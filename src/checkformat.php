@@ -365,12 +365,11 @@ class CheckFormat extends MessageSet {
     /** @return MessageItem */
     function front_report_item() {
         if ($this->has_error()) {
-            return MessageItem::error("<5>This document violates the submission format requirements");
+            return MessageItem::urgent_note("<5>This document violates the submission format requirements");
         } else if ($this->has_problem()) {
             return MessageItem::warning("<0>This document may violate the submission format requirements");
-        } else {
-            return MessageItem::success("<0>Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
         }
+        return MessageItem::success("<0>Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
     }
 
     /** @return MessageSet */

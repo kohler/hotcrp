@@ -398,7 +398,7 @@ class MessageSet {
     /** @param MessageItem $mi */
     private function _account_item($mi) {
         if ($mi->field !== null) {
-            $this->errf[$mi->field] = max($this->errf[$mi->field] ?? 0, $mi->status);
+            $this->errf[$mi->field] = self::combine_status($this->errf[$mi->field] ?? 0, $mi->status);
         }
         $this->problem_status = max($this->problem_status, $mi->status);
     }
@@ -552,7 +552,7 @@ class MessageSet {
             $mi->status = $status;
             if (!($this->_ms_flags & self::IGNORE_MSGS)) {
                 if ($mi->field !== null) {
-                    $this->errf[$mi->field] = max($this->errf[$mi->field] ?? 0, $mi->status);
+                    $this->errf[$mi->field] = self::combine_status($this->errf[$mi->field] ?? 0, $mi->status);
                 }
                 $this->problem_status = max($this->problem_status, $mi->status);
             }
@@ -592,6 +592,14 @@ class MessageSet {
         }
         return false;
     }
+    /** @return bool */
+    function has_urgent_note() {
+        foreach ($this->msgs as $mi) {
+            if ($mi->status === self::URGENT_NOTE)
+                return true;
+        }
+        return false;
+    }
     /** @param int $msgcount
      * @return bool */
     function has_error_since($msgcount) {
@@ -610,11 +618,10 @@ class MessageSet {
     /** @param string $field
      * @return int */
     function problem_status_at($field) {
-        if ($this->problem_status >= self::WARNING) {
-            return $this->errf[$field] ?? 0;
-        } else {
+        if ($this->problem_status < self::WARNING) {
             return 0;
         }
+        return max($this->errf[$field] ?? 0, 0);
     }
     /** @param string $field
      * @return bool */
@@ -628,17 +635,10 @@ class MessageSet {
         return $this->problem_status >= self::ERROR
             && ($this->errf[$field] ?? 0) >= self::ERROR;
     }
-
-    /** @param list<string> $fields
+    /** @param string $field
      * @return int */
-    function max_problem_status_at($fields) {
-        $ps = 0;
-        if ($this->problem_status > $ps) {
-            foreach ($fields as $f) {
-                $ps = max($ps, $this->errf[$f] ?? 0);
-            }
-        }
-        return $ps;
+    function status_at($field) {
+        return $this->errf[$field] ?? 0;
     }
 
     /** @param int $status

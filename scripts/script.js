@@ -13039,10 +13039,12 @@ function add_pslitem_header() {
     }
     e = navsidebar.set(this.parentElement, escape_html(xt), "#" + id).element;
     var ise = hasClass(this, "has-error"),
-        isw = hasClass(this, "has-warning");
-    toggleClass(e.firstChild, "is-diagnostic", ise || isw);
+        isw = hasClass(this, "has-warning"),
+        isun = hasClass(this, "has-urgent-note");
+    toggleClass(e.firstChild, "is-diagnostic", ise || isw || isun);
     toggleClass(e.firstChild, "is-error", ise);
     toggleClass(e.firstChild, "is-warning", isw);
+    toggleClass(e.firstChild, "is-urgent-note", isun);
     toggleClass(e, "hidden", hasClass(this.parentElement, "hidden"));
 }
 

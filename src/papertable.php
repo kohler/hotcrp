@@ -445,11 +445,14 @@ class PaperTable {
 
     /** @param string $field
      * @return int */
-    private function problem_status_at($field) {
-        if ($this->edit_status) {
-            return $this->edit_status->problem_status_at($field);
-        }
-        return 0;
+    private function status_at($field) {
+        return $this->edit_status ? $this->edit_status->status_at($field) : 0;
+    }
+    /** @param string $field
+     * @return int */
+    private function adjusted_status_at($field) {
+        $ps = $this->edit_status ? $this->edit_status->status_at($field) : 0;
+        return $ps === MessageSet::URGENT_NOTE ? $ps : max($ps, 0);
     }
     /** @param MessageItem $mi
      * @return MessageItem */
@@ -460,7 +463,7 @@ class PaperTable {
     /** @param string $field
      * @return bool */
     function has_problem_at($field) {
-        return $this->problem_status_at($field) > 0;
+        return $this->edit_status && $this->edit_status->has_problem_at($field);
     }
     /** @param string $field
      * @return string */
@@ -470,13 +473,18 @@ class PaperTable {
     /** @param string $field
      * @return string */
     function control_class($field, $rest = "", $prefix = "has-") {
-        return MessageSet::status_class($this->problem_status_at($field), $rest, $prefix);
+        return MessageSet::status_class($this->adjusted_status_at($field), $rest, $prefix);
     }
     /** @param list<string> $fields
      * @return string */
     function max_control_class($fields, $rest = "", $prefix = "has-") {
-        $ps = $this->edit_status ? $this->edit_status->max_problem_status_at($fields) : 0;
-        return MessageSet::status_class($ps, $rest, $prefix);
+        $psm = 0;
+        if ($this->edit_status) {
+            foreach ($fields as $field) {
+                $psm = MessageSet::combine_status($psm, $this->adjusted_status_at($field));
+            }
+        }
+        return MessageSet::status_class($psm, $rest, $prefix);
     }
 
     /** @param ?string $heading
@@ -2063,15 +2071,15 @@ class PaperTable {
             $this->_main_message(0, $v);
         }
 
-        if ($this->edit_status->has_problem()
+        if ($this->edit_status->has_message()
             && $this->edit_mode > 1) {
             $fields = [];
             $maxps = 0;
             foreach ($this->prow->form_fields() as $o) {
                 if ($this->user->can_edit_option($this->prow, $o)
-                    && ($ps = $this->edit_status->problem_status_at($o->formid)) > 0) {
+                    && ($ps = $this->adjusted_status_at($o->formid)) !== 0) {
                     $fields[] = $o;
-                    $maxps = max($maxps, $ps);
+                    $maxps = MessageSet::combine_status($maxps, $ps);
                 }
             }
             if (!empty($fields)) {
@@ -2354,7 +2362,7 @@ class PaperTable {
         }
         if ($this->useRequest) {
             $form_js["class"] .= " differs";
-            if ($this->problem_status_at("status:if_unmodified_since")) {
+            if ($this->adjusted_status_at("status:if_unmodified_since")) {
                 $form_js["class"] .= " need-highlight-differences";
             }
         }

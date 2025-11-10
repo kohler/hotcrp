@@ -235,7 +235,7 @@ class Paper_Page {
             } else {
                 $ml[] = MessageItem::urgent_note($conf->_("<0>Please correct these issues and save again."));
             }
-        } else if ($this->ps->has_problem()
+        } else if (($this->ps->has_problem() || $this->ps->has_urgent_note())
                    && $this->user->can_edit_paper($new_prow)) {
             $ml[] = MessageItem::warning_note($conf->_("<0>Please check these issues before completing the {submission}."));
         }
