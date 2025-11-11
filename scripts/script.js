@@ -4841,7 +4841,7 @@ const builders = {};
 function dropmenu_close() {
     const modal = $$("dropmenu-modal");
     modal && modal.remove();
-    $("details.dropmenu-details").each(function () { this.open = false; });
+    $(".dropmenu-container").each(function () { this.hidden = true; });
 }
 
 handle_ui.on("click.js-dropmenu-open", function (evt) {
@@ -4852,22 +4852,20 @@ handle_ui.on("click.js-dropmenu-open", function (evt) {
                 builders[c].call(esummary, evt);
         });
     }
-    if (esummary.nodeName === "BUTTON") {
-        esummary = esummary.closest("summary");
-    }
-    const edetails = esummary.parentElement;
+    const edetails = esummary.closest(".dropmenu-details"),
+        econtainer = edetails.lastElementChild;
     hotcrp.tooltip.close();
-    if (!edetails.open) {
+    if (econtainer.hidden) {
         if (!modal) {
             modal = $e("div", "modal transparent");
             modal.id = "dropmenu-modal";
             edetails.parentElement.insertBefore(modal, edetails.nextSibling);
             modal.addEventListener("click", dropmenu_close, false);
         }
-        edetails.open = true;
+        econtainer.hidden = false;
     } else if (this.tagName === "BUTTON") {
         modal && modal.remove();
-        edetails.open = false;
+        econtainer.hidden = true;
     }
     evt.preventDefault();
     handle_ui.stopPropagation(evt);
@@ -4908,7 +4906,8 @@ hotcrp.dropmenu = {
         builders[s] = f;
     },
     close: function (e) {
-        if (!e || e.closest("details[open]"))
+        const dd = e && e.closest(".dropmenu-details");
+        if (!e || (dd && !dd.lastElementChild.hidden))
             dropmenu_close();
     }
 };
@@ -5713,7 +5712,7 @@ function row_order_allow_remove(group) {
 }
 
 handle_ui.on("dragstart.row-order-draghandle", function (evt) {
-    var row = this.closest(".draggable");
+    const row = this.closest(".draggable");
     hotcrp.drag_block_reorder(this, row, function (draggable, group, changed) {
         changed && row_order_drag_confirm(group);
     }).start(evt);
@@ -5721,23 +5720,24 @@ handle_ui.on("dragstart.row-order-draghandle", function (evt) {
 
 hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
     const row = this.closest(".draggable"), group = row.parentElement;
-    let details = this.closest("details"), menu;
+    let details = this.closest(".dropmenu-details"), menu;
     if (details) {
         menu = details.lastElementChild.firstChild;
         menu.replaceChildren();
     } else {
-        menu = $e("ul", "uic dropmenu");
-        details = $e("details", "dropmenu-details",
-            $e("summary"),
-            $e("div", "dropmenu-container dropmenu-draghandle", menu));
-        details.setAttribute("role", "menu");
+        details = $e("div", "dropmenu-details");
         this.replaceWith(details);
-        details.firstChild.append(this);
+        menu = $e("ul", "uic dropmenu");
+        menu.setAttribute("role", "menu");
+        const menucontainer = $e("div", "dropmenu-container dropmenu-draghandle", menu);
+        menucontainer.hidden = true;
+        details.append(this, menucontainer);
     }
     menu.append($e("li", "disabled", "(Drag to reorder)"));
     function buttonli(className, attr, text) {
         attr["class"] = className;
         attr["type"] = "button";
+        attr["role"] = "menuitem";
         return $e("li", attr.disabled ? "disabled" : "has-link", $e("button", attr, text));
     }
     let sib = row.previousElementSibling;

@@ -285,7 +285,7 @@ body.paper #p-header {
 	text-align: right;
 	float: right;
 }
-.profile-dropmenu-summary {
+.profile-dropmenu-menubutton {
 	margin: 0 -7px;
 }
 .usertime {
@@ -1886,13 +1886,6 @@ td.padls, th.padls, div.padls {
 .dropmenu-details {
 	display: inline-block;
 	position: relative;
-}
-.dropmenu-details > summary {
-	display: inline-block;
-	list-style-type: none;
-}
-.dropmenu-details > summary::-webkit-details-marker {
-	display: none;
 }
 .dropmenu-container {
 	font-size: 0.875rem;
