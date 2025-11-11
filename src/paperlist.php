@@ -63,9 +63,11 @@ class PaperListTableRender {
     function heading_row($groupno, $heading, $attr) {
         $x = "  <tr class=\"plheading\"";
         foreach ($attr as $k => $v) {
-            if ($v === true) {
+            if ($k === "no_titlecol" || $k === "tdclass") {
+                continue;
+            } else if ($v === true) {
                 $x .= " {$k}";
-            } else if ($k !== "no_titlecol" && $k !== "tdclass") {
+            } else {
                 $x .= " {$k}=\"" . htmlspecialchars($v) . "\"";
             }
         }
@@ -465,7 +467,7 @@ class PaperList {
 
     const DECOR_NONE = 0;
     const DECOR_HEADER = 1;
-    const DECOR_EVERYHEADER = 2;
+    const DECOR_ALLCOLUMNS = 2;
     const DECOR_FOOTER = 4;
     const DECOR_STATISTICS = 8;
     const DECOR_LIST = 16;
@@ -1664,7 +1666,6 @@ class PaperList {
                     $content = "<div class=\"{$this->column_class}\">{$content}</div>";
                 }
                 $tm[] = "<td class=\"{$k}\">{$content}</td>";
-                $fdef->has_content = true;
             } else {
                 $tm[] = "<td class=\"pl\"></td>";
             }
@@ -1673,7 +1674,7 @@ class PaperList {
         // extension columns
         $tt = [];
         foreach ($this->_vcolumns as $fdef) {
-            if (!$fdef->as_row || !$fdef->has_content) {
+            if (!$fdef->as_row) {
                 continue;
             }
             $content = $this->_column_html($fdef, $row);
@@ -1830,11 +1831,6 @@ class PaperList {
     private function _field_th($fdef) {
         $sort_name = $fdef->sort_name();
         $sort_name_h = htmlspecialchars($sort_name);
-        // empty header
-        if (!$fdef->has_content
-            && ($this->_table_decor & self::DECOR_EVERYHEADER) === 0) {
-            return "<th data-pc=\"{$sort_name_h}\"></th>";
-        }
 
         // non-sortable header
         $thclass = "pl plh {$fdef->className}";
@@ -1883,7 +1879,7 @@ class PaperList {
             if ($fdef instanceof Selector_PaperColumn) {
                 $has_sel = true;
             }
-            if ($fdef->has_content && ($j["has_statistics"] ?? false)) {
+            if ($j["has_statistics"] ?? false) {
                 $has_statistics = true;
             }
             if ($fdef instanceof Authors_PaperColumn && $fdef->anon) {
@@ -2212,13 +2208,19 @@ class PaperList {
             return PaperListTableRender::make_error($m);
         }
 
-        // analyze presence of content
+        // reset fields; determine if columns have content
         foreach ($this->_vcolumns as $fdef) {
-            foreach ($rows as $row) {
-                $this->row_overridable = $this->user->has_overridable_conflict($row);
-                if ($this->_column_html($fdef, $row) !== "") {
-                    $fdef->has_content = true;
-                    break;
+            if ($fdef->as_row) {
+                // do nothing
+            } else if (($this->_table_decor & self::DECOR_ALLCOLUMNS) !== 0) {
+                $fdef->has_content = true;
+            } else {
+                foreach ($rows as $row) {
+                    $this->row_overridable = $this->user->has_overridable_conflict($row);
+                    if ($this->_column_html($fdef, $row) !== "") {
+                        $fdef->has_content = true;
+                        break;
+                    }
                 }
             }
             $fdef->reset($this);
@@ -2319,7 +2321,7 @@ class PaperList {
         $this->_analyze_fields_folds();
 
         // header cells
-        if (($this->_table_decor & (self::DECOR_HEADER | self::DECOR_EVERYHEADER)) !== 0) {
+        if (($this->_table_decor & self::DECOR_HEADER) !== 0) {
             $ths = "";
             foreach ($this->_vcolumns as $fdef) {
                 if (!$fdef->as_row && $fdef->has_content) {
@@ -2612,7 +2614,9 @@ class PaperList {
                 $t = $fdef->text($this, $row);
             }
             $csvrow[] = $t;
-            $fdef->has_content = $fdef->has_content || $t !== "";
+            if ($t !== "") {
+                $fdef->has_content = true;
+            }
         }
         return $csvrow;
     }

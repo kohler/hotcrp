@@ -81,7 +81,7 @@ class ConflictAssign_Page {
             $paperlist = new PaperList($reportid, $search, $args, $qreq);
             $paperlist->set_reviewer_user($pc);
             $paperlist->set_row_filter($filter);
-            $paperlist->set_table_decor(PaperList::DECOR_EVERYHEADER | PaperList::DECOR_FULLWIDTH);
+            $paperlist->set_table_decor(PaperList::DECOR_ALLCOLUMNS | PaperList::DECOR_FULLWIDTH | ($any ? 0 : PaperList::DECOR_HEADER));
             $rstate = $paperlist->table_render();
             if (!$rstate->is_empty()) {
                 if (!$any) {
