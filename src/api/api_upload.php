@@ -634,7 +634,6 @@ class Upload_API {
             "ok" => $status < MessageSet::ERROR,
             "token" => $this->_cap->salt,
             "dt" => $this->_capd->dtype,
-            "dtype" => $this->_capd->dtype /* XXX backward compat */,
             "filename" => $this->_capd->filename,
             "mimetype" => $this->_capd->mimetype,
             "ranges" => $this->_capd->ranges
@@ -653,8 +652,6 @@ class Upload_API {
             $spl = min($seg1, $this->_capd->size) + (isset($this->_capd->hash) ? 1 << 20 : 0);
             $j["progress_value"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
             $j["progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
-            $j["server_progress_loaded"] = $j["progress_value"]; /* XXX backward compat */
-            $j["server_progress_max"] = $j["progress_max"]; /* XXX backward compat */
         }
         if (!empty($this->_ml)) {
             $j["message_list"] = $this->_ml;
