@@ -32,12 +32,11 @@ class Attachments_PaperOption extends PaperOption {
         }
         if ($j && isset($j->all_dids)) {
             return $j->all_dids;
-        } else {
-            $values = $ov->value_list();
-            $data = $ov->data_list();
-            array_multisort($data, SORT_NUMERIC, $values);
-            return $values;
         }
+        $values = $ov->value_list();
+        $data = $ov->data_list();
+        array_multisort($data, SORT_NUMERIC, $values);
+        return $values;
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         $attachments = [];
@@ -243,9 +242,8 @@ class Attachments_PaperOption extends PaperOption {
             return new DocumentCount_SearchTerm($srch->user, $this, $sword->compar, (int) $sword->cword);
         } else if ($sword->compar === "" || $sword->compar === "!=") {
             return new DocumentName_SearchTerm($srch->user, $this, $sword->compar !== "!=", $sword->cword);
-        } else {
-            return null;
         }
+        return null;
     }
     function present_script_expression() {
         return ["type" => "document_count", "formid" => $this->formid, "dt" => $this->id, "dtype" => $this->id /* XXX backward compat */];

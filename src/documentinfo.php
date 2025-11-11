@@ -167,17 +167,13 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @param QrequestFile $upload
-     * @param int $paperId
-     * @param int $documentType
      * @return ?DocumentInfo */
-    static function make_uploaded_file($upload, $paperId, $documentType, Conf $conf) {
+    static function make_uploaded_file(Conf $conf, $upload) {
         if (!$upload) {
             return null;
         }
 
         $doc = new DocumentInfo($conf);
-        $doc->paperId = $paperId;
-        $doc->documentType = $documentType;
         $doc->timestamp = Conf::$now;
         $doc->mimetype = $upload->type;
         $doc->filename = self::sanitize_filename($upload->name);
@@ -206,11 +202,8 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @param string $token
-     * @param ?int $paperId
-     * @param ?int $documentType
      * @return ?DocumentInfo */
-    static function make_capability(Conf $conf, $token, $paperId = null,
-                                    $documentType = null) {
+    static function make_capability(Conf $conf, $token) {
         if (!$token
             || !($toki = TokenInfo::find($token, $conf))
             || !$toki->is_active()
@@ -218,23 +211,20 @@ class DocumentInfo implements JsonSerializable {
             || !$toki->data("ready")) {
             return null;
         }
-        return self::make_token($conf, $toki, null, $paperId, $documentType);
+        return self::make_token($conf, $toki);
     }
 
     /** @param ?string $content_file
-     * @param ?int $paperId
-     * @param ?int $documentType
      * @return ?DocumentInfo */
-    static function make_token(Conf $conf, TokenInfo $toki, $content_file = null,
-                               $paperId = null, $documentType = null) {
+    static function make_token(Conf $conf, TokenInfo $toki, $content_file = null) {
         assert($toki->capabilityType === TokenInfo::UPLOAD);
         $tokd = $toki->data();
         if (!$tokd->hash) {
             return null;
         }
         $doc = new DocumentInfo($conf);
-        $doc->paperId = $paperId ?? $toki->paperId;
-        $doc->documentType = $documentType ?? $tokd->dtype;
+        $doc->paperId = $toki->paperId;
+        $doc->documentType = $tokd->dtype;
         $doc->timestamp = Conf::$now;
         $doc->mimetype = $tokd->mimetype ?? null;
         $doc->filename = self::sanitize_filename($tokd->filename);
@@ -276,19 +266,23 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param string $name
      * @param int $paperId
-     * @param int $documentType
+     * @param int $dt
      * @return ?DocumentInfo */
-    static function make_request(Qrequest $qreq, $name, $paperId,
-                                 $documentType, Conf $conf) {
+    static function make_request(Qrequest $qreq, $name, $paperId, $dt, Conf $conf) {
         if (($fu = $qreq["{$name}:upload"])) {
-            return self::make_capability($conf, $fu, $paperId, $documentType);
+            $doc = self::make_capability($conf, $fu);
         } else if (($fi = $qreq->file("{$name}:file"))) {
-            return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
+            $doc = self::make_uploaded_file($conf, $fi);
         } else if (($fi = $qreq->file($name) /* XXX obsolete */)) {
             error_log("obsolete use of file attachment {$name}");
-            return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
+            $doc = self::make_uploaded_file($conf, $fi);
+        } else {
+            $doc = null;
         }
-        return null;
+        if (!$doc) {
+            return null;
+        }
+        return $doc->set_paper_id($paperId)->set_document_type($dt);
     }
 
     /** @param FileFilter $ff
