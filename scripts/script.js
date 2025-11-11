@@ -14204,19 +14204,7 @@ handle_ui.on("js-assign-potential-conflict", function () {
 });
 
 hotcrp.tooltip.add_builder("cflt", function (info) {
-    const ex = {anchor: "s"};
-    if (hasClass(this, "cflt-no")) {
-        ex.content = "Non-conflict";
-    } else if (hasClass(this, "cflt-no-pinned")) {
-        ex.content = "Pinned non-conflict";
-    } else if (hasClass(this, "cflt-no-potential")) {
-        ex.content = "Unconfirmed potential conflict";
-    } else if (hasClass(this, "cflt-yes")) {
-        ex.content = "Conflict";
-    } else if (hasClass(this, "cflt-yes-pinned")) {
-        ex.content = "Pinned conflict";
-    }
-    return Object.assign(ex, info);
+    return Object.assign({anchor: "s"}, info);
 });
 
 handle_ui.on("js-assign-review", function (evt) {

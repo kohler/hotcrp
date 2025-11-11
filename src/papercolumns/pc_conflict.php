@@ -129,20 +129,26 @@ class Conflict_PaperColumn extends PaperColumn {
         if ($this->show_user) {
             $n = htmlspecialchars($pl->user->name_text_for($this->user));
             $suffix .= " title=\"{$n} conflict\"";
+        } else {
+            $suffix .= " title=\"Conflict\"";
         }
-        return "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrev{$this->usuffix}\" name=\"assrev{$row->paperId}u{$this->user->contactId}\" value=\"{$value}\" data-unconflicted-value=\"{$nonvalue}\" autocomplete=\"off\" tabindex=\"0\"{$suffix}>";
+        return "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrev{$this->usuffix}\" name=\"assrev{$row->paperId}u{$this->user->contactId}\" value=\"{$value}\" data-unconflicted-value=\"{$nonvalue}\" autocomplete=\"off\"{$suffix}>";
     }
     private function edit_content_palette(PaperList $pl, PaperInfo $row, $ct) {
         $t = ['<span class="btnbox">'];
-        $t[] = $this->radio_for($row, true, true, $ct);
-        $t[] = $this->radio_for($row, false, true, $ct);
-        $t[] = $this->radio_for($row, false, false, $ct);
-        $t[] = $this->radio_for($row, true, false, $ct);
+        $t[] = $this->radio_for($row, 3, $ct);
+        $t[] = $this->radio_for($row, 1, $ct);
+        $t[] = $this->radio_for($row, 0, $ct);
+        $t[] = $this->radio_for($row, 2, $ct);
         $t[] = '</span>';
         $pl->need_render = true;
         return join("", $t);
     }
-    private function radio_for(PaperInfo $row, $pinned, $conflicted, $ct) {
+    static private $radio_titles = ["Non-conflict", "Conflict", "Pinned non-conflict", "Pinned conflict"];
+    private function radio_for(PaperInfo $row, $cn, $ct) {
+        $pinned = ($cn & 2) !== 0;
+        $conflicted = ($cn & 1) !== 0;
+        $title = self::$radio_titles[$cn];
         $checked = Conflict::is_conflicted($ct) === $conflicted
             && Conflict::is_pinned($ct) === $pinned ? " checked" : "";
         $klass = $conflicted ? "yes" : "no";
@@ -156,9 +162,9 @@ class Conflict_PaperColumn extends PaperColumn {
             $value = "pinned {$value}";
         } else if (!$conflicted && $row->potential_conflict($this->user)) {
             $klass .= "-potential";
+            $title = "Unconfirmed potential conflict";
         }
-        $cn = ($pinned ? 2 : 0) | ($conflicted ? 1 : 0);
-        return "<input type=\"radio\" class=\"uic uikd uich js-assign-review js-range-click btn cflt cflt-{$klass} need-tooltip\" data-tooltip-info=\"cflt\" data-range-type=\"assrev{$this->usuffix}cv{$cn}\" name=\"assrev{$row->paperId}u{$this->user->contactId}\" value=\"{$value}\" autocomplete=\"off\" tabindex=\"0\"{$checked}>";
+        return "<input type=\"radio\" class=\"uic uikd uich js-assign-review js-range-click btn cflt cflt-{$klass} need-tooltip\" data-tooltip-info=\"cflt\" data-range-type=\"assrev{$this->usuffix}cv{$cn}\" name=\"assrev{$row->paperId}u{$this->user->contactId}\" value=\"{$value}\" autocomplete=\"off\" title=\"{$title}\"{$checked}>";
     }
     function text(PaperList $pl, PaperInfo $row) {
         $ct = $this->conflict_type($pl, $row);
