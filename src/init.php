@@ -348,7 +348,16 @@ function initialize_user($qreq, $kwarg = null) {
     $nav = $qreq->navigation();
     if (str_starts_with($nav->shifted_path, "u/")) {
         // use explicit account index
-        $uindex = (int) substr($nav->shifted_path, 2);
+        $s = substr($nav->shifted_path, 2, -1);
+        if (ctype_digit($s)) {
+            $uindex = (int) $s;
+        } else if (($e = $conf->opt["publicUserPaths"][$s] ?? null)) {
+            $us = [$e];
+            $nus = 1;
+            $uindex = 0;
+        } else {
+            $uindex = -1;
+        }
     } else if ($nus > 1) {
         // no explicit account index, but a choice among accounts
         if ($reqemail !== "") {

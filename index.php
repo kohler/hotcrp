@@ -57,18 +57,10 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     API_Page::go_options($nav);
 }
 
-// handle `/u/USERINDEX/`
-if ($nav->page === "u") {
-    $unum = $nav->path_component(0);
-    if ($unum !== null && ctype_digit($unum)) {
-        if (!$nav->shift_path_components(2)) {
-            // redirect `/u/USERINDEX` => `/u/USERINDEX/`
-            Navigation::redirect_absolute("{$nav->server}{$nav->base_path}u/{$unum}/{$nav->query}");
-        }
-    } else {
-        // redirect `/u/XXXX` => `/`
-        Navigation::redirect_absolute("{$nav->server}{$nav->base_path}{$nav->query}");
-    }
+// redirect `/u/USERINDEX` => `/u/USERINDEX/`
+if ($nav->page === "u" && !$nav->shift_path_components(2)) {
+    $unum = $nav->path_component(0) ?? 0;
+    Navigation::redirect_absolute("{$nav->server}{$nav->base_path}u/{$unum}/{$nav->query}");
 }
 
 // handle pages
