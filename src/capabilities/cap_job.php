@@ -103,13 +103,20 @@ class Job_Capability extends TokenInfo {
      * @return JsonResult */
     function json_result($output = false) {
         $ok = $this->is_active();
-        $answer = ["ok" => $ok] + (array) $this->data();
-        $answer["ok"] = $ok;
-        if (!isset($answer["status"])) {
-            $answer["status"] = "wait";
-        }
-        if (!isset($answer["update_at"])) {
-            $answer["update_at"] = $this->timeUsed ? : $this->timeCreated;
+        $answer = [
+            "ok" => $ok,
+            "status" => "wait",
+            "update_at" => $this->timeUsed ? : $this->timeCreated
+        ];
+        foreach ((array) $this->data() as $k => $v) {
+            if ($k === ""
+                || $k[0] === "_"
+                || $k[0] === "#"
+                || $k === "ok"
+                || $k === "update_at") {
+                continue;
+            }
+            $answer[$k] = $v;
         }
         if ($output && $this->outputData !== null) {
             if ((str_starts_with($this->outputData, "{")
