@@ -1970,7 +1970,8 @@ td.padls, th.padls, div.padls {
 	background-color: #004daa;
 	color: white;
 }
-.dropmenu > li.separator {
+.dropmenu > li.separator,
+.dropmenu > li[role="separator"] {
 	margin: 0.35em 0;
 	padding: 0;
 	border-bottom: 1px solid silver;

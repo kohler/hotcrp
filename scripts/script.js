@@ -5731,6 +5731,7 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
         this.replaceWith(details);
         menu = $e("ul", "uic dropmenu");
         menu.setAttribute("role", "menu");
+        menu.setAttribute("aria-label", "Reordering menu");
         const menucontainer = $e("div", "dropmenu-container dropmenu-draghandle", menu);
         menucontainer.hidden = true;
         details.append(this, menucontainer);
@@ -5740,7 +5741,7 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
         attr["class"] = className;
         attr["type"] = "button";
         attr["role"] = "menuitem";
-        return $e("li", attr.disabled ? "disabled" : "has-link", $e("button", attr, text));
+        return $e("li", {class: attr.disabled ? "disabled" : "has-link", role: "none"}, $e("button", attr, text));
     }
     let sib = row.previousElementSibling;
     menu.append(buttonli("link ui row-order-dragmenu move-up", {

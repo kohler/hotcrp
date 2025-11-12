@@ -1663,7 +1663,9 @@ class PaperTable {
         $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api ui-fold js-fold-focus"]);
         echo $this->papt("decision", Ht::label("Decision", $id),
                 ["type" => "ps", "fold" => "decision"]),
-            '<form class="ui-submit uin fx">';
+            '<p class="odname js-psedit-result fn">',
+            $this->prow->decision()->name_as(5),
+            '</p><form class="ui-submit uin fx">';
         $opts = [];
         foreach ($this->conf->decision_set() as $dec) {
             $opts[$dec->id] = $dec->name_as(5);
@@ -1671,9 +1673,7 @@ class PaperTable {
         echo Ht::select("decision", $opts,
                         (string) $this->prow->outcome,
                         ["class" => "w-99 want-focus", "id" => $id]),
-            '</form><p class="fn odname js-psedit-result">',
-            $this->prow->decision()->name_as(5),
-            "</p></div>\n";
+            "</form></div>\n";
     }
 
     function papstripReviewPreference() {
