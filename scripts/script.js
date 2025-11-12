@@ -4608,9 +4608,11 @@ function make_expander_element(foldnum) {
     function mksvgp(d) {
         return $svg("svg", {class: "licon", width: "0.75em", height: "0.75em", viewBox: "0 0 16 16", preserveAspectRatio: "none"}, $svg("path", {d: d}));
     }
+    let fx = foldnum == null ? "" : " fx" + foldnum,
+        fn = foldnum == null ? "" : " fn" + foldnum;
     return $e("span", "expander",
-        $e("span", "in0 fx" + foldnum, mksvgp("M1 1L8 15L15 1z")),
-        $e("span", "in1 fn" + foldnum, mksvgp("M1 1L15 8L1 15z")));
+        $e("span", "in0" + fx, mksvgp("M1 1L8 15L15 1z")),
+        $e("span", "in1" + fn, mksvgp("M1 1L15 8L1 15z")));
 }
 
 
@@ -6473,13 +6475,17 @@ function render_ratings(ratings, user_rating, editable) {
     } else {
         ex = $e("div", "revrating", ...es);
     }
-    return $e("div", "revcard-rating fx20", ex);
+    return $e("div", "revcard-rating", ex);
 }
 
-function make_review_h2(rrow, rlink, rdesc) {
+function make_review_h2(rrow, rlink, rdesc, rid) {
     let h2 = $e("h2"), ma, rd = $e("span");
     if (rrow.collapsed) {
-        ma = $e("button", {type: "button", class: "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
+        ma = $e("button", {
+            type: "button", class: "qo ui js-foldup expander",
+            "aria-controls": `r${rid}-body`, "aria-expanded": "false"
+        });
+        ma.append(make_expander_element());
     } else {
         ma = $e("a", {href: hoturl("review", rlink), class: "qo"});
     }
@@ -6556,61 +6562,70 @@ hotcrp.add_review = function (rrow) {
 
     const earticle = document.createElement("article");
     earticle.id = "r" + rid;
-    earticle.className = "pcard revcard " + (rrow.subreview || rrow.draft ? "" : "revsubmitted ") + "need-anchor-unfold has-fold fold20" + (rrow.collapsed ? "c" : "o");
+    earticle.className = "pcard revcard " + (rrow.subreview || rrow.draft ? "" : "revsubmitted ") + "need-anchor-unfold";
     earticle.setAttribute("data-pid", rrow.pid);
     earticle.setAttribute("data-rid", rrow.rid);
-    rrow.ordinal && earticle.setAttribute("data-review-ordinal", rrow.ordinal);
-    $(".pcontainer")[0].appendChild(earticle);
+    if (rrow.ordinal) {
+        earticle.setAttribute("data-review-ordinal", rrow.ordinal);
+    }
 
     // header
-    const eheader = $e("header", "revcard-head", make_review_h2(rrow, rlink, rdesc));
+    const eheader = $e("header", "revcard-head",
+        make_review_h2(rrow, rlink, rdesc, rid));
     append_review_id(rrow, eheader);
     eheader.appendChild($e("hr", "c"));
-    earticle.appendChild(eheader);
 
-    // messages
+    // body
+    const ebody = document.createElement("div");
+    ebody.id = `r${rid}-body`;
+    if (rrow.collapsed) {
+        ebody.hidden = true;
+        earticle.setAttribute("aria-expanded", "false");
+    }
+
     if (rrow.message_list) {
-        earticle.appendChild($e("div", "revcard-feedback fx20", feedback.render_list(rrow.message_list)));
+        ebody.appendChild($e("div", "revcard-feedback", feedback.render_list(rrow.message_list)));
     }
 
     // body
-    let e = $e("div", "revcard-render fx20");
-    earticle.appendChild(e);
+    let e = $e("div", "revcard-render");
+    ebody.appendChild(e);
     render_review_body_in(rrow, e);
 
     // hidden fields, if any
     if (rrow.hidden_fields && rrow.hidden_fields.length > 0) {
-        earticle.appendChild(render_review_hidden_fields(rrow.hidden_fields));
+        ebody.appendChild(render_review_hidden_fields(rrow.hidden_fields));
     }
 
     // ratings
     if ((e = render_ratings(rrow.ratings, rrow.user_rating, "user_rating" in rrow))) {
-        earticle.appendChild(e);
+        ebody.appendChild(e);
     }
 
     // complete render
+    earticle.append(eheader, ebody);
+    document.querySelector(".pcontainer").append(earticle);
     score_header_tooltips($(earticle));
     navsidebar.set("r" + rid, rdesc);
 };
 
 function render_review_hidden_fields(hidden_fields) {
-    var i, n = [], link;
-    for (i = 0; i !== hidden_fields.length; ++i) {
-        var f = formj[hidden_fields[i]];
+    let n = [];
+    for (let i = 0; i !== hidden_fields.length; ++i) {
+        let f = formj[hidden_fields[i]];
         n.push(f.name);
     }
-    link = $e("a");
+    const link = $e("a");
     link.href = hoturl("settings", {group: "reviewform", "#": "rf/" + formj[hidden_fields[0]].order});
     if (!hotcrp.status.is_admin) {
         link.className = "q";
     }
     if (n.length === 1) {
         link.textContent = "field condition";
-        return $e("p", "feedback is-warning mt-3", "This review’s ".concat(n[0], " field has been hidden by a "), link, ".");
-    } else {
-        link.textContent = "field conditions";
-        return $e("p", "feedback is-warning mt-3", "This review’s ".concat(commajoin(n), " fields have been hidden by "), link, ".");
+        return $e("p", "feedback is-warning mt-3", `This review’s ${n[0]} field has been hidden by a `, link, ".");
     }
+    link.textContent = "field conditions";
+    return $e("p", "feedback is-warning mt-3", `This review’s ${commajoin(n)} fields have been hidden by `, link, ".");
 }
 
 

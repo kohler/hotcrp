@@ -1358,6 +1358,12 @@ span.expander {
 	opacity: 0.65;
 	text-decoration: none;
 }
+button.expander[aria-expanded="false"] > span.expander > span.in0 {
+	display: none;
+}
+button.expander[aria-expanded="true"] > span.expander > span.in1 {
+	display: none;
+}
 
 .tbtn {
 	display: inline-block;
