@@ -436,7 +436,7 @@ class PaperTable {
         if ($require_folds) {
             echo '">';
         } else {
-            echo (empty($folders) ? "" : " "),
+            echo empty($folders) ? "" : " ",
                 'need-fold-storage" data-fold-storage="',
                 htmlspecialchars(json_encode_browser($foldstorage)), '">';
             Ht::stash_script("hotcrp.fold_storage()");
@@ -583,7 +583,7 @@ class PaperTable {
         } else {
             $c .= "\">";
         }
-        $c .= "<h3 class=\"$hdrclass";
+        $c .= "<h3 class=\"{$hdrclass}";
         if (isset($extra["fnclass"])) {
             $c .= " " . $extra["fnclass"];
         }
@@ -607,7 +607,7 @@ class PaperTable {
                 $c .= ' title="' . $title . '"';
             }
             if (isset($this->foldmap[$foldnum])) {
-                $c .= ' role="button" aria-expanded="' . ($this->foldmap[$foldnum] ? "false" : "true") . '"';
+                $c .= ' aria-expanded="' . ($this->foldmap[$foldnum] ? "false" : "true") . '"';
             }
             $c .= '>' . expander(null, $foldnum);
             if (!is_array($name)) {
@@ -1471,7 +1471,7 @@ class PaperTable {
             }
             foreach ($extra as $k => $v) {
                 if ($k !== "class")
-                    echo "\" $k=\"", str_replace("\"", "&quot;", $v);
+                    echo "\" {$k}=\"", str_replace("\"", "&quot;", $v);
             }
         }
         echo '">';

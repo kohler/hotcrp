@@ -1358,12 +1358,6 @@ span.expander {
 	opacity: 0.65;
 	text-decoration: none;
 }
-button.expander[aria-expanded="false"] > span.expander > span.in0 {
-	display: none;
-}
-button.expander[aria-expanded="true"] > span.expander > span.in1 {
-	display: none;
-}
 
 .tbtn {
 	display: inline-block;
@@ -5162,6 +5156,12 @@ body {
 .fold64c .fx64, .fold64o .fn64,
 .fold98c .fx98, .fold98o .fn98,
 .fold99c .fx99, .fold99o .fn99 {
+	display: none;
+}
+.collapsed .ifx,
+[aria-expanded="false"] .ifx,
+.expanded .ifnx,
+[aria-expanded="true"] .ifnx {
 	display: none;
 }
 .hidden, [hidden] {

@@ -4362,11 +4362,9 @@ function fold_session_for(foldnum, type) {
 }
 
 function fold(elt, dofold, foldnum) {
-    var i, opentxt, closetxt, wasopen, foldnumid, s;
-
     // find element
     if (elt && ($.isArray(elt) || elt.jquery)) {
-        for (i = 0; i < elt.length; i++) {
+        for (let i = 0; i < elt.length; i++) {
             fold(elt[i], dofold, foldnum);
         }
         return false;
@@ -4378,19 +4376,19 @@ function fold(elt, dofold, foldnum) {
     }
 
     // find fold number, fold/unfold
-    foldnumid = foldnum ? foldnum : "";
-    opentxt = "fold" + foldnumid + "o";
-    closetxt = "fold" + foldnumid + "c";
+    const foldnumid = foldnum ? foldnum : "",
+        opentxt = "fold" + foldnumid + "o",
+        closetxt = "fold" + foldnumid + "c",
+        wasopen = hasClass(elt, opentxt);
 
-    // check current fold state
-    wasopen = hasClass(elt, opentxt);
     if (dofold == null || !dofold != wasopen) {
         // perform fold
         toggleClass(elt, opentxt, !wasopen);
         toggleClass(elt, closetxt, wasopen);
 
         // check for session
-        if ((s = fold_session_for.call(elt, foldnum, "storage"))) {
+        let s = fold_session_for.call(elt, foldnum, "storage");
+        if (s) {
             const wstor = hotcrp.wstorage;
             let sj = wstor.json(true, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
@@ -4407,15 +4405,10 @@ function fold(elt, dofold, foldnum) {
 }
 
 function foldup(evt, opts) {
-    var e = this, wantopen, m, x;
     if (typeof opts === "number") {
         opts = {n: opts};
     } else if (!opts) {
         opts = {};
-    }
-    if (!("open" in opts) && "f" in opts) {
-        log_jserror("opts.f provided, not opts.open");
-        opts.open = !opts.f;
     }
     if (this.tagName === "DIV"
         && evt
@@ -4423,69 +4416,89 @@ function foldup(evt, opts) {
         && !opts.required) {
         return;
     }
-    if (!("n" in opts)
-        && e.hasAttribute("data-fold-target")
-        && (m = e.getAttribute("data-fold-target").match(/^(\D[^#]*$|.*(?=#)|)#?(\d*)([couU]?)$/))) {
-        if (m[1] !== "") {
-            e = document.getElementById(m[1]);
+    // determine targets
+    // XXX only partial support for ARIA method
+    let foldname, m;
+    if (this.ariaControlsElements && this.ariaControlsElements.length > 0) {
+        const p = this.closest(".expanded, .collapsed");
+        if (!("open" in opts)) {
+            opts.open = this.ariaExpanded !== "true";
         }
-        opts.n = parseInt(m[2]) || 0;
-        if (!("open" in opts) && m[3] !== "") {
-            if (this.tagName === "INPUT"
-                && input_is_checkboxlike(this)
-                && (this.checked ? m[3] === "u" : m[3] === "U")) {
-                m[3] = "c";
+        this.ariaExpanded = opts.open ? "true" : "false";
+        for (const e of this.ariaControlsElements) {
+            e.hidden = !opts.open;
+            $(e).trigger($.Event("foldtoggle", {which: opts, open: opts.open}));
+        }
+        if (p && hasClass(p, "expanded") !== opts.open) {
+            removeClass(p, opts.open ? "collapsed" : "expanded");
+            addClass(p, opts.open ? "expanded" : "collapsed");
+            $(p).trigger($.Event("foldtoggle", {which: opts, open: opts.open}));
+        }
+    } else {
+        let target = this;
+        if (!("n" in opts)
+            && this.hasAttribute("data-fold-target")
+            && (m = this.getAttribute("data-fold-target").match(/^(\D[^#]*$|.*(?=#)|)#?(\d*)([couU]?)$/))) {
+            if (m[1] !== "") {
+                target = document.getElementById(m[1]);
             }
-            opts.open = m[3] !== "c";
-        }
-    }
-    var foldname = "fold" + (opts.n || "");
-    while (e && ((!hasClass(e, "has-fold") && (!e.id || !e.id.startsWith("fold")))
-                 || (opts.n != null && !hasClass(e, foldname + "c") && !hasClass(e, foldname + "o")))) {
-        e = e.parentNode;
-    }
-    if (!e) {
-        return true;
-    }
-    if (opts.n == null) {
-        x = classList(e);
-        for (var i = 0; i !== x.length; ++i) {
-            if (x[i].substring(0, 4) === "fold"
-                && (m = x[i].match(/^fold(\d*)[oc]$/))
-                && (opts.n == null || +m[1] < opts.n)) {
-                opts.n = +m[1];
-                foldname = "fold" + (opts.n || "");
+            opts.n = parseInt(m[2]) || 0;
+            if (!("open" in opts) && m[3] !== "") {
+                if (this.tagName === "INPUT"
+                    && input_is_checkboxlike(this)
+                    && (this.checked ? m[3] === "u" : m[3] === "U")) {
+                    m[3] = "c";
+                }
+                opts.open = m[3] !== "c";
             }
         }
-    }
-    if (!("open" in opts)
-        && (this.tagName === "INPUT" || this.tagName === "SELECT" || this.tagName === "TEXTAREA")) {
-        var value = null;
-        if (this.type === "checkbox") {
-            opts.open = this.checked;
-        } else if (this.type === "radio") {
-            if (!this.checked)
-                return true;
-            value = this.value;
-        } else if (this.type === "select-one") {
-            value = this.selectedIndex < 0 ? "" : this.options[this.selectedIndex].value;
-        } else if (this.type === "text" || this.type === "textarea") {
-            opts.open = this.value !== "";
+        foldname = "fold" + (opts.n || "");
+        while (target && ((!hasClass(target, "has-fold") && (!target.id || !target.id.startsWith("fold")))
+                          || (opts.n != null && !hasClass(target, foldname + "c") && !hasClass(target, foldname + "o")))) {
+            target = target.parentNode;
         }
-        if (value !== null) {
-            var vstr = e.getAttribute("data-" + foldname + "-values") || "",
-                values = $.trim(vstr) === "" ? [] : vstr.split(/\s+/);
-            opts.open = values.indexOf(value) >= 0;
+        if (!target) {
+            return true;
         }
-    }
-    wantopen = hasClass(e, foldname + "c");
-    if (!("open" in opts) || !!opts.open === wantopen) {
-        opts.open = wantopen;
-        fold(e, !wantopen, opts.n || 0);
-        $(e).trigger($.Event("foldtoggle", {which: opts}));
-    }
-    if (this.hasAttribute("aria-expanded")) {
-        this.setAttribute("aria-expanded", wantopen ? "true" : "false");
+        if (opts.n == null) {
+            for (const cl of classList(target)) {
+                if (cl.substring(0, 4) === "fold"
+                    && (m = cl.match(/^fold(\d*)[oc]$/))
+                    && (opts.n == null || +m[1] < opts.n)) {
+                    opts.n = +m[1];
+                    foldname = "fold" + (opts.n || "");
+                }
+            }
+        }
+        if (!("open" in opts)
+            && (this.tagName === "INPUT" || this.tagName === "SELECT" || this.tagName === "TEXTAREA")) {
+            let value = null;
+            if (this.type === "checkbox") {
+                opts.open = this.checked;
+            } else if (this.type === "radio") {
+                if (!this.checked)
+                    return true;
+                value = this.value;
+            } else if (this.type === "select-one") {
+                value = this.selectedIndex < 0 ? "" : this.options[this.selectedIndex].value;
+            } else if (this.type === "text" || this.type === "textarea") {
+                opts.open = this.value !== "";
+            }
+            if (value !== null) {
+                const vstr = target.getAttribute("data-" + foldname + "-values") || "",
+                    values = $.trim(vstr) === "" ? [] : vstr.split(/\s+/);
+                opts.open = values.indexOf(value) >= 0;
+            }
+        }
+        const wantopen = hasClass(target, foldname + "c");
+        if (!("open" in opts) || !!opts.open === wantopen) {
+            opts.open = wantopen;
+            fold(target, !wantopen, opts.n || 0);
+            $(target).trigger($.Event("foldtoggle", {which: opts, open: opts.open}));
+        }
+        if (this.hasAttribute("aria-expanded")) {
+            this.ariaExpanded = wantopen ? "true" : "false";
+        }
     }
     if (evt
         && typeof evt === "object"
@@ -4608,11 +4621,11 @@ function make_expander_element(foldnum) {
     function mksvgp(d) {
         return $svg("svg", {class: "licon", width: "0.75em", height: "0.75em", viewBox: "0 0 16 16", preserveAspectRatio: "none"}, $svg("path", {d: d}));
     }
-    let fx = foldnum == null ? "" : " fx" + foldnum,
-        fn = foldnum == null ? "" : " fn" + foldnum;
+    let fx = foldnum == null ? "ifx" : "fx" + foldnum,
+        fn = foldnum == null ? "ifnx" : "fn" + foldnum;
     return $e("span", "expander",
-        $e("span", "in0" + fx, mksvgp("M1 1L8 15L15 1z")),
-        $e("span", "in1" + fn, mksvgp("M1 1L15 8L1 15z")));
+        $e("span", fx, mksvgp("M1 1L8 15L15 1z")),
+        $e("span", fn, mksvgp("M1 1L15 8L1 15z")));
 }
 
 
@@ -6581,7 +6594,6 @@ hotcrp.add_review = function (rrow) {
     ebody.id = `r${rid}-body`;
     if (rrow.collapsed) {
         ebody.hidden = true;
-        earticle.setAttribute("aria-expanded", "false");
     }
 
     if (rrow.message_list) {
