@@ -366,6 +366,11 @@ function expander($open, $foldnum = null, $open_tooltip = null) {
     return $t . '</span>';
 }
 
+function aria_expander() {
+    return '<span class="expander" role="none"><span class="ifx">' . Icons::ui_triangle(2)
+        . '</span><span class="ifnx">' . Icons::ui_triangle(1) . '</span></span>';
+}
+
 
 /** @param Contact|Author|ReviewInfo|CommentInfo $userlike
  * @return string */

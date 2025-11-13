@@ -4318,47 +4318,44 @@ hotcrp.onload = (function ($) {
 })(jQuery);
 
 
+function fold_map(e, type) {
+    let s = e.getAttribute("data-fold-" + (type || "storage"));
+    if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
+        s = JSON.parse(s);
+    } else if (s) {
+        s = [s];
+    }
+    const m = {};
+    for (const k in s || {}) {
+        const v = s[k];
+        m[k] = v.charAt(0) === "-" ? [v.substring(1), true] : [v, false];
+    }
+    return m;
+}
+
 function fold_storage() {
     if (!this || this === window || this === hotcrp) {
         $(".need-fold-storage").each(fold_storage);
-    } else {
-        removeClass(this, "need-fold-storage");
-        var sn = this.getAttribute("data-fold-storage"), smap, k;
-        if (sn.charAt(0) === "-") { // default is open, use storage to close
-            sn = sn.substring(1);
-        }
-        if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
-            smap = JSON.parse(sn) || {};
-        } else {
-            var m = this.className.match(/\bfold(\d*)[oc]\b/),
-                n = m[1] === "" ? 0 : +m[1];
-            smap = {};
-            smap[n] = sn;
-        }
+        return;
+    }
+    removeClass(this, "need-fold-storage");
+    removeClass(this, "fold-storage-hidden");
+    const smap = fold_map(this),
         sn = hotcrp.wstorage.json(true, "fold") || hotcrp.wstorage.json(false, "fold") || {};
-        for (k in smap) {
-            if (sn[smap[k]]) {
-                foldup.call(this, null, {open: true, n: +k});
-            } else if (sn[smap[k]] != null) {
-                foldup.call(this, null, {open: false, n: +k});
-            }
+    for (const k in smap) {
+        if (sn[smap[k][0]] != null) {
+            foldup.call(this, null, {open: !sn[smap[k][0]], n: +k});
         }
     }
-}
-
-function fold_session_for(foldnum, type) {
-    var s = this.getAttribute("data-fold-" + type), p, flip = false;
-    if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
-        s = (JSON.parse(s) || {})[foldnum];
-    }
-    if (s && s.charAt(0) === "-") {
-        s = s.substring(1);
-        flip = true;
-    }
-    if (s && (p = this.getAttribute("data-fold-" + type + "-prefix"))) {
-        s = p + s;
-    }
-    return s ? [s, flip] : null;
+    this.addEventListener("foldtoggle", function (evt) {
+        const info = smap[evt.detail.n || 0], wstor = hotcrp.wstorage;
+        let sj = wstor.json(true, "fold") || {};
+        evt.detail.open === info[1] ? delete sj[info[0]] : sj[info[0]] = evt.detail.open ? 0 : 1;
+        wstor(true, "fold", $.isEmptyObject(sj) ? null : sj);
+        sj = wstor.json(false, "fold") || {};
+        evt.detail.open === info[1] ? delete sj[info[0]] : sj[info[0]] = evt.detail.open ? 0 : 1;
+        wstor(false, "fold", $.isEmptyObject(sj) ? null : sj);
+    });
 }
 
 function fold(elt, dofold, foldnum) {
@@ -4387,7 +4384,7 @@ function fold(elt, dofold, foldnum) {
         toggleClass(elt, closetxt, wasopen);
 
         // check for session
-        let s = fold_session_for.call(elt, foldnum, "storage");
+        let s = fold_map(elt)[foldnum];
         if (s) {
             const wstor = hotcrp.wstorage;
             let sj = wstor.json(true, "fold") || {};
@@ -4396,7 +4393,7 @@ function fold(elt, dofold, foldnum) {
             sj = wstor.json(false, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
             wstor(false, "fold", $.isEmptyObject(sj) ? null : sj);
-        } else if ((s = fold_session_for.call(elt, foldnum, "session"))) {
+        } else if ((s = fold_map(elt, "session")[foldnum])) {
             $.post(hoturl("=api/session", {v: s[0] + (wasopen ? "=1" : "=0")}));
         }
     }
@@ -4416,23 +4413,30 @@ function foldup(evt, opts) {
         && !opts.required) {
         return;
     }
+    let acting;
+    if (this.tagName === "DIV") {
+        acting = this.querySelector("[aria-expanded]");
+    }
+    acting = acting || this;
     // determine targets
     // XXX only partial support for ARIA method
     let foldname, m;
-    if (this.ariaControlsElements && this.ariaControlsElements.length > 0) {
-        const p = this.closest(".expanded, .collapsed");
+    if (acting.ariaControlsElements && acting.ariaControlsElements.length > 0) {
+        const p = acting.closest(".expanded, .collapsed");
         if (!("open" in opts)) {
-            opts.open = this.ariaExpanded !== "true";
+            opts.open = acting.ariaExpanded !== "true";
         }
-        this.ariaExpanded = opts.open ? "true" : "false";
-        for (const e of this.ariaControlsElements) {
-            e.hidden = !opts.open;
-            $(e).trigger($.Event("foldtoggle", {which: opts, open: opts.open}));
+        acting.ariaExpanded = opts.open ? "true" : "false";
+        for (const e of acting.ariaControlsElements) {
+            if (e.hidden !== !opts.open) {
+                e.hidden = !opts.open;
+                e.dispatchEvent(new CustomEvent("foldtoggle", {detail: opts}));
+            }
         }
         if (p && hasClass(p, "expanded") !== opts.open) {
             removeClass(p, opts.open ? "collapsed" : "expanded");
             addClass(p, opts.open ? "expanded" : "collapsed");
-            $(p).trigger($.Event("foldtoggle", {which: opts, open: opts.open}));
+            p.dispatchEvent(new CustomEvent("foldtoggle", {detail: opts}));
         }
     } else {
         let target = this;
@@ -4494,7 +4498,7 @@ function foldup(evt, opts) {
         if (!("open" in opts) || !!opts.open === wantopen) {
             opts.open = wantopen;
             fold(target, !wantopen, opts.n || 0);
-            $(target).trigger($.Event("foldtoggle", {which: opts, open: opts.open}));
+            $(target).trigger($.Event("foldtoggle", {detail: opts}));
         }
         if (this.hasAttribute("aria-expanded")) {
             this.ariaExpanded = wantopen ? "true" : "false";
@@ -4511,24 +4515,25 @@ function foldup(evt, opts) {
 
 handle_ui.on("js-foldup", foldup);
 handle_ui.on("foldtoggle.js-fold-focus", function (evt) {
-    if (evt.which.nofocus)
+    if (evt.detail.nofocus)
         return;
-    var ns = evt.which.n || "";
-    if (!hasClass(this, "fold".concat(ns, "c"))
-        && !hasClass(this, "fold".concat(ns, "o")))
+    var ns = evt.detail.n || "";
+    if (!hasClass(this, `fold${ns}c`)
+        && !hasClass(this, `fold${ns}o`)) {
         return;
-    if (evt.which.open) {
+    }
+    if (evt.open) {
         if (!document.activeElement
             || !this.contains(document.activeElement)
             || !document.activeElement.offsetParent) {
-            focus_within(this, ".fx".concat(ns, " *"));
+            focus_within(this, `.fx${ns} *`);
         }
     } else if (document.activeElement
                && this.contains(document.activeElement)
                && document.activeElement.closest(".fx" + ns)) {
-        focus_within(this, ":not(.fx".concat(ns, " *)"), true);
+        focus_within(this, `:not(.fx${ns} *)`, true);
     }
-    evt.which.nofocus = true;
+    evt.detail.nofocus = true;
 });
 $(function () {
     $(".uich.js-foldup").each(function () {
@@ -4646,13 +4651,15 @@ handle_ui.on("js-aufoldup", function (evt) {
 });
 
 handle_ui.on("js-click-child", function (evt) {
-    if (evt.target.closest("a[href], input, select, textarea, button"))
+    if (evt.target.closest("a[href], input, select, textarea, button")) {
         return;
-    var a = this.querySelector("a[href], input[type=checkbox], input[type=radio]");
-    if (!a || a.disabled)
+    }
+    const a = this.querySelector("a[href], input[type=checkbox], input[type=radio]");
+    if (!a || a.disabled) {
         return;
+    }
     if (evt.type === "click") {
-        var newEvent = new MouseEvent("click", {
+        const newEvent = new MouseEvent("click", {
             view: window, bubbles: true, cancelable: true,
             button: evt.button, buttons: evt.buttons,
             ctrlKey: evt.ctrlKey, shiftKey: evt.shiftKey,
@@ -4696,12 +4703,12 @@ handle_ui.on("lla", function () {
         f = e.closest(".linelinks");
     $(f).find(".linelink").removeClass("active");
     addClass(e, "active");
-    $(e).trigger($.Event("foldtoggle", {which: {open: true}}));
+    $(e).trigger($.Event("foldtoggle", {detail: {open: true}}));
     focus_within(e, ".lld *");
 });
 
 $(function () {
-    $(".linelink.active").trigger($.Event("foldtoggle", {which: {open: true}}));
+    $(".linelink.active").trigger($.Event("foldtoggle", {detail: {open: true}}));
 });
 
 
@@ -4721,7 +4728,7 @@ function tla_select(self, focus) {
     addClass(tll, "active");
     tll.setAttribute("aria-selected", "true");
     push_history_state(this.href);
-    $(e).trigger($.Event("foldtoggle", {which: {open: true}}));
+    $(e).trigger($.Event("foldtoggle", {detail: {open: true}}));
     focus && focus_within(e);
 }
 
@@ -12779,7 +12786,7 @@ function prepare_pstags() {
     });
     $f.on("submit", save_pstags);
     $f.closest(".foldc, .foldo").on("foldtoggle", function (evt) {
-        if (!evt.which.open)
+        if (!evt.detail.open)
             return;
         $f.data("everOpened", true);
         $f.find("input").prop("disabled", false);
@@ -13863,7 +13870,7 @@ handle_ui.on("js-named-search", function (evt) {
 
 handle_ui.on("foldtoggle.js-named-search-tabpanel", function (evt) {
     const self = this;
-    if (!evt.which.open) {
+    if (!evt.detail.open) {
         return;
     }
     removeClass(this, "js-named-search-tabpanel");
@@ -13889,7 +13896,7 @@ handle_ui.on("js-select-all", function () {
 });
 
 handle_ui.on("js-tag-list-action", function (evt) {
-    if (evt.type === "foldtoggle" && !evt.which.open)
+    if (evt.type === "foldtoggle" && !evt.detail.open)
         return;
     removeClass(this, "js-tag-list-action");
     $("select.js-submit-action-info-tag").on("change", function () {
@@ -13904,7 +13911,7 @@ handle_ui.on("js-tag-list-action", function (evt) {
 });
 
 handle_ui.on("js-assign-list-action", function (evt) {
-    if (evt.type === "foldtoggle" && !evt.which.open)
+    if (evt.type === "foldtoggle" && !evt.detail.open)
         return;
     var self = this;
     removeClass(self, "js-assign-list-action");
@@ -14183,7 +14190,7 @@ handle_ui.on("js-selector-summary", function () {
 
 
 handle_ui.on("foldtoggle.js-unfold-pcselector", function (evt) {
-    if (evt.which.open) {
+    if (evt.detail.open) {
         removeClass(this, "js-unfold-pcselector");
         $(this).find("select[data-pcselector-options]").each(populate_pcselector);
     }
@@ -14643,7 +14650,7 @@ function render_events(e, rows) {
 }
 
 handle_ui.on("js-open-activity", function (evt) {
-    if (evt.which.open) {
+    if (evt.detail.open) {
         removeClass(this, "js-open-activity");
         this.append($e("div", "fx20 has-events"));
         events ? render_events(this, events) : load_more_events();

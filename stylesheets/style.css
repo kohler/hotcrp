@@ -5167,6 +5167,9 @@ body {
 .hidden, [hidden] {
 	display: none !important;
 }
+.fold-storage-hidden {
+	display: none;
+}
 .unhidden {
 	display: block !important;
 }

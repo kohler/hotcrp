@@ -70,5 +70,6 @@ Generic values
     * `#n-prev`
     * `#n-search`
     * `#n-list`
+* `id^=s-` is for submission elements
 * `id^=k-` is for inputs and for programmatically assigned IDs, e.g., elements
   that need IDs for reference by `label`

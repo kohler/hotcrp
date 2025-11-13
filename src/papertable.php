@@ -63,6 +63,8 @@ class PaperTable {
     /** @var int */
     private $npapstrip = 0;
     /** @var bool */
+    private $_ps_was_open;
+    /** @var bool */
     private $allow_folds;
     /** @var bool */
     private $unfold_all = false;
@@ -428,7 +430,7 @@ class PaperTable {
         // collect folders
         $folders = [];
         foreach ($this->foldmap as $num => $f) {
-            if ($num !== 8 || $vas === 1) {
+            if ($num !== 4 && ($num !== 8 || $vas === 1)) {
                 $folders[] = "fold" . $num . ($f ? "c" : "o");
             }
         }
@@ -563,8 +565,7 @@ class PaperTable {
      * @return string */
     private function papt($what, $name, $extra = []) {
         $fold = $extra["fold"] ?? false;
-        $editfolder = $extra["editfolder"] ?? false;
-        $foldnum = $fold || $editfolder ? $extra["foldnum"] ?? 0 : 0;
+        $foldnum = $fold ? $extra["foldnum"] ?? 0 : 0;
         $foldtarget = "";
         if ($foldnum || isset($extra["foldopen"])) {
             $foldtarget = " data-fold-target=\"{$foldnum}"
@@ -578,7 +579,7 @@ class PaperTable {
         }
 
         $c = "<div class=\"" . ($what ? $this->control_class($what, $divclass) : $divclass);
-        if ($fold || $editfolder) {
+        if ($fold) {
             $c .= " ui js-foldup\"{$foldtarget}>";
         } else {
             $c .= "\">";
@@ -589,16 +590,26 @@ class PaperTable {
         }
         $c .= '">';
         if (!$fold) {
-            $n = (is_array($name) ? $name[0] : $name);
-            if ($editfolder) {
-                $c .= "<a class=\"q fn ui js-foldup\" "
-                    . "href=\"" . $this->conf->selfurl($this->qreq, ["atab" => $what])
-                    . "\"" . $foldtarget . ">" . $n
-                    . '<span class="t-editor">✎ </span>'
-                    . "</a><span class=\"fx\">" . $n . "</span>";
-            } else {
-                $c .= $n;
+            $c .= is_array($name) ? $name[0] : $name;
+        } else if ($fold === "x") {
+            $c .= '<button type="button" class="q ui js-foldup" aria-expanded="'
+                . ($this->_ps_was_open ? "true" : "false");
+            if (($controls = $extra["aria-controls"] ?? null)) {
+                $c .= "\" aria-controls=\"{$controls}";
             }
+            if (($title = $extra["foldtitle"] ?? null)) {
+                $c .= "\" title=\"{$title}";
+            }
+            $c .= '">' . aria_expander();
+            if (!is_array($name)) {
+                $name = [$name, $name];
+            }
+            if ($name[0] !== $name[1]) {
+                $c .= '<span class="ifnx">' . $name[1] . '</span><span class="ifx">' . $name[0] . '</span>';
+            } else {
+                $c .= $name[0];
+            }
+            $c .= '</button>';
         } else {
             '@phan-var-force int $foldnum';
             '@phan-var-force string $foldtarget';
@@ -666,9 +677,8 @@ class PaperTable {
         if (str_ends_with($t, ")")
             && preg_match('/\A([^()]* +)(\([^()]+\))\z/', $t, $m)) {
             return htmlspecialchars($m[1]) . '<span class="n">' . htmlspecialchars($m[2]) . '</span>';
-        } else {
-            return htmlspecialchars($t);
         }
+        return htmlspecialchars($t);
     }
 
     /** @param DocumentInfo $doc
@@ -1364,25 +1374,23 @@ class PaperTable {
                 if ($nvos1 === count($rgroup)) {
                     $class .= " fx8";
                 }
-                $foldnum = $this->foldnumber[$o1->page_group] ?? 0;
-                if ($foldnum && $rgroup[0]->title !== "") {
-                    $group_html = "<span class=\"fn{$foldnum}\">{$group_html}</span><span class=\"fx{$foldnum}\">" . $rgroup[0]->title . '</span>';
+                $want_fold = $this->foldnumber[$o1->page_group] ?? 0;
+                if ($want_fold && $rgroup[0]->title !== "") {
+                    $group_html = "<span class=\"ifnx\">{$group_html}</span><span class=\"ifx\">" . $rgroup[0]->title . '</span>';
                     $rgroup[0]->title = false;
                     $rgroup[0]->value = '<div class="'
                         . ($rgroup[0]->value_long ? "pg" : "pgsm")
                         . ' pavb">' . $rgroup[0]->value . '</div>';
+                        $class .= " collapsed";
                 }
-                echo '<div class="', $class, '">';
-                if ($foldnum) {
-                    echo '<div class="pavt ui js-foldup" data-fold-target="', $foldnum, '">',
-                        '<h3 class="pavfn">',
-                        '<button type="button" class="q ui js-foldup" data-fold-target="', $foldnum, '" title="Toggle visibility" aria-expanded="',
-                        $this->foldmap[$foldnum] ? "false" : "true",
-                        '">', expander(null, $foldnum),
-                        $group_html,
-                        '</button></h3></div><div class="pg fx', $foldnum, '">';
+                if ($want_fold) {
+                    echo "<div class=\"{$class} collapsed need-fold-storage fold-storage-hidden\" data-fold-storage=\"p.{$o1->page_group}\"><div class=\"pavt ui js-foldup\"><h3 class=\"pavfn\">",
+                        '<button type="button" class="q ui js-foldup" title="Toggle visibility" aria-expanded="false" aria-controls="s-', $o1->page_group, '-body">',
+                        aria_expander(), $group_html,
+                        '</button></h3></div><div class="pg" id="s-', $o1->page_group, '-body" hidden>',
+                        Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-{$o1->page_group}\"))");
                 } else {
-                    echo '<div class="pavt"><h3 class="pavfn">',
+                    echo "<div class=\"{$class}\"><div class=\"pavt\"><h3 class=\"pavfn\">",
                         $group_html,
                         '</h3></div><div class="pg">';
                 }
@@ -1477,6 +1485,20 @@ class PaperTable {
         echo '">';
     }
 
+    private function _ps_start_expandable($sfx, $open, $extra = null) {
+        $this->_papstrip_framework();
+        echo "<div id=\"s-{$sfx}\" class=\"psc", $open ? " expanded" : " collapsed";
+        if (isset($extra["class"])) {
+            echo " ", $extra["class"];
+        }
+        foreach ($extra ?? [] as $k => $v) {
+            if ($k !== "class")
+                echo "\" {$k}=\"", str_replace("\"", "&quot;", $v);
+        }
+        echo "\">";
+        $this->_ps_was_open = $open;
+    }
+
     private function _print_ps_collaborators() {
         if (!$this->conf->setting("sub_collab")
             || !$this->prow->collaborators
@@ -1485,15 +1507,17 @@ class PaperTable {
         }
         $data = $this->highlight($this->prow->collaborators(), "co", $match);
         $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
-        $this->_papstripBegin("pscollab", false, ["data-fold-storage" => "-p.collab", "class" => "need-fold-storage"]);
-        echo Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"foldpscollab\"))"),
-            $this->papt("collaborators", $option->title_html(),
-                        ["type" => "ps", "fold" => "pscollab"]),
-            '<ul class="fx x namelist-columns">';
+        $this->_ps_start_expandable("collaborators", true, [
+            "data-fold-storage" => "-p.collaborators", "class" => "need-fold-storage fold-storage-hidden"
+        ]);
+        echo $this->papt("collaborators", $option->title_html(),
+                         ["type" => "ps", "fold" => "x", "aria-controls" => "s-collaborators-body"]),
+            '<ul id="s-collaborators-body" class="x namelist-columns">',
+            Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-collaborators\"))");
         foreach (explode("\n", $data) as $line) {
             echo '<li class="od">', $line, '</li>';
         }
-        echo '</ul></div>', "\n";
+        echo "</ul></div>\n";
     }
 
     private function _print_ps_pc_conflicts() {
@@ -1514,11 +1538,13 @@ class PaperTable {
         }
         ksort($pcconf);
         $option = $this->conf->option_by_id(PaperOption::PCCONFID);
-        $this->_papstripBegin("pspcconf", $this->allow_folds, ["data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage"]);
-        echo Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"foldpspcconf\"))"),
-            $this->papt("pc_conflicts", $option->title_html(),
-                        ["type" => "ps", "fold" => "pspcconf"]),
-            '<ul class="fx x namelist-columns">',
+        $this->_ps_start_expandable("pcconf", !$this->allow_folds, [
+            "data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage fold-storage-hidden"
+        ]);
+        echo $this->papt("pc_conflicts", $option->title_html(),
+                         ["type" => "ps", "fold" => "x", "aria-controls" => "s-pcconf-body"]),
+            '<ul id="s-pcconf-body" class="x namelist-columns">',
+            Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-pcconf\"))"),
             join("", $pcconf),
             "</ul></div>\n";
     }
@@ -1532,11 +1558,10 @@ class PaperTable {
             return;
         }
         $value = $this->prow->$field;
-        $id = "{$type}_{$this->prow->paperId}";
 
-        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-fold js-unfold-pcselector js-fold-focus need-paper-select-api"] : "");
-        echo $this->papt($type, $editable ? Ht::label($name, $id) : $name,
-            ["type" => "ps", "fold" => $editable ? $type : false]);
+        $this->_ps_start_expandable($type, false, $editable ? ["class" => "ui-fold js-unfold-pcselector js-fold-focus need-paper-select-api"] : []);
+        echo $this->papt($type, $name,
+            ["type" => "ps", "fold" => $editable ? "x" : false, "aria-controls" => "f-{$type}"]);
         if (!$value) {
             $n = "";
         } else if (($p = $this->conf->user_by_id($value, USER_SLICE))
@@ -1546,7 +1571,7 @@ class PaperTable {
         } else {
             $n = "<strong>[removed from PC]</strong>";
         }
-        echo '<div class="pscopen"><p class="fn odname js-psedit-result">',
+        echo '<div class="pscopen"><p class="ifnx odname js-psedit-result">',
             $n, '</p></div>';
 
         if ($editable) {
@@ -1555,8 +1580,8 @@ class PaperTable {
             if ($type === "shepherd" && $this->conf->setting("extrev_shepherd")) {
                 $selopt .= " extrev";
             }
-            echo '<form class="ui-submit uin fx">',
-                Ht::select($type, [], 0, ["class" => "w-99 want-focus", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value, "id" => $id]),
+            echo "<form id=\"f-{$type}\" class=\"ui-submit uin\" hidden>",
+                Ht::select($type, [], 0, ["class" => "w-99 want-focus", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value, "aria-label" => $name]),
                 '</form>';
         }
 
@@ -1592,7 +1617,7 @@ class PaperTable {
         $viewable = $this->prow->sorted_viewable_tags($this->user);
 
         $tx = $tagger->unparse_link($viewable);
-        $unfolded = $editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
+        $unfolded = $editable && $this->has_problem_at("tags");
         $id = "tags {$this->prow->paperId}";
 
         $this->_papstripBegin("tags", true, $editable ? ["class" => "need-tag-form ui-fold js-fold-focus"] : []);
@@ -1659,20 +1684,22 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
-        $id = "decision_{$this->prow->paperId}";
-        $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api ui-fold js-fold-focus"]);
-        echo $this->papt("decision", Ht::label("Decision", $id),
-                ["type" => "ps", "fold" => "decision"]),
-            '<p class="odname js-psedit-result fn">',
+        $sfx = "p{$this->prow->paperId}-decision";
+        $this->_ps_start_expandable("decision", false, [
+            "class" => "need-paper-select-api ui-fold js-fold-focus"
+        ]);
+        echo $this->papt("decision", "Decision",
+                ["type" => "ps", "fold" => "x", "aria-controls" => "f-{$sfx}"]),
+            '<p class="odname js-psedit-result ifnx">',
             $this->prow->decision()->name_as(5),
-            '</p><form class="ui-submit uin fx">';
+            "</p><form id=\"f-{$sfx}\" class=\"ui-submit uin\" hidden>";
         $opts = [];
         foreach ($this->conf->decision_set() as $dec) {
             $opts[$dec->id] = $dec->name_as(5);
         }
         echo Ht::select("decision", $opts,
                         (string) $this->prow->outcome,
-                        ["class" => "w-99 want-focus", "id" => $id]),
+                        ["class" => "w-99 want-focus", "aria-label" => "Decision"]),
             "</form></div>\n";
     }
 
