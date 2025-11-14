@@ -9,7 +9,7 @@ body {
 	background-color: var(--paper);
 	--paper: #ffffff;
 	--paper-transparent: rgba(255, 255, 255, 0);
-	--brand-fg: #f33360;
+	--brand-fg: #e21c53;
 	--brand-bg: #fff3f5;
 	--brand-bg-dark: #ffc9d6;
 	--brand-decor-light: #fad5d5;
@@ -4677,7 +4677,7 @@ fieldset.pfe > legend {
 .cmtt {
 	font-size: smaller;
 	margin-bottom: 0.5rem;
-	color: #777777;
+	color: #707070;
 }
 .pavb, .revtext, .cmttext, .cmtattachments {
 	word-wrap: break-word;
