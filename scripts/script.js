@@ -12690,7 +12690,7 @@ handle_ui.on("pspcard-fold", function (evt) {
 });
 
 (function ($) {
-var edit_conditions = {}, edit_conditions_scheduled = false;
+let edit_conditions = {}, edit_conditions_scheduled = false;
 
 function prepare_paper_select() {
     var self = this,
@@ -12874,22 +12874,17 @@ handle_ui.on("is-tag-index", function () {
     }
 });
 
+const compar_map = {"=": 2, "!=": 5, "<": 1, "<=": 3, ">=": 6, ">": 4};
+
 function evaluate_compar(x, compar, y) {
     if ($.isArray(y)) {
-        var r = y.indexOf(x) >= 0;
+        const r = y.indexOf(x) >= 0;
         return compar === "=" ? r : !r;
     } else if (x === null || y === null) {
         return compar === "!=" ? x !== y : x === y;
-    } else {
-        var compar_map = {"=": 2, "!=": 5, "<": 1, "<=": 3, ">=": 6, ">": 4};
-        compar = compar_map[compar];
-        if (x > y)
-            return (compar & 4) !== 0;
-        else if (x == y)
-            return (compar & 2) !== 0;
-        else
-            return (compar & 1) !== 0;
     }
+    const cbit = x > y ? 4 : (x == y ? 2 : 1);
+    return (compar_map[compar] & cbit) !== 0;
 }
 
 function evaluate_edit_condition(ec, form) {
@@ -13023,14 +13018,16 @@ edit_conditions.collaborators = function (ec, form) {
     return ec.match === ($.trim(e ? e.value : "") !== "");
 };
 edit_conditions.pc_conflict = function (ec, form) {
-    let n = 0, elt;
-    for (let i = 0; i !== ec.uids.length; ++i)
-        if ((elt = form.elements["pcconf:" + ec.uids[i]])
+    let n = 0, elt, ge = ec.compar === ">" || ec.compar === ">=";
+    for (const uid of ec.uids) {
+        if ((elt = form.elements["pcconf:" + uid])
             && (elt.type === "checkbox" ? elt.checked : +elt.value > 1)) {
             ++n;
-            if (n > ec.value)
+            if (ge && n > ec.value) {
                 break;
+            }
         }
+    }
     return evaluate_compar(n, ec.compar, ec.value);
 };
 
