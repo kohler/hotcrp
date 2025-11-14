@@ -5206,7 +5206,7 @@ class Conf {
         $user = $qreq->user();
         echo "<body";
         if ($id) {
-            echo ' id="t-', $id, '"';
+            echo ' id="m-', $id, '"';
         }
         $class = $extra["body_class"] ?? "";
         $this->_mx_auto = strpos($class, "error") !== false;

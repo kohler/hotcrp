@@ -12,7 +12,7 @@ body.paper {
 .pcard {
 	margin-left: 22.5%;
 }
-#t-home #p-body {
+#m-home #p-body {
 	margin-left: 24px;
 	margin-right: 24px;
 }
@@ -69,7 +69,7 @@ body.leftmenu #p-header {
 body.paper #p-header {
 	background: #dce4e8;
 }
-#p-body, body.paper #p-body, #t-home #p-body {
+#p-body, body.paper #p-body, #m-home #p-body {
 	margin-left: 12px;
 	margin-right: 12px;
 }

@@ -12,7 +12,7 @@ class Tag_ListAction extends ListAction {
         }
     }
 
-    static function render(PaperList $pl, Qrequest $qreq) {
+    static function render(PaperList $pl, Qrequest $qreq, $plft) {
         // tagtype cell
         $tagopt = ["a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order"];
         $tagextra = ["class" => "js-submit-action-info-tag"];
@@ -43,8 +43,8 @@ class Tag_ListAction extends ListAction {
                 . "</div></div>";
         }
 
-        return [Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " &nbsp;",
-            ["linelink-class" => "has-fold fold98c fold99c ui-fold js-tag-list-action", "content" => $t]];
+        $plft->tab_attr["class"] = "has-fold fold98c fold99c ui-fold js-tag-list-action";
+        $plft->content = Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " " . $t;
     }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_edit_some_tag();

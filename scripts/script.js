@@ -4699,12 +4699,19 @@ push_history_state.ever = false;
 // line links
 
 handle_ui.on("lla", function () {
-    var e = this.closest(".linelink"),
-        f = e.closest(".linelinks");
-    $(f).find(".linelink").removeClass("active");
-    addClass(e, "active");
-    $(e).trigger($.Event("foldtoggle", {detail: {open: true}}));
-    focus_within(e, ".lld *");
+    const ll = this.closest(".linelink"),
+        lls = ll.closest(".linelinks"),
+        lla = lls.querySelector(".linelink.active");
+    if (lla) {
+        lla.querySelector(".lld").hidden = true;
+        lla.querySelector("[aria-selected]").ariaSelected = "false";
+        removeClass(lla, "active");
+    }
+    ll.querySelector(".lld").hidden = false;
+    this.ariaSelected = "true";
+    addClass(ll, "active");
+    $(ll).trigger($.Event("foldtoggle", {detail: {open: true}}));
+    focus_within(ll, ".lld *");
 });
 
 $(function () {
@@ -13911,8 +13918,9 @@ handle_ui.on("js-tag-list-action", function (evt) {
 });
 
 handle_ui.on("js-assign-list-action", function (evt) {
-    if (evt.type === "foldtoggle" && !evt.detail.open)
+    if (evt.type === "foldtoggle" && !evt.detail.open) {
         return;
+    }
     var self = this;
     removeClass(self, "js-assign-list-action");
     $(self).find("select[name=markpc]").each(populate_pcselector);

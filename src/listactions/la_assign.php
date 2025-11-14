@@ -6,9 +6,9 @@ class Assign_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->privChair && $qreq->page() !== "reviewprefs";
     }
-    static function render(PaperList $pl, Qrequest $qreq) {
-        return [
-            Ht::select("assignfn", [
+    static function render(PaperList $pl, Qrequest $qreq, $plft) {
+        $plft->tab_attr["class"] = "has-fold foldc ui-fold js-assign-list-action";
+        return Ht::select("assignfn", [
                     "auto" => "Automatic assignments",
                     "zzz1" => null,
                     "conflict" => "Conflict",
@@ -24,9 +24,7 @@ class Assign_ListAction extends ListAction {
                 ], $qreq->assignfn, ["class" => "want-focus js-submit-action-info-assign"])
             . '<span class="fx"> &nbsp;<span class="js-assign-for">for</span> &nbsp;'
             . Ht::select("markpc", [], 0, ["data-pcselector-selected" => $qreq->markpc])
-            . "</span>" . $pl->action_submit("assign"),
-            ["linelink-class" => "has-fold foldc ui-fold js-assign-list-action"]
-        ];
+            . "</span>" . $pl->action_submit("assign");
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $mt = $qreq->assignfn;

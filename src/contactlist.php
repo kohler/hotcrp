@@ -1073,23 +1073,25 @@ class ContactList {
         if ($this->count === 0) {
             return "";
         }
-        $lllgroups = [];
+        $plfts = [];
 
         // Begin linelinks
+        $plft = PaperList::make_tab("get", "Download");
         $types = ["nameemail" => "Names and emails"];
         if ($this->user->privChair) {
             $types["pcinfo"] = "PC info";
         }
-        $lllgroups[] = ["", "Download",
-            Ht::select("getfn", $types, null, ["class" => "want-focus"])
-            . Ht::submit("fn", "Go", ["value" => "get", "class" => "uic js-submit-list ml-2 can-submit-all"])];
+        $plft->content = Ht::select("getfn", $types, null, ["class" => "want-focus"])
+            . Ht::submit("fn", "Go", ["value" => "get", "class" => "uic js-submit-list ml-2 can-submit-all"]);
+        $plfts[] = $plft;
 
         if ($this->user->privChair) {
-            $lllgroups[] = ["", "Tag",
-                Ht::select("tagfn", ["a" => "Add", "d" => "Remove", "s" => "Define"], $this->qreq->tagfn)
+            $plft = PaperList::make_tab("tag", "Tag");
+            $plft->content =Ht::select("tagfn", ["a" => "Add", "d" => "Remove", "s" => "Define"], $this->qreq->tagfn)
                 . ' &nbsp;tag(s) &nbsp;'
                 . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-submit-fn" => "tag"])
-                . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-list ml-2"])];
+                . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-list ml-2"]);
+            $plfts[] = $plft;
 
             $mods = [
                 "disableaccount" => "Disable",
@@ -1106,15 +1108,16 @@ class ContactList {
             if ($this->has("pc")) {
                 $mods["remove_pc"] = "Remove from PC";
             }
-            $lllgroups[] = ["", "Modify",
-                Ht::select("modifyfn", $mods, null, ["class" => "want-focus"])
-                . Ht::submit("fn", "Go", ["value" => "modify", "class" => "uic js-submit-list ml-2"])];
+            $plft = PaperList::make_tab("modify", "Modify");
+            $plft->content = Ht::select("modifyfn", $mods, null, ["class" => "want-focus"])
+                . Ht::submit("fn", "Go", ["value" => "modify", "class" => "uic js-submit-list ml-2"]);
+            $plfts[] = $plft;
         }
 
         return "  <tfoot class=\"pltable-tfoot" . ($hascolors ? " pltable-colored" : "")
             . "\">" . PaperList::render_footer_row(1, $ncol - 1,
                 "<b>Select people</b> (or <a class=\"ui js-select-all\" href=\"\">select all {$this->count}</a>), then&nbsp; ",
-                $lllgroups)
+                $plfts)
             . "</tfoot>\n";
     }
 

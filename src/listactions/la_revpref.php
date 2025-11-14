@@ -11,15 +11,15 @@ class Revpref_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->isPC;
     }
-    static function render_upload(PaperList $pl) {
-        return ["<b>&nbsp;preference file:</b> &nbsp;"
-                . "<input class=\"want-focus js-autosubmit\" type=\"file\" name=\"preffile\" accept=\"text/plain,text/csv\" size=\"20\" data-submit-fn=\"tryuploadpref\" />"
-                . $pl->action_submit("tryuploadpref", ["class" => "can-submit-all"])];
+    static function render_upload(PaperList $pl, Qrequest $qreq, $plft) {
+        $plft->label_expansion = " preference file:";
+        return "<input class=\"want-focus js-autosubmit\" type=\"file\" name=\"preffile\" accept=\"text/plain,text/csv\" size=\"20\" data-submit-fn=\"tryuploadpref\" />"
+            . $pl->action_submit("tryuploadpref", ["class" => "can-submit-all"]);
     }
-    static function render_set(PaperList $pl) {
-        return ["<b> preferences:</b> &nbsp;"
-            . Ht::entry("pref", "", ["class" => "want-focus js-autosubmit", "size" => 4, "data-submit-fn" => "setpref"])
-            . $pl->action_submit("setpref")];
+    static function render_set(PaperList $pl, Qrequest $qreq, $plft) {
+        $plft->label_expansion = " preferences:";
+        return Ht::entry("pref", "", ["class" => "want-focus js-autosubmit", "size" => 4, "data-submit-fn" => "setpref"])
+            . $pl->action_submit("setpref");
     }
     /** @param ?string $reviewer
      * @return ?Contact */

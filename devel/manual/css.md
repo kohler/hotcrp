@@ -40,7 +40,7 @@ Generic values
     * Paper and review fields cannot follow that pattern
     * Paper and review fields also must not match JSON keys used for papers
       and reviews
-* `id^=t-` defines the page type; it is only set on the `<body>` element
+* `id^=m-` defines the page type; it is only set on the `<body>` element
 * `id^=p-` is for page-level elements
     * `#p-tracker` (optional)
     * `#p-page`
