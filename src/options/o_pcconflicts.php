@@ -229,7 +229,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         $pt->print_editable_option_papt($this, null, [
-            "id" => $this->formid, "for" => false
+            "id" => $this->formid, "for" => false, "fieldset" => true
         ]);
         echo '<div class="papev"><ul class="pc-ctable">';
 
@@ -317,7 +317,7 @@ class PCConflicts_PaperOption extends PaperOption {
             echo '<li class="ctelt"><div class="ctelti"><em>(The PC has no members)</em></div></li>';
         }
 
-        echo "</ul></div></div>\n\n";
+        echo "</ul></div></fieldset>\n\n";
     }
     /** @param FieldChangeSet $fcs */
     function strip_unchanged_qreq(PaperInfo $prow, Qrequest $qreq, $fcs) {

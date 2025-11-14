@@ -23,15 +23,14 @@ class Text_ReviewFieldSearch extends ReviewFieldSearch {
     }
 
     function test_value($rrow, $fv) {
-        $match = $fv !== null
+        if ($fv !== null
             && $fv !== ""
-            && $rrow->field_match_pregexes($this->preg, $this->rf->order);
-        if (!$match) {
-            if (($this->op & CountMatcher::RELALL) !== 0 && $fv !== null) {
-                $this->finished = -1;
-            }
-            return false;
+            && $rrow->field_match_pregexes($this->preg, $this->rf->order)) {
+            return true;
         }
-        return true;
+        if (($this->op & CountMatcher::RELALL) !== 0 && $fv !== null) {
+            $this->finished = -1;
+        }
+        return false;
     }
 }

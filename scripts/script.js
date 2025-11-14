@@ -6215,7 +6215,7 @@ hotcrp.tooltip.add_builder("rf-description", function (info) {
 });
 
 function score_header_tooltips($j) {
-    $j.find(".rf .revfn").attr("data-tooltip-info", "rf-description")
+    $j.find(".rf .field-title").attr("data-tooltip-info", "rf-description")
         .each(hotcrp.tooltip);
 }
 
@@ -6244,7 +6244,7 @@ function render_review_body_in(rrow, bodye) {
         bodye.appendChild(fe);
 
         e = document.createElement("span");
-        e.className = "revfn";
+        e.className = "field-title";
         e.append(f.name);
         h3 = document.createElement("h3");
         h3.className = "rfehead";
@@ -13037,7 +13037,9 @@ function run_edit_condition() {
         off = !evaluate_edit_condition(ec, f),
         link = navsidebar.get(this);
     toggleClass(this, "hidden", off);
-    link && toggleClass(link.element, "hidden", off);
+    if (link) {
+        link.element.hidden = off;
+    }
 }
 
 function run_all_edit_conditions() {
@@ -13053,43 +13055,53 @@ function schedule_all_edit_conditions() {
 }
 
 function header_text(hdr) {
-    var x = hdr.firstChild;
+    let x = hdr.firstChild;
     while (x && x.nodeType !== 3) {
-        x = x.nextSibling;
+        if (x.nodeType === 1 && hasClass(x, "field-title")) {
+            x = x.firstChild;
+        } else {
+            x = x.nextSibling;
+        }
     }
     return x ? x.data.trim() : null;
 }
 
 function add_pslitem_header() {
-    var l = this.firstChild, id = this.id, e, xt;
+    let l = this.firstChild, id = this.id, e, xt;
     if (l && l.nodeName === "LABEL") {
         id = id || l.getAttribute("for");
-        if (!id && (e = l.querySelector("input")))
+        if (!id && (e = l.querySelector("input"))) {
             id = e.id;
+        }
     } else {
         l = this.querySelector(".field-title") || this;
     }
+    console.log(id, l);
     if (!id || !(xt = header_text(l))) {
         return;
     }
-    e = navsidebar.set(this.parentElement, escape_html(xt), "#" + id).element;
-    var ise = hasClass(this, "has-error"),
+    const sidee = navsidebar.set(this.parentElement, escape_html(xt), "#" + id).element,
+        ise = hasClass(this, "has-error"),
         isw = hasClass(this, "has-warning"),
         isun = hasClass(this, "has-urgent-note");
-    toggleClass(e.firstChild, "is-diagnostic", ise || isw || isun);
-    toggleClass(e.firstChild, "is-error", ise);
-    toggleClass(e.firstChild, "is-warning", isw);
-    toggleClass(e.firstChild, "is-urgent-note", isun);
-    toggleClass(e, "hidden", hasClass(this.parentElement, "hidden"));
+    toggleClass(sidee.firstChild, "is-diagnostic", ise || isw || isun);
+    toggleClass(sidee.firstChild, "is-error", ise);
+    toggleClass(sidee.firstChild, "is-warning", isw);
+    toggleClass(sidee.firstChild, "is-urgent-note", isun);
+    sidee.hidden = hasClass(this.parentElement, "hidden") || this.parentElement.hidden;
 }
 
 function add_pslitem_pfe() {
     if (hasClass(this, "pf-separator")) {
-        var li = document.createElement("li");
-        li.className = "pslitem pslitem-separator";
-        navsidebar.append_li(li);
-    } else if (hasClass(this.firstChild, "pfehead")) {
-        add_pslitem_header.call(this.firstChild);
+        navsidebar.append_li($e("li", "pslitem pslitem-separator"));
+    } else {
+        let ch = this.firstChild;
+        if (ch.tagName === "LEGEND") {
+            ch = ch.firstChild;
+        }
+        if (hasClass(ch, "pfehead")) {
+            add_pslitem_header.call(ch);
+        }
     }
 }
 
@@ -13229,13 +13241,13 @@ hotcrp.load_editable_paper = function () {
 };
 
 hotcrp.load_editable_review = function () {
-    var rfehead = $(".rfehead");
+    const rfehead = $(".rfehead");
     rfehead.each(add_pslitem_header);
     if (rfehead.length) {
         $(".pslcard > .pslitem:last-child").addClass("mb-3");
     }
     hotcrp.add_diff_check("#f-review");
-    var k = $("#f-review").hasClass("differs") ? "" : " hidden",
+    const k = $("#f-review").hasClass("differs") ? "" : " hidden",
         h = $(".btn-savereview").first();
     $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
         '"><button class="ui btn-highlight btn-savereview">', h.html(),

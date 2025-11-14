@@ -329,7 +329,7 @@ class Authors_PaperOption extends PaperOption {
             $title .= ' <span class="n">(anonymous until review)</span>';
         }
         $pt->print_editable_option_papt($this, $title, [
-            "id" => "authors", "for" => false
+            "id" => "authors", "for" => false, "fieldset" => true
         ]);
 
         $min_authors = $this->max_count > 0 ? min(5, $this->max_count) : 5;
@@ -358,7 +358,7 @@ class Authors_PaperOption extends PaperOption {
         echo '</div>';
         echo '<template id="authors:row-template" class="hidden">';
         $this->echo_editable_authors_line($pt, '$', null, null, $this->max_count !== 1);
-        echo "</template></div></div>\n\n";
+        echo "</template></div></fieldset>\n\n";
     }
 
     function field_fmt_context() {

@@ -492,23 +492,26 @@ class PaperTable {
     /** @param ?string $heading
      * @return void */
     function print_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
+        $fieldset = $rest["fieldset"] ?? false;
         $input = $rest["input"] ?? true;
         if (!isset($rest["for"])) {
             $for = $opt->readable_formid();
         } else {
             $for = $rest["for"] ?? false;
         }
-        echo '<div class="pf pfe';
+        echo $fieldset ? "<fieldset name=\"{$opt->formid}\"" : "<div",
+            " class=\"pf pfe";
         if ((!$opt->test_exists($this->prow) && !$this->settings_mode)
             || ($rest["hidden"] ?? false)) {
-            echo ' hidden';
+            echo " hidden";
         }
         if ($opt->has_complex_exists_condition()
             && !$this->settings_mode
             && $input) {
-            echo ' has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
+            echo " has-edit-condition\" data-edit-condition=\"", htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
         }
-        echo '"><h3 class="', $this->control_class($opt->formid, "pfehead");
+        echo $fieldset ? "\"><legend>" : "\">",
+            "<h3 class=\"", $this->control_class($opt->formid, "pfehead");
         if ($for === "checkbox") {
             echo " checki";
         }
@@ -539,7 +542,10 @@ class PaperTable {
                 // XXX
             }
         }
-        echo '</h3>';
+        echo "</h3>";
+        if ($fieldset) {
+            echo "</legend>";
+        }
         $this->print_field_description($opt);
         if ((!$input && $this->edit_mode === 2)
             || ($this->admin && !$opt->test_editable($this->prow))) {

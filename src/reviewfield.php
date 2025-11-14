@@ -453,28 +453,37 @@ abstract class ReviewField implements JsonSerializable {
     /** @param ?string $id
      * @param ?string $label_for
      * @param ReviewValues $rvalues
-     * @param ?array{name_html?:string,label_class?:string} $args */
+     * @param ?array{name_html?:string,label_class?:string,fieldset?:bool} $args */
     protected function print_web_edit_open($id, $label_for, $rvalues, $args = null) {
-        echo '<div class="rf rfe" data-rf="', $this->uid(),
-            '"><h3 class="',
-            $rvalues->control_class($this->short_id, "rfehead");
+        $fieldset = $args["fieldset"] ?? false;
+        if ($fieldset) {
+            echo '<fieldset class="rf rfe" data-rf="', $this->uid(), '"><legend>';
+            assert(!$label_for);
+            $label_tag = "span";
+        } else {
+            echo '<div class="rf rfe" data-rf="', $this->uid(), '">';
+            $label_tag = "label";
+        }
+        echo '<h3 class="', $rvalues->control_class($this->short_id, "rfehead");
         if ($id !== null) {
             echo '" id="', $id;
         }
-        echo '"><label class="', $args["label_class"] ?? "revfn";
-        if ($this->required) {
-            echo ' field-required';
-        }
+        echo "\"><{$label_tag} class=\"",
+            Ht::add_tokens("field-title", $this->required ? "field-required" : null, $args["label_class"] ?? null);
         if ($label_for) {
             echo '" for="', $label_for;
         }
-        echo '">', $args["name_html"] ?? $this->name_html, '</label>';
+        echo '">', $args["name_html"] ?? $this->name_html, "</{$label_tag}>";
         if (($rd = self::visibility_description($this->view_score)) !== "") {
-            echo '<div class="field-visibility">(', $rd, ')</div>';
+            echo "<div class=\"field-visibility\">({$rd})</div>";
         }
-        echo '</h3>', $rvalues->feedback_html_at($this->short_id);
+        echo '</h3>';
+        if ($fieldset) {
+            echo "</legend>";
+        }
+        echo $rvalues->feedback_html_at($this->short_id);
         if ($this->description) {
-            echo '<div class="field-d">', $this->description, "</div>";
+            echo "<div class=\"field-d\">{$this->description}</div>";
         }
     }
 
@@ -1123,8 +1132,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
 
     private function print_web_edit_radio($fval, $reqval, $rvalues) {
         $n = count($this->values);
-        $forval = $fval ?? ($this->flip ? $n : 1);
-        $this->print_web_edit_open($this->short_id, "{$this->short_id}_" . $this->unparse_choice($forval), $rvalues);
+        $this->print_web_edit_open($this->short_id, null, $rvalues, ["fieldset" => true]);
         echo '<div class="revev">';
         $step = $this->flip ? -1 : 1;
         for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
@@ -1133,7 +1141,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
         if (!$this->required) {
             $this->print_radio_choice(0, $fval, $reqval);
         }
-        echo '</div></div>';
+        echo '</div></fieldset>';
     }
 
     private function print_web_edit_dropdown($fval, $reqval, $rvalues) {
@@ -1371,9 +1379,8 @@ class Text_ReviewField extends ReviewField {
             return null;
         } else if (is_string($j)) {
             return $this->parse($j);
-        } else {
-            return false;
         }
+        return false;
     }
 
     function print_web_edit($fval, $reqstr, $rvalues, $args) {

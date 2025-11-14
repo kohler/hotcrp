@@ -4425,6 +4425,17 @@ a:hover .t-editor,
 .rfe, .rge {
 	margin-bottom: 36px;
 }
+fieldset.pfe, fieldset.rfe {
+	border: 0 none;
+	border-radius: 0;
+	padding: 0;
+	margin-top: 0;
+	margin-left: 0;
+	margin-right: 0;
+}
+fieldset.pfe > legend, fieldset.rfe > legend {
+	padding: 0;
+}
 .revvt {
 	margin-bottom: 2px;
 }
@@ -4435,6 +4446,9 @@ a:hover .t-editor,
 	font-size: inherit;
 	color: #683131;
 	margin-top: 0;
+	margin-bottom: 0.25rem;
+}
+fieldset.pfe > legend {
 	margin-bottom: 0.25rem;
 }
 .field-visibility {

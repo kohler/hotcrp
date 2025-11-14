@@ -145,7 +145,9 @@ class Attachments_PaperOption extends PaperOption {
         if ($max_size > 0) {
             $title .= ' <span class="n">(max ' . unparse_byte_size($max_size) . ' per file)</span>';
         }
-        $pt->print_editable_option_papt($this, $title, ["id" => $this->readable_formid(), "for" => false]);
+        $pt->print_editable_option_papt($this, $title, [
+            "id" => $this->readable_formid(), "for" => false, "fieldset" => true
+        ]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dt="', $this->id, '" data-dtype="', /* XXX backward compat */ $this->id, '" id="', $this->formid, ':attachments"';
         if ($this->max_size > 0) {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
@@ -167,7 +169,7 @@ class Attachments_PaperOption extends PaperOption {
         }
         echo '</div><div class="mt-2">',
             Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]),
-            "</div></div>\n\n";
+            "</div></fieldset>\n\n";
     }
 
     function render(FieldRender $fr, PaperValue $ov) {

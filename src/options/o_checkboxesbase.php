@@ -185,12 +185,10 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->print_editable_option_papt($this, null, [
-            "id" => $this->readable_formid(),
-            "for" => false,
+            "id" => $this->readable_formid(), "for" => false, "fieldset" => true
         ]);
         $topicset = $this->topic_set();
-        echo '<fieldset class="papev fieldset-covert" name="', $this->formid,
-            '"><ul class="ctable',
+        echo '<div class="papev"><ul class="ctable',
             $this->compact ? ' compact' : '',
             count($topicset) < 7 ? ' column-count-1' : '',
             '">';
@@ -231,7 +229,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         if ($topicset->count() === 0) {
             echo '<li class="ctelt celtg"><div class="ctelti"><em>(No options defined)</em></div></li>';
         }
-        echo "</ul></fieldset></div>\n\n";
+        echo "</ul></div></fieldset>\n\n";
     }
 
     function render(FieldRender $fr, PaperValue $ov) {

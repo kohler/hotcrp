@@ -25,9 +25,8 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
         } else if ($this->rf->main_storage) {
             $ce = count($this->scores) === 1 ? "=" : ">=";
             return $this->rf->main_storage . $ce . $this->scores[0];
-        } else {
-            return "sfields is not null";
         }
+        return "sfields is not null";
     }
 
     function prepare() {

@@ -1327,7 +1327,7 @@ class Selector_PaperOption extends PaperOption {
         $pt->print_editable_option_papt($this, null,
             $this->type === "dropdown"
             ? ["for" => $this->readable_formid()]
-            : ["id" => $this->readable_formid(), "for" => false]);
+            : ["id" => $this->readable_formid(), "for" => false, "fieldset" => true]);
         echo '<div class="papev">';
         if ($this->type === "dropdown") {
             $sel = [];
@@ -1351,7 +1351,7 @@ class Selector_PaperOption extends PaperOption {
                 }
             }
         }
-        echo "</div></div>\n\n";
+        echo "</div>", $this->type === "dropdown" ? "</div>" : "</fieldset>", "\n\n";
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
