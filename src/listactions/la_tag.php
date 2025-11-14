@@ -116,10 +116,10 @@ class Tag_ListAction extends ListAction {
         $assignset->set_overrides(Contact::OVERRIDE_CONFLICT); // i.e., not other overrides
         if ($tagreq === "" || $act === "") {
             if ($act === "") {
-                $assignset->message_set()->append_item(MessageItem::error_at("tagfn", isset($qreq->tagfn) ? "<0>Parameter eror" : "<0>Parameter missing"));
+                $assignset->message_set()->append_item(MessageItem::error_at("tagfn", isset($qreq->tagfn) ? "<0>Parameter error" : "<0>Parameter missing"));
             }
             if ($tagreq === "") {
-                $assignset->message_set()->append_item(MessageItem::error_at("tag", "<0>Parameter missing"));
+                $assignset->message_set()->append_item(MessageItem::error_at("tag", "<0>Tags required"));
             }
         } else if (!empty($papers) && $action) {
             foreach ($papers as $p) {
