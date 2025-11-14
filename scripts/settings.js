@@ -118,10 +118,10 @@ function settings_delete(elt, message) {
 }
 
 function settings_field_unfold(evt) {
-    if (evt.which.n !== 2) {
+    if (evt.detail.n !== 2) {
         return;
     }
-    if (evt.which.open) {
+    if (evt.detail.open) {
         let ch = this.parentElement.firstChild;
         for (; ch; ch = ch.nextSibling) {
             if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
@@ -129,7 +129,7 @@ function settings_field_unfold(evt) {
         }
         $(this).find("textarea").css("height", "auto").autogrow();
         $(this).find("input[type=text]").autogrow();
-        if (!evt.which.nofocus) {
+        if (!evt.detail.nofocus) {
             $(this).scrollIntoView();
         }
     }

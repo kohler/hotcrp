@@ -4430,13 +4430,13 @@ function foldup(evt, opts) {
         for (const e of acting.ariaControlsElements) {
             if (e.hidden !== !opts.open) {
                 e.hidden = !opts.open;
-                e.dispatchEvent(new CustomEvent("foldtoggle", {detail: opts}));
+                e.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
             }
         }
         if (p && hasClass(p, "expanded") !== opts.open) {
             removeClass(p, opts.open ? "collapsed" : "expanded");
             addClass(p, opts.open ? "expanded" : "collapsed");
-            p.dispatchEvent(new CustomEvent("foldtoggle", {detail: opts}));
+            p.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
         }
     } else {
         let target = this;
