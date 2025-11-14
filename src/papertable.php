@@ -169,7 +169,7 @@ class PaperTable {
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
-        $t = '<header id="h-page" class="header-page-submission"><h1 class="paptitle';
+        $t = '<div id="h-page" class="header-page-submission"><h1 class="paptitle';
 
         if (!$paperTable) {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
@@ -220,7 +220,7 @@ class PaperTable {
             }
         }
 
-        $t .= '</h1></header>';
+        $t .= '</h1></div>';
         if ($paperTable && $prow->paperId) {
             $t .= $paperTable->_mode_nav();
         }
