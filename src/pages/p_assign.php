@@ -115,7 +115,9 @@ class Assign_Page {
         $aset->parse(join("", $t));
         $ok = $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
-        $ok && $this->conf->redirect_self($this->qreq);
+        if ($ok) {
+            $this->conf->redirect_self($this->qreq);
+        }
     }
 
     /** @return never

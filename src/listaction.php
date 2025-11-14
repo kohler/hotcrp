@@ -140,7 +140,7 @@ class ListAction {
             $res->emit();
             exit(0);
         } else if ($res instanceof Redirection) {
-            $user->conf->redirect($res->url);
+            $user->conf->redirect($res->url, $res->status);
             exit(0);
         }
     }

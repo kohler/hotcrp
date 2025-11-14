@@ -42,7 +42,7 @@ function handle_request($nav) {
         handle_request_components($user, $qreq, $pagej, $pc);
         $pc->print_body_members($pagej->group);
     } catch (Redirection $redir) {
-        Conf::$main->redirect($redir->url);
+        Conf::$main->redirect($redir->url, $redir->status);
     } catch (JsonCompletion $jc) {
         $jc->result->emit($qreq);
     } catch (PageCompletion $unused) {

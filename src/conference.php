@@ -4224,21 +4224,21 @@ class Conf {
     }
 
     /** @param ?string $url
+     * @param 301|302|303|307|308 $status
      * @return never
      * @throws Redirection */
-    function redirect($url = null) {
+    function redirect($url = null, $status = 302) {
         if (self::$test_mode) {
             $nav = Navigation::get();
-            throw new Redirection($nav->resolve($url ?? $this->hoturl("index")));
-        } else {
-            $qreq = Qrequest::$main_request;
-            if ($this->_save_msgs) {
-                $qreq->open_session();
-                $qreq->set_csession("msgs", $this->_save_msgs);
-            }
-            $qreq->qsession()->commit();
-            Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl("index")));
+            throw new Redirection($nav->resolve($url ?? $this->hoturl("index")), $status);
         }
+        $qreq = Qrequest::$main_request;
+        if ($this->_save_msgs) {
+            $qreq->open_session();
+            $qreq->set_csession("msgs", $this->_save_msgs);
+        }
+        $qreq->qsession()->commit();
+        Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl("index")), $status);
     }
 
     /** @param string $page

@@ -303,10 +303,14 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 class Redirection extends Exception {
     /** @var string */
     public $url;
-    /** @param string $url */
-    function __construct($url) {
+    /** @var int */
+    public $status;
+    /** @param string $url
+     * @param 301|302|303|307|308 $status */
+    function __construct($url, $status = 302) {
         parent::__construct("Redirect to {$url}");
         $this->url = $url;
+        $this->status = $status;
     }
 }
 
