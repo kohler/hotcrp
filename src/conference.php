@@ -5223,7 +5223,7 @@ class Conf {
         if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
             echo ' data-document-max-size="', ini_get_bytes(null, $x), '"';
         }
-        echo '><div id="p-page" class="need-banner-offset"><div id="p-header">';
+        echo '><div id="p-page" class="need-banner-offset"><header id="p-header">';
 
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
@@ -5250,7 +5250,7 @@ class Conf {
         if ($qreq->has_annex("upload_errors")) {
             $this->feedback_msg($qreq->annex("upload_errors"));
         }
-        echo "</div></div>\n";
+        echo "</div></header>\n";
 
         echo "<div id=\"p-body\">\n";
 
