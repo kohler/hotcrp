@@ -13077,7 +13077,6 @@ function add_pslitem_header() {
     } else {
         l = this.querySelector(".field-title") || this;
     }
-    console.log(id, l);
     if (!id || !(xt = header_text(l))) {
         return;
     }
