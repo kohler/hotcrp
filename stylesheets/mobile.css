@@ -148,6 +148,9 @@ h1.leftmenu > a:after {
 .leftmenu-if-left {
 	display: none;
 }
+.leftmenu-not-left {
+	display: initial;
+}
 .leftmenu-list {
 	display: none;
 	-webkit-columns: 100px 4;
@@ -157,7 +160,7 @@ h1.leftmenu > a:after {
 	-moz-column-gap: 18px;
 	column-gap: 18px;
 }
-.leftmenu-open > .leftmenu-list {
+.expanded > .leftmenu-list {
 	display: block;
 }
 .leftmenu-item {

@@ -2,13 +2,15 @@
 /* style.css -- HotCRP CSS styles */
 /* Copyright (c) 2006-2025 Eddie Kohler; see LICENSE. */
 
+@layer theme;
+
 /* theme colors and widths */
 @layer theme {
-body {
-	color: #333333;
-	background-color: var(--paper);
+:root {
 	--paper: #ffffff;
 	--paper-transparent: rgba(255, 255, 255, 0);
+	--text: #333333;
+	--input-text: #222222;
 	--brand-fg: #e21c53;
 	--brand-bg: #fff3f5;
 	--brand-bg-dark: #ffc9d6;
@@ -19,9 +21,11 @@ body {
 	--submission-bg: #e2e9ec;
 	--submission-sidebar-bg: #edf3f5;
 	--warning-fg: #c07700;
+	color: var(--text);
+	background-color: var(--paper);
 }
 select, button {
-	color: #222222;
+	color: var(--input-text);
 }
 
 .dark {
@@ -114,7 +118,7 @@ body {
 
 
 /* generic styles */
-html {
+:root {
 	box-sizing: border-box;
 }
 *, *::before, *::after {
@@ -387,13 +391,13 @@ h2.leftmenu {
 	min-height: 0.75rem;
 	margin-top: 4px;
 	margin-right: 24px;
+	display: inline-flex;
+	align-items: center;
 }
 body.paper #p-quicklinks {
 	margin-top: 12px;
 }
-td.vbar {
-	vertical-align: middle;
-	min-height: 4px;
+.quicklink-item {
 	white-space: nowrap;
 	padding-left: 1rem;
 }
@@ -1360,6 +1364,10 @@ span.expander {
 	opacity: 0.65;
 	text-decoration: none;
 }
+span.expander.after {
+	padding-left: 0.25em;
+	padding-right: 0;
+}
 
 .tbtn {
 	display: inline-block;
@@ -2051,6 +2059,9 @@ h4.helppage {
 	top: 0;
 	bottom: 0;
 	width: 140px;
+}
+.leftmenu-not-left {
+	display: none;
 }
 .leftmenu-menu {
 	-webkit-position: sticky;

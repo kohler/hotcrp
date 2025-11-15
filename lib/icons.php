@@ -91,7 +91,7 @@ class Icons {
         } else if ($direction === 1) {
             $t = 'M5 3L15 9L5 15';
         } else if ($direction === 2) {
-            $t = 'M2 1L8 11L14 1';
+            $t = 'M2 3L8 13L14 3';
         } else { // $direction === 3
             $t = 'M11 3L1 9L11 15';
         }

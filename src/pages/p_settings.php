@@ -106,13 +106,15 @@ class Settings_Page {
                 "name" => base64_encode(random_bytes(8)), // prevent FF from autofilling on reload
                 "class" => $form_class
             ]),
-            '<div class="leftmenu-left"><nav class="leftmenu-menu">',
-            '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings</button></h1>',
-            '<ul class="leftmenu-list">';
+            '<div class="leftmenu-left">',
+            '<nav class="leftmenu-menu collapsed" aria-label="Setting groups">',
+            '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings',
+            '<span class="leftmenu-not-left">', aria_plus_expander("after"), '</span>',
+            '</button></h1><ul class="leftmenu-list">';
         foreach ($this->sv->group_members("") as $gj) {
             $title = $gj->short_title ?? $gj->title;
             if ($gj->name === $group) {
-                echo '<li class="leftmenu-item active">', $title ?? "(Unlisted)", '</li>';
+                echo '<li class="leftmenu-item active" aria-current="page">', $title ?? "(Unlisted)", '</li>';
             } else if ($title && !($gj->unlisted ?? false)) {
                 echo '<li class="leftmenu-item ui js-click-child"><a href="',
                     $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';

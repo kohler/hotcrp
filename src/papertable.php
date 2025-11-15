@@ -2287,14 +2287,13 @@ class PaperTable {
      * @param bool $nondisabled
      * @return string */
     private function _mode_nav_link($text, $imgfile, $url, $active, $nondisabled) {
-        $class1 = $active ? " active" : "";
+        $class1 = $active ? " active\" aria-current=\"page" : "";
         $hl = $active ? " class=\"x\"" : "";
-        $img = Ht::img($imgfile, "[{$text}]", "papmodeimg");
+        $img = Ht::img($imgfile, "", "papmodeimg");
         if ($nondisabled) {
-            return "<li class=\"papmode{$class1}\"><a href=\"{$url}\" class=\"noul\">{$img}&nbsp;<u{$hl}>{$text}</u></a></li>";
-        } else {
-            return "<li class=\"papmode{$class1}\"><a href=\"{$url}\" class=\"noul dim ui js-confirm-override-conflict\">{$img}&nbsp;<u class=\"x\">{$text}</u></a></li>";
+            return "<li class=\"papmode{$class1}\"><a href=\"{$url}\" class=\"noul\">{$img} <u{$hl}>{$text}</u></a></li>";
         }
+        return "<li class=\"papmode{$class1}\"><a href=\"{$url}\" class=\"noul dim ui js-confirm-override-conflict\">{$img} <u class=\"x\">{$text}</u></a></li>";
     }
 
     /** @return string */
@@ -2343,11 +2342,10 @@ class PaperTable {
                 $this->mode === "p" && $this->qreq->page() === "paper", true
             ));
         }
-        if (!empty($tx)) {
-            return '<nav class="submission-modes"><ul>' . join("", $tx) . '</ul></nav>';
-        } else {
+        if (empty($tx)) {
             return "";
         }
+        return '<nav class="submission-modes" aria-label="View mode"><ul>' . join("", $tx) . '</ul></nav>';
     }
 
     static private function _print_clickthrough($ctype) {
@@ -2465,12 +2463,20 @@ class PaperTable {
         }
         if ($this->npapstrip) {
             Ht::stash_script("hotcrp.load_paper_sidebar()");
-            echo '</div></div><nav class="pslcard-nav need-banner-offset">';
+            echo '</div></div>';
         } else {
-            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav need-banner-offset">';
+            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip">';
         }
+        echo '<nav class="pslcard-nav need-banner-offset" aria-label="';
+        if ($this->mode === "re") {
+            echo 'Review fields';
+        } else if ($this->mode === "edit") {
+            echo 'Submission fields';
+        } else {
+            echo 'Reviews and comments';
+        }
+        echo '"><h4 class="pslcard-home">';
         $viewable_tags = $this->prow->viewable_tags($this->user);
-        echo '<h4 class="pslcard-home">';
         if ($viewable_tags || $this->user->can_view_tags($this->prow)) {
             $color = $this->prow->conf->tags()->color_classes($viewable_tags);
             echo '<span class="pslcard-home-tag has-tag-classes taghh',

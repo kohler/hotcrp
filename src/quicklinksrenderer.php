@@ -20,9 +20,8 @@ class QuicklinksRenderer {
         $icon = Icons::ui_linkarrow($isprev ? 3 : 1);
         if ($isprev) {
             return "<a id=\"n-prev\" class=\"ulh pnum\" href=\"{$url}\">{$icon}{$paperText}</a>";
-        } else {
-            return "<a id=\"n-next\" class=\"ulh pnum\" href=\"{$url}\">{$paperText}{$icon}</a>";
         }
+        return "<a id=\"n-next\" class=\"ulh pnum\" href=\"{$url}\">{$paperText}{$icon}</a>";
     }
 
     /** @param Qrequest $qreq
@@ -31,7 +30,7 @@ class QuicklinksRenderer {
         if ($qreq->user()->is_empty()) {
             return "";
         }
-        $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get"]);
+        $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get", "role" => "search"]);
         if ($baseUrl === "profile") {
             $x .= Ht::entry("u", "", ["id" => "n-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
         } else {
@@ -74,7 +73,7 @@ class QuicklinksRenderer {
         // quicklinks
         $x = "";
         if (($list = $qreq->active_list())) {
-            $x .= '<td class="vbar quicklinks"';
+            $x .= '<div class="quicklink-item quicklinks"';
             if ($xmode || $goBase !== "paper") {
                 $x .= ' data-link-params="' . htmlspecialchars(json_encode_browser(["page" => $goBase] + $xmode)) . '"';
             }
@@ -94,18 +93,19 @@ class QuicklinksRenderer {
             if (($next = $list->neighbor_id(1)) !== false) {
                 $x .= " " . self::one_quicklink($qreq, $next, $goBase, $xmode, $listtype, false);
             }
-            $x .= '</td>';
+            $x .= '</div>';
 
             if ($user->is_track_manager() && $listtype === "p") {
-                $x .= '<td class="vbar no-print"><button type="button" id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" aria-label="Start meeting tracker">&#9759;</button></td>';
+                $x .= '<div class="quicklink-item no-print"><button type="button" id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" aria-label="Start meeting tracker">&#9759;</button></div>';
             }
         }
 
         // paper search form
         if ($user->isPC || $user->is_reviewer() || $user->is_author()) {
-            $x .= '<td class="vbar no-print">' . self::quicksearch_form($qreq, $goBase, $xmode) . '</td>';
+            $x .= '<div class="quicklink-item no-print">' . self::quicksearch_form($qreq, $goBase, $xmode) . '</div>';
         }
 
-        return '<table id="p-quicklinks"><tr>' . $x . '</tr></table>';
+        $navname = $listtype === "p" ? "Submission search" : "User search";
+        return "<nav id=\"p-quicklinks\" aria-label=\"{$navname}\">{$x}</nav>";
     }
 }

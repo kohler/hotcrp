@@ -6034,14 +6034,15 @@ handle_ui.on("js-leftmenu", function (evt) {
     }
     var liststyle = window.getComputedStyle(list);
     if (liststyle.display === "none") {
-        addClass(nav, "leftmenu-open");
-        evt.preventDefault();
+        addClass(nav, "expanded");
+        removeClass(nav, "collapsed");
     } else if (liststyle.display === "block") {
-        removeClass(nav, "leftmenu-open");
-        evt.preventDefault();
-    } else if (this.href === "") {
-        evt.preventDefault();
+        removeClass(nav, "expanded");
+        addClass(nav, "collapsed");
+    } else if (this.href !== "") {
+        return;
     }
+    evt.preventDefault();
 });
 
 

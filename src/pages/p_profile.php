@@ -593,9 +593,11 @@ class Profile_Page {
         ]);
 
         // left menu
-        echo '<div class="leftmenu-left"><nav class="leftmenu-menu">',
-            '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Account</button></h1>',
-            '<ul class="leftmenu-list">';
+        echo '<div class="leftmenu-left">',
+            '<nav class="leftmenu-menu collapsed" aria-label="Profile groups">',
+            '<h1 class="leftmenu"><button type="button" class="q ui js-leftmenu">Account',
+            '<span class="leftmenu-not-left">', aria_plus_expander("after"), '</span>',
+            '</button></h1><ul class="leftmenu-list">';
 
         if ($this->viewer->privChair) {
             foreach ([["New account", "new"], ["Bulk update", "bulk"], ["Your profile", null]] as $t) {
@@ -603,9 +605,9 @@ class Profile_Page {
                     continue;
                 }
                 $active = $t[1] && $this->page_type === ($t[1] === "new" ? 1 : 2);
-                echo '<li class="leftmenu-item',
-                    $active ? ' active' : ' ui js-click-child',
-                    ' font-italic">';
+                echo '<li class="leftmenu-item font-italic',
+                    $active ? ' active" aria-current="page' : ' ui js-click-child',
+                    '">';
                 if ($active) {
                     echo $t[0];
                 } else {
@@ -632,8 +634,9 @@ class Profile_Page {
                     }
                 }
                 echo '<li class="leftmenu-item',
-                    $gj->name === $this->topic ? ' active' : ' ui js-click-child',
-                    $first ? ' leftmenu-item-gap4' : '', '">';
+                    $first ? ' leftmenu-item-gap4' : '',
+                    $gj->name === $this->topic ? ' active" aria-current="page' : ' ui js-click-child',
+                    '">';
                 $title = $gj->short_title ?? $gj->title;
                 if ($gj->name === $this->topic) {
                     echo $title;
