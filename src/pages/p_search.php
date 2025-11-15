@@ -337,7 +337,7 @@ class Search_Page {
         echo '<div class="tld is-tla',
             $this->stab === "default" ? " active" : "",
             '" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
-            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
+            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search", "role" => "search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "size" => 40, "tabindex" => 1,
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
@@ -353,7 +353,7 @@ class Search_Page {
         echo '<div class="tld is-tla',
             $this->stab === "advanced" ? " active" : "",
             '" id="advanced" role="tabpanel" aria-labelledby="k-advanced-tab">',
-            Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
+            Ht::form($this->conf->hoturl("search"), ["method" => "get", "role" => "search"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="k-advanced-qt">Search</label><div class="entry">',
               Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "k-advanced-qt"]),

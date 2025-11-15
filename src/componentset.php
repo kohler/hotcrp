@@ -28,6 +28,8 @@ class ComponentSet {
     /** @var string */
     private $_section_class = "";
     /** @var string */
+    private $_next_section_tag = "";
+    /** @var string */
     private $_next_section_class = "";
     /** @var string */
     private $_title_class = "";
@@ -384,6 +386,13 @@ class ComponentSet {
         return $this->on_leave([$this, "print"], $name);
     }
 
+    /** @param string $tag
+     * @return $this */
+    function set_section_tag($tag) {
+        $this->_next_section_tag = $tag;
+        return $this;
+    }
+
     /** @param string $classes
      * @return $this */
     function add_section_class($classes) {
@@ -403,22 +412,32 @@ class ComponentSet {
     function print_start_section($title = null, $hashid = null) {
         $title = $title ?? "";
         $hashid_notitle = $title === "" && (string) $hashid !== "";
+        $tag = $this->_next_section_tag ? : "div";
         $this->print_end_section();
         $this->trigger_separator();
-        if ($this->_next_section_class !== "" || $hashid_notitle) {
-            echo '<div';
+        if ($this->_next_section_tag !== ""
+            || $this->_next_section_class !== ""
+            || $hashid_notitle) {
+            echo "<{$tag}";
             if ($this->_next_section_class !== "") {
                 echo " class=\"", $this->_next_section_class, "\"";
             }
-            $this->_next_section_class = $this->_section_class;
             if ($hashid_notitle) {
                 echo " id=\"", htmlspecialchars($hashid), "\"";
             }
             echo '>';
-            $this->_section_closer = "</div>";
+            $this->_section_closer = "</{$tag}>";
+            $this->_next_section_tag = "";
+            $this->_next_section_class = $this->_section_class;
         }
         if ($title !== "") {
+            if ($tag === "fieldset") {
+                echo "<legend>";
+            }
             $this->print_title($title, $hashid);
+            if ($tag === "fieldset") {
+                echo "</legend>";
+            }
         }
     }
 
@@ -446,7 +465,7 @@ class ComponentSet {
         if ((string) $hashid !== "") {
             echo ' id="', htmlspecialchars($hashid), '"';
         }
-        echo '>', Ftext::as(5, $ftext, 0), "</h3>\n";
+        echo '>', Ftext::as(5, $ftext, 0), "</h3>";
     }
 
     /** @param string $ftext

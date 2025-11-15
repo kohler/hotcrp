@@ -674,10 +674,12 @@ class Profile_Page {
             echo '<div id="foldaccount" class="';
             if ($this->qreq->pctype === "chair"
                 || $this->qreq->pctype === "pc"
-                || (!isset($this->qreq->pctype) && ($this->user->roles & Contact::ROLE_PC) !== 0)) {
+                || (!isset($this->qreq->pctype)
+                    && ($this->user->roles & Contact::ROLE_PC) !== 0)) {
                 echo "fold1o fold2o";
             } else if ($this->qreq->ass
-                       || (!isset($this->qreq->pctype) && ($this->user->roles & Contact::ROLE_ADMIN) !== 0)) {
+                       || (!isset($this->qreq->pctype)
+                           && ($this->user->roles & Contact::ROLE_ADMIN) !== 0)) {
                 echo "fold1c fold2o";
             } else {
                 echo "fold1c fold2c";

@@ -372,6 +372,8 @@ class Ht {
         }
         $js["class"] = trim(($js["class"] ?? "") . " pseudohidden");
         $js["value"] = $value;
+        $js["aria-hidden"] = "true";
+        $js["tabindex"] = -1;
         return self::submit($name, "", $js);
     }
 

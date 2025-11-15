@@ -1594,17 +1594,17 @@ class UserStatus extends MessageSet {
             }
             $this->print_field("uemail", "Email" . $this->actas_link(),
                 Ht::entry("uemail", $this->qreq->uemail ?? $this->qreq->email ?? "", ["class" => $class, "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => "", "type" => "email"]));
-        } else {
-            if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
-                $link = "<p class=\"nearby\">" . Ht::link("Manage email →", $this->conf->hoturl("manageemail", ["u" => $this->user->email]), ["class" => "btn btn-success btn-sm"]) . "</p>";
-            } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
-                $link = "<p class=\"nearby\">" . Ht::link("Transfer reviews →", $this->conf->hoturl("manageemail", ["t" => "transferreview", "u" => $this->user->email]), ["class" => "btn btn-primary btn-sm"]) . "</p>";
-            } else {
-                $link = "";
-            }
-            $this->print_field("uemail", "Email" . $this->actas_link(),
-                "<p><strong class=\"sb\">" . htmlspecialchars($this->user->email) . "</strong></p>{$link}");
+            return;
         }
+        if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
+            $link = "<p class=\"nearby\">" . Ht::link("Manage email →", $this->conf->hoturl("manageemail", ["u" => $this->user->email]), ["class" => "btn btn-success btn-sm"]) . "</p>";
+        } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
+            $link = "<p class=\"nearby\">" . Ht::link("Transfer reviews →", $this->conf->hoturl("manageemail", ["t" => "transferreview", "u" => $this->user->email]), ["class" => "btn btn-primary btn-sm"]) . "</p>";
+        } else {
+            $link = "";
+        }
+        $this->print_field(null, "Email" . $this->actas_link(),
+            "<p><strong class=\"sb\">" . htmlspecialchars($this->user->email) . "</strong></p>{$link}");
     }
 
     function print_main_external_username() {
@@ -1685,6 +1685,7 @@ class UserStatus extends MessageSet {
             return;
         }
 
+        $us->cs()->set_section_tag("fieldset");
         $us->print_start_section("Roles", "roles");
 
         if ($us->user->security_locked_here()) {
@@ -1750,7 +1751,7 @@ class UserStatus extends MessageSet {
         }
         $cd = $us->conf->_i("conflictdef");
         $us->cs()->add_section_class("w-text")->print_start_section();
-        echo '<h3 class="', $us->control_class("collaborators", "form-h field-title"), '">Collaborators and other affiliations</h3>', "\n",
+        echo '<h3 class="', $us->control_class("collaborators", "form-h field-title"), '"><label for="collaborators">Collaborators and other affiliations</label></h3>', "\n",
             "<p>List potential conflicts of interest one per line, using parentheses for affiliations and institutions. We may use this information when assigning reviews.<br>Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p>";
         if ($cd !== "" && preg_match('/<(?:p|div)[ >]/', $cd)) {
             echo $cd;
@@ -1771,63 +1772,91 @@ class UserStatus extends MessageSet {
             && !$us->viewer->privChair) {
             return;
         }
-        $us->cs()->add_section_class("w-text fx1")->print_start_section("Topic interests");
+        $us->cs()->add_section_class("w-text fx1")
+            ->set_section_tag("fieldset")
+            ->print_start_section("Topic interests");
+
+        $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
+        $labels = ["Very low interest", "Low interest", "Standard interest", "High interest", "Very high interest"];
+
         echo '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
             $us->feedback_html_at("ti"),
-            '  <table class="table-striped profile-topic-interests"><thead>
-    <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest">High</th></tr>
-    <tr><td></td><th class="topic-2"></th><th class="topic-1"></th><th class="topic0"></th><th class="topic1"></th><th class="topic2"></th></tr></thead><tbody>', "\n";
+            '  <table class="profile-topic-interests"><thead><tr>',
+            '<th aria-label="Topic"></th>',
+            '<th class="ti_interest" aria-label="', $labels[0], '">Low<br><span class="topic-2"></span></th>',
+            '<th class="ti_interest" aria-label="', $labels[1], '"><span class="topic-1"></span></th>',
+            '<th class="ti_interest" aria-label="', $labels[2], '"><span class="topic0"></span></th>',
+            '<th class="ti_interest" aria-label="', $labels[3], '"><span class="topic1"></span></th>',
+            '<th class="ti_interest" aria-label="', $labels[4], '">High<br><span class="topic2"></span></th>',
+            "</tr></thead>\n";
 
-        $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
         $tmap = $us->user->topic_interest_map();
         $ts = $us->conf->topic_set();
+        $k = 0;
         foreach ($ts->group_list() as $tg) {
+            echo '<tbody>';
             foreach ($tg->members() as $i => $tid) {
                 $tic = "ti_topic";
-                if ($tg->trivial() || ($i === 0 && $tg->has_group_topic())) {
+                $thscope = "row";
+                if ($tg->trivial()) {
                     $n = $ts->unparse_name_html($tid);
+                } else if ($i === 0 && $tg->has_group_topic()) {
+                    $n = $ts->unparse_name_html($tid);
+                    $thscope = "rowgroup";
                 } else {
-                    if ($i == 0) {
-                        echo "    <tr><td class=\"ti_topic\">",
+                    if ($i === 0) {
+                        echo '<tr class="k', $k, '">',
+                            '<th class="ti_topic" scope="rowgroup" colspan="6">',
                             $tg->unparse_name_html(),
-                            "</td><td class=\"ti_interest\" colspan=\"5\"></td></tr>\n";
+                            "</th></tr>\n";
+                        $k = 1 - $k;
                     }
                     $n = $ts->unparse_subtopic_name_html($tid);
                     $tic .= " ti_subtopic";
                 }
-                echo "      <tr><td class=\"{$tic}\">{$n}</td>";
+                echo "<tr class=\"k{$k}\">",
+                    "<th class=\"{$tic}\" scope=\"{$thscope}\">{$n}</th>";
+                $k = 1 - $k;
                 $ival = $tmap[$tid] ?? 0;
                 $reqval = isset($us->qreq["ti{$tid}"]) ? (int) $us->qreq["ti{$tid}"] : $ival;
                 for ($j = -2; $j <= 2; ++$j) {
                     $ichecked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
                     $reqchecked = $reqval >= $ibound[$j+2] && $reqval < $ibound[$j+3];
-                    echo '<td class="ti_interest">', Ht::radio("ti{$tid}", $j, $reqchecked, ["class" => "uic js-range-click", "data-range-type" => "topicinterest{$j}", "data-default-checked" => $ichecked]), "</td>";
+                    echo '<td class="ti_interest">',
+                        Ht::radio("ti{$tid}", $j, $reqchecked, [
+                            "class" => "uic js-range-click",
+                            "data-range-type" => "topicinterest{$j}",
+                            "data-default-checked" => $ichecked,
+                            "aria-label" => $labels[$j+2]
+                        ]),
+                        "</td>";
                 }
                 echo "</tr>\n";
             }
+            echo "</tbody>\n";
         }
-        echo "    </tbody></table>\n";
+        echo "</table>\n";
     }
 
     static function print_tags(UserStatus $us) {
         $user = $us->user;
         $tagger = new Tagger($us->viewer);
-        $itags = $tagger->unparse($user->viewable_tags($us->viewer));
-        if (!$us->viewer->privChair
-            && (!$us->user->isPC || $itags === "")) {
+        $itags = $tagger->unparse($us->user->viewable_tags($us->viewer));
+        if (!$us->viewer->privChair) {
+            if ($us->user->isPC && $itags !== "") {
+                $us->print_start_section("Tags");
+                echo $itags, "<p class=\"f-d\">Tags represent PC subgroups and are set by administrators.</p>\n";
+            }
             return;
         }
-        $us->cs()->add_section_class("w-text fx2")->print_start_section("Tags");
-        if ($us->viewer->privChair) {
-            echo '<div class="', $us->control_class("tags", "f-i"), '">',
-                $us->feedback_html_at("tags"),
-                Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw"]),
-                "<p class=\"f-d\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p></div>\n";
-        } else {
-            echo $itags, "<p class=\"f-d\">Tags represent PC subgroups and are set by administrators.</p>\n";
-        }
+        $us->cs()->add_section_class("w-text fx2")
+            ->print_start_section("<5>" . Ht::label("Tags", "tags"));
+        echo '<div class="', $us->control_class("tags", "f-i"), '">',
+            $us->feedback_html_at("tags"),
+            Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw", "id" => "tags"]),
+            "<p class=\"f-d\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p></div>\n";
     }
 
     private static function print_delete_action(UserStatus $us) {

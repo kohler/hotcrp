@@ -3046,8 +3046,13 @@ del .rto {
 	text-align: center;
 	min-width: 2.2rem;
 }
+th.ti_interest {
+	vertical-align: bottom;
+}
 .ti_topic {
 	padding: 2px 0.5em 2px 6px;
+	font-weight: inherit;
+	text-align: inherit;
 }
 .ti_subtopic {
 	padding-left: 1.75em;
@@ -4437,7 +4442,7 @@ a:hover .t-editor,
 .rfe, .rge {
 	margin-bottom: 36px;
 }
-fieldset.pfe, fieldset.rfe {
+fieldset.pfe, fieldset.rfe, fieldset.form-section {
 	border: 0 none;
 	border-radius: 0;
 	padding: 0;
@@ -4445,7 +4450,7 @@ fieldset.pfe, fieldset.rfe {
 	margin-left: 0;
 	margin-right: 0;
 }
-fieldset.pfe > legend, fieldset.rfe > legend {
+fieldset.pfe > legend, fieldset.rfe > legend, fieldset.form-section > legend {
 	padding: 0;
 }
 .revvt {
