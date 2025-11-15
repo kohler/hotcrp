@@ -14630,7 +14630,7 @@ return function (j) {
 
 // home activity
 (function ($) {
-var events = null, events_at = 0, events_more = null;
+let events = null, events_at = 0, events_more = null;
 
 function load_more_events() {
     $.ajax(hoturl("api/events", (events_at ? {from: events_at} : null)), {
@@ -14650,7 +14650,7 @@ function render_events(e, rows) {
     let tb = e.querySelector("tbody");
     if (!tb) {
         tb = $e("tbody", "pltable-tbody");
-        let button = $e("button", {type: "button"}, "More");
+        const button = $e("button", {type: "button"}, "More");
         e.append($e("div", "eventtable", $e("table", "pltable", tb)),
             $e("div", "g eventtable-more", button));
         $(button).on("click", load_more_events);
@@ -14659,7 +14659,7 @@ function render_events(e, rows) {
         $(tb).append(rows[i]);
     }
     if (events_more === false) {
-        $(e).find(".eventtable-more").addClass("hidden");
+        e.querySelector(".eventtable-more").hidden = true;
         if (!events.length) {
             tb.append($e("tr", null, $e("td", null, "No recent activity in papers you’re following")));
         }
@@ -14669,7 +14669,6 @@ function render_events(e, rows) {
 handle_ui.on("js-open-activity", function (evt) {
     if (evt.detail.open) {
         removeClass(this, "js-open-activity");
-        this.append($e("div", "fx20 has-events"));
         events ? render_events(this, events) : load_more_events();
     }
 });

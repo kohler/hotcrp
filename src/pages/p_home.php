@@ -467,10 +467,10 @@ class Home_Page {
         }
 
         if ($user->is_reviewer()) {
-            echo "<div class=\"homesubgrp has-fold fold20c ui-fold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
-                foldupbutton(20),
-                "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class=\"fx20\">:</span></a>",
-                "</div>";
+            echo "<div class=\"homesubgrp collapsed ui-fold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
+                '<button type="button" class="q ui js-foldup" aria-expanded="false" aria-controls="homeactivity-body">',
+                aria_expander(), 'Recent activity<span class="ifx">:</span></button>',
+                '<div id="homeactivity-body" class="has-events" hidden></div></div>';
             Ht::stash_script("hotcrp.fold_storage()");
         }
 
