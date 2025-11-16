@@ -1090,7 +1090,10 @@ Object.assign(hotcrp.text, {
 
 // events
 var event_key = (function () {
-const key_map = {"Spacebar": " ", "Esc": "Escape"},
+const key_map = {
+        "Spacebar": " ", "Esc": "Escape", "Left": "ArrowLeft",
+        "Right": "ArrowRight", "Up": "ArrowUp", "Down": "ArrowDown"
+    },
     charCode_map = {"9": "Tab", "13": "Enter", "27": "Escape"},
     keyCode_map = {
         "9": "Tab", "13": "Enter", "16": "ShiftLeft", "17": "ControlLeft",
@@ -4867,67 +4870,172 @@ $(function () {
 (function ($) {
 const builders = {};
 
-function dropmenu_close() {
-    const modal = $$("dropmenu-modal");
-    modal && modal.remove();
-    $(".dropmenu-container").each(function () { this.hidden = true; });
+function dropmenu_open(mb, dir) {
+    let was_hidden = false;
+    if (hasClass(mb, "need-dropmenu")) {
+        $.each(classList(mb), function (i, c) {
+            if (builders[c])
+                builders[c].call(mb);
+        });
+        was_hidden = true;
+    }
+    const edetails = mb.closest(".dropmenu-details"),
+        econtainer = edetails.lastElementChild;
+    was_hidden = was_hidden || econtainer.hidden;
+    hotcrp.tooltip.close();
+    if (was_hidden) {
+        dropmenu_close();
+        const modal = $e("div", "modal transparent");
+        modal.id = "dropmenu-modal";
+        edetails.parentElement.insertBefore(modal, edetails.nextSibling);
+        modal.addEventListener("click", dropmenu_close, false);
+        econtainer.hidden = false;
+    }
+    const emenu = econtainer.querySelector(".dropmenu");
+    if (hasClass(emenu, "need-dropmenu-events")) {
+        dropmenu_events(emenu);
+    }
+    dropmenu_focus(emenu, dir || "first");
 }
 
-handle_ui.on("click.js-dropmenu-open", function (evt) {
-    let modal = $$("dropmenu-modal"), esummary = this;
-    if (hasClass(esummary, "need-dropmenu")) {
-        $.each(classList(esummary), function (i, c) {
-            if (builders[c])
-                builders[c].call(esummary, evt);
-        });
-    }
-    const edetails = esummary.closest(".dropmenu-details"),
-        econtainer = edetails.lastElementChild;
-    hotcrp.tooltip.close();
-    if (econtainer.hidden) {
-        if (!modal) {
-            modal = $e("div", "modal transparent");
-            modal.id = "dropmenu-modal";
-            edetails.parentElement.insertBefore(modal, edetails.nextSibling);
-            modal.addEventListener("click", dropmenu_close, false);
-        }
-        econtainer.hidden = false;
-    } else if (this.tagName === "BUTTON") {
-        modal && modal.remove();
-        econtainer.hidden = true;
-    }
-    evt.preventDefault();
-    handle_ui.stopPropagation(evt);
-});
+function dropmenu_events(emenu) {
+    removeClass(emenu, "need-dropmenu-events");
+    emenu.addEventListener("click", dropmenu_click);
+    emenu.addEventListener("mouseover", dropmenu_mouseover);
+    emenu.addEventListener("keydown", dropmenu_keydown);
+    emenu.addEventListener("focusout", dropmenu_focusout);
+}
 
-handle_ui.on("click.dropmenu", function (evt) {
-    var tgt = evt.target, li, es, bs;
+function dropmenu_focus(emenu, which) {
+    const items = emenu.querySelectorAll("[role=\"menuitem\"]");
+    if (which === "first") {
+        which = items[0];
+    } else if (which === "last") {
+        which = items[items.length - 1];
+    } else if (which === "next" || which === "prev") {
+        let current = 0;
+        while (current < items.length && items[current].tabIndex !== 0) {
+            ++current;
+        }
+        if (current >= items.length) {
+            which = items[which === "next" ? 0 : items.length - 1];
+        } else if (which === "next") {
+            which = items[(current + 1) % items.length];
+        } else {
+            which = items[(current + items.length - 1) % items.length];
+        }
+    }
+    for (const e of items) {
+        if (e === which) {
+            e.tabIndex = 0;
+            const li = e.closest("li");
+            addClass(li, "focus");
+            if (e.ariaDisabled === "true") {
+                addClass(li, "focus-disabled");
+            }
+            e.focus();
+        } else if (e.tabIndex !== -1) {
+            e.tabIndex = -1;
+            removeClass(e.closest("li"), "focus");
+        }
+    }
+}
+
+function dropmenu_click(evt) {
+    const tgt = evt.target;
+    let li, mi;
     if (tgt.tagName === "A"
         || tgt.tagName === "BUTTON"
-        || tgt.closest("ul") !== this) {
+        || !(li = tgt.closest("li"))
+        || li.parentElement !== this
+        || !(mi = li.querySelector("[role=\"menuitem\"]"))
+        || mi.ariaDisabled === "true") {
         return;
     }
-    li = tgt.closest("li");
-    if (!li) {
-        return;
-    }
-    es = li.querySelectorAll("button");
-    if (es.length !== 1
-        && (bs = li.querySelectorAll("a")).length === 1) {
-        es = bs;
-    }
-    if (es.length !== 1) {
-        return;
-    }
-    if (es[0].tagName === "A"
-        && es[0].href
+    if (mi.tagName === "A"
+        && mi.href
         && !event_key.is_default_a(evt)) {
-        window.open(es[0].href, "_blank", "noopener");
+        window.open(mi.href, "_blank", "noopener");
     } else {
-        es[0].click();
+        mi.click();
         evt.preventDefault();
         handle_ui.stopPropagation(evt);
     }
+}
+
+function dropmenu_mouseover(evt) {
+    const li = evt.target.closest("li");
+    let mi;
+    if (!li
+        || li.parentElement !== this
+        || hasClass(li, "focus")
+        || !(mi = li.querySelector("[role=\"menuitem\"]"))) {
+        return;
+    }
+    dropmenu_focus(this, mi);
+}
+
+function dropmenu_keydown(evt) {
+    const key = event_key(evt);
+    if (key === "ArrowDown") {
+        dropmenu_focus(this, "next");
+    } else if (key === "ArrowUp") {
+        dropmenu_focus(this, "prev");
+    } else if (key === "Home" || key === "PageUp") {
+        dropmenu_focus(this, "first");
+    } else if (key === "End" || key === "PageDown") {
+        dropmenu_focus(this, "last");
+    } else if (key === "Escape") {
+        dropmenu_close(true);
+    } else {
+        return;
+    }
+    evt.preventDefault();
+    handle_ui.stopPropagation(evt);
+}
+
+function dropmenu_focusout(evt) {
+    if (!evt.relatedTarget
+        || evt.relatedTarget.closest(".dropmenu") !== this) {
+        dropmenu_close();
+    }
+}
+
+function dropmenu_close(focus) {
+    const modal = $$("dropmenu-modal");
+    if (!modal) {
+        return;
+    }
+    modal.remove();
+    for (const dm of document.querySelectorAll(".dropmenu-container")) {
+        if (dm.hidden) {
+            continue;
+        }
+        dm.hidden = true;
+        const mb = dm.closest(".dropmenu-details")
+            .querySelector(".js-dropmenu-button");
+        if (mb) {
+            mb.ariaExpanded = "false";
+            if (focus) {
+                mb.focus();
+            }
+        }
+    }
+}
+
+handle_ui.on("click.js-dropmenu-button", function (evt) {
+    dropmenu_open(this);
+    evt.preventDefault();
+});
+
+handle_ui.on("keydown.js-dropmenu-button", function (evt) {
+    const k = event_key(evt);
+    if ((k !== "ArrowUp" && k !== "ArrowDown")
+        || event_key.modcode(evt) !== 0) {
+        return;
+    }
+    dropmenu_open(this, k === "ArrowUp" ? "last" : "first");
+    evt.preventDefault();
 });
 
 hotcrp.dropmenu = {
@@ -5756,7 +5864,7 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
     } else {
         details = $e("div", "dropmenu-details");
         this.replaceWith(details);
-        menu = $e("ul", "uic dropmenu");
+        menu = $e("ul", "dropmenu need-dropmenu-events");
         menu.setAttribute("role", "menu");
         menu.setAttribute("aria-label", "Reordering menu");
         const menucontainer = $e("div", "dropmenu-container dropmenu-draghandle", menu);
@@ -5764,31 +5872,37 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
         details.append(this, menucontainer);
     }
     menu.append($e("li", "disabled", "(Drag to reorder)"));
-    function buttonli(className, attr, text) {
-        attr["class"] = className;
-        attr["type"] = "button";
-        attr["role"] = "menuitem";
-        return $e("li", {class: attr.disabled ? "disabled" : "has-link", role: "none"}, $e("button", attr, text));
+    function buttonli(className, text, xattr) {
+        const attr = {class: className, type: "button", role: "menuitem"};
+        if (xattr && xattr.disabled) {
+            attr["aria-disabled"] = "true";
+            attr.class += " disabled";
+        }
+        return $e("li", {role: "none"}, $e("button", attr, text));
     }
     let sib = row.previousElementSibling;
-    menu.append(buttonli("link ui row-order-dragmenu move-up", {
+    menu.append(buttonli("qx ui row-order-dragmenu move-up", "Move up", {
         disabled: !sib || hasClass(sib, "row-order-barrier")
-    }, "Move up"));
+    }));
     sib = row.nextElementSibling;
-    menu.append(buttonli("link ui row-order-dragmenu move-down", {
+    menu.append(buttonli("qx ui row-order-dragmenu move-down", "Move down", {
         disabled: !sib || hasClass(sib, "row-order-barrier")
-    }, "Move down"));
+    }));
     if (group.hasAttribute("data-row-template")) {
         const max_rows = +group.getAttribute("data-max-rows") || 0;
         if (max_rows <= 0 || row_order_count(group) < max_rows) {
-            menu.append(buttonli("link ui row-order-dragmenu insert-above", {}, "Insert row above"));
-            menu.append(buttonli("link ui row-order-dragmenu insert-below", {}, "Insert row below"));
+            menu.append(buttonli("qx ui row-order-dragmenu insert-above", "Insert row above"));
+            menu.append(buttonli("qx ui row-order-dragmenu insert-below", "Insert row below"));
         }
     }
-    menu.append(buttonli("link ui row-order-dragmenu remove", {disabled: !row_order_allow_remove(group)}, "Remove"));
+    menu.append(buttonli("qx ui row-order-dragmenu remove", "Remove", {disabled: !row_order_allow_remove(group)}));
 });
 
-handle_ui.on("row-order-dragmenu", function () {
+handle_ui.on("row-order-dragmenu", function (evt) {
+    if (this.ariaDisabled === "true") {
+        evt.preventDefault();
+        return;
+    }
     hotcrp.dropmenu.close(this);
     const row = this.closest(".draggable"), group = row.parentElement,
         defaults = row_order_defaults(group);

@@ -6,7 +6,6 @@
 
     {   "name": "__profilemenu/me", "order": 100, "allow_if": "email", "print_function": "*Conf::print_profilemenu_item", "separator_group": "self"   },
     {   "name": "__profilemenu/other_accounts", "order": 200, "print_function": "*Conf::print_profilemenu_item", "separator_group": "self"   },
-    {   "name": "__profilemenu/profile", "order": 300, "allow_if": "email", "print_function": "*Conf::print_profilemenu_item", "separator_group": "main"   },
     {   "name": "__profilemenu/search", "order": 310, "allow_if": "pc", "print_function": "*Conf::print_profilemenu_item", "separator_group": "main"   },
     {   "name": "__profilemenu/my_reviews", "order": 320, "allow_if": "reviewer", "print_function": "*Conf::print_profilemenu_item", "separator_group": "main"   },
     {   "name": "__profilemenu/my_submissions", "order": 330, "allow_if": "author", "print_function": "*Conf::print_profilemenu_item", "separator_group": "main"   },

@@ -62,7 +62,7 @@ select, button {
 	color: #bcbcbc;
 }
 
-.dim {
+.dim, li.disabled {
 	color: #888888;
 }
 .color-red {
@@ -426,11 +426,13 @@ body.paper #p-quicklinks {
    * a.noul: underline inherit/inherit
    * a.q: color inherit/link + underline inherit/link (a.qh.ulh)
    * a.qo: color inherit/link + underline inherit/inherit (a.qh.noul)
+   * a.qx: color inherit/inherit + underline inherit/inherit + no :active
    * u.x: underline when in a:hover */
-a.qh, a.noq, a.noq:hover, a.q, a.qo, a.btn, a.btn:hover,
+a.qh, a.noq, a.noq:hover, a.q, a.qo, a.qx, a.qx:hover, a.qx:active,
+a.btn, a.btn:hover,
 .is-error a, .is-warning a, .is-success a, .is-note a,
 .is-warning-note a, .is-urgent-note a,
-button.q, button.qo {
+button.q, button.qo, button.qx {
 	color: inherit;
 }
 a:hover,
@@ -455,7 +457,7 @@ a.btn {
 	cursor: default;
 }
 .noul, .noul:hover,
-a.ulh, a.q, a.qo, a.btn, a.btn:hover,
+a.ulh, a.q, a.qo, a.qx, a.btn, a.btn:hover,
 .papmode.active > a, .papmode.active:hover > a.noul, .leftmenu-item > a,
 u.x {
 	text-decoration: inherit;
@@ -1578,7 +1580,7 @@ a.btn.disabled, a.btn.disabled:hover {
 	background: rgba(222, 222, 222, 0.5);
 	cursor: default;
 }
-button.link, button.q, button.qo {
+button.link, button.q, button.qo, button.qx {
 	display: inline;
 	text-align: inherit;
 	font-weight: inherit;
@@ -1591,14 +1593,17 @@ button.link, button.q, button.qo {
 	max-width: 100%;
 	white-space: normal;
 }
-button.link:hover, button.q:hover, button.qo:hover {
+button.link:hover, button.q:hover, button.qo:hover, button.qx:hover {
 	background: initial;
 	cursor: pointer;
 }
-button.link:disabled, button.q:disabled, button.qo:disabled,
-button.link:disabled:hover, button.q:disabled:hover, button.qo:disabled:hover,
+button.link:disabled, button.q:disabled, button.qo:disabled, button.qx:disabled,
+button.link:disabled:hover, button.q:disabled:hover, button.qo:disabled:hover, button.qx:disabled:hover,
 button.disabled, button.disabled:hover {
 	cursor: default;
+}
+button.link.disabled, button.q.disabled, button.qo.disabled, button.qx.disabled {
+	color: rgba(102, 102, 102, 0.5);
 }
 .btnx {
 	display: inline-block;
@@ -1960,26 +1965,25 @@ td.padls, th.padls, div.padls {
 	right: 10px;
 	left: auto;
 }
-.dropmenu a, .dropmenu .link {
-	color: inherit !important;
-	text-decoration: none;
-}
 .dropmenu > li {
 	padding: 0.25em 2em 0.25em 1em;
-}
-.dropmenu > li.has-link,
-.dropmenu > li.has-quiet-link {
 	cursor: pointer;
 }
-.dropmenu > li.has-link:hover {
+.dropmenu > li.focus {
 	background-color: #004daa;
 	color: white;
+}
+.dropmenu > li.focus.focus-disabled {
+	background-color: #c2d6f0;
 }
 .dropmenu > li.separator,
 .dropmenu > li[role="separator"] {
 	margin: 0.35em 0;
 	padding: 0;
 	border-bottom: 1px solid silver;
+}
+.dropmenu [role="menuitem"]:focus {
+	outline: none;
 }
 
 

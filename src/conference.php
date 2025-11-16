@@ -5035,11 +5035,15 @@ class Conf {
      * @param string $page
      * @param null|string|array $args */
     private function _print_profilemenu_link_if_enabled($user, $html, $page, $args = null) {
-        if (!$user->is_disabled()) {
-            echo '<li class="has-link" role="none">', Ht::link($html, $this->hoturl($page, $args), ["role" => "menuitem"]), '</li>';
+        $attr = ["role" => "menuitem", "class" => "qx"];
+        if ($user->is_disabled()) {
+            $attr["aria-disabled"] = "true";
+            $attr["class"] .= " disabled";
+            $t = Ht::button($html, $attr);
         } else {
-            echo '<li class="dim" role="menuitem" aria-disabled="true">', $html, '</li>';
+            $t = Ht::link($html, $this->hoturl($page, $args), $attr);
         }
+        echo '<li role="none">', $t, '</li>';
     }
 
     /** @param ComponentSet $pagecs */
@@ -5051,12 +5055,10 @@ class Conf {
             }
             $ouser = $user;
             if ($user->is_actas_user()) {
-                echo '<li class="has-quiet-link" role="none">', Ht::link("Acting as " . htmlspecialchars($user->email), $this->hoturl("profile"), ["role" => "menuitem"]), '</li>';
-                echo '<li class="has-link" role="none">', Ht::link("Switch to <strong>" . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem"]), '</strong></li>';
-            } else if (!$user->is_disabled() && !$user->is_anonymous_user()) {
-                echo '<li class="has-quiet-link" role="none">', Ht::link("Signed in as <strong>" . htmlspecialchars($user->email) . "</strong>", $this->hoturl("profile"), ["role" => "menuitem"]), '</li>';
-            } else {
-                echo '<li>Signed in as <strong>', htmlspecialchars($user->email), '</strong></li>';
+                echo '<li role="none"><em>Acting as ', htmlspecialchars($user->email), '</em></li>';
+            }
+            if ($user->has_email()) {
+                $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
             }
         } else if ($itemid === "other_accounts") {
             $base_email = $user->base_user()->email;
@@ -5074,14 +5076,14 @@ class Conf {
                     $actas_email = null;
                 }
                 if ($email !== "" && strcasecmp($email, $base_email) !== 0) {
-                    echo '<li class="has-link" role="none">', Ht::link("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}", ["role" => "menuitem"]), '</li>';
+                    echo '<li role="none">', Ht::link("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}", ["role" => "menuitem", "class" => "qx"]), '</li>';
                 }
             }
             if ($actas_email !== null) {
-                echo '<li class="has-link" role="none">', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email]), ["role" => "menuitem"]), '</li>';
+                echo '<li role="none">', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email]), ["role" => "menuitem", "class" => "qx"]), '</li>';
             }
             $t = $user->has_email() ? "Add another account" : "Sign in";
-            echo '<li class="has-link" role="none">', Ht::link($t, $this->hoturl("signin"), ["role" => "menuitem"]), '</li>';
+            echo '<li role="none">', Ht::link($t, $this->hoturl("signin"), ["role" => "menuitem", "class" => "qx"]), '</li>';
         } else if ($itemid === "profile") {
             if ($user->has_email()) {
                 $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
@@ -5107,12 +5109,12 @@ class Conf {
                 return;
             }
             if ($user->is_actas_user()) {
-                echo '<li class="has-link" role="none">', Ht::link("Return to main account", $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem"]), '</li>';
+                echo '<li role="none">', Ht::link("Return to main account", $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem"]), '</li>';
                 return;
             }
-            echo '<li class="has-link" role="none">',
+            echo '<li role="none">',
                 Ht::form($this->hoturl("=signout", ["cap" => null])),
-                Ht::button("Sign out", ["type" => "submit", "class" => "link", "role" => "menuitem"]),
+                Ht::button("Sign out", ["type" => "submit", "class" => "qx", "role" => "menuitem"]),
                 '</form></li>';
         }
     }
@@ -5137,9 +5139,9 @@ class Conf {
         $pagecs = $this->page_components($user, $qreq);
         $old_separator = $pagecs->swap_separator('<li role="separator"></li>');
         echo '<div', $details_id, ' class="dropmenu-details', $details_class, '">',
-            '<button type="button" id="h-usermenubutton" class="ui js-dropmenu-open ', $button_class, '" aria-haspopup="menu" aria-controls="h-usermenu">',
+            '<button type="button" id="h-usermenubutton" class="ui uikd js-dropmenu-button ', $button_class, '" aria-haspopup="menu" aria-controls="h-usermenu" aria-expanded="false">',
             $details_prefix, $user_html, $details_suffix,
-            '</button><div class="dropmenu-container dropmenu-sw" hidden><ul id="h-usermenu" class="uic dropmenu" role="menu" aria-label="Site menu">';
+            '</button><div class="dropmenu-container dropmenu-sw" hidden><ul id="h-usermenu" class="dropmenu need-dropmenu-events" role="menu" aria-label="Site menu">';
         $pagecs->print_members("__profilemenu");
         $pagecs->swap_separator($old_separator);
         echo '</ul></div></div>';
