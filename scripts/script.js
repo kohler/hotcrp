@@ -4896,6 +4896,7 @@ function dropmenu_open(mb, dir) {
         dropmenu_events(emenu);
     }
     dropmenu_focus(emenu, dir || "first");
+    mb.ariaExpanded = "true";
 }
 
 function dropmenu_events(emenu) {
