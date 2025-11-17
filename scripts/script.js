@@ -4352,6 +4352,9 @@ function fold_storage() {
     }
     this.addEventListener("foldtoggle", function (evt) {
         const info = smap[evt.detail.n || 0], wstor = hotcrp.wstorage;
+        if (!info) {
+            return;
+        }
         let sj = wstor.json(true, "fold") || {};
         evt.detail.open === info[1] ? delete sj[info[0]] : sj[info[0]] = evt.detail.open ? 0 : 1;
         wstor(true, "fold", $.isEmptyObject(sj) ? null : sj);
