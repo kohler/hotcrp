@@ -768,6 +768,10 @@ p + .nearby {
 	padding-right: 2.25em !important;
 	padding-right: 2.25rem !important;
 }
+.px-1 {
+	padding-left: 0.25rem;
+	padding-right: 0.25rem;
+}
 
 .text-start {
 	text-align: start;

@@ -2008,14 +2008,9 @@ class PaperList {
         }
 
         foreach ($plfts as $i => $plft) {
-            if (isset($plft->tab_attr["class"])) {
-                $plft->tab_attr["class"] = "linelink " . $plft->tab_attr["class"];
-            } else {
-                $plft->tab_attr["class"] = "linelink";
-            }
-            if ($plft->active) {
-                $plft->tab_attr["class"] .= " active";
-            }
+            $plft->tab_attr["class"] = Ht::add_tokens("linelink pl-footer-part",
+                $plft->tab_attr["class"] ?? null,
+                $plft->active ? "active" : null);
             $foot .= "<div";
             foreach ($plft->tab_attr as $k => $v) {
                 $foot .= " {$k}=\"" . htmlspecialchars($v) . "\"";

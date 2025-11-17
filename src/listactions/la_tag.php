@@ -27,7 +27,7 @@ class Tag_ListAction extends ListAction {
             $t .= '<span class="fx98"><button type="button" class="q ui js-foldup" data-fold-target="99">'
                 . expander(null, 99) . "</button></span>";
         }
-        $t .= 'tag<span class="fn98">(s)</span> &nbsp;'
+        $t .= '<span class="px-1">tag<span class="fn98">(s)</span></span> '
             . Ht::entry("tag", $qreq->tag,
                         ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-submit-fn" => "tag"])
             . $pl->action_submit("tag");
