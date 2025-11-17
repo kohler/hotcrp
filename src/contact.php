@@ -5027,7 +5027,7 @@ class Contact implements JsonSerializable {
         if (!$rights->view_conflict_type
             && $ctype >= ($rights->allow_pc() ? CommentInfo::CTVIS_PCONLY : CommentInfo::CTVIS_REVIEWER)
             && (($ctype & CommentInfo::CT_DRAFT) === 0
-                || ($textless && ($ctype & CommentInfo::CT_RESPONSE)) !== 0)
+                || ($textless && ($ctype & CommentInfo::CT_RESPONSE) !== 0))
             && ($ctype >= CommentInfo::CTVIS_AUTHOR
                 || $this->conf->setting("cmt_revid")
                 || $this->can_view_comment_identity($prow, $crow))
