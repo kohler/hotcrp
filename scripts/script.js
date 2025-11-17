@@ -4394,10 +4394,10 @@ function fold(elt, dofold, foldnum) {
         if (s) {
             const wstor = hotcrp.wstorage;
             let sj = wstor.json(true, "fold") || {};
-            wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
+            wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 1 : 0;
             wstor(true, "fold", $.isEmptyObject(sj) ? null : sj);
             sj = wstor.json(false, "fold") || {};
-            wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
+            wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 1 : 0;
             wstor(false, "fold", $.isEmptyObject(sj) ? null : sj);
         } else if ((s = fold_map(elt, "session")[foldnum])) {
             $.post(hoturl("=api/session", {v: s[0] + (wasopen ? "=1" : "=0")}));
@@ -4420,7 +4420,10 @@ function foldup(evt, opts) {
         return;
     }
     let acting;
-    if (this.tagName === "DIV") {
+    if (this.tagName === "DIV"
+        && (hasClass(this, "js-foldup")
+            || hasClass(this, "collapsed")
+            || hasClass(this, "expanded"))) {
         acting = this.querySelector("[aria-expanded]");
     }
     acting = acting || this;
@@ -4428,13 +4431,18 @@ function foldup(evt, opts) {
     // XXX only partial support for ARIA method
     let foldname, m;
     if (acting.ariaControlsElements && acting.ariaControlsElements.length > 0) {
-        const p = acting.closest(".expanded, .collapsed");
         if (!("open" in opts)) {
             opts.open = acting.ariaExpanded !== "true";
         }
-        acting.ariaExpanded = opts.open ? "true" : "false";
+        const p = acting.closest(".expanded, .collapsed"),
+            controls = acting.getAttribute("aria-controls");
+        for (const e of p.querySelectorAll("button[aria-expanded]")) {
+            if (e.getAttribute("aria-controls") === controls) {
+                e.ariaExpanded = opts.open ? "true" : "false";
+            }
+        }
         for (const e of acting.ariaControlsElements) {
-            if (e.hidden !== !opts.open) {
+            if (e.hidden !== !opts.open && !hasClass(e, "no-fold")) {
                 e.hidden = !opts.open;
                 e.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
             }
@@ -4643,15 +4651,16 @@ function make_expander_element(foldnum) {
 // special-case folding for author table
 handle_ui.on("js-aufoldup", function (evt) {
     if (evt.target === this || evt.target.tagName !== "A") {
-        var e = $$("foldpaper"),
+        const e = $$("foldpaper"),
             m9 = e.className.match(/\bfold9([co])\b/),
             m8 = e.className.match(/\bfold8([co])\b/);
-        if (m9 && (!m8 || m8[1] == "o"))
+        if (m9 && (!m8 || m8[1] === "o")) {
             foldup.call(e, evt, {n: 9, required: true});
-        if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
+        }
+        if (m8 && (!m9 || m8[1] === "c" || m9[1] === "o")) {
             foldup.call(e, evt, {n: 8, required: true});
-            if (m8[1] == "o" && $$("foldpscollab"))
-                fold("pscollab", 1);
+            const psc = document.getElementById("s-collaborators");
+            psc && (psc.hidden = hasClass(e, "fold8c"));
         }
     }
 });
@@ -6166,18 +6175,16 @@ handle_ui.on("js-leftmenu", function (evt) {
 
 // abstract
 $(function () {
+    const ab = document.getElementById("s-abstract-body"),
+        abc = ab ? ab.closest(".paperinfo-i-expand") : null;
     function check_abstract_height() {
-        var want_hidden = $("#foldpaper").hasClass("fold6c");
-        if (want_hidden) {
-            var $ab = $(".abstract");
-            if ($ab.length && $ab.height() > $ab.closest(".paperinfo-abstract").height() - $ab.position().top)
-                want_hidden = false;
+        if (hasClass(abc, "collapsed")) {
+            toggleClass(abc, "force-expanded", $(ab).height() <= $(abc.firstChild).height() - $(ab).position().top);
         }
-        $("#foldpaper").toggleClass("fold7c", want_hidden);
     }
-    if ($(".paperinfo-abstract").length) {
+    if (abc && abc.hasAttribute("data-fold-storage")) {
         check_abstract_height();
-        $("#foldpaper").on("foldtoggle renderText", check_abstract_height);
+        $(abc).on("foldtoggle renderText", check_abstract_height);
         $(window).on("resize", check_abstract_height);
     }
 });

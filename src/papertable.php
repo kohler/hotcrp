@@ -74,8 +74,8 @@ class PaperTable {
     private $matchPreg;
     /** @var array<int,bool> */
     private $foldmap;
-    /** @var array<string,int> */
-    private $foldnumber;
+    /** @var array<string,bool> */
+    private $_allow_collapse;
     /** @var null|-1|0|1 */
     private $_ready_state;
     /** @var ?array */
@@ -378,62 +378,58 @@ class PaperTable {
             || ($this->mode === "p" && $this->can_view_reviews && !empty($this->all_rrows))
             || ($this->mode === "edit" && $this->edit_mode === 0);
 
-        // 4="t": topics, 6="b": abstract, 7: [JavaScript abstract expansion],
-        // 8="a": blind authors, 9="p": full authors
-        $foldstorage = [4 => "p.t", 6 => "p.b", 9 => "p.p"];
-        $this->foldnumber = ["topics" => 4];
+        // check whether abstract & author collapsing allowed
+        $vas = $this->user->view_authors_state($this->prow);
+        $this->_allow_collapse = [
+            "abstract" => false, "authors" => false, "anonau" => $vas === 1
+        ];
+        if ($this->allow_folds && !$this->unfold_all) {
+            $abstract = $this->highlight($this->prow->abstract(), "ab", $match);
+            if (!$match && $this->abstract_foldable($abstract)) {
+                $this->_allow_collapse["abstract"] = true;
+            }
+            $match = false;
+            if ($this->matchPreg) {
+                $this->highlight($this->prow->authorInformation, "au", $match);
+            }
+            if (!$match && $vas !== 0) {
+                $this->_allow_collapse["authors"] = true;
+            } else {
+                $this->_allow_collapse["anonau"] = false;
+            }
+        }
 
         // other expansions
-        $next_foldnum = 10;
         foreach ($this->prow->page_fields() as $o) {
-            if ($o->display() >= PaperOption::DISP_TOP
-                && $o->display() <= PaperOption::DISP_REST
-                && ($o->id <= 0 || $this->user->allow_view_option($this->prow, $o))
-                && $o->page_group !== null) {
-                if (strlen($o->page_group) > 1
-                    && !isset($this->foldnumber[$o->page_group])) {
-                    $this->foldnumber[$o->page_group] = $next_foldnum;
-                    $foldstorage[$next_foldnum] = str_replace(" ", "_", "p." . $o->page_group);
-                    ++$next_foldnum;
-                }
-                if ($o->page_expand) {
-                    $this->foldnumber[$o->formid] = $next_foldnum;
-                    $foldstorage[$next_foldnum] = "p." . $o->formid;
-                    ++$next_foldnum;
-                }
+            if ($o->display() < PaperOption::DISP_TOP
+                || $o->display() > PaperOption::DISP_REST
+                || ($o->id > 0 && !$this->user->allow_view_option($this->prow, $o))) {
+                continue;
+            }
+            if ($o->page_group !== null
+                && !isset($this->_allow_collapse[$o->page_group])) {
+                $this->_allow_collapse[$o->page_group] = true;
+            }
+            if ($o->page_expand
+                && !isset($this->_allow_collapse[$o->formid])) {
+                $this->_allow_collapse[$o->formid] = true;
             }
         }
 
         // what is folded?
-        // if highlighting, automatically unfold abstract/authors
-        $vas = $this->user->view_authors_state($this->prow);
-        $this->foldmap = [];
-        foreach ($foldstorage as $num => $k) {
-            $this->foldmap[$num] = $this->allow_folds && !$this->unfold_all;
-        }
-        $this->foldmap[8] = $vas === 1;
-        if ($this->foldmap[6]) {
-            $abstract = $this->highlight($this->prow->abstract(), "ab", $match);
-            if ($match || !$this->abstract_foldable($abstract)) {
-                $this->foldmap[6] = false;
-            }
-        }
-        if ($this->matchPreg
-            && $vas !== 0
-            && ($this->foldmap[8] || $this->foldmap[9])) {
-            $this->highlight($this->prow->authorInformation, "au", $match);
-            if ($match) {
-                $this->foldmap[8] = $this->foldmap[9] = false;
-            }
-        }
+        // 8: blind authors, 9="p": full authors
+        $this->foldmap = [
+            8 => $this->_allow_collapse["anonau"] ?? false,
+            9 => $this->_allow_collapse["authors"] ?? false
+        ];
+        $foldstorage = [9 => "p.p"];
 
         // collect folders
         $folders = [];
-        foreach ($this->foldmap as $num => $f) {
-            if ($num !== 4 && ($num !== 8 || $vas === 1)) {
-                $folders[] = "fold" . $num . ($f ? "c" : "o");
-            }
+        if ($this->_allow_collapse["anonau"] ?? false) {
+            $folders[] = "fold8c";
         }
+        $folders[] = "fold9c";
         echo '<div id="foldpaper" class="', join(" ", $folders);
         if ($require_folds) {
             echo '">';
@@ -910,13 +906,12 @@ class PaperTable {
             $html = "[No abstract]";
         }
         $extra = [];
-        if ($this->allow_folds && $this->abstract_foldable($html)) {
-            $extra = ["fold" => "paper", "foldnum" => 6,
-                      "foldtitle" => "Toggle full abstract"];
+        if ($this->_allow_collapse["abstract"] ?? false) {
+            $extra = ["fold" => "x", "aria-controls" => "s-abstract-body", "foldtitle" => "Toggle full abstract"];
         }
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
             . $this->papt("abstract", $o->title_html(), $extra)
-            . '<div class="pavb abstract';
+            . '<div id="s-abstract-body" class="pavb no-fold abstract';
         if (!$match && ($format = $this->prow->format_of($html))) {
             $fr->value .= " need-format\" data-format=\"{$format}\">{$html}";
         } else {
@@ -924,8 +919,8 @@ class PaperTable {
         }
         $fr->value .= "</div></div></div>";
         if ($extra) {
-            $fr->value .= '<div class="fn6 fx7 longtext-fader"></div>'
-                . '<div class="fn6 fx7 longtext-expander"><button type="button" class="link ulh ui js-foldup" aria-expanded="false" data-fold-target="6">[more]</button></div>'
+            $fr->value .= '<div class="ifnx longtext-fader"></div>'
+                . '<div class="ifnx longtext-expander"><button type="button" class="link ulh ui js-foldup" aria-expanded="false" aria-controls="s-abstract-body">[more]</button></div>'
                 . Ht::unstash_script("hotcrp.render_text_page()");
         }
     }
@@ -1107,7 +1102,7 @@ class PaperTable {
                     $mailt = $dec->catbits & DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
                 }
             }
-            $fr->value .= ' <a class="fx9 q" href="'
+            $fr->value .= ' <a class="fx8 q" href="'
                 . $this->conf->hoturl("mail", ["t" => $mailt, "plimit" => 1, "q" => $this->prow->paperId])
                 . '">✉️</a>';
         }
@@ -1357,7 +1352,11 @@ class PaperTable {
                         echo '</div>';
                         $in_paperinfo_i = false;
                     }
-                    echo '<div class="paperinfo-i paperinfo-i-expand">';
+                    if ($this->_allow_collapse[$o1->formid] ?? false) {
+                        echo "<div class=\"paperinfo-i paperinfo-i-expand collapsed need-fold-storage fold-storage-hidden\" data-fold-storage=\"p.{$o1->formid}\">";
+                    } else {
+                        echo '<div class="paperinfo-i paperinfo-i-expand">';
+                    }
                 } else if (!$in_paperinfo_i) {
                     echo '<div class="paperinfo-i">';
                     $in_paperinfo_i = true;
@@ -1380,7 +1379,7 @@ class PaperTable {
                 if ($nvos1 === count($rgroup)) {
                     $class .= " fx8";
                 }
-                $want_fold = $this->foldnumber[$o1->page_group] ?? 0;
+                $want_fold = $this->_allow_collapse[$o1->page_group] ?? false;
                 if ($want_fold && $rgroup[0]->title !== "") {
                     $group_html = "<span class=\"ifnx\">{$group_html}</span><span class=\"ifx\">" . $rgroup[0]->title . '</span>';
                     $rgroup[0]->title = false;
@@ -1514,7 +1513,9 @@ class PaperTable {
         $data = $this->highlight($this->prow->collaborators(), "co", $match);
         $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
         $this->_ps_start_expandable("collaborators", true, [
-            "data-fold-storage" => "-p.collaborators", "class" => "need-fold-storage fold-storage-hidden"
+            "data-fold-storage" => "-p.collaborators",
+            "class" => "need-fold-storage fold-storage-hidden",
+            "hidden" => $this->_allow_collapse["anonau"] ?? false
         ]);
         echo $this->papt("collaborators", $option->title_html(),
                          ["type" => "ps", "fold" => "x", "aria-controls" => "s-collaborators-body"]),

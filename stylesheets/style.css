@@ -4200,18 +4200,18 @@ a.badge-white:hover {
 .paperinfo-c:last-child {
 	padding-right: 0;
 }
-.fold6c .paperinfo-i-expand {
+.paperinfo-i-expand.collapsed {
 	height: 7em;
 	flex-basis: 7em;
 }
-.fold6c .paperinfo-abstract {
+.collapsed .paperinfo-abstract {
 	position: absolute;
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
 }
 
-.pg, .pgsm, .paperinfo, .fold6c .paperinfo-i-expand {
+.pg, .pgsm, .paperinfo, .paperinfo-i-expand.collapsed {
 	margin-bottom: 1em;
 }
 .paperinfo-c {
@@ -5200,7 +5200,9 @@ body {
 [aria-expanded="false"] .ifx,
 [aria-selected="false"] .ifx,
 .expanded .ifnx,
-[aria-expanded="true"] .ifnx {
+[aria-expanded="true"] .ifnx,
+.force-expanded .ifnx,
+.force-expanded .expander {
 	display: none;
 }
 .hidden, [hidden] {
