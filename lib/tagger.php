@@ -832,9 +832,8 @@ class TagMap {
     function is_chair($tag) {
         if ($tag[0] === "~") {
             return $tag[1] === "~";
-        } else {
-            return !!$this->find_having($tag, TagInfo::TF_CHAIR);
         }
+        return !!$this->find_having($tag, TagInfo::TF_CHAIR);
     }
     /** @param string $tag
      * @return bool */
@@ -1873,10 +1872,9 @@ class Tagger {
         } else if (!$always) {
             return "";
         } else if ($base === $tv) {
-            $q = "#{$base}";
-        } else {
-            $q = "order:#{$base}";
+            return "#{$base}";
         }
+        return "order:#{$base}";
     }
 
     /** @param list<string>|string $viewable

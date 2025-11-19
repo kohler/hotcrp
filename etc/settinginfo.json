@@ -489,6 +489,12 @@
         "placeholder": "(Tag)"
     },
     {
+        "name_pattern": "submission/$/label",
+        "title": "Submission class title",
+        "type": "string", "size": 30, "autogrow": true,
+        "placeholder": "same as class tag"
+    },
+    {
         "name_pattern": "submission/$/title", "internal": true, "parser_class": "Sround_SettingParser"
     },
     {

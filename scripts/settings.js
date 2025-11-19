@@ -657,6 +657,27 @@ handle_ui.on("js-settings-submission-round-new", function () {
     this.form.elements["submission/" + i + "/tag"].focus();
 });
 
+handle_ui.on("input.js-settings-submission-round-name change.js-settings-submission-round-name", function () {
+    const e = this.closest(".js-settings-submission-round").querySelector(".js-settings-submission-round-label");
+    if (!e) {
+        return;
+    }
+    if (!this.hasAttribute("data-submission-round-labelled")) {
+        this.setAttribute("data-submission-round-labelled", input_default_value(this) !== input_default_value(e) ? "true" : "");
+    }
+    if (this.getAttribute("data-submission-round-labelled")) {
+        return;
+    }
+    e.value = this.value;
+});
+
+handle_ui.on("input.js-settings-submission-round-label", function (evt) {
+    const e = this.closest(".js-settings-submission-round").querySelector(".js-settings-submission-round-name");
+    if (e) {
+        e.setAttribute("data-submission-round-labelled", "true");
+    }
+});
+
 handle_ui.on("js-settings-submission-round-delete", function () {
     var div = this.closest(".js-settings-submission-round"),
         ne = this.form.elements[div.id + "/tag"];

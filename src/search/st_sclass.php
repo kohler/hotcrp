@@ -28,19 +28,17 @@ class Sclass_SearchTerm extends SearchTerm {
             return new Sclass_SearchTerm($srch->conf->unnamed_submission_round(), true);
         } else if (($sr = $srch->conf->submission_round_by_tag($tag, true))) {
             return new Sclass_SearchTerm($sr, false);
-        } else {
-            $srch->lwarning($sword, $srch->conf->_("<0>{Submission} class ‘{}’ not found", $tag));
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, $srch->conf->_("<0>{Submission} class ‘{}’ not found", $tag));
+        return new False_SearchTerm;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if (!$this->sr->unnamed) {
             return Dbl::format_query($sqi->srch->conf->dblink,
                 "exists (select * from PaperTag where paperId=Paper.paperId and tag=?)",
                 $this->sr->tag);
-        } else {
-            return "true";
         }
+        return "true";
     }
     function test(PaperInfo $row, $xinfo) {
         return ($row->submission_round() === $this->sr) !== $this->negate;

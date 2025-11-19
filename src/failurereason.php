@@ -172,7 +172,7 @@ class FailureReason extends Exception
             $end = $sr->submit;
         }
         return ["sub_sub", $sr->open, $dn, $end, [
-            new FmtArg("sclass", $sr->tag, 0),
+            new FmtArg("sclass", $sr->label, 0),
             new FmtArg("sclass_prefix", $sr->prefix, 0)
         ]];
     }

@@ -5402,28 +5402,38 @@ class Contact implements JsonSerializable {
         $tw = strpos($tag, "~");
         if ($tw === false || ($tw === 0 && $tag[1] === "~")) {
             $t = $tagmap->find($tag);
-            return ($rights->allow_pc()
-                    || ($t && $t->is(TagInfo::TF_CONFLICT_FREE)))
-                && ($tw === false || $this->privChair)
-                && (!$t || !$t->is(TagInfo::TF_AUTOMATIC))
-                && (!$t || !$t->is(TagInfo::TF_CHAIR) || $this->privChair)
-                && (!$t || !$t->is(TagInfo::TF_HIDDEN) || $this->can_view_hidden_tags($prow))
-                && (!$t
-                    || !$t->is(TagInfo::TF_READONLY | TagInfo::TF_RANK)
+            // chair tags can only be changed by chairs
+            if ($tw === 0 && !$this->privChair) {
+                return false;
+            }
+            // conflicted PC can only change conflict-free tags
+            if (!$rights->allow_pc() && (!$t || !$t->is(TagInfo::TF_CONFLICT_FREE))) {
+                return false;
+            }
+            // all other flags only limit rights
+            if (!$t) {
+                return true;
+            }
+            // check remaining flags
+            return !$t->is(TagInfo::TF_AUTOMATIC)
+                && (!$t->is(TagInfo::TF_CHAIR)
+                    || $this->privChair)
+                && (!$t->is(TagInfo::TF_HIDDEN)
+                    || $this->can_view_hidden_tags($prow))
+                && (!$t->is(TagInfo::TF_READONLY | TagInfo::TF_RANK)
                     || $rights->can_administer()
                     || ($this->privChair && $t->is(TagInfo::TF_SITEWIDE)));
-        } else {
-            $t = $tagmap->find(substr($tag, $tw + 1));
-            return ($rights->allow_pc()
-                    || ($t && $t->is(TagInfo::TF_CONFLICT_FREE)))
-                && ($tw === 0
-                    || $rights->can_administer()
-                    || ($tw === strlen((string) $this->contactId)
-                        && str_starts_with($tag, (string) $this->contactId)))
-                && (!($index < 0)
-                    || !$t
-                    || !$t->allotment);
         }
+        $t = $tagmap->find(substr($tag, $tw + 1));
+        return ($rights->allow_pc()
+                || ($t && $t->is(TagInfo::TF_CONFLICT_FREE)))
+            && ($tw === 0
+                || $rights->can_administer()
+                || ($tw === strlen((string) $this->contactId)
+                    && str_starts_with($tag, (string) $this->contactId)))
+            && (!($index < 0)
+                || !$t
+                || !$t->allotment);
     }
 
     /** @param string $tag

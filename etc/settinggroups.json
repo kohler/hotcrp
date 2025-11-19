@@ -104,10 +104,6 @@
         "settings": ["submission"]
     },
     {
-        "name": "__crosscheck/submissionclasses", "order": 301,
-        "crosscheck_function": "Sround_SettingParser::crosscheck"
-    },
-    {
         "name": "submissions/blind", "order": 40,
         "print_function": "Submissions_SettingParser::print_blind",
         "title": "Visibility to reviewers",
