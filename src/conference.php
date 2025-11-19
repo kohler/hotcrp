@@ -5193,7 +5193,7 @@ class Conf {
                     $title .= " <span class=\"pl-2 pr-2\">&#x2215;</span> <strong>{$subtitle}</strong>";
                 }
                 if ($title && $title !== "Home") {
-                    $title_div = "<div id=\"h-page\"><h1>{$title}</h1></div>";
+                    $title_div = "<div id=\"h-page\"><h1 id=\"h-title\">{$title}</h1></div>";
                 }
             }
             echo $title_div ?? "";
@@ -5254,7 +5254,7 @@ class Conf {
         }
         echo "</div></header>\n";
 
-        echo "<div id=\"p-body\">\n";
+        echo "<main id=\"p-body\">\n";
 
         // If browser owns tracker, send it the script immediately
         if ($this->has_active_tracker()

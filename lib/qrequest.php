@@ -685,9 +685,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     function print_footer() {
-        echo '<hr class="c"></div>', // close #p-body
+        echo '<hr class="c"></main>', // close #p-body
             '</div>',                // close #p-page
-            '<div id="p-footer" class="need-banner-offset banner-bottom">',
+            '<footer id="p-footer" class="need-banner-offset banner-bottom">',
             $this->_conf->opt("extraFooter") ?? "",
             '<a class="noq" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->_conf->opt("noFooterVersion")) {
@@ -702,7 +702,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
             }
         }
-        echo '</div>', Ht::unstash(), "</body>\n</html>\n";
+        echo '</footer>', Ht::unstash(), "</body>\n</html>\n";
     }
 
     static function print_footer_hook(Contact $user, Qrequest $qreq) {

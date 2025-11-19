@@ -95,7 +95,7 @@ class Home_Page {
     }
 
     function print_content(Contact $user, Qrequest $qreq, ComponentSet $gx) {
-        echo '<main class="home-content">';
+        echo '<div class="home-content">';
         ob_start();
         $gx->print_members("home/sidebar");
         if (($t = ob_get_clean()) !== "") {
@@ -104,7 +104,7 @@ class Home_Page {
         }
         echo '<div class="home-main">';
         $gx->print_members("home/main");
-        echo "</div></main>\n";
+        echo "</div></div>\n";
     }
 
     private function print_h2_home($x) {

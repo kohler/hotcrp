@@ -661,7 +661,7 @@ class Profile_Page {
         }
 
         echo '</nav></div>',
-            '<main id="profilecontent" class="leftmenu-content main-column">';
+            '<div class="leftmenu-content main-column">';
 
         if ($this->page_type === 2) {
             echo '<h2 class="leftmenu">Bulk update</h2>';
@@ -713,7 +713,7 @@ class Profile_Page {
             echo "</div>"; // foldaccount
         }
 
-        echo "</main></form>",
+        echo "</div></form>",
             // include #f-reauth in case we need to reauthenticate
             '<form id="f-reauth" class="ui-submit js-reauth"></form>';
 

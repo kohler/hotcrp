@@ -168,7 +168,7 @@ class Authorize_Page {
     }
 
     function print_form_title() {
-        echo '<h1>Choose an account</h1>';
+        echo '<h1 id="h-title">Choose an account</h1>';
         $clt = htmlspecialchars($this->client->title ?? $this->client->name);
         if ($this->client->client_uri) {
             $clt = Ht::link($clt, htmlspecialchars($this->client->client_uri));

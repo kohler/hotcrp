@@ -169,7 +169,7 @@ class PaperTable {
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
-        $t = '<div id="h-page" class="header-page-submission"><h1 class="paptitle';
+        $t = '<div id="h-page" class="header-page-submission"><h1 id="h-title" class="paptitle';
 
         if (!$paperTable) {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
@@ -1451,8 +1451,9 @@ class PaperTable {
 
     private function _papstrip_framework() {
         if (!$this->npapstrip) {
-            echo '<article class="pcontainer"><div class="pcard-left',
-                '"><div class="pspcard"><div class="ui pspcard-fold">',
+            echo '<article class="pcontainer"><div class="pcard-left">',
+                '<section class="pspcard" aria-label="Submission properties">',
+                '<div class="ui pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
             if (($viewable = $this->prow->sorted_viewable_tags($this->user))) {
@@ -2464,7 +2465,7 @@ class PaperTable {
         }
         if ($this->npapstrip) {
             Ht::stash_script("hotcrp.load_paper_sidebar()");
-            echo '</div></div>';
+            echo '</div></section>';
         } else {
             echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip">';
         }

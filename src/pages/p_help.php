@@ -68,11 +68,11 @@ class Help_Page {
             $klass = $gj->name === "list" ? " leftmenu-item-gap3" : "";
         }
         echo "</ul></nav></div>\n",
-            '<main id="helpcontent" class="leftmenu-content main-column">',
+            '<div class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $topicj->title, '</h2>';
         $conf->report_saved_messages();
         $help_topics->print_body_members($topic);
-        echo "</main>\n";
+        echo "</div>\n";
 
         $qreq->print_footer();
     }

@@ -172,7 +172,7 @@ class Signin_Page {
     }
 
     static function print_signin_form_title(Contact $user, Qrequest $qreq) {
-        echo '<h1 class="signin">Sign in</h1>';
+        echo '<h1 id="h-title" class="signin">Sign in</h1>';
     }
 
     static function print_signin_form_accounts(Contact $user, Qrequest $qreq) {
@@ -301,7 +301,7 @@ class Signin_Page {
         } else {
             $qreq->print_header("Sign out", "signout", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
             self::print_form_start_for($qreq, "signout");
-            echo '<h1 class="signin">Sign out</h1><div class="mb-5">',
+            echo '<h1 id="h-title" class="signin">Sign out</h1><div class="mb-5">',
                 $user->conf->_("Use this page to sign out of the site."),
                 '</div><div class="popup-actions">',
                 Ht::submit("Sign out", ["class" => "btn-danger", "value" => 1]),
@@ -404,7 +404,7 @@ class Signin_Page {
         Ht::stash_script("hotcrp.focus_within(\$(\"#f-signin\"));window.scroll(0,0)");
     }
     static function print_newaccount_form_title() {
-        echo '<h1 class="signin">Create account</h1>';
+        echo '<h1 id="h-title" class="signin">Create account</h1>';
     }
     static function print_newaccount_form_description(Contact $user) {
         $m = $user->conf->_("Enter your email and we’ll create an account and send you instructions for signing in.");
@@ -459,7 +459,7 @@ class Signin_Page {
         Ht::stash_script("hotcrp.focus_within(\$(\"#f-signin\"));window.scroll(0,0)");
     }
     static function print_forgot_form_title() {
-        echo '<h1 class="signin">Forgot password</h1>';
+        echo '<h1 id="h-title" class="signin">Forgot password</h1>';
     }
     static function print_forgot_form_description(Contact $user, Qrequest $qreq, $cs) {
         echo '<p class="mb-5">Enter your email and we’ll send you a link to reset your password.';
@@ -623,7 +623,7 @@ class Signin_Page {
         Ht::stash_script("hotcrp.focus_within(\$(\"#f-signin\"));window.scroll(0,0)");
     }
     static function print_reset_form_title() {
-        echo '<h1 class="signin">Reset password</h1>';
+        echo '<h1 id="h-title" class="signin">Reset password</h1>';
     }
     static function print_reset_form_description() {
         echo '<p class="mb-5">Use this form to set a new password. You may want to use the random password we’ve chosen.</p>';

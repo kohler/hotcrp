@@ -241,8 +241,7 @@ class Search_Page {
                 Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING)),
                 '</div>';
         }
-
-        echo "<div class=\"maintabsep\"></div>\n\n";
+        echo "\n";
 
         if ($this->pl->has("sel")) {
             echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST), ["id" => "sel", "class" => "ui-submit js-submit-list"]),

@@ -65,6 +65,7 @@ Generic values
     * `#h-messages`
     * `#h-usermenu`
     * `#h-usermenubutton`
+    * `#h-title`
 * `id^=n-` is for navigation elements (quicklinks)
     * `#n-next`
     * `#n-prev`

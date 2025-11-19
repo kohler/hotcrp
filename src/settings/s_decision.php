@@ -58,7 +58,8 @@ class Decision_SettingParser extends SettingParser {
                 "maybe" => "Other category"
             ], $class, $sv->sjs("decision/{$ctr}/category", [
                 "class" => "uich js-settings-decision-category",
-                "data-default-value" => $isnew ? "accept" : $class
+                "data-default-value" => $isnew ? "accept" : $class,
+                "aria-label" => "Decision category"
             ]));
         if ($sv->reqstr("decision/{$ctr}/delete")) {
             echo Ht::hidden("decision/{$ctr}/delete", "1", ["data-default-value" => ""]);

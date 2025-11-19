@@ -123,7 +123,7 @@ class Settings_Page {
         echo '</ul><div class="leftmenu-if-left if-differs mt-5">',
             Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
             "</div></nav></div>\n",
-            '<main class="leftmenu-content main-column">';
+            '<div class="leftmenu-content main-column">';
 
         if ($group !== "list") {
             $this->print_extant_group($group, $groupj, $qreq);
@@ -131,7 +131,7 @@ class Settings_Page {
             $this->print_list();
         }
 
-        echo "</main></form>\n";
+        echo "</div></form>\n";
         Ht::stash_script('$("#f-settings").awaken()');
         $qreq->print_footer();
     }
