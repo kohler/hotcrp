@@ -4434,23 +4434,25 @@ function foldup(evt, opts) {
         if (!("open" in opts)) {
             opts.open = acting.ariaExpanded !== "true";
         }
-        const p = acting.closest(".expanded, .collapsed"),
-            controls = acting.getAttribute("aria-controls");
-        for (const e of p.querySelectorAll("button[aria-expanded]")) {
-            if (e.getAttribute("aria-controls") === controls) {
-                e.ariaExpanded = opts.open ? "true" : "false";
-            }
-        }
         for (const e of acting.ariaControlsElements) {
             if (e.hidden !== !opts.open && !hasClass(e, "no-fold")) {
                 e.hidden = !opts.open;
                 e.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
             }
         }
-        if (p && hasClass(p, "expanded") !== opts.open) {
-            removeClass(p, opts.open ? "collapsed" : "expanded");
-            addClass(p, opts.open ? "expanded" : "collapsed");
-            p.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
+        const p = acting.closest(".expanded, .collapsed");
+        if (p) {
+            const controls = acting.getAttribute("aria-controls");
+            for (const e of p.querySelectorAll("button[aria-expanded]")) {
+                if (e.getAttribute("aria-controls") === controls) {
+                    e.ariaExpanded = opts.open ? "true" : "false";
+                }
+            }
+            if (hasClass(p, "expanded") !== opts.open) {
+                removeClass(p, opts.open ? "collapsed" : "expanded");
+                addClass(p, opts.open ? "expanded" : "collapsed");
+                p.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
+            }
         }
     } else {
         let target = this;
