@@ -731,7 +731,7 @@ class PaperList {
             $flags = &$this->_viewf[$svc->keyword];
             $flags = $flags ?? 0;
             if (($flags & self::VIEW_ORIGINMASK) <= $origin) {
-                $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum);
+                $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum . "^");
                 $vol = (new ViewOptionList)->append_validate($svc->view_options ?? [], $schema);
                 if (($ss = $vol->get("order")) !== null) {
                     $flags = ($flags & ~self::VIEW_ORIGINMASK) | $origin;
