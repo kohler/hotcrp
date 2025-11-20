@@ -1140,12 +1140,9 @@ function event_key(evt) {
             return keyCode_map[x];
         } else if ((x >= 48 && x <= 57) || (x >= 65 && x <= 90)) {
             return String.fromCharCode(x);
-        } else {
-            return "";
         }
-    } else {
-        return "";
     }
+    return "";
 }
 event_key.printable = function (evt) {
     return !nonprintable_map[event_key(evt)]
@@ -12869,12 +12866,9 @@ function prepare_paper_select() {
         }
     }
     function keypress(evt) {
-        if (event_key(evt) === " ")
-            /* nothing */;
-        else if (event_key.printable(evt))
-            keyed = now_msec();
-        else
-            keyed = 0;
+        if (event_key(evt) !== " ") {
+            keyed = event_key.printable(evt) ? now_msec() : 0;
+        }
     }
     $(ctl).on("change blur", change).on("keyup", keyup).on("keypress", keypress);
 }
@@ -13055,10 +13049,13 @@ edit_conditions.checkbox = function (ec, form) {
     const e = form.elements[ec.formid];
     return e && e.checked;
 };
+function fieldset(form, fsname) {
+    return form.elements[fsname] || form.querySelector(`fieldset[name="${fsname}"]`);
+}
 edit_conditions.checkboxes = function (ec, form) {
     const vs = ec.values;
     if (vs === false || vs === true || vs == null) {
-        const es = form.elements[ec.formid].querySelectorAll("input:checked");
+        const es = fieldset(form, ec.formid).querySelectorAll("input:checked");
         return (vs === false) === (es.length === 0);
     }
     for (const v of vs) {
@@ -13068,7 +13065,7 @@ edit_conditions.checkboxes = function (ec, form) {
     return false;
 };
 edit_conditions.all_checkboxes = function (ec, form) {
-    const es = form.elements[ec.formid].querySelectorAll("input[type=checkbox]");
+    const es = fieldset(form, ec.formid).querySelectorAll("input[type=checkbox]");
     for (const e of es) {
         if (!e.checked)
             return false;
