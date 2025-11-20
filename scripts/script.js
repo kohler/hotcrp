@@ -13407,13 +13407,15 @@ hotcrp.load_paper_sidebar = function () {
 
 hotcrp.replace_editable_field = function (field, elt) {
     var pfe = $$(field).closest(".pfe");
-    if (elt.tagName !== "DIV" || !hasClass(elt, "pfe")) {
-        throw new Error("bad DIV");
+    if ((elt.tagName !== "DIV" && elt.tagName !== "FIELDSET")
+        || !hasClass(elt, "pfe")) {
+        throw new Error("bad replacement");
     }
     pfe.className = elt.className;
     pfe.replaceChildren();
-    while (elt.firstChild)
+    while (elt.firstChild) {
         pfe.appendChild(elt.firstChild);
+    }
     add_pslitem_pfe.call(pfe);
 };
 

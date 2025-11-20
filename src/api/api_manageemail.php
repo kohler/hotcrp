@@ -286,7 +286,7 @@ class ManageEmail_API extends MessageSet {
                 $this->inform_at("email", $this->conf->_("<5>Reviews can’t be transferred from {src} to {dst} because there are {submissions} for which both accounts have reviews. (<a href=\"{searchurl}\">List them</a>)",
                     new FmtArg("src", $this->user->email, 0),
                     new FmtArg("dst", $this->dstuser->email, 0),
-                    new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => "pidcode:" . SessionList::encode_ids($bothreviewed)], Conf::HOTURL_RAW))));
+                    new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => "pidcode:" . SessionList::encode_ids($bothreviewed)], Conf::HOTURL_RAW), 0)));
             }
             if (!empty($dstconflict)) {
                 sort($dstconflict);
@@ -297,7 +297,7 @@ class ManageEmail_API extends MessageSet {
                 $this->inform_at("email", $this->conf->_("<5>Transferring reviews from {src} to {dst} would override some conflicts. (<a href=\"{searchurl}\">List them</a>)",
                     new FmtArg("src", $this->user->email, 0),
                     new FmtArg("dst", $this->dstuser->email, 0),
-                    new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => "pidcode:" . SessionList::encode_ids($dstconflict)], Conf::HOTURL_RAW))));
+                    new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => "pidcode:" . SessionList::encode_ids($dstconflict)], Conf::HOTURL_RAW), 0)));
             }
             if (!empty($bothreviewed)
                 || (!empty($dstconflict) && !$this->viewer->privChair)) {
