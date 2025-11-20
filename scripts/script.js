@@ -4453,6 +4453,8 @@ function foldup(evt, opts) {
                 addClass(p, opts.open ? "expanded" : "collapsed");
                 p.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
             }
+        } else {
+            acting.ariaExpanded = opts.open ? "true" : "false";
         }
     } else {
         let target = this;
