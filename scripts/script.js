@@ -5571,12 +5571,12 @@ hotcrp.monitor_job = function (jobid, statuselt) {
 
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
-    var f = this.form,
+    const f = this.form,
         plimit = f.elements.plimit,
         toelt = f.elements.to,
-        recip = toelt.options[toelt.selectedIndex],
         subjelt = f.elements.subject,
-        bodyelt = f.elements.body;
+        bodyelt = f.elements.body,
+        recip = toelt ? toelt.options[toelt.selectedIndex] : null;
     foldup.call(this, null, {open: !plimit || plimit.checked, n: 8});
     if (!recip) {
         return;
