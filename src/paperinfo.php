@@ -1226,13 +1226,13 @@ class PaperInfo {
         $this->$prop = $v;
         // clear caches, sometimes conservatively
         if ($prop === "authorInformation") {
-            $this->_author_array = $this->_ctype_list = null;
+            $this->_author_array = $this->_ctype_list = $this->_potconf = null;
         } else if ($prop === "collaborators") {
-            $this->_collaborator_array = null;
+            $this->_collaborator_array = $this->_potconf = null;
         } else if ($prop === "topicIds") {
             $this->_topic_array = $this->_topic_interest_score_array = null;
         } else if ($prop === "allConflictType") {
-            $this->_ctype_list = null;
+            $this->_ctype_list = $this->_potconf = null;
         }
     }
 
@@ -1558,9 +1558,11 @@ class PaperInfo {
             $a[] = $s;
         }
         foreach ($this->conflict_list() as $cu) {
-            if ($cu->conflictType >= CONFLICT_AUTHOR
-                && $cu->user
-                && ($s = $cu->user->collaborators()) !== "") {
+            if ($cu->conflictType < CONFLICT_AUTHOR || !$cu->user) {
+                continue;
+            }
+            $a[] = $cu->user->name(NAME_A);
+            if (($s = $cu->user->collaborators()) !== "") {
                 $a[] = $s;
             }
         }
@@ -1585,10 +1587,7 @@ class PaperInfo {
             }
             foreach ($cu->user->aucollab_matchers() as $m) {
                 if ($m->is_nonauthor()) {
-                    $m = $m->copy();
-                    $m->contactId = $cu->contactId;
-                    $m->author_index = $cu->author_index;
-                    yield $m;
+                    yield $m->copy_with_author($cu->contactId, $cu->author_index);
                 }
             }
         }
@@ -1706,9 +1705,8 @@ class PaperInfo {
             return "Administrator";
         } else if ($rrow) {
             return "Reviewer";
-        } else {
-            return null;
         }
+        return null;
     }
 
 

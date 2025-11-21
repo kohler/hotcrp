@@ -116,6 +116,15 @@ class Author {
         return $au;
     }
 
+    /** @return $this */
+    function copy_with_author($uid, $author_index) {
+        $au = $this->copy();
+        $au->contactId = $uid;
+        $au->author_index = $author_index;
+        return $au;
+    }
+
+
     /** @param Author|Contact $o */
     function merge($o) {
         if ($this->email === "") {

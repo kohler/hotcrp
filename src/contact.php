@@ -4052,7 +4052,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @param PaperOption $opt
-     * @return bool*/
+     * @return bool */
     function allow_view_option(PaperInfo $prow, $opt) {
         return $this->view_option_state($prow, $opt) !== 0;
     }
