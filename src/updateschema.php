@@ -1255,6 +1255,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             0x0C /* CTM_BYAUTHOR */, 5 /* REVIEW_META */);
     }
 
+    private function v319_set_cf_neaascii() {
+        $result = $this->conf->ql("select contactId, firstName, lastName, affiliation from ContactInfo");
+        $uids = [];
+        while (($row = $result->fetch_row())) {
+            if (!is_usascii($row[1] . $row[2] . $row[3]))
+                $uids[] = (int) $row[0];
+        }
+        $result->close();
+        return $this->conf->ql_ok("update ContactInfo set cflags=cflags|0x100 where contactId?a", $uids);
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -3215,6 +3226,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 317
             && $this->v318_set_ct_bymetareviewer()) {
             $conf->update_schema_version(318);
+        }
+        if ($conf->sversion === 318
+            && $this->v319_set_cf_neaascii()) {
+            $conf->update_schema_version(319);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

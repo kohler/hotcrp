@@ -122,34 +122,6 @@ class Profile_Page {
             $user = $this->handle_user_search($u);
         }
 
-        // load initial information about new user from submissions
-        if (($user !== $this->viewer || !$user->has_account_here())
-            && $user->has_email()
-            && !$user->firstName
-            && !$user->lastName
-            && !$user->affiliation
-            && !$this->qreq->is_post()) {
-            /* XXX this code is dead */
-            $result = $this->conf->qe_raw("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId} and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
-            while (($prow = PaperInfo::fetch($result, $this->viewer))) {
-                foreach ($prow->author_list() as $au) {
-                    if (strcasecmp($au->email, $user->email) == 0
-                        && ($au->firstName || $au->lastName || $au->affiliation)) {
-                        if (!$user->firstName && $au->firstName) {
-                            $user->firstName = $au->firstName;
-                        }
-                        if (!$user->lastName && $au->lastName) {
-                            $user->lastName = $au->lastName;
-                        }
-                        if (!$user->affiliation && $au->affiliation) {
-                            $user->affiliation = $au->affiliation;
-                        }
-                    }
-                }
-            }
-            Dbl::free($result);
-        }
-
         $this->user = $user;
     }
 

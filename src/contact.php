@@ -43,17 +43,19 @@ class Contact implements JsonSerializable {
     /** @var int */
     public $cdb_confid = 0; // nonzero iff this is a CDB user
 
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $email = "";
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $firstName = "";
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $lastName = "";
     /** @var ?string */
     public $unaccentedName;
-    /** @var ?bool */
-    public $name_usascii;
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $affiliation = "";
     /** @var int */
     public $roles = 0;
@@ -242,6 +244,7 @@ class Contact implements JsonSerializable {
     const CF_UNCONFIRMED = 0x20;
     const CF_SECURITYLOCK = 0x40;
     const CF_PRIMARY = 0x80;
+    const CF_NEANONASCII = 0x100;
 
     const CFM_DISABLEMENT = 0x1F;
     const CFM_DB = ~0x4;
@@ -302,7 +305,8 @@ class Contact implements JsonSerializable {
 
     /** @param ?string $email
      * @param int $cflags
-     * @return Contact */
+     * @return Contact
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_email_cflags(Conf $conf, $email, $cflags) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
@@ -324,7 +328,8 @@ class Contact implements JsonSerializable {
     }
 
     /** @param int $contactId
-     * @return Contact */
+     * @return Contact
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_deleted(Conf $conf, $contactId) {
         $u = new Contact($conf);
         $u->contactId = $contactId;
@@ -344,7 +349,8 @@ class Contact implements JsonSerializable {
     }
 
     /** @param array{contactId?:int,email?:string,given_name?:string,firstName?:string,first?:string,family_name?:string,lastName?:string,last?:string,name?:string,affiliation?:string,disabled?:void,disablement?:int} $args
-     * @return Contact */
+     * @return Contact
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_keyed(Conf $conf, $args) {
         // email, firstName, lastName, affiliation, disablement, contactId, first, last:
         // the importable properties
@@ -375,11 +381,15 @@ class Contact implements JsonSerializable {
             $u->preferredEmail = $preferred_email;
         }
         $u->cflags = ($args["disablement"] ?? 0) | self::CF_UNCONFIRMED;
+        if (!is_usascii($u->firstName . $u->lastName . $u->affiliation)) {
+            $u->cflags |= self::CF_NEANONASCII;
+        }
         $u->set_roles_properties();
         return $u;
     }
 
-    /** @return Contact */
+    /** @return Contact
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_root_user(Conf $conf) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
@@ -2035,12 +2045,19 @@ class Contact implements JsonSerializable {
             }
             $this->updateTime = Conf::$now;
         }
-        if ($this->_aucollab_matchers
-            && in_array($prop, ["firstName", "lastName", "email", "affiliation"], true)) {
-            $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
-        }
         if ($prop === "roles" || $prop === "cflags") {
             $this->set_roles_properties();
+        }
+        $neaidx = array_search($prop, ["firstName", "lastName", "email", "affiliation"], true);
+        if ($neaidx !== false) {
+            $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
+            if ($neaidx !== 2) {
+                $nonascii = is_usascii($this->firstName . $this->lastName . $this->affiliation)
+                    ? 0 : self::CF_NEANONASCII;
+                if (($this->cflags & self::CF_NEANONASCII) !== $nonascii) {
+                    $this->set_prop("cflags", ($this->cflags & ~self::CF_NEANONASCII) | $nonascii);
+                }
+            }
         }
     }
 
