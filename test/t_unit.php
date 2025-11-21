@@ -1009,28 +1009,28 @@ class Unit_Tester {
 
     function test_star_text_pregexes() {
         $pregex = Text::star_text_pregexes("foo");
-        xassert(Text::match_pregexes($pregex, "foo", null));
-        xassert(Text::match_pregexes($pregex, "foo", "foo"));
-        xassert(Text::match_pregexes($pregex, "fóo", "foo"));
-        xassert(!Text::match_pregexes($pregex, "foobar", null));
-        xassert(!Text::match_pregexes($pregex, "foobar", "foobar"));
-        xassert(!Text::match_pregexes($pregex, "fóobar", "foobar"));
+        xassert($pregex->match_da("foo", null));
+        xassert($pregex->match_da("foo", "foo"));
+        xassert($pregex->match_da("fóo", "foo"));
+        xassert(!$pregex->match_da("foobar", null));
+        xassert(!$pregex->match_da("foobar", "foobar"));
+        xassert(!$pregex->match_da("fóobar", "foobar"));
 
         $pregex = Text::star_text_pregexes("foo*");
-        xassert(Text::match_pregexes($pregex, "foo", null));
-        xassert(Text::match_pregexes($pregex, "foo", "foo"));
-        xassert(Text::match_pregexes($pregex, "fóo", "foo"));
-        xassert(Text::match_pregexes($pregex, "foobar", null));
-        xassert(Text::match_pregexes($pregex, "foobar", "foobar"));
-        xassert(Text::match_pregexes($pregex, "fóobar", "foobar"));
-        xassert(!Text::match_pregexes($pregex, "ffoobar", null));
-        xassert(!Text::match_pregexes($pregex, "ffoobar", "ffoobar"));
-        xassert(!Text::match_pregexes($pregex, "ffóobar", "ffoobar"));
+        xassert($pregex->match_da("foo", null));
+        xassert($pregex->match_da("foo", "foo"));
+        xassert($pregex->match_da("fóo", "foo"));
+        xassert($pregex->match_da("foobar", null));
+        xassert($pregex->match_da("foobar", "foobar"));
+        xassert($pregex->match_da("fóobar", "foobar"));
+        xassert(!$pregex->match_da("ffoobar", null));
+        xassert(!$pregex->match_da("ffoobar", "ffoobar"));
+        xassert(!$pregex->match_da("ffóobar", "ffoobar"));
 
         $pregex = Text::star_text_pregexes("foo@butt.com");
-        xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", null));
-        xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", "it's foo@butt.com and friends"));
-        xassert(Text::match_pregexes($pregex, "it's fóo@butt.com and friends", "it's foo@butt.com and friends"));
+        xassert($pregex->match_da("it's foo@butt.com and friends", null));
+        xassert($pregex->match_da("it's foo@butt.com and friends", "it's foo@butt.com and friends"));
+        xassert($pregex->match_da("it's fóo@butt.com and friends", "it's foo@butt.com and friends"));
     }
 
     function test_simple_search() {

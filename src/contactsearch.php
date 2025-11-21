@@ -254,11 +254,8 @@ class ContactSearch {
                     break;
                 }
                 $ids[] = $id;
-            } else if ($nreg) {
-                $n = $acct->searchable_name();
-                if (Text::match_pregexes($nreg, $n, UnicodeHelper::deaccent($n))) {
-                    $ids[] = $id;
-                }
+            } else if ($nreg && $nreg->match($acct->searchable_name())) {
+                $ids[] = $id;
             }
         }
 

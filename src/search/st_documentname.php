@@ -24,8 +24,7 @@ class DocumentName_SearchTerm extends Option_SearchTerm {
             && ($ov = $row->option($this->option))) {
             $this->pregexes = $this->pregexes ?? Text::star_text_pregexes($this->match);
             foreach ($ov->document_set() as $d) {
-                $m = $this->pregexes->match($d->filename, null);
-                if ($m === $this->want)
+                if ($this->pregexes->match($d->filename) === $this->want)
                     return true;
             }
         }

@@ -1519,7 +1519,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         } else if ($this->trivial !== null) {
             return $this->trivial;
         }
-        return $row->field_match_pregexes($this->regex, $this->field);
+        return $this->regex->match($row->{$this->field}());
     }
     function script_expression(PaperInfo $row, $about) {
         if ($about !== self::ABOUT_PAPER) {

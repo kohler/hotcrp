@@ -53,14 +53,14 @@ class AuthorMatch_SearchTerm extends SearchTerm {
             return false;
         }
         if ($this->type !== "comatch"
-            && $row->field_match_pregexes($this->matcher->general_pregexes(), "authorInformation")) {
+            && $this->matcher->general_pregexes()->match($row->authorInformation)) {
             foreach ($row->author_list() as $au) {
                 if ($this->matcher->test($au, true))
                     return true;
             }
         }
         if ($this->type !== "aumatch"
-            && $row->field_match_pregexes($this->matcher->general_pregexes(), "collaborators")) {
+            && $this->matcher->general_pregexes()->match($row->collaborators())) {
             foreach ($row->collaborator_list() as $au) {
                 if ($this->matcher->test($au, true))
                     return true;

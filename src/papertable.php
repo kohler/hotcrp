@@ -388,11 +388,11 @@ class PaperTable {
             if (!$match && $this->abstract_foldable($abstract)) {
                 $this->_allow_collapse["abstract"] = true;
             }
-            $match = false;
+            $matches = 0;
             if ($this->matchPreg) {
-                $this->highlight($this->prow->authorInformation, "au", $match);
+                $this->highlight($this->prow->authorInformation, "au", $matches);
             }
-            if (!$match && $vas !== 0) {
+            if ($matches === 0 && $vas !== 0) {
                 $this->_allow_collapse["authors"] = true;
             } else {
                 $this->_allow_collapse["anonau"] = false;

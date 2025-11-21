@@ -262,10 +262,10 @@ class AuthorMatcher extends Author {
             && $au->lastName !== ""
             && ($this->lastName_simple
                 ? $this->lastName_simple === $au->deaccent(1)
-                : Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->deaccent(1)))
+                : $this->lastName_matcher->match_da($au->lastName, $au->deaccent(1)))
             && ($au->firstName === ""
                 || !$this->firstName_matcher
-                || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->deaccent(0)))) {
+                || $this->firstName_matcher->match_da($au->firstName, $au->deaccent(0)))) {
             return self::MATCH_NAME;
         }
         if ($this->affiliation_matcher

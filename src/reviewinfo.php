@@ -75,8 +75,6 @@ class ReviewInfo implements JsonSerializable {
 
     /** @var list<null|int|string> */
     public $fields;
-    /** @var ?list<null|false|string> */
-    private $_deaccent_fields;
 
     // scores
     // These scores are loaded from the database, but exposed only in `fields`
@@ -989,20 +987,11 @@ class ReviewInfo implements JsonSerializable {
 
     /** @param ?TextPregexes $reg
      * @param int $order
-     * @return bool */
+     * @return bool
+     * @deprecated */
     function field_match_pregexes($reg, $order) {
         $data = $this->fields[$order];
-        if (!isset($this->_deaccent_fields[$order])) {
-            if (!isset($this->_deaccent_fields)) {
-                $this->_deaccent_fields = $this->conf->review_form()->order_array(null);
-            }
-            if (is_usascii($data)) {
-                $this->_deaccent_fields[$order] = false;
-            } else {
-                $this->_deaccent_fields[$order] = UnicodeHelper::deaccent($data);
-            }
-        }
-        return Text::match_pregexes($reg, $data, $this->_deaccent_fields[$order]);
+        return $reg && $reg->match($this->fields[$order]);
     }
 
 

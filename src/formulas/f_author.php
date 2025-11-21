@@ -68,8 +68,7 @@ class Author_Fexpr extends Fexpr {
             }
         } else {
             foreach ($prow->author_list() as $au) {
-                $text = $au->name(NAME_E|NAME_A);
-                if (Text::match_pregexes($mf, $text, UnicodeHelper::deaccent($text)))
+                if ($mf->match($au->name(NAME_E|NAME_A)))
                     ++$n;
             }
         }

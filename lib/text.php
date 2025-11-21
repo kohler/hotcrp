@@ -19,7 +19,7 @@ class TextPregexes {
 
     /** @return TextPregexes */
     static function make_empty() {
-        return new TextPregexes('(?!)', '(?!)');
+        return new TextPregexes(null, '(?!)');
     }
 
     /** @return bool */
@@ -28,23 +28,44 @@ class TextPregexes {
     }
 
     /** @param string $text
-     * @param ?string $deaccented_text
      * @return bool */
-    function match($text, $deaccented_text) {
+    function match_raw($text) {
         if ($this->preg_raw === null) {
             return !!preg_match("{{$this->preg_utf8}}ui", $text);
-        } else if ((string) $deaccented_text !== "" && $deaccented_text !== $text) {
-            return !!preg_match("{{$this->preg_utf8}}ui", $deaccented_text);
-        } else {
-            return !!preg_match("{{$this->preg_raw}}i", $text);
         }
+        return !!preg_match("{{$this->preg_raw}}i", $text);
+    }
+
+    /** @param string $text
+     * @return bool */
+    function match($text) {
+        if ($this->preg_raw === null) {
+            return !!preg_match("{{$this->preg_utf8}}ui", $text);
+        } else if (($text_da = UnicodeHelper::maybe_deaccent($text)) !== null) {
+            return !!preg_match("{{$this->preg_utf8}}ui", $text_da);
+        }
+        return !!preg_match("{{$this->preg_raw}}i", $text);
+    }
+
+    /** @param string $text
+     * @param ?string $text_da
+     * @return bool */
+    function match_da($text, $text_da) {
+        if ($this->preg_raw === null) {
+            return !!preg_match("{{$this->preg_utf8}}ui", $text);
+        } else if ((string) $text_da !== "" && $text_da !== $text) {
+            return !!preg_match("{{$this->preg_utf8}}ui", $text_da);
+        }
+        return !!preg_match("{{$this->preg_raw}}i", $text);
     }
 
     function add_matches(TextPregexes $r) {
-        if ($this->is_empty()) {
+        if ($r->is_empty()) {
+            // do nothing
+        } else if ($this->is_empty()) {
             $this->preg_utf8 = $r->preg_utf8;
             $this->preg_raw = $r->preg_raw;
-        } else if (!$r->is_empty()) {
+        } else {
             $this->preg_utf8 .= "|{$r->preg_utf8}";
             if ($r->preg_raw === null) {
                 $this->preg_raw = null;
@@ -338,9 +359,8 @@ class Text {
             return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
                 . str_replace(" ", $sp, preg_quote($word))
                 . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
-        } else {
-            return self::utf8_word_regex(convert_to_utf8($word));
         }
+        return self::utf8_word_regex(convert_to_utf8($word));
     }
 
     /** @param string $word
@@ -373,9 +393,10 @@ class Text {
     /** @param ?TextPregexes $reg
      * @param string $text
      * @param ?string $deaccented_text
-     * @return bool */
+     * @return bool
+     * @deprecated */
     static function match_pregexes($reg, $text, $deaccented_text) {
-        return $reg && $reg->match($text, $deaccented_text);
+        return $reg && $reg->match_da($text, $deaccented_text);
     }
 
 

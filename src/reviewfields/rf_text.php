@@ -25,7 +25,7 @@ class Text_ReviewFieldSearch extends ReviewFieldSearch {
     function test_value($rrow, $fv) {
         if ($fv !== null
             && $fv !== ""
-            && $rrow->field_match_pregexes($this->preg, $this->rf->order)) {
+            && $this->preg->match($rrow->fields[$this->rf->order])) {
             return true;
         }
         if (($this->op & CountMatcher::RELALL) !== 0 && $fv !== null) {

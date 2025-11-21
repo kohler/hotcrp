@@ -747,8 +747,6 @@ class PaperInfo {
     private $_flags = 0;
     /** @var ?SubmissionRound */
     private $_submission_round;
-    /** @var ?array<string,string> */
-    private $_deaccents;
     /** @var ?list<Author> */
     private $_author_array;
     /** @var ?list<PaperConflictInfo> */
@@ -1227,7 +1225,6 @@ class PaperInfo {
         }
         $this->$prop = $v;
         // clear caches, sometimes conservatively
-        $this->_deaccents = null;
         if ($prop === "authorInformation") {
             $this->_author_array = $this->_ctype_list = null;
         } else if ($prop === "collaborators") {
@@ -1605,7 +1602,7 @@ class PaperInfo {
         }
         $auproblems = 0;
         $pcs = [];
-        if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
+        if ($user->aucollab_general_pregexes()->match($this->authorInformation)) {
             foreach ($this->author_list() as $au) {
                 foreach ($user->aucollab_matchers() as $userm) {
                     if (($why = $userm->test($au, $userm->is_nonauthor()))) {
@@ -1617,7 +1614,7 @@ class PaperInfo {
         }
         $userm = $user->full_matcher();
         $collab = $this->full_collaborators();
-        if (Text::match_pregexes($userm->general_pregexes(), $collab, UnicodeHelper::deaccent($collab))) {
+        if ($userm->general_pregexes()->match($collab)) {
             foreach ($this->collaborator_list() as $co) {
                 if (($co->lastName !== ""
                      || ($auproblems & AuthorMatcher::MATCH_AFFILIATION) === 0)
@@ -1715,26 +1712,12 @@ class PaperInfo {
     }
 
 
-    /** @param 'title'|'abstract'|'authorInformation'|'collaborators' $field
-     * @return ?string */
-    private function deaccented_field($field) {
-        $this->_deaccents = $this->_deaccents ?? [];
-        if (!array_key_exists($field, $this->_deaccents)) {
-            $str = $this->{$field}();
-            if ($str !== "" && !is_usascii($str)) {
-                $this->_deaccents[$field] = UnicodeHelper::deaccent($str);
-            } else {
-                $this->_deaccents[$field] = null;
-            }
-        }
-        return $this->_deaccents[$field];
-    }
-
     /** @param TextPregexes $reg
      * @param 'title'|'abstract'|'authorInformation'|'collaborators' $field
-     * @return bool */
+     * @return bool
+     * @deprecated */
     function field_match_pregexes($reg, $field) {
-        return Text::match_pregexes($reg, $this->{$field}(), $this->deaccented_field($field));
+        return $reg->match($this->{$field}());
     }
 
 
