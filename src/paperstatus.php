@@ -999,7 +999,9 @@ final class PaperStatus extends MessageSet {
             && $ctype >= CONFLICT_AUTHOR
             && strcasecmp($au->email, $this->user->email) === 0) {
             $this->user->ensure_account_here();
-            $uu = $this->conf->user_by_email($au->email, USER_SLICE);
+            if ($this->user->contactId > 0) {
+                $uu = $this->user;
+            }
         }
         if (!$uu && $ctype >= CONFLICT_AUTHOR) {
             $j = $au->unparse_nea_json();
@@ -1009,13 +1011,10 @@ final class PaperStatus extends MessageSet {
         if (!$uu) {
             return null;
         }
-        if ($uu->is_placeholder()) {
-            foreach (["firstName", "lastName", "affiliation"] as $nprop) {
-                if ($au->$nprop !== ""
-                    && ($uu->$nprop === "" || $ctype >= CONFLICT_CONTACTAUTHOR)) {
-                    $uu->set_prop($nprop, $au->$nprop);
-                }
-            }
+        if ($uu->is_placeholder() || $uu === $this->user) {
+            $uu->set_prop("firstName", $au->firstName, 2);
+            $uu->set_prop("lastName", $au->lastName, 2);
+            $uu->set_prop("affiliation", $au->affiliation, 2);
             $uu->save_prop();
         }
         return $uu;

@@ -548,7 +548,7 @@ concerns.
 - Testconf I Submissions
 http://hotcrp.lcdf.org/test
 ******** withdraw-16-admin-notify
-To: "Jeffrey C. Mogul" <mogul@wrl.dec.com>, "A. Feldmann" <anja@research.att.com>, Balachander Krishnamurthy <bala@research.att.com>
+To: "Jeffrey C. Mogul" <mogul@wrl.dec.com>, Anja Feldmann <anja@research.att.com>, Balachander Krishnamurthy <bala@research.att.com>
 Subject: [Testconf I] Withdrawn submission #16 "Potential Benefits of Delta
  Encoding and..."
 X-Landmark: test/test01.php:8
@@ -1512,7 +1512,7 @@ concerns.
 - Testconf I Submissions
 http://hotcrp.lcdf.org/test
 ******** t_mailer-send-1
-To: "A. Feldmann" <anja@research.att.com>, Balachander Krishnamurthy <bala@research.att.com>, "Jeffrey C. Mogul" <mogul@wrl.dec.com>
+To: Anja Feldmann <anja@research.att.com>, Balachander Krishnamurthy <bala@research.att.com>, "Jeffrey C. Mogul" <mogul@wrl.dec.com>
 Subject: [Testconf I] Submission #16 "Potential Benefits of Delta Encoding
  and..."
 X-Landmark: test/t_mailer.php:25
