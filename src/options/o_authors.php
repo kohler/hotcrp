@@ -178,13 +178,7 @@ class Authors_PaperOption extends PaperOption {
     static private function expand_author(Author $au, PaperInfo $prow) {
         if ($au->email !== ""
             && ($aux = $prow->author_by_email($au->email))) {
-            if ($au->firstName === "" && $au->lastName === "") {
-                $au->firstName = $aux->firstName;
-                $au->lastName = $aux->lastName;
-            }
-            if ($au->affiliation === "") {
-                $au->affiliation = $aux->affiliation;
-            }
+            $au->merge($aux);
         }
     }
     /** @param list<Author> $authors
@@ -208,26 +202,28 @@ class Authors_PaperOption extends PaperOption {
             if ($email === null && $name === null && $aff === null) {
                 break;
             }
-            $auth = new Author;
+            $auf = $aul = $aue = $aua = "";
             $name = simplify_whitespace($name ?? "");
             if ($name !== "" && $name !== "Name") {
-                list($auth->firstName, $auth->lastName, $auth->email) = Text::split_name($name, true);
+                list($auf, $aul, $aue) = Text::split_name($name, true);
             }
             $email = simplify_whitespace($email ?? "");
             if ($email !== "" && $email !== "Email") {
-                $auth->email = $email;
+                $aue = $email;
             }
             $aff = simplify_whitespace($aff ?? "");
             if ($aff !== "" && $aff !== "Affiliation") {
-                $auth->affiliation = $aff;
+                $aua = $aff;
             }
             // some people enter email in the affiliation slot
             if (strpos($aff, "@") !== false
                 && validate_email($aff)
-                && !validate_email($auth->email)) {
-                $auth->affiliation = $auth->email;
-                $auth->email = $aff;
+                && !validate_email($aue)) {
+                $tmp = $aue;
+                $aue = $aua;
+                $aua = $tmp;
             }
+            $auth = Author::make_nae($auf, $aul, $aue, $aua);
             self::expand_author($auth, $prow);
             $authors[] = $auth;
         }
@@ -295,7 +291,7 @@ class Authors_PaperOption extends PaperOption {
             && !$au
             && !$pt->user->can_administer($pt->prow)
             && (!$reqau || $reqau->nea_equals($pt->user->populated_user()))) {
-            $reqau = new Author($pt->user->populated_user());
+            $reqau = Author::make_user($pt->user->populated_user());
             $ignore_diff = true;
         }
 

@@ -18,14 +18,19 @@ class AuthorMatcher extends Author {
 
     private static $wordinfo;
 
-    function __construct($x = null, $status = null) {
-        parent::__construct($x, $status);
-    }
-
-    /** @param object $x
-     * @return AuthorMatcher */
+    /** @param Author|AuthorMatcher $x
+     * @return AuthorMatcher
+     * @suppress PhanAccessReadOnlyProperty */
     static function make($x) {
-        return $x instanceof AuthorMatcher ? $x : new AuthorMatcher($x);
+        if ($x instanceof AuthorMatcher) {
+            return $x;
+        }
+        $m = new AuthorMatcher;
+        $m->firstName = $x->firstName;
+        $m->lastName = $x->lastName;
+        $m->email = $x->email;
+        $m->affiliation = $x->affiliation;
+        return $m;
     }
 
     /** @return AuthorMatcher */
@@ -35,10 +40,20 @@ class AuthorMatcher extends Author {
         return $m;
     }
 
-    /** @return AuthorMatcher */
+    /** @return AuthorMatcher
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_affiliation($x) {
         $m = new AuthorMatcher;
         $m->affiliation = (string) $x;
+        return $m;
+    }
+
+    /** @param Contact $u
+     * @param ?int $status
+     * @return AuthorMatcher */
+    static function make_user($u, $status = null) {
+        $m = new AuthorMatcher;
+        $m->assign_user($u, $status);
         return $m;
     }
 

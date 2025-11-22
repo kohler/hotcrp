@@ -282,6 +282,7 @@ class CheckInvariants_Batch {
             where reviewType>0 and reviewType!=" . REVIEW_SECONDARY);
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     private function fix_whitespace() {
         $result = $this->conf->qe("select * from ContactInfo");
         $mq = Dbl::make_multi_qe_stager($this->conf->dblink);

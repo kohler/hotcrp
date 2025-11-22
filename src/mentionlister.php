@@ -88,8 +88,7 @@ class MentionLister {
             }
             if ($rrow->reviewOrdinal
                 && $user->can_view_review($prow, $rrow)) {
-                $au = new Author;
-                $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+                $au = Author::make_last("Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal));
                 $au->contactId = $rrow->contactId;
                 $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
                 $rlist[] = $au;
@@ -109,8 +108,7 @@ class MentionLister {
     /** @param PaperInfo $prow
      * @param Contact $user */
     private function add_shepherd($prow, $user) {
-        $au = new Author;
-        $au->lastName = "Shepherd";
+        $au = Author::make_last("Shepherd");
         $au->contactId = $prow->shepherdContactId;
         $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
         $this->lists["reviewers"][] = $au;

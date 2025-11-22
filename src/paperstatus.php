@@ -1364,7 +1364,7 @@ final class PaperStatus extends MessageSet {
             }
             if ($opt->id === PaperOption::AUTHORSID
                 && (!$this->prow->authorInformation
-                    || $this->prow->authorInformation === (new Author($this->user))->unparse_tabbed())) {
+                    || $this->prow->authorInformation === Author::make_user($this->user)->unparse_tabbed())) {
                 continue;
             }
             return false;

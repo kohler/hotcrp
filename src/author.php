@@ -3,13 +3,16 @@
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Author {
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $firstName = "";
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $lastName = "";
     /** @var string */
     public $email = "";
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $affiliation = "";
     /** @var ?string */
     private $_name;
@@ -37,23 +40,10 @@ class Author {
     const COLLABORATORS_INDEX = -200;
     const UNINITIALIZED_INDEX = -400; // see also PaperConflictInfo
 
-    /** @param null|string|object $x
-     * @param null|1|2|3|4|5 $status */
-    function __construct($x = null, $status = null) {
-        if (is_object($x)) {
-            $this->firstName = $x->firstName;
-            $this->lastName = $x->lastName;
-            $this->email = $x->email;
-            $this->affiliation = $x->affiliation;
-        } else if ($x !== null && $x !== "") {
-            $this->assign_string($x);
-        }
-        $this->status = $status;
-    }
-
     /** @param string $s
      * @param ?int $author_index
-     * @return Author */
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_tabbed($s, $author_index = null) {
         $au = new Author;
         $w = explode("\t", $s);
@@ -89,21 +79,45 @@ class Author {
         return $au;
     }
 
+    /** @param string $last
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
+    static function make_last($last) {
+        $au = new Author;
+        $au->lastName = $last;
+        return $au;
+    }
+
     /** @param string $email
-     * @return Author */
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_email($email) {
         $au = new Author;
         $au->email = $email;
         return $au;
     }
 
+    /** @param string $first
+     * @param string $last
+     * @param string $email
+     * @param string $aff
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
+    static function make_nae($first, $last, $email, $aff) {
+        $au = new Author;
+        $au->firstName = $first;
+        $au->lastName = $last;
+        $au->email = $email;
+        $au->affiliation = $aff;
+        return $au;
+    }
+
     /** @param Contact $u
+     * @param ?int $status
      * @return Author */
-    static function make_user($u) {
-        $au = new Author($u);
-        $au->contactId = $u->contactId;
-        $au->roles = $u->roles;
-        $au->disablement = $u->disabled_flags();
+    static function make_user($u, $status = null) {
+        $au = new Author;
+        $au->assign_user($u, $status);
         return $au;
     }
 
@@ -116,7 +130,8 @@ class Author {
         return $au;
     }
 
-    /** @param Author|Contact $o */
+    /** @param Author|Contact $o
+     * @suppress PhanAccessReadOnlyProperty */
     function merge($o) {
         if ($this->email === "") {
             $this->email = $o->email;
@@ -132,7 +147,8 @@ class Author {
         $this->_deaccents = null;
     }
 
-    /** @param string $s */
+    /** @param string $s
+     * @suppress PhanAccessReadOnlyProperty */
     function assign_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
             if (preg_match('/\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:%]).*)\z/', $s, $m, 0, $paren + 1)) {
@@ -159,7 +175,8 @@ class Author {
         $this->_name = $this->email === null ? trim($s) : null;
     }
 
-    /** @param string $s */
+    /** @param string $s
+     * @suppress PhanAccessReadOnlyProperty */
     function assign_string_guess($s) {
         $hash = strpos($s, "#");
         $pct = strpos($s, "%");
@@ -187,7 +204,8 @@ class Author {
         }
     }
 
-    /** @param object|array<string,mixed> $x */
+    /** @param object|array<string,mixed> $x
+     * @suppress PhanAccessReadOnlyProperty */
     function assign_keyed($x) {
         if (!is_object($x) && !is_array($x)) {
             throw new Exception("invalid Author::make_keyed");
@@ -206,21 +224,24 @@ class Author {
             }
             $e = $e ?? $ee;
         }
-        $this->firstName = $f ?? "";
-        $this->lastName = $l ?? "";
+        $this->firstName = simplify_whitespace($f ?? "");
+        $this->lastName = simplify_whitespace($l ?? "");
         $this->email = $e ?? "";
-        $this->affiliation = $a ?? "";
+        $this->affiliation = simplify_whitespace($a ?? "");
     }
 
-    /** @return $this */
-    function simplify_whitespace() {
-        $this->firstName = simplify_whitespace($this->firstName);
-        $this->lastName = simplify_whitespace($this->lastName);
-        $this->affiliation = simplify_whitespace($this->affiliation);
-        if ($this->_name !== null) {
-            $this->_name = simplify_whitespace($this->_name);
-        }
-        return $this;
+    /** @param Contact $u
+     * @param ?int $status
+     * @suppress PhanAccessReadOnlyProperty */
+    function assign_user($u, $status = null) {
+        $this->firstName = $u->firstName;
+        $this->lastName = $u->lastName;
+        $this->email = $u->email;
+        $this->affiliation = $u->affiliation;
+        $this->contactId = $u->contactId;
+        $this->roles = $u->roles;
+        $this->disablement = $u->disabled_flags();
+        $this->status = $status;
     }
 
     /** @param string $s

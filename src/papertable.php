@@ -1022,11 +1022,10 @@ class PaperTable {
                 if ($au->email === "") {
                     $au->email = $u->email;
                 }
+                $au->contactId = $u->contactId;
             } else {
-                $au = $contacts[] = new Author($u);
-                $au->status = Author::STATUS_NONAUTHOR;
+                $contacts[] = Author::make_user($u, Author::STATUS_NONAUTHOR);
             }
-            $au->contactId = $u->contactId;
         }
 
         usort($contacts, $this->conf->user_comparator());

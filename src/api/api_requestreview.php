@@ -105,7 +105,7 @@ class RequestReview_API {
                 "name" => $qreq->name,
                 "affiliation" => $qreq->affiliation,
                 "email" => $pemail
-            ])->simplify_whitespace();
+            ]);
             $xreviewer = Contact::make_keyed($user->conf, $name_args->unparse_nea_json());
         }
 
