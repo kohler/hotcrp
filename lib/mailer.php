@@ -95,13 +95,6 @@ class Mailer {
             $r->email = $contact->preferredEmail;
         }
 
-        // maybe infer username
-        if ($r->firstName === ""
-            && $r->lastName === ""
-            && $r->email !== "") {
-            $this->infer_user_name($r, $contact);
-        }
-
         $flags = $this->context === self::CONTEXT_EMAIL ? NAME_MAILQUOTE : 0;
         if ($r->email !== "") {
             $email = $r->email;
@@ -126,11 +119,6 @@ class Mailer {
         } else {
             return "";
         }
-    }
-
-    /** @param Author $r
-     * @param Contact|Author $contact */
-    function infer_user_name($r, $contact) {
     }
 
 

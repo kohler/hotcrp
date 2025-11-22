@@ -255,24 +255,6 @@ class HotCRPMailer extends Mailer {
     }
 
 
-    function infer_user_name($r, $contact) {
-        // If user hasn't entered a name, try to infer it from author records
-        if ($this->row && $this->row->paperId > 0) {
-            $e1 = $contact->email ?? "";
-            $e2 = $contact->preferredEmail ?? "";
-            foreach ($this->row->author_list() as $au) {
-                if (($au->firstName !== "" || $au->lastName !== "")
-                    && $au->email !== ""
-                    && (strcasecmp($au->email, $e1) === 0
-                        || strcasecmp($au->email, $e2) === 0)) {
-                    $r->firstName = $au->firstName;
-                    $r->lastName = $au->lastName;
-                    return;
-                }
-            }
-        }
-    }
-
     private function guess_reviewdeadline() {
         if ($this->rrow) {
             return $this->rrow->deadline_name();
