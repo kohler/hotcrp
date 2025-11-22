@@ -411,7 +411,7 @@ class CheckInvariants_Batch {
     }
 
     private function fix_unnamed_authors() {
-        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . " from ContactInfo where firstName='' and lastName='' and affiliation='' and exists (select * from PaperConflict pc where pc.contactId=ContactInfo.contactId and (pc.conflictType&" . CONFLICT_AUTHOR . ")!=0)");
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields(0) . " from ContactInfo where firstName='' and lastName='' and affiliation='' and exists (select * from PaperConflict pc where pc.contactId=ContactInfo.contactId and (pc.conflictType&" . CONFLICT_AUTHOR . ")!=0)");
         while (($user = Contact::fetch($result, $this->conf))) {
             if (($cdbu = $user->cdb_user())) {
                 $user->set_prop("firstName", $cdbu->firstName, 2);

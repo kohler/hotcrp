@@ -2460,7 +2460,7 @@ class Conf {
                 $u->_slice = 0;
             }
         } else if ($this->_user_cache !== null
-                   && $u === $this->_user_cache[$u->contactId]
+                   && $u === ($this->_user_cache[$u->contactId] ?? null)
                    && $this->_slice !== 0) {
             // assume we'll need to unslice all cached users (likely the PC)
             $result = $this->qe("select * from ContactInfo where contactId?a", array_keys($this->_user_cache));
