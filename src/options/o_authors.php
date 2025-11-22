@@ -25,7 +25,7 @@ class Authors_PaperOption extends PaperOption {
         $au = [];
         foreach (self::author_list($ov) as $auth) {
             $au[] = $j = (object) $auth->unparse_nea_json();
-            if ($auth->email !== ""
+            if (validate_email($auth->email)
                 && in_array(strtolower($auth->email), $lemails, true)) {
                 $j->contact = true;
             }
@@ -167,7 +167,7 @@ class Authors_PaperOption extends PaperOption {
     function value_save_conflict_values(PaperValue $ov, PaperStatus $ps) {
         $ps->clear_conflict_values(CONFLICT_AUTHOR);
         foreach (self::author_list($ov) as $i => $auth) {
-            if ($auth->email !== "") {
+            if (validate_email($auth->email)) {
                 $cflags = CONFLICT_AUTHOR
                     | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
                 $ps->update_conflict_value($auth, $cflags, $cflags);
@@ -250,7 +250,7 @@ class Authors_PaperOption extends PaperOption {
             }
             self::expand_author($auth, $prow);
             $authors[] = $auth;
-            if ($contact && $auth->email !== "") {
+            if ($contact && validate_email($auth->email)) {
                 $cemail[] = $auth->email;
             }
         }
@@ -373,11 +373,9 @@ class Authors_PaperOption extends PaperOption {
         $names = ["<ul class=\"x namelist\">"];
         foreach (self::author_list($ov) as $au) {
             $n = htmlspecialchars(trim("{$au->firstName} {$au->lastName}"));
-            if ($au->email !== "") {
-                $ehtml = htmlspecialchars($au->email);
-                $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$ehtml}</a>&gt;";
-            } else {
-                $e = "";
+            $e = htmlspecialchars($au->email);
+            if ($e !== "") {
+                $e = "&lt;<a href=\"mailto:{$e}\" class=\"q\">{$e}</a>&gt;";
             }
             $t = ($n === "" ? $e : $n);
             if ($au->affiliation !== "") {
