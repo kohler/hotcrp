@@ -427,8 +427,9 @@ class CheckInvariants_Batch {
             }
             if ($user->prop_changed()) {
                 fwrite(STDERR, ". {$user->email}: {$user->firstName} {$user->lastName} ({$user->affiliation})\n");
+                $user->save_prop();
+                $user->export_prop(1);
             }
-            $user->save_prop();
         }
         $result->close();
     }

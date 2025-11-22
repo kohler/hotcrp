@@ -1859,6 +1859,10 @@ Phil Porras.");
         xassert_eqq($u_agnes->firstName, "");
         xassert_eqq($u_agnes->lastName, "");
         xassert_eqq($u_agnes->affiliation, "");
+
+        $cdb_agnes = $this->conf->cdb_user_by_email("agnes@martin.ca");
+        xassert(!$cdb_agnes || $cdb_agnes->firstName === "");
+
         $ps = new PaperStatus($u_agnes);
         $ps->save_paper_web(new Qrequest("POST", [
             "title" => "I Love the Whole World",
@@ -1869,6 +1873,7 @@ Phil Porras.");
             "authors:1:affiliation" => "Taos Institute"
         ]), null);
         xassert_paper_status($ps);
+
         xassert_eqq($u_agnes->firstName, "Agnes");
         xassert_eqq($u_agnes->lastName, "Martin");
         xassert_eqq($u_agnes->affiliation, "Taos Institute");
@@ -1876,6 +1881,8 @@ Phil Porras.");
         xassert_eqq($u_agnes->firstName, "Agnes");
         xassert_eqq($u_agnes->lastName, "Martin");
         xassert_eqq($u_agnes->affiliation, "Taos Institute");
+        $cdb_agnes = $this->conf->fresh_cdb_user_by_email("agnes@martin.ca");
+        xassert(!$cdb_agnes || $cdb_agnes->firstName === "Agnes");
     }
 
     function test_invariants_last() {

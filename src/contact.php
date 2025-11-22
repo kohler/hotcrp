@@ -2321,6 +2321,14 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @param 0|1|2 $ifempty */
+    function export_prop($ifempty) {
+        if (($cdbu = $this->cdb_user())) {
+            $cdbu->import_prop($this, $ifempty);
+            $cdbu->save_prop();
+        }
+    }
+
     /** @param int $flags
      * @param ?Contact $actor
      * @return ?Contact */

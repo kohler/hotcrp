@@ -1015,7 +1015,10 @@ final class PaperStatus extends MessageSet {
             $uu->set_prop("firstName", $au->firstName, 2);
             $uu->set_prop("lastName", $au->lastName, 2);
             $uu->set_prop("affiliation", $au->affiliation, 2);
-            $uu->save_prop();
+            if ($uu->prop_changed()) {
+                $uu->save_prop();
+                $uu->export_prop(1);
+            }
         }
         return $uu;
     }
