@@ -228,6 +228,10 @@ class CheckInvariants_Batch {
             $this->fix_author_conflicts();
             $ic->resolve_problem("author_conflicts");
         }
+        if ($this->want_fix("unnamed_authors")) {
+            $this->report_fix("unnamed_authors");
+            $this->fix_unnamed_authors();
+        }
         return $ic->ok() ? 0 : 1;
     }
 
@@ -404,6 +408,29 @@ class CheckInvariants_Batch {
                 on duplicate key update conflictType=conflictType|?",
                 $ins, CONFLICT_CONTACTAUTHOR);
         }
+    }
+
+    private function fix_unnamed_authors() {
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . " from ContactInfo where firstName='' and lastName='' and affiliation='' and exists (select * from PaperConflict pc where pc.contactId=ContactInfo.contactId and (pc.conflictType&" . CONFLICT_AUTHOR . ")!=0)");
+        while (($user = Contact::fetch($result, $this->conf))) {
+            if (($cdbu = $user->cdb_user())) {
+                $user->set_prop("firstName", $cdbu->firstName, 2);
+                $user->set_prop("lastName", $cdbu->lastName, 2);
+                $user->set_prop("affiliation", $cdbu->affiliation, 2);
+            }
+            foreach ($user->authored_papers() as $prow) {
+                if (($au = $prow->author_by_email($user->email))) {
+                    $user->set_prop("firstName", $au->firstName, 2);
+                    $user->set_prop("lastName", $au->lastName, 2);
+                    $user->set_prop("affiliation", $au->affiliation, 2);
+                }
+            }
+            if ($user->prop_changed()) {
+                fwrite(STDERR, ". {$user->email}: {$user->firstName} {$user->lastName} ({$user->affiliation})\n");
+            }
+            $user->save_prop();
+        }
+        $result->close();
     }
 
     static function list_fixes() {
