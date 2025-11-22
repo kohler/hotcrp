@@ -152,17 +152,20 @@ class MailChecker {
                 $have = $haves[$index];
                 $havel = explode("\n", $have);
                 $wantl = explode("\n", $wtext);
-                $ml = [
-                    "Mail mismatch\n",
-                    "... line {$badline} differs near {$havel[$badline-1]}\n",
-                    "... expected {$wantl[$badline-1]}\n",
-                    "... ", str_replace("\n", "\n    ", rtrim($have)),
-                    "\n!== ", str_replace("\n", "\n    ", rtrim($wtext)), "\n"
-                ];
-                if (is_object($want) && isset($want->landmark)) {
-                    $ml[] =  "... expected mail at {$want->landmark}\n";
-                }
-                Xassert::fail_with(...$ml);
+                $color = Xassert::$test_runner && Xassert::$test_runner->color;
+                Xassert::fail_with(
+                    "Mail mismatch at line {$badline}\n",
+                    "  expected {$wantl[$badline-1]}\n",
+                    is_object($want) && isset($want->landmark)
+                    ? "        at {$want->landmark}\n" : "",
+                    "       got {$havel[$badline-1]}\n",
+                    $color ? "\x1b[90m" : "",
+                    "  expected ",
+                    str_replace("\n", "\n           ", rtrim($have)),
+                    "\n       got ",
+                    str_replace("\n", "\n           ", rtrim($wtext)),
+                    $color ? "\x1b[m\n" : "\n"
+                );
             } else {
                 Xassert::fail_with("mail not found `{$wtext}`");
             }
