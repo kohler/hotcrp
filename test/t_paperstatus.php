@@ -1854,6 +1854,30 @@ Phil Porras.");
         xassert_lt($ntries, 20);
     }
 
+    function test_adopt_author_nea() {
+        $u_agnes = Contact::make_email($this->conf, "agnes@martin.ca")->store();
+        xassert_eqq($u_agnes->firstName, "");
+        xassert_eqq($u_agnes->lastName, "");
+        xassert_eqq($u_agnes->affiliation, "");
+        $ps = new PaperStatus($u_agnes);
+        $ps->save_paper_web(new Qrequest("POST", [
+            "title" => "I Love the Whole World",
+            "abstract" => "Beauty and perfection are the same. They never occur without happiness.",
+            "has_authors" => "1",
+            "authors:1:name" => "Agnes Martin",
+            "authors:1:email" => "agnes@martin.ca",
+            "authors:1:affiliation" => "Taos Institute"
+        ]), null);
+        xassert_paper_status($ps);
+        xassert_eqq($u_agnes->firstName, "Agnes");
+        xassert_eqq($u_agnes->lastName, "Martin");
+        xassert_eqq($u_agnes->affiliation, "Taos Institute");
+        $u_agnes = $this->conf->fresh_user_by_email("agnes@martin.ca");
+        xassert_eqq($u_agnes->firstName, "Agnes");
+        xassert_eqq($u_agnes->lastName, "Martin");
+        xassert_eqq($u_agnes->affiliation, "Taos Institute");
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
