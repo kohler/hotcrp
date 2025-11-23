@@ -4918,6 +4918,7 @@ function dropmenu_events(emenu) {
     emenu.addEventListener("mouseover", dropmenu_mouseover);
     emenu.addEventListener("keydown", dropmenu_keydown);
     emenu.addEventListener("focusout", dropmenu_focusout);
+    emenu.tabIndex = -1;
 }
 
 function dropmenu_focus(emenu, which) {
