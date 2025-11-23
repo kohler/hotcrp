@@ -572,6 +572,13 @@ class ConfInvariants {
                 $this->invariant_error("user_whitespace", "user {$u->email}/{$u->contactId} has invalid whitespace");
             }
 
+            // expected neanonascii
+            $nonascii = is_usascii($u->firstName . $u->lastName . $u->affiliation)
+                ? 0 : Contact::CF_NEANONASCII;
+            if (($u->cflags & Contact::CF_NEANONASCII) !== $nonascii) {
+                $this->invariant_error("user_nonascii", sprintf("user {$u->email}/{$u->contactId} has incorrect nonascii cflag %x", $u->cflags & Contact::CF_NEANONASCII));
+            }
+
             // roles have only expected bits
             if (($u->roles & ~Contact::ROLE_DBMASK) !== 0) {
                 $this->invariant_error("roles", "user {$u->email} has funky roles {$u->roles}");
