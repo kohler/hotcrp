@@ -59,6 +59,18 @@ class TextPregexes {
         return !!preg_match("{{$this->preg_raw}}i", $text);
     }
 
+    /** @param string $text
+     * @param bool $isna
+     * @return bool */
+    function match_isna($text, $isna) {
+        if ($this->preg_raw === null) {
+            return !!preg_match("{{$this->preg_utf8}}ui", $text);
+        } else if ($isna) {
+            return !!preg_match("{{$this->preg_utf8}}ui", UnicodeHelper::deaccent($text));
+        }
+        return !!preg_match("{{$this->preg_raw}}i", $text);
+    }
+
     function add_matches(TextPregexes $r) {
         if ($r->is_empty()) {
             // do nothing

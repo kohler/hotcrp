@@ -16,14 +16,12 @@ class Author {
     public $affiliation = "";
     /** @var ?string */
     private $_name;
-    /** @var null|Author|array{string,string,string} */
-    private $_deaccents;
     /** @var ?int */
     public $contactId;
     /** @var int */
     public $roles = 0;
     /** @var int */
-    private $disablement = 0;
+    private $cflags = 0;
     /** @var ?int */
     public $conflictType;
     /** @var ?int */
@@ -52,6 +50,7 @@ class Author {
         $au->email = $w[2] ?? "";
         $au->affiliation = $w[3] ?? "";
         $au->author_index = $author_index;
+        $au->seal_nea();
         return $au;
     }
 
@@ -85,6 +84,7 @@ class Author {
     static function make_last($last) {
         $au = new Author;
         $au->lastName = $last;
+        $au->seal_nea();
         return $au;
     }
 
@@ -109,6 +109,7 @@ class Author {
         $au->lastName = $last;
         $au->email = $email;
         $au->affiliation = $aff;
+        $au->seal_nea();
         return $au;
     }
 
@@ -121,18 +122,23 @@ class Author {
         return $au;
     }
 
+    protected function seal_nea() {
+        $nonascii = is_usascii($this->firstName . $this->lastName . $this->affiliation)
+            ? 0 : Contact::CF_NEANONASCII;
+        if (($this->cflags & Contact::CF_NEANONASCII) !== $nonascii) {
+            $this->cflags = ($this->cflags & ~Contact::CF_NEANONASCII) | $nonascii;
+        }
+    }
+
     /** @return $this */
     function copy() {
-        $au = clone $this;
-        if (!is_object($this->_deaccents)) {
-            $au->_deaccents = $this;
-        }
-        return $au;
+        return clone $this;
     }
 
     /** @param Author|Contact $o
      * @suppress PhanAccessReadOnlyProperty */
     function merge($o) {
+        $need_seal = false;
         if ($this->email === "") {
             $this->email = $o->email;
         }
@@ -140,11 +146,15 @@ class Author {
             $this->firstName = $o->firstName;
             $this->lastName = $o->lastName;
             $this->_name = null;
+            $need_seal = true;
         }
         if ($this->affiliation === "") {
             $this->affiliation = $o->affiliation;
+            $need_seal = true;
         }
-        $this->_deaccents = null;
+        if ($need_seal) {
+            $this->seal_nea();
+        }
     }
 
     /** @param string $s
@@ -173,6 +183,7 @@ class Author {
             list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
         }
         $this->_name = $this->email === null ? trim($s) : null;
+        $this->seal_nea();
     }
 
     /** @param string $s
@@ -202,6 +213,7 @@ class Author {
                 $this->affiliation = $s;
             }
         }
+        $this->seal_nea();
     }
 
     /** @param object|array<string,mixed> $x
@@ -228,6 +240,7 @@ class Author {
         $this->lastName = simplify_whitespace($l ?? "");
         $this->email = $e ?? "";
         $this->affiliation = simplify_whitespace($a ?? "");
+        $this->seal_nea();
     }
 
     /** @param Contact $u
@@ -240,7 +253,7 @@ class Author {
         $this->affiliation = $u->affiliation;
         $this->contactId = $u->contactId;
         $this->roles = $u->roles;
-        $this->disablement = $u->disabled_flags();
+        $this->cflags = $u->cflags;
         $this->status = $status;
     }
 
@@ -284,20 +297,19 @@ class Author {
         return $name;
     }
 
-    /** @param 0|1|2 $component
+    /** @return bool */
+    function is_nea_nonascii() {
+        return ($this->cflags & Contact::CF_NEANONASCII) !== 0;
+    }
+
+    /** @param 'firstName'|'lastName'|'affiliation' $key
      * @return string */
-    function deaccent($component) {
-        if (is_object($this->_deaccents)) {
-            return $this->_deaccents->deaccent($component);
+    function searchable_nea($key) {
+        $s = $this->$key;
+        if (($this->cflags & Contact::CF_NEANONASCII) !== 0) {
+            $s = UnicodeHelper::deaccent($s);
         }
-        if ($this->_deaccents === null) {
-            $this->_deaccents = [
-                strtolower(UnicodeHelper::deaccent($this->firstName)),
-                strtolower(UnicodeHelper::deaccent($this->lastName)),
-                strtolower(UnicodeHelper::deaccent($this->affiliation))
-            ];
-        }
-        return $this->_deaccents[$component];
+        return strtolower($s);
     }
 
     /** @return bool */
@@ -318,12 +330,12 @@ class Author {
 
     /** @return bool */
     function is_placeholder() {
-        return ($this->disablement & Contact::CFM_PLACEHOLDER) === Contact::CF_PLACEHOLDER;
+        return ($this->cflags & Contact::CFM_PLACEHOLDER) === Contact::CF_PLACEHOLDER;
     }
 
     /** @return int */
     function disabled_flags() {
-        return $this->disablement;
+        return $this->cflags & Contact::CFM_DISABLEMENT;
     }
 
     /** @param Author|Contact $x

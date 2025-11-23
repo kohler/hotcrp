@@ -105,7 +105,7 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("Lon Deutsch"), true);
     }
 
-    function test_affiliation_alterates() {
+    function test_affiliation_alternates() {
         $aum = AuthorMatcher::make_string_guess("IBM Watson");
         xassert_eqq(!!$aum->test("Fart (IBM Watson)"), true);
         xassert_eqq(!!$aum->test("Fart (IBM T. J. Watson Research Center)"), true);
