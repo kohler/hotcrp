@@ -263,7 +263,7 @@ class AuthorMatcher extends Author {
 
     const MATCH_NAME = 1;
     const MATCH_AFFILIATION = 2;
-    /** @param string|Author $au
+    /** @param string|Author|Contact $au
      * @return int */
     function test($au, $prefer_name = false) {
         if ($this->general_pregexes_ === false) {

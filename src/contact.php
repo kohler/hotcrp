@@ -1265,6 +1265,21 @@ class Contact implements JsonSerializable {
         return self::make_db_searchable_name($this->firstName, $this->lastName, $this->affiliation);
     }
 
+    /** @return bool */
+    function is_nea_nonascii() {
+        return ($this->cflags & Contact::CF_NEANONASCII) !== 0;
+    }
+
+    /** @param 'firstName'|'lastName'|'affiliation' $key
+     * @return string */
+    function searchable_nea($key) {
+        $s = $this->$key;
+        if (($this->cflags & Contact::CF_NEANONASCII) !== 0) {
+            $s = UnicodeHelper::deaccent($s);
+        }
+        return strtolower($s);
+    }
+
     /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
     function unparse_nea_json() {
         return Author::unparse_nea_json_for($this);
