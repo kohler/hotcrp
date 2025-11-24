@@ -2049,10 +2049,12 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_submission" => 1,
+            "submission/1/id" => "dodanga",
             "submission/1/delete" => "yes"
         ]);
         xassert($sv->execute());
 
         xassert_search($this->u_chair, "#dodanga", "1-10");
+        xassert_assign($this->u_chair, "paper,tag\n1-10,dodanga#clear\n");
     }
 }
