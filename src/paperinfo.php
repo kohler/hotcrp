@@ -1597,10 +1597,8 @@ class PaperInfo {
     /** @return PaperInfoPotentialConflictList */
     private function _potential_conflict(Contact $user) {
         $this->check_rights_version();
-        if (!$this->_potconf) {
-            $this->_potconf = new PaperInfoPotentialConflictList($this);
-        }
-        if ($this->_potconf->user() !== $user) {
+        if (!$this->_potconf || $this->_potconf->user() !== $user) {
+            $this->_potconf = new PaperInfoPotentialConflictList($this, $this->_potconf);
             $this->_potconf->reset($user);
         }
         return $this->_potconf;
@@ -3872,23 +3870,30 @@ class PaperInfoPotentialConflictList {
     /** @var list<int> */
     private $_auindexes;
 
-    /** @param PaperInfo $prow */
-    function __construct($prow) {
+    /** @param PaperInfo $prow
+     * @param ?PaperInfoPotentialConflictList $prev */
+    function __construct($prow, $prev = null) {
         $this->_prow = $prow;
-        $this->_austr = $prow->authorInformation;
-        $aulist = $prow->author_list();
-        foreach ($prow->conflict_list() as $cflt) {
-            if ($cflt->conflictType >= CONFLICT_AUTHOR
-                && $cflt->author_index > 0
-                && $cflt->user
-                && ($au = $aulist[$cflt->author_index - 1])
-                && ($au->firstName !== $cflt->user->firstName
-                    || $au->lastName !== $cflt->user->lastName
-                    || $au->affiliation !== $cflt->user->affiliation)) {
-                $auc = Author::make_user($au);
-                $auc->author_index = $cflt->author_index;
-                $this->_austr .= $auc->name(NAME_A) . "\n";
-                $this->_aucontacts[] = $auc;
+        if ($prev) {
+            assert($this->_prow === $prev->_prow);
+            $this->_austr = $prev->_austr;
+            $this->_aucontacts = $prev->_aucontacts;
+        } else {
+            $this->_austr = $prow->authorInformation;
+            $aulist = $prow->author_list();
+            foreach ($prow->conflict_list() as $cflt) {
+                if ($cflt->conflictType >= CONFLICT_AUTHOR
+                    && $cflt->author_index > 0
+                    && $cflt->user
+                    && ($au = $aulist[$cflt->author_index - 1])
+                    && ($au->firstName !== $cflt->user->firstName
+                        || $au->lastName !== $cflt->user->lastName
+                        || $au->affiliation !== $cflt->user->affiliation)) {
+                    $auc = Author::make_user($au);
+                    $auc->author_index = $cflt->author_index;
+                    $this->_austr .= "\n" . $auc->name(NAME_A);
+                    $this->_aucontacts[] = $auc;
+                }
             }
         }
     }
