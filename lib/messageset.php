@@ -478,15 +478,6 @@ class MessageSet {
 
     /** @param ?string $field
      * @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function msg_at($field, $msg, $status) {
-        return $this->append_item(new MessageItem($status, $field, $msg ?? ""));
-    }
-
-    /** @param ?string $field
-     * @param ?string $msg
      * @return MessageItem */
     function estop_at($field, $msg = null, ...$args) {
         return $this->append_item(new MessageItem(self::ESTOP, $field, $msg, ...$args));
@@ -526,23 +517,6 @@ class MessageSet {
      * @return MessageItem */
     function success($msg, ...$args) {
         return $this->append_item(new MessageItem(self::SUCCESS, null, $msg, ...$args));
-    }
-
-    /** @param int $pos
-     * @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function splice_msg($pos, $msg, $status) {
-        return $this->splice_item($pos, new MessageItem($status, null, $msg));
-    }
-
-    /** @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function prepend_msg($msg, $status) {
-        return $this->splice_item(0, new MessageItem($status, null, $msg));
     }
 
     /** @param MessageItem $mi
