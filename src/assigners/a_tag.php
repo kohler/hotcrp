@@ -156,7 +156,8 @@ class TagAssignmentPiece {
 
         // special values
         if (strcasecmp($xvalue, "none") === 0
-            || strcasecmp($xvalue, "clear") === 0) {
+            || strcasecmp($xvalue, "clear") === 0
+            || strcasecmp($xvalue, "delete") === 0) {
             $this->nvalue = false;
             return true;
         } else if (strcasecmp($xvalue, "next") === 0) {
