@@ -59,14 +59,6 @@ class Sround_Setting {
 class Sround_SettingParser extends SettingParser {
     private $round_transform = [];
 
-    function placeholder(Si $si, SettingValues $sv) {
-        if ($si->name0 === "submission/" && $si->name2 === "/name") {
-            $idv = $sv->vstr("submission/{$si->name1}/id");
-            return ctype_digit($idv) && $idv !== "0" ? "unnamed" : "(new round)";
-        }
-        return null;
-    }
-
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 === "submission/" && $si->name2 === "") {
             $sv->set_oldv($si, new Sround_Setting);
@@ -183,7 +175,30 @@ class Sround_SettingParser extends SettingParser {
             $srj[] = $sr->export_json();
         }
         if ($sv->update("submission_rounds", empty($srj) ? "" : json_encode_db($srj))) {
+            // XXX Automatic tags have weird interactions with submission rounds
+            $sv->request_read_lock("Paper");
+            $sv->request_write_lock("PaperTag");
+            $sv->request_write_lock("PaperTagAnno");
             $sv->request_store_value($si);
+        }
+    }
+
+    function store_value(Si $si, SettingValues $sv) {
+        $assignments = "";
+        foreach ($sv->oblist_nondeleted_keys("submission") as $ctr) {
+            $sr = $sv->newv("submission/{$ctr}");
+            if ($sr->id
+                && $sr->tag !== $sr->id
+                && !$sv->conf->tags()->is_automatic($sr->tag)) {
+                $assignments .= "renametag,ALL,{$sr->id},{$sr->tag},new\n";
+            }
+        }
+        if ($assignments !== "") {
+            $aset = new AssignmentSet($sv->conf->root_user());
+            $aset->set_override_conflicts(true);
+            $aset->set_search_type("all");
+            $aset->parse("action,paper,tag,new_tag,tag_value\n" . $assignments);
+            $aset->execute();
         }
     }
 }

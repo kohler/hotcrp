@@ -469,6 +469,7 @@ class SettingValues extends MessageSet {
     private function decorated_message_list() {
         $lastmi = $prevmi = null;
         $lastloc = [];
+        $this->apply_fmt($this->conf);
         foreach ($this->message_list() as $mi) {
             $mi = clone $mi;
             if ($mi->status === MessageSet::WARNING
@@ -643,6 +644,12 @@ class SettingValues extends MessageSet {
         return $this->req[$name] ?? null;
     }
 
+    /** @param string $name
+     * @return ?bool */
+    function reqstr_boolean($name) {
+        return friendly_boolean($this->req[$name] ?? null);
+    }
+
 
     /** @param string|Si $id
      * @return string */
@@ -713,7 +720,7 @@ class SettingValues extends MessageSet {
             $this->_explicit_newv[$name] = $newv = $oldv ? clone $oldv : null;
             if ($newv) {
                 // skip member parsing if object is deleted (avoid errors)
-                if ($this->_use_req && $this->reqstr("{$name}/delete")) {
+                if ($this->_use_req && $this->reqstr_boolean("{$name}/delete")) {
                     $newv->deleted = true;
                 } else {
                     $this->_object_parsingv[$name] = $newv;
@@ -1001,7 +1008,7 @@ class SettingValues extends MessageSet {
     function oblist_nondeleted_keys($pfx) {
         $ctrs = [];
         foreach ($this->oblist_keys($pfx) as $ctr) {
-            if (!$this->reqstr("{$pfx}/{$ctr}/delete"))
+            if (!$this->reqstr_boolean("{$pfx}/{$ctr}/delete"))
                 $ctrs[] = $ctr;
         }
         return $ctrs;
@@ -1038,7 +1045,7 @@ class SettingValues extends MessageSet {
         }
         assert(is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)));
         $ctr = (int) $ctr;
-        if ($this->reqstr("{$pfx}{$ctr}/delete")) {
+        if ($this->reqstr_boolean("{$pfx}{$ctr}/delete")) {
             return false;
         }
         $oim = $this->swap_ignore_messages(true);
@@ -1046,7 +1053,7 @@ class SettingValues extends MessageSet {
         $v0 = $this->base_parse_req("{$pfx}{$ctr}{$sfx}");
         $badctr = null;
         for ($ctr1 = $ctr + 1; array_key_exists("{$pfx}{$ctr1}/id", $this->req); ++$ctr1) {
-            if (!$this->reqstr("{$pfx}{$ctr1}/delete")
+            if (!$this->reqstr_boolean("{$pfx}{$ctr1}/delete")
                 && ($v1 = $this->base_parse_req("{$pfx}{$ctr1}{$sfx}")) !== null
                 && $v0 !== null
                 && $collator->compare($v0, $v1) === 0) {
@@ -1091,7 +1098,7 @@ class SettingValues extends MessageSet {
         $strs = [];
         $ctrs = [];
         for ($ctr = 1; array_key_exists("{$pfx}{$ctr}/id", $this->req); ++$ctr) {
-            if (!$this->reqstr("{$pfx}{$ctr}/delete")
+            if (!$this->reqstr_boolean("{$pfx}{$ctr}/delete")
                 && ($v = $this->base_parse_req("{$pfx}{$ctr}{$sfx}"))) {
                 $strs[] = $v;
                 $ctrs[] = $ctr;

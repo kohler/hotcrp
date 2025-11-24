@@ -2024,6 +2024,35 @@ class Settings_Tester {
             "decision/1/category" => "accept"
         ]);
         xassert($sv->execute());
-        fwrite(STDERR, $sv->decorated_feedback_text());
+    }
+
+    function test_submission_round() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_submission" => 1,
+            "submission/1/id" => "new",
+            "submission/1/tag" => "dadonga"
+        ]);
+        xassert($sv->execute());
+
+        xassert_assign($this->u_chair, "paper,tag\n1-10,dadonga\n");
+        xassert_search($this->u_chair, "#dadonga", "1-10");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_submission" => 1,
+            "submission/1/id" => "dadonga",
+            "submission/1/tag" => "dodanga"
+        ]);
+        xassert($sv->execute());
+
+        xassert_search($this->u_chair, "#dodanga", "1-10");
+        xassert_search($this->u_chair, "#dadonga", "");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_submission" => 1,
+            "submission/1/delete" => "yes"
+        ]);
+        xassert($sv->execute());
+
+        xassert_search($this->u_chair, "#dodanga", "1-10");
     }
 }
