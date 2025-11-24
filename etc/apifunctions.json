@@ -251,6 +251,12 @@
         "response": "pc ?tags ?sort ?p"
     },
     {
+        "name": "potentialconflicts", "get": true,
+        "function": "PotentialConflicts_API::run",
+        "parameters": "?sclass ?authors ?collaborators ?json",
+        "response": "potential_conflicts"
+    },
+    {
         "name": "reauth", "post": true,
         "function": "Session_API::reauth",
         "parameters": "?confirm ?=reason ?=email ?=password ?=totpcode"
