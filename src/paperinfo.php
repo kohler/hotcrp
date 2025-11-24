@@ -1414,9 +1414,8 @@ class PaperInfo {
                    && !$this->conf->setting("seedec_hideau")
                    && $this->can_author_view_decision()) {
             return 0;  /* not blind to reviewers who can see decision */
-        } else {
-            return 1;  /* blind to any reviewer */
         }
+        return 1;      /* blind to any reviewer */
     }
 
 
@@ -1683,9 +1682,8 @@ class PaperInfo {
             return "Administrator";
         } else if ($rrow) {
             return "Reviewer";
-        } else {
-            return null;
         }
+        return null;
     }
 
 
@@ -1740,9 +1738,8 @@ class PaperInfo {
         if (($this->timeSubmitted <= 0 || !$sr->freeze)
             && $sr->time_update(true)) {
             return 1;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
 
@@ -2146,9 +2143,8 @@ class PaperInfo {
     function viewable_decision(Contact $user) {
         if ($this->outcome === 0 || !$user->can_view_decision($this)) {
             return $this->conf->unspecified_decision;
-        } else {
-            return $this->decision();
         }
+        return $this->decision();
     }
 
     /** @return array{string,string} */
@@ -2815,9 +2811,8 @@ class PaperInfo {
             return null;
         } else if ($n < 0) {
             return $this->review_by_ordinal(-$n);
-        } else {
-            return $this->review_by_id($n);
         }
+        return $this->review_by_id($n);
     }
 
     /** @param int|Contact $u
@@ -2956,9 +2951,8 @@ class PaperInfo {
             return null;
         } else if ($n < 0) {
             return $this->full_review_by_ordinal(-$n);
-        } else {
-            return $this->full_review_by_id($n);
         }
+        return $this->full_review_by_id($n);
     }
 
     /** @return ?ReviewInfo */
@@ -3426,15 +3420,12 @@ class PaperInfo {
         }
 
         usort($crows, function ($a, $b) {
-            if ($a->timeDisplayed != $b->timeDisplayed) {
-                if ($a->timeDisplayed == 0 || $b->timeDisplayed == 0) {
-                    return $a->timeDisplayed == 0 ? 1 : -1;
-                } else {
-                    return $a->timeDisplayed < $b->timeDisplayed ? -1 : 1;
-                }
-            } else {
+            if ($a->timeDisplayed == $b->timeDisplayed) {
                 return $a->commentId < $b->commentId ? -1 : 1;
+            } else if ($a->timeDisplayed == 0 || $b->timeDisplayed == 0) {
+                return $a->timeDisplayed == 0 ? 1 : -1;
             }
+            return $a->timeDisplayed < $b->timeDisplayed ? -1 : 1;
         });
 
         $xrows = [];
@@ -3492,9 +3483,8 @@ class PaperInfo {
                    || isset($b->reviewId)
                    || (($a->commentType | $b->commentType) & CommentInfo::CT_RESPONSE)) {
             return "\n\n\n";
-        } else {
-            return "\n\n";
         }
+        return "\n\n";
     }
 
 
