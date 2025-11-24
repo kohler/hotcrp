@@ -1689,19 +1689,19 @@ Phil Porras.");
         $o1 = $this->conf->options()->find("Submission Type");
         $o2 = $this->conf->options()->find("First Text");
 
-        $ps = new PaperStatus($this->u_estrin);
+        $ps = new PaperStatus($this->u_sally);
         $ps->save_paper_json((object) [
             "id" => "new",
             "title" => "Conditional Field Test",
             "abstract" => "This is my submission",
             "authors" => [
-                (object) ["name" => "Deborah", "email" => $this->u_estrin->email]
+                (object) ["name" => "Deborah", "email" => $this->u_sally->email]
             ],
             "submission_type" => "First",
             "first_text" => "Feck"
         ]);
         xassert_paper_status($ps);
-        $prow = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        $prow = $this->u_sally->checked_paper_by_id($ps->paperId);
         xassert_eqq($prow->title(), "Conditional Field Test");
         xassert_eqq($prow->option($o1)->value, 1);
         xassert_eqq($prow->option($o2)->data(), "Feck");
@@ -1713,7 +1713,7 @@ Phil Porras.");
             "first_text" => "Fick"
         ]);
         xassert_paper_status($ps);
-        $prow = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        $prow = $this->u_sally->checked_paper_by_id($ps->paperId);
         xassert_eqq($prow->title(), "Conditional Field Test");
         xassert_eqq($prow->option($o1)->value, 2);
         xassert_eqq($prow->option($o2)->data(), "Feck");

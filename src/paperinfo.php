@@ -1226,13 +1226,13 @@ class PaperInfo {
         $this->$prop = $v;
         // clear caches, sometimes conservatively
         if ($prop === "authorInformation") {
-            $this->_author_array = $this->_ctype_list = null;
+            $this->_author_array = $this->_ctype_list = $this->_potconf = null;
         } else if ($prop === "collaborators") {
-            $this->_collaborator_array = null;
+            $this->_collaborator_array = $this->_potconf = null;
         } else if ($prop === "topicIds") {
             $this->_topic_array = $this->_topic_interest_score_array = null;
         } else if ($prop === "allConflictType") {
-            $this->_ctype_list = null;
+            $this->_ctype_list = $this->_potconf = null;
         }
     }
 
@@ -3889,7 +3889,7 @@ class PaperInfoPotentialConflictList {
                     && ($au->firstName !== $cflt->user->firstName
                         || $au->lastName !== $cflt->user->lastName
                         || $au->affiliation !== $cflt->user->affiliation)) {
-                    $auc = Author::make_user($au);
+                    $auc = Author::make_user($cflt->user);
                     $auc->author_index = $cflt->author_index;
                     $this->_austr .= "\n" . $auc->name(NAME_A);
                     $this->_aucontacts[] = $auc;
