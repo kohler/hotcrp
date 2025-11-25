@@ -3948,6 +3948,7 @@ class Conf {
         if (is_array($params)) {
             $param = $sep = "";
             foreach ($params as $k => $v) {
+                /* XXX urlencode($k) */
                 if ($v === null || $v === false) {
                     continue;
                 }
@@ -3960,6 +3961,7 @@ class Conf {
                 }
             }
             foreach ($defaults as $k => $v) {
+                /* XXX urlencode($k) */
                 if (!array_key_exists($k, $params)) {
                     $param .= "{$sep}{$k}={$v}";
                     $sep = $amp;
@@ -3967,7 +3969,7 @@ class Conf {
             }
         } else {
             $param = (string) $params;
-            if (($pos = strpos($param, "#"))) {
+            if (($pos = strpos($param, "#")) !== false) {
                 $anchor = substr($param, $pos);
                 $param = substr($param, 0, $pos);
             }
