@@ -11,6 +11,8 @@ class Autoassign_Page {
     public $qreq;
     /** @var SearchSelection */
     public $ssel;
+    /** @var SearchSelection */
+    public $asel;
     /** @var MessageSet */
     public $ms;
     /** @var string */
@@ -55,23 +57,28 @@ class Autoassign_Page {
         if (!isset($qreq->q) || trim($qreq->q) === "(All)") {
             $qreq->q = "";
         }
-        if (isset($qreq->saveassignment)) {
+        if (isset($qreq->has_pap)
+            && !isset($qreq->saveassignment)
+            && (($qreq->prevt ?? $qreq->t) !== $qreq->t
+                || ($qreq->prevq ?? $qreq->q) !== $qreq->q)) {
+            if (isset($qreq->assign)) {
+                $this->conf->warning_msg("<0>Please review the selected submissions now that you have changed the search");
+            }
+            unset($qreq->has_pap, $qreq->assign);
+        }
+        $search = new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q]);
+        if (isset($qreq->asel)) {
+            $this->asel = SearchSelection::make($qreq, $this->user, "asel");
+        } else if (isset($qreq->has_pap) && !isset($qreq->saveassignment)) {
+            $this->asel = SearchSelection::make($qreq, $this->user, "pap");
+        } else {
+            $this->asel = new SearchSelection($search->paper_ids());
+        }
+        $this->asel->reset_default($search);
+        if (isset($qreq->has_pap) && isset($qreq->saveassignment)) {
             $this->ssel = SearchSelection::make($qreq, $this->user, "pap");
         } else {
-            if (isset($qreq->has_pap)
-                && (($qreq->prevt ?? $qreq->t) !== $qreq->t
-                    || ($qreq->prevq ?? $qreq->q) !== $qreq->q)) {
-                if (isset($qreq->assign)) {
-                    $this->conf->warning_msg("<0>Please review the selected submissions now that you have changed the search");
-                }
-                unset($qreq->has_pap, $qreq->assign);
-            }
-            if ($qreq->has_pap) {
-                $this->ssel = SearchSelection::make($qreq, $this->user, "pap");
-            } else {
-                $search = new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q]);
-                $this->ssel = new SearchSelection($search->paper_ids());
-            }
+            $this->ssel = $this->asel;
         }
         $this->ssel->sort_selection();
 
@@ -159,11 +166,24 @@ class Autoassign_Page {
             $x["job"] = str_starts_with($this->jobid, "hcj_") ? substr($this->jobid, 4) : $this->jobid;
         }
         $x["a"] = $this->qreq->a ?? "review";
+        $x += $this->qreq->subset_as_array("q", "t");
+        if (!$this->asel->is_default()) {
+            $x["asel"] = join(" ", $this->asel->selection());
+        }
+        $x += $this->qreq->subset_as_array("pctyp");
+        if ($this->qreq->pctyp === "sel") {
+            $pcs = [];
+            foreach ($this->conf->pc_members() as $id => $p) {
+                if (friendly_boolean($this->qreq["pcc{$id}"]))
+                    $pcs[] = $id;
+            }
+            $x["pcs"] = join(" ", $pcs);
+        }
         $pfx = $x["a"] . ":";
         foreach ($this->qreq as $k => $v) {
-            if (in_array($k, ["q", "t", "a", "badpairs"], true)
-                || str_starts_with($k, "pcc")
+            if ($k === "badpairs"
                 || (str_starts_with($k, "bp")
+                    && preg_match('/\Abp[ab]\d+\z/', $k)
                     && $v !== "none")
                 || (strpos($k, ":") !== false
                     && (!$this->jobid
@@ -348,7 +368,8 @@ class Autoassign_Page {
         if (isset($qreq->requery) || isset($qreq->has_pap)) {
             $search = (new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q]))->set_urlbase("autoassign");
             $plist = new PaperList("reviewersSel", $search);
-            $plist->set_selection($this->ssel)->set_table_decor(PaperList::DECOR_HEADER);
+            $plist->set_selection($this->ssel)
+                ->set_table_decor(PaperList::DECOR_HEADER);
             if ($search->paper_ids()) {
                 echo "<br><span class=\"hint\">Assignments will apply to the selected papers.</span>";
             }
@@ -486,7 +507,7 @@ class Autoassign_Page {
     function start_job() {
         // prepare arguments for batch autoassigner
         $qreq = $this->qreq;
-        $argv = ["-q" . $this->ssel->unparse_search(), "-t" . $qreq->t];
+        $argv = ["-q" . $this->asel->unparse_search(), "-t" . $qreq->t];
 
         if ($qreq->pctyp === "sel") {
             $pcsel = [];
@@ -818,14 +839,16 @@ class Autoassign_Page {
 
     function run() {
         // load job
-        if (isset($this->qreq->reassign) || isset($this->qreq->cancel)) {
+        if (friendly_boolean($this->qreq->reassign)
+            || friendly_boolean($this->qreq->cancel)) {
             unset($this->qreq->job);
         }
         if ($this->qreq->job) {
             $this->run_try_job();
         } else if (isset($this->qreq->a)
                    && isset($this->qreq->pctyp)
-                   && (isset($this->qreq->assign) || isset($this->qreq->reassign))
+                   && (friendly_boolean($this->qreq->assign)
+                       || friendly_boolean($this->qreq->reassign))
                    && $this->qreq->valid_post()) {
             $this->start_job();
         }

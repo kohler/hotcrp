@@ -60,6 +60,20 @@ class SearchSelection {
         return $this->default;
     }
 
+    /** @param bool $default
+     * @return $this */
+    function set_default($default) {
+        $this->default = $default;
+        return $this;
+    }
+
+    /** @param PaperSearch $srch
+     * @return $this */
+    function reset_default($srch) {
+        $this->default = $srch->sorted_paper_ids() === $this->sel;
+        return $this;
+    }
+
     /** @return int */
     function count() {
         return count($this->sel);
@@ -124,9 +138,8 @@ class SearchSelection {
         $bs = $sm[$b] ?? PHP_INT_MAX;
         if ($as === $bs) {
             return $a < $b ? -1 : ($a == $b ? 0 : 1);
-        } else {
-            return $as < $bs ? -1 : 1;
         }
+        return $as < $bs ? -1 : 1;
     }
 
     /** @return bool */
@@ -159,8 +172,7 @@ class SearchSelection {
             return "NONE";
         } else if (count($this->sel) > 100) {
             return "pidcode:" . SessionList::encode_ids($this->sel);
-        } else {
-            return join(" ", $this->sel);
         }
+        return join(" ", $this->sel);
     }
 }
