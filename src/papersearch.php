@@ -642,9 +642,8 @@ class PaperSearch extends MessageSet {
             return $qx;
         } else if ($qx) {
             return SearchTerm::combine_in("or", $this->_string_context, ...$qx);
-        } else {
-            return new False_SearchTerm; // assume error already given
         }
+        return new False_SearchTerm; // assume error already given
     }
 
     /** @param string $str
@@ -660,18 +659,16 @@ class PaperSearch extends MessageSet {
     static private function _search_word_inferred_keyword($str) {
         if (preg_match('/\A([_a-zA-Z0-9][-_.a-zA-Z0-9]*)([=!<>]=?|≠|≤|≥)([^:\"]+\z|[^:\"]*\".*)/s', $str, $m)) {
             return $m;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return list<string> */
     private function _qt_fields() {
         if ($this->_qt === "n") {
             return $this->user->can_view_some_authors() ? ["ti", "ab", "au"] : ["ti", "ab"];
-        } else {
-            return [$this->_qt];
         }
+        return [$this->_qt];
     }
 
     /** @param string $kw
@@ -757,9 +754,8 @@ class PaperSearch extends MessageSet {
         $pos = SearchParser::span_balanced_parens($str, 0, null, true);
         if ($pos === strlen($str)) {
             return $str;
-        } else {
-            return "\"" . str_replace("\"", "\\\"", $str) . "\"";
         }
+        return "\"" . str_replace("\"", "\\\"", $str) . "\"";
     }
 
     /** @param ?SearchExpr $sa
@@ -1048,9 +1044,8 @@ class PaperSearch extends MessageSet {
         $this->_has_qe || $this->main_term();
         if ($this->limit() === "all") {
             return $this->_qe;
-        } else {
-            return SearchTerm::combine("and", $this->_limit_qe, $this->_qe);
         }
+        return SearchTerm::combine("and", $this->_limit_qe, $this->_qe);
     }
 
     private function _prepare_result(SearchTerm $qe) {
@@ -1100,7 +1095,9 @@ class PaperSearch extends MessageSet {
             $sqi->add_column("size", "Paper.size");
         }
         foreach ($this->conf->rights_terms() as $st) {
+            $ctx = $sqi->set_context(SearchQueryInfo::CTX_ANY);
             $st->sqlexpr($sqi);
+            $sqi->set_context($ctx);
         }
 
         // create query

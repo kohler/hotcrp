@@ -1185,12 +1185,11 @@ class Limit_SearchTerm extends SearchTerm {
             return $this->user->can_view_all_incomplete()
                 && $this->user->can_view_all_decision();
         case "reviewable":
-            if (!$this->reviewer->isPC) {
-                $options["myReviews"] = true;
-                return true;
-            } else {
+            if ($this->reviewer->isPC) {
                 return false;
             }
+            $options["myReviews"] = true;
+            return true;
         case "a":
             $options["author"] = true;
             // If complex author SQL, always do search the long way
