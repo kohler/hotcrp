@@ -2975,9 +2975,16 @@ function prepare_info(elt, info) {
     }
     if (elt.hasAttribute("data-tooltip")) {
         info.content = elt.getAttribute("data-tooltip");
-    } else if (info.content == null && elt.hasAttribute("aria-label")) {
+    } else if (info.content != null) {
+        // leave alone
+    } else if (elt.hasAttribute("aria-describedby")
+               && elt.ariaDescribedByElements
+               && elt.ariaDescribedByElements.length === 1
+               && hasClass(elt.ariaDescribedByElements[0], "bubble")) {
+        info.contentElement = elt.ariaDescribedByElements[0];
+    } else if (elt.hasAttribute("aria-label")) {
         info.content = elt.getAttribute("aria-label");
-    } else if (info.content == null && elt.hasAttribute("title")) {
+    } else if (elt.hasAttribute("title")) {
         info.content = elt.getAttribute("title");
     }
     return info;
@@ -2990,13 +2997,16 @@ function show_tooltip(info) {
 
     const self = this;
     info = prepare_info(self, $.extend({}, info || {}));
-    info.element = this;
 
-    let tt, bub = null, to = null, near = null,
-        refcount = 0, content = info.content;
+    let bub = null, to = null, refcount = 0;
 
     function close() {
         to = clearTimeout(to);
+        if (bub) {
+            bub.element().removeEventListener("pointerenter", tt.enter);
+            bub.element().removeEventListener("pointerleave", tt.leave);
+            bub.remove();
+        }
         bub && bub.remove();
         tooltip_map.delete(self);
         if (global_tooltip === tt) {
@@ -3004,72 +3014,72 @@ function show_tooltip(info) {
         }
     }
 
-    function show_bub() {
-        if (content && !bub) {
-            bub = make_bubble({content: content, class: "tooltip ".concat(info.className, info.type === "focus" ? " position-absolute" : ""), anchor: info.anchor});
-            near = info.near || info.element;
-            bub.near(near).hover(tt.enter, tt.exit);
-        } else if (content) {
-            bub.html(content);
-        } else if (bub) {
-            bub && bub.remove();
-            bub = near = null;
-        }
-    }
-
-    function complete(new_content) {
-        if (new_content instanceof HPromise) {
-            new_content.then(complete);
-            return;
-        }
-        let tx = global_tooltip;
-        content = new_content;
-        if (tx
-            && tx._element === info.element
-            && tx.html() === content
-            && !info.done) {
-            tt = tx;
-        } else {
-            tx && tx.close();
-            tooltip_map.set(self, tt);
-            show_bub();
-            global_tooltip = tt;
-        }
-    }
-
-    tt = {
+    let tt = {
         enter: function () {
             to = clearTimeout(to);
             ++refcount;
             return tt;
         },
-        exit: function () {
-            var delay = info.type === "focus" ? 0 : 200;
+        leave: function () {
+            const delay = info.type === "focus" ? 0 : 200;
             to = clearTimeout(to);
-            if (--refcount == 0 && info.type !== "sticky") {
+            if (--refcount === 0 && info.type !== "sticky") {
                 to = setTimeout(close, delay);
             }
             return tt;
         },
         close: close,
-        _element: self,
-        html: function (new_content) {
-            if (new_content === undefined) {
-                return content;
-            }
-            content = new_content;
-            show_bub();
-            return tt;
-        },
-        text: function (new_text) {
-            return tt.html(escape_html(new_text));
+        owner: function () {
+            return self;
         },
         near: function () {
-            return near;
+            return info.near || self;
+        },
+        bubbleElement: function () {
+            return bub ? bub.element() : null;
         }
     };
 
-    complete(content);
+    function complete(content) {
+        if (content instanceof HPromise) {
+            content.then(complete);
+            return;
+        }
+
+        let tx = global_tooltip;
+        if (tx
+            && tx.owner() === info.element
+            && (info.contentElement
+                ? info.contentElement === tx.bubbleElement()
+                : content === tx.html())
+            && !info.done) {
+            tt = tx;
+            return;
+        }
+        if (tx) {
+            tx.close();
+            tx = null;
+        }
+
+        const bubinfo = {class: `tooltip ${info.className}`, anchor: info.anchor};
+        if (info.type === "focus") {
+            bubinfo.class += " position-absolute";
+        }
+        if (info.contentElement) {
+            bubinfo.element = info.contentElement;
+        } else if (content) {
+            bubinfo.content = content;
+        } else {
+            return;
+        }
+
+        tooltip_map.set(self, tt);
+        bub = make_bubble(bubinfo).near(info.near || self);
+        bub.element().addEventListener("pointerenter", tt.enter);
+        bub.element().addEventListener("pointerleave", tt.leave);
+        global_tooltip = tt;
+    }
+    complete(info.content);
     info.done = true;
     return tt;
 }
@@ -3081,25 +3091,54 @@ function ttenter() {
 
 function ttleave() {
     const tt = tooltip_map.get(this);
-    tt && tt.exit();
+    tt && tt.leave();
 }
 
 function tooltip() {
     removeClass(this, "need-tooltip");
-    if (this.getAttribute("data-tooltip-type") === "focus")
-        $(this).on("focus", ttenter).on("blur", ttleave);
-    else
-        $(this).hover(ttenter, ttleave);
+    const tt = this.getAttribute("data-tooltip-type");
+    if (tt === "within") {
+        tooltip_within(this);
+    } else {
+        this.addEventListener("focusin", ttenter);
+        this.addEventListener("focusout", ttleave);
+        if (tt !== "focus") {
+            this.addEventListener("pointerenter", ttenter);
+            this.addEventListener("pointerleave", ttleave);
+        }
+    }
 }
+
+function tooltip_within(elt) {
+    const info = prepare_info(elt, {});
+    function enter(evt) {
+        const wte = evt.target.closest(".want-tooltip");
+        if (wte) {
+            const tt = tooltip_map.get(wte) || show_tooltip.call(wte, info);
+            tt && tt.enter();
+        }
+    }
+    function leave(evt) {
+        const wte = evt.target.closest(".want-tooltip");
+        wte && ttleave.call(wte);
+    }
+    elt.addEventListener("mouseover", enter);
+    elt.addEventListener("mouseout", leave);
+    elt.addEventListener("focusin", enter);
+    elt.addEventListener("focusout", leave);
+}
+
 tooltip.close = function (e) {
     const tt = e ? tooltip_map.get(e) : global_tooltip;
     tt && tt.close();
 };
+
 tooltip.close_under = function (e) {
     if (global_tooltip && e.contains(global_tooltip.near())) {
         global_tooltip.close();
     }
 };
+
 tooltip.add_builder = function (name, f) {
     builders[name] = f;
 };
@@ -3118,14 +3157,16 @@ HtmlCollector.prototype.push = function (open, close) {
         this.close.push(close);
         this.html = "";
         return this.open.length - 1;
-    } else
+    } else {
         this.html += open;
+    }
     return this;
 };
 HtmlCollector.prototype.pop = function (pos) {
     var n = this.open.length;
-    if (pos == null)
+    if (pos == null) {
         pos = Math.max(0, n - 1);
+    }
     while (n > pos) {
         --n;
         this.html = this.open[n] + this.html + this.close[n];
@@ -3157,11 +3198,15 @@ HtmlCollector.prototype.clear = function () {
     return this;
 };
 HtmlCollector.next_input_id = (function () {
-var id = 1;
-return function () {
-    var s;
+let id = 1;
+return function (pfx) {
+    if (pfx && !document.getElementById(pfx)) {
+        return pfx;
+    }
+    pfx = pfx || "k-";
+    let s;
     do {
-        s = "k-" + id++;
+        s = pfx + id++;
     } while (document.getElementById(s));
     return s;
 };
@@ -6371,87 +6416,63 @@ hotcrp.tooltip.add_builder("rf-score", function (info) {
     return info;
 });
 
-hotcrp.tooltip.add_builder("rf-description", function (info) {
-    var rv = $(this).closest(".rf");
-    if (rv.length) {
-        var fieldj = formj[rv.data("rf")];
-        if (fieldj && (fieldj.description || fieldj.values)) {
-            var d = "";
-            if (fieldj.description) {
-                if (/<(?:p|div|table)/i.test(fieldj.description))
-                    d += fieldj.description;
-                else
-                    d += "<p>" + fieldj.description + "</p>";
-            }
-            if (fieldj.values) {
-                d += "<div class=\"od\">Choices are:</div>";
-                fieldj.each_value(function (fv) {
-                    d = d.concat('<div class="od"><strong class="sv ', fv.className, '">', fv.symbol, fv.sp1, '</strong>', fv.sp2, escape_html(fv.title), '</div>');
-                });
-            }
-            info = $.extend({content: d, anchor: "w"}, info);
-        }
-    }
-    return info;
-});
-
-function score_header_tooltips($j) {
-    $j.find(".rf .field-title").attr("data-tooltip-info", "rf-description")
-        .each(hotcrp.tooltip);
-}
-
 function field_visible(f, rrow) {
     return rrow[f.uid] != null && rrow[f.uid] !== "";
 }
 
 function render_review_body_in(rrow, bodye) {
-    var foidx = 0, f, x, nextf, last_display = 0, display, fe, h3, e;
+    let foidx = 0, nextf, last_display = 0;
     for (foidx = 0; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
     }
     while (nextf) {
-        f = nextf;
+        const f = nextf;
         for (++foidx; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
         }
 
-        if (last_display != 1 && f.type !== "text" && nextf && nextf.type !== "text") {
-            display = 1;
-        } else {
-            display = last_display == 1 ? 2 : 0;
+        let display = 1;
+        if (last_display === 1 || f.type === "text" || !nextf || nextf.type === "text") {
+            display = last_display === 1 ? 2 : 0;
         }
 
-        fe = document.createElement("div");
+        const fe = document.createElement("div");
         fe.className = "rf rfd" + display;
         fe.setAttribute("data-rf", f.uid);
         bodye.appendChild(fe);
 
-        e = document.createElement("span");
-        e.className = "field-title";
-        e.append(f.name);
-        h3 = document.createElement("h3");
-        h3.className = "rfehead";
-        h3.appendChild(e);
-        x = f.visibility || "re";
-        if (x === "audec" && hotcrp.status && hotcrp.status.myperm
-            && hotcrp.status.myperm.some_author_can_view_decision) {
-            x = "au";
+        const fte = document.createElement("span");
+        fte.className = "field-title";
+        fte.append(f.name);
+        const ttid = f.tooltip_id();
+        if (ttid) {
+            addClass(fte, "need-tooltip");
+            fte.setAttribute("data-tooltip-anchor", "w");
+            fte.setAttribute("aria-describedby", ttid);
         }
-        if (x !== "au") {
-            e = document.createElement("div");
-            e.className = "field-visibility";
-            x = ({
+        const h3 = document.createElement("h3");
+        h3.className = "rfehead";
+        h3.appendChild(fte);
+        let vis = f.visibility || "re";
+        if (vis === "audec" && hotcrp.status && hotcrp.status.myperm
+            && hotcrp.status.myperm.some_author_can_view_decision) {
+            vis = "au";
+        }
+        if (vis !== "au") {
+            const vise = document.createElement("div");
+            vise.className = "field-visibility";
+            const vistext = ({
                 secret: "secret",
                 admin: "shown only to administrators",
                 re: "hidden from authors",
                 audec: "hidden from authors until decision",
                 pconly: "hidden from authors and external reviewers"
-            })[x] || x;
-            e.append("(" + x + ")");
-            h3.appendChild(e);
+            })[vis] || vis;
+            vise.append("(" + vistext + ")");
+            h3.appendChild(vise);
         }
-        e = document.createElement("div");
-        e.className = "revvt";
-        e.appendChild(h3);
-        fe.appendChild(e);
+        const vte = document.createElement("div");
+        vte.className = "revvt";
+        vte.appendChild(h3);
+        fe.appendChild(vte);
 
         f.render_in(rrow[f.uid], rrow, fe);
 
@@ -6813,7 +6834,7 @@ hotcrp.add_review = function (rrow) {
     // complete render
     earticle.append(eheader, ebody);
     document.querySelector(".pcontainer").append(earticle);
-    score_header_tooltips($(earticle));
+    $(earticle).awaken();
     navsidebar.set("r" + rid, rdesc);
 };
 
@@ -6861,6 +6882,33 @@ ReviewField.prototype.render_in = function (fv, rrow, fe) {
     fe.appendChild(e);
     render_text.onto(e, rrow.format, fv);
 }
+
+ReviewField.prototype.tooltip_id = function () {
+    if (!this.description && !this.values) {
+        return null;
+    } else if (this._tooltip_id) {
+        return this._tooltip_id;
+    }
+    const bubdiv = make_bubble.skeleton();
+    bubdiv.id = this._tooltip_id = `d-rf-${this.uid}`;
+    let d = "";
+    if (this.description) {
+        if (/<(?:p|div|table)/i.test(this.description)) {
+            d += this.description;
+        } else {
+            d += `<p>${this.description}</p>`;
+        }
+    }
+    if (this.values) {
+        d += "<div class=\"od\">Choices are:</div>";
+        this.each_value(function (fv) {
+            d += `<div class="od"><strong class="sv ${fv.className}">${fv.symbol}${fv.sp1}</strong>${fv.sp2}${escape_html(fv.title)}</div>`;
+        });
+    }
+    bubdiv.firstChild.innerHTML = d;
+    document.body.appendChild(bubdiv);
+    return this._tooltip_id;
+};
 
 function DiscreteValues_ReviewField(fj) {
     var i, n, step, sym, ch;
