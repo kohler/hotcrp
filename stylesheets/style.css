@@ -4139,8 +4139,6 @@ a.badge-white:hover {
 }
 .bubtail {
 	position: absolute;
-	border-style: solid;
-	border-width: 0;
 	width: 12px;
 	height: 6px;
 }

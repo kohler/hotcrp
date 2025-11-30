@@ -633,7 +633,7 @@ function graph_cdf(selector, args) {
             hovered_path = p.pathNode;
         }
         if (hovered_series && (hovered_series.label || args.cdf_tooltip_position)) {
-            hubble = hubble || make_bubble("", {color: args.tooltip_class || "graphtip", "pointer-events": "none"});
+            hubble = hubble || make_bubble({class: args.tooltip_class || "graphtip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             if (args.cdf_tooltip_position) {
                 const f = $frag();
@@ -1008,7 +1008,7 @@ function make_hover_interactor(svg, hovers, identity) {
                 return false;
             }
             self.data = data = d;
-            self.bubble = self.bubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
+            self.bubble = self.bubble || make_bubble({class: "graphtip", "pointer-events": "none"});
             svg.style("cursor", "pointer");
             return true;
         },
