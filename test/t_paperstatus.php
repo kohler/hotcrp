@@ -149,6 +149,7 @@ class PaperStatus_Tester {
         $p2 = $this->conf->checked_paper_by_id(2);
         xassert_gt($p2->outcome_sign, 0);
         xassert_eqq($p2->phase(), PaperInfo::PHASE_FINAL);
+        $hello_docid = $p2->paperStorageId;
 
         $ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
         xassert_paper_status($ps);
@@ -162,14 +163,29 @@ class PaperStatus_Tester {
         xassert_paper_status($ps);
         xassert(ConfInvariants::test_document_inactive($this->conf));
 
-        $paper2 = $pex->paper_json(2);
-        xassert_eqq($paper2->submission->hash, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
-        xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
-        $paper2 = $this->u_estrin->checked_paper_by_id(2);
-        xassert_eqq(bin2hex($paper2->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
+        $p2 = $this->u_estrin->checked_paper_by_id(2);
+        xassert_eqq(bin2hex($p2->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
+        xassert_neqq($p2->paperStorageId, $hello_docid);
+        $again_docid = $p2->paperStorageId;
+        $doc = $p2->document(DTYPE_SUBMISSION, $hello_docid);
+        xassert_eqq($doc->inactive, 1);
+        $p2j = $pex->paper_json(2);
+        xassert_eqq($p2j->submission->hash, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
+        xassert_eqq($p2j->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
 
         $this->conf->qe("delete from Settings where name='final_open' or name='au_seedec'");
         $this->conf->qe("update Paper set outcome=0 where paperId=2");
+
+        $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-hello\\n\",\"type\":\"application/pdf\"}}"));
+        xassert_paper_status($ps);
+        xassert(ConfInvariants::test_document_inactive($this->conf));
+
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert_eqq($p2->paperStorageId, $hello_docid);
+        $doc = $p2->document(DTYPE_SUBMISSION, $hello_docid);
+        xassert_eqq($doc->inactive, 0);
+        $doc = $p2->document(DTYPE_SUBMISSION, $again_docid);
+        xassert_eqq($doc->inactive, 1);
     }
 
     function test_document_options_storage() {

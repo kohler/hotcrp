@@ -1053,39 +1053,18 @@ class DocumentInfo implements JsonSerializable {
 
     const SAVEF_SKIP_VERIFY = 1;
     const SAVEF_SKIP_CONTENT = 2;
+    const SAVEF_DELAY_PROP = 4;
 
     /** @param int $savef
      * @return bool */
     function save($savef = 0) {
+        assert($this->paperStorageId <= 0);
+
         // look for an existing document with same sha1
-        if ($this->binary_hash() !== false && $this->paperId != 0) {
-            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, timeReferenced, inactive, filename, mimetype, infoJson from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
-            if ($row
-                && (!isset($this->filename) || $row[4] === $this->filename)
-                && (!isset($this->mimetype) || $row[5] === $this->mimetype)) {
-                $this->paperStorageId = (int) $row[0];
-                $this->timestamp = (int) $row[1];
-                $this->timeReferenced = (int) $row[2];
-                $qf = $qv = [];
-                if ($row[3]) {
-                    $qf[] = "inactive=?";
-                    $qv[] = 0;
-                }
-                $m = $this->metadata();
-                $this->infoJson = $row[6];
-                $this->_metadata = null;
-                if (!empty((array) $m)) {
-                    $this->infoJson = json_object_replace_recursive($this->infoJson, $m);
-                    $qf[] = "infoJson=?";
-                    $qv[] = $this->infoJson;
-                }
-                if (!empty($qf)) {
-                    $qv[] = $this->paperId;
-                    $qv[] = $this->paperStorageId;
-                    $this->conf->qe_apply("update PaperStorage set " . join(",", $qf) . " where paperId=? and paperStorageId=?", $qv);
-                }
-                return true;
-            }
+        if ($this->binary_hash() !== false
+            && $this->paperId != 0
+            && $this->_save_check_existing($savef)) {
+            return true;
         }
 
         // ensure content
@@ -1121,6 +1100,40 @@ class DocumentInfo implements JsonSerializable {
                 if ($mi->field !== ".content")
                     $this->message_set()->append_item($mi);
             }
+        }
+        return true;
+    }
+
+    /** @param int $savef */
+    private function _save_check_existing($savef) {
+        $qf = ["paperId=?", "documentType=?", "sha1=?",
+               "filterType<=>?", "originalStorageId<=>?"];
+        $qv = [$this->paperId, $this->documentType, $this->binary_hash(),
+               $this->filterType, $this->originalStorageId];
+        if (isset($this->filename)) {
+            $qf[] = "filename=?";
+            $qv[] = $this->filename;
+        }
+        if (isset($this->mimetype)) {
+            $qf[] = "mimetype=?";
+            $qv[] = $this->mimetype;
+        }
+        $result = $this->conf->qe_apply("select " . $this->conf->document_query_fields() . " from PaperStorage where " . join(" and ", $qf), $qv);
+        $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
+        if (!$edoc) {
+            return false;
+        }
+        $this->paperStorageId = $edoc->paperStorageId;
+        $this->timestamp = $edoc->timestamp;
+        $this->timeReferenced = $edoc->timeReferenced;
+        $this->filename = $edoc->filename;
+        $this->mimetype = $edoc->mimetype;
+        if ($this->inactive === 0 && $edoc->inactive) {
+            $this->_old_prop = $this->_old_prop ?? [];
+            $this->_old_prop["inactive"] = $edoc->inactive;
+        }
+        if (($savef & self::SAVEF_DELAY_PROP) === 0) {
+            $this->save_prop();
         }
         return true;
     }
@@ -1710,8 +1723,7 @@ class DocumentInfo implements JsonSerializable {
     /** @param string $prop
      * @param mixed $v */
     function set_prop($prop, $v) {
-        if (($prop === "npages" || $prop === "width" || $prop === "height")
-            && $this->conf->sversion >= 276) {
+        if (in_array($prop, ["npages", "width", "height", "inactive", "paperId", "timeReferenced"], true)) {
             assert(is_int($v));
             if ($this->$prop === $v) {
                 return;
@@ -1750,8 +1762,9 @@ class DocumentInfo implements JsonSerializable {
                 $qv[] = $this->$prop;
             }
         }
-        $qv[] = $this->paperId;
+        $qv[] = $this->_old_prop["paperId"] ?? $this->paperId;
         $qv[] = $this->paperStorageId;
+        // XXX this might fail because of a concurrent update to paperId
         if (empty($metadata)) {
             $result = $this->conf->qe("update PaperStorage set " . join(", ", $qf) . " where paperId=? and paperStorageId=?", ...$qv);
             $ok = !Dbl::is_error($result);
@@ -1773,6 +1786,9 @@ class DocumentInfo implements JsonSerializable {
             if (!$ok && !$quiet) {
                 error_log(caller_landmark() . ": {$this->conf->dbname}: save_prop(paper {$this->paperId}, dt {$this->documentType}): infoJson too long, delta " . json_encode($metadata));
             }
+        }
+        if ($ok) {
+            $this->_old_prop = null;
         }
         return $ok;
     }
@@ -1829,12 +1845,14 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return object */
     function metadata() {
-        if ($this->_metadata === null) {
-            if ($this->infoJson === false && $this->paperStorageId > 0) {
-                $this->load_metadata();
-            }
-            $this->_metadata = ($this->infoJson ? json_decode($this->infoJson) : null) ?? (object) [];
+        if ($this->_metadata !== null) {
+            return $this->_metadata;
         }
+        if ($this->infoJson === false && $this->paperStorageId > 0) {
+            $this->load_metadata();
+        }
+        $m = $this->infoJson ? json_decode($this->infoJson) : null;
+        $this->_metadata = $m ?? (object) [];
         return $this->_metadata;
     }
 

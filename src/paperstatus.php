@@ -66,8 +66,6 @@ final class PaperStatus extends MessageSet {
     private $_documents_changed;
     /** @var bool */
     private $_noncontacts_changed;
-    /** @var bool */
-    private $_document_pids_needed;
     /** @var list<DocumentInfo> */
     private $_docs;
     /** @var list<array{string,float|false}> */
@@ -316,11 +314,7 @@ final class PaperStatus extends MessageSet {
         }
 
         $this->_docs[] = $doc;
-        if ($doc->paperId === 0 || $doc->paperId === -1) {
-            $this->_document_pids_needed = true;
-        } else {
-            assert($doc->paperId === $this->prow->paperId);
-        }
+        assert($doc->paperId === $this->prow->paperId || $doc->paperId === 0 || $doc->paperId === -1);
         $doc->release_redundant_content();
         return $doc;
     }
@@ -459,23 +453,25 @@ final class PaperStatus extends MessageSet {
         }
         if (!$this->prow->is_new()
             && ($docid > 0 || $hash !== null)) {
-            $qx = [
-                "paperId=?" => $this->prow->paperId,
-                "documentType=?" => $o->id
-            ];
+            $qf = ["paperId=?", "documentType=?", "filterType is null"];
+            $qv = [$this->prow->paperId, $o->id];
             if ($docid > 0) {
-                $qx["paperStorageId=?"] = $docj->docid;
+                $qf[] = "paperStorageId=?";
+                $qv[] = $docj->docid;
             }
             if ($hash !== null) {
-                $qx["sha1=?"] = $hash;
+                $qf[] = "sha1=?";
+                $qv[] = $hash;
             }
             if ($mimetype !== null) {
-                $qx["mimetype=?"] = $mimetype;
+                $qf[] = "mimetype=?";
+                $qv[] = $mimetype;
             }
             if ($safe_filename !== null) {
-                $qx["filename=?"] = $safe_filename;
+                $qf[] = "filename=?";
+                $qv[] = $safe_filename;
             }
-            $result = $this->conf->qe_apply("select * from PaperStorage where " . join(" and ", array_keys($qx)), array_values($qx));
+            $result = $this->conf->qe_apply("select " . $this->conf->document_query_fields() . " from PaperStorage where " . join(" and ", $qf), $qv);
             $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
             Dbl::free($result);
             if ($edoc) {
@@ -1169,7 +1165,9 @@ final class PaperStatus extends MessageSet {
         } else if ($this->prow->is_new()) {
             $this->conf->qe("update PaperStorage set paperId=-1, inactive=1 where paperStorageId?a", $this->_dids());
         } else {
-            $this->prow->mark_inactive_documents();
+            foreach ($this->_docs as $doc) {
+                $doc->abort_prop();
+            }
         }
     }
 
@@ -1230,9 +1228,10 @@ final class PaperStatus extends MessageSet {
         $this->_conflict_ins = $this->_created_contacts = null;
         $this->_author_change_cids = null;
         $this->_paper_submitted = false;
-        $this->_documents_changed = $this->_document_pids_needed = false;
+        $this->_documents_changed = false;
         $this->_noncontacts_changed = $prow->is_new();
         $this->_docs = $this->_tags_changed = [];
+        $this->doc_savef |= DocumentInfo::SAVEF_DELAY_PROP;
         $this->_save_status = 0;
         if ($this->user->can_administer($this->prow)) {
             $this->_save_status |= self::SSF_ADMIN_UPDATE;
@@ -1712,20 +1711,17 @@ final class PaperStatus extends MessageSet {
         if (empty($this->_docs)) {
             return;
         }
-        if ($this->_document_pids_needed) {
-            $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a",
-                $this->paperId, $this->_dids());
-        }
-        $time_dids = [];
         foreach ($this->_docs as $doc) {
-            $baseov = $this->prow->base_option($doc->documentType);
-            if (!in_array($doc->paperStorageId, $baseov->value_list())) {
-                $time_dids[] = $doc->paperStorageId;
+            if ($doc->paperId === 0 || $doc->paperId === -1) {
+                $doc->set_prop("paperId", $this->paperId);
             }
-        }
-        if (!empty($time_dids)) {
-            $this->conf->qe("update PaperStorage set timeReferenced=? where paperId=? and paperStorageId?a",
-                $this->prow->timeModified, $this->paperId, $time_dids);
+            $doc->set_prop("inactive", 0);
+            $baseov = $this->prow->base_option($doc->documentType);
+            if (!in_array($doc->paperStorageId, $baseov->value_list())
+                && ($doc->timeReferenced ?? $doc->timestamp) < $this->prow->timeModified) {
+                $doc->set_prop("timeReferenced", $this->prow->timeModified);
+            }
+            $doc->save_prop();
         }
     }
 
