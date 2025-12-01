@@ -679,7 +679,7 @@ class ConfInvariants {
     /** @return $this */
     function check_document_inactive() {
         $tntable = "DocActivity_" . base48_encode(random_bytes(4));
-        $this->conf->ql("create temporary table {$tntable} (
+        $this->conf->ql("create temporary table ?s (
     pid int NOT NULL,
     did int NOT NULL,
     dt int NOT NULL,
@@ -687,15 +687,18 @@ class ConfInvariants {
     want_inactive tinyint NOT NULL,
     PRIMARY KEY (`pid`,`did`)
 ) as select paperId pid, paperStorageId did, documentType dt, inactive, 1 want_inactive
-    from PaperStorage where paperStorageId>1");
+    from PaperStorage where paperStorageId>1",
+                        $tntable);
 
-        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+        $this->conf->ql("insert into ?s (pid,did,dt,inactive,want_inactive)
     select paperId, paperStorageId, 0, -1, 0 from Paper where paperStorageId>1
-    on duplicate key update want_inactive=0");
+    on duplicate key update want_inactive=0",
+                        $tntable);
 
-        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+        $this->conf->ql("insert into ?s (pid,did,dt,inactive,want_inactive)
     select paperId, finalPaperStorageId, -1, -1, 0 from Paper where finalPaperStorageId>1
-    on duplicate key update want_inactive=0");
+    on duplicate key update want_inactive=0",
+                        $tntable);
 
         $oids = $nonempty_oids = [];
         foreach ($this->conf->options()->universal() as $o) {
@@ -706,17 +709,18 @@ class ConfInvariants {
             }
         }
 
-        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+        $this->conf->ql("insert into ?s (pid,did,dt,inactive,want_inactive)
     select paperId, value, optionId, -1, 0 from PaperOption
     where optionId?a and (value>1 or optionId?a)
     on duplicate key update want_inactive=0",
-                        $oids, $nonempty_oids);
+                        $tntable, $oids, $nonempty_oids);
 
-        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+        $this->conf->ql("insert into ?s (pid,did,dt,inactive,want_inactive)
     select paperId, documentId, linkType, -1, 0 from DocumentLink
-    on duplicate key update want_inactive=0");
+    on duplicate key update want_inactive=0",
+                        $tntable);
 
-        $result = $this->conf->ql("select pid, did, dt, inactive from {$tntable} where inactive<0 or inactive!=want_inactive");
+        $result = $this->conf->ql("select pid, did, dt, inactive from ?s where inactive<0 or inactive!=want_inactive", $tntable);
         $bits = 0;
         while (($this->irow = $result->fetch_row())) {
             if ($this->irow[1] <= 1) {
@@ -732,7 +736,7 @@ class ConfInvariants {
         $result->close();
         $this->irow = null;
 
-        $this->conf->ql("drop temporary table {$tntable}");
+        $this->conf->ql("drop temporary table ?s", $tntable);
 
         return $this;
     }

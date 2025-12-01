@@ -201,7 +201,8 @@ class CheckFormat extends MessageSet {
                 $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
                 return $this->complete_banal_json($bj, $flags | CheckFormat::RUN_ABANDONED);
             }
-            $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',{$n},'{$t}') on duplicate key update value={$n}, data='{$t}'");
+            $doc->conf->q("insert into Settings set name=?, value=?, data=? ?U on duplicate key update value=?U(value), data=?U(data)",
+                          "__banal_count", $n, (string) $t);
         }
 
         $flags |= CheckFormat::RUN_ATTEMPTED;
@@ -213,7 +214,7 @@ class CheckFormat extends MessageSet {
         }
 
         if ($limit > 0) {
-            $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='{$t}'");
+            $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data=?", (string) $t);
         }
         return $this->complete_banal_json($bj, $flags);
     }

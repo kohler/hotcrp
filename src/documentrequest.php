@@ -402,7 +402,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 $this->_error_status = 400;
                 return;
             }
-            $result = $this->conf->qe("select * from PaperStorage where paperId=? and documentType=? and sha1=?",
+            $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperId=? and documentType=? and sha1=?",
                 $this->prow->paperId, $this->dtype, $dochash);
             $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
             $result->close();

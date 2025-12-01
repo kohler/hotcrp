@@ -2775,7 +2775,7 @@ class Contact implements JsonSerializable {
         }
         $this->activity_at = Conf::$now;
         if ($this->contactId) {
-            $this->conf->ql("update ContactInfo set lastLogin=" . Conf::$now . " where contactId={$this->contactId}");
+            $this->conf->ql("update ContactInfo set lastLogin=? where contactId=?", Conf::$now, $this->contactId);
             $this->update_cdb_roles();
         }
     }
@@ -6142,9 +6142,9 @@ class Contact implements JsonSerializable {
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($type > 0 && $oldtype === 0) {
             $reviewer->activate_placeholder(false, $this);
-            $this->conf->ql("delete from PaperReviewRefused where paperId={$pid} and contactId={$reviewer->contactId}");
+            $this->conf->ql("delete from PaperReviewRefused where paperId=? and contactId=?", $pid, $reviewer->contactId);
             if (($req_email = $extra["requested_email"] ?? null)) {
-                $this->conf->qe("delete from ReviewRequest where paperId={$pid} and email=?", $req_email);
+                $this->conf->qe("delete from ReviewRequest where paperId=? and email=?", $pid, $req_email);
             }
             if ($type < REVIEW_SECONDARY) {
                 $this->conf->update_review_delegation($pid, $new_requester_cid, 1);
