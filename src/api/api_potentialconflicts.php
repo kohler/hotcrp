@@ -27,8 +27,7 @@ class PotentialConflicts_API {
 
         // apply changes
         $ps = new PaperStatus($user);
-        $ps->allow_error_at_option($prow->conf->option_by_id(PaperOption::AUTHORSID));
-        $ps->allow_error_at_option($prow->conf->option_by_id(PaperOption::COLLABORATORSID));
+        $ps->set_ignore_errors(true);
         if (isset($qreq->json)) {
             $json = json_decode($qreq->json);
             if (!is_object($json)) {

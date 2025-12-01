@@ -10,6 +10,8 @@ final class PaperStatus extends MessageSet {
      * @readonly */
     public $user;
     /** @var bool */
+    private $ignore_errors = false;
+    /** @var bool */
     private $disable_users = false;
     /** @var bool */
     private $any_content_file = false;
@@ -27,8 +29,6 @@ final class PaperStatus extends MessageSet {
     private $override_json_fields;
     /** @var bool */
     private $json_fields;
-    /** @var ?list<PaperOption> */
-    private $allow_error_fields;
     /** @var int */
     private $doc_savef = 0;
     /** @var list<callable> */
@@ -96,6 +96,13 @@ final class PaperStatus extends MessageSet {
         $ps = new PaperStatus($user);
         $ps->prow = $prow;
         return $ps;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_ignore_errors($x) {
+        $this->ignore_errors = $x;
+        return $this;
     }
 
     /** @param bool $x
@@ -210,13 +217,6 @@ final class PaperStatus extends MessageSet {
      * @return MessageItem */
     function syntax_error_at($key) {
         return $this->error_at($key, "<0>Validation error [{$key}]");
-    }
-
-    /** @param PaperOption $opt
-     * @return $this */
-    function allow_error_at_option($opt) {
-        $this->allow_error_fields[] = $opt;
-        return $this;
     }
 
     /** @param PaperValue $ov */
@@ -819,8 +819,7 @@ final class PaperStatus extends MessageSet {
         }
         if ($ov !== null) {
             $opt->value_check($ov, $this->user);
-            if ($this->allow_error_fields !== null
-                && in_array($opt, $this->allow_error_fields, true)) {
+            if ($this->ignore_errors) {
                 $ov->append_item(MessageItem::success(null));
             }
             if ($ov->allow_store()) {
@@ -1487,8 +1486,10 @@ final class PaperStatus extends MessageSet {
     function abort_save() {
         if (($this->_save_status & (self::SSF_SAVED | self::SSF_ABORTED)) === 0) {
             $this->_save_status |= self::SSF_ABORTED;
-            $this->prow->abort_prop();
-            $this->prow->remove_option_overrides();
+            if (!$this->ignore_errors) {
+                $this->prow->abort_prop();
+                $this->prow->remove_option_overrides();
+            }
             $this->_invalidate_uploaded_documents();
         }
     }
