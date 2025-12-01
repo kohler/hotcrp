@@ -2509,7 +2509,7 @@ function calculate_sizes(color) {
         const ets = window.getComputedStyle(et),
             ebs = window.getComputedStyle(eb),
             sizes = {"0": parseFloat(ets.width), "1": parseFloat(ets.height)};
-        for (let ds = 0, x; ds < 4; ++ds) {
+        for (let ds = 0; ds < 4; ++ds) {
             sizes[lcdir[ds]] = cssfloat(ebs[`margin${ucdir[ds]}`] || "0");
         }
         eb.remove();
@@ -2554,7 +2554,7 @@ function change_tail_direction(tail, bubsty, sizes, dir) {
     const wx = sizes[dir&1], wy = sizes[(dir&1)^1],
         bw = cssfloat(bubsty[`border${ucdir[dir]}Width`]),
         wx1 = wx + (dir&1 ? bw : 0), wy1 = wy + (dir&1 ? 0 : bw);
-    let d, x, y;
+    let d;
     if (dir === 0) {
         d = `M0 ${wy1}L${wx/2} ${wy1-wy} ${wx} ${wy1}`;
     } else if (dir === 1) {
@@ -5406,7 +5406,7 @@ handle_ui.on("js-bulkassign-action", function () {
 });
 
 (function () {
-var email_info = [], email_info_at = 0;
+let searches = [], searches_at = 0;
 
 function populate(e, v, placeholder) {
     if (placeholder) {
@@ -5429,8 +5429,9 @@ handle_ui.on("input.js-email-populate", function () {
     if (!f) {
         return;
     }
-    let v = self.value.toLowerCase().trim(),
-        fn = null, ln = null, nn = null, af = null,
+
+    const v = self.value.toLowerCase().trim();
+    let fn = null, ln = null, nn = null, af = null,
         country = null, orcid = null, placeholder = false, idx;
     if (this.name === "email" || this.name === "uemail") {
         fn = f.elements.firstName;
@@ -5453,24 +5454,25 @@ handle_ui.on("input.js-email-populate", function () {
 
     function success(data) {
         data = data || {};
-        if (data.match || (data.ok && !data.email)) {
+        if (data.ok && !data._search) {
+            data._search = v;
             if (data.email) {
                 data.lemail = data.email.toLowerCase();
-            } else {
+            } else if (data.match === false) {
                 data.lemail = v + "~";
+            } else {
+                data.lemail = v; // search only matches itself
             }
-            if (!email_info.length) {
-                email_info_at = now_sec();
+            if (searches.length === 0) {
+                searches_at = now_sec();
             }
             let i = 0;
-            while (i !== email_info.length && email_info[i] !== v) {
-                i += 2;
+            while (i !== searches.length && searches[i]._search !== v) {
+                ++i;
             }
-            if (i === email_info.length) {
-                email_info.push(v, data);
-            }
+            searches[i] = data;
         }
-        if (!data.match) {
+        if (v !== data.lemail) {
             data = {};
         }
         if (self.value.trim() !== v
@@ -5501,16 +5503,16 @@ handle_ui.on("input.js-email-populate", function () {
         success(null);
         return;
     }
-    if ((email_info_at && now_sec() - email_info_at >= 3600)
-        || email_info.length > 200) {
-        email_info = [];
+    if ((searches_at && now_sec() - searches_at >= 3600)
+        || searches.length > 200) {
+        searches = [];
     }
     let i = 0;
-    while (i !== email_info.length
-           && (v < email_info[i] || v > email_info[i + 1].lemail)) {
-        i += 2;
+    while (i !== searches.length
+           && (v < searches[i]._search || v > searches[i].lemail)) {
+        ++i;
     }
-    if (i === email_info.length) {
+    if (i === searches.length) {
         let args = {email: v};
         if (hasClass(this, "want-potential-conflict")) {
             args.potential_conflict = 1;
@@ -5519,8 +5521,8 @@ handle_ui.on("input.js-email-populate", function () {
         $.ajax(hoturl("=api/user", args), {
             method: "GET", success: success
         });
-    } else if (v === email_info[i + 1].lemail) {
-        success(email_info[i + 1]);
+    } else if (v === searches[i].lemail) {
+        success(searches[i]);
     } else {
         success(null);
     }
@@ -9989,17 +9991,15 @@ var paperlist_tag_ui = (function () {
 function tag_canonicalize(tag) {
     if (tag && tag.charCodeAt(0) === 126 && tag.charCodeAt(1) !== 126) {
         return siteinfo.user.uid + tag;
-    } else {
-        return tag;
     }
+    return tag;
 }
 
 function tag_simplify(tag) {
     if (tag && tag.startsWith(siteinfo.user.uid + "~")) {
         return tag.substring(("" + siteinfo.user.uid).length);
-    } else {
-        return tag;
     }
+    return tag;
 }
 
 function tagvalue_parse(s) {
