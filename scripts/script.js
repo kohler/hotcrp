@@ -2636,8 +2636,8 @@ function make_bubble(bubopts, buboptsx) {
             const container = bubopts.container || document.body;
             container.appendChild(bubdiv);
         }
-        bubdiv.hidden = false;
     }
+    ensure();
 
     function constrainmid(nearpos, wpos, ds, tailfrac) {
         const z0 = nearpos[lcdir[ds]], z1 = nearpos[lcdir[ds^2]];
@@ -2700,6 +2700,7 @@ function make_bubble(bubopts, buboptsx) {
 
     function show() {
         ensure();
+        bubdiv.hidden = false;
         if (!sizes) {
             sizes = calculate_sizes(color);
         }
@@ -2892,11 +2893,9 @@ function make_bubble(bubopts, buboptsx) {
             if (text === undefined) {
                 return bubdiv ? bubdiv.firstChild.textContent : "";
             }
-            ensure();
             return bubble.replace_content(text);
         },
         content_node: function () {
-            ensure();
             return bubdiv.firstChild;
         },
         replace_content: function (...es) {
@@ -2906,7 +2905,6 @@ function make_bubble(bubopts, buboptsx) {
             return bubble;
         },
         hover: function (enter, leave) {
-            ensure();
             bubdiv.addEventListener("pointerenter", enter);
             bubdiv.addEventListener("pointerleave", leave);
             return bubble;
@@ -2923,7 +2921,7 @@ function make_bubble(bubopts, buboptsx) {
             return bubdiv;
         },
         self: function () {
-            return bubdiv ? $(bubdiv) : null;
+            return $(bubdiv);
         },
         outerHTML: function () {
             return bubdiv ? bubdiv.outerHTML : null;
