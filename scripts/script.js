@@ -5909,6 +5909,7 @@ function row_order_drag_confirm(group, defaults) {
         row_fill(row, i, defaults, changes);
     }
     row_order_autogrow(group, defaults);
+    $(changes).trigger("input");
     $(changes).trigger("change");
 }
 
