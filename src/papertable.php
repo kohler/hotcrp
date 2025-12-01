@@ -506,6 +506,10 @@ class PaperTable {
             && $input) {
             echo " has-edit-condition\" data-edit-condition=\"", htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
         }
+        foreach ($rest as $key => $value) {
+            if (str_starts_with($key, "data-"))
+                echo "\" {$key}=\"", htmlspecialchars($value);
+        }
         echo $fieldset ? "\"><legend>" : "\">",
             "<h3 class=\"", $this->control_class($opt->formid, "pfehead");
         if ($for === "checkbox") {
@@ -2379,6 +2383,7 @@ class PaperTable {
         }
         $form_js = [
             "id" => "f-paper",
+            "data-pid" => $this->prow->paperId ? : "new",
             "name" => base64_encode(random_bytes(8)), // prevent FF from incorrectly autofilling on reload
             "class" => "need-unload-protection need-diff-check ui-submit js-submit-paper",
             "data-differs-toggle" => "paper-alert"

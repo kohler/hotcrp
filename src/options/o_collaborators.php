@@ -59,7 +59,14 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5]);
+        $class = "";
+        if (($opt = $this->conf->option_by_id(PaperOption::PCCONFID))
+            && $opt->test_exists($pt->prow)
+            && ($pt->user->can_administer($pt->prow)
+                || $opt->test_editable($pt->prow))) {
+            $class = "uii js-update-potential-conflicts";
+        }
+        $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5, "class" => $class]);
     }
     function render(FieldRender $fr, PaperValue $ov) {
         $n = ["<ul class=\"x namelist-columns\">"];

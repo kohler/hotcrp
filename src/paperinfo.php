@@ -3978,11 +3978,7 @@ class PaperInfoPotentialConflictList {
 
     /** @return string */
     function description_html() {
-        $x = $this->description_text();
-        if ($x !== "") {
-            $x = "<div class=\"pcconfmatch\">{$x}</div>";
-        }
-        return $x;
+        return htmlspecialchars($this->description_text());
     }
 
     /** @return list<non-empty-list<string>> */

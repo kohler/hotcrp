@@ -27,6 +27,8 @@ final class PaperStatus extends MessageSet {
     private $override_json_fields;
     /** @var bool */
     private $json_fields;
+    /** @var ?list<PaperOption> */
+    private $allow_error_fields;
     /** @var int */
     private $doc_savef = 0;
     /** @var list<callable> */
@@ -210,6 +212,13 @@ final class PaperStatus extends MessageSet {
      * @return MessageItem */
     function syntax_error_at($key) {
         return $this->error_at($key, "<0>Validation error [{$key}]");
+    }
+
+    /** @param PaperOption $opt
+     * @return $this */
+    function allow_error_at_option($opt) {
+        $this->allow_error_fields[] = $opt;
+        return $this;
     }
 
     /** @param PaperValue $ov */
@@ -814,6 +823,10 @@ final class PaperStatus extends MessageSet {
         }
         if ($ov !== null) {
             $opt->value_check($ov, $this->user);
+            if ($this->allow_error_fields !== null
+                && in_array($opt, $this->allow_error_fields, true)) {
+                $ov->append_item(MessageItem::success(null));
+            }
             if ($ov->allow_store()) {
                 $opt->value_store($ov, $this);
                 $this->prow->override_option($ov);

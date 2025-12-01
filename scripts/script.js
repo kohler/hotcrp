@@ -12857,6 +12857,101 @@ handle_ui.on("js-remove-document", function () {
     }
 });
 
+(function () {
+let potconf_timeout, potconf_status = 0;
+function update_potential_conflicts() {
+    potconf_timeout = null;
+    if (potconf_status === 1) {
+        potconf_status = 2;
+        return;
+    }
+    potconf_status = 1;
+    const fd = new FormData,
+        f = document.getElementById("f-paper"),
+        aufs = f.querySelector("fieldset[name=\"authors\"]"),
+        auin = aufs ? aufs.querySelectorAll("input[name]") : [];
+    for (const e of auin) {
+        fd.set(e.name, e.value);
+    }
+    if (f.elements.collaborators) {
+        fd.set("collaborators", f.elements.collaborators.value);
+    }
+    $.ajax(hoturl("=api/potentialconflicts", {p: f.getAttribute("data-pid"), ":method:": "GET"}), {
+        method: "POST", data: fd, processData: false, contentType: false,
+        success: save_potential_conflicts
+    });
+}
+function save_potential_conflicts(d) {
+    const old_potconf_status = potconf_status;
+    potconf_status = 0;
+    if (old_potconf_status === 2) {
+        update_potential_conflicts();
+    }
+    if (!d.ok || !d.potential_conflicts) {
+        return;
+    }
+    const fs = document.getElementById("pc_conflicts").closest("fieldset"),
+        cul = fs.lastChild.firstChild,
+        nul = cul.nextSibling,
+        pc_order = fs.getAttribute("data-pc-order").split(/ /),
+        potconf_map = {};
+    for (const potconf of d.potential_conflicts) {
+        if (potconf.type !== "potentialconflict") {
+            continue;
+        }
+        potconf_map[potconf.uid] = potconf;
+        let tt = document.getElementById(`d-pcconf:${potconf.uid}`);
+        if (!tt) {
+            tt = hotcrp.make_bubble.skeleton();
+            tt.id = `d-pcconf:${potconf.uid}`;
+            fs.lastChild.appendChild(tt);
+        }
+        if (potconf.tooltip !== "<5>" + tt.firstChild.innerHTML) {
+            render_text.onto(tt.firstChild, "f", potconf.tooltip);
+        }
+    }
+    let cli = cul.firstChild, nli = nul.firstChild;
+    for (const uid of pc_order) {
+        const isc = cli && cli.getAttribute("data-uid") === uid,
+            isn = nli && nli.getAttribute("data-uid") === uid;
+        if (!isc && !isn) {
+            continue;
+        }
+        const li = isc ? cli : nli, elt = li.firstChild;
+        if (isc) {
+            cli = cli.nextSibling;
+        } else {
+            nli = nli.nextSibling;
+        }
+        const wantc = potconf_map[uid];
+        if (wantc) {
+            if (!isc) {
+                elt.appendChild($e("div", "pcconfmatch"));
+                cul.insertBefore(li, cli);
+            }
+            if (wantc.description !== "<0>" + elt.lastChild.textContent) {
+                render_text.onto(elt.lastChild, "f", wantc.description);
+            }
+            addClass(elt, "want-tooltip");
+            elt.setAttribute("aria-describedby", `d-pcconf:${uid}`);
+        } else if (isc) {
+            if (hasClass(elt.lastChild, "pcconfmatch")) {
+                elt.lastChild.remove();
+            }
+            if (!hasClass(elt, "pcconf-conflicted")) {
+                nul.insertBefore(li, nli);
+            }
+            removeClass(elt, "want-tooltip");
+            elt.removeAttribute("aria-describedby");
+        }
+    }
+}
+handle_ui.on("js-update-potential-conflicts", function () {
+    potconf_timeout && clearTimeout(potconf_timeout);
+    potconf_timeout = setTimeout(update_potential_conflicts, 1000);
+});
+})();
+
 handle_ui.on("js-withdraw", function () {
     const f = this.form, $pu = $popup({near: this, action: f});
     $pu.append($e("p", null, "Are you sure you want to withdraw this " + siteinfo.snouns[0] + " from consideration and/or publication?" + (this.hasAttribute("data-revivable") ? "" : " Only administrators can undo this step.")),

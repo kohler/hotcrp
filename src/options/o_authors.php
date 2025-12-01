@@ -344,9 +344,16 @@ class Authors_PaperOption extends PaperOption {
         $ndigits = (int) ceil(log10($nau + 1));
 
         echo '<div class="papev">',
-            '<div id="authors:container" class="js-row-order need-row-order-autogrow" data-min-rows="', $min_authors, '"',
-            $this->max_count > 0 ? " data-max-rows=\"{$this->max_count}\"" : "",
-            ' data-row-counter-digits="', $ndigits,
+            '<div id="authors:container" class="need-row-order-autogrow';
+        if (($opt = $this->conf->option_by_id(PaperOption::PCCONFID))
+            && $opt->test_exists($pt->prow)
+            && ($pt->user->can_administer($pt->prow)
+                || $opt->test_editable($pt->prow))) {
+            echo ' uii js-update-potential-conflicts';
+        }
+        echo '" data-min-rows="', $min_authors,
+            $this->max_count > 0 ? "\" data-max-rows=\"{$this->max_count}" : "",
+            '" data-row-counter-digits="', $ndigits,
             '" data-row-template="authors:row-template">';
         for ($n = 1; $n <= $nau; ++$n) {
             $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $this->max_count !== 1);

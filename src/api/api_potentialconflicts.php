@@ -27,6 +27,8 @@ class PotentialConflicts_API {
 
         // apply changes
         $ps = new PaperStatus($user);
+        $ps->allow_error_at_option($prow->conf->option_by_id(PaperOption::AUTHORSID));
+        $ps->allow_error_at_option($prow->conf->option_by_id(PaperOption::COLLABORATORSID));
         if (isset($qreq->json)) {
             $json = json_decode($qreq->json);
             if (!is_object($json)) {
@@ -66,22 +68,25 @@ class PotentialConflicts_API {
         foreach ($prow->conf->pc_members() as $pcm) {
             if ($prow->has_author($pcm)) {
                 $potconfs[] = (object) [
-                    "u" => $pcm->contactId,
+                    "uid" => $pcm->contactId,
                     "email" => $pcm->email,
                     "type" => "author"
                 ];
             } else if (($potconf = $prow->potential_conflict_list($pcm))) {
                 $potconfs[] = (object) [
-                    "u" => $pcm->contactId,
+                    "uid" => $pcm->contactId,
                     "email" => $pcm->email,
                     "type" => "potentialconflict",
-                    "description" => "<5>" . $potconf->description_html(),
+                    "description" => "<0>" . $potconf->description_text(),
                     "tooltip" => "<5>" . $potconf->tooltip_html($prow)
                 ];
             }
         }
 
         $prow->abort_prop();
-        return new JsonResult(["ok" => true, "potential_conflicts" => $potconfs]);
+        return new JsonResult([
+            "ok" => true,
+            "potential_conflicts" => $potconfs
+        ]);
     }
 }

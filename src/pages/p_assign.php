@@ -460,7 +460,7 @@ class Assign_Page {
         echo '</div>'; // .pctbname
         if ($potconf) {
             $k = Conflict::is_conflicted($ct) ? " pcconf-conflicted" : "";
-            echo '<div class="need-tooltip', $k,
+            echo '<div class="pcconfmatch need-tooltip', $k,
                 '" data-tooltip-class="gray" data-tooltip="',
                 str_replace('"', '&quot;', $potconf->tooltip_html($this->prow)),
                 '">', $potconf->description_html(), '</div>';

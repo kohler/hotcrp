@@ -214,6 +214,7 @@ class PCConflicts_PaperOption extends PaperOption {
             && !$pt->settings_mode) {
             return;
         }
+        $pcorder = array_keys($pcm);
 
         $confset = $this->conf->conflict_set();
 
@@ -227,11 +228,6 @@ class PCConflicts_PaperOption extends PaperOption {
                 }
             }
         }
-
-        $pt->print_editable_option_papt($this, null, [
-            "id" => $this->formid, "for" => false, "fieldset" => true
-        ]);
-        echo '<div class="papev"><ul class="pc-ctable">';
 
         $potconfs = [];
         if ($ov->prow->paperId) {
@@ -251,27 +247,35 @@ class PCConflicts_PaperOption extends PaperOption {
                 return $a->pc_index <=> $b->pc_index;
             });
         }
-        $last_hadconf = null;
 
+        $pt->print_editable_option_papt($this, null, [
+            "id" => $this->formid, "for" => false, "fieldset" => true,
+            "data-pc-order" => join(" ", $pcorder)
+        ]);
+        echo '<div class="papev need-tooltip relative" data-tooltip-class="gray" data-tooltip-type="within"><ul class="pc-ctable">';
+        $potconftts = [];
+        $last_hasconf = null;
         foreach ($pcm as $id => $p) {
             $pct = $ctmaps[0][$id] ?? 0;
             $ct = $ctmaps[1][$id] ?? 0;
             $potconf = $potconfs[$id] ?? null;
-            if ($last_hadconf && $ct === 0 && !$potconf) {
-                echo '</ul><ul class="pc-ctable mt-4">';
+            $hasconf = $ct > 0 || $potconf;
+            if ($last_hasconf !== false && !$hasconf) {
+                echo '</ul><ul class="pc-ctable">';
             }
-            $last_hadconf = $ct > 0 || $potconf;
+            $last_hasconf = $hasconf;
 
             $name = $pt->user->reviewer_html_for($p);
             if (Conflict::is_conflicted($pct)) {
                 $name .= " " . review_type_icon(-1);
             }
 
-            echo '<li class="ctelt"><div class="ctelti clearfix',
+            echo '<li class="ctelt" data-uid="', $id, '"><div class="ctelti clearfix',
                 $this->selectors ? "" : " checki",
                 Conflict::is_conflicted($pct) ? " pcconf-conflicted" : "";
             if ($potconf) {
-                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', $potconf->tooltip_html($ov->prow));
+                $potconftts[] = "<div id=\"d-pcconf:{$id}\" class=\"bubble\" role=\"tooltip\" hidden><div class=\"bubcontent\">" . $potconf->tooltip_html($ov->prow) . "</div></div>";
+                echo ' want-tooltip" aria-describedby="d-pcconf:', $id;
             }
             echo '">';
 
@@ -307,17 +311,19 @@ class PCConflicts_PaperOption extends PaperOption {
             if ($p->affiliation) {
                 echo '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
             }
+            echo $hidden;
             if ($potconf) {
-                echo $potconf->description_html();
+                echo '<div class="pcconfmatch">', $potconf->description_html(), '</div>';
             }
-            echo $hidden, "</div></li>";
+            echo "</div></li>";
         }
-
         if (empty($pcm)) { // only in settings mode
             echo '<li class="ctelt"><div class="ctelti"><em>(The PC has no members)</em></div></li>';
         }
-
-        echo "</ul></div></fieldset>\n\n";
+        if ($last_hasconf !== false) {
+            echo '</ul><ul class="pc-ctable">';
+        }
+        echo "</ul>", join("", $potconftts), "</div></fieldset>\n\n";
     }
     /** @param FieldChangeSet $fcs */
     function strip_unchanged_qreq(PaperInfo $prow, Qrequest $qreq, $fcs) {

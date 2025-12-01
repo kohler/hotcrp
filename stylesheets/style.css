@@ -2889,6 +2889,12 @@ pre.email {
 .pc-ctable + .pc-ctable {
 	margin-top: 1.5rem;
 }
+.pc-ctable:empty {
+	margin: 0;
+}
+.pc-ctable:empty + .pc-ctable, .pc-ctable + .pc-ctable:empty {
+	margin-top: 0;
+}
 ul.ctable {
 	padding-left: 0;
 }

@@ -910,9 +910,10 @@ class PaperOption implements JsonSerializable {
             && !($extra["no_format_description"] ?? false)) {
             echo $fi->description_preview_html();
         }
+        $class = Ht::add_tokens("w-text need-autogrow", $extra["class"] ?? null);
         echo Ht::textarea($this->formid, $reqd, [
                 "id" => $this->readable_formid(),
-                "class" => $pt->control_class($this->formid, "w-text need-autogrow"),
+                "class" => $pt->control_class($this->formid, $class),
                 "rows" => max($extra["rows"] ?? 1, 1),
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
