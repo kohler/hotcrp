@@ -5057,7 +5057,10 @@ class Conf {
             }
             $ouser = $user;
             if ($user->is_actas_user()) {
-                echo '<li role="none"><em>Acting as ', htmlspecialchars($user->email), '</em></li>';
+                echo '<li role="none"><em>Acting as ', htmlspecialchars($user->email), '</em></li>',
+                    '<li role="none">', Ht::link("Return to main account", $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</li>',
+                    '<li role="separator"></li>';
+
             }
             if ($user->has_email()) {
                 $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
@@ -5085,7 +5088,7 @@ class Conf {
                 echo '<li role="none">', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email]), ["role" => "menuitem", "class" => "qx"]), '</li>';
             }
             $t = $user->has_email() ? "Add another account" : "Sign in";
-            echo '<li role="none">', Ht::link($t, $this->hoturl("signin"), ["role" => "menuitem", "class" => "qx"]), '</li>';
+            echo '<li role="none">', Ht::link($t, $this->hoturl("signin", ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</li>';
         } else if ($itemid === "profile") {
             if ($user->has_email()) {
                 $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
@@ -5110,13 +5113,10 @@ class Conf {
             if (!$user->has_email()) {
                 return;
             }
-            if ($user->is_actas_user()) {
-                echo '<li role="none">', Ht::link("Return to main account", $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem"]), '</li>';
-                return;
-            }
+            $sfx = $user->is_actas_user() ? " of main account" : "";
             echo '<li role="none">',
                 Ht::form($this->hoturl("=signout", ["cap" => null])),
-                Ht::button("Sign out", ["type" => "submit", "class" => "qx", "role" => "menuitem"]),
+                Ht::button("Sign out{$sfx}", ["type" => "submit", "class" => "qx", "role" => "menuitem"]),
                 '</form></li>';
         }
     }
