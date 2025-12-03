@@ -447,10 +447,9 @@ abstract class Op_SearchTerm extends SearchTerm {
             return $qe->assign_context($this);
         } else if (count($newchild) === 1) {
             return (clone $newchild[0])->assign_context($this, $newchild[0]);
-        } else {
-            $this->child = $newchild;
-            return $this;
         }
+        $this->child = $newchild;
+        return $this;
     }
 
     function debug_json() {
@@ -952,12 +951,11 @@ class Then_SearchTerm extends Op_SearchTerm {
         while ($g !== $this->nthen && $group >= $this->_group_offsets[$g + 1]) {
             ++$g;
         }
-        if ($g < $this->nthen) {
-            // XXX This loses information about HIGHLIGHTs, which is probably OK for now
-            return $this->child[$g]->group_slice_term($group - $this->_group_offsets[$g]);
-        } else {
+        if ($g >= $this->nthen) {
             return new False_SearchTerm;
         }
+        // XXX This loses information about HIGHLIGHTs, which is probably OK for now
+        return $this->child[$g]->group_slice_term($group - $this->_group_offsets[$g]);
     }
     /** @param int $group
      * @return ?SearchTerm */
@@ -966,15 +964,12 @@ class Then_SearchTerm extends Op_SearchTerm {
         while ($g !== $this->nthen && $group >= $this->_group_offsets[$g + 1]) {
             ++$g;
         }
-        if ($g < $this->nthen) {
-            if (($thench = $this->_nested_thens[$g])) {
-                return $thench->group_head_term($group - $this->_group_offsets[$g]);
-            } else {
-                return $this->child[$g];
-            }
-        } else {
+        if ($g >= $this->nthen) {
             return null;
+        } else if (($thench = $this->_nested_thens[$g])) {
+            return $thench->group_head_term($group - $this->_group_offsets[$g]);
         }
+        return $this->child[$g];
     }
     function script_expression(PaperInfo $row, $about) {
         $sexprs = [];
@@ -1500,9 +1495,8 @@ class TextMatch_SearchTerm extends SearchTerm {
         $sqi->add_column("dataOverflow", "Paper.dataOverflow");
         if ($this->trivial && !$this->authorish) {
             return "(Paper.{$this->field}!='' or Paper.dataOverflow is not null)";
-        } else {
-            return "true";
         }
+        return "true";
     }
     function is_sqlexpr_precise() {
         return $this->trivial && !$this->authorish;
@@ -1525,9 +1519,8 @@ class TextMatch_SearchTerm extends SearchTerm {
             return parent::script_expression($row, $about);
         } else if (!$this->trivial || $this->field === "authorInformation") {
             return null;
-        } else {
-            return ["type" => $this->field, "match" => $this->trivial];
         }
+        return ["type" => $this->field, "match" => $this->trivial];
     }
     function about() {
         return self::ABOUT_PAPER;
@@ -1604,12 +1597,11 @@ class PaperID_SearchTerm extends SearchTerm {
     /** @return int|false */
     function index_of($p) {
         $i = $this->lower_bound($p);
-        if ($i < count($this->r) && $p >= $this->r[$i]->first) {
-            $d = $p - $this->r[$i]->first;
-            return $this->r[$i]->pos + ($this->r[$i]->rev ? -$d : $d);
-        } else {
+        if ($i >= count($this->r) || $p < $this->r[$i]->first) {
             return false;
         }
+        $d = $p - $this->r[$i]->first;
+        return $this->r[$i]->pos + ($this->r[$i]->rev ? -$d : $d);
     }
     /** @param int $p0
      * @param int $p1
@@ -1658,32 +1650,30 @@ class PaperID_SearchTerm extends SearchTerm {
         }
     }
     function merge(SearchTerm $st) {
-        if ($st instanceof PaperID_SearchTerm) {
-            $rs = $st->r;
-            if (!$st->in_order) {
-                usort($rs, function ($a, $b) { return $a->first <=> $b->first; });
-            }
-            foreach ($rs as $r) {
-                $this->add_drange($r->first, $r->last, $r->rev, $r->explicit);
-            }
-            return true;
-        } else {
+        if (!($st instanceof PaperID_SearchTerm)) {
             return false;
         }
+        $rs = $st->r;
+        if (!$st->in_order) {
+            usort($rs, function ($a, $b) { return $a->first <=> $b->first; });
+        }
+        foreach ($rs as $r) {
+            $this->add_drange($r->first, $r->last, $r->rev, $r->explicit);
+        }
+        return true;
     }
     /** @return ?list<int> */
     function paper_ids() {
-        if ($this->n <= 1000) {
-            $a = [];
-            foreach ($this->r as $r) {
-                for ($i = $r->first; $i < $r->last; ++$i) {
-                    $a[] = $i;
-                }
-            }
-            return $a;
-        } else {
+        if ($this->n > 1000) {
             return null;
         }
+        $a = [];
+        foreach ($this->r as $r) {
+            for ($i = $r->first; $i < $r->last; ++$i) {
+                $a[] = $i;
+            }
+        }
+        return $a;
     }
     /** @return list<PaperIDRange> */
     function ranges() {
@@ -1701,13 +1691,12 @@ class PaperID_SearchTerm extends SearchTerm {
         } else if ($this->n <= 8 * count($this->r)
                    && ($pids = $this->paper_ids()) !== null) {
             return "{$field} in (" . join(",", $pids) . ")";
-        } else {
-            $s = [];
-            foreach ($this->r as $r) {
-                $s[] = "({$field}>={$r->first} and {$field}<{$r->last})";
-            }
-            return "(" . join(" or ", $s) . ")";
         }
+        $s = [];
+        foreach ($this->r as $r) {
+            $s[] = "({$field}>={$r->first} and {$field}<{$r->last})";
+        }
+        return "(" . join(" or ", $s) . ")";
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1722,9 +1711,8 @@ class PaperID_SearchTerm extends SearchTerm {
     function default_sort_column($top, $pl) {
         if ($top && !$this->in_order) {
             return new PaperIDOrder_PaperColumn($pl->conf, $this);
-        } else {
-            return null;
         }
+        return null;
     }
     function about() {
         return self::ABOUT_PAPER;

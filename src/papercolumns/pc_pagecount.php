@@ -57,10 +57,9 @@ class PageCount_PaperColumn extends PaperColumn {
             return (string) $pn;
         } else if ($this->doc && $this->cf->need_recheck()) {
             $dt = $this->dtype($pl->user, $row);
-            return '<span class="need-format-check is-npages"'
-                . ($dt ? ' data-dt="' . $dt . '"' : '')
-                . ($dt ? ' data-dtype="' . $dt . '"' : '') /* XXX backward compat */
-                . '></span>';
+            return '<span class="need-format-check is-npages'
+                . ($dt ? '" data-dt="' . $dt : '')
+                . '"></span>';
         }
         return "";
     }

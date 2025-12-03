@@ -178,9 +178,8 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     private function render_checkbox($tid, $checked, $arg) {
         if ($this->max_count === 1) {
             return Ht::radio($this->formid, $tid, $checked, $arg);
-        } else {
-            return Ht::checkbox("{$this->formid}:{$tid}", 1, $checked, $arg);
         }
+        return Ht::checkbox("{$this->formid}:{$tid}", 1, $checked, $arg);
     }
 
     function print_web_edit(PaperTable $pt, $ov, $reqov) {

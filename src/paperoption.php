@@ -316,9 +316,8 @@ class PaperOption implements JsonSerializable {
         }
         if (!preg_match('/\A(?:title|paper|submission|final|authors|blind|nonblind|contacts|abstract|topics|pc_conflicts|pcconf|collaborators|reviews|sclass|status.*|submit.*|fold.*|[a-z]?[a-z]?[-_].*|has[-_].*|)\z/', $s)) {
             return $s;
-        } else {
-            return "sf-" . $s;
         }
+        return "sf-" . $s;
     }
 
     /** @return list<FmtArg> */
@@ -376,9 +375,8 @@ class PaperOption implements JsonSerializable {
     private function abbrev_matcher() {
         if ($this->nonpaper) {
             return $this->conf->options()->nonpaper_abbrev_matcher();
-        } else {
-            return $this->conf->abbrev_matcher();
         }
+        return $this->conf->abbrev_matcher();
     }
     /** @return string|false */
     function search_keyword() {
@@ -469,9 +467,8 @@ class PaperOption implements JsonSerializable {
             return null;
         } else if (strcasecmp($expr, "none") === 0) {
             return "NONE";
-        } else {
-            return $expr;
         }
+        return $expr;
     }
 
     /** @return ?string */
@@ -480,9 +477,8 @@ class PaperOption implements JsonSerializable {
             return $this->exists_if;
         } else if ($this->_phase === PaperInfo::PHASE_FINAL) {
             return "phase:final";
-        } else {
-            return null;
         }
+        return null;
     }
     /** @param null|bool|string|SearchTerm $x
      * @suppress PhanAccessReadOnlyProperty */
@@ -758,9 +754,8 @@ class PaperOption implements JsonSerializable {
     function display_name() {
         if ($this->page_order === false) {
             return "none";
-        } else {
-            return self::$display_map[$this->_display];
         }
+        return self::$display_map[$this->_display];
     }
 
     #[\ReturnTypeWillChange]
@@ -884,9 +879,8 @@ class PaperOption implements JsonSerializable {
         }
         if ($j !== "" || ($flags & self::PARSE_STRING_EMPTY) !== 0) {
             return PaperValue::make($prow, $this, 1, $j);
-        } else {
-            return PaperValue::make($prow, $this);
         }
+        return PaperValue::make($prow, $this);
     }
 
     /** @param PaperValue $ov
@@ -1045,9 +1039,8 @@ class PaperOption implements JsonSerializable {
             && in_array($lword, ["yes", "no", "y", "n", "true", "false"], true)) {
             $v = $lword[0] === "y" || $lword[0] === "t";
             return (new OptionPresent_SearchTerm($srch->user, $this))->negate_if($v !== ($sword->compar !== "!="));
-        } else {
-            return null;
         }
+        return null;
     }
     /** @return array|bool|null */
     function present_script_expression() {
@@ -1428,9 +1421,8 @@ class Document_PaperOption extends PaperOption {
         } else if ($this->type === "video") {
             return [Mimetype::checked_lookup(".mp4"),
                     Mimetype::checked_lookup(".avi")];
-        } else {
-            return [];
         }
+        return [];
     }
 
     function value_force(PaperValue $ov) {
@@ -1568,7 +1560,6 @@ class Document_PaperOption extends PaperOption {
         $pt->print_editable_option_papt($this, $heading, ["for" => $doc ? false : "{$fk}:uploader", "id" => $this->readable_formid()]);
 
         echo '<div class="papev has-document" data-dt="', $this->id,
-            '" data-dtype="', $this->id, /* XXX backward compat */
             '" data-document-name="', $fk, '"';
         if ($doc) {
             echo ' data-docid="', $doc->paperStorageId, '"';
@@ -1802,9 +1793,8 @@ class Text_PaperOption extends PaperOption {
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if ($sword->compar === "") {
             return new OptionText_SearchTerm($srch->user, $this, $sword->cword);
-        } else {
-            return null;
         }
+        return null;
     }
     function present_script_expression() {
         return ["type" => "text_present", "formid" => $this->formid];

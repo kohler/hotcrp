@@ -12494,7 +12494,7 @@ handle_ui.on("js-check-format", function () {
     }, 1000);
     $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {
-            dt: doce.getAttribute("data-dt") || doce.getAttribute("data-dtype") /* XXX */,
+            dt: doce.getAttribute("data-dt"),
             docid: doce.getAttribute("data-docid")
         },
         success: function (data) {
@@ -12551,7 +12551,7 @@ function background_format_check() {
         });
     } else if (hasClass(needed, "is-npages")
                && (pid = needed.closest("[data-pid]"))) {
-        const dt = needed.getAttribute("data-dt") || needed.getAttribute("data-dtype") /* XXX */ || "0";
+        const dt = needed.getAttribute("data-dt") || "0";
         $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dt: dt, soft: 1}), {
             success: function (data) {
                 if (data && data.ok)
@@ -12561,7 +12561,7 @@ function background_format_check() {
         });
     } else if (hasClass(needed, "is-nwords")
                && (pid = needed.closest("[data-pid]"))) {
-        const dt = needed.getAttribute("data-dt") || needed.getAttribute("data-dtype") /* XXX */ || "0";
+        const dt = needed.getAttribute("data-dt") || "0";
         $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dt: dt, soft: 1}), {
             success: function (data) {
                 if (data && data.ok)
@@ -12603,10 +12603,7 @@ handle_ui.on("js-add-attachment", function () {
     var max_size = attache.getAttribute("data-document-max-size"),
         doce = $e("div", "has-document document-new-instance hidden",
             $e("div", "document-upload", filee), actionse);
-    if (attache.hasAttribute("data-dt") /* XXX backward compat */)
-        doce.setAttribute("data-dt", attache.getAttribute("data-dt"));
-    else
-        doce.setAttribute("data-dt", attache.getAttribute("data-dtype"));
+    doce.setAttribute("data-dt", attache.getAttribute("data-dt"));
     doce.setAttribute("data-document-name", name);
     if (max_size != null)
         doce.setAttribute("data-document-max-size", max_size);
@@ -12628,7 +12625,7 @@ handle_ui.on("js-replace-document", function () {
         doce.querySelector(".document-replacer").before(actions);
     }
     if (!u) {
-        const dt = doce.getAttribute("data-dt") || doce.getAttribute("data-dtype");
+        const dt = doce.getAttribute("data-dt");
         var dname = doce.getAttribute("data-document-name") || ("opt" + dt);
         u = $e("input", "uich document-uploader");
         u.id = u.name = dname + ":file";
@@ -12760,10 +12757,10 @@ handle_ui.on("document-uploader", function (event) {
             progress();
         }
         var args = {p: siteinfo.paperid};
-        if (token)
+        if (token) {
             args.token = token;
-        else {
-            args.dt = doce.getAttribute("data-dt") || doce.getAttribute("data-dtype");
+        } else {
+            args.dt = doce.getAttribute("data-dt");
             args.start = 1;
         }
         if (cancelled) {
@@ -12772,10 +12769,10 @@ handle_ui.on("document-uploader", function (event) {
                 $.ajax(hoturl("=api/upload", args), {method: "POST"});
             }
         } else if (!r.hash) {
-            var fd = new FormData, myxhr;
+            let fd = new FormData, myxhr;
             fd.append("mimetype", file.type);
             fd.append("filename", file.name);
-            var endpos = Math.min(size, pos + blob_limit);
+            const endpos = Math.min(size, pos + blob_limit);
             uploading = endpos - pos;
             if (uploading !== 0) {
                 args.offset = pos;
