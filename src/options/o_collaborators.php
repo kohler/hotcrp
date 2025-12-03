@@ -60,10 +60,7 @@ class Collaborators_PaperOption extends PaperOption {
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $class = "";
-        if (($opt = $this->conf->option_by_id(PaperOption::PCCONFID))
-            && $opt->test_exists($pt->prow)
-            && ($pt->user->can_administer($pt->prow)
-                || $opt->test_editable($pt->prow))) {
+        if ($pt->has_editable_pc_conflicts()) {
             $class = "uii js-update-potential-conflicts";
         }
         $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5, "class" => $class]);

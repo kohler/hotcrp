@@ -366,6 +366,14 @@ class PaperTable {
         return $this->can_view_reviews;
     }
 
+    /** @return bool */
+    function has_editable_pc_conflicts() {
+        $opt = $this->conf->option_by_id(PaperOption::PCCONFID);
+        return $this->edit_mode === 2
+            && $opt->test_visible($this->prow)
+            && ($this->admin || $opt->test_editable($this->prow));
+    }
+
     /** @param string $abstract
      * @return bool */
     private function abstract_foldable($abstract) {
@@ -547,7 +555,7 @@ class PaperTable {
             echo "</legend>";
         }
         $this->print_field_description($opt);
-        if ((!$input && $this->edit_mode === 2)
+        if (($this->edit_mode === 2 && !$input)
             || ($this->admin && !$opt->test_editable($this->prow))) {
             if ($input) {
                 $ml = [MessageItem::marked_note("<0>Only administrators can edit this field.")];

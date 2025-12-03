@@ -345,10 +345,7 @@ class Authors_PaperOption extends PaperOption {
 
         echo '<div class="papev">',
             '<div id="authors:container" class="need-row-order-autogrow';
-        if (($opt = $this->conf->option_by_id(PaperOption::PCCONFID))
-            && $opt->test_exists($pt->prow)
-            && ($pt->user->can_administer($pt->prow)
-                || $opt->test_editable($pt->prow))) {
+        if ($pt->has_editable_pc_conflicts()) {
             echo ' uii js-update-potential-conflicts';
         }
         echo '" data-min-rows="', $min_authors,
