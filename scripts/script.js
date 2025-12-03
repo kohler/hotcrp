@@ -2440,6 +2440,20 @@ handle_ui.on("js-range-click", function (evt) {
     }
 });
 
+handle_ui.on("js-range-radio", function (evt) {
+    const f = this.form,
+        kind = this.getAttribute("data-range-type") || this.name;
+
+    // find checkboxes of this type
+    const cbs = [], cbisg = [], cbgs = [];
+    for (const e of f.querySelectorAll("input.js-range-radio:checked")) {
+        const tkind = e.getAttribute("data-range-type") || this.name;
+        if (kind === tkind && e !== this) {
+            e.checked = false;
+        }
+    }
+});
+
 $(function () {
     const time = now_msec();
     $(".is-range-group").each(function () {

@@ -165,7 +165,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
     /** @param FieldChangeSet $fcs */
     function strip_unchanged_qreq(PaperInfo $prow, Qrequest $qreq, $fcs) {
-        if ($this->max_count !== 1) {
+        if ($this->min_count !== 1 || $this->max_count !== 1) {
             $basev = $prow->base_option($this);
             foreach ($this->topic_set() as $tid => $tname) {
                 if ($fcs->test("{$this->formid}:{$tid}") === FieldChangeSet::UNCHANGED) {
@@ -176,7 +176,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
     private function render_checkbox($tid, $checked, $arg) {
-        if ($this->max_count === 1) {
+        if ($this->min_count === 1 && $this->max_count === 1) {
             return Ht::radio($this->formid, $tid, $checked, $arg);
         }
         return Ht::checkbox("{$this->formid}:{$tid}", 1, $checked, $arg);
@@ -191,9 +191,16 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             $this->compact ? ' compact' : '',
             count($topicset) < 7 ? ' column-count-1' : '',
             '">';
-        foreach ($topicset->group_list() as $tg) {
-            $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
+        if ($this->min_count === 1 && $this->max_count === 1) {
+            $arg = ["id" => false];
+        } else if ($this->max_count === 1) {
+            $arg = ["id" => false, "class" => "uic js-range-radio",
                     "data-range-type" => $this->formid];
+        } else {
+            $arg = ["id" => false, "class" => "uic js-range-click",
+                    "data-range-type" => $this->formid];
+        }
+        foreach ($topicset->group_list() as $tg) {
             if (($isgroup = $tg->nontrivial())) {
                 echo '<li class="ctelt cteltg"><div class="ctelti">';
                 if ($tg->has_group_topic()) {
@@ -232,7 +239,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
     function print_web_edit_hidden(PaperTable $pt, $ov) {
-        if ($this->max_count === 1) {
+        if ($this->min_count === 1 && $this->max_count === 1) {
             parent::print_web_edit_hidden($pt, $ov);
             return;
         }
@@ -279,14 +286,14 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
     function present_script_expression() {
-        if ($this->max_count === 1) {
+        if ($this->min_count === 1 && $this->max_count === 1) {
             return ["type" => "dropdown", "formid" => $this->formid];
         }
         return ["type" => "checkboxes", "formid" => $this->formid];
     }
 
     function match_script_expression($values) {
-        if ($this->max_count === 1) {
+        if ($this->min_count === 1 && $this->max_count === 1) {
             return ["type" => "in", "child" => [$this->present_script_expression()], "values" => $values];
         }
         return ["type" => "checkboxes", "formid" => $this->formid, "values" => $values];
