@@ -13280,12 +13280,10 @@ edit_conditions.numeric = function (ec, form) {
     return v !== "" && !isNaN((n = parseFloat(v))) ? n : null;
 };
 edit_conditions.document_count = function (ec, form) {
+    const fs = fieldset(form, ec.fieldset || ec.formid);
     let n = 0;
-    $(form).find(".has-document").each(function () {
-        if ((this.getAttribute("data-dt") || this.getAttribute("data-dtype")) != ec.dt) {
-            return;
-        }
-        const name = this.getAttribute("data-document-name"),
+    for (const dn of fs.querySelectorAll(".has-document")) {
+        const name = dn.getAttribute("data-document-name"),
             removee = form.elements[name + ":delete"];
         if (removee && removee.value) {
             return;
@@ -13300,7 +13298,7 @@ edit_conditions.document_count = function (ec, form) {
         } else if (preve && preve.value) {
             n += 1;
         }
-    });
+    }
     return n;
 };
 edit_conditions.compar = function (ec, form) {

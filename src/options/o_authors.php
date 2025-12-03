@@ -360,6 +360,20 @@ class Authors_PaperOption extends PaperOption {
         $this->echo_editable_authors_line($pt, '$', null, null, $this->max_count !== 1);
         echo "</template></div></fieldset>\n\n";
     }
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        echo '<fieldset name="authors" role="none" hidden>';
+        foreach (self::author_list($ov) as $i => $au) {
+            $n = $i + 1;
+            echo Ht::hidden("authors:{$n}:email", $au->email, ["disabled" => true]);
+            if (($n = $au->name(NAME_PARSABLE)) !== "") {
+                echo Ht::hidden("authors:{$n}:name", $n, ["disabled" => true]);
+            }
+            if ($au->affiliation !== "") {
+                echo Ht::hidden("authors:{$n}:affiliation", $au->affiliation, ["disabled" => true]);
+            }
+        }
+        echo '</fieldset>';
+    }
 
     function field_fmt_context() {
         return [new FmtArg("max", $this->max_count)];

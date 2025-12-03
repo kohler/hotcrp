@@ -231,6 +231,22 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         echo "</ul></div></fieldset>\n\n";
     }
 
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        if ($this->max_count === 1) {
+            parent::print_web_edit_hidden($pt, $ov);
+            return;
+        }
+        echo '<fieldset name="', $this->formid, '" role="none" hidden>';
+        $topicset = $this->topic_set();
+        foreach ($topicset->group_list() as $tg) {
+            foreach ($tg->members() as $tid) {
+                $checked = in_array($tid, $ov->value_list(), true);
+                echo $this->render_checkbox($tid, $checked, ["disabled" => true]);
+            }
+        }
+        echo '</fieldset>';
+    }
+
     function render(FieldRender $fr, PaperValue $ov) {
         $vs = $ov->value_list();
         if (!empty($vs)) {
@@ -263,10 +279,16 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
     function present_script_expression() {
+        if ($this->max_count === 1) {
+            return ["type" => "dropdown", "formid" => $this->formid];
+        }
         return ["type" => "checkboxes", "formid" => $this->formid];
     }
 
     function match_script_expression($values) {
+        if ($this->max_count === 1) {
+            return ["type" => "in", "child" => [$this->present_script_expression()], "values" => $values];
+        }
         return ["type" => "checkboxes", "formid" => $this->formid, "values" => $values];
     }
 }

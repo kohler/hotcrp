@@ -917,6 +917,11 @@ class PaperOption implements JsonSerializable {
             ]),
             "</div></div>\n\n";
     }
+    /** @param PaperValue $ov */
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        echo Ht::hidden($this->formid, $ov->data() ?? $ov->value ?? 0,
+                        ["disabled" => true]);
+    }
     /** @param PaperInfo $prow
      * @return string */
     function web_edit_html(PaperInfo $prow, Contact $user) {
@@ -1119,6 +1124,8 @@ class Separator_PaperOption extends PaperOption {
         $pt->print_field_description($this);
         echo '</div>';
     }
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+    }
 }
 
 class Checkbox_PaperOption extends PaperOption {
@@ -1153,6 +1160,9 @@ class Checkbox_PaperOption extends PaperOption {
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
         echo "</div>\n\n";
+    }
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        echo Ht::checkbox($this->formid, 1, !!$ov->value, ["disabled" => true, "hidden" => true]);
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
@@ -1525,6 +1535,7 @@ class Document_PaperOption extends PaperOption {
         if (($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL)
             && ($this->id === DTYPE_FINAL) !== ($pt->user->edit_paper_state($ov->prow) === 2)
             && !$pt->settings_mode) {
+            $this->print_web_edit_hidden($pt, $ov);
             return;
         }
 
@@ -1557,7 +1568,11 @@ class Document_PaperOption extends PaperOption {
         if (!empty($msgs)) {
             $heading .= ' <span class="n">(' . join(", ", $msgs) . ')</span>';
         }
-        $pt->print_editable_option_papt($this, $heading, ["for" => $doc ? false : "{$fk}:uploader", "id" => $this->readable_formid()]);
+        $pt->print_editable_option_papt($this, $heading, [
+            "for" => $doc ? false : "{$fk}:uploader",
+            "id" => $this->readable_formid(),
+            "fieldset" => "{$this->formid}:field"
+        ]);
 
         echo '<div class="papev has-document" data-dt="', $this->id,
             '" data-document-name="', $fk, '"';
@@ -1612,7 +1627,15 @@ class Document_PaperOption extends PaperOption {
         }
 
         echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "{$fk}:uploader"]), '</div>',
-            "</div></div>\n\n";
+            "</div></fieldset>\n\n";
+    }
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        echo '<fieldset name="', $this->formid, ':field" role="none" hidden>',
+            '<div class="has-document" data-document-name="', $this->formid, '">';
+        if ($ov->value) {
+            echo Ht::hidden($this->formid, $ov->value, ["disabled" => true]);
+        }
+        echo '</div></fieldset>';
     }
 
     function validate_document(DocumentInfo $doc) {
@@ -1723,7 +1746,7 @@ class Document_PaperOption extends PaperOption {
         return $this->parse_boolean_search($sword, $srch);
     }
     function present_script_expression() {
-        return ["type" => "document_count", "formid" => $this->formid, "dt" => $this->id, "dtype" => $this->id /* XXX backward compat */];
+        return ["type" => "document_count", "fieldset" => "{$this->formid}:field"];
     }
 }
 

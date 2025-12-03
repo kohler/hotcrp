@@ -503,8 +503,12 @@ class PaperTable {
         } else {
             $for = $rest["for"] ?? false;
         }
-        echo $fieldset ? "<fieldset name=\"{$opt->formid}\"" : "<div",
-            " class=\"pf pfe";
+        if ($fieldset) {
+            $fsname = $fieldset === true ? $opt->formid : $fieldset;
+            echo "<fieldset name=\"{$fsname}\" class=\"pf pfe";
+        } else {
+            echo "<div class=\"pf pfe";
+        }
         if ((!$opt->test_exists($this->prow) && !$this->settings_mode)
             || ($rest["hidden"] ?? false)) {
             echo " hidden";
@@ -2436,6 +2440,7 @@ class PaperTable {
                     $heading = null;
                 }
                 $this->print_editable_option_papt($o, $heading, ["for" => false, "input" => false]);
+                $o->print_web_edit_hidden($this, $ov);
                 $klass = $fr->value_long ? "papev w-text" : "papev"; // XXX too one-weird-trick
                 echo $fr->value_html($klass), "</div>";
                 continue;

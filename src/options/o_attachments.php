@@ -170,6 +170,17 @@ class Attachments_PaperOption extends PaperOption {
             Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]),
             "</div></fieldset>\n\n";
     }
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        echo '<fieldset name="', $this->formid, '" role="none" hidden>';
+        foreach ($ov->document_set() as $i => $doc) {
+            $ctr = $i + 1;
+            $oname = "{$this->formid}:{$ctr}";
+            echo '<div class="has-document" data-document-name="', $oname, '">',
+                Ht::hidden($oname, $doc->paperStorageId, ["disabled" => true]),
+                '</div>';
+        }
+        echo '</fieldset>';
+    }
 
     function render(FieldRender $fr, PaperValue $ov) {
         $want_mimetype = $fr->column && $fr->column->view_option("type");
@@ -247,6 +258,6 @@ class Attachments_PaperOption extends PaperOption {
         return null;
     }
     function present_script_expression() {
-        return ["type" => "document_count", "formid" => $this->formid, "dt" => $this->id, "dtype" => $this->id /* XXX backward compat */];
+        return ["type" => "document_count", "fieldset" => $this->formid];
     }
 }
