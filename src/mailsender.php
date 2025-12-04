@@ -46,6 +46,10 @@ class MailSender {
     private $skipcount = 0;
     /** @var array<int,true> */
     private $mrecipients = [];
+    /** @var ?HotCRPMailPreparation */
+    private $active_prep;
+    /** @var ?HotCRPMailPreparation */
+    private $active_censored_prep;
     /** @var bool */
     private $had_invalid_recipient = false;
     /** @var bool */
@@ -364,38 +368,39 @@ class MailSender {
     }
 
     /** @param HotCRPMailPreparation $prep
-     * @param HotCRPMailPreparation &$last_prep
      * @param ?Contact $recipient
      * @return bool */
-    private function process_prep($prep, &$last_prep, $recipient) {
+    private function process_prep($prep, $recipient) {
         // Don't combine senders if anything differs. Also, don't combine
         // mails from different papers, unless those mails are to the same
         // person.
-        $mail_differs = !$prep->can_merge($last_prep);
-        if (!$mail_differs && !$prep->has_all_recipients($last_prep)) {
+        $mail_differs = !$prep->can_merge($this->active_prep);
+        if (!$mail_differs && !$prep->has_all_recipients($this->active_prep)) {
             $this->groupable = true;
         }
 
         if ($mail_differs || !$this->group) {
-            if (!$last_prep->fake) {
-                $this->send_prep($last_prep);
+            if (!$this->active_prep->fake) {
+                $this->send_active_prep();
             }
-            $last_prep = $prep;
+            $this->active_prep = $prep;
+            $this->active_censored_prep = null;
             $must_include = true;
         } else {
             $must_include = false;
         }
 
-        if (!$prep->fake
-            && ($must_include
-                || !$recipient
-                || !$last_prep->has_recipient($recipient))) {
-            if ($last_prep !== $prep) {
-                $last_prep->merge($prep);
-            }
-            return true;
+        if ($prep->fake
+            || (!$must_include
+                && $recipient
+                && $this->active_prep->has_recipient($recipient))) {
+            return false;
         }
-        return false;
+
+        if ($prep !== $this->active_prep) {
+            $this->active_prep->merge($prep);
+        }
+        return true;
     }
 
     /** @param HotCRPMailPreparation $prep
@@ -410,16 +415,15 @@ class MailSender {
         return isset($this->sendprep[self::prepid($prep)]);
     }
 
-    /** @param HotCRPMailPreparation $prep */
-    private function print_prep($prep) {
+    private function print_active_prep() {
         if ($this->no_print) {
             return;
         }
 
         // hide passwords from non-chair users
-        $show_prep = $prep;
-        if ($prep->censored_preparation) {
-            $show_prep = $prep->censored_preparation;
+        $prep = $show_prep = $this->active_prep;
+        if ($this->active_censored_prep) {
+            $show_prep = $this->active_censored_prep;
             $show_prep->finalize();
         }
 
@@ -477,8 +481,8 @@ class MailSender {
             '</div>', $this->sending ? "" : '</div>', "</fieldset>\n";
     }
 
-    /** @param HotCRPMailPreparation $prep */
-    private function send_prep($prep) {
+    private function send_active_prep() {
+        $prep = $this->active_prep;
         if ($this->sending
             && !$this->send_all
             && !$this->qreq_prep_selected($prep)) {
@@ -515,7 +519,7 @@ class MailSender {
             $this->had_invalid_mail = true;
         }
 
-        $this->print_prep($prep);
+        $this->print_active_prep();
     }
 
     function run() {
@@ -560,12 +564,15 @@ class MailSender {
             $rest["no_send"] = true;
             $rest["censor"] = Mailer::CENSOR_DISPLAY;
         }
+        $need_censored_prep = $this->sending
+            && (!$this->user->privChair || $this->conf->opt("chairHidePasswords"));
 
         $mailer = new HotCRPMailer($this->conf);
         $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
         $fake_prep = new HotCRPMailPreparation($this->conf, null);
         $fake_prep->fake = true;
-        $last_prep = $fake_prep;
+        $this->active_prep = $fake_prep;
+        $this->active_censored_prep = null;
         $nrows_done = 0;
         $nrows_total = count($recip_set);
         $nwarnings = 0;
@@ -607,13 +614,15 @@ class MailSender {
                 }
             }
 
-            if (!$prep->has_error() && $this->process_prep($prep, $last_prep, $user)) {
-                if ((!$this->user->privChair || $this->conf->opt("chairHidePasswords"))
-                    && !$last_prep->censored_preparation
-                    && $rest["censor"] === Mailer::CENSOR_NONE) {
+            if (!$prep->has_error()
+                && $this->process_prep($prep, $user)
+                && $need_censored_prep) {
+                if ($this->active_censored_prep) {
+                    $this->active_censored_prep->merge($prep);
+                } else {
                     $rest["censor"] = Mailer::CENSOR_DISPLAY;
                     $mailer->reset($user, $rest);
-                    $last_prep->censored_preparation = $mailer->prepare($template, $rest);
+                    $this->active_censored_prep = $mailer->prepare($template, $rest);
                     $rest["censor"] = Mailer::CENSOR_NONE;
                 }
             }
@@ -635,7 +644,7 @@ class MailSender {
             }
         }
 
-        $this->process_prep($fake_prep, $last_prep, null);
+        $this->process_prep($fake_prep, null);
         $this->print_mailinfo($nrows_done, $nrows_total);
 
         if ($this->mcount === 0) {

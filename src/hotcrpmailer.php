@@ -13,8 +13,6 @@ class HotCRPMailPreparation extends MailPreparation {
     public $combination_type = 0;
     /** @var bool */
     public $fake = false;
-    /** @var ?HotCRPMailPreparation */
-    public $censored_preparation; // used in mail tool
 
     /** @param Conf $conf
      * @param ?Contact $recipient */
