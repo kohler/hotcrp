@@ -295,6 +295,7 @@ class UpdateContactdb_Batch {
         $subcount_type = ($this->confrow->conf_flags & 15);
         $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeModified, timeSubmitted, exists (select * from PaperReview where paperId=Paper.paperId and reviewModified>0) from Paper");
         $max_submitted = 0;
+        $max_timeModified = 0;
         $nsubmitted = 0;
         $pids = [];
         $qv = [];
@@ -313,6 +314,7 @@ class UpdateContactdb_Batch {
             }
             unset($epapers[$pid]);
             $max_submitted = max($max_submitted, abs($timeSubmitted));
+            $max_timeModified = max($max_timeModified, $timeModified);
             if ($timeSubmitted > 0
                 || ($timeSubmitted < 0
                     && ($has_review || $subcount_type === 1))) {
@@ -329,7 +331,11 @@ class UpdateContactdb_Batch {
         }
         if ($this->confrow->last_submission_at < $max_submitted
             || $this->confrow->submission_count != $nsubmitted) {
-            Dbl::ql($cdb, "update Conferences set submission_count=?, last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $nsubmitted, $max_submitted, $this->cdb_confid);
+            Dbl::ql($cdb, "update Conferences set submission_count=?,
+                    last_submission_at=greatest(coalesce(last_submission_at,0), ?),
+                    last_timeModified=greatest(coalesce(last_timeModified,0), ?)
+                    where confid=?",
+                $nsubmitted, $max_submitted, $max_timeModified, $this->cdb_confid);
         }
         if ($this->verbose) {
             fwrite(STDERR, "{$this->conftid} [#{$this->confrow->confid}]: submissions: {$this->confrow->submission_count} -> {$nsubmitted}\n");
