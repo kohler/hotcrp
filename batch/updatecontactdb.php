@@ -330,6 +330,7 @@ class UpdateContactdb_Batch {
             Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?a", $this->cdb_confid, array_keys($epapers));
         }
         if ($this->confrow->last_submission_at < $max_submitted
+            || $this->confrow->last_timeModified < $max_timeModified
             || $this->confrow->submission_count != $nsubmitted) {
             Dbl::ql($cdb, "update Conferences set submission_count=?,
                     last_submission_at=greatest(coalesce(last_submission_at,0), ?),
