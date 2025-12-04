@@ -7,6 +7,34 @@ if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     exit(UpdateContactdb_Batch::make_args($argv)->run());
 }
 
+class ConferencePaperInfo {
+    /** @var int */
+    public $confid;
+    /** @var int */
+    public $paperId;
+    /** @var string */
+    public $title;
+    /** @var int */
+    public $timeModified;
+    /** @var int */
+    public $timeSubmitted;
+
+    /** @return ?ConferencePaperInfo */
+    static function fetch($result) {
+        if (($cpi = $result->fetch_object("ConferencePaperInfo"))) {
+            $cpi->fetch_incorporate();
+        }
+        return $cpi;
+    }
+
+    private function fetch_incorporate() {
+        $this->confid = (int) $this->confid;
+        $this->paperId = (int) $this->paperId;
+        $this->timeModified = (int) $this->timeModified;
+        $this->timeSubmitted = (int) $this->timeSubmitted;
+    }
+}
+
 class UpdateContactdb_Batch {
     /** @var Conf */
     public $conf;
@@ -259,15 +287,13 @@ class UpdateContactdb_Batch {
         $cdb = $this->cdb();
         $result = Dbl::qe($cdb, "select * from ConferencePapers where confid=?", $this->cdb_confid);
         $epapers = [];
-        while (($erow = $result->fetch_object())) {
-            $erow->paperId = (int) $erow->paperId;
-            $erow->timeSubmitted = (int) $erow->timeSubmitted;
+        while (($erow = ConferencePaperInfo::fetch($result))) {
             $epapers[$erow->paperId] = $erow;
         }
         $result->close();
 
         $subcount_type = ($this->confrow->conf_flags & 15);
-        $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeSubmitted, exists (select * from PaperReview where paperId=Paper.paperId and reviewModified>0) from Paper");
+        $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeModified, timeSubmitted, exists (select * from PaperReview where paperId=Paper.paperId and reviewModified>0) from Paper");
         $max_submitted = 0;
         $nsubmitted = 0;
         $pids = [];
@@ -275,13 +301,15 @@ class UpdateContactdb_Batch {
         while (($row = $result->fetch_row())) {
             $pid = (int) $row[0];
             $pids[] = $pid;
-            $timeSubmitted = (int) $row[2];
-            $has_review = (int) $row[3] > 0;
+            $timeModified = (int) $row[2];
+            $timeSubmitted = (int) $row[3];
+            $has_review = (int) $row[4] > 0;
             $erow = $epapers[$pid] ?? null;
             if (!$erow
                 || $erow->title !== $row[1]
+                || $erow->timeModified !== $timeModified
                 || $erow->timeSubmitted !== $timeSubmitted) {
-                $qv[] = [$this->cdb_confid, $pid, $row[1], $timeSubmitted];
+                $qv[] = [$this->cdb_confid, $pid, $row[1], $timeModified, $timeSubmitted];
             }
             unset($epapers[$pid]);
             $max_submitted = max($max_submitted, abs($timeSubmitted));
@@ -294,7 +322,7 @@ class UpdateContactdb_Batch {
         $result->close();
 
         if (!empty($qv)) {
-            Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title,timeSubmitted) values ?v ?U on duplicate key update title=?U(title), timeSubmitted=?U(timeSubmitted)", $qv);
+            Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title,timeModified,timeSubmitted) values ?v ?U on duplicate key update title=?U(title), timeModified=?U(timeModified), timeSubmitted=?U(timeSubmitted)", $qv);
         }
         if (!empty($epapers)) {
             Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?a", $this->cdb_confid, array_keys($epapers));
