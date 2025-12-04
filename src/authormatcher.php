@@ -67,21 +67,31 @@ class AuthorMatcher extends Author {
         $m = new AuthorMatcher;
         $m->assign_string($x);
         $m->status = Author::STATUS_NONAUTHOR;
+        $m->contactId = 0;
         return $m;
     }
 
-    /** @return Generator<AuthorMatcher> */
-    static function make_collaborator_generator($s) {
+    /** @param ?int $min_author_index
+     * @return Generator<AuthorMatcher> */
+    static function make_collaborator_generator($s, $min_author_index = null) {
         $pos = 0;
+        $line = 0;
         while (($eol = strpos($s, "\n", $pos)) !== false) {
             if ($eol !== $pos
                 && ($m = self::make_collaborator_line(substr($s, $pos, $eol - $pos))) !== null) {
+                if ($min_author_index !== null) {
+                    $m->author_index = $min_author_index + $line;
+                }
                 yield $m;
             }
             $pos = $eol + 1;
+            ++$line;
         }
         if (strlen($s) !== $pos
             && ($m = self::make_collaborator_line(substr($s, $pos))) !== null) {
+            if ($min_author_index !== null) {
+                $m->author_index = $min_author_index + $line;
+            }
             yield $m;
         }
     }

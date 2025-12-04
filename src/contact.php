@@ -553,7 +553,7 @@ class Contact implements JsonSerializable {
 
     /** @return Generator<AuthorMatcher> */
     function collaborator_generator() {
-        return AuthorMatcher::make_collaborator_generator($this->collaborators());
+        return AuthorMatcher::make_collaborator_generator($this->collaborators(), Author::USER_COLLABORATOR_INDEX);
     }
 
     /** @return string */

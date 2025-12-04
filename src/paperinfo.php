@@ -398,7 +398,7 @@ final class PaperConflictInfo {
      * @readonly */
     public $author_index;
 
-    const UNINITIALIZED_INDEX = -400; // see also Author
+    const UNINITIALIZED_INDEX = -3000000; // see also Author
 
     /** @param int $uid
      * @param int $ctype */
@@ -1570,9 +1570,7 @@ class PaperInfo {
     function collaborator_list() {
         if ($this->_collaborator_array === null) {
             $this->_collaborator_array = [];
-            foreach (AuthorMatcher::make_collaborator_generator($this->collaborators()) as $m) {
-                $m->contactId = 0;
-                $m->author_index = Author::COLLABORATORS_INDEX;
+            foreach (AuthorMatcher::make_collaborator_generator($this->collaborators(), Author::PAPER_COLLABORATOR_INDEX) as $m) {
                 $this->_collaborator_array[] = $m;
             }
         }
@@ -3744,7 +3742,8 @@ class PaperInfoPotentialConflict {
         } else {
             $this->order = self::OA_NAME;
         }
-        if ($cflt->author_index === Author::COLLABORATORS_INDEX) {
+        if ($cflt->author_index >= Author::PAPER_COLLABORATOR_INDEX
+            && $cflt->author_index < Author::MAX_PAPER_COLLABORATOR_INDEX) {
             $this->order |= self::OB_COLLABORATOR;
         } else if (($cflt->author_index ?? 0) <= 0) {
             $this->order |= self::OB_CONTACT;

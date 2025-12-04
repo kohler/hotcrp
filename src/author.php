@@ -35,8 +35,10 @@ class Author {
     const STATUS_PC = 4;
     const STATUS_NONAUTHOR = 5;
 
-    const COLLABORATORS_INDEX = -200;
-    const UNINITIALIZED_INDEX = -400; // see also PaperConflictInfo
+    const USER_COLLABORATOR_INDEX = -2000000;
+    const PAPER_COLLABORATOR_INDEX = -1000000;
+    const MAX_PAPER_COLLABORATOR_INDEX = -1;
+    const UNINITIALIZED_INDEX = -3000000; // see also PaperConflictInfo
 
     /** @param string $s
      * @param ?int $author_index
