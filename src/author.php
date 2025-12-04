@@ -36,6 +36,7 @@ class Author {
     const STATUS_NONAUTHOR = 5;
 
     const USER_COLLABORATOR_INDEX = -2000000;
+    const MAX_USER_COLLABORATOR_INDEX = -1000001;
     const PAPER_COLLABORATOR_INDEX = -1000000;
     const MAX_PAPER_COLLABORATOR_INDEX = -1;
     const UNINITIALIZED_INDEX = -3000000; // see also PaperConflictInfo

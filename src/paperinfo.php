@@ -3743,7 +3743,7 @@ class PaperInfoPotentialConflict {
             $this->order = self::OA_NAME;
         }
         if ($cflt->author_index >= Author::PAPER_COLLABORATOR_INDEX
-            && $cflt->author_index < Author::MAX_PAPER_COLLABORATOR_INDEX) {
+            && $cflt->author_index <= Author::MAX_PAPER_COLLABORATOR_INDEX) {
             $this->order |= self::OB_COLLABORATOR;
         } else if (($cflt->author_index ?? 0) <= 0) {
             $this->order |= self::OB_CONTACT;
