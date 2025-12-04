@@ -180,7 +180,7 @@ class Mail_Page {
 <hr class="g">
 
 <div class="ctable no-hmargin">
-<dl class="ctelt">
+<dl class="bsp ctelt">
 <dt><code>{{LINK}}</code></dt>
     <dd>Site URL.</dd>
 <dt><code>{{NUMSUBMITTED}}</code></dt>
@@ -195,7 +195,7 @@ class Mail_Page {
     <dd>Email address of recipient.</dd>
 <dt><code>{{REVIEWDEADLINE}}</code></dt>
     <dd>Reviewing deadline appropriate for recipient.</dd>
-</dl><dl class="ctelt">
+</dl><dl class="bsp ctelt">
 <dt><code>{{PID}}</code></dt>
     <dd>Paper number relevant for mail.</dd>
 <dt><code>{{TITLE}}</code></dt>
@@ -228,14 +228,14 @@ class Mail_Page {
             echo "</dd>\n<dt><code>{{IF(", htmlspecialchars($opts[0]->search_keyword()), ')}}...{{ENDIF}}</code></dt>
     <dd>Include text if paper has a “', $opts[0]->title_html(), "” submission field.</dd>\n";
         }
-        echo '</dl><dl class="ctelt">
+        echo '</dl><dl class="bsp ctelt">
 <dt><code>{{REVIEWS}}</code></dt>
     <dd>Pretty-printed paper reviews.</dd>
 <dt><code>{{COMMENTS}}</code></dt>
     <dd>Pretty-printed paper comments, if any.</dd>
 <dt><code>{{COMMENTS(<i>tag</i>)}}</code></dt>
     <dd>Comments tagged #<code><i>tag</i></code>, if any.</dd>
-</dl><dl class="ctelt">
+</dl><dl class="bsp ctelt">
 <dt><code>{{IF(SHEPHERD)}}...{{ENDIF}}</code></dt>
     <dd>Include text if a shepherd is assigned.</dd>
 <dt><code>{{SHEPHERD}}</code></dt>
@@ -244,7 +244,7 @@ class Mail_Page {
     <dd>Shepherd name, if any.</dd>
 <dt><code>{{SHEPHERDEMAIL}}</code></dt>
     <dd>Shepherd email, if any.</dd>
-</dl><dl class="ctelt">
+</dl><dl class="bsp ctelt">
 <dt><code>{{IF(#<i>tag</i>)}}...{{ENDIF}}</code></dt>
     <dd>Include text if paper has tag <code><i>tag</i></code>.</dd>
 <dt><code>{{TAGVALUE(<i>tag</i>)}}</code></dt>

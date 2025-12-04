@@ -156,11 +156,11 @@ class Deadlines_Page {
 
         if (!empty($new)) {
             echo '<h3>', Ftext::as(5, $this->conf->_c("deadlines", "Upcoming")),
-                "</h3><dl>", join("\n", $new), "</dl>\n";
+                '</h3><dl class="bsp">', join("\n", $new), "</dl>\n";
         }
         if (!empty($old)) {
             echo '<h3>', Ftext::as(5, $this->conf->_c("deadlines", "Past")),
-                "</h3><dl>", join("\n", array_reverse($old)), "</dl>\n";
+                '</h3><dl class="bsp">', join("\n", array_reverse($old)), "</dl>\n";
         }
         $qreq->print_footer();
     }

@@ -168,7 +168,7 @@ class Settings_Page {
     private function print_list() {
         echo '<h2 class="leftmenu">Settings list</h2>';
         $this->conf->report_saved_messages();
-        echo "<dl>\n";
+        echo "<dl class=\"bsp\">\n";
         foreach ($this->sv->group_members("") as $gj) {
             if (isset($gj->title)) {
                 echo '<dt><strong><a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">',

@@ -153,14 +153,21 @@ input, textarea, .textarea, select, button, .btn {
 dl {
 	margin: 0 0 1em;
 }
-dt {
+dl.bsp > dt {
 	font-weight: bolder;
 }
-dd {
-	margin: 0 0 0.5em;
-}
-dl.dd {
+dl.bsp > dd {
 	margin-bottom: 0.5em;
+}
+dl.swoosh > dd {
+	margin-left: 1.5em;
+}
+dl.swoosh > dd::before {
+	content: "↪︎";
+	display: inline-block;
+	indent: 0;
+	margin-left: -1.1em;
+	width: 1.1em;
 }
 a > img {
 	border: none;

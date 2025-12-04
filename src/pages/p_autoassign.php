@@ -344,7 +344,7 @@ class Autoassign_Page {
         </ul>
         <hr>
         <p>Types of PC review:</p>
-        <dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
+        <dl class="bsp"><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
           <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>
           <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
           <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>

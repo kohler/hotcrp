@@ -1999,7 +1999,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
         if (!$us->conf->has_topics()) {
             return;
         }
-        echo '<dl class="ctelt dd"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
+        echo '<dl class="bsp ctelt mb-2"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
             '<dd>Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)</dd></dl>';
     }
 

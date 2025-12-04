@@ -236,12 +236,12 @@ class ManualAssign_Page {
 </ul>
 <hr>
 <p>Types of PC review:</p>
-<dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
+<dl class="bsp"><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
   <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>
   <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
   <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 <hr>
-<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>
+<dl class="bsp"><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>
   <dt>Preference</dt><dd><a href="', $this->conf->hoturl("reviewprefs"), '">Review preference</a></dd>
   <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd></dl>

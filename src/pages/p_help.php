@@ -5,7 +5,7 @@
 class Help_Page {
     /** @param HelpRenderer $hth */
     static function show_list($hth) {
-        echo "<dl>\n";
+        echo "<dl class=\"bsp\">\n";
         foreach ($hth->groups() as $ht) {
             if ($ht->name !== "list" && isset($ht->title)) {
                 echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">',

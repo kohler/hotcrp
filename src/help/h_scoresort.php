@@ -9,7 +9,7 @@ class ScoreSort_HelpTopic {
 column heading to sort the paper list using that score. Search &gt; View
 options changes how scores are sorted.  There are five choices:</p>
 
-<dl>
+<dl class=\"bsp\">
 
 <dt><strong>Counts</strong> (default)</dt>
 
