@@ -315,6 +315,7 @@ class HotCRPMailer extends Mailer {
         }
         return $this->_statistics[$uf->statindex];
     }
+
     function kw_reviewercontact($args, $isbool, $uf) {
         if ($uf->match_data[1] === "REVIEWER") {
             if (($x = $this->_expand_reviewer($uf->match_data[2], $isbool)) !== false) {
@@ -339,9 +340,11 @@ class HotCRPMailer extends Mailer {
         }
         return $this->get_assignments($this->recipient, $flags, $round);
     }
+
     function kw_newassignments() {
         return $this->get_assignments($this->recipient, self::GA_SINCE | self::GA_NEEDS_SUBMIT, null);
     }
+
     function kw_haspaper($uf = null, $name = null) {
         if ($this->row && $this->row->paperId > 0) {
             if ($this->preparation
@@ -353,8 +356,32 @@ class HotCRPMailer extends Mailer {
         $this->_unexpanded_paper_keyword = $name;
         return false;
     }
+
     function kw_hasreview() {
         return !!$this->rrow;
+    }
+
+    function kw_alert($args, $isbool) {
+        if (!$args || !$this->recipient) {
+            return null;
+        }
+        if (!$this->recipient->data("alerts")) {
+            return $isbool ? false : "";
+        }
+        $ca = new ContactAlerts($this->recipient);
+        $as = $ca->find_by_name($args);
+        if (empty($as)) {
+            return $isbool ? false : "";
+        }
+        $texts = [];
+        foreach ($as as $a) {
+            if ($this->censor && ($a->sensitive ?? false)) {
+                $texts[] = "ALERT HIDDEN\n";
+            } else if (($ml = $ca->message_list($a))) {
+                $texts[] = MessageSet::feedback_text($ml);
+            }
+        }
+        return join("\n", $texts);
     }
 
     function kw_title() {

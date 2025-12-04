@@ -4688,6 +4688,11 @@ class Conf {
         }
     }
 
+    /** @return bool */
+    function mx_auto() {
+        return $this->_mx_auto;
+    }
+
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls */
     function feedback_msg(...$mls) {
         $ms = Ht::fmt_feedback_msg_content($this, ...$mls);
@@ -5253,6 +5258,9 @@ class Conf {
         }
         if ($qreq->has_annex("upload_errors")) {
             $this->feedback_msg($qreq->annex("upload_errors"));
+        }
+        if ($user->data("alerts")) {
+            (new ContactAlerts($user))->report_qreq($qreq);
         }
         echo "</div></header>\n";
 

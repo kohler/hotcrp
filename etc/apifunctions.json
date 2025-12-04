@@ -100,6 +100,11 @@
         "response": "decision decision_html ?editable"
     },
     {
+        "name": "dismissalert", "post": true,
+        "function": "Alerts_API::dismissalert",
+        "parameters": "alertid"
+    },
+    {
         "name": "document", "get": true,
         "function": "Document_API::document",
         "parameters": "?doc ?p ?dt ?attachment ?hash ?docid ?<at ?attachment"

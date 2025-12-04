@@ -220,6 +220,7 @@ lib/utf8conversionfilter.php
 lib/xlsx.php
 
 src/.htaccess
+src/api/api_alerts.php
 src/api/api_alltags.php
 src/api/api_assign.php
 src/api/api_comment.php
@@ -292,6 +293,7 @@ src/conference.php
 src/confinvariants.php
 src/conflict.php
 src/contact.php
+src/contactalerts.php
 src/contactcounter.php
 src/contactcountmatcher.php
 src/contactlist.php

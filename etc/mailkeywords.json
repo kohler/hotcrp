@@ -34,6 +34,7 @@
     {"name": "NEEDPASSWORD", "function": "*kw_needpassword"},
     {"name": "RESETPASSWORDLINK", "function": "*kw_passwordlink"},
     {"name": "PASSWORDLINK", "function": "*kw_passwordlink"},
+    {"name": "ALERT", "function": "*kw_alert"},
 
     {"name": "DEADLINE", "function": "*kw_deadline", "global": true, "is_review": false},
     {"name": "REVIEWDEADLINE", "function": "*kw_deadline", "global": true, "is_review": true},

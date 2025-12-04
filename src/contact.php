@@ -1743,21 +1743,28 @@ class Contact implements JsonSerializable {
 
     /** @param object|array $data */
     function merge_and_save_data($data) {
+        $change = array_to_object_recursive($data);
+        $this->modify_data(function ($u) use ($change) {
+            object_replace_recursive($u->make_data(), $change);
+        });
+    }
+
+    /** @param callable(Contact) $f */
+    function modify_data($f) {
         $cdb = $this->cdb_confid !== 0;
         $key = $cdb ? "contactDbId" : "contactId";
-        $cid = $cdb ? $this->contactDbId : $this->contactId;
-        $change = array_to_object_recursive($data);
-        assert($cid > 0);
+        $uid = $cdb ? $this->contactDbId : $this->contactId;
+        assert($uid > 0);
         Dbl::compare_exchange(
             $this->dblink(),
-            "select `data` from ContactInfo where {$key}=?", [$cid],
-            function ($old) use ($change) {
+            "select `data` from ContactInfo where {$key}=?", [$uid],
+            function ($old) use ($f) {
                 $this->data = $old;
                 $this->_jdata = null;
-                object_replace_recursive($this->make_data(), $change);
+                $f($this);
                 return $this->encode_data();
             },
-            "update ContactInfo set data=?{desired} where {$key}=? and data?{expected}e", [$cid]
+            "update ContactInfo set data=?{desired} where {$key}=? and data?{expected}e", [$uid]
         );
     }
 

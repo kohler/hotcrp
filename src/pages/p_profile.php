@@ -535,6 +535,7 @@ class Profile_Page {
             $title = "New account";
         } else if ($this->user === $this->viewer) {
             $title = "Profile";
+            $this->qreq->set_annex("profile_self", true);
         } else {
             $title = $this->viewer->name_html_for($this->user) . " profile";
         }

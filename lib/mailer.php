@@ -116,9 +116,8 @@ class Mailer {
             return Text::name($r->firstName, "", "", $flags);
         } else if ($out === "LAST") {
             return Text::name("", $r->lastName, "", $flags);
-        } else {
-            return "";
         }
+        return "";
     }
 
 
@@ -147,9 +146,8 @@ class Mailer {
             return $this->conf->full_name();
         } else if ($uf->name == "CONFSHORTNAME") {
             return $this->conf->short_name;
-        } else {
-            return $this->conf->long_name;
         }
+        return $this->conf->long_name;
     }
 
     function kw_siteuser($args, $isbool, $uf) {

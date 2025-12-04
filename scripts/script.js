@@ -3452,9 +3452,8 @@ function form_submitter(form, evt) {
     } else if (form.hotcrpSubmitter
                && form.hotcrpSubmitter[1] >= (new Date).getTime() - 10) {
         return form.hotcrpSubmitter[0];
-    } else {
-        return null;
     }
+    return null;
 }
 
 handle_ui.on("js-mark-submit", function () {
@@ -3534,6 +3533,19 @@ return {
     }
 };
 })(jQuery);
+
+
+// alerts
+handle_ui.on("js-dismiss-alert", function (evt) {
+    const self = this;
+    this.disabled = true;
+    $.ajax(hoturl("=api/dismissalert", {alertid: this.getAttribute("data-alertid")}), {
+        method: "POST", success: function (data) {
+            if (data.ok)
+                self.closest(".msg").remove();
+        }
+    });
+});
 
 
 // initialization and tracker

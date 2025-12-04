@@ -17,9 +17,8 @@ class AllTags_API {
                    || ($user->can_view_some_incomplete()
                        && !$user->can_view_all_incomplete())) {
             return self::hard_alltags_api($user);
-        } else {
-            return self::easy_alltags_api($user);
         }
+        return self::easy_alltags_api($user);
     }
 
     /** @param string $tag
@@ -34,9 +33,8 @@ class AllTags_API {
         } else if ($twiddle > 0
                    && substr($tag, 0, $twiddle) == $user->contactId) {
             return substr($tag, $twiddle);
-        } else {
-            return null;
         }
+        return null;
     }
 
     static private function easy_alltags_api(Contact $user) {
