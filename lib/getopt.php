@@ -214,6 +214,9 @@ class Getopt {
      * @return $this */
     function helpopt($helpopt) {
         $this->helpopt = $helpopt;
+        if (!isset($this->po[$helpopt])) {
+            $this->long("{$helpopt} !");
+        }
         return $this;
     }
 

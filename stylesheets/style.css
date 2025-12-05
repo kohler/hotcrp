@@ -164,6 +164,7 @@ dl.swoosh > dd {
 }
 dl.swoosh > dd::before {
 	content: "↪︎";
+	font-style: normal;
 	display: inline-block;
 	indent: 0;
 	margin-left: -1.1em;
