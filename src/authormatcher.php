@@ -602,9 +602,8 @@ class AuthorMatcher extends Author {
             return join("\n", $lines);
         } else if ($any) {
             return "None";
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $line
@@ -712,10 +711,9 @@ class AuthorMatcher extends Author {
             }
         }
         if (self::is_likely_affiliation($line)) {
-            return "All ($line)";
-        } else {
-            return $line;
+            return "All ({$line})";
         }
+        return $line;
     }
 
     /** @param string $line
@@ -798,6 +796,6 @@ class AuthorMatcher extends Author {
     /** @param string $s
      * @return string */
     static function trim_collaborators($s) {
-        return preg_replace('{\s*#.*$|\ANone\z}im', "", $s);
+        return preg_replace('/\s*\#.*$|\ANone\z/im', "", $s);
     }
 }

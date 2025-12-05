@@ -65,6 +65,15 @@ class Author {
         return $au;
     }
 
+    /** @param string $name
+     * @param string $affiliation
+     * @return Author */
+    static function make_name_affiliation($name, $affiliation) {
+        $au = new Author;
+        $au->assign_name_affiliation($name, $affiliation);
+        return $au;
+    }
+
     /** @param string $s
      * @return Author */
     static function make_string_guess($s) {
@@ -161,31 +170,47 @@ class Author {
     }
 
     /** @param string $s
-     * @suppress PhanAccessReadOnlyProperty */
-    function assign_string($s) {
+     * @return array{string,string,string} */
+    static function split_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
-            if (preg_match('/\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:%]).*)\z/', $s, $m, 0, $paren + 1)) {
-                $this->affiliation = trim($m[1]);
-                $s = rtrim(substr($s, 0, $paren));
-            } else {
-                $len = strlen($s);
-                while ($paren !== false) {
-                    $rparen = self::skip_balanced_parens($s, $paren);
-                    if ($rparen === $len
-                        || preg_match('{\A(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', substr($s, $rparen + 1))) {
-                        $this->affiliation = trim(substr($s, $paren + 1, $rparen - $paren - 1));
-                        $s = rtrim(substr($s, 0, $paren));
-                        break;
-                    }
-                    $paren = strpos($s, "(", $rparen + 1);
+            if (preg_match('/\G([^()]*+)(?:\)|\z)\s*+(?:[\s,;.]*|(?:-+|–|—|[\#:])\s*+(.*))\z/', $s, $m, 0, $paren + 1)) {
+                return [trim(substr($s, 0, $paren)), trim($m[1]), $m[2] ?? ""];
+            }
+            $len = strlen($s);
+            while ($paren !== false) {
+                $rparen = self::skip_balanced_parens($s, $paren);
+                if ($rparen === $len) {
+                    return [trim(substr($s, 0, $paren)), trim(substr($s, $paren + 1)), ""];
+                } else if (preg_match('/\G(?:[\s,:.]*|\s*+(?:-+|–|—|[\#:])\s*+(.*))\z/', $s, $m, 0, $rparen + 1)) {
+                    return [trim(substr($s, 0, $paren)), trim(substr($s, $paren + 1, $rparen - $paren - 1)), $m[1] ?? ""];
                 }
+                $paren = strpos($s, "(", $rparen + 1);
             }
         }
-        if (strlen($s) > 4
-            || ($s !== "" && strcasecmp($s, "all") !== 0 && strcasecmp($s, "none") !== 0)) {
-            list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
+        return [trim($s), "", ""];
+    }
+
+    /** @param string $s
+     * @suppress PhanAccessReadOnlyProperty */
+    function assign_string($s) {
+        list($n, $a, $x) =  self::split_string($s);
+        $this->assign_name_affiliation($n, $a);
+    }
+
+    /** @param string $name
+     * @param string $affiliation
+     * @suppress PhanAccessReadOnlyProperty */
+    function assign_name_affiliation($name, $affiliation) {
+        if (strlen($name) <= 4
+            && ($name === "" || strcasecmp($name, "all") === 0 || strcasecmp($name, "none") === 0)) {
+            $this->_name = null;
+            $this->firstName = $this->lastName = $this->email = "";
+        } else {
+            list($this->firstName, $this->lastName, $email) = Text::split_name($name, true);
+            $this->email = $email ?? "";
+            $this->_name = $email === null ? $name : null;
         }
-        $this->_name = $this->email === null ? trim($s) : null;
+        $this->affiliation = $affiliation;
         $this->seal_nea();
     }
 
