@@ -75,7 +75,7 @@ class Ftext {
         } else if ($from_format === 5 && $to_format !== 5) {
             // XXX <p>, <ul>, <ol>
             $liststack = [];
-            return html_entity_decode(preg_replace_callback('/<\s*+(\/?)\s*+(a|b|i|u|strong|em|code|samp|pre|tt|span|br|ul|ol|li)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
+            return html_entity_decode(preg_replace_callback('/<\s*+(\/?)\s*+(a|b|i|u|strong|em|code|samp|pre|tt|span|br|ul|ol|li|dl|dt|dd)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
                 function ($m) use (&$liststack) {
                     $tag = strtolower($m[2]);
                     if ($tag === "code" || $tag === "samp" || $tag === "tt") {
@@ -104,6 +104,13 @@ class Ftext {
                             array_pop($liststack);
                         }
                         return "";
+                    } else if ($tag === "dl") {
+                        if ($m[1] === "") {
+                            $liststack[] = false;
+                        } else {
+                            array_pop($liststack);
+                        }
+                        return "";
                     } else if ($tag === "li") {
                         if ($m[1] === "") {
                             $n = $liststack[count($liststack) - 1] ?? false;
@@ -113,6 +120,18 @@ class Ftext {
                                 $liststack[count($liststack) - 1] += 1;
                                 return "{$n}. ";
                             }
+                        } else {
+                            return "\n";
+                        }
+                    } else if ($tag === "dt") {
+                        if ($m[1] === "") {
+                            return "";
+                        } else {
+                            return "\n";
+                        }
+                    } else if ($tag === "dd") {
+                        if ($m[1] === "") {
+                            return "-> ";
                         } else {
                             return "\n";
                         }
