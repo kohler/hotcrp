@@ -161,8 +161,8 @@ class AuthorCertification_PaperOption extends PaperOption {
         $conf = $ov->prow->conf;
         $entries = [];
         foreach ($ov->value_list() as $i => $v) {
-            if ($v <= 0
-                && ($u = $conf->user_by_id($v, USER_SLICE))) {
+            $u = $v > 0 ? $conf->user_by_id($v, USER_SLICE) : null;
+            if (!$u) {
                 continue;
             }
             $e = new AuthorCertification_Entry($u->email);
