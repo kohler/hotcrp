@@ -559,13 +559,10 @@ class MailSender {
         if ($this->sending) {
             // Mail format matters
             $this->user->log_activity("Sending mail #{$this->mailid} \"{$subject}\"");
-            $rest["censor"] = Mailer::CENSOR_NONE;
         } else {
             $rest["no_send"] = true;
-            $rest["censor"] = Mailer::CENSOR_DISPLAY;
         }
-        $need_censored_prep = $this->sending
-            && (!$this->user->privChair || $this->conf->opt("chairHidePasswords"));
+        $need_censored_prep = !$this->user->privChair || $this->conf->opt("chairHidePasswords");
 
         $mailer = new HotCRPMailer($this->conf);
         $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
