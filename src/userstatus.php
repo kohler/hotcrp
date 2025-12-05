@@ -922,6 +922,28 @@ class UserStatus extends MessageSet {
         }
     }
 
+    static function crosscheck_alerts(UserStatus $us) {
+        if ($us->cs()->root() !== "main"
+            || (!$us->is_auth_self() && !$us->is_actas_self())
+            || !$us->user->data("alerts")) {
+            return;
+        }
+        $ca = new ContactAlerts($us->user);
+        foreach ($ca->list() as $alert) {
+            if (isset($alert->scope)
+                && !($alert->dismissed ?? false)
+                && preg_match('/(?:\A| )profile\#(\S+)(?: |\z)/', $alert->scope, $m)
+                && ($p = strpos($alert->scope, "profile#"))
+                && (!($alert->sensitive ?? false)
+                    || $us->is_auth_self()
+                    || $us->conf->opt("debugShowSensitiveEmail"))) {
+                foreach ($ca->message_list($alert) as $mi) {
+                    $us->append_item($mi->with_field($m[1]));
+                }
+            }
+        }
+    }
+
 
     /** @param ?object $cj
      * @return $this */
