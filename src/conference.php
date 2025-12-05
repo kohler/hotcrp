@@ -5259,7 +5259,7 @@ class Conf {
         if ($qreq->has_annex("upload_errors")) {
             $this->feedback_msg($qreq->annex("upload_errors"));
         }
-        if ($user->data("alerts")) {
+        if ($user && $user->data("alerts")) {
             (new ContactAlerts($user))->report_qreq($qreq);
         }
         echo "</div></header>\n";
