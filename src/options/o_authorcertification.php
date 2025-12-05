@@ -559,7 +559,52 @@ class AuthorCertification_PaperOption extends PaperOption {
         echo "</fieldset></div>\n\n";
     }
 
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        echo '<fieldset name="', $this->formid, '" role="none" hidden>';
+        $entries = self::entries($ov);
+        $okey = $this->field_key();
+        $n = 0;
+        foreach ($pt->prow->author_list() as $auth) {
+            if ($auth->email) {
+                $oe = ACEntry::find_by_email($auth->email, $entries);
+                $oval = $oe && $oe->value;
+                echo Ht::checkbox("{$okey}:{$n}:value", 1, $oval, ["disabled" => true]);
+                ++$n;
+            }
+        }
+        if ($n === 0) {
+            echo Ht::checkbox("", 1, false, ["hidden" => true, "disabled" => true]);
+        }
+        echo '</fieldset>';
+    }
+
     function render(FieldRender $fr, PaperValue $ov) {
+        if (($fr->context & FieldRender::CFFORM) === 0) {
+            return;
+        }
+        $entries = self::entries($ov);
+        $ready = [[], []];
+        foreach ($ov->prow->author_list() as $auth) {
+            if (!$auth->email) {
+                continue;
+            }
+            $oe = ACEntry::find_by_email($auth->email, $entries);
+            $oval = $oe && $oe->value;
+            $ready[(int) $oval][] = '<li class="odname">' . $auth->name_h(NAME_E | NAME_A) . "</li>";
+        }
+        $t = "";
+        if (!empty($ready[1])) {
+            $mb = empty($ready[0]) ? " mb-0" : "";
+            $t .= '<h4 class="mb-0 font-italic">Complete</h4><ul class="x' . $mb . '">' . join("", $ready[1]) . '</ul>';
+        }
+        if (!empty($ready[0])) {
+            $t .= '<h4 class="mb-0 font-italic">Incomplete</h4><ul class="x mb-0">' . join("", $ready[0]) . '</ul>';
+        }
+        if ($t === "") {
+            $t .= '<h4 class="mb-0 font-italic">No authors yet</h4>';
+        }
+        $fr->value = $t;
+        $fr->value_format = 5;
     }
 
     function present_script_expression() {

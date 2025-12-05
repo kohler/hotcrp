@@ -2432,6 +2432,7 @@ class PaperTable {
                 $fr->clear();
                 $o->render($fr, $ov);
                 if ($fr->is_empty()) {
+                    $o->print_web_edit_hidden($this, $ov);
                     continue;
                 }
                 if ($o->type === "checkbox") {

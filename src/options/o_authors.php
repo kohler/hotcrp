@@ -386,19 +386,7 @@ class Authors_PaperOption extends PaperOption {
         }
         $names = ["<ul class=\"x namelist\">"];
         foreach (self::author_list($ov) as $au) {
-            $n = htmlspecialchars(trim("{$au->firstName} {$au->lastName}"));
-            $e = htmlspecialchars($au->email);
-            if ($e !== "") {
-                $e = "&lt;<a href=\"mailto:{$e}\" class=\"q\">{$e}</a>&gt;";
-            }
-            $t = ($n === "" ? $e : $n);
-            if ($au->affiliation !== "") {
-                $t .= " <span class=\"auaff\">(" . htmlspecialchars($au->affiliation) . ")</span>";
-            }
-            if ($n !== "" && $e !== "") {
-                $t .= " " . $e;
-            }
-            $names[] = "<li class=\"odname\">{$t}</li>";
+            $names[] = '<li class="odname">' . $au->name_h(NAME_E | NAME_A) . '</li>';
         }
         $names[] = "</ul>";
         $fr->set_html(join("", $names));
