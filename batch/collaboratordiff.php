@@ -15,6 +15,8 @@ class CollaboratorDiff_Batch {
     /** @var resource */
     public $file;
     /** @var bool */
+    public $csv;
+    /** @var bool */
     public $fix;
     /** @var bool */
     public $only_missing;
@@ -27,16 +29,22 @@ class CollaboratorDiff_Batch {
     /** @var bool */
     public $append;
 
+    /** @var list<AuthorMatcher> */
+    private $_com;
+    /** @var TextPregexes */
+    private $_corex;
+
     /** @var array<string,string> */
-    public $new_co = [];
+    private $new_co = [];
     /** @var list<bool> */
-    public $used_uco;
+    private $used_uco;
     /** @var list<string> */
-    public $unused_uco = [];
+    private $unused_uco = [];
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->user = $conf->checked_user_by_email($arg["_"][0]);
+        $this->csv = isset($arg["csv"]);
         $this->fix = isset($arg["fix"]);
         $this->only_missing = isset($arg["only-missing"]);
         $this->no_advisor = isset($arg["no-advisor"]);
@@ -55,42 +63,90 @@ class CollaboratorDiff_Batch {
             throw error_get_last_as_exception($arg["_"][1] . ": ");
         }
 
+        $this->_com = $this->user->aucollab_matchers();
+        $this->_corex = $this->user->aucollab_general_pregexes();
         $this->used_uco = array_fill(0, substr_count($this->user->collaborators(), "\n") + 1, false);
     }
 
-    private function process($collab) {
+    /** @param string $name
+     * @param string $affiliation
+     * @param string $rest */
+    private function process_one($name, $affiliation, $rest) {
+        if ($name === "" && $affiliation === "") {
+            return;
+        }
+        if ($affiliation === "") {
+            $affiliation = "unknown";
+        } else if ($name === "") {
+            $name = "All";
+        }
+        $na = "{$name} ({$affiliation})";
+        if ($this->_corex->match($na)) {
+            $au = Author::make_name_affiliation($name, $affiliation);
+            foreach ($this->_com as $m) {
+                if ($m->test($au, $m->is_nonauthor())) {
+                    if ($m->author_index >= Author::USER_COLLABORATOR_INDEX
+                        && $m->author_index <= Author::MAX_USER_COLLABORATOR_INDEX) {
+                        $this->used_uco[$m->author_index - Author::USER_COLLABORATOR_INDEX] = true;
+                    }
+                    return;
+                }
+            }
+        }
+        if (!isset($this->new_co[$na])) {
+            $this->new_co[$na] = $rest;
+        }
+    }
+
+    private function process_string($collab) {
         if ($this->fix) {
             $collab = AuthorMatcher::fix_collaborators($collab);
         }
-        $com = $this->user->aucollab_matchers();
-        $corex = $this->user->aucollab_general_pregexes();
         foreach (explode("\n", $collab) as $line) {
-            $found = false;
-            list($n, $a, $x) = Author::split_string($line);
-            if ($n === "" && $a === "") {
+            $this->process_one(...Author::split_string($line));
+        }
+    }
+
+    private function process_csv($file) {
+        $csvg = new CsvParser($file);
+        $list = $csvg->peek_list();
+        if (in_array("line", $list)
+            || in_array("name", $list)
+            || in_array("affiliation", $list)) {
+            $csvg->next_list();
+        } else if (!empty($list) && strpos($list[0], "@") !== false) {
+            if (count($list) === 2) {
+                $list = ["email", "line"];
+            } else if (count($list) === 3) {
+                $list = ["email", "name", "affiliation"];
+            } else if (count($list) === 4) {
+                $list = ["email", "name", "affiliation", "note"];
+            } else {
+                throw new CommandLineException("CSV format error");
+            }
+        } else {
+            throw new CommandLineException("CSV lacks required fields `line`, `name`, `affiliation`");
+        }
+        $csvg->set_header($list);
+
+        $emailp = array_search("email", $list);
+        $linep = array_search("line", $list);
+        $namep = array_search("name", $list);
+        $affp = array_search("affiliation", $list);
+        $notep = array_search("note", $list);
+        $uemail = $this->user->email;
+        while (($row = $csvg->next_row())) {
+            if ($emailp !== false
+                && strcasecmp(trim($row[$emailp]), $uemail) !== 0) {
                 continue;
             }
-            if ($a === "") {
-                $a = "unknown";
-            }
-            if ($corex->match($line)) {
-                $au = Author::make_name_affiliation($n, $a);
-                foreach ($com as $m) {
-                    if ($m->test($au, $m->is_nonauthor())) {
-                        $found = true;
-                        if ($m->author_index >= Author::USER_COLLABORATOR_INDEX
-                            && $m->author_index <= Author::MAX_USER_COLLABORATOR_INDEX) {
-                            $this->used_uco[$m->author_index - Author::USER_COLLABORATOR_INDEX] = true;
-                        }
-                        break;
-                    }
-                }
-            }
-            if (!$found) {
-                $na = "{$n} ({$a})";
-                if (!isset($this->new_co[$na])) {
-                    $this->new_co[$na] = $x;
-                }
+            if ($linep !== false) {
+                $this->process_one(...Author::split_string($row[$linep]));
+            } else {
+                $name = $namep === false ? "" : $row[$namep];
+                $aff = $affp === false ? "" : $row[$affp];
+                $note = $notep === false ? "" : $row[$notep];
+                $this->process_one($name, $aff, $note);
             }
         }
     }
@@ -197,7 +253,11 @@ class CollaboratorDiff_Batch {
     }
 
     function run() {
-        $this->process(stream_get_contents($this->file));
+        if ($this->csv) {
+            $this->process_csv($this->file);
+        } else {
+            $this->process_string(stream_get_contents($this->file));
+        }
         $this->finish();
         if ($this->alert) {
             $this->make_alert();
@@ -214,6 +274,7 @@ class CollaboratorDiff_Batch {
             "config: !",
             "fix Repair input file format",
             "only-missing Do not list potentially obsolete collaborators",
+            "csv Input file is CSV",
             "alert:: =NAME Output is alert for user [collaborators]",
             "append Do not replace existing alerts",
             "no-advisor Do not special-case current advisor entries"
