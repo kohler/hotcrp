@@ -116,11 +116,11 @@ class CollaboratorDiff_Batch {
             $csvg->next_list();
         } else if (!empty($list) && strpos($list[0], "@") !== false) {
             if (count($list) === 2) {
-                $list = ["email", "line"];
+                $list = ["user_email", "line"];
             } else if (count($list) === 3) {
-                $list = ["email", "name", "affiliation"];
+                $list = ["user_email", "name", "affiliation"];
             } else if (count($list) === 4) {
-                $list = ["email", "name", "affiliation", "note"];
+                $list = ["user_email", "name", "affiliation", "note"];
             } else {
                 throw new CommandLineException("CSV format error");
             }
@@ -129,7 +129,7 @@ class CollaboratorDiff_Batch {
         }
         $csvg->set_header($list);
 
-        $emailp = array_search("email", $list);
+        $emailp = array_search("user_email", $list);
         $linep = array_search("line", $list);
         $namep = array_search("name", $list);
         $affp = array_search("affiliation", $list);

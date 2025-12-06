@@ -399,7 +399,7 @@ Assignment methods:
         echo Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
             " &nbsp; <span class=\"hint\">You’ll be able to check the assignments before they are saved.</span>\n";
 
-        echo '<div class="mt-4"><a href="', $conf->hoturl("=search", ["fn" => "get", "getfn" => "pcassignments", "t" => "manager", "q" => "", "p" => "all"]), '">Download current PC review assignments</a></div>';
+        echo '<div class="mt-4"><a href="', $conf->hoturl("=search", ["fn" => "get", "getfn" => "pcassignments", "t" => "alladmin", "q" => "", "p" => "all"]), '">Download current PC review assignments</a></div>';
 
         echo "</form>\n\n";
 

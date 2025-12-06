@@ -325,11 +325,6 @@ class Author {
         return $name;
     }
 
-    /** @return bool */
-    function is_nea_nonascii() {
-        return ($this->cflags & Contact::CF_NEANONASCII) !== 0;
-    }
-
     /** @param 'firstName'|'lastName'|'affiliation' $key
      * @return string */
     function searchable_nea($key) {
@@ -343,6 +338,11 @@ class Author {
     /** @return bool */
     function is_empty() {
         return $this->email === "" && $this->firstName === "" && $this->lastName === "" && $this->affiliation === "";
+    }
+
+    /** @return bool */
+    function is_nea_nonascii() {
+        return ($this->cflags & Contact::CF_NEANONASCII) !== 0;
     }
 
     /** @return bool */
