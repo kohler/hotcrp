@@ -3359,11 +3359,10 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function allow_administer(?PaperInfo $prow = null) {
-        if ($prow) {
-            return $this->rights($prow)->allow_administer();
-        } else {
+        if (!$prow) {
             return $this->privChair;
         }
+        return $this->rights($prow)->allow_administer();
     }
 
     /** @return bool */
@@ -3427,10 +3426,9 @@ class Contact implements JsonSerializable {
     function can_lookup_user() {
         if ($this->privChair) {
             return true;
-        } else {
-            $x = $this->conf->opt("allowLookupUser");
-            return $x || ($x === null && $this->can_view_pc());
         }
+        $x = $this->conf->opt("allowLookupUser");
+        return $x || ($x === null && $this->can_view_pc());
     }
 
     /** @return bool */
@@ -3524,17 +3522,15 @@ class Contact implements JsonSerializable {
         }
         if (empty($m) && $this->contactId && $only_if_complex) {
             return null;
-        } else {
-            if ($this->contactId) {
-                assert($table !== null);
-                $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
-            }
-            if (count($m) > 1) {
-                return "(" . join(" or ", $m) . ")";
-            } else {
-                return empty($m) ? "false" : $m[0];
-            }
         }
+        if ($this->contactId) {
+            assert($table !== null);
+            $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
+        }
+        if (count($m) > 1) {
+            return "(" . join(" or ", $m) . ")";
+        }
+        return empty($m) ? "false" : $m[0];
     }
 
     function act_reviewer_sql($table) {
@@ -3607,9 +3603,8 @@ class Contact implements JsonSerializable {
             }
         } else if ($rights->allow_author_edit()) {
             return $prow->author_edit_state();
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     /** @return bool */
@@ -3901,18 +3896,17 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function needs_bulk_download_warning(PaperInfo $prow) {
-        if ($this->needs_some_bulk_download_warning()) {
-            $rights = $this->rights($prow);
-            return !$rights->allow_administer()
-                && $rights->allow_pc_broad()
-                && $rights->review_status === 0
-                && !$rights->allow_author_view()
-                && ($prow->outcome_sign <= 0 || !$rights->can_view_decision())
-                && $this->conf->time_pc_view($prow, true)
-                && $this->conf->check_tracks($prow, $this, Track::VIEWPDF);
-        } else {
+        if (!$this->needs_some_bulk_download_warning()) {
             return false;
         }
+        $rights = $this->rights($prow);
+        return !$rights->allow_administer()
+            && $rights->allow_pc_broad()
+            && $rights->review_status === 0
+            && !$rights->allow_author_view()
+            && ($prow->outcome_sign <= 0 || !$rights->can_view_decision())
+            && $this->conf->time_pc_view($prow, true)
+            && $this->conf->check_tracks($prow, $this, Track::VIEWPDF);
     }
 
     /** @return bool */
