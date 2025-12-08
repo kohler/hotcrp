@@ -27,6 +27,8 @@ class CheckInvariants_Batch {
     /** @var int */
     public $level;
     /** @var int */
+    public $limit;
+    /** @var int */
     private $width = 47;
 
     function __construct(Conf $conf, $arg) {
@@ -35,6 +37,7 @@ class CheckInvariants_Batch {
         $this->quiet = !$this->verbose && isset($arg["quiet"]);
         $this->fix = $arg["fix"] ?? [];
         $this->level = $arg["level"] ?? 0;
+        $this->limit = $arg["limit"] ?? 1;
         $this->list = isset($arg["list"]);
         if (isset($arg["fix-autosearch"])) {
             $this->fix[] = "autosearch";
@@ -86,7 +89,9 @@ class CheckInvariants_Batch {
 
     /** @return int */
     function run() {
-        $ic = (new ConfInvariants($this->conf))->set_level($this->level);
+        $ic = (new ConfInvariants($this->conf))
+            ->set_level($this->level)
+            ->set_limit($this->limit);
         $ncheck = 0;
         $ro = new ReflectionObject($ic);
         $color = $this->color = $this->color ?? posix_isatty(STDERR);
@@ -96,12 +101,24 @@ class CheckInvariants_Batch {
         }
         $dbname = $this->conf->dbname;
         $mpfx = "";
+
+        $all = [];
+        $match = [];
         foreach ($ro->getMethods() as $m) {
-            if (!str_starts_with($m->name, "check_")
-                || $m->name === "check_all"
-                || ($this->regex && !preg_match($this->regex, $m->name))) {
+            if ($m->name === "check_all") {
                 continue;
             }
+            if (str_starts_with($m->name, "check_")) {
+                $all[] = $m;
+            } else if (!$this->regex || !str_starts_with($m->name, "alias_")) {
+                continue;
+            }
+            if ($this->regex && preg_match($this->regex, $m->name)) {
+                $match[] = $m;
+            }
+        }
+
+        foreach ($this->regex ? $match : $all as $m) {
             ++$ncheck;
 
             $mlevel = $this->method_level($m);
@@ -448,6 +465,7 @@ class CheckInvariants_Batch {
             "verbose,V Be verbose",
             "quiet,q,silent Do not print error messages",
             "level:,l: {n} Set invariant level [0]",
+            "limit: =N {n} Limit to N errors per type [1]",
             "list",
             "fix-autosearch ! Repair any incorrect autosearch tags",
             "fix-inactive ! Repair any inappropriately inactive documents",

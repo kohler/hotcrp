@@ -17,6 +17,8 @@ class ConfInvariants {
     public $conf;
     /** @var int */
     public $level = 0;
+    /** @var int */
+    public $limit = 1;
     /** @var bool */
     public $color = false;
     /** @var array<string,true> */
@@ -37,6 +39,13 @@ class ConfInvariants {
      * @return $this */
     function set_level($level) {
         $this->level = $level;
+        return $this;
+    }
+
+    /** @param int $limit
+     * @return $this */
+    function set_limit($limit) {
+        $this->limit = $limit;
         return $this;
     }
 
@@ -386,7 +395,7 @@ class ConfInvariants {
         foreach ($rowset as $row) {
             for ($chi = $srch->paper_group_index($row->paperId) ?? 0; $chi < $nch; ++$chi) {
                 $ch = $checkers[$chi];
-                if ($ch->reported) {
+                if ($this->limit > 0 && $ch->reports >= $this->limit) {
                     continue;
                 }
                 $v0 = $row->tag_value($ch->tag);
@@ -399,13 +408,14 @@ class ConfInvariants {
                 } else {
                     $this->invariant_error("autosearch", "automatic tag #{$ch->tag} has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #{$row->paperId}");
                 }
-                $ch->reported = true;
+                ++$ch->reports;
             }
         }
 
         $vcheckers = $qs = [];
         foreach ($checkers as $ch) {
-            if (!$ch->reported && $ch->value_formula) {
+            if ($ch->value_formula
+                && ($this->limit <= 0 || $ch->reports < $this->limit)) {
                 $vcheckers[] = $ch;
                 $qs[] = "#{$ch->tag}";
             }
@@ -421,8 +431,13 @@ class ConfInvariants {
                 $ch = $vcheckers[$chi];
                 $v0 = $row->tag_value($ch->tag);
                 $v1 = $v0 !== null ? $ch->expected_value($row) : null;
-                if ($v0 !== $v1) {
-                    $this->invariant_error("autosearch", "automatic tag #{$ch->tag} has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #{$row->paperId}");
+                if ($v0 === $v1) {
+                    ++$chi;
+                    continue;
+                }
+                $this->invariant_error("autosearch", "automatic tag #{$ch->tag} has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #{$row->paperId}");
+                ++$ch->reports;
+                if ($this->limit > 0 && $ch->reports >= $this->limit) {
                     array_splice($vcheckers, $chi, 1);
                 } else {
                     ++$chi;
@@ -431,6 +446,11 @@ class ConfInvariants {
         }
 
         return $this;
+    }
+
+    /** @return $this */
+    function alias_autosearch() {
+        return $this->check_automatic_tags();
     }
 
     /** @return $this */
@@ -863,8 +883,8 @@ class ConfInvariant_AutomaticTagChecker {
     public $value_constant;
     /** @var ?callable(PaperInfo,?int,Contact):mixed */
     public $value_formula;
-    /** @var bool */
-    public $reported = false;
+    /** @var int */
+    public $reports = 0;
 
     function __construct(TagInfo $dt) {
         $this->tag = $dt->tag;
@@ -899,9 +919,8 @@ class ConfInvariant_AutomaticTagChecker {
                 $v = (float) $v;
             }
             return $v;
-        } else {
-            return $this->value_constant;
         }
+        return $this->value_constant;
     }
 }
 
