@@ -1093,7 +1093,8 @@ class PaperTable {
         if ($vas === 1 || $this->allow_folds) {
             $fr->value .= '<button type="button" class="q ui js-aufoldup" title="Toggle author display" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
         }
-        if ($vas === 1) {
+        $collapse_anonau = $this->_allow_collapse["anonau"];
+        if ($vas === 1 && $collapse_anonau) {
             $fr->value .= '<span class="fn8">' . $o->title_html() . '</span><span class="fx8">';
         }
         if ($this->allow_folds) {
@@ -1102,7 +1103,7 @@ class PaperTable {
             $fr->value .= expander(false);
         }
         $fr->value .= $auname;
-        if ($vas === 1) {
+        if ($vas === 1 && $collapse_anonau) {
             $fr->value .= '</span>';
         }
         if ($vas === 1 || $this->allow_folds) {
@@ -1126,7 +1127,7 @@ class PaperTable {
 
         // contents
         $fr->value .= '<div class="pavb">';
-        if ($vas === 1) {
+        if ($vas === 1 && $collapse_anonau) {
             $fr->value .= '<button type="button" class="q fn8 ui js-aufoldup" title="Toggle author display">'
                 . '+&nbsp;<i>Hidden</i>'
                 . '</button><div class="fx8">';
@@ -1141,7 +1142,7 @@ class PaperTable {
         if ($this->allow_folds) {
             $fr->value .= '</div>';
         }
-        if ($vas === 1) {
+        if ($vas === 1 && $collapse_anonau) {
             $fr->value .= '</div>';
         }
         $fr->value .= "</div></div>\n\n";
