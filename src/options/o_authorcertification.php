@@ -363,7 +363,7 @@ class AuthorCertification_PaperOption extends PaperOption {
             }
         }
 
-        $result = $prow->conf->qe("select paperId, value from PaperOption where paperId!=? and optionId=? and value?a and timeWithdrawn<=0", $prow->paperId, $this->id, array_keys($assignments));
+        $result = $prow->conf->qe("select Paper.paperId, value from PaperOption join Paper using (paperId) where paperId!=? and optionId=? and value?a and timeWithdrawn<=0", $prow->paperId, $this->id, array_keys($assignments));
         $pids = [];
         while (($row = $result->fetch_row())) {
             $pid = (int) $row[0];
