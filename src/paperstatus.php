@@ -896,7 +896,7 @@ final class PaperStatus extends MessageSet {
                 if ($opt->required > 0
                     && $opt->test_exists($this->prow)) {
                     $ov = $this->prow->force_option($opt);
-                    if (!$opt->value_check_required($ov)) {
+                    if (!$opt->value_check_submit($ov)) {
                         $this->append_messages_from($ov);
                         $pj_submitted = $old_submitted;
                     }

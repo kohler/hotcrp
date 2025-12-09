@@ -27,6 +27,14 @@
     },
 
     ["<0>A {submission} may have at most {max} authors", "<0>A {submission} may have at most one author", ["{max}=1"]],
+    {
+        "in": "<5>Each author may certify up to {max_submissions} {submissions}. To certify this {submission}, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).",
+        "m": [
+            ["<5>Each author may certify one {submission}. To mark this {submission} as ready for review, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).", ["{max_submissions}=1", "{action}=submit"]],
+            ["<5>Each author may certify up to {max_submissions} {submissions}. To mark this {submission} as ready for review, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).", ["{action}=submit"]],
+            ["<5>Each author may certify one {submission}. To certify this {submission}, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).", ["{max_submissions}=1"]]
+        ]
+    },
 
     ["{naccepted} of {nsubmitted} {submissions} accepted", "{naccepted} of {nsubmitted} {submission} accepted", ["{naccepted}=1", "{nsubmitted}=1"]],
 

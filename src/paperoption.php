@@ -725,6 +725,10 @@ class PaperOption implements JsonSerializable {
         }
         return false;
     }
+    /** @return bool */
+    function value_check_submit(PaperValue $ov) {
+        return $this->value_check_required($ov);
+    }
     /** @return void */
     function value_check(PaperValue $ov, Contact $user) {
         $this->value_check_required($ov);
