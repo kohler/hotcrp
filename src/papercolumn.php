@@ -36,10 +36,10 @@ class PaperColumn extends Column {
     }
 
     /** @param Contact|XtParams $ctx
-     * @param string|MessageItem $msg */
-    static function column_error($ctx, $msg) {
+     * @param string|MessageItem|list<MessageItem> $message */
+    static function column_error($ctx, $message) {
         if ($ctx instanceof XtParams && $ctx->paper_list) {
-            $ctx->paper_list->column_error($msg);
+            $ctx->paper_list->column_error($message);
         }
     }
 

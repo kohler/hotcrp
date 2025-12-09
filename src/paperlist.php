@@ -1287,31 +1287,35 @@ class PaperList {
     }
 
 
-    /** @param string|MessageItem $message */
+    /** @param string|MessageItem|list<MessageItem> $message */
     function column_error($message) {
         if (!($name = $this->_finding_column)
             || !$this->want_column_errors($name)) {
             return;
         }
         if (is_string($message)) {
-            $mi = MessageItem::warning_at($name, $message);
+            $ml = [MessageItem::warning_at($name, $message)];
+        } else if (is_object($message)) {
+            $ml = [$message];
         } else {
-            $mi = $message;
+            $ml = $message;
         }
         if (($sve = $this->search->main_term()->find_view_command($name))
-            && $sve->sword
-            && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
-            if ($mi->pos1 !== null) {
-                $mis = $this->search->expand_message_context($mi, $mi->pos1 + $sve->sword->pos1, $mi->pos2 + $sve->sword->pos1, $sve->sword->string_context);
-            } else {
-                $mis = $this->search->expand_message_context($mi, $sve->sword->kwpos1, $sve->sword->pos2, $sve->sword->string_context);
+            && ($sw = $sve->sword)) {
+            $mlx = [];
+            foreach ($ml as &$mi) {
+                if ($mi->nested_context) {
+                    $mlx[] = $mi;
+                } else if ($mi->pos1 !== null) {
+                    array_push($mlx, ...$this->search->expand_message_context($mi, $mi->pos1 + $sw->pos1, $mi->pos2 + $sw->pos1, $sw->string_context));
+                } else {
+                    array_push($mlx, ...$this->search->expand_message_context($mi, $sw->kwpos1, $sw->pos2, $sw->string_context));
+                }
             }
-        } else {
-            $mis = [$mi];
-            $mi->pos1 = $mi->pos2 = null;
+            $ml = $mlx;
         }
         $this->_finding_column_errors = $this->_finding_column_errors ?? [];
-        array_push($this->_finding_column_errors, ...$mis);
+        array_push($this->_finding_column_errors, ...$ml);
     }
 
     /** @param string $name

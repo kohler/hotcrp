@@ -40,7 +40,7 @@ class Formula_PaperColumn extends PaperColumn {
             || !$this->formula->viewable()) {
             return false;
         }
-        $this->formula_function = $this->formula->compile_function();
+        $this->formula->prepare();
         $this->formula->add_query_options($pl->qopts);
         if (($v = $this->view_option("format")) !== null
             && preg_match('/\A%?(\d*(?:\.\d*)[bdeEfFgGoxX])\z/', $v, $m)) {
@@ -50,9 +50,9 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
-        $formulaf = $this->formula->compile_sortable_function();
+        $this->formula->prepare_sortable();
         foreach ($pl->rowset() as $row) {
-            $this->sortmap[$row->paperXid] = $formulaf($row, null, $pl->user);
+            $this->sortmap[$row->paperXid] = $this->formula->eval_sortable($row, null);
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
@@ -65,12 +65,11 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function reset(PaperList $pl) {
         if ($this->results === null) {
-            $formulaf = $this->formula_function;
             $this->results = [];
             $isreal = $this->formula->result_format() === Fexpr::FNUMERIC
                 && !$this->real_format;
             foreach ($pl->rowset() as $row) {
-                $v = $formulaf($row, null, $pl->user);
+                $v = $this->formula->eval($row, null);
                 $this->results[$row->paperId] = $v;
                 if ($isreal && is_float($v) && $v - floor($v) >= 0.005) {
                     $this->real_format = "%.2f";
@@ -86,7 +85,7 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         if ($pl->overriding === 2) {
-            $v = call_user_func($this->formula_function, $row, null, $pl->user);
+            $v = $this->formula->eval($row, null);
         } else {
             $v = $this->results[$row->paperId];
         }
@@ -138,16 +137,16 @@ class Formula_PaperColumnFactory {
             $nf = ($xtp->conf->named_formulas())[(int) substr($name, 7)] ?? null;
         }
 
-        $pos_offset = 0;
+        $prefix = "";
         if (!$nf) {
             if (str_starts_with($name, "f:")) {
-                $pos_offset = 2;
+                $prefix = "f:";
             } else if (str_starts_with($name, "formula:")) {
-                $pos_offset = 8;
+                $prefix = "formula:";
             }
         }
-        $want_error = $pos_offset > 0 || strpos($name, "(") !== false;
-        $name = substr($name, $pos_offset);
+        $want_error = $prefix !== "" || strpos($name, "(") !== false;
+        $name = substr($name, strlen($prefix));
 
         if (!$nf) {
             $nf = $xtp->conf->find_named_formula($name);
@@ -169,9 +168,9 @@ class Formula_PaperColumnFactory {
                 return [Formula_PaperColumnFactory::make($ff, $nf, $xfj)];
             }
         } else if ($want_error) {
-            foreach ($ff->message_list() as $mi) {
-                PaperColumn::column_error($xtp, $mi->with(["pos_offset" => $pos_offset]));
-            }
+            PaperColumn::column_error($xtp, MessageSet::list_with($ff->message_list(), [
+                "top_context" => $prefix . $name, "top_pos_offset" => strlen($prefix)
+            ]));
         }
         return null;
     }

@@ -5,8 +5,8 @@
 class Pref_Fexpr extends Fexpr {
     private $is_expertise;
     private $cids;
-    function __construct($ff) {
-        $is_expertise = is_object($ff) ? $ff->kwdef->is_expertise : $ff;
+    function __construct(FormulaCall $ff) {
+        $is_expertise = $ff->kwdef->is_expertise;
         parent::__construct($is_expertise ? "prefexp" : "pref");
         $this->is_expertise = $is_expertise;
         $this->set_format($is_expertise ? Fexpr::FPREFEXPERTISE : Fexpr::FNUMERIC);
@@ -14,25 +14,28 @@ class Pref_Fexpr extends Fexpr {
             $this->cids = $ff->modifier;
         }
     }
-    static function parse_modifier(FormulaCall $ff, $arg, Formula $formula) {
+    static function parse_modifier(FormulaCall $ff, $arg) {
         if ($ff->modifier !== false || str_starts_with($arg, ".")) {
             return false;
         }
         if (str_starts_with($arg, ":")) {
             $arg = substr($arg, 1);
         }
-        $csm = ContactSearch::make_pc($arg, $formula->user);
+        $csm = ContactSearch::make_pc($arg, $ff->user);
         if (!$csm->has_error()) {
             $ff->modifier = $csm->user_ids();
             return true;
         }
         return false;
     }
+    static function make(FormulaCall $ff) {
+        if (!$ff->user->isPC) {
+            return Fexpr::cnever();
+        }
+        return new Pref_Fexpr($ff);
+    }
     function inferred_index() {
         return Fexpr::IDX_PC;
-    }
-    function viewable_by(Contact $user) {
-        return $user->isPC;
     }
     function compile(FormulaCompiler $state) {
         if (!$state->user->is_reviewer()) {

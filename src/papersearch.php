@@ -33,6 +33,42 @@ class SearchStringContext {
     public $depth;
     /** @var ?SearchStringContext */
     public $parent;
+
+    /** @param string $q
+     * @param int $ppos1
+     * @param int $ppos2
+     * @param ?SearchStringContext $parent */
+    function __construct($q, $ppos1, $ppos2, $parent) {
+        $this->q = $q;
+        $this->ppos1 = $ppos1;
+        $this->ppos2 = $ppos2;
+        $this->depth = $parent ? $parent->depth + 1 : 1;
+        $this->parent = $parent;
+    }
+
+    /** @param MessageItem $mi
+     * @param int $pos1
+     * @param int $pos2
+     * @param ?SearchStringContext $context
+     * @param string $base
+     * @return list<MessageItem> */
+    static function expand($mi, $pos1, $pos2, $context, $base) {
+        $mi->pos1 = $pos1;
+        $mi->pos2 = $pos2;
+        $mis = [$mi];
+        while ($context) {
+            $mi->context = $context->q;
+            $mi->nested_context = true;
+            $mi = MessageItem::inform("");
+            $mi->landmark = "<5>→ <em>expanded from</em> ";
+            $mi->pos1 = $context->ppos1;
+            $mi->pos2 = $context->ppos2;
+            $mis[] = $mi;
+            $context = $context->parent;
+        }
+        $mi->context = $base;
+        return $mis;
+    }
 }
 
 class SearchQueryInfo {
@@ -451,20 +487,7 @@ class PaperSearch extends MessageSet {
         } else {
             $mi = $message;
         }
-        $mi->pos1 = $pos1;
-        $mi->pos2 = $pos2;
-        $mis = [$mi];
-        while ($context) {
-            $mi->context = $context->q;
-            $mi = MessageItem::inform("");
-            $mi->landmark = "<5>→ <em>expanded from</em> ";
-            $mi->pos1 = $context->ppos1;
-            $mi->pos2 = $context->ppos2;
-            $mis[] = $mi;
-            $context = $context->parent;
-        }
-        $mi->context = $this->q;
-        return $mis;
+        return SearchStringContext::expand($mi, $pos1, $pos2, $context, $this->q);
     }
 
     /** @param SearchWord|SearchTerm $sw
@@ -598,12 +621,7 @@ class PaperSearch extends MessageSet {
             $this->lwarning($sword, "<0>Circular reference in named search definitions");
             return null;
         }
-        $context = new SearchStringContext;
-        $context->q = $body;
-        $context->ppos1 = $sword->kwpos1;
-        $context->ppos2 = $sword->pos2;
-        $context->depth = $this->_string_context ? $this->_string_context->depth + 1 : 1;
-        $context->parent = $this->_string_context;
+        $context = new SearchStringContext($body, $sword->kwpos1, $sword->pos2, $this->_string_context);
         $this->_string_context = $context;
         $qe = $this->_search_expression($body);
         $this->_string_context = $context->parent;

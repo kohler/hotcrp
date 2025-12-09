@@ -7,8 +7,6 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     public $formula;
     /** @var callable */
     private $indexes_function;
-    /** @var callable */
-    private $formula_function;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
@@ -20,7 +18,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             return false;
         }
         $this->format_field = $this->formula->result_format_detail();
-        $this->formula_function = $this->formula->compile_sortable_function();
+        $this->formula->prepare_sortable();
         $this->indexes_function = null;
         if ($this->formula->indexed()) {
             $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->index_type());
@@ -31,11 +29,10 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function score_info(PaperList $pl, PaperInfo $row) {
         $indexesf = $this->indexes_function;
-        $indexes = $indexesf ? $indexesf($row, $pl->user) : [null];
-        $formulaf = $this->formula_function;
+        $indexes = $indexesf ? call_user_func($indexesf, $row, $pl->user) : [null];
         $sci = new ScoreInfo;
         foreach ($indexes as $i) {
-            if (($v = $formulaf($row, $i, $pl->user)) !== null
+            if (($v = $this->formula->eval_sortable($row, $i)) !== null
                 && $v > 0) {
                 $sci->add($v);
                 if ($i === $this->cid
@@ -54,9 +51,9 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     static function expand($name, XtParams $xtp, $xfj, $m) {
         $formula = Formula::make_indexed($xtp->user, $m[2]);
         if (!$formula->ok()) {
-            foreach ($formula->message_list() as $mi) {
-                PaperColumn::column_error($xtp, $mi->with(["pos_offset" => strlen($m[1])]));
-            }
+            PaperColumn::column_error($xtp, MessageSet::list_with($formula->message_list(), [
+                "top_context" => $m[0], "top_pos_offset" => strlen($m[1])
+            ]));
             return null;
         } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
             PaperColumn::column_error($xtp, "<0>Formula of type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");

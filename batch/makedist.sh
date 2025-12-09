@@ -315,7 +315,9 @@ src/fieldrender.php
 src/filefilter.php
 src/formatspec.php
 src/formula.php
+src/formulacall.php
 src/formulagraph.php
+src/formulaparser.php
 src/formulas/f_author.php
 src/formulas/f_conflict.php
 src/formulas/f_decision.php

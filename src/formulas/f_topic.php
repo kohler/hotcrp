@@ -5,7 +5,7 @@
 class Topic_Fexpr extends Fexpr {
     /** @var true|array<int> */
     private $match;
-    function __construct(FormulaCall $ff, Formula $formula) {
+    function __construct(FormulaCall $ff) {
         parent::__construct($ff);
         if ($ff->modifier === null || $ff->modifier === [-1]) {
             $this->match = true;
@@ -17,14 +17,14 @@ class Topic_Fexpr extends Fexpr {
             }
         }
     }
-    static function parse_modifier(FormulaCall $ff, $arg, Formula $formula) {
+    static function parse_modifier(FormulaCall $ff, $arg) {
         if ($ff->modifier !== null || str_starts_with($arg, ".")) {
             return false;
         }
         if (str_starts_with($arg, ":")) {
             $arg = substr($arg, 1);
         }
-        $ff->modifier = $formula->conf->topic_set()->find_all(SearchWord::unquote($arg));
+        $ff->modifier = $ff->conf->topic_set()->find_all(SearchWord::unquote($arg));
         // XXX warn if no match
         return true;
     }

@@ -514,15 +514,17 @@ class FormulaGraph extends MessageSet {
     }
 
     /** @param bool $reviewf
-     * @return ?callable */
+     * @return bool */
     private function _compile_xorder_function($reviewf) {
         if (!$this->fxorder) {
-            return null;
-        } else if ($reviewf) {
-            return $this->fxorder->compile_extractor_function();
-        } else {
-            return $this->fxorder->compile_json_function();
+            return false;
         }
+        if ($reviewf) {
+            $this->fxorder->prepare_extractor();
+        } else {
+            $this->fxorder->prepare_json();
+        }
+        return true;
     }
 
     /** @param list $order_data
@@ -533,9 +535,9 @@ class FormulaGraph extends MessageSet {
         }
         $this->_xorder_data = [];
         if ($reviewf) {
-            $ordercf = $this->fxorder->compile_combiner_function();
             foreach ($order_data as $x => $vs) {
-                $this->_xorder_data[] = new Order_GraphData($x, $ordercf($vs));
+                $v = $this->fxorder->eval_combiner($vs);
+                $this->_xorder_data[] = new Order_GraphData($x, $v);
             }
         } else {
             foreach ($order_data as $x => $vs) {
@@ -547,12 +549,12 @@ class FormulaGraph extends MessageSet {
     /** @param Formula $fx
      * @return list<CDF_GraphData> */
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
-        $fxf = $fx->compile_json_function();
+        $fx->prepare_json();
         $reviewf = null;
         if ($fx->indexed()) {
             $reviewf = Formula::compile_indexes_function($this->user, $fx->index_type());
         }
-        $orderf = $this->_compile_xorder_function(!!$reviewf);
+        $want_order = $this->_compile_xorder_function(!!$reviewf);
         $order_data = [];
 
         $data = [];
@@ -560,7 +562,7 @@ class FormulaGraph extends MessageSet {
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             $queries = $this->papermap[$prow->paperId];
             foreach ($revs as $rcid) {
-                if (($x = $fxf($prow, $rcid, $this->user)) === null) {
+                if (($x = $fx->eval_json($prow, $rcid)) === null) {
                     continue;
                 }
                 if ($this->_x_bool && !is_bool($x)) {
@@ -578,8 +580,10 @@ class FormulaGraph extends MessageSet {
                         $data[$q][] = $x;
                     }
                 }
-                if ($orderf) {
-                    $order_data[$x][] = $orderf($prow, $rcid, $this->user);
+                if ($want_order) {
+                    $order_data[$x][] = $reviewf
+                        ? $this->fxorder->eval_extractor($prow, $rcid)
+                        : $this->fxorder->eval_json($prow, $rcid);
                 }
             }
         }
@@ -703,8 +707,8 @@ class FormulaGraph extends MessageSet {
             $this->_prepare_reviewer_color($this->user);
         }
 
-        $fxf = $this->fx->compile_json_function();
-        $fyf = $this->fy->compile_json_function();
+        $this->fx->prepare_json();
+        $this->fy->prepare_json();
 
         $reviewf = null;
         $review_id = false;
@@ -718,8 +722,7 @@ class FormulaGraph extends MessageSet {
                 && ($index_type & Fexpr::IDX_PC) !== 0;
         }
 
-        $orderf = $this->_compile_xorder_function(!!$reviewf);
-
+        $want_order = $this->_compile_xorder_function(!!$reviewf);
         $order_data = [];
         $this->_scatter_data = [];
 
@@ -728,8 +731,8 @@ class FormulaGraph extends MessageSet {
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             foreach ($revs as $rcid) {
                 $rrow = $rcid ? $prow->review_by_user($rcid) : null;
-                $x = $fxf($prow, $rcid, $this->user);
-                $y = $fyf($prow, $rcid, $this->user);
+                $x = $this->fx->eval_json($prow, $rcid);
+                $y = $this->fy->eval_json($prow, $rcid);
                 if ($x === null || $y === null) {
                     continue;
                 }
@@ -763,8 +766,10 @@ class FormulaGraph extends MessageSet {
                     foreach ($xs as $xv) {
                         $sdata[] = new Scatter_GraphData($xv, $y, $id);
                     }
-                    if ($orderf) {
-                        $order_data[$x][] = $orderf($prow, $rcid, $this->user);
+                    if ($want_order) {
+                        $order_data[$x][] = $reviewf
+                            ? $this->fxorder->eval_extractor($prow, $rcid)
+                            : $this->fxorder->eval_json($prow, $rcid);
                     }
                 }
             }
@@ -778,18 +783,16 @@ class FormulaGraph extends MessageSet {
             $this->_prepare_reviewer_color($this->user);
         }
 
-        $fxf = $this->fx->compile_json_function();
-        $fytrack = $this->fy->compile_extractor_function();
-        $fycombine = $this->fy->compile_combiner_function();
+        $this->fx->prepare_json();
+        $this->fy->prepare_extractor();
         $index_type = Formula::combine_index_types($this->fx->index_type(),
             $this->fxorder ? $this->fxorder->index_type() : 0,
             $this->fy->index_type());
         $reviewf = Formula::compile_indexes_function($this->user, $index_type);
-        $orderf = $ordercf = $order_data = null;
+        $order_data = null;
         if ($this->fxorder) {
             $order_data = [];
-            $orderf = $this->fxorder->compile_extractor_function();
-            $ordercf = $this->fxorder->compile_combiner_function();
+            $this->fxorder->prepare_extractor();
         }
         $review_id = $this->fx->indexed()
             && $this->fy->indexed()
@@ -801,7 +804,7 @@ class FormulaGraph extends MessageSet {
             $ps = $this->_paper_style($prow);
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             foreach ($revs as $rcid) {
-                $x = $fxf($prow, $rcid, $this->user);
+                $x = $this->fx->eval_json($prow, $rcid);
                 if ($x === null) {
                     continue;
                 }
@@ -814,7 +817,7 @@ class FormulaGraph extends MessageSet {
                 } else {
                     $s = $ps;
                 }
-                $y = $fytrack($prow, $rcid, $this->user);
+                $y = $this->fy->eval_extractor($prow, $rcid);
                 $id = $prow->paperId;
                 if ($review_id && $rrow && $rrow->reviewOrdinal) {
                     $id .= unparse_latin_ordinal($rrow->reviewOrdinal);
@@ -830,8 +833,8 @@ class FormulaGraph extends MessageSet {
                         $data[] = new BarElement_GraphData($x, $y, $id, $s, $q);
                     }
                 }
-                if ($orderf) {
-                    $order_data[$x][] = $orderf($prow, $rcid, $this->user);
+                if ($order_data !== null) {
+                    $order_data[$x][] = $this->fxorder->eval_extractor($prow, $rcid);
                 }
             }
         }
@@ -860,17 +863,18 @@ class FormulaGraph extends MessageSet {
                      && ($d0 = $data[$i])->x == $x
                      && (!$is_sum || $d0->style == $s)
                      && $d0->sx == $q);
-            $y = $fycombine($ys);
+            $y = $this->fy->eval_combiner($ys);
             if ($reviewf && !$this->fx->indexed()) {
                 $ids = array_values(array_unique($ids));
             }
             $this->_bar_data[] = new Bar_GraphData($x, $y, $ids, $s, $q);
         }
 
-        if ($ordercf) {
+        if ($order_data !== null) {
             $this->_xorder_data = [];
             foreach ($order_data as $x => $vs) {
-                $this->_xorder_data[] = new Order_GraphData($x, $ordercf($vs));
+                $v = $this->fxorder->eval_combiner($vs);
+                $this->_xorder_data[] = new Order_GraphData($x, $v);
             }
         }
     }

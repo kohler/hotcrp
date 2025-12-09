@@ -137,8 +137,6 @@ class TagAssignmentPiece {
     public $xitype;
     /** @var ?Formula */
     public $formula;
-    /** @var ?callable(PaperInfo,?int,Contact):mixed */
-    public $formulaf;
 
     /** @param string $xvalue
      * @return bool */
@@ -182,7 +180,7 @@ class TagAssignmentPiece {
             $state->error("<0>‘{$xvalue}’: Can’t compute this formula here");
             return false;
         }
-        $this->formulaf = $this->formula->compile_function();
+        $this->formula->prepare();
         return true;
     }
 
@@ -236,8 +234,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     private $itype = 0;
     /** @var ?Formula */
     private $formula;
-    /** @var ?callable(PaperInfo,?int,Contact):mixed */
-    private $formulaf;
     /** @var list<TagAssignmentPiece> */
     private $pieces;
 
@@ -385,7 +381,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // resolve formula
         if ($piece->formula) {
-            $nvalue = call_user_func($piece->formulaf, $prow, null, $state->user);
+            $nvalue = $piece->formula->eval($prow, null);
             if ($nvalue === null || $nvalue === false) {
                 $nvalue = false;
             } else if ($nvalue === true) {

@@ -1410,9 +1410,7 @@ class Selector_PaperOption extends PaperOption {
     }
 
     function parse_fexpr(FormulaCall $fcall) {
-        $fex = new OptionValue_Fexpr($this);
-        $fex->set_format(Fexpr::FSUBFIELD, $this);
-        return $fex;
+        return new OptionValue_Fexpr($this, Fexpr::FSUBFIELD, $this);
     }
 }
 

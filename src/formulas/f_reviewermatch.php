@@ -29,11 +29,14 @@ class ReviewerMatch_Fexpr extends Fexpr {
         }
         $this->csearch = new ContactSearch($flags, $arg, $user);
     }
+    static function make(Contact $user, $arg) {
+        if (!$user->can_view_some_review_identity()) {
+            return Fexpr::cnever();
+        }
+        return new ReviewerMatch_Fexpr($user, $arg);
+    }
     function inferred_index() {
         return self::IDX_REVIEW;
-    }
-    function viewable_by(Contact $user) {
-        return $user->can_view_some_review_identity();
     }
     function compile(FormulaCompiler $state) {
         assert($state->user === $this->user);

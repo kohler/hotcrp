@@ -7,12 +7,11 @@ class Formula_SearchTerm extends SearchTerm {
     private $user;
     /** @var Formula */
     private $formula;
-    private $function;
     function __construct(Formula $formula) {
         parent::__construct("formula");
         $this->user = $formula->user;
         $this->formula = $formula;
-        $this->function = $formula->compile_function();
+        $formula->prepare();
     }
     /** @param string $word
      * @param SearchWord $sword
@@ -31,13 +30,11 @@ class Formula_SearchTerm extends SearchTerm {
         }
         if (!$formula->ok()) {
             $srch->lwarning($sword, "<0>Invalid formula matches no submissions");
-            foreach ($formula->message_list() as $mi) {
-                $srch->message_set()->append_item($mi->with([
-                    "problem_status" => MessageSet::WARNING,
-                    "pos_offset" => $sword->pos1,
-                    "context" => $srch->q
-                ]));
-            }
+            $srch->message_set()->append_list(MessageSet::list_with($formula->message_list(), [
+                "problem_status" => MessageSet::WARNING,
+                "top_context" => $srch->q,
+                "top_pos_offset" => $sword->pos1
+            ]));
             $formula = null;
         }
         return $formula;
@@ -62,11 +59,9 @@ class Formula_SearchTerm extends SearchTerm {
         return "true";
     }
     function test(PaperInfo $row, $xinfo) {
-        $formulaf = $this->function;
         if ($xinfo && $xinfo instanceof ReviewInfo) {
-            return !!$formulaf($row, $xinfo->contactId, $this->user);
-        } else {
-            return !!$formulaf($row, null, $this->user);
+            return !!$this->formula->eval($row, $xinfo->contactId);
         }
+        return !!$this->formula->eval($row, null);
     }
 }

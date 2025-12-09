@@ -6,20 +6,20 @@ class TopicScore_Fexpr extends Fexpr {
     function __construct() {
         parent::__construct("topicscore");
     }
+    static function make(FormulaCall $ff) {
+        return $ff->user->isPC ? new TopicScore_Fexpr : Fexpr::cnever();
+    }
     function inferred_index() {
         return Fexpr::IDX_PC;
     }
     function paper_options(&$oids) {
         $oids[PaperOption::TOPICSID] = true;
     }
-    function viewable_by(Contact $user) {
-        return $user->isPC;
-    }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["topics"] = true;
         $prow = $state->_prow();
         if ($state->index_type === Fexpr::IDX_MY) {
-            return $state->define_gvar("mytopicscore", "{$prow}->topic_interest_score(\$contact)");
+            return $state->define_gvar("mytopicscore", "{$prow}->topic_interest_score(\$user)");
         } else if ($state->user->can_view_pc()) {
             return "{$prow}->topic_interest_score(" . $state->loop_cid(true) . ")";
         } else {

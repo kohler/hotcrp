@@ -881,7 +881,7 @@ class ConfInvariant_AutomaticTagChecker {
     public $term;
     /** @var ?float */
     public $value_constant;
-    /** @var ?callable(PaperInfo,?int,Contact):mixed */
+    /** @var ?Formula */
     public $value_formula;
     /** @var int */
     public $reports = 0;
@@ -900,7 +900,8 @@ class ConfInvariant_AutomaticTagChecker {
         } else {
             $f = Formula::make($this->user, $ftext);
             if ($f->ok()) {
-                $this->value_formula = $f->compile_function();
+                $this->value_formula = $f;
+                $f->prepare();
             }
             $vsfx = "";
         }
@@ -912,7 +913,7 @@ class ConfInvariant_AutomaticTagChecker {
         if (!$this->term->test($row, null)) {
             return null;
         } else if ($this->value_formula) {
-            $v = call_user_func($this->value_formula, $row, null, $this->user);
+            $v = $this->value_formula->eval($row, null);
             if (is_bool($v)) {
                 $v = $v ? 0.0 : null;
             } else if (is_int($v)) {

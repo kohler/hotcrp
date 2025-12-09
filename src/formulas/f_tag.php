@@ -27,35 +27,35 @@ class Tag_Fexpr extends Fexpr {
         return false;
     }
     static function make(FormulaCall $ff) {
-        if (count($ff->rawargs) === 1
-            && preg_match('{\A#?(?:|~~?|\S+~)' . TAG_REGEX_NOTWIDDLE . '\z}', $ff->rawargs[0])) {
-            $tag = $ff->rawargs[0];
-            $tsm = new TagSearchMatcher($ff->formula->user);
-            $tsm->add_check_tag(str_starts_with($tag, "_~") ? substr($tag, 1) : $tag, true);
-            return new Tag_Fexpr($tag, $tsm, $ff->kwdef->is_value);
-        } else {
+        if (count($ff->rawargs) !== 1
+            || !preg_match('{\A#?(?:|~~?|\S+~)' . TAG_REGEX_NOTWIDDLE . '\z}', $ff->rawargs[0])) {
             $ff->lerror("<0>Invalid tag ‘{$ff->rawargs[0]}’");
             return null;
         }
+        if (!$ff->user->can_view_tags()) {
+            return Fexpr::cnever();
+        }
+        $tag = $ff->rawargs[0];
+        $tsm = new TagSearchMatcher($ff->user);
+        $tsm->add_check_tag(str_starts_with($tag, "_~") ? substr($tag, 1) : $tag, true);
+        return new Tag_Fexpr($tag, $tsm, $ff->kwdef->is_value);
     }
     static function tag_value($tags, $search, $isvalue) {
         $p = stripos($tags, $search);
         if ($p === false) {
             return false;
-        } else {
-            $value = (float) substr($tags, $p + strlen($search));
-            return $isvalue || $value !== (float) 0 ? $value : true;
         }
+        $value = (float) substr($tags, $p + strlen($search));
+        return $isvalue || $value !== (float) 0 ? $value : true;
     }
     static function tag_regex_value($tags, $search, $isvalue) {
         $p = preg_matchpos($search, $tags);
         if ($p === false) {
             return false;
-        } else {
-            $hash = strpos($tags, "#", $p);
-            $value = (float) substr($tags, $hash);
-            return $isvalue || $value !== (float) 0 ? $value : true;
         }
+        $hash = strpos($tags, "#", $p);
+        $value = (float) substr($tags, $hash);
+        return $isvalue || $value !== (float) 0 ? $value : true;
     }
     /** @return string */
     function tag() {
@@ -64,12 +64,8 @@ class Tag_Fexpr extends Fexpr {
     function inferred_index() {
         if (str_starts_with($this->tag, "_~")) {
             return Fexpr::IDX_PC;
-        } else {
-            return 0;
         }
-    }
-    function viewable_by(Contact $user) {
-        return $user->isPC;
+        return 0;
     }
     function compile(FormulaCompiler $state) {
         $tags = $state->_add_tags();

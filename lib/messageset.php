@@ -15,6 +15,8 @@ class MessageItem implements JsonSerializable {
     public $pos2;
     /** @var ?string */
     public $context;
+    /** @var bool */
+    public $nested_context = false;
     /** @var null|int|string */
     public $landmark;
     /** @var ?string */
@@ -77,7 +79,7 @@ class MessageItem implements JsonSerializable {
         return Ftext::as($format, $this->message);
     }
 
-    /** @param array{field?:?string,message?:string,status?:int,problem_status?:int} $updates
+    /** @param array{field?:?string,message?:string,status?:int,problem_status?:int,pos_offset?:int,top_pos_offset?:int,top_context?:?string} $updates
      * @return MessageItem */
     function with($updates) {
         $mi = clone $this;
@@ -98,15 +100,29 @@ class MessageItem implements JsonSerializable {
         } else if ($mi->pos1 !== null
                    && array_key_exists("pos_offset", $updates)) {
             $mi->pos1 += $updates["pos_offset"];
+        } else if ($mi->pos1 !== null
+                   && !$mi->nested_context
+                   && array_key_exists("top_pos_offset", $updates)) {
+            $mi->pos1 += $updates["top_pos_offset"];
         }
         if (array_key_exists("pos2", $updates)) {
             $mi->pos2 = $updates["pos2"];
         } else if ($mi->pos2 !== null
                    && array_key_exists("pos_offset", $updates)) {
             $mi->pos2 += $updates["pos_offset"];
+        } else if ($mi->pos2 !== null
+                   && !$mi->nested_context
+                   && array_key_exists("top_pos_offset", $updates)) {
+            $mi->pos2 += $updates["top_pos_offset"];
         }
         if (array_key_exists("context", $updates)) {
             $mi->context = $updates["context"];
+        } else if (array_key_exists("top_context", $updates)
+                   && !$mi->nested_context) {
+            $mi->context = $updates["top_context"];
+        }
+        if (array_key_exists("nested_context", $updates)) {
+            $mi->nested_context = $updates["nested_context"];
         }
         if (array_key_exists("landmark", $updates)) {
             $mi->landmark = $updates["landmark"];
@@ -864,6 +880,17 @@ class MessageSet {
             }
         }
         return $status ?? 0;
+    }
+
+    /** @param iterable<MessageItem> $message_list
+     * @param array $change
+     * @return list<MessageItem> */
+    static function list_with($message_list, $change) {
+        $ml = [];
+        foreach ($message_list as $mi) {
+            $ml[] = $mi->with($change);
+        }
+        return $ml;
     }
 
 

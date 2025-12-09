@@ -6,6 +6,6 @@ class PdfSize_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $state->queryOptions["pdfSize"] = true;
         $prow = $state->_prow();
-        return "(\$contact->can_view_pdf({$prow}) ? (int) {$prow}->primary_document_size() : null)";
+        return "(\$user->can_view_pdf({$prow}) ? (int) {$prow}->primary_document_size() : null)";
     }
 }
