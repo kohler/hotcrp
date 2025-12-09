@@ -788,7 +788,7 @@ function xassert_match($a, $b) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("expected " . var_export($a, true) . " ~= {$b}");
+        Xassert::fail_match("expected ", var_export($a, true), " ~= ", $b);
     }
     return $ok;
 }
@@ -802,11 +802,17 @@ function xassert_int_list_eqq($actual, $expected) {
     $estr = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
         return join(" ", range(+$m[1], +$m[2]));
     }, $estr);
+    if ($astr === "") {
+        $astr = "<empty>";
+    }
+    if ($estr === "") {
+        $estr = "<empty>";
+    }
     $ok = $astr === $estr;
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("expected {$estr}, got {$astr}");
+        Xassert::fail_match("expected ", $estr, ", got ", $astr);
     }
     return $ok;
 }

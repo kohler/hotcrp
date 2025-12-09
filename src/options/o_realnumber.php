@@ -82,9 +82,8 @@ class RealNumber_PaperOption extends PaperOption {
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if (is_numeric($sword->cword)) {
             return new RealNumberOption_SearchTerm($srch->user, $this, CountMatcher::parse_relation($sword->compar), floatval($sword->cword));
-        } else {
-            return null;
         }
+        return null;
     }
     function present_script_expression() {
         return ["type" => "text_present", "formid" => $this->formid];
