@@ -60,7 +60,6 @@ class Options_SettingParser extends SettingParser {
         $prow->set_prop("authorInformation", "Author\tOne\tauthor1@example.com\t\nAuthor\tTwo\tauthor2@example.com\t\n" . Author::make_user($sv->user)->unparse_tabbed());
         $this->pt = new PaperTable($sv->user, new Qrequest("GET"), $prow);
         $this->pt->settings_mode = true;
-        $this->_fcvts = new FieldConversions_Setting($sv->conf->option_type_map(), $sv->conf);
     }
 
 
@@ -76,6 +75,14 @@ class Options_SettingParser extends SettingParser {
      * @return object */
     function basic_intrinsic_json($id) {
         return ($this->basic_intrinsic_json_map())[$id] ?? null;
+    }
+
+    /** @return FieldConversions_Setting */
+    private function fcvts() {
+        if ($this->_fcvts === null) {
+            $this->_fcvts = new FieldConversions_Setting($this->conf->option_type_map(), $this->conf);
+        }
+        return $this->_fcvts;
     }
 
     /** @param int $id
@@ -221,9 +228,8 @@ class Options_SettingParser extends SettingParser {
                     $ot[] = $uf->name;
             }
             return $ot;
-        } else {
-            return null;
         }
+        return null;
     }
 
     function member_list(Si $si, SettingValues $sv) {
@@ -268,8 +274,8 @@ class Options_SettingParser extends SettingParser {
             $content = "Intrinsic field (" . htmlspecialchars($ij->name) . ")";
         } else {
             $conversions = [];
-            foreach ($this->_fcvts->find_from($this->sfs->type) as $cvt) {
-                if ($this->_fcvts->allow($cvt, $this->sfs, $sv, null))
+            foreach ($this->fcvts()->find_from($this->sfs->type) as $cvt) {
+                if ($this->fcvts()->allow($cvt, $this->sfs, $sv, null))
                     $conversions[] = $cvt->to;
             }
             $types = $this->conf->option_type_map();
@@ -597,9 +603,9 @@ class Options_SettingParser extends SettingParser {
         }
         $cvt = null;
         if ($fs->type !== "none" && $fs->type !== $ft->name) {
-            $cvt = $this->_fcvts->find($fs->type, $ft->name);
+            $cvt = $this->fcvts()->find($fs->type, $ft->name);
             if (!$cvt
-                || !$this->_fcvts->allow($cvt, $fs, $sv, $si)) {
+                || !$this->fcvts()->allow($cvt, $fs, $sv, $si)) {
                 if (!$sv->has_error_at($si->name)) {
                     $sv->error_at($si, "<0>Cannot convert submission field to this type");
                 }
@@ -1062,16 +1068,21 @@ class Options_SettingParser extends SettingParser {
     }
 
 
-    static function crosscheck(SettingValues $sv) {
+    function crosscheck(SettingValues $sv) {
         if (($sv->has_interest("sf") || $sv->has_interest("author_visibility"))
             && $sv->oldv("author_visibility") == Conf::BLIND_ALWAYS) {
-            $opts = self::configurable_options($sv->conf);
-            foreach ($opts as $ctrz => $f) {
-                if ($f->visibility() === PaperOption::VIS_AUTHOR
-                    && $f->id > 0) {
-                    $visname = "sf/" . ($ctrz + 1) . "/visibility";
-                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden from reviewers");
+            foreach (self::configurable_options($this->conf) as $ctrz => $f) {
+                if ($f->visibility() !== PaperOption::VIS_AUTHOR) {
+                    continue;
                 }
+                $ot = $f->id <= 0
+                    ? $this->basic_intrinsic_json($f->id)
+                    : $this->conf->option_type($f->type);
+                if (!$ot || ($ot->authorlike ?? false)) {
+                    continue;
+                }
+                $visname = "sf/" . ($ctrz + 1) . "/visibility";
+                $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden from reviewers");
             }
         }
     }

@@ -43,7 +43,8 @@
         "form_order": 3001, "required": true,
         "display": "right",
         "function": "+Authors_PaperOption",
-        "configurable": true, "properties": ["name", "description", "edit_condition", "editable_if", "max"]
+        "configurable": true, "properties": ["name", "description", "edit_condition", "editable_if", "max"],
+        "authorlike": true
     },
     {
         "name": "Anonymity", "id": -1002,
@@ -60,7 +61,8 @@
         "visibility": "conflict",
         "form_order": 3050,
         "display": "none",
-        "configurable": false, "function": "+Contacts_PaperOption"
+        "configurable": false, "function": "+Contacts_PaperOption",
+        "authorlike": true
     },
     {
         "name": "Topics", "id": -1005,
@@ -80,7 +82,8 @@
         "display": "none",
         "function": "+PCConflicts_PaperOption",
         "editable_if": "phase:review",
-        "configurable": true, "properties": ["name"]
+        "configurable": true, "properties": ["name"],
+        "authorlike": true
     },
     {
         "name": "Collaborators", "id": -1007,
@@ -91,6 +94,7 @@
         "display": "none",
         "function": "+Collaborators_PaperOption",
         "editable_if": "phase:review",
-        "configurable": true, "properties": ["name", "description"]
+        "configurable": true, "properties": ["name", "description"],
+        "authorlike": true
     }
 ]

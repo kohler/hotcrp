@@ -168,7 +168,7 @@
     {   "name": "opt", "alias": "options"   },
     {
         "name": "__crosscheck/submissionfields", "order": 400,
-        "crosscheck_function": "Options_SettingParser::crosscheck"
+        "crosscheck_function": "*Options_SettingParser::crosscheck"
     },
     {
         "name": "__crosscheck/submissionfieldconditions", "order": 600,
