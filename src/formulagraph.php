@@ -162,9 +162,11 @@ class FormulaGraph extends MessageSet {
 
     const REVIEWER_COLOR = 1;
 
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     public $user;
     /** @var int */
     public $type = 0;

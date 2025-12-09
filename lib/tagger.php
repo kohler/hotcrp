@@ -207,9 +207,8 @@ class TagInfo {
             return $this->autosearch;
         } else if (($this->flags & self::TFM_VOTES) !== 0) {
             return "#*~" . $this->tag;
-        } else {
-            return null;
         }
+        return null;
     }
     /** @return ?SearchTerm */
     function automatic_search_term() {
@@ -229,9 +228,8 @@ class TagInfo {
             return "count.pc(#_~{$this->tag}) || null";
         } else if (($this->flags & self::TF_ALLOTMENT) !== 0) {
             return "sum.pc(#_~{$this->tag}) || null";
-        } else {
-            return null;
         }
+        return null;
     }
 }
 

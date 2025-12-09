@@ -14,9 +14,9 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         $this->formula = $cj->formula;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$this->formula->check($pl->user)
+        if (!$this->formula->ok()
             || $this->formula->result_format() !== Fexpr::FREVIEWFIELD
-            || !$pl->user->can_view_formula($this->formula)) {
+            || !$this->formula->viewable()) {
             return false;
         }
         $this->format_field = $this->formula->result_format_detail();
@@ -47,7 +47,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         return $sci;
     }
     function header(PaperList $pl, $is_text) {
-        $x = $this->formula->column_header();
+        $x = $this->formula->expression;
         return $is_text ? $x : htmlspecialchars($x);
     }
 

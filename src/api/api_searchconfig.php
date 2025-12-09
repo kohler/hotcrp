@@ -65,12 +65,17 @@ class SearchConfig_API {
 
     static function namedformula(Contact $user, Qrequest $qreq) {
         $fjs = [];
-        foreach ($user->conf->viewable_named_formulas($user) as $f) {
-            $fj = ["name" => $f->name, "expression" => $f->expression, "id" => $f->formulaId];
-            if ($user->can_edit_formula($f)) {
+        foreach ($user->conf->viewable_named_formulas($user) as $nf) {
+            $fj = [
+                "name" => $nf->name,
+                "expression" => $nf->expression,
+                "id" => $nf->formulaId
+            ];
+            if ($user->can_edit_named_formula($nf)) {
                 $fj["editable"] = true;
             }
-            if (!$f->check()) {
+            $f = $nf->realize($user);
+            if (!$f->ok()) {
                 $fj["message_list"] = $f->message_list();
             }
             $fjs[] = $fj;
@@ -132,7 +137,7 @@ class SearchConfig_API {
             }
             $id2idx[$id] = $fidx;
 
-            if (!$user->can_edit_formula($fdef)
+            if (!$user->can_edit_named_formula($fdef)
                 && (!$fdef || $name !== $fdef->name || $expr !== $fdef->expression || $deleted)) {
                 $msgset->error_at("formula/{$fidx}", $fdef ? "<0>{$pfx}You can’t change this named formula" : "<0>You can’t create named formulas");
                 continue;
@@ -150,9 +155,10 @@ class SearchConfig_API {
                 $msgset->error_at("formula/{$fidx}/name", "<0>{$pfx}{$error}");
             }
 
-            $f = new Formula($expr);
+            $f = new NamedFormula($user->conf);
             $f->name = $name;
             $f->formulaId = $id;
+            $f->expression = $expr;
             $new_formula_by_id[$id] = $f;
         }
 
@@ -168,53 +174,53 @@ class SearchConfig_API {
 
         // validate formulas using new formula set
         $user->conf->replace_named_formulas($new_formula_by_id);
-        foreach ($new_formula_by_id as $f) {
-            $fdef = $formula_by_id[$f->formulaId] ?? null;
-            $pfx = $f->name ? htmlspecialchars($f->name) . ": " : "";
-            if ($f->check($user)) {
-                if ((!$fdef || $fdef->expression !== $f->expression)
-                    && !$user->can_view_formula($f))  {
-                    $msgset->error_at("formula/" . $id2idx[$f->formulaId] . "/expression", "<0>{$pfx}This expression refers to properties you can’t access");
+        foreach ($new_formula_by_id as $nf) {
+            $fdef = $formula_by_id[$nf->formulaId] ?? null;
+            $pfx = $nf->name ? htmlspecialchars($nf->name) . ": " : "";
+            $f = $nf->realize($user);
+            if ($f->ok()) {
+                if ((!$fdef || $fdef->expression !== $nf->expression)
+                    && !$f->viewable())  {
+                    $msgset->error_at("formula/" . $id2idx[$nf->formulaId] . "/expression", "<0>{$pfx}This expression refers to properties you can’t access");
                 }
             } else {
                 foreach ($f->message_list() as $mi) {
-                    $msgset->append_item($mi->with_field("formula/" . $id2idx[$f->formulaId] . "/expression"));
+                    $msgset->append_item($mi->with_field("formula/" . $id2idx[$nf->formulaId] . "/expression"));
                 }
             }
         }
 
         // save
-        if (!$msgset->has_error()) {
-            $q = $qv = [];
-            foreach ($formula_by_id as $f) {
-                if (!isset($new_formula_by_id[$f->formulaId])) {
-                    $q[] = "delete from Formula where formulaId=?";
-                    $qv[] = $f->formulaId;
-                }
-            }
-            foreach ($new_formula_by_id as $f) {
-                $fdef = $formula_by_id[$f->formulaId] ?? null;
-                if (!$fdef) {
-                    $q[] = "insert into Formula set name=?, expression=?, createdBy=?, timeModified=?";
-                    array_push($qv, $f->name, $f->expression, $user->privChair ? -$user->contactId : $user->contactId, Conf::$now);
-                } else if ($f->name !== $fdef->name || $f->expression !== $fdef->expression) {
-                    $q[] = "update Formula set name=?, expression=?, timeModified=? where formulaId=?";
-                    array_push($qv, $f->name, $f->expression, Conf::$now, $f->formulaId);
-                }
-            }
-            if (empty($new_formula_by_id)) {
-                $q[] = "delete from Settings where name='formulas'";
-            } else {
-                $q[] = "insert into Settings set name='formulas', value=1 on duplicate key update value=1";
-            }
-            $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
-            $mresult->free_all();
-
-            $user->conf->replace_named_formulas(null);
-            return self::namedformula($user, $qreq);
-        } else {
+        if ($msgset->has_error()) {
             return ["ok" => false, "message_list" => $msgset->message_list()];
         }
+        $q = $qv = [];
+        foreach ($formula_by_id as $f) {
+            if (!isset($new_formula_by_id[$f->formulaId])) {
+                $q[] = "delete from Formula where formulaId=?";
+                $qv[] = $f->formulaId;
+            }
+        }
+        foreach ($new_formula_by_id as $f) {
+            $fdef = $formula_by_id[$f->formulaId] ?? null;
+            if (!$fdef) {
+                $q[] = "insert into Formula set name=?, expression=?, createdBy=?, timeModified=?";
+                array_push($qv, $f->name, $f->expression, $user->privChair ? -$user->contactId : $user->contactId, Conf::$now);
+            } else if ($f->name !== $fdef->name || $f->expression !== $fdef->expression) {
+                $q[] = "update Formula set name=?, expression=?, timeModified=? where formulaId=?";
+                array_push($qv, $f->name, $f->expression, Conf::$now, $f->formulaId);
+            }
+        }
+        if (empty($new_formula_by_id)) {
+            $q[] = "delete from Settings where name='formulas'";
+        } else {
+            $q[] = "insert into Settings set name='formulas', value=1 on duplicate key update value=1";
+        }
+        $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
+        $mresult->free_all();
+
+        $user->conf->replace_named_formulas(null);
+        return self::namedformula($user, $qreq);
     }
 
 

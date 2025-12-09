@@ -138,10 +138,9 @@ class Tag_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->tsm->test_empty()) {
             return "true";
-        } else {
-            $sql = $this->tsm->sqlexpr("PaperTag");
-            return self::SQLEXPR_PREFIX . ($sql ? " and {$sql}" : "") . ')';
         }
+        $sql = $this->tsm->sqlexpr("PaperTag");
+        return self::SQLEXPR_PREFIX . ($sql ? " and {$sql}" : "") . ')';
     }
     function is_sqlexpr_precise() {
         return $this->tsm->is_sqlexpr_precise() && $this->tsm->user->is_root_user();

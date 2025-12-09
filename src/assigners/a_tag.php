@@ -178,7 +178,7 @@ class TagAssignmentPiece {
             $state->error("<0>‘{$xvalue}’: Bad tag value");
             return false;
         }
-        if (!$state->user->can_view_formula($this->formula)) {
+        if (!$this->formula->viewable()) {
             $state->error("<0>‘{$xvalue}’: Can’t compute this formula here");
             return false;
         }

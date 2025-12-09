@@ -7,6 +7,8 @@ class Formula_PaperColumn extends PaperColumn {
     public $formula;
     /** @var callable */
     private $formula_function;
+    /** @var ?string */
+    private $formula_name;
     /** @var ScoreInfo */
     private $statistics;
     /** @var array<int,mixed> */
@@ -21,6 +23,7 @@ class Formula_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_BOTH;
         $this->formula = $cj->formula;
+        $this->formula_name = $cj->formula_name ?? null;
     }
     static function basic_view_option_schema() {
         return ["format$^"];
@@ -29,14 +32,12 @@ class Formula_PaperColumn extends PaperColumn {
         return self::basic_view_option_schema();
     }
     function sort_name() {
-        if ($this->formula->name) {
-            return $this->formula->name;
-        }
-        return "formula:{$this->formula->expression}";
+        return $this->formula_name
+            ?? "formula:{$this->formula->expression}";
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$this->formula->check($pl->user)
-            || !$pl->user->can_view_formula($this->formula)) {
+        if (!$this->formula->ok()
+            || !$this->formula->viewable()) {
             return false;
         }
         $this->formula_function = $this->formula->compile_function();
@@ -105,12 +106,13 @@ class Formula_PaperColumn extends PaperColumn {
 }
 
 class Formula_PaperColumnFactory {
-    static function make(Formula $f, $xfj) {
+    static function make(Formula $f, ?NamedFormula $nf, $xfj) {
         $cj = (array) $xfj;
         $cj["formula"] = $f;
-        if ($f->formulaId) {
-            $cj["name"] = "formula:" . $f->abbreviation();
-            $cj["title"] = $f->name ? : $f->expression;
+        if ($nf) {
+            $cj["name"] = "formula:" . $nf->abbreviation();
+            $cj["title"] = $nf->name ? : $f->expression;
+            $cj["formula_name"] = $nf->name;
         } else {
             $cj["name"] = "formula:" . $f->expression;
             $cj["title"] = $f->expression;
@@ -121,21 +123,23 @@ class Formula_PaperColumnFactory {
     static function expand($name, XtParams $xtp, $xfj, $m) {
         if ($name === "formulas") {
             $fs = [];
-            foreach ($xtp->conf->named_formulas() as $id => $f) {
-                if ($xtp->user->can_view_formula($f))
-                    $fs[$id] = Formula_PaperColumnFactory::make($f, $xfj);
+            foreach ($xtp->conf->named_formulas() as $id => $nf) {
+                if ($xtp->user->can_view_named_formula($nf)) {
+                    $f = $nf->realize($xtp->user);
+                    $fs[$id] = Formula_PaperColumnFactory::make($f, $nf, $xfj);
+                }
             }
             return $fs;
         }
 
-        $ff = null;
+        $nf = null;
         if (str_starts_with($name, "formula")
             && ctype_digit(substr($name, 7))) {
-            $ff = ($xtp->conf->named_formulas())[(int) substr($name, 7)] ?? null;
+            $nf = ($xtp->conf->named_formulas())[(int) substr($name, 7)] ?? null;
         }
 
         $pos_offset = 0;
-        if (!$ff) {
+        if (!$nf) {
             if (str_starts_with($name, "f:")) {
                 $pos_offset = 2;
             } else if (str_starts_with($name, "formula:")) {
@@ -145,21 +149,26 @@ class Formula_PaperColumnFactory {
         $want_error = $pos_offset > 0 || strpos($name, "(") !== false;
         $name = substr($name, $pos_offset);
 
-        if (!$ff) {
-            $ff = $xtp->conf->find_named_formula($name);
+        if (!$nf) {
+            $nf = $xtp->conf->find_named_formula($name);
         }
-        if (!$ff && str_starts_with($name, "\"") && strpos($name, "\"", 1) === strlen($name) - 1) {
-            $ff = $xtp->conf->find_named_formula(substr($name, 1, -1));
+        if (!$nf
+            && str_starts_with($name, "\"")
+            && strpos($name, "\"", 1) === strlen($name) - 1) {
+            $nf = $xtp->conf->find_named_formula(substr($name, 1, -1));
         }
-        if (!$ff && $name !== "" && ($want_error || !is_numeric($name))) {
-            $ff = new Formula($name);
+        if ($nf) {
+            $ff = $nf->realize($xtp->user);
+        } else if ($name === "" || (!$want_error && is_numeric($name))) {
+            return null;
+        } else {
+            $ff = Formula::make($xtp->user, $name);
         }
-
-        if ($ff && $ff->check($xtp->user)) {
-            if ($xtp->user->can_view_formula($ff)) {
-                return [Formula_PaperColumnFactory::make($ff, $xfj)];
+        if ($ff->ok()) {
+            if ($ff->viewable()) {
+                return [Formula_PaperColumnFactory::make($ff, $nf, $xfj)];
             }
-        } else if ($ff && $want_error) {
+        } else if ($want_error) {
             foreach ($ff->message_list() as $mi) {
                 PaperColumn::column_error($xtp, $mi->with(["pos_offset" => $pos_offset]));
             }
@@ -169,11 +178,11 @@ class Formula_PaperColumnFactory {
     static function examples(Contact $user, $xfj) {
         $fa = new FmtArg("view_options", Formula_PaperColumn::basic_view_option_schema());
         $exs = [new SearchExample("({formula})", "<0>Value of formula", $fa)];
-        foreach ($user->conf->named_formulas() as $f) {
-            if (!$user->can_view_formula($f)) {
+        foreach ($user->conf->named_formulas() as $nf) {
+            if (!$user->can_view_named_formula($nf)) {
                 continue;
             }
-            $exs[] = new SearchExample(SearchWord::quote($f->name), "<0>Value of predefined {$f->name} formula", $fa);
+            $exs[] = new SearchExample(SearchWord::quote($nf->name), "<0>Value of predefined {$nf->name} formula", $fa);
         }
         return $exs;
     }

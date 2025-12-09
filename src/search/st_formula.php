@@ -20,14 +20,16 @@ class Formula_SearchTerm extends SearchTerm {
      * @param bool $is_graph
      * @return ?Formula */
     static private function read_formula($word, $sword, $srch, $is_graph) {
-        $formula = null;
+        $nf = null;
         if (preg_match('/\A[^(){}\[\]]+\z/', $word)) {
-            $formula = $srch->conf->find_named_formula($word);
+            $nf = $srch->conf->find_named_formula($word);
         }
-        if (!$formula) {
+        if ($nf) {
+            $formula = $nf->realize($srch->user);
+        } else {
             $formula = Formula::make($srch->user, $word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
-        if (!$formula->check($srch->user)) {
+        if (!$formula->ok()) {
             $srch->lwarning($sword, "<0>Invalid formula matches no submissions");
             foreach ($formula->message_list() as $mi) {
                 $srch->message_set()->append_item($mi->with([

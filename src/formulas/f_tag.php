@@ -3,8 +3,11 @@
 // Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
 
 class Tag_Fexpr extends Fexpr {
+    /** @var string */
     private $tag;
+    /** @var TagSearchMatcher */
     private $tsm;
+    /** @var bool */
     private $isvalue;
     function __construct($tag, TagSearchMatcher $tsm, $isvalue) {
         parent::__construct("tag");

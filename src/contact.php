@@ -5183,8 +5183,10 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_formula(Formula $formula) {
-        return $formula->viewable_by($this);
+    function can_view_named_formula(NamedFormula $nf) {
+        return $nf->createdBy === $this->contactId
+            || $this->privChair
+            || $nf->realize($this)->viewable();
     }
 
     /** @param object $sj
@@ -5221,7 +5223,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_edit_formula(?Formula $formula = null) {
+    function can_edit_named_formula(?NamedFormula $formula = null) {
         // XXX one PC member can edit another's formulas?
         return $this->privChair
             || ($this->isPC && (!$formula || $formula->createdBy > 0));
@@ -5283,25 +5285,23 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_view_tags(?PaperInfo $prow = null) {
         // see also AllTags_API::alltags, PaperInfo::{searchable,viewable}_tags
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->allow_pc()
-                || ($rights->allow_pc_broad() && $this->conf->pc_can_view_conflicted_tags())
-                || ($this->privChair && $this->conf->tags()->has(TagInfo::TF_SITEWIDE));
-        } else {
+        if (!$prow) {
             return $this->isPC;
         }
+        $rights = $this->rights($prow);
+        return $rights->allow_pc()
+            || ($rights->allow_pc_broad() && $this->conf->pc_can_view_conflicted_tags())
+            || ($this->privChair && $this->conf->tags()->has(TagInfo::TF_SITEWIDE));
     }
 
     /** @return bool */
     function can_view_most_tags(?PaperInfo $prow = null) {
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->allow_pc()
-                || ($rights->allow_pc_broad() && $this->conf->pc_can_view_conflicted_tags());
-        } else {
+        if (!$prow) {
             return $this->isPC;
         }
+        $rights = $this->rights($prow);
+        return $rights->allow_pc()
+            || ($rights->allow_pc_broad() && $this->conf->pc_can_view_conflicted_tags());
     }
 
     /** @return bool */
@@ -5403,10 +5403,9 @@ class Contact implements JsonSerializable {
     function can_view_peruser_tag(?PaperInfo $prow, $tag) {
         if ($prow) {
             return $this->can_view_tag($prow, ($this->contactId + 1) . "~{$tag}");
-        } else {
-            return $this->is_manager()
-                || ($this->isPC && $this->conf->tags()->is_public_peruser($tag));
         }
+        return $this->is_manager()
+            || ($this->isPC && $this->conf->tags()->is_public_peruser($tag));
     }
 
     /** @return bool */

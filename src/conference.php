@@ -157,7 +157,7 @@ class Conf {
     private $_site_contact;
     /** @var ?ReviewForm */
     private $_review_form;
-    /** @var ?AbbreviationMatcher<PaperOption|ReviewField|Formula> */
+    /** @var ?AbbreviationMatcher<PaperOption|ReviewField|NamedFormula> */
     private $_abbrev_matcher;
     /** @var bool */
     private $_date_format_initialized = false;
@@ -167,7 +167,7 @@ class Conf {
     private $_formatspec_cache = [];
     /** @var false|null|Docstore */
     private $_docstore = false;
-    /** @var array<int,Formula> */
+    /** @var array<int,NamedFormula> */
     private $_defined_formulas;
     private $_emoji_codes;
     /** @var S3Client|null|false */
@@ -1289,13 +1289,13 @@ class Conf {
     }
 
 
-    /** @return array<int,Formula> */
+    /** @return array<int,NamedFormula> */
     function named_formulas() {
         if ($this->_defined_formulas === null) {
             $this->_defined_formulas = [];
             if ($this->setting("formulas")) {
                 $result = $this->q("select * from Formula");
-                while ($result && ($f = Formula::fetch($this, $result))) {
+                while ($result && ($f = NamedFormula::fetch($this, $result))) {
                     $this->_defined_formulas[$f->formulaId] = $f;
                 }
                 Dbl::free($result);
@@ -1307,21 +1307,21 @@ class Conf {
         return $this->_defined_formulas;
     }
 
-    /** @param array<int,Formula> $formula_map */
+    /** @param array<int,NamedFormula> $formula_map */
     function replace_named_formulas($formula_map) {
         $this->_defined_formulas = $formula_map;
         $this->_abbrev_matcher = null;
     }
 
-    /** @return ?Formula */
+    /** @return ?NamedFormula */
     function find_named_formula($text) {
         return $this->abbrev_matcher()->find1($text, self::MFLAG_FORMULA);
     }
 
-    /** @return array<int,Formula> */
+    /** @return array<int,NamedFormula> */
     function viewable_named_formulas(Contact $user) {
         return array_filter($this->named_formulas(), function ($f) use ($user) {
-            return $user->can_view_formula($f);
+            return $user->can_view_named_formula($f);
         });
     }
 
@@ -1373,7 +1373,7 @@ class Conf {
     const MFLAG_REVIEW = 2;
     const MFLAG_FORMULA = 4;
 
-    /** @return AbbreviationMatcher<PaperOption|ReviewField|Formula> */
+    /** @return AbbreviationMatcher<PaperOption|ReviewField|NamedFormula> */
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
@@ -1397,7 +1397,7 @@ class Conf {
         return $this->_abbrev_matcher;
     }
 
-    /** @return list<PaperOption|ReviewField|Formula> */
+    /** @return list<PaperOption|ReviewField|NamedFormula> */
     function find_all_fields($text, $tflags = 0) {
         return $this->abbrev_matcher()->find_all($text, $tflags);
     }

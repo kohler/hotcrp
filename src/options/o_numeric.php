@@ -66,11 +66,10 @@ class Numeric_PaperOption extends PaperOption {
         ];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
-        if (preg_match('/\A[-+]?(?:\d+|\d+\.\d*|\.\d+)\z/', $sword->cword)) {
-            return new OptionValue_SearchTerm($srch->user, $this, CountMatcher::parse_relation($sword->compar), (float) $sword->cword);
-        } else {
+        if (!preg_match('/\A[-+]?(?:\d+|\d+\.\d*|\.\d+)\z/', $sword->cword)) {
             return null;
         }
+        return new OptionValue_SearchTerm($srch->user, $this, CountMatcher::parse_relation($sword->compar), (float) $sword->cword);
     }
     function present_script_expression() {
         return ["type" => "text_present", "formid" => $this->formid];

@@ -405,9 +405,8 @@ class Constant_Fexpr extends Fexpr {
         if ($rsm->apply_review_type($this->x)) {
             $this->x = $rsm->review_type();
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
     function typecheck(Formula $formula) {
         if ($this->format() === Fexpr::FREVTYPE
@@ -419,9 +418,8 @@ class Constant_Fexpr extends Fexpr {
             $this->set_format(Fexpr::FERROR);
             $formula->fexpr_lerror($this, "<0>Term ‘{$this->x}’ not found");
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
     function resolve_neighbor(Formula $formula, $e) {
         if ($this->has_format()
@@ -1354,11 +1352,17 @@ class VarUse_Fexpr extends Fexpr {
 }
 
 class FormulaCompiler {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     public $user;
-    /** @var Tagger */
+    /** @var Formula
+     * @readonly */
+    public $formula;
+    /** @var Tagger
+     * @readonly */
     public $tagger;
     /** @var array<string,string> */
     private $gvar;
@@ -1396,17 +1400,18 @@ class FormulaCompiler {
     const LFLAG_CID = 16;
     const LFLAG_PREFERENCES = 32;
 
-    function __construct(Contact $user) {
-        $this->conf = $user->conf;
-        $this->user = $user;
-        $this->tagger = new Tagger($user);
+    function __construct(Formula $formula) {
+        $this->conf = $formula->conf;
+        $this->user = $formula->user;
+        $this->formula = $formula;
+        $this->tagger = new Tagger($formula->user);
         $this->clear();
     }
 
     /** @return FormulaCompiler */
-    static function make_combiner(Contact $user) {
-        $fc = new FormulaCompiler($user);
-        $fc->term_compiler = new FormulaCompiler($user);
+    static function make_combiner(Formula $formula) {
+        $fc = new FormulaCompiler($formula);
+        $fc->term_compiler = new FormulaCompiler($formula);
         $fc->term_compiler->term_list = [];
         return $fc;
     }
@@ -1795,24 +1800,18 @@ class FormulaParse {
 }
 
 class Formula implements JsonSerializable {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var ?Contact */
+    /** @var ?Contact
+     * @readonly */
     public $user;
-
-    /** @var ?int */
-    public $formulaId;
-    public $name;
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $expression;
-    /** @var int */
-    public $createdBy = 0;
-    /** @var int */
-    public $timeModified = 0;
 
     /** @var bool */
     private $_allow_indexed;
-    private $_abbreviation;
 
     /** @var int */
     private $pos;
@@ -1872,27 +1871,53 @@ class Formula implements JsonSerializable {
         "and" => "&&", "or" => "||"
     ];
 
-    const ALLOW_INDEXED = 1;
-    /** @param ?string $expr
-     * @param int $flags */
-    function __construct($expr = null, $flags = 0) {
-        assert(is_int($flags));
-        if ($expr !== null) {
-            $this->expression = $expr;
-        }
-        $this->_allow_indexed = ($flags & self::ALLOW_INDEXED) !== 0;
+
+    /** @param string $t
+     * @return int */
+    static function span_maximal_formula($t) {
+        return self::span_parens_until($t, 0, ",;)]}");
     }
+
+    /** @param string $t
+     * @param int $pos
+     * @return int */
+    private static function skip_whitespace($t, $pos) {
+        $len = strlen($t);
+        while (($sp = SearchParser::space_len($t, $pos, $len)) > 0) {
+            $pos += $sp;
+        }
+        return $pos;
+    }
+
+    /** @param string $t
+     * @param int $pos
+     * @param string $span
+     * @return int */
+    private static function span_parens_until($t, $pos, $span) {
+        $len = strlen($t);
+        while ($pos !== $len && strpos($span, $t[$pos]) === false) {
+            $x = SearchParser::span_balanced_parens($t, $pos, $span, true);
+            $pos = max($pos + 1, $x);
+        }
+        return $pos;
+    }
+
+
+    const ALLOW_INDEXED = 1;
 
     /** @param string $expr
      * @param int $flags
-     * @return Formula */
+     * @return Formula
+     * @suppress PhanAccessReadOnlyProperty */
     static function make(Contact $user, $expr, $flags = 0) {
         $f = new Formula;
         $f->conf = $user->conf;
         $f->user = $user;
         $f->expression = $expr;
         $f->_allow_indexed = ($flags & self::ALLOW_INDEXED) !== 0;
-        $f->check();
+        $f->_parse = $f->parse();
+        $f->_format = $f->_parse->fexpr->format();
+        $f->_format_detail = $f->_parse->fexpr->format_detail();
         return $f;
     }
 
@@ -1902,46 +1927,6 @@ class Formula implements JsonSerializable {
         return self::make($user, $expr, self::ALLOW_INDEXED);
     }
 
-    private function fetch_incorporate() {
-        $this->formulaId = (int) $this->formulaId;
-        $this->createdBy = (int) $this->createdBy;
-        $this->timeModified = (int) $this->timeModified;
-    }
-
-    /** @param Dbl_Result $result
-     * @return ?Formula */
-    static function fetch(Conf $conf, $result) {
-        if (($formula = $result->fetch_object("Formula"))) {
-            $formula->conf = $conf;
-            $formula->fetch_incorporate();
-        }
-        return $formula;
-    }
-
-    /** @param string $t
-     * @return int */
-    static function span_maximal_formula($t) {
-        return self::span_parens_until($t, 0, ",;)]}");
-    }
-
-
-    function assign_search_keyword(AbbreviationMatcher $am) {
-        if ($this->_abbreviation === null) {
-            $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_FORMULA);
-            $this->_abbreviation = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
-        } else {
-            $am->add_keyword($this->_abbreviation, $this, Conf::MFLAG_FORMULA);
-        }
-    }
-
-    /** @return string */
-    function abbreviation() {
-        if ($this->_abbreviation === null) {
-            $this->conf->abbrev_matcher();
-            assert($this->_abbreviation !== null);
-        }
-        return $this->_abbreviation;
-    }
 
 
     /* parsing */
@@ -1969,13 +1954,8 @@ class Formula implements JsonSerializable {
     }
 
     /** @return FormulaParse */
-    private function parse(Contact $user) {
-        assert(!$this->conf || $this->conf === $user->conf);
+    private function parse() {
         assert($this->_depth === 0);
-        if ($user !== $this->user) {
-            $this->conf = $user->conf;
-            $this->user = $user;
-        }
         $this->_lerrors = [];
         $this->_bind = [];
         if ((string) $this->expression === "") {
@@ -2015,7 +1995,7 @@ class Formula implements JsonSerializable {
             }
             return new FormulaParse($fe);
         }
-        $state = new FormulaCompiler($this->user);
+        $state = new FormulaCompiler($this);
         $fe->compile($state);
         if ($state->indexed && !$this->_allow_indexed) {
             if ($fe->matches_at_most_once()) {
@@ -2037,20 +2017,6 @@ class Formula implements JsonSerializable {
     }
 
     /** @return bool */
-    function check(?Contact $user = null) {
-        $user = $user ?? $this->user;
-        assert($user !== null);
-        if ($this->_parse === null || $user !== $this->user) {
-            $this->_parse = $this->parse($user);
-            $this->_format = $this->_parse->fexpr->format();
-            $this->_format_detail = $this->_parse->fexpr->format_detail();
-            $this->_value_format = null;
-            $this->_extractorf = $this->_combinerf = null;
-        }
-        return $this->_format !== Fexpr::FERROR;
-    }
-
-    /** @return bool */
     function ok() {
         assert($this->_parse !== null);
         return $this->_format !== Fexpr::FERROR;
@@ -2058,13 +2024,11 @@ class Formula implements JsonSerializable {
 
     /** @return Fexpr */
     function fexpr() {
-        $this->check();
         return $this->_parse->fexpr;
     }
 
     /** @return list<MessageItem> */
     function message_list() {
-        $this->check();
         return $this->_parse->lerrors ?? [];
     }
 
@@ -2091,30 +2055,6 @@ class Formula implements JsonSerializable {
     function format_rf() {
         assert($this->_format === Fexpr::FREVIEWFIELD);
         return $this->_format_detail;
-    }
-
-    /** @param string $t
-     * @param int $pos
-     * @return int */
-    private static function skip_whitespace($t, $pos) {
-        $len = strlen($t);
-        while (($sp = SearchParser::space_len($t, $pos, $len)) > 0) {
-            $pos += $sp;
-        }
-        return $pos;
-    }
-
-    /** @param string $t
-     * @param int $pos
-     * @param string $span
-     * @return int */
-    private static function span_parens_until($t, $pos, $span) {
-        $len = strlen($t);
-        while ($pos !== $len && strpos($span, $t[$pos]) === false) {
-            $x = SearchParser::span_balanced_parens($t, $pos, $span, true);
-            $pos = max($pos + 1, $x);
-        }
-        return $pos;
     }
 
     /** @param string &$name
@@ -2372,9 +2312,8 @@ class Formula implements JsonSerializable {
 
         if ($e0 && $e1) {
             return new Ternary_Fexpr($e1, $e0, Constant_Fexpr::cnull());
-        } else {
-            return $e0 ?? $e1;
         }
+        return $e0 ?? $e1;
     }
 
     /** @param string &$field
@@ -2445,15 +2384,30 @@ class Formula implements JsonSerializable {
                 return $this->_reviewer_decoration(new Score_Fexpr($f));
             }
             $this->lerror($pos1, $this->pos, "<0>Review field ‘{$f->name}’ can’t be used in formulas");
-        } else if ($f instanceof Formula) {
-            if ($f->_depth === 0) {
-                $fp = $f->parse($this->user);
-                if ($fp->fexpr->format() !== Fexpr::FERROR) {
-                    return $fp->fexpr;
+        } else if ($f instanceof NamedFormula) {
+            if ($this->_depth > 100) {
+                $this->lerror($pos1, $this->pos, "<0>Self-referential formula");
+            } else {
+                $old_macro = $this->_macro;
+                $old_expression = $this->expression;
+                $old_pos = $this->pos;
+                $this->_macro = null;
+                $this->expression = $f->expression; // XXX should use SearchStringContext mechanism
+                $this->pos = 0;
+                ++$this->_depth;
+
+                $e = $this->_parse_ternary(false);
+                $end_pos = self::skip_whitespace($f->expression, $this->pos);
+
+                --$this->_depth;
+                $this->pos = $old_pos;
+                $this->expression = $old_expression;
+                $this->_macro = $old_macro;
+
+                if ($e && $end_pos === strlen($f->expression)) {
+                    return $e;
                 }
                 $this->lerror($pos1, $this->pos, "<0>Formula definition contains an error");
-            } else {
-                $this->lerror($pos1, $this->pos, "<0>Self-referential formula");
             }
         } else {
             $this->lerror($pos1, $this->pos, "<0>Field not found");
@@ -2764,8 +2718,8 @@ class Formula implements JsonSerializable {
     /** @param int $sortable
      * @return callable(PaperInfo,?int,Contact):mixed */
     private function _compile_function($sortable) {
-        if ($this->check()) {
-            $state = new FormulaCompiler($this->user);
+        if ($this->ok()) {
+            $state = new FormulaCompiler($this);
             $expr = $this->_parse->fexpr->compile($state);
             $body = self::compile_body($this->user, $state, $expr, $sortable);
         } else {
@@ -2813,7 +2767,8 @@ class Formula implements JsonSerializable {
         if ($index_types === 0) {
             return null;
         }
-        $state = new FormulaCompiler($user);
+        $formula = Formula::make($user, "0");
+        $state = new FormulaCompiler($formula);
         $g = $state->loop_variable($index_types);
         $body = "assert(\$contact->contactXid === {$user->contactXid});\n  "
             . join("\n  ", $state->gstmt) . "\n";
@@ -2840,10 +2795,10 @@ class Formula implements JsonSerializable {
     function support_combiner() {
         if ($this->_extractorf !== null) {
             return $this->_extractorf !== false;
-        } else if (!$this->check()) {
+        } else if (!$this->ok()) {
             return false;
         }
-        $state = FormulaCompiler::make_combiner($this->user);
+        $state = FormulaCompiler::make_combiner($this);
         $expr = $this->_parse->fexpr->compile($state);
         if (!$state->term_error && !$state->term_compiler->term_error) {
             $this->_extractorf = self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0);
@@ -2874,8 +2829,8 @@ class Formula implements JsonSerializable {
     }
 
     function add_query_options(&$queryOptions) {
-        if ($this->check()) {
-            $state = new FormulaCompiler($this->user);
+        if ($this->ok()) {
+            $state = new FormulaCompiler($this);
             $state->queryOptions =& $queryOptions;
             $this->_parse->fexpr->compile($state);
             if ($this->_parse->indexed) {
@@ -2886,25 +2841,25 @@ class Formula implements JsonSerializable {
 
     /** @var array<int,true> &$ods */
     function paper_options(&$oids) {
-        if ($this->check()) {
+        if ($this->ok()) {
             $this->_parse->fexpr->paper_options($oids);
         }
     }
 
     /** @return bool */
     function viewable_by(Contact $user) {
-        return $this->check($this->user ?? $user)
+        return $this->ok()
             && $this->_parse->fexpr->viewable_by($user);
     }
 
-    /** @return string */
-    function column_header() {
-        return $this->name ? : $this->expression;
+    /** @return bool */
+    function viewable() {
+        return $this->viewable_by($this->user);
     }
 
     /** @return int */
     function result_format() {
-        if (!$this->check()) {
+        if (!$this->ok()) {
             return null;
         }
         return $this->_format;
@@ -2912,7 +2867,7 @@ class Formula implements JsonSerializable {
 
     /** @return mixed */
     function result_format_detail() {
-        if (!$this->check()) {
+        if (!$this->ok()) {
             return null;
         }
         return $this->_parse->fexpr->format_detail();
@@ -2920,7 +2875,7 @@ class Formula implements JsonSerializable {
 
     /** @return ?bool */
     function result_format_is_numeric() {
-        if (!$this->check()) {
+        if (!$this->ok()) {
             return null;
         }
         return $this->_format === Fexpr::FNULL
@@ -2931,7 +2886,7 @@ class Formula implements JsonSerializable {
 
     /** @return string */
     function result_format_description() {
-        if (!$this->check()) {
+        if (!$this->ok()) {
             return "error";
         }
         return $this->_parse->fexpr->format_description();
@@ -2943,7 +2898,7 @@ class Formula implements JsonSerializable {
         if ($this->_value_format !== null) {
             return $this->_value_format;
         }
-        if (!$this->check()) {
+        if (!$this->ok()) {
             $this->_value_format = Null_ValueFormat::main();
         } else if ($this->_format <= Fexpr::FNUMERIC) {
             $this->_value_format = Numeric_ValueFormat::main();
@@ -2973,31 +2928,25 @@ class Formula implements JsonSerializable {
 
     /** @return bool */
     function is_sumlike() {
-        return $this->check()
+        return $this->ok()
             && ($this->_parse->fexpr->op === "sum"
                 || $this->_parse->fexpr->op === "count");
     }
 
     /** @return bool */
     function indexed() {
-        return $this->check() && $this->_parse->indexed;
+        return $this->ok() && $this->_parse->indexed;
     }
 
     /** @return int */
     function index_type() {
-        return $this->check() ? $this->_parse->index_type : 0;
+        return $this->ok() ? $this->_parse->index_type : 0;
     }
 
     #[\ReturnTypeWillChange]
     /** @return array<string,mixed> */
     function jsonSerialize() {
         $j = [];
-        if ($this->formulaId) {
-            $j["id"] = $this->formulaId;
-        }
-        if ($this->name) {
-            $j["name"] = $this->name;
-        }
         $j["expression"] = $this->expression;
         $j["parse"] = $this->_parse->fexpr;
         return $j;

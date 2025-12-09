@@ -383,6 +383,7 @@ src/meetingtracker.php
 src/mentionlister.php
 src/mentionparser.php
 src/multiconference.php
+src/namedformula.php
 src/notificationinfo.php
 src/options/o_abstract.php
 src/options/o_attachments.php
