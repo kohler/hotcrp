@@ -94,7 +94,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $m = $state->remove(new Status_Assignable($prow->paperId));
         $res = $m[0];
         if ($this->xtype === "submit") {
-            $this->apply_submit();
+            $this->apply_submit($res, $prow, $state);
         } else if ($this->xtype === "unsubmit") {
             if ($res->_withdrawn !== 0) {
                 $state->paper_error("<0>#{$prow->paperId} has been withdrawn");

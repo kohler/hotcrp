@@ -424,7 +424,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         $conf = $auov->prow->conf;
         $base_aulist = Authors_PaperOption::author_list($base_auov);
         $aulist = Authors_PaperOption::author_list($auov);
-        foreach (ACEntry::make_author_list($conf, $aulist) as $e) {
+        foreach (ACEntryList::make_author_list($conf, $aulist) as $e) {
             if ($e->email !== ""
                 && !Author::find_by_email($e->email, $base_aulist)
                 && (!$e->user || !$entries->find_by_user($e->user))) {
