@@ -325,15 +325,15 @@ class FormulaGraph extends MessageSet {
                 $m[2] = "-($m[2])";
             }
             $this->set_xorder($m[2]);
-            $this->fxs[] = new Formula("pid", Formula::ALLOW_INDEXED);
+            $this->fxs[] = Formula::make_indexed($this->user, "pid");
         } else if (strcasecmp($fx, "query") === 0 || strcasecmp($fx, "search") === 0) {
-            $this->fxs[] = new Formula("0", Formula::ALLOW_INDEXED);
+            $this->fxs[] = Formula::make_indexed($this->user, "0");
             $this->_fx_type = Fexpr::FSEARCH;
         } else if (strcasecmp($fx, "tag") === 0) {
-            $this->fxs[] = new Formula("0", Formula::ALLOW_INDEXED);
+            $this->fxs[] = Formula::make_indexed($this->user, "0");
             $this->_fx_type = Fexpr::FTAG;
         } else if (($this->type & self::CDF) === 0) {
-            $this->fxs[] = new Formula($fx, Formula::ALLOW_INDEXED);
+            $this->fxs[] = Formula::make_indexed($this->user, $fx);
         } else {
             while (true) {
                 $fx = preg_replace('/\A\s*;*\s*/', '', $fx);
@@ -341,16 +341,15 @@ class FormulaGraph extends MessageSet {
                     break;
                 }
                 $pos = Formula::span_maximal_formula($fx);
-                $this->fxs[] = new Formula(substr($fx, 0, $pos), Formula::ALLOW_INDEXED);
+                $this->fxs[] = Formula::make_indexed($this->user, substr($fx, 0, $pos));
                 $fx = substr($fx, $pos);
             }
         }
         foreach ($this->fxs as $i => $f) {
-            $ok = $f->check($this->user);
             foreach ($f->message_list() as $mi) {
                 $this->append_item($mi->with_field("fx"));
             }
-            if (!$ok) {
+            if (!$f->ok()) {
                 continue;
             }
             if ($fx_data !== 0
@@ -371,12 +370,11 @@ class FormulaGraph extends MessageSet {
         $this->fx = count($this->fxs) === 1 ? $this->fxs[0] : null;
 
         // Y axis expression
-        $this->fy = new Formula($fy, Formula::ALLOW_INDEXED);
-        $ok = $this->fy->check($this->user);
+        $this->fy = Formula::make_indexed($this->user, $fy);
         foreach ($this->fy->message_list() as $mi) {
             $this->append_item($mi->with_field("fy"));
         }
-        if ($ok
+        if ($this->fy->ok()
             && $fy_data !== 0
             && !self::check_data_type($fy_data, $this->fy)) {
             $this->error_at("fy", $this->conf->_("<0>Formula incompatible with data type ‘{}’", self::unparse_data_type($fy_data)));
@@ -409,13 +407,11 @@ class FormulaGraph extends MessageSet {
         if ($this->_fx_combine
             && !$this->has_error()) {
             if ($this->fy->result_format() === Fexpr::FBOOL) {
-                $this->fy = new Formula("sum(" . $fy . ")", Formula::ALLOW_INDEXED);
-                $this->fy->check($this->user);
+                $this->fy = Formula::make_indexed($this->user, "sum({$fy})");
             } else if (!$this->fy->support_combiner()) {
                 $this->error_at("fy", "<0>Y axis formula cannot be used for this chart");
                 $this->inform_at("fy", "<0>Try an aggregate function like ‘sum({$fy})’.");
-                $this->fy = new Formula("sum(0)", Formula::ALLOW_INDEXED);
-                $this->fy->check($this->user);
+                $this->fy = Formula::make_indexed($this->user, "sum(0)");
             }
         }
     }
@@ -481,12 +477,11 @@ class FormulaGraph extends MessageSet {
         $this->fxorder = null;
         $xorder = simplify_whitespace($xorder);
         if ($xorder !== "") {
-            $fxorder = new Formula($xorder, Formula::ALLOW_INDEXED);
-            if (!$fxorder->check($this->user)) {
-                foreach ($fxorder->message_list() as $mi) {
-                    $this->append_item($mi->with_field("xorder"));
-                }
-            } else {
+            $fxorder = Formula::make_indexed($this->user, $xorder);
+            foreach ($fxorder->message_list() as $mi) {
+                $this->append_item($mi->with_field("xorder"));
+            }
+            if ($fxorder->ok()) {
                 $this->fxorder = $fxorder;
             }
         }

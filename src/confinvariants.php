@@ -898,8 +898,8 @@ class ConfInvariant_AutomaticTagChecker {
             $this->value_constant = 0.0;
             $vsfx = "#0";
         } else {
-            $f = new Formula($ftext);
-            if ($f->check($this->user)) {
+            $f = Formula::make($this->user, $ftext);
+            if ($f->ok()) {
                 $this->value_formula = $f->compile_function();
             }
             $vsfx = "";

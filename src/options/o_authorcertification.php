@@ -622,6 +622,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         }
         return $j;
     }
+
     function export_setting() {
         $sfs = parent::export_setting();
         $sfs->max_submissions = $this->max_submissions;

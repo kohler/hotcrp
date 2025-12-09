@@ -25,7 +25,7 @@ class Formula_SearchTerm extends SearchTerm {
             $formula = $srch->conf->find_named_formula($word);
         }
         if (!$formula) {
-            $formula = new Formula($word, $is_graph ? Formula::ALLOW_INDEXED : 0);
+            $formula = Formula::make($srch->user, $word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
         if (!$formula->check($srch->user)) {
             $srch->lwarning($sword, "<0>Invalid formula matches no submissions");

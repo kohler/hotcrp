@@ -358,7 +358,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 $ch = $confset->unparse_html($cflt->conflictType);
             }
             if ($ch !== "") {
-                $t .= " - {$ch}";
+                $t .= " – {$ch}";
             }
             $names[$p->pc_index] = "<li class=\"odname\">{$t}</li>";
         }

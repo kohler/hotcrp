@@ -112,8 +112,8 @@ class AutomaticTag_SettingParser extends SettingParser {
             }
         } else if ($si->name2 === "/value") {
             $v = $sv->newv($si);
-            $formula = new Formula($sv->newv($si));
-            if (!$formula->check($sv->conf->root_user())) {
+            $formula = Formula::make($sv->conf->root_user(), $sv->newv($si));
+            if (!$formula->ok()) {
                 $method = $v === $old_at->v ? "warning_at" : "error_at";
                 $sv->$method($si);
                 foreach ($formula->message_list() as $mi) {

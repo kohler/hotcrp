@@ -173,8 +173,8 @@ class TagAssignmentPiece {
         }
 
         // check for formula
-        $this->formula = new Formula($xvalue);
-        if (!$this->formula->check($state->user)) {
+        $this->formula = Formula::make($state->user, $xvalue);
+        if (!$this->formula->ok()) {
             $state->error("<0>‘{$xvalue}’: Bad tag value");
             return false;
         }

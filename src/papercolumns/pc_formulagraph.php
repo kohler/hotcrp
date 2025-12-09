@@ -52,8 +52,8 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
 
     static function expand($name, XtParams $xtp, $xfj, $m) {
-        $formula = new Formula($m[2], Formula::ALLOW_INDEXED);
-        if (!$formula->check($xtp->user)) {
+        $formula = Formula::make_indexed($xtp->user, $m[2]);
+        if (!$formula->ok()) {
             foreach ($formula->message_list() as $mi) {
                 PaperColumn::column_error($xtp, $mi->with(["pos_offset" => strlen($m[1])]));
             }

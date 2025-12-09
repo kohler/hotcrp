@@ -122,8 +122,7 @@ class Tag_SearchTerm extends SearchTerm {
                     }
                     $ftext = "let _v_ = {$afe} in " . join(" && ", $ftexts);
                 }
-                $formula = new Formula($ftext);
-                $formula->check($asrch->user);
+                $formula = Formula::make($asrch->user, $ftext);
                 $allterms[] = SearchTerm::combine("and", $aterm, new Formula_SearchTerm($formula));
             }
         }

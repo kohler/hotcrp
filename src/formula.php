@@ -1883,6 +1883,25 @@ class Formula implements JsonSerializable {
         $this->_allow_indexed = ($flags & self::ALLOW_INDEXED) !== 0;
     }
 
+    /** @param string $expr
+     * @param int $flags
+     * @return Formula */
+    static function make(Contact $user, $expr, $flags = 0) {
+        $f = new Formula;
+        $f->conf = $user->conf;
+        $f->user = $user;
+        $f->expression = $expr;
+        $f->_allow_indexed = ($flags & self::ALLOW_INDEXED) !== 0;
+        $f->check();
+        return $f;
+    }
+
+    /** @param string $expr
+     * @return Formula */
+    static function make_indexed(Contact $user, $expr) {
+        return self::make($user, $expr, self::ALLOW_INDEXED);
+    }
+
     private function fetch_incorporate() {
         $this->formulaId = (int) $this->formulaId;
         $this->createdBy = (int) $this->createdBy;
@@ -2028,6 +2047,12 @@ class Formula implements JsonSerializable {
             $this->_value_format = null;
             $this->_extractorf = $this->_combinerf = null;
         }
+        return $this->_format !== Fexpr::FERROR;
+    }
+
+    /** @return bool */
+    function ok() {
+        assert($this->_parse !== null);
         return $this->_format !== Fexpr::FERROR;
     }
 
