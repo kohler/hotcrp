@@ -847,6 +847,8 @@ class PaperTable {
         if ($this->allow_edit_final) {
             echo Ht::hidden("status:submit", 1);
             return;
+        } else if ($this->prow->timeWithdrawn > 0) {
+            return;
         }
 
         $sr = $this->prow->submission_round();
