@@ -92,20 +92,25 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @return bool */
+    final function ok() {
+        return $this->_format !== self::FERROR;
+    }
+
+    /** @return bool */
     final function has_format() {
-        return $this->_format !== Fexpr::FUNKNOWN;
+        return $this->_format !== self::FUNKNOWN;
     }
 
     /** @return bool */
     final function math_format() {
-        return $this->_format !== Fexpr::FREVIEWER
-            && $this->_format !== Fexpr::FSUBFIELD;
+        return $this->_format !== self::FREVIEWER
+            && $this->_format !== self::FSUBFIELD;
     }
 
     /** @return bool */
     final function nonnullable_format() {
-        return $this->_format === Fexpr::FNUMERIC
-            || $this->_format === Fexpr::FBOOL;
+        return $this->_format === self::FNUMERIC
+            || $this->_format === self::FBOOL;
     }
 
     /** @return bool */

@@ -102,7 +102,6 @@ class AutomaticTag_SettingParser extends SettingParser {
         if ($si->name2 === "/search") {
             $q = $sv->newv($si);
             $search = new PaperSearch($sv->conf->root_user(), ["q" => $q, "t" => "all"]);
-            $search->set_expand_automatic(true);
             $search->full_term();
             if ($search->has_problem()) {
                 $method = $q === $old_at->q ? "warning_at" : "error_at";

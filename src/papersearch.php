@@ -321,6 +321,9 @@ class PaperSearch extends MessageSet {
         // contact facts
         $this->conf = $user->conf;
         $this->user = $user;
+        if ($this->conf->is_updating_automatic_tags()) {
+            $this->expand_automatic = 1;
+        }
 
         // query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is

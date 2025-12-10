@@ -3152,7 +3152,7 @@ class Conf {
         if ($paper === null) {
             foreach ($this->tags()->entries_having(TagInfo::TF_AUTOMATIC) as $dt) {
                 $csv[] = CsvGenerator::quote("#{$dt->tag}") . "," . CsvGenerator::quote($dt->tag) . ",clear";
-                $csv[] = CsvGenerator::quote("searchcontrol:expand_automatic " . $dt->automatic_search()) . "," . CsvGenerator::quote($dt->tag) . "," . CsvGenerator::quote($dt->automatic_formula_expression());
+                $csv[] = CsvGenerator::quote($dt->automatic_search()) . "," . CsvGenerator::quote($dt->tag) . "," . CsvGenerator::quote($dt->automatic_formula_expression());
             }
         } else if (!empty($paper)) {
             if (is_int($paper)) {
