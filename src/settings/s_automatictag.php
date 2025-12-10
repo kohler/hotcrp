@@ -98,6 +98,7 @@ class AutomaticTag_SettingParser extends SettingParser {
 
     function validate(Si $si, SettingValues $sv) {
         $old_at = $sv->oldv($si->name0 . $si->name1);
+        $pb = $sv->conf->set_updating_automatic_tags(true);
         if ($si->name2 === "/search") {
             $q = $sv->newv($si);
             $search = new PaperSearch($sv->conf->root_user(), ["q" => $q, "t" => "all"]);
@@ -121,6 +122,7 @@ class AutomaticTag_SettingParser extends SettingParser {
                 }
             }
         }
+        $sv->conf->set_updating_automatic_tags(false);
     }
 
     function store_value(Si $si, SettingValues $sv) {

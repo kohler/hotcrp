@@ -3202,6 +3202,15 @@ class Conf {
         return ($this->_permbits & self::PB_UPDATING_AUTOMATIC_TAGS) !== 0;
     }
 
+    /** @param bool $x
+     * @return bool */
+    function set_updating_automatic_tags($x) {
+        $r = $this->is_updating_automatic_tags();
+        $this->_permbits = ($this->_permbits & ~self::PB_UPDATING_AUTOMATIC_TAGS)
+            | ($x ? self::PB_UPDATING_AUTOMATIC_TAGS : 0);
+        return $r;
+    }
+
 
     /** @param int $n
      * @return bool */

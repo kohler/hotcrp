@@ -19,15 +19,23 @@ class FormulaParser {
      * @readonly */
     public $string_context;
     /** @var int */
-    private $pos = 0;
+    public $recursion;
     /** @var int */
-    private $_depth = 0;
+    public $nesting = 0;
+    /** @var int */
+    private $pos = 0;
     /** @var ?FormulaCall */
     private $_macro;
     /** @var array<string,VarDef_Fexpr> */
     private $_bind = [];
     /** @var ?int */
     private $_last_lerror_pos;
+
+    /** @var int */
+    static public $current_recursion = 0;
+
+    const MAXNESTING = 100;
+    const MAXRECURSION = 10;
 
     static private $_oprassoc = [
         "**" => true
@@ -70,6 +78,7 @@ class FormulaParser {
         $this->user = $formula->user;
         $this->formula = $formula;
         $this->str = $str;
+        $this->recursion = self::$current_recursion;
     }
 
     /** @param string $str
@@ -80,7 +89,7 @@ class FormulaParser {
      * @suppress PhanAccessReadOnlyProperty */
     function make_nested($str, $macro, $ppos1, $ppos2) {
         $fp = new FormulaParser($this->formula, $str);
-        $fp->_depth = $this->_depth + 1;
+        $fp->recursion = $this->recursion + 1;
         if ($macro) {
             $fp->_macro = $macro;
             $fp->_bind = $this->_bind;
@@ -167,17 +176,17 @@ class FormulaParser {
 
         // parsed arguments
         $warned = $comma = false;
-        ++$this->_depth;
+        ++$this->nesting;
         $pos = self::skip_whitespace($t, $pos1 + 1);
         while ($pos !== $len && $t[$pos] !== ")") {
             if ($comma && $t[$pos] === ",") {
                 $pos = self::skip_whitespace($t, $pos + 1);
             }
             $this->pos = $apos = $pos;
-            if (($e = $this->_parse_ternary(false))) {
-                $ff->args[] = $e;
-            } else {
-                $ff->args[] = $this->cerror($apos, $this->pos);
+            $e = $this->_parse_ternary(false) ?? $this->cerror($apos, $this->pos);
+            $ff->args[] = $e;
+            if ($e->format() === Fexpr::FERROR) {
+                $warned = true;
             }
             $pos = self::skip_whitespace($t, $this->pos);
             if ($pos !== $len && $t[$pos] !== ")" && $t[$pos] !== ",") {
@@ -189,12 +198,12 @@ class FormulaParser {
             }
             $comma = true;
         }
-        if ($pos === $len) {
-            $this->weak_lerror($pos, "<0>Expected ‘)’");
-        } else {
+        if ($pos !== $len) {
             ++$pos;
+        } else if (!$warned) {
+            $this->weak_lerror($pos, "<0>Expected ‘)’");
         }
-        --$this->_depth;
+        --$this->nesting;
         $this->pos = $ff->pos2 = $pos;
         return true;
     }
@@ -462,12 +471,12 @@ class FormulaParser {
         $ch = strtolower($t[$this->pos]);
         if ($ch === "(") {
             ++$this->pos;
-            ++$this->_depth;
             $e = $this->_parse_ternary(false);
-            --$this->_depth;
             $this->pos = self::skip_whitespace($t, $this->pos);
             if ($this->pos === $len || $t[$this->pos] !== ")") {
-                $this->weak_lerror($this->pos, "<0>Expected ‘)’");
+                if ($e) {
+                    $this->weak_lerror($this->pos, "<0>Expected ‘)’");
+                }
                 $this->pos = self::span_parens_until($t, $this->pos, ")");
             }
             if (!$e || $this->pos === $len) {
@@ -625,9 +634,7 @@ class FormulaParser {
             $opx = self::$_oprewrite[$op] ?? $op;
             $opassoc = (self::$_oprassoc[$opx] ?? false) ? $opprec : $opprec + 1;
 
-            ++$this->_depth;
             $e2 = $this->_parse_expr($opassoc, $in_qc);
-            --$this->_depth;
 
             if ($op === ":" && (!$e2 || !($e2 instanceof Constant_Fexpr))) {
                 $this->pos = $posx;
@@ -636,7 +643,7 @@ class FormulaParser {
 
             if (!$e2) {
                 if ($e->format() !== Fexpr::FERROR) {
-                    $this->weak_lerror($this->pos, "<0>Expected expression");
+                    $this->weak_lerror($this->pos, "<0>Expression expected");
                     $e = $this->cerror($this->pos, $this->pos);
                 }
             } else if ($opx === "<" || $opx === ">" || $opx === "<=" || $opx === ">=") {
@@ -669,6 +676,13 @@ class FormulaParser {
     /** @param bool $in_qc
      * @return ?Fexpr */
     private function _parse_ternary($in_qc) {
+        if ($this->nesting >= self::MAXNESTING) {
+            $this->lerror($this->pos, $this->pos, "<0>Expression too deeply nested");
+            $this->pos = strlen($this->str);
+            return null;
+        }
+        ++$this->nesting;
+
         $t = $this->str;
         $len = strlen($t);
         $pos1 = $this->pos;
@@ -676,8 +690,9 @@ class FormulaParser {
 
         if (!($ec = $this->_parse_expr(0, $in_qc))) {
             if (count($this->formula->lerrors) === $before) {
-                $this->weak_lerror($pos1, "<0>Expected expression");
+                $this->weak_lerror($pos1, "<0>Expression expected");
             }
+            --$this->nesting;
             return null;
         }
 
@@ -685,11 +700,9 @@ class FormulaParser {
         if ($this->pos === $len || $t[$this->pos] !== "?") {
             return $ec;
         }
-
         ++$this->pos;
-        ++$this->_depth;
-        $er = null;
 
+        $er = null;
         if (($et = $this->_parse_ternary(true))) {
             $this->pos = self::skip_whitespace($t, $this->pos);
             if ($this->pos === $len || $t[$this->pos] !== ":") {
@@ -703,16 +716,24 @@ class FormulaParser {
                 $er = new Ternary_Fexpr($ec, $et, $ef);
             }
         }
-
-        --$this->_depth;
         $er = $er ?? Fexpr::cerror();
         $er->apply_strspan($pos1, $this->pos, $this->string_context);
+
+        --$this->nesting;
         return $er;
     }
 
     /** @return ?Fexpr */
     function parse() {
-        if ((string) $this->str === "") {
+        if ($this->recursion >= self::MAXRECURSION) {
+            $fe = Fexpr::cerror();
+            if (($sc = $this->string_context)) {
+                $fe->apply_strspan($sc->ppos1, $sc->ppos2, $sc->parent);
+            } else {
+                $fe->apply_strspan(0, strlen($this->str), null);
+            }
+            $this->formula->fexpr_lerror($fe, "<0>Circular reference in formula");
+        } else if ((string) $this->str === "") {
             $fe = Fexpr::cerror();
             $fe->apply_strspan(0, 0, $this->string_context);
             $this->formula->fexpr_lerror($fe, "<0>Empty formula");

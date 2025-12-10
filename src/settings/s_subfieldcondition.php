@@ -78,7 +78,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
         if ($sv->conf->setting("__sf_condition_recursion") > 0
             || isset($oids[$myid])
             || ($status === 1 && $scr === $myid && ($scrd === "exists_if") === ($type === "condition"))) {
-            $sv->error_at($siname, "<0>Self-referential search in field condition");
+            $sv->error_at($siname, "<0>Circular reference in field condition");
         }
         $sv->conf->change_setting("__sf_condition_recursion", $scr, $scrd);
     }

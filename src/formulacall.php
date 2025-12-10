@@ -65,6 +65,10 @@ class FormulaCall {
     /** @param mixed $args
      * @return bool */
     function check_nargs($args) {
+        foreach ($this->args as $a) {
+            if ($a->format() === Fexpr::FERROR)
+                return false;
+        }
         if (is_int($args)) {
             $args = [$args, $args];
         }

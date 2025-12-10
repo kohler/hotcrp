@@ -609,7 +609,7 @@ class PaperOption implements JsonSerializable {
         }
         if ($scr >= 0 && !defined("HOTCRP_TESTHARNESS")) {
             $prop = property_exists($this, $name) ? " [{$this->$name}]" : "";
-            error_log("Recursion in {$this->name}::{$name}{$prop}");
+            error_log("Circular reference in {$this->name}::{$name}{$prop}");
         }
     }
 
