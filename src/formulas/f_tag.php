@@ -85,7 +85,6 @@ class Tag_Fexpr extends Fexpr {
         return 0;
     }
     function compile(FormulaCompiler $state) {
-        $tags = $state->_add_tags();
         $tag = $this->tsm->single_tag();
         if (!$tag) {
             return $this->_compile_complex($state);
@@ -96,6 +95,7 @@ class Tag_Fexpr extends Fexpr {
         } else {
             $str = json_encode(" {$tag}#");
         }
+        $tags = $state->_add_tags();
         $jvalue = json_encode($this->isvalue);
         return "Tag_Fexpr::tag_value({$tags},{$str},{$jvalue})";
     }
@@ -110,6 +110,7 @@ class Tag_Fexpr extends Fexpr {
         } else {
             $regex = json_encode($regex);
         }
+        $tags = $state->_add_tags();
         $jvalue = json_encode($this->isvalue);
         return "Tag_Fexpr::tag_regex_value({$tags},{$regex},{$jvalue})";
     }
