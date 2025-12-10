@@ -214,9 +214,17 @@ class TagInfo {
     function automatic_search_term() {
         if ($this->_autosearch_term === null
             && ($q = $this->automatic_search()) !== null) {
-            $this->_autosearch_term = (new PaperSearch($this->conf->root_user(), ["q" => $q, "t" => "all"]))
-                ->set_expand_automatic(true)
-                ->main_term();
+            $ua = $this->conf->set_updating_automatic_tags(true);
+            $this->_autosearch_term = new False_SearchTerm;
+            $this->_autosearch_term->set_float("circular_reference", true);
+
+            $srch = new PaperSearch($this->conf->root_user(), ["q" => $q, "t" => "all"]);
+            $this->_autosearch_term = $srch->main_term();
+            if ($srch->has_problem_at("circular_reference")) {
+                $this->_autosearch_term = new False_SearchTerm;
+                $this->_autosearch_term->set_float("circular_reference", iterator_to_array($srch->message_list_at("circular_reference")));
+            }
+            $this->conf->set_updating_automatic_tags($ua);
         }
         return $this->_autosearch_term;
     }

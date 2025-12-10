@@ -199,9 +199,8 @@ abstract class SearchTerm {
             return new True_SearchTerm;
         } else if ($b === false) {
             return new False_SearchTerm;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return string */
@@ -214,9 +213,8 @@ abstract class SearchTerm {
             return "true";
         } else if (count($ff) === 1) {
             return join("", $ff);
-        } else {
-            return "(" . join(" and ", $ff) . ")";
         }
+        return "(" . join(" and ", $ff) . ")";
     }
 
     /** @param list<string> $q
@@ -227,9 +225,8 @@ abstract class SearchTerm {
             return $default;
         } else if (in_array("true", $q, true)) {
             return "true";
-        } else {
-            return "(" . join(" or ", $q) . ")";
         }
+        return "(" . join(" or ", $q) . ")";
     }
 
     /** @return bool */

@@ -1879,6 +1879,16 @@ class Formula implements JsonSerializable {
         return $this->lerrors;
     }
 
+    /** @param string $field
+     * @return bool */
+    function has_problem_at($field) {
+        foreach ($this->lerrors as $mi) {
+            if ($mi->field === $field && $mi->status >= 2)
+                return true;
+        }
+        return false;
+    }
+
     /** @return string */
     function full_feedback_text() {
         return MessageSet::feedback_text($this->message_list());

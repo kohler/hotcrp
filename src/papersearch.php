@@ -59,7 +59,7 @@ class SearchStringContext {
         while ($context) {
             $mi->context = $context->q;
             $mi->nested_context = true;
-            $mi = MessageItem::inform("");
+            $mi = MessageItem::inform_at($mi->field, "");
             $mi->landmark = "<5>→ <em>expanded from</em> ";
             $mi->pos1 = $context->ppos1;
             $mi->pos2 = $context->ppos2;

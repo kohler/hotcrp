@@ -28,16 +28,11 @@ class Formula_SearchTerm extends SearchTerm {
         } else {
             $formula = Formula::make($srch->user, $word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
-        if (!$formula->ok()) {
-            $srch->lwarning($sword, "<0>Invalid formula matches no submissions");
-            $srch->message_set()->append_list(MessageSet::list_with($formula->message_list(), [
-                "problem_status" => MessageSet::WARNING,
-                "top_context" => $srch->q,
-                "top_pos_offset" => $sword->pos1
-            ]));
-            $formula = null;
-        }
-        return $formula;
+        $srch->message_set()->append_list(MessageSet::list_with($formula->message_list(), [
+            "top_context" => $srch->q,
+            "top_pos_offset" => $sword->pos1
+        ]));
+        return $formula->ok() ? $formula : null;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (($formula = self::read_formula($word, $sword, $srch, false))) {

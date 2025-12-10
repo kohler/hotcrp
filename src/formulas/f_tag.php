@@ -39,6 +39,11 @@ class Tag_Fexpr extends Fexpr {
         $pc_indexed = str_starts_with($tag, "_~");
         $tsm = new TagSearchMatcher($ff->user);
         $tsm->add_check_tag($pc_indexed ? substr($tag, 1) : $tag, true);
+        if (!$tsm->single_tag()
+            && $ff->kwdef->is_value) {
+            $ff->lerror("<0>Tag values are meaningful only for single tags");
+            return null;
+        }
         if (!$pc_indexed
             && $ff->conf->is_updating_automatic_tags()
             && ($stag = $tsm->single_tag())
@@ -50,13 +55,18 @@ class Tag_Fexpr extends Fexpr {
     }
     static function make_expand_automatic(FormulaCall $ff, TagInfo $ti, $isvalue) {
         $recursion = FormulaParser::set_current_recursion($ff->parser->recursion + 1);
-        $sfe = new Search_Fexpr($ff->formula, $ti->automatic_search_term());
+        $st = $ti->automatic_search_term();
         $parser = $ff->parser->make_nested($ti->automatic_formula_expression(), null, $ff->pos1, $ff->pos2);
         $vfe = $parser->parse();
         FormulaParser::set_current_recursion($recursion);
-        if (!$vfe->ok() || !$sfe->ok()) {
+
+        if ($st->get_float("circular_reference")) {
+            $ff->lerror("<0>Circular reference in automatic tag #{$ti->tag}");
+            $ff->formula->lerrors[] = MessageItem::error_at("circular_reference");
             return Fexpr::cerror();
         }
+
+        $sfe = new Search_Fexpr($ff->formula, $st);
         if (!$isvalue) {
             $vfe = new Or_Fexpr($vfe, Fexpr::ctrue());
         }
@@ -72,12 +82,7 @@ class Tag_Fexpr extends Fexpr {
     }
     static function tag_regex_value($tags, $search, $isvalue) {
         $p = preg_matchpos($search, $tags);
-        if ($p === false) {
-            return false;
-        }
-        $hash = strpos($tags, "#", $p);
-        $value = (float) substr($tags, $hash);
-        return $isvalue || $value !== (float) 0 ? $value : true;
+        return $p !== false;
     }
     /** @return string */
     function tag() {

@@ -741,6 +741,7 @@ class FormulaParser {
                 $fe->apply_strspan(0, strlen($this->str), null);
             }
             $this->formula->fexpr_lerror($fe, "<0>Circular reference in formula");
+            $this->formula->lerrors[] = MessageItem::error_at("circular_reference");
         } else if ((string) $this->str === "") {
             $fe = Fexpr::cerror();
             $fe->apply_strspan(0, 0, $this->string_context);

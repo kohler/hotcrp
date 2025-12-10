@@ -84,29 +84,26 @@ class Tag_SearchTerm extends SearchTerm {
                                      PaperSearch $srch) {
         $dt = $srch->conf->tags();
         $allterms = $nomatch = [];
-        foreach ($dt->entries_having(TagInfo::TF_AUTOMATIC) as $t) {
-            if (!$tsm->test_ignore_value(" {$t->tag}#")) {
+        foreach ($dt->entries_having(TagInfo::TF_AUTOMATIC) as $ti) {
+            if (!$tsm->test_ignore_value(" {$ti->tag}#")) {
                 continue;
             }
-            if ($srch->expand_automatic >= 10) {
-                $srch->warning_at("circular_automatic");
-                continue;
-            }
-            $nomatch[] = " " . preg_quote($t->tag) . "#";
+            $nomatch[] = " " . preg_quote($ti->tag) . "#";
 
-            $asrch = new PaperSearch($srch->conf->root_user(), [
-                "q" => $t->automatic_search(), "t" => "all"
-            ]);
-            $asrch->set_expand_automatic($srch->expand_automatic + 1);
-            $aterm = $asrch->full_term();
-            if ($asrch->has_problem_at("circular_automatic")) {
-                $srch->warning_at("circular_automatic");
-                if ($srch->expand_automatic === 1) {
-                    $srch->lwarning($sword, "<0>Circular reference in automatic tag #{$t->tag}");
+            $aterm = $ti->automatic_search_term();
+            if (($cr = $aterm->get_float("circular_reference"))) {
+                $srch->append_list($srch->expand_message_context(
+                    MessageItem::error_at("circular_reference", "<0>Circular reference in automatic tag #{$ti->tag}"),
+                    $sword->pos1, $sword->pos2, $sword->string_context
+                ));
+                foreach ($cr === true ? [] : $cr as $mi) {
+                    $srch->append_item($mi->with([
+                        "landmark" => "<5>→ <em>expands to</em> ", "message" => "", "status" => MessageSet::INFORM
+                    ]));
                 }
             }
 
-            $afe = $t->automatic_formula_expression();
+            $afe = $ti->automatic_formula_expression();
             if ($afe === "0") {
                 if ($tsm->test_value(0.0)) {
                     $allterms[] = $aterm;
@@ -122,7 +119,7 @@ class Tag_SearchTerm extends SearchTerm {
                     }
                     $ftext = "let _v_ = {$afe} in " . join(" && ", $ftexts);
                 }
-                $formula = Formula::make($asrch->user, $ftext);
+                $formula = Formula::make($srch->conf->root_user(), $ftext);
                 $allterms[] = SearchTerm::combine("and", $aterm, new Formula_SearchTerm($formula));
             }
         }
