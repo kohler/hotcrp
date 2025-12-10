@@ -333,6 +333,7 @@ src/formulas/f_reviewermatch.php
 src/formulas/f_reviewround.php
 src/formulas/f_reviewwordcount.php
 src/formulas/f_revtype.php
+src/formulas/f_search.php
 src/formulas/f_submittedat.php
 src/formulas/f_tag.php
 src/formulas/f_timefield.php

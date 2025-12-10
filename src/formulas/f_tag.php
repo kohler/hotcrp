@@ -36,9 +36,26 @@ class Tag_Fexpr extends Fexpr {
             return Fexpr::cnever();
         }
         $tag = $ff->rawargs[0];
+        $pc_indexed = str_starts_with($tag, "_~");
         $tsm = new TagSearchMatcher($ff->user);
-        $tsm->add_check_tag(str_starts_with($tag, "_~") ? substr($tag, 1) : $tag, true);
+        $tsm->add_check_tag($pc_indexed ? substr($tag, 1) : $tag, true);
+        if (!$pc_indexed
+            && $ff->conf->is_updating_automatic_tags()
+            && ($stag = $tsm->single_tag())
+            && ($ti = $ff->conf->tags()->find($stag))
+            && $ti->is(TagInfo::TF_AUTOSEARCH)) {
+            return self::make_expand_automatic($ff, $ti, $ff->kwdef->is_value);
+        }
         return new Tag_Fexpr($tag, $tsm, $ff->kwdef->is_value);
+    }
+    static function make_expand_automatic(FormulaCall $ff, TagInfo $ti, $isvalue) {
+        $sfe = new Search_Fexpr($ff->formula, $ti->automatic_search_term());
+        $parser = $ff->parser->make_nested($ti->automatic_formula_expression(), null, $ff->pos1, $ff->pos2);
+        $vfe = $parser->parse();
+        if (!$isvalue) {
+            $vfe = new Or_Fexpr($vfe, Fexpr::ctrue());
+        }
+        return new And_Fexpr($sfe, $vfe);
     }
     static function tag_value($tags, $search, $isvalue) {
         $p = stripos($tags, $search);
@@ -69,27 +86,32 @@ class Tag_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $tags = $state->_add_tags();
-        $jvalue = json_encode($this->isvalue);
-        if (($tag = $this->tsm->single_tag())) {
-            if (str_starts_with($this->tag, "_~")) {
-                $str = "\" \"." . $state->loop_cid() . "."
-                    . json_encode(substr($tag, strpos($tag, "~")) . "#");
-            } else {
-                $str = json_encode(" {$tag}#");
-            }
-            return "Tag_Fexpr::tag_value({$tags},{$str},{$jvalue})";
-        } else {
-            $regex = $this->tsm->regex();
-            if (str_starts_with($this->tag, "_~")) {
-                assert(strpos($regex, "|") === false
-                       && str_starts_with($regex, "{ {$state->user->contactId}~"));
-                $regex = "\"{ \"." . $state->loop_cid() . "."
-                    . json_encode(substr($regex, strlen((string) $state->user->contactId) + 2));
-            } else {
-                $regex = json_encode($regex);
-            }
-            return "Tag_Fexpr::tag_regex_value({$tags},{$regex},{$jvalue})";
+        $tag = $this->tsm->single_tag();
+        if (!$tag) {
+            return $this->_compile_complex($state);
         }
+        if (str_starts_with($this->tag, "_~")) {
+            $str = "\" \"." . $state->loop_cid() . "."
+                . json_encode(substr($tag, strpos($tag, "~")) . "#");
+        } else {
+            $str = json_encode(" {$tag}#");
+        }
+        $jvalue = json_encode($this->isvalue);
+        return "Tag_Fexpr::tag_value({$tags},{$str},{$jvalue})";
+    }
+    function _compile_complex(FormulaCompiler $state) {
+        error_log("Tag_Fexpr::_compile_complex deprecated at {$this->tag}");
+        $regex = $this->tsm->regex();
+        if (str_starts_with($this->tag, "_~")) {
+            assert(strpos($regex, "|") === false
+                   && str_starts_with($regex, "{ {$state->user->contactId}~"));
+            $regex = "\"{ \"." . $state->loop_cid() . "."
+                . json_encode(substr($regex, strlen((string) $state->user->contactId) + 2));
+        } else {
+            $regex = json_encode($regex);
+        }
+        $jvalue = json_encode($this->isvalue);
+        return "Tag_Fexpr::tag_regex_value({$tags},{$regex},{$jvalue})";
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
