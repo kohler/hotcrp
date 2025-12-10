@@ -168,7 +168,7 @@ class PaperOption implements JsonSerializable {
             $this->required = self::REQ_REGISTER;
         }
 
-        $vis = $args->visibility ?? /* XXX */ $args->view_type ?? null;
+        $vis = $args->visibility ?? null;
         if ($vis !== null) {
             if (($x = array_search($vis, self::$visibility_map)) !== false) {
                 $this->_visibility = $x;
@@ -453,6 +453,11 @@ class PaperOption implements JsonSerializable {
         return $this->_visibility === self::VIS_SUB
             && !$this->_phase
             && $this->_exists_state > 0;
+    }
+    /** @param 0|1|2|3|4 $visibility
+     * @suppress PhanAccessReadOnlyProperty */
+    protected function set_visibility($visibility) {
+        $this->_visibility = $visibility;
     }
 
     /** @param null|bool|string $expr

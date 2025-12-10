@@ -231,6 +231,9 @@ class AuthorCertification_PaperOption extends PaperOption {
         if ($this->required === self::REQ_REGISTER) {
             $this->set_required(self::REQ_SUBMIT);
         }
+        if ($this->visibility() === self::VIS_SUB) {
+            $this->set_visibility(self::VIS_AUTHOR);
+        }
     }
 
     /** @param PaperValue $ov
