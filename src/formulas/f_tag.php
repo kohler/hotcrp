@@ -49,9 +49,14 @@ class Tag_Fexpr extends Fexpr {
         return new Tag_Fexpr($tag, $tsm, $ff->kwdef->is_value);
     }
     static function make_expand_automatic(FormulaCall $ff, TagInfo $ti, $isvalue) {
+        $recursion = FormulaParser::set_current_recursion($ff->parser->recursion + 1);
         $sfe = new Search_Fexpr($ff->formula, $ti->automatic_search_term());
         $parser = $ff->parser->make_nested($ti->automatic_formula_expression(), null, $ff->pos1, $ff->pos2);
         $vfe = $parser->parse();
+        FormulaParser::set_current_recursion($recursion);
+        if (!$vfe->ok() || !$sfe->ok()) {
+            return Fexpr::cerror();
+        }
         if (!$isvalue) {
             $vfe = new Or_Fexpr($vfe, Fexpr::ctrue());
         }

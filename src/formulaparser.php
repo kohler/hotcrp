@@ -98,6 +98,14 @@ class FormulaParser {
         return $fp;
     }
 
+    /** @param int $recursion
+     * @return int */
+    static function set_current_recursion($recursion) {
+        $r = self::$current_recursion;
+        self::$current_recursion = $recursion;
+        return $r;
+    }
+
 
     /** @param int $pos1
      * @param int $pos2
