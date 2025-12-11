@@ -1687,7 +1687,7 @@ class PaperTable {
             }
             $editable_tags = $this->prow->sorted_editable_tags($this->user);
             echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest mf-label ',
-                $is_sitewide ? "sitewide-editable-tags" : "editable-tags",
+                $is_sitewide ? "sitewide-editable-tags" : "editable-tags suggest-emoji-codes",
                 '" spellcheck="false" id="', $id, '">',
                 $tagger->unparse($editable_tags),
                 '</textarea><div class="aab flex-row-reverse mt-1"><div class="aabut">',

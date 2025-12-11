@@ -533,7 +533,7 @@ handle_ui.on("js-settings-automatic-tag-new", function () {
         ++ctr;
     h = $("#settings-new-automatic-tag").html().replace(/\/\$/g, "/" + ctr);
     odiv = $(h).appendTo("#settings-automatic-tags");
-    odiv.find("input[type=text]").autogrow();
+    $(odiv).awaken();
     $$("automatic_tag/".concat(ctr, "/tag")).focus();
 });
 

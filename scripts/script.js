@@ -8616,30 +8616,30 @@ function select_from(sel, s, list) {
     }
 }
 
-function complete_list(v, sel, modifiers) {
-    var res = [], i, j, code, compl, mod;
-    for (i = 0; i !== sel.length; ++i) {
-        code = sel[i];
-        compl = v.completion[code];
+function complete_list(v, sel, options) {
+    let res = [], mod;
+    for (const code of sel) {
+        const scode = `:${code}:`;
+        let compl = v.completion[code];
         if (!compl) {
             compl = v.completion[code] = {
-                s: ":".concat(code, ":"),
-                r: v.emoji[code],
-                no_space: true,
-                sh: '<span class="nw">'.concat(v.emoji[code], " :", code, ":</span>")
+                s: scode,
+                r: options.code ? scode : v.emoji[code],
+                no_space: !options.code,
+                sh: `<span class="nw">${v.emoji[code]} ${scode}</span>`
             };
         }
         res.push(compl);
-        if (modifiers && people_regex.test(compl.r)) {
-            for (j = 0; j !== v.modifier_words.length; ++j) {
-                mod = v.modifier_words[j];
+        if (options.modifiers && people_regex.test(compl.r)) {
+            for (const mod of v.modifier_words) {
+                const mscode = `:${code}-${mod}:`;
                 res.push({
-                    s: ":".concat(code, "-", mod, ":"),
-                    r: compl.r + v.emoji[mod],
-                    no_space: true,
-                    sh: '<span class="nw">'.concat(compl.r, v.emoji[mod], " :", code, "-", mod, ":</span>"),
+                    s: mscode,
+                    r: options.code ? mscode : compl.r + v.emoji[mod],
+                    no_space: !options.code,
+                    sh: `<span class="nw">${compl.r}${v.emoji[mod]} ${mscode}</span>`,
                     hl_length: 2 + code.length + mod.length,
-                    shorter_hl: ":".concat(code, ":")
+                    shorter_hl: scode
                 });
             }
         }
@@ -8647,39 +8647,45 @@ function complete_list(v, sel, modifiers) {
     return res;
 }
 
-demand_load.emoji_completion = function (start) {
+function decolon(s) {
+    const a = s.startsWith(":") ? 1 : 0,
+        b = s.endsWith(":") && s.length > 1 ? 1 : 0;
+    return a + b === 0 ? s : s.substring(a, s.length - b);
+}
+
+demand_load.emoji_completion = function (start, options) {
+    start = decolon(start);
+    options = Object.assign({}, options || {});
     return demand_load.emoji_codes().then(function (v) {
-        var sel, i, ch, basic = v.lists.basic, m;
-        if (start.startsWith(":")) {
-            start = start.substring(1);
-        }
-        if (start.endsWith(":")) {
-            start = start.substring(0, start.length - 1);
-        }
+        let m, ch;
         if ((m = /^(-?[^-]+)-/.exec(start))
             && (ch = v.emoji[m[1]])
             && people_regex.test(ch)) {
-            return complete_list(v, [m[1]], true);
+            options.modifiers = true;
+            return complete_list(v, [m[1]], options);
         }
+        let sel;
         if (start === "") {
-            sel = basic.slice();
+            sel = v.lists.basic.slice();
         } else {
             sel = [];
-            for (i = 0; i !== basic.length; ++i) {
-                if (basic[i].startsWith(start))
-                    sel.push(basic[i]);
+            for (const b of v.lists.basic) {
+                if (b.startsWith(start))
+                    sel.push(b);
             }
             sel = select_from(sel, start, v.lists.common);
             if (start.length > 1) {
                 sel = select_from(sel, start, v.lists.all);
-                var xsel = select_from([], start, v.words), ysel = [];
-                for (i = 0; i !== xsel.length; ++i)
-                    Array.prototype.push.apply(ysel, v.wordsets[xsel[i]]);
+                const ysel = [];
+                for (const wordset of select_from([], start, v.words)) {
+                    Array.prototype.push.apply(ysel, v.wordsets[wordset]);
+                }
                 ysel.sort();
                 combine(sel, ysel, 0, ysel.length);
             }
         }
-        return complete_list(v, sel, false);
+        options.modifiers = false;
+        return complete_list(v, sel, options);
     });
 };
 })();
@@ -9076,21 +9082,39 @@ function suggest() {
     }
 
     function display() {
-        let i = -1;
-        function next(cinfo) {
-            ++i;
-            if (cinfo || i == suggdata.promises.length) {
-                finish_display(cinfo);
-            } else {
-                const result = suggdata.promises[i](elt, hintinfo);
-                if (result && $.isFunction(result.then)) {
-                    result.then(next);
-                } else {
-                    next(result);
+        let results = [], done = false;
+        function next(i, pinfo) {
+            if (done) {
+                return;
+            }
+            if (pinfo && $.isFunction(pinfo.then)) {
+                results[i] = true;
+                pinfo.then(cinfo => next(i, cinfo));
+                return;
+            }
+            results[i] = pinfo;
+            let unresolved = false, showcinfo = null;
+            for (const cinfo of results) {
+                if (cinfo === true) {
+                    unresolved = true;
+                } else if (!cinfo || unresolved) {
+                    // skip
+                } else if (cinfo.best !== null) {
+                    done = true;
+                    showcinfo = cinfo;
+                    break;
+                } else if (!showcinfo) {
+                    showcinfo = cinfo;
                 }
             }
+            if (done || !unresolved) {
+                finish_display(showcinfo);
+            }
         }
-        next(null);
+        for (let i = 0; i !== suggdata.promises.length; ++i) {
+            next(i, suggdata.promises[i](elt, hintinfo));
+        }
+        next();
         will_display = false;
     }
 
@@ -9302,12 +9326,36 @@ suggest.CompletionSpan = CompletionSpan;
 return suggest;
 })();
 
+
+function suggest_tag_emoji(d) {
+    function finish_suggest_tag_emoji(emoji) {
+        for (const it of d.items) {
+            if (!it.s.startsWith(":") || !it.s.endsWith(":")) {
+                continue;
+            }
+            const s = it.s.substring(1, it.s.length - 1);
+            if (!emoji.emoji[s]) {
+                continue;
+            }
+            it.sh = `<span class="nw">${emoji.emoji[s]} ${it.s}</span>`;
+        }
+        return d;
+    }
+
+    for (const it of d.items) {
+        if (it.s.startsWith(":") && it.s.endsWith(":")) {
+            return demand_load.emoji_codes().then(finish_suggest_tag_emoji);
+        }
+    }
+    return d;
+}
+
 hotcrp.suggest.add_builder("tags", function (elt) {
     const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
-        return cs.filterFrom(demand_load.tags());
+        return cs.filterFrom(demand_load.tags()).then(suggest_tag_emoji);
     }
 });
 
@@ -9316,7 +9364,7 @@ hotcrp.suggest.add_builder("editable-tags", function (elt) {
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
-        return cs.filterFrom(demand_load.editable_tags());
+        return cs.filterFrom(demand_load.editable_tags()).then(suggest_tag_emoji);
     }
 });
 
@@ -9325,7 +9373,7 @@ hotcrp.suggest.add_builder("sitewide-editable-tags", function (elt) {
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
-        return cs.filterFrom(demand_load.sitewide_editable_tags());
+        return cs.filterFrom(demand_load.sitewide_editable_tags()).then(suggest_tag_emoji);
     }
 });
 
@@ -9370,6 +9418,19 @@ hotcrp.suggest.add_builder("suggest-emoji", function (elt) {
         cs.maxItems = 8;
         cs.postReplace = suggest_emoji_postreplace;
         return cs.filterFrom(demand_load.emoji_completion(cs.span().toLowerCase()));
+    }
+    /* eslint-enable no-misleading-character-class */
+});
+
+hotcrp.suggest.add_builder("suggest-emoji-codes", function (elt) {
+    /* eslint-disable no-misleading-character-class */
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
+    if (cs.matchLeft(/(?:^|\s)(:(?:|\+|\+?[-_0-9a-zA-Z]+):?)$/)
+        && cs.matchRight(/(?:$|\s)/y)) {
+        cs.caseSensitive = "lower";
+        cs.maxItems = 32;
+        cs.postReplace = suggest_emoji_postreplace;
+        return cs.filterFrom(demand_load.emoji_completion(cs.span().toLowerCase(), {code: true}));
     }
     /* eslint-enable no-misleading-character-class */
 });
@@ -11617,7 +11678,7 @@ handle_ui.on("js-plinfo-edittags", function () {
             return;
         const elt = $e("div", "d-inline-flex",
             $e("div", "mf mf-text w-text",
-                $e("textarea", {name: "tags " + rv.pid, cols: 120, rows: 1, class: "want-focus need-suggest tags w-text", style: "vertical-align:-0.5rem", "data-tooltip-anchor": "v", "id": "tags " + rv.pid, "spellcheck": "false"})),
+                $e("textarea", {name: "tags " + rv.pid, cols: 120, rows: 1, class: "want-focus need-suggest editable-tags suggest-emoji-codes w-text", style: "vertical-align:-0.5rem", "data-tooltip-anchor": "v", "id": "tags " + rv.pid, "spellcheck": "false"})),
             $e("button", {type: "button", name: "tagsave " + rv.pid, class: "btn-primary ml-2"}, "Save"),
             $e("button", {type: "button", name: "tagcancel " + rv.pid, class: "ml-2"}, "Cancel"));
         set_pidfield(plistui.fields.tags, pidfe, elt);
