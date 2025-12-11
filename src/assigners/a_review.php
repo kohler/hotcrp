@@ -392,6 +392,10 @@ class Review_Assigner extends Assigner {
         $locks["PaperReview"] = $locks["PaperReviewRefused"] =
             $locks["PaperReviewHistory"] = $locks["ReviewRating"] =
             $locks["IDReservation"] = $locks["Settings"] = "write";
+        if ($this->contact->is_placeholder()
+            || ($this->rtype == REVIEW_EXTERNAL && $this->contact->primaryContactId > 0)) {
+            $locks["ContactInfo"] = "write";
+        }
     }
     function execute(AssignmentSet $aset) {
         $extra = ["no_autosearch" => true];
