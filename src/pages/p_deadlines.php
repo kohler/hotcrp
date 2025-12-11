@@ -46,7 +46,7 @@ class Deadlines_Page {
 
         // XXX deadlines for multiple submission classes
         foreach ($this->conf->submission_round_list() as $sr) {
-            $srarg = new FmtArg("sclass", $sr->tag, 0);
+            $srarg = new FmtArg("sclass", $sr->label, 0);
             if ($sr->register > 0
                 && ($sr->update <= 0 || $sr->register < $sr->update)) {
                 $this->dl1($sr->register, "<5>{sclass} registration deadline",
