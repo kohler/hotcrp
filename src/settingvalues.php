@@ -1968,6 +1968,10 @@ class SettingValues extends MessageSet {
         if ($si->autogrow) {
             $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
         }
+        if (!isset($js["spellcheck"])
+            && $si->spellcheck !== null) {
+            $js["spellcheck"] = $si->spellcheck ? "true" : "false";
+        }
         if (($dv = $si->default_value($this)) !== null
             && isset($js["placeholder"])
             && $v === (string) $dv) {
