@@ -92,6 +92,7 @@ class Tag_SearchTerm extends SearchTerm {
 
             $aterm = $ti->automatic_search_term();
             if (($cr = $aterm->get_float("circular_reference"))) {
+                '@phan-var-force true|list<MessageItem> $cr';
                 $srch->append_list($srch->expand_message_context(
                     MessageItem::error_at("circular_reference", "<0>Circular reference in automatic tag #{$ti->tag}"),
                     $sword->pos1, $sword->pos2, $sword->string_context
