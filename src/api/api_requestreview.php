@@ -299,11 +299,10 @@ class RequestReview_API {
             return true;
         } else if ($remrow instanceof ReviewInfo) {
             return $user->is_my_review($remrow);
-        } else {
-            return $user->contactXid === $remrow->contactId
-                || ($remrow->email && strcasecmp($user->email, $remrow->email) === 0)
-                || $user->reviewer_capability($prow) === $remrow->contactId;
         }
+        return $user->contactXid === $remrow->contactId
+            || ($remrow->email && strcasecmp($user->email, $remrow->email) === 0)
+            || $user->reviewer_capability($prow) === $remrow->contactId;
     }
 
     /** @param Contact $user
