@@ -807,6 +807,7 @@ class PaperTable {
         if ($this->allow_edit_final) {
             return 0;
         }
+        assert(($this->user->overrides() & Contact::OVERRIDE_EDIT_CONDITIONS) !== 0);
         $sexprs = [];
         foreach ($this->prow->form_fields() as $o) {
             if ($o->required <= 0
@@ -2456,8 +2457,8 @@ class PaperTable {
     }
 
     private function _print_editable_body() {
-        $this->_print_editable_form();
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
+        $this->_print_editable_form();
         $sr = $this->prow->submission_round();
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
             $this->conf->_c5("paper_edit", $this->prow->paperId ? "<0>Edit {sclass} {submission}" : "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->label, 0), new FmtArg("draft", $this->prow->timeSubmitted <= 0)),
