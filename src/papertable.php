@@ -858,24 +858,30 @@ class PaperTable {
         $checked = $this->is_ready(true);
         $autoready = $this->ready_state();
         $ready_open = $autoready <= 0 || $this->prow->paperStorageId > 1;
+        $label_class = null;
         $label_hidden = false;
         if ($sr->freeze) {
-            $label_class = $checked ? null : "is-error";
+            if (($sr->submit <= 0 || Conf::$now <= $sr->submit)
+                && !$checked) {
+                $label_class = "is-error";
+            }
             $complete = "complete";
         } else {
-            if (Conf::$now > $sr->update) {
-                $label_class = null;
-            } else if ($ready_open) {
-                $label_class = $checked ? null : "is-error";
-            } else {
+            if (Conf::$now <= $sr->update
+                && $ready_open
+                && !$checked) {
+                $label_class = "is-error";
+            }
+            if (Conf::$now <= $sr->update
+                && !$ready_open) {
                 $label_hidden = true;
             }
             $complete = "ready for review";
         }
 
         echo '<div class="ready-container mb-3"><label class="',
-            Ht::add_tokens("checki mb-1", $label_class), '"',
-            $label_hidden ? ' hidden' : '',
+            Ht::add_tokens("checki mb-1", $label_class),
+            '"', $label_hidden ? ' hidden' : '',
             '><span class="checkc">',
             Ht::checkbox("status:submit", 1, $checked && $ready_open, [
                 "disabled" => $autoready < 0 || !$ready_open,
