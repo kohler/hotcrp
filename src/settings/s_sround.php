@@ -117,6 +117,7 @@ class Sround_SettingParser extends SettingParser {
         $sv->print_entry_group("submission/{$ctr}/label", "Title", ["horizontal" => true, "group_class" => "medium", "class" => "uii js-settings-submission-round-label"]);
         $sv->print_entry_group("submission/{$ctr}/registration", "Registration deadline", ["horizontal" => true, "group_class" => "medium"]);
         $sv->print_entry_group("submission/{$ctr}/done", "Submission deadline", ["horizontal" => true, "group_class" => "medium"]);
+        $sv->print_entry_group("submission/{$ctr}/resubmission", "Resubmission deadline", ["horizontal" => true, "group_class" => "medium"]);
         echo '</div></div></fieldset>';
         if ($deleted) {
             echo Ht::unstash_script("\$(function(){\$(\"#submission\\\\/{$ctr}\\\\/deleter\").click()})");

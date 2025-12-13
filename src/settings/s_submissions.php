@@ -27,7 +27,7 @@ class Submissions_SettingParser extends SettingParser {
             "hint" => "Submissions must be complete by this deadline."
         ]);
         $sv->print_entry_group("submission_resubmission", "Resubmission deadline", [
-            "hint" => "Complete submissions may be further edited until this deadline."
+            "hint" => "Complete submissions may be edited until this deadline."
         ]);
         $sv->print_entry_group("submission_grace", "Grace period");
     }
