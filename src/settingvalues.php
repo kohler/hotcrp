@@ -1201,18 +1201,19 @@ class SettingValues extends MessageSet {
      * @param bool $force_name0
      * @return bool */
     function check_date_before($name0, $name1, $force_name0) {
-        if (($d1 = $this->newv($name1))) {
-            $d0 = $this->newv($name0);
-            if (!$d0) {
-                if ($force_name0) {
-                    $this->save($name0, $d1);
-                }
-            } else if ($d0 > $d1) {
-                $si1 = $this->si($name1);
-                $this->error_at($name0, "<5>Must come before " . $this->setting_link($si1->title_html($this), $si1));
-                $this->error_at($name1);
-                return false;
-            }
+        $d1 = $this->newv($name1);
+        if (!$d1) {
+            return true;
+        }
+        $d0 = $this->newv($name0);
+        if ($d0 && $d0 > $d1) {
+            $si1 = $this->si($name1);
+            $this->error_at($name0, "<5>Must come before " . $this->setting_link($si1->title_html($this), $si1));
+            $this->error_at($name1);
+            return false;
+        }
+        if (!$d0 && $force_name0) {
+            $this->save($name0, $d1);
         }
         return true;
     }

@@ -96,14 +96,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         if ($this->xtype === "submit") {
             $this->apply_submit($res, $prow, $state);
         } else if ($this->xtype === "unsubmit") {
-            if ($res->_withdrawn !== 0) {
-                $state->paper_error("<0>#{$prow->paperId} has been withdrawn");
-            } else if ($res->_submitted !== 0) {
-                if (($whynot = $state->user->perm_edit_paper($prow))) {
-                    return new AssignmentError($whynot);
-                }
-                $res->_submitted = 0;
-            }
+            $this->apply_unsubmit($res, $prow, $state);
         } else if ($this->xtype === "withdraw") {
             if ($res->_withdrawn === 0) {
                 assert($res->_submitted >= 0);
@@ -143,6 +136,18 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             $state->paper_error("<5>" . $whynot->unparse_html());
         } else {
             $this->check_submit($res, $prow, $state);
+        }
+    }
+    private function apply_unsubmit(Status_Assignable $res, PaperInfo $prow,
+                                    AssignmentState $state) {
+        if ($res->_withdrawn !== 0) {
+            $state->paper_error("<0>#{$prow->paperId} has been withdrawn");
+        } else if ($res->_submitted === 0) {
+            // already unsubmitted
+        } else if (($whynot = $state->user->perm_unsubmit_paper($prow))) {
+            $state->paper_error("<5>" . $whynot->unparse_html());
+        } else {
+            $res->_submitted = 0;
         }
     }
     private function apply_revive(Status_Assignable $res, PaperInfo $prow,

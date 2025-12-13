@@ -26,10 +26,16 @@ class Submissions_SettingParser extends SettingParser {
         $sv->print_entry_group("submission_done", "Submission deadline", [
             "hint" => "Submissions must be complete by this deadline."
         ]);
+        $sv->print_entry_group("submission_resubmission", "Resubmission deadline", [
+            "hint" => "Complete submissions may be further edited until this deadline."
+        ]);
         $sv->print_entry_group("submission_grace", "Grace period");
     }
     static function print_updates(SettingValues $sv) {
-        $sv->print_radio_table("submission_freeze", [0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"]);
+        $sv->print_radio_table("submission_freeze", [
+            0 => "Allow updates until the submission deadline (usually the best choice)",
+            1 => "Authors must freeze the final version of each submission"
+        ]);
     }
     static function print_blind(SettingValues $sv) {
         $sv->print_radio_table("author_visibility", [
@@ -50,13 +56,22 @@ class Submissions_SettingParser extends SettingParser {
     }
 
     function apply_req(Si $si, SettingValues $sv) {
-        $v = $sv->base_parse_req($si);
-        if ($v !== null) {
-            $sv->save("submission_done", $v);
-            $sv->save("submission_update", $v);
-            $sv->check_date_before("submission_registration", "submission_done", true);
+        if ($si->name === "submission_done") {
+            $v = $sv->base_parse_req($si);
+            if ($v !== null) {
+                $sv->save("submission_done", $v);
+                $sv->save("submission_update", $v);
+                $sv->check_date_before("submission_registration", "submission_done", true);
+            }
+            return true;
+        } else if ($si->name === "submission_resubmission") {
+            $v = $sv->base_parse_req($si);
+            if ($v !== null) {
+                $sv->save("submission_resubmission", $v);
+                $sv->check_date_before("submission_done", "submission_resubmission", false);
+            }
+            return true;
         }
-        return true;
     }
 
     static function crosscheck(SettingValues $sv) {

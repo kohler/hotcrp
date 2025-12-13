@@ -13510,10 +13510,12 @@ function add_pslitem_pfe() {
 }
 
 handle_ui.on("submit.js-submit-paper", function (evt) {
-    var sub = this.elements["status:submit"] || this.elements.submitpaper,
+    const sub = this.elements["status:submit"],
         is_submit = (form_submitter(this, evt) || "update") === "update";
     if (is_submit
-        && sub && sub.type === "checkbox" && !sub.checked
+        && sub
+        && sub.type === "checkbox"
+        && !sub.checked
         && this.hasAttribute("data-submitted")) {
         if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.")) {
             evt.preventDefault();
@@ -13528,28 +13530,29 @@ handle_ui.on("submit.js-submit-paper", function (evt) {
     }
     this.elements["status:unchanged"] && this.elements["status:unchanged"].remove();
     this.elements["status:changed"] && this.elements["status:changed"].remove();
-    if (is_submit) {
-        const unch = [], ch = [];
-        for (let i = 0; i !== this.elements.length; ++i) {
-            const e = this.elements[i],
-                type = e.type,
-                name = type ? e.name : e[0].name;
-            if (name
-                && !name.startsWith("has_")
-                && (!type
-                    || (!hasClass(e, "ignore-diff")
-                        && !e.disabled
-                        && !input_is_buttonlike(e)))) {
-                (input_differs(e) ? ch : unch).push(name);
-            }
-        }
-        let e = hidden_input("status:unchanged", unch.join(" "));
-        e.className = "ignore-diff";
-        this.appendChild(e);
-        e = hidden_input("status:changed", ch.join(" "));
-        e.className = "ignore-diff";
-        this.appendChild(e);
+    if (!is_submit) {
+        return;
     }
+    const unch = [], ch = [];
+    for (let i = 0; i !== this.elements.length; ++i) {
+        const e = this.elements[i],
+            type = e.type,
+            name = type ? e.name : e[0].name;
+        if (name
+            && !name.startsWith("has_")
+            && (!type
+                || (!hasClass(e, "ignore-diff")
+                    && !e.disabled
+                    && !input_is_buttonlike(e)))) {
+            (input_differs(e) ? ch : unch).push(name);
+        }
+    }
+    let e = hidden_input("status:unchanged", unch.join(" "));
+    e.className = "ignore-diff";
+    this.appendChild(e);
+    e = hidden_input("status:changed", ch.join(" "));
+    e.className = "ignore-diff";
+    this.appendChild(e);
 });
 
 function fieldchange(evt) {
@@ -13559,11 +13562,11 @@ function fieldchange(evt) {
 }
 
 function prepare_autoready_condition(f) {
-    var condition = null,
-        readye = f.elements["status:submit"] || f.elements.submitpaper;
-    if (!readye) {
+    const readye = f.elements["status:submit"];
+    if (!readye || readye.type === "hidden") {
         return;
     }
+    let condition = null;
     if (f.hasAttribute("data-autoready-condition")) {
         condition = JSON.parse(f.getAttribute("data-autoready-condition"));
     }
@@ -13574,28 +13577,22 @@ function prepare_autoready_condition(f) {
             readye.checked = true;
             readye.removeAttribute("data-autoready");
         }
-        let readychecked, e;
-        if (readye.type === "checkbox") {
-            readychecked = readye.checked;
-        } else {
-            readychecked = readye.value !== "" && readye.value !== "0";
-        }
-        e = readye.parentElement.parentElement;
-        toggleClass(e, "hidden", !iscond);
-        toggleClass(e, "is-error", iscond && !readychecked && readye.hasAttribute("data-urgent"));
+        let e = readye.parentElement.parentElement;
+        e.hidden = !iscond;
+        toggleClass(e, "is-error", iscond && !readye.checked && readye.hasAttribute("data-urgent"));
         for (e = e.nextSibling; e && e.tagName === "P"; e = e.nextSibling) {
             if (hasClass(e, "if-unready-required")) {
-                toggleClass(e, "hidden", iscond);
+                e.hidden = iscond;
             } else if (hasClass(e, "if-unready")) {
-                toggleClass(e, "hidden", iscond && readychecked);
+                e.hidden = iscond && readye.checked;
             } else if (hasClass(e, "if-ready")) {
-                toggleClass(e, "hidden", !iscond || !readychecked);
+                e.hidden = !iscond || !readye.checked;
             }
         }
         let t;
         if (f.hasAttribute("data-contacts-only")) {
             t = "Save contacts";
-        } else if (!iscond || !readychecked) {
+        } else if (!iscond || !readye.checked) {
             t = "Save draft";
         } else if (f.hasAttribute("data-submitted")) {
             t = "Save and resubmit";

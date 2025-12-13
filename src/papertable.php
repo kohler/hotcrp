@@ -845,7 +845,9 @@ class PaperTable {
     private function print_editable_complete() {
         echo Ht::hidden("status:phase", $this->allow_edit_final ? "final" : "review"),
             Ht::hidden("status:if_unmodified_since", $this->prow->timeModified);
-        if ($this->allow_edit_final) {
+        if ($this->allow_edit_final
+            || ($this->prow->timeSubmitted > 0
+                && !$this->user->can_unsubmit_paper($this->prow))) {
             echo Ht::hidden("status:submit", 1);
             return;
         } else if ($this->prow->timeWithdrawn > 0) {
@@ -856,21 +858,25 @@ class PaperTable {
         $checked = $this->is_ready(true);
         $autoready = $this->ready_state();
         $ready_open = $autoready <= 0 || $this->prow->paperStorageId > 1;
+        $label_hidden = false;
         if ($sr->freeze) {
             $label_class = $checked ? null : "is-error";
             $complete = "complete";
         } else {
-            if (Conf::$now <= $sr->update) {
-                $label_class = $ready_open ? ($checked ? null : "is-error") : "hidden";
-            } else {
+            if (Conf::$now > $sr->update) {
                 $label_class = null;
+            } else if ($ready_open) {
+                $label_class = $checked ? null : "is-error";
+            } else {
+                $label_hidden = true;
             }
             $complete = "ready for review";
         }
 
         echo '<div class="ready-container mb-3"><label class="',
-            Ht::add_tokens("checki mb-1", $label_class),
-            '"><span class="checkc">',
+            Ht::add_tokens("checki mb-1", $label_class), '"',
+            $label_hidden ? ' hidden' : '',
+            '><span class="checkc">',
             Ht::checkbox("status:submit", 1, $checked && $ready_open, [
                 "disabled" => $autoready < 0 || !$ready_open,
                 "data-autoready" => $autoready > 0 && !$ready_open,
@@ -892,13 +898,15 @@ class PaperTable {
         if ($sr->freeze) {
             $freezem = $this->conf->_c("paper_edit", "<5>Completed {submissions} are frozen and cannot be changed further.");
         }
-        if ($autoready !== 0) {
+        if ($autoready !== 0
+            && $this->edit_mode > 1) {
             $requiredm = $this->conf->_c("paper_edit", "<5>You must fill out all required fields to mark the {submission} as {$complete}.");
             if ($requiredm) {
                 echo '<p class="feedback ',
                     ($submitm ? "is-urgent-note" : "is-note"),
-                    ' if-unready-required', ($ready_open ? ' hidden">' : '">'),
-                    Ftext::as(5, $requiredm), '</p>';
+                    ' if-unready-required"',
+                    $ready_open ? ' hidden' : '',
+                    '>', Ftext::as(5, $requiredm), '</p>';
             }
         }
         if ($submitm) {
@@ -906,8 +914,8 @@ class PaperTable {
                 Ftext::as(5, Ftext::join_nonempty(" ", [$updatem, $submitm, $freezem])), '</p>';
         }
         if ($updatem || $freezem) {
-            echo '<p class="feedback is-note if-ready',
-                $checked ? "" : " hidden", '">',
+            echo '<p class="feedback is-note if-ready"',
+                $checked ? "" : " hidden", '>',
                 Ftext::as(5, Ftext::join_nonempty(" ", [$updatem, $submitm, $freezem])), '</p>';
         }
 

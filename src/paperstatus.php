@@ -909,6 +909,11 @@ final class PaperStatus extends MessageSet {
                 && !$this->_noncontacts_changed) {
                 $whynot = $this->user->perm_finalize_paper($this->prow);
             }
+            if (!$whynot
+                && $old_submitted
+                && !$pj_submitted) {
+                $whynot = $this->user->perm_unsubmit_paper($this->prow);
+            }
             if ($whynot) {
                 $whynot->append_to($this, "status:submitted", 3);
                 $pj_submitted = $old_submitted;
@@ -1291,14 +1296,6 @@ final class PaperStatus extends MessageSet {
         }
         $this->json_fields = $this->override_json_fields ?? false;
         $pj = (object) [];
-
-        // Backward compatibility XXX
-        if (isset($qreq->submitpaper) && !isset($qreq["status:submit"])) {
-            $qreq["status:submit"] = $qreq->submitpaper;
-        }
-        if (isset($qreq->has_submitpaper) && !isset($qreq["has_status:submit"])) {
-            $qreq["has_status:submit"] = $qreq["has_submitpaper"];
-        }
 
         // Status
         $pjs = $pj->status = (object) [];

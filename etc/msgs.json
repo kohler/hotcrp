@@ -230,6 +230,8 @@
             ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {sclass_prefix}{submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{expand}"]],
             ["<0>The {sclass_prefix}{submission} update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
             ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{expand}"]],
+            ["<0>The {sclass_prefix}resubmission deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_resub"]],
+            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}resubmission deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_resub", "{expand}"]],
             ["<0>The {sclass_prefix}{submission} deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
             ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{expand}"]],
             ["<0>The deadline for this external review has passed", ["{deadline}^=extrev_hard"]],

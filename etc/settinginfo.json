@@ -515,6 +515,12 @@
         "type": "date", "placeholder": "none",
         "tags": "submission deadline"
     },
+    {
+        "name_pattern": "submission/$/resubmission", "storage": "member.resubmit",
+        "title": "/Resubmission deadline",
+        "type": "date", "placeholder": "none",
+        "tags": "submission deadline"
+    },
 
 
     {
@@ -1085,6 +1091,13 @@
         "name": "submission_done", "storage": "sub_sub",
         "title": "Submission deadline",
         "type": "date", "parse_order": 1,
+        "parser_class": "Submissions_SettingParser",
+        "tags": "submission deadline"
+    },
+    {
+        "name": "submission_resubmission", "storage": "sub_resub",
+        "title": "Resubmission deadline",
+        "type": "date", "parse_order": 2, "placeholder": "none",
         "parser_class": "Submissions_SettingParser",
         "tags": "submission deadline"
     },

@@ -3655,10 +3655,32 @@ class Contact implements JsonSerializable {
         $sr = $prow->submission_round();
         if ($prow->is_new() && !$sr->time_register(true)) {
             $whyNot["deadline"] = "sub_reg";
-        } else if (!$sr->time_update(true)) {
-            $whyNot["deadline"] = "sub_update";
+        } else if (!$sr->time_edit($prow->timeSubmitted > 0, true)) {
+            if ($prow->timeSubmitted <= 0 || $sr->submit === $sr->resubmit) {
+                $whyNot["deadline"] = "sub_update";
+            } else {
+                $whyNot["deadline"] = "sub_resub";
+            }
         }
         return $whyNot;
+    }
+
+    /** @return bool */
+    function can_unsubmit_paper(PaperInfo $prow) {
+        return $this->can_edit_paper($prow)
+            && ($this->can_administer($prow)
+                || $prow->submission_round()->time_unsubmit(true));
+    }
+
+    /** @return ?FailureReason */
+    function perm_unsubmit_paper(PaperInfo $prow) {
+        $whynot = $this->perm_edit_paper($prow);
+        if (!$whynot && !$this->can_unsubmit_paper($prow)) {
+            $rights = $this->rights($prow);
+            $whynot = $this->perm_edit_paper_failure($prow, $rights, "");
+            $whynot["noUnsubmit"] = true;
+        }
+        return $whynot;
     }
 
     /** @return bool */

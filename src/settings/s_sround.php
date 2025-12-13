@@ -15,6 +15,7 @@ class Sround_Setting {
     public $register;
     // XXX update
     public $submit;
+    public $resubmit;
     public $grace;
     public $freeze;
     public $deleted = false;
@@ -26,6 +27,7 @@ class Sround_Setting {
         $sr->open = $jx->open ?? 0;
         $sr->register = $jx->register ?? 0;
         $sr->submit = $jx->submit ?? 0;
+        $sr->resubmit = $jx->resubmit ?? 0;
         $sr->grace = $jx->grace ?? null;
         $sr->freeze = $jx->freeze ?? null;
         return $sr;
@@ -45,6 +47,9 @@ class Sround_Setting {
         // XXX update
         if ($this->submit > 0) {
             $j["submit"] = $this->submit;
+        }
+        if ($this->resubmit > 0) {
+            $j["resubmit"] = $this->resubmit;
         }
         if ($this->grace !== null) {
             $j["grace"] = $this->grace;
@@ -158,7 +163,11 @@ class Sround_SettingParser extends SettingParser {
             $pfx = "submission/{$ctr}";
             if ($sv->oldv("{$pfx}/registration") !== $sv->newv("{$pfx}/registration")
                 || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
-                $sv->check_date_before("submission/{$ctr}/registration", "submission/{$ctr}/done", false);
+                $sv->check_date_before("{$pfx}/registration", "{$pfx}/done", false);
+            }
+            if ($sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")
+                || $sv->oldv("{$pfx}/resubmission") !== $sv->newv("{$pfx}/resubmission")) {
+                $sv->check_date_before("{$pfx}/done", "{$pfx}/resubmission", false);
             }
             $srs[] = $sv->newv($pfx);
         }

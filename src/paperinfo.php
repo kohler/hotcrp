@@ -1746,15 +1746,12 @@ class PaperInfo {
             return 2;
         }
         $sr = $this->submission_round();
-        if ($this->is_new()
-            && !$sr->time_register(true)) {
+        if (($this->is_new()
+             && !$sr->time_register(true))
+            || !$sr->time_edit($this->timeSubmitted > 0, true)) {
             return 0;
         }
-        if (($this->timeSubmitted <= 0 || !$sr->freeze)
-            && $sr->time_update(true)) {
-            return 1;
-        }
-        return 0;
+        return 1;
     }
 
 
