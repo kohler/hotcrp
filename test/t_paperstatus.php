@@ -1901,6 +1901,67 @@ Phil Porras.");
         xassert(!$cdb_agnes || $cdb_agnes->firstName === "Agnes");
     }
 
+    function test_newly_present_option() {
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "sf": [
+                {"name": "Include thing", "id": "new", "order": 100, "type": "checkbox"},
+                {"name": "Thing", "id": "new", "order": 101, "type": "checkbox", "required": "submit", "condition": "IncThi:yes"}
+            ]
+        }');
+        xassert($sv->execute());
+        $o1 = $this->conf->options()->option_by_key("include_thing");
+        $o2 = $this->conf->options()->option_by_key("thing");
+        xassert($o1 && $o2);
+
+        // can change submitted paper
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $p2au = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        $p2_title = $p2->title();
+        xassert_gt($p2->timeSubmitted, 0);
+
+        $ps = new PaperStatus($p2au);
+        $x = $ps->save_paper_web(new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => "{$p2_title}?"
+        ]), $p2);
+        xassert_eqq($x, 2);
+
+        // make it so this submitted paper lacks a required field
+        $this->conf->qe("insert into PaperOption set paperId=?, optionId=?, value=1", 2, $o1->id);
+
+        // it should be OK to update the paper despite the missing field
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $x = $ps->save_paper_web(new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => "{$p2_title}??"
+        ]), $p2);
+        xassert_eqq($x, 2);
+
+        // remove the option
+        $this->conf->qe("delete from PaperOption where paperId=? and optionId=?", 2, $o1->id);
+
+        // but if the change we want to make *introduces* a new field that
+        // isn't ready, reject the change altogether
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $x = $ps->save_paper_web(new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => $p2_title,
+            "has_opt{$o1->id}" => 1,
+            "opt{$o1->id}" => 1
+        ]), $p2);
+        xassert_eqq($x, false);
+
+        // remove newly-added options
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $o1->id,
+            "sf/1/delete" => 1,
+            "sf/2/id" => $o2->id,
+            "sf/2/delete" => 1
+        ]);
+        xassert($sv->execute());
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
