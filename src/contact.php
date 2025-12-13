@@ -3563,7 +3563,7 @@ class Contact implements JsonSerializable {
      * @return ?FailureReason */
     function perm_start_paper(PaperInfo $prow, $allow_no_email = false) {
         if (($sl = $this->conf->site_lock("paper:start")) > 0
-            && ($sl > 1 || !$this->can_administer($prow))) {
+            && ($sl > 1 || !$this->allow_administer($prow))) {
             return new FailureReason($this->conf, ["site_lock" => "paper:start"]);
         }
         if ($this->can_administer($prow)) {
@@ -3592,7 +3592,7 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         if ($prow->is_new()
             && ($sl = $this->conf->site_lock("paper:start")) > 0
-            && ($sl > 1 || !$rights->can_administer())) {
+            && ($sl > 1 || !$rights->allow_administer())) {
             return 0;
         }
         if ($rights->can_administer()) {

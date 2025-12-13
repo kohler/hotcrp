@@ -607,7 +607,7 @@ class Home_Page {
         $srlist = [];
         $any_open = false;
         $sl = $conf->site_lock("paper:start");
-        if ($sl === 0 || ($sl === 1 && $user->is_manager())) {
+        if ($sl <= 0 || ($sl === 1 && $user->is_manager())) {
             foreach ($conf->submission_round_list() as $sr) {
                 $any_open = $any_open || $sr->open > 0;
                 if ($user->privChair || $sr->time_register(true)) {
