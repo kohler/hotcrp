@@ -149,7 +149,7 @@ class Paper_Page {
     function handle_update() {
         $conf = $this->conf;
         // XXX lock tables
-        $is_new = $this->prow->paperId <= 0;
+        $is_new = $this->prow->is_new();
         $was_submitted = $this->prow->timeSubmitted > 0;
         $is_final = $this->prow->phase() === PaperInfo::PHASE_FINAL
             && $this->qreq["status:phase"] === "final";
@@ -174,16 +174,12 @@ class Paper_Page {
 
         // check deadlines
         // NB PaperStatus also checks deadlines now; this is likely redundant.
-        if ($is_new) {
-            // we know that can_start_paper implies can_finalize_paper
-            $whynot = $this->user->perm_start_paper($this->prow);
-        } else {
-            $whynot = $this->user->perm_edit_paper($this->prow);
-            if ($whynot
-                && !$is_final
-                && !count(array_diff($this->ps->changed_keys(), ["contacts", "status"]))) {
-                $whynot = $this->user->perm_finalize_paper($this->prow);
-            }
+        $whynot = $this->user->perm_edit_paper($this->prow);
+        if ($whynot
+            && !$is_new
+            && !$is_final
+            && !count(array_diff($this->ps->changed_keys(), ["contacts", "status"]))) {
+            $whynot = $this->user->perm_finalize_paper($this->prow);
         }
         if ($whynot) {
             $conf->feedback_msg($whynot->set("expand", true)->message_list());
@@ -414,12 +410,12 @@ class Paper_Page {
         $pp->load_prow();
 
         // new papers: maybe fix user, maybe error exit
-        if ($pp->prow->paperId === 0) {
+        if ($pp->prow->is_new()) {
             if (!$pp->prow->submission_round()->time_register(true)
                 && $user->privChair) {
                 $user->add_overrides(Contact::OVERRIDE_CONFLICT);
             }
-            if (($perm = $user->perm_start_paper($pp->prow))) {
+            if (($perm = $user->perm_edit_paper($pp->prow))) {
                 $pp->error_exit($perm);
             }
         }

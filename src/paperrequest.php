@@ -1,6 +1,6 @@
 <?php
 // paperrequest.php -- HotCRP helper class for parsing paper requests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperRequest {
     /** @var PaperInfo */
@@ -220,27 +220,26 @@ class PaperRequest {
                 throw new FailureReason($user->conf, ["invalidSclass" => true, "sclass" => $qreq->sclass]);
             }
             return PaperInfo::make_new($user, $qreq->sclass);
-        } else {
-            $options = ["topics" => true, "options" => true, "allConflictType" => true, "myWatch" => true];
-            if ($user->privChair
-                || ($user->isPC && $user->conf->timePCReviewPreferences())) {
-                $options["reviewerPreference"] = true;
-            }
-            $prow = $user->paper_by_id($pid, $options);
-            if (!self::check_prow($prow, $user, $qreq)) {
-                self::try_other_user($prow, $user, $qreq);
-                if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
-                    throw new FailureReason($user->conf, ["missingId" => "paper"]);
-                } else if (!$user->has_email()) {
-                    throw $this->signin_redirection($qreq, $pid);
-                } else {
-                    throw $user->perm_view_paper($prow, false, $pid);
-                }
-            } else if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
-                throw new Redirection($user->conf->selfurl($qreq, ["p" => $prow->paperId]));
-            }
-            return $prow;
         }
+        $options = ["topics" => true, "options" => true, "allConflictType" => true, "myWatch" => true];
+        if ($user->privChair
+            || ($user->isPC && $user->conf->timePCReviewPreferences())) {
+            $options["reviewerPreference"] = true;
+        }
+        $prow = $user->paper_by_id($pid, $options);
+        if (!self::check_prow($prow, $user, $qreq)) {
+            self::try_other_user($prow, $user, $qreq);
+            if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
+                throw new FailureReason($user->conf, ["missingId" => "paper"]);
+            } else if (!$user->has_email()) {
+                throw $this->signin_redirection($qreq, $pid);
+            } else {
+                throw $user->perm_view_paper($prow, false, $pid);
+            }
+        } else if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
+            throw new Redirection($user->conf->selfurl($qreq, ["p" => $prow->paperId]));
+        }
+        return $prow;
     }
 
     /** @param Contact $user

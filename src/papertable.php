@@ -2188,12 +2188,7 @@ class PaperTable {
 
         if ($this->mode === "edit") {
             // check whether author can save (we know we can save)
-            $auuser = $this->prow->author_user();
-            if ($this->prow->paperId) {
-                $whyNot = $auuser->perm_edit_paper($this->prow);
-            } else {
-                $whyNot = $auuser->perm_start_paper($this->prow, true);
-            }
+            $whyNot = $this->prow->author_user()->perm_edit_paper($this->prow);
             // produce button
             $save_name = $this->_save_name();
             if (!$whyNot) {
@@ -2202,7 +2197,7 @@ class PaperTable {
                 $revWhyNot = $whyNot->filter(["deadline", "frozen", "sclass"])->set("expand", true)->set("confirmOverride", true);
                 $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["frozen"])
-                       && $auuser->can_finalize_paper($this->prow)) {
+                       && $this->prow->author_user()->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper uic js-mark-submit"]);
             } else if ($this->prow->paperId) {
                 $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);

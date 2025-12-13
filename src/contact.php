@@ -3525,7 +3525,7 @@ class Contact implements JsonSerializable {
         }
         if ($this->contactId) {
             assert($table !== null);
-            $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
+            $m[] = "{$table}.conflictType>=" . CONFLICT_AUTHOR;
         }
         if (count($m) > 1) {
             return "(" . join(" or ", $m) . ")";
@@ -3560,22 +3560,10 @@ class Contact implements JsonSerializable {
     }
 
     /** @param bool $allow_no_email
-     * @return ?FailureReason */
+     * @return ?FailureReason
+     * @deprecated */
     function perm_start_paper(PaperInfo $prow, $allow_no_email = false) {
-        if (($sl = $this->conf->site_lock("paper:start")) > 0
-            && ($sl > 1 || !$this->allow_administer($prow))) {
-            return new FailureReason($this->conf, ["site_lock" => "paper:start"]);
-        }
-        if ($this->can_administer($prow)) {
-            return null;
-        }
-        $sr = $prow->submission_round();
-        if (!$sr->time_register(true)) {
-            return new FailureReason($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair, "sclass" => $sr->tag]);
-        } else if (!$this->email && !$allow_no_email) {
-            return new FailureReason($this->conf, ["signin" => "paper:start"]);
-        }
-        return null;
+        return $this->perm_edit_paper($prow);
     }
 
     /** @return bool */
@@ -3598,10 +3586,10 @@ class Contact implements JsonSerializable {
         if ($rights->can_administer()) {
             if ($prow->phase() === PaperInfo::PHASE_FINAL) {
                 return 2;
-            } else {
-                return 1;
             }
-        } else if ($rights->allow_author_edit()) {
+            return 1;
+        }
+        if ($rights->allow_author_edit()) {
             return $prow->author_edit_state();
         }
         return 0;
@@ -3613,10 +3601,14 @@ class Contact implements JsonSerializable {
     }
 
     /** @return FailureReason */
-    private function perm_edit_paper_failure(PaperInfo $prow, PaperContactInfo $rights, $kind = "") {
+    private function perm_edit_paper_failure(PaperInfo $prow, PaperContactInfo $rights, $kind) {
         $whyNot = $prow->failure_reason();
+        $sr = $prow->submission_round();
+        $whyNot["sclass"] = $sr->tag;
         if (!$rights->allow_author_edit()) {
-            if ($rights->allow_author_view()) {
+            if ($prow->is_new()) {
+                $whyNot["signin"] = "paper:start";
+            } else if ($rights->allow_author_view()) {
                 $whyNot["signin"] = "paper:edit";
             } else {
                 $whyNot["author"] = true;
@@ -3628,7 +3620,7 @@ class Contact implements JsonSerializable {
         }
         if ($prow->timeSubmitted > 0
             && strpos($kind, "f") !== false
-            && $prow->submission_round()->freeze) {
+            && $sr->freeze) {
             $whyNot["frozen"] = true;
         }
         if ($rights->allow_administer()) {
@@ -3643,19 +3635,28 @@ class Contact implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
+        if ($prow->is_new()
+            && ($sl = $this->conf->site_lock("paper:start")) > 0
+            && ($sl > 1 || !$rights->allow_administer())) {
+            return new FailureReason($this->conf, ["site_lock" => "paper:start"]);
+        }
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
         if ($prow->outcome_sign < 0
             && $rights->can_view_decision()) {
             $whyNot["frozen"] = true;
-        } else if (!$rights->can_administer()) {
-            if ($prow->phase() === PaperInfo::PHASE_FINAL
-                && $rights->can_view_decision()
-                && !$this->conf->time_edit_final_paper()) {
-                $whyNot["deadline"] = "final_done";
-            } else if (!$prow->submission_round()->time_update(true)) {
-                $whyNot["deadline"] = "sub_update";
-                $whyNot["sclass"] = $prow->submission_round()->tag;
-            }
+            return $whyNot;
+        }
+        if ($prow->phase() === PaperInfo::PHASE_FINAL
+            && $rights->can_view_decision()
+            && !$this->conf->time_edit_final_paper()) {
+            $whyNot["deadline"] = "final_done";
+            return $whyNot;
+        }
+        $sr = $prow->submission_round();
+        if ($prow->is_new() && !$sr->time_register(true)) {
+            $whyNot["deadline"] = "sub_reg";
+        } else if (!$sr->time_update(true)) {
+            $whyNot["deadline"] = "sub_update";
         }
         return $whyNot;
     }
@@ -3711,7 +3712,7 @@ class Contact implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $this->perm_edit_paper_failure($prow, $rights);
+        $whyNot = $this->perm_edit_paper_failure($prow, $rights, "");
         if ($rights->allow_author_edit() && !$rights->can_administer()) {
             $whyNot["permission"] = "paper:withdraw";
             $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
