@@ -297,16 +297,22 @@ final class PaperValue implements JsonSerializable {
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
     }
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->_ms ? $this->_ms->message_list() : [];
+    }
+    /** @return void */
+    function clear_messages() {
+        $this->_ms = null;
+    }
+
     /** @return bool */
     function allow_store() {
         return !$this->_ms
             || !$this->_ms->has_error()
             || $this->_ms->has_success();
     }
-    /** @return list<MessageItem> */
-    function message_list() {
-        return $this->_ms ? $this->_ms->message_list() : [];
-    }
+
     /** @return string */
     function field_key() {
         return $this->option->field_key();

@@ -322,6 +322,9 @@ class AuthorCertification_PaperOption extends PaperOption {
         if (!$this->test_required($ov->prow)
             || $this->value_present($ov)
             || $ov->prow->allow_absent()) {
+            if ($this->max_submissions > 0) {
+                return $this->_value_check_max_submissions($ov);
+            }
             return true;
         }
         $status = $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING;
@@ -343,10 +346,8 @@ class AuthorCertification_PaperOption extends PaperOption {
             new FmtArg("url", $this->conf->hoturl_raw("search", ["t" => "act", "q" => $this->search_keyword() . ":" . $email]), 0));
     }
 
-    function value_check_submit(PaperValue $ov) {
-        if (!parent::value_check_submit($ov)) {
-            return false;
-        } else if ($this->max_submissions <= 0) {
+    private function _value_check_max_submissions(PaperValue $ov) {
+        if ($ov->prow->timeSubmitted > 0 || !$ov->prow->want_submitted()) {
             return true;
         }
         $entries = self::entries($ov);

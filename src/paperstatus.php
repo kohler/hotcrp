@@ -42,6 +42,8 @@ final class PaperStatus extends MessageSet {
     private $saved_prow;
     /** @var ?string */
     public $title;
+    /** @var ?list<PaperOption> */
+    private $_submitted_problem_fields;
     /** @var ?list<string> */
     private $_unknown_fields;
     /** @var list<PaperOption> */
@@ -848,6 +850,29 @@ final class PaperStatus extends MessageSet {
         }
     }
 
+    private function _check_submit_required() {
+        $pj_submitted = true;
+        foreach ($this->prow->form_fields() as $opt) {
+            if (!$opt->test_exists($this->prow)) {
+                continue;
+            }
+            $ov = $this->prow->force_option($opt);
+            $had_error = $ov->has_error();
+            if ($opt->value_check_required($ov)) {
+                continue;
+            }
+            if (!$had_error) {
+                $this->append_messages_from($ov);
+            }
+            if ($this->prow->base_prop("timeSubmitted") <= 0) {
+                $pj_submitted = false;
+            } else if (!in_array($opt, $this->_submitted_problem_fields ?? [], true)) {
+                $this->estop_at("status:submitted");
+            }
+        }
+        return $pj_submitted;
+    }
+
     private function _prepare_status($pj) {
         $old_withdrawn = $this->prow->base_prop("timeWithdrawn") > 0;
         $old_submitted = $this->prow->base_prop("timeSubmitted") > 0;
@@ -867,10 +892,15 @@ final class PaperStatus extends MessageSet {
         }
 
 
-        // check and change submitted status (and permission to edit other fields)
+        // check and change submitted status
         $pj_submitted = $pj_withdrawn
             ? $old_submitted_at > 0
             : $pj->status->submitted && (!$this->has_error() || $old_submitted);
+
+        if ($pj_submitted) {
+            $pj_submitted = $this->_check_submit_required();
+        }
+
         if ($pj_submitted !== $old_submitted
             || $this->_noncontacts_changed) {
             $whynot = $this->user->perm_edit_paper($this->prow);
@@ -882,21 +912,6 @@ final class PaperStatus extends MessageSet {
             if ($whynot) {
                 $whynot->append_to($this, "status:submitted", 3);
                 $pj_submitted = $old_submitted;
-            }
-        }
-
-        // if submitting from draft, and a required field is present
-        // but missing, save draft instead
-        if ($pj_submitted && !$old_submitted) {
-            foreach ($this->prow->form_fields() as $opt) {
-                if ($opt->required > 0
-                    && $opt->test_exists($this->prow)) {
-                    $ov = $this->prow->force_option($opt);
-                    if (!$opt->value_check_submit($ov)) {
-                        $this->append_messages_from($ov);
-                        $pj_submitted = $old_submitted;
-                    }
-                }
             }
         }
 
@@ -1227,6 +1242,10 @@ final class PaperStatus extends MessageSet {
         $this->prow = $prow;
         $this->paperId = $this->saved_prow = $this->title = null;
         $this->_fdiffs = $this->_xdiffs = [];
+        $this->_submitted_problem_fields = null;
+        if ($this->prow->timeSubmitted > 0) {
+            $this->_prepare_submitted_problem_fields();
+        }
         $this->_unknown_fields = $this->_resave_fields = null;
         $this->_conflict_changemask = 0;
         $this->_conflict_values = [];
@@ -1255,9 +1274,9 @@ final class PaperStatus extends MessageSet {
             $this->_save_status |= self::SSF_PIDFAIL;
             return false;
         }
-        $this->prow->set_prop("title", "");
-        $this->prow->set_prop("abstract", "");
-        $this->prow->set_prop("authorInformation", "");
+        $this->prow->set_prop_force("title", "");
+        $this->prow->set_prop_force("abstract", "");
+        $this->prow->set_prop_force("authorInformation", "");
         foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
             $this->_tags_changed[] = $tv;
         }
@@ -1387,6 +1406,18 @@ final class PaperStatus extends MessageSet {
             return false;
         }
         return true;
+    }
+
+    private function _prepare_submitted_problem_fields() {
+        foreach ($this->prow->form_fields() as $opt) {
+            if ($opt->test_exists($this->prow)) {
+                $ov = $this->prow->force_option($opt);
+                if (!$opt->value_check_required($ov)) {
+                    $this->_submitted_problem_fields[] = $opt;
+                    $ov->clear_messages();
+                }
+            }
+        }
     }
 
     /** @param object $pj

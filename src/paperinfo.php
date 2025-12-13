@@ -1241,6 +1241,16 @@ class PaperInfo {
 
     /** @param string $prop
      * @param mixed $v */
+    function set_prop_force($prop, $v) {
+        $this->_old_prop = $this->_old_prop ?? [];
+        if (!array_key_exists($prop, $this->_old_prop)) {
+            $this->_old_prop[$prop] = $this->$prop;
+        }
+        $this->set_prop($prop, $v);
+    }
+
+    /** @param string $prop
+     * @param mixed $v */
     function set_overflow_prop($prop, $v) {
         if ($v === null && $this->dataOverflow === null) {
             return;
