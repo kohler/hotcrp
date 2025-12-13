@@ -941,7 +941,9 @@ class PaperInfo {
         } else {
             $prow->allConflictType = "";
         }
-        $prow->_author_user = $user;
+        if ($user->has_email()) {
+            $prow->_author_user = $user;
+        }
         $prow->_review_array = [];
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         $prow->_row_set->add_paper($prow);
@@ -1107,7 +1109,7 @@ class PaperInfo {
     /** @return Contact */
     function author_user() {
         // Return a fake user that looks like a contact for this paper, but
-        // has no special privileges
+        // has no other privileges
         if (!$this->_author_user) {
             $this->_author_user = Contact::make($this->conf);
             $this->contact_info($this->_author_user); // contact_info must exist
