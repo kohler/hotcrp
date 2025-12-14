@@ -504,13 +504,9 @@ class ComponentSet {
         }
 
         $sepgroup = $gj->separator_group ?? null;
-        if ($sepgroup !== null
-            && $this->_separator_group !== null
-            && $this->_separator_group !== $sepgroup) {
-            $this->mark_separator();
-            $this->trigger_separator();
-        } else if ($gj->separator_before ?? false) {
-            $this->mark_separator();
+        if (($gj->separator_before ?? false)
+            || $sepgroup !== null) {
+            $this->mark_separator($sepgroup);
         }
 
         $title = $gj->title ?? "";
@@ -528,9 +524,6 @@ class ComponentSet {
             $this->trigger_separator();
         }
 
-        if ($sepgroup !== null) {
-            $this->_separator_group = $sepgroup;
-        }
         return $this->_print_body($gj, false);
     }
 
@@ -613,16 +606,25 @@ class ComponentSet {
         return $result;
     }
 
-    function mark_separator() {
-        $this->_need_separator = true;
+    /** @param ?string $group
+     * @return $this */
+    function mark_separator($group = null) {
+        if ($group === null
+            || ($this->_separator_group !== null
+                && $group !== $this->_separator_group)) {
+            $this->_need_separator = true;
+        }
+        $this->_separator_group = $group;
+        return $this;
     }
 
+    /** @return $this */
     function trigger_separator() {
         if ($this->_need_separator) {
             echo $this->_separator;
+            $this->_need_separator = false;
         }
-        $this->_need_separator = false;
-        $this->_separator_group = null;
+        return $this;
     }
 
     /** @param string $name

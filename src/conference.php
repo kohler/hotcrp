@@ -5063,50 +5063,40 @@ class Conf {
     }
 
     /** @param ComponentSet $pagecs */
+    function print_profilemenu_actas(Contact $user, Qrequest $qreq, $pagecs) {
+        if ($user->is_actas_user()) {
+            $pagecs->mark_separator("actas");
+            echo '<li role="none"><em>', Ht::link("Return to " . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</em></li>';
+            return;
+        }
+        if (!$user->privChair
+            || !($actas_email = $qreq->gsession("last_actas"))
+            || Contact::session_index_by_email($qreq, $actas_email) >= 0) {
+            return;
+        }
+        $pagecs->mark_separator("actas");
+        echo '<li role="none"><em>', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email]), ["role" => "menuitem", "class" => "qx"]), '</em></li>';
+    }
+
+    /** @param ComponentSet $pagecs */
     function print_profilemenu_item(Contact $user, Qrequest $qreq, $pagecs, $gj) {
         $itemid = substr($gj->name, 14); // NB 14 === strlen("__profilemenu/")
-        if ($itemid === "me") {
-            if (!$user->has_email()) {
-                return;
-            }
-            $ouser = $user;
-            if ($user->is_actas_user()) {
-                echo '<li role="none"><em>Acting as ', htmlspecialchars($user->email), '</em></li>',
-                    '<li role="none">', Ht::link("Return to main account", $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</li>',
-                    '<li role="separator"></li>';
-
-            }
-            if ($user->has_email()) {
-                $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
-            }
+        if ($itemid === "profile") {
+            $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
         } else if ($itemid === "other_accounts") {
             $base_email = $user->base_user()->email;
-            $actas_email = null;
-            if ($user->privChair && !$user->is_actas_user()) {
-                $actas_email = $qreq->gsession("last_actas");
-            }
             $nav = $qreq->navigation();
             $sfx = $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL);
             if ($sfx === "index" . $nav->php_suffix) {
                 $sfx = "";
             }
             foreach (Contact::session_emails($qreq) as $i => $email) {
-                if ($actas_email !== null && strcasecmp($email, $actas_email) === 0) {
-                    $actas_email = null;
-                }
                 if ($email !== "" && strcasecmp($email, $base_email) !== 0) {
                     echo '<li role="none">', Ht::link("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}", ["role" => "menuitem", "class" => "qx"]), '</li>';
                 }
             }
-            if ($actas_email !== null) {
-                echo '<li role="none">', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email]), ["role" => "menuitem", "class" => "qx"]), '</li>';
-            }
             $t = $user->has_email() ? "Add another account" : "Sign in";
             echo '<li role="none">', Ht::link($t, $this->hoturl("signin", ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</li>';
-        } else if ($itemid === "profile") {
-            if ($user->has_email()) {
-                $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
-            }
         } else if ($itemid === "my_submissions") {
             $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", "t=a");
         } else if ($itemid === "my_reviews") {
@@ -5114,9 +5104,7 @@ class Conf {
         } else if ($itemid === "search") {
             $this->_print_profilemenu_link_if_enabled($user, "Search", "search");
         } else if ($itemid === "help") {
-            if (!$user->is_disabled()) {
-                $this->_print_profilemenu_link_if_enabled($user, "Help", "help");
-            }
+            $this->_print_profilemenu_link_if_enabled($user, "Help", "help");
         } else if ($itemid === "settings") {
             $this->_print_profilemenu_link_if_enabled($user, "Settings", "settings");
         } else if ($itemid === "users") {
@@ -5127,10 +5115,9 @@ class Conf {
             if (!$user->has_email()) {
                 return;
             }
-            $sfx = $user->is_actas_user() ? " of main account" : "";
             echo '<li role="none">',
                 Ht::form($this->hoturl("=signout", ["cap" => null])),
-                Ht::button("Sign out{$sfx}", ["type" => "submit", "class" => "qx", "role" => "menuitem"]),
+                Ht::button("Sign out", ["type" => "submit", "class" => "qx", "role" => "menuitem"]),
                 '</form></li>';
         }
     }
