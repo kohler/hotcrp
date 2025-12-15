@@ -14731,10 +14731,25 @@ function populate_pcselector() {
 
     demand_load.pc_map().then(function (pcs) {
         const last_first = pcs.sort === "last", used = {};
-        let selindex = -1, noptions = 0;
+        let selindex = -1, noptions = 0, lastgroup = self;
 
         for (const opt of options) {
-            let want, mygroup = self;
+            // close current group
+            if ((opt === "selected" || opt === "extrev" || opt.endsWith(":"))
+                && lastgroup !== self) {
+                if (lastgroup.firstChild) {
+                    self.append(lastgroup);
+                }
+                lastgroup = self;
+            }
+            // open new group
+            if (opt.endsWith(":")) {
+                lastgroup = document.createElement("optgroup");
+                lastgroup.setAttribute("label", opt.substring(0, opt.length - 1));
+                continue;
+            }
+            // enumerate members
+            let want, mygroup = lastgroup;
             if (opt === "" || opt === "*") {
                 want = pcs.pc_uids;
             } else if (opt === "assignable") {
@@ -14748,9 +14763,12 @@ function populate_pcselector() {
                 for (const u of pcs.p[siteinfo.paperid].extrev || []) {
                     want.push(u.uid);
                 }
+            } else if (opt.startsWith("#")) {
+                want = [opt];
             } else {
                 want = [+opt || 0];
             }
+            // apply members
             for (const uid of want) {
                 if (used[uid]) {
                     continue;
@@ -14771,6 +14789,8 @@ function populate_pcselector() {
                     } else {
                         name = opt;
                     }
+                } else if (opt.startsWith("#")) {
+                    name = email = opt;
                 } else {
                     continue;
                 }
@@ -14784,9 +14804,12 @@ function populate_pcselector() {
                 }
                 ++noptions;
             }
-            if (mygroup !== self && mygroup.firstChild) {
+            if (mygroup !== lastgroup && mygroup.firstChild) {
                 self.appendChild(mygroup);
             }
+        }
+        if (lastgroup !== self && lastgroup.firstChild) {
+            self.appendChild(lastgroup);
         }
 
         if (selindex < 0) {

@@ -19,6 +19,8 @@ class Autoassign_Page {
     public $jobid;
     /** @var string */
     private $_pcsel_sep;
+    /** @var string */
+    private $_bp_pcselector_options;
     /** @var bool */
     private $_aset_ok;
 
@@ -106,14 +108,19 @@ class Autoassign_Page {
             && !isset($qreq->assign)
             && !$qreq->is_post()) {
             $x = preg_split('/\s+/', $this->conf->setting_data("autoassign_badpairs") ?? "", -1, PREG_SPLIT_NO_EMPTY);
-            $pcm = $this->conf->pc_members();
             $bpnum = 1;
-            for ($i = 0; $i < count($x) - 1; $i += 2) {
-                $xa = stoi($x[$i]) ?? -1;
-                $xb = stoi($x[$i + 1]) ?? -1;
-                if (isset($pcm[$xa]) && isset($pcm[$xb])) {
-                    $qreq["bpa{$bpnum}"] = $pcm[$xa]->email;
-                    $qreq["bpb{$bpnum}"] = $pcm[$xb]->email;
+            for ($i = 0; $i < count($x); ++$i) {
+                if (($comma = strpos($x[$i], ","))) {
+                    $a = $this->parse_badpair_half(substr($x[$i], 0, $comma));
+                    $b = $this->parse_badpair_half(substr($x[$i], $comma + 1));
+                } else {
+                    $a = $this->parse_badpair_half($x[$i]);
+                    $b = $this->parse_badpair_half($x[$i + 1] ?? null);
+                    ++$i;
+                }
+                if ($a && $b) {
+                    $qreq["bpa{$bpnum}"] = $a;
+                    $qreq["bpb{$bpnum}"] = $b;
                     ++$bpnum;
                 }
             }
@@ -125,12 +132,9 @@ class Autoassign_Page {
                    && $qreq->valid_post()) {
             $x = [];
             for ($i = 1; isset($qreq["bpa{$i}"]); ++$i) {
-                if ($qreq["bpa{$i}"]
-                    && $qreq["bpb{$i}"]
-                    && ($pca = $this->conf->pc_member_by_email($qreq["bpa{$i}"]))
-                    && ($pcb = $this->conf->pc_member_by_email($qreq["bpb{$i}"]))) {
-                    $x[] = $pca->contactId;
-                    $x[] = $pcb->contactId;
+                if (($a = $this->parse_badpair_half($qreq["bpa{$i}"]))
+                    && ($b = $this->parse_badpair_half($qreq["bpb{$i}"]))) {
+                    $x[] = "{$a},{$b}";
                 }
             }
             if (!empty($x)
@@ -288,9 +292,24 @@ class Autoassign_Page {
     }
 
     private function bp_selector($i, $which) {
+        if ($this->_bp_pcselector_options === null) {
+            $selectable_tags = [];
+            foreach ($this->conf->viewable_user_tags($this->user) as $tag) {
+                if (UserStatus::check_pc_tag($tag)) {
+                    $selectable_tags[] = "#{$tag}";
+                }
+            }
+            if (!empty($selectable_tags)) {
+                $options = make_array("(PC member)", "PC tagged:", ...$selectable_tags);
+                array_push($options, "PC member:", "*");
+            } else {
+                $options = ["(PC member)", "*"];
+            }
+            $this->_bp_pcselector_options = json_encode_browser($options);
+        }
         $n = "bp{$which}{$i}";
         return Ht::select($n, [], 0,
-            ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $this->qreq[$n], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $this->qreq[$n]]);
+            ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $this->qreq[$n], "data-pcselector-options" => $this->_bp_pcselector_options, "data-default-value" => $this->qreq[$n]]);
     }
 
     private function print_bad_pairs() {
@@ -531,7 +550,7 @@ class Autoassign_Page {
 
         if ($this->qreq->badpairs) {
             foreach ($this->qreq_badpairs() as $pair) {
-                $argv[] = "-X{$pair[0]->contactId},{$pair[1]->contactId}";
+                $argv[] = "-X{$pair}";
             }
         }
 
@@ -576,15 +595,31 @@ class Autoassign_Page {
         }
     }
 
-    /** @return list<array{Contact,Contact}> */
+    /** @param ?string $x
+     * @return null|int|string */
+    private function parse_badpair_half($x) {
+        $x = $x ?? "";
+        if (str_starts_with($x, "#")) {
+            if ($this->conf->pc_tag_exists(substr($x, 1))) {
+                return $x;
+            }
+        } else if (($u = $this->conf->pc_member_by_email($x))) {
+            return $u->contactId;
+        } else if (($uid = stoi($x) ?? -1) > 0
+                   && $this->conf->pc_member_by_id($uid)) {
+            return $uid;
+        }
+        return null;
+    }
+
+    /** @return list<string> */
     private function qreq_badpairs() {
         $bp = [];
         for ($i = 1; isset($this->qreq["bpa{$i}"]); ++$i) {
-            if (($bpa = $this->qreq["bpa{$i}"])
-                && ($bpb = $this->qreq["bpb{$i}"])
-                && ($pca = $this->conf->pc_member_by_email($bpa))
-                && ($pcb = $this->conf->pc_member_by_email($bpb)))
-                $bp[] = [$pca, $pcb];
+            if (($a = $this->parse_badpair_half($this->qreq["bpa{$i}"]))
+                && ($b = $this->parse_badpair_half($this->qreq["bpb{$i}"]))) {
+                $bp[] = "{$a},{$b}";
+            }
         }
         return $bp;
     }
@@ -642,7 +677,11 @@ class Autoassign_Page {
             $this->ms->warning_at(null, "<0>This assignment is incomplete!");
             $this->ms->inform_at(null, $this->conf->_("<5><a href=\"{url}\">{Submissions} {pids:numlist#}</a> got fewer assignments than you requested.", new FmtArg("url", $this->conf->hoturl_raw("search", ["q" => $q]), 0), new FmtArg("pids", $ipid)));
             if (strpos($this->qreq->a, "review") !== false) {
-                $this->ms->inform_at(null, "<0>Possible reasons include conflicts, existing assignments, or previously declined assignments among the PC members you selected.");
+                $reasons = ["conflicts", "preexisting assignments", "previously declined assignments"];
+                if ($qreq->badpairs) {
+                    $reasons[] = "disjointness constraints";
+                }
+                $this->ms->inform_at(null, "<0>Possible reasons include {:list} among the PC members you selected.", $reasons);
             }
         }
 
