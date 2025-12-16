@@ -22,7 +22,7 @@ class Icons {
             return '<path d="M60 4L4 32L60 60z" />';
         case "movearrow0":
             return '<path d="M26 64L28 28L10 46L6 44L32 1L58 44L54 46L36 28L38 64Z" />';
-        case "movearrow2";
+        case "movearrow2":
             return '<path d="M26 0L28 36L10 18L6 20L32 63L58 20L54 18L36 36L38 0Z" />';
         case "display":
             return '<path d="M 10 11L54 11C55 11 56 12 56 13L56 35C56 36 55 37 54 37L10 37C9 37 8 36 8 35L8 13C8 12 9 11 10 11ZM4 12L4 36C4 40 6 42 10 42L29 42L28 50C28 50 28 53 23 54C18 55 14 56 12 57C11 59 12 59 16 59L48 59C52 59 53 59 52 57C50 56 46 55 41 54C36 53 36 50 36 50L35 42L54 42C58 42 60 40 60 36L60 12C60 8 58 6 54 6L10 6C6 6 4 8 4 12Z" />';
