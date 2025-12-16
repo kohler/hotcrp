@@ -429,6 +429,7 @@ class Users_Page {
                   "aff" => "Affiliations",
                   "collab" => "Collaborators",
                   "topics" => "Topics",
+                  "nprefs" => "# Preferences",
                   "orcid" => "ORCID iD",
                   "country" => "Country"] as $fold => $text) {
             if (($pl->have_folds[$fold] ?? null) !== null) {

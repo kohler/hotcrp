@@ -4600,9 +4600,8 @@ class Contact implements JsonSerializable {
             return $aggregate
                 ? $rights->allow_pc() && $this->can_view_pc()
                 : $rights->allow_administer();
-        } else {
-            return $this->is_manager();
         }
+        return $this->is_manager();
     }
 
     /** @return bool */
