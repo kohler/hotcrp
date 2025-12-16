@@ -29,7 +29,7 @@ class ContactList {
     const FIELD_SCORE = 50;
 
     /** @var list<string> */
-    public static $folds = ["topics", "aff", "tags", "collab", "orcid", "country"];
+    public static $folds = ["topics", "aff", "tags", "collab", "orcid", "country", "nprefs"];
 
     /** @var Conf */
     public $conf;
@@ -229,7 +229,7 @@ class ContactList {
         case self::FIELD_COUNTRY:
             return new Column(["name" => "country", "fold" => 6, "sort" => true]);
         case self::FIELD_NPREFS:
-            return new Column(["name" => "nprefs", "sort" => true]);
+            return new Column(["name" => "nprefs", "fold" => 7, "sort" => true]);
         case self::FIELD_COLLABORATORS:
             return new Column(["name" => "collab", "fold" => 4, "prefer_row" => true]);
         }
