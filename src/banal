@@ -368,6 +368,13 @@ sub calc_xmap_mode_columns ($) {
     @columns;
 }
 
+my (@recent_reasonable_colpos, @alternate_colpos);
+
+sub is_colpos_reasonable (\@) {
+    my ($colpos) = @_;
+    @$colpos != 4 || $colpos->[2] - $colpos->[1] > in2pdf(1) ? 0 : 1;
+}
+
 sub calc_page_columns ($$) {
     my ($page, $xmap) = @_;
     $xmap = xmap_close_gaps($xmap);
@@ -394,6 +401,13 @@ sub calc_page_columns ($$) {
 
     $page->{ncols} = @columns / 2;
     $page->{colpos} = [@columns];
+
+    if (is_colpos_reasonable(@columns)) {
+        @recent_reasonable_colpos = @columns;
+        @alternate_colpos = ();
+    } else {
+        @alternate_colpos = @recent_reasonable_colpos;
+    }
     #print STDERR $page->{num}, " : ", @columns / 2, " [", join(",", @columns), "]\n";
     #xmap_print($xmap);
     #print STDERR "\n\n";
@@ -539,6 +553,44 @@ sub heading_number ($) {
     }
 }
 
+sub check_column_fit ($$$$$\@) {
+    my ($tl, $tr, $slack, $content, $small, $colpos) = @_;
+
+    # find containing column
+    my ($colli) = 0;
+    while ($colli < @$colpos
+           && $colpos->[$colli] < $tl - $slack
+           && $colpos->[$colli + 1] < $tr
+           && ($colli + 2 == @$colpos || $colpos->[$colli + 2] <= $tr)) {
+        $colli += 2;
+    }
+    if ($colli == @$colpos) {
+        return (0, 0, 0);
+    }
+
+    my ($colri) = $colli;
+    while ($colri + 3 < @$colpos
+           && $colpos->[$colri + 2] <= $tr
+           && $colpos->[$colri + 1] < $colpos->[$colli] + in2pdf(1)) {
+        $colri += 2;
+    }
+
+    # skip if not left-aligned or centered
+    # (“References” is a special case b/c of some fancy formats)
+    my ($coll) = $colpos->[$colli];
+    my ($colr) = $colpos->[$colri + 1];
+
+    if (($coll < $tl - 2 * $slack
+         && abs(($tl - $coll) - ($colr - $tr)) > in2pdf(1/4)
+         && (length($content) != 10 || lc($content) ne "references"))
+        || ($tr >= $colr - $slack && $small)) {
+        return ($coll, $colr, 0);
+    }
+
+    ($coll, $colr, 1);
+}
+
+
 sub calc_page_headings ($$$$) {
     my ($doc, $page, $texts, $bodyfontsize) = @_;
     my ($colpos) = $page->{colpos};
@@ -595,32 +647,16 @@ sub calc_page_headings ($$$$) {
             ++$tpos;
         }
 
-        # find containing column
-        my ($colli) = 0;
-        while ($colli < @$colpos
-               && $colpos->[$colli] < $tl - $slack
-               && $colpos->[$colli + 1] < $tr
-               && ($colli + 2 == @$colpos || $colpos->[$colli + 2] <= $tr)) {
-            $colli += 2;
+        # check column fit, using @alternate_colpos as a fallback
+        my ($small) = $text->{sz} <= $bodyfontsize;
+        my ($coll, $colr, $colfit);
+        if (@alternate_colpos) {
+            ($coll, $colr, $colfit) = check_column_fit($tl, $tr, $slack, $content, $small, @alternate_colpos);
         }
-        next if $colli == @$colpos;
-        my ($colri) = $colli;
-        while ($colri + 3 < @$colpos
-               && $colpos->[$colri + 2] <= $tr
-               && $colpos->[$colri + 1] < $colpos->[$colli] + in2pdf(1)) {
-            $colri += 2;
+        if (!$colfit) {
+            ($coll, $colr, $colfit) = check_column_fit($tl, $tr, $slack, $content, $small, @$colpos);
         }
-        my ($coll) = $colpos->[$colli];
-        my ($colr) = $colpos->[$colri + 1];
-
-        # skip if not left-aligned or centered
-        # (“References” is a special case b/c of some fancy formats)
-        if (($coll < $tl - 2 * $slack
-             && abs(($tl - $coll) - ($colr - $tr)) > in2pdf(1/4)
-             && (length($content) != 10 || lc($content) ne "references"))
-            || ($tr >= $colr - $slack && $text->{sz} <= $bodyfontsize)) {
-            next;
-        }
+        next if !$colfit;
 
         # check for expected headings
         $content =~ s/\s+\z//;
@@ -631,14 +667,14 @@ sub calc_page_headings ($$$$) {
 
         # skip if part of paragraph
         # (if font is body size, require that there be space before the heading)
-        if ($text->{sz} <= $bodyfontsize) {
+        if ($small) {
             my ($gaps) = 0;
             my ($tposl) = $tpos1 - 1;
             my ($tposr) = $tpos;
             while ($tposl >= 0 || $tposr < @$texts) {
                 if ($tposl >= 0) {
                     $gaps |= column_gap_overlap($texts->[$tposl], $coll, $colr, $tt, $th, $bodyfontsize);
-                    #print STDERR "kill @" . $texts->[$tposl]->{content} . " " . $texts->[$tposl]->{sz} ."($bodyfontsize) [$content]\n" if $gaps & 2;
+                    #print STDERR "kill @" . $texts->[$tposl]->{content} . " " . $texts->[$tposl]->{sz} . "($bodyfontsize) [$content]\n" if $gaps & 2;
                     --$tposl;
                 }
                 if ($tposr < @$texts) {
