@@ -28,6 +28,9 @@ class PageCount_PaperColumn extends PaperColumn {
         }
         return true;
     }
+    function sort_name() {
+        return $this->sort_name_with_options("type");
+    }
     /** @return 0|-1 */
     private function dtype(Contact $user, PaperInfo $row) {
         if ($row->finalPaperStorageId > 0
