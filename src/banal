@@ -1130,9 +1130,12 @@ sub parse_p2h_fonts ($$) {
 #       print "p2h_font: $line";
         return $line if ($line =~ /<\/page>/);
 
-        last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"(-?\d+(?:\.\d*)?)\" family=\"([^\"]+)\" color=\"([^\"]+)\"(?: opacity=\"([^\"]+)\"|)/);
+        last unless ($line =~ /<fontspec id=\"(\d*+)\" size=\"(-?\d+(?:\.\d*+)?)\" family=\"([^\"]*+)\" color=\"([^\"]*+)\"(?: opacity=\"([^\"]*+)\"|)/);
         my ($idnum, $xsize, $family, $color, $opacity) =
             ($1 + 0, $2 + 0, $3, $4, defined($5) && $5 ne "" ? $5 + 0 : 1.0);
+        if ($family eq "") {
+            $family = "Unknown";
+        }
 
         if ($color eq "#000000" && $opacity >= 1) {
             $skip = 0;
@@ -1567,7 +1570,7 @@ sub parse_p2h_page ($) {
         $line = <$FILE> if $line =~ /<\/outline>\s*$/;
     }
 
-    unless ($line =~ /<page number=\"(\d+)\" position=\"([A-Za-z0-9]+\") top=\"(\d+)\" left=\"(\d+)\" height=\"(\d+)\" width=\"(\d+)\"/) {
+    unless ($line =~ /<page number=\"(\d+)\" position=\"([A-Za-z0-9]+)\" top=\"(\d+)\" left=\"(\d+)\" height=\"(\d+)\" width=\"(\d+)\"/) {
         return '' if ($line =~ /<\/pdf2xml/);
         print STDERR "$banal_filename: Error: \"<page ...\" node expected for page ", $doc->{npages} + 1, "\n";
         chomp $line;
