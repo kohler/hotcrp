@@ -109,7 +109,8 @@ class Paper_CLIBatch implements CLIBatchCommand {
     function run_save(Hotcrapi_Batch $clib) {
         $args = [];
         $curlh = $clib->make_curl("POST");
-        $upb = (new Upload_CLIBatch($this->cf))->set_temporary(true)
+        $upb = (new Upload_CLIBatch($this->cf))
+            ->set_temporary(true)
             ->set_try_mimetypes(Mimetype::ZIP_TYPE, Mimetype::JSON_UTF8_TYPE)
             ->set_require_mimetype(true);
         if (($token = $upb->attach_or_execute($curlh, $clib))) {
@@ -191,6 +192,34 @@ class Paper_CLIBatch implements CLIBatchCommand {
         return $ok ? 0 : 1;
     }
 
+    static function make_zip_with(Hotcrapi_File $cf, $files) {
+        $cfz = Hotcrapi_File::make_zip();
+        $cfz->zip_add_file("data.json", $cf);
+        foreach ($files as $f) {
+            if (($eq = strpos($f, "=")) !== false) {
+                $fname = substr($f, 0, $eq);
+                $fdest = substr($f, $eq + 1);
+            } else if (($slash = strrpos($f, "/")) !== false) {
+                $fname = substr($f, $slash + 1);
+                $fdest = $f;
+            } else {
+                $fname = $fdest = $f;
+            }
+            if (!is_file($fdest) || !is_readable($fdest)) {
+                throw new CommandLineException("{$fdest}: Not a regular file");
+            }
+            if (!Hotcrapi_File::zip_allow($fname)
+                || str_ends_with($fname, "data.json")
+                || str_starts_with($fname, ".")
+                || $cfz->zip_contains($fname)) {
+                throw new CommandLineException("{$fname}: Unacceptable upload name");
+            }
+            $cfz->zip_add_file($fname, $fdest);
+        }
+        $cfz->zip_complete();
+        return $cfz;
+    }
+
     /** @return Paper_CLIBatch */
     static function make_arg(Hotcrapi_Batch $clib, $arg) {
         $pcb = new Paper_CLIBatch;
@@ -242,6 +271,9 @@ class Paper_CLIBatch implements CLIBatchCommand {
             } else {
                 $pcb->cf = Hotcrapi_File::make("-");
             }
+            if (!empty($arg["F"])) {
+                $pcb->cf = self::make_zip_with($pcb->cf, $arg["F"]);
+            }
         }
 
         if ($argi < $argc) {
@@ -266,12 +298,13 @@ class Paper_CLIBatch implements CLIBatchCommand {
             "paper",
             "Retrieve or change HotCRP submissions
 Usage: php batch/hotcrapi.php paper [PID | -q SEARCH]
-       php batch/hotcrapi.php paper save [JSONFILE | ZIPFILE]
+       php batch/hotcrapi.php paper save [JSONFILE | ZIPFILE] [-F file...]
        php batch/hotcrapi.php paper delete PID"
         )->long(
             "p:,paper: =PID !paper Submission ID",
             "q:,query: =SEARCH !paper Submission search",
             "t:,type: =TYPE !paper Collection to search [viewable]",
+            "F[],file[] =FILE !paper Add attachment",
             "dry-run,d !paper Don’t actually save changes",
             "disable-users !paper Disable newly created users",
             "add-topics !paper Add all referenced topics to conference",

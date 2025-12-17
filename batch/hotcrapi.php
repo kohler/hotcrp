@@ -27,6 +27,8 @@ class Hotcrapi_File {
     public $input_filename;
     /** @var ?int */
     public $size;
+    /** @var ?ZipArchive */
+    private $_zip;
 
     /** @param string $fn
      * @return Hotcrapi_File */
@@ -44,7 +46,7 @@ class Hotcrapi_File {
                 $cf->stream = STDOUT;
                 $cf->input_filename = "<stdout>";
             }
-        } else if (($cf->stream = @fopen($fn, $mode))) {
+        } else if (($cf->stream = @fopen(safe_filename($fn), $mode))) {
             $cf->filename = preg_replace('/\A.*\/(?=[^\/]+\z)/', "", $fn);
             $cf->input_filename = $fn;
         } else {
@@ -68,6 +70,82 @@ class Hotcrapi_File {
         $cf->input_filename = "<data>";
         $cf->size = strlen($data);
         return $cf;
+    }
+
+    /** @return Hotcrapi_File */
+    static function make_zip() {
+        $temp = tempdir();
+        if (!$temp) {
+            throw new CommandLineException("Could not create temporary directory");
+        }
+        $cf = new Hotcrapi_File;
+        $fn = base48_encode(random_bytes(16)) . ".zip";
+        $cf->input_filename = $temp . $fn;
+        $cf->filename = $fn;
+        $cf->_zip = new ZipArchive;
+        if (!$cf->_zip->open($temp . $fn, ZipArchive::CREATE | ZipArchive::EXCL)) {
+            throw new CommandLineException("Could not create zip archive");
+        }
+        return $cf;
+    }
+
+    /** @param string $filename
+     * @return bool */
+    function zip_contains($filename) {
+        return $this->_zip->locateName($filename) !== false;
+    }
+
+    /** @param string $filename
+     * @return bool */
+    static function zip_allow($filename) {
+        return $filename !== ""
+            && !preg_match('/[\000-\037]|\/\/|\A\/|\/\z|(?:\A|\/)\.\.(?:\/|\z)/', $filename)
+            && is_valid_utf8($filename)
+            && strlen($filename) <= 255;
+    }
+
+    /** @param string $filename */
+    static private function _zip_verify_filename($filename) {
+        if (!self::zip_allow($filename)) {
+            throw new CommandLineException("{$filename}: Bad zip filename");
+        }
+    }
+
+    /** @param string $filename
+     * @param string $content */
+    function zip_add_string($filename, $content) {
+        self::_zip_verify_filename($filename);
+        if (!$this->_zip->addFromString($filename, $content)) {
+            throw new CommandLineException("{$filename}: Could not extend zip archive");
+        }
+    }
+
+    /** @param string $filename
+     * @param string|Hotcrapi_File $file */
+    function zip_add_file($filename, $file) {
+        self::_zip_verify_filename($filename);
+        $fname = is_string($file) ? $file : $file->input_filename;
+        if (!is_string($file) && str_starts_with($fname, "<")) {
+            if (($content = @stream_get_contents($file->stream)) === false) {
+                throw CommandLineException::make_file_error($fname);
+            }
+            $this->zip_add_string($filename, $content);
+        } else if (!$this->_zip->addFile($fname, $filename)) {
+            throw CommandLineException::make_file_error($fname);
+        }
+    }
+
+    function zip_complete() {
+        $ok = $this->_zip->close();
+        $this->_zip = null;
+        if (!$ok
+            || !($this->stream = @fopen($this->input_filename, "rb"))) {
+            throw new CommandLineException("Could not create zip archive");
+        }
+        if (($stat = fstat($this->stream))
+            && $stat["size"] > 0) {
+            $this->size = $stat["size"];
+        }
     }
 }
 
