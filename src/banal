@@ -31,6 +31,7 @@ use Data::Dumper;
 use File::Basename;
 require File::Temp;
 use List::Util qw(min max);
+use Encode;
 my($FILE, $banal_text_fudge);
 
 sub usage {
@@ -1122,6 +1123,15 @@ sub report_stats ($) {
             "-";
 }
 
+sub next_line () {
+    my($t);
+    $t = <$FILE>;
+    if (defined($t)) {
+        $t = Encode::decode("UTF-8", $t, Encode::FB_PERLQQ);
+    }
+    $t;
+}
+
 sub parse_p2h_fonts ($$) {
     my ($line, $page) = @_;
     my (%fonts, $font, $fontid, $skip, $r, $g, $b, $minc, $maxc);
@@ -1167,7 +1177,7 @@ sub parse_p2h_fonts ($$) {
         }
         $page->{doc}->{fonts}{$idnum} = $font;
 
-        $line = <$FILE>;
+        $line = next_line();
     }
 
     return $line;
@@ -1403,7 +1413,7 @@ sub parse_p2h_text ($$$) {
         unless ($line =~ /<text top=\"(-?\d+(?:\.\d*)?)\" left=\"(-?\d+(?:\.\d*)?)\" width=\"(-?\d+(?:\.\d*)?)\" height=\"(-?\d+(?:\.\d*)?)\" font=\"(-?\d+)\"/) {
             # if we didn't match a <text>, then it should be an end of page or <image>
             if ($line =~ /<image/) {
-                $line = <$FILE>;
+                $line = next_line();
                 next;
             }
             unless ($line =~ /<\/page>/) {
@@ -1426,7 +1436,7 @@ sub parse_p2h_text ($$$) {
 
         # embedded newlines will split <text>...</text> across multiple lines
         my ($continuation);
-        while ($line !~ /<\/text>/ && defined($continuation = <$FILE>)) {
+        while ($line !~ /<\/text>/ && defined($continuation = next_line())) {
             $line .= $continuation;
         }
 
@@ -1437,13 +1447,13 @@ sub parse_p2h_text ($$$) {
         $top = 0 if $top < 0;
         $bottom = $pageheight if $bottom > $pageheight;
         if ($top >= $bottom || $left >= $right) {
-            $line = <$FILE>;
+            $line = next_line();
             next;
         }
 
         # skip watermarks and other light text
         if ($fontspec->{skip}) {
-            $line = <$FILE>;
+            $line = next_line();
             next;
         }
 
@@ -1469,7 +1479,7 @@ sub parse_p2h_text ($$$) {
         }
         # print STDERR $page->{num}, " ", int(pdf2pt($left)), " ", $top, " ", $content, "\n";
 
-        $line = <$FILE>;
+        $line = next_line();
     }
 
     # compute page body font: the font with the most characters
@@ -1550,13 +1560,13 @@ sub parse_p2h_page ($) {
 
     # assume we've just read the header
     my ($line);
-    $line = <$FILE>;
+    $line = next_line();
     return '' if !defined($line);
 
     # skip any error strings embedded between pages
     while (check_p2h_error ($line)) {
         print STDERR "$banal_filename: skipping p2h error string: $line" if ($debug_parse);
-        $line = <$FILE>;
+        $line = next_line();
     }
 
     if ($line !~ /<page/ && $line =~ /<outline>/) {
@@ -1565,9 +1575,9 @@ sub parse_p2h_page ($) {
             ++$nout if $line =~ /<outline>/;
             --$nout if $line =~ /<\/outline>/;
             last if $nout == 0;
-            $line = <$FILE>;
+            $line = next_line();
         }
-        $line = <$FILE> if $line =~ /<\/outline>\s*$/;
+        $line = next_line() if $line =~ /<\/outline>\s*$/;
     }
 
     unless ($line =~ /<page number=\"(\d+)\" position=\"([A-Za-z0-9]+)\" top=\"(\d+)\" left=\"(\d+)\" height=\"(\d+)\" width=\"(\d+)\"/) {
@@ -1594,7 +1604,7 @@ sub parse_p2h_page ($) {
     };
 
     # check for optional fontspecs at start of page
-    $line = <$FILE>;
+    $line = next_line();
     if ($line =~ /<fontspec/) {
         $line = parse_p2h_fonts ($line, $page);
     } elsif ($debug_parse) {
@@ -1616,9 +1626,9 @@ sub parse_p2h_page ($) {
 
 sub parse_p2h_header ($) {
     my ($doc) = @_;
-
-    while (<$FILE>) {
-        return 1 if (/<pdf2xml/);
+    my ($t);
+    while (defined($t = next_line())) {
+        return 1 if $t =~ /<pdf2xml/;
     }
     return 0;
 }
@@ -1772,7 +1782,6 @@ sub banal_open_input ($) {
         print STDERR "$fname: Error: Failed to open file.\n";
         return 0;
     }
-    binmode ($FILE, ":utf8");
 
     return 1;
 }
