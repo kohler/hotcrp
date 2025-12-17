@@ -599,7 +599,8 @@ sub calc_page_headings ($$$$) {
         my ($colli) = 0;
         while ($colli < @$colpos
                && $colpos->[$colli] < $tl - $slack
-               && $colpos->[$colli + 1] < $tr) {
+               && $colpos->[$colli + 1] < $tr
+               && ($colli + 2 == @$colpos || $colpos->[$colli + 2] <= $tr)) {
             $colli += 2;
         }
         next if $colli == @$colpos;
