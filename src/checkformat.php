@@ -243,9 +243,8 @@ class CheckFormat extends MessageSet {
             return "";
         } else if (count($px) <= 20) {
             return " (" . plural_word($px, "page") . " " . numrangejoin($px) . ")";
-        } else {
-            return " (including pages " . numrangejoin(array_slice($px, 0, 20)) . ")";
         }
+        return " (including pages " . numrangejoin(array_slice($px, 0, 20)) . ")";
     }
 
     /** @return ?int */
@@ -254,6 +253,21 @@ class CheckFormat extends MessageSet {
             $this->banal_json();
         }
         return $this->npages;
+    }
+
+    /** @param string $type
+     * @return ?int */
+    function npages_of_type($type) {
+        $bj = $this->banal_json();
+        if ($bj === null || !is_array($bj->pages ?? null)) {
+            return null;
+        }
+        $n = 0;
+        foreach ($bj->pages as $pg) {
+            if (self::banal_page_type($pg) === $type)
+                ++$n;
+        }
+        return $n;
     }
 
 
@@ -336,7 +350,6 @@ class CheckFormat extends MessageSet {
             }
         }
 
-        $this->last_doc = $this->last_banal = null;
         return ($this->run_flags & CheckFormat::RUN_ABANDONED) === 0;
     }
 
