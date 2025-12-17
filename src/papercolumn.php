@@ -411,7 +411,8 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         if ($is_text) {
             return "# {$round_name}Reviews";
         }
-        return '<span class="need-tooltip" aria-label="# completed reviews / # assigned reviews" data-tooltip-anchor="s">#&nbsp;' . $round_name . 'Reviews</span>';
+        $class = $round_name === "" ? " nw" : "";
+        return "<span class=\"need-tooltip{$class}\" aria-label=\"# completed reviews / # assigned reviews\" data-tooltip-anchor=\"s\"># {$round_name}Reviews</span>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_review_assignment($row, null);
@@ -631,38 +632,60 @@ class Abstract_PaperColumn extends PaperColumn {
 
 class ReviewerType_PaperColumn extends PaperColumn {
     /** @var Contact */
-    private $contact;
+    private $user;
     /** @var bool */
     private $not_me;
     /** @var bool */
     private $simple = false;
+    /** @var bool */
+    private $description;
     /** @var array<int,int> */
     private $sortmap;
+
+    // bits 0-4 are for conflicts
+    // bit  5   is for no conflict
+    // bits 6-9 are for reviews
+    // bit  10  is for lead
+    // bit  11  is for shepherd
+    const FM_CONFLICT = 30;
+    const F_CONFLICT = 2;
+    const F_NOCONFLICT = 32;
+    const FM_REVIEW = 0x3C0;
+    const FS_REVIEWTYPE = 7;
+    const F_REVIEWCOMPLETE = 0x40;
+    const F_LEAD = 0x400;
+    const F_SHEPHERD = 0x800;
+
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (isset($cj->user)) {
-            $this->contact = $conf->pc_member_by_email($cj->user);
+            $this->user = $conf->pc_member_by_email($cj->user);
         }
+        assert(self::FM_CONFLICT === Conflict::FM_PCTYPE);
     }
     function view_option_schema() {
-        return ["simple"];
+        return ["simple", "description", "desc/description", "confdesc/description", "user$"];
     }
     function prepare(PaperList $pl, $visible) {
         $this->simple = $this->view_option("simple") ?? false;
-        $this->contact = $this->contact ?? $pl->reviewer_user();
-        $this->not_me = $this->contact->contactXid !== $pl->user->contactXid;
+        if (($utext = $this->view_option("user"))
+            && !($this->user = ContactSearch::make_pc($utext, $pl->user)->user1())) {
+            return false;
+        } else if (!$this->user) {
+            $this->user = $pl->reviewer_user();
+        }
+        $this->not_me = $this->user->contactXid !== $pl->user->contactXid;
+        $this->description = $pl->conf->setting("sub_pcconfsel")
+            && ($this->view_option("description") ?? false);
         return true;
     }
     /** @return Contact */
     function contact() {
-        return $this->contact;
+        return $this->user;
     }
-    const F_CONFLICT = 1;
-    const F_LEAD = 2;
-    const F_SHEPHERD = 4;
     /** @return array{?PaperListReviewAnalysis,int} */
     private function analysis(PaperList $pl, PaperInfo $row) {
-        $rrow = $row->review_by_user($this->contact);
+        $rrow = $row->review_by_user($this->user);
         if ($rrow
             && ($this->not_me
                 ? $pl->user->can_view_review_identity($row, $rrow)
@@ -674,16 +697,23 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if ($ranal && $ranal->rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
             $pl->mark_has("need_review");
         }
-        $flags = 0;
-        if ($row->has_conflict($this->contact)
+        if (($ct = $row->conflict_type($this->user)) > CONFLICT_MAXUNCONFLICTED
             && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
-            $flags |= self::F_CONFLICT;
+            $flags = $this->description ? $ct & self::FM_CONFLICT : self::F_CONFLICT;
+        } else {
+            $flags = self::F_NOCONFLICT;
         }
-        if ($row->leadContactId === $this->contact->contactXid
+        if ($ranal && $ranal->rrow->reviewType) {
+            $flags |= $ranal->rrow->reviewType << self::FS_REVIEWTYPE;
+            if ($ranal->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
+                $flags |= self::F_REVIEWCOMPLETE;
+            }
+        }
+        if ($row->leadContactId === $this->user->contactXid
             && (!$this->not_me || $pl->user->can_view_lead($row))) {
             $flags |= self::F_LEAD;
         }
-        if ($row->shepherdContactId === $this->contact->contactXid
+        if ($row->shepherdContactId === $this->user->contactXid
             && (!$this->not_me || $pl->user->can_view_shepherd($row))) {
             $flags |= self::F_SHEPHERD;
         }
@@ -693,21 +723,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
             list($ranal, $flags) = $this->analysis($pl, $row);
-            if ($ranal && $ranal->rrow->reviewType) {
-                $v = 2 * $ranal->rrow->reviewType;
-                if ($ranal->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-                    $v += 1;
-                }
-            } else {
-                $v = ($flags & self::F_CONFLICT ? -2 : 0);
-            }
-            if ($flags & self::F_LEAD) {
-                $v += 30;
-            }
-            if ($flags & self::F_SHEPHERD) {
-                $v += 60;
-            }
-            $this->sortmap[$row->paperXid] = $v;
+            $this->sortmap[$row->paperXid] = $flags;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
@@ -717,20 +733,23 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if (!$this->not_me || $this->simple) {
             return "Review";
         } else if ($is_text) {
-            return $pl->user->reviewer_text_for($this->contact) . " review";
+            return $pl->user->reviewer_text_for($this->user) . " review";
         }
-        return $pl->user->reviewer_html_for($this->contact) . "<br>review";
+        return $pl->user->reviewer_html_for($this->user) . "<br>review";
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);
+        $x = [];
         $t = "";
         if ($ranal) {
             $t = $ranal->icon_html(true);
         } else if (($flags & self::F_CONFLICT) !== 0
                    && $pl->search->limit() !== "a") {
             $t = review_type_icon(-1);
+            if ($this->description) {
+                $t .= " " . $pl->conf->conflict_set()->unparse_html($flags & self::FM_CONFLICT);
+            }
         }
-        $x = [];
         if ($flags & self::F_LEAD) {
             $x[] = review_lead_icon();
         }
@@ -738,16 +757,21 @@ class ReviewerType_PaperColumn extends PaperColumn {
             $x[] = review_shepherd_icon();
         }
         $hasround = $ranal && $ranal->rrow->reviewRound > 0;
-        if (!empty($x) || $hasround) {
-            $c = ["pl_revtype"];
-            $t && ($c[] = "hasrev");
-            ($flags & (self::F_LEAD | self::F_SHEPHERD)) && ($c[] = "haslead");
-            $hasround && ($c[] = "hasround");
-            $t && ($x[] = $t);
-            return '<div class="' . join(" ", $c) . '">' . join(' ', $x) . '</div>';
-        } else {
+        if (empty($x) && !$hasround) {
             return $t;
         }
+        $c = ["pl_revtype"];
+        if ($t) {
+            $c[] = "hasrev";
+            $x[] = $t;
+        }
+        if (($flags & (self::F_LEAD | self::F_SHEPHERD)) !== 0) {
+            $c[] = "haslead";
+        }
+        if ($hasround) {
+            $c[] = "hasround";
+        }
+        return '<div class="' . join(" ", $c) . '">' . join(" ", $x) . '</div>';
     }
     function text(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);

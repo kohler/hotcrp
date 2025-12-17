@@ -300,4 +300,10 @@ class ContactSearch {
         }
         return $this->contacts;
     }
+
+    /** @return ?Contact */
+    function user1() {
+        $us = $this->users();
+        return count($us) === 1 ? $us[0] : null;
+    }
 }
