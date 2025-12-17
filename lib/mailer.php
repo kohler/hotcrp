@@ -673,14 +673,14 @@ class Mailer {
         $old_width = $this->width;
         $old_line_prefix = $this->line_prefix;
         $old_field = $this->field;
-        if (isset(self::$email_fields[$field])) {
+        if ($field == "" || $field === "body") {
+            $this->context = self::CONTEXT_BODY;
+        } else if (isset(self::$email_fields[$field])) {
             $this->context = self::CONTEXT_EMAIL;
             $this->width = 10000000;
-        } else if ($field !== "body" && $field != "") {
+        } else {
             $this->context = self::CONTEXT_HEADER;
             $this->width = 10000000;
-        } else {
-            $this->context = self::CONTEXT_BODY;
         }
         $this->field = $field;
 

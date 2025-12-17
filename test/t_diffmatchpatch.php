@@ -77,10 +77,17 @@ class DiffMatchPatch_Tester {
         $this->assertEquals(4, $dmp->diff_commonSuffix('1234', 'xyz1234'));
     }
 
+    static private function find_method(...$args) {
+        $m = new \ReflectionMethod(...$args);
+        if (PHP_VERSION_ID < 80100) {
+            $m->setAccessible(true);
+        }
+        return $m;
+    }
+
     function testDiffCommonOverlap() {
         $dmp = new diff_match_patch;
-        $m = new \ReflectionMethod("dmp\\diff_match_patch", "diff_commonOverlap_");
-        $m->setAccessible(true);
+        $m = self::find_method("dmp\\diff_match_patch", "diff_commonOverlap_");
 
         // Detect any suffix/prefix overlap.
         // Null case.
@@ -105,8 +112,7 @@ class DiffMatchPatch_Tester {
         // Detect a halfmatch.
         $dmp = new diff_match_patch;
         $dmp->Diff_Timeout = 1;
-        $m = new \ReflectionMethod("dmp\\diff_match_patch", "diff_halfMatch_");
-        $m->setAccessible(true);
+        $m = self::find_method("dmp\\diff_match_patch", "diff_halfMatch_");
 
         // No match.
         $this->assertEquals(null, $m->invoke($dmp, '1234567890', 'abcdef'));
@@ -140,8 +146,7 @@ class DiffMatchPatch_Tester {
 
     function testDiffLinesToChars() {
         $dmp = new diff_match_patch;
-        $m = new \ReflectionMethod("dmp\\diff_match_patch", "diff_linesToChars_");
-        $m->setAccessible(true);
+        $m = self::find_method("dmp\\diff_match_patch", "diff_linesToChars_");
 
         // Convert lines down to characters.
         $this->assertEquals(["\x01\x00\x02\x00\x01\x00", "\x02\x00\x01\x00\x02\x00", ["", "alpha\n", "beta\n"]],
@@ -170,10 +175,8 @@ class DiffMatchPatch_Tester {
 
     function testDiffCharsToLines() {
         $dmp = new diff_match_patch;
-        $m = new \ReflectionMethod("dmp\\diff_match_patch", "diff_charsToLines_");
-        $m->setAccessible(true);
-        $ml2c = new \ReflectionMethod("dmp\\diff_match_patch", "diff_linesToChars_");
-        $ml2c->setAccessible(true);
+        $m = self::find_method("dmp\\diff_match_patch", "diff_charsToLines_");
+        $ml2c = self::find_method("dmp\\diff_match_patch", "diff_linesToChars_");
 
         // Convert chars up to lines.
         $diffs = $dmp->diff_fromStringList(["=\x01\x00\x02\x00\x01\x00", "+\x02\x00\x01\x00\x02\x00"]);
@@ -719,8 +722,7 @@ class DiffMatchPatch_Tester {
 
     function testDiffBisect() {
         $dmp = new diff_match_patch;
-        $m = new \ReflectionMethod("dmp\\diff_match_patch", "diff_bisect_");
-        $m->setAccessible(true);
+        $m = self::find_method("dmp\\diff_match_patch", "diff_bisect_");
 
         // Normal.
         $a = 'cat';
