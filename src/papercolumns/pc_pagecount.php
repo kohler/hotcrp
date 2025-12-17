@@ -77,13 +77,14 @@ class PageCount_PaperColumn extends PaperColumn {
         if (($pn = $this->page_count($pl->user, $row)) !== null) {
             $this->statistics->add_overriding($pn, $pl->overriding);
             return (string) $pn;
-        } else if ($this->doc && $this->cf->need_recheck()) {
-            $dt = $this->dtype($pl->user, $row);
-            return '<span class="need-format-check is-npages'
-                . ($dt ? '" data-dt="' . $dt : '')
-                . '"></span>';
+        } else if (!$this->doc || !$this->cf->need_recheck()) {
+            return "";
+        } else if ($this->type) {
+            return "?";
         }
-        return "";
+        $dt = $this->dtype($pl->user, $row);
+        $dtx = $dt ? " data-dt=\"{$dt}\"" : "";
+        return "<span class=\"need-format-check is-npages\"{$dtx}></span>";
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $this->page_count($pl->user, $row);
