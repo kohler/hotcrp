@@ -249,7 +249,7 @@ class OAuth_Page {
         $txt = curl_exec($curlh);
         $errno = curl_errno($curlh);
         $status = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
-        curl_close($curlh);
+        $curlh = null;
 
         // check response
         $response = $txt ? json_decode($txt) : null;

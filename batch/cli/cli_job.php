@@ -93,7 +93,6 @@ class Job_CLIBatch {
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->delay = min($this->delay * $this->backoff, $this->max_delay);
         }
-        curl_close($curlh);
         return $status === "done";
     }
 }

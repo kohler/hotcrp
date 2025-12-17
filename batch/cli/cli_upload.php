@@ -204,7 +204,6 @@ class Upload_CLIBatch implements CLIBatchCommand {
             $this->buf = (string) substr($this->buf, $breakpos);
         }
 
-        curl_close($curlh);
         $this->buf = "";
         return $this->token;
     }
