@@ -796,7 +796,7 @@
         ]
     },
     "michigan": {
-        "sync": ["state", "technological", "western"]
+        "sync": ["state", "tech technological", "western"]
     },
     "microsoft": {
         "nameish": false,
@@ -1026,7 +1026,7 @@
         "alternate": [
             {"word": "uw", "if": "university"}
         ],
-        "sync": ["george", "lee", "state", "louis"]
+        "sync": ["george", "lee", "state", "louis", "science", "technology tech"]
     },
     "western": {
         "sync": ["case", "australia"]
