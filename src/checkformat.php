@@ -42,6 +42,10 @@ class CheckFormat extends MessageSet {
     public $npages;
     /** @var ?int */
     public $nwords;
+    /** @var ?int */
+    public $body_pages;
+    /** @var ?int */
+    public $appendix_page;
     /** @var int */
     private $run_flags = 0;
 
@@ -131,11 +135,26 @@ class CheckFormat extends MessageSet {
     private function complete_banal_json($bj, $flags) {
         $this->last_banal = $bj;
         $this->run_flags |= $flags | self::RUN_HAS_BANAL;
-        if ($bj) {
-            $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
-            $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
-            $this->last_doc->set_prop("npages", $this->npages); // head off recursion
+        if (!$bj) {
+            return null;
         }
+        $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
+        $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
+        if (is_int($bj->body_pages ?? null)) {
+            $this->body_pages = $bj->body_pages;
+            $this->appendix_page = $bj->appendix_page ?? null;
+        } else {
+            $this->body_pages = 0;
+            foreach ($bj->pages as $i => $pg) {
+                if (CheckFormat::banal_page_is_body($pg)) {
+                    ++$this->body_pages;
+                } else if (($pg->type ?? null) === "appendix"
+                           && $this->appendix_page === null) {
+                    $this->appendix_page = $i + 1;
+                }
+            }
+        }
+        $this->last_doc->set_prop("npages", $this->npages); // head off recursion
         return $bj;
     }
 
@@ -276,7 +295,7 @@ class CheckFormat extends MessageSet {
     function clear() {
         $this->clear_messages();
         $this->last_doc = $this->last_banal = null;
-        $this->npages = $this->nwords = null;
+        $this->npages = $this->nwords = $this->body_pages = $this->appendix_page = null;
         $this->run_flags = 0;
     }
 
@@ -379,9 +398,9 @@ class CheckFormat extends MessageSet {
     /** @return MessageItem */
     function front_report_item() {
         if ($this->has_error()) {
-            return MessageItem::urgent_note("<5>This document violates the submission format requirements");
+            return MessageItem::urgent_note("<5>This document violates formatting requirements");
         } else if ($this->has_problem()) {
-            return MessageItem::warning("<0>This document may violate the submission format requirements");
+            return MessageItem::warning("<0>This document may violate formatting requirements");
         }
         return MessageItem::success("<0>Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
     }
@@ -445,9 +464,8 @@ class Default_FormatChecker implements FormatChecker {
         if ($this->body_pages >= 0.5 * $this->npages
             && $error_pages >= 0.16 * $this->body_pages) {
             return MessageSet::ERROR;
-        } else {
-            return MessageSet::WARNING;
         }
+        return MessageSet::WARNING;
     }
 
     /** @return void */
@@ -474,9 +492,7 @@ class Default_FormatChecker implements FormatChecker {
 
         // analyze JSON, store info
         $this->npages = $cf->npages;
-        $this->body_pages = count(array_filter($bj->pages, function ($pg) {
-            return CheckFormat::banal_page_is_body($pg);
-        }));
+        $this->body_pages = $cf->body_pages;
 
         // check spec
         $nmsg0 = $cf->message_count();
@@ -509,6 +525,9 @@ class Default_FormatChecker implements FormatChecker {
             }
             if ($spec->columns || $spec->bodyfontsize || $spec->bodylineheight) {
                 $this->check_body_pages_exist($cf, $bj);
+            }
+            if ($spec->noappendix) {
+                $this->check_noappendix($cf, $bj);
             }
         }
 
@@ -741,6 +760,14 @@ class Default_FormatChecker implements FormatChecker {
         }
     }
 
+    /** @param object $bj */
+    private function check_noappendix(CheckFormat $cf, $bj) {
+        if (!$cf->appendix_page) {
+            return;
+        }
+        $cf->problem_at("appendix", "<0>Appendix found on page " . $cf->appendix_page, 2);
+    }
+
     /** @param object $bj
      * @param int $nmsg0
      * @return object */
@@ -794,6 +821,12 @@ class Default_FormatChecker implements FormatChecker {
             }
             $xj->pages[] = (object) $xg;
         }
+        if (count($bj->pages) > 48) {
+            $xj->body_pages = $cf->body_pages;
+            if ($cf->appendix_page) {
+                $xj->appendix_page = $cf->appendix_page;
+            }
+        }
         if ($spec->timestamp) {
             $msx = [$spec->timestamp];
             $mlist = $cf->message_list();
@@ -823,7 +856,7 @@ class Default_FormatChecker implements FormatChecker {
             $ms->append_item($mi);
         }
         if ($cf->has_problem()) {
-            $ms->append_item(MessageItem::inform("<0>Submissions that violate the requirements will not be considered. However, some violation reports may be false positives (for instance, the checker can miscalculate margins and text sizes for figures). If you are confident that the current document respects all format requirements, keep it as is."));
+            $ms->append_item(MessageItem::inform("<0>Submissions that violate the requirements will not be considered. However, the checker can report false positives—for example, it can miscalculate margins or misinterpret text in figures. If you are confident that your document meets all formatting requirements, you can keep it as is."));
         }
         $ms->append_list($cf->message_list());
         return true;

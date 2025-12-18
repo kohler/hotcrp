@@ -1,6 +1,6 @@
 <?php
 // formatspec.php -- spec for HotCRP PDF analysis
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class FormatSpec {
     /** @var list<array{float,float}> */
@@ -11,6 +11,8 @@ class FormatSpec {
     public $wordlimit;      // [MIN, MAX]
     /** @var ?bool */
     public $unlimitedref;
+    /** @var ?bool */
+    public $noappendix;
     /** @var ?int */
     public $columns;        // NCOLUMNS
     /** @var ?array{int,int} */
@@ -32,7 +34,7 @@ class FormatSpec {
         "bodyfontsize", "bodylineheight", "unlimitedref"
     ];
     static private $props2 = [
-        "wordlimit"
+        "wordlimit", "noappendix"
     ];
 
 
@@ -102,6 +104,8 @@ class FormatSpec {
             }
         } else if ($k === "unlimitedref" && (is_string($v) || is_bool($v))) {
             $this->unlimitedref = !!$v;
+        } else if ($k === "noappendix" && (is_string($v) || is_bool($v))) {
+            $this->noappendix = !!$v;
         } else if ($k === "columns" && is_string($v)) {
             $this->columns = stoi($v);
         } else if ($k === "textblock" && is_string($v)) {
@@ -124,7 +128,7 @@ class FormatSpec {
 
     function clear_banal() {
         $this->papersize = [];
-        $this->pagelimit = $this->wordlimit = $this->unlimitedref =
+        $this->pagelimit = $this->wordlimit = $this->unlimitedref = $this->noappendix =
             $this->columns = $this->textblock =
             $this->bodyfontsize = $this->bodylineheight = null;
         $this->_is_banal_empty = true;
@@ -180,9 +184,10 @@ class FormatSpec {
             return self::unparse_range($this->bodylineheight);
         } else if ($k === "unlimitedref" && $this->unlimitedref) {
             return "1";
-        } else {
-            return "";
+        } else if ($k === "noappendix" && $this->noappendix) {
+            return "1";
         }
+        return "";
     }
 
     /** @return string */
@@ -191,13 +196,14 @@ class FormatSpec {
             $a = [];
             foreach (get_object_vars($this) as $k => $v) {
                 if (substr($k, 0, 1) !== "_"
-                    && $v !== null && $v !== "" && (!empty($v) || $k !== "papersize"))
+                    && $v !== null
+                    && $v !== ""
+                    && (!empty($v) || $k !== "papersize"))
                     $a[$k] = $v;
             }
             return empty($a) ? "" : json_encode($a);
-        } else {
-            return $this->unparse_banal();
         }
+        return $this->unparse_banal();
     }
 
     /** @return string */
@@ -230,9 +236,8 @@ class FormatSpec {
             && (!isset($m[2]) || $m[2] === "" || ($x1 = cvtnum($m[2], null)) !== null)
             && (!isset($m[3]) || $m[3] === "" || ($x2 = cvtnum($m[3], null)) !== null)) {
             return [$x0, $x1, $x2];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param array{int|float,int|float|null,int|float|null} $r
@@ -244,9 +249,8 @@ class FormatSpec {
             return "$r[0]±$r[2]";
         } else if ($r[1]) {
             return "$r[0]-$r[1]";
-        } else {
-            return (string) $r[0];
         }
+        return (string) $r[0];
     }
 
     /** @param string $text
@@ -304,9 +308,8 @@ class FormatSpec {
             return self::parse_dimen("8.5in x 11in");
         } else if ($text === "a4") {
             return self::parse_dimen("210mm x 297mm");
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param string $text
@@ -352,9 +355,8 @@ class FormatSpec {
             return ((int) (100 * $n / 72 / 0.393700787 + 0.5) / 100) . $to;
         } else if ($to === "mm") {
             return (int) ($n / 72 / 0.0393700787 + 0.5) . $to;
-        } else {
-            return "??" . $to;
         }
+        return "??" . $to;
     }
 }
 

@@ -1057,6 +1057,11 @@
         "type": "checkbox"
     },
     {
+        "name_pattern": "format/$/appendix",
+        "title": "Allow appendix sections",
+        "type": "checkbox"
+    },
+    {
         "name_pattern": "format/$/wordlimit",
         "title": "PDF format checker word limit",
         "type": "string", "size": 8, "placeholder": "any"
