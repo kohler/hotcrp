@@ -16,6 +16,8 @@ class Hotcrapi_Batch_Site {
     public $site;
     /** @var string */
     public $apitoken;
+    /** @var ?int */
+    public $chunk;
 }
 
 class Hotcrapi_File {
@@ -244,6 +246,25 @@ class Hotcrapi_Batch extends MessageSet {
         return $this;
     }
 
+    /** @param string $x
+     * @return ?int */
+    static function parse_size($x) {
+        if (!preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $x, $m)) {
+            return false;
+        }
+        $n = (float) $m[1];
+        if ($m[2] !== "") {
+            /** @phan-suppress-next-line PhanParamSuspiciousOrder */
+            $x = (int) strpos(".kmg", strtolower($m[2][0]));
+            if (strlen($m[2]) === 2) {
+                $n *= 10 ** (3 * $x);
+            } else {
+                $n *= 1 << (10 * $x);
+            }
+        }
+        return (int) $n;
+    }
+
     /** @param bool $x
      * @suppress PhanAccessReadOnlyProperty
      * @return $this */
@@ -359,6 +380,12 @@ class Hotcrapi_Batch extends MessageSet {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `apitoken`");
                 }
                 $this->_siteconfig[$sn]->apitoken = $s;
+            } else if (preg_match('/\A\s*+chunk\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
+                $s = self::unquote($m[1]);
+                if (($c = self::parse_size($s)) === false) {
+                    throw new CommandLineException("{$fname}:{$line}: Invalid `chunk`");
+                }
+                $this->_siteconfig[$sn]->chunk = $c;
             } else if (preg_match('/\A\s*+default\s*+=\s*+true\s*+\z/', $l, $m)) {
                 $this->_default_siteconfig = $this->_siteconfig[$sn];
             }
@@ -370,6 +397,9 @@ class Hotcrapi_Batch extends MessageSet {
             }
             if ($this->apitoken === null && $dsc->apitoken !== null) {
                 $this->set_apitoken($dsc->apitoken);
+            }
+            if ($this->chunk === null && $dsc->chunk !== null) {
+                $this->set_chunk($dsc->chunk);
             }
         }
     }
@@ -392,6 +422,9 @@ class Hotcrapi_Batch extends MessageSet {
             }
             if ($s->apitoken !== null) {
                 $this->set_apitoken($s->apitoken);
+            }
+            if ($s->chunk !== null) {
+                $this->set_chunk($s->chunk);
             }
         } else {
             $this->site = $s;
@@ -725,20 +758,10 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             $hcli->set_progress(true);
         }
         if (isset($arg["chunk"])) {
-            if (!preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $arg["chunk"], $m)) {
+            if (($c = $hcli->parse_size($arg["chunk"])) === false) {
                 throw new CommandLineException("Invalid `--chunk`");
             }
-            $n = (float) $m[1];
-            if ($m[2] !== "") {
-                /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-                $x = (int) strpos(".kmg", strtolower($m[2][0]));
-                if (strlen($m[2]) === 2) {
-                    $n *= 10 ** (3 * $x);
-                } else {
-                    $n *= 1 << (10 * $x);
-                }
-            }
-            $hcli->set_chunk((int) $n);
+            $hcli->set_chunk($c);
         }
 
         if (($callback = $hcli->_subcommand_class[$arg["_subcommand"]] ?? null)) {
