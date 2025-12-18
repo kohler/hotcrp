@@ -425,7 +425,9 @@ class Assign_Page {
         }
 
         echo '<div class="ctelt">',
-            '<div class="ctelti has-assignment has-fold foldc" data-pid="', $this->prow->paperId,
+            '<div class="ctelti has-assignment has-fold foldc',
+            $crevtype < 0 ? " pcconf-conflicted" : "",
+            '" data-pid="', $this->prow->paperId,
             '" data-uid="', $pc->contactId,
             '" data-review-type="', $revtype, '"';
         if (Conflict::is_conflicted($ct)) {
@@ -440,7 +442,7 @@ class Assign_Page {
         if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
             echo ' data-review-in-progress';
         }
-        echo '"><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
+        echo '><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
             '<button type="button" class="q ui js-assignment-fold">', expander(null, 0),
             $this->user->reviewer_html_for($pc), '</button>';
         if ($crevtype != 0) {
@@ -459,9 +461,7 @@ class Assign_Page {
         }
         echo '</div>'; // .pctbname
         if ($potconf) {
-            $k = Conflict::is_conflicted($ct) ? " pcconf-conflicted" : "";
-            echo '<div class="pcconfmatch need-tooltip', $k,
-                '" data-tooltip-class="gray" data-tooltip="',
+            echo '<div class="pcconfmatch need-tooltip" data-tooltip-class="gray" data-tooltip="',
                 str_replace('"', '&quot;', $potconf->tooltip_html($this->prow)),
                 '">', $potconf->description_html(), '</div>';
         }
