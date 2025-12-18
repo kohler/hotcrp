@@ -53,8 +53,6 @@ class DocumentInfo implements JsonSerializable {
     private $content_file;
     /** @var ?string */
     private $filestore;
-    /** @var bool */
-    private $_prefer_s3 = false;
     /** @var ?string */
     private $_content_prefix;
 
@@ -72,8 +70,13 @@ class DocumentInfo implements JsonSerializable {
     private $_ms;
     /** @var ?array */
     private $_old_prop;
+    /** @var int */
+    private $_dflags = 0;
 
     const FLAG_NO_DOCSTORE = 1;
+
+    const DF_PREFER_S3 = 1;
+    const DF_WAS_INSERTED = 2;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -242,7 +245,9 @@ class DocumentInfo implements JsonSerializable {
         if ($doc->content_available() || $doc->load_docstore()) {
             $doc->analyze_content();
         }
-        $doc->_prefer_s3 = !!($tokd->s3_ready ?? false);
+        if ($tokd->s3_ready ?? false) {
+            $doc->_dflags |= DocumentInfo::DF_PREFER_S3;
+        }
         return $doc;
     }
 
@@ -713,6 +718,11 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
+    function was_inserted() {
+        return ($this->_dflags & self::DF_WAS_INSERTED) !== 0;
+    }
+
+    /** @return bool */
     function store_skeleton() {
         if (!$this->timestamp) {
             $this->timestamp = Conf::$now;
@@ -760,6 +770,7 @@ class DocumentInfo implements JsonSerializable {
             $result = $this->conf->qe_apply("insert into PaperStorage set " . join("=?, ", array_keys($upd)) . "=?", array_values($upd));
             if ($result->affected_rows) {
                 $this->paperStorageId = (int) $result->insert_id;
+                $this->_dflags |= self::DF_WAS_INSERTED;
             }
         }
 
@@ -1069,7 +1080,8 @@ class DocumentInfo implements JsonSerializable {
 
         // ensure content
         $s3 = ($savef & self::SAVEF_SKIP_CONTENT) !== 0
-            || ($this->_prefer_s3 && $this->check_s3());
+            || (($this->_dflags & self::DF_PREFER_S3) !== 0
+                && $this->check_s3());
         if ($this->has_error() || (!$s3 && !$this->ensure_content())) {
             return false;
         }

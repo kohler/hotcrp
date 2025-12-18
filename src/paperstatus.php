@@ -1187,12 +1187,20 @@ final class PaperStatus extends MessageSet {
     private function _invalidate_uploaded_documents() {
         if (empty($this->_docs)) {
             return;
-        } else if ($this->prow->is_new()) {
+        }
+        if ($this->prow->is_new()) {
             $this->conf->qe("update PaperStorage set paperId=-1, inactive=1 where paperStorageId?a", $this->_dids());
-        } else {
-            foreach ($this->_docs as $doc) {
-                $doc->abort_prop();
+            return;
+        }
+        $inactive_dids = [];
+        foreach ($this->_docs as $doc) {
+            if ($doc->was_inserted()) {
+                $inactive_dids[] = $doc->paperStorageId;
             }
+            $doc->abort_prop();
+        }
+        if (!empty($inactive_dids)) {
+            $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and paperStorageId?a", $this->prow->paperId, $inactive_dids);
         }
     }
 

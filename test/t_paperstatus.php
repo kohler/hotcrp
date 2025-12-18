@@ -188,6 +188,24 @@ class PaperStatus_Tester {
         xassert_eqq($doc->inactive, 1);
     }
 
+    function test_paper_new_document_after_deadline() {
+        $p3 = $this->conf->checked_paper_by_id(3);
+        $u_sclin = $this->conf->user_by_email("sclin@leland.stanford.edu");
+        $p3did = $p3->paperStorageId;
+
+        $deadline = $this->conf->setting("sub_update");
+        $this->conf->save_refresh_setting("sub_update", Conf::$now - 3600);
+
+        $ps = new PaperStatus($u_sclin);
+        $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content\":\"%PDF-fsanfndsakfndskajfndskjanfkjsdanfkjsdnafkjsnak\\n\",\"type\":\"application/pdf\"}}"));
+        xassert($ps->has_error());
+
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_eqq($p3->paperStorageId, $p3did);
+        $this->conf->save_refresh_setting("sub_update", $deadline);
+        xassert(ConfInvariants::test_document_inactive($this->conf));
+    }
+
     function test_document_options_storage() {
         TestRunner::reset_options();
         $options = $this->conf->setting_json("options");
