@@ -87,6 +87,13 @@ class Column {
     /** @var ViewOptionSchema */
     static private $base_schema;
 
+    /** @param string $key
+     * @param mixed $value
+     * @return $this */
+    function add_view_option($key, $value) {
+        return $this->add_view_options((new ViewOptionList)->add($key, $value));
+    }
+
     /** @param ?ViewOptionlist $volist
      * @return $this */
     function add_view_options($volist) {

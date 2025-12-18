@@ -27,7 +27,9 @@ class Preference_PaperColumn extends PaperColumn {
         if (isset($cj->user)) {
             $this->user = $conf->pc_member_by_email($cj->user);
         }
-        $this->editable = $cj->edit ?? false;
+        if ($cj->edit ?? false) {
+            $this->add_view_option("edit", true);
+        }
     }
     static function basic_view_option_schema() {
         return ["topics", "topicscore/topics", "topic_score/topics", "edit", "all"];
@@ -43,7 +45,7 @@ class Preference_PaperColumn extends PaperColumn {
             || ($this->not_me && !$this->viewer->can_view_preference(null))) {
             return false;
         }
-        $this->editable = $this->view_option("edit") ?? $this->editable;
+        $this->editable = $this->view_option("edit") ?? false;
         if ($this->editable) {
             $this->override = PaperColumn::OVERRIDE_BOTH;
             $this->className = "pl_editrevpref";
@@ -78,7 +80,7 @@ class Preference_PaperColumn extends PaperColumn {
         return $pf;
     }
     function sort_name() {
-        return $this->sort_name_with_options("topics");
+        return $this->sort_name_with_options("topics", "edit");
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $cmp = PaperReviewPreference::compare($this->sortable_preference($a), $this->sortable_preference($b));
