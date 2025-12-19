@@ -92,7 +92,7 @@ used.
 
 > Controls whether users can add emoji reactions to comments
 
-When enabled (the default), users can add emoji reactions to comments they can view. 
+When enabled, users can add emoji reactions to comments they can view. 
 Reactions are shown as small emoji buttons below each comment. Users can click to 
 add or remove their reaction.
 
@@ -106,8 +106,8 @@ when users click to add a reaction to a comment. Users can always search for
 and add any emoji from the full emoji list, but these are the ones shown by
 default.
 
-The default list includes: `thumbs_up`, `thumbs_down`, `heart`, `laugh`, 
-`confused`, `hooray`, `rocket`, `eyes`.
+The default list includes: `thumbsup`, `thumbsdown`, `heart`, `joy`, 
+`confused`, `tada`, `rocket`, `eyes`.
 
 Emoji codes must match those defined in the system's emoji database 
-(`scripts/emojicodes.json`).
+(available at `scripts/emojicodes.json`).

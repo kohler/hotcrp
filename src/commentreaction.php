@@ -70,11 +70,22 @@ class CommentReaction {
     /** @param Conf $conf
      * @return list<string> */
     static function default_reaction_emojis(Conf $conf) {
+        $defaults = ["thumbsup", "thumbsdown", "heart", "joy", "confused", "tada", "rocket", "eyes"];
         $custom_list = $conf->opt("commentReactionEmojis");
-        if (is_string($custom_list)) {
-            return array_map('trim', explode(',', $custom_list));
+        if ($custom_list !== null) {
+            if (is_string($custom_list)) {
+                $custom_list = array_map('trim', explode(',', $custom_list));
+            }
+            if (is_array($custom_list)) {
+                $custom_list = array_values(array_filter($custom_list, function ($e) {
+                    return $e !== '';
+                }));
+                if (!empty($custom_list)) {
+                    return $custom_list;
+                }
+            }
         }
-        return ["thumbs_up", "thumbs_down", "heart", "laugh", "confused", "hooray", "rocket", "eyes"];
+        return $defaults;
     }
 
     /** @param Contact $viewer

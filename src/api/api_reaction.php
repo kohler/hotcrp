@@ -25,7 +25,7 @@ class Reaction_API {
     /** @return JsonResult */
     private function run_qreq(Qrequest $qreq) {
         // Check if reactions are enabled
-        if (!$this->conf->setting("cmt_reactions", 1)) {
+        if ($this->conf->setting("cmt_reactions") <= 0) {
             return JsonResult::make_error(404, "<0>Comment reactions are disabled");
         }
 

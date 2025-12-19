@@ -2954,6 +2954,12 @@ class PaperTable {
         }
 
         $s = "";
+        $reactions_enabled = $this->conf->setting("cmt_reactions");
+        $quick_emojis = $reactions_enabled ? CommentReaction::default_reaction_emojis($this->conf) : [];
+        $s .= "hotcrp.set_reaction_config("
+            . json_encode_browser(["enabled" => $reactions_enabled, "quick" => $quick_emojis])
+            . ");\n";
+
         $ncmt = 0;
         $pex = new PaperExport($this->user);
         foreach ($rcs as $rc) {
@@ -2995,10 +3001,6 @@ class PaperTable {
             }
         }
 
-        $s .= "hotcrp.set_reaction_emojis(" . $this->conf->setting("comment_reactions", false) . ");\n";
-        if ($this->conf->setting("cmt_reactions", false)) {
-            $s .= "hotcrp.set_reaction_emojis(" . json_encode_browser($this->conf->setting("opt.commentReactionEmojis", [])) . ");\n";
-        }
         if ($ncmt) {
             CommentInfo::print_script($this->prow);
         }

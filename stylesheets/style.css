@@ -4869,8 +4869,8 @@ a:hover .cmtnum,
     background: #ecece8;
     border: 1px solid #bcc5cd;
     border-radius: 12px;
-    padding: 2px 12px;
-    font-size: 12px;
+    padding: 2px 8px;
+    font-size: 0;
     cursor: pointer;
     opacity: 0.7;
 	visibility: hidden;

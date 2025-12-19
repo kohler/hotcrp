@@ -3187,7 +3187,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
 `emoji` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
 `timeModified` bigint(11) NOT NULL,
 PRIMARY KEY (`reactionId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+            && $conf->save_setting("cmt_reactions", 1)) {
             $conf->update_schema_version(313);
         }
 

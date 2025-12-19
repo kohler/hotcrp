@@ -50,14 +50,14 @@
     {
         "name": "comment_reactions", "storage": "cmt_reactions",
         "title": "Allow comment reactions",
-        "type": "checkbox", "default_value": 1,
+        "type": "checkbox", "default_value": 0,
         "tags": "comment"
     },
     {
         "name": "comment_reaction_emojis", "storage": "opt.commentReactionEmojis",
         "title": "Comment reaction emoji list",
         "type": "string", "subtype": "list",
-        "default_value": "thumbs_up,thumbs_down,heart,laugh,confused,hooray,rocket,eyes",
+        "default_value": "+1,thumbsdown,heart,joy,confused,tada,rocket,eyes",
         "tags": "comment"
     },
 

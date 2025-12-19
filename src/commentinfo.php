@@ -735,7 +735,7 @@ class CommentInfo {
      * @return string */
     function unparse_reactions_html(Contact $viewer) {
         // Check if reactions are enabled
-        if (!$this->conf->setting("cmt_reactions", 1)) {
+        if (($this->conf->setting("cmt_reactions") ?? 1) <= 0) {
             return "";
         }
 
@@ -968,9 +968,16 @@ class CommentInfo {
         }
 
         // reactions
-        if ($this->commentId > 0 && $viewer->can_view_comment($this->prow, $this, true)) {
+        if ($this->commentId > 0
+            && ($this->conf->setting("cmt_reactions") ?? 1) > 0
+            && $viewer->can_view_comment($this->prow, $this, true)) {
             $reactions = $this->unparse_reactions($viewer);
-            $cj["reactions"] = $reactions;
+            if (!empty($reactions)) {
+                $cj["reactions"] = $reactions;
+            }
+            if ($viewer->can_view_comment($this->prow, $this)) {
+                $cj["can_react"] = true;
+            }
         }
 
         return (object) $cj;
