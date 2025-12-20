@@ -1,19 +1,25 @@
 <?php
 // decisioninfo.php -- HotCRP helper class for decisions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DecisionInfo {
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $id;
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $name;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $catbits;
-    /** @var -2|-1|0|1 */
+    /** @var -2|-1|0|1
+     * @readonly */
     public $sign;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $placeholder = false;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $order = 0;
 
 
@@ -51,7 +57,8 @@ class DecisionInfo {
     }
 
     /** @param int $id
-     * @return DecisionInfo */
+     * @return DecisionInfo
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_placeholder($id) {
         $dec = new DecisionInfo($id, "[#{$id}]");
         $dec->placeholder = true;
@@ -75,9 +82,8 @@ class DecisionInfo {
             return self::CAT_NO;
         } else if ($s === "desk_reject" || $s === "deskreject") {
             return self::CB_DESKREJECT;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $catbits
@@ -87,9 +93,8 @@ class DecisionInfo {
             return "accept";
         } else if (($catbits & self::CAT_NO) !== 0) {
             return $catbits === self::CB_DESKREJECT ? "desk_reject" : "reject";
-        } else {
-            return "maybe";
         }
+        return "maybe";
     }
 
     /** @param int $catbits
@@ -97,9 +102,8 @@ class DecisionInfo {
     static function unparse_category_class($catbits) {
         if (($catbits & (self::CAT_YES | self::CAT_NO)) === 0) {
             return "dec-maybe";
-        } else {
-            return ($catbits & self::CAT_YES) !== 0 ? "dec-yes" : "dec-no";
         }
+        return ($catbits & self::CAT_YES) !== 0 ? "dec-yes" : "dec-no";
     }
 
     /** @return string */

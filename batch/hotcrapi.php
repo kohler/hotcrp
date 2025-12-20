@@ -250,7 +250,7 @@ class Hotcrapi_Batch extends MessageSet {
      * @return ?int */
     static function parse_size($x) {
         if (!preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $x, $m)) {
-            return false;
+            return null;
         }
         $n = (float) $m[1];
         if ($m[2] !== "") {
@@ -382,7 +382,7 @@ class Hotcrapi_Batch extends MessageSet {
                 $this->_siteconfig[$sn]->apitoken = $s;
             } else if (preg_match('/\A\s*+chunk\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
                 $s = self::unquote($m[1]);
-                if (($c = self::parse_size($s)) === false) {
+                if (($c = self::parse_size($s)) === null) {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `chunk`");
                 }
                 $this->_siteconfig[$sn]->chunk = $c;
@@ -758,7 +758,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             $hcli->set_progress(true);
         }
         if (isset($arg["chunk"])) {
-            if (($c = $hcli->parse_size($arg["chunk"])) === false) {
+            if (($c = $hcli->parse_size($arg["chunk"])) === null) {
                 throw new CommandLineException("Invalid `--chunk`");
             }
             $hcli->set_chunk($c);

@@ -81,9 +81,8 @@ class DecisionSet implements IteratorAggregate, Countable {
             return "Empty decision name";
         } else if (preg_match('/\A(?:yes|no|maybe|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
             return "Decision name “{$dname}” is reserved";
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return DecisionSet */
@@ -210,9 +209,8 @@ class DecisionSet implements IteratorAggregate, Countable {
             return "outcome{$compar}";
         } else if (empty($compar)) {
             return "false";
-        } else {
-            return "outcome in (" . join(",", $compar) . ")";
         }
+        return "outcome in (" . join(",", $compar) . ")";
     }
 
 

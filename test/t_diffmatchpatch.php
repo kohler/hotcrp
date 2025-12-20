@@ -77,8 +77,8 @@ class DiffMatchPatch_Tester {
         $this->assertEquals(4, $dmp->diff_commonSuffix('1234', 'xyz1234'));
     }
 
-    static private function find_method(...$args) {
-        $m = new \ReflectionMethod(...$args);
+    static private function find_method($class, $method) {
+        $m = new \ReflectionMethod($class, $method);
         if (PHP_VERSION_ID < 80100) {
             $m->setAccessible(true);
         }
