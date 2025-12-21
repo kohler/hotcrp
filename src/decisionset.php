@@ -13,6 +13,7 @@ class DecisionSet implements IteratorAggregate, Countable {
     private $_has_other = false;
 
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function __construct(Conf $conf, $j = null) {
         if (is_object($j)) {
             foreach ((array) $j as $decid => $dj) {
@@ -36,8 +37,8 @@ class DecisionSet implements IteratorAggregate, Countable {
         uasort($this->_decision_map, function ($da, $db) use ($collator) {
             if ($da->id === 0 || $db->id === 0) {
                 return $da->id === 0 ? -1 : 1;
-            } else if ($da->catbits !== $db->catbits) {
-                return $da->catbits <=> $db->catbits;
+            } else if ($da->category !== $db->category) {
+                return $da->category <=> $db->category;
             } else {
                 return $collator->compare($da->name, $db->name);
             }
@@ -64,9 +65,9 @@ class DecisionSet implements IteratorAggregate, Countable {
         }
         $this->_decision_map[$id] = $dinfo;
 
-        if ($id !== 0 && ($dinfo->catbits & DecisionInfo::CAT_OTHER) !== 0) {
+        if ($id !== 0 && $dinfo->category === DecisionInfo::CAT_OTHER) {
             $this->_has_other = true;
-        } else if ($dinfo->catbits === DecisionInfo::CB_DESKREJECT) {
+        } else if ($dinfo->category === DecisionInfo::CAT_DESKREJECT) {
             $this->_has_desk_reject = true;
         }
 
@@ -142,7 +143,7 @@ class DecisionSet implements IteratorAggregate, Countable {
         }
         $decids = [];
         foreach ($this->_decision_map as $dec) {
-            if ($dec->catbits === DecisionInfo::CB_DESKREJECT)
+            if ($dec->category === DecisionInfo::CAT_DESKREJECT)
                 $decids[] = $dec->id;
         }
         return $decids;
@@ -153,7 +154,7 @@ class DecisionSet implements IteratorAggregate, Countable {
     private function cat_ids($mask) {
         $decids = [];
         foreach ($this->_decision_map as $dec) {
-            if (($dec->catbits & $mask) !== 0)
+            if (($dec->category & $mask) !== 0)
                 $decids[] = $dec->id;
         }
         return $decids;
@@ -190,7 +191,7 @@ class DecisionSet implements IteratorAggregate, Countable {
         if (strcasecmp($word, "yes") === 0) {
             return $prefer_list ? $this->cat_ids(DecisionInfo::CAT_YES) : ">0";
         } else if (strcasecmp($word, "no") === 0) {
-            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_NO) : "<0";
+            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CM_NO) : "<0";
         } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
             return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
         } else if (strcasecmp($word, "active") === 0) {
@@ -221,8 +222,8 @@ class DecisionSet implements IteratorAggregate, Countable {
             if ($dinfo->id === 0) {
                 continue;
             }
-            $ecat = $dinfo->id > 0 ? DecisionInfo::CAT_YES : DecisionInfo::CAT_NO;
-            if ($ecat === $dinfo->catbits) {
+            $ecat = $dinfo->id > 0 ? DecisionInfo::CAT_YES : DecisionInfo::CAT_STDREJECT;
+            if ($ecat === $dinfo->category) {
                 $x[$dinfo->id] = $dinfo->name;
             } else {
                 $x[$dinfo->id] = (object) ["name" => $dinfo->name, "category" => $dinfo->category_name()];

@@ -195,11 +195,11 @@ class PaperExport {
         $dec = $prow->viewable_decision($this->viewer);
         if ($dec->id !== 0) {
             $pj->decision = $dec->name;
-            if (($dec->catbits & DecisionInfo::CAT_YES) !== 0) {
+            if ($dec->category === DecisionInfo::CAT_YES) {
                 $submitted_status = "accept";
-            } else if ($dec->catbits === DecisionInfo::CB_DESKREJECT) {
+            } else if ($dec->category === DecisionInfo::CAT_DESKREJECT) {
                 $submitted_status = "desk_reject";
-            } else if (($dec->catbits & DecisionInfo::CAT_NO) !== 0) {
+            } else if ($dec->category === DecisionInfo::CAT_STDREJECT) {
                 $submitted_status = "reject";
             }
         }

@@ -100,11 +100,11 @@ class MailRecipients extends MessageSet {
     function canonical_recipients($t) {
         if ($t === "somedec:yes" || $t === "somedec:no") {
             $this->dcounts();
-            $category = $t === "somedec:yes" ? DecisionInfo::CAT_YES : DecisionInfo::CAT_NO;
+            $category = $t === "somedec:yes" ? DecisionInfo::CAT_YES : DecisionInfo::CM_NO;
             $dmaxcount = 0;
             $dmaxname = "";
             foreach ($this->conf->decision_set() as $dinfo) {
-                if (($dinfo->catbits & $category) !== 0
+                if (($dinfo->category & $category) !== 0
                     && ($dcount = $this->_dcounts[$dinfo->id] ?? 0) > $dmaxcount) {
                     $dmaxcount = $dcount;
                     $dmaxname = $dinfo->name;

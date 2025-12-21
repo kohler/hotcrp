@@ -1132,8 +1132,8 @@ class PaperTable {
                 $mailt = "all";
             } else if ($this->prow->outcome !== 0 && $this->prow->can_author_view_decision()) {
                 $dec = $this->prow->decision();
-                if ($dec->catbits !== DecisionInfo::CAT_OTHER) {
-                    $mailt = $dec->catbits & DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
+                if ($dec->category !== DecisionInfo::CAT_OTHER) {
+                    $mailt = $dec->category & DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
                 }
             }
             $fr->value .= ' <a class="fx8 q" href="'

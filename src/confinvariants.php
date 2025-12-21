@@ -146,7 +146,7 @@ class ConfInvariants {
     /** @return $this */
     function check_settings() {
         foreach ($this->conf->decision_set() as $dinfo) {
-            if (($dinfo->id > 0) !== (($dinfo->catbits & DecisionInfo::CAT_YES) !== 0)) {
+            if (($dinfo->id > 0) !== ($dinfo->category === DecisionInfo::CAT_YES)) {
                 $this->invariant_error("decision_id", "decision {$dinfo->id} has wrong category");
             }
         }
