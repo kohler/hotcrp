@@ -30,11 +30,12 @@ class QuicklinksRenderer {
         if ($qreq->user()->is_empty()) {
             return "";
         }
+        $tabindex = $qreq->page() === "search" ? -1 : null;
         $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get", "role" => "search"]);
         if ($baseUrl === "profile") {
-            $x .= Ht::entry("u", "", ["id" => "n-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
+            $x .= Ht::entry("u", "", ["id" => "n-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off", "tabindex" => $tabindex]);
         } else {
-            $x .= Ht::entry("q", "", ["id" => "n-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
+            $x .= Ht::entry("q", "", ["id" => "n-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false, "autocomplete" => "off", "tabindex" => $tabindex]);
         }
         foreach ($args as $k => $v) {
             $x .= Ht::hidden($k, $v);

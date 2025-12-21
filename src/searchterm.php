@@ -1165,9 +1165,16 @@ class Limit_SearchTerm extends SearchTerm {
             return false;
         }
         // otherwise go by limit
-        $fin = $options["finalized"] = ($this->lflag & self::LFLAG_SUBMITTED) !== 0;
-        $act = $options["active"] = ($this->lflag & self::LFLAG_ACTIVE) !== 0;
-        $options["dec:standard"] = ($this->lflag & self::LFLAG_STDDEC) !== 0;
+        // NB cannot set values to false!
+        $fin = $act = false;
+        if (($this->lflag & self::LFLAG_SUBMITTED) !== 0) {
+            $options["finalized"] = $fin = true;
+        } else if (($this->lflag & self::LFLAG_ACTIVE) !== 0) {
+            $options["active"] = $act = true;
+        }
+        if (($this->lflag & self::LFLAG_STDDEC) !== 0) {
+            $options["dec:standard"] = true;
+        }
         switch ($this->limit_class) {
         case "all":
         case "viewable":

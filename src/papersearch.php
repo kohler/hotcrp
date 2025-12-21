@@ -247,8 +247,8 @@ class PaperSearch extends MessageSet {
     /** @var Limit_SearchTerm
      * @readonly */
     private $_limit_qe;
-    /** @var bool */
-    private $_limit_explicit = false;
+    /** @var int */
+    private $_limit_override;
     /** @var bool */
     private $_has_qe = false;
 
@@ -355,9 +355,11 @@ class PaperSearch extends MessageSet {
         }
 
         // paper selection
+        $toverride = friendly_boolean($options["toverride"] ?? null);
         if (isset($options["t"]) && $options["t"] !== "") {
             $lnames = Limit_SearchTerm::canonical_names($this->conf, $options["t"]);
             $limit = $lnames[0] ?? "none";
+            $toverride = $toverride ?? true;
         } else {
             // Empty limit should be the plausible limit for a default search,
             // as in entering text into a quicksearch box.
@@ -382,12 +384,13 @@ class PaperSearch extends MessageSet {
         }
         $lword = SearchWord::make_simple($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
+        $this->_limit_override = $toverride ? 0 : -1;
     }
 
     private function clear_compilation() {
         $this->clear_messages();
         $this->_qe = null;
-        // XXX does not reset _limit_explicit, that should be ok
+        // XXX does not reset _limit_override, that should be ok
         $this->_then_term = null;
         $this->_contact_searches = null;
         $this->_matches = null;
@@ -447,7 +450,10 @@ class PaperSearch extends MessageSet {
     }
     /** @return bool */
     function limit_explicit() {
-        return $this->_limit_explicit;
+        if ($this->_limit_override === 0 && !$this->_has_qe) {
+            $this->main_term();
+        }
+        return $this->_limit_override > 0;
     }
 
     /** @return Contact */
@@ -1045,8 +1051,9 @@ class PaperSearch extends MessageSet {
             }
 
             // check for limit
-            if (($xlimit = $this->_qe->get_float("xlimit"))) {
-                $this->_limit_explicit = true;
+            if ($this->_limit_override === 0
+                && ($xlimit = $this->_qe->get_float("xlimit"))) {
+                $this->_limit_override = 1;
                 $this->_limit_qe->set_limit($xlimit->named_limit);
             }
 
@@ -1401,14 +1408,14 @@ class PaperSearch extends MessageSet {
 
     /** @return array<string,mixed>|false */
     function simple_search_options() {
+        // must request main_term first because that might reset _limit_qe
         $queryOptions = [];
         if ($this->_matches === null
-            && $this->_limit_qe->simple_search($queryOptions)
-            && $this->main_term()->simple_search($queryOptions)) {
+            && $this->main_term()->simple_search($queryOptions)
+            && $this->_limit_qe->simple_search($queryOptions)) {
             return $queryOptions;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return string|false */
@@ -1429,7 +1436,7 @@ class PaperSearch extends MessageSet {
     /** @return string */
     function default_limited_query() {
         if ($this->user->isPC
-            && !$this->_limit_explicit
+            && $this->_limit_override <= 0
             && $this->limit() !== ($this->user->can_view_some_incomplete() ? "active" : "s")) {
             return self::canonical_query($this->q, "", "", $this->_qt, $this->conf, $this->limit());
         }

@@ -252,17 +252,6 @@ class Search_Page {
 
         echo '<div class="pltable-fullw-container demargin">', $pl_text, '</div>';
 
-        if ($this->pl->is_empty()
-            && $search->limit() !== "s"
-            && !$search->limit_explicit()) {
-            $a = [];
-            foreach (["q", "qa", "qo", "qx", "qt", "sort", "showtags"] as $xa) {
-                if (isset($qreq[$xa]) && ($xa !== "q" || !isset($qreq->qa))) {
-                    $a[] = "{$xa}=" . urlencode($qreq[$xa]);
-                }
-            }
-        }
-
         if ($this->pl->has("sel")) {
             echo "</form>";
         }
@@ -284,6 +273,7 @@ class Search_Page {
 
         // create PaperList
         if (isset($qreq->q)) {
+            $qreq->toverride = $qreq->toverride ?? "1";
             $search = new PaperSearch($user, $qreq);
         } else {
             $search = new PaperSearch($user, ["t" => $qreq->t, "q" => "NONE"]);
@@ -338,15 +328,18 @@ class Search_Page {
             '" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search", "role" => "search"]),
             Ht::entry("q", (string) $qreq->q, [
-                "size" => 40, "tabindex" => 1,
+                "size" => $search->limit_explicit() ? 48 : 40,
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
                 "placeholder" => "(All)", "aria-label" => "Search",
                 "spellcheck" => false, "autocomplete" => "off"
-            ]),
-            '<div class="form-basic-search-in"> in ',
-              PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
-              Ht::submit("Search", ["tabindex" => 1]),
-            '</div></form></div>';
+            ]);
+        if (!$search->limit_explicit()) {
+            echo '<div class="form-basic-search-in"> in ',
+                PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
+                Ht::submit("Search", ["tabindex" => 1]),
+                '</div>';
+        }
+        echo '</form></div>';
 
         // Advanced search tab
         echo '<div class="tld is-tla',
