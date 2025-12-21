@@ -11,6 +11,8 @@ class DecisionSet implements IteratorAggregate, Countable {
     private $_has_desk_reject = false;
     /** @var bool */
     private $_has_other = false;
+    /** @var int */
+    private $_nonexistent_id = -2;
 
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -49,6 +51,9 @@ class DecisionSet implements IteratorAggregate, Countable {
                 $dinfo->order = $order;
                 ++$order;
             }
+            if ($dinfo->id <= $this->_nonexistent_id) {
+                $this->_nonexistent_id = $dinfo->id - 1;
+            }
         }
     }
 
@@ -80,7 +85,7 @@ class DecisionSet implements IteratorAggregate, Countable {
         $dname = simplify_whitespace($dname);
         if ((string) $dname === "") {
             return "Empty decision name";
-        } else if (preg_match('/\A(?:yes|no|maybe|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
+        } else if (preg_match('/\A(?:yes|no|maybe|any|none|unknown|unspecified|undecided|\?|standard)\z/i', $dname)) {
             return "Decision name “{$dname}” is reserved";
         }
         return false;
@@ -194,8 +199,11 @@ class DecisionSet implements IteratorAggregate, Countable {
             return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CM_NO) : "<0";
         } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
             return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
-        } else if (strcasecmp($word, "active") === 0) {
-            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES) : ">=0";
+        } else if (strcasecmp($word, "standard") === 0) {
+            if (!$this->_has_desk_reject) {
+                return $prefer_list ? $this->ids() : "!={$this->_nonexistent_id}";
+            }
+            return $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES | DecisionInfo::CAT_STDREJECT);
         } else if (strcasecmp($word, "any") === 0) {
             return $prefer_list ? array_values(array_diff($this->ids(), [0])) : "!=0";
         }

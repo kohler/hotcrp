@@ -4545,7 +4545,7 @@ class Conf {
         if ($options["active"] ?? false) {
             $where[] = "timeWithdrawn<=0";
         }
-        foreach (["yes", "no", "any", "none", "maybe", "active"] as $word) {
+        foreach (["yes", "no", "any", "none", "maybe", "standard"] as $word) {
             if ($options["dec:{$word}"] ?? false) {
                 $where[] = $this->decision_set()->sqlexpr($word);
             }

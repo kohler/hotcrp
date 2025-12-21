@@ -1060,6 +1060,7 @@ class Limit_SearchTerm extends SearchTerm {
     const LFLAG_SUBMITTED = 2;
     const LFLAG_IMPLICIT = 4;
     const LFLAG_ACCEPTED = 8;
+    const LFLAG_STDDEC = 16;
 
     function __construct(Contact $user, Contact $reviewer, $limit, $implicit = false) {
         parent::__construct("in");
@@ -1106,12 +1107,14 @@ class Limit_SearchTerm extends SearchTerm {
         // mark flags
         if (str_starts_with($limit, "dec:")) {
             $this->limit_class = "dec";
-            $this->xlist = $this->user->conf->decision_set()->matchexpr(substr($limit, 4), true);
-            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
+            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED | self::LFLAG_STDDEC;
+            $decset = $this->user->conf->decision_set();
+            $this->xlist = $decset->matchexpr(substr($limit, 4), true);
             foreach ($this->xlist as $dec) {
-                if ($dec <= 0) {
+                if ($decset->get($dec)->sign === -2) {
                     $this->lflag = self::LFLAG_SUBMITTED;
-                    break;
+                } else if ($dec <= 0) {
+                    $this->lflag &= ~self::LFLAG_ACCEPTED;
                 }
             }
         } else if (in_array($limit, ["a", "ar", "r", "req", "viewable", "reviewable",
@@ -1120,13 +1123,13 @@ class Limit_SearchTerm extends SearchTerm {
         } else if ($limit === "accepted") {
             $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
         } else if ($limit === "undecided") {
-            $this->lflag = self::LFLAG_SUBMITTED;
+            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
         } else if (in_array($limit, ["active", "unsub", "actadmin"], true)
                    || ($conf->can_pc_view_some_incomplete()
                        && !in_array($limit, ["s", "accepted"], true))) {
-            $this->lflag = self::LFLAG_ACTIVE;
+            $this->lflag = self::LFLAG_ACTIVE | self::LFLAG_STDDEC;
         } else {
-            $this->lflag = self::LFLAG_SUBMITTED;
+            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
         }
     }
 
@@ -1164,6 +1167,7 @@ class Limit_SearchTerm extends SearchTerm {
         // otherwise go by limit
         $fin = $options["finalized"] = ($this->lflag & self::LFLAG_SUBMITTED) !== 0;
         $act = $options["active"] = ($this->lflag & self::LFLAG_ACTIVE) !== 0;
+        $options["dec:standard"] = ($this->lflag & self::LFLAG_STDDEC) !== 0;
         switch ($this->limit_class) {
         case "all":
         case "viewable":
@@ -1173,9 +1177,7 @@ class Limit_SearchTerm extends SearchTerm {
             return $this->user->isPC;
         case "active":
             assert($act || $fin);
-            $options["dec:active"] = true;
-            return $this->user->can_view_all_incomplete()
-                && $this->user->can_view_all_decision();
+            return $this->user->can_view_all_incomplete();
         case "reviewable":
             if ($this->reviewer->isPC) {
                 return false;
@@ -1268,6 +1270,14 @@ class Limit_SearchTerm extends SearchTerm {
         } else if (($this->lflag & self::LFLAG_ACTIVE) !== 0) {
             $ff[] = "Paper.timeWithdrawn<=0";
         }
+        if (($this->lflag & self::LFLAG_STDDEC) !== 0
+            && ($decs = $this->user->conf->decision_set()->desk_reject_ids())) {
+            if (count($decs) === 1) {
+                $ff[] = "Paper.outcome!=" . $decs[0];
+            } else {
+                $ff[] = "Paper.outcome not in (" . join(",", $decs) . ")";
+            }
+        }
 
         $act_reviewer_sql = "error";
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
@@ -1286,6 +1296,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "all":
         case "viewable":
         case "s":
+        case "active":
             break;
         case "reviewable":
             $sqi->add_reviewer_columns();
@@ -1319,11 +1330,6 @@ class Limit_SearchTerm extends SearchTerm {
                 $ff[] = "MyReviews.reviewNeedsSubmit!=0";
             } else {
                 $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql} and reviewNeedsSubmit!=0)";
-            }
-            break;
-        case "active":
-            if ($this->user->can_view_all_decision()) {
-                $ff[] = "Paper." . $this->user->conf->decision_set()->sqlexpr("active");
             }
             break;
         case "accepted":
@@ -1373,13 +1379,15 @@ class Limit_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         $user = $this->user;
         if ((($this->lflag & self::LFLAG_SUBMITTED) !== 0 && $row->timeSubmitted <= 0)
-            || (($this->lflag & self::LFLAG_ACTIVE) !== 0 && $row->timeWithdrawn > 0)) {
+            || (($this->lflag & self::LFLAG_ACTIVE) !== 0 && $row->timeWithdrawn > 0)
+            || (($this->lflag & self::LFLAG_STDDEC) !== 0 && $row->outcome_sign === -2)) {
             return false;
         }
         switch ($this->limit_class) {
         case "all":
         case "viewable":
         case "s":
+        case "active":
             return true;
         case "a":
             return $row->has_author_view($user);
@@ -1405,11 +1413,7 @@ class Limit_SearchTerm extends SearchTerm {
                 && ($row->timeSubmitted > 0
                     || ($row->timeWithdrawn <= 0
                         && $row->submission_round()->incomplete_viewable))
-                && ($row->outcome_sign !== -2
-                    || !$user->can_view_decision($row));
-        case "active":
-            return $row->outcome_sign !== -2
-                || !$user->can_view_decision($row);
+                && $row->outcome_sign !== -2;
         case "accepted":
             return $row->outcome > 0
                 && $user->can_view_decision($row);

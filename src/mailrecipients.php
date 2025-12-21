@@ -74,25 +74,26 @@ class MailRecipients extends MessageSet {
     }
 
     private function dcounts() {
-        if ($this->_dcounts === null) {
-            if ($this->user->allow_administer_all()) {
-                $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
-            } else if ($this->user->is_manager()) {
-                $psearch = new PaperSearch($this->user, ["q" => "", "t" => "alladmin"]);
-                $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 and paperId?a group by outcome", $psearch->paper_ids());
-            } else {
-                $result = null;
-            }
-            $this->_dcounts = [];
-            $this->_has_dt = [false, false, false];
-            while ($result && ($row = $result->fetch_row())) {
-                $d = (int) $row[0];
-                $this->_dcounts[$d] = (int) $row[1];
-                $dt = $d < 0 ? 0 : ($d === 0 ? 1 : 2);
-                $this->_has_dt[$dt] = true;
-            }
-            Dbl::free($result);
+        if ($this->_dcounts !== null) {
+            return;
         }
+        if ($this->user->allow_administer_all()) {
+            $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
+        } else if ($this->user->is_manager()) {
+            $psearch = new PaperSearch($this->user, ["q" => "", "t" => "alladmin"]);
+            $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 and paperId?a group by outcome", $psearch->paper_ids());
+        } else {
+            $result = null;
+        }
+        $this->_dcounts = [];
+        $this->_has_dt = [false, false, false];
+        while ($result && ($row = $result->fetch_row())) {
+            $d = (int) $row[0];
+            $this->_dcounts[$d] = (int) $row[1];
+            $dt = $d < 0 ? 0 : ($d === 0 ? 1 : 2);
+            $this->_has_dt[$dt] = true;
+        }
+        Dbl::free($result);
     }
 
     /** @param ?string $t
@@ -406,10 +407,13 @@ class MailRecipients extends MessageSet {
             // all authors, no paper restriction
         } else if ($t === "s") {
             $options["finalized"] = true;
+            $options["dec:standard"] = true;
         } else if ($t === "unsub") {
-            $options["unsub"] = $options["active"] = true;
+            $options["unsub"] = true;
+            $options["active"] = true;
         } else if (in_array($t, ["dec:any", "dec:none", "dec:yes", "dec:no", "dec:maybe"], true)) {
-            $options["finalized"] = $options[$t] = true;
+            $options["finalized"] = true;
+            $options[$t] = true;
         } else if (str_starts_with($t, "dec:")) {
             $options["finalized"] = true;
             $options["where"] = "false";
