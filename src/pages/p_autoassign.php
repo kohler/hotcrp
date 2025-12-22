@@ -403,6 +403,7 @@ class Autoassign_Page {
         }
         echo Ht::hidden("has_pcc", 1),
             '<div class="pc-ctable mt-2">', join("", $summary), "</div></div>\n";
+        $this->print_bad_pairs();
     }
 
 
@@ -475,11 +476,8 @@ class Autoassign_Page {
         echo "</div>\n\n";
 
 
-        // PC
+        // PC, bad pairs
         $this->print_pc_members();
-
-        // bad pairs
-        $this->print_bad_pairs();
 
 
         // load balancing
