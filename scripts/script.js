@@ -5709,6 +5709,26 @@ handle_ui.on("change.js-mail-recipients", function () {
     foldup.call(this, null, {open: !hasClass(recip, "mail-want-no-papers"), n: 9});
     foldup.call(this, null, {open: hasClass(recip, "mail-want-since"), n: 10});
 
+    if (recip.hasAttribute("data-default-limit")) {
+        const deflimit = recip.getAttribute("data-default-limit"),
+            telt = f.elements.t;
+        if (telt
+            && deflimit !== telt.value
+            && deflimit !== telt.getAttribute("data-default-limit")) {
+            if (telt.lastChild.hasAttribute("data-special-limit")) {
+                telt.lastChild.remove();
+            }
+            if (!telt.querySelector(`[value="${escape_html(deflimit)}"]`)) {
+                telt.appendChild($e("option", {"value": deflimit, "data-default-limit": 1}));
+                telt.closest(".form-basic-search-type").hidden = true;
+            } else {
+                telt.closest(".form-basic-search-type").hidden = false;
+            }
+            telt.value = deflimit;
+            telt.setAttribute("data-default-limit", deflimit);
+        }
+    }
+
     if (!recip.hasAttribute("data-default-message")
         || !subjelt
         || (subjelt.value.trim() !== "" && input_differs(subjelt))
@@ -5716,7 +5736,7 @@ handle_ui.on("change.js-mail-recipients", function () {
         || (bodyelt.value.trim() !== "" && input_differs(bodyelt))) {
         return;
     }
-    var dm = JSON.parse(f.getAttribute("data-default-messages")),
+    const dm = JSON.parse(f.getAttribute("data-default-messages")),
         dmt = recip.getAttribute("data-default-message");
     if (dm && dm[dmt] && dm[dmt].subject !== subjelt.value) {
         subjelt.value = subjelt.defaultValue = dm[dmt].subject;

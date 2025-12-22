@@ -335,8 +335,8 @@ class Search_Page {
             ]);
         if (!$search->limit_explicit()) {
             echo '<div class="form-basic-search-in"> in ',
-                PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
-                Ht::submit("Search", ["tabindex" => 1]),
+                PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["select" => !$search->limit_explicit() && count($limits) > 1]),
+                Ht::submit("Search", ["class" => "basic-search"]),
                 '</div>';
         }
         echo '</form></div>';

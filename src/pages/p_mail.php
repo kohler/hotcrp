@@ -50,7 +50,7 @@ class Mail_Page {
         if (isset($qreq->recipients) && !isset($qreq->to)) {
             $qreq->to = $qreq->recipients;
         }
-        if (!isset($qreq->t) || !isset($this->search_topt[$qreq->t])) {
+        if (!isset($qreq->t)) {
             $qreq->t = (array_keys($this->search_topt))[0];
         }
         if (isset($qreq->monreq)) {
@@ -317,13 +317,17 @@ class Mail_Page {
                 "class" => "papersearch need-suggest js-autosubmit",
                 "size" => $this->viewer->privChair ? 36 : 32,
                 "data-submit-fn" => "psearch"
-            ]), '<div class="form-basic-search-in"> in ';
-        if (count($this->search_topt) === 1) {
-            echo htmlspecialchars($this->search_topt[$this->qreq->t]);
-        } else {
-            echo Ht::select("t", $this->search_topt, $this->qreq->t, ["id" => "t"]);
+            ]), '<div class="form-basic-search-in"><span class="form-basic-search-type"';
+        if (count($this->search_topt) === 1 || !isset($this->search_topt[$this->qreq->t])) {
+            echo ' hidden';
         }
-        echo Ht::submit("psearch", "Search"), '</div></div></div>',
+        echo '> in ';
+        $topt = $this->search_topt;
+        if (!isset($topt[$this->qreq->t])) {
+            $topt[$this->qreq->t] = ["data-special-limit" => true];
+        }
+        echo Ht::select("t", $topt, $this->qreq->t, ["id" => "t"]),
+            '</span>', Ht::submit("psearch", "Search", ["class" => "basic-search"]), '</div></div></div>',
             $this->recip->feedback_html_at("q");
         if ($plist && !$plist->is_empty()) {
             echo '<div class="fx8 mt-2">';

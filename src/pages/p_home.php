@@ -218,7 +218,7 @@ class Home_Page {
                 "spellcheck" => false, "autocomplete" => "off"
             ]), '<div class="form-basic-search-in"> in ',
             PaperSearch::limit_selector($this->conf, $limits, PaperSearch::default_limit($user, $limits)),
-            Ht::submit("Search"),
+            Ht::submit("Search", ["class" => "basic-search"]),
             "</div></form>";
 
         if ($user->isPC) {

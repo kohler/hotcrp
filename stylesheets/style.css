@@ -1160,17 +1160,17 @@ label.hashtarget, .label.hashtarget, .field-title.hashtarget {
 	flex-wrap: wrap;
 	justify-content: flex-end;
 }
+.form-basic-search .papersearch {
+	min-width: 20rem;
+}
 .form-basic-search-in {
 	white-space: nowrap;
 	margin-left: 0.5rem;
 }
-.form-basic-search .papersearch {
-	min-width: 20rem;
-}
-.form-basic-search-in > .select {
+.form-basic-search-in > .select, .form-basic-search-type > .select {
 	margin-left: 0.25rem;
 }
-.form-basic-search-in > button {
+button.basic-search {
 	margin-left: 1rem;
 }
 

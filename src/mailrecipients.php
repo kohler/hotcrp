@@ -7,6 +7,8 @@ class MailRecipientClass {
     public $name;
     /** @var ?string */
     public $description;
+    /** @var ?string */
+    public $limit;
     /** @var int */
     public $flags;
     /** @var string */
@@ -14,11 +16,13 @@ class MailRecipientClass {
 
     /** @param string $name
      * @param ?string $description
+     * @param ?string $limit
      * @param int $flags
      * @param ?string $default_message */
-    function __construct($name, $description, $flags, $default_message) {
+    function __construct($name, $description, $limit, $flags, $default_message) {
         $this->name = $name;
         $this->description = $description;
+        $this->limit = $limit;
         $this->flags = $flags;
         $this->default_message = $default_message;
     }
@@ -139,10 +143,17 @@ class MailRecipients extends MessageSet {
     }
 
     /** @param string $name
-     * @param string $description
+     * @param ?string $description
+     * @param ?string $limit
      * @param int $flags */
-    private function defsel($name, $description, $flags = 0) {
-        $this->recipts[] = new MailRecipientClass($name, $description, $flags, $this->recipt_default_message);
+    private function add_recpt($name, $description, $limit = null, $flags = 0) {
+        $this->recipts[] = new MailRecipientClass($name, $description, $limit, $flags, $this->recipt_default_message);
+    }
+
+    /** @param string $name
+     * @param ?string $description */
+    private function add_recpt_group($name, $description) {
+        $this->add_recpt($name, $description, null, self::F_GROUP);
     }
 
     private function enumerate_recipients() {
@@ -152,26 +163,26 @@ class MailRecipients extends MessageSet {
         if ($user->is_manager()) {
             $this->recipt_default_message = "authors";
             $hide = !$this->conf->has_any_submitted();
-            $this->defsel("s", "Contact authors of submitted papers", $hide ? self::F_HIDE : 0);
-            $this->defsel("unsub", "Contact authors of unsubmitted papers");
-            $this->defsel("au", "All contact authors");
+            $this->add_recpt("s", "Contact authors of submitted papers", "s", $hide ? self::F_HIDE : 0);
+            $this->add_recpt("unsub", "Contact authors of unsubmitted papers", "unsub");
+            $this->add_recpt("au", "All contact authors", "all");
 
             $this->dcounts();
-            $this->defsel("bydec_group", "Contact authors by decision", self::F_GROUP);
+            $this->add_recpt_group("bydec_group", "Contact authors by decision");
             foreach ($this->conf->decision_set() as $dec) {
                 if ($dec->id !== 0) {
                     $hide = ($this->_dcounts[$dec->id] ?? 0) === 0;
-                    $this->defsel("dec:{$dec->name}", "Contact authors of " . $dec->name_as(5) . " papers", $hide ? self::F_HIDE : 0);
+                    $this->add_recpt("dec:{$dec->name}", "Contact authors of " . $dec->name_as(5) . " papers", "dec:{$dec->name}", $hide ? self::F_HIDE : 0);
                 }
             }
-            $this->defsel("dec:yes", "Contact authors of accept-class papers", $this->_has_dt[2] ? 0 : self::F_HIDE);
-            $this->defsel("dec:no", "Contact authors of reject-class papers", $this->_has_dt[0] ? 0 : self::F_HIDE);
-            $this->defsel("dec:none", "Contact authors of undecided papers", $this->_has_dt[1] && ($this->_has_dt[0] || $this->_has_dt[2]) ? 0 : self::F_HIDE);
-            $this->defsel("dec:any", "Contact authors of decided papers", self::F_HIDE);
-            $this->defsel("bydec_group_end", null, self::F_GROUP);
+            $this->add_recpt("dec:yes", "Contact authors of accept-class papers", "dec:yes", $this->_has_dt[2] ? 0 : self::F_HIDE);
+            $this->add_recpt("dec:no", "Contact authors of reject-class papers", "dec:no", $this->_has_dt[0] ? 0 : self::F_HIDE);
+            $this->add_recpt("dec:none", "Contact authors of undecided papers", "dec:none", $this->_has_dt[1] && ($this->_has_dt[0] || $this->_has_dt[2]) ? 0 : self::F_HIDE);
+            $this->add_recpt("dec:any", "Contact authors of decided papers", "dec:any", self::F_HIDE);
+            $this->add_recpt_group("bydec_group_end", null);
 
             $this->recipt_default_message = "reviewers";
-            $this->defsel("rev_group", "Reviewers", self::F_GROUP);
+            $this->add_recpt_group("rev_group", "Reviewers");
 
             // XXX this exposes information about PC review assignments
             // for conflicted papers to the chair; not worth worrying about
@@ -195,33 +206,33 @@ class MailRecipients extends MessageSet {
             list($any_pcrev, $any_extrev, $any_newpcrev, $any_lead, $any_shepherd) = $row;
 
             $hide = $any_pcrev || $any_extrev ? 0 : self::F_HIDE;
-            $this->defsel("rev", "Reviewers", $hide);
-            $this->defsel("crev", "Reviewers with complete reviews", $hide);
-            $this->defsel("uncrev", "Reviewers with incomplete reviews", $hide);
-            $this->defsel("allcrev", "Reviewers with no incomplete reviews", $hide);
+            $this->add_recpt("rev", "Reviewers", "s", $hide);
+            $this->add_recpt("crev", "Reviewers with complete reviews", "s", $hide);
+            $this->add_recpt("uncrev", "Reviewers with incomplete reviews", "s", $hide);
+            $this->add_recpt("allcrev", "Reviewers with no incomplete reviews", "s", $hide);
 
             $hide = $any_pcrev ? 0 : self::F_HIDE;
-            $this->defsel("pcrev", "PC reviewers", $hide);
-            $this->defsel("uncpcrev", "PC reviewers with incomplete reviews", $hide);
-            $this->defsel("newpcrev", "PC reviewers with new review assignments", ($any_newpcrev && $any_pcrev ? 0 : self::F_HIDE) | self::F_SINCE);
+            $this->add_recpt("pcrev", "PC reviewers", "s", $hide);
+            $this->add_recpt("uncpcrev", "PC reviewers with incomplete reviews", "s", $hide);
+            $this->add_recpt("newpcrev", "PC reviewers with new review assignments", "s", ($any_newpcrev && $any_pcrev ? 0 : self::F_HIDE) | self::F_SINCE);
 
             $hide = $any_extrev ? 0 : self::F_HIDE;
-            $this->defsel("extrev", "External reviewers", $hide);
-            $this->defsel("uncextrev", "External reviewers with incomplete reviews", $hide);
-            $this->defsel("extrev-not-accepted", "External reviewers with outstanding requests", $hide);
-            $this->defsel("rev_group_end", null, self::F_GROUP);
+            $this->add_recpt("extrev", "External reviewers", "s", $hide);
+            $this->add_recpt("uncextrev", "External reviewers with incomplete reviews", "s", $hide);
+            $this->add_recpt("extrev-not-accepted", "External reviewers with outstanding requests", "s", $hide);
+            $this->add_recpt_group("rev_group_end", null);
         } else {
             $any_lead = $any_shepherd = 0;
         }
 
         $this->recipt_default_message = "reviewers";
         $hide = !$this->user->is_requester();
-        $this->defsel("myextrev", "Your requested reviewers", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
-        $this->defsel("uncmyextrev", "Your requested reviewers with incomplete reviews", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
+        $this->add_recpt("myextrev", "Your requested reviewers", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
+        $this->add_recpt("uncmyextrev", "Your requested reviewers with incomplete reviews", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
 
         if ($user->is_manager()) {
-            $this->defsel("lead", "Discussion leads", $any_lead ? 0 : self::F_HIDE);
-            $this->defsel("shepherd", "Shepherds", $any_shepherd ? 0 : self::F_HIDE);
+            $this->add_recpt("lead", "Discussion leads", "s", $any_lead ? 0 : self::F_HIDE);
+            $this->add_recpt("shepherd", "Shepherds", "s", $any_shepherd ? 0 : self::F_HIDE);
         }
 
         // PC
@@ -232,19 +243,19 @@ class MailRecipients extends MessageSet {
                 $tags[] = $t;
         }
         if (empty($tags)) {
-            $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
+            $this->add_recpt("pc", "Program committee", null, self::F_ANYPC | self::F_NOPAPERS);
         } else {
-            $this->defsel("pc_group", "Program committee", self::F_GROUP);
-            $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
+            $this->add_recpt_group("pc_group", "Program committee");
+            $this->add_recpt("pc", "Program committee", null, self::F_ANYPC | self::F_NOPAPERS);
             foreach ($tags as $t) {
-                $this->defsel("pc:{$t}", "#{$t} program committee", self::F_ANYPC | self::F_NOPAPERS);
+                $this->add_recpt("pc:{$t}", "#{$t} program committee", null, self::F_ANYPC | self::F_NOPAPERS);
             }
-            $this->defsel("pc_group_end", null, self::F_GROUP);
+            $this->add_recpt_group("pc_group_end", null);
         }
 
         if ($user->privChair) {
             $this->recipt_default_message = null;
-            $this->defsel("all", "Active users", self::F_NOPAPERS);
+            $this->add_recpt("all", "Active users", null, self::F_NOPAPERS);
         }
     }
 
@@ -348,6 +359,9 @@ class MailRecipients extends MessageSet {
                 $d["class"] = Ht::add_tokens($rec->flags & self::F_NOPAPERS ? "mail-want-no-papers" : "",
                     $rec->flags & self::F_SINCE ? "mail-want-since" : "");
                 $d["data-default-message"] = $rec->default_message;
+                if (isset($rec->limit)) {
+                    $d["data-default-limit"] = $rec->limit;
+                }
                 $sel[$rec->name] = $d;
             }
             $last = $rec->name;
