@@ -82,7 +82,8 @@ class SpecValidator_API {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
                 self::error($qreq, "body param `{$n}` unknown");
             } else if (!isset($_GET[$n])
-                       && ($t & self::F_BODY) === 0) {
+                       && ($t & self::F_BODY) === 0
+                       && !$qreq->is_get() /* no `:method:` overriding */) {
                 self::error($qreq, "body param `{$n}` should be in query");
             }
         }
