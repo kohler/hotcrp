@@ -258,7 +258,7 @@
     {
         "name": "potentialconflicts", "get": true,
         "function": "PotentialConflicts_API::run",
-        "parameters": "?sclass ?authors ?collaborators ?json",
+        "parameters": "?sclass ?p ?has_authors ?:authors ?collaborators ?json",
         "response": "potential_conflicts"
     },
     {

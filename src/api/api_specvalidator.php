@@ -70,9 +70,8 @@ class SpecValidator_API {
         $param = [];
         foreach (array_keys($_GET) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"], true)
-                    && ($n !== "p" || !($uf->paper ?? false))
-                    && ($n !== "redirect" || !($uf->redirect ?? false))) {
+                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_", ":method:"], true)
+                    && ($n !== "p" || !($uf->paper ?? false))) {
                     self::error($qreq, "query param `{$n}` unknown");
                 }
             } else if (($t & self::F_QUERY) === 0) {
