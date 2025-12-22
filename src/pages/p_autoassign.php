@@ -342,6 +342,70 @@ class Autoassign_Page {
         $this->_pcsel_sep = ", ";
     }
 
+    private function print_pc_members() {
+        $pctyp = $this->qreq->pctyp;
+        echo '<div class="form-section"><h3 class="form-h">PC members</h3>';
+
+        $pclist = [];
+        foreach ($this->conf->pc_members() as $pc) {
+            $pclist["all"][] = $pc->contactId;
+            if (!$pc->is_dormant()) {
+                $pclist["enabled"][] = $pc->contactId;
+            }
+            foreach (Tagger::split_unpack(strtolower($pc->viewable_tags($this->user))) as $tv) {
+                $pclist[$tv[0]][] = $pc->contactId;
+            }
+        }
+        if (empty($pclist)) {
+            echo '<p class="is-warning">There are no PC members</p></div>';
+            return;
+        }
+
+        echo '<div class="js-radio-focus checki"><label>',
+            '<span class="checkc">', Ht::radio("pctyp", "all", $pctyp === "all"), '</span>',
+            'Use entire PC</label></div>';
+
+        if ($pctyp === "enabled" || $this->conf->has_disabled_pc_members()) {
+            echo '<div class="js-radio-focus checki"><label>',
+                '<span class="checkc">', Ht::radio("pctyp", "enabled", $pctyp === "enabled"), '</span>',
+                'Use enabled PC members</label></div>';
+        }
+
+        echo '<div class="js-radio-focus js-pcsel-container checki"><label>',
+            '<span class="checkc">', Ht::radio("pctyp", "sel", $pctyp === "sel", ["class" => "want-pcsel"]), '</span>',
+            'Use selected PC members:</label>',
+            " &nbsp; (select ";
+        $this->_pcsel_sep = "";
+        $this->print_pc_selection_link("all", $pclist["all"]);
+        $this->print_pc_selection_link("none", []);
+        if ($this->conf->has_disabled_pc_members()) {
+            $this->print_pc_selection_link("enabled", $pclist["enabled"]);
+        }
+        foreach ($this->conf->viewable_user_tags($this->user) as $pctag) {
+            if ($pctag !== "pc")
+                $this->print_pc_selection_link("#{$pctag}", $pclist[strtolower($pctag)] ?? []);
+        }
+        $this->print_pc_selection_link("flip", ["flip"]);
+        echo ")";
+        Ht::stash_script('$(function(){$("input.js-pcsel").first().trigger("change")});');
+
+        $summary = [];
+        $nrev = AssignmentCountSet::load($this->user, AssignmentCountSet::HAS_REVIEW);
+        foreach ($this->conf->pc_members() as $id => $p) {
+            $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
+                . Ht::checkbox("pcc{$id}", 1, friendly_boolean($this->qreq["pcc{$id}"]), [
+                    "id" => "pcc{$id}", "data-range-type" => "pcc",
+                    "class" => "uic js-range-click js-pcsel"
+                ]) . '</span>' . $this->user->reviewer_html_for($p)
+                . $nrev->unparse_counts_for($p)
+                . "</label></div>";
+            $summary[] = $t;
+        }
+        echo Ht::hidden("has_pcc", 1),
+            '<div class="pc-ctable mt-2">', join("", $summary), "</div></div>\n";
+    }
+
+
     private function print() {
         // start page
         $conf = $this->conf;
@@ -412,62 +476,7 @@ class Autoassign_Page {
 
 
         // PC
-        echo '<div class="form-section"><h3 class="form-h">PC members</h3>';
-
-        echo '<div class="js-radio-focus checki"><label>',
-            '<span class="checkc">', Ht::radio("pctyp", "all", $qreq->pctyp === "all"), '</span>',
-            'Use entire PC</label></div>';
-
-        if ($qreq->pctyp === "enabled" || $this->conf->has_disabled_pc_members()) {
-            echo '<div class="js-radio-focus checki"><label>',
-                '<span class="checkc">', Ht::radio("pctyp", "enabled", $qreq->pctyp === "enabled"), '</span>',
-                'Use enabled PC members</label></div>';
-        }
-
-        $pclist = [];
-        foreach ($conf->pc_members() as $pc) {
-            $pclist["all"][] = $pc->contactId;
-            if (!$pc->is_dormant()) {
-                $pclist["enabled"][] = $pc->contactId;
-            }
-            foreach (Tagger::split_unpack(strtolower($pc->viewable_tags($this->user))) as $tv) {
-                $pclist[$tv[0]][] = $pc->contactId;
-            }
-        }
-
-        echo '<div class="js-radio-focus js-pcsel-container checki"><label>',
-            '<span class="checkc">', Ht::radio("pctyp", "sel", $qreq->pctyp === "sel", ["class" => "want-pcsel"]), '</span>',
-            'Use selected PC members:</label>',
-            " &nbsp; (select ";
-        $this->_pcsel_sep = "";
-        $this->print_pc_selection_link("all", $pclist["all"]);
-        $this->print_pc_selection_link("none", []);
-        if ($this->conf->has_disabled_pc_members()) {
-            $this->print_pc_selection_link("enabled", $pclist["enabled"]);
-        }
-        foreach ($conf->viewable_user_tags($this->user) as $pctag) {
-            if ($pctag !== "pc")
-                $this->print_pc_selection_link("#{$pctag}", $pclist[strtolower($pctag)] ?? []);
-        }
-        $this->print_pc_selection_link("flip", ["flip"]);
-        echo ")";
-        Ht::stash_script('$(function(){$("input.js-pcsel").first().trigger("change")});');
-
-        $summary = [];
-        $nrev = AssignmentCountSet::load($this->user, AssignmentCountSet::HAS_REVIEW);
-        foreach ($conf->pc_members() as $id => $p) {
-            $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
-                . Ht::checkbox("pcc{$id}", 1, friendly_boolean($qreq["pcc{$id}"]), [
-                    "id" => "pcc{$id}", "data-range-type" => "pcc",
-                    "class" => "uic js-range-click js-pcsel"
-                ]) . '</span>' . $this->user->reviewer_html_for($p)
-                . $nrev->unparse_counts_for($p)
-                . "</label></div>";
-            $summary[] = $t;
-        }
-        echo Ht::hidden("has_pcc", 1),
-            '<div class="pc-ctable mt-2">', join("", $summary), "</div></div>\n";
-
+        $this->print_pc_members();
 
         // bad pairs
         $this->print_bad_pairs();
