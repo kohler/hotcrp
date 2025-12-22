@@ -1062,11 +1062,12 @@ class Limit_SearchTerm extends SearchTerm {
     const LFLAG_ACCEPTED = 8;
     const LFLAG_STDDEC = 16;
 
-    function __construct(Contact $user, Contact $reviewer, $limit, $implicit = false) {
+    /** @param string|SearchWord $limit */
+    function __construct(PaperSearch $srch, $limit, $implicit = false) {
         parent::__construct("in");
-        $this->user = $user;
-        $this->reviewer = $reviewer;
-        $this->set_limit($limit);
+        $this->user = $srch->user;
+        $this->reviewer = $srch->reviewer_user();
+        $this->set_limit($limit, $srch);
         if ($implicit) {
             $this->lflag |= self::LFLAG_IMPLICIT;
         } else {
@@ -1075,7 +1076,7 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        return new Limit_SearchTerm($srch->user, $srch->reviewer_user(), $word);
+        return new Limit_SearchTerm($srch, $sword);
     }
 
     /** @return ?array{string,string} */
@@ -1085,31 +1086,55 @@ class Limit_SearchTerm extends SearchTerm {
         } else if (($rt = self::$reqtype_map[$limit] ?? null) !== null) {
             return is_string($rt) ? [$rt, $rt] : $rt;
         } else if (str_starts_with($limit, "dec:")
-                   && count($conf->decision_set()->matchexpr(substr($limit, 4), true)) > 0) {
+                   && count($conf->decision_set()->matchexpr(SearchWord::unquote(substr($limit, 4)), true)) > 0) {
             return [$limit, $limit];
         }
         return null;
     }
 
-    /** @param string $limit
+    /** @param string|SearchWord $limit
+     * @param ?PaperSearch $srch
      * @suppress PhanAccessReadOnlyProperty */
-    function set_limit($limit) {
-        $limitpair = self::canonical_names($this->user->conf, $limit) ?? ["none", "none"];
-        $this->named_limit = $limit = $limitpair[0];
+    function set_limit($limit, $srch = null) {
         $conf = $this->user->conf;
-        // optimize SQL for some limits
-        if ($limit === "viewable" && $this->user->can_view_all()) {
-            $limit = "all";
-        } else if ($limit === "reviewable" && !$this->reviewer->isPC) {
-            $limit = "r";
+        if (is_string($limit)) {
+            $limstr = $limit;
+            $limword = null;
+        } else {
+            $limstr = $limit->word;
+            $limword = $limit;
         }
-        $this->limit = $this->limit_class = $limit;
+
+        // find limit
+        $limitpair = self::canonical_names($conf, $limstr);
+        if (!$limitpair) {
+            if ($srch && $limword) {
+                if (str_starts_with($limstr, "dec:")) {
+                    $xword = clone $limword;
+                    $xword->pos1 += 4;
+                    $srch->lwarning($xword, "<0>Decision not found");
+                } else {
+                    $srch->lwarning($limword, $conf->_("<0>{Submission} collection not found"));
+                }
+            }
+            $limitpair = ["none", "none"];
+        }
+        $this->named_limit = $limstr = $limitpair[0];
+
+        // optimize SQL for some limits
+        if ($limstr === "viewable" && $this->user->can_view_all()) {
+            $limstr = "all";
+        } else if ($limstr === "reviewable" && !$this->reviewer->isPC) {
+            $limstr = "r";
+        }
+        $this->limit = $this->limit_class = $limstr;
+
         // mark flags
-        if (str_starts_with($limit, "dec:")) {
+        if (str_starts_with($limstr, "dec:")) {
             $this->limit_class = "dec";
             $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED | self::LFLAG_STDDEC;
             $decset = $this->user->conf->decision_set();
-            $this->xlist = $decset->matchexpr(substr($limit, 4), true);
+            $this->xlist = $decset->matchexpr(SearchWord::unquote(substr($limstr, 4)), true);
             foreach ($this->xlist as $dec) {
                 if ($decset->get($dec)->sign === -2) {
                     $this->lflag = self::LFLAG_SUBMITTED;
@@ -1117,16 +1142,16 @@ class Limit_SearchTerm extends SearchTerm {
                     $this->lflag &= ~self::LFLAG_ACCEPTED;
                 }
             }
-        } else if (in_array($limit, ["a", "ar", "r", "req", "viewable", "reviewable",
+        } else if (in_array($limstr, ["a", "ar", "r", "req", "viewable", "reviewable",
                                      "all", "none"], true)) {
             $this->lflag = 0;
-        } else if ($limit === "accepted") {
+        } else if ($limstr === "accepted") {
             $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
-        } else if ($limit === "undecided") {
+        } else if ($limstr === "undecided") {
             $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
-        } else if (in_array($limit, ["active", "unsub", "actadmin"], true)
+        } else if (in_array($limstr, ["active", "unsub", "actadmin"], true)
                    || ($conf->can_pc_view_some_incomplete()
-                       && !in_array($limit, ["s", "accepted"], true))) {
+                       && !in_array($limstr, ["s", "accepted"], true))) {
             $this->lflag = self::LFLAG_ACTIVE | self::LFLAG_STDDEC;
         } else {
             $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
@@ -1173,7 +1198,7 @@ class Limit_SearchTerm extends SearchTerm {
             $options["active"] = $act = true;
         }
         if (($this->lflag & self::LFLAG_STDDEC) !== 0) {
-            $options["dec:standard"] = true;
+            $options["decision"][] = "standard";
         }
         switch ($this->limit_class) {
         case "all":
@@ -1206,15 +1231,15 @@ class Limit_SearchTerm extends SearchTerm {
             return true;
         case "accepted":
             assert($fin);
-            $options["dec:yes"] = true;
+            $options["decision"][] = "yes";
             return $this->user->can_view_all_decision();
         case "undecided":
             assert($fin);
-            $options["dec:none"] = true;
+            $options["decision"][] = "none";
             return $this->user->can_view_all_decision();
         case "dec":
             assert($fin);
-            $options[$this->limit] = true;
+            $options["decision"][] = $this->xlist;
             return $this->user->can_view_all_decision();
         case "unsub":
             assert($act);

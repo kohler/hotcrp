@@ -407,22 +407,13 @@ class MailRecipients extends MessageSet {
             // all authors, no paper restriction
         } else if ($t === "s") {
             $options["finalized"] = true;
-            $options["dec:standard"] = true;
+            $options["decision"] = ["standard"];
         } else if ($t === "unsub") {
             $options["unsub"] = true;
             $options["active"] = true;
-        } else if (in_array($t, ["dec:any", "dec:none", "dec:yes", "dec:no", "dec:maybe"], true)) {
-            $options["finalized"] = true;
-            $options[$t] = true;
         } else if (str_starts_with($t, "dec:")) {
             $options["finalized"] = true;
-            $options["where"] = "false";
-            foreach ($this->conf->decision_set() as $dec) {
-                if (strcasecmp($dec->name, substr($t, 4)) === 0) {
-                    $options["where"] = "Paper.outcome={$dec->id}";
-                    break;
-                }
-            }
+            $options["decision"] = [substr($t, 4)];
         } else if ($t === "lead") {
             $options["anyLead"] = $options["reviewSignatures"] = true;
         } else if ($t === "shepherd") {

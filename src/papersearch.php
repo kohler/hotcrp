@@ -446,7 +446,7 @@ class PaperSearch extends MessageSet {
     /** @return bool */
     function show_submitted_status() {
         return in_array($this->limit(), ["a", "active", "all"], true)
-            && $this->q !== "re:me";
+            && !$this->query_is_re_me();
     }
     /** @return bool */
     function limit_explicit() {
@@ -459,6 +459,10 @@ class PaperSearch extends MessageSet {
     /** @return Contact */
     function reviewer_user() {
         return $this->_reviewer_user ?? $this->user;
+    }
+    /** @return bool */
+    function query_is_re_me() {
+        return $this->q === "re:me" && $this->user === $this->reviewer_user();
     }
 
 
@@ -1042,8 +1046,8 @@ class PaperSearch extends MessageSet {
     function main_term() {
         if ($this->_qe === null) {
             $this->_has_qe = true;
-            if ($this->q === "re:me") {
-                $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r", true);
+            if ($this->query_is_re_me()) {
+                $this->_qe = new Limit_SearchTerm($this, "r", true);
             } else if (($qe = $this->_search_expression($this->q))) {
                 $this->_qe = $qe;
             } else {
@@ -1479,18 +1483,19 @@ class PaperSearch extends MessageSet {
 
     /** @return string */
     function description($listname) {
+        $is_re_me = $this->query_is_re_me();
         if ($listname) {
             $lx = $this->conf->_($listname);
         } else {
             $limit = $this->limit();
-            if ($this->q === "re:me" && in_array($limit, ["r", "s", "active"], true)) {
+            if ($is_re_me && in_array($limit, ["r", "s", "active"], true)) {
                 $limit = "r";
             }
             $lx = self::limit_description($this->conf, $limit);
         }
         if ($this->q === ""
-            || ($this->q === "re:me" && $this->limit() === "s")
-            || ($this->q === "re:me" && $this->limit() === "active")) {
+            || ($is_re_me && $this->limit() === "s")
+            || ($is_re_me && $this->limit() === "active")) {
             return $lx;
         } else if (str_starts_with($this->q, "au:")
                    && strlen($this->q) <= 36

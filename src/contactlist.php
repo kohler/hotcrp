@@ -704,9 +704,9 @@ class ContactList {
         } else if ($limit === "au") {
             $args["finalized"] = true;
         } else if ($limit === "aurej") {
-            $args["dec:no"] = true;
+            $args["decision"] = ["no"];
         } else if ($limit === "auacc") {
-            $args["dec:yes"] = true;
+            $args["decision"] = ["yes"];
         } else if ($limit === "auuns") {
             $args["unsub"] = true;
         }
@@ -979,7 +979,7 @@ class ContactList {
                 }
                 $lst = $this->_au_unsub[$row->contactId] ?? false ? "all" : "s";
                 return '<div class="has-hotlist" data-hotlist="'
-                    . htmlspecialchars("p/$lst/" . urlencode($lsx)) . '">' . join(", ", $t) . '</div>';
+                    . htmlspecialchars("p/{$lst}/" . urlencode($lsx)) . '">' . join(", ", $t) . '</div>';
             } else {
                 return "";
             }

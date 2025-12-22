@@ -185,10 +185,13 @@ class DecisionSet implements IteratorAggregate, Countable {
         return $this->abbrev_matcher()->find_all($pattern);
     }
 
-    /** @param string $word
+    /** @param string|list<int> $word
      * @param bool $prefer_list
      * @return string|list<int> */
     function matchexpr($word, $prefer_list = false) {
+        if (is_list($word)) {
+            return $word;
+        }
         foreach ($this->_decision_map as $dinfo) {
             if ($word === $dinfo->name)
                 return $prefer_list ? [$dinfo->id] : "={$dinfo->id}";
@@ -210,7 +213,7 @@ class DecisionSet implements IteratorAggregate, Countable {
         return $this->abbrev_matcher()->find_all($word);
     }
 
-    /** @param string $word
+    /** @param string|list<int> $word
      * @return string */
     function sqlexpr($word) {
         $compar = $this->matchexpr($word);
