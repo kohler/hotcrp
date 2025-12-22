@@ -942,6 +942,7 @@ class PaperTable {
         $extra = [];
         if ($this->_allow_collapse["abstract"] ?? false) {
             $extra = ["fold" => "x", "aria-controls" => "s-abstract-body", "foldtitle" => "Toggle full abstract"];
+            $this->_ps_was_open = false;
         }
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
             . $this->papt("abstract", $o->title_html(), $extra)
