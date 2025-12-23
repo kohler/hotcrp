@@ -178,7 +178,10 @@ class DocumentInfo implements JsonSerializable {
 
         $doc = new DocumentInfo($conf);
         $doc->timestamp = Conf::$now;
-        $doc->mimetype = $upload->type;
+        $doc->mimetype = Mimetype::sanitize($upload->type);
+        if ($upload->type && !$doc->mimetype) {
+            $doc->message_set()->warning_at(null, "<0>Invalid MIME type");
+        }
         $doc->filename = self::sanitize_filename($upload->name);
 
         $upload_error = "";

@@ -54,6 +54,18 @@ class Mimetype_Tester {
         }
     }
 
+    function test_sanitize() {
+        xassert_eqq(Mimetype::sanitize("application/octet-stream"), "application/octet-stream");
+        xassert_eqq(Mimetype::sanitize(null), null);
+        xassert_eqq(Mimetype::sanitize(""), null);
+        xassert_eqq(Mimetype::sanitize("fart"), null);
+        xassert_eqq(Mimetype::sanitize("application/fdsnakjfdsnakfndskjafnkjdsnfdkjsanfkjdsnafkjdsnfkjanfkjdnsakjfndskjanfdjksanfkjdsna"), null);
+        xassert_eqq(Mimetype::sanitize("text/plain; charset=utf-8"), "text/plain");
+        xassert_eqq(Mimetype::sanitize("text/plain; charset=utf-8"), "text/plain");
+        xassert_eqq(Mimetype::sanitize("application/vnd.openxmlformats-officedocument.presentationml.presentation"), "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+        xassert_eqq(Mimetype::sanitize("text/x-c++"), "text/x-c++");
+    }
+
     function xxx_test_mp4() {
         foreach (glob("/Users/kohler/Downloads/sigcomm23-10_minute_presentation_video/*.mp4") as $f) {
             $mt = ISOVideoMimetype::make_file($f)->set_verbose(true);

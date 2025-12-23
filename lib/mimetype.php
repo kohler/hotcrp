@@ -68,6 +68,19 @@ class Mimetype {
     /** @var ?\finfo */
     private static $finfo;
 
+
+    /** @param string $mimetype
+     * @return ?string */
+    static function sanitize($mimetype) {
+        if ((string) $mimetype !== ""
+            && preg_match('/\A([a-zA-Z0-9][-a-zA-Z0-9.+]*\/[a-zA-Z0-9][-a-zA-Z0-9.+]*)(?:\s*;\s*\S+=\S+)*\z/', $mimetype, $m)
+            && strlen($m[1]) <= 80) {
+            return $m[1];
+        }
+        return null;
+    }
+
+
     /** @param string $mimetype
      * @param string $extension
      * @param ?string $description
