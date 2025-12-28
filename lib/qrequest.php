@@ -13,6 +13,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_page;
     /** @var ?string */
     private $_path;
+    /** @var int */
+    private $_path_component_index = 0;
+    /** @var ?int */
+    private $_path_component_count;
     /** @var string */
     private $_method;
     /** @var ?array<string,string> */
@@ -64,8 +68,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function set_navigation($nav) {
         $this->_navigation = $nav;
         $this->_page = $nav->page;
-        $this->_path = $nav->path;
-        return $this;
+        return $this->set_path($nav->path);
     }
 
     /** @param string $page
@@ -79,6 +82,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return $this */
     function set_path($path) {
         $this->_path = $path;
+        $this->_path_component_index = 0;
+        $this->_path_component_count = null;
+        return $this;
+    }
+
+    /** @param int $n
+     * @return $this */
+    function set_path_component_index($n) {
+        $this->_path_component_index = $n;
         return $this;
     }
 
@@ -167,14 +179,17 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @param int $n
      * @return ?string */
     function path_component($n, $decoded = false) {
-        if ((string) $this->_path !== "") {
-            $p = explode("/", substr($this->_path, 1));
-            if ($n + 1 < count($p)
-                || ($n + 1 === count($p) && $p[$n] !== "")) {
-                return $decoded ? urldecode($p[$n]) : $p[$n];
-            }
+        if ($this->_path_component_count === null) {
+            $p = $this->_path ?? "";
+            $this->_path_component_count = substr_count($p, "/")
+                + (str_ends_with($p, "/") ? 0 : 1);
         }
-        return null;
+        $n += $this->_path_component_index + 1;
+        if ($n <= 0 || $n >= $this->_path_component_count) {
+            return null;
+        }
+        $pc = explode("/", $this->_path);
+        return $decoded ? urldecode($pc[$n]) : $pc[$n];
     }
     /** @return ?PaperInfo */
     function paper() {

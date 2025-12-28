@@ -1073,6 +1073,23 @@ class Unit_Tester {
         xassert_eqq(count($q), 3);
         xassert_eqq(json_encode($q), "{\"a\":1,\"b\":2,\"c\":\"s\"}");
         xassert_eqq(Json::encode($q), "{\"a\":1,\"b\":2,\"c\":\"s\"}");
+
+        $q->set_path("");
+        xassert_eqq($q->path_component(0), null);
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/");
+        xassert_eqq($q->path_component(0), null);
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/a");
+        xassert_eqq($q->path_component(0), "a");
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/a/");
+        xassert_eqq($q->path_component(0), "a");
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/a/b");
+        xassert_eqq($q->path_component(0), "a");
+        xassert_eqq($q->path_component(1), "b");
+        xassert_eqq($q->path_component(2), null);
     }
 
     function test_is_anonymous_email() {
