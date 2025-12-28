@@ -58,5 +58,4 @@ for authentication.
 ### Large queries
 
 A `POST` request whose `:method:` query parameter is set to `GET` is treated as
-if it were a `GET` request. This can help work around web server URL length
-limits.
+if it were a `GET` request. Use this to work around URL length limits.

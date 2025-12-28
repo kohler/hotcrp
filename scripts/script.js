@@ -3654,9 +3654,8 @@ function tracker_find(trackerid) {
         return null;
     } else if (dl.tracker && dl.tracker.trackerid === trackerid) {
         return dl.tracker;
-    } else {
-        return null;
     }
+    return null;
 }
 
 function tracker_status() {
@@ -3671,10 +3670,10 @@ function tracker_status() {
     }
 }
 
-var tracker_map = [["is_manager", "is-manager", "Administrator"],
-                   ["is_lead", "is-lead", "Discussion lead"],
-                   ["is_reviewer", "is-reviewer", "Reviewer"],
-                   ["is_conflict", "is-conflict", "Conflict"]];
+const tracker_map = [["is_manager", "is-manager", "Administrator"],
+                     ["is_lead", "is-lead", "Discussion lead"],
+                     ["is_reviewer", "is-reviewer", "Reviewer"],
+                     ["is_conflict", "is-conflict", "Conflict"]];
 
 function tracker_show_elapsed() {
     if (tracker_timer) {

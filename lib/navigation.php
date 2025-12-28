@@ -341,9 +341,8 @@ class NavigationState {
             return $x;
         } else if (substr($url, 0, 5) !== "index" || substr($url, 5, 1) === "/") {
             return $x . $url;
-        } else {
-            return $x . substr($url, 5);
         }
+        return $x . substr($url, 5);
     }
 
     /** @param string $url */
@@ -376,7 +375,8 @@ class NavigationState {
     /** @param string $path
      * @return string */
     function set_path($path) {
-        return ($this->path = $path);
+        $this->path = $path;
+        return $this->path;
     }
 
     /** @param int $n
