@@ -8,9 +8,7 @@ class API_Page {
     static function go(Contact $user, Qrequest $qreq, $fn) {
         // initialize user, paper request
         $conf = $user->conf;
-        if ($qreq->base !== null) {
-            $conf->set_site_path_relative($qreq->navigation(), $qreq->base);
-        }
+        $conf->set_site_path_relative($qreq->navigation(), $qreq->base ?? null);
         if (!$user->has_account_here()
             && ($key = $user->capability("@kiosk"))) {
             $kiosks = $conf->setting_json("__tracker_kiosk") ? : (object) [];

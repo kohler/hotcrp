@@ -3902,18 +3902,16 @@ class Conf {
 
 
     /** @param NavigationState $nav
-     * @param string $url */
+     * @param ?string $url */
     function set_site_path_relative($nav, $url) {
-        if ($nav->site_path_relative !== $url) {
-            $old_baseurl = $nav->base_path_relative;
-            $nav->set_site_path_relative($url);
-            if ($this->_assets_url === $old_baseurl) {
-                $this->_assets_url = $nav->base_path_relative;
-                Ht::$img_base = $this->_assets_url . "images/";
-            }
-            if ($this->_script_assets_site) {
-                $this->_script_assets_url = $nav->base_path_relative;
-            }
+        $old_baseurl = $nav->base_path_relative;
+        $nav->set_site_path_relative($url);
+        if ($this->_assets_url === $old_baseurl) {
+            $this->_assets_url = $nav->base_path_relative;
+            Ht::$img_base = $this->_assets_url . "images/";
+        }
+        if ($this->_script_assets_site) {
+            $this->_script_assets_url = $nav->base_path_relative;
         }
     }
 

@@ -345,11 +345,16 @@ class NavigationState {
         return $x . substr($url, 5);
     }
 
-    /** @param string $url */
+    /** @param ?string $url */
     function set_site_path_relative($url) {
         if ($url === $this->site_path_relative) {
             return;
-        } else if ($url !== "" && $url !== "../" && !preg_match('/\A(\.\.\/)+\z/', $url)) {
+        }
+        if ($url === null
+            || ($url !== ""
+                && $url !== "../"
+                && $url !== "../../"
+                && !preg_match('/\A(\.\.\/)+\z/', $url))) {
             $this->base_path_relative = $this->base_path;
             $this->site_path_relative = $this->site_path;
             return;
