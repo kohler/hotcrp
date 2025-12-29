@@ -11,62 +11,62 @@ compute assignments automatically.
 
 > Perform assignments
 
-Perform assignments, specified either as a JSON array or as an uploaded CSV
-file.
+Perform assignments specified as JSON or CSV.
 
-The assignments should be compatible with HotCRP’s bulk assignments format.
-They may be specified:
+Assignments use HotCRP’s bulk assignments format, and can be provided in several
+ways:
 
-1. As a JSON request body (when the request body has content-type
-   `application/json`).
-2. As a CSV file (when the request body has content-type
-   `text/csv`).
-3. As a JSON- or CSV-formatted request parameter named `assignments` (when the
-   request body has content-type `application/x-www-form-urlencoded` or
-   `multipart/form-data`).
-4. As a previously-uploaded JSON or CSV file, represented by a upload token in
-   the `upload` parameter.
+1. As a JSON request body (content-type `application/json`).
+2. As a CSV-formatted request body (content-type `text/csv`).
+3. As an `assignments` parameter containing JSON or CSV (content-type
+   `application/x-www-form-urlencoded` or `multipart/form-data`).
+4. As an `upload` parameter containing an upload token for a previously-uploaded
+   JSON or CSV file.
 
-JSON assignments should parse to arrays of objects. Each object should contain
-at least a `pid` property and an `action` property, where `action` determines
-what kind of assignment to run. CSV assignments must contain a header, which
-should specify at least `pid` and `action` columns. (The `/assigners` endpoint
-lists the available `action`s.)
+JSON assignments should parse to arrays of objects, each with `pid` and `action`
+properties (and possibly others). CSV assignments must contain a header with at
+least `pid` and `action` columns. The `action` determines the assignment type;
+the `/assigners` API endpoint lists the available actions.
 
-To test an assignment, supply a `dry_run=1` parameter. This will parse the
-uploaded assignment and report any errors, but make no changes to the
-database.
+To test assignments without making changes, set `dry_run=1`. This will parses
+the assignment and reports errors without modifying the database.
 
-The `valid` response property is `true` if and only if the assignments were
-valid (had no errors). In non-dry-run requests, `"valid": true` indicates that
-any database changes were committed.
+The `valid` response property is `true` if the assignments had no errors. In
+non-dry-run requests, `"valid": true` indicates any database changes were
+committed.
 
-The response includes an `output` property, which is an array of the specific
-assignments performed (or, for dry-run requests, the specific assignments that
-*would have been* performed). Each entry represents a single action applied to a
-single submission. (This differs from input `assignments` entries, each of which
-might apply to many submissions.) If you’re not interested in the `output`
-property, supply either `summary=1` (to get summary `assigned_actions` and
-`assigned_pids` properties) or `quiet=1` (to get nothing).
+For valid assignments, the response includes information about the performed
+assignments (or, for `dry_run` requests, the requested assignments).
+`assignment_count` indicates the number of atomic assignments, where an atomic
+assignment is a single action applied to a single entity (e.g., a submission or
+review). The `format` parameter can request additional detail. When
+`format=none` (default), only `assignment_count` is provided. When
+`format=summary`, the response includes `assignment_actions` (distinct actions
+performed) and `assignment_pids` (affected submission IDs). When `format=csv`,
+the `output` property contains the atomic assignments as a CSV string. When
+`format=json`, the `assignments` property contains the atomic assignments as a
+list of JSON objects.
 
-If the optional `p` request parameter is set, HotCRP will only implement
-assignments that affect that submission.
+When the optional `p` parameter is set, only assignments affecting that
+submission are performed; all other assignments are ignored.
 
 
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param ?assignments string: JSON or CSV assignments
 * param ?upload upload_token: Upload token for JSON or CSV assignments
-* param ?quiet boolean: True omits assignment information from response
-* param ?summary boolean: True omits complete assignment from response
-* param ?csv boolean: True uses CSV format in response
+* param ?format string: `none`, `summary`, `csv`, or `json`
 * param ?forceShow boolean: Explicit false means chair conflicts are not overridden
 * param ?search search_parameter_specification
 * response ?dry_run boolean: True if request was a dry run
 * response valid boolean: True if the assignments were valid
-* response ?assigned_actions [string]: List of action names included in eventual assignment
-* response ?assigned_pids [pid]: List of submission IDs changed by assignment
-* response ?output: Resulting assignments, as JSON list or CSV
-* response ?output_header [string]: CSV header if `output` is JSON
+* response ?assignment_count integer: Number of individual assignments performed
+* response ?assignment_actions [string]: List of distinct action names in performed assignment (`format=summary`)
+* response ?assignment_pids [pid]: List of submission IDs in performed assignment (`format=summary`)
+* response ?output string: Performed assignments as CSV with header (`format=csv`)
+* response ?output_mimetype string: `text/csv` (`format=csv`)
+* response ?output_size integer: Length of `output` (`format=csv`)
+* response ?assignment_header [string]: CSV header (`format=json`)
+* response ?assignments [object]: Performed assignments (`format=json`)
 * response ?papers
 * response ?ids
 * response ?groups

@@ -31,8 +31,8 @@
     {
         "name": "assign", "post": true,
         "function": "Assign_API::assign",
-        "parameters": "?p ?dry_run ?quiet ?summary ?csv ?forceShow ?search ?upload ?=assignments",
-        "response": "?dry_run valid ?assigned_actions ?assigned_pids ?output ?output_header ?papers ?ids ?groups ?search_params"
+        "parameters": "?p ?dry_run format ?<quiet ?<summary ?<csv ?forceShow ?search ?upload ?=assignments",
+        "response": "?dry_run valid ?assignment_count ?assignment_actions ?assignment_pids ?output ?output_mimetype ?output_size ?assignment_header ?assignments ?papers ?ids ?groups ?search_params"
     },
     {
         "name": "assigners", "get": true,

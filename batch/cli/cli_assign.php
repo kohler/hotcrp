@@ -41,13 +41,17 @@ class Assign_CLIBatch implements CLIBatchCommand {
         if ($this->dry_run) {
             $args["dry_run"] = 1;
         }
-        if (!$this->json) {
-            $args["csv"] = 1;
-        }
         if ($clib->quiet) {
-            $args["quiet"] = 1;
+            $args["quiet"] = 1; // XXX backward compat
+            $args["format"] = "none";
         } else if ($this->summary) {
-            $args["summary"] = 1;
+            $args["summary"] = 1; // XXX backward compat
+            $args["format"] = "summary";
+        } else if ($this->json) {
+            $args["format"] = "json";
+        } else {
+            $args["csv"] = 1; // XXX backward compat
+            $args["format"] = "csv";
         }
 
         $curlh = $clib->make_curl("POST");
@@ -87,29 +91,31 @@ class Assign_CLIBatch implements CLIBatchCommand {
             return 1;
         }
 
-        $no_assignments = ($cj->output ?? null) === ""
+        $no_assignments = ($cj->assignment_count ?? null) === 0
+            || /* XXX all others backward compat */
+               ($cj->output ?? null) === ""
             || ($cj->output ?? null) === []
             || ($cj->assignments ?? null) === [] /* backward compat */
+            || ($cj->assigned_pids ?? null) === []
             || ($cj->assignment_pids ?? null) === [];
         if ($no_assignments) {
             $clib->success("<0>No changes");
-        } else if (isset($cj->output)) {
-            if (is_string($cj->output)) {
-                $clib->set_output($cj->output);
-            } else {
-                $clib->set_output_json($cj->output);
-            }
-        } else if (isset($cj->assignments)) { /* XXX backward compat */
-            $csv = (new CsvGenerator)->select($cj->assignments_header);
-            foreach ($cj->assignments as $aj) {
-                $csv->add_row((array) $aj);
-            }
-            $clib->set_output($csv->unparse());
+        }
+        if ($args["format"] === "csv") {
+            assert(is_string($cj->output));
+            $clib->set_output($cj->output);
+        } else if ($args["format"] === "json") {
+            $json = $cj->assignments ?? /* XXX backward compat */ $cj->output;
+            assert(is_list($json));
+            $clib->set_output_json($json);
         } else {
             $clib->success(($cj->dry_run ?? false) ? "<0>Assignment valid" : "<0>Saved changes");
-            if (isset($cj->assignment_actions)) {
-                $clib->append_item(MessageItem::inform("<0>Action: " . join(" ", $cj->assignment_actions)));
-                $clib->append_item(MessageItem::inform("<0>Paper: " . join(" ", $cj->assignment_pids)));
+            if ($args["format"] === "summary") {
+                $actions = $cj->assignment_actions ?? /* XXX backward compat */ $cj->assigned_actions;
+                $pids = $cj->assignment_pids ?? /* XXX backward compat */ $cj->assigned_pids;
+                assert(is_list($actions) && is_list($pids));
+                $clib->append_item(MessageItem::inform("<0>Action: " . join(" ", $actions)));
+                $clib->append_item(MessageItem::inform("<0>Paper: " . join(" ", $pids)));
             }
         }
         return 0;

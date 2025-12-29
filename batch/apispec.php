@@ -1123,7 +1123,7 @@ class APISpec_Batch {
         $info = $mj->info = $mj->info ?? (object) [];
         if ($this->base) {
             $info->title = "HotCRP REST API";
-            $info->version = `git log --format="format:%cs:%h" -n1 devel/apidoc etc/apifunctions.json etc/apiexpansions.json batch/apispec.php`;
+            $info->version = shell_exec("git log --format=\"format:%cs:%h\" -n1 devel/apidoc etc/apifunctions.json etc/apiexpansions.json batch/apispec.php");
         } else {
             $info->title = $info->title ?? "HotCRP";
             $info->version = $info->version ?? "0.1";

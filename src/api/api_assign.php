@@ -107,18 +107,41 @@ class Assign_API {
             $jr->set("dry_run", true);
         }
         $jr->set("valid", !$aset->has_error());
-        if (friendly_boolean($qreq->quiet)
+        if (!$aset->has_error()) {
+            $jr->set("assignment_count", $aset->assignment_count());
+        }
+
+        if (!isset($qreq->format)) { // XXX backwards compat
+            if (friendly_boolean($qreq->quiet)) {
+                $qreq->format = "none";
+            } else if (friendly_boolean($qreq->summary)) {
+                $qreq->format = "summary";
+            } else {
+                $qreq->format = friendly_boolean($qreq->csv) ? "csv" : "json";
+            }
+        }
+
+        $format = ViewOptionType::parse_enum($qreq->format ?? "none", "none|summary|csv|json");
+        if ($format === null) {
+            $jr->append_item(MessageItem::error_at("format", "<0>Unknown format"));
+            $format = "none";
+        }
+
+        if ($format === "none"
             || (!$dry_run && $aset->has_error())) {
             // no additional information
-        } else if (friendly_boolean($qreq->summary)) {
-            $jr->set("assigned_actions", $aset->assigned_types());
-            $jr->set("assigned_pids", $aset->assigned_pids());
-        } else if (friendly_boolean($qreq->csv)) {
-            $jr->set("output", $aset->make_acsv()->unparse());
+        } else if ($format === "summary") {
+            $jr->set("assignment_actions", $aset->assigned_types());
+            $jr->set("assignment_pids", $aset->assigned_pids());
+        } else if ($format === "csv") {
+            $t = $aset->make_acsv()->unparse();
+            $jr->set("output", $t);
+            $jr->set("output_mimetype", "text/csv");
+            $jr->set("output_size", strlen($t));
         } else {
             $acsv = $aset->make_acsv();
-            $jr->set("output_header", $acsv->header());
-            $jr->set("output", $acsv->rows());
+            $jr->set("assignment_header", $acsv->header());
+            $jr->set("assignments", $acsv->rows());
         }
         return $jr;
     }
