@@ -5838,7 +5838,7 @@ class Conf {
         $uf = $xtp->search_name($this->api_map(), $fn);
         return self::xt_enabled($uf) ? $uf : null;
     }
-    /** @return JsonResult */
+    /** @return JsonResult|Downloader|PageCompletion */
     function call_api_on($uf, $fn, Contact $user, Qrequest $qreq) {
         // NOTE: Does not check $user->can_view_paper($qreq->paper())
         $method = $qreq->method();

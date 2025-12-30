@@ -82,12 +82,9 @@ class Document_API {
             ->parse_qreq($qreq)
             ->set_cacheable($dr->cacheable)
             ->set_log_user($user);
-        $status = $doc->emit($dopt);
-        if ($status <= 299 || $status === 304) {
-            return new PageCompletion;
-        } else if ($status === 500) {
+        if (!$doc->prepare_download($dopt)) {
             return JsonResult::make_message_list(500, $doc->message_list());
         }
-        return new JsonResult($status, ["ok" => false]);
+        return $dopt;
     }
 }

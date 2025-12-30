@@ -333,6 +333,12 @@ class Downloader {
         return !empty($this->range);
     }
 
+    /** @param int $status */
+    static private function emit_response_code($status) {
+        http_response_code($status);
+    }
+
+    /** @param string $h */
     static private function emit_header($h) {
         header($h);
     }
@@ -406,7 +412,7 @@ class Downloader {
         $rangeheader = [];
         $clen = $this->content_length;
         if ($this->head) {
-            self::emit_header("HTTP/1.1 204 No Content");
+            self::emit_response_code(204 /* No Content */);
             self::emit_header("Content-Type: {$this->mimetype}");
             self::emit_header("Content-Length: {$clen}");
             self::emit_header("Accept-Ranges: bytes");
@@ -420,7 +426,7 @@ class Downloader {
             self::emit_header("Accept-Ranges: bytes");
         } else if (count($range) === 1) {
             $outsize = $range[0][1] - $range[0][0];
-            self::emit_header("HTTP/1.1 206 Partial Content");
+            self::emit_response_code(206 /* Partial Content */);
             self::emit_header("Content-Type: {$this->mimetype}");
             self::emit_header("Content-Range: bytes {$range[0][0]}-" . ($range[0][1] - 1) . "/{$clen}");
         } else {
@@ -431,7 +437,7 @@ class Downloader {
                 $outsize += $r[1] - $r[0];
             }
             $rangeheader[] = "--{$boundary}--\r\n";
-            self::emit_header("HTTP/1.1 206 Partial Content");
+            self::emit_response_code(206 /* Partial Content */);
             self::emit_header("Content-Type: multipart/byteranges; boundary={$boundary}");
             $outsize += strlen(join("", $rangeheader));
         }
@@ -459,8 +465,9 @@ class Downloader {
         }
     }
 
-    /** @return int */
-    function emit() {
+    /** @param ?Qrequest $qreq
+     * @return int */
+    function emit($qreq = null) {
         $status = $this->execute_conditions();
         if ($status !== 200) {
             return $status;

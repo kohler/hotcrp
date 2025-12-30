@@ -3,7 +3,7 @@
 // Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Job_API {
-    /** @return JsonResult */
+    /** @return JsonResult|Downloader|PageCompletion */
     static function job(Contact $user, Qrequest $qreq) {
         if (($jobid = trim($qreq->job ?? "")) === "") {
             return JsonResult::make_missing_error("job");

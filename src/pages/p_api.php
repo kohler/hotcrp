@@ -51,10 +51,8 @@ class API_Page {
         if ($validate) {
             SpecValidator_API::response($uf, $qreq, $jr);
         }
-        if ($jr instanceof Downloader) {
-            $jr->emit();
-            exit(0);
-        } else if ($jr instanceof PageCompletion) {
+        if ($jr instanceof Downloader || $jr instanceof PageCompletion) {
+            $jr->emit($qreq);
             exit(0);
         }
         if ($uf

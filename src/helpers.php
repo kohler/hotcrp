@@ -315,8 +315,17 @@ class Redirection extends Exception {
 }
 
 class PageCompletion extends Exception {
-    function __construct() {
+    /** @var ?int */
+    public $status;
+    function __construct($status = null) {
         parent::__construct("Page complete");
+        $this->status = $status;
+    }
+    /** @param ?Qrequest $qreq */
+    function emit($qreq = null) {
+        if ($this->status !== null) {
+            http_response_code($this->status);
+        }
     }
 }
 
@@ -328,6 +337,10 @@ class JsonCompletion extends Exception {
     /** @param JsonResult $j */
     function __construct($j) {
         $this->result = $j;
+    }
+    /** @param ?Qrequest $qreq */
+    function emit($qreq = null) {
+        $this->result->emit($qreq);
     }
 }
 
