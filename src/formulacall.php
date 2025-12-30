@@ -75,12 +75,20 @@ class FormulaCall {
         if (!is_array($args)) {
             return true;
         }
-        if (count($this->args) < $args[0]) {
-            $note = $args[0] < $args[1] ? "at least " : "";
-            $this->lerror("<0>Too few arguments to function ‘{$this->name}’ (expected {$note}{$args[0]})");
+        return $this->check_nargs_range(count($this->args), $args[0], $args[1]);
+    }
+
+    /** @param int $nargs
+     * @param int $min
+     * @param int $max
+     * @return bool */
+    function check_nargs_range($nargs, $min, $max) {
+        if ($nargs < $min) {
+            $note = $min < $max ? "at least " : "";
+            $this->lerror("<0>Too few arguments to function ‘{$this->name}’ (expected {$note}{$min})");
             return false;
-        } else if (count($this->args) > $args[1]) {
-            $note = $args[0] < $args[1] ? "{$args[0]}–{$args[1]}" : $args[1];
+        } else if ($nargs > $max) {
+            $note = $min < $max ? "{$min}–{$max}" : $max;
             $this->lerror("<0>Too many arguments to function ‘{$this->name}’ (expected {$note})");
             return false;
         }

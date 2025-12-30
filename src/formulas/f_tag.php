@@ -27,15 +27,17 @@ class Tag_Fexpr extends Fexpr {
         return false;
     }
     static function make(FormulaCall $ff) {
-        if (count($ff->rawargs) !== 1
-            || !preg_match('{\A#?(?:|~~?|\S+~)' . TAG_REGEX_NOTWIDDLE . '\z}', $ff->rawargs[0])) {
+        if (!$ff->check_nargs_range(count($ff->rawargs), 1, 1)) {
+            return null;
+        }
+        if (!preg_match('{\A\(?#?((?:|~~?|\S+~)' . TAG_REGEX_NOTWIDDLE . ')\)?\z}', $ff->rawargs[0], $m)) {
             $ff->lerror("<0>Invalid tag ‘{$ff->rawargs[0]}’");
             return null;
         }
         if (!$ff->user->can_view_tags()) {
             return Fexpr::cnever();
         }
-        $tag = $ff->rawargs[0];
+        $tag = $m[1];
         $pc_indexed = str_starts_with($tag, "_~");
         $tsm = new TagSearchMatcher($ff->user);
         $tsm->add_check_tag($pc_indexed ? substr($tag, 1) : $tag, true);
