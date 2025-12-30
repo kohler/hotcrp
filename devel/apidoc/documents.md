@@ -16,10 +16,10 @@ like `testconf-paper1.pdf`, or the `p`, `dt`, and optionally `attachment`
 parameters, which define the submission ID, submission field, and attachment
 name.
 
-The `hash` and `docid` parameters let administrators and authors select a
-specific version of a document. `hash` selects a document by hash, and `docid`
-by internal document ID. Responses to requests with `hash` or `docid` are
-usually cacheable.
+The `hash` and `docid` parameters select a specific version of a document.
+`hash` selects a document by hash, and `docid` by internal document ID.
+Responses to requests with `hash` or `docid` are usually cacheable. Only
+administrators and authors can select specific document versions.
 
 Successful requests (HTTP status code 200) return the requested document as the
 response, without any JSON wrapper. Find the document’s MIME type using the
@@ -86,23 +86,24 @@ instance, `subdir/{file1.txt, file2.txt}`.
 
 > Upload file
 
-Upload large files to HotCRP for later use.
+Upload large files for later use.
 
-Servers limit how much data they will accept in a single request. The upload
-API uploads larger files over multiple requests. When an upload is complete,
-later requests can refer to that file using an *upload token*.
+Servers limit how much data they will accept in a single request. The upload API
+can upload large files using multiple requests. When an upload is complete,
+later API requests can refer to that file using an *upload token*.
 
 The lifecycle of an upload is as follows.
 
 1. A request with `start=1` begins a new upload. This request should also
    include a `size` parameter to define the size of the uploaded file, if that
-   is known.
-2. The response to this request will include the upload token for the uploaded
-   file in its `token` field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`.
-   All subsequent requests relating to the upload must include this token as a
-   `token` parameter.
+   is known, and parameters defining its purpose (`dt`, `mimetype`, `filename`,
+   and `temp`).
+2. The response to this request includes the upload token in its `token`
+   property. This is a string like `hcupwhvGDVmHNYyDKdqeqA`. All subsequent
+   requests relating to the upload must include this token as a `token`
+   parameter.
 3. Subsequent requests upload the contents of the file in chunks. The `blob`
-   parameter (which can be an attached file) contains the chunk itself; the
+   parameter (which can be an attached file) contains the chunk itself, and the
    `offset` parameter defines the offset of chunk relative to the file.
 4. A request with `finish=1` completes the upload. The server seals the upload
    and responds with the file’s content hash. A `finish=1` request will fail

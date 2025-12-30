@@ -227,15 +227,14 @@ applied to all papers returned by the `q` search query.
 
 > Fetch share link
 
-Fetch the share link for a submission, if any has been created. This link can
-be accessed by users not signed in to HotCRP; it grants view-only access to the
-submission and its documents. Only authors and administrators can fetch the
-share link.
+Fetch the share link for a submission. This link can be accessed by users not
+signed in to HotCRP; it grants view-only access to the submission and its
+documents. Only authors and administrators can fetch the share link.
 
+* response ?url: The share link
 * response ?token author_view_token: Token for this share link
 * response ?token_type string: `"author_view"`
 * response ?expires_at integer
-* response ?url: The share link
 
 
 # post /{p}/share
