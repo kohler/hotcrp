@@ -89,44 +89,41 @@ parameters.
 
 Compute and optionally perform an automatic assignment.
 
-Specify the autoassignment action with the `autoassigner` parameter, and the
+Specify the autoassignment action with the `autoassigner` parameter and the
 submissions to assign with the `q` parameter. The `/autoassigners` endpoint
 lists the available autoassignment actions.
 
-Most autoassignment actions take additional parameters and a set of PC members
-to assign. Supply these in the `u`, `disjoint`, and `param` parameters. `u`
-defines the assignable PC members; `disjoint` defines the classes of PC
-members that should not be co-assigned; and `param` defines additional
-autoassigner parameters, such as the number of assignments to make or the type
-of review to create.
+Most autoassignment actions take additional parameters. `u` defines the PC
+members to assign; it defaults to all PC members. `disjoint` defines classes of
+PC members that should not be co-assigned to the same submission. `param`
+defines additional autoassigner parameters, such as the number of assignments to
+make or the type of review to create.
 
-The `u`, `disjoint`, and `param` parameters may be supplied multiple times,
-either as a single JSON-formatted array string named `PNAME` or as multiple
-strings named `PNAME[]`. For instance, `/autoassign?u=%5B1,2%5D` and
-`/autoassign?u%5B%5D=1&u%5B%5D=2` each supply two `u` arguments, `1` and `2`.
+To supply multiple values for these parameters, use a JSON-formatted array or
+multiple parameters with `[]` appended to the name. For instance,
+`/autoassign?u=%5B1,2%5D` and `/autoassign?u%5B%5D=1&u%5B%5D=2` both supply `u`
+arguments `1` and `2`, the first as a single `u=[1,2]` parameter and the second
+as separate `u[]=1` and `u[]=2` parameters.
 
-Each `u` argument is a search string defining a set of users. Valid strings
-are user IDs (`1`), emails (`kohler@g.harvard.edu`), or tags (`#heavy`).
-Prefix a string with a hyphen `-` to remove matching users from the assignable
-set.
+Each `u` argument is a user search string: a user ID (`1`), email
+(`kohler@g.harvard.edu`), or tag (`#heavy`). Prefix with a hyphen `-` to remove
+matching users from the assignable set.
 
-Each `disjoint` argument is a comma-separated list of users that should not be
-coassigned. Again, users can be defined using IDs, emails, or tags.
+Each `disjoint` argument is a comma-separated list of users (IDs, emails, or
+tags) that should not be co-assigned to the same submission.
 
-Each `param` argument defines a parameter for the autoassignment action, and
-should be a string with the format `NAME=VALUE`. The parameters required or
-understood by each action are listed by the `/autoassigners` endpoint.
+Each `param` argument has the format `NAME=VALUE`. See `/autoassigners` for the
+parameters understood by each action.
 
-To test an assignment, supply the `dry_run=1` parameter. This will create an
-assignment and test it, reporting any errors, but will make no changes to the
-database. Supply `minimal_dry_run=1` to obtain the autoassignment output
-without additional testing. For instance, `dry_run=1` will report warnings for
-potential conflicts, but `minimal_dry_run=1` will not.
+To test without making changes, set `dry_run=1`. This creates and tests an
+assignment, reporting errors without modifying the database. Set
+`minimal_dry_run=1` to skip additional testing—for example, `dry_run=1` reports
+potential conflicts, but `minimal_dry_run=1` does not.
 
-Autoassignment is often time consuming, so a successful `/autoassign` may return
-early, before the autoassignment completes. The response will list a job ID for
-the autoassigner. Query the `/job` endpoint with `output=1` to monitor the job
-and obtain its eventual output.
+Autoassignment can be time-consuming, so `/autoassign` may return before
+completion. An early response uses HTTP status code 202 Accepted, and its
+`job` response property gives a job ID for the autoassignment. Query the `/job`
+endpoint to monitor progress and retrieve the CSV output.
 
 * param autoassigner string: Name of autoassignment action to run
 * param q
@@ -134,7 +131,7 @@ and obtain its eventual output.
 * param dry_run boolean: True computes the assignment, but does not perform it
 * param minimal_dry_run boolean: True computes an initial assignment, but does not validate it
 * param u [string]: Array of users to consider for assignment
-* param disjoint [string]: Array of user sets that should not be coassigned
+* param disjoint [string]: Array of user sets that should not be co-assigned
 * param param [string]: Array of `NAME=VALUE` autoassignment parameter settings
 * response ?dry_run boolean: True if request was a dry run
 * response ?job job_id: Job ID of autoassignment job
