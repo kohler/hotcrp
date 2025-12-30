@@ -7,20 +7,37 @@ The `/job` endpoint monitors long-running jobs.
 
 > Monitor job
 
-Some HotCRP tasks, such as autoassignment, can take too long for a single API
-request. Such tasks start a *job* and return its unique identifier. The `/job`
-endpoint monitors the job’s progress and can return its output upon
-completion.
+The `/job` endpoint monitors the progress of long-running jobs and can return
+their output upon completion. Jobs represent HotCRP tasks that take too long for
+a single API request; requests such as `/autoassign` may start a job and return
+its unique identifier.
 
-The listed response properties are common to all job types, but specific jobs
-may return other response properties. For example, a running autoassignment
-job will return a string `progress` property that describes the current phase
-of autoassignment, and a completed autoassignment job will report
-`assigned_pids` and `incomplete_pids` properties.
+Responses always contain a `status` string. This is `"wait"` before the starts,
+`"run"` while it is running, `"done"` after completion, and `"failed"` when it
+is known to have failed. The `update_at` property gives the UNIX timestamp of
+most recent update; if it’s far in the past but `status` is `"run"`, the job has
+likely crashed. Specific jobs may return other response properties, such as a
+`progress` string that describes the current phase of job execution.
+
+Some jobs produce output when they complete. When `status` is `"done"` and
+output is present, the response’s `output_mimetype` and `output_size` properties
+describe this output. To fetch the output itself, supply an `output` parameter.
+If `output=string`, the `output` property contains the output as a string. If
+`output=json`, the `output` property contains the output as parsed JSON. If
+`output=body`, then the output is returned as the response body with the proper
+Content-Type header.
+
+A `/job` response uses HTTP response status code 202 Accepted for in-progress
+jobs, and 200 OK for completed or failed jobs. However, if a job’s output is
+incompatible with the requested format (`output=string` but the output is not
+UTF-8 encoded, `output=json` but the output is not JSON, or `output=body` but
+the job failed), then the response uses status code 409 Conflict.
 
 * param job job_id
-* param ?output boolean: True to return job output
-* response status string: `"wait"` if the job has not started, `"run"` if it is running, `"done"` if it is complete, `"fail"` if it failed
-* response update_at integer: UNIX time that job was last updated (if this time is far in the past, the job likely crashed)
-* response output: Job output, either as a JSON object or a UTF-8 string
-* response output_base64 string: Base64-encoded job output (if job output isn’t a UTF-8 string)
+* param ?output string: Format for job output
+* response status string
+* response update_at integer: UNIX time that job was last updated
+* response ?output: Job output
+* response ?output_mimetype mimetype: Output mimetype
+* response ?output_size integer: Length of output
+* response ?output_at integer: UNIX time that job output was set

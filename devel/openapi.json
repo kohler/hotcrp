@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-12-28:3575636f2",
+        "version": "2025-12-29:e36c3e0c4",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. Use this to work around URL length limits.\n"
     },
@@ -2950,7 +2950,7 @@
                                         "progress": {
                                             "type": "string"
                                         },
-                                        "assigned_pids": {
+                                        "assignment_pids": {
                                             "type": "array",
                                             "items": {
                                                 "type": "integer"
@@ -4920,7 +4920,7 @@
         "/job": {
             "get": {
                 "summary": "Monitor job",
-                "description": "Some HotCRP tasks, such as autoassignment, can take too long for a single API\nrequest. Such tasks start a *job* and return its unique identifier. The `/job`\nendpoint monitors the job’s progress and can return its output upon\ncompletion.\n\nThe listed response properties are common to all job types, but specific jobs\nmay return other response properties. For example, a running autoassignment\njob will return a string `progress` property that describes the current phase\nof autoassignment, and a completed autoassignment job will report\n`assigned_pids` and `incomplete_pids` properties.\n",
+                "description": "Some HotCRP tasks can take too long for a single API request. Such tasks start a\n*job* and return its unique identifier. The `/job` endpoint monitors the job’s\nprogress and returns its output on completion. The response will use HTTP\nresponse status code 202 Accepted for in-progress jobs, and 200 for completed or\nfailed jobs.\n\nResponses always contain a `status` string. This is `\"wait\"` when the job has\nnot started, `\"run\"` while it is running, `\"done\"` after completion, and\n`\"fail\"` when it has definitely failed. The `update_at` property gives the UNIX\ntimestamp that the job was last updated; if it’s far in the past, the job likely\nhas crashed regardless of `status`. Specific jobs may return other response\nproperties, such as a `progress` string that describes the current phase of job\nexecution.\n\nSome jobs have output that becomes available upon successful completion. The\nresponse contains `output_mimetype` and `output_size` properties describing the\noutput. To fetch the output itself, supply an `output` parameter. If\n`output=string`, the `output` property contains the output as a string. If\n`output=json`, the `output` property contains the output as JSON. If\n`output=body`, then a successful response (HTTP status code 200 or 204)\ncomprises the output data on its own. If a job’s output is incompatible with the\nrequested `output` format (`output=string` and the output is not UTF-8 encoded;\n`output=json` and the output is not JSON; or `output=body` and the job failed),\nthen the response uses a 400 status code.\n",
                 "operationId": "job",
                 "tags": [
                     "Task management"
@@ -4939,9 +4939,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "type": "string"
                         },
-                        "description": "True to return job output"
+                        "description": "Format for job output"
                     }
                 ],
                 "responses": {
@@ -4964,19 +4964,27 @@
                                             "$ref": "#/components/schemas/message_list"
                                         },
                                         "status": {
-                                            "type": "string",
-                                            "description": "`\"wait\"` if the job has not started, `\"run\"` if it is running, `\"done\"` if it is complete, `\"fail\"` if it failed"
+                                            "type": "string"
                                         },
                                         "update_at": {
                                             "type": "integer",
-                                            "description": "UNIX time that job was last updated (if this time is far in the past, the job likely crashed)"
+                                            "description": "UNIX time that job was last updated"
                                         },
                                         "output": {
-                                            "description": "Job output, either as a JSON object or a UTF-8 string"
+                                            "description": "Job output"
                                         },
-                                        "output_base64": {
-                                            "type": "string",
-                                            "description": "Base64-encoded job output (if job output isn’t a UTF-8 string)"
+                                        "output_base64": {},
+                                        "output_mimetype": {
+                                            "$ref": "#/components/schemas/mimetype",
+                                            "description": "Output mimetype"
+                                        },
+                                        "output_size": {
+                                            "type": "integer",
+                                            "description": "Length of output"
+                                        },
+                                        "output_at": {
+                                            "type": "integer",
+                                            "description": "UNIX time that job output was set"
                                         }
                                     }
                                 }

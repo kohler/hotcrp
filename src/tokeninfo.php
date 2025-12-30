@@ -52,6 +52,10 @@ class TokenInfo {
     protected $dataOverflow;
     /** @var ?string */
     public $outputData;
+    /** @var ?int */
+    public $outputTimestamp;
+    /** @var ?string */
+    public $outputMimetype;
     /** @var ?string
      * @readonly */
     public $lookupKey;
@@ -87,7 +91,7 @@ class TokenInfo {
 
     const CHF_TIMES = 1;
     const CHF_DATA = 2;
-    const CHF_OUTPUT_DATA = 4;
+    const CHF_OUTPUT = 4;
 
     /** @param ?int $capabilityType */
     function __construct(Conf $conf, $capabilityType = null) {
@@ -543,20 +547,15 @@ class TokenInfo {
         return $this;
     }
 
-    /** @param ?string $data
+    /** @param string $data
+     * @param string $mimetype
      * @return $this */
-    final function change_output($data, $value = null) {
-        if (json_encode_object_change($this->outputData, $this->_joutputData, $data, $value, func_num_args())) {
-            $this->_changes |= self::CHF_OUTPUT_DATA;
-        }
-        return $this;
-    }
-
-    /** @return $this
-     * @suppress PhanAccessReadOnlyProperty */
-    final function unload_output() {
-        $this->outputData = $this->_joutputData = null;
-        $this->_changes &= ~self::CHF_OUTPUT_DATA;
+    final function set_output($data, $mimetype) {
+        assert($this->outputData === null);
+        $this->outputData = $data;
+        $this->outputMimetype = $mimetype;
+        $this->outputTimestamp = Conf::$now;
+        $this->_changes |= self::CHF_OUTPUT;
         return $this;
     }
 
@@ -577,19 +576,16 @@ class TokenInfo {
             array_push($qv, $this->timeUsed, $this->useCount, $this->timeInvalid, $this->timeExpires);
         }
         if (($this->_changes & self::CHF_DATA) !== 0) {
-            $qf[] = "`data`=?";
-            $qf[] = "dataOverflow=?";
+            array_push($qf, "`data`=?", "dataOverflow=?");
             if ($this->data === null || strlen($this->data) <= 16383) {
-                $qv[] = $this->data;
-                $qv[] = null;
+                array_push($qv, $this->data, null);
             } else {
-                $qv[] = null;
-                $qv[] = $this->data;
+                array_push($qv, null, $this->data);
             }
         }
-        if (($this->_changes & self::CHF_OUTPUT_DATA) !== 0) {
-            $qf[] = "outputData=?";
-            $qv[] = $this->outputData;
+        if (($this->_changes & self::CHF_OUTPUT) !== 0) {
+            array_push($qf, "outputData=?", "outputMimetype=?", "outputTimestamp=?");
+            array_push($qv, $this->outputData, $this->outputMimetype, $this->outputTimestamp);
         }
         $qv[] = $this->salt;
         $result = Dbl::qe_apply($this->dblink(), "update Capability set " . join(", ", $qf) . " where salt=?", $qv);

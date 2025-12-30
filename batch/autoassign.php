@@ -327,7 +327,7 @@ class Autoassign_Batch {
 
     private function set_output($text) {
         if ($this->_jtok) {
-            $this->_jtok->change_output($text);
+            $this->_jtok->set_output($text, "text/csv");
         } else {
             fwrite(STDOUT, $text);
         }
@@ -383,8 +383,8 @@ class Autoassign_Batch {
 
         // mark assigned pids
         if ($this->_jtok) {
-            $this->change_data("assigned_actions", $aset->assigned_types());
-            $this->change_data("assigned_pids", $aset->assigned_pids());
+            $this->change_data("assignment_actions", $aset->assigned_types());
+            $this->change_data("assignment_pids", $aset->assigned_pids());
         }
 
         // exit if dry run

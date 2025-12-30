@@ -793,7 +793,6 @@ class Autoassign_Page {
         $aset->set_search_type($this->qreq->t);
         $aset->set_confirm_potential_conflicts(true);
         $aset->parse($tok->outputData);
-        $tok->unload_output();
 
         $apids = SessionList::encode_ids($aset->assigned_pids());
         if (strlen($apids) > 512) {

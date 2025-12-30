@@ -39,6 +39,8 @@ CREATE TABLE `Capability` (
   `data` varbinary(16384) DEFAULT NULL,
   `dataOverflow` longblob DEFAULT NULL,
   `outputData` longblob DEFAULT NULL,
+  `outputTimestamp` bigint DEFAULT NULL,
+  `outputMimetype` varbinary(80) DEFAULT NULL,
   `lookupKey` varbinary(255) DEFAULT NULL,
   PRIMARY KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -657,7 +659,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 319, null),   -- schema version
+  ('allowPaperOption', 320, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

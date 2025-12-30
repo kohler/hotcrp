@@ -111,7 +111,7 @@ class Autoassign_API {
         $jobid = $tok->salt;
 
         $emit_function = function () use ($qreq, $jobid) {
-            $jr = new JsonResult([
+            $jr = new JsonResult(202 /* Accepted */, [
                 "ok" => true,
                 "job" => $jobid,
                 "job_url" => $qreq->conf()->hoturl("api/job", ["job" => $jobid], Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE)
@@ -131,7 +131,7 @@ class Autoassign_API {
 
         $tok->load_data();
         if ($tok->data("exit_status") === 0) {
-            return $tok->json_result(true);
+            return $tok->json_result("string");
         }
         $jr = JsonResult::make_message_list($tok->data("message_list") ?? []);
         $tok->delete();

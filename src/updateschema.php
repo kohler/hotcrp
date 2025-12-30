@@ -3231,6 +3231,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v319_set_cf_neaascii()) {
             $conf->update_schema_version(319);
         }
+        if ($conf->sversion === 319
+            && $conf->ql_ok("alter table Capability add `outputTimestamp` bigint")
+            && $conf->ql_ok("alter table Capability add `outputMimetype` varbinary(80)")) {
+            $conf->update_schema_version(320);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

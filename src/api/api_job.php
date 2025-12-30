@@ -21,6 +21,26 @@ class Job_API {
         if (!$tok) {
             return JsonResult::make_not_found_error("job");
         }
-        return $tok->json_result(friendly_boolean($qreq->output) ?? false);
+
+        $output = $qreq->output ?? null;
+        if ($output === "body" && !$tok->is_ongoing()) {
+            if (!$tok->is_done()) {
+                return $tok->json_result()
+                    ->set_status(409 /* Conflict */)
+                    ->append_item(MessageItem::error_at("output", "<0>Failed job has no output"));
+            } else if ($tok->outputData === null) {
+                return new PageCompletion(204 /* No Content */);
+            }
+            return (new Downloader)
+                ->parse_qreq($qreq)
+                ->set_cacheable(true)
+                ->set_mimetype($tok->outputMimetype)
+                ->set_last_modified($tok->outputTimestamp)
+                ->set_content($tok->outputData);
+        }
+        if (friendly_boolean($output) /* XXX backward compat */) {
+            $output = "string";
+        }
+        return $tok->json_result($output);
     }
 }

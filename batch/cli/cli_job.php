@@ -62,7 +62,7 @@ class Job_CLIBatch {
     /** @return bool */
     function run(Hotcrapi_Batch $clib) {
         $curlh = $clib->make_curl("GET");
-        $args = "job=" . urlencode($this->job) . "&output=1";
+        $args = "job=" . urlencode($this->job) . "&output=string";
         $status = null;
         $first = true;
         while (true) {
@@ -73,7 +73,7 @@ class Job_CLIBatch {
                 return false;
             }
             $first = false;
-            $status = $clib->content_json->status ?? "fail";
+            $status = $clib->content_json->status ?? "failed";
             if ($status !== "wait" && $status !== "run") {
                 break;
             }

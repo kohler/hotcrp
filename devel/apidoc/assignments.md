@@ -142,7 +142,7 @@ and obtain its eventual output.
 * response ?status string
 * response ?exit_status integer
 * response ?progress string
-* response ?assigned_pids [integer]
+* response ?assignment_pids [integer]
 * response ?output string: CSV of computed assignment
 
 
