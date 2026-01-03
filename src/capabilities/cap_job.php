@@ -136,7 +136,7 @@ class Job_Capability extends TokenInfo {
         }
         $status = 200;
         if ($this->outputData !== null) {
-            if ($output === "string"
+            if (($output === "string" || $output === true /* XXX backward compat */)
                 && is_valid_utf8($this->outputData)) {
                 $answer["output"] = $this->outputData;
             } else if ($output === "json"
