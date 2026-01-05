@@ -349,7 +349,13 @@ class Options_SettingParser extends SettingParser {
             "review" => "Hidden until review",
             "admin" => "Hidden from reviewers"
         ];
-        if ($sv->oldv("sf/{$this->ctr}/visibility") !== "conflict") {
+        $oldv = $sv->oldv("sf/{$this->ctr}/visibility");
+        if ($this->typej
+            && ($this->typej->authorlike ?? null)
+            && $oldv !== "all") {
+            unset($options["all"]);
+        }
+        if ($oldv !== "conflict") {
             unset($options["conflict"]);
         }
         $sv->print_select_group("sf/{$this->ctr}/visibility", "Visibility", $options, [
@@ -814,9 +820,8 @@ class Options_SettingParser extends SettingParser {
             $fr->clear();
             $nopt->render_default_description($fr);
             return [$d1, $fr->value_html()];
-        } else {
-            return [$isfs->$mname];
         }
+        return [$isfs->$mname];
     }
 
     /** @param Sf_Setting $sfs
@@ -1069,21 +1074,22 @@ class Options_SettingParser extends SettingParser {
 
 
     function crosscheck(SettingValues $sv) {
-        if (($sv->has_interest("sf") || $sv->has_interest("author_visibility"))
-            && $sv->oldv("author_visibility") == Conf::BLIND_ALWAYS) {
-            foreach (self::configurable_options($this->conf) as $ctrz => $f) {
-                if ($f->visibility() !== PaperOption::VIS_AUTHOR) {
-                    continue;
-                }
-                $ot = $f->id <= 0
-                    ? $this->basic_intrinsic_json($f->id)
-                    : $this->conf->option_type($f->type);
-                if (!$ot || ($ot->authorlike ?? false)) {
-                    continue;
-                }
-                $visname = "sf/" . ($ctrz + 1) . "/visibility";
-                $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden from reviewers");
+        if ($sv->oldv("author_visibility") != Conf::BLIND_ALWAYS
+            || (!$sv->has_interest("sf") && !$sv->has_interest("author_visibility"))) {
+            return;
+        }
+        foreach (self::configurable_options($this->conf) as $ctrz => $f) {
+            if ($f->visibility() !== PaperOption::VIS_AUTHOR) {
+                continue;
             }
+            $ot = $f->id <= 0
+                ? $this->basic_intrinsic_json($f->id)
+                : $this->conf->option_type($f->type);
+            if (!$ot || ($ot->authorlike ?? false)) {
+                continue;
+            }
+            $visname = "sf/" . ($ctrz + 1) . "/visibility";
+            $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden from reviewers");
         }
     }
 }
