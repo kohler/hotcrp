@@ -195,7 +195,6 @@ class CurlS3Result extends S3Result {
 
     function close() {
         if ($this->curlh !== null) {
-            curl_reset($this->curlh);
             fclose($this->_hstream);
             if ($this->_fstream) {
                 fclose($this->_fstream);
