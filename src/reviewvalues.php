@@ -350,9 +350,8 @@ class ReviewValues extends MessageSet {
             return true;
         } else if ($x === "nonblind" || $x === "nonanonymous") {
             return false;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param mixed $x
@@ -364,9 +363,8 @@ class ReviewValues extends MessageSet {
             return true;
         } else if ($x === "unready" || $x === "draft") {
             return false;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param mixed $x
@@ -376,9 +374,8 @@ class ReviewValues extends MessageSet {
             return $v ? "approved" : false;
         } else if ($x === "approved" || $x === "submitted") {
             return $x;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return bool */
@@ -1422,9 +1419,8 @@ class ReviewValues extends MessageSet {
             return MessageSet::ERROR;
         } else if ($this->has_problem() || $this->finished === 1) {
             return MessageSet::WARNING;
-        } else {
-            return MessageSet::SUCCESS;
         }
+        return MessageSet::SUCCESS;
     }
 
     function report() {
