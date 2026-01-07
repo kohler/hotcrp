@@ -83,7 +83,7 @@ class Home_Page {
     }
 
     function print_head(Contact $user, Qrequest $qreq, ComponentSet $gx) {
-        $qreq->print_header("Home", "home");
+        $qreq->print_header("Home", "home", ["body_class" => "body-home"]);
         if ($qreq->signedout && $user->is_empty()) {
             $user->conf->success_msg("<0>You have been signed out of the site");
         }

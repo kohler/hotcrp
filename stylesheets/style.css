@@ -922,7 +922,7 @@ td.g {
 	padding-bottom: 48px;
 	position: relative;
 }
-#m-home #p-body {
+body.body-home #p-body {
 	margin-top: 1rem;
 	margin-left: 3%;
 	margin-right: 4%;

@@ -30,7 +30,7 @@ class LoginHelper {
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
             header("HTTP/1.0 401 Unauthorized");
-            $qreq->print_header("Error", "home");
+            $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication required"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.")
@@ -45,7 +45,7 @@ class LoginHelper {
             $conf->redirect($info["redirect"] ?? "");
         } else {
             header("HTTP/1.0 401 Unauthorized");
-            $qreq->print_header("Error", "home");
+            $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication error"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users. You have provided incorrect authentication data.")
