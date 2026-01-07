@@ -255,16 +255,16 @@ body {
 	position: relative;
 	min-height: 100vh;
 }
-body.paper {
+#p-page.paper {
 	background: linear-gradient(to right, var(--submission-bg), var(--submission-bg) 15.5rem, var(--paper) 15.5rem, var(--paper));
 }
-body.body-signin {
+#p-page.body-signin {
 	background: #e0d9da;
 }
-body.body-error, body.paper-error {
+#p-page.body-error, #p-page.paper-error {
 	background: #dfd0d3;
 }
-body.leftmenu {
+#p-page.leftmenu {
 	background: linear-gradient(to right, #ecf2f4, #ecf2f4 164px, var(--paper) 164px, var(--paper));
 }
 #m-buzzer {
@@ -922,17 +922,17 @@ td.g {
 	padding-bottom: 48px;
 	position: relative;
 }
-body.body-home #p-body {
+#p-body.body-home {
 	margin-top: 1rem;
 	margin-left: 3%;
 	margin-right: 4%;
 }
-body.paper #p-body {
+#p-body.paper {
 	margin-left: 0;
 	margin-right: 0;
 }
 @media screen and (min-width: 900px) {
-.body-text #p-body {
+#p-body.body-text {
 	margin-left: 10%;
 	margin-right: 10%;
 }

@@ -5213,17 +5213,28 @@ class Conf {
      * @param string|list<string> $title */
     function print_body_entry($qreq, $title, $id, $extra = []) {
         $user = $qreq->user();
+        $list = $qreq->active_list();
+
+        $class = $extra["body_class"] ?? "";
+        $body_elt_class = $list ? Ht::add_tokens($class, "has-hotlist") : $class;
+        $body_class = "";
+        if ($class !== "") {
+            foreach (explode(" ", $class) as $k) {
+                if (str_starts_with($k, "paper")
+                    || str_starts_with($k, "body")
+                    || $k === "leftmenu") {
+                    $body_class = $body_class === "" ? $k : "{$body_class} {$k}";
+                }
+            }
+        }
+        $this->_mx_auto = strpos($body_elt_class, "error") !== false;
+
         echo "<body";
         if ($id) {
             echo ' id="m-', $id, '"';
         }
-        $class = $extra["body_class"] ?? "";
-        $this->_mx_auto = strpos($class, "error") !== false;
-        if (($list = $qreq->active_list())) {
-            $class = $class === "" ? "has-hotlist" : "{$class} has-hotlist";
-        }
-        if ($class !== "") {
-            echo ' class="', $class, '"';
+        if ($body_elt_class !== "") {
+            echo ' class="', $body_elt_class, '"';
         }
         if ($list) {
             echo ' data-hotlist="', htmlspecialchars($list->info_string()), '"';
@@ -5232,7 +5243,9 @@ class Conf {
         if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
             echo ' data-document-max-size="', ini_get_bytes(null, $x), '"';
         }
-        echo '><div id="p-page" class="need-banner-offset"><header id="p-header">';
+        echo '><div id="p-page" class="',
+            Ht::add_tokens($body_class, "need-banner-offset"),
+            '"><header id="p-header">';
 
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
@@ -5264,7 +5277,11 @@ class Conf {
         }
         echo "</div></header>\n";
 
-        echo "<main id=\"p-body\">\n";
+        echo "<main id=\"p-body\"";
+        if ($body_class !== "") {
+            echo " class=\"{$body_class}\"";
+        }
+        echo ">\n";
 
         // If browser owns tracker, send it the script immediately
         if ($this->has_active_tracker()

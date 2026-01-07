@@ -6,13 +6,13 @@
 .pcard-left {
 	width: 22.5%;
 }
-body.paper {
+#p-page.paper {
 	background: linear-gradient(to right, var(--submission-bg), var(--submission-bg) 22.5%, var(--paper) 22.5%, var(--paper));
 }
 .pcard {
 	margin-left: 22.5%;
 }
-body.body-home #p-body {
+#p-body.body-home {
 	margin-left: 24px;
 	margin-right: 24px;
 }
@@ -59,7 +59,7 @@ html {
 h1.leftmenu, h2.leftmenu {
 	margin-bottom: 8px;
 }
-body.leftmenu, body.paper {
+#p-page.leftmenu, #p-page.paper {
 	background: var(--paper);
 }
 body.leftmenu #p-header {
@@ -69,7 +69,7 @@ body.leftmenu #p-header {
 body.paper #p-header {
 	background: #dce4e8;
 }
-#p-body, body.paper #p-body, body.body-home #p-body {
+#p-body, #p-body.paper, #p-body.body-home {
 	margin-left: 12px;
 	margin-right: 12px;
 }
