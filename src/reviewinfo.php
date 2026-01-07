@@ -143,13 +143,6 @@ class ReviewInfo implements JsonSerializable {
     // See also script.js:ratings_info
     /** @var array<int,string>
      * @readonly */
-    static public $rating_options = [
-        1 => "good review", 2 => "needs work",
-        4 => "too short", 8 => "too vague", 16 => "too narrow",
-        32 => "disrespectful", 64 => "not correct"
-    ];
-    /** @var array<int,string>
-     * @readonly */
     static public $rating_bits = [
         1 => "good", 2 => "needswork", 4 => "short", 8 => "vague",
         16 => "narrow", 32 => "disrespectful", 64 => "wrong"
@@ -219,9 +212,8 @@ class ReviewInfo implements JsonSerializable {
     static function unparse_assigner_action($type) {
         if ($type <= 0) {
             return "clearreview";
-        } else {
-            return self::$type_revmap[$type] . "review";
         }
+        return self::$type_revmap[$type] . "review";
     }
 
 
@@ -459,9 +451,8 @@ class ReviewInfo implements JsonSerializable {
             return self::RS_EMPTY;
         } else if ($this->reviewModified === 1) {
             return self::RS_ACKNOWLEDGED;
-        } else {
-            return self::RS_DRAFTED;
         }
+        return self::RS_DRAFTED;
     }
 
     /** @param int $rflags
@@ -477,9 +468,8 @@ class ReviewInfo implements JsonSerializable {
             return self::RS_DRAFTED;
         } else if (($rflags & self::RF_ACKNOWLEDGED) !== 0) {
             return self::RS_ACKNOWLEDGED;
-        } else {
-            return self::RS_EMPTY;
         }
+        return self::RS_EMPTY;
     }
 
     /** @return bool */
@@ -588,9 +578,8 @@ class ReviewInfo implements JsonSerializable {
             return " rtghost";
         } else if (($rflags & self::RF_APPROVED) !== 0) {
             return " rtsubrev";
-        } else {
-            return " rtinc";
         }
+        return " rtinc";
     }
 
     /** @param ?string $classes
@@ -627,9 +616,8 @@ class ReviewInfo implements JsonSerializable {
         if ($round > 0 && ($n = $conf->round_name($round)) !== "") {
             $n = htmlspecialchars($n);
             return "<span class=\"revround\" title=\"Review round\">{$n}</span>";
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @return string */
@@ -646,9 +634,8 @@ class ReviewInfo implements JsonSerializable {
             return $ucfirst ? "Subreview" : "subreview";
         } else if ($this->is_ghost()) {
             return $ucfirst ? "Hidden assignment" : "hidden assignment";
-        } else {
-            return $ucfirst ? "Review" : "review";
         }
+        return $ucfirst ? "Review" : "review";
     }
 
     /** @return string */
@@ -671,9 +658,8 @@ class ReviewInfo implements JsonSerializable {
             return "outstanding";
         } else if ($this->is_ghost()) {
             return "tentative";
-        } else {
-            return "not started";
         }
+        return "not started";
     }
 
     /** @return string */
@@ -684,9 +670,8 @@ class ReviewInfo implements JsonSerializable {
             return "{$this->paperId}r{$this->reviewId}";
         } else if ($this->paperId) {
             return "{$this->paperId}rnew";
-        } else {
-            return "new";
         }
+        return "new";
     }
 
     /** @return bool */
@@ -1044,9 +1029,8 @@ class ReviewInfo implements JsonSerializable {
         $pos = strpos("," . $this->ratingSignature, $str);
         if ($pos !== false) {
             return intval(substr($this->ratingSignature, $pos + strlen($str) - 1));
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $rating
@@ -1056,14 +1040,13 @@ class ReviewInfo implements JsonSerializable {
             return self::$rating_bits[$rating];
         } else if (!$rating) {
             return "none";
-        } else {
-            $a = [];
-            foreach (self::$rating_bits as $k => $v) {
-                if ($rating & $k)
-                    $a[] = $v;
-            }
-            return join(" ", $a);
         }
+        $a = [];
+        foreach (self::$rating_bits as $k => $v) {
+            if ($rating & $k)
+                $a[] = $v;
+        }
+        return join(" ", $a);
     }
 
     /** @param int ...$ratings
@@ -1086,10 +1069,9 @@ class ReviewInfo implements JsonSerializable {
             return "none";
         } else if (count($n) === 1) {
             return $n[0];
-        } else {
-            sort($n);
-            return $n;
         }
+        sort($n);
+        return $n;
     }
 
     /** @param ?string $s

@@ -435,7 +435,7 @@ final class PaperDocumentLink {
     }
 }
 
-class PaperInfoSet implements IteratorAggregate, Countable {
+final class PaperInfoSet implements IteratorAggregate, Countable {
     /** @var Conf
      * @readonly */
     public $conf;
