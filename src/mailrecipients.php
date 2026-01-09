@@ -164,7 +164,8 @@ class MailRecipients extends MessageSet {
             $this->recipt_default_message = "authors";
             $hide = !$this->conf->has_any_submitted();
             $this->add_recpt("s", "Contact authors of submitted papers", "s", $hide ? self::F_HIDE : 0);
-            $this->add_recpt("unsub", "Contact authors of unsubmitted papers", "unsub");
+            $this->add_recpt("active", "Contact authors of active papers", "active");
+            $this->add_recpt("unsub", "Contact authors of unsubmitted papers", "unsub", self::F_HIDE);
             $this->add_recpt("au", "All contact authors", "all");
 
             $this->dcounts();
@@ -372,7 +373,7 @@ class MailRecipients extends MessageSet {
 
     /** @return bool */
     function is_authors() {
-        return in_array($this->rect->name, ["s", "unsub", "au"], true)
+        return in_array($this->rect->name, ["s", "unsub", "active", "au"], true)
             || str_starts_with($this->rect->name, "dec:");
     }
 
@@ -422,6 +423,8 @@ class MailRecipients extends MessageSet {
         } else if ($t === "s") {
             $options["finalized"] = true;
             $options["decision"] = ["standard"];
+        } else if ($t === "active") {
+            $options["active"] = true;
         } else if ($t === "unsub") {
             $options["unsub"] = true;
             $options["active"] = true;
