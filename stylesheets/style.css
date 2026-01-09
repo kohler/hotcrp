@@ -253,7 +253,13 @@ code, kbd, pre, samp, .text-monospace {
 body {
 	margin: 0;
 	position: relative;
+}
+
+#p-page {
+	position: relative;
+	z-index: 0;
 	min-height: 100vh;
+	min-height: 100dvh;
 }
 #p-page.paper {
 	background: linear-gradient(to right, var(--submission-bg), var(--submission-bg) 15.5rem, var(--paper) 15.5rem, var(--paper));
@@ -273,10 +279,6 @@ body {
 
 
 /* header */
-#p-page {
-	position: relative;
-	z-index: 0;
-}
 #p-header {
 	position: relative;
 	padding-bottom: 24px;

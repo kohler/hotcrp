@@ -3465,7 +3465,8 @@ handle_ui.on("js-mark-submit", function () {
 // banner
 hotcrp.banner = (function () {
 function resize(b) {
-    const offs = document.querySelectorAll(".need-banner-offset");
+    const offs = document.querySelectorAll(".need-banner-offset"),
+        pbody = document.getElementById("p-page");
     if (b) {
         const h = b.offsetHeight;
         for (const e of offs) {
@@ -3489,13 +3490,13 @@ function resize(b) {
                 e.style.top = (h + parseFloat(bo)) + "px";
             }
         }
-        document.body.style.minHeight = "calc(100vh - " + h + "px)";
+        document.body.style.minHeight = pbody.style.minHeight = "calc(100dvh - " + h + "px)";
     } else {
         for (const e of offs) {
             const bo = e.getAttribute("data-banner-offset") || "";
             e.style[bo.startsWith("B") ? "bottom" : "top"] = null;
         }
-        document.body.style.minHeight = null;
+        document.body.style.minHeight = pbody.style.minHeight = null;
     }
 }
 return {
