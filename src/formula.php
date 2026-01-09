@@ -1705,15 +1705,11 @@ class Formula implements JsonSerializable {
     /** @var string
      * @readonly */
     public $expression;
-    /** @var bool */
-    private $_allow_indexed;
 
     /** @var Fexpr */
     private $_fexpr;
     /** @var list<MessageItem> */
     public $lerrors = [];
-    /** @var bool */
-    private $_indexed = false;
     /** @var int */
     private $_index_type = 0;
     /** @var int */
@@ -1783,10 +1779,9 @@ class Formula implements JsonSerializable {
         $f->conf = $user->conf;
         $f->user = $user;
         $f->expression = $expr;
-        $f->_allow_indexed = ($flags & self::ALLOW_INDEXED) !== 0;
 
         $fp = new FormulaParser($f, $expr);
-        $f->_fexpr = $f->_adjust_fexpr($fp->parse());
+        $f->_fexpr = $f->_adjust_fexpr($fp->parse(), $flags);
         if (MessageSet::list_status($f->lerrors) >= MessageSet::ERROR) {
             $f->_fexpr->set_format_error();
         }
@@ -1806,7 +1801,8 @@ class Formula implements JsonSerializable {
 
     /* parsing */
 
-    private function _adjust_fexpr(Fexpr $fe) {
+    /** @param int $flags */
+    private function _adjust_fexpr(Fexpr $fe, $flags) {
         if ($fe->format() === Fexpr::FERROR) {
             if (empty($this->lerrors)) {
                 $this->fexpr_lerror($fe, "<0>Formula parse error");
@@ -1821,11 +1817,11 @@ class Formula implements JsonSerializable {
         }
         $state = new FormulaCompiler($this);
         $fe->compile($state);
-        if ($state->indexed && !$this->_allow_indexed) {
+        if ($state->indexed && ($flags & self::ALLOW_INDEXED) === 0) {
             if ($fe->matches_at_most_once()) {
                 $some_fe = new Some_Fexpr($fe, $fe->some_inferred_index());
                 $some_fe->apply_strspan($fe->pos1, $fe->pos2, null);
-                return $this->_adjust_fexpr($some_fe);
+                return $this->_adjust_fexpr($some_fe, $flags);
             }
             $this->fexpr_lerror($fe, "<0>Need an aggregate function like ‘sum’ or ‘max’");
             return $fe;
@@ -2110,7 +2106,7 @@ class Formula implements JsonSerializable {
             $state = new FormulaCompiler($this);
             $state->queryOptions =& $queryOptions;
             $this->_fexpr->compile($state);
-            if ($this->_indexed) {
+            if ($this->_index_type > 0) {
                 $state->loop_variable($this->_index_type);
             }
         }
@@ -2206,7 +2202,7 @@ class Formula implements JsonSerializable {
 
     /** @return bool */
     function indexed() {
-        return $this->_indexed;
+        return $this->_index_type > 0;
     }
 
     /** @return int */

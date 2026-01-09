@@ -777,7 +777,7 @@ function grouped_quadtree_gfind(point, min_distance) {
     return closest;
 }
 
-function grouped_quadtree(data, xs, ys, rf) {
+function grouped_quadtree(data, xs, ys, rf, expand) {
     function make_extent() {
         const xe = xs.range(), ye = ys.range();
         return [[Math.min(xe[0], xe[1]), Math.min(ye[0], ye[1])],
@@ -796,7 +796,7 @@ function grouped_quadtree(data, xs, ys, rf) {
             cc: d[3],
             next: null,
             head: null,
-            n: 1,
+            n: expand ? d[2].length : 1,
             i: nd.length,
             r0: null,
             r: null,
@@ -815,7 +815,7 @@ function grouped_quadtree(data, xs, ys, rf) {
         }
         if (vp && vp.cc == vd.cc) {
             vp.data.push(d);
-            vp.n += 1;
+            vp.n += vd.n;
         } else {
             if (vp) {
                 vp.next = vd;
@@ -1038,7 +1038,7 @@ function graph_scatter(selector, args) {
 
     $(selector).on("hotgraphhighlight", highlight);
 
-    const gq = grouped_quadtree(data, x, y, 4);
+    const gq = grouped_quadtree(data, x, y, 4, args.data_format === "xyis");
     data = null;
     scatter_create(svg, gq.data);
 

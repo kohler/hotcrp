@@ -56,9 +56,8 @@ class BarElement_GraphData {
             return $a->sx <=> $b->sx;
         } else if ($a->x != $b->x) {
             return $a->x <=> $b->x;
-        } else {
-            return strcmp($a->style, $b->style);
         }
+        return strcmp($a->style, $b->style);
     }
 }
 
@@ -92,9 +91,8 @@ class Bar_GraphData implements JsonSerializable {
             return [$this->x, $this->y, $this->ids, $this->style, $this->sx];
         } else if ($this->style) {
             return [$this->x, $this->y, $this->ids, $this->style];
-        } else {
-            return [$this->x, $this->y, $this->ids];
         }
+        return [$this->x, $this->y, $this->ids];
     }
 }
 
@@ -1021,9 +1019,8 @@ class FormulaGraph extends MessageSet {
             return "cdf";
         } else if ($this->_fx_combine) {
             return "xyis";
-        } else {
-            return "style_xyi";
         }
+        return "style_xyi";
     }
 
     private function data() {
@@ -1046,7 +1043,7 @@ class FormulaGraph extends MessageSet {
                 return $this->user->can_view_paper($prow);
             });
 
-            if (($this->type & self::CDF) !== 0) {
+            if ($this->type & self::CDF) {
                 $this->_cdf_data($rowset);
             } else if ($this->_fx_combine) {
                 $this->_combine_data($rowset);
@@ -1062,9 +1059,8 @@ class FormulaGraph extends MessageSet {
             return $this->_cdf_data;
         } else if ($this->_fx_combine) {
             return $this->_bar_data;
-        } else {
-            return $this->_scatter_data;
         }
+        return $this->_scatter_data;
     }
 
     /** @param 'x'|'y' $axis */
