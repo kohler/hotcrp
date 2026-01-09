@@ -1,6 +1,6 @@
 /* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
 /* style.css -- HotCRP CSS styles */
-/* Copyright (c) 2006-2025 Eddie Kohler; see LICENSE. */
+/* Copyright (c) 2006-2026 Eddie Kohler; see LICENSE. */
 
 @layer theme;
 
@@ -2030,18 +2030,17 @@ td.padls, th.padls, div.padls {
 	margin-top: 2.25rem;
 	margin-bottom: 0;
 }
-.form-sep-2 {
-	margin-top: 0.5rem;
-	margin-bottom: 0;
-}
 .form-sep.nearby {
 	margin-top: 1.25rem;
 }
-hr.form-sep, hr.form-sep-2 {
+.form-sep.minimal {
+	margin-top: 0.5rem;
+}
+hr.form-sep {
 	border: 0 none;
 	height: 0;
 }
-.form-h + .form-sep, .form-h + .form-sep-2 {
+.form-h + .form-sep {
 	margin-top: 0;
 }
 .form-g, .form-g-5 {
