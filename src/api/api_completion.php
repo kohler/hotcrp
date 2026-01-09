@@ -192,6 +192,13 @@ class Completion_API {
             }
         }
 
+        if ((!$category || $category === "sclass")
+            && $conf->has_named_submission_rounds()) {
+            foreach ($conf->submission_round_list() as $sr) {
+                $comp[] = "sclass:" . ($sr->unnamed ? "unnamed" : $sr->tag);
+            }
+        }
+
         if ((!$category || $category === "dec")
             && $user->can_view_some_decision()) {
             $comp[] = ["pri" => -1, "nosort" => true, "i" => ["dec:any", "dec:none", "dec:yes", "dec:no"]];
