@@ -153,11 +153,17 @@ input, textarea, .textarea, select, button, .btn {
 dl {
 	margin: 0 0 1em;
 }
+dd {
+	margin-left: 1.5em;
+}
 dl.bsp > dt {
 	font-weight: bolder;
 }
-dl.bsp > dd {
+dl.bsp > dd, dl.sp > dd {
 	margin-bottom: 0.5em;
+}
+dl.sb > dt {
+	font-weight: 500;
 }
 dl.swoosh > dd {
 	margin-left: 1.5em;
@@ -606,8 +612,11 @@ input.wide {
 .font-weight-bold {
 	font-weight: bold !important;
 }
-.font-weight-semibold, .sb {
+.font-weight-semibold {
 	font-weight: 500 !important;
+}
+strong.sb {
+	font-weight: 500;
 }
 .font-italic {
 	font-style: italic;
@@ -4166,8 +4175,8 @@ a.badge-white:hover {
 	width: 0;
 	height: 0;
 }
-.bubcontent > p {
-	max-width: 280px;
+.bubcontent > p, .bubcontent > blockquote, .bubcontent > dl {
+	max-width: 320px;
 }
 .bubcontent > :last-child {
 	margin-bottom: 0;
