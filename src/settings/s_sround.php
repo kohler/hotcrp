@@ -96,7 +96,7 @@ class Sround_SettingParser extends SettingParser {
         }
 
         echo '<fieldset id="submission/', $ctr,
-            '" class="js-settings-submission-round mt-3 mb-2 form-g',
+            '" class="js-settings-submission-round form-g',
             $idv !== "new" ? "" : " is-new", $deleted ? " deleted" : "", '">',
             Ht::hidden("submission/{$ctr}/id", $idv, ["data-default-value" => $idv === "new" ? "" : $idv]),
             Ht::hidden("submission/{$ctr}/delete", $deleted ? "1" : "", ["data-default-value" => ""]);
@@ -136,7 +136,7 @@ class Sround_SettingParser extends SettingParser {
 
         echo '</div><template id="settings-submission-round-new" class="hidden">';
         self::print_round($sv, '$');
-        echo '</template><hr class="form-sep nearby">',
+        echo '</template>',
             Ht::button("Add submission class", ["class" => "ui js-settings-submission-round-new"]);
     }
 
