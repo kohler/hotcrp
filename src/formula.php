@@ -927,9 +927,8 @@ class Variance_Fexpr extends Aggregate_Fexpr {
             return "({$t}[2] ? {$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2]) : null)";
         } else if ($this->op === "stddev") {
             return "({$t}[2] > 1 ? sqrt({$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1))) : ({$t}[2] ? 0.0 : null))";
-        } else {
-            return "({$t}[2] ? sqrt({$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2])) : null)";
         }
+        return "({$t}[2] ? sqrt({$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2])) : null)";
     }
 }
 
@@ -1053,9 +1052,8 @@ class Sum_Fexpr extends Aggregate_Fexpr {
     function compile(FormulaCompiler $state) {
         if ($this->args[0]->nonnull_format()) {
             return $state->_compile_loop("null", "(~r~ !== null ? ~r~ + ~l~ : +~l~)", $this);
-        } else {
-            return $state->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : +~l~) : ~r~)", $this);
         }
+        return $state->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : +~l~) : ~r~)", $this);
     }
 }
 
@@ -1584,14 +1582,13 @@ class FormulaCompiler {
         $body = join($indent, array_merge($prefix, $this->lstmt));
         if ($isblock) {
             return "{{$indent}{$body}" . substr($indent, 0, -2) . "}";
-        } else {
-            return $body;
         }
+        return $body;
     }
 
     /** @param int $index_types
      * @return string */
-    function loop_variable($index_types) {
+    function index_range($index_types) {
         if ($index_types === Fexpr::IDX_PC_SET_PRIVATE_TAG) {
             return $this->_add_pc_set_private_tag();
         } else if (($index_types & Fexpr::IDX_REVIEW_MASK) === $index_types) {
@@ -1599,8 +1596,8 @@ class FormulaCompiler {
         } else if ($index_types === Fexpr::IDX_PC) {
             return $this->_add_pc();
         }
-        assert($index_types === 0 || $index_types === Fexpr::IDX_X);
-        return $this->define_gvar("trivial_loop", "[0]");
+        assert($index_types === 0 || $index_types === Fexpr::IDX_MY || $index_types === Fexpr::IDX_X);
+        return "[0]";
     }
 
     function _compile_loop($initial_value, $combiner, Aggregate_Fexpr $e) {
@@ -1658,14 +1655,13 @@ class FormulaCompiler {
         if ($this->term_compiler !== null) {
             $loop = "foreach (\$extractor_results as \$v{$p}) " . $this->_join_lstmt(true, $lprefix);
         } else {
-            $g = $this->loop_variable($this->index_type);
+            $g = $this->index_range($this->index_type);
             if (($this->index_type & Fexpr::IDX_REVIEW) !== 0) {
                 $loop = "foreach ({$g} as \$v{$p}) ";
             } else {
                 $loop = "foreach ({$g} as \$i{$p} => \$v{$p}) ";
             }
             $loop .= str_replace("~i~", "\$i{$p}", $this->_join_lstmt(true, $lprefix));
-            $loop = str_replace("({$g}[\$i{$p}] ?? null)", "\$v{$p}", $loop);
         }
         $loopstmt[] = $loop;
 
@@ -2024,7 +2020,7 @@ class Formula implements JsonSerializable {
         }
         $formula = Formula::make($user, "0");
         $state = new FormulaCompiler($formula);
-        $g = $state->loop_variable($index_types);
+        $g = $state->index_range($index_types);
         $body = "assert(\$user->contactXid === {$user->contactXid});\n  "
             . join("\n  ", $state->gstmt) . "\n";
         if (($index_types & Fexpr::IDX_REVIEW) !== 0) {
@@ -2107,7 +2103,7 @@ class Formula implements JsonSerializable {
             $state->queryOptions =& $queryOptions;
             $this->_fexpr->compile($state);
             if ($this->_index_type > 0) {
-                $state->loop_variable($this->_index_type);
+                $state->index_range($this->_index_type);
             }
         }
     }
