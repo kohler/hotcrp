@@ -15,7 +15,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
         if ($pres === "none" || $osp->sfs->option_id <= 0) {
             $sel["none"] = "Disabled";
         }
-        if (!isset($pressel[$pres])) {
+        if (!isset($sel[$pres])) {
             $sv->print_control_group("sf/{$osp->ctr}/condition", "Present", "Custom search", [
                 "horizontal" => true
             ]);
