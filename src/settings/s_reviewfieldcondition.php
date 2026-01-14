@@ -1,15 +1,17 @@
 <?php
 // settings/s_reviewfieldcondition.php -- HotCRP review field conditions
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ReviewFieldCondition_SettingParser extends SettingParser {
     /** @param Conf $conf
      * @return array<string,string> */
     static function presence_options($conf) {
-        $ecsel = ["all" => "All reviews"];
-        foreach ($conf->defined_rounds() as $i => $rname) {
-            $rname = $i ? $rname : "unnamed";
-            $ecsel["round:{$rname}"] = "{$rname} review round";
+        $ecsel = ["all" => "Always present"];
+        if ($conf->has_rounds()) {
+            foreach ($conf->defined_rounds() as $i => $rname) {
+                $rname = $i ? $rname : "unnamed";
+                $ecsel["round:{$rname}"] = "{$rname} review round";
+            }
         }
         $ecsel["custom"] = "Custom…";
         return $ecsel;

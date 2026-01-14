@@ -1,6 +1,6 @@
 <?php
 // settings/s_reviewform.php -- HotCRP review form definition page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ReviewForm_SettingParser extends SettingParser {
     /** @var FieldConversions_Setting */
@@ -578,7 +578,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         Ht::stash_html('<div id="settings-rf-caption-condition" class="hidden">'
             . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl class="bsp"><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>'
             . '</div>', "settings-rf-caption-condition");
-        $sv->print_select_group("rf/\$/presence", "Present on",
+        $sv->print_select_group("rf/\$/presence", "Condition",
             ReviewFieldCondition_SettingParser::presence_options($sv->conf), [
                 "horizontal" => true,
                 "fold_values" => ["custom"], "group_open" => true,

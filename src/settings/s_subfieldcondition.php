@@ -1,6 +1,6 @@
 <?php
 // settings/s_subfieldcondition.php -- HotCRP submission field conditions
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class SubFieldCondition_SettingParser extends SettingParser {
     /** @return ?string */
@@ -23,16 +23,18 @@ class SubFieldCondition_SettingParser extends SettingParser {
         $osp = $sv->parser("Options_SettingParser");
         $sel = [];
         if ($osp->sfs->option_id !== DTYPE_FINAL) {
-            $sel["all"] = "Yes";
+            $sel["all"] = "Always present";
         }
-        $sel["phase:final"] = "In the final-version phase";
+        if ($osp->sfs->option_id !== DTYPE_SUBMISSION) {
+            $sel["phase:final"] = "Final-version phase";
+        }
         $opres = strtolower($osp->sfs->exists_if ?? "all");
         $npres = $sv->reqstr("sf/{$osp->ctr}/presence") ?? $opres;
         if ($opres === "none" || $npres === "none" || $osp->sfs->option_id <= 0) {
-            $sel["none"] = "Disabled";
+            $sel["none"] = "Hidden";
         }
         $sv->print_group_open("sf/{$osp->ctr}/condition", ["horizontal" => true]);
-        echo $sv->label("sf/{$osp->ctr}/presence", "Present", ["no_control_class" => true]),
+        echo $sv->label("sf/{$osp->ctr}/presence", "Condition", ["no_control_class" => true]),
             '<div class="entry">',
             $sv->feedback_at("sf/{$osp->ctr}/condition");
         if (isset($sel[$npres])) {
