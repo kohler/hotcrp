@@ -437,11 +437,12 @@
         "name": "trackerconfig", "post": true,
         "function": "TrackerConfig_API::run",
         "parameters": "?=stopall ?=:tr ?=:has_tr",
-        "response": "?tracker ?tracker_recent ?tracker_status ?now tracker_status_at tracker_eventid ?new_trackerid ?tracker_site"
+        "response": "?tracker ?tracker_status ?now ?tracker_eventid ?tracker_recent ?tracker_site ?new_trackerid"
     },
     {
         "name": "trackerstatus", "get": true,
-        "function": "MeetingTracker::trackerstatus_api"
+        "function": "MeetingTracker::trackerstatus_api",
+        "response": "tracker_status tracker_eventid"
     },
     {
         "name": "upload", "post": true,

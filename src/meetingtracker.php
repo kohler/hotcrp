@@ -1,6 +1,6 @@
 <?php
 // meetingtracker.php -- HotCRP meeting tracker support
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class MeetingTracker {
     /** @return MeetingTracker_ConfigSet */
@@ -48,14 +48,12 @@ class MeetingTracker {
     }
 
 
-    /** @param Qrequest $qreq
-     * @return JsonResult */
+    /** @return JsonResult */
     static function trackerstatus_api(Contact $user) {
         $tracker = self::lookup($user->conf);
         return new JsonResult([
             "ok" => true,
             "tracker_status" => $tracker->status(),
-            "tracker_status_at" => $tracker->position_at,
             "tracker_eventid" => $tracker->eventid
         ]);
     }
@@ -220,9 +218,6 @@ class MeetingTracker {
             }
             $dl->tracker_status = $tracker->status();
             $dl->now = microtime(true);
-        }
-        if ($tracker->position_at) {
-            $dl->tracker_status_at = $tracker->position_at;
         }
         if ($tracker->eventid > 0) {
             $dl->tracker_eventid = $tracker->eventid;
@@ -690,7 +685,6 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
                 "ok" => true,
                 "conference" => $url,
                 "tracker_status" => $this->status(),
-                "tracker_status_at" => $this->position_at,
                 "tracker_eventid" => $this->eventid
             ];
             if (!str_ends_with($comet_dir, "/")) {
@@ -733,12 +727,11 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
         }
 
         $context = stream_context_create(["http" => [
-            "method" => "GET", "ignore_errors" => true,
+            "method" => "POST", "ignore_errors" => true,
             "content" => "", "timeout" => 1.0
         ]]);
         $comet_url .= "update?conference=" . urlencode($url)
             . "&tracker_status=" . urlencode($this->status())
-            . "&tracker_status_at=" . $this->position_at
             . "&tracker_eventid=" . $this->eventid;
         $stream = @fopen($comet_url, "r", false, $context);
         if (!$stream) {
