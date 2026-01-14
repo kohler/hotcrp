@@ -531,9 +531,8 @@ class Ht {
     static function link($html, $href, $js = null) {
         if ($js === null && is_array($href)) {
             return self::make_link($html, null, $href);
-        } else {
-            return self::make_link($html, $href, $js);
         }
+        return self::make_link($html, $href, $js);
     }
 
     /** @param string $html

@@ -1718,9 +1718,9 @@ class SettingValues extends MessageSet {
      * @return string */
     function json_path_link($html, $jpath, $js = null) {
         $lpfx = $html !== "" ? "<u>{$html}</u> " : "";
+        $ujpath = urlencode($jpath);
         $hjpath = htmlspecialchars($jpath);
-        $lpath = "<code class=\"settings-jpath\">{$hjpath}</code>";
-        return "<a href=\"\" class=\"ui js-settings-jpath noul\">{$lpfx}{$lpath}</a>";
+        return "<a href=\"#path={$ujpath}\" class=\"noul\">{$lpfx}<code class=\"settings-jpath\">{$hjpath}</code></a>";
     }
 
     /** @param string $html
@@ -1728,18 +1728,17 @@ class SettingValues extends MessageSet {
      * @return string */
     function setting_group_link($html, $sg, $js = null) {
         $gj = $this->group_item($sg);
-        if ($gj) {
-            $page = $this->cs()->canonical_group($gj);
-            if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
-                $url = "#" . $gj->hashid;
-            } else {
-                $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
-            }
-            return Ht::link($html, $url, $js);
-        } else {
+        if (!$gj) {
             error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
             return $html;
         }
+        $page = $this->cs()->canonical_group($gj);
+        if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
+            $url = "#" . $gj->hashid;
+        } else {
+            $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
+        }
+        return Ht::link($html, $url, $js);
     }
 
     /** @param string $type

@@ -2494,9 +2494,8 @@ function json_path_position(s, path) {
             ++ipos;
         }
         return new JsonParserPosition(null, null, null, ipos, json_skip(s, ipos));
-    } else {
-        return jpp;
     }
+    return jpp;
 }
 
 function make_json_validate() {
@@ -3103,16 +3102,8 @@ function initialize_json_settings() {
     });
 }
 
-handle_ui.on("click.js-settings-jpath", function () {
-    let path = this.querySelector("code.settings-jpath"),
-        el = document.getElementById("json_settings");
-    if (path && el) {
-        settings_path_jump(el, path.textContent, hasClass(this, "use-key"));
-    }
-});
-
 handle_ui.on("hashjump.js-hash", function (c) {
-    let el = document.getElementById("json_settings");
+    const el = document.getElementById("json_settings");
     if (el) {
         initialize_json_settings();
         for (let i = 0; i !== c.length; ++i) {

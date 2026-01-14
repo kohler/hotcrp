@@ -3944,8 +3944,8 @@ class Conf {
         $t = $page;
         $are = '/\A(|.*?(?:&|&amp;))';
         $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
-        // parse options, separate anchor
-        $anchor = "";
+        // parse options, separate fragment
+        $fragment = "";
         $defaults = [];
         if (($flags & self::HOTURL_NO_DEFAULTS) === 0
             && $qreq
@@ -3959,11 +3959,14 @@ class Conf {
                 if ($v === null || $v === false) {
                     continue;
                 }
-                $v = urlencode($v);
-                if ($k === "anchor" /* XXX deprecated */ || $k === "#") {
-                    $anchor = "#{$v}";
+                if ($k === "#") {
+                    if (($flags & self::HOTURL_RAW) === 0
+                        && strcspn($v, "&<\"'") !== strlen($v)) {
+                        $v = htmlspecialchars($v);
+                    }
+                    $fragment = "#{$v}";
                 } else {
-                    $param .= "{$sep}{$k}={$v}";
+                    $param .= "{$sep}{$k}=" . urlencode($v);
                     $sep = $amp;
                 }
             }
@@ -3977,7 +3980,7 @@ class Conf {
         } else {
             $param = (string) $params;
             if (($pos = strpos($param, "#")) !== false) {
-                $anchor = substr($param, $pos);
+                $fragment = substr($param, $pos);
                 $param = substr($param, 0, $pos);
             }
             $sep = $param === "" ? "" : $amp;
@@ -4100,8 +4103,8 @@ class Conf {
         if ($param !== "") {
             $t .= "?" . $param;
         }
-        if ($anchor !== "") {
-            $t .= $anchor;
+        if ($fragment !== "") {
+            $t .= $fragment;
         }
         if ($flags & self::HOTURL_SITEREL) {
             return $t;
