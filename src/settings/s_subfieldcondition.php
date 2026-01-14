@@ -4,7 +4,7 @@
 
 class SubFieldCondition_SettingParser extends SettingParser {
     /** @return ?string */
-    static private function presence_to_condition(Conf $conf, $pres) {
+    static function presence_to_condition(Conf $conf, $pres) {
         if (strcasecmp($pres, "all") === 0) {
             return "ALL";
         } else if (strcasecmp($pres, "none") === 0) {
