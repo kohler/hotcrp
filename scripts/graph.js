@@ -789,7 +789,7 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
         if (d[0] == null || d[1] == null) {
             continue;
         }
-        let vd = {
+        const vd = {
             "0": xs(d[0]),
             "1": ys(d[1]),
             data: [d],

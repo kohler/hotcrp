@@ -46,7 +46,7 @@ class Search_Page {
      * @param string $type
      * @param string $title */
     private function checkbox_item($column, $type, $title, $options = []) {
-        $options["class"] = "uich js-plinfo";
+        $options["class"] = "uic uich uikd js-plinfo js-range-click";
         $options["id"] = "show{$type}";
         $xtype = $type === "anonau" ? "authors" : $type;
         $lclass = "checki";
@@ -211,7 +211,7 @@ class Search_Page {
         // Conflict display
         if ($this->user->is_manager()) {
             echo '<td class="padlb"><label class="checki"><span class="checkc">',
-                Ht::checkbox("showforce", 1, $this->pl->viewing("force"),
+                Ht::checkbox("forceShow", 1, $this->pl->viewing("force"),
                              ["id" => "showforce", "class" => "uich js-plinfo"]),
                 "</span>Override conflicts</label></td>";
         }

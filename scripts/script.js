@@ -2307,19 +2307,24 @@ function focus_and_scroll_into_view(e, down) {
 }
 
 handle_ui.on("js-range-click", function (evt) {
-    var f = this.form,
+    let key = false;
+    if (evt.type === "keydown") {
+        if (event_key.modcode(evt)
+            || ((key = event_key(evt)) !== "ArrowDown" && key !== "ArrowUp")) {
+            return;
+        }
+    } else if (evt.type !== "updaterange" && evt.type !== "click") {
+        return;
+    }
+
+    const f = this.form,
         rangeclick_state = f.jsRangeClick || {},
         kind = this.getAttribute("data-range-type") || this.name;
-    f.jsRangeClick = rangeclick_state;
-
-    let key = false;
-    if (evt.type === "keydown" && !event_key.modcode(evt)) {
-        key = event_key(evt);
-    }
     if (rangeclick_state.__clicking__
-        || (evt.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp")
-        || (evt.type === "updaterange" && rangeclick_state["__update_" + kind] === evt.detail))
+        || (evt.type === "updaterange" && rangeclick_state["__update_" + kind] === evt.detail)) {
         return;
+    }
+    f.jsRangeClick = rangeclick_state;
 
     // find checkboxes and groups of this type
     const cbs = [], cbisg = [], cbgs = [];
@@ -2353,7 +2358,7 @@ handle_ui.on("js-range-click", function (evt) {
         return;
     }
 
-    var lastgidx = 0;
+    let lastgidx = 0;
     function range_group_match(e, g, gelt) {
         if (g === "auto") {
             if (cbs[lastgidx] !== gelt) {
@@ -2402,6 +2407,7 @@ handle_ui.on("js-range-click", function (evt) {
         for (; i <= j; ++i) {
             if (!cbisg[i]
                 && cbs[i].checked !== this.checked
+                && !cbs[i].disabled
                 && range_group_match(cbs[i], group, gelt))
                 $(cbs[i]).trigger("click");
         }
@@ -2421,9 +2427,9 @@ handle_ui.on("js-range-click", function (evt) {
         let state = null;
         for (i = 0; i !== cbs.length; ++i) {
             if (!cbisg[i] && range_group_match(cbs[i], group, cbgs[j])) {
-                if (state === null)
+                if (state === null) {
                     state = cbs[i].checked;
-                else if (state !== cbs[i].checked) {
+                } else if (state !== cbs[i].checked) {
                     state = 2;
                     break;
                 }
@@ -2445,7 +2451,6 @@ handle_ui.on("js-range-radio", function (evt) {
         kind = this.getAttribute("data-range-type") || this.name;
 
     // find checkboxes of this type
-    const cbs = [], cbisg = [], cbgs = [];
     for (const e of f.querySelectorAll("input.js-range-radio:checked")) {
         const tkind = e.getAttribute("data-range-type") || this.name;
         if (kind === tkind && e !== this) {
@@ -8637,7 +8642,7 @@ function select_from(sel, s, list) {
 }
 
 function complete_list(v, sel, options) {
-    let res = [], mod;
+    let res = [];
     for (const code of sel) {
         const scode = `:${code}:`;
         let compl = v.completion[code];
@@ -12175,16 +12180,20 @@ handle_ui.on("js-override-conflict", function () {
     $(pr, prb).find(".fx5").removeClass("fx5").addClass("fxx5");
 });
 
-handle_ui.on("js-plinfo", function (evt) {
-    if (this.type !== "checkbox" || !this.name.startsWith("show")) {
+handle_ui.on("change.js-plinfo", function (evt) {
+    if (this.type !== "checkbox") {
         throw new Error("bad plinfo");
     }
     const plistui = make_plist.call(mainlist()), hidden = !this.checked;
     let fname;
     if (this.name === "show" || this.name === "show[]") {
         fname = this.value;
-    } else {
+    } else if (this.name === "forceShow") {
+        fname = "force";
+    } else if (this.name.startsWith("show")) {
         fname = this.name.substring(4);
+    } else {
+        throw new Error("bad plinfo");
     }
     if (fname === "force") {
         fold_override(plistui.pltable, hidden);
@@ -12209,7 +12218,6 @@ handle_ui.on("js-plinfo", function (evt) {
     } else {
         plinfo(plistui, fname, hidden, this.form);
     }
-    evt.preventDefault();
 });
 
 })();
