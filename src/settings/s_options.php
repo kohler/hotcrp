@@ -418,7 +418,7 @@ class Options_SettingParser extends SettingParser {
             || strcasecmp($this->sfs->editable_if, "all") === 0) {
             // no editable comment
         } else if (strcasecmp($this->sfs->editable_if, "none") === 0) {
-            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Frozen on all submissions (not editable)"));
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Read-only (not editable)"));
         } else if (strcasecmp($this->sfs->editable_if, "phase:review") === 0) {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable in the review phase"));
         } else if (strcasecmp($this->sfs->editable_if, "phase:final") !== 0) {
