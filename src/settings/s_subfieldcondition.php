@@ -3,6 +3,22 @@
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class SubFieldCondition_SettingParser extends SettingParser {
+    /** @return ?string */
+    static private function presence_to_condition(Conf $conf, $pres) {
+        if (strcasecmp($pres, "all") === 0) {
+            return "ALL";
+        } else if (strcasecmp($pres, "none") === 0) {
+            return "NONE";
+        } else if ($pres === "phase:final"
+                   || $pres === "phase:review"
+                   || (str_starts_with($pres, "sclass:")
+                       && ($sr = $conf->submission_round_by_tag(substr($pres, 7)))
+                       && !$sr->unnamed)) {
+            return $pres;
+        }
+        return null;
+    }
+
     function print(SettingValues $sv) {
         $osp = $sv->parser("Options_SettingParser");
         $sel = [];
@@ -10,27 +26,47 @@ class SubFieldCondition_SettingParser extends SettingParser {
             $sel["all"] = "Yes";
         }
         $sel["phase:final"] = "In the final-version phase";
-        $cond = $osp->sfs->exists_if ?? "all";
-        $pres = strtolower($cond);
-        if ($pres === "none" || $osp->sfs->option_id <= 0) {
+        $opres = strtolower($osp->sfs->exists_if ?? "all");
+        $npres = $sv->reqstr("sf/{$osp->ctr}/presence") ?? $opres;
+        if ($opres === "none" || $npres === "none" || $osp->sfs->option_id <= 0) {
             $sel["none"] = "Disabled";
         }
-        if (!isset($sel[$pres])) {
-            $sv->print_control_group("sf/{$osp->ctr}/condition", "Present", "Custom search", [
-                "horizontal" => true
-            ]);
-        } else {
+        $sv->print_group_open("sf/{$osp->ctr}/condition", ["horizontal" => true]);
+        echo $sv->label("sf/{$osp->ctr}/presence", "Present", ["no_control_class" => true]),
+            '<div class="entry">',
+            $sv->feedback_at("sf/{$osp->ctr}/condition");
+        if (isset($sel[$npres])) {
             $klass = null;
             if ($osp->sfs->option_id === PaperOption::ABSTRACTID
                 || $osp->sfs->option_id === DTYPE_SUBMISSION
                 || $osp->sfs->option_id === DTYPE_FINAL) {
                 $klass = "uich js-settings-sf-wizard";
             }
-            $sv->print_select_group("sf/{$osp->ctr}/condition", "Present", $sel, [
-                "class" => $klass,
-                "horizontal" => true
-            ]);
+            echo Ht::select("sf/{$osp->ctr}/presence", $sel, $npres, ["class" => $klass, "data-default-value" => $opres]);
+        } else {
+            echo "Custom search ‘", htmlspecialchars($osp->sfs->exists_if), "’";
+            if (($jpath = $sv->si("sf/{$osp->ctr}/condition")->json_path())) {
+                echo MessageSet::feedback_html([MessageItem::marked_note("<5>See " . Ht::link("advanced settings", $sv->conf->hoturl("settings", ["group" => "json", "#" => "path=" . urlencode($jpath)])))]);
+            }
         }
+        echo Ht::hidden("has_sf/{$osp->ctr}/condition", 1);
+        $sv->print_group_close(["horizontal" => true]);
+    }
+
+    function apply_req(Si $si, SettingValues $sv) {
+        if ($si->name2 === "/condition") {
+            if ($sv->has_req("sf/{$si->name1}/presence")) {
+                $pres = $sv->reqstr("sf/{$si->name1}/presence");
+                if (($cond = self::presence_to_condition($sv->conf, $pres))) {
+                    $sv->set_req("sf/{$si->name1}/condition", $cond);
+                }
+            }
+            if (($v = $sv->base_parse_req($si)) !== null) {
+                $sv->save($si, $v);
+            }
+            return true;
+        }
+        return false;
     }
 
     /** @param SettingValues $sv
@@ -39,8 +75,8 @@ class SubFieldCondition_SettingParser extends SettingParser {
      * @param PaperInfo $prow */
     static private function validate1($sv, $ctr, $type, $prow) {
         $siname = "sf/{$ctr}/{$type}";
-        $q = $sv->newv($siname);
-        if ($q === null || $q === "" || $q === "NONE" || $q === "phase:final") {
+        $q = $sv->newv($siname) ?? "";
+        if ($q === "" || $q === "NONE" || $q === "phase:final") {
             return;
         }
         $status = $sv->validating() ? 2 : 1;

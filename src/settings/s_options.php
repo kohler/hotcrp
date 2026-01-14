@@ -860,6 +860,10 @@ class Options_SettingParser extends SettingParser {
             }
             // if we get this far, there is a difference
             $diffprop[] = $mname;
+            // `exists_if` might affect the `final` JSON property instead
+            if ($mname === "exists_if") {
+                $diffprop[] = "final";
+            }
         }
         $form_order = $page_order = $isfsj->form_order;
         if (empty($diffprop)

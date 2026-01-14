@@ -1818,10 +1818,14 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string|Si $name
-     * @param string $class
+     * @param array<string,mixed>|string $class
      * @param ?array<string,mixed> $js */
     function print_group_open($name, $class, $js = null) {
         $si = is_string($name) ? $this->si($name) : $name;
+        if ($js === null && is_array($class)) {
+            $js = $class;
+            $class = ($js["horizontal"] ?? false) ? "entryi" : "f-i";
+        }
         $xjs = ["class" => $class];
         if (!isset($js["no_control_class"])) {
             if (isset($js["feedback_items"])) {
@@ -2031,14 +2035,6 @@ class SettingValues extends MessageSet {
     /** @param ?array<string,mixed> $js
      * @return void */
     function print_group_close($js = []) {
-        $horizontal = !!($js["horizontal"] ?? false);
-        echo $horizontal ? "</div></div>\n" : "</div>\n";
-    }
-
-    /** @param ?array<string,mixed> $js
-     * @return void
-     * @deprecated */
-    function print_close_control_group($js = []) {
         $horizontal = !!($js["horizontal"] ?? false);
         echo $horizontal ? "</div></div>\n" : "</div>\n";
     }

@@ -360,6 +360,7 @@
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
         "title": "/Presence condition",
         "type": "string", "subtype": "condition", "size": 30, "placeholder": "Search",
+        "parser_class": "SubFieldCondition_SettingParser",
         "parse_order": 3
     },
     {
