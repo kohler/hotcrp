@@ -151,6 +151,7 @@ class FormulaGraph extends MessageSet {
     const CDF = 2;
     const BARCHART = 4;
     const BOXPLOT = 8;
+    const DOT = 16;
     const FBARCHART = 132; // 128 | BARCHART
     const OGIVE = 130;    // 128 | CDF
 
@@ -221,7 +222,7 @@ class FormulaGraph extends MessageSet {
     /** @param string $s
      * @return ?array{int,string} */
     static function graph_type_prefix($s) {
-        if (!preg_match('/\A\s*+(cdf(?![-\w])|)((?:ogive|cumfreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w])|)((?:stack|fraction)(?![-\w])|)((?:box|boxplot)(?![-\w])|)(scatter(?:plot|)(?![-\w])|)(?![-\w])\s*+/', $s, $m)) {
+        if (!preg_match('/\A\s*+(cdf(?![-\w])|)((?:ogive|cumfreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w])|)((?:stack|fraction)(?![-\w])|)((?:box|boxplot)(?![-\w])|)(scatter(?:plot|)(?![-\w])|)(dot(?:plot|)(?![-\w])|)(?![-\w])\s*+/', $s, $m)) {
             return null;
         } else if ($m[1]) {
             return [self::CDF, $m[0]];
@@ -235,6 +236,8 @@ class FormulaGraph extends MessageSet {
             return [self::BOXPLOT, $m[0]];
         } else if ($m[6]) {
             return [self::SCATTER, $m[0]];
+        } else if ($m[7]) {
+            return [self::DOT, $m[0]];
         }
         return null;
     }
@@ -1190,6 +1193,7 @@ class FormulaGraph extends MessageSet {
     function type_json() {
         $tj = [
             self::SCATTER => "scatter",
+            self::DOT => "dot",
             self::CDF => "cdf",
             self::OGIVE => "cumfreq",
             self::BARCHART => "bar",

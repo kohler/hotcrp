@@ -1,6 +1,6 @@
 {
   "name": "d3-hotcrp",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "scripts": {
     "prepare": "rollup -c"
   },
@@ -11,6 +11,7 @@
     "rollup": "3",
     "d3-array": "3",
     "d3-axis": "3",
+    "d3-force": "3",
     "d3-quadtree": "3",
     "d3-scale": "4",
     "d3-selection": "3",

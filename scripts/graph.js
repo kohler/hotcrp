@@ -413,6 +413,21 @@ function proj1(d) {
     return d[1];
 }
 
+function projx(d) {
+    return d.x;
+}
+
+function projy(d) {
+    return d.y;
+}
+
+function id2pid(id) {
+    if (typeof id === "string") {
+        return parseInt(id, 10);
+    }
+    return id;
+}
+
 function pid_sorter(a, b) {
     if (typeof a === "object") {
         a = a.id || a[2];
@@ -420,8 +435,7 @@ function pid_sorter(a, b) {
     if (typeof b === "object") {
         b = b.id || b[2];
     }
-    const d = (typeof a === "string" ? parseInt(a, 10) : a) -
-            (typeof b === "string" ? parseInt(b, 10) : b);
+    const d = id2pid(a) - id2pid(b);
     return d ? d : (a < b ? -1 : (a == b ? 0 : 1));
 }
 
@@ -944,29 +958,38 @@ function scatter_create(svg, gqdata, klass) {
     return sel;
 }
 
-function scatter_highlight(svg, data, klass) {
-    if (!$$("svggpat_dot_highlight")) {
-        $$("p-body").prepend($svg("svg", {width: 0, height: 0, "class": "position-absolute"},
-            $svg("defs", null,
-                $svg("radialGradient", {id: "svggpat_dot_highlight"},
-                    $svg("stop", {offset: "50%", "stop-opacity": 0}),
-                    $svg("stop", {offset: "50%", "stop-color": "#ffff00", "stop-opacity": 0.5}),
-                    $svg("stop", {offset: "100%", "stop-color": "#ffff00", "stop-opacity": 0})))));
+function highlight_pattern() {
+    if ($$("svggpat_dot_highlight")) {
+        return;
     }
+    $$("p-body").prepend($svg("svg", {width: 0, height: 0, "class": "position-absolute"},
+        $svg("defs", null,
+            $svg("radialGradient", {id: "svggpat_dot_highlight"},
+                $svg("stop", {offset: "50%", "stop-opacity": 0}),
+                $svg("stop", {offset: "50%", "stop-color": "#ffff00", "stop-opacity": 0.5}),
+                $svg("stop", {offset: "100%", "stop-color": "#ffff00", "stop-opacity": 0})))));
+}
 
-    var sel = svg.selectAll(".ghighlight");
-    if (klass)
+function highlight_update(svg, data, keyfunc, klass) {
+    highlight_pattern();
+    let sel = svg.selectAll(".ghighlight");
+    if (klass) {
         sel = sel.filter("." + klass);
-    sel = sel.data(data, scatter_key);
+    }
+    sel = sel.data(data, keyfunc);
     sel.exit().remove();
-    var g = sel.enter()
+    let g = sel.enter()
       .append("g")
         .attr("class", "ghighlight" + (klass ? " " + klass : ""));
     g.append("circle")
         .attr("class", "gdot-hover");
     g.append("circle")
         .style("fill", "url(#svggpat_dot_highlight)");
-    g.merge(sel).selectAll("circle")
+    return g.merge(sel).selectAll("circle");
+}
+
+function scatter_highlight(svg, data, klass) {
+    highlight_update(svg, data, scatter_key, klass)
         .attr("cx", proj0)
         .attr("cy", proj1)
         .attr("r", function (d, i) {
@@ -1101,11 +1124,7 @@ function graph_scatter(selector, args) {
         if (event.ids.length) {
             myd = gq.data.filter(function (pd) {
                 for (const d of pd.data) {
-                    let p = d[2];
-                    if (typeof p === "string") {
-                        p = parseInt(p, 10);
-                    }
-                    if (event.ids.indexOf(p) >= 0) {
+                    if (event.ids.indexOf(id2pid(d[2])) >= 0) {
                         return true;
                     }
                 }
@@ -1113,6 +1132,107 @@ function graph_scatter(selector, args) {
             });
         }
         scatter_highlight(svg, myd);
+    }
+}
+
+function dot_highlight(svg, data, klass) {
+    highlight_update(svg, data, d => d.id, klass)
+        .attr("cx", projx)
+        .attr("cy", projy)
+        .attr("r", 4.5);
+}
+
+function graph_dot(selector, args) {
+    const svg = this;
+    let data = ungroup_data(args.data);
+    const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
+        y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y)),
+        axes = make_axis_pair(args, x, y);
+    data = data.map(d => {
+        const xv = x(d[0]), yv = y(d[1]);
+        return {"0": d[0], "1": d[1], x: xv, x0: xv, y: yv, y0: yv, id: d[2], cc: d[3]};
+    });
+
+    const sim = d3.forceSimulation(data)
+        .force("collide", d3.forceCollide(6))
+        .force("x", d3.forceX(d => d.x0).strength(0.05))
+        .force("y", d3.forceY(d => d.y0).strength(0.05))
+        .stop();
+    sim.tick(Math.ceil(Math.log(sim.alphaMin()) / Math.log(1 - sim.alphaDecay())));
+
+    $(selector).on("hotgraphhighlight", highlight);
+
+    svg.selectAll(".gdot")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", projx)
+        .attr("cy", projy)
+        .attr("r", 5)
+        .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
+        .style("fill", d => ensure_pattern(d.cc, "gdot"));
+
+    svg.append("circle").attr("class", "gdot gdot-hover");
+    const hovers = svg.selectAll(".gdot-hover")
+            .attr("r", 5)
+            .style("display", "none"),
+        hoverer = make_hover_interactor(svg, hovers);
+
+    draw_axes(svg, axes[0], axes[1], args);
+
+    svg.append("rect")
+        .attr("x", -args.marginLeft)
+        .attr("width", args.plotWidth + args.marginLeft)
+        .attr("height", args.plotHeight + args.marginBottom)
+        .attr("fill", "none")
+        .attr("pointer-events", "all")
+        .on("mouseover", mousemoved)
+        .on("mousemove", mousemoved)
+        .on("mouseout", hoverer.mouseout_soon)
+        .on("click", mouseclick);
+
+    const gq = d3.quadtree(data, projx, projy);
+
+    function make_tooltip(p) {
+        return [
+            $e("p", null, render_position(args.x, p[0]), ", ", render_position(args.y, p[1])),
+            render_pid_p([p], p.cc)
+        ];
+    }
+
+    function mousemoved(event) {
+        let m = d3.pointer(event), p = gq.find(m[0], m[1], 6);
+        if (!hoverer.move(p)) {
+            return;
+        }
+        hovers.datum(p)
+            .attr("cx", projx)
+            .attr("cy", projy)
+            .style("display", null);
+        hoverer.bubble.replace_content(...make_tooltip(p))
+            .anchor("s")
+            .near(hovers.node());
+    }
+
+    function mouseclick(event) {
+        clicker(hoverer.data ? hoverer.data.id : null, event);
+    }
+
+    function highlight(event) {
+        if (!event.ids) {
+            if (event.q && event.ok) {
+                $.getJSON(hoturl("api/search", {q: event.q}), null, highlight);
+            }
+            return;
+        }
+        hoverer.mouseout();
+        let myd = [];
+        if (event.ids.length) {
+            myd = data.filter(function (d) {
+                return event.ids.indexOf(id2pid(d.id)) >= 0;
+            });
+        }
+        dot_highlight(svg, myd);
     }
 }
 
@@ -1869,6 +1989,7 @@ handle_ui.on("js-hotgraph-highlight", function () {
 const graphers = {
     procrastination: {filter: true, function: procrastination_filter},
     scatter: {function: graph_scatter},
+    dot: {function: graph_dot},
     cdf: {function: graph_cdf},
     cumfreq: {function: graph_cdf},
     bar: {function: graph_bars},
