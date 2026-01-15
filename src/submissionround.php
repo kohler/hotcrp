@@ -76,7 +76,7 @@ class SubmissionRound {
             $this->resubmit = $this->update;
             $this->inferred_resubmit = true;
         }
-        if ($this->time_submit(true)) {
+        if ($this->submit + $this->grace >= Conf::$now) {
             $this->incomplete_viewable = $conf->setting("pc_seeall") > 0;
             $this->pdf_viewable = $conf->setting("pc_seeallpdf") > 0
                 || $this->submit <= 0;
