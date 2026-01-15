@@ -1706,6 +1706,8 @@ class Formula implements JsonSerializable {
     private $_fexpr;
     /** @var list<MessageItem> */
     public $lerrors = [];
+    /** @var bool */
+    private $_indexed = false;
     /** @var int */
     private $_index_type = 0;
     /** @var int */
@@ -1823,6 +1825,7 @@ class Formula implements JsonSerializable {
             return $fe;
         }
         if ($state->indexed) {
+            $this->_indexed = true;
             $this->_index_type = $fe->inferred_index();
         } else if ($fe instanceof Aggregate_Fexpr) {
             $this->_index_type = $fe->index_type;
@@ -2198,7 +2201,7 @@ class Formula implements JsonSerializable {
 
     /** @return bool */
     function indexed() {
-        return $this->_index_type > 0;
+        return $this->_indexed;
     }
 
     /** @return int */
