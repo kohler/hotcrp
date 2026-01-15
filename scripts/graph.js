@@ -458,26 +458,28 @@ function render_pid_p(ps, cc) {
 }
 
 function clicker(pids, event) {
-    var x, i, last_review = null;
-    if (!pids)
+    if (!pids) {
         return;
-    if (typeof pids !== "object")
+    }
+    if (typeof pids !== "object") {
         pids = [pids];
-    for (i = 0, x = []; i !== pids.length; ++i) {
-        var p = pids[i];
-        if (typeof p === "object")
+    }
+    let x = [], last_review = null;
+    for (let p of pids) {
+        if (typeof p === "object") {
             p = p.id;
+        }
         if (typeof p === "string") {
             last_review = p;
             p = parseInt(p, 10);
         }
         x.push(p);
     }
-    if (x.length === 1 && pids.length === 1 && last_review !== null)
+    if (x.length === 1 && pids.length === 1 && last_review !== null) {
         clicker_go(hoturl("paper", {p: x[0], anchor: "r" + last_review}), event);
-    else if (x.length === 1)
+    } else if (x.length === 1) {
         clicker_go(hoturl("paper", {p: x[0]}), event);
-    else {
+    } else {
         x = Array.from(new Set(x).values());
         x.sort(pid_sorter);
         clicker_go(hoturl("search", {q: x.join(" ")}), event);
@@ -843,18 +845,21 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
     return {data: nd, quadtree: q};
 }
 
-function gqdata_ids(gqp) {
-    const ids = [];
+function gqdata_ids(gqp, want_cc) {
+    const a = [], cch = gqp.cc;
     for (; gqp; gqp = gqp.next) {
         for (const d of gqp.data) {
-            if ($.isArray(d[2])) {
-                Array.prototype.push.apply(ids, d[2]);
+            const ids = typeof d[2] === "object" ? d[2] : [d[2]];
+            if (want_cc && cch !== d[3]) {
+                for (const id of ids) {
+                    a.push({id: id, cc: d[3]});
+                }
             } else {
-                ids.push(d[2]);
+                a.push(...ids);
             }
         }
     }
-    return ids;
+    return a;
 }
 
 function ungroup_data(data) {
@@ -923,12 +928,12 @@ function scatter_key(d) {
 }
 
 function scatter_create(svg, gqdata, klass) {
-    var sel = svg.selectAll(".gdot");
+    let sel = svg.selectAll(".gdot");
     if (klass)
         sel = sel.filter("." + klass);
     sel = sel.data(gqdata, scatter_key);
     sel.exit().remove();
-    var pathklass = "gdot" + (klass ? " " + klass : "");
+    const pathklass = "gdot" + (klass ? " " + klass : "");
     sel.enter()
         .append("path")
         .attr("class", function (d) { return pathklass + (d.cc ? " " + d.cc : "") })
@@ -1031,7 +1036,6 @@ function make_hover_interactor(svg, hovers, identity) {
 function graph_scatter(selector, args) {
     const svg = this;
     let data = ungroup_data(args.data);
-
     const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
         y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y)),
         axes = make_axis_pair(args, x, y);
@@ -1063,7 +1067,7 @@ function graph_scatter(selector, args) {
         const pinstance = p.data[0];
         return [
             $e("p", null, render_position(args.x, pinstance[0]), ", ", render_position(args.y, pinstance[1])),
-            render_pid_p(gqdata_ids(p), pinstance[3])
+            render_pid_p(gqdata_ids(p, true), p.cc)
         ];
     }
 
@@ -1495,7 +1499,7 @@ function graph_boxplot(selector, args) {
             }
         } else {
             pe.append(render_position(args.y, posd[1]));
-            ids = gqdata_ids(p);
+            ids = gqdata_ids(p, true);
         }
         return [pe, render_pid_p(ids, p.cc)];
     }
