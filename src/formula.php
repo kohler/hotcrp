@@ -1931,7 +1931,7 @@ class Formula implements JsonSerializable {
         $t .= $state->statement_text();
         if ($expr !== null) {
             if ($sortable & 3) {
-                $t .= "\n  \$x = $expr;";
+                $t .= "\n  \$x = {$expr};";
             }
             if ($sortable & 1) {
                 $t .= "\n  \$x = is_bool(\$x) ? (int) \$x : \$x;";
@@ -1945,6 +1945,10 @@ class Formula implements JsonSerializable {
         return $t;
     }
 
+    static private function protect_string($s) {
+        return str_replace("?>", "? >", simplify_whitespace($s));
+    }
+
     /** @param int $sortable
      * @return callable(PaperInfo,?int,Contact):mixed */
     private function _compile_function($sortable) {
@@ -1955,10 +1959,14 @@ class Formula implements JsonSerializable {
         } else {
             $body = "return null;\n";
         }
-        $function = "function (\$prow, \$rrow_cid, \$user, \$formula) {\n"
-            . "  // " . simplify_whitespace($this->expression)
-            . "\n  {$body}}";
-        self::DEBUG && self::debug_report($function);
+        $function = "function (\$prow, \$rrow_cid, \$user, \$formula) {\n  ";
+        if (self::DEBUG) {
+            $function .= "// " . self::protect_string($this->expression) . "\n  ";
+        }
+        $function .= $body . "}";
+        if (self::DEBUG) {
+            self::debug_report($function);
+        }
         return eval("return {$function};");
     }
 
@@ -2041,7 +2049,9 @@ class Formula implements JsonSerializable {
             $body .= "  return array_keys({$g});\n";
         }
         $function = "function (\$prow, \$user) {\n  {$body}}";
-        self::DEBUG && self::debug_report($function);
+        if (self::DEBUG) {
+            self::debug_report($function);
+        }
         return eval("return {$function};");
     }
 
@@ -2060,15 +2070,18 @@ class Formula implements JsonSerializable {
             $this->_supports_combiner = false;
             return false;
         }
-        $expr_str = simplify_whitespace($this->expression);
-        $extractor_str = "function (\$prow, \$rrow_cid, \$user, \$formula) {\n"
-            . "  // extractor {$expr_str}\n  "
-            . self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0)
+        $extractor_str = "function (\$prow, \$rrow_cid, \$user, \$formula) {\n  ";
+        if (self::DEBUG) {
+            $extractor_str .= "// extractor " . self::protect_string($this->expression) . "\n  ";
+        }
+        $extractor_str .= self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0)
             . "}";
         $this->_f_extractor = eval("return {$extractor_str};\n");
-        $combiner_str = "function (\$extractor_results) {\n"
-            . "  // combiner {$expr_str}\n  "
-            . self::compile_body(null, $state, $fexpr, 0)
+        $combiner_str = "function (\$extractor_results) {\n  ";
+        if (self::DEBUG) {
+            $combiner_str .= "// combiner " . self::protect_string($this->expression) . "\n  ";
+        }
+        $combiner_str .= self::compile_body(null, $state, $fexpr, 0)
             . "}";
         $this->_f_combiner = eval("return {$combiner_str};\n");
         $this->_supports_combiner = true;
