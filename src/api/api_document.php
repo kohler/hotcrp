@@ -68,6 +68,7 @@ class Document_API {
     }
 
     static function document(Contact $user, Qrequest $qreq) {
+    return false;
         $qreq->qsession()->commit();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
