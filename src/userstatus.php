@@ -1625,7 +1625,7 @@ class UserStatus extends MessageSet {
         } else {
             $link = "";
         }
-        $this->print_field(null, "Email" . $this->actas_link(),
+        $this->print_field("", "Email" . $this->actas_link(),
             "<p><strong class=\"sb\">" . htmlspecialchars($this->user->email) . "</strong></p>{$link}");
     }
 
