@@ -1,6 +1,6 @@
 <?php
 // formulagraph.php -- HotCRP class for drawing graphs
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Scatter_GraphData implements JsonSerializable {
     /** @var int|float|bool */
@@ -425,7 +425,7 @@ class FormulaGraph extends MessageSet {
         for ($i = 1; isset($qreq["q{$i}"]); ++$i) {
             $q = trim($qreq["q{$i}"]);
             $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
-            $styles[] = trim((string) $qreq["s$i"]);
+            $styles[] = trim((string) $qreq["s{$i}"]);
         }
         if (empty($queries) && isset($qreq->q)) {
             $q = trim($qreq->q);
@@ -479,14 +479,15 @@ class FormulaGraph extends MessageSet {
     function set_xorder($xorder) {
         $this->fxorder = null;
         $xorder = simplify_whitespace($xorder);
-        if ($xorder !== "") {
-            $fxorder = Formula::make_indexed($this->user, $xorder);
-            foreach ($fxorder->message_list() as $mi) {
-                $this->append_item($mi->with_field("xorder"));
-            }
-            if ($fxorder->ok()) {
-                $this->fxorder = $fxorder;
-            }
+        if ($xorder === "") {
+            return;
+        }
+        $fxorder = Formula::make_indexed($this->user, $xorder);
+        foreach ($fxorder->message_list() as $mi) {
+            $this->append_item($mi->with_field("xorder"));
+        }
+        if ($fxorder->ok()) {
+            $this->fxorder = $fxorder;
         }
     }
 
@@ -702,6 +703,22 @@ class FormulaGraph extends MessageSet {
         return $r;
     }
 
+    /** @return bool */
+    private function _indexed() {
+        return $this->fx->indexed()
+            || $this->fy->indexed()
+            || ($this->fxorder && $this->fxorder->indexed());
+    }
+
+    /** @return int */
+    private function _index_type() {
+        return Formula::combine_index_types(
+            $this->fx->index_type(),
+            $this->fxorder ? $this->fxorder->index_type() : 0,
+            $this->fy->index_type()
+        );
+    }
+
     private function _scatter_data(PaperInfoSet $rowset) {
         if ($this->fx->result_format() === Fexpr::FREVIEWER
             && ($this->type & self::BOXPLOT) !== 0) {
@@ -713,10 +730,8 @@ class FormulaGraph extends MessageSet {
 
         $reviewf = null;
         $review_id = false;
-        if ($this->fx->indexed()
-            || $this->fy->indexed()
-            || ($this->fxorder && $this->fxorder->indexed())) {
-            $index_type = Formula::combine_index_types($this->fx->index_type(), $this->fxorder ? $this->fxorder->index_type() : 0, $this->fy->index_type());
+        if ($this->_indexed()) {
+            $index_type = $this->_index_type();
             $reviewf = Formula::compile_indexes_function($this->user, $index_type);
             $review_id = $this->fx->indexed()
                 && $this->fy->indexed()
@@ -786,9 +801,7 @@ class FormulaGraph extends MessageSet {
 
         $this->fx->prepare_json();
         $this->fy->prepare_extractor();
-        $index_type = Formula::combine_index_types($this->fx->index_type(),
-            $this->fxorder ? $this->fxorder->index_type() : 0,
-            $this->fy->index_type());
+        $index_type = $this->_indexed() ? $this->_index_type() : 0;
         $reviewf = Formula::compile_indexes_function($this->user, $index_type);
         $order_data = null;
         if ($this->fxorder) {

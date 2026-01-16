@@ -1,5 +1,5 @@
 // graph.js -- HotCRP JavaScript library for graph drawing
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 /* global hotcrp, siteinfo */
 hotcrp.graph = (function ($, d3) {
@@ -312,10 +312,10 @@ procrastination_seq.tickFormat = max_procrastination_seq.tickFormat =
     function (x) { return -x; };
 
 function seq_to_cdf(seq, flip, raw) {
-    var cdf = [], i, n = seq.ntotal || seq.length;
+    const cdf = [], n = seq.ntotal || seq.length;
     seq.sort(flip ? d3.descending : d3.ascending);
-    for (i = 0; i <= seq.length; ++i) {
-        var y = raw ? i : i/n;
+    for (let i = 0; i <= seq.length; ++i) {
+        const y = raw ? i : i/n;
         if (i != 0 && (i == seq.length || seq[i-1] != seq[i]))
             cdf.push([seq[i-1], y]);
         if (i != seq.length && (i == 0 || seq[i-1] != seq[i]))
