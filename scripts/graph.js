@@ -39,11 +39,11 @@ function make_svg_path_parser(s) {
         s = s.getAttribute("d");
     }
     s = s.split(/([a-zA-Z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[Ee][-+]?\d+)?)/);
-    var i = 1, e = s.length, next_cmd;
+    let i = 1, e = s.length, next_cmd;
     return function () {
-        var a = null, ch;
+        let a = null;
         while (i < e) {
-            ch = s[i];
+            const ch = s[i];
             if (ch >= "A") {
                 if (a)
                     break;
@@ -64,7 +64,7 @@ function make_svg_path_parser(s) {
     };
 }
 
-var normalize_path_complaint = false;
+let normalize_path_complaint = false;
 function normalize_svg_path(s) {
     if (s instanceof SVGPathElement) {
         s = s.getAttribute("d");
@@ -73,7 +73,7 @@ function normalize_svg_path(s) {
         return normalized_path_cache[s];
     }
 
-    var res = [],
+    let res = [],
         cx = 0, cy = 0, cx0 = 0, cy0 = 0, copen = false,
         cb = 0, sincb = 0, coscb = 1,
         i, dx, dy,
@@ -232,33 +232,39 @@ function closestPoint(pathNode, point, inbest) {
     if (inbest && !pathNodeMayBeNearer(pathNode, point, inbest.distance))
         return inbest;
 
-    var pathLength = pathNode.getTotalLength(),
+    let pathLength = pathNode.getTotalLength(),
         precision = Math.max(pathLength / svg_path_number_of_items(pathNode) * .125, 3),
         best, bestLength, bestDistance2 = Infinity;
 
     function check(pLength) {
-        var p = pathNode.getPointAtLength(pLength);
-        var dx = point[0] - p.x, dy = point[1] - p.y, d2 = dx * dx + dy * dy;
-        if (d2 < bestDistance2) {
-            best = [p.x, p.y];
-            best.pathNode = pathNode;
-            bestLength = pLength;
-            bestDistance2 = d2;
-            return true;
-        } else
+        const p = pathNode.getPointAtLength(pLength),
+            dx = point[0] - p.x, dy = point[1] - p.y,
+            d2 = dx * dx + dy * dy;
+        if (d2 >= bestDistance2) {
             return false;
+        }
+        best = [p.x, p.y];
+        best.pathNode = pathNode;
+        bestLength = pLength;
+        bestDistance2 = d2;
+        return true;
     }
 
     // linear scan for coarse approximation
-    for (var sl = 0; sl <= pathLength; sl += precision)
+    for (let sl = 0; sl <= pathLength; sl += precision) {
         check(sl);
+    }
 
     // binary search for precise estimate
     precision *= .5;
     while (precision > .5) {
-        if (!((sl = bestLength - precision) >= 0 && check(sl))
-            && !((sl = bestLength + precision) <= pathLength && check(sl)))
-            precision *= .5;
+        const bl0 = bestLength - precision;
+        if (bl0 < 0 || !check(bl0)) {
+            const bl1 = bestLength + precision;
+            if (bl1 > pathLength || !check(bl1)) {
+                precision *= 0.5;
+            }
+        }
     }
 
     best.distance = Math.sqrt(bestDistance2);
@@ -267,10 +273,11 @@ function closestPoint(pathNode, point, inbest) {
 }
 
 function tangentAngle(pathNode, length) {
-    var length0 = Math.max(0, length - 0.25);
-    if (length0 == length)
+    const length0 = Math.max(0, length - 0.25);
+    if (length0 == length) {
         length += 0.25;
-    var p0 = pathNode.getPointAtLength(length0),
+    }
+    const p0 = pathNode.getPointAtLength(length0),
         p1 = pathNode.getPointAtLength(length);
     return Math.atan2(p1.y - p0.y, p1.x - p0.x);
 }
@@ -278,10 +285,11 @@ function tangentAngle(pathNode, length) {
 
 /* CDF functions */
 function procrastination_seq(ri, dl) {
-    var seq = [], i;
-    for (i in ri)
-        if (ri[i][0] > 0)
-            seq.push((ri[i][0] - dl[ri[i][1]]) / 86400);
+    const seq = [];
+    for (const rf of ri) {
+        if (rf[0] > 0)
+            seq.push((rf[0] - dl[rf[1]]) / 86400);
+    }
     seq.ntotal = ri.length;
     return seq;
 }
@@ -368,7 +376,7 @@ function draw_axes(svg, xAxis, yAxis, args) {
             .text(`${args.x.label} →`);
     }
     xaxe.select(".domain").each(function () {
-        var d = this.getAttribute("d");
+        const d = this.getAttribute("d");
         this.setAttribute("d", d.replace(/^M([^A-Z]*),([^A-Z]*)V0H([^A-Z]*)V([^A-Z]*)$/,
             function (m, x1, y1, x2, y2) {
                 return y1 === y2 ? "M".concat(x1, ",0H", x2) : m;
@@ -556,14 +564,13 @@ function render_position(aa, p, prefix) {
 }
 
 
-// args: {selector: JQUERYSELECTOR,
-//        data: [{d: [ARRAY], label: STRING, className: STRING}],
+// args: {data: [{d: [ARRAY], label: STRING, className: STRING}],
 //        x/y: {label: STRING, tickFormat: STRING}}
-function graph_cdf(selector, args) {
+function graph_cdf(element, args) {
     const svg = this;
 
     // massage data
-    var series = args.data;
+    let series = args.data;
     if (!series.length) {
         series = Object.values(series);
         series.sort(function (a, b) {
@@ -573,13 +580,13 @@ function graph_cdf(selector, args) {
     series = series.filter(function (d) {
         return (d.d ? d.d : d).length > 0;
     });
-    var data = series.map(function (d) {
+    const data = series.map(function (d) {
         d = d.d ? d.d : d;
         return d.cdf ? d : seq_to_cdf(d, args.x.flip, args.y.raw);
     });
 
     // axis domains
-    var xdomain = data.reduce(function (e, d) {
+    let xdomain = data.reduce(function (e, d) {
         e[0] = Math.min(e[0], d[0][0], d[d.length - 1][0]);
         e[1] = Math.max(e[1], d[0][0], d[d.length - 1][0]);
         return e;
@@ -593,7 +600,7 @@ function graph_cdf(selector, args) {
         axes = make_axis_pair(args, x, y);
 
     // lines
-    var line = d3.line().x(function (d) {return x(d[0]);})
+    const line = d3.line().x(function (d) {return x(d[0]);})
         .y(function (d) {return y(d[1]);});
 
     // CDF lines
@@ -612,7 +619,7 @@ function graph_cdf(selector, args) {
 
     svg.append("path").attr("class", "gcdf gcdf-hover0");
     svg.append("path").attr("class", "gcdf gcdf-hover1");
-    var hovers = svg.selectAll(".gcdf-hover0, .gcdf-hover1");
+    const hovers = svg.selectAll(".gcdf-hover0, .gcdf-hover1");
     hovers.style("display", "none");
 
     draw_axes(svg, axes[0], axes[1], args);
@@ -737,7 +744,7 @@ function grouped_quadtree_mark_bounds(q, rf, ordinalf) {
     //ordinalf = ordinalf || (function () { var m = 0; return function () { return ++m; }; })();
     //q.ordinal = ordinalf();
 
-    var b, p, i, n, ps;
+    let b, p, i, n, ps;
     if (!q.length) {
         for (p = q.data, ps = []; p; p = p.next) {
             ps.push(p);
@@ -777,13 +784,13 @@ function grouped_quadtree_gfind(point, min_distance) {
             return true;
         if (node.length)
             return;
-        var p = node.data;
-        var dx = p[0] - point[0], dy = p[1] - point[1];
+        let p = node.data;
+        const dx = p[0] - point[0], dy = p[1] - point[1];
         if (Math.abs(dx) - node.maxr < min_distance
             || Math.abs(dy) - node.maxr < min_distance) {
-            var dd = Math.sqrt(dx * dx + dy * dy);
+            const dd = Math.sqrt(dx * dx + dy * dy);
             for (; p; p = p.next) {
-                var d = Math.max(dd - p.r, 0);
+                const d = Math.max(dd - p.r, 0);
                 if (d < min_distance || (d == 0 && p.r < closest.r))
                     closest = p, min_distance = d;
             }
@@ -1056,14 +1063,14 @@ function make_hover_interactor(svg, hovers, identity) {
     return self;
 }
 
-function graph_scatter(selector, args) {
+function graph_scatter(element, args) {
     const svg = this;
     let data = ungroup_data(args.data);
     const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
         y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y)),
         axes = make_axis_pair(args, x, y);
 
-    $(selector).on("hotgraphhighlight", highlight);
+    $(element).on("hotgraphhighlight", highlight);
 
     const gq = grouped_quadtree(data, x, y, 4, args.data_format === "xyis");
     data = null;
@@ -1142,7 +1149,7 @@ function dot_highlight(svg, data, klass) {
         .attr("r", 4.5);
 }
 
-function graph_dot(selector, args) {
+function graph_dot(element, args) {
     const svg = this;
     let data = ungroup_data(args.data);
     const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
@@ -1160,7 +1167,7 @@ function graph_dot(selector, args) {
         .stop();
     sim.tick(Math.ceil(Math.log(sim.alphaMin()) / Math.log(1 - sim.alphaDecay())));
 
-    $(selector).on("hotgraphhighlight", highlight);
+    $(element).on("hotgraphhighlight", highlight);
 
     svg.selectAll(".gdot")
         .data(data)
@@ -1305,7 +1312,7 @@ function data_to_barchart(data, yaxis) {
     return ndata;
 }
 
-function graph_bars(selector, args) {
+function graph_bars(element, args) {
     const svg = this,
         bdata = data_to_barchart(args.data, args.y);
 
@@ -1469,9 +1476,8 @@ function data_to_boxplot(data, septags) {
     return data;
 }
 
-function graph_boxplot(selector, args) {
+function graph_boxplot(element, args) {
     const data = data_to_boxplot(args.data, !!args.y.fraction, true),
-        $sel = $(selector),
         svg = this;
 
     const xe = d3.extent(data, proj0),
@@ -1585,11 +1591,11 @@ function graph_boxplot(selector, args) {
             .style("ponter-events", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    $sel.on("hotgraphhighlight", highlight);
+    $(element).on("hotgraphhighlight", highlight);
 
-    $sel[0].addEventListener("mouseout", hoverer.mouseout_soon, false);
+    element.addEventListener("mouseout", hoverer.mouseout_soon, false);
 
-    $sel[0].addEventListener("mouseover", function (event) {
+    element.addEventListener("mouseover", function (event) {
         if (hasClass(event.target, "outlier")
             || hasClass(event.target, "gscatter"))
             mouseover_outlier.call(event.target);
@@ -1597,7 +1603,7 @@ function graph_boxplot(selector, args) {
             mouseover.call(event.target);
     }, false);
 
-    $sel[0].addEventListener("click", function (event) {
+    element.addEventListener("click", function (event) {
         if (hasClass(event.target, "gbox")
             || hasClass(event.target, "gscatter"))
             mouseclick.call(event.target, event);
@@ -1672,9 +1678,9 @@ function graph_boxplot(selector, args) {
             svg.selectAll(".gscatter").remove();
             return;
         }
-        const $g = $(selector);
         $.getJSON(hoturl("api/graphdata"), {
-            x: $g.attr("data-graph-fx"), y: $g.attr("data-graph-fy"),
+            x: element.getAttribute("data-graph-fx"),
+            y: element.getAttribute("data-graph-fy"),
             q: event.q
         }, function (rv) {
             if (!rv.ok) {
@@ -1974,12 +1980,14 @@ function make_rotate_ticks(angle) {
 }
 
 handle_ui.on("js-hotgraph-highlight", function () {
-    var s = $.trim(this.value), pids = null;
-    if (s === "")
+    const s = $.trim(this.value);
+    let pids = null;
+    if (s === "") {
         pids = [];
-    else if (/^[1-9][0-9]*$/.test(s))
+    } else if (/^[1-9][0-9]*$/.test(s)) {
         pids = [+s];
-    var e = $.Event("hotgraphhighlight");
+    }
+    const e = $.Event("hotgraphhighlight");
     e.ok = true;
     e.q = s;
     e.ids = pids;
@@ -1997,7 +2005,7 @@ const graphers = {
     box: {function: graph_boxplot}
 };
 
-function make_args(selector, args) {
+function make_args(element, args) {
     args = $.extend({}, args);
     const mns = ["marginTop", "marginRight", "marginBottom", "marginLeft"],
         m = args.margin || [null, null, null, null],
@@ -2013,7 +2021,7 @@ function make_args(selector, args) {
         }
     }
     if (args.width == null) {
-        args.width = $(selector).width();
+        args.width = $(element).width();
         args.widthDefault = true;
     }
     if (args.height == null) {
@@ -2030,12 +2038,17 @@ function make_args(selector, args) {
 }
 
 return function (selector, args) {
+    const element = $(selector)[0];
+    if (!element) {
+        return null;
+    }
     if (!d3) {
-        const $err = $('<div class="msg msg-error"></div>').appendTo(selector);
-        feedback.append_item_near($err[0], {message: "<0>Graphs are not supported on this browser", status: 2});
+        const erre = $e("div", "msg-error");
+        feedback.append_item_near(erre, {message: "<0>Graphs are not supported on this browser", status: 2});
         if (document.documentMode) {
-            feedback.append_item_near($err[0], {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5 /*MessageSet::INFORM*/});
+            feedback.append_item_near(erre, {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5 /*MessageSet::INFORM*/});
         }
+        element.append(erre);
         return null;
     }
     let g = graphers[args.type];
@@ -2046,11 +2059,11 @@ return function (selector, args) {
     if (!g) {
         return null;
     }
-    args = make_args(selector, args);
-    args.svg = d3.select(selector).append("svg")
+    args = make_args(element, args);
+    args.svg = d3.select(element).append("svg")
         .attr("width", args.width)
         .attr("height", args.height)
       .append("g");
-    return g["function"].call(args.svg, selector, args);
+    return g["function"].call(args.svg, element, args);
 };
 })(jQuery, window.d3);
