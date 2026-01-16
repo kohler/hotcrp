@@ -385,47 +385,80 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     /** @param Qrequest $qreq */
     private function _apply_specific_version($qreq) {
         $this->cacheable = true;
+
+        // parse version parameters
+        $docid = null;
         if (isset($qreq->docid)) {
-            $key = "docid";
             $docid = stoi($qreq->docid) ?? 0;
             if ($docid <= 1) {
-                $this->error_at($key, "<0>Invalid document ID");
+                $this->error_at("docid", "<0>Invalid document ID");
                 $this->_error_status = 400;
                 return;
             }
+        }
+
+        $dochash = $hashkey = null;
+        if (isset($qreq->hash) || isset($qreq->version)) {
+            $hashkey = isset($qreq->hash) ? "hash" : "version";
+            $dochash = HashAnalysis::hash_as_binary(trim($qreq->$hashkey));
+            if (!$dochash) {
+                $this->error_at($hashkey, "<0>Invalid document hash");
+                $this->_error_status = 400;
+                return;
+            }
+        }
+
+        // if document already set, check for version parameter conflicts
+        if ($this->doc) {
+            if ($docid && $this->doc->paperStorageId !== $docid) {
+                $this->error_at("docid", "<0>Version conflict");
+            }
+            if ($dochash && $this->doc->salt !== $dochash) {
+                $this->error_at($hashkey, "<0>Version conflict");
+            }
+            return;
+        }
+
+        // look up document
+        if ($docid) {
             $doc = $this->prow->document($this->dtype, $docid, true);
         } else {
-            $key = isset($qreq->hash) ? "hash" : "version";
-            $dochash = HashAnalysis::hash_as_binary(trim($qreq->$key));
-            if (!$dochash) {
-                $this->error_at($key, "<0>Invalid document hash");
-                $this->_error_status = 400;
-                return;
-            }
             $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperId=? and documentType=? and sha1=?",
                 $this->prow->paperId, $this->dtype, $dochash);
             $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
             $result->close();
         }
 
-        if ($this->doc) {
-            if ($key === "docid"
-                ? $this->doc->paperStorageId !== $doc->paperStorageId
-                : $this->doc->sha1 !== $doc->sha1) {
-                $this->error_at($key, "<0>Version mismatch");
-            }
-            return;
-        }
-
-        assert($this->dtype >= DTYPE_FINAL);
-        $can_view_history = $this->viewer->can_view_document_history($this->prow);
-        if (!$doc
-            || $doc->filterType
-            || (!$can_view_history && !$doc->is_active())) {
+        // check for errors
+        $key = $docid ? "docid" : $hashkey;
+        if (!$doc) {
             $this->error_at($key, "<0>Document version not found");
             $this->cacheable = false; // version might appear later
             return;
         }
+        if ($doc->filterType) {
+            $this->error_at($key, "<0>Document version not found");
+            return;
+        }
+        if ($doc->documentType !== $this->dtype) {
+            $this->error_at("dt", "<0>Version conflict");
+            return;
+        }
+        if ($docid && $docid !== $doc->paperStorageId) {
+            $this->error_at("docid", "<0>Version conflict");
+            return;
+        }
+        if ($dochash && $dochash !== $doc->sha1) {
+            $this->error_at($hashkey, "<0>Version conflict");
+            return;
+        }
+        if (!$this->viewer->can_view_document_history($this->prow)
+            && !$doc->is_active()) {
+            $this->error_at($key, "<0>Document version not found");
+            $this->cacheable = false; // user might gain ability to see history
+            return;
+        }
+
         $this->doc = $doc;
     }
 
