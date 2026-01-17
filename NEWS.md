@@ -1,6 +1,55 @@
 HotCRP NEWS
 ===========
 
+## Version 3.2 – 16.Jan.2026
+
+* Upgrade notes
+
+    * PHP 8.5 is supported, PHP 7.1 and 7.2 are not.
+
+* Security updates
+
+    * Critical vulnerability patched in formula construction. Thanks to Luca
+      Di Bartolomeo and Philipp Mao for the report (HexHive Lab, EPFL, PI
+      Mathias Payer).
+    * Serious vulnerability patched in document API that allowed any author to
+      download any submitted document associated with any paper.
+    * Default to not generating author view links.
+
+* Submissions
+
+    * Support resubmission deadlines, which allow updates to submissions that
+      are ready to review (but not drafts).
+    * Submission edit pages automatically update potential conflicts as the
+      authors change.
+    * Fix bugs in potential conflict computations.
+    * Fix interaction between edit conditions and read-only submission fields.
+    * Improve author certification option.
+    * Format checker can detect and disallow appendix pages.
+    * Format checker heading detection improvements.
+
+* Assignments
+
+    * Conflict assignment page allows assignment of (1) pinned conflict, (2)
+      normal conflict, (3) non-conflict, and (4) pinned non-conflict.
+
+* Search
+
+    * Desk rejected papers are not included in searches of “submitted” or
+      “active” papers.
+
+* Settings
+
+    * Improve advanced settings changes to avoid bogus error messages.
+
+* API
+
+    * Add and document additional API endpoints for /autoassign, /assigners,
+      /job, etc.
+
+* Many other bug fixes and improvements, especially around accessibility.
+
+
 ## Version 3.1 – 12.Sep.2025
 
 * Upgrade notes
