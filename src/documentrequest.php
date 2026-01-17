@@ -413,7 +413,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             if ($docid && $this->doc->paperStorageId !== $docid) {
                 $this->error_at("docid", "<0>Version conflict");
             }
-            if ($dochash && $this->doc->salt !== $dochash) {
+            if ($dochash && $this->doc->sha1 !== $dochash) {
                 $this->error_at($hashkey, "<0>Version conflict");
             }
             return;
