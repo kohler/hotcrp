@@ -50,13 +50,13 @@ class CheckUpdates_Page {
                     }
                 }
                 $errid = isset($update["errid"]) && ctype_alnum("" . $update["errid"]) ? $update["errid"] : false;
-                if ($errid && ($conf->setting("ignoreupdate_$errid") ?? 0) > time()) {
+                if ($errid && ($conf->setting("ignoreupdate_{$errid}") ?? 0) > time()) {
                     $ok = false;
                 }
                 if ($ok) {
                     $m = "<div class=\"msg msg-error\"";
                     if ($errid) {
-                        $m .= " id=\"softwareupdate_$errid\"";
+                        $m .= " id=\"softwareupdate_{$errid}\"";
                     }
                     $m .= " style=\"font-size:smaller\"><div class=\"dod\"><strong>WARNING: Upgrade your HotCRP installation.</strong>";
                     if (isset($update["vulnid"]) && is_numeric($update["vulnid"])) {
@@ -80,6 +80,6 @@ class CheckUpdates_Page {
             }
         }
 
-        json_exit($messages ? ["ok" => true] : ["ok" => true, "messages" => join("", $messages)]);
+        json_exit($messages ? ["ok" => true, "messages" => join("", $messages)] : ["ok" => true]);
     }
 }
