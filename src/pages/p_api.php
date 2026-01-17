@@ -1,6 +1,6 @@
 <?php
 // pages/p_api.php -- HotCRP JSON API access page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class API_Page {
     /** @param string $fn
@@ -51,7 +51,10 @@ class API_Page {
         if ($validate) {
             SpecValidator_API::response($uf, $qreq, $jr);
         }
-        if ($jr instanceof Downloader || $jr instanceof PageCompletion) {
+        if ($jr instanceof Downloader) {
+            $jr->emit();
+            exit(0);
+        } else if ($jr instanceof PageCompletion) {
             $jr->emit($qreq);
             exit(0);
         }
