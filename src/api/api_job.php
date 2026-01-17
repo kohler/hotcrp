@@ -1,6 +1,6 @@
 <?php
 // api_job.php -- HotCRP job-related API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Job_API {
     /** @return JsonResult|Downloader|PageCompletion */
@@ -26,7 +26,7 @@ class Job_API {
         if ($output === "body" && !$tok->is_ongoing()) {
             if (!$tok->is_done()) {
                 return $tok->json_result()
-                    ->set_status(409 /* Conflict */)
+                    ->set_response_code(409 /* Conflict */)
                     ->append_item(MessageItem::error_at("output", "<0>Failed job has no output"));
             } else if ($tok->outputData === null) {
                 return new PageCompletion(204 /* No Content */);

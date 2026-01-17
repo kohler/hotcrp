@@ -1,6 +1,6 @@
 <?php
 // documentrequest.php -- HotCRP document request parsing
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class DocumentRequest extends MessageSet implements JsonSerializable {
     /** @var Conf
@@ -74,7 +74,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         $want_path = !isset($req["p"]) && !isset($req["paperId"]);
         if (!$want_path) {
             $key = isset($req["p"]) ? "p" : "paperId";
-            if (!$this->set_paper_id($req[$key], $key)) {
+            if (!$this->set_paper_id((string) $req[$key], $key)) {
                 return;
             }
         }
@@ -423,21 +423,18 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         if ($docid) {
             $doc = $this->prow->document($this->dtype, $docid, true);
         } else {
-            $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperId=? and documentType=? and sha1=?",
-                $this->prow->paperId, $this->dtype, $dochash);
-            $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
-            $result->close();
+            $doc = $this->_apply_hash_version($dochash);
         }
 
         // check for errors
         $key = $docid ? "docid" : $hashkey;
         if (!$doc) {
-            $this->error_at($key, "<0>Document version not found");
+            $this->error_at($key, "<0>Document version not found 1");
             $this->cacheable = false; // version might appear later
             return;
         }
         if ($doc->filterType) {
-            $this->error_at($key, "<0>Document version not found");
+            $this->error_at($key, "<0>Document version not found 2");
             return;
         }
         if ($doc->documentType !== $this->dtype) {
@@ -454,12 +451,34 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         }
         if (!$this->viewer->can_view_document_history($this->prow)
             && !$doc->is_active()) {
-            $this->error_at($key, "<0>Document version not found");
+            $this->error_at($key, "<0>Document version not found 3");
             $this->cacheable = false; // user might gain ability to see history
             return;
         }
 
         $this->doc = $doc;
+    }
+
+    /** @param string $dochash
+     * @return ?DocumentInfo */
+    private function _apply_hash_version($dochash) {
+        // multiple documents might have the same hash (because of metadata
+        // like mimetype and filename); choose the active one, or if none is
+        // active, the latest one
+        foreach ($this->prow->documents($this->dtype) as $doc) {
+            if ($doc->sha1 === $dochash)
+                return $doc;
+        }
+        $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperId=? and documentType=? and sha1=?",
+            $this->prow->paperId, $this->dtype, $dochash);
+        $docf = null;
+        while (($doc = DocumentInfo::fetch($result, $this->conf, $this->prow))) {
+            if (!$docf
+                || ($doc->timeReferenced ?? $doc->timestamp) > ($docf->timeReferenced ?? $docf->timestamp))
+                $docf = $doc;
+        }
+        $result->close();
+        return $docf;
     }
 
     /** @param Qrequest $qreq

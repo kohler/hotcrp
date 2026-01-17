@@ -353,7 +353,7 @@
         {"name": "Deborah Estrin", "email": "estrin@isi.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
         {"name": "Mark Handley", "email": "mjh@isi.edu", "affiliation": "Information Sciences Institute, University of Southern California"}
     ],
-    "submission": {"content": "%PDF-whatever27"},
+    "submission": {"content": "%PDF-whatever27\n"},
     "submitted": true
 },
 {

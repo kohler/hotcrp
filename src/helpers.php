@@ -1,6 +1,6 @@
 <?php
 // helpers.php -- HotCRP non-class helper functions
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 // string helpers
 
@@ -189,8 +189,16 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
 
-    /** @param int $status
+    /** @param int $code
      * @return $this */
+    function set_response_code($code) {
+        $this->status = $code;
+        return $this;
+    }
+
+    /** @param int $status
+     * @return $this
+     * @deprecated */
     function set_status($status) {
         $this->status = $status;
         return $this;
@@ -215,6 +223,11 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     /** @return bool */
     function ok() {
         return $this->content["ok"];
+    }
+
+    /** @return int */
+    function response_code() {
+        return $this->status;
     }
 
     /** @param string $key

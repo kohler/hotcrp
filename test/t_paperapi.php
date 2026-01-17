@@ -18,6 +18,9 @@ class PaperAPI_Tester {
     /** @var Contact
      * @readonly */
     public $u_puneet;
+    /** @var Contact
+     * @readonly */
+    public $u_micke;
     /** @var int */
     public $npid;
 
@@ -25,14 +28,32 @@ class PaperAPI_Tester {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $conf->save_setting("sub_open", 1);
-        $conf->save_setting("sub_update", Conf::$now + 100);
-        $conf->save_setting("sub_sub", Conf::$now + 100);
         $conf->save_setting("rev_open", 1);
         $conf->save_setting("viewrev", null);
-        $conf->refresh_settings();
+        if (!$this->allow_submission()) {
+            $conf->refresh_settings();
+        }
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_estrin = $conf->checked_user_by_email("estrin@usc.edu"); // pc
         $this->u_puneet = $conf->checked_user_by_email("puneet@catarina.usc.edu");
+        $this->u_micke = $conf->checked_user_by_email("micke@cdt.luth.se");
+    }
+
+    function allow_submission() {
+        $this->set_submission_deadline(Conf::$now + 100);
+    }
+
+    function prevent_submission() {
+        $this->set_submission_deadline(Conf::$now - 10);
+    }
+
+    function set_submission_deadline($t) {
+        $a = $this->conf->save_setting("sub_update", $t);
+        $b = $this->conf->save_setting("sub_sub", $t);
+        if ($a || $b) {
+            $this->conf->refresh_settings();
+        }
+        return $a || $b;
     }
 
     function test_save_submit_new_paper() {
@@ -418,9 +439,7 @@ class PaperAPI_Tester {
     }
 
     function test_new_paper_after_deadline() {
-        $this->conf->save_setting("sub_update", Conf::$now - 10);
-        $this->conf->save_setting("sub_sub", Conf::$now - 10);
-        $this->conf->refresh_settings();
+        $this->prevent_submission();
 
         $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);
@@ -446,5 +465,126 @@ class PaperAPI_Tester {
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "p");
         xassert_eqq($jr->message_list[0]->message, "<0>Parameter missing");
+    }
+
+    function test_document() {
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $dl = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        // this is the hash of `%PDF-whatever`
+        xassert_eqq($dl->header("ETag"), "\"sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f\"");
+        xassert_eqq($dl->header("Cache-Control"), null);
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $dl = call_api_result("document", $this->u_micke, $qreq);
+        xassert_eqq($dl->response_code(), 403);
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0]);
+        $dl = call_api_result("document", $this->u_micke, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"sha2-7a501599e6d2a520603a6f13c868f0cdae4b4afdd9ce962d68b0cb437c045057\"");
+        xassert_eqq($dl->header("Cache-Control"), null);
+    }
+
+    function test_document_docid() {
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert($p1 && $p1->paperStorageId > 0);
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "docid" => $p1->paperStorageId]);
+        $dl = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f\"");
+        xassert_not_str_contains($dl->header("Cache-Control"), "must-revalidate");
+
+        // other user can't scan by docid :(
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert($p2 && $p2->paperStorageId > 0);
+        xassert($p1->paperStorageId !== $p2->paperStorageId);
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "docid" => $p2->paperStorageId]);
+        $dl = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($dl->response_code(), 404);
+    }
+
+    function test_document_hash() {
+        $this->allow_submission();
+
+        // install a new PDF, then revert to the previous
+        $qreq = TestQreq::post_zip([
+            "data.json" => ["pid" => 1, "submission" => ["content_file" => "janspaper.pdf"], "status" => "submitted"],
+            "janspaper.pdf" => "%PDF-whatever-1-2\n"
+        ], ["p" => "1"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+
+        $qreq = TestQreq::post_zip([
+            "data.json" => ["pid" => 1, "submission" => ["content_file" => "janspaper.pdf"], "status" => "submitted"],
+            "janspaper.pdf" => "%PDF-whatever"
+        ], ["p" => "1"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+
+        // current version has original checksum
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $dl = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f\"");
+
+        // author can fetch both
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "hash" => "sha2-a06937feee4591ae4639312701b11e1125b321f7f3c8c6920962f20b38613882"]);
+        $dl = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"sha2-a06937feee4591ae4639312701b11e1125b321f7f3c8c6920962f20b38613882\"");
+        xassert_eqq($dl->header("Content-Length"), "18");
+        xassert_not_str_contains($dl->header("Cache-Control"), "must-revalidate");
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "hash" => "sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f"]);
+        $dl = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f\"");
+        xassert_eqq($dl->header("Content-Length"), "13");
+        xassert_not_str_contains($dl->header("Cache-Control"), "must-revalidate");
+
+        // other author cannot fetch
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "hash" => "sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f"]);
+        $dl = call_api_result("document", $this->u_micke, $qreq);
+        xassert_eqq($dl->response_code(), 403);
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0, "hash" => "sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f"]);
+        $dl = call_api_result("document", $this->u_micke, $qreq);
+        xassert_eqq($dl->response_code(), 404);
+    }
+
+    function test_document_history() {
+        // PC members cannot see document history
+        $this->prevent_submission();
+
+        $result = $this->conf->ql("select paperStorageId, sha1 from PaperStorage where paperId=1 and documentType=0");
+        $map = [];
+        while (($row = $result->fetch_row())) {
+            $map[HashAnalysis::hash_as_text($row[1])] = (int) $row[0];
+        }
+        $result->close();
+
+        $u_marina = $this->conf->checked_user_by_email("marina@poema.ru");
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $dl = call_api_result("document", $u_marina, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f\"");
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "hash" => "sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f"]);
+        $dl = call_api_result("document", $u_marina, $qreq);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f\"");
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "hash" => "sha2-a06937feee4591ae4639312701b11e1125b321f7f3c8c6920962f20b38613882"]);
+        $dl = call_api_result("document", $u_marina, $qreq);
+        xassert_eqq($dl->response_code(), 404);
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "docid" => $map["sha2-a06937feee4591ae4639312701b11e1125b321f7f3c8c6920962f20b38613882"]]);
+        $dl = call_api_result("document", $u_marina, $qreq);
+        xassert_eqq($dl->response_code(), 404);
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0, "docid" => $map["sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f"]]);
+        $dl = call_api_result("document", $u_marina, $qreq);
+        xassert_eqq($dl->response_code(), 200);
     }
 }

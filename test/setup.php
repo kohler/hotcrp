@@ -992,8 +992,8 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
 
 /** @param Contact $user
  * @param ?PaperInfo $prow
- * @return object */
-function call_api($fn, $user, $qreq, $prow = null) {
+ * @return Downloader|JsonResult */
+function call_api_result($fn, $user, $qreq, $prow = null) {
     if (($is_post = str_starts_with($fn, "="))) {
         $fn = substr($fn, 1);
     }
@@ -1014,7 +1014,17 @@ function call_api($fn, $user, $qreq, $prow = null) {
     $qreq->set_navigation(Navigation::get());
     Qrequest::set_main_request($qreq);
     $uf = $user->conf->api($fn, $user, $qreq->method());
-    $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq);
+    return $user->conf->call_api_on($uf, $fn, $user, $qreq);
+}
+
+/** @param Contact $user
+ * @param ?PaperInfo $prow
+ * @return object */
+function call_api($fn, $user, $qreq, $prow = null) {
+    $jr = call_api_result($fn, $user, $qreq, $prow);
+    if (!($jr instanceof JsonResult)) {
+        $jr = JsonResult::make_error(500, "<0>Not a JSON");
+    }
     if (!isset($jr->content["status_code"]) && $jr->status > 299) {
         $jr->content["status_code"] = $jr->status;
     }
