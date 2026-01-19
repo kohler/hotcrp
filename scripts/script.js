@@ -11331,14 +11331,20 @@ handle_ui.on("js-expand-archive", function (evt) {
 function check_version(url, versionstr) {
     var x;
     function updateverifycb(json) {
-        var e;
-        if (json && json.messages && (e = $$("h-messages")))
-            e.innerHTML = json.messages + e.innerHTML;
+        let e;
+        if (!json
+            || !json.message_list
+            || json.message_list.length === 0
+            || !(e = $$("h-messages"))) {
+            return;
+        }
+        e.prepend(feedback.render_alert(json.message_list));
     }
     function updatecb(json) {
         if (json && json.updates && window.JSON)
-            jQuery.get(siteinfo.site_relative + "checkupdates.php",
-                       {data: JSON.stringify(json)}, updateverifycb);
+            jQuery.post(siteinfo.site_relative + "checkupdates.php",
+                        {data: JSON.stringify(json), post: siteinfo.postvalue},
+                        updateverifycb);
         else if (json && json.status)
             hotcrp.wstorage.site(false, "hotcrp_version_check", {at: now_msec(), version: versionstr});
     }
@@ -11354,9 +11360,12 @@ function check_version(url, versionstr) {
         jsonp: false, global: false, success: updatecb
     });
     handle_ui.on("js-check-version-ignore", function () {
-        var id = $(this).data("versionId");
-        $.post(siteinfo.site_relative + "checkupdates.php", {ignore: id, post: siteinfo.postvalue});
-        $("#softwareupdate_" + id).hide();
+        $.post(siteinfo.site_relative + "checkupdates.php", {ignore: this.getAttribute("data-errid"), post: siteinfo.postvalue});
+        const fl = this.closest("ul");
+        this.closest("li").remove();
+        if (!fl.firstChild) {
+            fl.closest(".msg").remove();
+        }
     });
 }
 

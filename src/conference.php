@@ -5318,7 +5318,6 @@ class Conf {
                     $v .= " " . $args[1];
                 }
             }
-                error_log($m);
             Ht::stash_script("hotcrp.check_version(\"$m\",\"$v\")");
             $qreq->set_gsession("updatecheck", Conf::$now);
         }

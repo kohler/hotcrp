@@ -1,20 +1,22 @@
 <?php
 // pages/checkupdates.php -- HotCRP update checker helper
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class CheckUpdates_Page {
     static function go(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
 
         if ($user->privChair
-            && $qreq->valid_token()
-            && !$qreq->is_head()
-            && isset($qreq->ignore)) {
+            && $qreq->valid_post()
+            && isset($qreq->ignore)
+            && ctype_alnum($qreq->ignore)
+            && strlen($qreq->ignore) <= 128) {
             $when = time() + 86400 * 2;
             $conf->qe("insert into Settings (name, value) values (?, ?) on duplicate key update value=?", "ignoreupdate_" . $qreq->ignore, $when, $when);
         }
 
-        $messages = [];
+        $ml = [];
+        $status = 0;
         if ($user->privChair
             && isset($qreq->data)
             && ($data = json_decode($qreq->data, true))
@@ -49,37 +51,57 @@ class CheckUpdates_Page {
                         }
                     }
                 }
-                $errid = isset($update["errid"]) && ctype_alnum("" . $update["errid"]) ? $update["errid"] : false;
-                if ($errid && ($conf->setting("ignoreupdate_{$errid}") ?? 0) > time()) {
+                $s = $update["errid"] ?? null;
+                if (is_int($s)) {
+                    $s = "{$s}";
+                }
+                if (is_string($s)
+                    && ctype_alnum($s)
+                    && strlen($s) <= 128) {
+                    $errid = $s;
+                } else {
+                    $errid = null;
+                }
+                if ($errid !== null
+                    && ($conf->setting("ignoreupdate_{$errid}") ?? 0) > time()) {
                     $ok = false;
                 }
-                if ($ok) {
-                    $m = "<div class=\"msg msg-error\"";
-                    if ($errid) {
-                        $m .= " id=\"softwareupdate_{$errid}\"";
-                    }
-                    $m .= " style=\"font-size:smaller\"><div class=\"dod\"><strong>WARNING: Upgrade your HotCRP installation.</strong>";
-                    if (isset($update["vulnid"]) && is_numeric($update["vulnid"])) {
-                        $m .= " (HotCRP-Vulnerability-" . $update["vulnid"] . ")";
-                    }
-                    $m .= "</div>";
-                    if (isset($update["message"]) && is_string($update["message"])) {
-                        $m .= "<div class=\"bigid\">" . CleanHTML::basic_clean($update["message"]) . "</div>";
-                    }
-                    if (isset($update["to"]) && is_string($update["to"])) {
-                        $m .= "<div class=\"bigid\">First unaffected commit: " . htmlspecialchars($update["to"]);
-                        if ($errid) {
-                            $m .= ' <span class="barsep">·</span> '
-                                . '<button type="button" class="link ui js-check-version-ignore" data-version-id="' . $errid . '">Ignore for two days</button>';
-                        }
-                        $m .= "</div>";
-                    }
-                    $messages[] = $m . "</div>\n";
-                    $qreq->set_gsession("updatecheck", 0);
+                if (!$ok) {
+                    continue;
+                }
+                $status = 1;
+                if (is_int(($ustatus = $update["status"] ?? null))
+                    && ($ustatus === 1 || $ustatus === 2 || $ustatus === -1)) {
+                    $status = $ustatus;
+                }
+                $m = "<5><strong>WARNING: Upgrade your HotCRP installation</strong>";
+                $ml[] = new MessageItem($status, null, $m);
+                if (is_string(($message = $update["message"] ?? null))) {
+                    $ml[] = MessageItem::inform("<5>" . CleanHTML::basic_clean($message));
+                }
+                $x = [];
+                if (is_string(($hash = $update["to"] ?? null))
+                    && ctype_xdigit($hash)
+                    && strlen($hash) >= 7) {
+                    $x[] = "First unaffected commit: {$hash}";
+                }
+                if (is_string(($cve = $update["cve"] ?? null))
+                    && preg_match('/\ACVE-[-0-9]+\z/', $cve)) {
+                    $x[] = "<a href=\"https://www.cve.org/CVERecord?id={$cve}\">{$cve}</a>";
+                }
+                if (is_string(($ghsa = $update["ghsa"] ?? null))
+                    && preg_match('/\AGHSA-[-a-z0-9]+\z/', $ghsa)) {
+                    $x[] = "<a href=\"https://github.com/advisories/{$ghsa}\">GitHub {$ghsa}</a>";
+                }
+                if ($errid !== null) {
+                    $x[] = "<button type=\"button\" class=\"link ui js-check-version-ignore\" data-errid=\"{$errid}\">Ignore for two days</button>";
+                }
+                if (!empty($x)) {
+                    $ml[] = MessageItem::inform("<5>" . join(' <span class="barsep">·</span> ', $x));
                 }
             }
         }
 
-        json_exit($messages ? ["ok" => true, "messages" => join("", $messages)] : ["ok" => true]);
+        json_exit(empty($ml) ? ["ok" => true] : ["ok" => true, "message_list" => $ml]);
     }
 }
