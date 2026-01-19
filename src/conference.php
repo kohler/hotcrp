@@ -5297,9 +5297,10 @@ class Conf {
             && $user->privChair
             && $qreq->qsession()->is_open()
             && (!$qreq->has_gsession("updatecheck")
-                || $qreq->gsession("updatecheck") + 3600 <= Conf::$now)
+                || $qreq->gsession("updatecheck") + ($this->opt["updatesSiteFrequency"] ?? 3600) <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
-            $m = isset($this->opt["updatesSite"]) ? $this->opt["updatesSite"] : "//hotcrp.lcdf.org/updates";
+            $s = $this->opt["updatesSite"] ?? true;
+            $m = $s === true ? "https://hotcrp.lcdf.org/updates" : $s;
             $m .= (strpos($m, "?") === false ? "?" : "&")
                 . "addr=" . urlencode($_SERVER["SERVER_ADDR"])
                 . "&base=" . urlencode($qreq->navigation()->siteurl())
@@ -5317,6 +5318,7 @@ class Conf {
                     $v .= " " . $args[1];
                 }
             }
+                error_log($m);
             Ht::stash_script("hotcrp.check_version(\"$m\",\"$v\")");
             $qreq->set_gsession("updatecheck", Conf::$now);
         }
