@@ -500,7 +500,7 @@ class S3Client {
         list($url, $hdr) = $this->signed_headers($skey, "GET", []);
         $dl->set_content_redirect($accel . $url);
         foreach ($hdr as $h) {
-            $dl->header($h);
+            $dl->set_header($h);
         }
     }
 
