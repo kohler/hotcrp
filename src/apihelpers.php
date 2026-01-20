@@ -21,7 +21,8 @@ class APIHelpers {
         }
         if ($u) {
             return $u;
-        } else if ($viewer->isPC) {
+        }
+        if ($viewer->isPC) {
             JsonResult::make_not_found_error($field, "<0>User not found")->complete();
         } else {
             JsonResult::make_permission_error()->complete();
@@ -36,8 +37,7 @@ class APIHelpers {
         if ($u->contactId === $viewer->contactId
             || ($prow ? $viewer->can_administer($prow) : $viewer->privChair)) {
             return $u;
-        } else {
-            JsonResult::make_permission_error()->complete();
         }
+        JsonResult::make_permission_error()->complete();
     }
 }

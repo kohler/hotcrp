@@ -999,13 +999,12 @@ class ContactList {
                     $last = $reord[0];
                 }
             }
-            if (!empty($t)) {
-                $ls = htmlspecialchars("p/s/" . urlencode("re:" . $row->email));
-                return '<div class="has-hotlist" data-hotlist="' . $ls . '">'
-                    . join(", ", $t) . '</div>';
-            } else {
+            if (empty($t)) {
                 return "";
             }
+            $ls = htmlspecialchars("p/s/" . urlencode("re:" . $row->email));
+            return '<div class="has-hotlist" data-hotlist="' . $ls . '">'
+                . join(", ", $t) . '</div>';
         case self::FIELD_TAGS:
             if ($this->user->isPC
                 && ($tags = $row->viewable_tags($this->user))) {

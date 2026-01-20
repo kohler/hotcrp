@@ -1,10 +1,12 @@
 <?php
 // api_reviewtoken.php -- HotCRP review token API call
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class ReviewToken_API {
     static function run(Contact $user, Qrequest $qreq) {
-        assert(!$user->is_empty());
+        if ($user->is_empty()) {
+            return JsonResult::make_error(401, "<0>Unauthorized");
+        }
         $ml = [];
         if ($qreq->valid_post() && isset($qreq->token)) {
             if (str_starts_with($qreq->token, "[")) {

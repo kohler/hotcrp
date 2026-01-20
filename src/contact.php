@@ -1562,27 +1562,23 @@ class Contact implements JsonSerializable {
                 $roles &= ~Contact::ROLE_ADMIN;
             }
             return $roles;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     /** @param int $roles
      * @return string */
     static function role_html_for($roles) {
-        if ($roles & (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
-            if ($roles & Contact::ROLE_CHAIR) {
-                return '<span class="pcrole">chair</span>';
-            } else if (($roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) === (Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
-                return '<span class="pcrole">PC, sysadmin</span>';
-            } else if ($roles & Contact::ROLE_ADMIN) {
-                return '<span class="pcrole">sysadmin</span>';
-            } else {
-                return '<span class="pcrole">PC</span>';
-            }
-        } else {
+        if (($roles & (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN | Contact::ROLE_PC)) === 0) {
             return "";
+        } else if ($roles & Contact::ROLE_CHAIR) {
+            return '<span class="pcrole">chair</span>';
+        } else if (($roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) === (Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
+            return '<span class="pcrole">PC, sysadmin</span>';
+        } else if ($roles & Contact::ROLE_ADMIN) {
+            return '<span class="pcrole">sysadmin</span>';
         }
+        return '<span class="pcrole">PC</span>';
     }
 
     /** @param string $t
@@ -3686,7 +3682,8 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_finalize_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit() || $prow->timeWithdrawn > 0) {
+        if (!$rights->allow_author_edit()
+            || $prow->timeWithdrawn > 0) {
             return false;
         }
         $sr = $prow->submission_round();

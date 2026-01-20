@@ -58,31 +58,26 @@ class Lead_AssignmentParser extends AssignmentParser {
         Conflict_AssignmentParser::load_conflict_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($this->key === "manager") {
-            if ($state->user->privChair) {
-                return true;
-            } else {
-                return new AssignmentError("<0>Only chairs and sysadmins can change paper administrators");
-            }
-        } else {
+        if ($this->key !== "manager") {
             return $state->user->can_administer($prow);
+        } else if ($state->user->privChair) {
+            return true;
         }
+        return new AssignmentError("<0>Only chairs and sysadmins can change paper administrators");
     }
     function user_universe($req, AssignmentState $state) {
         if ($this->key === "shepherd" && $state->conf->setting("extrev_shepherd")) {
             return "pc+reviewers";
-        } else {
-            return "pc";
         }
+        return "pc";
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
             $m = $state->query(new Lead_Assignable($this->xtype, $prow->paperId));
             $cids = array_map(function ($x) { return $x->_cid; }, $m);
             return $state->users_by_id($cids);
-        } else {
-            return null;
         }
+        return null;
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
@@ -136,9 +131,8 @@ class Lead_Assigner extends Assigner {
             return review_lead_icon();
         } else if ($this->type() === "shepherd") {
             return review_shepherd_icon();
-        } else {
-            return "({$this->description})";
         }
+        return "({$this->description})";
     }
     function unparse_description() {
         return $this->description;
