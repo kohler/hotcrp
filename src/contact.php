@@ -162,10 +162,12 @@ class Contact implements JsonSerializable {
     const ROLE_OUTSTANDING_REVIEW = 0x1000;
     const ROLE_METAREVIEWER = 0x2000;
     const ROLE_LEAD = 0x4000;
-    const ROLE_EXPLICIT_MANAGER = 0x8000;
-    const ROLE_APPROVABLE = 0x10000;
-    const ROLE_VIEW_SOME_REVIEW_ID = 0x20000;
-    const ROLE_OUTSTANDING_REQUEST = 0x40000;
+    const ROLE_MANAGER = 0x18000;
+    const ROLE_TRACK_MANAGER = 0x8000;
+    const ROLE_ASSIGNED_MANAGER = 0x10000;
+    const ROLE_APPROVABLE = 0x20000;
+    const ROLE_VIEW_SOME_REVIEW_ID = 0x40000;
+    const ROLE_OUTSTANDING_REQUEST = 0x80000;
 
     const ROLE_DBMASK = 0x000F;
     const ROLE_CDBMASK = 0x003F; // DBMASK | AUTHOR | REVIEWER
@@ -3016,29 +3018,40 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function is_explicit_manager() {
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_EXPLICIT_MANAGER) === 0) {
-            $this->role_mask |= self::ROLE_EXPLICIT_MANAGER;
-            if ($this->contactXid > 0
-                && $this->isPC
-                && ($this->conf->check_any_admin_tracks($this)
-                    || ($this->conf->has_any_manager()
-                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactXid) > 0))) {
-                $this->roles |= self::ROLE_EXPLICIT_MANAGER;
+    function is_manager() {
+        if ($this->privChair) {
+            return true;
+        } else if ($this->contactXid <= 0 || !$this->isPC) {
+            return false;
+        } else if ($this->is_track_manager()) {
+            return true;
+        }
+        // `is_track_manager` did `check_rights_Version`
+        if (($this->role_mask & self::ROLE_ASSIGNED_MANAGER) === 0) {
+            $this->role_mask |= self::ROLE_ASSIGNED_MANAGER;
+            if ($this->conf->has_any_manager()
+                && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?", $this->contactXid) > 0) {
+                $this->roles |= self::ROLE_ASSIGNED_MANAGER;
             }
         }
-        return ($this->roles & self::ROLE_EXPLICIT_MANAGER) !== 0;
-    }
-
-    /** @return bool */
-    function is_manager() {
-        return $this->privChair || $this->is_explicit_manager();
+        return ($this->roles & self::ROLE_MANAGER) !== 0;
     }
 
     /** @return bool */
     function is_track_manager() {
-        return $this->privChair || $this->conf->check_any_admin_tracks($this);
+        if ($this->privChair) {
+            return true;
+        } else if ($this->contactXid <= 0 || !$this->isPC) {
+            return false;
+        }
+        $this->check_rights_version();
+        if (($this->role_mask & self::ROLE_TRACK_MANAGER) === 0) {
+            $this->role_mask |= self::ROLE_TRACK_MANAGER;
+            if ($this->conf->check_any_admin_tracks($this)) {
+                $this->roles |= self::ROLE_TRACK_MANAGER;
+            }
+        }
+        return ($this->roles & self::ROLE_TRACK_MANAGER) !== 0;
     }
 
     /** @return bool */
@@ -3936,8 +3949,7 @@ class Contact implements JsonSerializable {
         } else if (!$this->can_view_pc()) {
             return false;
         } else if (!$prow) {
-            return ($this->isPC
-                    && $this->is_explicit_manager())
+            return $this->is_manager()
                 || ($this->is_reviewer()
                     && !$this->conf->opt("hideManager"));
         }
