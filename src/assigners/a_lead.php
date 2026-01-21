@@ -1,6 +1,6 @@
 <?php
 // a_lead.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Lead_Assignable extends Assignable {
     /** @var 0|1|2 */
@@ -59,7 +59,7 @@ class Lead_AssignmentParser extends AssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($this->key !== "manager") {
-            return $state->user->can_administer($prow);
+            return $state->user->can_manage($prow);
         } else if ($state->user->privChair) {
             return true;
         }
@@ -86,7 +86,7 @@ class Lead_AssignmentParser extends AssignmentParser {
         if ($this->remove
             || !$user->contactId
             || $user->pc_track_assignable($prow)
-            || $user->allow_administer($prow)
+            || $user->allow_admin($prow)
             || ($rt = $prow->review_type($user)) >= REVIEW_PC
             || ($rt === REVIEW_EXTERNAL
                 && $this->key === "shepherd"

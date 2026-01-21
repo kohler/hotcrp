@@ -1,6 +1,6 @@
 <?php
 // api_alltags.php -- HotCRP tag completion API call
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class AllTags_API {
     static function run(Contact $user) {
@@ -28,7 +28,7 @@ class AllTags_API {
         if ($twiddle === false
             || ($twiddle === 0
                 && $tag[1] === "~"
-                && ($prow ? $user->allow_administer($prow) : $user->privChair))) {
+                && ($prow ? $user->allow_admin($prow) : $user->privChair))) {
             return $tag;
         } else if ($twiddle > 0
                    && substr($tag, 0, $twiddle) == $user->contactId) {

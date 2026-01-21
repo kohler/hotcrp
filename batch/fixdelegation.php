@@ -1,6 +1,6 @@
 <?php
 // fixdelegation.php -- HotCRP paper export script
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -47,7 +47,7 @@ class FixDelegation_Batch {
                 $proposals[$xuser->contactId] = true;
             } else if (preg_match('/\AAdded External review by (\S+)/', $row->action, $m)
                        && ($pc = $this->conf->pc_member_by_email($m[1]))
-                       && $pc->can_administer($prow)) {
+                       && $pc->allow_admin($prow)) {
                 $confirmations[$row->contactId] = $pc->contactId;
             }
         }

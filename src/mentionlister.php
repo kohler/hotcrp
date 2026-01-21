@@ -1,6 +1,6 @@
 <?php
 // mentionlister.php -- HotCRP helper class for listing mentions
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class MentionLister {
     /** @var array<string,list<Contact|Author>> */
@@ -168,7 +168,7 @@ class MentionLister {
                 }
                 if (!$ispc) {
                     $x["pri"] = 1;
-                } else if ($prow ? $au->can_administer($prow) : $au->privChair) {
+                } else if ($prow ? $au->is_admin($prow) : $au->privChair) {
                     $x["admin"] = true;
                 }
                 $comp[] = $x;

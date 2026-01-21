@@ -1,6 +1,6 @@
 <?php
 // a_preference.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Preference_Assignable extends Assignable {
     /** @var int */
@@ -47,11 +47,10 @@ class Preference_AssignmentParser extends AssignmentParser {
         return true;
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        if ($state->user->can_administer($prow)) {
+        if ($state->user->can_manage_scope($prow, "preference")) {
             return $state->pc_users();
-        } else {
-            return [$state->user];
         }
+        return [$state->user];
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->isPC ? [$state->reviewer] : null;
@@ -61,7 +60,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             return false;
         }
         if ($state->user->contactId !== $user->contactId) {
-            if (!$state->user->can_administer($prow)) {
+            if (!$state->user->can_manage_scope($prow, "preference")) {
                 return new AssignmentError($prow->failure_reason(["administer" => true]));
             } else if (!$user->isPC) {
                 return new AssignmentError("<0>User ‘{$user->email}’ is not a PC member");

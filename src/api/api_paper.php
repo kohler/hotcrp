@@ -1,6 +1,6 @@
 <?php
 // api_paper.php -- HotCRP paper API call
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Paper_API extends MessageSet {
     /** @var Conf
@@ -387,7 +387,7 @@ class Paper_API extends MessageSet {
         $ps->log_save_activity("via API");
         if ($this->notify) {
             if (!$this->notify_authors
-                && !$this->user->allow_administer($ps->saved_prow())) {
+                && !$this->user->allow_manage($ps->saved_prow())) {
                 $ps->set_notify_authors(true);
             }
             $ps->notify_followers();
@@ -653,7 +653,7 @@ class Paper_API extends MessageSet {
             }
         }
 
-        if (!$this->user->can_administer($prow)) {
+        if (!$this->user->can_manage($prow)) {
             return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete {$this->conf->snouns[1]}");
         }
 

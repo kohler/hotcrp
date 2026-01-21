@@ -1,6 +1,6 @@
 <?php
 // a_review.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Review_Assignable extends Assignable {
     /** @var ?int */
@@ -106,7 +106,7 @@ class Review_AssignmentParser extends AssignmentParser {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_administer($prow)) {
+        if (!$state->user->can_manage_reviews($prow)) {
             return false;
         } else if ($prow->timeWithdrawn > 0 && $this->rtype !== 0) {
             return new AssignmentError($prow->failure_reason(["withdrawn" => 1]));
@@ -181,9 +181,9 @@ class Review_AssignmentParser extends AssignmentParser {
         // XXX this should use perm/can_create_review
         if ($contact->is_pc_member()
             && !$contact->pc_track_assignable($prow)
-            && !$contact->allow_administer($prow)
+            && !$contact->allow_admin($prow)
             && $prow->review_type($contact) <= 0
-            && (!$state->user->can_administer($prow)
+            && (!$state->user->can_manage_reviews($prow)
                 || !isset($req["override"])
                 || !friendly_boolean($req["override"]))) {
             $uname = $contact->name(NAME_E);
@@ -257,7 +257,7 @@ class Review_AssignmentParser extends AssignmentParser {
         }
         if (isset($req["override"])
             && friendly_boolean($req["override"])
-            && $state->user->can_administer($prow)) {
+            && $state->user->can_manage_reviews($prow)) {
             $rev->_override = 1;
         }
         $state->add($rev);

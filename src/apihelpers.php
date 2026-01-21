@@ -1,6 +1,6 @@
 <?php
 // apihelpers.php -- HotCRP API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class APIHelpers {
     /** @param ?string $text
@@ -35,7 +35,7 @@ class APIHelpers {
     static function parse_reviewer_for($text, Contact $viewer, $prow) {
         $u = self::parse_user($text, $viewer);
         if ($u->contactId === $viewer->contactId
-            || ($prow ? $viewer->can_administer($prow) : $viewer->privChair)) {
+            || ($prow ? $viewer->is_admin($prow) : $viewer->privChair)) {
             return $u;
         }
         JsonResult::make_permission_error()->complete();

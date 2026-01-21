@@ -1,6 +1,6 @@
 <?php
 // a_status.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Status_Assignable extends Assignable {
     /** @var ?int */
@@ -77,7 +77,8 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $this->xtype = $aj->type;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return $state->user->can_administer($prow) || $prow->has_author($state->user);
+        return $state->user->can_manage($prow)
+            || $prow->has_author($state->user);
     }
     static function load_status_state(AssignmentState $state) {
         if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {
@@ -117,7 +118,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             }
             if (isset($req["notify"])
                 && ($notify = friendly_boolean($req["notify"])) !== null
-                && $state->user->can_administer($prow)) {
+                && $state->user->allow_manage($prow)) {
                 $res->_notify = $notify;
             }
         } else if ($this->xtype === "revive") {

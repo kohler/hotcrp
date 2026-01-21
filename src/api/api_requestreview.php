@@ -1,6 +1,6 @@
 <?php
 // api_requestreview.php -- HotCRP review-request API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class RequestReview_API {
     /** @param Contact $user
@@ -59,7 +59,7 @@ class RequestReview_API {
 
         // - check for existing request
         $request = self::request_by_paper_email($prow, $pemail);
-        if ($request && !$user->allow_administer($prow)) {
+        if ($request && !$user->allow_manage_reviews($prow)) {
             $ml[] = MessageItem::error_at("email", "<0>{$pemail} is already a requested reviewer");
             return JsonResult::make_message_list($ml);
         } else if ($request) {
@@ -73,7 +73,7 @@ class RequestReview_API {
             $refusal = ($prow->review_refusals_by_email($pemail))[0] ?? null;
         }
         if ($refusal
-            && (!$user->can_administer($prow) || !$qreq->override)) {
+            && (!$user->can_manage_reviews($prow) || !$qreq->override)) {
             if ($reviewer
                 && ($refusal->refusedBy == $reviewer->contactId
                     || ($refusal->refusedBy === null && $refusal->reason !== "request denied by chair"))) {
@@ -84,7 +84,7 @@ class RequestReview_API {
             if ($refusal->reason !== "" && $refusal->reason !== "request denied by chair") {
                 $ml[] = MessageItem::inform_at("email", "<5>They offered this reason: “" . htmlspecialchars($refusal->reason) . "”");
             }
-            if ($user->allow_administer($prow)) {
+            if ($user->allow_manage_reviews($prow)) {
                 $ml[] = MessageItem::error_at("override", "");
             }
             return JsonResult::make_message_list($ml);
@@ -110,7 +110,8 @@ class RequestReview_API {
         }
 
         // load requester, reason
-        if ($request && $user->can_administer($prow)) {
+        $can_manage = $user->can_manage_reviews($prow);
+        if ($request && $can_manage) {
             $requester = $user->conf->user_by_id($request->requestedBy, USER_SLICE) ?? $user;
         } else {
             $requester = $user;
@@ -125,14 +126,14 @@ class RequestReview_API {
 
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");
-        if ($user->can_administer($prow)
+        if ($can_manage
             ? ($potconflist || $notrack) && !$qreq->override
             : $extrev_chairreq === 1
               || ($extrev_chairreq === 2 && ($potconflist || $notrack))) {
             $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $pemail, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
-            if ($user->can_administer($prow)) {
+            if ($can_manage) {
                 if ($potconflist) {
                     $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
                     $ml[] = MessageItem::inform_at("email", "<5>" . $potconflist->tooltip_html($prow));
@@ -219,23 +220,22 @@ class RequestReview_API {
             || trim((string) $qreq->lastName) !== "") {
             return JsonResult::make_error(400, "<0>An email address is required to request a review");
         }
-        if (!$user->allow_administer($prow)) {
+        if (!$user->allow_manage_reviews($prow)) {
             return JsonResult::make_error(403, "<0>Only administrators can request anonymous reviews");
         }
         $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->enable_papers($prow);
         $aset->parse("paper,action,user\n{$prow->paperId},review,newanonymous\n");
-        if ($aset->execute()) {
-            $aset_csv = $aset->make_acsv();
-            assert($aset_csv->count() === 1);
-            $row = $aset_csv->row(0);
-            assert(isset($row["review_token"]));
-            $token = $row["review_token"];
-            $mi = MessageItem::success("<0>Created anonymous review with review token ‘{$token}’");
-            return new JsonResult(["ok" => true, "action" => "token", "review_token" => $token, "message_list" => [$mi]]);
-        } else {
+        if (!$aset->execute()) {
             return new JsonResult(["ok" => false, "message_list" => $aset->message_list()]);
         }
+        $aset_csv = $aset->make_acsv();
+        assert($aset_csv->count() === 1);
+        $row = $aset_csv->row(0);
+        assert(isset($row["review_token"]));
+        $token = $row["review_token"];
+        $mi = MessageItem::success("<0>Created anonymous review with review token ‘{$token}’");
+        return new JsonResult(["ok" => true, "action" => "token", "review_token" => $token, "message_list" => [$mi]]);
     }
 
     /** @param Contact $user
@@ -243,7 +243,7 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function denyreview($user, $qreq, $prow) {
-        if (!$user->allow_administer($prow)) {
+        if (!$user->allow_manage_reviews($prow)) {
             return JsonResult::make_permission_error();
         }
         $email = trim((string) $qreq->email);
@@ -251,43 +251,43 @@ class RequestReview_API {
             return JsonResult::make_parameter_error("email", "<0>Invalid email address");
         }
         $user->conf->qe("lock tables ReviewRequest write, PaperReviewRefused write, ContactInfo read");
+        $request = $user->conf->fetch_first_object("select * from ReviewRequest where paperId=? and email=?", $prow->paperId, trim($qreq->email));
+        if (!$request) {
+            $user->conf->qe("unlock tables");
+            return JsonResult::make_not_found_error("email", "<0>Request not found");
+        }
         // Need to be careful and not expose inappropriate information:
         // this email comes from the chair, who can see all, but goes to a PC
         // member, who can see less.
-        if (($request = $user->conf->fetch_first_object("select * from ReviewRequest where paperId=? and email=?", $prow->paperId, trim($qreq->email)))) {
-            $requester = $user->conf->user_by_id($request->requestedBy);
-            $reviewer = $user->conf->user_by_email($email);
-            $reason = trim((string) $qreq->reason);
+        $requester = $user->conf->user_by_id($request->requestedBy);
+        $reviewer = $user->conf->user_by_email($email);
+        $reason = trim((string) $qreq->reason);
 
-            $user->conf->qe("delete from ReviewRequest where paperId=? and email=?",
-                $prow->paperId, $email);
-            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, reviewRound=?",
-                $prow->paperId, $email, $reviewer ? $reviewer->contactId : 0,
-                $request->firstName, $request->lastName, $request->affiliation,
-                $request->requestedBy, $request->timeRequested,
-                $user->contactId, Conf::$now, $reason, REVIEW_EXTERNAL,
-                $request->reviewRound);
-            Dbl::qx_raw("unlock tables");
+        $user->conf->qe("delete from ReviewRequest where paperId=? and email=?",
+            $prow->paperId, $email);
+        $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, reviewRound=?",
+            $prow->paperId, $email, $reviewer ? $reviewer->contactId : 0,
+            $request->firstName, $request->lastName, $request->affiliation,
+            $request->requestedBy, $request->timeRequested,
+            $user->contactId, Conf::$now, $reason, REVIEW_EXTERNAL,
+            $request->reviewRound);
+        $user->conf->qe("unlock tables");
 
-            $reviewer_contact = Author::make_keyed([
-                "firstName" => $reviewer ? $reviewer->firstName : $request->firstName,
-                "lastName" => $reviewer ? $reviewer->lastName : $request->lastName,
-                "affiliation" => $reviewer ? $reviewer->affiliation : $request->affiliation,
-                "email" => $email
-            ]);
-            HotCRPMailer::send_to($requester, "@denyreviewrequest", [
-                "prow" => $prow,
-                "reviewer_contact" => $reviewer_contact,
-                "reason" => $reason
-            ]);
+        $reviewer_contact = Author::make_keyed([
+            "firstName" => $reviewer ? $reviewer->firstName : $request->firstName,
+            "lastName" => $reviewer ? $reviewer->lastName : $request->lastName,
+            "affiliation" => $reviewer ? $reviewer->affiliation : $request->affiliation,
+            "email" => $email
+        ]);
+        HotCRPMailer::send_to($requester, "@denyreviewrequest", [
+            "prow" => $prow,
+            "reviewer_contact" => $reviewer_contact,
+            "reason" => $reason
+        ]);
 
-            $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
-            $prow->conf->update_automatic_tags($prow, "review");
-            return new JsonResult(["ok" => true, "action" => "deny"]);
-        } else {
-            Dbl::qx_raw("unlock tables");
-            return JsonResult::make_not_found_error("email", "<0>No such request");
-        }
+        $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
+        $prow->conf->update_automatic_tags($prow, "review");
+        return new JsonResult(["ok" => true, "action" => "deny"]);
     }
 
     /** @param Contact $user
@@ -295,7 +295,7 @@ class RequestReview_API {
      * @param ReviewInfo|ReviewRefusalInfo $remrow
      * @return bool */
     static function allow_accept_decline($user, $prow, $remrow) {
-        if ($user->can_administer($prow)) {
+        if ($user->can_manage_reviews($prow)) {
             return true;
         } else if ($remrow instanceof ReviewInfo) {
             return $user->is_my_review($remrow);
@@ -560,17 +560,17 @@ class RequestReview_API {
 
         $rrows = array_filter($xrrows, function ($rrow) use ($user, $prow) {
             return $rrow->reviewStatus < ReviewInfo::RS_DRAFTED
-                && ($user->can_administer($prow)
+                && ($user->can_manage_reviews($prow)
                     || ($user->contactId && $user->contactId == $rrow->requestedBy));
         });
         $requests = array_filter($xrequests, function ($req) use ($user, $prow) {
-            return $user->can_administer($prow)
+            return $user->can_manage_reviews($prow)
                 || ($user->contactId && $user->contactId == $req->requestedBy);
         });
 
         if (empty($rrows) && empty($requests)) {
             if (!empty($xrrows)
-                && ($user->can_administer($prow)
+                && ($user->can_manage_reviews($prow)
                     || ($user->contactId && $user->contactId == $xrrows[0]->requestedBy))) {
                 return JsonResult::make_permission_error("r", "<0>This review can’t be retracted because the reviewer has already begun their work");
             } else {
@@ -641,7 +641,7 @@ class RequestReview_API {
         }
 
         // check permissions
-        if (!$user->can_administer($prow)
+        if (!$user->can_manage_reviews($prow)
             && strcasecmp($email, $user->email) !== 0) {
             return JsonResult::make_permission_error("email");
         }
@@ -651,7 +651,7 @@ class RequestReview_API {
             return JsonResult::make_not_found_error(null, "<0>No reviews declined");
         }
 
-        if (!$user->can_administer($prow)) {
+        if (!$user->can_manage_reviews($prow)) {
             $xrefusals = array_filter($refusals, function ($ref) use ($user) {
                 return $ref->contactId == $user->contactId;
             });

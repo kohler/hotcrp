@@ -1,6 +1,6 @@
 <?php
 // pages/p_assign.php -- HotCRP per-paper assignment/conflict management page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Assign_Page {
     /** @var Conf */
@@ -191,7 +191,7 @@ class Assign_Page {
         $qreq = $this->qreq;
         if (isset($qreq->update)
             && $qreq->valid_post()
-            && $this->user->allow_administer($this->prow)) {
+            && $this->user->allow_manage($this->prow)) {
             $this->handle_pc_update();
         }
         if ((isset($qreq->requestreview) || isset($qreq->approvereview))
@@ -310,7 +310,7 @@ class Assign_Page {
     private function print_reqrev($rrow, $time) {
         echo '<div class="ctelt"><div class="ctelti has-fold';
         if ($rrow->reviewType === REVIEW_REQUEST
-            && ($this->user->can_administer($this->prow)
+            && ($this->user->is_admin($this->prow)
                 || $rrow->requestedBy == $this->user->contactId)) {
             echo ' foldo';
         } else {
@@ -327,7 +327,7 @@ class Assign_Page {
             $name = $this->user->reviewer_html_for($rrowid);
             if ($rrow->contactId !== $this->user->contactId
                 && $this->user->privChair
-                && $this->user->allow_administer($this->prow)) {
+                && $this->user->allow_admin($this->prow)) {
                 $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
                     $this->prow->reviewurl(["actas" => $rrowid->email]));
             }
@@ -363,7 +363,7 @@ class Assign_Page {
         }
 
         // render form
-        if ($this->user->can_administer($this->prow)
+        if ($this->user->is_admin($this->prow)
             || ($rrow->reviewType !== REVIEW_REFUSAL
                 && $this->user->contactId > 0
                 && $rrow->requestedBy == $this->user->contactId)) {
@@ -381,7 +381,7 @@ class Assign_Page {
                 echo Ht::hidden("reason", $reason);
             }
             if ($rrow->reviewType === REVIEW_REQUEST
-                && $this->user->can_administer($this->prow)) {
+                && $this->user->is_admin($this->prow)) {
                 echo Ht::hidden("override", 1);
                 $buttons[] = Ht::submit("approvereview", "Approve proposal", ["class" => "btn-sm btn-success"]);
                 $buttons[] = Ht::submit("denyreview", "Deny proposal", ["class" => "btn-sm ui js-deny-review-request"]); // XXX reason
@@ -509,7 +509,7 @@ class Assign_Page {
             if ($rrow->reviewType < REVIEW_SECONDARY
                 && $rrow->reviewStatus < ReviewInfo::RS_DRAFTED
                 && $user->can_view_review_identity($prow, $rrow)
-                && ($user->can_administer($prow) || $rrow->requestedBy == $user->contactId)) {
+                && ($user->is_admin($prow) || $rrow->requestedBy == $user->contactId)) {
                 $requests[] = [0, max((int) $rrow->timeRequestNotified, (int) $rrow->timeRequested), count($requests), $rrow];
             }
         }
@@ -538,7 +538,7 @@ class Assign_Page {
         }
 
         // PC assignments
-        if ($user->can_administer($prow)) {
+        if ($user->is_admin($prow)) {
             $acs = AssignmentCountSet::load($user, AssignmentCountSet::HAS_REVIEW);
 
             // PC conflicts row
@@ -610,7 +610,7 @@ class Assign_Page {
 
         // add external reviewers
         $req = "Request external review";
-        if (!$user->allow_administer($prow) && $this->conf->setting("extrev_chairreq")) {
+        if (!$user->allow_admin($prow) && $this->conf->setting("extrev_chairreq")) {
             $req = "Propose external review";
         }
         echo '<div class="pcard revcard">',
@@ -618,7 +618,7 @@ class Assign_Page {
             "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 
         echo '<p class="w-text">', $this->conf->_i("external_review_request_description");
-        if ($user->allow_administer($prow)) {
+        if ($user->allow_admin($prow)) {
             echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
         }
         echo '</p>';
@@ -671,7 +671,7 @@ class Assign_Page {
                 "</div>\n\n";
         }
 
-        if ($user->can_administer($prow)) {
+        if ($user->is_admin($prow)) {
             echo '<label class="', $this->ms->control_class("override", "checki"), '"><span class="checkc">',
                 Ht::checkbox("override"),
                 ' </span>Override declined requests</label>';

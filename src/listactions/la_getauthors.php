@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getauthors.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class GetAuthors_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
@@ -23,7 +23,7 @@ class GetAuthors_ListAction extends ListAction {
         $texts = [];
         $has_iscontact = $has_country = $has_orcid = false;
         foreach ($prows as $prow) {
-            $admin = $user->allow_administer($prow);
+            $admin = $user->allow_admin($prow);
             $aucid = [];
             foreach ($prow->author_list() as $au) {
                 $line = [

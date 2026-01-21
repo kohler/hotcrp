@@ -1,6 +1,6 @@
 <?php
 // paperexport.php -- HotCRP helper for reading/storing papers as JSON
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class PaperExport {
     /** @var Conf
@@ -333,7 +333,7 @@ class PaperExport {
                 $rj[$f->uid()] = $f->unparse_json($fval);
             } else if ($fval !== null
                        && $this->include_permissions
-                       && ($my_review || $this->viewer->can_administer($prow))) {
+                       && ($my_review || $this->viewer->is_admin($prow))) {
                 $hidden[] = $f->uid();
             }
         }

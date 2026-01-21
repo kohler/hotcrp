@@ -1,6 +1,6 @@
 <?php
 // api_reviewmeta.php -- HotCRP review metadata API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class ReviewMeta_API {
     /** @return JsonResult|ReviewInfo */
@@ -28,7 +28,7 @@ class ReviewMeta_API {
             return $rrow;
         }
         if (!$user->is_my_review($rrow)
-            && !$user->can_administer($prow)) {
+            && !$user->is_admin($prow)) {
             return JsonResult::make_permission_error("r");
         }
         $pex = new PaperExport($user);
@@ -61,7 +61,7 @@ class ReviewMeta_API {
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
             if ($qreq->user_rating === "clearall") {
-                if (!$user->can_administer($prow)) {
+                if (!$user->can_manage_reviews($prow)) {
                     return JsonResult::make_permission_error();
                 }
                 $rating = -1;
@@ -95,7 +95,7 @@ class ReviewMeta_API {
 
     /** @param PaperInfo $prow */
     static function reviewround(Contact $user, $qreq, $prow) {
-        if (!$user->can_administer($prow)) {
+        if (!$user->can_manage_reviews($prow)) {
             return JsonResult::make_permission_error();
         }
         $rrow = self::lookup_review($user, $prow, $qreq->r);

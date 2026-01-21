@@ -1,6 +1,6 @@
 <?php
 // responseround.php -- HotCRP helper class for response rounds
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ResponseRound {
     /** @var bool */
@@ -60,7 +60,7 @@ class ResponseRound {
 
     /** @return bool */
     function relevant(Contact $user, ?PaperInfo $prow = null) {
-        if (($prow ? $user->allow_administer($prow) : $user->is_manager())
+        if (($prow ? $user->allow_admin($prow) : $user->is_manager())
             && ($this->done || $this->condition !== null || $this->name !== "1")) {
             return true;
         } else if ($user->isPC) {

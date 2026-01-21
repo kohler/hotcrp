@@ -1,6 +1,6 @@
 <?php
 // o_authors.php -- HotCRP helper class for authors intrinsic
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Authors_PaperOption extends PaperOption {
     /** @var int */
@@ -289,7 +289,7 @@ class Authors_PaperOption extends PaperOption {
         $ignore_diff = false;
         if ($n === 1
             && !$au
-            && !$pt->user->can_administer($pt->prow)
+            && !$pt->user->is_admin($pt->prow)
             && (!$reqau || $reqau->nea_equals($pt->user->populated_user()))) {
             $reqau = Author::make_user($pt->user->populated_user());
             $ignore_diff = true;

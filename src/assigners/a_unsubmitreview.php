@@ -1,6 +1,6 @@
 <?php
 // a_unsubmitreview.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function __construct() {
@@ -10,7 +10,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         Review_AssignmentParser::load_review_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return $state->user->can_administer($prow);
+        return $state->user->can_manage_reviews($prow);
     }
     function user_universe($req, AssignmentState $state) {
         return "reviewers";

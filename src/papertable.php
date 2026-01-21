@@ -1,6 +1,6 @@
 <?php
 // papertable.php -- HotCRP helper class for producing paper tables
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class PaperTable {
     /** @var Conf
@@ -91,8 +91,8 @@ class PaperTable {
         $this->user = $user;
         $this->qreq = $qreq;
         $this->prow = $prow;
-        $this->allow_admin = $user->allow_administer($this->prow);
-        $this->admin = $user->can_administer($this->prow);
+        $this->allow_admin = $user->allow_admin($this->prow);
+        $this->admin = $user->is_admin($this->prow);
         $this->allow_edit_final = $user->edit_paper_state($this->prow) === 2;
 
         if (!$this->prow->paperId) {
@@ -1695,7 +1695,7 @@ class PaperTable {
             }
             if ($is_sitewide) {
                 echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit its ", Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';
-                if ($this->user->allow_administer($this->prow)) {
+                if ($this->user->allow_admin($this->prow)) {
                     echo ' ', Ht::link("Override your conflict", $this->conf->selfurl($this->qreq, ["forceShow" => 1])), ' to view and edit all tags.';
                 }
                 echo '</p>';
@@ -1917,7 +1917,7 @@ class PaperTable {
             || $this->user->contactId <= 0
             || ($this->prow->has_conflict($this->user)
                 && !$this->prow->has_author($this->user)
-                && !$this->user->is_admin_force())) {
+                && !$this->user->is_override_conflict())) {
             return;
         }
 
@@ -2404,7 +2404,7 @@ class PaperTable {
             $form_url["sclass"] = $sr->tag;
         }
         // This is normally added automatically, but isn't for new papers
-        if ($this->user->is_admin_force()) {
+        if ($this->user->is_override_conflict()) {
             $form_url["forceShow"] = 1;
         }
         $form_js = [
@@ -2538,7 +2538,7 @@ class PaperTable {
                 echo '<div class="pcard notecard override-conflict off"><p class="sd">',
                     '<a class="noul" href="', $this->conf->selfurl($this->qreq, ["forceShow" => 1]), '">',
                     '🔒&nbsp;<u>Override conflict</u></a> for administrator view</p></div>';
-            } else if ($this->user->is_admin_force()
+            } else if ($this->user->is_override_conflict()
                        && $this->prow->has_conflict($this->user)) {
                 $unprivurl = $this->mode === "assign"
                     ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => null])
@@ -2606,7 +2606,7 @@ class PaperTable {
         $conf = $prow->conf;
         $subrev = [];
         $cflttype = $user->view_conflict_type($prow);
-        $allow_actas = $user->privChair && $user->allow_administer($prow);
+        $allow_actas = $user->privChair && $user->allow_admin($prow);
         $hideUnviewable = ($cflttype > 0 && !$this->admin)
             || (!$user->act_pc($prow) && ($conf->setting("viewrev_ext") ?? 0) < 0);
         $show_ratings = $user->can_view_review_ratings($prow);
@@ -2865,7 +2865,7 @@ class PaperTable {
         // edit paper
         if ($this->mode !== "edit"
             && $prow->has_author($this->user)
-            && !$this->user->can_administer($prow)) {
+            && !$this->user->is_admin($prow)) {
             $es = $this->conf->_c5("paper_edit", "<0>Edit {submission}");
             $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="noul revlink">'
                 . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u></a>";

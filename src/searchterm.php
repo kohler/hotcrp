@@ -1,6 +1,6 @@
 <?php
 // searchterm.php -- HotCRP paper search terms
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 abstract class SearchTerm {
     /** @var string
@@ -1435,7 +1435,7 @@ class Limit_SearchTerm extends SearchTerm {
             }
             return false;
         case "reviewable":
-            if ($this->reviewer !== $user && !$user->allow_administer($row)) {
+            if ($this->reviewer !== $user && !$user->allow_admin($row)) {
                 return false;
             } else if ($row->has_active_reviewer($this->reviewer)) {
                 return true;
@@ -1463,7 +1463,7 @@ class Limit_SearchTerm extends SearchTerm {
             return $user->is_primary_administrator($row);
         case "alladmin":
         case "actadmin":
-            return $user->allow_administer($row);
+            return $user->allow_admin($row);
         case "req":
             foreach ($row->all_reviews() as $rrow) {
                 if ($rrow->reviewType == REVIEW_EXTERNAL

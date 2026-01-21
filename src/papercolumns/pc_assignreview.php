@@ -1,6 +1,6 @@
 <?php
 // pc_assignreview.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class AssignReview_PaperColumn extends PaperColumn {
     /** @var Contact */
@@ -39,7 +39,7 @@ class AssignReview_PaperColumn extends PaperColumn {
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
-            if ($pl->user->allow_administer($row)) {
+            if ($pl->user->allow_admin($row)) {
                 $ci = $row->contact_info($this->contact);
                 if ($ci->conflictType >= CONFLICT_AUTHOR) {
                     $v = -100;
@@ -58,7 +58,7 @@ class AssignReview_PaperColumn extends PaperColumn {
         return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->allow_administer($row);
+        return !$pl->user->allow_admin($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ci = $row->contact_info($this->contact);

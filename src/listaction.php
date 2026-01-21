@@ -1,6 +1,6 @@
 <?php
 // listaction.php -- HotCRP helper class for paper search actions
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ListAction {
     /** @return bool */
@@ -174,7 +174,7 @@ class ListAction {
 
         $texts = [];
         foreach ($user->paper_set(["paperId" => $pids, "reviewSignatures" => true]) as $prow) {
-            if (!$user->allow_administer($prow)) {
+            if (!$user->allow_admin($prow)) {
                 $texts[] = [];
                 $texts[] = ["paper" => $prow->paperId,
                             "action" => "none",

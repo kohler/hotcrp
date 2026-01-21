@@ -1,6 +1,6 @@
 <?php
 // pages/p_review.php -- HotCRP paper review display/edit page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Review_Page {
     /** @var Conf */
@@ -74,7 +74,7 @@ class Review_Page {
     /** @return ?ReviewInfo */
     function my_rrow($prefer_approvable) {
         $myrrow = $apprrow1 = $apprrow2 = null;
-        $admin = $this->user->can_administer($this->prow);
+        $admin = $this->user->can_manage_reviews($this->prow);
         foreach ($this->prow->reviews_as_display() as $rrow) {
             if ($this->user->can_view_review($this->prow, $rrow)) {
                 if ($rrow->contactId === $this->user->contactId
@@ -94,9 +94,8 @@ class Review_Page {
         if (($apprrow1 || $apprrow2)
             && ($prefer_approvable || !$myrrow)) {
             return $apprrow1 ?? $apprrow2;
-        } else {
-            return $myrrow;
         }
+        return $myrrow;
     }
 
     function reload_prow() {
@@ -238,7 +237,7 @@ class Review_Page {
         if (!$this->rrow || !$this->rrow_explicit) {
             $this->conf->error_msg("<0>Review not found");
             return;
-        } else if (!$this->user->can_administer($this->prow)) {
+        } else if (!$this->user->can_manage_reviews($this->prow)) {
             return;
         }
         if ($this->rrow->delete($this->user)) {
@@ -250,7 +249,7 @@ class Review_Page {
     function handle_unsubmit() {
         if (!$this->rrow
             || $this->rrow->reviewStatus < ReviewInfo::RS_DELIVERED
-            || !$this->user->can_administer($this->prow)) {
+            || !$this->user->can_manage_reviews($this->prow)) {
             return;
         }
         $rv = new ReviewValues($this->conf);

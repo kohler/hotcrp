@@ -1,6 +1,6 @@
 <?php
 // reviewinfo.php -- HotCRP class representing reviews
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ReviewInfo implements JsonSerializable {
     /** @var Conf */
@@ -529,7 +529,7 @@ class ReviewInfo implements JsonSerializable {
         }
 
         if (($this->rflags & self::RF_AUSEEN_LIVE) !== 0
-            || $viewer->can_administer($this->prow)
+            || $viewer->is_admin($this->prow)
             || $viewer->is_my_review($this)) {
             return [$this->reviewModified, false];
         }

@@ -1,6 +1,6 @@
 <?php
 // api_potentialconflicts.php -- HotCRP user-related API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class PotentialConflicts_API {
     /** @return JsonResult */
@@ -14,7 +14,7 @@ class PotentialConflicts_API {
         }
 
         // API accessible to authors and administrators
-        if (!$prow->has_author($user) && !$user->can_administer($prow)) {
+        if (!$prow->has_author($user) && !$user->is_admin($prow)) {
             return JsonResult::make_permission_error("p");
         }
 

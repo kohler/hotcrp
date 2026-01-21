@@ -1,6 +1,6 @@
 <?php
 // a_sharing.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 use AuthorView_Capability as AVToken;
 
@@ -68,7 +68,7 @@ class Sharing_AssignmentParser extends UserlessAssignmentParser {
         Dbl::free($result);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($state->user->can_administer($prow)
+        if ($state->user->can_manage($prow)
             || $prow->has_author($state->user)) {
             return true;
         }

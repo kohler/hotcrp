@@ -1,14 +1,14 @@
 <?php
 // api_sharing.php -- HotCRP sharing API call
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Sharing_API extends MessageSet {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        if (!$user->can_administer($prow)
-            && !$prow->has_author($user)) {
+        if (!$prow->has_author($user)
+            && ($qreq->is_get() ? !$user->is_admin($prow) : !$user->can_manage($prow))) {
             return JsonResult::make_permission_error();
         }
-        if ($qreq->method() !== "GET") {
+        if (!$qreq->is_get()) {
             if ($qreq->method() === "DELETE") {
                 $share = false;
             } else if (!isset($qreq->share)) {

@@ -1,6 +1,6 @@
 <?php
 // pages/manualassign.php -- HotCRP chair's paper assignment page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ManualAssign_Page {
     /** @var Conf */
@@ -41,7 +41,7 @@ class ManualAssign_Page {
 
             $ct = $row->conflict_type($reviewer);
             $rt = $row->review_type($reviewer);
-            if (!$this->viewer->can_administer($row)
+            if (!$this->viewer->can_manage_reviews($row)
                 || Conflict::is_author($ct)) {
                 continue;
             }

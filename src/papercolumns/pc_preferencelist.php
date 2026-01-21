@@ -1,6 +1,6 @@
 <?php
 // pc_preferencelist.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class PreferenceList_PaperColumn extends PaperColumn {
     /** @var bool */
@@ -29,7 +29,7 @@ class PreferenceList_PaperColumn extends PaperColumn {
         return true;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_administer($row);
+        return !$pl->user->is_admin($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ts = [];

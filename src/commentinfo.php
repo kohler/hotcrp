@@ -1,6 +1,6 @@
 <?php
 // commentinfo.php -- HotCRP helper class for comments
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class CommentInfo {
     /** @var Conf
@@ -360,7 +360,7 @@ class CommentInfo {
             return true;
         }
         // do not censor visible administrator
-        if ($u->allow_administer($this->prow)
+        if ($u->allow_admin($this->prow)
             && $viewer->can_view_manager($this->prow)) {
             return false;
         }

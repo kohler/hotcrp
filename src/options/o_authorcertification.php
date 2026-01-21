@@ -1,6 +1,6 @@
 <?php
 // o_authorcertification.php -- HotCRP helper class for authors intrinsic
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class AuthorCertification_Entry {
     /** @var string */
@@ -302,7 +302,7 @@ class AuthorCertification_PaperOption extends PaperOption {
     /** @param string $email
      * @return bool */
     static function user_can_change(Contact $user, PaperInfo $prow, $email) {
-        if ($user->can_administer($prow)
+        if ($user->can_manage($prow)
             || strcasecmp($user->email, $email) === 0) {
             return true;
         }
@@ -546,7 +546,7 @@ class AuthorCertification_PaperOption extends PaperOption {
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $okey = $this->field_key();
         $entries = new AuthorCertification_EntryList;
-        $admin = $qreq->user()->can_administer($prow);
+        $admin = $qreq->user()->can_manage($prow);
         for ($n = 1; true; ++$n) {
             $ekey = "{$okey}:{$n}:email";
             $email = $qreq[$ekey];
@@ -575,7 +575,7 @@ class AuthorCertification_PaperOption extends PaperOption {
 
         $entries = new AuthorCertification_EntryList;
         $msgs = [];
-        $admin = $user->can_administer($prow);
+        $admin = $user->can_manage($prow);
         foreach ($j as $i => $ej) {
             if (is_array($ej) && !array_is_list($ej)) {
                 $ej = (object) $ej;

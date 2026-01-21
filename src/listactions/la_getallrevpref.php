@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getallrevpref.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class GetAllRevpref_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
@@ -26,7 +26,7 @@ class GetAllRevpref_ListAction extends ListAction {
         $csvg = $user->conf->make_csvg("allprefs")->set_header($headers);
         $pcm = $user->conf->pc_members();
         foreach ($ssel->paper_set($user, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {
-            if (!$user->allow_administer($prow)) {
+            if (!$user->allow_admin($prow)) {
                 continue;
             }
             $ctypes = $prow->conflict_types();

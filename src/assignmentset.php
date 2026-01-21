@@ -1,6 +1,6 @@
 <?php
 // assignmentset.php -- HotCRP helper classes for assignments
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 abstract class Assignable {
     /** @var int */
@@ -2309,7 +2309,7 @@ class Assignment_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !isset($this->content[$row->paperId])
-            || !$pl->user->can_administer($row);
+            || !$pl->user->is_admin($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         return $this->content[$row->paperId];

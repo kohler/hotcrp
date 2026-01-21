@@ -1,6 +1,6 @@
 <?php
 // conference.php -- HotCRP central class representing a conference
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Conf {
     /** @var ?mysqli
@@ -4008,7 +4008,7 @@ class Conf {
             && $paper->conf === $this
             && Contact::$main_user
             && Contact::$main_user->conf === $this
-            && Contact::$main_user->can_administer($paper)
+            && Contact::$main_user->is_admin($paper)
             && $paper->has_conflict(Contact::$main_user)
             && preg_match("{$are}p={$paper->paperId}{$zre}", $param)
             && (is_array($params) ? !array_key_exists("forceShow", $params) : !preg_match($are . 'forceShow=/', $param))) {
@@ -5022,7 +5022,7 @@ class Conf {
         }
         if ($pid > 0) {
             $siteinfo["paperid"] = $pid;
-            if ($user && $user->is_admin_force()) {
+            if ($user && $user->is_override_conflict()) {
                 $siteinfo["want_override_conflict"] = true;
             }
         }
@@ -5404,7 +5404,7 @@ class Conf {
             $rj["tags"] = $this->viewable_user_tags($viewer);
         }
         $paper = Qrequest::$main_request ? Qrequest::$main_request->paper() : null;
-        if ($paper && $paper->conf === $this && $viewer->allow_administer($paper)) {
+        if ($paper && $paper->conf === $this && $viewer->allow_admin($paper)) {
             $assignable = [];
             foreach ($this->pc_members() as $pcm) {
                 if ($pcm->pc_assignable($paper)) {

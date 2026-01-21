@@ -1,6 +1,6 @@
 <?php
 // paperinfo.php -- HotCRP paper objects
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 final class PaperReviewPreference {
     /** @var int
@@ -111,7 +111,7 @@ final class PaperContactInfo {
     public $ciflags = 0;
     const CIF_SET0 = 0x1;
     const CIF_ALLOW_ADMINISTER = 0x2;
-    const CIF_ALLOW_ADMINISTER_FORCED = 0x4;
+    const CIF_OVERRIDE_CONFLICT = 0x4;
     const CIFM_SET0 = 0x7;
     const CIF_RECURSION = 0x8;
     const CIF_SET1 = 0x10;
@@ -218,16 +218,48 @@ final class PaperContactInfo {
     }
 
     /** @return bool */
-    function allow_administer() {
+    function allow_admin() {
         return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
     }
 
     /** @return bool */
-    function allow_administer_forced() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER_FORCED) !== 0;
+    function is_admin() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
     }
 
     /** @return bool */
+    function allow_manage() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function allow_manage_reviews() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function can_manage() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function can_manage_reviews() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function can_manage_tags() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+    }
+
+    /** @return bool
+     * @deprecated */
+    function allow_administer() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+    }
+
+    /** @return bool
+     * @deprecated */
     function can_administer() {
         return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
     }
@@ -371,16 +403,20 @@ final class PaperContactInfo {
         }
     }
 
-    /** @return PaperContactInfo */
-    function get_forced_rights() {
-        assert(($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0);
-        if (!$this->forced_rights_link) {
-            $ci = $this->forced_rights_link = clone $this;
-            $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
-            $ci->ciflags = ($ci->ciflags & self::CIFM_SET0)
-                | self::CIF_ALLOW_ADMINISTER_FORCED;
+    /** @param int $set0
+     *  @return PaperContactInfo */
+    function get_linked_rights($set0) {
+        $ci = $this;
+        while ($ci && ($ci->ciflags & self::CIFM_SET0) !== $set0) {
+            $ci = $ci->forced_rights_link;
         }
-        return $this->forced_rights_link;
+        if (!$ci) {
+            $ci = clone $this;
+            $this->forced_rights_link = $ci;
+            $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
+            $ci->ciflags = $set0;
+        }
+        return $ci;
     }
 }
 
@@ -1662,7 +1698,7 @@ class PaperInfo {
         foreach ($this->conf->pc_members() as $u) {
             if (($has_track_admin || $u->privChair)
                 && $u->is_primary_administrator($this)) {
-                if ($u->can_administer($this)) {
+                if ($u->is_admin($this)) {
                     $as[] = $u;
                 } else {
                     $cas[] = $u;
@@ -1689,7 +1725,7 @@ class PaperInfo {
             && (!$viewer || $viewer->can_view_review_assignment($this, $rrow))) {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
         } else if (($p = $this->conf->pc_member_by_id($cid))
-                   && $p->allow_administer($this)) {
+                   && $p->allow_admin($this)) {
             return "Administrator";
         } else if ($rrow) {
             return "Reviewer";
@@ -3005,7 +3041,7 @@ class PaperInfo {
     /** @param int $cid
      * @return bool */
     function can_view_review_identity_of($cid, Contact $viewer) {
-        if ($viewer->can_administer($this)
+        if ($viewer->is_admin($this)
             || $cid === $viewer->contactId) {
             return true;
         }

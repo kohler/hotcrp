@@ -1,6 +1,6 @@
 <?php
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 final class PaperStatus extends MessageSet {
     /** @var Conf
@@ -982,7 +982,7 @@ final class PaperStatus extends MessageSet {
             || !$this->user->can_view_decision($this->prow)
             || /* XXX not exactly the same check as override_deadlines */
                (!$this->conf->time_edit_final_paper()
-                && !$this->user->allow_administer($this->prow))) {
+                && !$this->user->allow_manage($this->prow))) {
             return;
         }
 
@@ -1213,7 +1213,7 @@ final class PaperStatus extends MessageSet {
         // if creating a paper, user becomes contact;
         // if user removes self from author list, user becomes contact
         if ($this->user->contactId > 0
-            && !$this->user->allow_administer($this->prow)) {
+            && !$this->user->allow_manage($this->prow)) {
             $cv = $this->_conflict_values[$this->user->contactId] ?? null;
             $ncv = self::new_conflict_value($cv);
             if (($ncv & CONFLICT_CONTACTAUTHOR) === 0
@@ -1270,7 +1270,7 @@ final class PaperStatus extends MessageSet {
         $this->_docs = $this->_tags_changed = [];
         $this->doc_savef |= DocumentInfo::SAVEF_DELAY_PROP;
         $this->_save_status = 0;
-        if ($this->user->can_administer($this->prow)) {
+        if ($this->user->can_manage($this->prow)) {
             $this->_save_status |= self::SSF_ADMIN_UPDATE;
         }
         if (!$prow->is_new()) {
@@ -1867,7 +1867,7 @@ final class PaperStatus extends MessageSet {
         // correct ADMIN_UPDATE for new papers: if administrator created the
         // paper and is not an author or contact, it's an admin update
         if (($this->_save_status & (self::SSF_NEW | self::SSF_ADMIN_UPDATE)) === self::SSF_NEW
-            && $this->user->allow_administer($this->prow)) {
+            && $this->user->allow_manage($this->prow)) {
             $cv = $this->_conflict_values[$this->user->contactId] ?? null;
             if ((self::new_conflict_value($cv) & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) === 0) {
                 $this->_save_status |= self::SSF_ADMIN_UPDATE;

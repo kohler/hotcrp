@@ -1,6 +1,6 @@
 <?php
 // o_contacts.php -- HotCRP helper class for contacts intrinsic
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Contacts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
@@ -60,7 +60,7 @@ class Contacts_PaperOption extends PaperOption {
         return $j;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if (!$ov->anno("modified") || $user->allow_administer($ov->prow)) {
+        if (!$ov->anno("modified") || $user->allow_admin($ov->prow)) {
             return;
         }
         if ($ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
