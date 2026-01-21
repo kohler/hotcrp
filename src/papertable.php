@@ -707,10 +707,10 @@ class PaperTable {
         $tooltip = !$options || !($options["notooltip"] ?? null);
         $t = [];
 
-        if ($doc->timestamp > 0) {
+        if (($time = $doc->timeReferenced ?? $doc->timestamp) > 0) {
             $t[] = ($tooltip ? '<span class="nb need-tooltip" aria-label="Upload time">' : '<span class="nb">')
                 . '<svg width="12" height="12" viewBox="0 0 96 96" class="licon"><path d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64zM48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z" /></svg>'
-                . " " . $doc->conf->unparse_time($doc->timestamp) . "</span>";
+                . " " . $doc->conf->unparse_time($time) . "</span>";
         }
 
         $ha = new HashAnalysis($doc->sha1);
@@ -731,11 +731,10 @@ class PaperTable {
             $t[] = $x;
         }
 
-        if (!empty($t)) {
-            return '<span class="hint">' . join(' <span class="barsep">·</span> ', $t) . "</span>";
-        } else {
+        if (empty($t)) {
             return "";
         }
+        return '<span class="hint">' . join(' <span class="barsep">·</span> ', $t) . "</span>";
     }
 
     /** @param PaperOption $o */
