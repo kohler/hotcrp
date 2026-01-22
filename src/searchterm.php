@@ -1039,9 +1039,12 @@ class Limit_SearchTerm extends SearchTerm {
         "outstandingreviews" => ["rout", "outstandingreviews"],
         "r" => ["r", "reviews"],
         "rable" => "reviewable",
-        "req" => "req",
-        "reqrevs" => "req",
+        "req" => ["req", "requests"],
+        "reqrevs" => ["req", "requests"],
+        "request" => ["req", "requests"],
+        "requests" => ["req", "requests"],
         "reviewable" => "reviewable",
+        "review" => ["r", "reviews"],
         "reviews" => ["r", "reviews"],
         "rout" => ["rout", "outstandingreviews"],
         "s" => ["s", "submitted"],
@@ -1142,8 +1145,8 @@ class Limit_SearchTerm extends SearchTerm {
                     $this->lflag &= ~self::LFLAG_ACCEPTED;
                 }
             }
-        } else if (in_array($limstr, ["a", "ar", "r", "req", "viewable", "reviewable",
-                                     "all", "none"], true)) {
+        } else if (in_array($limstr, ["a", "ar", "r", "req", "viewable",
+                                      "reviewable", "all", "none"], true)) {
             $this->lflag = 0;
         } else if ($limstr === "accepted") {
             $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;

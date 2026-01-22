@@ -104,7 +104,7 @@ class Cacheable_Page {
         if (($if_modified_since || $if_none_match)
             && (!$if_modified_since || $if_modified_since === $last_modified)
             && (!$if_none_match || $if_none_match === $etag)) {
-            header("HTTP/1.0 304 Not Modified");
+            http_response_code(304 /* Not Modified */);
         } else if (function_exists("ob_gzhandler") && !$skip_length) {
             ob_start("ob_gzhandler");
             echo $prefix;
