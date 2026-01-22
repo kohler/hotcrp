@@ -1,6 +1,6 @@
 <?php
 // qrequest.php -- HotCRP helper class for request objects (no warnings)
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     /** @var ?Conf */
@@ -203,6 +203,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @return ?string */
     function user_agent() {
         return $this->_headers["HTTP_USER_AGENT"] ?? null;
+    }
+
+    /** @param string $k
+     * @return ?string */
+    function raw_header($k) {
+        return $this->_headers[$k] ?? null;
     }
 
     /** @param string $k

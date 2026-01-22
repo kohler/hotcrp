@@ -7,5 +7,6 @@ require_once(__DIR__ . '/setup.php');
 TestRunner::run(
     "reset_db",
     "PaperAPI_Tester",
-    "ReviewAPI_Tester"
+    "ReviewAPI_Tester",
+    "Scope_Tester"
 );

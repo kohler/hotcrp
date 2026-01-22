@@ -110,24 +110,32 @@ final class PaperContactInfo {
     /** @var int */
     public $ciflags = 0;
     const CIF_SET0 = 0x1;
-    const CIF_ALLOW_ADMINISTER = 0x2;
+    const CIF_ALLOW_ADMIN_0 = 0x2;
     const CIF_OVERRIDE_CONFLICT = 0x4;
-    const CIFM_SET0 = 0x7;
-    const CIF_RECURSION = 0x8;
-    const CIF_SET1 = 0x10;
-    const CIF_CAN_ADMINISTER = 0x20;
-    const CIF_ALLOW_PC_BROAD = 0x40;
-    const CIF_ALLOW_PC = 0x80;
-    const CIF_ALLOW_AUTHOR_EDIT = 0x100;
-    const CIF_ACT_AUTHOR_VIEW = 0x200;
-    const CIF_ALLOW_AUTHOR_VIEW = 0x400;
-    const CIF_CAN_VIEW_DECISION = 0x800;
-    const CIF_SET2 = 0x1000;
-    const CIF_ALLOW_VIEW_AUTHORS = 0x2000;
-    const CIF_PREFER_VIEW_AUTHORS = 0x4000;
-    const CIFSHIFT_VIEW_AUTHORS_STATE = 13;
-    const CIF_SET3 = 0x8000;
-    const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x10000;
+    const CIF_OVERRIDE_SCOPE = 0x8;
+    const CIFM_SET0 = 0xF;
+    const CIF_RECURSION = 0x10;
+    const CIF_SET1 = 0x20;
+    const CIF_SUB_READ_SCOPE = 0x40;
+    const CIF_ALLOW_ADMIN = 0x80;
+    const CIF_IS_ADMIN = 0x100;
+    const CIF_ALLOW_MANAGE = 0x200;
+    const CIFM_CAN_MANAGE = 0x300;
+    const CIF_ALLOW_MANAGE_REVIEWS = 0x400;
+    const CIF_ALLOW_MANAGE_TAGS = 0x800;
+    const CIF_ALLOW_PC_BROAD = 0x1000;
+    const CIF_ALLOW_PC = 0x2000;
+    const CIF_ALLOW_AUTHOR_EDIT = 0x4000;
+    const CIF_ACT_AUTHOR_VIEW = 0x8000;
+    const CIF_ALLOW_AUTHOR_VIEW = 0x10000;
+    const CIF_CAN_VIEW_DECISION = 0x20000;
+    const CIF_REV_READ_SCOPE = 0x40000;
+    const CIF_SET2 = 0x80000;
+    const CIF_ALLOW_VIEW_AUTHORS = 0x100000;
+    const CIF_PREFER_VIEW_AUTHORS = 0x200000;
+    const CIFSHIFT_VIEW_AUTHORS_STATE = 20; // === log2(CIF_ALLOW_VIEW_AUTHORS)
+    const CIF_SET3 = 0x400000;
+    const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x800000;
     /** @var bool */
     public $primary_administrator;
     /** @var int */
@@ -219,49 +227,51 @@ final class PaperContactInfo {
 
     /** @return bool */
     function allow_admin() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_ALLOW_ADMIN) !== 0;
     }
 
     /** @return bool */
     function is_admin() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_IS_ADMIN) !== 0;
     }
 
     /** @return bool */
     function allow_manage() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
-    }
-
-    /** @return bool */
-    function allow_manage_reviews() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_ALLOW_MANAGE) !== 0;
     }
 
     /** @return bool */
     function can_manage() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIFM_CAN_MANAGE) === self::CIFM_CAN_MANAGE;
+    }
+
+    /** @return bool */
+    function allow_manage_reviews() {
+        return ($this->ciflags & self::CIF_ALLOW_MANAGE_REVIEWS) !== 0;
     }
 
     /** @return bool */
     function can_manage_reviews() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        $f = self::CIF_IS_ADMIN | self::CIF_ALLOW_MANAGE_REVIEWS;
+        return ($this->ciflags & $f) === $f;
     }
 
     /** @return bool */
     function can_manage_tags() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        $f = self::CIF_IS_ADMIN | self::CIF_ALLOW_MANAGE_TAGS;
+        return ($this->ciflags & $f) === $f;
     }
 
     /** @return bool
      * @deprecated */
     function allow_administer() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_ALLOW_ADMIN) !== 0;
     }
 
     /** @return bool
      * @deprecated */
     function can_administer() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_IS_ADMIN) !== 0;
     }
 
     /** @return bool */
@@ -292,6 +302,16 @@ final class PaperContactInfo {
     /** @return bool */
     function can_view_decision() {
         return ($this->ciflags & self::CIF_CAN_VIEW_DECISION) !== 0;
+    }
+
+    /** @return bool */
+    function sub_read_scope() {
+        return ($this->ciflags & self::CIF_SUB_READ_SCOPE) !== 0;
+    }
+
+    /** @return bool */
+    function rev_read_scope() {
+        return ($this->ciflags & self::CIF_REV_READ_SCOPE) !== 0;
     }
 
     /** @param int $ct */

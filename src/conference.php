@@ -5861,11 +5861,12 @@ class Conf {
     }
     /** @return JsonResult|Downloader|PageCompletion */
     function call_api_on($uf, $fn, Contact $user, Qrequest $qreq) {
-        // NOTE: Does not check $user->can_view_paper($qreq->paper())
+        // NOTE: Does not check $user->can_view_paper($qreq->paper()).
+        // Expects $qreq->paper() to have been set by Conf::set_paper_request,
+        // which checks $user->can_view_paper().
         $method = $qreq->method();
-        if ($method !== "GET"
-            && $method !== "HEAD"
-            && $method !== "OPTIONS"
+        $getlike = $method === "GET" || $method === "HEAD" || $method === "OPTIONS";
+        if (!$getlike
             && !$qreq->valid_token()
             && (!$uf || ($uf->check_token ?? null) !== false)) {
             return JsonResult::make_error(403, "<0>Missing credentials");
@@ -5873,6 +5874,21 @@ class Conf {
         if ($user->is_disabled()
             && (!$uf || !($uf->allow_disabled ?? false))) {
             return JsonResult::make_error(403, "<0>Disabled account");
+        }
+        if (($scope = $user->scope())
+            && $scope->checks_method()) {
+            if ($getlike) {
+                $bit = TokenScope::S_METHOD_GET;
+            } else if ($method === "POST") {
+                $bit = TokenScope::S_METHOD_POST;
+            } else if ($method === "DELETE") {
+                $bit = TokenScope::S_METHOD_DELETE;
+            } else {
+                $bit = 0;
+            }
+            if (!$scope->allow($bit)) {
+                return JsonResult::make_error(403, "<0>Method not permitted by scope");
+            }
         }
         if (!$uf) {
             if ($this->has_api($fn, $user, null)) {

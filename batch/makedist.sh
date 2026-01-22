@@ -584,6 +584,7 @@ src/tagrankparser.php
 src/tagsearchmatcher.php
 src/textformat.php
 src/tokeninfo.php
+src/tokenscope.php
 src/topicset.php
 src/track.php
 src/updateschema.php
