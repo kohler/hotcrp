@@ -4597,7 +4597,7 @@ class Conf {
             $where[] = $options["where"];
         }
 
-        // use authored papers has already been loaded
+        // use authored papers if already loaded
         if ($author
             && empty($where)
             && $user->has_authored_papers()

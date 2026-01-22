@@ -156,20 +156,19 @@ class JWTParser extends \MessageSet {
                    || !is_string($jwk->n)
                    || !is_base64url_string($jwk->n)) {
             return $this->null_error(1003, "<0>JWK key parameters incorrect");
-        } else {
-            $algseq = "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00";
-            $nenc = self::der_encode_positive_int_string(base64url_decode($jwk->n));
-            $eenc = self::der_encode_positive_int_string(base64url_decode($jwk->e));
-            $param = self::der_encode_bit_string(self::der_encode_tlv(0x30, $nenc . $eenc), 0);
-            $content = self::der_encode_tlv(0x30, $algseq . $param);
-            $s = base64_encode($content);
-            $t = ["-----BEGIN PUBLIC KEY-----\r\n"];
-            for ($p = 0; $p < strlen($s); $p += 64) {
-                $t[] = substr($s, $p, 64) . "\r\n";
-            }
-            $t[] = "-----END PUBLIC KEY-----\r\n";
-            return join("", $t);
         }
+        $algseq = "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00";
+        $nenc = self::der_encode_positive_int_string(base64url_decode($jwk->n));
+        $eenc = self::der_encode_positive_int_string(base64url_decode($jwk->e));
+        $param = self::der_encode_bit_string(self::der_encode_tlv(0x30, $nenc . $eenc), 0);
+        $content = self::der_encode_tlv(0x30, $algseq . $param);
+        $s = base64_encode($content);
+        $t = ["-----BEGIN PUBLIC KEY-----\r\n"];
+        for ($p = 0; $p < strlen($s); $p += 64) {
+            $t[] = substr($s, $p, 64) . "\r\n";
+        }
+        $t[] = "-----END PUBLIC KEY-----\r\n";
+        return join("", $t);
     }
 
     /** @return bool */
@@ -186,9 +185,8 @@ class JWTParser extends \MessageSet {
                 }
             }
             return self::$openssl_known[self::$openssl_alg_map[$alg]] ?? false;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param string $s
@@ -204,9 +202,8 @@ class JWTParser extends \MessageSet {
         } else if (isset(self::$openssl_alg_map[$alg])) {
             // XXX openssl_error_string();
             return openssl_verify($s, $signature, $this->verify_key, self::$openssl_alg_map[$alg]) === 1;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param string $s

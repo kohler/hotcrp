@@ -500,7 +500,7 @@ class Downloader {
         }
     }
 
-    /** @param string $k
+    /** @param string $key
      * @return ?string */
     function header($key) {
         foreach ($this->headers() as $k => $v) {

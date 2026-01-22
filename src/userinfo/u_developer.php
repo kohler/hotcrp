@@ -82,9 +82,8 @@ class Developer_UserInfo {
             $bu = floor($b->timeUsed / 86400);
             if (($au > 0) !== ($bu > 0)) {
                 return $au > 0 ? -1 : 1;
-            } else {
-                return ($bu <=> $au) ? : ($a->timeCreated <=> $b->timeCreated);
             }
+            return ($bu <=> $au) ? : ($a->timeCreated <=> $b->timeCreated);
         });
 
         if (!empty($toks)) {

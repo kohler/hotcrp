@@ -502,7 +502,8 @@ class ManageEmail_Page {
             throw new Redirection($this->conf->hoturl("signin", ["redirect" => $redirect]));
         }
         if (($user = $this->parse_user($key, $email))) {
-            $this->create_token()->change_data($key, $user->email)
+            $this->create_token()
+                ->change_data($key, $user->email)
                 ->change_data("step", $this->delta_step(1)->name);
             $this->redirect_token();
         }

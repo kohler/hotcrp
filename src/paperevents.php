@@ -68,9 +68,9 @@ class PaperEvents {
         $this->conf = $user->conf;
         $this->user = $user;
 
-        if (($user->defaultWatch & Contact::WATCH_REVIEW_ALL) != 0
+        if (($user->defaultWatch & Contact::WATCH_REVIEW_ALL) !== 0
             || ($user->is_track_manager()
-                && ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED) != 0)) {
+                && ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED) !== 0)) {
             $this->all_papers = true;
             $this->prows = new PaperInfoSet($this->conf);
         } else {
