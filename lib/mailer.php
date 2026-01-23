@@ -1,6 +1,6 @@
 <?php
 // mailer.php -- HotCRP mail template manager
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Mailer {
     const CONTEXT_BODY = 0;
@@ -265,9 +265,9 @@ class Mailer {
         if (!$this->censor && !$this->preparation->reset_capability) {
             $capinfo = new TokenInfo($this->conf, TokenInfo::RESETPASSWORD);
             if (($cdbu = $this->recipient->cdb_user())) {
-                $capinfo->set_cdb_user($cdbu)->set_token_pattern("hcpw1[20]");
+                $capinfo->set_user_from($cdbu, true)->set_token_pattern("hcpw1[20]");
             } else {
-                $capinfo->set_user($this->recipient)->set_token_pattern("hcpw0[20]");
+                $capinfo->set_user_from($this->recipient, false)->set_token_pattern("hcpw0[20]");
             }
             $capinfo->set_expires_in(259200)->insert();
             assert($capinfo->stored());

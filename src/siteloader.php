@@ -1,6 +1,6 @@
 <?php
 // siteloader.php -- HotCRP autoloader
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class SiteLoader {
     static $map = [
@@ -69,6 +69,7 @@ class SiteLoader {
         "_settingparser.php" => ["s_", "src/settings"],
         "_sitype.php" => ["si_", "src/settings"],
         "_tester.php" => ["t_", "test"],
+        "_token.php" => ["cap_", "src/capabilities"],
         "_userinfo.php" => ["u_", "src/userinfo"],
         "_valueformat.php" => ["vf_", "src/valueformats"]
     ];

@@ -1,6 +1,6 @@
 <?php
 // api_upload.php -- HotCRP upload manager
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Upload_API {
     const MIN_MULTIPART_SIZE = 5 << 20;
@@ -149,7 +149,9 @@ class Upload_API {
             return JsonResult::make_parameter_error("size", "<0>File too large")->set("maxsize", $this->max_size);
         }
         $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
-            ->set_user($user)->set_paper($prow)->set_expires_in(7200);
+            ->set_user_from($user, false)
+            ->set_paper($prow)
+            ->set_expires_in(7200);
         if (isset($qreq->filename)
             && strlen($qreq->filename) <= 255
             && is_valid_utf8($qreq->filename)) {

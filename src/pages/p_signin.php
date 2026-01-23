@@ -99,11 +99,7 @@ class Signin_Page {
         if (!$token) {
             return null;
         }
-        if (str_starts_with($token, "hcpw1")) {
-            $tok = TokenInfo::find_cdb($token, $conf);
-        } else {
-            $tok = TokenInfo::find($token, $conf);
-        }
+        $tok = TokenInfo::find_from($token, $conf, str_starts_with($token, "hcpw1"));
         if ($tok && $tok->is_active(TokenInfo::RESETPASSWORD)) {
             return $tok;
         }
