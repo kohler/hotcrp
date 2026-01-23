@@ -1,6 +1,6 @@
 <?php
 // pages/p_profile.php -- HotCRP profile management page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Profile_Page {
     /** @var Conf
@@ -523,9 +523,14 @@ class Profile_Page {
             || $this->ustatus->has_error();
 
         // maybe prepare & crosscheck
-        $this->ustatus->user_json();
-        if (!$use_req) {
+        $this->ustatus->user_json(); // set `$this->ustatus->jval`
+        if (!$this->ustatus->has_error()
+            && ($this->user->has_account_here()
+                || !isset($this->qreq->follow_review))) {
             $this->prepare_and_crosscheck();
+            $want_ustatus_message = true;
+        } else {
+            $want_ustatus_message = $this->conf->saved_messages_status() < 1;
         }
 
         // set title
@@ -674,10 +679,11 @@ class Profile_Page {
             echo '</h2>';
         }
 
-        if (($this->conf->report_saved_messages() < 1 || !$use_req)
-            && $this->ustatus->has_message()) {
+        if ($this->ustatus->has_message() && $want_ustatus_message) {
             $this->conf->feedback_msg($this->decorated_message_list($this->ustatus, $this->ustatus));
         }
+
+        $this->conf->report_saved_messages();
 
         if ($this->page_type === 2) {
             $this->ustatus->print_members("__bulk");

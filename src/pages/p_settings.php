@@ -1,6 +1,6 @@
 <?php
 // pages/p_settings.php -- HotCRP chair-only conference settings management page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Settings_Page {
     /** @var Conf */
@@ -150,11 +150,13 @@ class Settings_Page {
         if (!$sv->use_req()) {
             $sv->crosscheck();
         }
-        if ($sv->conf->report_saved_messages() < 1 || $sv->use_req()) {
+        if ($sv->conf->saved_messages_status() < 1 || $sv->use_req()) {
             // XXX this is janky (if there are any warnings saved in the session,
             // don't crosscheck) but reduces duplicate warnings
             $sv->report();
         }
+        $sv->conf->report_saved_messages();
+
         $sv->cs()->print_body_members(strtolower($group));
 
         if ($sv->inputs_printed()) {

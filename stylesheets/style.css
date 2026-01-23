@@ -273,7 +273,7 @@ body {
 #p-page.body-signin {
 	background: #e0d9da;
 }
-#p-page.body-error, #p-page.paper-error {
+#p-page.body-error {
 	background: #dfd0d3;
 }
 #p-page.leftmenu {
@@ -949,7 +949,7 @@ td.g {
 }
 }
 
-#h-messages {
+header > #h-messages {
 	margin-left: 24px;
 	margin-right: 24px;
 }
@@ -987,9 +987,7 @@ body.body-error #h-messages {
 	border-radius: 4px;
 	padding: 0.5rem 0.85rem;
 }
-.msgs-wide > .msg,
-.msg.mx-auto,
-body.paper-error .msg {
+.msg.mx-auto {
 	margin-left: auto;
 	margin-right: auto;
 	max-width: 80%;
@@ -1504,6 +1502,9 @@ select, button, .btn, button.btn-t:hover {
 	background: white;
 	background-image: linear-gradient(#fcfcfc, #f0f0f0);
 	white-space: nowrap;
+}
+.btn {
+	text-align: center;
 }
 button.btn-t {
 	border-color: rgba(181, 181, 181, 0);
@@ -2446,8 +2447,13 @@ label.f-c, .f-i > label, .f-i > .label {
 	margin-top: 0.25rem;
 	margin-bottom: 0;
 }
-.msg .feedback-list {
+.msg > .feedback-list {
 	max-width: initial;
+}
+.msg.mx-auto > .feedback-list:first-child:last-child {
+	width: fit-content;
+	margin-left: auto;
+	margin-right: auto;
 }
 .feedback-list + input.has-error,
 .feedback-list + input.has-warning {
