@@ -49,29 +49,34 @@ class NavigationState {
     static function make_server($server) {
         $nav = new NavigationState;
 
-        // host, protocol, server
-        $http_host = $server["HTTP_HOST"] ?? null;
-        $nav->host = $http_host ?? $server["SERVER_NAME"] ?? null;
+        // protocol, host, server
         if ((isset($server["HTTPS"])
              && $server["HTTPS"] !== ""
              && $server["HTTPS"] !== "off")
             || ($server["HTTP_X_FORWARDED_PROTO"] ?? null) === "https"
             || ($server["REQUEST_SCHEME"] ?? null) === "https") {
-            $x = "https://";
+            $nav->protocol = "https://";
+            $plen = 8;
             $xport = 443;
         } else {
-            $x = "http://";
+            $nav->protocol = "http://";
+            $plen = 7;
             $xport = 80;
         }
-        $nav->protocol = $x;
-        $x .= $nav->host ? : "localhost";
-        if ($http_host === null // HTTP `Host` header should contain port
-            && strpos($x, ":", 6) === false
-            && ($port = $server["SERVER_PORT"])
-            && $port != $xport) {
-            $x .= ":" . $port;
+        $http_host = $server["HTTP_HOST"] ?? null;
+        $srv = $nav->protocol
+            . (($http_host ?? $server["SERVER_NAME"] ?? null) ? : "localhost");
+        $colon = strpos($srv, ":", $plen);
+        if ($colon === false) {
+            $colon = strlen($srv);
+            if (($port = $server["SERVER_PORT"])
+                && $port != $xport) {
+                $srv .= ":" . $port;
+            }
         }
-        $nav->server = $x;
+        $nav->host = substr($srv, $plen, $colon - $plen);
+        $nav->server = $srv;
+
         $nav->request_uri = $server["REQUEST_URI"];
         $pct = strpos($nav->request_uri, "%") !== false;
 
