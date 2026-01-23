@@ -297,11 +297,11 @@ function initialize_user($qreq, $kwarg = null) {
     // check for bearer token
     if (($kwarg["bearer"] ?? false)
         && ($htauth = $qreq->raw_header("HTTP_AUTHORIZATION"))
-        && preg_match('/\A\s*+Bearer\s++(hct_[A-Za-z0-9]++)\s*+\z/i', $htauth, $m)) {
+        && preg_match('/\A\s*+Bearer\s++(hc[tT]_[A-Za-z0-9]++)\s*+\z/i', $htauth, $m)) {
         $qreq->approve_token(); // explicit authorization
         $user = null;
-        $token = TokenInfo::find_cdb($m[1], $conf)
-            ?? TokenInfo::find($m[1], $conf);
+        $token = TokenInfo::find_from($m[1], $conf, true)
+            ?? TokenInfo::find_from($m[1], $conf, false);
         if ($token
             && $token->capabilityType === TokenInfo::BEARER
             && $token->is_active()) {

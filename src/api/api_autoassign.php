@@ -1,6 +1,6 @@
 <?php
 // api_autoassign.php -- HotCRP autoassignment API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Autoassign_API {
     /** @param Qrequest $qreq
@@ -105,7 +105,7 @@ class Autoassign_API {
             $jargv[] = "-d";
         }
 
-        $tok = Job_Capability::make($user, "Autoassign", $jargv)
+        $tok = Job_Token::make($user, "Autoassign", $jargv)
             ->set_input("assign_argv", $argv)
             ->insert();
         $jobid = $tok->salt;

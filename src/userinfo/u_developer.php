@@ -1,6 +1,6 @@
 <?php
 // u_developer.php -- HotCRP Profile > Developer
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Developer_UserInfo {
     /** @var UserStatus */
@@ -212,16 +212,40 @@ class Developer_UserInfo {
 
     function request_new_bearer_token(UserStatus $us) {
         assert($us->is_auth_self());
+        $cdbu = $us->user->cdb_user();
         if (!$us->qreq["bearer_token/new/enable"]
-            || $us->user->security_locked()) {
+            || $us->user->security_locked()
+            || ($cdbu && $cdbu->security_locked())) {
             return;
         }
 
-        $this->_new_token = $token = new TokenInfo($us->conf, TokenInfo::BEARER);
+        $sites = $us->qreq["bearer_token/new/sites"] ?? "here";
+        if ($sites === "all" && $cdbu) {
+            $tuser = $cdbu;
+        } else {
+            $us->user->ensure_account_here();
+            $tuser = $us->user;
+        }
+
+        $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
+        if ($exp === "never") {
+            $expiry = -1;
+        } else {
+            $expiry = (int) ((stonum($exp) ?? 30) * 86400);
+        }
+
+        $token = Authorization_Token::prepare_bearer($tuser, $expiry);
+        $this->_new_token = $token;
 
         $note = simplify_whitespace($us->qreq["bearer_token/new/note"] ?? "");
         if ($note !== "") {
             $token->assign_data(["note" => $note]);
+        }
+
+        $scope = simplify_whitespace($us->qreq["bearer_token/new/scope"] ?? "");
+        if ($scope !== ""
+            && preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)++\z/', $scope)) {
+            $token->assign_data(["scope" => $scope]);
         }
 
         $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
@@ -231,21 +255,13 @@ class Developer_UserInfo {
             $expiry = (ctype_digit($exp) ? intval($exp) : 30) * 86400;
             $token->set_invalid_in($expiry)->set_expires_in($expiry + 604800);
         }
-
-        $sites = $us->qreq["bearer_token/new/sites"] ?? "here";
-        if ($sites === "all" && ($cdbu = $us->user->cdb_user())) {
-            $token->set_cdb_user($cdbu);
-        } else {
-            $us->user->ensure_account_here();
-            $token->set_user($us->user);
-        }
     }
 
     function save_new_bearer_token(UserStatus $us) {
         if ($this->_new_token === null) {
             return;
         }
-        $this->_new_token->set_token_pattern("hct_[30]")->insert();
+        $this->_new_token->insert();
         if ($this->_new_token->stored()) {
             $us->diffs["API tokens"] = true;
         } else {
@@ -260,8 +276,8 @@ class Developer_UserInfo {
             return;
         }
         for ($i = 1; isset($us->qreq["bearer_token/{$i}/id"]); ++$i) {
-            if (preg_match('/\A(\d+)\.([AL])\.(hct_\w+)\z/', $us->qreq["bearer_token/{$i}/id"], $m)
-                && $us->qreq["bearer_token/{$i}/delete"]) {
+            if (preg_match('/\A(\d+)\.([AL])\.(hc[tT]_\w+)\z/', $us->qreq["bearer_token/{$i}/id"], $m)
+                && friendly_boolean($us->qreq["bearer_token/{$i}/delete"])) {
                 $this->_delete_tokens[] = [intval($m[1]), $m[2] === "A", $m[3]];
             }
         }

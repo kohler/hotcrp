@@ -577,7 +577,7 @@ class Autoassign_Page {
             $argmap->$k1 = $k;
         }
 
-        $tok = Job_Capability::make($this->user, "Autoassign", ["-je", "-D"])
+        $tok = Job_Token::make($this->user, "Autoassign", ["-je", "-D"])
             ->set_input("assign_argv", $argv)
             ->set_input("argmap", $argmap)
             ->insert();
@@ -634,7 +634,7 @@ class Autoassign_Page {
 
     /** @return never */
     function run_try_job() {
-        $tok = Job_Capability::find($this->qreq->job, $this->conf);
+        $tok = Job_Token::find($this->qreq->job, $this->conf);
         if ($tok
             && $tok->is_batch_class("Autoassign")
             && $tok->is_active()) {
@@ -656,7 +656,7 @@ class Autoassign_Page {
     }
 
     /** @return never */
-    function run_job(Job_Capability $tok) {
+    function run_job(Job_Token $tok) {
         $qreq = $this->qreq;
         $this->jobid = $tok->salt;
 
