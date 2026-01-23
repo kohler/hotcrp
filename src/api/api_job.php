@@ -13,7 +13,7 @@ class Job_API {
         }
 
         try {
-            $tok = Job_Capability::find($jobid, $user->conf);
+            $tok = Job_Token::find($jobid, $user->conf);
         } catch (CommandLineException $ex) {
             $tok = null;
         }

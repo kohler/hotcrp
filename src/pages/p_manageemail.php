@@ -256,7 +256,7 @@ class ManageEmail_Page {
         if ($this->token && $this->token->input("t") === $this->type) {
             return $this->token;
         }
-        $this->token = ManageEmail_Capability::prepare($this->viewer)
+        $this->token = ManageEmail_Token::prepare($this->viewer)
             ->set_input("t", $this->type)
             ->insert();
         if (!$this->token->stored()) {
