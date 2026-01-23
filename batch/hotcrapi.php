@@ -376,7 +376,7 @@ class Hotcrapi_Batch extends MessageSet {
                 $this->_siteconfig[$sn]->site = $s;
             } else if (preg_match('/\A\s*+(?:api|)token\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
                 $s = self::unquote($m[1]);
-                if (!preg_match('/\Ahct_[A-Za-z0-9]{30,}/', $s)) {
+                if (!preg_match('/\Ahc[tT]_[A-Za-z0-9]{30,}/', $s)) {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `apitoken`");
                 }
                 $this->_siteconfig[$sn]->apitoken = $s;
@@ -452,7 +452,7 @@ class Hotcrapi_Batch extends MessageSet {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_apitoken($t) {
-        if (!preg_match('/\Ahct_[A-Za-z0-9]{30,}\z/', $t)) {
+        if (!preg_match('/\Ahc[tT]_[A-Za-z0-9]{30,}\z/', $t)) {
             throw new CommandLineException("Invalid APITOKEN");
         }
         $this->apitoken = $t;

@@ -1,6 +1,6 @@
 <?php
 // pages/p_oauth.php -- HotCRP OAuth 2 authentication page
-// Copyright (c) 2022-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
 use Conf, Contact, MessageItem, NavigationState, Qrequest, Redirection;
@@ -180,11 +180,7 @@ class OAuth_Page {
         if (!isset($state)) {
             return MessageItem::error("<0>OAuth authentication response parameters required");
         }
-        if ($this->conf->contactdb()) {
-            $tok = TokenInfo::find_cdb($state, $this->conf);
-        } else {
-            $tok = TokenInfo::find($state, $this->conf);
-        }
+        $tok = TokenInfo::find_from($state, $this->conf, !!$this->conf->contactdb());
         if (!$tok) {
             return MessageItem::error("<0>Authentication request not found or expired");
         }

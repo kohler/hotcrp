@@ -1,6 +1,6 @@
 <?php /*{hotcrp Autoassign_Batch}*/
 // autoassign.php -- HotCRP autoassignment script
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -67,7 +67,7 @@ class Autoassign_Batch {
         $this->getopt = $getopt;
         $this->detacher = $detacher;
         if (isset($arg["job"])) {
-            $this->_jtok = Job_Capability::claim($arg["job"], $this->conf, "Autoassign");
+            $this->_jtok = Job_Token::claim($arg["job"], $this->conf, "Autoassign");
             $this->user = $this->_jtok->user() ?? $conf->root_user();
         } else {
             $this->user = $conf->root_user();

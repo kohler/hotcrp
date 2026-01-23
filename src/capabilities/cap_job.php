@@ -1,18 +1,18 @@
 <?php
 // cap_job.php -- HotCRP batch job capability management
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
-class Job_Capability extends TokenInfo {
+class Job_Token extends TokenInfo {
     function __construct(Conf $conf) {
         parent::__construct($conf, TokenInfo::JOB);
     }
 
     /** @param string $batch_class
      * @param list<string> $argv
-     * @return Job_Capability */
+     * @return Job_Token */
     static function make(Contact $user, $batch_class, $argv = []) {
-        return (new Job_Capability($user->conf))
-            ->set_user($user)
+        return (new Job_Token($user->conf))
+            ->set_user_from($user, false)
             ->set_token_pattern("hcj_[24]")
             ->set_invalid_in(86400)
             ->set_expires_in(86400)
@@ -35,21 +35,21 @@ class Job_Capability extends TokenInfo {
     }
 
     /** @param string $token
-     * @return ?Job_Capability */
+     * @return ?Job_Token */
     static function find($token, Conf $conf) {
         if (!($rtoken = self::canonical_token($token))) {
             return null;
         }
         $result = $conf->ql("select * from Capability where salt=? and capabilityType=?",
             $rtoken, TokenInfo::JOB);
-        $tok = TokenInfo::fetch($result, $conf, false, "Job_Capability");
+        $tok = TokenInfo::fetch($result, $conf, false, "Job_Token");
         $result->close();
         return $tok;
     }
 
     /** @param string $batch_class
      * @param list<string> $argv
-     * @return ?Job_Capability */
+     * @return ?Job_Token */
     static function find_active_match(Contact $user, $batch_class, $argv = []) {
         $result = $user->conf->ql("select * from Capability
                 where capabilityType=? and salt>='hcj' and salt<'hck'
@@ -62,7 +62,7 @@ class Job_Capability extends TokenInfo {
             $user->contactId > 0 ? $user->contactId : 0,
             Conf::$now, Conf::$now,
             json_encode_db(["batch_class" => $batch_class, "argv" => $argv]));
-        $tok = TokenInfo::fetch($result, $user->conf, false, "Job_Capability");
+        $tok = TokenInfo::fetch($result, $user->conf, false, "Job_Token");
         $result->close();
         return $tok;
     }
@@ -88,7 +88,7 @@ class Job_Capability extends TokenInfo {
 
     /** @param string $salt
      * @param ?string $batch_class
-     * @return Job_Capability */
+     * @return Job_Token */
     static function claim($salt, Conf $conf, $batch_class = null) {
         $tok = self::find($salt, $conf);
         if (!$tok || !$tok->is_batch_class($batch_class)) {
@@ -246,3 +246,5 @@ class Job_Capability extends TokenInfo {
         return escapeshellarg($word);
     }
 }
+
+class_alias("Job_Token", "Job_Capability");

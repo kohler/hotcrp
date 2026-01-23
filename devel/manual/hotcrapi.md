@@ -16,7 +16,7 @@ The site URL is set using the `-S SITEURL` command line option. If not present,
 Hotcrapi checks the `HOTCRAPI_SITE` environment variable; and if that is not
 present, Hotcrapi searches the per-user configuration file for a default site.
 
-An API token is a long alphanumeric string starting with `hct_`, such as
+An API token is a long alphanumeric string starting with `hct_` or `hcT_`, such as
 `hct_KYyAfMVWXrRCmQxfhjYQiMhiYKYLidQtctSgGsknSXaL`. Create an API token for your
 site on Account settings > Developer. Once the token is created, supply it to
 Hotcrapi using the `-T APITOKEN` command line option; the `HOTCRAPI_TOKEN`
