@@ -79,7 +79,7 @@ class Conf {
     /** @var bool */
     public $_header_printed = false;
     /** @var ?list<array{string,int}> */
-    private $_save_msgs;
+    private $_save_msgs = [];
     /** @var bool */
     private $_mx_auto = false;
     /** @var int */
@@ -4219,19 +4219,16 @@ class Conf {
         return $st;
     }
 
-    /** @return list<array{string,int}> */
-    function take_saved_messages() {
-        $ml = $this->_save_msgs ?? [];
-        $this->_save_msgs = null;
-        return $ml;
-    }
-
     /** @return int */
     function report_saved_messages() {
         $st = $this->saved_messages_status();
-        foreach ($this->take_saved_messages() as $mx) {
+        $ml = $this->_save_msgs ?? [];
+        $this->_save_msgs = null;
+        echo '<div id="h-messages"', $this->_mx_auto ? ' class="want-mx-auto"' : '', '>';
+        foreach ($ml as $mx) {
             self::msg_on($this, $mx[0], $mx[1]);
         }
+        echo '</div>';
         return $st;
     }
 
@@ -4696,7 +4693,7 @@ class Conf {
             } else if ($type === 1 || !defined("HOTCRP_TESTHARNESS")) {
                 fwrite(STDOUT, "{$text}\n");
             }
-        } else if ($conf && !$conf->_header_printed) {
+        } else if ($conf && $conf->_save_msgs !== null) {
             $conf->_save_msgs[] = [$text, $type];
         } else {
             $k = Ht::msg_class($type) . ($conf && $conf->_mx_auto ? " mx-auto" : "");
@@ -4711,8 +4708,9 @@ class Conf {
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls */
     function feedback_msg(...$mls) {
-        $ms = Ht::fmt_feedback_msg_content($this, ...$mls);
-        $ms[0] === "" || self::msg_on($this, $ms[0], $ms[1]);
+        if (($mx = Ht::fmt_feedback_msg_content($this, ...$mls))) {
+            self::msg_on($this, $mx[0], $mx[1]);
+        }
     }
 
     /** @param string $msg */
@@ -5230,7 +5228,6 @@ class Conf {
                 }
             }
         }
-        $this->_mx_auto = strpos($body_elt_class, "error") !== false;
 
         echo "<body";
         if ($id) {
@@ -5248,7 +5245,7 @@ class Conf {
         }
         echo '><div id="p-page" class="',
             Ht::add_tokens($body_class, "need-banner-offset"),
-            '"><header id="p-header">';
+            '"><header id="p-header"><hr class="c">';
 
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
@@ -5265,20 +5262,34 @@ class Conf {
         }
         $this->_header_printed = true;
 
-        echo "<div id=\"h-messages\" class=\"msgs-wide\">\n";
-        if (($x = $this->opt("maintenance"))) {
-            echo Ht::msg(is_string($x) ? $x : "<strong>This site is down for maintenance.</strong> Please check back later.", 2);
+        // Update saved messages
+        $save_messages = $extra["save_messages"] ?? false;
+        if (($mm = $this->opt("maintenance"))) {
+            if (is_string($mm)) {
+                $mm = Ht::is_block($mm) ? $mm : "<p>{$mm}</p>";
+            } else {
+                $mm = "<p class=\"is-error\"><span class=\"urgent-note-mark mr-1\"></span><strong>This site is under maintenance.</strong> Please check back later.</p>";
+            }
+            if (!$save_messages) {
+                array_unshift($this->_save_msgs, [$mm, 2]);
+            } else {
+                echo '<div class="msg msg-error mx-auto">', $mm, '</div>';
+            }
         }
-        if ($this->_save_msgs && !($extra["save_messages"] ?? false)) {
-            $this->report_saved_messages();
-        }
-        if ($qreq->has_annex("upload_errors")) {
-            $this->feedback_msg($qreq->annex("upload_errors"));
+        if ($qreq->has_annex("upload_errors")
+            && ($mx = Ht::fmt_feedback_msg_content($qreq->annex("upload_errors")))) {
+            $this->_save_msgs[] = $mx;
         }
         if ($user && $user->data("alerts")) {
-            (new ContactAlerts($user))->report_qreq($qreq);
+            $ca = new ContactAlerts($user);
+            array_push($this->_save_msgs, ...$ca->qreq_msg_content_list($qreq));
         }
-        echo "</div></header>\n";
+        if (!$save_messages) {
+            $this->_mx_auto = true;
+            $this->report_saved_messages();
+        }
+        $this->_mx_auto = strpos($body_elt_class, "error") !== false;
+        echo "</header>\n";
 
         echo "<main id=\"p-body\"";
         if ($body_class !== "") {

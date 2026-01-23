@@ -1,5 +1,5 @@
 // script.js -- HotCRP JavaScript library
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 "use strict";
 var siteinfo, hotcrp;
@@ -11338,7 +11338,11 @@ function check_version(url, versionstr) {
             || !(e = $$("h-messages"))) {
             return;
         }
-        e.prepend(feedback.render_alert(json.message_list));
+        const a = feedback.render_alert(json.message_list);
+        if (hasClass(e, "want-mx-auto")) {
+            addClass(a, "mx-auto");
+        }
+        e.prepend(a);
     }
     function updatecb(json) {
         if (json && json.updates && window.JSON)

@@ -1,6 +1,6 @@
 <?php
 // pages/p_autoassign.php -- HotCRP automatic paper assignment page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Autoassign_Page {
     /** @var Conf */
@@ -643,7 +643,7 @@ class Autoassign_Page {
         http_response_code($tok ? 409 : 404);
         $this->qreq->print_header("Assignments", "autoassign", [
             "subtitle" => "Automatic",
-            "body_class" => "paper-error"
+            "body_class" => "body-error"
         ]);
         if ($tok && $tok->is_batch_class("Autoassign")) {
             $m = "This assignment has already been committed.";

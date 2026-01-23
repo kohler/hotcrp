@@ -2551,7 +2551,7 @@ class PaperTable {
         }
 
         echo '<div class="pcard papcard">';
-        $saved_status = $this->conf->report_saved_messages();
+        $this->conf->report_saved_messages();
         if ($this->edit_mode === 2 && !$this->user->can_clickthrough("submit")) {
             echo '<div id="foldpaper js-clickthrough-container">',
                 '<div class="js-clickthrough-terms">',
