@@ -1,6 +1,6 @@
 <?php
 // pages/p_authorize.php -- HotCRP OAuth 2.0 authorization provider page
-// Copyright (c) 2022-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
 use Conf, ComponentSet, Contact, Ht, JsonResult, Qrequest, Redirection;
@@ -39,18 +39,6 @@ class OAuthClient {
                 $oac->redirect_uri[] = $x->redirect_uri;
             } else if (is_list($x->redirect_uri)) {
                 $oac->redirect_uri = $x->redirect_uri;
-            }
-            $n = count($oac->redirect_uri);
-            for ($i = 0; $i !== $n; ) {
-                $s = $oac->redirect_uri[$i];
-                if (is_string($s)
-                    && str_starts_with($s, "https://")
-                    && strpos($s, "#") === false) {
-                    ++$i;
-                } else {
-                    array_splice($oac->redirect_uri, $i, 1);
-                    --$n;
-                }
             }
         }
         if (!is_string($oac->client_id)
@@ -287,6 +275,19 @@ class Authorize_Page {
         exit(0);
     }
 
+    /** @param string $uri
+     * @return bool */
+    private function check_redirect_uri($uri) {
+        if (strpos($uri, "#") !== false) {
+            return false;
+        }
+        return str_starts_with($uri, "https://")
+            // allow localhost redirect URIs for local development
+            || ((str_starts_with($uri, "http://localhost/")
+                 || str_starts_with($uri, "http://localhost:"))
+                && $this->qreq->navigation()->host === "localhost");
+    }
+
     function go() {
         // handle internal action
         if ($this->qreq->authconfirm) {
@@ -307,9 +308,10 @@ class Authorize_Page {
 
         // `redirect_uri` must be present and match a configured value
         if (!isset($this->qreq->redirect_uri)) {
-            $this->print_error_exit("<0>Authorization parameter <code>redirect_uri</code> missing");
-        } else if (!in_array($this->qreq->redirect_uri, $client->redirect_uri, true)) {
-            $this->print_error_exit("<0>Invalid authorization parameter <code>redirect_uri</code>");
+            $this->print_error_exit("<0>Authorization parameter `redirect_uri` missing");
+        } else if (!in_array($this->qreq->redirect_uri, $client->redirect_uri, true)
+                   || !$this->check_redirect_uri($this->qreq->redirect_uri)) {
+            $this->print_error_exit("<0>Invalid authorization parameter `redirect_uri`");
         }
 
         // From here on, all errors should be sent to `redirect_uri`.
