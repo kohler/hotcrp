@@ -143,7 +143,7 @@ class API_Page {
 
     static function parameter_error_exit($param, $message) {
         http_response_code(400);
-        header("Content-Type: application/json; charset=utf-8");
+        header("Content-Type: application/json");
         echo "{\"ok\": false, \"message_list\": [{\"field\": \"{$param}\", \"message\": \"{$message}\", \"status\": 2}]}\n";
         exit(0);
     }
