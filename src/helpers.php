@@ -289,10 +289,12 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             if (($origin = $qreq->header("Origin"))) {
                 header("Access-Control-Allow-Origin: {$origin}");
             }
-        } else if ($this->status > 299 && !isset($this->content["status_code"])) {
+        } else if ($this->status > 299
+                   && !$this->minimal
+                   && !isset($this->content["status_code"])) {
             $this->content["status_code"] = $this->status;
         }
-        header("Content-Type: application/json; charset=utf-8");
+        header("Content-Type: application/json");
         if ($qreq && isset($qreq->pretty)) {
             $pprint = friendly_boolean($qreq->pretty);
         } else {
