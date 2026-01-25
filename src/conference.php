@@ -4825,8 +4825,15 @@ class Conf {
         return $csp;
     }
 
+    function emit_security_headers() {
+        $sts = $this->opt["httpStrictTransportSecurity"] ?? false;
+        if ($sts !== false && $sts !== "") {
+            header("Strict-Transport-Security: " . $sts);
+        }
+    }
+
     /** @param Qrequest $qreq */
-    function prepare_security_headers($qreq) {
+    function emit_browser_security_headers($qreq) {
         $csp = $this->opt["httpContentSecurityPolicy"] ?? true;
         if ($csp === true) {
             // disallow frame embedding by default
@@ -4841,10 +4848,6 @@ class Conf {
         $coop = $this->opt["httpCrossOriginOpenerPolicy"] ?? "same-origin";
         if ($coop !== false && $coop !== "") {
             header("Cross-Origin-Opener-Policy: " . $coop);
-        }
-        $sts = $this->opt["httpStrictTransportSecurity"] ?? $this->opt["strictTransportSecurity"] ?? false;
-        if ($sts !== false && $sts !== "") {
-            header("Strict-Transport-Security: " . $sts);
         }
         $re = $this->opt["httpReportingEndpoints"] ?? false;
         if ($re !== false && $re !== "") {
