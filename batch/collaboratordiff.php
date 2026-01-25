@@ -1,6 +1,6 @@
 <?php
-// batch/collaboratordiff.php -- HotCRP script for analyzing color schemes
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// batch/collaboratordiff.php -- HotCRP script for updating collaborator lists
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -28,6 +28,8 @@ class CollaboratorDiff_Batch {
     public $alert_name = "collaborators";
     /** @var bool */
     public $append;
+    /** @var bool */
+    public $sensitive;
 
     /** @var list<AuthorMatcher> */
     private $_com;
@@ -53,6 +55,7 @@ class CollaboratorDiff_Batch {
             $this->alert_name = $arg["alert"];
         }
         $this->append = isset($arg["append"]);
+        $this->sensitive = !isset($arg["no-sensitive"]);
 
         if (count($arg["_"]) > 1 && $arg["_"][1] !== "-") {
             $this->file = fopen($arg["_"][1], "rb");
@@ -244,7 +247,7 @@ class CollaboratorDiff_Batch {
 
         $alert = (object) [
             "message_list" => $ml,
-            "sensitive" => true,
+            "sensitive" => $this->sensitive,
             "expires_at" => Conf::$now + 86400 * 30,
             "name" => $this->alert_name,
             "scope" => "home profile#collaborators"
@@ -277,7 +280,8 @@ class CollaboratorDiff_Batch {
             "csv Input file is CSV",
             "alert:: =NAME Output is alert for user [collaborators]",
             "append Do not replace existing alerts",
-            "no-advisor Do not special-case current advisor entries"
+            "no-advisor Do not special-case current advisor entries",
+            "no-sensitive Do not mark alert as sensitive"
         )->description("Report missing collaborators based on input.
 Usage: php batch/collaboratordiff.php EMAIL < COLLAB
 COLLAB is in HotCRP collaborator format:
