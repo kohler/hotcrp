@@ -1,175 +1,232 @@
 [
   {
-    "name": "paper", "get": true, "post": true, "delete": true, "merge": true,
+    "name": "paper", "get": true, "post": true, "delete": true,
     "tags": ["Submissions"], "order": 0
   },
   {
-    "name": "papers", "get": true, "post": true, "merge": true,
+    "name": "paper", "get": true, "merge": true,
+    "parameters": "p ?forceShow",
+    "response": "?paper"
+  },
+  {
+    "name": "paper", "post": true, "merge": true,
+    "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+json ?forceShow",
+    "response": "?+dry_run +change_list +valid ?+pid ?paper"
+  },
+  {
+    "name": "paper", "delete": true, "paper": true, "merge": true,
+    "parameters": "p ?dry_run ?notify ?notify_authors ?reason ?forceShow"
+  },
+
+  {
+    "name": "papers", "get": true, "post": true,
     "tags": ["Submissions"], "order": 1
   },
   {
-    "name": "share", "get": true, "post": true, "delete": true, "merge": true,
-    "tags": ["Submissions"], "order": 2
+    "name": "papers", "get": true, "merge": true,
+    "parameters": "q ?t ?qt ?scoresort ?sort ?reviewer ?warn_missing ?forceShow",
+    "response": "?papers"
   },
   {
-    "name": "document", "get": true, "merge": true,
-    "tags": ["Documents"], "order": 0
+    "name": "papers", "post": true, "merge": true,
+    "parameters": "?q ?t ?qt ?sort ?scoresort ?reviewer ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+json ?forceShow",
+    "response": "?papers ?dry_run ?status_list"
+  },
+
+  {
+    "name": "share", "get": true, "post": true, "delete": true,
+    "tags": ["Submissions"], "order": 2,
+    "parameters": "+share ?+expires_in"
+  },
+
+  {
+    "name": "document", "get": true,
+    "tags": ["Documents"], "order": 0,
+    "parameters": "?doc ?p ?dt ?attachment ?hash ?docid ?<at ?attachment"
   },
   {
-    "name": "documenthistory", "get": true, "merge": true,
-    "tags": ["Documents"], "order": 1
+    "name": "documenthistory", "get": true,
+    "tags": ["Documents"], "order": 1,
+    "parameters": "?doc ?p ?dt",
+    "response": "dt document_history"
   },
   {
-    "name": "formatcheck", "get": true, "merge": true,
-    "tags": ["Documents"], "order": 2
+    "name": "formatcheck", "get": true,
+    "tags": ["Documents"], "order": 2,
+    "parameters": "?doc ?<file ?p ?dt ?attachment ?hash ?docid ?<at ?soft",
+    "response": "npages nwords problem_fields has_error docid"
   },
   {
-    "name": "archivelisting", "get": true, "merge": true,
-    "tags": ["Documents"], "order": 3
+    "name": "archivelisting", "get": true,
+    "tags": ["Documents"], "order": 3,
+    "parameters": "?doc ?<file ?p ?dt ?docid ?attachment ?version ?<at ?consolidated",
+    "response": "listing ?consolidated_listing"
   },
   {
-    "name": "upload", "post": true, "merge": true,
-    "tags": ["Documents"], "order": 4
+    "name": "upload", "post": true,
+    "tags": ["Documents"], "order": 4,
+    "parameters": "?p ?dt ?<dtype ?start ?temp ?offset ?size ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
+    "response": "token ?dt ?filename ?mimetype ?size ?ranges ?hash ?crc32 ?progress_value ?progress_max"
+  },
+
+  {
+    "name": "assign", "post": true,
+    "tags": ["Assignments"],
+    "parameters": "?p ?dry_run format ?<quiet ?<summary ?<csv ?forceShow ?search ?upload ?=assignments",
+    "response": "?dry_run valid ?assignment_count ?assignment_actions ?assignment_pids ?output ?output_mimetype ?output_size ?assignment_header ?assignments ?papers ?ids ?groups ?search_params"
   },
   {
-    "name": "assign", "post": true, "merge": true,
-    "tags": ["Assignments"]
+    "name": "assigners", "get": true,
+    "tags": ["Assignments"],
+    "response": "assigners"
   },
   {
-    "name": "assigners", "get": true, "merge": true,
-    "tags": ["Assignments"]
+    "name": "assigntags", "post": true,
+    "tags": ["Tags"],
+    "parameters": "=tagassignment ?=search",
+    "response": "p ?ids ?groups ?hotlist ?search_params"
   },
   {
-    "name": "assigntags", "post": true, "merge": true,
-    "tags": ["Tags"]
+    "name": "autoassign", "post": true,
+    "tags": ["Assignments"],
+    "parameters": "autoassigner ?dry_run ?minimal_dry_run q ?t ?u ?disjoint ?param"
   },
   {
-    "name": "autoassign", "post": true, "merge": true,
-    "tags": ["Assignments"]
+    "name": "autoassigners", "get": true,
+    "tags": ["Assignments"],
+    "response": "autoassigners"
   },
+
   {
-    "name": "autoassigners", "get": true, "merge": true,
-    "tags": ["Assignments"]
-  },
-  {
-    "name": "decision", "get": true, "merge": true,
-    "tags": ["Submission administration"]
+    "name": "decision", "get": true, "post": true,
+    "tags": ["Submission administration"],
+    "response": "decision decision_html ?editable"
   },
   {
     "name": "decision", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "parameters": "=decision"
   },
   {
-    "name": "lead", "get": true, "merge": true,
-    "tags": ["Submission administration"]
+    "name": "lead", "get": true, "post": true,
+    "tags": ["Submission administration"],
+    "response": "lead lead_html ?color_classes"
   },
   {
     "name": "lead", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "parameters": "=lead"
   },
   {
-    "name": "manager", "get": true, "merge": true,
-    "tags": ["Submission administration"]
+    "name": "manager", "get": true, "post": true,
+    "tags": ["Submission administration"],
+    "response": "manager manager_html ?color_classes"
   },
   {
     "name": "manager", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "parameters": "=manager"
   },
   {
     "name": "reviewround", "post": true, "merge": true,
     "tags": ["Submission administration"]
   },
   {
-    "name": "shepherd", "get": true, "merge": true,
-    "tags": ["Submission administration"]
+    "name": "shepherd", "get": true, "post": true,
+    "tags": ["Submission administration"],
+    "response": "shepherd shepherd_html ?color_classes"
   },
   {
     "name": "shepherd", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "parameters": "=shepherd"
   },
   {
-    "name": "search", "get": true, "merge": true,
-    "tags": ["Search"], "order": 0
+    "name": "search", "get": true,
+    "tags": ["Search"], "order": 0,
+    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?search ?session",
+    "response": "ids groups search_params ?hotlist ?fields ?papers ?statistics"
   },
   {
-    "name": "fieldhtml", "get": true, "merge": true,
-    "tags": ["Search"], "order": false
+    "name": "searchactions", "get": true,
+    "tags": ["Search"], "order": 1,
+    "response": "actions"
   },
   {
-    "name": "fieldtext", "get": true, "merge": true,
-    "tags": ["Search"], "order": false
+    "name": "searchaction", "get": true, "post": true,
+    "tags": ["Search"], "order": 2,
+    "parameters": "?action q ?t ?qt ?sort ?report ?scoresort ?reviewer ?p"
   },
   {
-    "name": "searchactions", "get": true, "merge": true,
-    "tags": ["Search"], "order": 1
-  },
-  {
-    "name": "searchaction", "get": true, "post": true, "merge": true,
-    "tags": ["Search"], "order": 2
-  },
-  {
-    "name": "graphdata", "get": true, "merge": true,
+    "name": "graphdata", "get": true,
     "tags": ["Search"]
   },
   {
-    "name": "namedsearch", "get": true, "merge": true,
-    "tags": ["Search"]
+    "name": "namedsearch", "get": true, "post": true,
+    "tags": ["Search"],
+    "response": "searches"
   },
   {
-    "name": "namedsearch", "post": true, "merge": true,
-    "tags": ["Search"]
+    "name": "searchcompletion", "get": true,
+    "tags": ["Search"],
+    "response": "searchcompletion"
   },
   {
-    "name": "searchcompletion", "get": true, "merge": true,
-    "tags": ["Search"]
+    "name": "displayfields", "get": true,
+    "tags": ["Search"],
+    "response": "fields"
   },
   {
-    "name": "displayfields", "get": true, "merge": true,
-    "tags": ["Search"]
-  },
-  {
-    "name": "viewoptions", "get": true, "merge": true,
-    "tags": ["Search"]
+    "name": "viewoptions", "get": true, "post": true,
+    "tags": ["Search"],
+    "parameters": "?report ?q",
+    "response": "report display_current display_default display_difference display_default_message_list"
   },
   {
     "name": "viewoptions", "post": true, "merge": true,
-    "tags": ["Search"]
+    "tags": ["Search"],
+    "parameters": "?report ?q =display"
   },
   {
-    "name": "tags", "get": true, "merge": true,
-    "tags": ["Tags"], "order": 0
+    "name": "tags", "get": true, "post": true,
+    "tags": ["Tags"], "order": 0,
+    "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes ?tags_conflicted ?color_classes_conflicted"
   },
   {
     "name": "tags", "post": true, "merge": true,
-    "tags": ["Tags"], "order": 0
+    "parameters": "?=tags ?=addtags ?=deltags ?=search",
+    "response": "pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?ids ?groups ?hotlist ?search_params"
   },
   {
-    "name": "alltags", "get": true, "merge": true,
-    "tags": ["Tags"]
+    "name": "alltags", "get": true,
+    "tags": ["Tags"],
+    "parameters": "",
+    "response": "tags ?readonly_tagmap ?sitewide_tagmap"
   },
   {
-    "name": "taganno", "get": true, "merge": true,
-    "tags": ["Tags"]
+    "name": "taganno", "get": true,
+    "tags": ["Tags"],
+    "parameters": "tag ?search",
+    "response": "tag editable anno ?ids ?groups ?hotlist ?search_params"
   },
   {
-    "name": "taganno", "post": true, "merge": true,
-    "tags": ["Tags"]
+    "name": "taganno", "post": true,
+    "tags": ["Tags"],
+    "parameters": "tag ?search =anno",
+    "response": "tag editable anno ?ids ?groups ?hotlist ?search_params"
   },
   {
-    "name": "tagmessages", "get": true, "merge": true,
-    "tags": ["Tags"]
+    "name": "tagmessages", "get": true,
+    "tags": ["Tags"],
+    "response": "pid"
   },
   {
-    "name": "votereport", "get": true, "merge": true,
-    "tags": ["Tags"]
+    "name": "votereport", "get": true,
+    "tags": ["Tags"],
+    "parameters": "tag",
+    "response": "vote_report"
   },
   {
-    "name": "revpref", "get": true, "merge": true,
-    "tags": ["Review preferences"]
-  },
-  {
-    "name": "revpref", "post": true, "merge": true,
-    "tags": ["Review preferences"]
+    "name": "revpref", "get": true, "post": true,
+    "tags": ["Review preferences"],
+    "parameters": "p ?u +pref",
+    "response": "value pref ?prefexp ?topic_score"
   },
   {
     "name": "review", "get": true, "post": true, "merge": true,
@@ -180,149 +237,204 @@
     "tags": ["Reviews"], "order": 1
   },
   {
-    "name": "acceptreview", "post": true, "merge": true,
-    "tags": ["Reviews"]
+    "name": "acceptreview", "post": true,
+    "tags": ["Reviews"],
+    "parameters": "p r",
+    "response": "action review_site_relative"
   },
   {
-    "name": "claimreview", "post": true, "merge": true,
-    "tags": ["Reviews"]
+    "name": "claimreview", "post": true,
+    "tags": ["Reviews"],
+    "parameters": "r email",
+    "response": "action review_site_relative"
   },
   {
-    "name": "declinereview", "post": true, "merge": true,
-    "tags": ["Reviews"]
+    "name": "declinereview", "post": true,
+    "tags": ["Reviews"],
+    "parameters": "p r ?=reason",
+    "response": "action ?reason review_site_relative"
   },
   {
-    "name": "requestreview", "post": true, "merge": true,
-    "tags": ["Reviews"]
+    "name": "requestreview", "post": true,
+    "tags": ["Reviews"],
+    "parameters": "?round =email ?=given_name ?=family_name ?=name ?=affiliation ?=override ?=reason"
   },
   {
-    "name": "reviewrating", "get": true, "merge": true,
-    "tags": ["Reviews"]
+    "name": "reviewrating", "get": true, "post": true,
+    "tags": ["Reviews"],
+    "parameters": "r",
+    "response": "?ratings ?user_rating"
   },
   {
     "name": "reviewrating", "post": true, "merge": true,
+    "parameters": "r =user_rating"
+  },
+  {
+    "name": "reviewtoken", "get": true, "post": true,
     "tags": ["Reviews"]
   },
   {
-    "name": "reviewtoken", "get": true, "post": true, "merge": true,
-    "tags": ["Reviews"]
-  },
-  {
-    "name": "comment", "get": true, "merge": true,
+    "name": "comment", "get": true,
     "tags": ["Comments"], "order": 0,
+    "parameters": "?c ?content",
+    "response": "?comment ?comments",
     "response_info": {"comment": "comment", "comments": "[comment]"}
   },
   {
-    "name": "comment", "post": true, "merge": true,
+    "name": "comment", "post": true,
     "tags": ["Comments"], "order": 0,
+    "parameters": "c ?override ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=ready ?=draft ?=blind ?=response ?=by_author ?=review_token ?delete",
+    "response": "?comment ?conflict",
     "response_info": {"comment": "comment"}
   },
   {
-    "name": "mentioncompletion", "get": true, "merge": true,
-    "tags": ["Comments"]
+    "name": "mentioncompletion", "get": true,
+    "tags": ["Comments"],
+    "parameters": "?p",
+    "response": "mentioncompletion"
   },
   {
-    "name": "track", "post": true, "merge": true,
-    "tags": ["Meeting tracker"], "order": 0
+    "name": "track", "post": true,
+    "tags": ["Meeting tracker"], "order": 0,
+    "parameters": "track ?tracker_start_at ?p ?=hotlist-info"
   },
   {
-    "name": "trackerstatus", "get": true, "merge": true,
-    "tags": ["Meeting tracker"], "order": 1
+    "name": "trackerstatus", "get": true,
+    "tags": ["Meeting tracker"], "order": 1,
+    "response": "tracker_status tracker_eventid"
   },
   {
-    "name": "trackerconfig", "post": true, "merge": true,
-    "tags": ["Meeting tracker"]
+    "name": "trackerconfig", "post": true,
+    "tags": ["Meeting tracker"],
+    "parameters": "?=stopall ?=:tr ?=:has_tr",
+    "response": "?tracker ?tracker_status ?now ?tracker_eventid ?tracker_recent ?tracker_site ?new_trackerid"
   },
   {
-    "name": "user", "get": true, "merge": true,
-    "tags": ["Users"], "order": 0
+    "name": "user", "get": true,
+    "tags": ["Users"], "order": 0,
+    "parameters": "email ?p ?potential_conflict",
+    "response": "match ?email ?given_name ?family_name ?affiliation ?potential_conflict ?orcid ?country"
   },
   {
-    "name": "pc", "get": true, "merge": true,
-    "tags": ["Users"]
+    "name": "pc", "get": true,
+    "tags": ["Users"],
+    "parameters": "?ui",
+    "response": "pc ?tags ?sort ?p"
   },
   {
-    "name": "clickthrough", "post": true, "merge": true,
-    "tags": ["Profile"]
+    "name": "clickthrough", "post": true,
+    "tags": ["Profile"],
+    "parameters": "?p ?=accept =clickthrough_id =clickthrough_type =clickthrough_time"
   },
   {
-    "name": "events", "get": true, "merge": true,
-    "tags": ["Notifications"]
+    "name": "events", "get": true,
+    "tags": ["Notifications"],
+    "parameters": "?from",
+    "response": "from to rows more"
   },
   {
-    "name": "follow", "post": true, "merge": true,
-    "tags": ["Notifications"]
+    "name": "follow", "post": true,
+    "tags": ["Notifications"],
+    "parameters": "?u =following",
+    "response": "following"
   },
   {
-    "name": "mailtext", "get": true, "merge": true,
-    "tags": ["Site information"]
+    "name": "mailtext", "get": true,
+    "tags": ["Site information"],
+    "parameters": "?template ?p ?r ?email ?given_name ?family_name ?affiliation ?reason ?width ?text ?subject ?body",
+    "response": "?templates ?subject ?body"
   },
   {
-    "name": "settings", "get": true, "post": true, "merge": true,
-    "tags": ["Settings"], "order": 0
+    "name": "settings", "get": true, "post": true,
+    "tags": ["Settings"], "order": 0,
+    "parameters": "?+dry_run ?=settings ?+filename ?filter ?exclude ?reset",
+    "response": "?+dry_run +valid +change_list settings"
   },
   {
-    "name": "reviewfieldlibrary", "get": true, "merge": true,
-    "tags": ["Settings"]
+    "name": "reviewfieldlibrary", "get": true,
+    "tags": ["Settings"],
+    "response": "samples types"
   },
   {
-    "name": "settingdescriptions", "get": true, "merge": true,
-    "tags": ["Settings"]
+    "name": "settingdescriptions", "get": true,
+    "tags": ["Settings"],
+    "response": "setting_descriptions"
   },
   {
-    "name": "submissionfieldlibrary", "get": true, "merge": true,
-    "tags": ["Settings"]
+    "name": "submissionfieldlibrary", "get": true,
+    "tags": ["Settings"],
+    "response": "samples types"
   },
   {
-    "name": "account", "get": true, "merge": true,
-    "tags": ["Site administration"]
+    "name": "account", "get": true, "post": true,
+    "tags": ["Site administration"],
+    "parameters": "email",
+    "response": "email disabled placeholder"
   },
   {
     "name": "account", "post": true, "merge": true,
-    "tags": ["Site administration"]
+    "parameters": "email ?disable ?enable ?sendinfo"
   },
   {
-    "name": "namedformula", "get": true, "merge": true,
-    "tags": ["Site administration"]
+    "name": "namedformula", "get": true, "post": true,
+    "tags": ["Site administration"],
+    "response": "formulas"
   },
   {
     "name": "namedformula", "post": true, "merge": true,
-    "tags": ["Site administration"]
+    "parameters": "=:formula"
   },
   {
-    "name": "job", "get": true, "merge": true,
-    "tags": ["Task management"]
+    "name": "job", "get": true,
+    "tags": ["Task management"],
+    "parameters": "job ?output",
+    "response": "status update_at ?output ?output_base64 *"
   },
   {
-    "name": "jserror", "post": true, "merge": true,
+    "name": "jserror", "post": true,
+    "tags": ["Session"],
+    "parameters": "=error ?=url ?=lineno ?=colno ?=stack"
+  },
+  {
+    "name": "oauthtoken", "post": true,
     "tags": ["Session"]
   },
   {
-    "name": "oauthtoken", "post": true, "merge": true,
-    "tags": ["Session"]
-  },
-  {
-    "name": "session", "get": true, "merge": true,
-    "tags": ["Session"]
+    "name": "session", "get": true, "post": true,
+    "tags": ["Session"],
+    "response": "sessioninfo"
   },
   {
     "name": "session", "post": true, "merge": true,
+    "parameters": "v"
+  },
+  {
+    "name": "whoami", "get": true,
+    "tags": ["Profile"],
+    "response": "?email ?given_name ?family_name ?affiliation"
+  },
+  {
+    "name": "reauth", "post": true,
+    "tags": ["Session"],
+    "parameters": "?confirm ?=reason ?=email ?=password ?=totpcode"
+  },
+  {
+    "name": "stashmessages", "post": true,
+    "tags": ["Session"],
+    "parameters": "=message_list",
+    "response": "smsg"
+  },
+  {
+    "name": "cspreport", "post": true,
     "tags": ["Session"]
   },
   {
-    "name": "whoami", "get": true, "merge": true,
-    "tags": ["Profile"]
+    "name": "dismissalert", "post": true,
+    "parameters": "alertid"
   },
   {
-    "name": "reauth", "post": true, "merge": true,
-    "tags": ["Session"]
-  },
-  {
-    "name": "stashmessages", "post": true, "merge": true,
-    "tags": ["Session"]
-  },
-  {
-    "name": "cspreport", "post": true, "merge": true,
-    "tags": ["Session"]
+    "name": "potentialconflicts", "get": true,
+    "parameters": "?sclass ?p ?*has_authors ?:*authors ?*collaborators ?*json",
+    "response": "potential_conflicts"
   }
 ]

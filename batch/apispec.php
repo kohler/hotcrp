@@ -1,6 +1,6 @@
 <?php
 // apispec.php -- HotCRP script for generating OpenAPI specification
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -96,7 +96,7 @@ class APISpec_Batch {
         $this->xtp = new XtParams($this->conf, null);
         $this->base = isset($arg["x"]);
 
-        $this->api_map = $conf->expanded_api_map();
+        $this->api_map = $conf->api_map();
         $this->j = (object) [];
         $this->setj_paths = (object) [];
         $this->setj_tags = (object) [];
@@ -338,8 +338,19 @@ class APISpec_Batch {
     private function expand_paths($fn) {
         $methods = [];
         foreach (["get", "post", "delete"] as $lmethod) {
-            if (($uf = $this->conf->api($fn, null, strtoupper($lmethod)))
-                && ($uf->order ?? null) !== false) {
+            $umethod = strtoupper($lmethod);
+            if (!($uf = $this->conf->api($fn, null, $umethod))) {
+                continue;
+            }
+            if (($ufx = $this->conf->api_expansion($fn, $umethod))) {
+                $uf = clone $uf;
+                foreach (get_object_vars($ufx) as $k => $v) {
+                    if (!isset($uf->$k) || $k === "__source_order")
+                        $uf->$k = $v;
+                }
+            }
+            $order = $uf->order ?? ($uf->deprecated ?? false ? false : null);
+            if ($order !== false) {
                 $methods[$lmethod] = $uf;
             }
         }
@@ -1098,14 +1109,16 @@ class APISpec_Batch {
         $an = substr($a->__path, strrpos($a->__path, "/") + 1);
         $bn = substr($b->__path, strrpos($b->__path, "/") + 1);
         $auf = $this->conf->api($an, null, null);
+        $aufx = $this->conf->api_expansion($an, null);
         $buf = $this->conf->api($bn, null, null);
+        $bufx = $this->conf->api_expansion($bn, null);
         if ($auf === null || $buf === null) {
             if ($auf !== null || $buf !== null) {
                 return $auf === null ? 1 : -1;
             }
         } else {
-            $ao = $auf->order ?? PHP_INT_MAX;
-            $bo = $buf->order ?? PHP_INT_MAX;
+            $ao = $auf->order ?? $aufx->order ?? PHP_INT_MAX;
+            $bo = $buf->order ?? $bufx->order ?? PHP_INT_MAX;
             if ($ao !== $bo) {
                 return $ao <=> $bo;
             }
