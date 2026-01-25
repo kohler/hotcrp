@@ -24,6 +24,8 @@ class CollaboratorDiff_Batch {
     public $no_advisor;
     /** @var bool */
     public $alert;
+    /** @var bool */
+    public $alert_format;
     /** @var string */
     public $alert_name = "collaborators";
     /** @var bool */
@@ -54,6 +56,7 @@ class CollaboratorDiff_Batch {
         if (isset($arg["alert"]) && $arg["alert"] !== false) {
             $this->alert_name = $arg["alert"];
         }
+        $this->alert_format = isset($arg["alert-format"]);
         $this->append = isset($arg["append"]);
         $this->sensitive = !isset($arg["no-sensitive"]);
 
@@ -211,7 +214,7 @@ class CollaboratorDiff_Batch {
 
     private function make_alert() {
         $ca = new ContactAlerts($this->user);
-        if (!$this->append) {
+        if (!$this->append && !$this->alert_format) {
             foreach ($ca->find_by_name($this->alert_name) as $a) {
                 $ca->dismiss($a);
             }
@@ -245,6 +248,11 @@ class CollaboratorDiff_Batch {
         }
         $ml[] = MessageItem::inform("<5><dl class=\"swoosh\">" . join("", $lis) . "</dl>");
 
+        if ($this->alert_format) {
+            fwrite(STDOUT, MessageSet::feedback_text($ml));
+            return;
+        }
+
         $alert = (object) [
             "message_list" => $ml,
             "sensitive" => $this->sensitive,
@@ -262,7 +270,7 @@ class CollaboratorDiff_Batch {
             $this->process_string(stream_get_contents($this->file));
         }
         $this->finish();
-        if ($this->alert) {
+        if ($this->alert || $this->alert_format) {
             $this->make_alert();
         } else {
             $this->write();
@@ -279,6 +287,7 @@ class CollaboratorDiff_Batch {
             "only-missing Do not list potentially obsolete collaborators",
             "csv Input file is CSV",
             "alert:: =NAME Output is alert for user [collaborators]",
+            "alert-format Output alert format",
             "append Do not replace existing alerts",
             "no-advisor Do not special-case current advisor entries",
             "no-sensitive Do not mark alert as sensitive"
