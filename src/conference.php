@@ -5178,6 +5178,13 @@ class Conf {
         return ini_get_bytes("upload_max_filesize");
     }
 
+    private function print_header_site_page() {
+        echo '<div id="h-site" class="header-site-page">',
+            '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
+            '"><span class="header-site-name">', htmlspecialchars($this->short_name),
+            '</span></a></div>';
+    }
+
     /** @param Qrequest $qreq
      * @param string|list<string> $title */
     private function print_body_header($qreq, $title, $id, $extra) {
@@ -5186,10 +5193,7 @@ class Conf {
                 '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
                 '">', htmlspecialchars($this->short_name), '</a></h1></div>';
         } else {
-            echo '<div id="h-site" class="header-site-page">',
-                '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
-                '"><span class="header-site-name">', htmlspecialchars($this->short_name),
-                '</span></a></div>';
+            $this->print_header_site_page();
         }
 
         echo '<div id="h-right">';
@@ -5260,7 +5264,9 @@ class Conf {
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
-        if (!($extra["hide_header"] ?? false)) {
+        if ($extra["hide_header"] ?? false) {
+            $this->print_header_site_page();
+        } else {
             $this->print_body_header($qreq, $title, $id, $extra);
         }
         $this->_header_printed = true;
@@ -5851,6 +5857,28 @@ class Conf {
 
     // API
 
+    /** @return string */
+    function oauth_issuer() {
+        return $this->opt["oAuthIssuer"] ?? $this->opt["paperSite"];
+    }
+
+    /** @param ?string $error */
+    function www_authenticate_header($error, $qreq) {
+        $issuer = $this->oauth_issuer();
+        $rest = "";
+        if ($error) {
+            $rest .= ", error=\"{$error}\"";
+        }
+        if ($this->opt("oAuthClients")
+            && $qreq
+            && $qreq->page() === "api") {
+            $nav = $qreq->navigation();
+            $bptrunc = substr($nav->base_path, 0, -1);
+            $rest .= ", resource_metadata=\"{$nav->server}/.well-known/oauth-protected-resource{$bptrunc}\"";
+        }
+        header("WWW-Authenticate: Bearer realm=\"{$issuer}\"{$rest}");
+    }
+
     /** @return array<string,list<object>> */
     function api_map() {
         if ($this->_api_map === null) {
@@ -5880,14 +5908,12 @@ class Conf {
         // which checks $user->can_view_paper().
         $method = $qreq->method();
         $getlike = $method === "GET" || $method === "HEAD" || $method === "OPTIONS";
-        if (!$getlike
-            && !$qreq->valid_token()
-            && (!$uf || ($uf->check_token ?? null) !== false)) {
-            return JsonResult::make_error(403, "<0>Missing credentials");
-        }
-        if ($user->is_disabled()
-            && (!$uf || !($uf->allow_disabled ?? false))) {
-            return JsonResult::make_error(403, "<0>Disabled account");
+        if ((!$uf || ($uf->auth ?? null) !== false)
+            && ((!$getlike && !$qreq->valid_token())
+                || $user->is_empty()
+                || $user->is_disabled())) {
+            $this->www_authenticate_header("invalid_token", $qreq);
+            return JsonResult::make_error(401, "<0>Missing credentials");
         }
         if (($scope = $user->scope())
             && $scope->checks_method()) {

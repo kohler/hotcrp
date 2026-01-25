@@ -29,6 +29,7 @@ final class TokenScope {
 
     static public $scopes = [
         "*" => -1, "all" => -1,
+        "openid" => -2, "email" => -2, "profile" => -2,
         "method:get" => 0x1, "method:post" => 0x2, "method:delete" => 0x4,
         "paper:read" => 0x11110, "paper:write" => 0x33330, "paper:admin" => 0x77770,
         "submission:read" => 0x10, "submission:write" => 0x30, "submission:admin" => 0x70,
@@ -53,13 +54,17 @@ final class TokenScope {
         $bits = 0;
         $mask = ~0;
         $rest = null;
+        '@phan-var-force ?list $rest';
         foreach (explode(" ", $s) as $w) {
             if ($w === "") {
                 continue;
             }
             $b = self::$scopes[$w] ?? 0;
-            if ($b < 0) {
+            if ($b === -1) {
                 return null;
+            }
+            if ($b === -2) {
+                continue;
             }
             if ($b > 0) {
                 $bits |= $b;
@@ -167,5 +172,28 @@ final class TokenScope {
     /** @return bool */
     function checks_method() {
         return ($this->_bits & self::SM_METHOD) !== self::SM_METHOD;
+    }
+
+    /** @param ?string $haystack
+     * @param string $needle
+     * @return bool */
+    static function scope_str_contains($haystack, $needle) {
+        if ($haystack === null || $needle === "") {
+            return false;
+        }
+        $hl = strlen($haystack);
+        $nl = strlen($needle);
+        $p = 0;
+        while (true) {
+            $p = strpos($haystack, $needle, $p);
+            if ($p === false) {
+                return false;
+            }
+            if (($p === 0 || $haystack[$p - 1] === " ")
+                && ($p + $nl === $hl || $haystack[$p + $nl] === " ")) {
+                return true;
+            }
+            $p += $nl;
+        }
     }
 }

@@ -79,7 +79,7 @@
         "response": "?comment ?conflict"
     },
     {
-        "name": "cspreport", "post": true, "check_token": false,
+        "name": "cspreport", "post": true, "auth": false,
         "function": "Error_API::cspreport"
     },
     {
@@ -154,7 +154,7 @@
         "response": "status update_at ?output ?output_base64 *"
     },
     {
-        "name": "jserror", "post": true, "check_token": false,
+        "name": "jserror", "post": true, "auth": false,
         "function": "Error_API::jserror",
         "parameters": "=error ?=url ?=lineno ?=colno ?=stack"
     },
@@ -217,7 +217,11 @@
         "response": "mentioncompletion"
     },
     {
-        "name": "oauthtoken", "post": true, "allow_disabled": true, "check_token": false,
+        "name": "oauthregister", "post": true, "auth": false,
+        "function": "HotCRP\\Authorize_Page::oauthregister_api"
+    },
+    {
+        "name": "oauthtoken", "post": true, "auth": false,
         "function": "HotCRP\\Authorize_Page::oauthtoken_api"
     },
     {
@@ -353,7 +357,7 @@
         "response": "searchcompletion"
     },
     {
-        "name": "session", "get": true, "allow_disabled": true,
+        "name": "session", "get": true, "auth": false,
         "function": "Session_API::getsession",
         "response": "sessioninfo"
     },
