@@ -197,6 +197,8 @@ class Conf {
     /** @var ?array<string,list<object>> */
     private $_api_map;
     /** @var ?array<string,list<object>> */
+    private $_api_x_map;
+    /** @var ?array<string,list<object>> */
     private $_paper_column_map;
     /** @var ?list<object> */
     private $_paper_column_factories;
@@ -772,6 +774,7 @@ class Conf {
         $this->sort_by_last = $sort_by_last;
 
         $this->_api_map = null;
+        $this->_api_x_map = null;
         $this->_file_filters = null;
         $this->_site_contact = null;
         $this->_date_format_initialized = false;
@@ -5786,7 +5789,7 @@ class Conf {
         if ($this->_search_keyword_base === null) {
             $this->make_search_keyword_map();
         }
-        $xtp = new XtParams($this, $user);
+        $xtp = (new XtParams($this, $user))->set_warn_deprecated(true);
         $uf = $xtp->search_name($this->_search_keyword_base, $keyword);
         $ufs = $xtp->search_factories($this->_search_keyword_factories, $keyword, $uf);
         return self::xt_resolve_require($ufs[0]);
@@ -5859,18 +5862,28 @@ class Conf {
         }
         return $this->_api_map;
     }
-    /** @return array<string,list<object>> */
-    function expanded_api_map() {
-        list($this->_api_map, $unused) =
-            $this->_xtbuild(["etc/apifunctions.json", "etc/apiexpansions.json"], "apiFunctions");
-        return $this->_api_map;
-    }
+    /** @return bool */
     function has_api($fn, ?Contact $user = null, $method = null) {
         return !!$this->api($fn, $user, $method);
     }
+    /** @param string $fn
+     * @param ?string $method
+     * @return ?object */
     function api($fn, ?Contact $user = null, $method = null) {
         $xtp = (new XtParams($this, $user))->set_require_key_for_method($method);
         $uf = $xtp->search_name($this->api_map(), $fn);
+        return self::xt_enabled($uf) ? $uf : null;
+    }
+    /** @param string $fn
+     * @param ?string $method
+     * @return ?object */
+    function api_expansion($fn, $method = null) {
+        if ($this->_api_x_map === null) {
+            list($this->_api_x_map, $unused) =
+                $this->_xtbuild(["etc/apiexpansions.json"], "apiExpansions");
+        }
+        $xtp = (new XtParams($this, null))->set_require_key_for_method($method);
+        $uf = $xtp->search_name($this->_api_x_map, $fn);
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @return JsonResult|Downloader|PageCompletion */
