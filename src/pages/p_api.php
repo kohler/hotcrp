@@ -42,14 +42,16 @@ class API_Page {
      * @return JsonResult */
     static private function normal_api($fn, $user, $qreq) {
         JsonCompletion::$allow_short_circuit = true;
+        $validator = null;
         $conf = $user->conf;
         $uf = $conf->api($fn, $user, $qreq->method());
-        if (($validate = $uf && $conf->opt("validateApiSpec"))) {
-            SpecValidator_API::request($uf, $qreq);
+        if ($uf && $conf->opt("validateApiSpec")) {
+            $validator = new SpecValidator_API($fn, $uf, $qreq);
+            $validator->request();
         }
         $jr = $conf->call_api_on($uf, $fn, $user, $qreq);
-        if ($validate) {
-            SpecValidator_API::response($uf, $qreq, $jr);
+        if ($validator) {
+            $validator->response($jr);
         }
         if ($jr instanceof Downloader) {
             $conf->emit_browser_security_headers($qreq);
