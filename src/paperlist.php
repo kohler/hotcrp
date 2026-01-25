@@ -356,7 +356,9 @@ class PaperList {
     function __construct(string $report, PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
         $this->user = $search->user;
-        $this->xtp = (new XtParams($this->conf, $this->user))->set_match_ignores_case(true);
+        $this->xtp = (new XtParams($this->conf, $this->user))
+            ->set_match_ignores_case(true)
+            ->set_warn_deprecated(true);
         $this->xtp->primitive_checkers[] = [$this, "list_checker"];
         $this->xtp->paper_list = $this;
         if (!$qreq || !($qreq instanceof Qrequest)) {
