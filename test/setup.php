@@ -990,7 +990,7 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
 }
 
 
-/** @param Contact $user
+/** @param Contact|TokenInfo $user
  * @param ?PaperInfo $prow
  * @return Downloader|JsonResult */
 function call_api_result($fn, $user, $qreq, $prow = null) {
@@ -1005,25 +1005,45 @@ function call_api_result($fn, $user, $qreq, $prow = null) {
             $qreq = new Qrequest("GET", $qreq);
         }
     }
+    if ($user instanceof TokenInfo) {
+        $token = $user;
+        if ($token->capabilityType !== TokenInfo::BEARER
+            || !$token->is_active()) {
+            return JsonResult::make_error(401, "<0>Unauthorized");
+        }
+        $qreq->set_header("Authorization", "Bearer {$token->salt}");
+        $qreq->approve_token();
+        $user = clone $token->local_user();
+        $user->set_bearer_authorized();
+        $user->set_scope($token->data("scope"));
+    } else {
+        assert(!$user->is_bearer_authorized());
+    }
+    $qreq->set_navigation(Navigation::get());
     $qreq->set_user($user);
     if ($prow) {
         $qreq->set_paper($prow);
     } else if ($qreq->p && ctype_digit((string) $qreq->p)) {
         $user->conf->set_paper_request($qreq, $user);
     }
-    $qreq->set_navigation(Navigation::get());
     Qrequest::set_main_request($qreq);
     $uf = $user->conf->api($fn, $user, $qreq->method());
     return $user->conf->call_api_on($uf, $fn, $user, $qreq);
 }
 
-/** @param Contact $user
+/** @param Contact|TokenInfo $user
  * @param ?PaperInfo $prow
  * @return object */
 function call_api($fn, $user, $qreq, $prow = null) {
     $jr = call_api_result($fn, $user, $qreq, $prow);
     if (!($jr instanceof JsonResult)) {
         $jr = JsonResult::make_error(500, "<0>Not a JSON");
+    }
+    if ($jr->minimal) {
+        if (is_array($jr->content) && !is_list($jr->content)) {
+            return (object) $jr->content;
+        }
+        return $jr->content;
     }
     if (!isset($jr->content["status_code"]) && $jr->status > 299) {
         $jr->content["status_code"] = $jr->status;
@@ -1403,7 +1423,8 @@ class TestRunner {
             if (!str_starts_with($m->name, "test")
                 || strlen($m->name) <= 4
                 || ($m->name[4] !== "_" && !ctype_upper($m->name[4]))
-                || ($methodmatch !== "" && !fnmatch($methodmatch, $m->name))) {
+                || ($methodmatch !== "" && !fnmatch($methodmatch, $m->name))
+                || !$m->isPublic()) {
                 continue;
             }
             $this->set_verbose_test($ro, $m);
@@ -1418,7 +1439,7 @@ class TestRunner {
                 continue;
             }
             if (!$this->verbose) {
-                $testo->{$m->name}();
+                $m->invoke($testo);
                 continue;
             }
             if ($this->color) {
@@ -1429,7 +1450,7 @@ class TestRunner {
             $this->need_newline = true;
             $before_nfail = Xassert::$n - Xassert::$nsuccess;
             $before_nerror = Xassert::$nerror;
-            $testo->{$m->name}();
+            $m->invoke($testo);
             $fail = Xassert::$n - Xassert::$nsuccess > $before_nfail;
             $ok = !$fail && Xassert::$nerror === $before_nerror;
             if ($this->verbose_test !== null) {
@@ -1478,6 +1499,14 @@ class TestRunner {
 
     /** @param string $test */
     private function set_test_class($test) {
+        if ($this->tester) {
+            $ro = new ReflectionObject($this->tester);
+            if ($ro->hasMethod("finalize")
+                && ($m = $ro->getMethod("finalize"))->isPublic()) {
+                $m->invoke($ro);
+            }
+            $this->tester = null;
+        }
         $this->last_classname = $test;
         $this->tester = null;
 

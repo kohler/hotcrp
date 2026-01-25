@@ -5929,18 +5929,15 @@ class Conf {
             return JsonResult::make_error(401, "<0>Missing credentials");
         }
         if (($scope = $user->scope())
-            && $scope->checks_method()) {
+            && $uf
+            && ($uf->scope ?? null) === false) {
             if ($getlike) {
-                $bit = TokenScope::S_METHOD_GET;
-            } else if ($method === "POST") {
-                $bit = TokenScope::S_METHOD_POST;
-            } else if ($method === "DELETE") {
-                $bit = TokenScope::S_METHOD_DELETE;
+                $bit = TokenScope::S_OTH_READ;
             } else {
-                $bit = 0;
+                $bit = TokenScope::S_OTH_WRITE;
             }
-            if (!$scope->allow($bit)) {
-                return JsonResult::make_error(403, "<0>Method not permitted by scope");
+            if (!$scope->allows($bit)) {
+                return JsonResult::make_error(401, "<0>Method not permitted by scope");
             }
         }
         if (!$uf) {

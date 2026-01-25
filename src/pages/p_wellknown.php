@@ -43,6 +43,7 @@ class WellKnown_Page {
         if ($conf->opt("oAuthClients")) {
             // enumerate capabilities implied by clients
             $has_access_token = $has_dynamic = false;
+            $any_scopes = null;
             foreach (HotCRP\Authorize_Page::oauth_clients($conf) as $clj) {
                 if (!$has_dynamic
                     && ($clj->dynamic ?? false)
@@ -51,6 +52,10 @@ class WellKnown_Page {
                 }
                 if ($clj->access_token ?? false) {
                     $has_access_token = true;
+                    if ($clj->scope ?? false) {
+                        $ts = TokenScope::parse($clj->scope, null);
+                        $any_scopes = $ts ? ($any_scopes ?? 0) | $ts->any_bits() : ~0;
+                    }
                 }
             }
             $j["authorization_endpoint"] = "{$site}/authorize";
@@ -62,15 +67,14 @@ class WellKnown_Page {
             $j["response_types_supported"] = ["code"];
             $j["token_endpoint_auth_methods_supported"] = ["client_secret_basic"];
             $j["code_challenge_methods_supported"] = ["S256"];
+            $scopes = ["openid", "email", "profile"];
             if ($has_access_token) {
                 $j["grant_types_supported"][] = "refresh_token";
-                $scopes = ["all"];
-                foreach (TokenScope::$scopes as $k => $v) {
-                    if ($v !== -1)
-                        $scopes[] = $k;
+                if (($any_scopes ?? ~0) === ~0) {
+                    $scopes[] = "all";
+                } else {
+                    array_push($scopes, ...explode(" ", TokenScope::unparse(new TokenScope($any_scopes, null, null))));
                 }
-            } else {
-                $scopes = ["openid", "email", "profile"];
             }
             $j["scopes_supported"] = $scopes;
         }
