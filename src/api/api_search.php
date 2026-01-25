@@ -29,7 +29,7 @@ class Search_API {
         if ($search instanceof JsonResult) {
             return $search;
         }
-        $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
+        $pl = new PaperList($qreq->report ? : "empty", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
         if (friendly_boolean($qreq->session) !== false) {
             $pl->apply_view_session($qreq);

@@ -9961,24 +9961,6 @@ $(function () {
 });
 })($);
 
-function hotlist_search_params(x, ids) {
-    x = x instanceof HTMLElement ? Hotlist.at(x) : new Hotlist(x);
-    let m;
-    if (!x || !x.obj || !x.obj.ids
-        || !(m = x.obj.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/))) {
-        return false;
-    }
-
-    const q = {q: ids ? x.id_search() : urldecode(m[2]), t: m[1] || "s"};
-    if (m[3]) {
-        for (const arg of m[3].split(/[&;]/)) {
-            const pos = arg.indexOf("=");
-            q[arg.substr(0, pos)] = urldecode(arg.substr(pos + 1));
-        }
-    }
-    return q;
-}
-
 handle_ui.on("click.js-sq", function () {
     removeClass(this, "js-sq");
     let q;
@@ -10423,7 +10405,7 @@ function tablelist_apply(tbl, data, searchp) {
 }
 
 function tablelist_load(tbl, k, v) {
-    let searchp = new URLSearchParams(tablelist_search(tbl));
+    const searchp = new URLSearchParams(tablelist_search(tbl));
     k && searchp.set(k, v != null ? v : "");
     function history_success(data) {
         const url = make_URL(window.location.href);
@@ -12045,16 +12027,19 @@ function plinfo(plistui, type, hidden, form) {
         }
     }
 
-    const pctr = plistui.pltable;
-    let ses = pctr.getAttribute("data-fold-session-prefix");
+    const tbl = plistui.pltable;
+    let ses = tbl.getAttribute("data-fold-session-prefix");
     if (need_load) {
-        const loadargs = {f: load_type, format: "html"};
+        const searchp = new URLSearchParams(tablelist_search(tbl));
+        searchp.set("f", load_type);
+        searchp.set("format", "html");
+        searchp.set("q", Hotlist.at(tbl).id_search());
+        searchp.delete("sort");
         if (ses) {
-            loadargs.session = plinfo_session(ses, type, hidden, form);
+            searchp.set("session", plinfo_session(ses, type, hidden, form));
             ses = null;
         }
-        $.get(hoturl("=api/search", $.extend(loadargs, hotlist_search_params(pctr, true))),
-              make_callback(plistui, type));
+        $.get(hoturl("=api/search", searchp), make_callback(plistui, type));
     } else if (hidden !== (!f || f.missing || f.hidden)) {
         fold_field(plistui, f, hidden);
         check_statistics(plistui);
