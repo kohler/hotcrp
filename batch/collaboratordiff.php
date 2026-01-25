@@ -239,7 +239,7 @@ class CollaboratorDiff_Batch {
             $lis[] = "</dl><dl class=\"swoosh\">";
         }
         foreach ($this->unused_uco as $line) {
-            $lis[] = "<dt>" . htmlspecialchars($line) . "</dt>";
+            $lis[] = "<dt>" . htmlspecialchars(rtrim($line)) . "</dt>";
         }
         if (!empty($this->unused_uco)) {
             $lis[] = "<dd class=\"font-italic\">possibly obsolete current "

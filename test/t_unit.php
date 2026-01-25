@@ -1396,6 +1396,11 @@ class Unit_Tester {
         xassert_eqq(Ftext::concat("<0><hello>", "?"), "<0><hello>?");
     }
 
+    function test_ftext_html() {
+        xassert_eqq(Ftext::convert_to(0, 5, "<dl><dt>a</dt><dt>b</dt><dd>c</dd></dl>"),
+                    "a\nb\n-> c\n");
+    }
+
     function test_str_list_lower_bound() {
         xassert_eqq(str_list_lower_bound("a", ["0", "ab", "ac", "ad"]), 1);
         xassert_eqq(str_list_lower_bound("aa", ["0", "ab", "ac", "ad"]), 1);
