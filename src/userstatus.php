@@ -908,17 +908,16 @@ class UserStatus extends MessageSet {
             && ($user->contactId > 0 || !$cdbu || $cdbu->affiliation === "")) {
             $us->warning_at("affiliation", "<0>Please enter your affiliation (use “None” or “Unaffiliated” if you have none)");
         }
-        if ($user->is_pc_member()) {
-            if ($user->collaborators() === "") {
-                $us->warning_at("collaborators", "<0>Please enter your recent collaborators and other affiliations");
-                $us->inform_at("collaborators", "<0>This information can help detect conflicts of interest. Enter “None” if you have none.");
-            }
-            if ($us->conf->has_topics()
-                && !$user->topic_interest_map()
-                && !$us->conf->opt("allowNoTopicInterests")) {
-                $us->warning_at("topics", "<0>Please enter your topic interests");
-                $us->inform_at("topics", "<0>We use topic interests to improve the paper assignment process.");
-            }
+        if ($user->collaborators() === "") {
+            $us->warning_at("collaborators", "<0>Please enter your recent collaborators and other affiliations");
+            $us->inform_at("collaborators", "<0>This information can help detect conflicts of interest. Enter “None” if you have none.");
+        }
+        if ($user->is_pc_member()
+            && $us->conf->has_topics()
+            && !$user->topic_interest_map()
+            && !$us->conf->opt("allowNoTopicInterests")) {
+            $us->warning_at("topics", "<0>Please enter your topic interests");
+            $us->inform_at("topics", "<0>We use topic interests to improve the paper assignment process.");
         }
     }
 
@@ -1764,13 +1763,6 @@ class UserStatus extends MessageSet {
     }
 
     static function print_collaborators(UserStatus $us) {
-        if (!$us->user->isPC
-            && !$us->conf->setting("sub_collab")
-            && !$us->qreq->collaborators
-            && !$us->user->collaborators()
-            && !$us->viewer->privChair) {
-            return;
-        }
         $cd = $us->conf->_i("conflictdef");
         $us->cs()->add_section_class("w-text")->print_start_section();
         echo '<h3 class="', $us->control_class("collaborators", "form-h field-title"), '"><label for="collaborators">Collaborators and other affiliations</label></h3>', "\n",
