@@ -230,12 +230,10 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         $potconfs = [];
-        if ($ov->prow->paperId) {
-            foreach ($pcm as $id => $p) {
-                if (($ctmaps[0][$id] ?? 0) < CONFLICT_AUTHOR
-                    && ($potconf = $ov->prow->potential_conflict_list($p)))
-                    $potconfs[$id] = $potconf;
-            }
+        foreach ($pcm as $id => $p) {
+            if (($ctmaps[0][$id] ?? 0) < CONFLICT_AUTHOR
+                && ($potconf = $ov->prow->potential_conflict_list($p)))
+                $potconfs[$id] = $potconf;
         }
         if (!empty($ctmaps[0]) || !empty($potconfs)) {
             uasort($pcm, function ($a, $b) use ($ctmaps, $potconfs) {
