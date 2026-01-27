@@ -1,6 +1,6 @@
 <?php
 // formula.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 abstract class Fexpr implements JsonSerializable {
     /** @var string */
@@ -934,10 +934,9 @@ class Variance_Fexpr extends Aggregate_Fexpr {
 
 class Quantile_Fexpr extends Aggregate_Fexpr {
     /** @var int */
-    private $varg;
+    private $varg = 0;
     function __construct($fn, array $values, ?int $index_type) {
         parent::__construct($fn, $values, $index_type);
-        $this->varg = $fn === "median" ? 0 : 1;
     }
     static function make(FormulaCall $ff) {
         return $ff->check_nargs($ff->name === "median" ? 1 : 2)
@@ -992,9 +991,8 @@ class Extremum_Fexpr extends Aggregate_Fexpr {
     static function make(FormulaCall $ff) {
         if (count($ff->args) > 1 && !$ff->modifier) {
             return new LeastGreatest_Fexpr($ff);
-        } else {
-            return $ff->check_nargs(1) ? new Extremum_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
         }
+        return $ff->check_nargs(1) ? new Extremum_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
     }
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula, true)
