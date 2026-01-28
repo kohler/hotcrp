@@ -681,7 +681,8 @@ class TagMap {
         $ti = $this->storage[$ltag] ?? null;
         if (!$ti
             && $ltag !== ""
-            && (($ltag[0] === ":" && $this->check_emoji_code($ltag))
+            && ($ltag[0] === "~"
+                || ($ltag[0] === ":" && $this->check_emoji_code($ltag))
                 || isset($this->style_lmap[$ltag])
                 || TagStyle::dynamic_style($ltag, $this))) {
             $ti = $this->ensure($tag);
@@ -1743,9 +1744,8 @@ class Tagger {
     function expand($tag) {
         if (strlen($tag) > 2 && $tag[0] === "~" && $tag[1] !== "~" && $this->_contactId) {
             return $this->_contactId . $tag;
-        } else {
-            return $tag;
         }
+        return $tag;
     }
 
 
