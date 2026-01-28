@@ -1,6 +1,6 @@
 <?php
 // t_tags.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Tags_Tester {
     /** @var Conf
@@ -121,6 +121,11 @@ class Tags_Tester {
             "tag_sitewide": ""
         }');
         xassert($sv->execute());
+    }
+
+    function test_implicit_tag_patterns() {
+        $ti = $this->conf->tags()->find("~~fxxxk");
+        xassert($ti && $ti->is(TagInfo::TF_CHAIR));
     }
 
     function test_assign_delete_create() {
