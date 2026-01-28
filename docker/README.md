@@ -33,3 +33,14 @@ Keycloak:
 MariaDB:
 * Root: `root`/`root`
 * HotCRP: `hotcrp`/`hotcrppwd`
+
+# Running Tests
+
+On MacOS, poppler is required to run tests. You can install it with `brew install poppler`.
+
+```bash
+docker run --rm --name hotcrp-db -e MARIADB_ROOT_PASSWORD=root -p 3306:3306 -v ./docker/05-skipcache.cnf:/etc/mysql/mariadb.conf.d/05-skipcache.cnf mariadb:10.11
+lib/createdb.sh -u root -proot -h127.0.0.1 -c test/options.php --batch --grant-host='%'
+lib/createdb.sh -u root -proot -h127.0.0.1 -c test/cdb-options.php --no-dbuser --batch --grant-host='%'
+MYSQL_HOST=127.0.0.1 test/check.sh --all
+```
