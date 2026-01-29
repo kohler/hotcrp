@@ -169,7 +169,7 @@ class Upload_API {
             "size" => $size,
             "ranges" => [0, 0],
             "filename" => $filename,
-            "mimetype" => $qreq->mimetype,
+            "mimetype" => Mimetype::sanitize($qreq->mimetype) ?? "application/octet-stream",
             "pid" => $prow ? $prow->paperId : -1,
             "dtype" => $dtype,
             "temp" => friendly_boolean($qreq->temp) ?? $dtype === null,

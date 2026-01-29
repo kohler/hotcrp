@@ -73,9 +73,9 @@ class Mimetype {
      * @return ?string */
     static function sanitize($mimetype) {
         if ((string) $mimetype !== ""
-            && preg_match('/\A([a-zA-Z0-9][-a-zA-Z0-9.+]*\/[a-zA-Z0-9][-a-zA-Z0-9.+]*)(?:\s*;\s*\S+=\S+)*\z/', $mimetype, $m)
+            && preg_match('/\A([a-z]++\/[a-z0-9][-a-zA-Z0-9_.+]*+)(?:\s*+;\s*+[^\s=]++=\S+)*\z/i', $mimetype, $m)
             && strlen($m[1]) <= 80) {
-            return $m[1];
+            return strtolower($m[1]);
         }
         return null;
     }
@@ -160,11 +160,11 @@ class Mimetype {
         $space = strpos($type, " ");
         $semi = strpos($type, ";");
         if ($space === false && $semi === false) {
-            return $type;
+            return strtolower($type);
         } else if ($space === false || $semi < $space) {
-            return substr($type, 0, $semi);
+            return strtolower(substr($type, 0, $semi));
         }
-        return substr($type, 0, $space);
+        return strtolower(substr($type, 0, $space));
     }
 
     /** @param string|Mimetype $type
@@ -172,8 +172,7 @@ class Mimetype {
     static function lookup($type) {
         if (!$type) {
             return null;
-        }
-        if (is_object($type)) {
+        } else if (!is_string($type)) {
             return $type;
         }
         self::$tmap || self::load_mime_types(1);
@@ -207,7 +206,7 @@ class Mimetype {
         } else if (($mt = self::lookup($type))) {
             return $mt->mimetype;
         }
-        return $type;
+        return self::base($type);
     }
 
     /** @param string|Mimetype $type
@@ -281,8 +280,10 @@ class Mimetype {
         $mt = self::lookup($type);
         if ($mt && $mt->flags !== 0) {
             return ($mt->flags & self::FLAG_TEXTUAL) !== 0;
+        } else if ($mt) {
+            return str_starts_with($mt->mimetype, "text/");
         }
-        return str_starts_with($mt ? $mt->mimetype : $type, "text/");
+        return substr_compare($type, "text/", 0, 5, true) === 0;
     }
 
     /** @param string|Mimetype $type
@@ -291,14 +292,16 @@ class Mimetype {
         $mt = self::lookup($type);
         if ($mt && $mt->flags !== 0) {
             return ($mt->flags & self::FLAG_COMPRESSIBLE) !== 0;
+        } else if ($mt) {
+            return str_starts_with($mt->mimetype, "text/");
         }
-        return str_starts_with($mt ? $mt->mimetype : $type, "text/");
+        return substr_compare($type, "text/", 0, 5, true) === 0;
     }
 
     /** @param string|Mimetype $type
      * @return bool */
     static function is_form($type) {
-        $b = self::base($type instanceof Mimetype ? $type->mimetype : $type);
+        $b = is_string($type) ? self::base($type) : $type->mimetype;
         return $b === "application/x-www-form-urlencoded" || $b === "multipart/form-data";
     }
 
@@ -359,11 +362,11 @@ class Mimetype {
         }
         // canonicalize
         if ($type && ($mt = self::lookup($type))) {
-            if (($mt->flags & self::FLAG_REQUIRE_SNIFF) !== 0) {
-                $type = self::BIN_TYPE;
-            } else {
-                $type = $mt->mimetype;
+            if (($mt->flags & self::FLAG_REQUIRE_SNIFF) === 0
+                && $mt->mimetype !== self::BIN_TYPE) {
+                return $mt->mimetype;
             }
+            $type = self::BIN_TYPE;
         }
         // unreliable sniffs
         if (!$type || $type === self::BIN_TYPE) {

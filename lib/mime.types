@@ -1,19 +1,19 @@
 # default type
-application/octet-stream			bin
+application/octet-stream			bin BIN
 
 # builtin common types
-text/plain					txt
-application/pdf					pdf
+text/plain					txt TXT
+application/pdf					pdf PDF
 application/postscript				ps
-application/vnd.ms-powerpoint			ppt
+application/vnd.ms-powerpoint			ppt PPT
 application/vnd.apple.keynote			key
-application/vnd.openxmlformats-officedocument.presentationml.presentation	pptx
+application/vnd.openxmlformats-officedocument.presentationml.presentation	pptx PPTX
 video/mp4					mp4 mpg4
 video/x-msvideo					avi
 application/json				json
-image/jpeg					jpg jpeg jpe jfif
-image/png					png
-image/gif					gif
+image/jpeg					jpg jpeg jpe jfif JPG JPEG
+image/png					png PNG
+image/gif					gif GIF
 
 # builtin synonyms
 #!! application/mspowerpoint			application/vnd.ms-powerpoint
@@ -23,10 +23,10 @@ image/gif					gif
 
 # other known types
 application/gzip				gz tgz
-application/msword				doc
+application/msword				doc DOC
 application/rtf					rtf
 application/smil				smil smi sml
-application/vnd.ms-excel			xls
+application/vnd.ms-excel			xls XLS
 application/vnd.ms-excel.addin.macroEnabled.12		xlam
 application/vnd.ms-excel.sheet.binary.macroEnabled.12	xlsb
 application/vnd.ms-excel.sheet.macroEnabled.12		xlsm
@@ -49,7 +49,7 @@ application/vnd.oasis.opendocument.text-master			odm
 application/vnd.oasis.opendocument.text-template		ott
 application/vnd.oasis.opendocument.text-web			oth
 application/xhtml+xml				xhtml xhtm xht
-application/zip					zip
+application/zip					zip ZIP
 image/tiff					tiff tif
 image/vnd.adobe.photoshop			psd
 image/vnd.microsoft.icon			ico
@@ -62,7 +62,7 @@ text/rtf					rtf
 text/sgml					sgml sgm
 text/tab-separated-values			tsv
 video/mpeg					mpeg mpg mpe
-video/ogg					ogv
+video/ogg					ogv ogg
 video/quicktime					mov qt
 
 # obsoleted by text/javascript
@@ -76,14 +76,14 @@ application/vnd.ms-powerpoint.slideshow.macroEnabled.12		ppsm
 application/vnd.ms-powerpoint.template.macroEnabled.12		potm
 application/vnd.ms-word.document.macroEnabled.12	docm
 application/vnd.ms-word.template.macroEnabled.12	dotm
-application/vnd.openxmlformats-officedocument.presentationml.presentation pptx
-application/vnd.openxmlformats-officedocument.presentationml.slide	sldx
-application/vnd.openxmlformats-officedocument.presentationml.slideshow	ppsx
-application/vnd.openxmlformats-officedocument.presentationml.template	potx
-application/vnd.openxmlformats-officedocument.spreadsheetml.sheet	xlsx
-application/vnd.openxmlformats-officedocument.spreadsheetml.template	xltx
-application/vnd.openxmlformats-officedocument.wordprocessingml.document	docx
-application/vnd.openxmlformats-officedocument.wordprocessingml.template	dotx
+application/vnd.openxmlformats-officedocument.presentationml.presentation pptx PPTX
+application/vnd.openxmlformats-officedocument.presentationml.slide	sldx SLDX
+application/vnd.openxmlformats-officedocument.presentationml.slideshow	ppsx PPSX
+application/vnd.openxmlformats-officedocument.presentationml.template	potx POTX
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet	xlsx XLSX
+application/vnd.openxmlformats-officedocument.spreadsheetml.template	xltx XLTX
+application/vnd.openxmlformats-officedocument.wordprocessingml.document	docx DOCX
+application/vnd.openxmlformats-officedocument.wordprocessingml.template	dotx DOTX
 application/x-bzip2				bz2
 application/x-cpio				cpio
 application/x-gtar				tar
@@ -113,7 +113,7 @@ image/x-portable-anymap				pnm
 image/x-portable-bitmap				pbm
 image/x-portable-graymap			pgm
 image/x-portable-pixmap				ppm
-text/markdown					md
+text/markdown					md MD
 text/x-bibtex					bib
 text/x-ocaml					ml
 video/webm					webm
