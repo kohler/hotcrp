@@ -387,7 +387,7 @@ final class PaperStatus extends MessageSet {
             $ha = new HashAnalysis($docj->sha1);
             $want_algorithm = "sha1";
         }
-        if ($ha && (!$ha->ok() || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
+        if ($ha && (!$ha->complete() || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
             $this->warning_at_option($o, "<0>Invalid `hash` ignored");
             $ha = null;
         }
@@ -404,7 +404,7 @@ final class PaperStatus extends MessageSet {
 
         // compare content hash with user-provided hash; error if different
         if ($ha
-            && $content_ha->ok()
+            && $content_ha->complete()
             && $ha->binary() !== $content_ha->binary()) {
             $this->error_at_option($o, "<0>Document corrupt (its content did not match the provided hash)");
             return null;
@@ -440,7 +440,7 @@ final class PaperStatus extends MessageSet {
         // choose a hash
         if ($ha) {
             $hash = $ha->binary();
-        } else if ($content_ha->ok()) {
+        } else if ($content_ha->complete()) {
             $hash = $content_ha->binary();
         } else {
             $hash = null;

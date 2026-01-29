@@ -1432,7 +1432,7 @@ class DocumentInfo implements JsonSerializable {
         } else if (($path = $this->available_content_file())) {
             $ha->set_hash_file($path);
         }
-        return $ha->ok() ? $ha->binary() : false;
+        return $ha->complete() ? $ha->binary() : false;
     }
 
     /** @param string $file
@@ -1441,7 +1441,7 @@ class DocumentInfo implements JsonSerializable {
     function file_binary_hash($file, $like_hash = null) {
         $ha = HashAnalysis::make_algorithm($this->conf, $like_hash);
         $ha->set_hash_file($file);
-        return $ha->ok() ? $ha->binary() : false;
+        return $ha->complete() ? $ha->binary() : false;
     }
 
 

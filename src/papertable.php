@@ -714,7 +714,7 @@ class PaperTable {
         }
 
         $ha = new HashAnalysis($doc->sha1);
-        if ($ha->ok()) {
+        if ($ha->complete()) {
             $h = $ha->text_data();
             $x = '<span class="nb checksum';
             if ($tooltip) {

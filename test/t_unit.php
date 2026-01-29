@@ -1579,4 +1579,17 @@ class Unit_Tester {
             $spread_half . "Hello"
         );
     }
+
+    function test_hash_analysis() {
+        $ha = HashAnalysis::make_partial("abcdef");
+        xassert(!$ha->partial());
+        $ha = HashAnalysis::make_partial("sha2-01ABCDEF");
+        xassert($ha->partial());
+        xassert(!$ha->complete());
+        xassert_eqq($ha->algorithm(), "sha256");
+        $ha = HashAnalysis::make_partial("sha2-01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF");
+        xassert($ha->partial());
+        xassert($ha->complete());
+        xassert_eqq($ha->algorithm(), "sha256");
+    }
 }
