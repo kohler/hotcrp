@@ -602,6 +602,7 @@ class S3Client {
                 && (!isset($xml->KeyCount) || (string) $xml->KeyCount !== "0")) {
                 throw new Exception("Bad response from S3 List Objects");
             }
+            unset($args["start-after"]);
             if (isset($xml->IsTruncated) && (string) $xml->IsTruncated === "true") {
                 $args["continuation-token"] = (string) $xml->NextContinuationToken;
             } else {
