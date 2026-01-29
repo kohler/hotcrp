@@ -70,9 +70,9 @@ class Doc_Page {
         // serve document
         $dopt = new Downloader;
         $dopt->parse_qreq($qreq);
-        // `save=0` requests inline, `save=1` requests attachment,
+        // `save=1` requests attachment;
         // default is inline only for whitelisted formats
-        $dopt->set_attachment(friendly_boolean($qreq->save));
+        $dopt->set_attachment(friendly_boolean($qreq->save) ? : null);
         $dopt->set_cacheable($dr->cacheable);
         $dopt->log_user = $user;
         if ($doc->emit($dopt) === 500) {
