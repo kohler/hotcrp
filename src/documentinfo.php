@@ -854,13 +854,20 @@ class DocumentInfo implements JsonSerializable {
             && @filesize($dspath) === @filesize($this->content_file);
     }
 
-    /** @param string $text_hash
+    /** @param string|HashAnalysis $text_hash
      * @param string|Mimetype $mimetype
      * @return non-empty-string */
     static function s3_key_for($text_hash, $mimetype) {
         // Format: `doc/%[2/3]H/%h%x`. Why not algorithm in subdirectory?
         // Because S3 works better if keys are partitionable.
-        if (strlen($text_hash) === 40) {
+        if (!is_string($text_hash)) {
+            $dlen = $text_hash->prefix() === "" ? 2 : 3;
+            $x = substr($text_hash->partial_text_data(), 0, $dlen);
+            if (!$text_hash->complete()) {
+                $mimetype = "";
+            }
+            $text_hash = $text_hash->partial_text();
+        } else if (strlen($text_hash) === 40) {
             $x = substr($text_hash, 0, 2);
         } else {
             $x = substr($text_hash, strpos($text_hash, "-") + 1, 3);
