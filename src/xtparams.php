@@ -120,6 +120,8 @@ class XtParams {
                 throw new UnexpectedValueException("xt_check syntax error in `{$s}`");
             }
             return $e;
+        } else if (str_starts_with($s, "tag:")) {
+            return !$user || $user->has_tag(substr($s, 4));
         } else if (strpos($s, "::") !== false) {
             Conf::xt_resolve_require($xt);
             return call_user_func($s, $xt, $this);
