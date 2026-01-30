@@ -1025,6 +1025,12 @@ function call_api($fn, $user, $qreq, $prow = null) {
     if (!($jr instanceof JsonResult)) {
         $jr = JsonResult::make_error(500, "<0>Not a JSON");
     }
+    if ($jr->minimal) {
+        if (is_array($jr->content) && !is_list($jr->content)) {
+            return (object) $jr->content;
+        }
+        return $jr->content;
+    }
     if (!isset($jr->content["status_code"]) && $jr->status > 299) {
         $jr->content["status_code"] = $jr->status;
     }
