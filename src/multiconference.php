@@ -1,6 +1,6 @@
 <?php
 // multiconference.php -- HotCRP multiconference installations
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Multiconference {
     /** @var array<string,?Conf> */
@@ -61,6 +61,8 @@ class Multiconference {
             $subject = strtolower($nav->host);
         } else if ($t === "p") {
             $subject = $nav->base_path;
+        } else if ($t === "a") {
+            $subject = $nav->site_absolute(true) . $nav->raw_page . $nav->path;
         } else {
             return null;
         }

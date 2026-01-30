@@ -5191,6 +5191,13 @@ class Conf {
         return ini_get_bytes("upload_max_filesize");
     }
 
+    private function print_header_site_page() {
+        echo '<div id="h-site" class="header-site-page">',
+            '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
+            '"><span class="header-site-name">', htmlspecialchars($this->short_name),
+            '</span></a></div>';
+    }
+
     /** @param Qrequest $qreq
      * @param string|list<string> $title */
     private function print_body_header($qreq, $title, $id, $extra) {
@@ -5199,10 +5206,7 @@ class Conf {
                 '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
                 '">', htmlspecialchars($this->short_name), '</a></h1></div>';
         } else {
-            echo '<div id="h-site" class="header-site-page">',
-                '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
-                '"><span class="header-site-name">', htmlspecialchars($this->short_name),
-                '</span></a></div>';
+            $this->print_header_site_page();
         }
 
         echo '<div id="h-right">';
@@ -5276,7 +5280,9 @@ class Conf {
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
-        if (!($extra["hide_header"] ?? false)) {
+        if ($extra["hide_header"] ?? false) {
+            $this->print_header_site_page();
+        } else {
             $this->print_body_header($qreq, $title, $id, $extra);
         }
         $this->_header_printed = true;

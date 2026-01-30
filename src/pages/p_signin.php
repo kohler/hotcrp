@@ -253,12 +253,11 @@ class Signin_Page {
         }
         $buttons = [];
         $param = ["authtype" => null, "post" => $qreq->maybe_post_value()];
+        $nav = $qreq->navigation();
+        $param["success_redirect"] = $qreq->redirect;
+        $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
         if ($this->_oauth_hoturl_param) {
             $param += $this->_oauth_hoturl_param;
-        } else {
-            $nav = $qreq->navigation();
-            $param["success_redirect"] = $qreq->redirect;
-            $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
         }
         $top = "";
         foreach ($conf->oauth_providers() as $authdata) {
