@@ -1409,7 +1409,8 @@ class TestRunner {
             if (!str_starts_with($m->name, "test")
                 || strlen($m->name) <= 4
                 || ($m->name[4] !== "_" && !ctype_upper($m->name[4]))
-                || ($methodmatch !== "" && !fnmatch($methodmatch, $m->name))) {
+                || ($methodmatch !== "" && !fnmatch($methodmatch, $m->name))
+                || !$m->isPublic()) {
                 continue;
             }
             $this->set_verbose_test($ro, $m);
@@ -1424,7 +1425,7 @@ class TestRunner {
                 continue;
             }
             if (!$this->verbose) {
-                $testo->{$m->name}();
+                $m->invoke($testo);
                 continue;
             }
             if ($this->color) {
@@ -1435,7 +1436,7 @@ class TestRunner {
             $this->need_newline = true;
             $before_nfail = Xassert::$n - Xassert::$nsuccess;
             $before_nerror = Xassert::$nerror;
-            $testo->{$m->name}();
+            $m->invoke($testo);
             $fail = Xassert::$n - Xassert::$nsuccess > $before_nfail;
             $ok = !$fail && Xassert::$nerror === $before_nerror;
             if ($this->verbose_test !== null) {
@@ -1484,6 +1485,14 @@ class TestRunner {
 
     /** @param string $test */
     private function set_test_class($test) {
+        if ($this->tester) {
+            $ro = new ReflectionObject($this->tester);
+            if ($ro->hasMethod("finalize")
+                && ($m = $ro->getMethod("finalize"))->isPublic()) {
+                $m->invoke($ro);
+            }
+            $this->tester = null;
+        }
         $this->last_classname = $test;
         $this->tester = null;
 
