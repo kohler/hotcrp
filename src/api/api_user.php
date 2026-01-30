@@ -151,13 +151,18 @@ class User_API {
         if (!$user) {
             return JsonResult::make_error(404, "<0>User not found");
         }
-        if ($qreq->valid_post() && ($qreq->disable || $qreq->enable)) {
-            $jr = self::account_disable($user, $viewer, !!$qreq->disable);
-        } else if ($qreq->valid_post() && $qreq->sendinfo) {
-            $jr = self::account_sendinfo($user, $viewer);
-        } else {
-            $jr = new JsonResult(["ok" => true]);
+        $disable = friendly_boolean($qreq->disable);
+        $jr = null;
+        if ($qreq->valid_post()) {
+            if (friendly_boolean($qreq->disable)) {
+                $jr = self::account_disable($user, $viewer, true);
+            } else if (friendly_boolean($qreq->enable)) {
+                $jr = self::account_disable($user, $viewer, false);
+            } else if (friendly_boolean($qreq->sendinfo)) {
+                $jr = self::account_sendinfo($user, $viewer);
+            }
         }
+        $jr = $jr ?? new JsonResult(["ok" => true]);
         if ($jr->content["ok"]) {
             $jr->content["email"] = $user->email;
             $jr->content["disabled"] = $user->is_disabled();
