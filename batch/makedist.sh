@@ -184,6 +184,7 @@ lib/getopt.php
 lib/gmpshim.php
 lib/hashanalysis.php
 lib/hclcolor.php
+lib/headerset.php
 lib/ht.php
 lib/icons.php
 lib/isovideomimetype.php

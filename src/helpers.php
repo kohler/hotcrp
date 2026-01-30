@@ -86,6 +86,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     public $pretty_print;
     /** @var bool */
     public $minimal = false;
+    /** @var ?HeaderSet */
+    private $_headers;
 
     /** @param int|array<string,mixed>|\stdClass|\JsonSerializable $a1
      * @param ?array<string,mixed> $a2 */
@@ -211,6 +213,15 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         return $this;
     }
 
+    /** @param string $header
+     * @param bool $replace
+     * @return $this */
+    function set_header($header, $replace = true) {
+        $this->_headers = $this->_headers ?? new HeaderSet;
+        $this->_headers->set($header, $replace);
+        return $this;
+    }
+
 
     /** @param MessageItem $mi
      * @return $this */
@@ -227,7 +238,13 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @return int */
     function response_code() {
-        return $this->status;
+        return $this->status ?? 200;
+    }
+
+    /** @param string $key
+     * @return ?string */
+    function header($key) {
+        return $this->_headers ? $this->_headers->get($key) : null;
     }
 
     /** @param string $key
@@ -277,7 +294,9 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @param ?Qrequest $qreq */
     function emit($qreq = null) {
-        if ($this->status && !$this->minimal && !isset($this->content["ok"])) {
+        if (!$this->minimal
+            && $this->status
+            && !isset($this->content["ok"])) {
             $this->content["ok"] = $this->status <= 299;
         }
         if ($qreq && $qreq->valid_token()) {
@@ -289,12 +308,15 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             if (($origin = $qreq->header("Origin"))) {
                 header("Access-Control-Allow-Origin: {$origin}");
             }
-        } else if ($this->status > 299
-                   && !$this->minimal
+        } else if (!$this->minimal
+                   && $this->status > 299
                    && !isset($this->content["status_code"])) {
             $this->content["status_code"] = $this->status;
         }
         header("Content-Type: application/json");
+        foreach ($this->_headers ?? [] as $h) {
+            header($h);
+        }
         if ($qreq && isset($qreq->pretty)) {
             $pprint = friendly_boolean($qreq->pretty);
         } else {

@@ -47,6 +47,8 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     public $cacheable = false;
     /** @var int */
     private $_error_status = 404;
+    /** @var null|int|string */
+    private $_error_scope;
 
     /** @param string $s
      * @param string $field
@@ -247,7 +249,10 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         // check document permission
         if (($fr = $this->perm_view_document())) {
             $fr->append_to($this, $want_path ? "doc" : null, 2);
-            if (isset($fr["permission"])) {
+            if (isset($fr["scope"])) {
+                $this->_error_status = 401;
+                $this->_error_scope = $fr["scope"];
+            } else if (isset($fr["permission"])) {
                 $this->_error_status = 403;
             }
         }
@@ -348,7 +353,12 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
     /** @return JsonResult */
     function error_result() {
-        return JsonResult::make_message_list($this->_error_status, $this->message_list());
+        $jr = JsonResult::make_message_list($this->_error_status, $this->message_list());
+        if ($this->_error_status === 401
+            && $this->_error_scope) {
+            $jr->set_header($this->conf->www_authenticate_header("insufficient_scope", null, $this->_error_scope));
+        }
+        return $jr;
     }
 
 

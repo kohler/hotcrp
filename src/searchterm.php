@@ -1180,7 +1180,7 @@ class Limit_SearchTerm extends SearchTerm {
      * @return bool */
     function simple_search(&$options) {
         // hidden papers => complex search
-        if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
+        if (($this->user->dangerous_track_mask() & Track::FM_VIEW) !== 0) {
             return false;
         }
         // if tracks, nonchairs get simple search only for "a", "r", sometimes "s"
@@ -1272,7 +1272,7 @@ class Limit_SearchTerm extends SearchTerm {
 
     function is_sqlexpr_precise() {
         // hidden papers, view limits => imprecise
-        if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
+        if (($this->user->dangerous_track_mask() & Track::FM_VIEW) !== 0) {
             return false;
         }
         switch ($this->limit_class) {
