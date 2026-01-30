@@ -10,7 +10,7 @@ HotCRP NEWS
       cross-site scripting: an attacker could upload an HTML document which, if
       opened, ran in the user’s browser with their HotCRP credentials. Thanks to
       Nils Bars for the report (MPI-SP). GitHub Security Advisory
-      GHSA-p88p-2f2p-2476.
+      GHSA-p88p-2f2p-2476; CVE-2026-25156.
     * Recover automatic checking for security notices. To opt out, set
       `$Opt["updatesSite"] = false`.
 
