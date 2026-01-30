@@ -227,7 +227,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @return int */
     function response_code() {
-        return $this->status;
+        return $this->status ?? 200;
     }
 
     /** @param string $key
@@ -277,7 +277,9 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @param ?Qrequest $qreq */
     function emit($qreq = null) {
-        if ($this->status && !$this->minimal && !isset($this->content["ok"])) {
+        if (!$this->minimal
+            && $this->status
+            && !isset($this->content["ok"])) {
             $this->content["ok"] = $this->status <= 299;
         }
         if ($qreq && $qreq->valid_token()) {
@@ -289,8 +291,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             if (($origin = $qreq->header("Origin"))) {
                 header("Access-Control-Allow-Origin: {$origin}");
             }
-        } else if ($this->status > 299
-                   && !$this->minimal
+        } else if (!$this->minimal
+                   && $this->status > 299
                    && !isset($this->content["status_code"])) {
             $this->content["status_code"] = $this->status;
         }

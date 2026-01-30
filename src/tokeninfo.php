@@ -90,6 +90,8 @@ class TokenInfo {
     const OAUTHCODE = 9;
     const MANAGEEMAIL = 10;
     const ALERT = 11;
+    const OAUTHREFRESH = 12;
+    const OAUTHCLIENT = 13;
 
     const CHF_UID = 1;
     const CHF_TIMES = 2;

@@ -29,4 +29,13 @@ class Authorization_Token {
         self::set_expires_in($tok, $expires_in, 86400);
         return $tok;
     }
+    /** @param Contact $user
+     * @param int $expires_in
+     * @return TokenInfo */
+    static function prepare_refresh($user, $expires_in) {
+        $tok = new TokenInfo($user->conf, TokenInfo::OAUTHREFRESH);
+        self::set_user_token_pattern($tok, $user, "hctr_[36]", "hcTr_[36]");
+        self::set_expires_in($tok, $expires_in, 604800);
+        return $tok;
+    }
 }

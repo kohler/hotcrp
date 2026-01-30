@@ -80,7 +80,8 @@ class API_Page {
         $jr = (new JsonResult($user->status_json($prow ? [$prow] : [])))
             ->set_pretty_print(false);
         $jr["ok"] = true;
-        if ($fn === "track" && ($new_trackerid = $qreq->annex("new_trackerid"))) {
+        if ($fn === "track"
+            && ($new_trackerid = $qreq->annex("new_trackerid"))) {
             $jr["new_trackerid"] = $new_trackerid;
         }
         if ($prow

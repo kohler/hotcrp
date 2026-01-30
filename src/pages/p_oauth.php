@@ -140,9 +140,11 @@ class OAuth_Page {
         if (friendly_boolean($this->qreq->quiet)) {
             $tokdata["quiet"] = true;
         }
-        foreach (["redirect", "success_redirect", "failure_redirect"] as $k) {
-            if ($this->qreq->$k)
-                $tokdata[$k] = $this->qreq->$k;
+        if (($r = $this->qreq->sucess_redirect ?? $this->qreq->redirect) !== null) {
+            $tokdata["success_redirect"] = $r;
+        }
+        if (($r = $this->qreq->failure_redirect ?? $this->qreq->redirect) !== null) {
+            $tokdata["failure_redirect"] = $r;
         }
 
         $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
@@ -183,18 +185,7 @@ class OAuth_Page {
         $tok = TokenInfo::find_from($state, $this->conf, !!$this->conf->contactdb());
         if (!$tok) {
             return MessageItem::error("<0>Authentication request not found or expired");
-        }
-
-        // set redirection information from token
-        $this->site_uri = $tok->data("site_uri") ?? $this->site_uri;
-        if (!str_ends_with($this->site_uri, "/")) {
-            $this->site_uri .= "/";
-        }
-        $redirect = $tok->data("redirect");
-        $this->success_redirect = $tok->data("success_redirect") ?? $redirect;
-        $this->failure_redirect = $tok->data("failure_redirect") ?? $redirect;
-
-        if (!$tok->is_active()) {
+        } else if (!$tok->is_active()) {
             return MessageItem::error("<0>Authentication request expired");
         } else if ($tok->timeUsed) {
             return MessageItem::error("<0>Authentication request reused");
@@ -202,6 +193,15 @@ class OAuth_Page {
                    || !$tok->data()) {
             return MessageItem::error("<0>Invalid authentication request ‘{$state}’, internal error");
         }
+
+        // set redirection information from token
+        $this->site_uri = $tok->data("site_uri") ?? $this->site_uri;
+        if (!str_ends_with($this->site_uri, "/")) {
+            $this->site_uri .= "/";
+        }
+        $redirect = $tok->data("redirect") /* XXX obsolete */;
+        $this->success_redirect = $tok->data("success_redirect") ?? $redirect;
+        $this->failure_redirect = $tok->data("failure_redirect") ?? $redirect;
 
         if (($nonce = $tok->data("nonce")) !== null) {
             $noncematch = isset($_COOKIE["hotcrp-oauth-nonce-{$nonce}"]);

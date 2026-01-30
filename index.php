@@ -74,6 +74,9 @@ if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "style
 } else if ($nav->page === "scorechart") {
     include("src/pages/p_scorechart.php");
     Scorechart_Page::go_param($_GET);
+} else if ($nav->page === ".well-known") {
+    require_once("src/init.php");
+    WellKnown_Page::go_nav($nav);
 } else {
     require_once("src/init.php");
     handle_request($nav);
