@@ -36,6 +36,7 @@
     {   "name": "namedsearch", "get": true, "allow_if": "pc", "function": "SearchConfig_API::namedsearch"   },
     {   "name": "namedsearch", "post": true, "function": "SearchConfig_API::save_namedsearch", "scope": false   },
     {   "name": "mentioncompletion", "get": true, "function": "Completion_API::mentioncompletion_api"   },
+    {   "name": "oauthregister", "post": true, "auth": false, "function": "HotCRP\\Authorize_Page::oauthregister_api"   },
     {   "name": "oauthtoken", "post": true, "auth": false, "function": "HotCRP\\Authorize_Page::oauthtoken_api"   },
     {   "name": "paper", "get": true, "post": true, "function": "Paper_API::run_one"   },
     {   "name": "paper", "delete": true, "paper": true, "function": "Paper_API::run_one"   },
