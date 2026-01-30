@@ -421,6 +421,6 @@ class Tags_Tester {
     }
 
     function test_track_data() {
-        xassert_eqq(Track::BITS_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));
+        xassert_eqq(Track::FM_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));
     }
 }

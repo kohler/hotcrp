@@ -390,15 +390,15 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"}}");
         self::check_rights_version($users);
         xassert_eqq($user_chair->dangerous_track_mask(), 0);
-        xassert_eqq($user_jon->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
+        xassert_eqq($user_jon->dangerous_track_mask() & Track::FM_VIEW, Track::FM_VIEW);
         xassert_eqq($user_marina->dangerous_track_mask(), 0);
         xassert_eqq($user_pfrancis->dangerous_track_mask(), 0);
 
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+blue\"}}");
         self::check_rights_version($users);
         xassert_eqq($user_chair->dangerous_track_mask(), 0);
-        xassert_eqq($user_jon->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
-        xassert_eqq($user_marina->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
+        xassert_eqq($user_jon->dangerous_track_mask() & Track::FM_VIEW, Track::FM_VIEW);
+        xassert_eqq($user_marina->dangerous_track_mask() & Track::FM_VIEW, Track::FM_VIEW);
         xassert_eqq($user_pfrancis->dangerous_track_mask(), 0);
 
         $this->conf->save_refresh_setting("tracks", null);

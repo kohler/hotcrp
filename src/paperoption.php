@@ -658,11 +658,11 @@ class PaperOption implements JsonSerializable {
     }
 
     /** @return bool */
-    function is_document() {
+    function has_document() {
         return false;
     }
     /** @return bool */
-    function has_document() {
+    function is_document() {
         return false;
     }
     /** @return bool */
@@ -1419,11 +1419,11 @@ class Document_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
 
-    function is_document() {
+    function has_document() {
         return true;
     }
 
-    function has_document() {
+    function is_document() {
         return true;
     }
 

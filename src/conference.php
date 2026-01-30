@@ -1580,7 +1580,7 @@ class Conf {
     /** @param int $right
      * @return bool */
     function check_any_tracks(Contact $user, $right) {
-        if (($this->_track_sensitivity & (Track::BITS_VIEW | (1 << $right))) === 0) {
+        if (($this->_track_sensitivity & (Track::FM_VIEW | (1 << $right))) === 0) {
             return true;
         }
         foreach ($this->_tracks as $tr) {
@@ -1618,15 +1618,15 @@ class Conf {
     }
     /** @return bool */
     function check_track_view_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_VIEW) !== 0;
+        return ($this->_track_sensitivity & Track::FM_VIEW) !== 0;
     }
     /** @return bool */
     function check_track_review_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_REVIEW) !== 0;
+        return ($this->_track_sensitivity & Track::FM_REVIEW) !== 0;
     }
     /** @return bool */
     function check_track_admin_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_ADMIN) !== 0;
+        return ($this->_track_sensitivity & Track::FM_ADMIN) !== 0;
     }
 
     /** @return bool */
@@ -2033,6 +2033,11 @@ class Conf {
             $this->_oauth_providers = $this->_xtbuild_resolve([], "oAuthProviders");
         }
         return $this->_oauth_providers;
+    }
+
+    /** @return string */
+    function oauth_issuer() {
+        return $this->opt["oAuthIssuer"] ?? $this->opt["paperSite"];
     }
 
 
@@ -3879,7 +3884,7 @@ class Conf {
 
     /** @return bool */
     function has_any_manager() {
-        return ($this->_track_sensitivity & Track::BITS_ADMIN)
+        return ($this->_track_sensitivity & Track::FM_ADMIN) !== 0
             || !!($this->settings["papermanager"] ?? false);
     }
 
@@ -5862,6 +5867,36 @@ class Conf {
 
     // API
 
+    /** @param ?string $error
+     * @param ?Qrequest $qreq
+     * @param mixed $scope
+     * @return string */
+    function www_authenticate_header($error, $qreq, $scope = null) {
+        $issuer = $this->oauth_issuer();
+        $rest = "";
+        if ($error) {
+            $rest .= ", error=\"{$error}\"";
+        }
+        if ($error === "insufficient_scope") {
+            if (is_int($scope)) {
+                $bx = TokenScope::unparse_missing_bits($scope);
+                $scope = $bx ? join(" ", $bx) : null;
+            }
+            if ($scope) {
+                $rest .= ", scope=\"{$scope}\"";
+            }
+        }
+        if ($this->opt("oAuthClients")) {
+            $qreq = $qreq ?? Qrequest::$main_request;
+            if ($qreq && $qreq->page() === "api") {
+                $nav = $qreq->navigation();
+                $bptrunc = substr($nav->base_path, 0, -1);
+                $rest .= ", resource_metadata=\"{$nav->server}/.well-known/oauth-protected-resource{$bptrunc}\"";
+            }
+        }
+        return "WWW-Authenticate: Bearer realm=\"{$issuer}\"{$rest}";
+    }
+
     /** @return array<string,list<object>> */
     function api_map() {
         if ($this->_api_map === null) {
@@ -5905,22 +5940,20 @@ class Conf {
             && ((!$getlike && !$qreq->valid_token())
                 || $user->is_empty()
                 || $user->is_disabled())) {
-            $this->www_authenticate_header("invalid_token", $qreq);
-            return JsonResult::make_error(401, "<0>Missing credentials");
+            return JsonResult::make_error(401, "<0>Missing credentials")
+                ->set_header($this->www_authenticate_header("invalid_token", $qreq));
         }
         if (($scope = $user->scope())
-            && $scope->checks_method()) {
+            && $uf
+            && ($uf->scope ?? null) === false) {
             if ($getlike) {
-                $bit = TokenScope::S_METHOD_GET;
-            } else if ($method === "POST") {
-                $bit = TokenScope::S_METHOD_POST;
-            } else if ($method === "DELETE") {
-                $bit = TokenScope::S_METHOD_DELETE;
+                $bit = TokenScope::S_OTH_READ;
             } else {
-                $bit = 0;
+                $bit = TokenScope::S_OTH_WRITE;
             }
-            if (!$scope->allow($bit)) {
-                return JsonResult::make_error(403, "<0>Method not permitted by scope");
+            if (!$scope->allows($bit)) {
+                return JsonResult::make_error(401, "<0>Method not permitted by scope")
+                    ->set_header($this->www_authenticate_header("insufficient_scope", $qreq, $bit));
             }
         }
         if (!$uf) {
@@ -5955,7 +5988,13 @@ class Conf {
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
-            $status = isset($whynot["noPaper"]) ? 404 : 403;
+            if (isset($whynot["scope"])) {
+                $status = 401;
+            } else if (isset($whynot["noPaper"])) {
+                $status = 404;
+            } else {
+                $status = 403;
+            }
             array_push($result["message_list"], ...$whynot->message_list(null, 2));
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
@@ -5964,7 +6003,11 @@ class Conf {
             $status = 400;
             $result["message_list"][] = MessageItem::error_at("p", "<0>Parameter missing");
         }
-        return new JsonResult($status, $result);
+        $jr = new JsonResult($status, $result);
+        if ($status === 401) {
+            $jr->set_header($whynot->conf->www_authenticate_header("insufficient_scope", null, $whynot["scope"]));
+        }
+        return $jr;
     }
 
 

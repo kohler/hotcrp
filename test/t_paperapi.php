@@ -587,4 +587,72 @@ class PaperAPI_Tester {
         $dl = call_api_result("document", $u_marina, $qreq);
         xassert_eqq($dl->response_code(), 200);
     }
+
+    function test_api_scope() {
+        $qreq = TestQreq::get(["p" => 1]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 1);
+
+        $qreq = TestQreq::get(["p" => 2]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 2);
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $this->u_estrin->set_scope("paper:read#1");
+
+        $qreq = TestQreq::get(["p" => 1]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 1);
+
+        $qreq = TestQreq::get(["p" => 2]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 401);
+        xassert_eqq($resp->get("paper"), null);
+        Scope_Tester::xassert_scope_error($resp, "submeta:read");
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        Scope_Tester::xassert_scope_error($resp, "submeta:read");
+
+        $this->u_estrin->set_scope("submeta:read document:read#2");
+
+        $qreq = TestQreq::get(["p" => 1]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 1);
+
+        $qreq = TestQreq::get(["p" => 2]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 2);
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 401);
+        Scope_Tester::xassert_scope_error($resp, "document:read");
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $this->u_estrin->set_scope();
+    }
 }

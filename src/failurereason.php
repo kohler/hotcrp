@@ -218,6 +218,14 @@ class FailureReason extends Exception
         if ($this->_a["site_lock"] ?? false) {
             $ms[] = $this->conf->_("<0>Action locked");
         }
+        if (($scope = $this->_a["scope"] ?? null) !== null) {
+            if (is_int($scope)) {
+                $scope = join(" ", TokenScope::unparse_missing_bits($scope));
+            }
+            if ($scope) {
+                $ms[] = $this->conf->_("<0>Action requires scope ‘{}’", $scope);
+            }
+        }
         if ($this->_a["noPaper"] ?? false) {
             $ms[] = $this->conf->_("<0>{Submission} #{} does not exist", $paperId);
         }
