@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
-const HOTCRP_VERSION = "3.2";
+const HOTCRP_VERSION = "3.2.1";
 
 // All positive review types must be 1 digit
 const REVIEW_META = 5;
