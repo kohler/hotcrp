@@ -5901,14 +5901,12 @@ class Conf {
         // which checks $user->can_view_paper().
         $method = $qreq->method();
         $getlike = $method === "GET" || $method === "HEAD" || $method === "OPTIONS";
-        if (!$getlike
-            && !$qreq->valid_token()
-            && (!$uf || ($uf->check_token ?? null) !== false)) {
-            return JsonResult::make_error(403, "<0>Missing credentials");
-        }
-        if ($user->is_disabled()
-            && (!$uf || !($uf->allow_disabled ?? false))) {
-            return JsonResult::make_error(403, "<0>Disabled account");
+        if ((!$uf || ($uf->auth ?? null) !== false)
+            && ((!$getlike && !$qreq->valid_token())
+                || $user->is_empty()
+                || $user->is_disabled())) {
+            $this->www_authenticate_header("invalid_token", $qreq);
+            return JsonResult::make_error(401, "<0>Missing credentials");
         }
         if (($scope = $user->scope())
             && $scope->checks_method()) {
