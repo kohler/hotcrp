@@ -4696,7 +4696,7 @@ class Conf {
         } else if ($conf && $conf->_save_msgs !== null) {
             $conf->_save_msgs[] = [$text, $type];
         } else {
-            $k = Ht::msg_class($type) . ($conf && $conf->_mx_auto ? " mx-auto" : "");
+            $k = Ht::msg_class($type, $conf && $conf->_mx_auto ? "mx-auto" : "");
             echo "<div class=\"{$k}\">{$text}</div>";
         }
     }
@@ -4704,6 +4704,11 @@ class Conf {
     /** @return bool */
     function mx_auto() {
         return $this->_mx_auto;
+    }
+
+    /** @param bool $mx_auto */
+    function set_mx_auto($mx_auto) {
+        $this->_mx_auto = $mx_auto;
     }
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls */

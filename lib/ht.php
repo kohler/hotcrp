@@ -706,21 +706,26 @@ class Ht {
     }
 
     /** @param int $status
+     * @param string $extra_class
      * @return string */
-    static function msg_class($status) {
+    static function msg_class($status, $extra_class = "") {
         if ($status >= 2 || $status === -1 /* MessageSet::URGENT_NOTE */) {
-            return "msg msg-error";
+            $s = "msg msg-error";
         } else if ($status > 0 || $status === -2 /* MessageSet::WARNING_NOTE */) {
-            return "msg msg-warning";
+            $s = "msg msg-warning";
         } else if ($status === -3 /* MessageSet::SUCCESS */) {
-            return "msg msg-confirm";
+            $s = "msg msg-confirm";
+        } else {
+            $s = "msg msg-info";
         }
-        return "msg msg-info";
+        return $extra_class === "" ? $s : "{$s} {$extra_class}";
     }
 
     /** @param string $msg
-     * @param int $status */
-    static function msg($msg, $status) {
+     * @param int $status
+     * @param string $extra_class
+     * @return string */
+    static function msg($msg, $status, $extra_class = "") {
         assert(is_int($status));
         $mx = "";
         foreach (is_array($msg) ? $msg : [$msg] as $x) {
@@ -735,7 +740,8 @@ class Ht {
         if ($mx === "") {
             return "";
         }
-        return "<div class=\"" . self::msg_class($status) . "\">{$mx}</div>";
+        $mc = self::msg_class($status, $extra_class);
+        return "<div class=\"{$mc}\">{$mx}</div>";
     }
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls

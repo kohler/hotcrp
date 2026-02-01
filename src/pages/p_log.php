@@ -395,6 +395,7 @@ class Log_Page {
 
         if (!$this->viewer->privChair || !empty($this->exclude_pids)) {
             echo '<div class="msgs-wide">';
+            $conf->set_mx_auto(true);
             if (!$this->viewer->privChair) {
                 $conf->feedback_msg(MessageItem::marked_note("<0>Only showing your actions, plus entries for papers you administer"));
             } else if (!empty($this->exclude_pids)
@@ -415,6 +416,7 @@ class Log_Page {
                     $conf->feedback_msg(MessageItem::marked_note("<5>Not showing entries for " . Ht::link("conflicted administered papers", $conf->hoturl("search", "q=" . join("+", array_keys($this->exclude_pids))))));
                 }
             }
+            $conf->set_mx_auto(false);
             echo '</div>';
         }
 

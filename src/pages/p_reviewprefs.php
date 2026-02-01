@@ -152,7 +152,7 @@ class ReviewPrefs_Page {
             Ht::hidden_default_submit("default", 1);
         if ($search->has_message()) {
             echo '<div class="msgs-wide">',
-                Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING)),
+                Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING), "mx-auto"),
                 '</div>';
         }
         echo '<noscript><div style="text-align:center">',
