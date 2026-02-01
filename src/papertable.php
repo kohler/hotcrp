@@ -240,10 +240,7 @@ class PaperTable {
             $id = $amode;
         }
 
-        $body_class = "paper";
-        if ($error) {
-            $body_class .= "-error";
-        }
+        $body_class = $error ? "body-error" : "paper";
         if ($paperTable
             && $prow->paperId
             && $paperTable->user->has_overridable_conflict($prow)
