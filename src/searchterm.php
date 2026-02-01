@@ -1108,6 +1108,29 @@ class Limit_SearchTerm extends SearchTerm {
             $limword = $limit;
         }
 
+        // default limit should be the plausible limit for a default search,
+        // as in entering text into a quicksearch box
+        if ($limstr === "default") {
+            if ($this->user->privChair
+                && ($this->user->is_root_user()
+                    || $conf->unnamed_submission_round()->time_update(true))) {
+                $limstr = "all";
+            } else if ($this->user->isPC) {
+                if ($this->user->can_view_some_incomplete()
+                    && $conf->can_pc_view_some_incomplete()) {
+                    $limstr = "active";
+                } else {
+                    $limstr = "s";
+                }
+            } else if (!$this->user->is_reviewer()) {
+                $limstr = "a";
+            } else if (!$this->user->is_author()) {
+                $limstr = "r";
+            } else {
+                $limstr = "ar";
+            }
+        }
+
         // find limit
         $limitpair = self::canonical_names($conf, $limstr);
         if (!$limitpair) {
@@ -1174,6 +1197,15 @@ class Limit_SearchTerm extends SearchTerm {
     /** @return bool */
     function is_author() {
         return $this->limit === "a";
+    }
+
+    /** @param Limit_SearchTerm $set_limit
+     * @return bool */
+    function prefer_to($set_limit) {
+        return ($this->lflag & self::LFLAG_IMPLICIT) === 0
+            || ($this->limit_class === "dec"
+                && ($this->lflag & self::LFLAG_STDDEC) === 0
+                && ($set_limit->lflag & self::LFLAG_STDDEC) !== 0);
     }
 
     /** @param array<string,mixed> &$options

@@ -361,26 +361,7 @@ class PaperSearch extends MessageSet {
             $limit = $lnames[0] ?? "none";
             $toverride = $toverride ?? true;
         } else {
-            // Empty limit should be the plausible limit for a default search,
-            // as in entering text into a quicksearch box.
-            if ($user->privChair
-                && ($user->is_root_user()
-                    || $this->conf->unnamed_submission_round()->time_update(true))) {
-                $limit = "all";
-            } else if ($user->isPC) {
-                if ($user->can_view_some_incomplete()
-                    && $user->conf->can_pc_view_some_incomplete()) {
-                    $limit = "active";
-                } else {
-                    $limit = "s";
-                }
-            } else if (!$user->is_reviewer()) {
-                $limit = "a";
-            } else if (!$user->is_author()) {
-                $limit = "r";
-            } else {
-                $limit = "ar";
-            }
+            $limit = "default";
         }
         $lword = SearchWord::make_simple($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
@@ -1056,7 +1037,8 @@ class PaperSearch extends MessageSet {
 
             // check for limit
             if ($this->_limit_override === 0
-                && ($xlimit = $this->_qe->get_float("xlimit"))) {
+                && ($xlimit = $this->_qe->get_float("xlimit"))
+                && $xlimit->prefer_to($this->_limit_qe)) {
                 $this->_limit_override = 1;
                 $this->_limit_qe->set_limit($xlimit->named_limit);
             }
@@ -1309,9 +1291,8 @@ class PaperSearch extends MessageSet {
             return $gs;
         } else if (($h = $this->_qe->get_float("legend"))) {
             return [TagAnno::make_legend($h)];
-        } else {
-            return [];
         }
+        return [];
     }
 
     /** @param int $pid
@@ -1346,9 +1327,8 @@ class PaperSearch extends MessageSet {
     function group_slice_term($group) {
         if ($group === null) {
             return $this->main_term();
-        } else {
-            return ($this->group_slice_terms())[$group] ?? $this->_qe;
         }
+        return ($this->group_slice_terms())[$group] ?? $this->_qe;
     }
 
     /** @return array<int,int> */
@@ -1512,26 +1492,25 @@ class PaperSearch extends MessageSet {
     /** @param string $listid
      * @return ?array<string,string> */
     static function unparse_listid($listid) {
-        if (preg_match('/\Ap\/([^\/]+)\/([^\/]*)(?:|\/([^\/]*))\z/', $listid, $m)) {
-            $args = ["q" => urldecode($m[2]), "t" => $m[1]];
-            if (isset($m[3]) && $m[3] !== "") {
-                foreach (explode("&", $m[3]) as $arg) {
-                    if (str_starts_with($arg, "sort=")) {
-                        $args["sort"] = urldecode(substr($arg, 5));
-                    } else if (str_starts_with($arg, "qt=")) {
-                        $args["qt"] = urldecode(substr($arg, 3));
-                    } else if (str_starts_with($arg, "forceShow=")) {
-                        $args["forceShow"] = urldecode(substr($arg, 10));
-                    } else {
-                        // XXX `reviewer`
-                        error_log(caller_landmark() . ": listid includes {$arg}");
-                    }
-                }
-            }
-            return $args;
-        } else {
+        if (!preg_match('/\Ap\/([^\/]+)\/([^\/]*)(?:|\/([^\/]*))\z/', $listid, $m)) {
             return null;
         }
+        $args = ["q" => urldecode($m[2]), "t" => $m[1]];
+        if (isset($m[3]) && $m[3] !== "") {
+            foreach (explode("&", $m[3]) as $arg) {
+                if (str_starts_with($arg, "sort=")) {
+                    $args["sort"] = urldecode(substr($arg, 5));
+                } else if (str_starts_with($arg, "qt=")) {
+                    $args["qt"] = urldecode(substr($arg, 3));
+                } else if (str_starts_with($arg, "forceShow=")) {
+                    $args["forceShow"] = urldecode(substr($arg, 10));
+                } else {
+                    // XXX `reviewer`
+                    error_log(caller_landmark() . ": listid includes {$arg}");
+                }
+            }
+        }
+        return $args;
     }
 
     /** @param list<int> $ids

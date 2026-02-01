@@ -5,30 +5,33 @@
 class Decision_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $user;
-    /** @var string|list<int> */
-    private $match;
+    /** @var list<int> */
+    private $decs;
 
-    /** @param string|list<int> $match */
-    function __construct(Contact $user, $match) {
+    /** @param list<int> $decs */
+    function __construct(Contact $user, $decs) {
         parent::__construct("decision");
         $this->user = $user;
-        $this->match = $match;
+        $this->decs = $decs;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $dec = $srch->conf->decision_set()->matchexpr($word);
-        if (is_array($dec) && empty($dec)) {
+        $decs = $srch->conf->decision_set()->matchexpr($word, true);
+        if (empty($decs)) {
             $srch->lwarning($sword, "<0>Decision not found");
-            $dec[] = -10000000;
+            return new Decision_SearchTerm($srch->user, [-10000000]);
         }
-        return new Decision_SearchTerm($srch->user, $dec);
+        $st = new Decision_SearchTerm($srch->user, $decs);
+        $lim = new Limit_SearchTerm($srch, "dec:" . SearchWord::quote($word), true);
+        $st->set_float("xlimit", $lim);
+        return $st;
     }
-    /** @return string|list<int> */
+    /** @return list<int> */
     function matchexpr() {
-        return $this->match;
+        return $this->decs;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->match)];
-        if (CountMatcher::compare_using(0, $this->match)
+        $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->decs)];
+        if (in_array(0, $this->decs, true)
             && !$this->user->allow_administer_all()) {
             $f[] = "Paper.outcome=0";
         }
@@ -36,18 +39,18 @@ class Decision_SearchTerm extends SearchTerm {
     }
     function test(PaperInfo $row, $xinfo) {
         $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
-        return CountMatcher::compare_using($d, $this->match);
+        return in_array($d, $this->decs, true);
     }
     function about() {
         return self::ABOUT_PAPER;
     }
     function drag_assigners(Contact $user) {
-        $ds = $user->conf->decision_set()->filter_using($this->match);
-        if (count($ds) !== 1 || !$user->can_set_some_decision()) {
+        if (count($this->decs) !== 1 || !$user->can_set_some_decision()) {
             return null;
         }
+        $d = $user->conf->decision_set()->get($this->decs[0]);
         return [
-            ["action" => "decision", "decision" => $ds[0]->name, "ondrag" => "enter"],
+            ["action" => "decision", "decision" => $d->name, "ondrag" => "enter"],
             ["action" => "decision", "decision" => "none", "ondrag" => "leave"]
         ];
     }
