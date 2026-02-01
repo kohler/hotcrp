@@ -21,6 +21,9 @@ class Tags_Tester {
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_varghese = $conf->checked_user_by_email("varghese@ccrc.wustl.edu");
         $this->u_floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
+
+        $this->conf->qe("delete from PaperTag where tag='fart'");
+        $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values (1,'fart',4), (2,'fart',5), (3,'fart',6), (4,'fart',10), (5,'fart',9), (6,'fart',7), (7,'fart',11), (8,'fart',4.5)");
     }
 
     function test_mutual_automatic_search() {
@@ -348,6 +351,7 @@ class Tags_Tester {
     }
 
     function test_copy_tag_pattern() {
+        $result = $this->conf->qe("select paperId, tagIndex from PaperTag where tag='fart'");
         xassert_search_all($this->u_chair, "#fart", "1 8 2 3 6 5 4 7");
         xassert_search_all($this->u_chair, "#xfart", "");
         xassert_assign($this->u_chair, "action,paper,tag,new_tag\ncopytag,all,*art,x*art\n");
@@ -408,6 +412,12 @@ class Tags_Tester {
 
         // invalid patterns are caught
         xassert_assign_fail($this->u_chair, "action,paper,tag,new_tag,tag_value\ncopytag,all,{$vcid}*,{$fcid}*,max\n");
+    }
+
+    function test_assign_sorted_search() {
+        $root = $this->conf->root_user();
+        xassert_assign($this->u_chair, "action,paper,tag,tag_value\ntag,1-10 sort:title,tiorder,seqnext\n");
+        xassert_search_all($this->u_chair, "order:tiorder", "3 10 7 8 4 1 9 2 5 6");
     }
 
     function test_track_data() {
