@@ -12800,7 +12800,7 @@ handle_ui.on("document-uploader", function (event) {
     }
 
     function check(event) {
-        var form = that.form,
+        const form = that.form,
             upload_limit = find_first_attr("data-upload-limit", [doce, form, document.body], Infinity),
             max_size = find_first_attr("data-document-max-size", [doce, form, document.body], upload_limit);
         blob_limit = Math.min(find_first_attr("data-blob-limit", [form, document.body], 5 << 20), upload_limit);
@@ -12809,11 +12809,11 @@ handle_ui.on("document-uploader", function (event) {
             that.value = "";
             handle_ui.stopImmediatePropagation ? handle_ui.stopImmediatePropagation(event) : event.stopImmediatePropagation();
             return false;
-        } else {
-            return file
-                && window.FormData
-                && file.size >= Math.min(0.45 * upload_limit, 4 << 20);
         }
+        return file
+            && window.FormData
+            && blob_limit > 0
+            && file.size >= Math.min(0.45 * upload_limit, 4 << 20);
     }
     if (!check(event)) {
         remove_feedback();

@@ -5243,6 +5243,9 @@ class Conf {
         if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
             echo ' data-document-max-size="', ini_get_bytes(null, $x), '"';
         }
+        if (!isset($this->opt["docstore"])) {
+            echo ' data-blob-limit="0"';
+        }
         echo '><div id="p-page" class="',
             Ht::add_tokens($body_class, "need-banner-offset"),
             '"><header id="p-header"><hr class="c">';
