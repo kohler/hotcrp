@@ -13,6 +13,7 @@ class Mimetype {
     const JPG_TYPE = "image/jpeg";
     const PNG_TYPE = "image/png";
     const GIF_TYPE = "image/gif";
+    const WEBP_TYPE = "image/webp";
     const TAR_TYPE = "application/x-tar";
     const ZIP_TYPE = "application/zip";
     const RAR_TYPE = "application/x-rar-compressed";
@@ -342,13 +343,13 @@ class Mimetype {
         } else if (str_starts_with($content, "%PDF-")) {
             return self::PDF_TYPE;
         } else if (strlen($content) > 516
-                   && substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
+                   && substr_compare($content, "\x00\x6E\x1E\xF0", 512, 4) === 0) {
             return self::PPT_TYPE;
         } else if (str_starts_with($content, "\xFF\xD8\xFF\xD8")
                    || (str_starts_with($content, "\xFF\xD8\xFF\xE0")
-                       && substr($content, 6, 6) === "JFIF\x00\x01")
+                       && substr_compare($content, "JFIF\x00\x01", 6, 6) === 0)
                    || (str_starts_with($content, "\xFF\xD8\xFF\xE1")
-                       && substr($content, 6, 6) === "Exif\x00\x00")) {
+                       && substr_compare($content, "Exif\x00\x00", 6, 6) === 0)) {
             return self::JPG_TYPE;
         } else if (str_starts_with($content, "\x89PNG\r\n\x1A\x0A")) {
             return self::PNG_TYPE;
@@ -356,6 +357,11 @@ class Mimetype {
                     || str_starts_with($content, "GIF89a"))
                    && str_ends_with($content, "\x00;")) {
             return self::GIF_TYPE;
+        } else if (strlen($content) > 24
+                   && str_starts_with($content, "RIFF")
+                   && substr_compare($content, "WEBP", 8, 4) === 0
+                   && self::webp_content_info($content)) {
+            return self::WEBP_TYPE;
         } else if (str_starts_with($content, "Rar!\x1A\x07\x00")
                    || str_starts_with($content, "Rar!\x1A\x07\x01\x00")) {
             return self::RAR_TYPE;
@@ -408,6 +414,8 @@ class Mimetype {
             return self::png_content_info($content);
         } else if ($type === self::GIF_TYPE) {
             return self::gif_content_info($content);
+        } else if ($type === self::WEBP_TYPE) {
+            return self::webp_content_info($content);
         } else if ($type === "video/mp4") {
             if ($doc
                 && strlen($content) !== $doc->size()
@@ -425,22 +433,21 @@ class Mimetype {
      * @param int $off
      * @return int */
     static function be16at($s, $off) {
-        return (unpack("n", $s, $off))[1];
+        return (ord($s[$off]) << 8) + ord($s[$off + 1]);
     }
 
     /** @param string $s
      * @param int $off
      * @return int */
     static function le16at($s, $off) {
-        return (unpack("v", $s, $off))[1];
+        return ord($s[$off]) + (ord($s[$off + 1]) << 8);
     }
 
     /** @param string $s
      * @param int $off
-     * @return array{int,int} */
-    static function le16at_x2($s, $off) {
-        $a = unpack("v2", $s, $off);
-        return [$a[1], $a[2]];
+     * @return int */
+    static function le24at($s, $off) {
+        return ord($s[$off]) + (ord($s[$off + 1]) << 8) + (ord($s[$off + 2]) << 16);
     }
 
     /** @param string $s
@@ -456,6 +463,13 @@ class Mimetype {
     static function be32at_x2($s, $off) {
         $a = unpack("N2", $s, $off);
         return [$a[1], $a[2]];
+    }
+
+    /** @param string $s
+     * @param int $off
+     * @return int */
+    static function le32at($s, $off) {
+        return (unpack("V", $s, $off))[1];
     }
 
     /** @param string $s
@@ -524,11 +538,10 @@ class Mimetype {
         if ($pos + 3 > $len) {
             return $info;
         }
-        list($lw, $lh) = self::le16at_x2($s, $pos);
-        if ($lw !== 0) {
+        if (($lw = self::le16at($s, $pos)) !== 0) {
             $info["width"] = $lw;
         }
-        if ($lh !== 0) {
+        if (($lh = self::le16at($s, $pos + 2)) !== 0) {
             $info["height"] = $lh;
         }
         if (($lw !== 0 && $lh !== 0) || $pos + 6 > $len) {
@@ -551,8 +564,10 @@ class Mimetype {
                 }
             } else if ($ch === 0x2C) {
                 // image
-                list($left, $top) = self::le16at_x2($s, $pos + 1);
-                list($w, $h) = self::le16at_x2($s, $pos + 5);
+                $left = self::le16at($s, $pos + 1);
+                $top = self::le16at($s, $pos + 3);
+                $w = self::le16at($s, $pos + 5);
+                $h = self::le16at($s, $pos + 7);
                 if ($w !== 0 && $left + $w > ($info["width"] ?? 0)) {
                     $info["width"] = $left + $w;
                 }
@@ -596,5 +611,49 @@ class Mimetype {
             $pos += 12 + $blen;
         }
         return $info;
+    }
+
+    /** @param string $s
+     * @return ?array{type:string,width?:int,height?:int} */
+    static private function webp_content_info($s) {
+        $n = strlen($s);
+        $l = self::le32at($s, 4);
+        if ($l > 0xFFFFFFF6 || $l + 8 > $n) {
+            return null;
+        } else if (substr_compare($s, "VP8 ", 12, 4) === 0 && $n >= 30) {
+            $sc = self::le24at($s, 23);
+            if ((ord($s[20]) & 1) !== 0 || $sc !== 0x2a019d) {
+                return null;
+            }
+            $wc = self::le16at($s, 26);
+            $w = $wc & 0x3FFF;
+            $hc = self::le16at($s, 28);
+            $h = $hc & 0x3FFF;
+            if ($w !== 0 && $h !== 0 && $h > 0xFFFFFFFF / $w) {
+                return null;
+            }
+            // Ignore horizontal_scale and vertical_scale, because Chrome
+            // ignores these on display.
+            return ["type" => self::WEBP_TYPE, "width" => $w, "height" => $h];
+        } else if (substr_compare($s, "VP8L", 12, 4) === 0 && $n >= 25) {
+            if ($s[20] !== "\x2f") {
+                return null;
+            }
+            $v = self::le32at($s, 21);
+            $w = ($v & 0x3FFF) + 1;
+            $h = (($v >> 14) & 0x3FFF) + 1;
+            if ($h > 0xFFFFFFFF / $w) {
+                return null;
+            }
+            return ["type" => self::WEBP_TYPE, "width" => $w, "height" => $h];
+        } else if (substr_compare($s, "VP8X", 12, 4) === 0 && $n >= 30) {
+            $w = self::le24at($s, 24) + 1;
+            $h = self::le24at($s, 27) + 1;
+            if ($h > 0xFFFFFFFF / $w) {
+                return null;
+            }
+            return ["type" => self::WEBP_TYPE, "width" => $w, "height" => $h];
+        }
+        return null;
     }
 }
