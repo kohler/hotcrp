@@ -53,8 +53,12 @@ class Downloader {
     private $_boundary;
     /** @var ?int */
     private $_response_code;
-    /** @var list<string> */
-    private $_headers = [];
+    /** @var HeaderSet */
+    private $_headers;
+
+    function __construct() {
+        $this->_headers = new HeaderSet;
+    }
 
     /** @return $this */
     function parse_qreq(Qrequest $qreq) {
@@ -212,30 +216,11 @@ class Downloader {
         return $this;
     }
 
-    /** @param string $h */
-    private function _remove_matching_headers($h) {
-        $n = strpos($h, ":") ? : strlen($h) - 1;
-        $delta = 0;
-        foreach ($this->_headers as $i => &$s) {
-            if (substr_compare($s, $h, 0, $n + 1, true) === 0) {
-                ++$delta;
-            } else if ($delta > 0) {
-                $this->_headers[$i - $delta] = $s;
-            }
-        }
-        if ($delta > 0) {
-            array_splice($this->_headers, count($this->_headers) - $delta);
-        }
-    }
-
     /** @param string $header
      * @param bool $replace
      * @return $this */
     function set_header($header, $replace = true) {
-        if ($replace) {
-            $this->_remove_matching_headers($header);
-        }
-        $this->_headers[] = $header;
+        $this->_headers->set($header, $replace);
         return $this;
     }
 
@@ -486,25 +471,17 @@ class Downloader {
         if ($bs !== null && $bs > 2000000) {
             yield "X-Accel-Buffering" => "no";
         }
-        foreach ($this->_headers as $h) {
-            if (($p = strpos($h, ":")) === false) {
-                yield "" => $h;
-            } else {
-                for ($q = $p + 1; $q !== strlen($h) && $h[$q] === " "; ++$q) {
-                }
-                yield substr($h, 0, $p) => substr($h, $q);
-            }
-        }
+        yield from $this->_headers->by_name();
         if ($this->_content_redirect !== null) {
             yield "X-Accel-Redirect" => $this->_content_redirect;
         }
     }
 
-    /** @param string $key
+    /** @param string $name
      * @return ?string */
-    function header($key) {
-        foreach ($this->headers() as $k => $v) {
-            if (strcasecmp($k, $key) === 0)
+    function header($name) {
+        foreach ($this->headers() as $n => $v) {
+            if (strcasecmp($name, $n) === 0)
                 return $v;
         }
         return null;

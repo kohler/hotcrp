@@ -1592,4 +1592,39 @@ class Unit_Tester {
         xassert($ha->complete());
         xassert_eqq($ha->algorithm(), "sha256");
     }
+
+    function test_header_set() {
+        $hs = new HeaderSet;
+        xassert_eqq(count($hs), 0);
+        xassert(!$hs->has("Content-Length"));
+
+        $hs->set("Content-Length: 100");
+        xassert($hs->has("content-Length"));
+        xassert_eqq($hs->get("content-length"), "100");
+        xassert_eqq($hs->get_all("content-length"), ["100"]);
+        xassert_eqq($hs->get("x-content-length"), null);
+        xassert_eqq($hs->get_all("x-content-length"), []);
+        $l1 = iterator_to_array($hs);
+        xassert_eqq($l1, ["Content-Length: 100"]);
+        $l2 = iterator_to_array($hs->by_name());
+        xassert_eqq($l2, ["Content-Length" => "100"]);
+        xassert_eqq($hs->count(), 1);
+
+        $hs->set("content-length: 1000", false);
+        xassert_eqq($hs->get("content-length"), "100");
+        xassert_eqq($hs->get_all("content-length"), ["100", "1000"]);
+        $l1 = iterator_to_array($hs);
+        xassert_eqq($l1, ["Content-Length: 100", "content-length: 1000"]);
+        $l = [];
+        foreach ($hs->by_name() as $n => $v) {
+            $l[] = "{$n}/{$v}";
+        }
+        xassert_eqq($l, ["Content-Length/100", "content-length/1000"]);
+        xassert_eqq(count($hs), 2);
+
+        $hs->set("content-length: 10");
+        xassert_eqq($hs->get("content-length"), "10");
+        xassert_eqq($hs->get_all("content-length"), ["10"]);
+        xassert_eqq(count($hs), 1);
+    }
 }
