@@ -142,9 +142,12 @@ class AuthorCertification_EntryList implements IteratorAggregate {
         return null;
     }
 
-    /** @param Contact $u
+    /** @param ?Contact $u
      * @return ?AuthorCertification_Entry */
     function find_by_user($u) {
+        if (!$u) {
+            return null;
+        }
         $uid1 = $u->contactId;
         $uid2 = $u->primaryContactId ? : $u->contactId;
         foreach ($this->es as $e) {
@@ -424,18 +427,35 @@ class AuthorCertification_PaperOption extends PaperOption {
         return $has_author;
     }
 
-    private function author_change_error($auov, $base_auov, $entries, $ps) {
+    /** @param PaperValue $auov
+     * @param PaperValue $base_auov
+     * @param AuthorCertification_EntryList $entries
+     * @param PaperStatus $ps
+     * @param bool $prevent_add */
+    private function check_author_change($auov, $base_auov, $entries, $ps, $prevent_add) {
         $conf = $auov->prow->conf;
         $base_aulist = Authors_PaperOption::author_list($base_auov);
         $aulist = Authors_PaperOption::author_list($auov);
-        foreach (ACEntryList::make_author_list($conf, $aulist) as $e) {
-            if ($e->email !== ""
-                && !Author::find_by_email($e->email, $base_aulist)
-                && (!$e->user || !$entries->find_by_user($e->user))) {
-                $ps->append_item(MessageItem::estop_at("authors", $this->conf->_("<0>You can’t add {} to the author list at this time", $e->author->name(NAME_P | NAME_A))));
+        if ($prevent_add) {
+            foreach (ACEntryList::make_author_list($conf, $aulist) as $e) {
+                if ($e->email === ""
+                    || Author::find_by_email($e->email, $base_aulist)
+                    || $entries->find_by_user($e->user)) {
+                    continue;
+                }
+                $ps->append_item(MessageItem::estop_at("authors", $this->conf->_("<0>{} cannot be added to the author list at this time", $e->author->name(NAME_P | NAME_A))));
                 $ps->append_item(MessageItem::inform_at("authors", $this->conf->_("<0>{} hasn’t certified the {} field, and certification is required for submission. You can add authors by first converting this {submission} to a draft.", $e->email, $this->edit_title())));
                 $ps->append_item(MessageItem::error_at("authors:{$e->author->author_index}"));
             }
+        }
+        foreach (ACEntryList::make_author_list($conf, $base_aulist) as $e) {
+            if ($e->email === ""
+                || Author::find_by_email($e->email, $aulist)
+                || !$entries->find_by_user($e->user)) {
+                continue;
+            }
+            $ps->append_item(MessageItem::estop_at("authors", $this->conf->_("<0>Certified author {} cannot be removed from the author list", $e->author->name(NAME_P | NAME_A))));
+            $ps->append_item(MessageItem::inform_at("authors", $this->conf->_("<0>{} has certified the {} field. They must revoke that certification before being removed from the author list.", $e->email, $this->edit_title())));
         }
     }
 
@@ -444,14 +464,14 @@ class AuthorCertification_PaperOption extends PaperOption {
         $want_complete = self::entries_complete($ov->prow, $entries);
         $have_complete = self::is_complete($ov);
         // check for illegal change to authors
-        if (!$have_complete && $this->required > 0) {
-            $auov = $ov->prow->option(PaperOption::AUTHORSID);
-            $base_auov = $ov->prow->base_option(PaperOption::AUTHORSID);
-            if (!$auov->equals($base_auov)
+        $auov = $ov->prow->force_option(PaperOption::AUTHORSID);
+        $base_auov = $ov->prow->base_option(PaperOption::AUTHORSID);
+        if (!$auov->equals($base_auov)) {
+            $prevent_add = !$have_complete
+                && $this->required > 0
                 && self::is_complete($ov->prow->base_option($this->id))
-                && $ov->prow->want_submitted()) {
-                $this->author_change_error($auov, $base_auov, $entries, $ps);
-            }
+                && $ov->prow->want_submitted();
+            $this->check_author_change($auov, $base_auov, $entries, $ps, $prevent_add);
         }
         if ($want_complete === $have_complete) {
             return null;

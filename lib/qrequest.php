@@ -63,6 +63,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_qsession = new Qsession;
     }
 
+    /** @param string $method
+     * @param array<string,string> $data
+     * @return Qrequest */
+    static function make($method, $data = []) {
+        return new Qrequest($method, $data);
+    }
+
     /** @param NavigationState $nav
      * @return $this */
     function set_navigation($nav) {
