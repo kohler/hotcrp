@@ -480,7 +480,7 @@ class Downloader {
         }
         if (!$this->_headers->has("Content-Security-Policy")
             && ($conf = $this->conf ?? Conf::$main)
-            && ($cspf = $this->conf->opt("downloadContentSecurityPolicyFunction")) !== false) {
+            && ($cspf = $conf->opt("downloadContentSecurityPolicyFunction")) !== false) {
             $cspf = $cspf ?? "Downloader::content_security_policy_for";
             if (($csph = call_user_func($cspf, $this))) {
                 yield "Content-Security-Policy" => $csph;
