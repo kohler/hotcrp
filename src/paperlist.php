@@ -1014,6 +1014,14 @@ class PaperList {
         return $this->_sortcol;
     }
 
+    /** @return bool */
+    function is_id_sorted() {
+        $sort0 = ($this->sorters())[0];
+        return $sort0 instanceof Id_PaperColumn
+            && !$sort0->sort_descending
+            && $sort0->sort_subset === null;
+    }
+
     /** @return string */
     function sort_etag() {
         if ($this->_sortcol_fixed === 0) {
