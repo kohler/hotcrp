@@ -166,7 +166,6 @@ class AuthorCertification_Tester {
     }
 
     function test_admin_certify_other() {
-        error_log("!");
         $ps = new PaperStatus($this->u_chair);
         xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
             "has_{$this->c1key}" => "1",

@@ -1489,7 +1489,7 @@ class TestRunner {
             $ro = new ReflectionObject($this->tester);
             if ($ro->hasMethod("finalize")
                 && ($m = $ro->getMethod("finalize"))->isPublic()) {
-                $m->invoke($ro);
+                $m->invoke($this->tester);
             }
             $this->tester = null;
         }
