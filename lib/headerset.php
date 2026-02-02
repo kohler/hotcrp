@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class HeaderSet implements IteratorAggregate, Countable {
-    /** @var array<string,string> */
+    /** @var array<string,list<string>> */
     private $_headers = [];
     /** @var int */
     private $_nheaders = 0;
@@ -31,7 +31,7 @@ class HeaderSet implements IteratorAggregate, Countable {
         return $this->_nheaders;
     }
 
-    /** @param string $header
+    /** @param string $name
      * @return bool */
     function has($name) {
         return isset($this->_headers[strtolower($name)]);
