@@ -606,16 +606,16 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         if (empty($_POST)) {
             $qreq->set_post_empty();
+            $qreq->_body_type = self::BODY_FILE;
         }
         $qreq->_headers = $_SERVER;
         if (isset($_SERVER["HTTP_REFERER"])) {
             $qreq->set_referrer($_SERVER["HTTP_REFERER"]);
         }
-        $qreq->_body_type = empty($_POST) ? self::BODY_FILE : self::BODY_NONE;
 
         // Work around GET URL length limitations with `:method:` parameter.
         // A POST request can set `:method:` to GET for GET semantics.
-        if (($v = $qreq->_v[":method:"] ?? null) === "GET"
+        if (($_GET[":method:"] ?? null) === "GET"
             && $qreq->method() === "POST") {
             $qreq->_method = "GET";
         }
