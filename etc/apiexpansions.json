@@ -225,7 +225,7 @@
   {
     "name": "revpref", "get": true, "post": true,
     "tags": ["Review preferences"],
-    "parameters": "p ?u +pref",
+    "parameters": "p ?u +=pref",
     "response": "value pref ?prefexp ?topic_score"
   },
   {

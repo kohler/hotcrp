@@ -14,14 +14,15 @@ class SpecValidator_API {
     /** @var ?mixed */
     private $response;
 
-    const F_REQUIRED = 0x01;
-    const F_POST = 0x02;
+    const F_REQUIRED = 0x01;     // '!'; '?' means not required
+    const F_POST = 0x02;         // '+' (in request, implies QUERY)
     const F_QUERY = 0x04;
-    const F_BODY = 0x08;
-    const F_FILE = 0x10;
-    const F_SUFFIX = 0x20;
+    const F_BODY = 0x08;         // '='
+    const F_FILE = 0x10;         // '@'
+    const F_SUFFIX = 0x20;       // ':'
     const F_PRESENT = 0x40;
-    const F_DEPRECATED = 0x80;
+    const F_DEPRECATED = 0x80;   // '<'
+    const FM_BODYQUERY = 0x0C;
     const FM_QUERYPOST = 0x06;
     const FM_LOCATION = 0x1C;
 
@@ -67,13 +68,11 @@ class SpecValidator_API {
                 } else if ($p[$i] === "!") {
                     $f |= self::F_REQUIRED;
                 } else if ($p[$i] === "+") {
-                    $f |= self::F_POST;
+                    $f |= self::F_POST | self::F_QUERY;
                 } else if ($p[$i] === "=") {
                     $f |= self::F_BODY;
                 } else if ($p[$i] === "@") {
                     $f |= self::F_FILE;
-                } else if ($p[$i] === "<") {
-                    $f |= self::F_DEPRECATED;
                 } else if ($p[$i] === ":") {
                     $f |= self::F_SUFFIX;
                     $has_suffix = true;
@@ -83,6 +82,8 @@ class SpecValidator_API {
                         $f |= self::FM_LOCATION;
                     }
                     break;
+                } else if ($p[$i] === "<") {
+                    $f |= self::F_DEPRECATED;
                 } else {
                     break;
                 }
@@ -100,7 +101,7 @@ class SpecValidator_API {
         $param = [];
         foreach (array_keys($_GET) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_", ":method:"], true)
+                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_", ":method:", "apiKey"], true)
                     && ($n !== "p" || !($this->uf->paper ?? false))) {
                     $this->error("query param `{$n}` unknown");
                 }
@@ -226,6 +227,8 @@ class SpecValidator_API {
     static function unparse_param_type($n, $t) {
         if (($t & self::F_FILE) !== 0) {
             return "file param";
+        } else if (($t & self::FM_BODYQUERY) === self::FM_BODYQUERY) {
+            return "param";
         } else if (($t & self::F_BODY) !== 0) {
             return "body param";
         }
