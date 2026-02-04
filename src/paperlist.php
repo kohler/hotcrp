@@ -2522,7 +2522,7 @@ class PaperList {
 
     /** @param 1|2|3|4 $format
      * @param int $min_origin
-     * @return array{fields:list<array>,papers:list<array{id:int}>,statistics?:array} */
+     * @return array{fields:list<array>,papers:list<array{pid:int}>,statistics?:array} */
     function format_json($format, $min_origin = 0) {
         // get column list, check sort
         if ($format === self::FORMAT_HTML) {
