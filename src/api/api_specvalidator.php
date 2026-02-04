@@ -15,7 +15,7 @@ class SpecValidator_API {
     private $response;
 
     const F_REQUIRED = 0x01;     // '!'; '?' means not required
-    const F_POST = 0x02;         // '+' (in request, implies QUERY)
+    const F_POST = 0x02;         // '+' (implies QUERY if given in request)
     const F_QUERY = 0x04;
     const F_BODY = 0x08;         // '='
     const F_FILE = 0x10;         // '@'
@@ -62,7 +62,8 @@ class SpecValidator_API {
         $has_suffix = false;
         foreach ($parameters as $p) {
             $f = self::F_REQUIRED;
-            for ($i = 0; $i !== strlen($p); ++$i) {
+            $plen = strlen($p);
+            for ($i = 0; $i !== $plen; ++$i) {
                 if ($p[$i] === "?") {
                     $f &= ~self::F_REQUIRED;
                 } else if ($p[$i] === "!") {
@@ -80,6 +81,9 @@ class SpecValidator_API {
                     $f &= ~self::F_REQUIRED;
                     if (($f & self::FM_LOCATION) === 0) {
                         $f |= self::FM_LOCATION;
+                    }
+                    if ($i === $plen - 1) {
+                        break;
                     }
                 } else if ($p[$i] === "<") {
                     $f |= self::F_DEPRECATED;
@@ -152,6 +156,7 @@ class SpecValidator_API {
         $has_suffix = false;
         foreach ($response as $ri => $p) {
             $f = self::F_REQUIRED;
+            $plen = strlen($p);
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {
                     $f &= ~self::F_REQUIRED;
@@ -164,7 +169,9 @@ class SpecValidator_API {
                     $has_suffix = true;
                 } else if ($p[$i] === "*") {
                     $f &= ~self::F_REQUIRED;
-                    break;
+                    if ($i === $plen - 1) {
+                        break;
+                    }
                 } else if ($p[$i] === "+") {
                     $f |= self::F_POST;
                 } else {
@@ -175,7 +182,9 @@ class SpecValidator_API {
                 continue;
             }
             $n = substr($p, $i);
-            $known[$n] = $f;
+            if ($n !== "") {
+                $known[$n] = $f;
+            }
         }
         foreach (array_keys($jr->content) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
