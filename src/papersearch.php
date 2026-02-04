@@ -356,7 +356,9 @@ class PaperSearch extends MessageSet {
 
         // paper selection
         $toverride = friendly_boolean($options["toverride"] ?? null);
-        if (isset($options["t"]) && $options["t"] !== "") {
+        if (isset($options["t"])
+            && $options["t"] !== ""
+            && $options["t"] !== "default") {
             $lnames = Limit_SearchTerm::canonical_names($this->conf, $options["t"]);
             $limit = $lnames[0] ?? "none";
             $toverride = $toverride ?? true;
