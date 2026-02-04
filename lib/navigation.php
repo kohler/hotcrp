@@ -97,6 +97,12 @@ class NavigationState {
             $uri = $nav->request_uri;
         }
 
+        // beware double slashes
+        $doubleslash = strpos($uri, "//") !== false;
+        if ($doubleslash) {
+            $uri = preg_replace('/\/\/++/', "/", $uri);
+        }
+
         // base_path: encoded path to root of site; nonempty, ends in /
         $bp = $nav->find_base($uri, $server);
         if ($bp === "/"
@@ -129,8 +135,8 @@ class NavigationState {
         }
 
         // separate page and path
-        $nbp = strlen($nav->base_path);
-        $uri_suffix = (string) substr($uri, min($nbp, strlen($uri)));
+        $nbp = min(strlen($nav->base_path), strlen($uri));
+        $uri_suffix = (string) substr($uri, $nbp);
         if ($pct) {
             $uri_suffix = self::easy_urldecode($uri_suffix);
         }
@@ -150,9 +156,9 @@ class NavigationState {
 
         // compute base_path_relative
         $path_slash = substr_count($nav->path, "/");
-        if ($path_slash > 0) {
+        if ($path_slash > 0 && !$doubleslash) {
             $nav->base_path_relative = str_repeat("../", $path_slash);
-        } else if ($nav->raw_page === "") {
+        } else if ($nav->raw_page === "" || $doubleslash) {
             $nav->base_path_relative = $nav->base_path;
         } else {
             $nav->base_path_relative = "";
