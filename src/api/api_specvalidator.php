@@ -81,7 +81,6 @@ class SpecValidator_API {
                     if (($f & self::FM_LOCATION) === 0) {
                         $f |= self::FM_LOCATION;
                     }
-                    break;
                 } else if ($p[$i] === "<") {
                     $f |= self::F_DEPRECATED;
                 } else {
@@ -95,7 +94,9 @@ class SpecValidator_API {
                 continue;
             }
             $n = substr($p, $i);
-            $known[$n] = $f;
+            if ($n !== "") {
+                $known[$n] = $f;
+            }
         }
 
         $param = [];

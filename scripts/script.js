@@ -11082,7 +11082,7 @@ Assign_DraggableTable.prototype.commit = function () {
         doassignlist(as, this.assigninfo[newidx], srcra.id, "enter");
     }
     if (!as.empty) {
-        $.post(hoturl("=api/assign", {}),
+        $.post(hoturl("=api/assign", {format: "none"}),
             {assignments: JSON.stringify(as), search: tablelist_search(this.tablelist)},
             function (rv) {
                 if (rv.ok && rv.valid !== false) {
@@ -14677,7 +14677,7 @@ handle_ui.on("js-assign-potential-conflict", function () {
             is_none ? "Conflict ignored" : "Conflict confirmed"));
     }
     $ajax.condition(function () {
-        $.ajax(hoturl("=api/assign", {p: pid}), {
+        $.ajax(hoturl("=api/assign", {p: pid, format: "none"}), {
             method: "POST", data: {assignments: JSON.stringify([ass])},
             success: success, trackOutstanding: true
         });
@@ -14724,7 +14724,7 @@ handle_ui.on("js-assign-review", function (evt) {
         check_form_differs(form, self);
     }
     $ajax.condition(function () {
-        $.ajax(hoturl("=api/assign", {p: m[1]}), {
+        $.ajax(hoturl("=api/assign", {p: m[1], format: "none"}), {
             method: "POST", data: {assignments: JSON.stringify(ass)},
             success: success, trackOutstanding: true
         });
