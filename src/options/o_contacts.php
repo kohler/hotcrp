@@ -42,7 +42,7 @@ class Contacts_PaperOption extends PaperOption {
         $ov->set_value_data(array_keys($va), array_values($va));
         $ov->set_anno("users", $ca);
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         $ca = [];
         foreach (self::users_anno($ov) as $u) {
             if ($u->contactId >= 0)
@@ -50,11 +50,11 @@ class Contacts_PaperOption extends PaperOption {
         }
         foreach ($ov->value_list() as $uid) {
             if (!isset($ca[$uid]))
-                $ps->conf->prefetch_user_by_id($uid);
+                $this->conf->prefetch_user_by_id($uid);
         }
         $j = [];
         foreach ($ov->value_list() as $uid) {
-            if (($u = $ca[$uid] ?? $ps->conf->user_by_id($uid, USER_SLICE)))
+            if (($u = $ca[$uid] ?? $this->conf->user_by_id($uid, USER_SLICE)))
                 $j[] = Author::unparse_nea_json_for($u);
         }
         return $j;

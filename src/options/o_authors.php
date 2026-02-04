@@ -17,18 +17,9 @@ class Authors_PaperOption extends PaperOption {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        $contacts_ov = $ov->prow->option(PaperOption::CONTACTSID);
-        $lemails = [];
-        foreach ($contacts_ov->data_list() as $email) {
-            $lemails[] = strtolower($email);
-        }
         $au = [];
         foreach (self::author_list($ov) as $auth) {
-            $au[] = $j = (object) $auth->unparse_nea_json();
-            if (validate_email($auth->email)
-                && in_array(strtolower($auth->email), $lemails, true)) {
-                $j->contact = true;
-            }
+            $au[] = $auth->unparse_nea_json();
         }
         return $au;
     }
