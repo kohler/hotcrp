@@ -562,6 +562,15 @@ class Authors_PaperColumn extends PaperColumn {
             return join("; ", $out);
         }
     }
+    function json(PaperList $pl, PaperInfo $row) {
+        $au = [];
+        if ($pl->user->can_view_authors($row) || $this->anon) {
+            foreach ($row->author_list() as $auth) {
+                $au[] = $auth->unparse_nea_json();
+            }
+        }
+        return $au;
+    }
 }
 
 class Collab_PaperColumn extends PaperColumn {
