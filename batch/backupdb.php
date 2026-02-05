@@ -373,10 +373,12 @@ class BackupDB_Batch {
 
         $ans = [];
         foreach ($s3->ls_all_keys($pfx) as $key) {
-            if (!$key
-                || !$bp->match($key)
-                || ($this->_before !== null && ($bp->timestamp === null || $bp->timestamp > $this->_before))
-                || ($this->_after !== null && ($bp->timestamp === null || $bp->timestamp < $this->_after))) {
+            if (!$key || !$bp->match($key)) {
+                continue;
+            }
+            $ts = $bp->timestamp();
+            if (($this->_before !== null && ($ts === null || $ts > $this->_before))
+                || ($this->_after !== null && ($ts === null || $ts < $this->_after))) {
                 continue;
             }
             if ($this->_s3_tags) {
@@ -387,8 +389,8 @@ class BackupDB_Batch {
                     }
                 }
             }
-            if ($bp->timestamp !== null) {
-                $ans[$bp->timestamp] = $key;
+            if ($ts !== null) {
+                $ans[$ts] = $key;
             } else {
                 $ans[] = $key;
             }

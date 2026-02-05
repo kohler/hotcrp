@@ -5,27 +5,29 @@
 class BackupPattern {
     /** @var string
      * @readonly */
-    public $pat;
+    private $pat;
     /** @var ?string */
-    public $str;
+    private $str;
     /** @var ?string */
-    public $dbname;
+    private $dbname;
     /** @var ?string */
-    public $confid;
+    private $confid;
     /** @var ?int */
-    public $timestamp;
+    private $timestamp;
+    /** @var string */
+    private $filename;
     /** @var ?int */
-    public $yr;
+    private $yr;
     /** @var ?int */
-    public $mo;
+    private $mo;
     /** @var ?int */
-    public $dy;
+    private $dy;
     /** @var ?int */
-    public $hr;
+    private $hr;
     /** @var ?int */
-    public $mn;
+    private $mn;
     /** @var ?int */
-    public $sc;
+    private $sc;
     /** @var int */
     private $complete = -1;
 
@@ -36,7 +38,7 @@ class BackupPattern {
 
     /** @return $this */
     function clear() {
-        $this->str = $this->dbname = $this->confid = $this->timestamp = null;
+        $this->str = $this->dbname = $this->confid = $this->timestamp = $this->filename = null;
         $this->yr = $this->mo = $this->dy = $this->hr = $this->mn = $this->sc = null;
         $this->complete = -1;
         return $this;
@@ -64,6 +66,23 @@ class BackupPattern {
         assert($this->complete === -1);
         $this->timestamp = $timestamp;
         return $this;
+    }
+
+    /** @param ?string $filename
+     * @return $this */
+    function set_filename($filename) {
+        assert($this->complete === -1);
+        $this->filename = $filename === "" ? null : $filename;
+        return $this;
+    }
+
+    /** @param ?string $path
+     * @return $this */
+    function set_filename_from_path($path) {
+        if ($path !== null && ($sl = strrpos($path, "/")) !== false) {
+            $path = substr($path, $sl + 1);
+        }
+        return $this->set_filename($path);
     }
 
     /** @return string */
@@ -105,7 +124,27 @@ class BackupPattern {
         return $this->str;
     }
 
-    function compute_time() {
+    /** @return ?string */
+    function dbname() {
+        return $this->dbname;
+    }
+
+    /** @return ?string */
+    function confid() {
+        return $this->confid;
+    }
+
+    /** @return ?int */
+    function timestamp() {
+        return $this->timestamp;
+    }
+
+    /** @return ?string */
+    function filename() {
+        return $this->filename;
+    }
+
+    private function compute_time() {
         $x = gmdate("YmdHis", $this->timestamp);
         $this->yr = (int) substr($x, 0, 4);
         $this->mo = (int) substr($x, 4, 2);
@@ -138,14 +177,18 @@ class BackupPattern {
                 break;
             }
             $ch = $pat[$ppos + 1];
-            if ($ch === "{" && substr($pat, $ppos, 9) === "%{dbname}") {
+            if ($ch === "{" && substr_compare($pat, "%{dbname}", $ppos, 9) === 0) {
                 $want = &$this->dbname;
                 $type = [0];
                 $ppos += 9;
-            } else if ($ch === "{" && substr($pat, $ppos, 9) === "%{confid}") {
+            } else if ($ch === "{" && substr_compare($pat, "%{confid}", $ppos, 9) === 0) {
                 $want = &$this->confid;
                 $type = [0];
                 $ppos += 9;
+            } else if ($ch === "{" && substr_compare($pat, "%{filename}", $ppos, 11) === 0) {
+                $want = &$this->filename;
+                $type = [-2];
+                $ppos += 11;
             } else if ($ch === "Y") {
                 $want = &$this->yr;
                 $type = [4, 2020, 9999];
@@ -173,6 +216,10 @@ class BackupPattern {
             } else if ($ch === "U") {
                 $want = &$this->timestamp;
                 $type = [-1];
+                $ppos += 2;
+            } else if ($ch === "f") {
+                $want = &$this->filename;
+                $type = [-2];
                 $ppos += 2;
             } else if ($ch === "%") {
                 $want = "%";
@@ -211,6 +258,8 @@ class BackupPattern {
                     } else {
                         $len = 0;
                     }
+                } else if ($type[0] === -2) {
+                    $len = strcspn($str, "/", $spos);
                 } else if ($type[0] > 0) {
                     $len = $type[0];
                 } else {
@@ -220,7 +269,7 @@ class BackupPattern {
                     return;
                 }
                 $x = substr($str, $spos, $len);
-                if ($type[0] !== 0) {
+                if ($type[0] !== 0 && $type[0] !== -2) {
                     if (!ctype_digit($x)) {
                         return;
                     }

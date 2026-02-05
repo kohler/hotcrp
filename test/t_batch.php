@@ -13,8 +13,8 @@ class Batch_Tester {
     function test_backuppattern() {
         $bp = new BackupPattern("%{dbname}/%U.sql.gz");
         xassert($bp->match("barforama/1020340000.sql.gz"));
-        xassert_eqq($bp->dbname, "barforama");
-        xassert_eqq($bp->timestamp, 1020340000);
+        xassert_eqq($bp->dbname(), "barforama");
+        xassert_eqq($bp->timestamp(), 1020340000);
         xassert(!$bp->match("fsart_10202029292.sql.gz"));
         xassert(!$bp->match("barforama/1020340000.sql.g"));
 
@@ -32,10 +32,39 @@ class Batch_Tester {
 
         $bp = new BackupPattern("%{dbname}/%{confid}-%Y%m%d-%H%i%s.sql.gz");
         xassert($bp->match("mydb/myconf-20221106-120000.sql.gz"));
-        xassert_eqq($bp->dbname, "mydb");
-        xassert_eqq($bp->confid, "myconf");
-        xassert_eqq($bp->timestamp, 1667736000);
+        xassert_eqq($bp->dbname(), "mydb");
+        xassert_eqq($bp->confid(), "myconf");
+        xassert_eqq($bp->timestamp(), 1667736000);
         xassert(!$bp->match("mydb/myconf-20221106-120000.sal.gz"));
+
+        $bp = new BackupPattern("%{dbname}/%{confid}-%{filename}");
+        xassert($bp->match("mydb/myconf-20221106-120000.sql.gz"));
+        xassert_eqq($bp->dbname(), "mydb");
+        xassert_eqq($bp->confid(), "myconf");
+        xassert_eqq($bp->filename(), "20221106-120000.sql.gz");
+        xassert($bp->match("mydb/myconf-20221106-120000.sal.gz"));
+        xassert_eqq($bp->dbname(), "mydb");
+        xassert_eqq($bp->confid(), "myconf");
+        xassert_eqq($bp->filename(), "20221106-120000.sal.gz");
+        xassert(!$bp->match("mydb/myconf-20221106-120000.sal.gz/"));
+
+        $bp->clear()
+            ->set_dbname("foo")
+            ->set_confid("bar")
+            ->set_filename("amazing.txt");
+        xassert_eqq($bp->full_expansion(), "foo/bar-amazing.txt");
+
+        $bp = new BackupPattern("%{dbname}/%{confid}-%{filename}");
+        $bp->clear()
+            ->set_dbname("foo");
+        xassert_eqq($bp->expansion(), "foo/");
+        xassert_eqq($bp->full_expansion(), null);
+
+        $bp->clear()
+            ->set_dbname("foo")
+            ->set_confid("bar")
+            ->set_filename_from_path("/var/bool/xxxxx.txt");
+        xassert_eqq($bp->full_expansion(), "foo/bar-xxxxx.txt");
     }
 
     function test_saveusers() {
