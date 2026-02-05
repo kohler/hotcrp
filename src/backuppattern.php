@@ -1,9 +1,10 @@
 <?php
 // backuppattern.php -- HotCRP database backup helper
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class BackupPattern {
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $pat;
     /** @var ?string */
     public $str;
@@ -25,6 +26,8 @@ class BackupPattern {
     public $mn;
     /** @var ?int */
     public $sc;
+    /** @var int */
+    private $complete = -1;
 
     /** @param string $pat */
     function __construct($pat) {
@@ -35,7 +38,48 @@ class BackupPattern {
     function clear() {
         $this->str = $this->dbname = $this->confid = $this->timestamp = null;
         $this->yr = $this->mo = $this->dy = $this->hr = $this->mn = $this->sc = null;
+        $this->complete = -1;
         return $this;
+    }
+
+    /** @param ?string $dbname
+     * @return $this */
+    function set_dbname($dbname) {
+        assert($this->complete === -1);
+        $this->dbname = $dbname;
+        return $this;
+    }
+
+    /** @param ?string $confid
+     * @return $this */
+    function set_confid($confid) {
+        assert($this->complete === -1);
+        $this->confid = $confid;
+        return $this;
+    }
+
+    /** @param ?int $timestamp
+     * @return $this */
+    function set_timestamp($timestamp) {
+        assert($this->complete === -1);
+        $this->timestamp = $timestamp;
+        return $this;
+    }
+
+    /** @return string */
+    function expansion() {
+        if ($this->complete < 0) {
+            $this->process();
+        }
+        return $this->str;
+    }
+
+    /** @return ?string */
+    function full_expansion() {
+        if ($this->complete < 0) {
+            $this->process();
+        }
+        return $this->complete > 0 ? $this->str : null;
     }
 
     /** @param string $m
@@ -43,13 +87,15 @@ class BackupPattern {
     function match($m) {
         $this->clear();
         $this->str = $m;
-        return $this->process();
+        $this->process();
+        return $this->complete > 0;
     }
 
     /** @param ?string $dbname
      * @param ?string $confid
      * @param ?int $timestamp
-     * @return string */
+     * @return string
+     * @deprecated */
     function expand($dbname = null, $confid = null, $timestamp = null) {
         $this->clear();
         $this->dbname = $dbname;
@@ -69,14 +115,14 @@ class BackupPattern {
         $this->sc = (int) substr($x, 12, 2);
     }
 
-    /** @return bool */
-    function process() {
+    private function process() {
         $pat = $this->pat;
         $str = $this->str ?? "";
         $ismake = $this->str === null;
         $ppos = $spos = 0;
         $plen = strlen($pat);
         $slen = strlen($str);
+        $this->complete = 0;
 
         while (true) {
             $pct = strpos($pat, "%", $ppos);
@@ -84,7 +130,7 @@ class BackupPattern {
             if ($ismake) {
                 $str .= substr($pat, $ppos, $pct - $ppos);
             } else if (substr($str, $spos, $pct - $ppos) !== substr($pat, $ppos, $pct - $ppos)) {
-                return false;
+                return;
             }
             $spos += $pct - $ppos;
             $ppos = $pct;
@@ -133,7 +179,7 @@ class BackupPattern {
                 $type = [0];
                 $ppos += 1;
             } else {
-                return false;
+                return;
             }
             if ($want === null && $type[0] > 0 && $this->timestamp !== null) {
                 $this->compute_time();
@@ -147,7 +193,7 @@ class BackupPattern {
                 if ($ismake) {
                     $str .= $wants;
                 } else if (substr($str, $spos, strlen($wants)) !== $wants) {
-                    return false;
+                    return;
                 }
                 $spos += strlen($wants);
             } else if ($ismake) {
@@ -159,7 +205,7 @@ class BackupPattern {
                     } else if ($pat[$ppos] !== "%") {
                         $npos = strpos($str, $pat[$ppos], $spos);
                         if ($npos === false) {
-                            return false;
+                            return;
                         }
                         $len = $npos - $spos;
                     } else {
@@ -171,18 +217,18 @@ class BackupPattern {
                     $len = strspn($str, "0123456789", $spos);
                 }
                 if ($len === 0 || $spos + $len > $slen) {
-                    return false;
+                    return;
                 }
                 $x = substr($str, $spos, $len);
                 if ($type[0] !== 0) {
                     if (!ctype_digit($x)) {
-                        return false;
+                        return;
                     }
                     $x = (int) $x;
                     /** @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset */
                     if (($type[0] > 0 && ($x < $type[1] || $x > $type[2]))
                         || ($type[0] === -1 && $x < 1000000000)) {
-                        return false;
+                        return;
                     }
                 }
                 $want = $x;
@@ -199,6 +245,8 @@ class BackupPattern {
             $this->timestamp = gmmktime($this->hr ?? 0, $this->mn ?? 0, $this->sc ?? 0,
                                         $this->mo, $this->dy, $this->yr);
         }
-        return $ppos === $plen && (!$ismake || $spos === $slen);
+        if ($ppos === $plen && (!$ismake || $spos === $slen)) {
+            $this->complete = 1;
+        }
     }
 }

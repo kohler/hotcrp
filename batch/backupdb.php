@@ -365,8 +365,10 @@ class BackupDB_Batch {
             return $this->_s3_list;
         }
 
-        $bp = new BackupPattern($this->_s3_backup_pattern);
-        $pfx = $bp->expand($this->_s3_dbname ?? $this->connp->name, $this->_s3_confid ?? $this->confid);
+        $bp = (new BackupPattern($this->_s3_backup_pattern))
+            ->set_dbname($this->_s3_dbname ?? $this->connp->name)
+            ->set_confid($this->_s3_confid ?? $this->confid);
+        $pfx = $bp->expansion();
         $s3 = $this->s3_client();
 
         $ans = [];
@@ -735,10 +737,13 @@ class BackupDB_Batch {
     }
 
     private function s3_put() {
-        $bp = new BackupPattern($this->_s3_backup_pattern);
-        $bpk = $bp->expand($this->_s3_dbname ?? $this->connp->name,
-                           $this->_s3_confid ?? $this->confid,
-                           time());
+        $bp = (new BackupPattern($this->_s3_backup_pattern))
+            ->set_dbname($this->_s3_dbname ?? $this->connp->name)
+            ->set_confid($this->_s3_confid ?? $this->confid)
+            ->set_timestamp(time());
+        if (($bpk = $bp->full_expansion()) === null) {
+            $this->throw_error("invalid S3 backup pattern");
+        }
         if ($this->compress) {
             rewind($this->out);
         }

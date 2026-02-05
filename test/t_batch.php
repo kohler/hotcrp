@@ -1,6 +1,6 @@
 <?php
 // t_batch.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Batch_Tester {
     /** @var Conf */
@@ -18,10 +18,17 @@ class Batch_Tester {
         xassert(!$bp->match("fsart_10202029292.sql.gz"));
         xassert(!$bp->match("barforama/1020340000.sql.g"));
 
-        xassert_eqq($bp->expand("mydb", "myconf", 1), "mydb/1.sql.gz");
+        $bp->clear()
+            ->set_dbname("mydb")
+            ->set_confid("myconf")
+            ->set_timestamp(1);
+        xassert_eqq($bp->expansion(), "mydb/1.sql.gz");
 
-        $bp = new BackupPattern("%{dbname}/%{confid}-%Y%m%d-%H%i%s.sql.gz");
-        xassert_eqq($bp->expand("mydb", "myconf", 1667736000), "mydb/myconf-20221106-120000.sql.gz");
+        $bp = (new BackupPattern("%{dbname}/%{confid}-%Y%m%d-%H%i%s.sql.gz"))
+            ->set_dbname("mydb")
+            ->set_confid("myconf")
+            ->set_timestamp(1667736000);
+        xassert_eqq($bp->expansion(), "mydb/myconf-20221106-120000.sql.gz");
 
         $bp = new BackupPattern("%{dbname}/%{confid}-%Y%m%d-%H%i%s.sql.gz");
         xassert($bp->match("mydb/myconf-20221106-120000.sql.gz"));
