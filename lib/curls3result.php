@@ -1,6 +1,6 @@
 <?php
 // curls3result.php -- S3 access using curl functions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 /** @template T
  * @inherits S3Result<T> */
@@ -39,8 +39,14 @@ class CurlS3Result extends S3Result {
         parent::__construct($s3, $skey, $method, $args, $finisher);
         if (isset($args["content"])) {
             $this->_fsize = strlen($args["content"]);
-        } else if (isset($args["content_file"])) {
-            $this->_fsize = (int) filesize($args["content_file"]);
+        } else if (($cf = $args["content_file"] ?? null) !== null) {
+            if (is_string($cf)) {
+                $this->_fsize = (int) filesize($cf);
+            } else if (($stat = fstat($cf))) {
+                $this->_fsize = $stat["size"];
+            } else {
+                throw new ErrorException("cannot determine file size");
+            }
             $this->args["Content-Length"] = (string) $this->_fsize;
         } else {
             $this->_fsize = 0;
@@ -111,11 +117,14 @@ class CurlS3Result extends S3Result {
         curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, $this->method);
         if (isset($this->args["content"])) {
             curl_setopt($this->curlh, CURLOPT_POSTFIELDS, $this->args["content"]);
-        } else if (isset($this->args["content_file"])) {
+        } else if (($cf = $this->args["content_file"] ?? null) !== null) {
             if ($this->_fstream) {
                 rewind($this->_fstream);
-            } else {
+            } else if (is_string($cf)) {
                 $this->_fstream = fopen($this->args["content_file"], "rb");
+            } else {
+                rewind($cf);
+                $this->_fstream = $cf;
             }
             curl_setopt($this->curlh, CURLOPT_PUT, true);
             curl_setopt($this->curlh, CURLOPT_INFILE, $this->_fstream);
