@@ -13,6 +13,10 @@ class Decision_SearchTerm extends SearchTerm {
         parent::__construct("decision");
         $this->user = $user;
         if (is_string($match)) {
+            $this->decs = [];
+            foreach ($user->conf->decision_set()->filter_using($match) as $d) {
+                $this->decs[] = $d->id;
+            }
             $this->decs = $user->conf->decision_set()->filter_using($match);
         } else {
             $this->decs = $match;
