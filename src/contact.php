@@ -1527,6 +1527,9 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function is_signed_in() {
+        // Meant to include users who have provided a password and users
+        // who have signed in using a review token (this second class will
+        // not have a contactId).
         return $this->email && $this->_activated !== 0;
     }
 
@@ -1904,7 +1907,7 @@ class Contact implements JsonSerializable {
             } else {
                 $m = "<0>You don’t have permission to access this function";
             }
-            $jr = JsonResult::make_error(403, $m);
+            $jr = JsonResult::make_error($this->is_signed_in() ? 403 : 401, $m);
             if (!$this->is_signed_in()) {
                 $jr->set("signedout", true);
                 $jr->set("loggedout", true); // XXX backward compat
@@ -1923,7 +1926,7 @@ class Contact implements JsonSerializable {
         $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
 
         if (!$qreq->valid_post()) {
-            Multiconference::fail($qreq, 403, new FailureReason($this->conf, [
+            Multiconference::fail($qreq, 401, new FailureReason($this->conf, [
                 "signin" => $qreq->page(),
                 "signinUrl" => $this->conf->hoturl_raw("signin", ["redirect" => $url])
             ]));

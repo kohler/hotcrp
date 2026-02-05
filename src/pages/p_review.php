@@ -39,7 +39,14 @@ class Review_Page {
         PaperTable::print_header($this->pt, $this->qreq, $is_error);
     }
 
-    function error_exit() {
+    /** @param ?FailureReason $perm */
+    function error_exit($perm = null) {
+        http_response_code($this->user->is_signed_in() ? 403 : 401);
+        if ($perm && (!$perm->secondary || $this->conf->saved_messages_status() < 2)) {
+            $perm->set("expand", true);
+            $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
+            $this->conf->feedback_msg($perm->message_list());
+        }
         $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
         $this->qreq->print_footer();
@@ -62,12 +69,7 @@ class Review_Page {
         } catch (Redirection $redir) {
             throw $redir;
         } catch (FailureReason $perm) {
-            $perm->set("expand", true);
-            $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
-            if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
-                $this->conf->feedback_msg($perm->message_list());
-            }
-            $this->error_exit();
+            $this->error_exit($perm);
         }
     }
 
