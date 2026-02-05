@@ -51,7 +51,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         $removepred = null;
         $dec = null;
         if (isset($req["decision"])) {
-            $dlist = $state->conf->decision_set()->matchexpr($req["decision"], true);
+            $dlist = $state->conf->decision_set()->match($req["decision"]);
             if (!$this->remove) {
                 if (count($dlist) === 1) {
                     $dec = $dlist[0];

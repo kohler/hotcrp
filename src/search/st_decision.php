@@ -8,14 +8,18 @@ class Decision_SearchTerm extends SearchTerm {
     /** @var list<int> */
     private $decs;
 
-    /** @param list<int> $decs */
-    function __construct(Contact $user, $decs) {
+    /** @param string|list<int> $match */
+    function __construct(Contact $user, $match) {
         parent::__construct("decision");
         $this->user = $user;
-        $this->decs = $decs;
+        if (is_string($match)) {
+            $this->decs = $user->conf->decision_set()->filter_using($match);
+        } else {
+            $this->decs = $match;
+        }
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $decs = $srch->conf->decision_set()->matchexpr($word, true);
+        $decs = $srch->conf->decision_set()->match($word);
         if (empty($decs)) {
             $srch->lwarning($sword, "<0>Decision not found");
             return new Decision_SearchTerm($srch->user, [-10000000]);
@@ -24,10 +28,6 @@ class Decision_SearchTerm extends SearchTerm {
         $lim = new Limit_SearchTerm($srch, "dec:" . SearchWord::quote($word), true);
         $st->set_float("xlimit", $lim);
         return $st;
-    }
-    /** @return list<int> */
-    function matchexpr() {
-        return $this->decs;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->decs)];
