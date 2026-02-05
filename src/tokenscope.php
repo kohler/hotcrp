@@ -69,7 +69,7 @@ final class TokenScope {
     /** @param int $all_bits
      * @param ?list<TokenSubsetScope> $rest
      * @param ?Contact $user */
-    private function __construct($all_bits, $rest = null, $user = null) {
+    function __construct($all_bits, $rest = null, $user = null) {
         $this->_all_bits = $this->_any_bits = $all_bits;
         foreach ($rest ?? [] as $tss) {
             if (($this->_all_bits & $tss->bits) === $tss->bits) {
