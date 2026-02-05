@@ -245,7 +245,7 @@ class BackupPattern {
             $this->timestamp = gmmktime($this->hr ?? 0, $this->mn ?? 0, $this->sc ?? 0,
                                         $this->mo, $this->dy, $this->yr);
         }
-        if ($ppos === $plen && (!$ismake || $spos === $slen)) {
+        if ($ppos === $plen && ($ismake || $spos === $slen)) {
             $this->complete = 1;
         }
     }
