@@ -101,14 +101,8 @@ class PaperTable {
             return;
         }
 
-        $this->can_view_reviews = $user->can_view_submitted_review($prow);
-        if (!$this->can_view_reviews && $prow->has_active_reviewer($user)) {
-            foreach ($prow->reviews_by_user($user) as $rrow) {
-                if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-                    $this->can_view_reviews = true;
-                }
-            }
-        }
+        $this->can_view_reviews = $user->can_view_submitted_review($prow)
+            || $prow->has_active_reviewer($user);
 
         // enumerate allowed modes
         $page = $qreq->page();
@@ -3022,7 +3016,8 @@ class PaperTable {
         $rcs = [];
         $any_submitted = false;
         foreach ($rrows as $rrow) {
-            if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
+            if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
+                || !empty($rrow->message_list)) {
                 $rcs[] = $rrow;
                 $any_submitted = $any_submitted || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
             }
@@ -3115,9 +3110,9 @@ class PaperTable {
         if (($this->user->is_owned_review($rrow) || $this->admin)
             && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             if ($this->conf->time_review_open()) {
-                $t = '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.';
+                $t = '<5>You can’t edit your review because the <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed.';
             } else {
-                $t = "<0>The site is not open for reviewing, so the review cannot be changed.";
+                $t = "<0>You can’t edit your review because the site is not open for reviewing.";
             }
             if (!$this->admin) {
                 $rrow->message_list[] = MessageItem::urgent_note($t);
@@ -3162,7 +3157,7 @@ class PaperTable {
             } else if ($napproval) {
                 $t = "<0>A delegated external reviewer has submitted their review for approval. If you approve that review, you won’t need to submit your own.";
             } else {
-                $t = "<0>Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
+                $t = "<0>Your delegated external reviewer has not yet submitted a review. If they do not, you should complete this review yourself.";
             }
             $rrow->message_list[] = MessageItem::marked_note($t);
         }
