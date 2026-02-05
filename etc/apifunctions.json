@@ -73,7 +73,7 @@
     {   "name": "tags", "get": true, "post": true, "paper": true, "function": "Tags_API::run"   },
     {   "name": "track", "post": true   },
     {   "name": "trackerconfig", "post": true, "function": "TrackerConfig_API::run", "scope": false   },
-    {   "name": "trackerstatus", "get": true, "function": "MeetingTracker::trackerstatus_api"   },
+    {   "name": "trackerstatus", "get": true, "function": "MeetingTracker::trackerstatus_api", "auth": false   },
     {   "name": "upload", "post": true, "function": "Upload_API::run"   },
     {   "name": "user", "get": true, "function": "User_API::user"   },
     {   "name": "viewoptions", "get": true, "post": true, "function": "SearchConfig_API::viewoptions"   },
