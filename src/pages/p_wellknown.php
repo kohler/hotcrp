@@ -62,8 +62,8 @@ class WellKnown_Page {
             }
             $j["grant_types_supported"] = ["authorization_code"];
             $j["response_types_supported"] = ["code"];
-            $j["token_endpoint_auth_methods_supported"] = ["client_secret_basic"];
-            $j["code_challenge_methods_supported"] = ["S256"];
+            $j["token_endpoint_auth_methods_supported"] = ["client_secret_basic", "client_secret_post"];
+            $j["code_challenge_methods_supported"] = ["S256", "plain"];
             $scopes = ["openid", "email", "profile"];
             if (($any_scopes ?? 0) !== 0) {
                 $j["grant_types_supported"][] = "refresh_token";
