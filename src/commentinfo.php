@@ -998,9 +998,10 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $q = "";
         $qv = [];
         if ($text === false) {
-            if ($this->commentId) {
-                $q = "delete from PaperComment where paperId={$this->paperId} and commentId={$this->commentId}";
+            if (!$this->commentId) {
+                return false;
             }
+            $q = "delete from PaperComment where paperId={$this->paperId} and commentId={$this->commentId}";
             $docs = [];
         } else if (!$this->commentId) {
             $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];

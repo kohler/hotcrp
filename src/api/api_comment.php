@@ -1,6 +1,6 @@
 <?php
 // api_comment.php -- HotCRP comment API call
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Comment_API {
     /** @var Conf */
@@ -13,6 +13,10 @@ class Comment_API {
     private $status = 200;
     /** @var bool */
     private $ok = true;
+    /** @var string */
+    private $uccmttype;
+    /** @var string */
+    private $lccmttype;
     /** @var MessageSet */
     private $ms;
 
@@ -65,14 +69,19 @@ class Comment_API {
             $xcrow = CommentInfo::make_response_template($rrd, $this->prow);
         }
 
+        // boolean parameters
+        $qreq_draft = friendly_boolean($qreq->draft);
+        $qreq_blind = friendly_boolean($qreq->blind);
+        $qreq_delete = friendly_boolean($qreq->delete);
+
         // request skeleton
         $response = $xcrow->is_response();
         $req = [
             "visibility" => $qreq->visibility,
             "topic" => $qreq->topic,
-            "submit" => $response && !$qreq->draft,
+            "submit" => $response && !$qreq_draft,
             "text" => rtrim(cleannl((string) $qreq->text)),
-            "blind" => $qreq->blind
+            "blind" => $qreq_blind
         ];
 
         // tags
@@ -96,12 +105,12 @@ class Comment_API {
 
         // empty
         if ($req["text"] === "" && empty($docs)) {
-            if (!$qreq->delete && (!$xcrow->commentId || !isset($qreq->text))) {
+            if (!$qreq_delete && (!$xcrow->commentId || !isset($qreq->text))) {
                 $this->ok = false;
-                $this->ms->error_at(null, "<0>Refusing to save empty comment");
+                $this->ms->error_at(null, "<0>Refusing to save empty {$this->lccmttype}");
                 return null;
             } else {
-                $qreq->delete = true;
+                $qreq_delete = true;
             }
         }
 
@@ -124,9 +133,13 @@ class Comment_API {
         }
 
         // check for delete
-        if ($qreq->delete) {
+        if ($qreq_delete) {
             $req["text"] = false;
             $req["docs"] = [];
+            if (!$xcrow->commentId) {
+                $this->ms->error_at("c", "<0>Deleted nonexistent {$this->lccmttype}");
+                return null;
+            }
         } else {
             $req["docs"] = $docs;
         }
@@ -223,58 +236,59 @@ class Comment_API {
                 return JsonResult::make_error(400, "<0>Invalid response request");
             }
             $rcrow = $this->find_response_by_id($rrd->id);
-            $c = $c !== "" ? $c : "response";
         } else {
             $rrd = null;
             $rcrow = null;
         }
 
-        // analyze comment parameter
+        // analyze `c` parameter
+        if ($c === "") {
+            $c = $rrd ? "response" : ($qreq->is_post() ? "new" : "");
+        }
+        $cn = null;
+        if ($c !== "new" && $c !== "response" && ($cn = stoi($c)) === null) {
+            return JsonResult::make_error(404, "<0>Comment not found");
+        }
+        $crow = null;
         if ($rrd !== null) {
             $crow = $rcrow;
-        } else if ($c === "new" || $c === "response") {
-            $crow = null;
-        } else if (($cn = stoi($c)) !== null) {
+        } else if ($cn !== null) {
             $crow = $this->find_comment("commentId={$cn}");
-        } else if ($c === "" && $qreq->is_post()) {
-            $c = "new";
-            $crow = null;
-        } else {
-            return JsonResult::make_error(404, "<0>Comment not found");
         }
         assert($c === "new" || $c === "response" || ctype_digit($c));
 
         // comment/response name
         if ($rrd !== null) {
-            $uccmttype = $rrd->unnamed ? "Response" : "{$rrd->name} response";
-            $lccmttype = $rrd->unnamed ? "response" : $uccmttype;
+            $this->uccmttype = $rrd->unnamed ? "Response" : "{$rrd->name} response";
+            $this->lccmttype = $rrd->unnamed ? "response" : $this->uccmttype;
         } else {
-            $uccmttype = "Comment";
-            $lccmttype = "comment";
+            $this->uccmttype = "Comment";
+            $this->lccmttype = "comment";
         }
 
+        if (!$crow && ($cn !== null || !$qreq->is_post())) {
+            return JsonResult::make_error(404, "<0>Comment not found");
+        }
         // check for no comment or response mismatch
         // * if GET, comment must exist
         // * if ID is numeric, ID must match
         // * if POST and c=new, comment must not exist
-        if (($crow === null && $qreq->is_get())
-            || (ctype_digit($c) && ($crow === null || intval($c) !== $crow->commentId))
-            || ($c === "new" && $qreq->is_post() && $crow !== null)) {
-            if ($rrd === null || !$crow) {
-                return JsonResult::make_error(404, "<0>{$uccmttype} not found");
-            } else {
-                $this->status = self::RESPONSE_REPLACED;
+        if (($crow === null && !$qreq->is_post())
+            || ($cn !== null && ($crow === null || $crow->commentId !== $cn))
+            || ($c === "new" && $crow !== null && $qreq->is_post())) {
+            if ($rrd === null || $crow === null) {
+                return JsonResult::make_error(404, "<0>{$this->uccmttype} not found");
             }
+            $this->status = self::RESPONSE_REPLACED;
         }
         // XXX editing response but c does not name response?
 
         // check comment view permission
         if ($crow && !$this->user->can_view_comment($this->prow, $crow, true)) {
             if ($this->user->can_view_submitted_review($this->prow)) {
-                return JsonResult::make_error(403, "<0>You aren’t allowed to view that {$lccmttype}");
-            } else {
-                return JsonResult::make_error(404, "<0>{$uccmttype} not found");
+                return JsonResult::make_error(403, "<0>You aren’t allowed to view that {$this->lccmttype}");
             }
+            return JsonResult::make_error(404, "<0>{$this->uccmttype} not found");
         }
 
         // check post
@@ -284,7 +298,7 @@ class Comment_API {
 
         if ($this->status === self::RESPONSE_REPLACED) {
             // report response replacement error
-            $jr = JsonResult::make_error(200, "<0>{$uccmttype} was edited concurrently");
+            $jr = JsonResult::make_error(200, "<0>{$this->uccmttype} was edited concurrently");
             $jr["conflict"] = true;
         } else {
             $jr = new JsonResult($this->status, ["ok" => $this->ok && $this->status <= 299]);
@@ -300,10 +314,10 @@ class Comment_API {
 
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         // check parameters
-        if (!isset($qreq->text) && !isset($qreq->delete) && $qreq->is_post()) {
+        if ($qreq->is_post()
+            && !isset($qreq->text)
+            && !friendly_boolean($qreq->delete)) {
             return JsonResult::make_parameter_error("text");
-        } else if ($qreq->c === "new" && !$qreq->is_post()) {
-            return JsonResult::make_parameter_error("c");
         }
         return (new Comment_API($user, $prow))->run_qreq($qreq);
     }
