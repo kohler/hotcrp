@@ -1287,7 +1287,7 @@ class Contact implements JsonSerializable {
         return strtolower($s);
     }
 
-    /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
+    /** @return array{email?:string,given_name?:string,family_name?:string,affiliation?:string} */
     function unparse_nea_json() {
         return Author::unparse_nea_json_for($this);
     }
