@@ -45,10 +45,10 @@ class Multiconference {
     static private function test_multiconference_analyzer($ma, $nav) {
         $sp = strpos($ma, " ");
         $p = 0;
-        if ($sp === 1) {
+        if ($sp === 1 && $ma[0] !== "/") {
             $t = $ma[0];
             $p = 2;
-            $sp = strpos($ma, " ", 2);
+            $sp = strpos($ma, " ", $p);
         } else {
             $t = "b";
         }

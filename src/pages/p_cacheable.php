@@ -1,6 +1,6 @@
 <?php
 // pages/p_cacheable.php -- HotCRP cacheability helper
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Cacheable_Page {
     static function cacheable_headers() {
@@ -13,11 +13,11 @@ class Cacheable_Page {
         return function_exists("zlib_get_coding_type") && zlib_get_coding_type() !== false;
     }
 
-    /** @param string $status
+    /** @param int $status
      * @param string $text
      * @param bool $cacheable */
-    static function fail($status, $text, $cacheable) {
-        header("HTTP/1.0 {$status}");
+    static private function fail($status, $text, $cacheable) {
+        http_response_code($status);
         header("Content-Type: text/plain; charset=utf-8");
         if (!self::skip_content_length_header()) {
             header("Content-Length: " . (strlen($text) + 2));
@@ -31,6 +31,9 @@ class Cacheable_Page {
     /** @param NavigationState $nav */
     static function go_nav($nav) {
         session_cache_limiter("");
+        if (isset($_SERVER["HTTP_ORIGIN"])) {
+            header("Access-Control-Allow-Origin: *");
+        }
 
         // read file
         $file = $_GET["file"] ?? null;
@@ -38,7 +41,7 @@ class Cacheable_Page {
             $file = substr($nav->path, 1);
         }
         if ($file === null || $file === "") {
-            self::fail("400 Bad Request", "File missing", true);
+            self::fail(400 /* Bad Request */, "File missing", true);
             return;
         }
 
@@ -77,18 +80,18 @@ class Cacheable_Page {
             } else if ($ext === "eot") {
                 header("Content-Type: application/vnd.ms-fontobject");
             } else {
-                self::fail("403 Forbidden", "File cannot be served", true);
+                self::fail(403 /* Forbidden */, "File cannot be served", true);
                 return;
             }
             header("Access-Control-Allow-Origin: *");
         } else {
-            self::fail("403 Forbidden", "File cannot be served", true);
+            self::fail(403 /* Forbidden */, "File cannot be served", true);
             return;
         }
 
         $mtime = @filemtime($file);
         if ($mtime === false) {
-            self::fail("404 Not Found", "File not found", false);
+            self::fail(404 /* Not Found */, "File not found", false);
             return;
         }
 

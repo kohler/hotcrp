@@ -388,7 +388,7 @@ function initialize_user($qreq, $kwarg = null) {
             initialize_user_preferred_uindex($qreq, $uindex);
         }
         if ($uindex < $nus
-            && !in_array($nav->page, ["api", "scripts", "stylesheets", "images", "cacheable"], true)
+            && !in_array($nav->page, ["api", "scripts", "stylesheets", "images", "cacheable", ".well-known"], true)
             && ($qreq->method() === "GET" || $qreq->method() === "HEAD")) {
             // redirect to `/u` version
             $nav->query = preg_replace('/[?&;]i=[^&;]++/', '', $nav->query);

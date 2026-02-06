@@ -42,9 +42,15 @@ class API_Page {
      * @return JsonResult */
     static private function normal_api($fn, $user, $qreq) {
         JsonCompletion::$allow_short_circuit = true;
-        $validator = null;
         $conf = $user->conf;
         $uf = $conf->api($fn, $user, $qreq->method());
+        // CORS: Allow if user provides CSRF token or auth is explicitly false.
+        if ((($uf && ($uf->auth ?? null) === false) || $qreq->valid_token())
+            && ($origin = $qreq->raw_header("HTTP_ORIGIN")) !== null) {
+            header("Access-Control-Allow-Origin: {$origin}");
+            header("Access-Control-Allow-Credentials: true");
+        }
+        $validator = null;
         if ($uf && $conf->opt("validateApiSpec")) {
             $validator = new SpecValidator_API($fn, $uf, $qreq);
             $validator->request();
@@ -121,35 +127,33 @@ class API_Page {
             $nav->shift_path_components(2);
         }
         if ($nav->page === "api") {
-            $methods = "OPTIONS, GET, HEAD, POST, DELETE";
+            $cors_type = "api";
+            $allow = "OPTIONS, GET, HEAD, POST, DELETE";
         } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets", ".well-known"], true)) {
-            $methods = "OPTIONS, GET, HEAD";
+            $cors_type = "static";
+            $allow = "OPTIONS, GET, HEAD";
         } else {
-            $methods = "OPTIONS, GET, HEAD, POST";
+            $cors_type = null;
+            $allow = "OPTIONS, GET, HEAD, POST";
+        }
+        if ($cors_type !== null) {
+            header("Access-Control-Allow-Origin: " . ($_SERVER["HTTP_ORIGIN"] ?? "*"));
+        }
+        if ($cors_type === "api") {
+            header("Access-Control-Allow-Credentials: true");
         }
         $ok = true;
-        if (($m = $_SERVER["HTTP_ACCESS_CONTROL_REQUEST_METHOD"] ?? null)) {
-            if ($nav->page === "api") {
-                $origin = $_SERVER["HTTP_ORIGIN"] ?? "*";
-                header("Access-Control-Allow-Origin: {$origin}");
-                if (($hdrs = $_SERVER["HTTP_ACCESS_CONTROL_REQUEST_HEADERS"] ?? null)) {
-                    header("Access-Control-Allow-Headers: {$hdrs}");
-                }
-                header("Access-Control-Allow-Credentials: true");
-            } else if ($methods === "OPTIONS, GET, HEAD") {
-                header("Access-Control-Allow-Origin: *");
-            } else {
-                $ok = false;
+        if ($_SERVER["HTTP_ACCESS_CONTROL_REQUEST_METHOD"] ?? null) {
+            if ($cors_type === null) {
+                http_response_code(403);
+                exit(0);
             }
-            if ($ok) {
-                header("Access-Control-Allow-Methods: {$methods}");
-                header("Access-Control-Max-Age: 86400");
-            }
+            header("Access-Control-Allow-Headers: *");
+            header("Access-Control-Allow-Methods: {$allow}");
+            header("Access-Control-Max-Age: 86400");
         }
-        if ($ok) {
-            header("Allow: {$methods}"); // XXX other methods?
-        }
-        http_response_code($ok ? 204 : 403);
+        header("Allow: {$allow}");
+        http_response_code(204);
         exit(0);
     }
 
@@ -178,6 +182,7 @@ class API_Page {
             self::parameter_error_exit("fn", "<0>Parameter missing");
         }
 
+        // process request
         $qreq = initialize_request($conf, $nav);
         $qreq->set_path_component_index($pcindex + 1);
         try {

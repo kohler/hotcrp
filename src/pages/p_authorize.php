@@ -123,7 +123,11 @@ class Authorize_Page {
 
     /** @return array<string,object> */
     static function oauth_clients(Conf $conf) {
-        return $conf->_xtbuild_resolve([], "oAuthClients");
+        $clients = $conf->_xtbuild_resolve([], "oAuthClients");
+        if (empty($clients) || $conf->opt("oAuthDynamicClients")) {
+            return $clients;
+        }
+        return array_filter($clients, function ($cx) { return !($cx->dynamic ?? false); });
     }
 
     /** @param string $salt
@@ -143,7 +147,6 @@ class Authorize_Page {
             }
         }
         if ($dynamic
-            && $this->conf->opt("oAuthDynamicClients")
             && strlen($client_id) >= 30
             && strlen($client_id) <= 128
             && (str_starts_with($client_id, "hctk_")

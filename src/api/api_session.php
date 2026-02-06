@@ -18,7 +18,21 @@ class Session_API {
     }
 
     static function getsession(Contact $user, Qrequest $qreq) {
+        // create session cookie
         $qreq->open_session();
+
+        // SECURITY NOTE: This API’s purpose is to allow browser JS to
+        // update its CSRF token. It also may be called by unauthenticated
+        // users (`auth: false`), which enables CORS. We do not want to
+        // expose user information or the CSRF token to other origins!
+        $sfs = $qreq->raw_header("HTTP_SEC_FETCH_SITE");
+        if ($sfs === null) {
+            $sfs = $qreq->raw_header("HTTP_ORIGIN") === null ? "same-origin" : "different-origin";
+        }
+        if ($sfs !== "same-origin" && $sfs !== "none") {
+            return ["ok" => true];
+        }
+
         return self::session_result($user, $qreq, true);
     }
 
@@ -91,6 +105,7 @@ class Session_API {
     /** @param Qrequest $qreq
      * @return array{ok:bool,sessioninfo:array} */
     static function setsession(Contact $user, $qreq) {
+        // NB This is for POSTs and requires authentication.
         assert($user === $qreq->user());
         $qreq->open_session();
         $ok = self::change_session($qreq, $qreq->v);

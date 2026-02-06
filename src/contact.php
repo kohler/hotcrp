@@ -1385,7 +1385,7 @@ class Contact implements JsonSerializable {
         return $nd;
     }
 
-    /** @param 'n'|'t'|'r'|'ra'|'rn' $type
+    /** @param 'n'|'t'|'r'|'ra'|'rn'|'rx' $type
      * @param ReviewInfo|Contact|int $x
      * @param int $flags
      * @return mixed */
