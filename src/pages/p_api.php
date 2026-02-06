@@ -120,6 +120,13 @@ class API_Page {
             && ctype_digit($unum)) {
             $nav->shift_path_components(2);
         }
+        if ($nav->page === "api") {
+            $methods = "OPTIONS, GET, HEAD, POST, DELETE";
+        } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets", ".well-known"], true)) {
+            $methods = "OPTIONS, GET, HEAD";
+        } else {
+            $methods = "OPTIONS, GET, HEAD, POST";
+        }
         $ok = true;
         if (($m = $_SERVER["HTTP_ACCESS_CONTROL_REQUEST_METHOD"] ?? null)) {
             if ($nav->page === "api") {
@@ -129,19 +136,20 @@ class API_Page {
                     header("Access-Control-Allow-Headers: {$hdrs}");
                 }
                 header("Access-Control-Allow-Credentials: true");
-                header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD, POST, DELETE");
-                header("Access-Control-Max-Age: 86400");
-            } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets", ".well-known"], true)) {
+            } else if ($methods === "OPTIONS, GET, HEAD") {
                 header("Access-Control-Allow-Origin: *");
-                header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD");
-                header("Access-Control-Max-Age: 86400");
             } else {
                 $ok = false;
             }
-        } else {
-            header("Allow: OPTIONS, GET, HEAD, POST, DELETE"); // XXX other methods?
+            if ($ok) {
+                header("Access-Control-Allow-Methods: {$methods}");
+                header("Access-Control-Max-Age: 86400");
+            }
         }
-        http_response_code($ok ? 200 : 403);
+        if ($ok) {
+            header("Allow: {$methods}"); // XXX other methods?
+        }
+        http_response_code($ok ? 204 : 403);
         exit(0);
     }
 
