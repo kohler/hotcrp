@@ -1,6 +1,6 @@
 <?php
 // reviewfield.php -- HotCRP helper class for producing review forms and tables
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 // JSON schema for settings["review_form"]:
 // [{"id":FIELDID,"name":NAME,"description":DESCRIPTION,"order":ORDER,
@@ -178,18 +178,16 @@ abstract class ReviewField implements JsonSerializable {
     /** @param ReviewFieldInfo $rfi
      * @return ReviewField */
     static function make_json(Conf $conf, $rfi, $j) {
-        if ($rfi->is_sfield) {
-            $t = $j->type ?? "radio";
-            if ($t === "checkbox") {
-                return new Checkbox_ReviewField($conf, $rfi, $j);
-            } else if ($t === "checkboxes") {
-                return new Checkboxes_ReviewField($conf, $rfi, $j);
-            } else {
-                return new Score_ReviewField($conf, $rfi, $j);
-            }
-        } else {
+        if (!$rfi->is_sfield) {
             return new Text_ReviewField($conf, $rfi, $j);
         }
+        $t = $j->type ?? "radio";
+        if ($t === "checkbox") {
+            return new Checkbox_ReviewField($conf, $rfi, $j);
+        } else if ($t === "checkboxes") {
+            return new Checkboxes_ReviewField($conf, $rfi, $j);
+        }
+        return new Score_ReviewField($conf, $rfi, $j);
     }
 
     /** @param ReviewField $a
@@ -200,9 +198,8 @@ abstract class ReviewField implements JsonSerializable {
             return $a->order ? -1 : 1;
         } else if ($a->order !== $b->order) {
             return $a->order < $b->order ? -1 : 1;
-        } else {
-            return strcmp($a->short_id, $b->short_id);
         }
+        return strcmp($a->short_id, $b->short_id);
     }
 
     /** @param string $s
@@ -228,17 +225,16 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @return string */
     function unparse_round_mask() {
-        if ($this->round_mask) {
-            $rs = [];
-            foreach ($this->conf->round_list() as $i => $rname) {
-                if ($this->round_mask & (1 << $i))
-                    $rs[] = $i ? "round:{$rname}" : "round:unnamed";
-            }
-            natcasesort($rs);
-            return join(" OR ", $rs);
-        } else {
+        if (!$this->round_mask) {
             return "";
         }
+        $rs = [];
+        foreach ($this->conf->round_list() as $i => $rname) {
+            if ($this->round_mask & (1 << $i))
+                $rs[] = $i ? "round:{$rname}" : "round:unnamed";
+        }
+        natcasesort($rs);
+        return join(" OR ", $rs);
     }
 
     const UJ_EXPORT = 0;
@@ -332,9 +328,8 @@ abstract class ReviewField implements JsonSerializable {
             return "hidden from authors and external reviewers";
         } else if ($view_score < VIEWSCORE_AUTHORDEC) {
             return "hidden from authors";
-        } else {
-            return "hidden from authors until decision";
         }
+        return "hidden from authors until decision";
     }
 
 
@@ -349,9 +344,8 @@ abstract class ReviewField implements JsonSerializable {
             return $this->exists_if;
         } else if ($this->round_mask !== 0) {
             return $this->unparse_round_mask();
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return ?SearchTerm */
@@ -412,6 +406,12 @@ abstract class ReviewField implements JsonSerializable {
     /** @param ?int|?float|?string $fval
      * @return mixed */
     abstract function unparse_json($fval);
+
+    /** @param ?int|?float|?string $fval
+     * @return mixed */
+    function unparse_expanded_json($fval) {
+        return $this->unparse_json($fval);
+    }
 
     /** @param int|float $fval
      * @return string */
@@ -977,6 +977,18 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
             return null;
         }
         return $fval > 0 ? $this->symbols[$fval - 1] : false;
+    }
+
+    function unparse_expanded_json($fval) {
+        if ($fval === null) {
+            return null;
+        } else if ($fval <= 0) {
+            return (object) [ "value" => "No entry" ];
+        }
+        return (object) [
+            "value" => $this->symbols[$fval - 1],
+            "description" => $this->values[$fval - 1]
+        ];
     }
 
     function unparse_search($fval) {

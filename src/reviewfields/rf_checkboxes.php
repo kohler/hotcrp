@@ -1,6 +1,6 @@
 <?php
 // reviewfields/rf_checkboxes.php -- HotCRP checkboxes review fields
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
     const MASK2SCORE = "012 3   4       5               6";
@@ -33,19 +33,11 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
     /** @param ?int $fval
      * @return list<int|string> */
     private function unpack_value_symbols($fval) {
-        if ($fval === null || $fval === 0) {
-            return [];
+        $sym = [];
+        foreach (self::unpack_value($fval ?? 0, $this->flip) as $id) {
+            $sym[] = $this->symbols[$id - 1];
         }
-        if ($fval < strlen(self::MASK2SCORE)
-            && ($o = ord(self::MASK2SCORE[$fval])) > 48) {
-            return [$this->symbols[$o - 49]];
-        }
-        $r = [];
-        for ($s = 0, $b = 1; $b <= $fval; ++$s, $b <<= 1) {
-            if (($fval & $b) !== 0)
-                $r[] = $this->symbols[$s];
-        }
-        return $this->flip ? array_reverse($r) : $r;
+        return $sym;
     }
 
     function unparse_value($fval) {
@@ -57,6 +49,20 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
             return null;
         }
         return $this->unpack_value_symbols($fval);
+    }
+
+    function unparse_expanded_json($fval) {
+        if ($fval === null) {
+            return null;
+        }
+        $v = [];
+        foreach (self::unpack_value($fval ?? 0, $this->flip) as $id) {
+            $v[] = (object) [
+                "value" => $this->symbols[$id - 1],
+                "description" => $this->values[$id - 1]
+            ];
+        }
+        return $v;
     }
 
     function unparse_search($fval) {
