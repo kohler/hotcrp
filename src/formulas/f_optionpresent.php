@@ -13,9 +13,6 @@ class OptionPresent_Fexpr extends Fexpr {
     function paper_options(&$oids) {
         $oids[$this->option->id] = true;
     }
-    function viewable_by(Contact $user) {
-        return $user->can_view_some_option($this->option);
-    }
     function compile(FormulaCompiler $state) {
         $id = $this->option->id;
         $ovp = "\$optpresent" . ($id < 0 ? "m" . -$id : $id);

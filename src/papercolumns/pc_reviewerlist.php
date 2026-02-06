@@ -32,7 +32,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
         $this->pref = ($this->view_option("pref") ?? $this->topics ?? false)
             && $pl->user->allow_view_preference(null);
         $pl->qopts["reviewSignatures"] = true;
-        if ($visible && $this->pref) {
+        if ($this->pref) {
             $pl->qopts["allReviewerPreference"] = true;
             if ($this->topics && $pl->conf->has_topics()) {
                 $pl->qopts["topics"] = true;

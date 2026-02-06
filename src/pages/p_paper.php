@@ -1,6 +1,6 @@
 <?php
 // pages/p_paper.php -- HotCRP paper view and edit page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Paper_Page {
     /** @var Conf */
@@ -79,7 +79,7 @@ class Paper_Page {
 
         $reason = (string) $this->qreq->reason;
         if ($reason === ""
-            && $this->user->can_administer($this->prow)
+            && $this->user->can_manage($this->prow)
             && $this->qreq["status:notify"] > 0) {
             $reason = (string) $this->qreq["status:notify_reason"];
         }
@@ -113,7 +113,7 @@ class Paper_Page {
     function handle_delete() {
         if ($this->prow->paperId <= 0) {
             $this->conf->success_msg("<0>{$this->conf->snouns[2]} deleted");
-        } else if (!$this->user->can_administer($this->prow)) {
+        } else if (!$this->user->can_manage($this->prow)) {
             $this->conf->feedback_msg(
                 MessageItem::error("<0>Only program chairs can permanently delete a {$this->conf->snouns[0]}"),
                 MessageItem::inform("<0>Authors can withdraw {$this->conf->snouns[1]}.")
@@ -149,7 +149,7 @@ class Paper_Page {
     function handle_update() {
         $conf = $this->conf;
         // XXX lock tables
-        $is_new = $this->prow->paperId <= 0;
+        $is_new = $this->prow->is_new();
         $was_submitted = $this->prow->timeSubmitted > 0;
         $is_final = $this->prow->phase() === PaperInfo::PHASE_FINAL
             && $this->qreq["status:phase"] === "final";
@@ -174,20 +174,17 @@ class Paper_Page {
 
         // check deadlines
         // NB PaperStatus also checks deadlines now; this is likely redundant.
-        if ($is_new) {
-            // we know that can_start_paper implies can_finalize_paper
-            $whynot = $this->user->perm_start_paper($this->prow);
-        } else {
-            $whynot = $this->user->perm_edit_paper($this->prow);
-            if ($whynot
-                && !$is_final
-                && !count(array_diff($this->ps->changed_keys(), ["contacts", "status"]))) {
-                $whynot = $this->user->perm_finalize_paper($this->prow);
-            }
+        $whynot = $this->user->perm_edit_paper($this->prow);
+        if ($whynot
+            && !$is_new
+            && !$is_final
+            && !count(array_diff($this->ps->changed_keys(), ["contacts", "status"]))) {
+            $whynot = $this->user->perm_finalize_paper($this->prow);
         }
         if ($whynot) {
             $conf->feedback_msg($whynot->set("expand", true)->message_list());
             $this->useRequest = !$is_new; // XXX used to have more complex logic
+            $this->ps->abort_save();
             return;
         }
 
@@ -234,7 +231,7 @@ class Paper_Page {
             } else {
                 $ml[] = MessageItem::urgent_note($conf->_("<0>Please correct these issues and save again."));
             }
-        } else if ($this->ps->has_problem()
+        } else if (($this->ps->has_problem() || $this->ps->has_urgent_note())
                    && $this->user->can_edit_paper($new_prow)) {
             $ml[] = MessageItem::warning_note($conf->_("<0>Please check these issues before completing the {submission}."));
         }
@@ -243,7 +240,7 @@ class Paper_Page {
 
         // mail notification
         if ($this->ps->has_change()) {
-            if ($this->user->can_administer($new_prow)) {
+            if ($this->user->can_manage($new_prow)) {
                 if (friendly_boolean($this->qreq["status:notify"])) {
                     $this->ps->set_notify_reason($this->qreq["status:notify_reason"] ?? "");
                 } else {
@@ -258,14 +255,13 @@ class Paper_Page {
         if (!$this->ps->has_error() || $new_prow->is_new()) {
             $conf->redirect_self($this->qreq, ["p" => $new_prow->paperId, "m" => "edit"]);
         }
-        $this->useRequest = false;
     }
 
     function handle_updatecontacts() {
         $conf = $this->conf;
         $this->useRequest = true;
 
-        if (!$this->user->can_administer($this->prow)
+        if (!$this->user->can_manage($this->prow)
             && !$this->prow->has_author($this->user)) {
             $conf->feedback_msg($this->prow->failure_reason(["permission" => "contact:edit", "expand" => true])->message_list());
             return;
@@ -293,7 +289,6 @@ class Paper_Page {
         if (!$this->ps->has_error()) {
             $conf->redirect_self($this->qreq);
         }
-        $this->useRequest = false;
     }
 
     private function prepare_edit_mode() {
@@ -415,12 +410,12 @@ class Paper_Page {
         $pp->load_prow();
 
         // new papers: maybe fix user, maybe error exit
-        if ($pp->prow->paperId === 0) {
+        if ($pp->prow->is_new()) {
             if (!$pp->prow->submission_round()->time_register(true)
                 && $user->privChair) {
                 $user->add_overrides(Contact::OVERRIDE_CONFLICT);
             }
-            if (($perm = $user->perm_start_paper($pp->prow))) {
+            if (($perm = $user->perm_edit_paper($pp->prow))) {
                 $pp->error_exit($perm);
             }
         }

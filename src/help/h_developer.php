@@ -51,7 +51,7 @@ request body.)</p>
 
 <p>Responses are returned as JSON objects. Common components include:<p>
 
-<dl>
+<dl class=\"bsp\">
 <dt><code>ok</code> (boolean)</dt>
 <dd>Whether the API request succeeded.</dd>
 <dt><code>message_list</code> (list of objects)</dt>

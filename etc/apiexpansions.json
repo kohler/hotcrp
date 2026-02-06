@@ -1,39 +1,55 @@
 [
   {
-    "name": "paper", "get": true, "merge": true,
+    "name": "paper", "get": true, "post": true, "delete": true, "merge": true,
     "tags": ["Submissions"], "order": 0
   },
   {
-    "name": "paper", "post": true, "merge": true,
-    "tags": ["Submissions"], "order": 0
-  },
-  {
-    "name": "paper", "delete": true, "merge": true,
-    "tags": ["Submissions"], "order": 0
-  },
-  {
-    "name": "papers", "get": true, "merge": true,
+    "name": "papers", "get": true, "post": true, "merge": true,
     "tags": ["Submissions"], "order": 1
   },
   {
-    "name": "papers", "post": true, "merge": true,
-    "tags": ["Submissions"], "order": 1
+    "name": "share", "get": true, "post": true, "delete": true, "merge": true,
+    "tags": ["Submissions"], "order": 2
+  },
+  {
+    "name": "document", "get": true, "merge": true,
+    "tags": ["Documents"], "order": 0
+  },
+  {
+    "name": "documenthistory", "get": true, "merge": true,
+    "tags": ["Documents"], "order": 1
   },
   {
     "name": "formatcheck", "get": true, "merge": true,
-    "tags": ["Documents"]
+    "tags": ["Documents"], "order": 2
+  },
+  {
+    "name": "archivelisting", "get": true, "merge": true,
+    "tags": ["Documents"], "order": 3
   },
   {
     "name": "upload", "post": true, "merge": true,
-    "tags": ["Documents"]
+    "tags": ["Documents"], "order": 4
   },
   {
     "name": "assign", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "tags": ["Assignments"]
+  },
+  {
+    "name": "assigners", "get": true, "merge": true,
+    "tags": ["Assignments"]
   },
   {
     "name": "assigntags", "post": true, "merge": true,
     "tags": ["Tags"]
+  },
+  {
+    "name": "autoassign", "post": true, "merge": true,
+    "tags": ["Assignments"]
+  },
+  {
+    "name": "autoassigners", "get": true, "merge": true,
+    "tags": ["Assignments"]
   },
   {
     "name": "decision", "get": true, "merge": true,
@@ -105,6 +121,10 @@
   },
   {
     "name": "searchcompletion", "get": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "displayfields", "get": true, "merge": true,
     "tags": ["Search"]
   },
   {
@@ -271,7 +291,7 @@
   },
   {
     "name": "job", "get": true, "merge": true,
-    "tags": ["Session"]
+    "tags": ["Task management"]
   },
   {
     "name": "jserror", "post": true, "merge": true,
@@ -291,7 +311,7 @@
   },
   {
     "name": "whoami", "get": true, "merge": true,
-    "tags": ["Session"]
+    "tags": ["Profile"]
   },
   {
     "name": "reauth", "post": true, "merge": true,

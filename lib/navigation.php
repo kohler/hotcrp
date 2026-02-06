@@ -49,29 +49,34 @@ class NavigationState {
     static function make_server($server) {
         $nav = new NavigationState;
 
-        // host, protocol, server
-        $http_host = $server["HTTP_HOST"] ?? null;
-        $nav->host = $http_host ?? $server["SERVER_NAME"] ?? null;
+        // protocol, host, server
         if ((isset($server["HTTPS"])
              && $server["HTTPS"] !== ""
              && $server["HTTPS"] !== "off")
             || ($server["HTTP_X_FORWARDED_PROTO"] ?? null) === "https"
             || ($server["REQUEST_SCHEME"] ?? null) === "https") {
-            $x = "https://";
+            $nav->protocol = "https://";
+            $plen = 8;
             $xport = 443;
         } else {
-            $x = "http://";
+            $nav->protocol = "http://";
+            $plen = 7;
             $xport = 80;
         }
-        $nav->protocol = $x;
-        $x .= $nav->host ? : "localhost";
-        if ($http_host === null // HTTP `Host` header should contain port
-            && strpos($x, ":", 6) === false
-            && ($port = $server["SERVER_PORT"])
-            && $port != $xport) {
-            $x .= ":" . $port;
+        $http_host = $server["HTTP_HOST"] ?? null;
+        $srv = $nav->protocol
+            . (($http_host ?? $server["SERVER_NAME"] ?? null) ? : "localhost");
+        $colon = strpos($srv, ":", $plen);
+        if ($colon === false) {
+            $colon = strlen($srv);
+            if (($port = $server["SERVER_PORT"])
+                && $port != $xport) {
+                $srv .= ":" . $port;
+            }
         }
-        $nav->server = $x;
+        $nav->host = substr($srv, $plen, $colon - $plen);
+        $nav->server = $srv;
+
         $nav->request_uri = $server["REQUEST_URI"];
         $pct = strpos($nav->request_uri, "%") !== false;
 
@@ -341,16 +346,20 @@ class NavigationState {
             return $x;
         } else if (substr($url, 0, 5) !== "index" || substr($url, 5, 1) === "/") {
             return $x . $url;
-        } else {
-            return $x . substr($url, 5);
         }
+        return $x . substr($url, 5);
     }
 
-    /** @param string $url */
+    /** @param ?string $url */
     function set_site_path_relative($url) {
         if ($url === $this->site_path_relative) {
             return;
-        } else if ($url !== "" && $url !== "../" && !preg_match('/\A(\.\.\/)+\z/', $url)) {
+        }
+        if ($url === null
+            || ($url !== ""
+                && $url !== "../"
+                && $url !== "../../"
+                && !preg_match('/\A(\.\.\/)+\z/', $url))) {
             $this->base_path_relative = $this->base_path;
             $this->site_path_relative = $this->site_path;
             return;
@@ -376,7 +385,8 @@ class NavigationState {
     /** @param string $path
      * @return string */
     function set_path($path) {
-        return ($this->path = $path);
+        $this->path = $path;
+        return $this->path;
     }
 
     /** @param int $n
@@ -657,13 +667,14 @@ class NavigationState {
     /** @param bool $allow_http_if_localhost
      * @return void */
     function redirect_http_to_https($allow_http_if_localhost = false) {
-        if ($this->protocol === "http://"
-            && (!$allow_http_if_localhost
-                || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
-                    && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
-            Navigation::redirect_absolute("https://" . ($this->host ? : "localhost")
-                . $this->siteurl_path("{$this->page}{$this->php_suffix}{$this->path}{$this->query}"));
+        if ($this->protocol !== "http://"
+            || ($allow_http_if_localhost
+                && ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
+                    || $_SERVER["REMOTE_ADDR"] !== "::1"))) {
+            return;
         }
+        Navigation::redirect_absolute("https://" . ($this->host ? : "localhost")
+            . $this->siteurl_path("{$this->page}{$this->php_suffix}{$this->path}{$this->query}"), 301);
     }
 }
 
@@ -689,12 +700,14 @@ class Navigation {
     }
 
     /** @param string $url
+     * @param 301|302|303|307|308 $status
      * @return never */
-    static function redirect_absolute($url) {
+    static function redirect_absolute($url, $status = 302) {
         assert(substr_compare($url, "https://", 0, 8) === 0
                || substr_compare($url, "http://", 0, 7) === 0);
         // Might have an HTML-encoded URL; decode at least &amp;.
         $url = str_replace("&amp;", "&", $url);
+        http_response_code($status);
         header("Location: {$url}");
         echo "<!DOCTYPE html>
 <html lang=\"en\"><head>
@@ -704,5 +717,22 @@ class Navigation {
 <script>location=", json_encode($url), ";</script></head>
 <body><p>You should be redirected <a href=\"", htmlspecialchars($url), "\">to here</a>.</p></body></html>\n";
         exit(0);
+    }
+
+    /** @param int $t
+     * @return string */
+    static function http_date($t) {
+        return gmdate("D, d M Y H:i:s", $t) . " GMT";
+    }
+
+    /** @param string $s
+     * @return ?int */
+    static function parse_http_date($s) {
+        try {
+            $dt = DateTimeImmutable::createFromFormat("!D, d M Y H:i:s T", $s);
+            return $dt !== false ? $dt->getTimestamp() : null;
+        } catch (Exception $ex) {
+            return null;
+        }
     }
 }

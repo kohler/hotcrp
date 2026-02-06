@@ -1,6 +1,6 @@
 <?php
 // a_follow.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Follow_Assignable extends Assignable {
     /** @var ?int */
@@ -82,7 +82,7 @@ class Follow_AssignmentParser extends AssignmentParser {
         return $contact->contactId != 0
             && $contact->can_view_paper($prow)
             && ($contact->contactId == $state->user->contactId
-                || $state->user->can_administer($prow));
+                || $state->user->can_manage($prow));
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);

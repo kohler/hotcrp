@@ -1,6 +1,6 @@
 <?php
 // pages/p_settings.php -- HotCRP chair-only conference settings management page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Settings_Page {
     /** @var Conf */
@@ -106,13 +106,15 @@ class Settings_Page {
                 "name" => base64_encode(random_bytes(8)), // prevent FF from autofilling on reload
                 "class" => $form_class
             ]),
-            '<div class="leftmenu-left"><nav class="leftmenu-menu">',
-            '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings</button></h1>',
-            '<ul class="leftmenu-list">';
+            '<div class="leftmenu-left">',
+            '<nav class="leftmenu-menu collapsed" aria-label="Setting groups">',
+            '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings',
+            '<span class="leftmenu-not-left">', aria_plus_expander("after"), '</span>',
+            '</button></h1><ul class="leftmenu-list">';
         foreach ($this->sv->group_members("") as $gj) {
             $title = $gj->short_title ?? $gj->title;
             if ($gj->name === $group) {
-                echo '<li class="leftmenu-item active">', $title ?? "(Unlisted)", '</li>';
+                echo '<li class="leftmenu-item active" aria-current="page">', $title ?? "(Unlisted)", '</li>';
             } else if ($title && !($gj->unlisted ?? false)) {
                 echo '<li class="leftmenu-item ui js-click-child"><a href="',
                     $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
@@ -121,7 +123,7 @@ class Settings_Page {
         echo '</ul><div class="leftmenu-if-left if-differs mt-5">',
             Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
             "</div></nav></div>\n",
-            '<main class="leftmenu-content main-column">';
+            '<div class="leftmenu-content main-column">';
 
         if ($group !== "list") {
             $this->print_extant_group($group, $groupj, $qreq);
@@ -129,7 +131,7 @@ class Settings_Page {
             $this->print_list();
         }
 
-        echo "</main></form>\n";
+        echo "</div></form>\n";
         Ht::stash_script('$("#f-settings").awaken()');
         $qreq->print_footer();
     }
@@ -148,11 +150,13 @@ class Settings_Page {
         if (!$sv->use_req()) {
             $sv->crosscheck();
         }
-        if ($sv->conf->report_saved_messages() < 1 || $sv->use_req()) {
+        if ($sv->conf->saved_messages_status() < 1 || $sv->use_req()) {
             // XXX this is janky (if there are any warnings saved in the session,
             // don't crosscheck) but reduces duplicate warnings
             $sv->report();
         }
+        $sv->conf->report_saved_messages();
+
         $sv->cs()->print_body_members(strtolower($group));
 
         if ($sv->inputs_printed()) {
@@ -166,7 +170,7 @@ class Settings_Page {
     private function print_list() {
         echo '<h2 class="leftmenu">Settings list</h2>';
         $this->conf->report_saved_messages();
-        echo "<dl>\n";
+        echo "<dl class=\"bsp\">\n";
         foreach ($this->sv->group_members("") as $gj) {
             if (isset($gj->title)) {
                 echo '<dt><strong><a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">',

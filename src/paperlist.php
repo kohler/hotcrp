@@ -63,9 +63,11 @@ class PaperListTableRender {
     function heading_row($groupno, $heading, $attr) {
         $x = "  <tr class=\"plheading\"";
         foreach ($attr as $k => $v) {
-            if ($v === true) {
+            if ($k === "no_titlecol" || $k === "tdclass") {
+                continue;
+            } else if ($v === true) {
                 $x .= " {$k}";
-            } else if ($k !== "no_titlecol" && $k !== "tdclass") {
+            } else {
                 $x .= " {$k}=\"" . htmlspecialchars($v) . "\"";
             }
         }
@@ -183,6 +185,21 @@ class PaperListReviewAnalysis {
         $k = $klass ? " class=\"{$klass}\"" : "";
         return "<a{$k} href=\"{$href}\">{$html}</a>";
     }
+}
+
+class PaperListFooterTab {
+    /** @var string */
+    public $id;
+    /** @var string */
+    public $label;
+    /** @var string */
+    public $label_expansion = ":";
+    /** @var string */
+    public $content = "";
+    /** @var bool */
+    public $active = false;
+    /** @var array */
+    public $tab_attr = [];
 }
 
 class PaperList {
@@ -339,9 +356,8 @@ class PaperList {
     function __construct(string $report, PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
         $this->user = $search->user;
-        $this->xtp = new XtParams($this->conf, $this->user);
+        $this->xtp = (new XtParams($this->conf, $this->user))->set_match_ignores_case(true);
         $this->xtp->primitive_checkers[] = [$this, "list_checker"];
-        $this->xtp->reflags = "i";
         $this->xtp->paper_list = $this;
         if (!$qreq || !($qreq instanceof Qrequest)) {
             $qreq = new Qrequest("GET", $qreq);
@@ -432,12 +448,12 @@ class PaperList {
         case "reviewAssignment":
             return "id title desirability topicscore mypref assignment potentialconflict topics reviewers linkto[assign]";
         case "conflictassign":
-            return "id title authors[anon,full] potentialconflict revtype[simple] editconf[simple,pin=conflicted] linkto[assign]";
+            return "id title authors[anon,full] potentialconflict revtype[simple] conflict[edit=palette,simple,pin=conflicted] linkto[assign]";
         case "conflictassign:neg":
-            return "id title authors[anon,full] potentialconflict revtype[simple] editconf[simple,pin=unconflicted] linkto[assign]";
+            return "id title authors[anon,full] potentialconflict revtype[simple,description] conflict[edit=palette,simple,pin=unconflicted] linkto[assign]";
         case "pf":
             $t = $this->conf->setting("pref_shuffle") ? " sort:shuffle[reviewer]" : "";
-            return "sel id title status revtype topicscore editmypref[topicscore]" . $t;
+            return "sel id title status revtype topicscore mypref[edit,topicscore]" . $t;
         case "reviewers":
             return "sel[selected] id title status linkto[assign]";
         case "reviewersSel":
@@ -466,7 +482,7 @@ class PaperList {
 
     const DECOR_NONE = 0;
     const DECOR_HEADER = 1;
-    const DECOR_EVERYHEADER = 2;
+    const DECOR_ALLCOLUMNS = 2;
     const DECOR_FOOTER = 4;
     const DECOR_STATISTICS = 8;
     const DECOR_LIST = 16;
@@ -682,7 +698,7 @@ class PaperList {
         } else if ($k === "facets") {
             $this->_view_facets = $v;
         } else if ($k === "linkto") {
-            $schema = (new ViewOptionSchema)->define("page=paper|paperedit|assign|finishreview");
+            $schema = (new ViewOptionSchema)->define("page=paper|paperedit,edit|assign|finishreview^");
             $vol = (new ViewOptionList)->append_validate($view_options ?? [], $schema);
             $this->_view_linkto = $vol->get("page") ?? $this->_view_linkto;
         } else if (($k === "aufull" || $k === "anonau")
@@ -715,7 +731,7 @@ class PaperList {
             $flags = &$this->_viewf[$svc->keyword];
             $flags = $flags ?? 0;
             if (($flags & self::VIEW_ORIGINMASK) <= $origin) {
-                $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum);
+                $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum . "^");
                 $vol = (new ViewOptionList)->append_validate($svc->view_options ?? [], $schema);
                 if (($ss = $vol->get("order")) !== null) {
                     $flags = ($flags & ~self::VIEW_ORIGINMASK) | $origin;
@@ -731,7 +747,7 @@ class PaperList {
         $fs = $this->conf->paper_columns($svc->keyword, $this->xtp);
         if (count($fs) === 1) {
             $col = PaperColumn::make($this->conf, $fs[0])->add_view_options($svc->view_options);
-            if ($col->prepare($this, PaperColumn::PREP_SORT)
+            if ($col->prepare($this, FieldRender::CFSORT)
                 && $col->sort) {
                 $col->sort_subset = $sort_subset;
                 $this->_append_sortcol($col, $origin);
@@ -961,7 +977,7 @@ class PaperList {
         }
         if (count($this->_sortcol) === $nsortcol
             && ($dspc = $qe->default_sort_column(true, $this))
-            && $dspc->prepare($this, PaperColumn::PREP_SORT)) {
+            && $dspc->prepare($this, FieldRender::CFSORT)) {
             assert($dspc->sort > 0);
             $dspc->sort_subset = $sort_subset;
             $this->_append_sortcol($dspc, PaperList::VIEWORIGIN_SEARCH);
@@ -1271,31 +1287,35 @@ class PaperList {
     }
 
 
-    /** @param string|MessageItem $message */
+    /** @param string|MessageItem|list<MessageItem> $message */
     function column_error($message) {
         if (!($name = $this->_finding_column)
             || !$this->want_column_errors($name)) {
             return;
         }
         if (is_string($message)) {
-            $mi = MessageItem::warning_at($name, $message);
+            $ml = [MessageItem::warning_at($name, $message)];
+        } else if (is_object($message)) {
+            $ml = [$message];
         } else {
-            $mi = $message;
+            $ml = $message;
         }
         if (($sve = $this->search->main_term()->find_view_command($name))
-            && $sve->sword
-            && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
-            if ($mi->pos1 !== null) {
-                $mis = $this->search->expand_message_context($mi, $mi->pos1 + $sve->sword->pos1, $mi->pos2 + $sve->sword->pos1, $sve->sword->string_context);
-            } else {
-                $mis = $this->search->expand_message_context($mi, $sve->sword->kwpos1, $sve->sword->pos2, $sve->sword->string_context);
+            && ($sw = $sve->sword)) {
+            $mlx = [];
+            foreach ($ml as &$mi) {
+                if ($mi->nested_context) {
+                    $mlx[] = $mi;
+                } else if ($mi->pos1 !== null) {
+                    array_push($mlx, ...$this->search->expand_message_context($mi, $mi->pos1 + $sw->pos1, $mi->pos2 + $sw->pos1, $sw->string_context));
+                } else {
+                    array_push($mlx, ...$this->search->expand_message_context($mi, $sw->kwpos1, $sw->pos2, $sw->string_context));
+                }
             }
-        } else {
-            $mis = [$mi];
-            $mi->pos1 = $mi->pos2 = null;
+            $ml = $mlx;
         }
         $this->_finding_column_errors = $this->_finding_column_errors ?? [];
-        array_push($this->_finding_column_errors, ...$mis);
+        array_push($this->_finding_column_errors, ...$ml);
     }
 
     /** @param string $name
@@ -1405,7 +1425,7 @@ class PaperList {
             $f->is_visible = true;
             $f->has_content = false;
             $this->_finding_column = $k;
-            if ($f->prepare($this, PaperColumn::PREP_VISIBLE)) {
+            if ($f->prepare($this, FieldRender::CFLIST)) {
                 if ($f->view_order !== null) {
                     $vcols1[] = $f;
                 } else {
@@ -1665,7 +1685,6 @@ class PaperList {
                     $content = "<div class=\"{$this->column_class}\">{$content}</div>";
                 }
                 $tm[] = "<td class=\"{$k}\">{$content}</td>";
-                $fdef->has_content = true;
             } else {
                 $tm[] = "<td class=\"pl\"></td>";
             }
@@ -1674,7 +1693,7 @@ class PaperList {
         // extension columns
         $tt = [];
         foreach ($this->_vcolumns as $fdef) {
-            if (!$fdef->as_row || !$fdef->has_content) {
+            if (!$fdef->as_row) {
                 continue;
             }
             $content = $this->_column_html($fdef, $row);
@@ -1831,11 +1850,6 @@ class PaperList {
     private function _field_th($fdef) {
         $sort_name = $fdef->sort_name();
         $sort_name_h = htmlspecialchars($sort_name);
-        // empty header
-        if (!$fdef->has_content
-            && ($this->_table_decor & self::DECOR_EVERYHEADER) === 0) {
-            return "<th data-pc=\"{$sort_name_h}\"></th>";
-        }
 
         // non-sortable header
         $thclass = "pl plh {$fdef->className}";
@@ -1884,7 +1898,7 @@ class PaperList {
             if ($fdef instanceof Selector_PaperColumn) {
                 $has_sel = true;
             }
-            if ($fdef->has_content && ($j["has_statistics"] ?? false)) {
+            if ($j["has_statistics"] ?? false) {
                 $has_statistics = true;
             }
             if ($fdef instanceof Authors_PaperColumn && $fdef->anon) {
@@ -1972,82 +1986,54 @@ class PaperList {
         return $t;
     }
 
+    /** @param string $id
+     * @param string $label
+     * @return PaperListFooterTab */
+    static function make_tab($id, $label) {
+        $plft = new PaperListFooterTab;
+        $plft->id = $id;
+        $plft->label = $label;
+        return $plft;
+    }
+
     /** @param int $arrow_ncol
-     * @param int $ncol */
-    static function render_footer_row($arrow_ncol, $ncol, $header,
-                            $lllgroups, $activegroup = -1) {
-        $foot = "<tr class=\"pl_footrow\">\n   ";
+     * @param int $ncol
+     * @param list<PaperListFooterTab> $plfts */
+    static function render_footer_row($arrow_ncol, $ncol, $header, $plfts) {
+        $foot = "<tr class=\"pl_footrow\">";
         if ($arrow_ncol) {
-            $foot .= '<td class="plf pl_footselector" colspan="' . $arrow_ncol . '">'
-                . Icons::ui_upperleft() . "</td>\n   ";
+            $foot .= '<td class="plf pl-footer-selector" colspan="' . $arrow_ncol . '">'
+                . Icons::ui_upperleft() . "</td>";
         }
-        $foot .= '<td id="plact" class="plf pl-footer linelinks" colspan="' . $ncol . '">';
+        $foot .= '<td id="plact" class="plf pl-footer" colspan="' . $ncol . '"><div class="linelinks" role="tablist">';
 
         if ($header) {
-            $foot .= "<table class=\"pl-footer-part\"><tbody><tr>\n"
-                . '    <td class="pl-footer-desc">' . $header . "</td>\n"
-                . '   </tr></tbody></table>';
+            $foot .= "<div class=\"pl-footer-desc\">{$header}</div>";
         }
 
-        foreach ($lllgroups as $i => $lllg) {
-            $attr = ["class" => "linelink pl-footer-part"];
-            if ($i === $activegroup) {
-                $attr["class"] .= " active";
-            }
-            for ($j = 2; $j < count($lllg); ++$j) {
-                if (is_array($lllg[$j])) {
-                    foreach ($lllg[$j] as $k => $v) {
-                        if (str_starts_with($k, "linelink-")) {
-                            $k = substr($k, 9);
-                            if ($k === "class") {
-                                $attr["class"] .= " " . $v;
-                            } else {
-                                $attr[$k] = $v;
-                            }
-                        }
-                    }
-                }
-            }
-            $foot .= "<table";
-            foreach ($attr as $k => $v) {
+        foreach ($plfts as $i => $plft) {
+            $plft->tab_attr["class"] = Ht::add_tokens("linelink pl-footer-part",
+                $plft->tab_attr["class"] ?? null,
+                $plft->active ? "active" : null);
+            $foot .= "<div";
+            foreach ($plft->tab_attr as $k => $v) {
                 $foot .= " {$k}=\"" . htmlspecialchars($v) . "\"";
             }
-            $foot .= "><tbody><tr>\n"
-                . "    <td class=\"pl-footer-desc lll\"><a class=\"ui lla\" href=\""
-                . $lllg[0] . "\">" . $lllg[1] . "</a></td>\n";
-            for ($j = 2; $j < count($lllg); ++$j) {
-                $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
-                '@phan-var array{content:string} $cell';
-                $attr = [];
-                foreach ($cell as $k => $v) {
-                    if ($k !== "content" && !str_starts_with($k, "linelink-")) {
-                        $attr[$k] = $v;
-                    }
-                }
-                if ($attr || isset($cell["content"])) {
-                    $attr["class"] = rtrim("lld " . ($attr["class"] ?? ""));
-                    $foot .= "    <td";
-                    foreach ($attr as $k => $v) {
-                        $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
-                    }
-                    $foot .= ">";
-                    if ($j === 2
-                        && isset($cell["content"])
-                        && !str_starts_with($cell["content"], "<b>")) {
-                        $foot .= "<b>:&nbsp;</b> ";
-                    }
-                    if (isset($cell["content"])) {
-                        $foot .= $cell["content"];
-                    }
-                    $foot .= "</td>\n";
-                }
+            $foot .= "><div class=\"pl-footer-desc lll\"><button type=\"button\" id=\"k-list-{$plft->id}-tab\" class=\"ui lla link\" role=\"tab\" aria-selected=\""
+                . ($plft->active ? "true" : "false")
+                . "\" aria-controls=\"k-list-{$plft->id}\">{$plft->label}";
+            if ($plft->label_expansion !== "") {
+                $foot .= "<span class=\"ifx\">{$plft->label_expansion}</span>";
             }
-            if ($i < count($lllgroups) - 1) {
-                $foot .= "    <td>&nbsp;<span class=\"barsep\">·</span>&nbsp;</td>\n";
+            $foot .= "</button></div><div id=\"k-list-{$plft->id}\" class=\"lld\" role=\"tabpanel\" aria-labelledby=\"k-list-{$plft->id}-tab\""
+                . ($plft->active ? "" : " hidden")
+                . ">{$plft->content}</div>";
+            if ($i < count($plfts) - 1) {
+                $foot .= "<span class=\"barsep\">·</span>";
             }
-            $foot .= "   </tr></tbody></table>";
+            $foot .= "</div>";
         }
-        return $foot . "<hr class=\"c\"></td>\n </tr>";
+        return $foot . "</div></td></tr>";
     }
 
     /** @param string $fn
@@ -2077,26 +2063,27 @@ class PaperList {
         if ($this->_footer_filter) {
             $cs->apply_filter($this->_footer_filter);
         }
-        $lllgroups = [];
-        $whichlll = -1;
+        $plfts = [];
         foreach ($cs->members("") as $rf) {
             if (str_starts_with($rf->name, "__")
                 || !isset($rf->render_function)
-                || !Conf::xt_resolve_require($rf)
-                || !($lllg = call_user_func($rf->render_function, $this, $qreq, $cs, $rf))) {
+                || !Conf::xt_resolve_require($rf)) {
                 continue;
             }
-            if (is_string($lllg)) {
-                $lllg = [$lllg];
+            $plft = self::make_tab($rf->name, $rf->title);
+            $s = call_user_func($rf->render_function, $this, $qreq, $plft, $cs, $rf);
+            if (is_string($s)) {
+                $plft->content = $s;
+            } else if (is_array($s) && count($s) === 1) {
+                $plft->content = $s[0];
             }
-            array_unshift($lllg, $rf->name, $rf->title);
-            if ($selfhref) {
-                $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "#" => "plact"]);
+            if ($plft->content === "") {
+                continue;
             }
-            $lllgroups[] = $lllg;
-            if ($atab === $rf->name) {
-                $whichlll = count($lllgroups) - 1;
+            if ($plft->id === $atab) {
+                $plft->active = true;
             }
+            $plfts[] = $plft;
         }
 
         $footsel_ncol = $this->_view_facets ? 0 : 1;
@@ -2104,7 +2091,7 @@ class PaperList {
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
             . ($selfhref ? $this->conf->selfurl($this->qreq, ["selectall" => 1, "#" => "plact"]) : "")
             . '">select all ' . $this->count . "</a>), then&nbsp;",
-            $lllgroups, $whichlll);
+            $plfts);
     }
 
     /** @return bool */
@@ -2213,13 +2200,19 @@ class PaperList {
             return PaperListTableRender::make_error($m);
         }
 
-        // analyze presence of content
+        // reset fields; determine if columns have content
         foreach ($this->_vcolumns as $fdef) {
-            foreach ($rows as $row) {
-                $this->row_overridable = $this->user->has_overridable_conflict($row);
-                if ($this->_column_html($fdef, $row) !== "") {
-                    $fdef->has_content = true;
-                    break;
+            if ($fdef->as_row) {
+                // do nothing
+            } else if (($this->_table_decor & self::DECOR_ALLCOLUMNS) !== 0) {
+                $fdef->has_content = true;
+            } else {
+                foreach ($rows as $row) {
+                    $this->row_overridable = $this->user->has_overridable_conflict($row);
+                    if ($this->_column_html($fdef, $row) !== "") {
+                        $fdef->has_content = true;
+                        break;
+                    }
                 }
             }
             $fdef->reset($this);
@@ -2277,7 +2270,11 @@ class PaperList {
             if ($grouppos >= 0) {
                 $grouppos = $this->_mark_groups_html($grouppos, $rstate, $body, false);
             }
-            $body[] = $this->_row_html($rstate, $row);
+            $rowhtml = $this->_row_html($rstate, $row);
+            if ($rowhtml === "") {
+                continue;
+            }
+            $body[] = $rowhtml;
             if ($this->need_render && !$need_render) {
                 $this->_stash_render();
                 $need_render = true;
@@ -2316,7 +2313,7 @@ class PaperList {
         $this->_analyze_fields_folds();
 
         // header cells
-        if (($this->_table_decor & (self::DECOR_HEADER | self::DECOR_EVERYHEADER)) !== 0) {
+        if (($this->_table_decor & self::DECOR_HEADER) !== 0) {
             $ths = "";
             foreach ($this->_vcolumns as $fdef) {
                 if (!$fdef->as_row && $fdef->has_content) {
@@ -2609,7 +2606,9 @@ class PaperList {
                 $t = $fdef->text($this, $row);
             }
             $csvrow[] = $t;
-            $fdef->has_content = $fdef->has_content || $t !== "";
+            if ($t !== "") {
+                $fdef->has_content = true;
+            }
         }
         return $csvrow;
     }

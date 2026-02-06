@@ -1,6 +1,6 @@
 <?php
 // index.php -- HotCRP home page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 require_once("lib/navigation.php");
 
@@ -14,11 +14,6 @@ function handle_request_components($user, $qreq, $pagej, $pc) {
         return;
     }
     foreach ($pc->members($pagej->group, "request_function") as $gj) {
-        if (isset($gj->allow_request_if)) { /* XXX backward compat */
-            error_log("Warning: allow_request_if is deprecated");
-            if (!$pc->allowed($gj->allow_request_if, $gj))
-                continue;
-        }
         if ($pc->call_function($gj, $gj->request_function, $gj) === false) {
             break;
         }
@@ -41,14 +36,13 @@ function handle_request($nav) {
         if (!$pagej || str_starts_with($pagej->name, "__")) {
             Multiconference::fail($qreq, 404, ["link" => true], "<0>Page not found");
         } else if ($user->is_disabled() && !($pagej->allow_disabled ?? false)) {
-            Multiconference::fail($qreq, 403, ["link" => true], $user->conf->_i("account_disabled"));
-        } else {
-            $pc->set_root($pagej->group);
-            handle_request_components($user, $qreq, $pagej, $pc);
-            $pc->print_body_members($pagej->group);
+            Multiconference::fail_user_disabled($user, $qreq);
         }
+        $pc->set_root($pagej->group);
+        handle_request_components($user, $qreq, $pagej, $pc);
+        $pc->print_body_members($pagej->group);
     } catch (Redirection $redir) {
-        Conf::$main->redirect($redir->url);
+        Conf::$main->redirect($redir->url, $redir->status);
     } catch (JsonCompletion $jc) {
         $jc->result->emit($qreq);
     } catch (PageCompletion $unused) {
@@ -63,18 +57,10 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     API_Page::go_options($nav);
 }
 
-// handle `/u/USERINDEX/`
-if ($nav->page === "u") {
-    $unum = $nav->path_component(0);
-    if ($unum !== null && ctype_digit($unum)) {
-        if (!$nav->shift_path_components(2)) {
-            // redirect `/u/USERINDEX` => `/u/USERINDEX/`
-            Navigation::redirect_absolute("{$nav->server}{$nav->base_path}u/{$unum}/{$nav->query}");
-        }
-    } else {
-        // redirect `/u/XXXX` => `/`
-        Navigation::redirect_absolute("{$nav->server}{$nav->base_path}{$nav->query}");
-    }
+// redirect `/u/USERINDEX` => `/u/USERINDEX/`
+if ($nav->page === "u" && !$nav->shift_path_components(2)) {
+    $unum = $nav->path_component(0) ?? 0;
+    Navigation::redirect_absolute("{$nav->server}{$nav->base_path}u/{$unum}/{$nav->query}");
 }
 
 // handle pages

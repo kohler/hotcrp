@@ -149,7 +149,7 @@ class Upload_API {
             return JsonResult::make_parameter_error("size", "<0>File too large")->set("maxsize", $this->max_size);
         }
         $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
-            ->set_user($user)->set_paper($prow)->set_expires_after(7200);
+            ->set_user($user)->set_paper($prow)->set_expires_in(7200);
         if (isset($qreq->filename)
             && strlen($qreq->filename) <= 255
             && is_valid_utf8($qreq->filename)) {
@@ -157,10 +157,11 @@ class Upload_API {
         } else {
             $filename = "_upload_";
         }
-        if (is_int($qreq->dtype)) {
-            $dtype = $qreq->dtype;
-        } else if ($qreq->dtype && preg_match('/\A-?\d+\z/', $qreq->dtype)) {
-            $dtype = intval($qreq->dtype);
+        $dtarg = $qreq->dt ?? $qreq->dtype /* XXX backward compat */;
+        if (is_int($dtarg)) {
+            $dtype = $dtarg;
+        } else if ($dtarg && preg_match('/\A-?\d+\z/', $dtarg)) {
+            $dtype = intval($dtarg);
         } else {
             $dtype = null;
         }
@@ -168,7 +169,7 @@ class Upload_API {
             "size" => $size,
             "ranges" => [0, 0],
             "filename" => $filename,
-            "mimetype" => $qreq->mimetype,
+            "mimetype" => Mimetype::sanitize($qreq->mimetype) ?? "application/octet-stream",
             "pid" => $prow ? $prow->paperId : -1,
             "dtype" => $dtype,
             "temp" => friendly_boolean($qreq->temp) ?? $dtype === null,
@@ -323,7 +324,7 @@ class Upload_API {
                 }
                 call_user_func($callable, $this->_capd);
                 $this->_cap->assign_data($this->_capd);
-                return $this->_cap->data;
+                return $this->_cap->encoded_data();
             },
             "update Capability set `data`=?{desired} where salt=? and `data`=?{expected}", [$this->_cap->salt]
         );
@@ -332,7 +333,7 @@ class Upload_API {
     /** @return int */
     private function reload_capd_status() {
         $this->_cap->load_data();
-        $this->_capd = json_decode($this->_cap->data);
+        $this->_capd = $this->_cap->data();
         return $this->_capd->status ?? -1;
     }
 
@@ -554,7 +555,7 @@ class Upload_API {
             } else if (!$this->_capd->s3_lock) {
                 $this->_capd->s3_lock = time();
                 $new_data = json_encode_db($this->_capd);
-                $result = $this->conf->qe("update Capability set `data`=? where salt=? and `data`=?", $new_data, $this->_cap->salt, $this->_cap->data);
+                $result = $this->conf->qe("update Capability set `data`=? where salt=? and `data`=?", $new_data, $this->_cap->salt, $this->_cap->encoded_data());
                 if ($result->affected_rows > 0) {
                     $this->_cap->assign_data($new_data);
                     $have_lock = $this->_capd->s3_lock;
@@ -566,7 +567,7 @@ class Upload_API {
             usleep($delay);
             $delay = min($delay * 2, 250000);
             $this->_cap->load_data();
-            $this->_capd = json_decode($this->_cap->data);
+            $this->_capd = $this->_cap->data();
             if (!$this->_capd) {
                 $this->_ml[] = MessageItem::error("<0>Capability changed underneath us");
                 return;
@@ -632,7 +633,7 @@ class Upload_API {
         $j = [
             "ok" => $status < MessageSet::ERROR,
             "token" => $this->_cap->salt,
-            "dtype" => $this->_capd->dtype,
+            "dt" => $this->_capd->dtype,
             "filename" => $this->_capd->filename,
             "mimetype" => $this->_capd->mimetype,
             "ranges" => $this->_capd->ranges
@@ -649,8 +650,8 @@ class Upload_API {
         if (isset($this->_capd->size)) {
             list($unused, $seg1) = $this->segment_boundaries(count($this->_capd->s3_parts));
             $spl = min($seg1, $this->_capd->size) + (isset($this->_capd->hash) ? 1 << 20 : 0);
-            $j["server_progress_loaded"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
-            $j["server_progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
+            $j["progress_value"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
+            $j["progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
         }
         if (!empty($this->_ml)) {
             $j["message_list"] = $this->_ml;
@@ -687,7 +688,7 @@ class Upload_API {
         } else if ($this->_cap->contactId !== $user->contactId) {
             return JsonResult::make_parameter_error("token", "<0>That upload belongs to another user");
         }
-        $this->_capd = json_decode($this->_cap->data);
+        $this->_capd = $this->_cap->data();
 
         if (friendly_boolean($qreq->cancel)) {
             $this->delete_all();
@@ -786,7 +787,7 @@ class Upload_API {
     static function cleanup(TokenInfo $cap) {
         $up = new Upload_API($cap->conf);
         $up->_cap = $cap;
-        $up->_capd = json_decode($cap->data);
+        $up->_capd = $cap->data();
         $up->delete_all();
     }
 }

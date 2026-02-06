@@ -1950,11 +1950,12 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
 
-        $result = $this->conf->qe("select * from PaperOption where optionId=? order by paperId asc", $brownies->id);
+        $result = $this->conf->qe("select paperId, value, data from PaperOption where optionId=? order by paperId asc", $brownies->id);
         $n = 0;
-        while (($row = $result->fetch_object())) {
-            xassert_eq($row->paperId * $row->paperId, $row->value);
-            xassert_eq($row->paperId * $row->paperId, $row->data);
+        while (($row = $result->fetch_row())) {
+            $pid = (int) $row[0];
+            xassert_eq($pid * $pid, $row[1]);
+            xassert_eq($pid * $pid, $row[2]);
             ++$n;
         }
         xassert_eqq($n, 4);
@@ -1997,5 +1998,63 @@ class Settings_Tester {
 
         $this->conf->save_refresh_setting("options", $this->conf->setting("options") + 1, $old_options);
         $this->conf->save_setting("__sf_condition_recursion", null);
+    }
+
+    function test_condition_update() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "decision_visibility_author" => "yes",
+            "decision_visibility_author_condition" => "dec:\"Newly Added\"",
+            "has_named_search" => 1,
+            "named_search/1/id" => "missing_reviews",
+            "named_search/1/name" => "missing_reviews",
+            "named_search/1/search" => "dec:\"Newly Added\"",
+            "has_rf" => 1,
+            "rf/1/id" => "new",
+            "rf/1/name" => "Mystery field",
+            "rf/1/type" => "text",
+            "rf/1/condition" => "dec:\"Newly Added\"",
+            "has_sf" => 1,
+            "sf/1/id" => "new",
+            "sf/1/name" => "Mystery submission field",
+            "sf/1/type" => "text",
+            "sf/1/condition" => "dec:\"Newly Added\"",
+            "has_decision" => 1,
+            "decision/1/id" => "new",
+            "decision/1/name" => "Newly Added",
+            "decision/1/category" => "accept"
+        ]);
+        xassert($sv->execute());
+    }
+
+    function test_submission_round() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_submission" => 1,
+            "submission/1/id" => "new",
+            "submission/1/tag" => "dadonga"
+        ]);
+        xassert($sv->execute());
+
+        xassert_assign($this->u_chair, "paper,tag\n1-10,dadonga\n");
+        xassert_search($this->u_chair, "#dadonga", "1-10");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_submission" => 1,
+            "submission/1/id" => "dadonga",
+            "submission/1/tag" => "dodanga"
+        ]);
+        xassert($sv->execute());
+
+        xassert_search($this->u_chair, "#dodanga", "1-10");
+        xassert_search($this->u_chair, "#dadonga", "");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_submission" => 1,
+            "submission/1/id" => "dodanga",
+            "submission/1/delete" => "yes"
+        ]);
+        xassert($sv->execute());
+
+        xassert_search($this->u_chair, "#dodanga", "1-10");
+        xassert_assign($this->u_chair, "paper,tag\n1-10,dodanga#clear\n");
     }
 }

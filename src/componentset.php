@@ -28,9 +28,13 @@ class ComponentSet {
     /** @var string */
     private $_section_class = "";
     /** @var string */
+    private $_next_section_tag = "";
+    /** @var string */
     private $_next_section_class = "";
     /** @var string */
     private $_title_class = "";
+    /** @var string */
+    private $_next_title_class = "";
     /** @var string */
     private $_separator = "";
     /** @var bool */
@@ -112,6 +116,7 @@ class ComponentSet {
         $this->_raw = [];
         $this->_callables = ["Conf" => $this->conf];
         $this->_next_section_class = $this->_section_class;
+        $this->_next_title_class = $this->_title_class;
         $this->_section_closer = null;
         return $this;
     }
@@ -229,19 +234,18 @@ class ComponentSet {
             }
         }
         usort($r, "Conf::xt_order_compare");
-        if ($alias && !empty($r)) {
-            $rr = [];
-            foreach ($r as $gj) {
-                if (!isset($gj->alias)
-                    || (($gj = $this->get($gj->alias))
-                        && (!$require_key || isset($gj->$require_key)))) {
-                    $rr[] = $gj;
-                }
-            }
-            return $rr;
-        } else {
+        if (!$alias || empty($r)) {
             return $r;
         }
+        $rr = [];
+        foreach ($r as $gj) {
+            if (!isset($gj->alias)
+                || (($gj = $this->get($gj->alias))
+                    && (!$require_key || isset($gj->$require_key)))) {
+                $rr[] = $gj;
+            }
+        }
+        return $rr;
     }
 
     /** @return list<object> */
@@ -304,7 +308,7 @@ class ComponentSet {
     /** @param string $s
      * @return $this */
     function set_title_class($s) {
-        $this->_title_class = $s;
+        $this->_title_class = $this->_next_title_class = $s;
         return $this;
     }
 
@@ -382,10 +386,24 @@ class ComponentSet {
         return $this->on_leave([$this, "print"], $name);
     }
 
+    /** @param string $tag
+     * @return $this */
+    function set_section_tag($tag) {
+        $this->_next_section_tag = $tag;
+        return $this;
+    }
+
     /** @param string $classes
      * @return $this */
     function add_section_class($classes) {
         $this->_next_section_class = Ht::add_tokens($this->_next_section_class, $classes);
+        return $this;
+    }
+
+    /** @param string $classes
+     * @return $this */
+    function add_title_class($classes) {
+        $this->_next_title_class = Ht::add_tokens($this->_next_title_class, $classes);
         return $this;
     }
 
@@ -394,22 +412,32 @@ class ComponentSet {
     function print_start_section($title = null, $hashid = null) {
         $title = $title ?? "";
         $hashid_notitle = $title === "" && (string) $hashid !== "";
+        $tag = $this->_next_section_tag ? : "div";
         $this->print_end_section();
         $this->trigger_separator();
-        if ($this->_next_section_class !== "" || $hashid_notitle) {
-            echo '<div';
+        if ($this->_next_section_tag !== ""
+            || $this->_next_section_class !== ""
+            || $hashid_notitle) {
+            echo "<{$tag}";
             if ($this->_next_section_class !== "") {
                 echo " class=\"", $this->_next_section_class, "\"";
             }
-            $this->_next_section_class = $this->_section_class;
             if ($hashid_notitle) {
                 echo " id=\"", htmlspecialchars($hashid), "\"";
             }
             echo '>';
-            $this->_section_closer = "</div>";
+            $this->_section_closer = "</{$tag}>";
+            $this->_next_section_tag = "";
+            $this->_next_section_class = $this->_section_class;
         }
         if ($title !== "") {
+            if ($tag === "fieldset") {
+                echo "<legend>";
+            }
             $this->print_title($title, $hashid);
+            if ($tag === "fieldset") {
+                echo "</legend>";
+            }
         }
     }
 
@@ -429,14 +457,15 @@ class ComponentSet {
      * @param ?string $hashid */
     function print_title($ftext, $hashid = null) {
         echo '<h3';
-        if ($this->_title_class) {
-            echo ' class="', $this->_title_class, '"';
+        if ($this->_next_title_class) {
+            echo ' class="', $this->_next_title_class, '"';
         }
+        $this->_next_title_class = $this->_title_class;
         $hashid = $hashid ?? self::title_hashid($ftext);
         if ((string) $hashid !== "") {
             echo ' id="', htmlspecialchars($hashid), '"';
         }
-        echo '>', Ftext::as(5, $ftext, 0), "</h3>\n";
+        echo '>', Ftext::as(5, $ftext, 0), "</h3>";
     }
 
     /** @param string $ftext
@@ -461,9 +490,8 @@ class ComponentSet {
             return $gj->hashid !== "" ? $gj->hashid : null;
         } else if (($gj->title ?? "") !== "") {
             return self::title_hashid($gj->title);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string|object $gj */
@@ -476,13 +504,9 @@ class ComponentSet {
         }
 
         $sepgroup = $gj->separator_group ?? null;
-        if ($sepgroup !== null
-            && $this->_separator_group !== null
-            && $this->_separator_group !== $sepgroup) {
-            $this->mark_separator();
-            $this->trigger_separator();
-        } else if ($gj->separator_before ?? false) {
-            $this->mark_separator();
+        if (($gj->separator_before ?? false)
+            || $sepgroup !== null) {
+            $this->mark_separator($sepgroup);
         }
 
         $title = $gj->title ?? "";
@@ -492,14 +516,14 @@ class ComponentSet {
              || ($this->_section_closer === null && $this->_next_section_class !== ""))
             && ($gj->autosection ?? true) !== false) {
             // create default hashid from title
+            if (isset($gj->title_class)) {
+                $this->add_title_class($gj->title_class);
+            }
             $this->print_start_section($title, $hashid);
         } else {
             $this->trigger_separator();
         }
 
-        if ($sepgroup !== null) {
-            $this->_separator_group = $sepgroup;
-        }
         return $this->_print_body($gj, false);
     }
 
@@ -582,16 +606,25 @@ class ComponentSet {
         return $result;
     }
 
-    function mark_separator() {
-        $this->_need_separator = true;
+    /** @param ?string $group
+     * @return $this */
+    function mark_separator($group = null) {
+        if ($group === null
+            || ($this->_separator_group !== null
+                && $group !== $this->_separator_group)) {
+            $this->_need_separator = true;
+        }
+        $this->_separator_group = $group;
+        return $this;
     }
 
+    /** @return $this */
     function trigger_separator() {
         if ($this->_need_separator) {
             echo $this->_separator;
+            $this->_need_separator = false;
         }
-        $this->_need_separator = false;
-        $this->_separator_group = null;
+        return $this;
     }
 
     /** @param string $name

@@ -220,35 +220,45 @@ class Users_Page {
     private function handle_modify() {
         $modifyfn = $this->qreq->modifyfn;
         unset($this->qreq->fn, $this->qreq->modifyfn);
-        $ms = new MessageSet;
+        $ua = new UserActions($this->viewer);
+        $list = $action = null;
 
-        if ($modifyfn === "disableaccount") {
-            $j = UserActions::disable($this->viewer, $this->papersel);
-            if ($j->disabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Accounts {:list} disabled", $j->disabled_users));
-            }
-        } else if ($modifyfn === "enableaccount") {
-            $j = UserActions::enable($this->viewer, $this->papersel);
-            if ($j->enabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Accounts {:list} enabled", $j->enabled_users));
-            }
-            if ($j->activated_users ?? false) {
-                $ms->success($this->conf->_("<0>Accounts {:list} activated and notified", $j->activated_users));
-            }
+        if ($modifyfn === "disable" || $modifyfn === "disableaccount") {
+            $ua->disable($this->papersel);
+            $list = "disabled";
+            $action = new FmtArg("action", "disabled", 0);
+        } else if ($modifyfn === "enable" || $modifyfn === "enableaccount") {
+            $ua->enable($this->papersel);
+            $list = "enabled";
+            $action = new FmtArg("action", "enabled", 0);
         } else if ($modifyfn === "sendaccount") {
-            $j = UserActions::send_account_info($this->viewer, $this->papersel);
-            if ($j->mailed_users ?? false) {
-                $ms->success($this->conf->_("<0>Sent account information mail to {:list}", $j->mailed_users));
+            $ua->send_account_info($this->papersel);
+            if (!empty($ua->name_list("sent"))) {
+                $ua->success($this->conf->_("<0>Sent account information mail to {:list}", $ua->name_list("sent")));
             }
-            if ($j->skipped_users ?? false) {
-                $ms->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $j->skipped_users)));
+            if (!empty($ua->name_list("skipped"))) {
+                $ua->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $ua->name_list("skipped"))));
             }
+        } else if ($modifyfn === "add_pc" || $modifyfn === "remove_pc") {
+            $ua->$modifyfn($this->papersel);
+            $list = $modifyfn;
+            $action = new FmtArg("action", $modifyfn === "add_pc" ? "added to PC" : "removed from PC", 0);
         } else {
             return false;
         }
 
-        $ms->append_list($j->message_list ?? []);
-        $this->conf->feedback_msg($ms);
+        if ($list !== null) {
+            if (!empty($ua->name_list($list))) {
+                $ua->success($this->conf->_("<0>Accounts {:list} {action}", $ua->name_list($list), $action));
+            } else if (!$ua->has_message()) {
+                $ua->append_item(MessageItem::warning_note("<0>No changes"));
+            }
+            if ($list === "enabled" && !empty($ua->name_list("activated"))) {
+                $ua->success($this->conf->_("<0>Accounts {:list} {action}", $ua->name_list("activated"), new FmtArg("action", "activated and notified", 0)));
+            }
+        }
+
+        $this->conf->feedback_msg($ua);
         $this->conf->redirect_self($this->qreq);
         return true;
     }
@@ -419,6 +429,7 @@ class Users_Page {
                   "aff" => "Affiliations",
                   "collab" => "Collaborators",
                   "topics" => "Topics",
+                  "nprefs" => "# Preferences",
                   "orcid" => "ORCID iD",
                   "country" => "Country"] as $fold => $text) {
             if (($pl->have_folds[$fold] ?? null) !== null) {
@@ -523,7 +534,7 @@ class Users_Page {
             }
         }
 
-        if ($pl->any->sel) {
+        if ($pl->has("sel")) {
             echo Ht::form($this->conf->hoturl("=users", ["t" => $this->qreq->t]),
                     ["class" => "ui-submit js-submit-list"]),
                 Ht::hidden("defaultfn", ""),

@@ -1,6 +1,6 @@
 <?php
 // paperexport.php -- HotCRP helper for reading/storing papers as JSON
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class PaperExport {
     /** @var Conf
@@ -195,11 +195,11 @@ class PaperExport {
         $dec = $prow->viewable_decision($this->viewer);
         if ($dec->id !== 0) {
             $pj->decision = $dec->name;
-            if (($dec->catbits & DecisionInfo::CAT_YES) !== 0) {
+            if ($dec->category === DecisionInfo::CAT_YES) {
                 $submitted_status = "accept";
-            } else if ($dec->catbits === DecisionInfo::CB_DESKREJECT) {
+            } else if ($dec->category === DecisionInfo::CAT_DESKREJECT) {
                 $submitted_status = "desk_reject";
-            } else if (($dec->catbits & DecisionInfo::CAT_NO) !== 0) {
+            } else if ($dec->category === DecisionInfo::CAT_STDREJECT) {
                 $submitted_status = "reject";
             }
         }
@@ -232,10 +232,7 @@ class PaperExport {
         }
 
         if (($tlist = $prow->sorted_viewable_tags($this->viewer))) {
-            $pj->tags = [];
-            foreach (Tagger::split_unpack($tlist) as $tv) {
-                $pj->tags[] = (object) ["tag" => $tv[0], "value" => $tv[1]];
-            }
+            $pj->tags = Tagger::split($tlist);
         }
 
         return $pj;
@@ -336,7 +333,7 @@ class PaperExport {
                 $rj[$f->uid()] = $f->unparse_json($fval);
             } else if ($fval !== null
                        && $this->include_permissions
-                       && ($my_review || $this->viewer->can_administer($prow))) {
+                       && ($my_review || $this->viewer->is_admin($prow))) {
                 $hidden[] = $f->uid();
             }
         }

@@ -6,11 +6,11 @@ class ReviewWordCount_Fexpr extends Fexpr {
     function __construct() {
         parent::__construct("rewordcount");
     }
+    static function make($user) {
+        return $user->is_reviewer() ? new ReviewWordCount_Fexpr : Fexpr::cnever();
+    }
     function inferred_index() {
         return Fexpr::IDX_REVIEW;
-    }
-    function viewable_by(Contact $user) {
-        return $user->is_reviewer();
     }
     function compile(FormulaCompiler $state) {
         if ($state->index_type !== Fexpr::IDX_MY

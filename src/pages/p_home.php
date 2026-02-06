@@ -1,6 +1,6 @@
 <?php
 // pages/p_home.php -- HotCRP home page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Home_Page {
     /** @var Conf
@@ -33,10 +33,7 @@ class Home_Page {
 
     static function disabled_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $user->is_disabled()) {
-            $user->conf->warning_msg($user->conf->_i("account_disabled"));
-            $qreq->print_header("Account disabled", "home", ["action_bar" => ""]);
-            $qreq->print_footer();
-            exit(0);
+            Multiconference::fail_user_disabled($user, $qreq);
         }
     }
 
@@ -86,7 +83,7 @@ class Home_Page {
     }
 
     function print_head(Contact $user, Qrequest $qreq, ComponentSet $gx) {
-        $qreq->print_header("Home", "home");
+        $qreq->print_header("Home", "home", ["body_class" => "body-home"]);
         if ($qreq->signedout && $user->is_empty()) {
             $user->conf->success_msg("<0>You have been signed out of the site");
         }
@@ -98,7 +95,7 @@ class Home_Page {
     }
 
     function print_content(Contact $user, Qrequest $qreq, ComponentSet $gx) {
-        echo '<main class="home-content">';
+        echo '<div class="home-content">';
         ob_start();
         $gx->print_members("home/sidebar");
         if (($t = ob_get_clean()) !== "") {
@@ -107,7 +104,7 @@ class Home_Page {
         }
         echo '<div class="home-main">';
         $gx->print_members("home/main");
-        echo "</div></main>\n";
+        echo "</div></div>\n";
     }
 
     private function print_h2_home($x) {
@@ -211,7 +208,7 @@ class Home_Page {
         $limits = PaperSearch::viewable_limits($user);
         echo '<div class="homegrp d-table" id="homelist">',
             $this->print_h2_home('<a class="q" href="' . $this->conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
-            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
+            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search", "role" => "search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "id" => "homeq", "size" => 32,
                 "title" => "Enter paper numbers or search terms",
@@ -221,7 +218,7 @@ class Home_Page {
                 "spellcheck" => false, "autocomplete" => "off"
             ]), '<div class="form-basic-search-in"> in ',
             PaperSearch::limit_selector($this->conf, $limits, PaperSearch::default_limit($user, $limits)),
-            Ht::submit("Search"),
+            Ht::submit("Search", ["class" => "basic-search"]),
             "</div></form>";
 
         if ($user->isPC) {
@@ -434,10 +431,10 @@ class Home_Page {
             $sep = $xsep;
         }
 
-        if ($has_rinfo && $conf->review_ratings() >= 0) {
-            $badratings = PaperSearch::unusable_ratings($user);
+        if ($has_rinfo && $conf->review_ratings_visible() >= 0) {
+            $badratings = self::unusable_ratings($user);
             $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
-            $result = $conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$user->contactId} $qx");
+            $result = $conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$user->contactId}{$qx}");
             $row = $result->fetch_row();
             '@phan-var list $row';
             Dbl::free($result);
@@ -470,14 +467,41 @@ class Home_Page {
         }
 
         if ($user->is_reviewer()) {
-            echo "<div class=\"homesubgrp has-fold fold20c ui-fold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
-                foldupbutton(20),
-                "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class=\"fx20\">:</span></a>",
-                "</div>";
+            echo "<div class=\"homesubgrp collapsed ui-fold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
+                '<button type="button" class="q ui js-foldup" aria-expanded="false" aria-controls="homeactivity-body">',
+                aria_expander(), 'Recent activity<span class="ifx">:</span></button>',
+                '<div id="homeactivity-body" class="has-events" hidden></div></div>';
             Ht::stash_script("hotcrp.fold_storage()");
         }
 
         echo "</div>\n";
+    }
+
+    static function unusable_ratings(Contact $user) {
+        $rseer = $user->conf->review_ratings_visible();
+        assert($rseer >= 0);
+        if ($user->privChair
+            || $user->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS
+            || $rseer > 0) {
+            return [];
+        }
+        // This query should return those reviewIds whose ratings
+        // are not visible to the current querier:
+        // reviews by `$user` on papers with <=2 reviews and <=2 ratings
+        if ($user->conf->review_ratings() === 0) {
+            $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
+        } else {
+            $npr_constraint = "true";
+        }
+        $reviewMeta = REVIEW_META;
+        $result = $user->conf->qe("select r.reviewId,
+            coalesce((select count(*) from ReviewRating force index (primary) where paperId=r.paperId),0) numRatings,
+            coalesce((select sum(if(reviewType={$reviewMeta},3,1)) from PaperReview force index (primary) where paperId=r.paperId and (reviewType={$reviewMeta} or (reviewNeedsSubmit=0 and {$npr_constraint}))),0) numReviews
+            from PaperReview r
+            join ReviewRating rr on (rr.paperId=r.paperId and rr.reviewId=r.reviewId)
+            where r.contactId={$user->contactId} and r.reviewType!={$reviewMeta}
+            having numReviews<=2 and numRatings<=2");
+        return Dbl::fetch_first_columns($result);
     }
 
     // Review token printing
@@ -528,11 +552,11 @@ class Home_Page {
     private function print_new_submission(Contact $user, SubmissionRound $sr) {
         $conf = $user->conf;
         if ($sr->register >= Conf::$now && $sr->register < $sr->submit) {
-            $dname = $conf->_5("<5>{sclass} registration deadline", new FmtArg("sclass", $sr->tag, 0));
+            $dname = $conf->_5("<5>{sclass} registration deadline", new FmtArg("sclass", $sr->label, 0));
             $dtime = $conf->unparse_time_with_local_span($sr->register);
             $dltx = "<em class=\"deadline\">{$dname}: {$dtime}</em>";
         } else if ($sr->submit > 0) {
-            $dname = $conf->_5("<5>{sclass} deadline", new FmtArg("sclass", $sr->tag, 0));
+            $dname = $conf->_5("<5>{sclass} deadline", new FmtArg("sclass", $sr->label, 0));
             $dtime = $conf->unparse_time_with_local_span($sr->submit);
             $dltx = "<em class=\"deadline\">{$dname}: {$dtime}</em>";
         } else {
@@ -543,7 +567,7 @@ class Home_Page {
                 "p" => "new", "sclass" => $sr->unnamed ? null : $sr->tag
             ]);
             $actions = [[
-                "<a class=\"btn\" href=\"{$url}\">" . $conf->_c5("paper_edit", "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->tag)) . "</a>",
+                "<a class=\"btn\" href=\"{$url}\">" . $conf->_c5("paper_edit", "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->label, 0)) . "</a>",
                 $sr->time_register(true) ? "" : "(admin only)"
             ]];
             if ($dltx !== "") {
@@ -583,7 +607,7 @@ class Home_Page {
         $srlist = [];
         $any_open = false;
         $sl = $conf->site_lock("paper:start");
-        if ($sl === 0 || ($sl === 1 && $user->is_manager())) {
+        if ($sl <= 0 || ($sl === 1 && $user->is_manager())) {
             foreach ($conf->submission_round_list() as $sr) {
                 $any_open = $any_open || $sr->open > 0;
                 if ($user->privChair || $sr->time_register(true)) {

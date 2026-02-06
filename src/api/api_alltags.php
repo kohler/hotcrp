@@ -1,6 +1,6 @@
 <?php
 // api_alltags.php -- HotCRP tag completion API call
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class AllTags_API {
     static function run(Contact $user) {
@@ -17,9 +17,8 @@ class AllTags_API {
                    || ($user->can_view_some_incomplete()
                        && !$user->can_view_all_incomplete())) {
             return self::hard_alltags_api($user);
-        } else {
-            return self::easy_alltags_api($user);
         }
+        return self::easy_alltags_api($user);
     }
 
     /** @param string $tag
@@ -29,14 +28,13 @@ class AllTags_API {
         if ($twiddle === false
             || ($twiddle === 0
                 && $tag[1] === "~"
-                && ($prow ? $user->allow_administer($prow) : $user->privChair))) {
+                && ($prow ? $user->allow_admin($prow) : $user->privChair))) {
             return $tag;
         } else if ($twiddle > 0
                    && substr($tag, 0, $twiddle) == $user->contactId) {
             return substr($tag, $twiddle);
-        } else {
-            return null;
         }
+        return null;
     }
 
     static private function easy_alltags_api(Contact $user) {

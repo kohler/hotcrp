@@ -9,6 +9,10 @@
         "name": "__crosscheck/main", "order": 100,
         "crosscheck_function": "UserStatus::crosscheck_main"
     },
+    {
+        "name": "__crosscheck/alerts", "order": 150,
+        "crosscheck_function": "UserStatus::crosscheck_alerts"
+    },
     {   "name": "__field/firstName", "label": "First name", "page": "main"   },
     {   "name": "__field/lastName", "label": "Last name", "page": "main"   },
     {   "name": "__field/email", "label": "Email", "page": "main"   },

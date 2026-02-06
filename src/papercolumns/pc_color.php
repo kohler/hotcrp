@@ -14,7 +14,7 @@ class Color_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function view_option_schema() {
-        return ["order!"];
+        return ["order$^"];
     }
     function prepare(PaperList $pl, $visible) {
         if (($v = $this->view_option("order"))) {
@@ -28,7 +28,7 @@ class Color_PaperColumn extends PaperColumn {
                 $this->hrev = str_starts_with($v, "-");
             }
         }
-        return $visible === self::PREP_SORT;
+        return $visible === FieldRender::CFSORT;
     }
     /** @return ?OklchColor */
     private function color(PaperInfo $a, PaperList $pl) {
@@ -103,8 +103,7 @@ class Color_PaperColumn extends PaperColumn {
         // if all buckets match, do a fine-grained comparison
         if ($ah !== $bh) {
             return $this->hrev ? $bh <=> $ah : $ah <=> $bh;
-        } else {
-            return ($blch->okl <=> $alch->okl) ? : ($blch->okc <=> $alch->okc);
         }
+        return ($blch->okl <=> $alch->okl) ? : ($blch->okc <=> $alch->okc);
     }
 }

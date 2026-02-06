@@ -1,6 +1,6 @@
 # Comments
 
-These endpoints query and modify submission comments.
+These endpoints fetch and modify submission comments.
 
 Each comment has a *visibility* and a *topic* (which in the UI is called a
 *thread*). These values control who can see the comment.

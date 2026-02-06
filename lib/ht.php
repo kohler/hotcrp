@@ -1,6 +1,6 @@
 <?php
 // ht.php -- HotCRP HTML helper functions
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Ht {
     /** @var string */
@@ -372,6 +372,8 @@ class Ht {
         }
         $js["class"] = trim(($js["class"] ?? "") . " pseudohidden");
         $js["value"] = $value;
+        $js["aria-hidden"] = "true";
+        $js["tabindex"] = -1;
         return self::submit($name, "", $js);
     }
 
@@ -529,9 +531,8 @@ class Ht {
     static function link($html, $href, $js = null) {
         if ($js === null && is_array($href)) {
             return self::make_link($html, null, $href);
-        } else {
-            return self::make_link($html, $href, $js);
         }
+        return self::make_link($html, $href, $js);
     }
 
     /** @param string $html
@@ -741,35 +742,35 @@ class Ht {
      * @return array{string,int} */
     static function feedback_msg_content(...$mls) {
         $mlx = MessageSet::make_list(...$mls);
-        if (($h = MessageSet::feedback_html($mlx)) !== "") {
-            return [$h, MessageSet::list_status($mlx)];
+        if (($h = MessageSet::feedback_html($mlx)) === "") {
+            return null;
         }
-        return ["", 0];
+        return [$h, MessageSet::list_status($mlx)];
     }
 
     /** @param Fmt|Conf $fmt
      * @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
-     * @return array{string,int} */
+     * @return ?array{string,int} */
     static function fmt_feedback_msg_content($fmt, ...$mls) {
-        $mlx = MessageSet::fmt_list($fmt, ...$mls);
-        if (($h = MessageSet::feedback_html($mlx)) !== "") {
-            return [$h, MessageSet::list_status($mlx)];
+        $mlx = MessageSet::make_fmt_list($fmt, ...$mls);
+        if (($h = MessageSet::feedback_html($mlx)) === "") {
+            return null;
         }
-        return ["", 0];
+        return [$h, MessageSet::list_status($mlx)];
     }
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return string */
     static function feedback_msg(...$mls) {
-        $ms = self::feedback_msg_content(...$mls);
-        return $ms[0] === "" ? "" : self::msg($ms[0], $ms[1]);
+        $mx = self::feedback_msg_content(...$mls);
+        return $mx ? self::msg($mx[0], $mx[1]) : "";
     }
 
     /** @param Fmt|Conf $fmt
      * @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return string */
     static function fmt_feedback_msg($fmt, ...$mls) {
-        $ms = self::fmt_feedback_msg_content($fmt, ...$mls);
-        return $ms[0] === "" ? "" : self::msg($ms[0], $ms[1]);
+        $mx = self::fmt_feedback_msg_content($fmt, ...$mls);
+        return $mx ? self::msg($mx[0], $mx[1]) : "";
     }
 }

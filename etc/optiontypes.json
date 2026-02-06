@@ -65,7 +65,8 @@
     },
     {
         "name": "author_certification", "title": "Author certification", "order": 900,
-        "function": "+AuthorCertification_PaperOption"
+        "function": "+AuthorCertification_PaperOption",
+        "authorlike": true
     },
     {
         "name": "separator", "title": "Section break", "order": 10000,

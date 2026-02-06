@@ -37,14 +37,18 @@ class Preference_SettingParser extends SettingParser {
             } else if ($v > 0) {
                 $sv->error_at($si->name, "<0>Minimum preference cannot be greater than 0");
             }
-        } else if ($si->name === "preference_max") {
+            return false;
+        }
+        if ($si->name === "preference_max") {
             $v = $sv->base_parse_req($si);
             if ($v > 1000000) {
                 $sv->error_at($si->name, "<0>Maximum preference must be at most 1000000");
             } else if ($v < 0) {
                 $sv->error_at($si->name, "<0>Maximum preference cannot be less than 0");
             }
-        } else if ($si->name === "preference_fuzz_enable") {
+            return false;
+        }
+        if ($si->name === "preference_fuzz_enable") {
             $v = $sv->base_parse_req($si);
             if ($v && $sv->has_req("preference_fuzz_amount")) {
                 $amt = $sv->base_parse_req("preference_fuzz_amount");
@@ -58,11 +62,11 @@ class Preference_SettingParser extends SettingParser {
             } else {
                 $sv->save("preference_fuzz", $amt === 10 || $amt <= 1 ? 0 : -$amt);
             }
-        } else if ($si->name === "preference_fuzz_amount") {
-            if ($sv->has_req("preference_fuzz_enable")
-                && !$sv->vstr("preference_fuzz_enable")) {
-                return true;
-            }
+            return false;
+        }
+        if ($si->name === "preference_fuzz_amount") {
+            return $sv->has_req("preference_fuzz_enable")
+                && !$sv->vstr("preference_fuzz_enable");
         }
         return false;
     }

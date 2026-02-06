@@ -15,7 +15,7 @@ specific properties of submissions, or to fetch computed properties, use the
 `/search` or `/searchaction` endpoints.
 
 
-# get /paper
+# get /{p}/paper
 
 > Fetch submission
 
@@ -101,8 +101,7 @@ submissions have `"pid"` as the first item in the list. `change_list` contains
 fields that the request *attempted* to modify; successful requests, erroneous
 requests, and dry-run requests can all return nonempty `change_list`s.
 
-The response returns the modified submission object `paper` property contains
-the modified submission object.
+The `paper` response property is the modified submission object.
 
 Dry-run requests return `change_list` and `valid` properties, but not `paper`
 properties, since no modifications are performed.
@@ -132,9 +131,10 @@ to `0`.
 * param ?json string
 * param ?upload upload_token: Upload token for large input file
 * response ?dry_run boolean: True for `dry_run` requests
-* response ?paper paper: JSON version of modified paper
-* response ?+change_list [string]: List of changed fields
+* response ?pid integer: ID of modified submission
+* response ?paper paper: JSON of modified submission
 * response ?+valid boolean: True if the modification was valid
+* response ?+change_list [string]: List of changed fields
 
 
 # delete /{p}/paper
@@ -151,8 +151,8 @@ Delete the submission specified by `p`, a submission ID.
 * param ?reason string: Optional text included in notification emails
 * param ?if_unmodified_since string: Don’t delete if modified since this time
 * response ?dry_run boolean: True for `dry_run` requests
-* response change_list [string]: `["delete"]`
 * response valid boolean: True if the delete request was valid
+* response change_list [string]: `["delete"]`
 * badge admin
 
 
@@ -221,3 +221,56 @@ applied to all papers returned by the `q` search query.
 * response ?papers [paper]: List of JSON versions of modified papers
 * response ?+status_list [update_status]: List of lists of changed fields
 * badge admin
+
+
+# get /{p}/share
+
+> Fetch share link
+
+Fetch the share link for a submission. This link can be accessed by users not
+signed in to HotCRP; it grants view-only access to the submission and its
+documents. Only authors and administrators can fetch the share link.
+
+* response ?url: The share link
+* response ?token author_view_token: Token for this share link
+* response ?token_type string: `"author_view"`
+* response ?expires_at integer
+
+
+# post /{p}/share
+
+> Create, modify, or remove share link
+
+Change the share link for a submission. The `share` parameter determines
+whether a link should be created; it must be one of:
+
+`no`
+: Delete the current share link, if any.
+
+`yes`
+: Update a share link or create one if necessary. The expiration time of a
+  current share link may be extended if `expires_in` requests it.
+
+`reset`
+: Reset the expiration time of an existing share link, if one exists.
+
+`new`
+: Delete any existing share link and create a new one.
+
+Only authors and administrators can modify a share link.
+
+* param !share share_action
+* param ?expires_in integer
+* response !token ?author_view_token
+* response ?token_type string
+* response ?expires_at integer
+* response ?url
+
+
+# delete /{p}/share
+
+> Remove share link
+
+Delete the share link for a submission, if any has been created.
+
+* response !token null

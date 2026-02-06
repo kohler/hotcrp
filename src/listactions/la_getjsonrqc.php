@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getjsonrqc.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class GetJsonRQC_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
@@ -23,7 +23,7 @@ class GetJsonRQC_ListAction extends ListAction {
         $pex->set_include_permissions(false);
         $pex->set_override_ratings(true);
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
-            if ($user->allow_administer($prow)) {
+            if ($user->allow_admin($prow)) {
                 $pj[] = $j = $pex->paper_json($prow);
                 $prow->ensure_full_reviews();
                 foreach ($prow->viewable_reviews_as_display($user) as $rrow) {

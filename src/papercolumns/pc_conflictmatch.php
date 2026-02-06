@@ -1,13 +1,12 @@
 <?php
 // pc_conflictmatch.php -- HotCRP paper columns for author/collaborator match
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ConflictMatch_PaperColumn extends PaperColumn {
     /** @var Contact */
     private $contact;
     /** @var bool */
     private $show_user;
-    public $nonempty;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (($this->show_user = isset($cj->user))) {
@@ -30,26 +29,40 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         return $is_text ? $t : "<strong>{$t}</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        $this->nonempty = false;
-        return !$pl->user->allow_administer($row);
+        return !$pl->user->allow_admin($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pf = $row->preference($this->contact);
-        $potconf = $row->potential_conflict_html($this->contact, true);
+        $potconf = $row->potential_conflict_list($this->contact);
+        $gs = $potconf ? $potconf->group_list_html($row) : [];
         if ($pf->preference <= -100) {
-            $potconf = $potconf ?? new PaperInfoPotentialConflictHTML;
-            $potconf->messages[] = ["<em>reviewer preference</em> " . $pf->unparse()];
+            $gs[] = ["<em>reviewer preference</em> " . $pf->unparse()];
         }
-        $this->nonempty = !$row->has_author($this->contact) || $potconf;
-        if (!$potconf || empty($potconf->messages)) {
+        if (empty($gs)) {
             return "";
         }
-        $m = $potconf->render_ul_list("break-avoid");
-        if (count($potconf->messages) === 1) {
-            return "<div class=\"potentialconflict-one\">{$m[0]}</div>";
-        } else {
-            return "<div class=\"potentialconflict-many\">" . join("", $m) . "</div>";
+        $m = [];
+        foreach ($gs as $g) {
+            $m[] = PaperInfoPotentialConflictList::group_html_ul($g, null, "break-avoid");
         }
+        if (count($m) === 1) {
+            return "<div class=\"potentialconflict-one\">{$m[0]}</div>";
+        }
+        return "<div class=\"potentialconflict-many\">" . join("", $m) . "</div>";
+    }
+    function text(PaperList $pl, PaperInfo $row) {
+        $pf = $row->preference($this->contact);
+        $ts = [];
+        if ($pf->preference <= -100) {
+            $ts[] = "reviewer preference " . $pf->unparse();
+        }
+        if (($potconf = $row->potential_conflict_list($this->contact))) {
+            foreach ($potconf->list() as $pc) {
+                list($ut, $ct) = $pc->unparse_text($potconf->user(), $row);
+                $ts[] = "{$ut} ≈ {$ct}";
+            }
+        }
+        return join("\n", $ts);
     }
 
     /** @param string $name @unused-param

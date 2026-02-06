@@ -304,8 +304,7 @@ class Comment_API {
             return JsonResult::make_parameter_error("text");
         } else if ($qreq->c === "new" && !$qreq->is_post()) {
             return JsonResult::make_parameter_error("c");
-        } else {
-            return (new Comment_API($user, $prow))->run_qreq($qreq);
         }
+        return (new Comment_API($user, $prow))->run_qreq($qreq);
     }
 }

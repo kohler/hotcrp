@@ -1,6 +1,6 @@
 <?php
 // commentinfo.php -- HotCRP helper class for comments
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class CommentInfo {
     /** @var Conf
@@ -66,6 +66,7 @@ class CommentInfo {
     const CTM_TOPIC_NONREVIEW = 0x240;
     const CT_BYADMINISTRATOR = 0x100;
     const CT_TOPIC_DECISION = 0x200;
+    const CT_BYMETAREVIEWER = 0x400;
     const CT_FROZEN = 0x4000;
     const CT_SUBMIT = 0x8000; // only used internally, not in database
     const CTVIS_ADMINONLY = 0x00000;
@@ -314,9 +315,8 @@ class CommentInfo {
     function mtime(Contact $viewer) {
         if ($viewer->can_view_comment_time($this->prow, $this)) {
             return $this->timeModified;
-        } else {
-            return $this->conf->obscure_time($this->timeModified);
         }
+        return $this->conf->obscure_time($this->timeModified);
     }
 
     /** @return string */
@@ -360,7 +360,7 @@ class CommentInfo {
             return true;
         }
         // do not censor visible administrator
-        if ($u->allow_administer($this->prow)
+        if ($u->allow_admin($this->prow)
             && $viewer->can_view_manager($this->prow)) {
             return false;
         }
@@ -466,15 +466,14 @@ class CommentInfo {
 
     /** @return ?string */
     function unparse_response_text() {
-        if (($rrd = $this->response_round())) {
-            $t = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
-            if ($this->commentType & self::CT_DRAFT) {
-                $t = "Draft {$t}";
-            }
-            return $t;
-        } else {
+        if (!($rrd = $this->response_round())) {
             return null;
         }
+        $t = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
+        if ($this->commentType & self::CT_DRAFT) {
+            $t = "Draft {$t}";
+        }
+        return $t;
     }
 
     /** @param list<CommentInfo> $crows
@@ -532,18 +531,22 @@ class CommentInfo {
         } else if (($this->commentType & (self::CTM_VIS | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)
                    && $this->contactId === $this->prow->shepherdContactId) {
             return "Shepherd";
-        } else if (($rrow = $this->prow->review_by_user($this->contactId))
-                   && $rrow->reviewOrdinal
-                   && $viewer->can_view_review_assignment($this->prow, $rrow)) {
-            return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
-        } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0
-                   && $this->contactId === $this->prow->shepherdContactId) {
+        }
+        if (($rrow = $this->prow->review_by_user($this->contactId))) {
+            if ($rrow->reviewOrdinal
+                && $viewer->can_view_review_assignment($this->prow, $rrow)) {
+                return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+            } else if ($rrow->reviewType === REVIEW_META) {
+                return "Metareviewer";
+            }
+        }
+        if (($this->commentType & self::CT_BYSHEPHERD) !== 0
+            && $this->contactId === $this->prow->shepherdContactId) {
             return "Shepherd";
         } else if (($this->commentType & self::CT_BYADMINISTRATOR) !== 0) {
             return "Administrator";
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return bool */
@@ -554,9 +557,8 @@ class CommentInfo {
             return $this->prow->blindness_state(true) > 0;
         } else if (($this->commentType & self::CTM_VIS) === self::CTVIS_AUTHOR) {
             return !$this->prow->author_user()->can_view_comment_identity($this->prow, $this);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return string */
@@ -608,9 +610,8 @@ class CommentInfo {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_SEARCH, $tags, $viewer, $this->prow);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return ?string */
@@ -618,9 +619,8 @@ class CommentInfo {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, $this->prow);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return ?string */
@@ -628,9 +628,8 @@ class CommentInfo {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $tag
@@ -648,10 +647,9 @@ class CommentInfo {
     /** @return DocumentInfoSet */
     function attachments() {
         if (($this->commentType & self::CT_HASDOC) !== 0) {
-            return $this->prow->linked_documents($this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END, $this);
-        } else {
-            return new DocumentInfoSet;
+            return $this->prow->linked_documents($this->commentId, DTYPE_COMMENT, $this);
         }
+        return new DocumentInfoSet;
     }
 
     /** @return list<int> */
@@ -1151,24 +1149,29 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // document links
         if ($docs_differ) {
             if ($old_docids) {
-                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->paperId, $this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END);
+                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType=?", $this->paperId, $this->commentId, DTYPE_COMMENT);
             }
+            $update_dids = [];
             $need_mark = !!$old_docids;
             if ($docs) {
                 $qv = [];
                 foreach ($docs as $i => $doc) {
-                    $qv[] = [$this->paperId, $this->commentId, $i, $doc->paperStorageId];
-                    // just in case we're linking an inactive document
-                    // (this should never happen, though, because upload
-                    // marks as active explicitly)
+                    $qv[] = [$this->paperId, $this->commentId, DTYPE_COMMENT, $i, $doc->paperStorageId];
+                    // in case we're linking an inactive document
                     $need_mark = $need_mark || $doc->inactive;
+                    if (!in_array($doc->paperStorageId, $old_docids)) {
+                        $update_dids[] = $doc->paperStorageId;
+                    }
                 }
-                $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,documentId) values ?v", $qv);
+                $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,linkIndex,documentId) values ?v", $qv);
             }
             if ($need_mark) {
                 $this->prow->mark_inactive_linked_documents();
             }
             $this->prow->invalidate_linked_documents();
+            if (!empty($update_dids)) {
+                $this->conf->qe("update PaperStorage set timeReferenced=? where paperId=? and paperStorageId?a", Conf::$now, $this->prow->paperId, $update_dids);
+            }
         }
 
         // delete if appropriate
@@ -1182,7 +1185,6 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // notify mentions and followers
         if ($displayed
             && $this->commentId
-            && ($this->commentType & self::CTM_VIS) > self::CTVIS_ADMINONLY
             && !empty($desired_mentions)) {
             $this->inform_mentions($user, $desired_mentions);
         }

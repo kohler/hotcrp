@@ -1,43 +1,82 @@
 <?php
 // documentrequest.php -- HotCRP document request parsing
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
-class DocumentRequest implements JsonSerializable {
-    /** @var int */
+class DocumentRequest extends MessageSet implements JsonSerializable {
+    /** @var Conf
+     * @readonly */
+    public $conf;
+    /** @var Contact
+     * @readonly */
+    public $viewer;
+    /** @var int
+     * @readonly */
     public $paperId;
-    /** @var ?PaperInfo */
+    /** @var ?PaperInfo
+     * @readonly */
     public $prow;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $dtype;
-    /** @var ?PaperOption */
+    /** @var ?PaperOption
+     * @readonly */
     public $opt;
+
     /** @var ?string */
     private $linkid;
     /** @var ?string */
-    public $attachment;
+    private $attachment;
     /** @var ?int */
-    public $docid;
-    /** @var list<FileFilter> */
-    public $filters = [];
-    public $req_filename;
+    private $hash;
+    /** @var ?int */
+    private $at;
+    /** @var ?int */
+    private $docid;
 
-    private function set_paperid($s) {
-        $pid = stoi($s);
-        if ($pid === null || $s !== trim($s)) {
-            throw new Exception("Document not found [submission {$s}]");
+    /** @var ?DocumentInfo */
+    private $doc;
+    /** @var ?int */
+    private $history_nactive;
+    /** @var list<FileFilter>
+     * @readonly */
+    public $filters = [];
+    /** @var string
+     * @readonly */
+    public $req_filename;
+    /** @var bool */
+    public $cacheable = false;
+    /** @var int */
+    private $_error_status = 404;
+
+    /** @param string $s
+     * @param string $field
+     * @return bool
+     * @suppress PhanAccessReadOnlyProperty */
+    private function set_paper_id($s, $field) {
+        $n = stoi($s);
+        if ($n === null || $s !== trim($s) || ($n < 0 && $n !== -2)) {
+            $this->error_at($field, "<0>Invalid {submission} ID ’{:nonempty}’", $s);
+            return false;
+        } else if ($this->paperId !== null && $n !== $this->paperId) {
+            $this->error_at($field, "<0>{Submission} ID doesn’t match", null);
+            return false;
         }
-        $this->paperId = $pid;
+        $this->paperId = $n;
+        return true;
     }
 
-    function __construct($req, $path, Contact $user) {
-        $conf = $user->conf;
-        $want_path = false;
-        if (isset($req["p"])) {
-            $this->set_paperid($req["p"]);
-        } else if (isset($req["paperId"])) {
-            $this->set_paperid($req["paperId"]);
-        } else {
-            $want_path = true;
+    /** @param array|Qrequest $req
+     * @param ?string $path */
+    function __construct($req, Contact $viewer, $path = null) {
+        $this->conf = $viewer->conf;
+        $this->viewer = $viewer;
+
+        $want_path = !isset($req["p"]) && !isset($req["paperId"]);
+        if (!$want_path) {
+            $key = isset($req["p"]) ? "p" : "paperId";
+            if (!$this->set_paper_id((string) $req[$key], $key)) {
+                return;
+            }
         }
 
         $dtname = "";
@@ -53,50 +92,51 @@ class DocumentRequest implements JsonSerializable {
         }
 
         if ($want_path) {
-            $s = $this->req_filename = preg_replace('/\A\/*/', "", $path);
-            $dtname = "";
-            if (str_starts_with($s, $conf->download_prefix)) {
-                $s = substr($s, strlen($conf->download_prefix));
+            $path = $path ?? $req["doc"] ?? $req["file"] /* XXX backward compat */ ?? "";
+            $this->req_filename = $path;
+            if (str_starts_with($path, $this->conf->download_prefix)) {
+                $path = substr($path, strlen($this->conf->download_prefix));
             }
-            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $s, $m)
-                && ($pid = stoi($m[1])) !== null) {
-                $this->paperId = $pid;
+            $pidstr = $dtname = "";
+            $encattachment = null;
+            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $path, $m)) {
+                $pidstr = $m[1];
                 if (preg_match('/\A([^\/]+)\.[^\/]+\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
                 } else if (preg_match('/\A([^\/]+)\/+(.*)\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
-                    $this->attachment = urldecode($mm[2]);
+                    $encattachment = $mm[2];
                 } else if (isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)
-                       && ($pid = stoi($m[2])) !== null) {
-                $this->paperId = $pid;
+            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $path, $m)) {
+                $pidstr = $m[2];
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-                if (isset($m[4])) {
-                    $this->attachment = urldecode($m[4]);
-                }
+                $encattachment = $m[4] ?? null;
                 if ($m[1] !== "") {
                     $base_dtname = $m[1] === "final" ? "final" : "paper";
                 }
-            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)
-                       && ($pid = stoi($m[2])) !== null) {
-                $this->paperId = $pid;
+            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $path, $m)) {
+                $pidstr = $m[2];
                 $dtname = $m[1];
-                if (isset($m[3])) {
-                    $this->attachment = urldecode($m[3]);
-                }
-            } else if (preg_match('/\A([^\/]+?)(?:|\.[^\/]+|\/+(.*)|)\z/', $s, $m)) {
-                $this->paperId = -2;
+                $encattachment = $m[3] ?? null;
+            } else if ($this->paperId === null
+                       && preg_match('/\A([^\/]+?)(?:|\.[^\/]+|\/+(.*)|)\z/', $path, $m)) {
+                $pidstr = "-2";
                 $dtname = $m[1];
-                if (isset($m[2])) {
-                    $this->attachment = urldecode($m[2]);
-                }
+                $encattachment = $m[2] ?? null;
             } else {
-                throw new Exception("Document ‘{$this->req_filename}’ not found");
+                $this->error_at("doc", "<0>Document ‘{:nonempty}’ not found", $this->req_filename);
+                return;
+            }
+            if (!$this->set_paper_id($pidstr, "doc")) {
+                return;
+            }
+            if (isset($encattachment)) {
+                $this->attachment = urldecode($encattachment);
             }
         }
 
@@ -104,27 +144,27 @@ class DocumentRequest implements JsonSerializable {
         $this->opt = $this->dtype = null;
         while ($dtname !== "" && $this->dtype === null) {
             if ((str_starts_with($dtname, "comment-")
-                 && $this->check_comment_linkid($conf, substr($dtname, 8), 0))
+                 && $this->check_comment_linkid(substr($dtname, 8), 0))
                 || (str_starts_with($dtname, "response")
-                    && $this->check_comment_linkid($conf, substr($dtname, 8), 1))
+                    && $this->check_comment_linkid(substr($dtname, 8), 1))
                 || (str_ends_with($dtname, "response")
-                    && $this->check_comment_linkid($conf, substr($dtname, 0, -8), 2))) {
+                    && $this->check_comment_linkid(substr($dtname, 0, -8), 2))) {
                 $this->dtype = DTYPE_COMMENT;
                 break;
             }
             if (($dtnum = stoi($dtname)) !== null) {
-                $this->opt = $conf->option_by_id($dtnum);
+                $this->opt = $this->conf->option_by_id($dtnum);
             } else if ($this->paperId >= 0) {
-                $this->opt = $conf->options()->find($dtname);
+                $this->opt = $this->conf->options()->find($dtname);
             } else {
-                $this->opt = $conf->options()->find_nonpaper($dtname);
+                $this->opt = $this->conf->options()->find_nonpaper($dtname);
             }
             if ($this->opt !== null) {
                 $this->dtype = $this->opt->id;
                 break;
             }
             $filter = null;
-            foreach (FileFilter::all_by_name($conf) as $ff) {
+            foreach (FileFilter::all_by_name($this->conf) as $ff) {
                 if (str_ends_with($dtname, "-" . $ff->name) || $dtname === $ff->name) {
                     $filter = $ff;
                     break;
@@ -142,10 +182,11 @@ class DocumentRequest implements JsonSerializable {
 
         // if nothing found, use the base
         if ($this->dtype === null && $dtname === "") {
-            $this->opt = $conf->options()->find($base_dtname);
+            $this->opt = $this->conf->options()->find($base_dtname);
             $this->dtype = $this->opt->id;
         } else if ($this->dtype === null) {
-            throw new Exception("Document ‘{$dtname}’ not found");
+            $this->error_at("dt", "<0>Document class ‘{$dtname}’ not found");
+            return;
         }
 
         // canonicalize response naming
@@ -161,12 +202,13 @@ class DocumentRequest implements JsonSerializable {
 
         if (isset($req["filter"])) {
             foreach (explode(" ", $req["filter"]) as $filtername) {
-                if ($filtername !== "") {
-                    if (($filter = FileFilter::find_by_name($conf, $filtername))) {
-                        $this->filters[] = $filter;
-                    } else {
-                        throw new Exception("Document filter ‘{$filtername}’ not found");
-                    }
+                if ($filtername === "") {
+                    continue;
+                } else if (($filter = FileFilter::find_by_name($this->conf, $filtername))) {
+                    $this->filters[] = $filter;
+                } else {
+                    $this->error_at("filter", "<0>Document filter ‘{$filtername}’ not found");
+                    return;
                 }
             }
         }
@@ -191,21 +233,30 @@ class DocumentRequest implements JsonSerializable {
 
         if ($this->dtype === null
             || ($this->opt && $this->opt->nonpaper) !== ($this->paperId < 0)) {
-            throw new Exception("Document ‘{$this->req_filename}’ not found");
+            $this->error_at("doc", "<0>Document ‘{$this->req_filename}’ not found");
+            return;
         }
 
         // look up paper
         if ($this->paperId < 0) {
-            $this->prow = PaperInfo::make_placeholder($user->conf, -2);
+            $this->prow = PaperInfo::make_placeholder($this->conf, -2);
         } else {
-            $this->prow = $user->conf->paper_by_id($this->paperId, $user);
+            $this->prow = $this->conf->paper_by_id($this->paperId, $viewer);
+        }
+
+        // check document permission
+        if (($fr = $this->perm_view_document())) {
+            $fr->append_to($this, $want_path ? "doc" : null, 2);
+            if (isset($fr["permission"])) {
+                $this->_error_status = 403;
+            }
         }
     }
 
     /** @param string $dtname
      * @param 0|1|2 $reqtype
      * @return bool */
-    private function check_comment_linkid(Conf $conf, $dtname, $reqtype) {
+    private function check_comment_linkid($dtname, $reqtype) {
         // `linkid` settings must match CommentInfo::unparse_html_id
         if ($reqtype === 0) {
             if (str_ends_with($dtname, "response")) {
@@ -230,7 +281,7 @@ class DocumentRequest implements JsonSerializable {
             $dtname = substr($dtname, 0, -1);
         }
         if (preg_match('/\A(?:|[a-zA-Z](?:[a-zA-Z0-9]|[-_][a-zA-Z0-9])*)\z/', $dtname)) {
-            if (($rrd = $conf->response_round($dtname))) {
+            if (($rrd = $this->conf->response_round($dtname))) {
                 $this->linkid = $rrd->unnamed ? "response" : "{$rrd->name}response";
             } else {
                 $this->linkid = "{$dtname}response"; // will not match
@@ -240,32 +291,35 @@ class DocumentRequest implements JsonSerializable {
         return false;
     }
 
-    function perm_view_document(Contact $user) {
+    /** @return ?FailureReason */
+    private function perm_view_document() {
+        $viewer = $this->viewer;
         if ($this->paperId < 0) {
             $vis = $this->opt->visibility();
-            if (($vis === PaperOption::VIS_ADMIN && !$user->privChair)
-                || ($vis !== PaperOption::VIS_SUB && !$user->isPC)) {
+            if (($vis === PaperOption::VIS_ADMIN && !$viewer->privChair)
+                || ($vis !== PaperOption::VIS_SUB && !$viewer->isPC)) {
                 return $this->prow->failure_reason(["permission" => "field:view", "option" => $this->opt]);
-            } else {
-                return null;
             }
-        } else if (($whynot = $user->perm_view_paper($this->prow, false, $this->paperId))) {
+            return null;
+        } else if (($whynot = $viewer->perm_view_paper($this->prow, false, $this->paperId))) {
             return $whynot;
         } else if ($this->dtype === DTYPE_COMMENT) {
-            return $this->perm_view_comment_document($user);
+            return $this->perm_view_comment_document();
         } else if ($this->opt) {
-            return $user->perm_view_option($this->prow, $this->opt);
+            return $viewer->perm_view_option($this->prow, $this->opt);
         }
         return null;
     }
 
-    private function perm_view_comment_document(Contact $user) {
+    /** @return ?FailureReason
+     * @suppress PhanAccessReadOnlyProperty */
+    private function perm_view_comment_document() {
         $doc_crow = $cmtid = null;
         if (str_starts_with($this->linkid, "cx")
             && !str_ends_with($this->linkid, "response")) {
             $cmtid = stoi(substr($this->linkid, 2));
         }
-        foreach ($this->prow->viewable_comment_skeletons($user) as $crow) {
+        foreach ($this->prow->viewable_comment_skeletons($this->viewer) as $crow) {
             if ($crow->unparse_html_id() === $this->linkid
                 || $crow->commentId === $cmtid) {
                 $doc_crow = $crow;
@@ -274,15 +328,230 @@ class DocumentRequest implements JsonSerializable {
         }
         if ($doc_crow
             && ($xdoc = $doc_crow->attachments()->document_by_filename($this->attachment))) {
-            $this->docid = $xdoc->paperStorageId;
+            $this->doc = $xdoc;
             return null;
         }
         return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
     }
 
+
+    /** @return list<MessageItem> */
+    function message_list() {
+        $this->apply_fmt($this->conf);
+        return parent::message_list();
+    }
+
+    /** @return int */
+    function error_status() {
+        return $this->has_error() ? $this->_error_status : 200;
+    }
+
+    /** @return JsonResult */
+    function error_result() {
+        return JsonResult::make_message_list($this->_error_status, $this->message_list());
+    }
+
+
+    /** @return list<DocumentInfo> */
+    function history() {
+        if ($this->dtype < DTYPE_FINAL) {
+            return $this->doc ? [$this->doc] : [];
+        }
+        $docs = $this->prow->documents($this->dtype);
+        $this->history_nactive = count($docs);
+        if ($this->viewer->can_view_document_history($this->prow)) {
+            $active_docids = [];
+            foreach ($docs as $doc) {
+                $active_docids[] = $doc->paperStorageId;
+            }
+            $result = $this->conf->qe("select paperId, paperStorageId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null and paperStorageId?A order by paperStorageId desc",
+                $this->prow->paperId, $this->dtype, $active_docids);
+            while (($doc = DocumentInfo::fetch($result, $this->conf, $this->prow))) {
+                $docs[] = $doc;
+            }
+            Dbl::free($result);
+        }
+        return $docs;
+    }
+
+    /** @return int */
+    function history_nactive() {
+        if ($this->history_nactive === null) {
+            $this->history();
+        }
+        return $this->history_nactive;
+    }
+
+    /** @param Qrequest $qreq */
+    private function _apply_specific_version($qreq) {
+        $this->cacheable = true;
+
+        // parse version parameters
+        $docid = null;
+        if (isset($qreq->docid)) {
+            $docid = stoi($qreq->docid) ?? 0;
+            if ($docid <= 1) {
+                $this->error_at("docid", "<0>Invalid document ID");
+                $this->_error_status = 400;
+                return;
+            }
+        }
+
+        $dochash = $hashkey = null;
+        if (isset($qreq->hash) || isset($qreq->version)) {
+            $hashkey = isset($qreq->hash) ? "hash" : "version";
+            $dochash = HashAnalysis::hash_as_binary(trim($qreq->$hashkey));
+            if (!$dochash) {
+                $this->error_at($hashkey, "<0>Invalid document hash");
+                $this->_error_status = 400;
+                return;
+            }
+        }
+
+        // if document already set, check for version parameter conflicts
+        if ($this->doc) {
+            if ($docid && $this->doc->paperStorageId !== $docid) {
+                $this->error_at("docid", "<0>Version conflict");
+            }
+            if ($dochash && $this->doc->sha1 !== $dochash) {
+                $this->error_at($hashkey, "<0>Version conflict");
+            }
+            return;
+        }
+
+        // look up document
+        if ($docid) {
+            $doc = $this->prow->document($this->dtype, $docid, true);
+        } else {
+            $doc = $this->_apply_hash_version($dochash);
+        }
+
+        // check for errors
+        $key = $docid ? "docid" : $hashkey;
+        if (!$doc) {
+            $this->error_at($key, "<0>Document version not found 1");
+            $this->cacheable = false; // version might appear later
+            return;
+        }
+        if ($doc->filterType) {
+            $this->error_at($key, "<0>Document version not found 2");
+            return;
+        }
+        if ($doc->documentType !== $this->dtype) {
+            $this->error_at("dt", "<0>Version conflict");
+            return;
+        }
+        if ($docid && $docid !== $doc->paperStorageId) {
+            $this->error_at("docid", "<0>Version conflict");
+            return;
+        }
+        if ($dochash && $dochash !== $doc->sha1) {
+            $this->error_at($hashkey, "<0>Version conflict");
+            return;
+        }
+        if (!$this->viewer->can_view_document_history($this->prow)
+            && !$doc->is_active()) {
+            $this->error_at($key, "<0>Document version not found 3");
+            $this->cacheable = false; // user might gain ability to see history
+            return;
+        }
+
+        $this->doc = $doc;
+    }
+
+    /** @param string $dochash
+     * @return ?DocumentInfo */
+    private function _apply_hash_version($dochash) {
+        // multiple documents might have the same hash (because of metadata
+        // like mimetype and filename); choose the active one, or if none is
+        // active, the latest one
+        foreach ($this->prow->documents($this->dtype) as $doc) {
+            if ($doc->sha1 === $dochash)
+                return $doc;
+        }
+        $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperId=? and documentType=? and sha1=?",
+            $this->prow->paperId, $this->dtype, $dochash);
+        $docf = null;
+        while (($doc = DocumentInfo::fetch($result, $this->conf, $this->prow))) {
+            if (!$docf
+                || ($doc->timeReferenced ?? $doc->timestamp) > ($docf->timeReferenced ?? $docf->timestamp))
+                $docf = $doc;
+        }
+        $result->close();
+        return $docf;
+    }
+
+    /** @param Qrequest $qreq
+     * @return $this */
+    function apply_version($qreq) {
+        if ($this->has_error()) {
+            return $this;
+        }
+
+        if (isset($qreq->docid)
+            || isset($qreq->hash)
+            || isset($qreq->version)) {
+            $this->_apply_specific_version($qreq);
+            return $this;
+        }
+
+        if ($this->doc || $this->dtype < DTYPE_FINAL || !isset($qreq->at)) {
+            return $this;
+        }
+
+        $doctime = stoi($qreq->at) ?? $this->conf->parse_time($qreq->at);
+        if (!$doctime) {
+            $this->error_at("at", "<0>Invalid date");
+            return $this;
+        }
+        foreach ($this->history() as $doc) {
+            if ($doc->timestamp <= $doctime
+                && (!$this->doc || $this->doc->timestamp < $doc->timestamp)) {
+                $this->doc = $doc;
+            }
+        }
+        if (!$this->doc) {
+            $this->error_at("at", "<0>Version not found");
+        }
+        return $this;
+    }
+
+    /** @return ?DocumentInfo */
+    function document() {
+        if ($this->has_error()) {
+            return null;
+        }
+        if (!$this->doc) {
+            if ($this->attachment) {
+                $this->doc = $this->prow->attachment($this->dtype, $this->attachment);
+            } else {
+                $this->doc = $this->prow->document($this->dtype, 0, true);
+            }
+            if (!$this->doc) {
+                $this->error_at("doc", "<0>Document not found");
+            }
+        }
+        return $this->doc;
+    }
+
+    /** @return ?DocumentInfo */
+    function filtered_document() {
+        if (!($doc = $this->document())) {
+            return null;
+        }
+        foreach ($this->filters as $filter) {
+            $doc = $filter->exec($doc) ?? $doc;
+        }
+        return $doc;
+    }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $j = ["req_filename" => $this->req_filename, "pid" => $this->paperId, "dtype" => $this->dtype];
+        $j = [
+            "req_filename" => $this->req_filename,
+            "pid" => $this->paperId,
+            "dt" => $this->dtype
+        ];
         foreach (["linkid", "attachment", "docid"] as $k) {
             if ($this->$k !== null) {
                 $j[$k] = $this->$k;

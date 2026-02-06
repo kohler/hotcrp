@@ -7,12 +7,12 @@ sites.
 
 ## Configuration
 
-Hotcrapi requires a **site URL** and an **API token** for every access. The site
+Running Hotcrapi requires a **site URL** and an **API token**. The site
 URL defines the HotCRP site you want to access, and the API token authenticates
-to that site. Specify these parameters as command-line options, using
-environment variables, or in a per-user configuration file `~/.hotcrapi.conf`.
+to that site. Specify these parameters using command-line options,
+environment variables, or a per-user configuration file `~/.hotcrapi.conf`.
 
-Supply a site URL using the `-S SITEURL` command line option. If not present,
+The site URL is set using the `-S SITEURL` command line option. If not present,
 Hotcrapi checks the `HOTCRAPI_SITE` environment variable; and if that is not
 present, Hotcrapi searches the per-user configuration file for a default site.
 
@@ -74,20 +74,21 @@ where `SEARCH` is a search query. For instance, `php batch/hotcrapi.php paper -q
 
 To modify a single submission, run `php batch/hotcrapi.php paper save PID <
 FILE`. `PID` can be `new` to create a submission. The modification is specified
-as a JSON object. `FILE` can contain that JSON object. However, if you want to
-upload a document or attachment, `FILE` should instead be a ZIP file; the
-contents of the ZIP file should contain the JSON object (in a member named
+as a JSON submission object. `FILE` can contain that JSON. However, if you want
+to upload a document or attachment, `FILE` should instead be a ZIP file; the
+contents of the ZIP file should contain the JSON object (in a file member named
 `data.json` or `WHATEVER-data.json`) as well as any attachments. (To see an
 example of this format, use HotCRP search to download a “JSON with attachments”
 file.) If the modification succeeds, the JSON representation of the modified
 submission is written to standard output.
 
 To modify multiple submissions, run `php batch/hotcrapi.php paper save < FILE`.
-Here, the JSON in `FILE` should be an *array* of JSON objects.
+Again, `FILE` can be a JSON or a ZIP containing a JSON, but the JSON in either
+case should be an *array* of submission objects.
 
 To delete a submission, run `php batch/hotcrapi.php paper delete PID`.
 
-Textual error messages and warnings are written to standard error.
+Error messages and warnings are written to standard error.
 
 
 ## `search`
@@ -96,17 +97,48 @@ Use the `search` subcommand to perform searches and search actions.
 
 To list the PIDs that match a search, run `php batch/hotcrapi.php search -q
 SEARCH`, where `SEARCH` is a search query. To list other fields in CSV format,
-provide `-f FIELD` arguments, such as `php batch/hotcrapi.php search -q '#tag' -f tags -f title`.
-
-To list the search actions that can be performed, run `php batch/hotcrapi.php
-search actions`. The output lists actions one per line. For JSON output instead,
-run `php batch/hotcrapi.php search actions -j`.
+provide `-f FIELD` arguments, such as `php batch/hotcrapi.php search -q '#tag'
+-f tags -f title`. Obtain a list of available fields using `php
+batch/hotcrapi.php search help fields`, and get more information about a
+specific field, including any optional parameters, with `php batch/hotcrapi.php
+search help field FIELD`.
 
 To perform a search action, such as downloading a zip file of the submission
-PDFs matching a search (`get/paper`), run `php batch/hotcrapi.php search
-ACTIONNAME`. The list of `ACTIONNAME`s can be found using `search actions`.
-Actions that modify the site require the `--post` argument. Some actions accept
-additional parameters, which are passed with `--param NAME=VALUE`.
+PDFs matching a search, run `php batch/hotcrapi.php search ACTION`. Actions that
+modify the site require the `--post` argument, and some actions accept
+additional parameters that you can pass with `NAME=VALUE` arguments. Obtain a
+list of available actions with `php batch/hotcrapi.php search help actions`, and
+get more information about action parameters with `php batch/hotcrapi.php search
+help action ACTION`.
+
+
+## `assign`
+
+Use the `assign` subcommand to perform assignments. Given a bulk-assignment
+CSV file, run `php batch/hotcrapi.php assign < FILE` to perform the
+assignments.
+
+If the assignment is successful, Hotcrapi outputs a CSV file detailing the final
+assignments performed. You can also test the assignments for errors by running
+`php batch/hotcrapi.php assign --dry-run < FILE`; this outputs the assignments
+that would have been made without actually performing them. Supply `--quiet` or
+`--summary` for more concise output.
+
+`php batch/hotcrapi.php assign help` list the available assignment actions. To
+list the CSV parameters accepted by an action, run `php batch/hotcrapi.php
+assign help ACTION`.
+
+
+## `autoassign`
+
+Use the `autoassign` subcommand to perform automatic assignments. Use `php
+batch/hotcrapi.php autoassign help` to list the available autoassigners, `php
+batch/hotcrapi.php autoassign help AUTOASSIGNER` to list the parameters for a
+specific autoassigner, and `php batch/hotcrapi.php autoassign AUTOASSIGNER
+PARAM=VALUE...` to run an autoassigner.
+
+`autoassign`, like `assign`, outputs a CSV file detailing the final assignments
+performed, and accepts `--dry-run` and `--quiet`.
 
 
 ## `settings`

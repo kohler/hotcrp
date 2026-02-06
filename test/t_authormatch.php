@@ -29,6 +29,14 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("Butt (Indian Institute of Science)"), true);
     }
 
+    function test_split_string() {
+        xassert_eqq(Author::split_string("D. Thin (Captain Poop)"), ["D. Thin", "Captain Poop", ""]);
+        xassert_eqq(Author::split_string("D. Thin (Captain Poop).... "), ["D. Thin", "Captain Poop", ""]);
+        xassert_eqq(Author::split_string("D. Thin (Captain Poop): (Whatever)"), ["D. Thin", "Captain Poop", "(Whatever)"]);
+        xassert_eqq(Author::split_string("D. (The Man) Thin (Captain Poop (Esquire)) - yes"), ["D. (The Man) Thin", "Captain Poop (Esquire)", "yes"]);
+        xassert_eqq(Author::split_string("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)- Inc."), ["G.-Y. (Ken (Butt)) Lueh", "France (Crap) Telecom", "Inc."]);
+    }
+
     function test_initials() {
         $aum = AuthorMatcher::make_string_guess("D. Thin (Captain Poop)");
         xassert_eqq(!!$aum->test("D. Thin"), true);
@@ -105,7 +113,7 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("Lon Deutsch"), true);
     }
 
-    function test_affiliation_alterates() {
+    function test_affiliation_alternates() {
         $aum = AuthorMatcher::make_string_guess("IBM Watson");
         xassert_eqq(!!$aum->test("Fart (IBM Watson)"), true);
         xassert_eqq(!!$aum->test("Fart (IBM T. J. Watson Research Center)"), true);

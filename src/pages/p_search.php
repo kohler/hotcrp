@@ -46,7 +46,7 @@ class Search_Page {
      * @param string $type
      * @param string $title */
     private function checkbox_item($column, $type, $title, $options = []) {
-        $options["class"] = "uich js-plinfo";
+        $options["class"] = "uic uich uikd js-plinfo js-range-click";
         $options["id"] = "show{$type}";
         $xtype = $type === "anonau" ? "authors" : $type;
         $lclass = "checki";
@@ -95,7 +95,7 @@ class Search_Page {
         // Options
         foreach ($this->conf->options() as $ox) {
             if ($ox->search_keyword() !== false
-                && $ox->on_render_context(FieldRender::CFSUGGEST)
+                && $ox->published(FieldRender::CFSUGGEST)
                 && $pl->has("opt{$ox->id}")) {
                 $this->checkbox_item(10, $ox->search_keyword(), $ox->name);
             }
@@ -211,7 +211,7 @@ class Search_Page {
         // Conflict display
         if ($this->user->is_manager()) {
             echo '<td class="padlb"><label class="checki"><span class="checkc">',
-                Ht::checkbox("showforce", 1, $this->pl->viewing("force"),
+                Ht::checkbox("forceShow", 1, $this->pl->viewing("force"),
                              ["id" => "showforce", "class" => "uich js-plinfo"]),
                 "</span>Override conflicts</label></td>";
         }
@@ -241,8 +241,7 @@ class Search_Page {
                 Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING)),
                 '</div>';
         }
-
-        echo "<div class=\"maintabsep\"></div>\n\n";
+        echo "\n";
 
         if ($this->pl->has("sel")) {
             echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST), ["id" => "sel", "class" => "ui-submit js-submit-list"]),
@@ -252,17 +251,6 @@ class Search_Page {
         }
 
         echo '<div class="pltable-fullw-container demargin">', $pl_text, '</div>';
-
-        if ($this->pl->is_empty()
-            && $search->limit() !== "s"
-            && !$search->limit_explicit()) {
-            $a = [];
-            foreach (["q", "qa", "qo", "qx", "qt", "sort", "showtags"] as $xa) {
-                if (isset($qreq[$xa]) && ($xa !== "q" || !isset($qreq->qa))) {
-                    $a[] = "{$xa}=" . urlencode($qreq[$xa]);
-                }
-            }
-        }
 
         if ($this->pl->has("sel")) {
             echo "</form>";
@@ -285,6 +273,7 @@ class Search_Page {
 
         // create PaperList
         if (isset($qreq->q)) {
+            $qreq->toverride = $qreq->toverride ?? "1";
             $search = new PaperSearch($user, $qreq);
         } else {
             $search = new PaperSearch($user, ["t" => $qreq->t, "q" => "NONE"]);
@@ -337,23 +326,26 @@ class Search_Page {
         echo '<div class="tld is-tla',
             $this->stab === "default" ? " active" : "",
             '" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
-            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
+            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search", "role" => "search"]),
             Ht::entry("q", (string) $qreq->q, [
-                "size" => 40, "tabindex" => 1,
+                "size" => $search->limit_explicit() ? 48 : 40,
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
                 "placeholder" => "(All)", "aria-label" => "Search",
                 "spellcheck" => false, "autocomplete" => "off"
-            ]),
-            '<div class="form-basic-search-in"> in ',
-              PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
-              Ht::submit("Search", ["tabindex" => 1]),
-            '</div></form></div>';
+            ]);
+        if (!$search->limit_explicit()) {
+            echo '<div class="form-basic-search-in"> in ',
+                PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["select" => !$search->limit_explicit() && count($limits) > 1]),
+                Ht::submit("Search", ["class" => "basic-search"]),
+                '</div>';
+        }
+        echo '</form></div>';
 
         // Advanced search tab
         echo '<div class="tld is-tla',
             $this->stab === "advanced" ? " active" : "",
             '" id="advanced" role="tabpanel" aria-labelledby="k-advanced-tab">',
-            Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
+            Ht::form($this->conf->hoturl("search"), ["method" => "get", "role" => "search"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="k-advanced-qt">Search</label><div class="entry">',
               Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "k-advanced-qt"]),

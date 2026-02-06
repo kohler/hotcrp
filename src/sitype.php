@@ -295,8 +295,8 @@ class Grace_Sitype extends Sitype {
         $si->placeholder = $si->placeholder ?? "none";
     }
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
-        if (($v = SettingParser::parse_interval($vstr)) !== false) {
-            return intval($v);
+        if (($v = SettingParser::parse_duration($vstr)) !== null) {
+            return (int) round($v);
         }
         $sv->error_at($si, "<0>Please enter a valid grace period");
         return null;

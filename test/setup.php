@@ -1,6 +1,6 @@
 <?php
 // test/setup.php -- HotCRP helper file to initialize tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));
@@ -152,19 +152,22 @@ class MailChecker {
                 $have = $haves[$index];
                 $havel = explode("\n", $have);
                 $wantl = explode("\n", $wtext);
-                $ml = [
-                    "Mail mismatch\n",
-                    "... line {$badline} differs near {$havel[$badline-1]}\n",
-                    "... expected {$wantl[$badline-1]}\n",
-                    "... ", str_replace("\n", "\n    ", rtrim($have)),
-                    "\n!== ", str_replace("\n", "\n    ", rtrim($wtext)), "\n"
-                ];
-                if (is_object($want) && isset($want->landmark)) {
-                    $ml[] =  "... expected mail at {$want->landmark}\n";
-                }
-                Xassert::fail_with(...$ml);
+                $color = Xassert::$test_runner && Xassert::$test_runner->color;
+                Xassert::fail_with(
+                    "Mail mismatch at line {$badline}\n",
+                    "  expected {$wantl[$badline-1]}\n",
+                    is_object($want) && isset($want->landmark)
+                    ? "        at {$want->landmark}\n" : "",
+                    "       got {$havel[$badline-1]}\n",
+                    $color ? "\x1b[90m" : "",
+                    "  expected ",
+                    str_replace("\n", "\n           ", rtrim($have)),
+                    "\n       got ",
+                    str_replace("\n", "\n           ", rtrim($wtext)),
+                    $color ? "\x1b[m\n" : "\n"
+                );
             } else {
-                Xassert::fail_with("Mail not found `{$wtext}`");
+                Xassert::fail_with("mail not found `{$wtext}`");
             }
             if ($index !== false) {
                 array_splice($haves, $index, 1);
@@ -173,7 +176,7 @@ class MailChecker {
 
         Xassert::push_failure_group();
         foreach ($haves as $have) {
-            Xassert::fail_with("Unexpected mail: " . $have);
+            Xassert::fail_with("unexpected mail: " . $have);
         }
         Xassert::pop_failure_group();
         self::$preps = [];
@@ -526,7 +529,7 @@ function xassert($x, $description = "") {
     if ($x) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with($description ? : "Assertion failed");
+        Xassert::fail_with($description ? : "assertion failed");
     }
     return !!$x;
 }
@@ -567,7 +570,7 @@ function xassert_neqq($actual, $nonexpected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected !== " . xassert_var_export($actual));
+        Xassert::fail_with("expected !== " . xassert_var_export($actual));
     }
     return $ok;
 }
@@ -633,7 +636,7 @@ function xassert_neq($actual, $nonexpected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected != " . var_export($actual, true));
+        Xassert::fail_with("expected != " . var_export($actual, true));
     }
     return $ok;
 }
@@ -698,7 +701,7 @@ function xassert_str_starts_with($haystack, $needle) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected `{$haystack}` to start with `{$needle}`");
+        Xassert::fail_with("expected `{$haystack}` to start with `{$needle}`");
     }
     return $ok;
 }
@@ -711,7 +714,7 @@ function xassert_str_contains($haystack, $needle) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected `{$haystack}` to contain `{$needle}`");
+        Xassert::fail_with("expected `{$haystack}` to contain `{$needle}`");
     }
     return $ok;
 }
@@ -724,7 +727,7 @@ function xassert_not_str_contains($haystack, $needle) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected `{$haystack}` to not contain `{$needle}`");
+        Xassert::fail_with("expected `{$haystack}` to not contain `{$needle}`");
     }
     return $ok;
 }
@@ -785,7 +788,7 @@ function xassert_match($a, $b) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected " . var_export($a, true) . " ~= {$b}");
+        Xassert::fail_match("expected ", var_export($a, true), " ~= ", $b);
     }
     return $ok;
 }
@@ -799,11 +802,17 @@ function xassert_int_list_eqq($actual, $expected) {
     $estr = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
         return join(" ", range(+$m[1], +$m[2]));
     }, $estr);
+    if ($astr === "") {
+        $astr = "<empty>";
+    }
+    if ($estr === "") {
+        $estr = "<empty>";
+    }
     $ok = $astr === $estr;
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected {$estr}, got {$astr}");
+        Xassert::fail_match("expected ", $estr, ", got ", $astr);
     }
     return $ok;
 }
@@ -983,8 +992,8 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
 
 /** @param Contact $user
  * @param ?PaperInfo $prow
- * @return object */
-function call_api($fn, $user, $qreq, $prow = null) {
+ * @return Downloader|JsonResult */
+function call_api_result($fn, $user, $qreq, $prow = null) {
     if (($is_post = str_starts_with($fn, "="))) {
         $fn = substr($fn, 1);
     }
@@ -1005,7 +1014,23 @@ function call_api($fn, $user, $qreq, $prow = null) {
     $qreq->set_navigation(Navigation::get());
     Qrequest::set_main_request($qreq);
     $uf = $user->conf->api($fn, $user, $qreq->method());
-    $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq);
+    return $user->conf->call_api_on($uf, $fn, $user, $qreq);
+}
+
+/** @param Contact $user
+ * @param ?PaperInfo $prow
+ * @return object */
+function call_api($fn, $user, $qreq, $prow = null) {
+    $jr = call_api_result($fn, $user, $qreq, $prow);
+    if (!($jr instanceof JsonResult)) {
+        $jr = JsonResult::make_error(500, "<0>Not a JSON");
+    }
+    if ($jr->minimal) {
+        if (is_array($jr->content) && !is_list($jr->content)) {
+            return (object) $jr->content;
+        }
+        return $jr->content;
+    }
     if (!isset($jr->content["status_code"]) && $jr->status > 299) {
         $jr->content["status_code"] = $jr->status;
     }
@@ -1201,7 +1226,7 @@ class TestRunner {
         $s0 = file_get_contents($filename);
         assert($s0 !== false);
 
-        $s = preg_replace('/\s*(?:--|#).*/m', "", $s0);
+        $s = preg_replace('/\s*(?:--|\#).*/m', "", $s0);
         $truncates = [];
         while (!$rebuild && preg_match('/\A\s*((?:DROP|CREATE)\C*?;)$/mi', $s, $m)) {
             $stmt = $m[1];
@@ -1292,7 +1317,7 @@ class TestRunner {
             if ($user) {
                 MailChecker::check_db("create-{$c->email}");
             } else {
-                fwrite(STDERR, "* failed to create user {$c->email}\n");
+                fwrite(STDERR, "* failed to create user {$c->email}\n" . debug_string_backtrace());
                 $ok = false;
             }
         }
@@ -1304,7 +1329,7 @@ class TestRunner {
                     return "    {$mx->field}: {$mx->message}\n";
                 }, $ps->message_list()));
                 $id = isset($p->_id_) ? "#{$p->_id_} " : "";
-                fwrite(STDERR, "* failed to create paper {$id}{$p->title}:\n" . htmlspecialchars_decode($t) . "\n");
+                fwrite(STDERR, "* failed to create paper {$id}{$p->title}:\n" . htmlspecialchars_decode($t) . "\n"  . debug_string_backtrace());
                 $ok = false;
             }
         }

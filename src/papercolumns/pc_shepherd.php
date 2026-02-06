@@ -16,7 +16,8 @@ class Shepherd_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_shepherd(null)
-            || (!$pl->conf->has_any_lead_or_shepherd() && !$visible)) {
+            || (!$pl->conf->has_any_lead_or_shepherd()
+                && $visible === FieldRender::CFSUGGEST)) {
             return false;
         }
         $pl->conf->pc_set(); // prepare cache

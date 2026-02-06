@@ -1,6 +1,6 @@
 <?php
 // t_tags.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Tags_Tester {
     /** @var Conf
@@ -123,6 +123,11 @@ class Tags_Tester {
         xassert($sv->execute());
     }
 
+    function test_implicit_tag_patterns() {
+        $ti = $this->conf->tags()->find("~~fxxxk");
+        xassert($ti && $ti->is(TagInfo::TF_CHAIR));
+    }
+
     function test_assign_delete_create() {
         $p1 = $this->conf->checked_paper_by_id(1);
         xassert(!$p1->has_tag("testtag"));
@@ -197,7 +202,7 @@ class Tags_Tester {
         xassert($p1->has_tag("testtag"));
         xassert_eqq($p1->tag_value("testtag"), 0.0);
 
-        $this->conf->qe("insert into PaperConflict set paperId=1, contactId=?, conflictType=?", $this->u_chair->contactId, Conflict::GENERAL);
+        $this->conf->qe("insert into PaperConflict set paperId=1, contactId=?, conflictType=?", $this->u_chair->contactId, Conflict::CT_DEFAULT);
         xassert_search($this->u_chair, "conf:me", "1");
 
         $aset = new AssignmentSet($this->u_chair);

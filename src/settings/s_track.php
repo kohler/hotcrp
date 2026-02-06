@@ -1,6 +1,6 @@
 <?php
 // settings/s_track.php -- HotCRP settings > tracks page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Track_Setting {
     /** @var string */
@@ -102,9 +102,8 @@ class Track_Setting {
             return "review visibility";
         } else if ($right === "viewtracker") {
             return "tracker visibility";
-        } else {
-            return "unknown";
         }
+        return "unknown";
     }
 }
 
@@ -380,7 +379,8 @@ class Track_SettingParser extends SettingParser {
                 $this->_apply_req_perm($si, $sv);
             }
             return true;
-        } else if ($si->name === "track") {
+        }
+        if ($si->name === "track") {
             $j = [];
             foreach ($sv->oblist_nondeleted_keys("track") as $ctr) {
                 $this->cur_trx = $sv->newv("track/{$ctr}");

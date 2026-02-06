@@ -175,10 +175,12 @@ $Opt["emailSender"] = null;
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   strictJavascript If true, send Javascript with "use strict".
 //   hideManager     If set, PC members are not shown paper managers.
-//   disableCapabilities If set, emails to authors will not have a
-//                   token enabling them to view their papers without logging in.
+//   authorSharing   Controls whether authors can create sharing links.
+//                   If -1, they cannot. If +1, authors get sharing links
+//                   by default. If 0, authors can request sharing links.
 
 $Opt["smartScoreCompare"] = true;
+$Opt["authorSharing"] = 0;
 
 
 // SESSIONS AND SECURITY

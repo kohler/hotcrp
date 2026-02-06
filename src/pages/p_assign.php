@@ -1,6 +1,6 @@
 <?php
 // pages/p_assign.php -- HotCRP per-paper assignment/conflict management page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Assign_Page {
     /** @var Conf */
@@ -89,7 +89,7 @@ class Assign_Page {
             } else if (($type = ReviewInfo::parse_type($assignment, true))) {
                 $revtype = ReviewInfo::unparse_assigner_action($type);
                 $conftype = "off";
-            } else if (($ct = $confset->parse_assignment($assignment, 0)) !== false) {
+            } else if (($ct = $confset->parse_assignment($assignment)) !== false) {
                 $revtype = "clearreview";
                 $conftype = $assignment;
             } else {
@@ -114,11 +114,10 @@ class Assign_Page {
         $aset->enable_papers($this->prow);
         $aset->parse(join("", $t));
         $ok = $aset->execute();
-        if ($this->qreq->ajax) {
-            json_exit($aset->json_result());
-        }
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
-        $ok && $this->conf->redirect_self($this->qreq);
+        if ($ok) {
+            $this->conf->redirect_self($this->qreq);
+        }
     }
 
     /** @return never
@@ -190,12 +189,10 @@ class Assign_Page {
 
     function handle_request() {
         $qreq = $this->qreq;
-        if (isset($qreq->update) && $qreq->valid_post()) {
-            if ($this->user->allow_administer($this->prow)) {
-                $this->handle_pc_update();
-            } else if ($this->qreq->ajax) {
-                json_exit(JsonResult::make_error(403, "<0>Only administrators can assign reviews"));
-            }
+        if (isset($qreq->update)
+            && $qreq->valid_post()
+            && $this->user->allow_manage($this->prow)) {
+            $this->handle_pc_update();
         }
         if ((isset($qreq->requestreview) || isset($qreq->approvereview))
             && $qreq->valid_post()) {
@@ -262,9 +259,9 @@ class Assign_Page {
         }
         $reason = $rrow->reason;
         if ($this->allow_view_authors
-            && ($potconf = $this->prow->potential_conflict_html($rrowid, true))) {
-            foreach ($potconf->messages as $ml) {
-                echo '<li class="fx">', $potconf->render_ul_item(null, "possible conflict: ", $ml), '</li>';
+            && ($potconf = $this->prow->potential_conflict_list($rrowid))) {
+            foreach ($potconf->group_list_html($this->prow) as $g) {
+                echo '<li class="fx">', $potconf->group_html_ul($g, "possible conflict: ", null), '</li>';
             }
             $reason = $reason ? : "This reviewer appears to have a conflict with the submission authors.";
         }
@@ -313,7 +310,7 @@ class Assign_Page {
     private function print_reqrev($rrow, $time) {
         echo '<div class="ctelt"><div class="ctelti has-fold';
         if ($rrow->reviewType === REVIEW_REQUEST
-            && ($this->user->can_administer($this->prow)
+            && ($this->user->is_admin($this->prow)
                 || $rrow->requestedBy == $this->user->contactId)) {
             echo ' foldo';
         } else {
@@ -330,7 +327,7 @@ class Assign_Page {
             $name = $this->user->reviewer_html_for($rrowid);
             if ($rrow->contactId !== $this->user->contactId
                 && $this->user->privChair
-                && $this->user->allow_administer($this->prow)) {
+                && $this->user->allow_admin($this->prow)) {
                 $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
                     $this->prow->reviewurl(["actas" => $rrowid->email]));
             }
@@ -366,7 +363,7 @@ class Assign_Page {
         }
 
         // render form
-        if ($this->user->can_administer($this->prow)
+        if ($this->user->is_admin($this->prow)
             || ($rrow->reviewType !== REVIEW_REFUSAL
                 && $this->user->contactId > 0
                 && $rrow->requestedBy == $this->user->contactId)) {
@@ -384,7 +381,7 @@ class Assign_Page {
                 echo Ht::hidden("reason", $reason);
             }
             if ($rrow->reviewType === REVIEW_REQUEST
-                && $this->user->can_administer($this->prow)) {
+                && $this->user->is_admin($this->prow)) {
                 echo Ht::hidden("override", 1);
                 $buttons[] = Ht::submit("approvereview", "Approve proposal", ["class" => "btn-sm btn-success"]);
                 $buttons[] = Ht::submit("denyreview", "Deny proposal", ["class" => "btn-sm ui js-deny-review-request"]); // XXX reason
@@ -411,8 +408,9 @@ class Assign_Page {
     }
 
     /** @param Contact $pc
-     * @param AssignmentCountSet $acs */
-    private function print_pc_assignment($pc, $acs) {
+     * @param AssignmentCountSet $acs
+     * @param ?PaperInfoPotentialConflictList $potconf */
+    private function print_pc_assignment($pc, $acs, $potconf) {
         // first, name and assignment
         $ct = $this->prow->conflict_type($pc);
         $rrow = $this->prow->review_by_user($pc);
@@ -425,28 +423,26 @@ class Assign_Page {
         if ($crevtype == 0 && Conflict::is_conflicted($ct)) {
             $crevtype = -1;
         }
-        $potconf = null;
-        if ($this->allow_view_authors && $revtype != -2) {
-            $potconf = $this->prow->potential_conflict_html($pc, !Conflict::is_conflicted($ct));
-        }
 
         echo '<div class="ctelt">',
-            '<div class="ctelti has-assignment has-fold foldc" data-pid="', $this->prow->paperId,
+            '<div class="ctelti has-assignment has-fold foldc',
+            $crevtype < 0 ? " pcconf-conflicted" : "",
+            '" data-pid="', $this->prow->paperId,
             '" data-uid="', $pc->contactId,
-            '" data-review-type="', $revtype;
+            '" data-review-type="', $revtype, '"';
         if (Conflict::is_conflicted($ct)) {
-            echo '" data-conflict-type="1';
+            echo ' data-conflict-type';
         }
         if (!$revtype && $this->prow->review_refusals_by_user($pc)) {
-            echo '" data-assignment-declined="1';
+            echo ' data-assignment-declined="1"';
         }
         if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name())) {
-            echo '" data-review-round="', htmlspecialchars($rn);
+            echo ' data-review-round="', htmlspecialchars($rn), '"';
         }
         if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
-            echo '" data-review-in-progress="';
+            echo ' data-review-in-progress';
         }
-        echo '"><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
+        echo '><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
             '<button type="button" class="q ui js-assignment-fold">', expander(null, 0),
             $this->user->reviewer_html_for($pc), '</button>';
         if ($crevtype != 0) {
@@ -465,7 +461,9 @@ class Assign_Page {
         }
         echo '</div>'; // .pctbname
         if ($potconf) {
-            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf)), '">', $potconf->announce, '</div>';
+            echo '<div class="pcconfmatch need-tooltip" data-tooltip-class="gray" data-tooltip="',
+                str_replace('"', '&quot;', $potconf->tooltip_html($this->prow)),
+                '">', $potconf->description_html(), '</div>';
         }
 
         // then, number of reviews
@@ -511,7 +509,7 @@ class Assign_Page {
             if ($rrow->reviewType < REVIEW_SECONDARY
                 && $rrow->reviewStatus < ReviewInfo::RS_DRAFTED
                 && $user->can_view_review_identity($prow, $rrow)
-                && ($user->can_administer($prow) || $rrow->requestedBy == $user->contactId)) {
+                && ($user->is_admin($prow) || $rrow->requestedBy == $user->contactId)) {
                 $requests[] = [0, max((int) $rrow->timeRequestNotified, (int) $rrow->timeRequested), count($requests), $rrow];
             }
         }
@@ -540,7 +538,7 @@ class Assign_Page {
         }
 
         // PC assignments
-        if ($user->can_administer($prow)) {
+        if ($user->is_admin($prow)) {
             $acs = AssignmentCountSet::load($user, AssignmentCountSet::HAS_REVIEW);
 
             // PC conflicts row
@@ -560,18 +558,46 @@ class Assign_Page {
                 echo "<p>Review preferences display as “P#”.</p>";
             }
 
-            echo '<div class="pc-ctable has-assignment-set need-assignment-change"';
             $rev_rounds = array_keys($this->conf->round_selector_options(false));
-            echo ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
+            echo '<div class="has-assignment-set need-assignment-change"',
+                ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
                 ' data-default-review-round="', htmlspecialchars($this->conf->assignment_round_option(false)), '">';
 
             $this->conf->ensure_cached_user_collaborators();
+            $relevant_pc = $pc_class = $potconfs = [];
             foreach ($this->conf->pc_members() as $pc) {
-                if ($pc->pc_track_assignable($prow)
-                    || $prow->has_reviewer($pc)) {
-                    $this->print_pc_assignment($pc, $acs);
+                if ($prow->has_reviewer($pc)) {
+                    $pc_class[$pc->contactId] = 2;
+                } else if ($prow->has_conflict($pc)) {
+                    $pc_class[$pc->contactId] = 1;
+                } else if ($pc->pc_track_assignable($prow)) {
+                    $pc_class[$pc->contactId] = 0;
+                } else {
+                    continue;
+                }
+                $relevant_pc[] = $pc;
+                if ($this->allow_view_authors && !$prow->has_author($pc)) {
+                    $potconfs[$pc->contactId] = $this->prow->potential_conflict_list($pc);
+                    if ($potconfs[$pc->contactId] && $pc_class[$pc->contactId] === 0) {
+                        $pc_class[$pc->contactId] = 1;
+                    }
                 }
             }
+
+            usort($relevant_pc, function ($a, $b) use ($pc_class) {
+                return ($pc_class[$b->contactId] <=> $pc_class[$a->contactId])
+                    ? : ($a->pc_index <=> $b->pc_index);
+            });
+
+            $last_pc_class = null;
+            foreach ($relevant_pc as $pc) {
+                if ($pc_class[$pc->contactId] !== $last_pc_class) {
+                    echo ($last_pc_class === null ? '' : '</div>'), '<div class="pc-ctable">';
+                    $last_pc_class = $pc_class[$pc->contactId];
+                }
+                $this->print_pc_assignment($pc, $acs, $potconfs[$pc->contactId] ?? null);
+            }
+            echo $last_pc_class === null ? '' : '</div>';
 
             echo "</div>\n",
                 '<div class="aab">',
@@ -584,7 +610,7 @@ class Assign_Page {
 
         // add external reviewers
         $req = "Request external review";
-        if (!$user->allow_administer($prow) && $this->conf->setting("extrev_chairreq")) {
+        if (!$user->allow_admin($prow) && $this->conf->setting("extrev_chairreq")) {
             $req = "Propose external review";
         }
         echo '<div class="pcard revcard">',
@@ -592,7 +618,7 @@ class Assign_Page {
             "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 
         echo '<p class="w-text">', $this->conf->_i("external_review_request_description");
-        if ($user->allow_administer($prow)) {
+        if ($user->allow_admin($prow)) {
             echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
         }
         echo '</p>';
@@ -645,7 +671,7 @@ class Assign_Page {
                 "</div>\n\n";
         }
 
-        if ($user->can_administer($prow)) {
+        if ($user->is_admin($prow)) {
             echo '<label class="', $this->ms->control_class("override", "checki"), '"><span class="checkc">',
                 Ht::checkbox("override"),
                 ' </span>Override declined requests</label>';

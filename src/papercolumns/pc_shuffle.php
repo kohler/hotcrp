@@ -10,7 +10,7 @@ class Shuffle_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function view_option_schema() {
-        return ["key!"];
+        return ["key$^"];
     }
     function prepare(PaperList $pl, $visible) {
         $v = $this->view_option("key") ?? "";

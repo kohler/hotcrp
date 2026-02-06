@@ -30,7 +30,7 @@ class LoginHelper {
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
             header("HTTP/1.0 401 Unauthorized");
-            $qreq->print_header("Error", "home");
+            $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication required"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.")
@@ -45,7 +45,7 @@ class LoginHelper {
             $conf->redirect($info["redirect"] ?? "");
         } else {
             header("HTTP/1.0 401 Unauthorized");
-            $qreq->print_header("Error", "home");
+            $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication error"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users. You have provided incorrect authentication data.")
@@ -137,10 +137,10 @@ class LoginHelper {
             && !$user->allow_self_register()) {
             return ["ok" => false, "email" => true, "noaccount" => true];
         } else if ($user->is_disabled()) {
-            return ["ok" => false, "disabled" => true, "email" => true];
-        } else {
-            return ["ok" => true, "user" => $user];
+            $key = $user->is_deleted() ? "deleted" : "disabled";
+            return ["ok" => false, $key => true, "email" => true];
         }
+        return ["ok" => true, "user" => $user];
     }
 
     /** @param array{ok:true,user:Contact}|array{ok:false} $info
@@ -237,7 +237,13 @@ class LoginHelper {
         $user = $info["user"];
 
         $cdbu = $user->cdb_user();
-        if ($cdbu && !$cdbu->password_unset()) {
+        if (($cdbu && $cdbu->is_deleted())
+            || $user->is_deleted()) {
+            return [
+                "ok" => false, "email" => true, "deleted" => true,
+                "create_account" => true
+            ];
+        } else if ($cdbu && !$cdbu->password_unset()) {
             return [
                 "ok" => false, "email" => true, "userexists" => true,
                 "can_reset" => $cdbu->can_reset_password(),
@@ -252,24 +258,23 @@ class LoginHelper {
             return ["ok" => false, "email" => true, "invalidemail" => true];
         } else if (!$user->has_account_here() && !$user->store()) {
             return ["ok" => false, "email" => true, "internal" => true];
-        } else {
-            $conf->invalidate_user($user);
-            $info = self::forgot_password_info($conf, $qreq, true);
-            if ($info["ok"] && $info["mailtemplate"] === "@resetpassword") {
-                $info["mailtemplate"] = "@newaccount.selfregister";
-                if (self::check_setup_phase($info["user"])) {
-                    $info["firstuser"] = true;
-                }
-            }
-            return $info;
         }
+        $conf->invalidate_user($user);
+        $info = self::forgot_password_info($conf, $qreq, true);
+        if ($info["ok"] && $info["mailtemplate"] === "@resetpassword") {
+            $info["mailtemplate"] = "@newaccount.selfregister";
+            if (self::check_setup_phase($info["user"])) {
+                $info["firstuser"] = true;
+            }
+        }
+        return $info;
     }
 
 
     /** @return array{ok:true,user:Contact,mailtemplate:string}|array{ok:false} */
     static function forgot_password_info(Conf $conf, Qrequest $qreq, $create) {
         if ($conf->external_login()) {
-            return ["ok" => false, "email" => true, "noreset" => true];
+            return ["ok" => false, "noreset" => true];
         }
 
         $info = self::user_lookup($conf, $qreq);
@@ -288,7 +293,14 @@ class LoginHelper {
 
         // check for users that cannot reset their password
         if (!$user->can_reset_password()) {
-            return ["ok" => false, "email" => true, "nologin" => true];
+            if ($user->security_locked()) {
+                $key = "noreset";
+            } else if ($user->is_deleted()) {
+                $key = "deleted";
+            } else {
+                $key = "nologin";
+            }
+            return ["ok" => false, "email" => true, $key => true];
         }
 
         // disabled users get mail saying they're disabled
@@ -336,44 +348,53 @@ class LoginHelper {
         $e = "";
         $args = [];
 
-        if (isset($info["ldap"]) && isset($info["ldap_detail"])) {
+        if (($info["ldap"] ?? false) && isset($info["ldap_detail"])) {
             $e = $info["ldap_detail"];
-        } else if (isset($info["noemail"])) {
+        } else if ($info["noemail"] ?? false) {
             $e = $conf->login_type() ? "<0>Enter your username" : "<0>Enter your email address";
-        } else if (isset($info["invalidemail"])) {
+        } else if ($info["invalidemail"] ?? false) {
             $e = "<0>Enter a valid email address";
-        } else if (isset($info["noreset"])) {
-            $e = "<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
-        } else if (isset($info["nologin"])) {
-            $e = "<0>User {email} is not allowed to sign in to this site";
-        } else if (isset($info["noaccount"])) {
+        } else if ($info["noreset"] ?? false) {
+            if ($info["email"] ?? false) {
+                $e = "<0>User {email}’s password is locked and cannot be reset";
+            } else {
+                $e = "<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
+            }
+        } else if ($info["nologin"] ?? false) {
+            if ($info["email"] ?? false) {
+                $e = "<0>User {email} is not allowed to sign in to this site";
+            } else {
+                $e = "<0>Direct signin is not allowed on this site";
+                $problem = "no_signin";
+            }
+        } else if ($info["noaccount"] ?? false) {
             $e = "<0>Account {email} not found";
             $problem = "no_account";
             if (!$conf->login_type()
                 && $conf->allow_user_self_register()
-                && $email !== "") {
+                && $email !== ""
+                && !($info["deleted"] ?? false)) {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
-        } else if (isset($info["unset"])) {
+        } else if ($info["unset"] ?? false) {
             $e = "<0>User {email} has not set a password";
             $problem = "no_password";
-        } else if (isset($info["userexists"])) {
+        } else if ($info["userexists"] ?? false) {
             $e = "<0>Account {email} already exists";
             $problem = "account_exists";
-        } else if (isset($info["disabled"])) {
-            $e = $conf->_i("account_disabled");
-        } else if (isset($info["reset"])) {
+        } else if ($info["deleted"] ?? false) {
+            $e = "account_deleted";
+        } else if ($info["disabled"] ?? false) {
+            $e = "account_disabled";
+        } else if ($info["reset"] ?? false) {
             $e = "<0>Password expired";
             $problem = "password_expired";
-        } else if (isset($info["nopw"])) {
+        } else if ($info["nopw"] ?? false) {
             $e = "<0>Enter your password";
-        } else if (isset($info["nopost"])) {
-            $e = "<0>Automatic login links have been disabled for security. Use this form to sign in.";
-        } else if (isset($info["internal"])) {
+        } else if ($info["nopost"] ?? false) {
+            $e = "<0>Automatic login links have been disabled for security. Use this form to sign in";
+        } else if ($info["internal"] ?? false) {
             $e = "<0>Internal error";
-        } else if (isset($info["nologin"])) {
-            $e = "<0>Direct signin is not allowed on this site";
-            $problem = "no_signin";
         } else {
             $e = "<0>Password incorrect";
         }
@@ -381,7 +402,7 @@ class LoginHelper {
         if ($email !== "") {
             $args[] = new FmtArg("email", $email, 0);
             $args[] = new FmtArg("signin", $conf->hoturl_raw("signin", ["email" => $email]), 0);
-            if (isset($info["can_reset"])) {
+            if ($info["can_reset"] ?? false) {
                 $args[] = new FmtArg("forgotpassword", $conf->hoturl_raw("forgotpassword", ["email" => $email]), 0);
             }
         }
@@ -391,6 +412,10 @@ class LoginHelper {
         if ($info["allow_redirect"] ?? false) {
             $args[] = new FmtArg("allow_redirect", true);
         }
+        if ($info["create_account"] ?? false) {
+            $args[] = new FmtArg("create_account", true);
+        }
+        $args[] = new FmtArg("expanded", true);
 
         $msg = $conf->_($e, ...$args);
 

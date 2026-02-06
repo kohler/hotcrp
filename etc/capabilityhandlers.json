@@ -1,30 +1,11 @@
 [
     {
-        "match": "0([1-9][0-9]*)a\\S+",
-        "apply_function": "AuthorView_Capability::apply_old_author_view",
-        "$comment": "XXX backward compat"
-    },
-    {
         "match": "hcav_?(\\d+)[a-zA-Z]+", "type": 4,
         "apply_function": "AuthorView_Capability::apply_author_view"
     },
     {
-        "match": "([1-9][0-9]*)ra(\\S+)",
-        "apply_function": "ReviewAccept_Capability::apply_old_review_acceptor",
-        "$comment": "XXX backward compat"
-    },
-    {
         "match": "hcra_?([1-9][0-9]*)[a-zA-Z]+", "type": 5,
         "apply_function": "ReviewAccept_Capability::apply_review_acceptor"
-    },
-    {
-        "match": "ra([1-9][0-9]*)([a-zA-Z]+)",
-        "apply_function": "ReviewAccept_Capability::apply_old_review_acceptor"
-    },
-    {
-        "match": "kiosk-([a-zA-Z0-9]+)",
-        "apply_function": "MeetingTracker::apply_kiosk_capability",
-        "$comment": "XXX backward compat"
     },
     {
         "match": "hckk_?([a-zA-Z0-9]+)",

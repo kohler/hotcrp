@@ -6,11 +6,11 @@ class ReviewRound_Fexpr extends Fexpr {
     function __construct() {
         $this->set_format(Fexpr::FROUND);
     }
+    static function make(Contact $user) {
+        return $user->is_reviewer() ? new ReviewRound_Fexpr : Fexpr::cnever();
+    }
     function inferred_index() {
         return Fexpr::IDX_REVIEW;
-    }
-    function viewable_by(Contact $user) {
-        return $user->is_reviewer();
     }
     function compile(FormulaCompiler $state) {
         $rrow = $state->_rrow();

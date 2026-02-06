@@ -7,10 +7,10 @@ class Desirability_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->is_manager())
+        if (!$pl->user->is_manager()) {
             return false;
-        if ($visible)
-            $pl->qopts["allReviewerPreference"] = true;
+        }
+        $pl->qopts["allReviewerPreference"] = true;
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {

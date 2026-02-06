@@ -1,6 +1,6 @@
 <?php
 // ftext.php -- formatted text
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Ftext {
     /** @param ?string $s
@@ -61,9 +61,8 @@ class Ftext {
     static function ensure($s, $default_format) {
         if (self::is_ftext($s) !== false) {
             return $s;
-        } else {
-            return "<{$default_format}>{$s}";
         }
+        return "<{$default_format}>{$s}";
     }
 
     /** @param ?int $to_format
@@ -75,8 +74,9 @@ class Ftext {
             return $s;
         } else if ($from_format === 5 && $to_format !== 5) {
             // XXX <p>, <ul>, <ol>
-            return html_entity_decode(preg_replace_callback('/<\s*(\/?)\s*(a|b|i|u|strong|em|code|samp|pre|tt|span|br)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
-                function ($m) {
+            $liststack = [];
+            return html_entity_decode(preg_replace_callback('/<\s*+(\/?)\s*+(a|b|i|u|strong|em|code|samp|pre|tt|span|br|ul|ol|li|dl|dt|dd)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
+                function ($m) use (&$liststack) {
                     $tag = strtolower($m[2]);
                     if ($tag === "code" || $tag === "samp" || $tag === "tt") {
                         return "`";
@@ -90,15 +90,59 @@ class Ftext {
                         return "_";
                     } else if ($tag === "br") {
                         return "\n";
+                    } else if ($tag === "ul") {
+                        if ($m[1] === "") {
+                            $liststack[] = false;
+                        } else {
+                            array_pop($liststack);
+                        }
+                        return "";
+                    } else if ($tag === "ol") {
+                        if ($m[1] === "") {
+                            $liststack[] = 1;
+                        } else {
+                            array_pop($liststack);
+                        }
+                        return "";
+                    } else if ($tag === "dl") {
+                        if ($m[1] === "") {
+                            $liststack[] = false;
+                        } else {
+                            array_pop($liststack);
+                        }
+                        return "";
+                    } else if ($tag === "li") {
+                        if ($m[1] === "") {
+                            $n = $liststack[count($liststack) - 1] ?? false;
+                            if ($n === false) {
+                                return "* ";
+                            } else {
+                                $liststack[count($liststack) - 1] += 1;
+                                return "{$n}. ";
+                            }
+                        } else {
+                            return "\n";
+                        }
+                    } else if ($tag === "dt") {
+                        if ($m[1] === "") {
+                            return "";
+                        } else {
+                            return "\n";
+                        }
+                    } else if ($tag === "dd") {
+                        if ($m[1] === "") {
+                            return "-> ";
+                        } else {
+                            return "\n";
+                        }
                     } else {
                         return "";
                     }
                 }, $s), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, "UTF-8");
         } else if ($from_format !== 5 && $to_format === 5) {
             return htmlspecialchars($s, ENT_QUOTES);
-        } else {
-            return $s;
         }
+        return $s;
     }
 
     /** @param ?int $to_format

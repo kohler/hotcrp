@@ -84,9 +84,8 @@ class ViewOptionList implements IteratorAggregate {
             return $n;
         } else if ($v === false) {
             return "{$n}=no";
-        } else {
-            return "{$n}={$v}";
         }
+        return "{$n}={$v}";
     }
 
     /** @return string */

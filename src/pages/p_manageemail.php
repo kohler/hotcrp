@@ -177,7 +177,7 @@ class ManageEmail_Page {
     private function choose_link() {
         echo '<div class="form-section">',
             '<h3>Link accounts</h3>',
-            '<p>If you have multiple accounts, this option can define a primary account for site use. Emails, new review requests, and new PC assignments will be redirected from linked accounts to the primary account, and papers authored by any of the linked accounts will be accessible to the primary account.</p>',
+            '<p>If you have multiple accounts, this option can define a primary account for site use. New review requests and new PC assignments will be redirected from linked accounts to the primary account. Papers authored by any of the linked accounts will be accessible to the primary account, and emails intended for authors will be delivered only to the primary account.</p>',
             Ht::link("Link accounts", $this->conf->selfurl($this->qreq, ["t" => "link"]), ["class" => "btn btn-primary"]),
             '</div>';
     }
@@ -384,7 +384,7 @@ class ManageEmail_Page {
         if ($what === "fail") {
             echo '<div class="aabut">', Ht::submit("Restart", ["name" => "back", "value" => "restart"]), '</div>';
         } else {
-            echo '<div class="aabut">', Ht::submit($this->curstep->next_label ?? "Next", ["class" => $this->curstep->next_class ?? "btn-primary", "name" => "next", "value" => 1]), '</div>';
+            echo '<div class="aabut">', Ht::submit($this->curstep->next_label ?? "Next →", ["class" => $this->curstep->next_class ?? "btn-primary", "name" => "next", "value" => 1]), '</div>';
             if ($this->curstep->index > 0) {
                 echo '<div class="aabut">', Ht::submit("Back", ["name" => "back", "value" => 1]), '</div>';
             }
@@ -411,7 +411,7 @@ class ManageEmail_Page {
             }
 
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
-                '<p>Select the account whose current reviews should be transferred.';
+                '<p>Select the account whose current reviews and/or PC status should be transferred.';
             if (!$this->viewer->privChair) {
                 echo ' You must be signed in to all accounts involved in the transfer.';
             }
@@ -420,8 +420,16 @@ class ManageEmail_Page {
             $this->print_step_actions();
             echo '</form>';
         } else if ($this->curstep->name === "dest") {
+            $what = [];
+            if ($this->user && $this->user->isPC) {
+                $what[] = "PC status";
+            }
+            if (empty($what) || $this->user->has_review()) {
+                $what[] = "reviews";
+            }
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
-                '<p>Select the account that should receive the transferred reviews.';
+                "<p>Select the account that should receive <strong class=\"sb\">{$srchemail}</strong>’s ",
+                join(" and ", $what), ".";
             if (!$this->viewer->privChair) {
                 echo ' You must be signed in to all accounts involved in the transfer.';
             }
@@ -494,7 +502,8 @@ class ManageEmail_Page {
             throw new Redirection($this->conf->hoturl("signin", ["redirect" => $redirect]));
         }
         if (($user = $this->parse_user($key, $email))) {
-            $this->create_token()->change_data($key, $user->email)
+            $this->create_token()
+                ->change_data($key, $user->email)
                 ->change_data("step", $this->delta_step(1)->name);
             $this->redirect_token();
         }
@@ -1142,5 +1151,13 @@ class ManageEmail_Page {
 
     static function go_merge(Contact $user, Qrequest $qreq) {
         $user->conf->redirect_hoturl("manageemail", ["t" => "link"]);
+    }
+
+    static function go_changeemail(Contact $user, Qrequest $qreq) {
+        $user->conf->feedback_msg(
+            MessageItem::error("<0>Email address changes are not supported"),
+            MessageItem::inform("<0>Use ‘Manage email’ to link accounts or transfer reviews.")
+        );
+        $user->conf->redirect_hoturl("manageemail", ["t" => null]);
     }
 }

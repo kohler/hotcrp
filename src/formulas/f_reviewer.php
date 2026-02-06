@@ -7,11 +7,14 @@ class Reviewer_Fexpr extends Fexpr {
         parent::__construct("reviewer");
         $this->set_format(Fexpr::FREVIEWER);
     }
+    static function make(FormulaCall $ff) {
+        if (!$ff->formula->user->can_view_some_review_identity()) {
+            return Fexpr::cnever();
+        }
+        return new Reviewer_Fexpr;
+    }
     function inferred_index() {
         return Fexpr::IDX_REVIEW;
-    }
-    function viewable_by(Contact $user) {
-        return $user->can_view_some_review_identity();
     }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["reviewSignatures"] = true;

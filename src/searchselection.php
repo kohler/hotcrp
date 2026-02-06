@@ -7,6 +7,8 @@ class SearchSelection {
     private $sel = [];
     /** @var array<int,int> */
     private $selmap = [];
+    /** @var bool */
+    private $default;
 
     function __construct($papers = null) {
         $n = 1;
@@ -37,6 +39,13 @@ class SearchSelection {
         return new SearchSelection($ps);
     }
 
+    /** @return SearchSelection */
+    static function make_default(Qrequest $qreq, Contact $user) {
+        $ss = new SearchSelection((new PaperSearch($user, $qreq))->sorted_paper_ids());
+        $ss->default = true;
+        return $ss;
+    }
+
     static function clear_request(Qrequest $qreq) {
         unset($qreq->p, $qreq->pap, $_GET["p"], $_GET["pap"], $_POST["p"], $_POST["pap"]);
     }
@@ -44,6 +53,25 @@ class SearchSelection {
     /** @return bool */
     function is_empty() {
         return empty($this->sel);
+    }
+
+    /** @return bool */
+    function is_default() {
+        return $this->default;
+    }
+
+    /** @param bool $default
+     * @return $this */
+    function set_default($default) {
+        $this->default = $default;
+        return $this;
+    }
+
+    /** @param PaperSearch $srch
+     * @return $this */
+    function reset_default($srch) {
+        $this->default = $srch->sorted_paper_ids() === $this->sel;
+        return $this;
     }
 
     /** @return int */
@@ -110,9 +138,8 @@ class SearchSelection {
         $bs = $sm[$b] ?? PHP_INT_MAX;
         if ($as === $bs) {
             return $a < $b ? -1 : ($a == $b ? 0 : 1);
-        } else {
-            return $as < $bs ? -1 : 1;
         }
+        return $as < $bs ? -1 : 1;
     }
 
     /** @return bool */
@@ -145,8 +172,7 @@ class SearchSelection {
             return "NONE";
         } else if (count($this->sel) > 100) {
             return "pidcode:" . SessionList::encode_ids($this->sel);
-        } else {
-            return join(" ", $this->sel);
         }
+        return join(" ", $this->sel);
     }
 }

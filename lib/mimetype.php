@@ -17,9 +17,11 @@ class Mimetype {
     const ZIP_TYPE = "application/zip";
     const RAR_TYPE = "application/x-rar-compressed";
     const KEYNOTE_TYPE = "application/vnd.apple.keynote";
+    const CSV_TYPE = "text/csv";
 
     const TXT_UTF8_TYPE = "text/plain; charset=utf-8";
     const JSON_UTF8_TYPE = "application/json; charset=utf-8";
+    const CSV_UTF8_TYPE = "text/csv; charset=utf-8";
 
     const FLAG_INLINE = 1;
     const FLAG_UTF8 = 2;
@@ -53,7 +55,7 @@ class Mimetype {
                               [".pptx", "PowerPoint", self::FLAG_INCOMPRESSIBLE],
         "video/mp4" =>        [".mp4", null, self::FLAG_INCOMPRESSIBLE],
         "video/x-msvideo" =>  [".avi", null, self::FLAG_INCOMPRESSIBLE],
-        self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8 | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
+        self::JSON_TYPE =>    [".json", "JSON", self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
         self::JPG_TYPE =>     [".jpg", "JPEG", self::FLAG_INLINE, ".jpeg"],
         self::PNG_TYPE =>     [".png", "PNG", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF],
         self::GIF_TYPE =>     [".gif", "GIF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF]
@@ -65,6 +67,19 @@ class Mimetype {
     private static $max_extension_length;
     /** @var ?\finfo */
     private static $finfo;
+
+
+    /** @param string $mimetype
+     * @return ?string */
+    static function sanitize($mimetype) {
+        if ((string) $mimetype !== ""
+            && preg_match('/\A([a-z]++\/[a-z0-9][-a-zA-Z0-9_.+]*+)(?:\s*+;\s*+[^\s=]++=\S+)*\z/i', $mimetype, $m)
+            && strlen($m[1]) <= 80) {
+            return strtolower($m[1]);
+        }
+        return null;
+    }
+
 
     /** @param string $mimetype
      * @param string $extension
@@ -145,12 +160,11 @@ class Mimetype {
         $space = strpos($type, " ");
         $semi = strpos($type, ";");
         if ($space === false && $semi === false) {
-            return $type;
+            return strtolower($type);
         } else if ($space === false || $semi < $space) {
-            return substr($type, 0, $semi);
-        } else {
-            return substr($type, 0, $space);
+            return strtolower(substr($type, 0, $semi));
         }
+        return strtolower(substr($type, 0, $space));
     }
 
     /** @param string|Mimetype $type
@@ -158,8 +172,7 @@ class Mimetype {
     static function lookup($type) {
         if (!$type) {
             return null;
-        }
-        if (is_object($type)) {
+        } else if (!is_string($type)) {
             return $type;
         }
         self::$tmap || self::load_mime_types(1);
@@ -177,11 +190,10 @@ class Mimetype {
     /** @param string $type
      * @return Mimetype */
     static function checked_lookup($type) {
-        if (($m = self::lookup($type))) {
-            return $m;
-        } else {
+        if (!($mt = self::lookup($type))) {
             throw new Exception("Unknown mimetype “{$type}”");
         }
+        return $mt;
     }
 
     /** @param string|Mimetype $type
@@ -191,48 +203,41 @@ class Mimetype {
             return $type->mimetype;
         } else if (isset(self::$tinfo[$type])) {
             return $type;
-        } else if (($x = self::lookup($type))) {
-            return $x->mimetype;
-        } else {
-            return $type;
+        } else if (($mt = self::lookup($type))) {
+            return $mt->mimetype;
         }
+        return self::base($type);
     }
 
     /** @param string|Mimetype $type
      * @return string */
     static function type_with_charset($type) {
-        if (($x = self::lookup($type))) {
-            if (($x->flags & self::FLAG_UTF8) !== 0) {
-                return $x->mimetype . "; charset=utf-8";
-            } else {
-                return $x->mimetype;
-            }
-        } else {
+        if (!($mt = self::lookup($type))) {
             return "";
+        } else if (($mt->flags & self::FLAG_UTF8) !== 0) {
+            return "{$mt->mimetype}; charset=utf-8";
         }
+        return $mt->mimetype;
     }
 
     /** @param string|Mimetype $type
      * @return string */
     static function extension($type) {
-        $x = self::lookup($type);
-        return $x ? $x->extension : "";
+        $mt = self::lookup($type);
+        return $mt ? $mt->extension : "";
     }
 
     /** @param string|Mimetype $type
      * @return string */
     static function description($type) {
-        if (($x = self::lookup($type))) {
-            if ($x->description) {
-                return $x->description;
-            } else if ($x->extension !== "") {
-                return $x->extension;
-            } else {
-                return $x->mimetype;
-            }
-        } else {
+        if (!($mt = self::lookup($type))) {
             return $type;
+        } else if ($mt->description) {
+            return $mt->description;
+        } else if ($mt->extension !== "") {
+            return $mt->extension;
         }
+        return $mt->mimetype;
     }
 
     /** @param list<Mimetype> $types
@@ -242,10 +247,9 @@ class Mimetype {
             return "any file";
         } else if (count($types) === 1) {
             return Mimetype::description($types[0]);
-        } else {
-            $m = array_unique(array_map("Mimetype::description", $types));
-            return commajoin($m, "or");
         }
+        $m = array_unique(array_map("Mimetype::description", $types));
+        return commajoin($m, "or");
     }
 
     /** @param list<Mimetype> $types
@@ -266,39 +270,48 @@ class Mimetype {
     /** @param string|Mimetype $type
      * @return bool */
     static function disposition_inline($type) {
-        $x = self::lookup($type);
-        return $x && ($x->flags & self::FLAG_INLINE) !== 0;
+        $mt = self::lookup($type);
+        return $mt && ($mt->flags & self::FLAG_INLINE) !== 0;
     }
 
     /** @param string|Mimetype $type
      * @return bool */
     static function textual($type) {
-        $x = self::lookup($type);
-        if ($x && $x->flags !== 0) {
-            return ($x->flags & self::FLAG_TEXTUAL) !== 0;
-        } else {
-            return str_starts_with($x ? $x->mimetype : $type, "text/");
+        $mt = self::lookup($type);
+        if ($mt && $mt->flags !== 0) {
+            return ($mt->flags & self::FLAG_TEXTUAL) !== 0;
+        } else if ($mt) {
+            return str_starts_with($mt->mimetype, "text/");
         }
+        return substr_compare($type, "text/", 0, 5, true) === 0;
     }
 
     /** @param string|Mimetype $type
      * @return bool */
     static function compressible($type) {
-        $x = self::lookup($type);
-        if ($x && $x->flags !== 0) {
-            return ($x->flags & self::FLAG_COMPRESSIBLE) !== 0;
-        } else {
-            return str_starts_with($x ? $x->mimetype : $type, "text/");
+        $mt = self::lookup($type);
+        if ($mt && $mt->flags !== 0) {
+            return ($mt->flags & self::FLAG_COMPRESSIBLE) !== 0;
+        } else if ($mt) {
+            return str_starts_with($mt->mimetype, "text/");
         }
+        return substr_compare($type, "text/", 0, 5, true) === 0;
+    }
+
+    /** @param string|Mimetype $type
+     * @return bool */
+    static function is_form($type) {
+        $b = is_string($type) ? self::base($type) : $type->mimetype;
+        return $b === "application/x-www-form-urlencoded" || $b === "multipart/form-data";
     }
 
     /** @param string|Mimetype $type
      * @return bool */
     function matches($type) {
-        $xt = self::type($type);
-        return $xt === $this->mimetype
+        $xmt = self::type($type);
+        return $xmt === $this->mimetype
             || (($this->flags & self::FLAG_ZIPLIKE) !== 0
-                && $xt === self::ZIP_TYPE);
+                && $xmt === self::ZIP_TYPE);
     }
 
 
@@ -349,11 +362,11 @@ class Mimetype {
         }
         // canonicalize
         if ($type && ($mt = self::lookup($type))) {
-            if (($mt->flags & self::FLAG_REQUIRE_SNIFF) !== 0) {
-                $type = self::BIN_TYPE;
-            } else {
-                $type = $mt->mimetype;
+            if (($mt->flags & self::FLAG_REQUIRE_SNIFF) === 0
+                && $mt->mimetype !== self::BIN_TYPE) {
+                return $mt->mimetype;
             }
+            $type = self::BIN_TYPE;
         }
         // unreliable sniffs
         if (!$type || $type === self::BIN_TYPE) {

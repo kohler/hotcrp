@@ -892,9 +892,8 @@ class CsvGenerator {
             return $quote_empty ? '""' : $text;
         } else if (preg_match('/\A[-_@\/\$+A-Za-z0-9.](?:[-_@\/\$+A-Za-z0-9. \t]*[-_@\/\$+A-Za-z0-9.]|)\z/', $text)) {
             return $text;
-        } else {
-            return self::always_quote($text);
         }
+        return self::always_quote($text);
     }
 
     /** @param list<string> $array

@@ -1,6 +1,6 @@
 <?php
 // settings/s_automatictag.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class AutomaticTag_Setting implements JsonSerializable {
     /** @var string */
@@ -74,41 +74,54 @@ class AutomaticTag_SettingParser extends SettingParser {
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "automatic_tag") {
             return $this->_apply_automatic_tag_req($si, $sv);
-        } else if ($si->name0 === "automatic_tag/" && $si->name2 === "/search") {
+        }
+        if ($si->name0 === "automatic_tag/" && $si->name2 === "/search") {
             $q = $sv->reqstr($si->name);
             if (simplify_whitespace($q) === "") {
                 $sv->error_at($si, "<0>Entry required");
             } else {
-                $search = new PaperSearch($sv->conf->root_user(), ["q" => $q, "t" => "all"]);
-                $search->set_expand_automatic(true);
-                $search->full_term();
-                if ($search->has_problem()) {
-                    $old = $sv->oldv($si->name0 . $si->name1);
-                    $method = $q === $old->q ? "warning_at" : "error_at";
-                    $sv->$method($si);
-                    foreach ($search->message_list() as $mi) {
-                        $sv->append_item_at($si, $mi);
-                    }
-                }
                 $sv->save($si, $q);
+                $sv->request_validate($si);
             }
             return true;
-        } else if ($si->name0 === "automatic_tag/" && $si->name2 === "/value") {
+        }
+        if ($si->name0 === "automatic_tag/" && $si->name2 === "/value") {
             $v = $sv->reqstr($si->name);
+            $sv->save($si, $v);
             if ($v !== "") {
-                $formula = new Formula($v);
-                if (!$formula->check($sv->conf->root_user())) {
-                    $sv->error_at($si);
-                    foreach ($formula->message_list() as $mi) {
-                        $sv->append_item_at($si, $mi);
-                    }
+                $sv->request_validate($si);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function validate(Si $si, SettingValues $sv) {
+        $old_at = $sv->oldv($si->name0 . $si->name1);
+        $pb = $sv->conf->set_updating_automatic_tags(true);
+        if ($si->name2 === "/search") {
+            $q = $sv->newv($si);
+            $search = new PaperSearch($sv->conf->root_user(), ["q" => $q, "t" => "all"]);
+            $search->full_term();
+            if ($search->has_problem()) {
+                $method = $q === $old_at->q ? "warning_at" : "error_at";
+                $sv->$method($si);
+                foreach ($search->message_list() as $mi) {
+                    $sv->append_item_at($si, $mi);
                 }
             }
-            $sv->save($si, $v);
-            return true;
-        } else {
-            return false;
+        } else if ($si->name2 === "/value") {
+            $v = $sv->newv($si);
+            $formula = Formula::make($sv->conf->root_user(), $sv->newv($si));
+            if (!$formula->ok()) {
+                $method = $v === $old_at->v ? "warning_at" : "error_at";
+                $sv->$method($si);
+                foreach ($formula->message_list() as $mi) {
+                    $sv->append_item_at($si, $mi);
+                }
+            }
         }
+        $sv->conf->set_updating_automatic_tags(false);
     }
 
     function store_value(Si $si, SettingValues $sv) {
@@ -133,22 +146,12 @@ class AutomaticTag_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
+        $pc = $sv->parser("AutomaticTag_SettingParser");
         foreach ($sv->oblist_keys("automatic_tag") as $ctr) {
-            $atr = $sv->oldv("automatic_tag/{$ctr}");
-            if ($atr && simplify_whitespace($atr->q) !== "") {
-                $search = new PaperSearch($sv->conf->root_user(), ["q" => $atr->q, "t" => "all"]);
-                $search->set_expand_automatic(true);
-                $search->full_term();
-                foreach ($search->message_list() as $mi) {
-                    $sv->append_item_at("automatic_tag/{$ctr}/search", $mi);
-                }
-            }
-            if ($atr->v) {
-                $formula = new Formula($atr->v);
-                if (!$formula->check($sv->conf->root_user())) {
-                    foreach ($formula->message_list() as $mi) {
-                        $sv->append_item_at("automatic_tag/{$ctr}/value", $mi);
-                    }
+            if (($atr = $sv->oldv("automatic_tag/{$ctr}"))) {
+                $pc->validate($sv->si("automatic_tag/{$ctr}/search"), $sv);
+                if ($atr->v) {
+                    $pc->validate($sv->si("automatic_tag/{$ctr}/value"), $sv);
                 }
             }
         }

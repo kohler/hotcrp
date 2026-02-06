@@ -1,6 +1,6 @@
 <?php
 // mentionlister.php -- HotCRP helper class for listing mentions
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class MentionLister {
     /** @var array<string,list<Contact|Author>> */
@@ -88,8 +88,7 @@ class MentionLister {
             }
             if ($rrow->reviewOrdinal
                 && $user->can_view_review($prow, $rrow)) {
-                $au = new Author;
-                $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+                $au = Author::make_last("Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal));
                 $au->contactId = $rrow->contactId;
                 $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
                 $rlist[] = $au;
@@ -109,8 +108,7 @@ class MentionLister {
     /** @param PaperInfo $prow
      * @param Contact $user */
     private function add_shepherd($prow, $user) {
-        $au = new Author;
-        $au->lastName = "Shepherd";
+        $au = Author::make_last("Shepherd");
         $au->contactId = $prow->shepherdContactId;
         $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
         $this->lists["reviewers"][] = $au;
@@ -170,6 +168,8 @@ class MentionLister {
                 }
                 if (!$ispc) {
                     $x["pri"] = 1;
+                } else if ($prow ? $au->is_admin($prow) : $au->privChair) {
+                    $x["admin"] = true;
                 }
                 $comp[] = $x;
             }

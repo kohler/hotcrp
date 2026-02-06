@@ -261,29 +261,13 @@ final class PaperValue implements JsonSerializable {
 
     /** @return MessageSet */
     function message_set() {
-        if ($this->_ms === null) {
-            $this->_ms = new MessageSet;
-            $this->_ms->set_want_ftext(true, 5);
-        }
+        $this->_ms = $this->_ms ?? new MessageSet;
         return $this->_ms;
     }
     /** @param MessageItem $mi
      * @return MessageItem */
     function append_item($mi) {
         return $this->message_set()->append_item($mi);
-    }
-    /** @param string $field
-     * @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @deprecated */
-    function msg_at($field, $msg, $status) {
-        return $this->append_item(new MessageItem($status, $field, $msg));
-    }
-    /** @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @deprecated */
-    function msg($msg, $status) {
-        return $this->append_item(new MessageItem($status, $this->option->field_key(), $msg));
     }
     /** @param ?string $msg
      * @return MessageItem */
@@ -313,16 +297,22 @@ final class PaperValue implements JsonSerializable {
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
     }
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->_ms ? $this->_ms->message_list() : [];
+    }
+    /** @return void */
+    function clear_messages() {
+        $this->_ms = null;
+    }
+
     /** @return bool */
     function allow_store() {
         return !$this->_ms
             || !$this->_ms->has_error()
             || $this->_ms->has_success();
     }
-    /** @return list<MessageItem> */
-    function message_list() {
-        return $this->_ms ? $this->_ms->message_list() : [];
-    }
+
     /** @return string */
     function field_key() {
         return $this->option->field_key();

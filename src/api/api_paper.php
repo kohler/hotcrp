@@ -1,6 +1,6 @@
 <?php
 // api_paper.php -- HotCRP paper API call
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Paper_API extends MessageSet {
     /** @var Conf
@@ -131,8 +131,7 @@ class Paper_API extends MessageSet {
 
         // check Content-Type
         $ct = $qreq->body_content_type();
-        $ct_form = $ct === "application/x-www-form-urlencoded"
-            || $ct === "multipart/form-data";
+        $ct_form = Mimetype::is_form($ct);
         if ($ct_form && !$this->post_form_is_json($qreq)) {
             // handle form-encoded data
             if (($mode & self::M_ONE) !== 0) {
@@ -215,9 +214,8 @@ class Paper_API extends MessageSet {
             return JsonResult::make_permission_error();
         } else if ($mode === self::M_MATCH) {
             return $this->run_post_match_json($qreq, $jp);
-        } else {
-            return $this->run_post_multi_json($jp);
         }
+        return $this->run_post_multi_json($jp);
     }
 
     private function set_post_param(Qrequest $qreq) {
@@ -355,6 +353,8 @@ class Paper_API extends MessageSet {
     private function execute_save($ok, $ps) {
         if ($ok && !$this->dry_run) {
             $ok = $ps->execute_save();
+        } else {
+            $ps->abort_save();
         }
         foreach ($ps->message_list() as $mi) {
             if ($mi->field
@@ -387,7 +387,7 @@ class Paper_API extends MessageSet {
         $ps->log_save_activity("via API");
         if ($this->notify) {
             if (!$this->notify_authors
-                && !$this->user->allow_administer($ps->saved_prow())) {
+                && !$this->user->allow_manage($ps->saved_prow())) {
                 $ps->set_notify_authors(true);
             }
             $ps->notify_followers();
@@ -500,32 +500,39 @@ class Paper_API extends MessageSet {
     }
 
 
+    /** @param string $fname
+     * @return bool */
+    static function should_skip_zip_filename($fname) {
+        return preg_match('/(?:\A|\/)(?:__MACOSX|\.[^\/]*+|\$RECYCLE\.BIN|\#[^\/]*\#|[^\/]*~)(?:\z|\/)/', $fname);
+    }
+
     /** @return array{string,?string} */
     static function analyze_zip_contents($zip) {
         // find common directory prefix
         $dirpfx = null;
+        $xjsons = [];
         for ($i = 0; $i < $zip->numFiles; ++$i) {
             $name = $zip->getNameIndex($i);
+            if (self::should_skip_zip_filename($name)) {
+                continue;
+            }
             if ($dirpfx === null) {
                 $xslash = (int) strrpos($name, "/");
-                $dirpfx = $xslash ? substr($name, 0, $xslash + 1) : "";
+                $dirpfx = $xslash > 0 ? substr($name, 0, $xslash + 1) : "";
             }
             while ($dirpfx !== "" && !str_starts_with($name, $dirpfx)) {
-                $xslash = (int) strrpos($dirpfx, "/", -1);
-                $dirpfx = $xslash ? substr($dirpfx, 0, $xslash + 1) : "";
+                $xslash = (int) strrpos($dirpfx, "/", -2);
+                $dirpfx = $xslash > 0 ? substr($dirpfx, 0, $xslash + 1) : "";
             }
-            if ($dirpfx === "") {
-                break;
+            if (str_ends_with($name, ".json")) {
+                $xjsons[] = $name;
             }
         }
 
         // find JSONs
         $datas = $jsons = [];
-        for ($i = 0; $i < $zip->numFiles; ++$i) {
-            $name = $zip->getNameIndex($i);
-            if (!str_ends_with($name, ".json")
-                || strpos($name, "/", strlen($dirpfx)) !== false
-                || $name[strlen($dirpfx)] === ".") {
+        foreach ($xjsons as $name) {
+            if (strpos($name, "/", strlen($dirpfx)) !== false) {
                 continue;
             }
             $jsons[] = $name;
@@ -646,7 +653,7 @@ class Paper_API extends MessageSet {
             }
         }
 
-        if (!$this->user->can_administer($prow)) {
+        if (!$this->user->can_manage($prow)) {
             return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete {$this->conf->snouns[1]}");
         }
 

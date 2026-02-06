@@ -1,6 +1,6 @@
 <?php
 // settings/s_tagstyle.php -- HotCRP settings > tags > colors page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class TagStyle_Setting {
     /** @var string */
@@ -133,14 +133,15 @@ class TagStyle_SettingParser extends SettingParser {
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["tags" => true]);
         }
-        return true;
     }
 
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "tag_style" || $si->name === "badge") {
-            return $this->_apply_tag_style_req($si, $sv);
-        } else if (($si->name0 === "tag_style/" || $si->name0 === "badge/")
-                   && $si->name2 === "/style") {
+            $this->_apply_tag_style_req($si, $sv);
+            return true;
+        }
+        if (($si->name0 === "tag_style/" || $si->name0 === "badge/")
+            && $si->name2 === "/style") {
             $badge = $si->name0 === "badge/";
             $stylematch = $badge ? TagStyle::BADGE : TagStyle::STYLE;
             if (($v = $sv->base_parse_req($si->name)) !== null

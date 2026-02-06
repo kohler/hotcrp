@@ -42,6 +42,8 @@ class SpecValidator_API {
                     $f |= self::F_BODY;
                 } else if ($p[$i] === "@") {
                     $f |= self::F_FILE;
+                } else if ($p[$i] === "<") {
+                    $f |= self::F_DEPRECATED;
                 } else if ($p[$i] === ":") {
                     $f |= self::F_SUFFIX;
                     $has_suffix = true;
@@ -68,9 +70,8 @@ class SpecValidator_API {
         $param = [];
         foreach (array_keys($_GET) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"], true)
-                    && ($n !== "p" || !($uf->paper ?? false))
-                    && ($n !== "redirect" || !($uf->redirect ?? false))) {
+                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_", ":method:"], true)
+                    && ($n !== "p" || !($uf->paper ?? false))) {
                     self::error($qreq, "query param `{$n}` unknown");
                 }
             } else if (($t & self::F_QUERY) === 0) {
@@ -81,7 +82,8 @@ class SpecValidator_API {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
                 self::error($qreq, "body param `{$n}` unknown");
             } else if (!isset($_GET[$n])
-                       && ($t & self::F_BODY) === 0) {
+                       && ($t & self::F_BODY) === 0
+                       && !$qreq->is_get() /* no `:method:` overriding */) {
                 self::error($qreq, "body param `{$n}` should be in query");
             }
         }
@@ -100,6 +102,7 @@ class SpecValidator_API {
     }
 
     static function response($uf, Qrequest $qreq, $jr) {
+        $post = $qreq->is_post();
         if (!($jr instanceof JsonResult)
             || !isset($uf->response)) {
             return;
@@ -129,9 +132,14 @@ class SpecValidator_API {
                 } else if ($p[$i] === "*") {
                     $f &= ~self::F_REQUIRED;
                     break;
+                } else if ($p[$i] === "+") {
+                    $f |= self::F_POST;
                 } else {
                     break;
                 }
+            }
+            if (!$post && ($f & self::F_POST) !== 0) {
+                continue;
             }
             $n = substr($p, $i);
             $known[$n] = $f;

@@ -1,104 +1,131 @@
 <?php
 // cap_authorview.php -- HotCRP author-view capability management
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class AuthorView_Capability {
+    const AV_DEFAULT = 0;
+    const AV_EXISTING = 1;
+    const AV_CREATE = 2;
+    const AV_RESET = 3;
+
+    const REFRESHABLE_TIME = 86400 * 14;
+
     /** @param PaperInfo $prow
-     * @return ?string */
-    static function make($prow) {
-        if ($prow->_author_view_token !== null) {
-            return $prow->_author_view_token->salt;
+     * @param int $reqtype
+     * @param ?int $invalid_at
+     * @return ?TokenInfo */
+    static function make($prow, $reqtype = 0, $invalid_at = null) {
+        $sharing = $prow->conf->opt("authorSharing") ?? 0;
+        if ($sharing < 0) {
+            return null;
         }
-        if ($prow->conf->opt("disableCapabilities")) {
+        if ($prow->_author_view_token) {
+            self::update_expiration($prow->_author_view_token, $invalid_at, $reqtype);
+            return $prow->_author_view_token;
+        } else if ($prow->_author_view_token === false
+                   && ($reqtype === self::AV_EXISTING
+                       || ($sharing === 0 && $reqtype === self::AV_DEFAULT))) {
             return null;
         }
         // load already-assigned tokens
-        if (count($prow->_row_set) > 5) {
+        if (count($prow->_row_set) > 5 && $reqtype !== self::AV_RESET) {
             $lo = "hcav";
             $hi = "hcaw";
+            foreach ($prow->_row_set as $xrow) {
+                $xrow->_author_view_token = false;
+            }
         } else {
             $lo = "hcav{$prow->paperId}@";
             $hi = "hcav{$prow->paperId}~";
+            $prow->_author_view_token = false;
         }
-        $result = $prow->conf->qe("select * from Capability where salt>=? and salt<?", $lo, $hi);
+        $invalid_allowance = $reqtype === self::AV_RESET ? self::REFRESHABLE_TIME : 0;
+        $result = $prow->conf->qe("select * from Capability
+            where salt>=? and salt<? and capabilityType=?
+            and (timeInvalid=0 or timeInvalid>?) and (timeExpires=0 or timeExpires>?)",
+            $lo, $hi, TokenInfo::AUTHORVIEW,
+            Conf::$now - $invalid_allowance, Conf::$now);
         while (($tok = TokenInfo::fetch($result, $prow->conf, false))) {
-            if (($xrow = $prow->_row_set->get($tok->paperId))
-                && $tok->capabilityType === TokenInfo::AUTHORVIEW) {
+            if (($xrow = $prow->_row_set->get($tok->paperId))) {
                 $xrow->_author_view_token = $tok;
             }
         }
         Dbl::free($result);
         // create new token
-        if (!$prow->_author_view_token || !$prow->_author_view_token->salt) {
+        if ($prow->_author_view_token === false
+            && $reqtype !== self::AV_EXISTING
+            && ($sharing > 0 || $reqtype >= self::AV_CREATE)) {
             $tok = (new TokenInfo($prow->conf, TokenInfo::AUTHORVIEW))
                 ->set_paper($prow)
-                ->set_token_pattern("hcav{$prow->paperId}[16]")
-                ->insert();
+                ->set_token_pattern("hcav{$prow->paperId}[16]");
+            if ($invalid_at === null) {
+                $expires_in = $prow->conf->opt("authorSharingExpiry") ?? -1;
+                $invalid_at = $expires_in < 0 ? 0 : Conf::$now + $expires_in;
+            }
+            self::update_expiration($tok, $invalid_at, self::AV_RESET);
+            $tok->insert();
             if ($tok->stored()) {
                 $prow->_author_view_token = $tok;
             }
         }
         if ($prow->_author_view_token) {
-            return $prow->_author_view_token->salt;
+            self::update_expiration($prow->_author_view_token, $invalid_at, $reqtype);
         }
-        return null;
+        return $prow->_author_view_token ? : null;
+    }
+
+    /** @param PaperInfo $prow
+     * @return ?TokenInfo */
+    static function find($prow) {
+        return self::make($prow, self::AV_EXISTING);
+    }
+
+
+    /** @param TokenInfo $token
+     * @param ?int $invalid_at
+     * @param int $reqtype */
+    static private function update_expiration($token, $invalid_at, $reqtype) {
+        if ($invalid_at === null) {
+            return;
+        }
+        if ($invalid_at < 0) {
+            $invalid_at = 0;
+        }
+        if ($reqtype !== self::AV_RESET
+            && ($token->timeInvalid === 0
+                || $token->timeInvalid >= ($invalid_at ? : PHP_INT_MAX))) {
+            return;
+        }
+        $token->set_invalid_at($invalid_at)
+            ->set_expires_at($invalid_at ? $invalid_at + self::REFRESHABLE_TIME : 0);
+        if ($token->salt) {
+            $token->update();
+        }
+    }
+
+    /** @param PaperInfo $prow */
+    static function remove($prow) {
+        $lo = "hcav{$prow->paperId}@";
+        $hi = "hcav{$prow->paperId}~";
+        $result = $prow->conf->qe("update Capability
+            set timeInvalid=if(timeInvalid=0,?,least(timeInvalid,?)),
+            timeExpires=if(timeExpires=0,?,least(timeExpires,?))
+            where salt>=? and salt<? and capabilityType=?",
+            Conf::$now - self::REFRESHABLE_TIME, Conf::$now - self::REFRESHABLE_TIME,
+            Conf::$now + self::REFRESHABLE_TIME, Conf::$now + self::REFRESHABLE_TIME,
+            $lo, $hi, TokenInfo::AUTHORVIEW);
+        Dbl::free($result);
+        $prow->_author_view_token = false;
     }
 
     static function apply_author_view(Contact $user, $uf) {
         if (($tok = TokenInfo::find($uf->name, $user->conf))
             && $tok->is_active()
             && $tok->capabilityType === TokenInfo::AUTHORVIEW
-            && !$user->conf->opt("disableCapabilities")) {
+            && ($user->conf->opt("authorSharing") ?? 0) >= 0) {
             $user->set_capability("@av{$tok->paperId}", true);
             $user->set_default_cap_param($uf->name, true);
             $tok->update_use(3600)->update();
-        }
-    }
-
-    /** @param PaperInfo $prow
-     * @return string|false */
-    static function make_old($prow) {
-        // A capability has the following representation (. is concatenation):
-        //    capFormat . paperId . capType . hashPrefix
-        // capFormat -- Character denoting format (currently 0).
-        // paperId -- Decimal representation of paper number.
-        // capType -- Capability type (e.g. "a" for author view).
-        // To create hashPrefix, calculate a SHA-1 hash of:
-        //    capFormat . paperId . capType . paperCapVersion . capKey
-        // where paperCapVersion is a decimal representation of the paper's
-        // capability version (usually 0, but could allow conference admins
-        // to disable old capabilities paper-by-paper), and capKey
-        // is a random string specific to the conference, stored in Settings
-        // under cap_key (created in load_settings).  Then hashPrefix
-        // is the base-64 encoding of the first 8 bytes of this hash, except
-        // that "+" is re-encoded as "-", "/" is re-encoded as "_", and
-        // trailing "="s are removed.
-        //
-        // Any user who knows the conference's cap_key can construct any
-        // capability for any paper.  Longer term, one might set each paper's
-        // capVersion to a random value; but the only way to get cap_key is
-        // database access, which would give you all the capVersions anyway.
-
-        $key = $prow->conf->setting_data("cap_key");
-        if (!$key) {
-            $key = base64_encode(random_bytes(16));
-            if (!$key || !$prow->conf->save_setting("cap_key", 1, $key)) {
-                return false;
-            }
-        }
-        $start = "0" . $prow->paperId . "a";
-        $hash = sha1($start . $prow->capVersion . $key, true);
-        $suffix = str_replace(["+", "/", "="], ["-", "_", ""],
-                              base64_encode(substr($hash, 0, 8)));
-        return $start . $suffix;
-    }
-
-    static function apply_old_author_view(Contact $user, $uf) {
-        if (($prow = $user->conf->paper_by_id((int) $uf->match_data[1]))
-            && ($uf->name === self::make_old($prow))
-            && !$user->conf->opt("disableCapabilities")) {
-            $user->set_capability("@av{$prow->paperId}", true);
-            $user->set_default_cap_param($uf->name, true);
         }
     }
 }

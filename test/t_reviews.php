@@ -1783,16 +1783,18 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($r16f->reviewSubmitted, null);
     }
 
+    function test_set_allow_review_requests() {
+        $this->conf->save_refresh_setting("extrev_chairreq", 2);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
+        Contact::update_rights();
+        MailChecker::clear();
+    }
+
     #[RequireCdb(true)]
     function test_requested_reviewer_placeholder() {
         if (!($cdb = $this->conf->contactdb())) {
             return;
         }
-
-        $this->conf->save_refresh_setting("extrev_chairreq", 2);
-        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
-        Contact::update_rights();
-        MailChecker::clear();
 
         $u_ext2p = $this->conf->user_by_email("external2p@_.com");
         xassert(!$u_ext2p);
@@ -1815,6 +1817,83 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $u_ext2p = $this->conf->checked_user_by_email("external2p@_.com");
         xassert(!$u_ext2p->is_placeholder());
+    }
+
+    function test_request_reviewer_primary() {
+        $this->conf->qe("delete from ContactPrimary where contactId in (select contactId from ContactInfo where email like 'mobert%')");
+        $this->conf->qe("delete from ContactInfo where email like 'mobert%'");
+
+        $result = $this->conf->qe("insert into ContactInfo (firstName, lastName, email, affiliation, collaborators, password, cflags) values
+            ('Robert', 'Mobert', 'mobert1@_.com', 'Brandeis', 'German Strawberries', '', 0),
+            ('Robert', 'Mobert', 'mobert2@_.com', 'Brandeis', 'German Strawberries', '', 0),
+            ('Robert', 'Mobert', 'mobert1p@_.com', 'Brandeis', 'German Strawberries', '', 0)");
+        xassert(!Dbl::is_error($result));
+        $mobert1 = $this->conf->fresh_user_by_email("mobert1@_.com");
+        $mobert2 = $this->conf->fresh_user_by_email("mobert2@_.com");
+        $mobert1p = $this->conf->fresh_user_by_email("mobert1p@_.com");
+        (new ContactPrimary)->link($mobert1, $mobert1p);
+        (new ContactPrimary)->link($mobert2, $mobert1p);
+
+        MailChecker::clear();
+        $xqreq = new Qrequest("POST", ["email" => "mobert1@_.com", "name" => "Bobby Bobert", "affiliation" => "Brandeis"]);
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::check_db("t_paperstatus-primary-request-01");
+
+        $assignset = new AssignmentSet($this->u_chair);
+        $assignset->parse("paper,action,user\n18,external,mobert2@_.com");
+        $ok = $assignset->execute();
+        xassert($ok);
+        MailChecker::check0(); // XXXXXX
+
+        $p18 = $this->conf->checked_paper_by_id(18);
+        xassert(!$p18->review_by_user($mobert2));
+        xassert(!!$p18->review_by_user($mobert1p));
+    }
+
+    #[RequireCdb(true)]
+    function test_cdb_request_reviewer_primary() {
+        if (!($cdb = $this->conf->contactdb())) {
+            return;
+        }
+
+        Dbl::qe($cdb, "delete from ContactPrimary where contactId in (select contactDbId from ContactInfo where email like 'bobert%')");
+        Dbl::qe($cdb, "delete from ContactInfo where email like 'bobert%'");
+        $this->conf->qe("delete from ContactPrimary where contactId in (select contactId from ContactInfo where email like 'bobert%')");
+        $this->conf->qe("delete from ContactInfo where email like 'bobert%'");
+
+        $result = Dbl::qe($cdb, "insert into ContactInfo (firstName, lastName, email, affiliation, collaborators, password, cflags) values
+            ('Robert', 'Bobert', 'bobert1@_.com', 'Brandeis', 'German Strawberries', '', 0),
+            ('Robert', 'Bobert', 'bobert2@_.com', 'Brandeis', 'German Strawberries', '', 0),
+            ('Robert', 'Bobert', 'bobert1p@_.com', 'Brandeis', 'German Strawberries', '', 0)");
+        xassert(!Dbl::is_error($result));
+        $bobert1 = $this->conf->fresh_cdb_user_by_email("bobert1@_.com");
+        $bobert2 = $this->conf->fresh_cdb_user_by_email("bobert2@_.com");
+        $bobert1p = $this->conf->fresh_cdb_user_by_email("bobert1p@_.com");
+        (new ContactPrimary)->link($bobert1, $bobert1p);
+        (new ContactPrimary)->link($bobert2, $bobert1p);
+
+        MailChecker::clear();
+        $xqreq = new Qrequest("POST", ["email" => "bobert1@_.com", "name" => "Bobby Bobert", "affiliation" => "Brandeis"]);
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::check_db("t_paperstatus-cdb-primary-request-01");
+
+        $assignset = new AssignmentSet($this->u_chair);
+        $assignset->parse("paper,action,user\n18,external,bobert2@_.com");
+        $ok = $assignset->execute();
+        xassert($ok);
+        MailChecker::check0(); // XXXXXX
+
+        $lbobert2 = $this->conf->user_by_email("bobert2@_.com");
+        $lbobert1p = $this->conf->checked_user_by_email("bobert1p@_.com");
+        $p18 = $this->conf->checked_paper_by_id(18);
+        xassert(!$lbobert2 || !$p18->review_by_user($lbobert2));
+        xassert(!!$p18->review_by_user($lbobert1p));
     }
 
     function test_invariants_last() {

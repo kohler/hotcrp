@@ -1,6 +1,6 @@
 <?php
 // reviewvalues.php -- HotCRP parsed review data
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ReviewValues extends MessageSet {
     /** @var Conf
@@ -76,7 +76,6 @@ class ReviewValues extends MessageSet {
             $this->conf = $rf;
             $this->rf = $this->conf->review_form();
         }
-        $this->set_want_ftext(true);
         $this->clear_req();
     }
 
@@ -351,9 +350,8 @@ class ReviewValues extends MessageSet {
             return true;
         } else if ($x === "nonblind" || $x === "nonanonymous") {
             return false;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param mixed $x
@@ -365,9 +363,8 @@ class ReviewValues extends MessageSet {
             return true;
         } else if ($x === "unready" || $x === "draft") {
             return false;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param mixed $x
@@ -377,9 +374,8 @@ class ReviewValues extends MessageSet {
             return $v ? "approved" : false;
         } else if ($x === "approved" || $x === "submitted") {
             return $x;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return bool */
@@ -699,11 +695,12 @@ class ReviewValues extends MessageSet {
                                          $allow_new_submit, $approvable) {
         $oldstatus = $rrow->reviewStatus;
         $olddelivered = $oldstatus >= ReviewInfo::RS_DELIVERED;
+        $nonempty = $view_score > VIEWSCORE_EMPTY;
         if ($olddelivered
             && (!$this->can_unsubmit
-                || !$user->can_administer($prow))) {
+                || !$user->can_manage_reviews($prow))) {
             $minstatus = $oldstatus;
-        } else if ($view_score > VIEWSCORE_EMPTY
+        } else if ($nonempty
                    || $rrow->reviewModified > 1) {
             $minstatus = ReviewInfo::RS_DRAFTED;
         } else if ($user->is_my_review($rrow)
@@ -724,11 +721,15 @@ class ReviewValues extends MessageSet {
                 $maxstatus = ReviewInfo::RS_COMPLETED;
             } else if ($approval === "approved") {
                 $maxstatus = ReviewInfo::RS_APPROVED;
-            } else {
+            } else if ($nonempty) {
                 $maxstatus = ReviewInfo::RS_DELIVERED;
+            } else {
+                $maxstatus = $oldstatus;
             }
-        } else {
+        } else if ($nonempty) {
             $maxstatus = ReviewInfo::RS_COMPLETED;
+        } else {
+            $maxstatus = $oldstatus;
         }
         return max($maxstatus, $minstatus);
     }
@@ -736,7 +737,6 @@ class ReviewValues extends MessageSet {
     /** @return bool */
     private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow, $new_rrid) {
         assert($prow->paperId === $this->req["paperId"] && $rrow->paperId === $prow->paperId);
-        $admin = $user->allow_administer($prow);
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
         $approvable = $user->can_approve_review($prow, $rrow);
 
@@ -747,7 +747,7 @@ class ReviewValues extends MessageSet {
 
         // can only edit reviews you own or administer
         if (!$user->is_owned_review($rrow)
-            && !$user->can_administer($prow)) {
+            && !$user->can_manage_reviews($prow)) {
             $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
             return false;
         }
@@ -831,7 +831,7 @@ class ReviewValues extends MessageSet {
                 $this->clear_messages_since($before_msgcount);
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
-            } else if ($admin
+            } else if ($user->allow_admin($prow)
                        && !($this->req["override"] ?? false)
                        && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
                 $this->clear_messages_since($before_msgcount);
@@ -891,7 +891,7 @@ class ReviewValues extends MessageSet {
                    || ($oldstatus < ReviewInfo::RS_DELIVERED && !$allow_new_submit)) {
             // unready nonempty review is at least drafted
             if ($this->can_unsubmit
-                && $user->can_administer($prow)) {
+                && $user->can_manage_reviews($prow)) {
                 $newstatus = ReviewInfo::RS_DRAFTED;
             } else {
                 $newstatus = max($oldstatus, ReviewInfo::RS_DRAFTED);
@@ -1418,9 +1418,8 @@ class ReviewValues extends MessageSet {
             return MessageSet::ERROR;
         } else if ($this->has_problem() || $this->finished === 1) {
             return MessageSet::WARNING;
-        } else {
-            return MessageSet::SUCCESS;
         }
+        return MessageSet::SUCCESS;
     }
 
     function report() {

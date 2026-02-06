@@ -1,6 +1,6 @@
 <?php
 // tagger.php -- HotCRP helper class for dealing with tags
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 // Note that tags MUST NOT contain HTML or URL special characters:
 // no "'&<>.  If you add PHP-protected characters, such as $, make sure you
@@ -207,17 +207,24 @@ class TagInfo {
             return $this->autosearch;
         } else if (($this->flags & self::TFM_VOTES) !== 0) {
             return "#*~" . $this->tag;
-        } else {
-            return null;
         }
+        return null;
     }
     /** @return ?SearchTerm */
     function automatic_search_term() {
         if ($this->_autosearch_term === null
             && ($q = $this->automatic_search()) !== null) {
-            $this->_autosearch_term = (new PaperSearch($this->conf->root_user(), ["q" => $q, "t" => "all"]))
-                ->set_expand_automatic(true)
-                ->main_term();
+            $ua = $this->conf->set_updating_automatic_tags(true);
+            $this->_autosearch_term = new False_SearchTerm;
+            $this->_autosearch_term->set_float("circular_reference", true);
+
+            $srch = new PaperSearch($this->conf->root_user(), ["q" => $q, "t" => "all"]);
+            $this->_autosearch_term = $srch->main_term();
+            if ($srch->has_problem_at("circular_reference")) {
+                $this->_autosearch_term = new False_SearchTerm;
+                $this->_autosearch_term->set_float("circular_reference", iterator_to_array($srch->message_list_at("circular_reference")));
+            }
+            $this->conf->set_updating_automatic_tags($ua);
         }
         return $this->_autosearch_term;
     }
@@ -229,9 +236,8 @@ class TagInfo {
             return "count.pc(#_~{$this->tag}) || null";
         } else if (($this->flags & self::TF_ALLOTMENT) !== 0) {
             return "sum.pc(#_~{$this->tag}) || null";
-        } else {
-            return null;
         }
+        return null;
     }
 }
 
@@ -675,7 +681,8 @@ class TagMap {
         $ti = $this->storage[$ltag] ?? null;
         if (!$ti
             && $ltag !== ""
-            && (($ltag[0] === ":" && $this->check_emoji_code($ltag))
+            && ($ltag[0] === "~"
+                || ($ltag[0] === ":" && $this->check_emoji_code($ltag))
                 || isset($this->style_lmap[$ltag])
                 || TagStyle::dynamic_style($ltag, $this))) {
             $ti = $this->ensure($tag);
@@ -832,9 +839,8 @@ class TagMap {
     function is_chair($tag) {
         if ($tag[0] === "~") {
             return $tag[1] === "~";
-        } else {
-            return !!$this->find_having($tag, TagInfo::TF_CHAIR);
         }
+        return !!$this->find_having($tag, TagInfo::TF_CHAIR);
     }
     /** @param string $tag
      * @return bool */
@@ -1125,7 +1131,7 @@ class TagMap {
      * @return bool */
     static function is_tag_string($s, $strict = false) {
         return (string) $s === ""
-            || preg_match($strict ? '/\A(?: [^#\s]+#-?[\d.]+)+\z/' : '/\A(?: \S+)+\z/', $s);
+            || preg_match($strict ? '/\A(?: [^\#\s]+\#-?[\d.]+)+\z/' : '/\A(?: \S+)+\z/', $s);
     }
 
     static function assert_tag_string($tags, $strict = false) {
@@ -1147,7 +1153,7 @@ class TagMap {
 
         // preserve all tags/show no tags optimization
         $view_most = $user->can_view_most_tags($prow);
-        $allow_admin = $user->allow_administer($prow);
+        $allow_admin = $prow ? $user->allow_admin($prow) : $user->privChair;
         $conflict_free = TagInfo::TF_CONFLICT_FREE | ($user->privChair ? TagInfo::TF_SITEWIDE : 0);
         if ($view_most) {
             if (($ctype === self::CENSOR_SEARCH && $allow_admin)
@@ -1738,9 +1744,8 @@ class Tagger {
     function expand($tag) {
         if (strlen($tag) > 2 && $tag[0] === "~" && $tag[1] !== "~" && $this->_contactId) {
             return $this->_contactId . $tag;
-        } else {
-            return $tag;
         }
+        return $tag;
     }
 
 
@@ -1873,10 +1878,9 @@ class Tagger {
         } else if (!$always) {
             return "";
         } else if ($base === $tv) {
-            $q = "#{$base}";
-        } else {
-            $q = "order:#{$base}";
+            return "#{$base}";
         }
+        return "order:#{$base}";
     }
 
     /** @param list<string>|string $viewable

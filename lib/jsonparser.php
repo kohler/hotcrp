@@ -80,50 +80,6 @@ class JsonParser {
     }
 
     /** @param ?string $input
-     * @return $this
-     * @deprecated */
-    function input($input) {
-        return $this->set_input($input);
-    }
-
-    /** @param ?bool $assoc
-     * @param int $maxdepth
-     * @param int $flags
-     * @return $this
-     * @deprecated */
-    function params($assoc = null, $maxdepth = 512, $flags = 0) {
-        return $this->set_params($assoc, $maxdepth, $flags);
-    }
-
-    /** @param ?bool $assoc
-     * @return $this
-     * @deprecated */
-    function assoc($assoc = null) {
-        return $this->set_assoc($assoc);
-    }
-
-    /** @param int $maxdepth
-     * @return $this
-     * @deprecated */
-    function maxdepth($maxdepth = 512) {
-        return $this->set_maxdepth($maxdepth);
-    }
-
-    /** @param int $flags
-     * @return $this
-     * @deprecated */
-    function flags($flags = 0) {
-        return $this->set_flags($flags);
-    }
-
-    /** @param ?string $filename
-     * @return $this
-     * @deprecated */
-    function filename($filename) {
-        return $this->set_filename($filename);
-    }
-
-    /** @param ?string $input
      * @return $this */
     function set_input($input) {
         $this->input = $input;

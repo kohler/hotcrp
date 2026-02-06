@@ -1,6 +1,6 @@
 <?php
 // settings/s_banal.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Banal_Setting {
     public $id;
@@ -14,6 +14,7 @@ class Banal_Setting {
     public $bodylineheight;
     public $unlimitedref;
     public $wordlimit;
+    public $appendix;
 
     /** @param SettingValues $sv
      * @param 'submission'|'final' $id
@@ -28,6 +29,7 @@ class Banal_Setting {
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref", "wordlimit"] as $k) {
             $bs->$k = $cfs->unparse_key($k);
         }
+        $bs->appendix = !$cfs->unparse_key("noappendix");
         return $bs;
     }
 }
@@ -70,6 +72,9 @@ class Banal_SettingParser extends SettingParser {
         echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
         $sv->print_checkbox("format/{$ctr}/unlimitedref", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
         echo '</div></div>';
+        echo '<div class="entryi fx2"><label></label><div class="entry">';
+        $sv->print_checkbox("format/{$ctr}/appendix", "Allow appendix sections");
+        echo '</div></div>';
         if ($sv->conf->opt("allowBanalWordlimit")) {
             $sv->print_entry_group("format/{$ctr}/wordlimit", "Word limit", ["horizontal" => true, "readonly" => !$editable]);
         }
@@ -85,9 +90,8 @@ class Banal_SettingParser extends SettingParser {
                 self::parse($sv, $ctr, true);
             }
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return string */
@@ -96,9 +100,8 @@ class Banal_SettingParser extends SettingParser {
             return "failed";
         } else if ($cf->has_error()) {
             return "error";
-        } else {
-            return $cf->has_problem() ? "warning" : "ok";
         }
+        return $cf->has_problem() ? "warning" : "ok";
     }
 
     /** @param SettingValues $sv */
@@ -205,6 +208,13 @@ class Banal_SettingParser extends SettingParser {
             $cfs->unlimitedref = null;
             if ($cfs->pagelimit && $sv->reqstr("format/{$ctr}/unlimitedref")) {
                 $cfs->unlimitedref = true;
+            }
+        }
+
+        if ($sv->has_req("format/{$ctr}/appendix")) {
+            $cfs->noappendix = null;
+            if (!$sv->reqstr("format/{$ctr}/appendix")) {
+                $cfs->noappendix = true;
             }
         }
 

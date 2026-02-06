@@ -70,12 +70,9 @@ class Author_SearchTerm extends SearchTerm {
             }
         } else if ($can_view) {
             foreach ($row->author_list() as $au) {
-                if ($this->regex) {
-                    $text = $au->name(NAME_E|NAME_A);
-                    if (!Text::match_pregexes($this->regex, $text,
-                                              UnicodeHelper::deaccent($text))) {
-                        continue;
-                    }
+                if ($this->regex
+                    && !$this->regex->match($au->name(NAME_E|NAME_A))) {
+                    continue;
                 }
                 ++$n;
             }

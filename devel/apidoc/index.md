@@ -53,3 +53,9 @@ External applications should authenticate to HotCRP’s API using bearer tokens
 (an `Authorization: bearer` HTTP header). Obtain API tokens using Account
 settings > Developer. HotCRP Javascript makes API calls using session cookies
 for authentication.
+
+
+### Large queries
+
+A `POST` request whose `:method:` query parameter is set to `GET` is treated as
+if it were a `GET` request. Use this to work around URL length limits.

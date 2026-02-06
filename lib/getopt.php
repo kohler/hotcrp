@@ -214,6 +214,9 @@ class Getopt {
      * @return $this */
     function helpopt($helpopt) {
         $this->helpopt = $helpopt;
+        if (!isset($this->po[$helpopt])) {
+            $this->long("{$helpopt} !");
+        }
         return $this;
     }
 
@@ -326,15 +329,16 @@ class Getopt {
 
     /** @param string $opt
      * @param string $help
-     * @param int $len
+     * @param ?int $indent
      * @return string */
-    static function format_help_line($opt, $help, $len = 24) {
+    static function format_help_line($opt, $help, $indent = null) {
+        $indent = $indent ?? (24 + strspn($opt, " "));
         if (($help ?? "") === "") {
             $sep = "";
-        } else if (strlen($opt) <= $len) {
-            $sep = str_repeat(" ", $len + 2 - strlen($opt));
+        } else if (strlen($opt) <= $indent) {
+            $sep = str_repeat(" ", $indent - strlen($opt));
         } else {
-            $sep = "\n  " . str_repeat(" ", $len);
+            $sep = "\n" . str_repeat(" ", $indent);
         }
         return "{$opt}{$sep}{$help}\n";
     }
@@ -387,8 +391,7 @@ class Getopt {
             if (!empty($subarg[$this->helpopt])) {
                 $subcommand = $subarg[$this->helpopt];
             } else if (($subarg["_subcommand"] ?? "") === "{help}") {
-                if (!empty($subarg["_"])
-                    && ($x = $this->find_subcommand($subarg["_"][0])) !== null) {
+                if (($x = $this->find_subcommand($subarg["_"][0] ?? null)) !== null) {
                     $subcommand = $x;
                 }
             } else if (!empty($subarg["_subcommand"])) {
@@ -451,10 +454,10 @@ class Getopt {
         return join("", $s);
     }
 
-    /** @param string $arg
+    /** @param ?string $arg
      * @return ?string */
     function find_subcommand($arg) {
-        if (($sc = $this->subcommand[$arg] ?? null)) {
+        if ($arg !== null && ($sc = $this->subcommand[$arg] ?? null)) {
             return $sc->name;
         } else if ($arg === "help" && $this->helpopt) {
             return "{help}";

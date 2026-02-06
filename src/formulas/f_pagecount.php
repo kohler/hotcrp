@@ -7,15 +7,15 @@ class PageCount_Fexpr extends Fexpr {
     private $chkindex;
     /** @var list<CheckFormat> */
     static public $checkers = [];
-    function __construct(FormulaCall $ff, Formula $formula) {
+    function __construct(FormulaCall $ff) {
         parent::__construct("pagecount");
         $this->chkindex = 0;
         while ($this->chkindex < count(self::$checkers)
-               && self::$checkers[$this->chkindex]->conf !== $formula->conf) {
+               && self::$checkers[$this->chkindex]->conf !== $ff->user->conf) {
             ++$this->chkindex;
         }
         if ($this->chkindex === count(self::$checkers)) {
-            self::$checkers[] = new CheckFormat($formula->conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
+            self::$checkers[] = new CheckFormat($ff->user->conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
         }
     }
     function compile(FormulaCompiler $state) {

@@ -59,7 +59,11 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5]);
+        $class = "";
+        if ($pt->has_editable_pc_conflicts()) {
+            $class = "uii js-update-potential-conflicts";
+        }
+        $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5, "class" => $class]);
     }
     function render(FieldRender $fr, PaperValue $ov) {
         $n = ["<ul class=\"x namelist-columns\">"];

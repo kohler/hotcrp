@@ -1,6 +1,6 @@
 <?php
 // api_preference.php -- HotCRP preference API call
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Preference_API {
     static function pref_api(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
@@ -15,11 +15,11 @@ class Preference_API {
         $postpref = null;
         if ($qreq->method() === "POST") {
             if (!isset($qreq->pref)) {
-                return JsonResult::make_missing_error("pref")->set_status(200);
+                return JsonResult::make_missing_error("pref")->set_response_code(200);
             }
             $postpref = Preference_AssignmentParser::parse_check($qreq->pref, $user->conf);
             if (is_string($postpref)) {
-                return JsonResult::make_parameter_error("pref", $postpref)->set_status(200);
+                return JsonResult::make_parameter_error("pref", $postpref)->set_response_code(200);
             }
         }
 

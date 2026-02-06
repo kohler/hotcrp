@@ -16,6 +16,8 @@ class Hotcrapi_Batch_Site {
     public $site;
     /** @var string */
     public $apitoken;
+    /** @var ?int */
+    public $chunk;
 }
 
 class Hotcrapi_File {
@@ -27,6 +29,8 @@ class Hotcrapi_File {
     public $input_filename;
     /** @var ?int */
     public $size;
+    /** @var ?ZipArchive */
+    private $_zip;
 
     /** @param string $fn
      * @return Hotcrapi_File */
@@ -44,7 +48,7 @@ class Hotcrapi_File {
                 $cf->stream = STDOUT;
                 $cf->input_filename = "<stdout>";
             }
-        } else if (($cf->stream = @fopen($fn, $mode))) {
+        } else if (($cf->stream = @fopen(safe_filename($fn), $mode))) {
             $cf->filename = preg_replace('/\A.*\/(?=[^\/]+\z)/', "", $fn);
             $cf->input_filename = $fn;
         } else {
@@ -69,6 +73,82 @@ class Hotcrapi_File {
         $cf->size = strlen($data);
         return $cf;
     }
+
+    /** @return Hotcrapi_File */
+    static function make_zip() {
+        $temp = tempdir();
+        if (!$temp) {
+            throw new CommandLineException("Could not create temporary directory");
+        }
+        $cf = new Hotcrapi_File;
+        $fn = base48_encode(random_bytes(16)) . ".zip";
+        $cf->input_filename = $temp . $fn;
+        $cf->filename = $fn;
+        $cf->_zip = new ZipArchive;
+        if (!$cf->_zip->open($temp . $fn, ZipArchive::CREATE | ZipArchive::EXCL)) {
+            throw new CommandLineException("Could not create zip archive");
+        }
+        return $cf;
+    }
+
+    /** @param string $filename
+     * @return bool */
+    function zip_contains($filename) {
+        return $this->_zip->locateName($filename) !== false;
+    }
+
+    /** @param string $filename
+     * @return bool */
+    static function zip_allow($filename) {
+        return $filename !== ""
+            && !preg_match('/[\000-\037]|\/\/|\A\/|\/\z|(?:\A|\/)\.\.(?:\/|\z)/', $filename)
+            && is_valid_utf8($filename)
+            && strlen($filename) <= 255;
+    }
+
+    /** @param string $filename */
+    static private function _zip_verify_filename($filename) {
+        if (!self::zip_allow($filename)) {
+            throw new CommandLineException("{$filename}: Bad zip filename");
+        }
+    }
+
+    /** @param string $filename
+     * @param string $content */
+    function zip_add_string($filename, $content) {
+        self::_zip_verify_filename($filename);
+        if (!$this->_zip->addFromString($filename, $content)) {
+            throw new CommandLineException("{$filename}: Could not extend zip archive");
+        }
+    }
+
+    /** @param string $filename
+     * @param string|Hotcrapi_File $file */
+    function zip_add_file($filename, $file) {
+        self::_zip_verify_filename($filename);
+        $fname = is_string($file) ? $file : $file->input_filename;
+        if (!is_string($file) && str_starts_with($fname, "<")) {
+            if (($content = @stream_get_contents($file->stream)) === false) {
+                throw CommandLineException::make_file_error($fname);
+            }
+            $this->zip_add_string($filename, $content);
+        } else if (!$this->_zip->addFile($fname, $filename)) {
+            throw CommandLineException::make_file_error($fname);
+        }
+    }
+
+    function zip_complete() {
+        $ok = $this->_zip->close();
+        $this->_zip = null;
+        if (!$ok
+            || !($this->stream = @fopen($this->input_filename, "rb"))) {
+            throw new CommandLineException("Could not create zip archive");
+        }
+        if (($stat = fstat($this->stream))
+            && $stat["size"] > 0) {
+            $this->size = $stat["size"];
+        }
+    }
 }
 
 class Hotcrapi_Batch extends MessageSet {
@@ -90,9 +170,10 @@ class Hotcrapi_Batch extends MessageSet {
     /** @var bool
      * @readonly */
     public $progress = false;
+    /** @var Getopt
+     * @readonly */
+    public $getopt;
 
-    /** @var CurlHandle */
-    public $curlh;
     /** @var resource */
     public $headerf;
     /** @var int */
@@ -121,9 +202,15 @@ class Hotcrapi_Batch extends MessageSet {
     private $_subcommand_class = [];
 
     /** @var ?int */
+    private $_columns;
+    /** @var ?int */
     private $_progress_start_time;
     /** @var string */
     private $_progress_prefix = "";
+    /** @var ?int */
+    private $_progress_text_width;
+    /** @var string */
+    private $_progress_text = "";
     /** @var ?int */
     private $_progress_time;
     /** @var bool */
@@ -132,13 +219,7 @@ class Hotcrapi_Batch extends MessageSet {
     private $_progress_printed = false;
 
     function __construct() {
-        $this->curlh = curl_init();
-        curl_setopt($this->curlh, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($this->curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
         $this->headerf = fopen("php://memory", "w+b");
-        curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->headerf);
-        curl_setopt($this->curlh, CURLOPT_SAFE_UPLOAD, true);
     }
 
     /** @param bool $x
@@ -165,11 +246,44 @@ class Hotcrapi_Batch extends MessageSet {
         return $this;
     }
 
+    /** @param string $x
+     * @return ?int */
+    static function parse_size($x) {
+        if (!preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $x, $m)) {
+            return null;
+        }
+        $n = (float) $m[1];
+        if ($m[2] !== "") {
+            /** @phan-suppress-next-line PhanParamSuspiciousOrder */
+            $x = (int) strpos(".kmg", strtolower($m[2][0]));
+            if (strlen($m[2]) === 2) {
+                $n *= 10 ** (3 * $x);
+            } else {
+                $n *= 1 << (10 * $x);
+            }
+        }
+        return (int) $n;
+    }
+
     /** @param bool $x
      * @suppress PhanAccessReadOnlyProperty
      * @return $this */
     function set_progress($x) {
         $this->progress = $x;
+        return $this;
+    }
+
+    /** @param string $prefix
+     * @return $this */
+    function set_progress_prefix($prefix) {
+        $this->_progress_prefix = $prefix;
+        return $this;
+    }
+
+    /** @param ?int $width
+     * @return $this */
+    function set_progress_text_width($width) {
+        $this->_progress_text_width = $width;
         return $this;
     }
 
@@ -209,7 +323,7 @@ class Hotcrapi_Batch extends MessageSet {
 
     /** @param mixed $x
      * @return $this */
-    function set_json_output($x) {
+    function set_output_json($x) {
         return $this->set_output(json_encode_db($x, JSON_PRETTY_PRINT) . "\n");
     }
 
@@ -266,6 +380,12 @@ class Hotcrapi_Batch extends MessageSet {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `apitoken`");
                 }
                 $this->_siteconfig[$sn]->apitoken = $s;
+            } else if (preg_match('/\A\s*+chunk\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
+                $s = self::unquote($m[1]);
+                if (($c = self::parse_size($s)) === null) {
+                    throw new CommandLineException("{$fname}:{$line}: Invalid `chunk`");
+                }
+                $this->_siteconfig[$sn]->chunk = $c;
             } else if (preg_match('/\A\s*+default\s*+=\s*+true\s*+\z/', $l, $m)) {
                 $this->_default_siteconfig = $this->_siteconfig[$sn];
             }
@@ -277,6 +397,9 @@ class Hotcrapi_Batch extends MessageSet {
             }
             if ($this->apitoken === null && $dsc->apitoken !== null) {
                 $this->set_apitoken($dsc->apitoken);
+            }
+            if ($this->chunk === null && $dsc->chunk !== null) {
+                $this->set_chunk($dsc->chunk);
             }
         }
     }
@@ -290,12 +413,18 @@ class Hotcrapi_Batch extends MessageSet {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_site($s) {
+        if (is_string($s) && isset($this->_siteconfig[$s])) {
+            $s = $this->_siteconfig[$s];
+        }
         if ($s instanceof Hotcrapi_Batch_Site) {
             if ($s->site !== null) {
                 $this->site = $s->site;
             }
             if ($s->apitoken !== null) {
                 $this->set_apitoken($s->apitoken);
+            }
+            if ($s->chunk !== null) {
+                $this->set_chunk($s->chunk);
             }
         } else {
             $this->site = $s;
@@ -327,7 +456,6 @@ class Hotcrapi_Batch extends MessageSet {
             throw new CommandLineException("Invalid APITOKEN");
         }
         $this->apitoken = $t;
-        curl_setopt($this->curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
         return $this;
     }
 
@@ -336,52 +464,115 @@ class Hotcrapi_Batch extends MessageSet {
         return $this->apitoken !== null;
     }
 
+    /** @param 'GET'|'POST'|'DELETE' $method
+     * @return CurlHandle */
+    function make_curl($method = null) {
+        $curlh = curl_init();
+        curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $method ?? "POST");
+        curl_setopt($curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
+        curl_setopt($curlh, CURLOPT_WRITEHEADER, $this->headerf);
+        curl_setopt($curlh, CURLOPT_SAFE_UPLOAD, true);
+        if ($this->apitoken) {
+            curl_setopt($curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
+        }
+        return $curlh;
+    }
+
     /** @return $this */
     function progress_start() {
         $this->_progress_start_time = hrtime(true);
         return $this;
     }
 
-    /** @param string $prefix
+    /** @param string $text
      * @return $this */
-    function progress_prefix($prefix) {
-        $this->_progress_prefix = $prefix;
+    function set_progress_text($text) {
+        $this->_progress_text = $text;
         return $this;
+    }
+
+    /** @param string $text
+     * @param null|int|float $amount
+     * @param null|int|float $max */
+    function progress_show_text($text, $amount = null, $max = null) {
+        $this->_progress_text = $text;
+        $this->progress_show($amount, $max);
+    }
+
+    /** @return int */
+    function columns() {
+        if ($this->_columns !== null) {
+            return $this->_columns;
+        }
+        $this->_columns = stoi(getenv("COLUMNS", true));
+        if ($this->_columns === null) {
+            $x = (string) shell_exec("stty -a 2>&1");
+            if (preg_match('/(\d+) columns/', $x, $m)) {
+                $this->_columns = intval($m[1]);
+            } else {
+                $this->_columns = 80;
+            }
+        }
+        return $this->_columns;
     }
 
     function progress_show($amount, $max) {
         if (!$this->progress) {
             return;
         }
+
         $now = hrtime(true);
         if ($this->_progress_time === null
             ? $now - $this->_progress_start_time < 500000000
             : $now - $this->_progress_time < 100000000) {
             return;
         }
-        $m = $this->_progress_printed ? "\r" : "";
         $this->_progress_time = $now;
+
+        $cr = $this->_progress_printed ? "\r" : "";
+        $this->_progress_printed = true;
+
+        $suffix = $amount !== null ? " | " . unparse_byte_size_binary_f($amount) : "";
+        $prefix = $this->_progress_prefix;
+        if ($this->_progress_text !== "") {
+            if ($prefix !== "" && !str_ends_with($prefix, " ")) {
+                $prefix .= " | ";
+            }
+            $prefix .= $this->_progress_text;
+        }
+        $columns = $this->columns();
+        $prefixlim = max($columns - max(strlen($suffix) + 12, 24), 12);
+        $prefixpad = min($prefixlim, $this->_progress_text_width ?? strlen($prefix));
+        if (strlen($prefix) > $prefixlim) {
+            $first = (int) (($prefixlim - 3) * 0.7);
+            $prefix = substr($prefix, 0, $first) . "..." . substr($prefix, -($prefixlim - 3 - $first));
+        } else if ($prefix !== "" && strlen($prefix) < $prefixpad) {
+            $prefix = str_pad($prefix, $prefixpad);
+        }
+        if ($prefix !== "") {
+            $prefix .= " | ";
+        }
+        if ($max !== null && $amount !== null) {
+            $prefix .= sprintf("%3d%% | ", $max === 0 ? 100 : (int) round($amount / $max * 100));
+        }
+
+        $width = max((int) ($columns - strlen($prefix) - max(strlen($suffix) + 2, 10)), 15);
+
         if ($max === null || $amount === null) {
             // bounce a 3-character spaceship every 4 seconds
             // 0 seconds: 0 spaces; 2 seconds: 40 spaces; 4 seconds: 80 spaces (= 0 spaces)
             $mod4sec = (int) (($now - $this->_progress_start_time) / 1000) % 4000000;
-            $xsp = (int) floor($mod4sec * 80 / 4000000);
-            $sp = $xsp > 40 ? 80 - $xsp : $xsp;
-            $s = sprintf("%s%s%*s===%*s | %s\x1b[K", $m,
-                         $this->_progress_prefix,
-                         $sp, "", 40 - $sp, "",
-                         $amount === null ? "" : unparse_byte_size_binary_f($amount));
+            $xsp = (int) floor($mod4sec * $width * 2 / 4000000);
+            $sp = $xsp > $width ? $width * 2 - $xsp : $xsp;
+            $s = sprintf("%s%s%*s===%*s%s\x1b[K", $cr,
+                         $prefix, $sp, "", $width - $sp, "", $suffix);
         } else {
-            $barw = $max === 0 ? 40 : (int) round($amount / $max * 40);
-            $s = sprintf("%s%s%s%3d%% | %-40s | %s\x1b[K", $m,
-                         $this->_progress_prefix,
-                         $this->_progress_prefix === "" ? "" : " ",
-                         $max === 0 ? 100 : (int) round($amount / $max * 100),
-                         str_repeat("#", $barw),
-                         unparse_byte_size_binary_f($amount));
+            $barw = $max === 0 ? $width : (int) round($amount / $max * $width);
+            $s = sprintf("%s%s%-{$width}s%s\x1b[K", $cr,
+                         $prefix, str_repeat("#", $barw), $suffix);
         }
         fwrite(STDERR, $s);
-        $this->_progress_printed = true;
     }
 
     function progress_snapshot() {
@@ -396,23 +587,25 @@ class Hotcrapi_Batch extends MessageSet {
         $this->_progress_start_time = $this->_progress_time = null;
     }
 
-    /** @param callable(resource,int,int,int,int) $progressf
+    /** @param CurlHandle $curlh
+     * @param callable(resource,int,int,int,int) $progressf
      * @return $this */
-    function set_curl_progress($progressf) {
+    function set_curl_progress($curlh, $progressf) {
         if ($this->progress) {
             $curlopt = defined("CURLOPT_XFERINFOFUNCTION") ? CURLOPT_XFERINFOFUNCTION : CURLOPT_PROGRESSFUNCTION;
-            curl_setopt($this->curlh, $curlopt, $progressf);
-            curl_setopt($this->curlh, CURLOPT_NOPROGRESS, 0);
+            curl_setopt($curlh, $curlopt, $progressf);
+            curl_setopt($curlh, CURLOPT_NOPROGRESS, 0);
             $this->_progress_active = true;
         }
         return $this;
     }
 
-    /** @param ?callable(Hotcrapi_Batch):bool $skip_function
+    /** @param CurlHandle $curlh
+     * @param ?callable(Hotcrapi_Batch):bool $skip_function
      * @return bool */
-    function exec_api($skip_function = null) {
+    function exec_api($curlh, $skip_function = null) {
         if ($this->verbose) {
-            $url = curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL);
+            $url = curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL);
             if ($this->_progress_active) {
                 $this->progress_snapshot();
                 fwrite(STDERR, "{$url}\n");
@@ -422,15 +615,15 @@ class Hotcrapi_Batch extends MessageSet {
         }
         rewind($this->headerf);
         ftruncate($this->headerf, 0);
-        $this->content_string = curl_exec($this->curlh);
-        curl_setopt($this->curlh, CURLOPT_NOPROGRESS, 1);
-        $this->status_code = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
-        $this->decorated_content_type = curl_getinfo($this->curlh, CURLINFO_CONTENT_TYPE);
+        $this->content_string = curl_exec($curlh);
+        curl_setopt($curlh, CURLOPT_NOPROGRESS, 1);
+        $this->status_code = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
+        $this->decorated_content_type = curl_getinfo($curlh, CURLINFO_CONTENT_TYPE);
         $this->content_type = preg_replace('/\s*;.*\z/s', "", $this->decorated_content_type);
         if ($this->verbose) {
             if ($this->_progress_active) {
                 $this->progress_snapshot();
-                fwrite(STDERR, curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL) . " → {$this->status_code}\n");
+                fwrite(STDERR, curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL) . " → {$this->status_code}\n");
             } else {
                 fwrite(STDERR, " → {$this->status_code}\n");
             }
@@ -497,11 +690,12 @@ class Hotcrapi_Batch extends MessageSet {
     }
 
     /** @param list<string> $argv
-     * @return Hotcrapi_Batch */
+     * @return Hotcrapi_Batch
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_args($argv) {
         $hcli = new Hotcrapi_Batch;
 
-        $getopt = (new Getopt)->long(
+        $hcli->getopt = (new Getopt)->long(
             "help::,h:: !",
             "S:,siteurl:,url: =SITE Site URL",
             "T:,token: =APITOKEN API token",
@@ -516,12 +710,15 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
          ->helpopt("help")
          ->interleave(true)
          ->subcommand(true);
-        Test_CLIBatch::register($hcli, $getopt);
-        Paper_CLIBatch::register($hcli, $getopt);
-        Search_CLIBatch::register($hcli, $getopt);
-        Settings_CLIBatch::register($hcli, $getopt);
-        Upload_CLIBatch::register($hcli, $getopt);
-        $arg = $getopt->parse($argv);
+        Test_CLIBatch::register($hcli);
+        Paper_CLIBatch::register($hcli);
+        Document_CLIBatch::register($hcli);
+        Search_CLIBatch::register($hcli);
+        Assign_CLIBatch::register($hcli);
+        Autoassign_CLIBatch::register($hcli);
+        Settings_CLIBatch::register($hcli);
+        Upload_CLIBatch::register($hcli);
+        $arg = $hcli->getopt->parse($argv);
 
         $hcli->load_config_file($arg["config"] ?? null);
 
@@ -561,27 +758,17 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             $hcli->set_progress(true);
         }
         if (isset($arg["chunk"])) {
-            if (!preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $arg["chunk"], $m)) {
+            if (($c = $hcli->parse_size($arg["chunk"])) === null) {
                 throw new CommandLineException("Invalid `--chunk`");
             }
-            $n = (float) $m[1];
-            if ($m[2] !== "") {
-                /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-                $x = (int) strpos(".kmg", strtolower($m[2][0]));
-                if (strlen($m[2]) === 2) {
-                    $n *= 10 ** (3 * $x);
-                } else {
-                    $n *= 1 << (10 * $x);
-                }
-            }
-            $hcli->set_chunk((int) $n);
+            $hcli->set_chunk($c);
         }
 
         if (($callback = $hcli->_subcommand_class[$arg["_subcommand"]] ?? null)) {
             if (is_string($callback) && class_exists($callback)) {
                 $callback = "{$callback}::make_arg";
             }
-            $hcli->set_command(call_user_func($callback, $hcli, $getopt, $arg));
+            $hcli->set_command(call_user_func($callback, $hcli, $arg));
         } else {
             throw new CommandLineException("Subcommand required");
         }

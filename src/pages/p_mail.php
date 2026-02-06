@@ -50,7 +50,7 @@ class Mail_Page {
         if (isset($qreq->recipients) && !isset($qreq->to)) {
             $qreq->to = $qreq->recipients;
         }
-        if (!isset($qreq->t) || !isset($this->search_topt[$qreq->t])) {
+        if (!isset($qreq->t)) {
             $qreq->t = (array_keys($this->search_topt))[0];
         }
         if (isset($qreq->monreq)) {
@@ -180,7 +180,7 @@ class Mail_Page {
 <hr class="g">
 
 <div class="ctable no-hmargin">
-<dl class="ctelt">
+<dl class="bsp ctelt">
 <dt><code>{{LINK}}</code></dt>
     <dd>Site URL.</dd>
 <dt><code>{{NUMSUBMITTED}}</code></dt>
@@ -195,7 +195,7 @@ class Mail_Page {
     <dd>Email address of recipient.</dd>
 <dt><code>{{REVIEWDEADLINE}}</code></dt>
     <dd>Reviewing deadline appropriate for recipient.</dd>
-</dl><dl class="ctelt">
+</dl><dl class="bsp ctelt">
 <dt><code>{{PID}}</code></dt>
     <dd>Paper number relevant for mail.</dd>
 <dt><code>{{TITLE}}</code></dt>
@@ -208,7 +208,7 @@ class Mail_Page {
 
         $opts = array_filter($this->conf->options()->normal(), function ($o) {
             return $o->search_keyword() !== false
-                && $o->on_render_context(FieldRender::CFMAIL);
+                && $o->published(FieldRender::CFMAIL);
         });
         usort($opts, function ($a, $b) {
             if ($a->is_final() !== $b->is_final()) {
@@ -228,14 +228,14 @@ class Mail_Page {
             echo "</dd>\n<dt><code>{{IF(", htmlspecialchars($opts[0]->search_keyword()), ')}}...{{ENDIF}}</code></dt>
     <dd>Include text if paper has a “', $opts[0]->title_html(), "” submission field.</dd>\n";
         }
-        echo '</dl><dl class="ctelt">
+        echo '</dl><dl class="bsp ctelt">
 <dt><code>{{REVIEWS}}</code></dt>
     <dd>Pretty-printed paper reviews.</dd>
 <dt><code>{{COMMENTS}}</code></dt>
     <dd>Pretty-printed paper comments, if any.</dd>
 <dt><code>{{COMMENTS(<i>tag</i>)}}</code></dt>
     <dd>Comments tagged #<code><i>tag</i></code>, if any.</dd>
-</dl><dl class="ctelt">
+</dl><dl class="bsp ctelt">
 <dt><code>{{IF(SHEPHERD)}}...{{ENDIF}}</code></dt>
     <dd>Include text if a shepherd is assigned.</dd>
 <dt><code>{{SHEPHERD}}</code></dt>
@@ -244,7 +244,7 @@ class Mail_Page {
     <dd>Shepherd name, if any.</dd>
 <dt><code>{{SHEPHERDEMAIL}}</code></dt>
     <dd>Shepherd email, if any.</dd>
-</dl><dl class="ctelt">
+</dl><dl class="bsp ctelt">
 <dt><code>{{IF(#<i>tag</i>)}}...{{ENDIF}}</code></dt>
     <dd>Include text if paper has tag <code><i>tag</i></code>.</dd>
 <dt><code>{{TAGVALUE(<i>tag</i>)}}</code></dt>
@@ -308,7 +308,7 @@ class Mail_Page {
                 $this->recip->warning_at("q", "<0>No papers match that search");
             }
         }
-        echo '<div class="', $this->recip->control_class("q", "fx8 mt-1 d-flex"), '">';
+        echo '<div class="', $this->recip->control_class("q", "fx8 mt-1"), '"><div class="d-flex">';
         if (!$this->viewer->privChair) {
             echo '<label for="q" class="mr-2">Papers:</label>';
         }
@@ -317,13 +317,17 @@ class Mail_Page {
                 "class" => "papersearch need-suggest js-autosubmit",
                 "size" => $this->viewer->privChair ? 36 : 32,
                 "data-submit-fn" => "psearch"
-            ]), '<div class="form-basic-search-in"> in ';
-        if (count($this->search_topt) === 1) {
-            echo htmlspecialchars($this->search_topt[$this->qreq->t]);
-        } else {
-            echo Ht::select("t", $this->search_topt, $this->qreq->t, ["id" => "t"]);
+            ]), '<div class="form-basic-search-in"><span class="form-basic-search-type"';
+        if (count($this->search_topt) === 1 || !isset($this->search_topt[$this->qreq->t])) {
+            echo ' hidden';
         }
-        echo Ht::submit("psearch", "Search"), '</div></div>',
+        echo '> in ';
+        $topt = $this->search_topt;
+        if (!isset($topt[$this->qreq->t])) {
+            $topt[$this->qreq->t] = ["data-special-limit" => true];
+        }
+        echo Ht::select("t", $topt, $this->qreq->t, ["id" => "t"]),
+            '</span>', Ht::submit("psearch", "Search", ["class" => "basic-search"]), '</div></div></div>',
             $this->recip->feedback_html_at("q");
         if ($plist && !$plist->is_empty()) {
             echo '<div class="fx8 mt-2">';
@@ -369,7 +373,7 @@ class Mail_Page {
 
         // form
         echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
-                "id" => "mailform",
+                "id" => "f-mail",
                 "data-default-messages" => json_encode_browser((object) $templates),
                 "class" => "ui-submit js-selector-summary"
             ]),

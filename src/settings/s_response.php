@@ -1,6 +1,6 @@
 <?php
 // settings/s_response.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Response_Setting {
     /** @var int */
@@ -237,7 +237,8 @@ class Response_SettingParser extends SettingParser {
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "response") {
             return $this->apply_response_req($si, $sv);
-        } else if ($si->name2 === "/name") {
+        }
+        if ($si->name2 === "/name") {
             if (($v = $sv->base_parse_req($si)) !== null) {
                 $lv = strtolower($v);
                 if ($lv === "1" || $lv === "unnamed" || $lv === "none") {
@@ -247,7 +248,8 @@ class Response_SettingParser extends SettingParser {
                 }
             }
             return false;
-        } else if ($si->name2 === "/condition") {
+        }
+        if ($si->name2 === "/condition") {
             if (($v = $sv->base_parse_req($si)) !== "" && $v !== "all") {
                 $search = new PaperSearch($sv->conf->root_user(), $v);
                 foreach ($search->message_list() as $mi) {
@@ -255,9 +257,8 @@ class Response_SettingParser extends SettingParser {
                 }
             }
             return false;
-        } else {
-            return false;
         }
+        return false;
     }
 
     function apply_response_req(Si $si, SettingValues $sv) {

@@ -1,12 +1,12 @@
 <?php
 // o_authorcertification.php -- HotCRP helper class for authors intrinsic
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class AuthorCertification_Entry {
+    /** @var string */
+    public $email;
     /** @var int */
     public $uid;
-    /** @var ?string */
-    public $email;
     /** @var ?Contact */
     public $user;
     /** @var bool */
@@ -28,10 +28,14 @@ class AuthorCertification_Entry {
     const AUS_NOACCOUNT = 3;
     const AUS_DUPLICATE = 4;
 
+    /** @param string $email */
+    function __construct($email) {
+        $this->email = $email;
+    }
+
     /** @return AuthorCertification_Entry */
     static function make_email_by($email, $value, $admin, $viewer) {
-        $e = new AuthorCertification_Entry;
-        $e->email = $email;
+        $e = new AuthorCertification_Entry($email);
         $e->value = $value;
         $e->at = Conf::$now;
         $e->admin = $admin;
@@ -53,46 +57,75 @@ class AuthorCertification_Entry {
         }
         return empty($d) ? null : (object) $d;
     }
+}
+
+use AuthorCertification_Entry as ACEntry;
+
+
+class AuthorCertification_EntryList implements IteratorAggregate {
+    /** @var list<AuthorCertification_Entry> */
+    public $es = [];
+    /** @var PaperOption */
+    private $option;
+    /** @var int */
+    private $skip_pid = -1;
+    /** @var ?array<int,int> */
+    private $counts;
 
     /** @param list<Author> $authors
-     * @return list<AuthorCertification_Entry> */
+     * @return AuthorCertification_EntryList */
     static function make_author_list(Conf $conf, $authors) {
         foreach ($authors as $auth) {
             $conf->prefetch_user_by_email($auth->email);
         }
         $lemap = [];
-        $entries = [];
+        $elist = new AuthorCertification_EntryList;
         foreach ($authors as $auth) {
-            $entries[] = $e = new AuthorCertification_Entry;
+            $e = new AuthorCertification_Entry($auth->email);
+            $elist->append($e);
             $e->value = false;
             $e->author = $auth;
             if ($auth->email === "") {
-                $e->austatus = $auth->is_empty() ? self::AUS_EMPTY : self::AUS_NOEMAIL;
+                $e->austatus = $auth->is_empty() ? ACEntry::AUS_EMPTY : ACEntry::AUS_NOEMAIL;
                 continue;
             }
-            $e->email = $auth->email;
             $lemail = strtolower($e->email);
             if (isset($lemap[$lemail])) {
-                $e->austatus = self::AUS_DUPLICATE;
+                $e->austatus = ACEntry::AUS_DUPLICATE;
                 continue;
             }
             $lemap[$lemail] = true;
             $e->user = $conf->user_by_email($auth->email, USER_SLICE);
             if (!$e->user) {
-                $e->austatus = self::AUS_NOACCOUNT;
+                $e->austatus = ACEntry::AUS_NOACCOUNT;
                 continue;
             }
-            $e->austatus = self::AUS_OK;
+            $e->austatus = ACEntry::AUS_OK;
             $e->uid = $e->user->contactId;
         }
-        return $entries;
+        return $elist;
+    }
+
+    /** @return bool */
+    function is_empty() {
+        return empty($this->es);
+    }
+
+    /** @param AuthorCertification_Entry $e */
+    function append($e) {
+        $this->es[] = $e;
+        $this->counts = null;
+    }
+
+    #[\ReturnTypeWillChange]
+    function getIterator() {
+        return new ArrayIterator($this->es);
     }
 
     /** @param int $uid
-     * @param list<AuthorCertification_Entry> $entries
      * @return ?AuthorCertification_Entry */
-    static function find_by_id($uid, $entries) {
-        foreach ($entries as $e) {
+    function find_by_id($uid) {
+        foreach ($this->es as $e) {
             if ($e->uid === $uid)
                 return $e;
         }
@@ -100,10 +133,9 @@ class AuthorCertification_Entry {
     }
 
     /** @param string $email
-     * @param list<AuthorCertification_Entry> $entries
      * @return ?AuthorCertification_Entry */
-    static function find_by_email($email, $entries) {
-        foreach ($entries as $e) {
+    function find_by_email($email) {
+        foreach ($this->es as $e) {
             if ($e->user && strcasecmp($e->user->email, $email) === 0)
                 return $e;
         }
@@ -111,12 +143,11 @@ class AuthorCertification_Entry {
     }
 
     /** @param Contact $u
-     * @param list<AuthorCertification_Entry> $entries
      * @return ?AuthorCertification_Entry */
-    static function find_by_user($u, $entries) {
+    function find_by_user($u) {
         $uid1 = $u->contactId;
         $uid2 = $u->primaryContactId ? : $u->contactId;
-        foreach ($entries as $e) {
+        foreach ($this->es as $e) {
             if ($e->uid === $uid1
                 || $e->uid === $uid2
                 || ($e->user && $e->user->primaryContactId === $uid2))
@@ -124,19 +155,84 @@ class AuthorCertification_Entry {
         }
         return null;
     }
+
+
+    function set_option(PaperOption $option, $skip_pid) {
+        $this->option = $option;
+        $this->skip_pid = $skip_pid;
+    }
+
+    /** @return array<int,int> */
+    private function submission_counts() {
+        if ($this->counts !== null) {
+            return $this->counts;
+        }
+        $this->counts = [];
+        $conf = $this->option->conf;
+
+        $assignments = [];
+        foreach ($this->es as $e) {
+            if (!$e->user || isset($this->counts[$e->uid])) {
+                continue;
+            }
+            $this->counts[$e->uid] = 0;
+            if ($e->user->primaryContactId <= 0
+                && ($e->user->cflags & Contact::CF_PRIMARY) === 0) {
+                $assignments[$e->uid] = [$e->uid];
+                continue;
+            }
+            foreach ($conf->linked_user_ids($e->uid) as $xuid) {
+                if (!in_array($e->uid, $assignments[$xuid] ?? [], true)) {
+                    $assignments[$xuid][] = $e->uid;
+                }
+            }
+        }
+
+        $result = $conf->qe("select Paper.paperId, value
+            from PaperOption join Paper using (paperId)
+            where paperId!=? and optionId=? and value?a and timeWithdrawn<=0",
+            $this->skip_pid, $this->option->id, array_keys($assignments));
+        $pids = [];
+        while (($row = $result->fetch_row())) {
+            $pid = (int) $row[0];
+            $uid = (int) $row[1];
+            foreach ($assignments[$uid] as $xuid) {
+                if (!in_array($pid, $pids[$xuid] ?? [], true)) {
+                    $pids[$xuid][] = $pid;
+                    $this->counts[$xuid] = ($this->counts[$xuid] ?? 0) + 1;
+                }
+            }
+        }
+        $result->close();
+
+        return $this->counts;
+    }
+
+    /** @param Contact $user
+     * @return int */
+    function submission_count(Contact $user) {
+        $counts = $this->submission_counts();
+        return $counts[$user->contactId];
+    }
 }
 
-use AuthorCertification_Entry as ACEntry;
+use AuthorCertification_EntryList as ACEntryList;
+
 
 class AuthorCertification_PaperOption extends PaperOption {
     /** @var int */
     private $max_submissions;
+    /** @var list<string> */
+    private $max_submissions_problems;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->max_submissions = $args->max_submissions ?? 0;
         if ($this->required === self::REQ_REGISTER) {
             $this->set_required(self::REQ_SUBMIT);
+        }
+        if ($this->visibility() === self::VIS_SUB) {
+            $this->set_visibility(self::VIS_AUTHOR);
         }
     }
 
@@ -152,18 +248,19 @@ class AuthorCertification_PaperOption extends PaperOption {
     }
 
     /** @param PaperValue $ov
-     * @return list<AuthorCertification_Entry> */
+     * @return AuthorCertification_EntryList */
     static function entries($ov) {
         self::prefetch_entries($ov);
         $conf = $ov->prow->conf;
-        $entries = [];
+        $elist = new AuthorCertification_EntryList;
         foreach ($ov->value_list() as $i => $v) {
-            if ($v <= 0) {
+            $u = $v > 0 ? $conf->user_by_id($v, USER_SLICE) : null;
+            if (!$u) {
                 continue;
             }
-            $e = new AuthorCertification_Entry;
+            $e = new AuthorCertification_Entry($u->email);
             $e->uid = $v;
-            $e->user = $conf->user_by_id($v, USER_SLICE);
+            $e->user = $u;
             if (($j = json_decode_object($ov->data_by_index($i)))) {
                 if (isset($j->value)) {
                     $e->value = $j->value;
@@ -176,9 +273,9 @@ class AuthorCertification_PaperOption extends PaperOption {
                 }
                 $e->by = $j->by ?? $v;
             }
-            $entries[] = $e;
+            $elist->append($e);
         }
-        return $entries;
+        return $elist;
     }
 
     function value_export_json(PaperValue $ov, PaperExport $pex) {
@@ -205,7 +302,7 @@ class AuthorCertification_PaperOption extends PaperOption {
     /** @param string $email
      * @return bool */
     static function user_can_change(Contact $user, PaperInfo $prow, $email) {
-        if ($user->can_administer($prow)
+        if ($user->can_manage($prow)
             || strcasecmp($user->email, $email) === 0) {
             return true;
         }
@@ -225,6 +322,9 @@ class AuthorCertification_PaperOption extends PaperOption {
         if (!$this->test_required($ov->prow)
             || $this->value_present($ov)
             || $ov->prow->allow_absent()) {
+            if ($this->max_submissions > 0) {
+                return $this->_value_check_max_submissions($ov);
+            }
             return true;
         }
         $status = $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING;
@@ -233,12 +333,42 @@ class AuthorCertification_PaperOption extends PaperOption {
         return false;
     }
 
+    private function max_submissions_error_for($email) {
+        return $this->conf->_("<5>{email} has reached the certification limit",
+            new FmtArg("email", $email, 0),
+            new FmtArg("max_submissions", $this->max_submissions, 0));
+    }
 
-    /** @return list<AuthorCertification_Entry> */
+    private function max_submissions_inform_for($email, $action) {
+        return $this->conf->_("<5>Each author may certify up to {max_submissions} {submissions}. To certify this {submission}, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).",
+            new FmtArg("action", $action, 0),
+            new FmtArg("max_submissions", $this->max_submissions, 0),
+            new FmtArg("url", $this->conf->hoturl_raw("search", ["t" => "act", "q" => $this->search_keyword() . ":" . $email]), 0));
+    }
+
+    private function _value_check_max_submissions(PaperValue $ov) {
+        if ($ov->prow->timeSubmitted > 0 || !$ov->prow->want_submitted()) {
+            return true;
+        }
+        $entries = self::entries($ov);
+        $entries->set_option($this, -1);
+        $ok = true;
+        foreach ($entries as $e) {
+            if ($entries->submission_count($e->user) > $this->max_submissions) {
+                $ov->error($this->max_submissions_error_for($e->email));
+                $ov->inform($this->max_submissions_inform_for($e->email, "submit"));
+                $ok = false;
+            }
+        }
+        return $ok;
+    }
+
+
+    /** @return AuthorCertification_EntryList */
     static private function author_option_entries(PaperInfo $prow) {
         $auov = $prow->force_option(PaperOption::AUTHORSID);
         $aulist = Authors_PaperOption::author_list($auov);
-        return ACEntry::make_author_list($prow->conf, $aulist);
+        return ACEntryList::make_author_list($prow->conf, $aulist);
     }
 
     function value_check(PaperValue $ov, Contact $user) {
@@ -264,8 +394,8 @@ class AuthorCertification_PaperOption extends PaperOption {
                 $ov->warning($this->conf->_("<0>Author #{}’s email address {} is also used for another author. All authors must have different emails to complete this certification", $e->author->author_index, $e->author->email));
             } else if ($base_entries !== null
                        && $e->austatus === ACEntry::AUS_OK
-                       && !ACEntry::find_by_user($e->user, $entries)
-                       && ACEntry::find_by_user($e->user, $base_entries)) {
+                       && !$entries->find_by_user($e->user)
+                       && $base_entries->find_by_user($e->user)) {
                 $base_entries = null;
             }
         }
@@ -275,16 +405,17 @@ class AuthorCertification_PaperOption extends PaperOption {
         }
     }
 
-    /** @return bool */
+    /** @param AuthorCertification_EntryList $entries
+     * @return bool */
     private function entries_complete(PaperInfo $prow, $entries) {
-        if (empty($entries)) {
+        if ($entries->is_empty()) {
             return false;
         }
         // retrieve author emails; missing, duplicate, none => no certification
         $has_author = false;
         foreach (self::author_option_entries($prow) as $e) {
             if ($e->austatus === ACEntry::AUS_OK
-                && ACEntry::find_by_user($e->user, $entries)) {
+                && $entries->find_by_user($e->user)) {
                 $has_author = true;
             } else if ($e->austatus !== ACEntry::AUS_EMPTY) {
                 return false;
@@ -297,10 +428,10 @@ class AuthorCertification_PaperOption extends PaperOption {
         $conf = $auov->prow->conf;
         $base_aulist = Authors_PaperOption::author_list($base_auov);
         $aulist = Authors_PaperOption::author_list($auov);
-        foreach (ACEntry::make_author_list($conf, $aulist) as $e) {
+        foreach (ACEntryList::make_author_list($conf, $aulist) as $e) {
             if ($e->email !== ""
                 && !Author::find_by_email($e->email, $base_aulist)
-                && (!$e->user || !ACEntry::find_by_user($e->user, $entries))) {
+                && (!$e->user || !$entries->find_by_user($e->user))) {
                 $ps->append_item(MessageItem::estop_at("authors", $this->conf->_("<0>You can’t add {} to the author list at this time", $e->author->name(NAME_P | NAME_A))));
                 $ps->append_item(MessageItem::inform_at("authors", $this->conf->_("<0>{} hasn’t certified the {} field, and certification is required for submission. You can add authors by first converting this {submission} to a draft.", $e->email, $this->edit_title())));
                 $ps->append_item(MessageItem::error_at("authors:{$e->author->author_index}"));
@@ -338,63 +469,20 @@ class AuthorCertification_PaperOption extends PaperOption {
         return PaperValue::make_multi($ov->prow, $this, $values, $datas);
     }
 
-    /** @param list<AuthorCertification_Entry> $entries
-     * @return array<int,int> */
-    private function load_submission_counts(PaperInfo $prow, $entries) {
-        $assignments = $counts = [];
-        foreach ($entries as $e) {
-            if (!$e->user || isset($counts[$e->uid])) {
-                continue;
-            }
-            $counts[$e->uid] = 0;
-            if ($e->user->primaryContactId <= 0
-                && ($e->user->cflags & Contact::CF_PRIMARY) === 0) {
-                $assignments[$e->uid] = [$e->uid];
-                continue;
-            }
-            foreach ($prow->conf->linked_user_ids($e->uid) as $xuid) {
-                if (!in_array($e->uid, $assignments[$xuid] ?? [], true)) {
-                    $assignments[$xuid][] = $e->uid;
-                }
-            }
-        }
-
-        $result = $prow->conf->qe("select paperId, value from PaperOption where paperId!=? and optionId=? and value?a", $prow->paperId, $this->id, array_keys($assignments));
-        $pids = [];
-        while (($row = $result->fetch_row())) {
-            $pid = (int) $row[0];
-            $uid = (int) $row[1];
-            foreach ($assignments[$uid] as $xuid) {
-                if (!in_array($pid, $pids[$xuid] ?? [], true)) {
-                    $pids[$xuid][] = $pid;
-                    $counts[$xuid] = ($counts[$xuid] ?? 0) + 1;
-                }
-            }
-        }
-        $result->close();
-        return $counts;
-    }
-
     /** @param Contact $user
-     * @param PaperInfo $prow
-     * @param list<AuthorCertification_Entry> $entries
-     * @param array<int,int> &$submission_counts
+     * @param AuthorCertification_EntryList $entries
      * @param list<MessageItem> &$msgs
      * @return bool */
-    private function resolve_max_submissions($user, $prow, $entries, &$submission_counts, &$msgs) {
-        if ($this->max_submissions <= 0) {
+    private function resolve_max_submissions($user, $entries, &$msgs) {
+        if ($this->max_submissions <= 0
+            || $entries->submission_count($user) < $this->max_submissions) {
             return true;
         }
-        $submission_counts = $submission_counts
-            ?? $this->load_submission_counts($prow, $entries);
-        if ($submission_counts[$user->contactId] < $this->max_submissions) {
-            return true;
-        }
-        $msgs[] = MessageItem::error_at($this->field_key(), $this->conf->_("<0>{} cannot certify this {submission}, because each author can certify at most {} of their {submissions}", $user->email, $this->max_submissions));
+        $this->max_submissions_problems[] = $user->email;
         return false;
     }
 
-    /** @param list<AuthorCertification_Entry> $entries
+    /** @param AuthorCertification_EntryList $entries
      * @param list<MessageItem> $msgs
      * @return PaperValue */
     private function resolve_parse(PaperInfo $prow, $entries, Contact $user, $msgs = []) {
@@ -405,31 +493,32 @@ class AuthorCertification_PaperOption extends PaperOption {
             $ne->user = $prow->conf->user_by_email($ne->email, USER_SLICE);
             $ne->uid = $ne->user ? $ne->user->contactId : 0;
         }
+        $entries->set_option($this, $prow->paperId);
+        $this->max_submissions_problems = [];
 
-        $xentries = [];
+        $xentries = new AuthorCertification_EntryList;
         $baseov = $prow->base_option($this);
         $base_entries = self::entries($baseov);
-        $subcounts = null;
         foreach ($base_entries as $basee) {
-            $ne = ACEntry::find_by_id($basee->uid, $entries);
+            $ne = $entries->find_by_id($basee->uid);
             if ($ne
                 && $basee->value !== $ne->value
                 && self::user_can_change($user, $prow, $ne->user->email)) {
                 if ($ne->value
-                    && $this->resolve_max_submissions($ne->user, $prow, $entries, $subcounts, $msgs)) {
-                    $xentries[] = $ne;
+                    && $this->resolve_max_submissions($ne->user, $entries, $msgs)) {
+                    $xentries->append($ne);
                 }
             } else if ($basee->value) {
-                $xentries[] = $basee;
+                $xentries->append($basee);
             }
         }
         foreach ($entries as $ne) {
             if ($ne->user
                 && $ne->value
-                && !ACEntry::find_by_id($ne->uid, $base_entries)
+                && !$base_entries->find_by_id($ne->uid)
                 && self::user_can_change($user, $prow, $ne->user->email)
-                && $this->resolve_max_submissions($ne->user, $prow, $entries, $subcounts, $msgs)) {
-                $xentries[] = $ne;
+                && $this->resolve_max_submissions($ne->user, $entries, $msgs)) {
+                $xentries->append($ne);
             }
         }
 
@@ -446,13 +535,18 @@ class AuthorCertification_PaperOption extends PaperOption {
         if (!empty($msgs)) {
             $ov->message_set()->append_list($msgs);
         }
+        foreach ($this->max_submissions_problems as $i => $email) {
+            $ov->error($this->max_submissions_error_for($email));
+            $ov->inform($this->max_submissions_inform_for($email, "certify"));
+        }
+        $this->max_submissions_problems = null;
         return $ov;
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $okey = $this->field_key();
-        $entries = [];
-        $admin = $qreq->user()->can_administer($prow);
+        $entries = new AuthorCertification_EntryList;
+        $admin = $qreq->user()->can_manage($prow);
         for ($n = 1; true; ++$n) {
             $ekey = "{$okey}:{$n}:email";
             $email = $qreq[$ekey];
@@ -464,9 +558,7 @@ class AuthorCertification_PaperOption extends PaperOption {
             if (($v = friendly_boolean($vstr)) === null) {
                 continue;
             }
-            $entries[] = ACEntry::make_email_by(
-                $email, $v, $admin, $qreq->user()
-            );
+            $entries->append(ACEntry::make_email_by($email, $v, $admin, $qreq->user()));
         }
         return $this->resolve_parse($prow, $entries, $qreq->user());
     }
@@ -481,8 +573,9 @@ class AuthorCertification_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
 
-        $entries = $msgs = [];
-        $admin = $user->can_administer($prow);
+        $entries = new AuthorCertification_EntryList;
+        $msgs = [];
+        $admin = $user->can_manage($prow);
         foreach ($j as $i => $ej) {
             if (is_array($ej) && !array_is_list($ej)) {
                 $ej = (object) $ej;
@@ -496,7 +589,7 @@ class AuthorCertification_PaperOption extends PaperOption {
                 $msgs[] = MessageItem::error_at($this->formid, "<0>Invalid author email ‘{$x}’");
                 continue;
             }
-            $entries[] = $e = ACEntry::make_email_by(
+            $e = ACEntry::make_email_by(
                 $ej->email, $ej->value ?? true, $ej->admin ?? $admin, $user
             );
             if (isset($ej->at) && is_int($ej->at)) {
@@ -505,6 +598,7 @@ class AuthorCertification_PaperOption extends PaperOption {
             if (isset($ej->by) && is_int($ej->by)) {
                 $e->by = $ej->by;
             }
+            $entries->append($e);
         }
         return $this->resolve_parse($prow, $entries, $user, $msgs);
     }
@@ -520,7 +614,7 @@ class AuthorCertification_PaperOption extends PaperOption {
             if (!$auth->email) {
                 continue;
             }
-            $oe = ACEntry::find_by_email($auth->email, $entries);
+            $oe = $entries->find_by_email($auth->email);
             $oval = $oe && $oe->value;
             if (!self::user_can_change($pt->user, $pt->prow, $auth->email)) {
                 $name = $auth->name_h(NAME_E | NAME_A);
@@ -530,7 +624,7 @@ class AuthorCertification_PaperOption extends PaperOption {
                     . "</span></span>{$name}</div></li>";
                 continue;
             }
-            $reqe = ACEntry::find_by_email($auth->email, $reqentries);
+            $reqe = $entries->find_by_email($auth->email);
             $reqoval = $reqe && $reqe->value;
             $ready[(int) $oval][] = "<li class=\"odname\"><label class=\"checki\"><span class=\"checkc\">"
                 . Ht::checkbox("{$okey}:{$n}:value", 1, $reqoval, [
@@ -559,9 +653,79 @@ class AuthorCertification_PaperOption extends PaperOption {
         echo "</fieldset></div>\n\n";
     }
 
-    function render(FieldRender $fr, PaperValue $ov) {
+    function print_web_edit_hidden(PaperTable $pt, $ov) {
+        echo '<fieldset name="', $this->formid, '" role="none" hidden>';
+        $entries = self::entries($ov);
+        $okey = $this->field_key();
+        $n = 0;
+        foreach ($pt->prow->author_list() as $auth) {
+            if ($auth->email) {
+                $oe = $entries->find_by_email($auth->email);
+                $oval = $oe && $oe->value;
+                echo Ht::checkbox("{$okey}:{$n}:value", 1, $oval, ["disabled" => true]);
+                ++$n;
+            }
+        }
+        if ($n === 0) {
+            echo Ht::checkbox("", 1, false, ["hidden" => true, "disabled" => true]);
+        }
+        echo '</fieldset>';
     }
 
+    function render(FieldRender $fr, PaperValue $ov) {
+        if (($fr->context & FieldRender::CFFORM) === 0) {
+            return;
+        }
+        $entries = self::entries($ov);
+        $ready = [[], []];
+        foreach ($ov->prow->author_list() as $auth) {
+            if (!$auth->email) {
+                continue;
+            }
+            $oe = $entries->find_by_email($auth->email);
+            $oval = $oe && $oe->value;
+            $ready[(int) $oval][] = '<li class="odname">' . $auth->name_h(NAME_E | NAME_A) . "</li>";
+        }
+        $t = "";
+        if (!empty($ready[1])) {
+            $mb = empty($ready[0]) ? " mb-0" : "";
+            $t .= '<h4 class="mb-0 font-italic">Complete</h4><ul class="x' . $mb . '">' . join("", $ready[1]) . '</ul>';
+        }
+        if (!empty($ready[0])) {
+            $t .= '<h4 class="mb-0 font-italic">Incomplete</h4><ul class="x mb-0">' . join("", $ready[0]) . '</ul>';
+        }
+        if ($t === "") {
+            $t .= '<h4 class="mb-0 font-italic">No authors yet</h4>';
+        }
+        $fr->value = $t;
+        $fr->value_format = 5;
+    }
+
+    function search_examples(Contact $viewer, $venue) {
+        return [
+            $this->has_search_example(),
+            $this->make_search_example(
+                $this->search_keyword() . ":{email}",
+                "<0>submission’s {title} field has been certified by {email}",
+                new FmtArg("email", "anne@dudfield.org", 0)
+            )
+        ];
+    }
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
+        $w = $sword->word;
+        if (strcasecmp($w, "me") === 0) {
+            $w = $srch->user->email;
+        }
+        if (strpos($w, "@") !== false) {
+            $u = $srch->conf->user_by_email($w);
+            // XXX warn if no user
+            if (!$u) {
+                return new False_SearchTerm;
+            }
+            return new OptionValueIn_SearchTerm($srch->user, $this, $srch->conf->linked_user_ids($u->contactId));
+        }
+        return null;
+    }
     function present_script_expression() {
         return ["type" => "all_checkboxes", "formid" => $this->formid];
     }
@@ -573,6 +737,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         }
         return $j;
     }
+
     function export_setting() {
         $sfs = parent::export_setting();
         $sfs->max_submissions = $this->max_submissions;

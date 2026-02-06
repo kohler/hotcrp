@@ -12,6 +12,8 @@ class CheckInvariants_Batch {
     public $conf;
     /** @var bool */
     public $verbose;
+    /** @var bool */
+    public $quiet;
     /** @var list<string> */
     public $fix;
     /** @var ?string */
@@ -25,13 +27,17 @@ class CheckInvariants_Batch {
     /** @var int */
     public $level;
     /** @var int */
+    public $limit;
+    /** @var int */
     private $width = 47;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->verbose = isset($arg["verbose"]);
+        $this->quiet = !$this->verbose && isset($arg["quiet"]);
         $this->fix = $arg["fix"] ?? [];
         $this->level = $arg["level"] ?? 0;
+        $this->limit = $arg["limit"] ?? 1;
         $this->list = isset($arg["list"]);
         if (isset($arg["fix-autosearch"])) {
             $this->fix[] = "autosearch";
@@ -63,10 +69,12 @@ class CheckInvariants_Batch {
 
     /** @param string $report */
     function report_fix($report) {
-        $fix = $this->color ? " \x1b[01;36mFIX\x1b[m\n" : " FIX\n";
-        fwrite(STDERR,
-            str_pad("{$this->conf->dbname}: {$report} ", $this->width, ".")
-            . $fix);
+        if (!$this->quiet) {
+            $fix = $this->color ? " \x1b[01;36mFIX\x1b[m\n" : " FIX\n";
+            fwrite(STDERR,
+                str_pad("{$this->conf->dbname}: {$report} ", $this->width, ".")
+                . $fix);
+        }
     }
 
     /** @return int */
@@ -81,19 +89,38 @@ class CheckInvariants_Batch {
 
     /** @return int */
     function run() {
-        $ic = (new ConfInvariants($this->conf))->set_level($this->level);
+        $ic = (new ConfInvariants($this->conf))
+            ->set_level($this->level)
+            ->set_limit($this->limit);
         $ncheck = 0;
         $ro = new ReflectionObject($ic);
         $color = $this->color = $this->color ?? posix_isatty(STDERR);
         $ic->set_color($this->color);
+        if ($this->verbose || $this->quiet) {
+            $ic->buffer_messages();
+        }
         $dbname = $this->conf->dbname;
+        $mpfx = "";
+
+        $all = [];
+        $match = [];
         foreach ($ro->getMethods() as $m) {
-            if (!str_starts_with($m->name, "check_")
-                || $m->name === "check_all"
-                || ($this->regex && !preg_match($this->regex, $m->name))) {
+            if ($m->name === "check_all") {
                 continue;
             }
+            if (str_starts_with($m->name, "check_")) {
+                $all[] = $m;
+            } else if (!$this->regex || !str_starts_with($m->name, "alias_")) {
+                continue;
+            }
+            if ($this->regex && preg_match($this->regex, $m->name)) {
+                $match[] = $m;
+            }
+        }
+
+        foreach ($this->regex ? $match : $all as $m) {
             ++$ncheck;
+
             $mlevel = $this->method_level($m);
             if ($this->list) {
                 $lpfx = $lsfx = "";
@@ -107,6 +134,7 @@ class CheckInvariants_Batch {
                 fwrite(STDOUT, $lpfx . substr($m->name, 6) . "{$lsfx}\n");
                 continue;
             }
+
             if ($this->verbose) {
                 $mpfx = str_pad("{$dbname}: {$m->name} ", $this->width, ".") . " ";
                 if ($color) {
@@ -114,8 +142,11 @@ class CheckInvariants_Batch {
                 } else {
                     fwrite(STDERR, $mpfx);
                 }
-                $ic->buffer_messages();
-                $ic->{$m->name}();
+            }
+
+            $ic->{$m->name}();
+
+            if ($this->verbose) {
                 $msgs = $ic->take_buffered_messages();
                 if ($color && $msgs !== "") {
                     $msgs = preg_replace('/^' . preg_quote($this->conf->dbname) . ' invariant violation:/m',
@@ -128,81 +159,107 @@ class CheckInvariants_Batch {
                 } else {
                     fwrite(STDERR, "OK\n");
                 }
-            } else {
-                $ic->{$m->name}();
+            } else if ($this->quiet) {
+                $ic->take_buffered_messages();
             }
         }
         if ($this->regex && $ncheck === 0) {
-            fwrite(STDERR, "No matching invariants\n");
+            if (!$this->quiet) {
+                fwrite(STDERR, "No matching invariants\n");
+            }
             return 1;
         }
         if ($this->list) {
             return 0;
         }
 
-        if (isset($ic->problems["no_papersub"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("no_papersub") && $this->want_fix("summary")) {
             $this->report_fix("`no_papersub` summary setting");
             $this->conf->update_papersub_setting(0);
+            $ic->resolve_problem("no_papersub");
         }
-        if (isset($ic->problems["paperacc"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("paperacc") && $this->want_fix("summary")) {
             $this->report_fix("`paperacc` summary setting");
             $this->conf->update_paperacc_setting(0);
+            $ic->resolve_problem("paperacc");
         }
-        if (isset($ic->problems["rev_tokens"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("rev_tokens") && $this->want_fix("summary")) {
             $this->report_fix("`rev_tokens` summary setting");
             $this->conf->update_rev_tokens_setting(0);
+            $ic->resolve_problem("rev_tokens");
         }
-        if (isset($ic->problems["paperlead"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("paperlead") && $this->want_fix("summary")) {
             $this->report_fix("`paperlead` summary setting");
             $this->conf->update_paperlead_setting(0);
+            $ic->resolve_problem("paperlead");
         }
-        if (isset($ic->problems["papermanager"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("papermanager") && $this->want_fix("summary")) {
             $this->report_fix("`papermanager` summary setting");
             $this->conf->update_papermanager_setting(0);
+            $ic->resolve_problem("papermanager");
         }
-        if (isset($ic->problems["metareviews"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("metareviews") && $this->want_fix("summary")) {
             $this->report_fix("`metareviews` summary setting");
             $this->conf->update_metareviews_setting(0);
+            $ic->resolve_problem("metareviews");
         }
-        if (isset($ic->problems["autosearch"]) && $this->want_fix("autosearch")) {
+        if ($ic->has_problem("autosearch") && $this->want_fix("autosearch")) {
             $this->report_fix("automatic tags");
             $this->conf->update_automatic_tags();
+            $ic->resolve_problem("autosearch");
         }
-        if (isset($ic->problems["inactive"]) && $this->want_fix("inactive")) {
+        if (($ic->has_problem("inactive") || $ic->has_problem("noninactive"))
+            && $this->want_fix("inactive")) {
             $this->report_fix("inactive documents");
             $this->fix_inactive_documents();
+            $ic->resolve_problem("inactive");
+            $ic->resolve_problem("noninactive");
         }
-        if (isset($ic->problems["paper_denormalization"]) && $this->want_fix("document-match")) {
+        if ($ic->has_problem("paper_denormalization") && $this->want_fix("document-match")) {
             $this->report_fix("document match");
             $this->fix_document_match();
+            $ic->resolve_problem("paper_denormalization");
         }
-        if (isset($ic->problems["user_whitespace"]) && $this->want_fix("whitespace")) {
+        if ($ic->has_problem("user_whitespace") && $this->want_fix("whitespace")) {
             $this->report_fix("whitespace");
             $this->fix_whitespace();
+            $ic->resolve_problem("user_whitespace");
         }
-        if (isset($ic->problems["reviewNeedsSubmit"]) && $this->want_fix("reviews")) {
+        if ($ic->has_problem("reviewNeedsSubmit") && $this->want_fix("reviews")) {
             $this->report_fix("reviewNeedsSubmit");
             $this->fix_reviewNeedsSubmit();
+            $ic->resolve_problem("reviewNeedsSubmit");
         }
-        if (isset($ic->problems["roles"]) && $this->want_fix("roles")) {
+        if ($ic->has_problem("roles") && $this->want_fix("roles")) {
             $this->report_fix("roles");
             $this->fix_roles();
+            $ic->resolve_problem("roles");
         }
-        if (isset($ic->problems["cdbRoles"]) && $this->want_fix("cdbroles")) {
+        if ($ic->has_problem("cdbRoles") && $this->want_fix("cdbroles")) {
             $this->report_fix("cdbroles");
             $this->fix_cdbroles();
+            $ic->resolve_problem("cdbRoles");
         }
-        if (isset($ic->problems["author_contacts"]) && $this->want_fix("authors")) {
-            $this->report_fix("author_contacts");
-            $this->fix_author_contacts();
+        if ($ic->has_problem("author_conflicts") && $this->want_fix("authors")) {
+            $this->report_fix("author_conflicts");
+            $this->fix_author_conflicts();
+            $ic->resolve_problem("author_conflicts");
         }
-        return 0;
+        if ($this->want_fix("unnamed_authors")) {
+            $this->report_fix("unnamed_authors");
+            $this->fix_unnamed_authors();
+        }
+        return $ic->ok() ? 0 : 1;
     }
 
     private function fix_inactive_documents() {
-        $this->conf->qe("update PaperStorage s join Paper p on (p.paperId=s.paperId and (p.paperStorageId=s.paperStorageId or p.finalPaperStorageId=s.paperStorageId)) set s.inactive=0");
+        $this->conf->qe("lock tables PaperStorage write, Paper read, DocumentLink read, PaperOption read");
 
-        $this->conf->qe("update PaperStorage s join DocumentLink l on (l.documentId=s.paperStorageId) set s.inactive=0");
+        $this->conf->qe("update PaperStorage set inactive=1");
+
+        $this->conf->qe("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and (Paper.paperStorageId=PaperStorage.paperStorageId or Paper.finalPaperStorageId=PaperStorage.paperStorageId)) set PaperStorage.inactive=0");
+
+        $this->conf->qe("update PaperStorage join DocumentLink on (DocumentLink.documentId=PaperStorage.paperStorageId) set PaperStorage.inactive=0");
 
         $oids = [];
         foreach ($this->conf->options()->universal() as $o) {
@@ -211,8 +268,10 @@ class CheckInvariants_Batch {
             }
         }
         if (!empty($oids)) {
-            $this->conf->qe("update PaperStorage s join PaperOption o on (o.paperId=s.paperId and o.optionId?a and o.value=s.paperStorageId) set s.inactive=0", $oids);
+            $this->conf->qe("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.optionId?a and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0", $oids);
         }
+
+        $this->conf->qe("unlock tables");
     }
 
     private function fix_document_match() {
@@ -240,6 +299,7 @@ class CheckInvariants_Batch {
             where reviewType>0 and reviewType!=" . REVIEW_SECONDARY);
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     private function fix_whitespace() {
         $result = $this->conf->qe("select * from ContactInfo");
         $mq = Dbl::make_multi_qe_stager($this->conf->dblink);
@@ -306,24 +366,90 @@ class CheckInvariants_Batch {
         }
     }
 
-    private function fix_author_contacts() {
-        $authors = ConfInvariants::author_lcemail_map($this->conf);
+    private function fix_author_conflicts() {
+        // fix CONFLICT_AUTHOR
+        $paus = ConfInvariants::author_lcemail_map($this->conf);
 
-        $result = $this->conf->qe("select email from ContactInfo");
+        $caus = [];
+        $result = $this->conf->qe("select email, group_concat(paperId)
+            from ContactInfo join PaperConflict using (contactId)
+            where (conflictType&?)!=0
+            group by ContactInfo.contactId",
+            CONFLICT_AUTHOR);
         while (($row = $result->fetch_row())) {
-            unset($authors[strtolower($row[0])]);
+            $lemail = strtolower($row[0]);
+            $caus[$lemail] = explode(",", $row[1]);
+            if (!isset($paus[$lemail])) {
+                $paus[$lemail] = [];
+            }
         }
         $result->close();
 
-        $confs = [];
-        foreach ($authors as $email => $pids) {
-            $u = $this->conf->ensure_user_by_email($email);
-            foreach ($pids as $pid) {
-                $confs[] = [$pid, $u->contactId, CONFLICT_AUTHOR];
+        $stager = Dbl::make_multi_qe_stager($this->conf->dblink);
+        foreach ($paus as $lemail => $ppids) {
+            $cpids = $caus[$lemail] ?? [];
+            $d1 = array_diff($ppids, $cpids);
+            if (empty($d1) && count($ppids) === count($cpids)) {
+                continue;
+            }
+            $u = $this->conf->ensure_user_by_email($lemail);
+            foreach ($d1 as $pid) {
+                $stager("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=conflictType|?",
+                    $pid, $u->contactId, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
+            }
+            foreach (array_diff($cpids, $ppids) as $pid) {
+                $stager("update PaperConflict set conflictType=(conflictType&~?)|? where paperId=? and contactId=?",
+                    CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR, $pid, $u->contactId);
             }
         }
+        $stager(null);
 
-        $this->conf->qe("insert into PaperConflict values ?v on duplicate key update conflictType=PaperConflict.conflictType|?", $confs, CONFLICT_AUTHOR);
+        // fix CONFLICT_CONTACTAUTHOR: add to primary
+        $deluids = [];
+        $ins = [];
+        $result = $this->conf->qe("select contactId, primaryContactId, group_concat(paperId)
+            from ContactInfo join PaperConflict using (contactId)
+            where primaryContactId>0 and (conflictType&?)!=0
+            group by ContactInfo.contactId",
+            CONFLICT_CONTACTAUTHOR);
+        while (($row = $result->fetch_row())) {
+            $puid = (int) $row[1];
+            foreach (explode(",", $row[2]) as $pid) {
+                $ins[] = [(int) $pid, $puid, CONFLICT_CONTACTAUTHOR];
+            }
+        }
+        $result->close();
+
+        if (!empty($ins)) {
+            $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+                values ?v
+                on duplicate key update conflictType=conflictType|?",
+                $ins, CONFLICT_CONTACTAUTHOR);
+        }
+    }
+
+    private function fix_unnamed_authors() {
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields(0) . " from ContactInfo where firstName='' and lastName='' and affiliation='' and exists (select * from PaperConflict pc where pc.contactId=ContactInfo.contactId and (pc.conflictType&" . CONFLICT_AUTHOR . ")!=0)");
+        while (($user = Contact::fetch($result, $this->conf))) {
+            if (($cdbu = $user->cdb_user())) {
+                $user->set_prop("firstName", $cdbu->firstName, 2);
+                $user->set_prop("lastName", $cdbu->lastName, 2);
+                $user->set_prop("affiliation", $cdbu->affiliation, 2);
+            }
+            foreach ($user->authored_papers() as $prow) {
+                if (($au = $prow->author_by_email($user->email))) {
+                    $user->set_prop("firstName", $au->firstName, 2);
+                    $user->set_prop("lastName", $au->lastName, 2);
+                    $user->set_prop("affiliation", $au->affiliation, 2);
+                }
+            }
+            if ($user->prop_changed()) {
+                fwrite(STDERR, ". {$user->email}: {$user->firstName} {$user->lastName} ({$user->affiliation})\n");
+                $user->save_prop();
+                $user->export_prop(1);
+            }
+        }
+        $result->close();
     }
 
     static function list_fixes() {
@@ -337,7 +463,9 @@ class CheckInvariants_Batch {
             "config:,c: !",
             "help,h !",
             "verbose,V Be verbose",
+            "quiet,q,silent Do not print error messages",
             "level:,l: {n} Set invariant level [0]",
+            "limit: =N {n} Limit to N errors per type [1]",
             "list",
             "fix-autosearch ! Repair any incorrect autosearch tags",
             "fix-inactive ! Repair any inappropriately inactive documents",

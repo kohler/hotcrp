@@ -320,7 +320,7 @@ Assignment methods:
 </ul>
 <hr>
 <p>Types of PC review:</p>
-<dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
+<dl class="bsp"><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
   <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>
   <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
   <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
@@ -399,7 +399,7 @@ Assignment methods:
         echo Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
             " &nbsp; <span class=\"hint\">You’ll be able to check the assignments before they are saved.</span>\n";
 
-        echo '<div class="mt-4"><a href="', $conf->hoturl("=search", ["fn" => "get", "getfn" => "pcassignments", "t" => "manager", "q" => "", "p" => "all"]), '">Download current PC review assignments</a></div>';
+        echo '<div class="mt-4"><a href="', $conf->hoturl("=search", ["fn" => "get", "getfn" => "pcassignments", "t" => "alladmin", "q" => "", "p" => "all"]), '">Download current PC review assignments</a></div>';
 
         echo "</form>\n\n";
 

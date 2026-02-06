@@ -5,7 +5,7 @@
 class Help_Page {
     /** @param HelpRenderer $hth */
     static function show_list($hth) {
-        echo "<dl>\n";
+        echo "<dl class=\"bsp\">\n";
         foreach ($hth->groups() as $ht) {
             if ($ht->name !== "list" && isset($ht->title)) {
                 echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">',
@@ -49,18 +49,16 @@ class Help_Page {
 
         $hth = new HelpRenderer($help_topics, $user);
 
-        echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">';
-        if ($topic !== "topics") {
-            echo '<a href="', $conf->hoturl("help"), '" class="q uic js-leftmenu">Help</a>';
-        } else {
-            echo "Help";
-        }
-        echo '</h1><ul class="leftmenu-list">';
+        echo '<div class="leftmenu-left">',
+            '<nav class="leftmenu-menu collapsed" aria-label="Help topics">',
+            '<h1 class="leftmenu"><button type="button" class="q ui js-leftmenu">Help',
+            '<span class="leftmenu-not-left">', aria_plus_expander("after"), '</span>',
+            '</button></h1><ul class="leftmenu-list">';
         $klass = "";
         foreach ($help_topics->groups() as $gj) {
             $title = $gj->short_title ?? $gj->title ?? null;
             if ($gj->name === $topic) {
-                echo "<li class=\"leftmenu-item{$klass} active\">", $title ?? "(Unlisted)", "</li>";
+                echo "<li class=\"leftmenu-item{$klass} active\" aria-current=\"page\">", $title ?? "(Unlisted)", "</li>";
             } else if ($title && !($gj->unlisted ?? false)) {
                 echo "<li class=\"leftmenu-item{$klass} ui js-click-child\"><a href=\"",
                     $conf->hoturl("help", "t={$gj->name}"), "\">", $title, "</a></li>";
@@ -70,11 +68,11 @@ class Help_Page {
             $klass = $gj->name === "list" ? " leftmenu-item-gap3" : "";
         }
         echo "</ul></nav></div>\n",
-            '<main id="helpcontent" class="leftmenu-content main-column">',
+            '<div class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $topicj->title, '</h2>';
         $conf->report_saved_messages();
         $help_topics->print_body_members($topic);
-        echo "</main>\n";
+        echo "</div>\n";
 
         $qreq->print_footer();
     }

@@ -27,10 +27,15 @@ class Preference_PaperColumn extends PaperColumn {
         if (isset($cj->user)) {
             $this->user = $conf->pc_member_by_email($cj->user);
         }
-        $this->editable = $cj->edit ?? false;
+        if ($cj->edit ?? false) {
+            $this->add_view_option("edit", true);
+        }
+    }
+    static function basic_view_option_schema() {
+        return ["topics", "topicscore/topics", "topic_score/topics", "edit", "all"];
     }
     function view_option_schema() {
-        return ["topics", "topicscore/topics", "topic_score/topics", "edit", "all"];
+        return self::basic_view_option_schema();
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer = $pl->user;
@@ -40,14 +45,14 @@ class Preference_PaperColumn extends PaperColumn {
             || ($this->not_me && !$this->viewer->can_view_preference(null))) {
             return false;
         }
-        $this->editable = $this->view_option("edit") ?? $this->editable;
+        $this->editable = $this->view_option("edit") ?? false;
         if ($this->editable) {
             $this->override = PaperColumn::OVERRIDE_BOTH;
             $this->className = "pl_editrevpref";
         }
         $this->secondary_sort_topic_score = $this->view_option("topics") ?? false;
         $this->all = $this->view_option("all") ?? false;
-        if ($visible || $this->secondary_sort_topic_score) {
+        if ($this->secondary_sort_topic_score) {
             $pl->qopts["topics"] = 1;
         }
         $this->prefix =  "";
@@ -75,7 +80,7 @@ class Preference_PaperColumn extends PaperColumn {
         return $pf;
     }
     function sort_name() {
-        return $this->sort_name_with_options("topics");
+        return $this->sort_name_with_options("topics", "edit");
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $cmp = PaperReviewPreference::compare($this->sortable_preference($a), $this->sortable_preference($b));
@@ -158,11 +163,10 @@ class Preference_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (!$this->not_me || $this->viewer->can_view_preference($row)) {
-            return $row->preference($this->user)->unparse();
-        } else {
+        if ($this->not_me && !$this->viewer->can_view_preference($row)) {
             return "";
         }
+        return $row->preference($this->user)->unparse();
     }
     function has_statistics() {
         return !$this->as_row && !$this->editable;
@@ -189,11 +193,11 @@ class Preference_PaperColumn extends PaperColumn {
         return $rs;
     }
 
-    static function completions(Contact $user, $xfj) {
-        if ($user->isPC && $user->can_view_preference(null)) {
-            return ["pref:{user}"];
-        } else {
+    static function examples(Contact $user, $xfj) {
+        if (!$user->can_view_preference(null)) {
             return [];
         }
+        return [new SearchExample("pref:{user}", "<0>Review preference for PC member",
+                    new FmtArg("view_options", Preference_PaperColumn::basic_view_option_schema()))];
     }
 }

@@ -137,8 +137,6 @@ class TagAssignmentPiece {
     public $xitype;
     /** @var ?Formula */
     public $formula;
-    /** @var ?callable(PaperInfo,?int,Contact):mixed */
-    public $formulaf;
 
     /** @param string $xvalue
      * @return bool */
@@ -156,7 +154,8 @@ class TagAssignmentPiece {
 
         // special values
         if (strcasecmp($xvalue, "none") === 0
-            || strcasecmp($xvalue, "clear") === 0) {
+            || strcasecmp($xvalue, "clear") === 0
+            || strcasecmp($xvalue, "delete") === 0) {
             $this->nvalue = false;
             return true;
         } else if (strcasecmp($xvalue, "next") === 0) {
@@ -172,16 +171,16 @@ class TagAssignmentPiece {
         }
 
         // check for formula
-        $this->formula = new Formula($xvalue);
-        if (!$this->formula->check($state->user)) {
+        $this->formula = Formula::make($state->user, $xvalue);
+        if (!$this->formula->ok()) {
             $state->error("<0>‘{$xvalue}’: Bad tag value");
             return false;
         }
-        if (!$state->user->can_view_formula($this->formula)) {
+        if (!$this->formula->viewable()) {
             $state->error("<0>‘{$xvalue}’: Can’t compute this formula here");
             return false;
         }
-        $this->formulaf = $this->formula->compile_function();
+        $this->formula->prepare();
         return true;
     }
 
@@ -235,8 +234,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     private $itype = 0;
     /** @var ?Formula */
     private $formula;
-    /** @var ?callable(PaperInfo,?int,Contact):mixed */
-    private $formulaf;
     /** @var list<TagAssignmentPiece> */
     private $pieces;
 
@@ -384,7 +381,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // resolve formula
         if ($piece->formula) {
-            $nvalue = call_user_func($piece->formulaf, $prow, null, $state->user);
+            $nvalue = $piece->formula->eval($prow, null);
             if ($nvalue === null || $nvalue === false) {
                 $nvalue = false;
             } else if ($nvalue === true) {
@@ -572,7 +569,7 @@ class Tag_Assigner extends Assigner {
         }
         if ($this->index !== null
             && str_ends_with($this->tag, ':')) {
-            $aset->register_cleanup_function("colontag", function () use ($aset) {
+            $aset->register_cleanup_function("colontag", function ($aset) {
                 $aset->conf->save_refresh_setting("has_colontag", 1);
             });
         }

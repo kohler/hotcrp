@@ -1,6 +1,6 @@
 <?php
 // pages/manualassign.php -- HotCRP chair's paper assignment page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ManualAssign_Page {
     /** @var Conf */
@@ -41,13 +41,13 @@ class ManualAssign_Page {
 
             $ct = $row->conflict_type($reviewer);
             $rt = $row->review_type($reviewer);
-            if (!$this->viewer->can_administer($row)
+            if (!$this->viewer->can_manage_reviews($row)
                 || Conflict::is_author($ct)) {
                 continue;
             }
 
             if ($assrev < 0) {
-                $newct = Conflict::is_conflicted($ct) ? $ct : Conflict::set_pinned(Conflict::GENERAL, true);
+                $newct = Conflict::is_conflicted($ct) ? $ct : Conflict::set_pinned(Conflict::CT_DEFAULT, true);
             } else {
                 $newct = Conflict::is_conflicted($ct) ? 0 : $ct;
             }
@@ -236,12 +236,12 @@ class ManualAssign_Page {
 </ul>
 <hr>
 <p>Types of PC review:</p>
-<dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
+<dl class="bsp"><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
   <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>
   <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
   <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 <hr>
-<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>
+<dl class="bsp"><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>
   <dt>Preference</dt><dd><a href="', $this->conf->hoturl("reviewprefs"), '">Review preference</a></dd>
   <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd></dl>

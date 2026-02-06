@@ -1,19 +1,13 @@
 <?php
 // api_formatcheck.php -- HotCRP format check API call
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class FormatCheck_API {
     static function run(Contact $user, Qrequest $qreq) {
-        try {
-            $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
-        } catch (Exception $unused) {
-            return JsonResult::make_error(404, "<0>Document not found");
-        }
-        if (($whynot = $docreq->perm_view_document($user))) {
-            return JsonResult::make_message_list(isset($whynot["permission"]) ? 403 : 404, $whynot->message_list());
-        }
-        if (!($doc = $docreq->prow->document($docreq->dtype, $docreq->docid, true))) {
-            return JsonResult::make_error(404, "<0>Document not found");
+        $docreq = new DocumentRequest($qreq, $user);
+        $docreq->apply_version($qreq);
+        if (!($doc = $docreq->document())) {
+            return $docreq->error_result();
         }
         $runflag = friendly_boolean($qreq->soft) ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
         $cf = new CheckFormat($user->conf, $runflag);

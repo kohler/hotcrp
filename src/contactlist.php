@@ -1,6 +1,6 @@
 <?php
 // contactlist.php -- HotCRP helper class for producing lists of contacts
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ContactList {
     const FIELD_SELECTOR = 1000;
@@ -23,12 +23,13 @@ class ContactList {
     const FIELD_INCOMPLETE_REVIEWS = 17;
     const FIELD_ORCID = 18;
     const FIELD_COUNTRY = 19;
+    const FIELD_NPREFS = 20;
     const FIELD_FIRST = 40;
     const FIELD_LAST = 41;
     const FIELD_SCORE = 50;
 
     /** @var list<string> */
-    public static $folds = ["topics", "aff", "tags", "collab", "orcid", "country"];
+    public static $folds = ["topics", "aff", "tags", "collab", "orcid", "country", "nprefs"];
 
     /** @var Conf */
     public $conf;
@@ -44,8 +45,8 @@ class ContactList {
     private $sortable;
     /** @var int */
     private $count;
-    /** @var object */
-    public $any;
+    /** @var int */
+    private $has_flags = 0;
     /** @var Tagger */
     private $tagger;
     private $limit;
@@ -61,6 +62,8 @@ class ContactList {
     private $_au_data;
     /** @var array<int,bool> */
     private $_au_unsub;
+    /** @var array<int,int> */
+    private $_pref_data;
     /** @var array<int,list<int>> */
     private $_re_data;
     /** @var array<int,list<array{int,int,int,int}>> */
@@ -92,6 +95,10 @@ class ContactList {
 
     /** @var ?array<string,int> */
     static private $field_name_map;
+
+    const HAS_SELECTOR = 1;
+    const HAS_PC = 2;
+    const HAS_NONPC = 4;
 
     function __construct(Contact $user, $sortable = true, $qreq = null) {
         $this->conf = $user->conf;
@@ -149,6 +156,7 @@ class ContactList {
                 "affrow" => self::FIELD_AFFILIATION_ROW,
                 "orcid" => self::FIELD_ORCID,
                 "country" => self::FIELD_COUNTRY,
+                "nprefs" => self::FIELD_NPREFS,
                 "lastvisit" => self::FIELD_LASTVISIT,
                 "topicshi" => self::FIELD_HIGHTOPICS,
                 "topicslo" => self::FIELD_LOWTOPICS,
@@ -220,6 +228,8 @@ class ContactList {
             return new Column(["name" => "orcid", "fold" => 5, "sort" => true]);
         case self::FIELD_COUNTRY:
             return new Column(["name" => "country", "fold" => 6, "sort" => true]);
+        case self::FIELD_NPREFS:
+            return new Column(["name" => "nprefs", "fold" => 7, "sort" => true]);
         case self::FIELD_COLLABORATORS:
             return new Column(["name" => "collab", "fold" => 4, "prefer_row" => true]);
         }
@@ -265,6 +275,7 @@ class ContactList {
         case self::FIELD_EMAIL:
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
+        case self::FIELD_NPREFS:
         case self::FIELD_REVIEWS:
         case self::FIELD_INCOMPLETE_REVIEWS:
         case self::FIELD_LEADS:
@@ -306,6 +317,9 @@ class ContactList {
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
             $this->qopt["topics"] = true;
+            return;
+        case self::FIELD_NPREFS:
+            $this->qopt["topics"] = $this->qopt["preferences"] = true;
             return;
         case self::FIELD_REVIEWS:
         case self::FIELD_INCOMPLETE_REVIEWS:
@@ -377,6 +391,14 @@ class ContactList {
 
     function _sortCountry($a, $b) {
         return $this->_sort_string($a, $b, $a->country_name(), $b->country_name(), true);
+    }
+
+    function _sortNprefs($a, $b) {
+        $npa = $this->_pref_data[$a->contactId] ?? 0;
+        $npb = $this->_pref_data[$b->contactId] ?? 0;
+        $nta = count($a->topic_interest_map());
+        $ntb = count($b->topic_interest_map());
+        return $npa + $nta <=> $npb + $ntb;
     }
 
     function _sortOrcid($a, $b) {
@@ -480,6 +502,9 @@ class ContactList {
         case self::FIELD_COUNTRY:
             usort($rows, [$this, "_sortCountry"]);
             break;
+        case self::FIELD_NPREFS:
+            usort($rows, [$this, "_sortNprefs"]);
+            break;
         case self::FIELD_LASTVISIT:
             usort($rows, [$this, "_sortLastVisit"]);
             break;
@@ -540,6 +565,8 @@ class ContactList {
             return "ORCID iD";
         case self::FIELD_COUNTRY:
             return "Country";
+        case self::FIELD_NPREFS:
+            return '<span class="hastitle" title="Number of review and topic preferences"># Prefs</span>';
         case self::FIELD_LASTVISIT:
             return '<span class="hastitle" title="Includes paper changes, review updates, and profile changes">Last update</span>';
         case self::FIELD_HIGHTOPICS:
@@ -677,9 +704,9 @@ class ContactList {
         } else if ($limit === "au") {
             $args["finalized"] = true;
         } else if ($limit === "aurej") {
-            $args["dec:no"] = true;
+            $args["decision"] = ["no"];
         } else if ($limit === "auacc") {
-            $args["dec:yes"] = true;
+            $args["decision"] = ["yes"];
         } else if ($limit === "auuns") {
             $args["unsub"] = true;
         }
@@ -759,7 +786,7 @@ class ContactList {
             $this->_rating_data = [];
             foreach ($prows as $prow) {
                 if ($this->user->can_view_review_ratings($prow)) {
-                    $allow_admin = $this->user->allow_administer($prow);
+                    $allow_admin = $this->user->allow_admin($prow);
                     foreach ($prow->all_reviews() as $rrow) {
                         if (isset($ratings[$prow->paperId][$rrow->reviewId])
                             && ($allow_admin
@@ -862,7 +889,7 @@ class ContactList {
                 return $this->conf->unparse_time_obscure($row->activity_at);
             }
         case self::FIELD_SELECTOR:
-            $this->any->sel = true;
+            $this->has_flags |= self::HAS_SELECTOR;
             $c = "";
             if ($this->_select_all
                 || ($this->_selection && $this->_selection->is_selected($row->contactId))) {
@@ -880,6 +907,17 @@ class ContactList {
                 $nt = array_filter($topics, function ($i) { return $i < 0; });
             }
             return $this->conf->topic_set()->unparse_list_html(array_keys($nt), $nt);
+        case self::FIELD_NPREFS:
+            $topics = $row->topic_interest_map();
+            if (empty($topics) && !isset($this->_pref_data[$row->contactId])) {
+                return "";
+            }
+            $np = $this->_pref_data[$row->contactId] ?? 0;
+            $nt = count($topics);
+            if ($nt === 0 && !$this->conf->has_topics()) {
+                return "{$np}";
+            }
+            return "{$np}P {$nt}T";
         case self::FIELD_REVIEWS:
             if (($ct = $this->_rect_data[$row->contactId] ?? null)) {
                 $a1 = "<a href=\"" . $this->conf->hoturl("search", "t=s&amp;q=re:" . urlencode($row->email)) . "\">";
@@ -941,7 +979,7 @@ class ContactList {
                 }
                 $lst = $this->_au_unsub[$row->contactId] ?? false ? "all" : "s";
                 return '<div class="has-hotlist" data-hotlist="'
-                    . htmlspecialchars("p/$lst/" . urlencode($lsx)) . '">' . join(", ", $t) . '</div>';
+                    . htmlspecialchars("p/{$lst}/" . urlencode($lsx)) . '">' . join(", ", $t) . '</div>';
             } else {
                 return "";
             }
@@ -961,13 +999,12 @@ class ContactList {
                     $last = $reord[0];
                 }
             }
-            if (!empty($t)) {
-                $ls = htmlspecialchars("p/s/" . urlencode("re:" . $row->email));
-                return '<div class="has-hotlist" data-hotlist="' . $ls . '">'
-                    . join(", ", $t) . '</div>';
-            } else {
+            if (empty($t)) {
                 return "";
             }
+            $ls = htmlspecialchars("p/s/" . urlencode("re:" . $row->email));
+            return '<div class="has-hotlist" data-hotlist="' . $ls . '">'
+                . join(", ", $t) . '</div>';
         case self::FIELD_TAGS:
             if ($this->user->isPC
                 && ($tags = $row->viewable_tags($this->user))) {
@@ -1041,11 +1078,11 @@ class ContactList {
         case "pc":
         case "admin":
         case "pcadmin":
-            return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo reviews revratings lead shepherd scores");
+            return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo nprefs reviews revratings lead shepherd scores");
         case "pcadminx":
-            return $this->_resolve_columns("name email aff orcid country lastvisit tags collab topicshi topicslo");
+            return $this->_resolve_columns("name email aff orcid country lastvisit tags collab topicshi topicslo nprefs");
         case "re":
-            return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo reviews revratings scores");
+            return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo nprefs reviews revratings scores");
         case "ext":
         case "extsub":
             return $this->_resolve_columns("sel name email aff orcid country lastvisit collab topicshi topicslo reviews revratings repapers scores");
@@ -1066,25 +1103,28 @@ class ContactList {
     }
 
     function footer($ncol, $hascolors) {
-        if ($this->count == 0)
+        if ($this->count === 0) {
             return "";
-        $lllgroups = [];
+        }
+        $plfts = [];
 
         // Begin linelinks
+        $plft = PaperList::make_tab("get", "Download");
         $types = ["nameemail" => "Names and emails"];
         if ($this->user->privChair) {
             $types["pcinfo"] = "PC info";
         }
-        $lllgroups[] = ["", "Download",
-            Ht::select("getfn", $types, null, ["class" => "want-focus"])
-            . Ht::submit("fn", "Go", ["value" => "get", "class" => "uic js-submit-list ml-2 can-submit-all"])];
+        $plft->content = Ht::select("getfn", $types, null, ["class" => "want-focus"])
+            . Ht::submit("fn", "Go", ["value" => "get", "class" => "uic js-submit-list ml-2 can-submit-all"]);
+        $plfts[] = $plft;
 
         if ($this->user->privChair) {
-            $lllgroups[] = ["", "Tag",
-                Ht::select("tagfn", ["a" => "Add", "d" => "Remove", "s" => "Define"], $this->qreq->tagfn)
+            $plft = PaperList::make_tab("tag", "Tag");
+            $plft->content =Ht::select("tagfn", ["a" => "Add", "d" => "Remove", "s" => "Define"], $this->qreq->tagfn)
                 . ' &nbsp;tag(s) &nbsp;'
                 . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-submit-fn" => "tag"])
-                . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-list ml-2"])];
+                . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-list ml-2"]);
+            $plfts[] = $plft;
 
             $mods = [
                 "disableaccount" => "Disable",
@@ -1094,15 +1134,23 @@ class ContactList {
                 $mods["resetpassword"] = "Reset password";
             }
             $mods["sendaccount"] = "Send account information";
-            $lllgroups[] = ["", "Modify",
-                Ht::select("modifyfn", $mods, null, ["class" => "want-focus"])
-                . Ht::submit("fn", "Go", ["value" => "modify", "class" => "uic js-submit-list ml-2"])];
+            $mods[] = null;
+            if ($this->has("nonpc")) {
+                $mods["add_pc"] = "Add to PC";
+            }
+            if ($this->has("pc")) {
+                $mods["remove_pc"] = "Remove from PC";
+            }
+            $plft = PaperList::make_tab("modify", "Modify");
+            $plft->content = Ht::select("modifyfn", $mods, null, ["class" => "want-focus"])
+                . Ht::submit("fn", "Go", ["value" => "modify", "class" => "uic js-submit-list ml-2"]);
+            $plfts[] = $plft;
         }
 
         return "  <tfoot class=\"pltable-tfoot" . ($hascolors ? " pltable-colored" : "")
             . "\">" . PaperList::render_footer_row(1, $ncol - 1,
                 "<b>Select people</b> (or <a class=\"ui js-select-all\" href=\"\">select all {$this->count}</a>), then&nbsp; ",
-                $lllgroups)
+                $plfts)
             . "</tfoot>\n";
     }
 
@@ -1126,19 +1174,38 @@ class ContactList {
         } else if ($this->_limit_cids !== null) {
             $mainwhere[] = "contactId" . sql_in_int_list(array_keys($this->_limit_cids));
         }
-        $mainwhere[] = "(cflags&" . Contact::CF_PLACEHOLDER . ")=0";
+        $mainwhere[] = "(cflags&" . Contact::CFM_PLACEHOLDER . ")=0";
 
         // make query
         $result = $this->conf->qe_raw("select * from ContactInfo" . (empty($mainwhere) ? "" : " where " . join(" and ", $mainwhere)));
         $rows = [];
         while (($row = Contact::fetch($result, $this->conf))) {
-            if (!$row->is_anonymous_user() && !$row->is_placeholder()) {
-                $rows[] = $row;
+            if ($row->is_anonymous_user()
+                || $row->is_placeholder()
+                || $row->is_deleted()) {
+                continue;
             }
+            $rows[] = $row;
         }
         Dbl::free($result);
         if (isset($this->qopt["topics"])) {
             Contact::load_topic_interests($rows);
+        }
+        if (isset($this->qopt["preferences"]) && $this->user->isPC) {
+            $this->_pref_data = [];
+            $uids = [];
+            if ($this->user->can_view_pc()) {
+                foreach ($rows as $row) {
+                    $this->_pref_data[$row->contactId] = 0;
+                }
+            } else {
+                $this->_pref_data[$this->user->contactId] = 0;
+            }
+            $result = $this->conf->qe("select contactId, count(*) from PaperReviewPreference where contactId?a group by contactId", array_keys($this->_pref_data));
+            while (($row = $result->fetch_row())) {
+                $this->_pref_data[(int) $row[0]] = (int) $row[1];
+            }
+            $result->close();
         }
         return $rows;
     }
@@ -1177,7 +1244,7 @@ class ContactList {
         $fieldDef = [];
         $acceptable_fields = [];
         $uldisplay = self::uldisplay($this->qreq);
-        $this->any = (object) ["sel" => false];
+        $this->has_flags = 0;
         $ncol = 0;
         foreach ($columns as $col) {
             if ($this->column_visible($col)
@@ -1252,6 +1319,11 @@ class ContactList {
             }
             $this->count++;
             $ids[] = (int) $row->contactId;
+            if ($row->roles & Contact::ROLE_PC) {
+                $this->has_flags |= self::HAS_PC;
+            } else {
+                $this->has_flags |= self::HAS_NONPC;
+            }
 
             // First create the expanded callout row
             $tt = "";
@@ -1418,5 +1490,18 @@ class ContactList {
 
         // run query
         return $this->_rows();
+    }
+
+    /** @param string $field
+     * @return bool */
+    function has($field) {
+        if ($field === "sel") {
+            return ($this->has_flags & self::HAS_SELECTOR) !== 0;
+        } else if ($field === "pc") {
+            return ($this->has_flags & self::HAS_PC) !== 0;
+        } else if ($field === "nonpc") {
+            return ($this->has_flags & self::HAS_NONPC) !== 0;
+        }
+        return false;
     }
 }

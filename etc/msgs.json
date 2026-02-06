@@ -27,6 +27,14 @@
     },
 
     ["<0>A {submission} may have at most {max} authors", "<0>A {submission} may have at most one author", ["{max}=1"]],
+    {
+        "in": "<5>Each author may certify up to {max_submissions} {submissions}. To certify this {submission}, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).",
+        "m": [
+            ["<5>Each author may certify one {submission}. To mark this {submission} as ready for review, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).", ["{max_submissions}=1", "{action}=submit"]],
+            ["<5>Each author may certify up to {max_submissions} {submissions}. To mark this {submission} as ready for review, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).", ["{action}=submit"]],
+            ["<5>Each author may certify one {submission}. To certify this {submission}, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).", ["{max_submissions}=1"]]
+        ]
+    },
 
     ["{naccepted} of {nsubmitted} {submissions} accepted", "{naccepted} of {nsubmitted} {submission} accepted", ["{naccepted}=1", "{nsubmitted}=1"]],
 
@@ -101,8 +109,8 @@
         ]
     },
     ["sfdescription_pc_conflicts", "<5>Select the PC members who have conflicts of interest with this {submission}. {conflictdef}"],
-    ["sfdescription_collaborators", "<5><p>List other people and institutions with which the authors have conflicts of interest. We use this information when assigning external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>"],
-    ["sfdescription_collaborators", "<5><p>List people and institutions with which the authors have conflicts of interest. {conflictdef} Be sure to include conflicted PC members. We use this information when assigning PC and external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>", ["!setting.sub_pcconf"]],
+    ["sfdescription_collaborators", "<5><p>List other people and institutions that have conflicts of interest with the authors. We use this information when assigning external reviewers. You don’t need to repeat the authors’ affiliations or collaborators declared on authors’ HotCRP profiles.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>"],
+    ["sfdescription_collaborators", "<5><p>List other people and institutions that have conflicts of interest with the authors. {conflictdef} We use this information when assigning PC and external reviewers; make sure you cover conflicted PC members. You don’t need to repeat the authors’ affiliations or collaborators declared on authors’ HotCRP profiles.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>", ["!setting.sub_pcconf"]],
 
     ["paper_edit", "<0>New {sclass} {submission}", "<0>New {submission}", ["{sclass}="]],
     ["paper_edit", "<0>new {sclass} {submission}", "<0>new {submission}", ["{sclass}="]],
@@ -171,6 +179,7 @@
 
     ["<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", "<0>{Submission} {:numlist} is totally hidden when viewing the site as another user.", ["#{0}=1"]],
 
+    ["<0>Accounts {:list} {action}", "<0>Account {:list} {action}", ["#{0}=1"]],
     ["<0>Accounts {:list} disabled", "<0>Account {:list} disabled", ["#{0}=1"]],
     ["<0>Accounts {:list} enabled", "<0>Account {:list} enabled", ["#{0}=1"]],
     ["<0>Skipped disabled accounts {:list}", "<0>Skipped disabled account {:list}", ["#{0}=1"]],
@@ -196,8 +205,8 @@
 
     ["signin_required", "<0>You must sign in to access this page"],
     ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> to access this page", ["{expand}", "{url}"]],
-    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> in order to start a new {submission}.", ["{expand}", "{url}", "{action}=paper:start"]],
-    ["signin_required", "<5>You must <a href=\"{url}\">sign in to your HotCRP account</a> in order to make changes.", ["{expand}", "{url}", "{action}=paper:edit"]],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> to start a new {submission}", ["{expand}", "{url}", "{action}=paper:start"]],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in to your HotCRP account</a> to make changes", ["{expand}", "{url}", "{action}=paper:edit"]],
 
     {
         "context": "deadline_error", "in": "<0>Action not available", "m": [
@@ -221,6 +230,8 @@
             ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {sclass_prefix}{submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{expand}"]],
             ["<0>The {sclass_prefix}{submission} update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
             ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{expand}"]],
+            ["<0>The {sclass_prefix}resubmission deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_resub"]],
+            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}resubmission deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_resub", "{expand}"]],
             ["<0>The {sclass_prefix}{submission} deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
             ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{expand}"]],
             ["<0>The deadline for this external review has passed", ["{deadline}^=extrev_hard"]],
@@ -252,10 +263,13 @@
     ["badpost", "<0>Your browser session has changed since you last used this tab. Please try again."],
     ["session_failed_error", "<0>You appear to have disabled cookies in your browser. This site requires cookies to function."],
 
-    ["account_disabled", "<0>Your account on this site has been disabled by a site administrator"],
+    ["account_disabled", "<0>Account {email} has been disabled by a site administrator", ["{email}"]],
+    ["account_disabled", "<0>That account has been disabled by a site administrator"],
+    ["account_deleted", "<0>Account {email} has been deleted on this site. Only a site administrator can recreate it", ["{expanded}", "{create_account}"]],
+    ["account_deleted", "<0>Account {email} has been deleted"],
 
     ["<0>Account {email} not found", "<5>User {email} does not have an account. Check the email address, or <a href=\"{newaccount}\">create that account</a> if you’d like.", ["{newaccount}"]],
-    ["<0>User {email} has not set a password", "<5>User {email} has not set a password. Use this form to create one.", ["{forgotpassword}", "{allow_redirect}"]],
+    ["<0>User {email} has not set a password", "<5>User {email} has not set a password. Use this form to get a password reset link.", ["{forgotpassword}", "{allow_redirect}"]],
     ["<0>User {email} has not set a password", "<5>User {email} has not set a password. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to create one.", ["{forgotpassword}"]],
     ["<0>Password expired", "<5>That password has expired. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", ["{forgotpassword}"]],
     ["<0>Account {email} already exists", "<5>Account {email} already exists. If that’s your account, <a href=\"{signin}\">sign in</a> using your password.", ["{signin}"]],

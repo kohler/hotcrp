@@ -235,6 +235,7 @@ class SavePapers_Batch {
 
         if ($this->ps->prepare_save_paper_json($j)) {
             if ($this->dry_run) {
+                $this->ps->abort_save();
                 $action = $this->ps->has_change() ? "changed" : "unchanged";
                 $pid = true;
             } else {
@@ -259,7 +260,9 @@ class SavePapers_Batch {
         // XXX does not change decision
         if (!$this->silent || !$pid) {
             foreach ($this->ps->decorated_message_list() as $mi) {
-                fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                if ($mi->message !== "") {
+                    fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                }
             }
         }
         if (!$pid) {
@@ -291,7 +294,9 @@ class SavePapers_Batch {
             }
             if (!$this->silent) {
                 foreach ($this->tf->message_list() as $mi) {
-                    fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                    if ($mi->message !== "") {
+                        fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                    }
                 }
             }
             $this->tf->clear_messages();
@@ -328,7 +333,7 @@ class SavePapers_Batch {
             }
         }
 
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         for ($index = 0; $index !== count($jl); ++$index) {
             $j = $jl[$index];
             $jl[$index] = null;
@@ -338,11 +343,11 @@ class SavePapers_Batch {
             }
             gc_collect_cycles();
             if ($index % 10 === 9) {
-                $this->conf->release_logs();
-                $this->conf->delay_logs();
+                $this->conf->resume_log();
+                $this->conf->pause_log();
             }
         }
-        $this->conf->release_logs();
+        $this->conf->resume_log();
     }
 
     /** @param list<object> $jl */

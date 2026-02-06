@@ -1,6 +1,6 @@
 <?php
 // api_reviewmeta.php -- HotCRP review metadata API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class ReviewMeta_API {
     /** @return JsonResult|ReviewInfo */
@@ -8,18 +8,15 @@ class ReviewMeta_API {
         if ($r === null) {
             return JsonResult::make_missing_error("r");
         }
-        if (($rrow = $prow->full_review_by_ordinal_id($r))) {
-            if ($user->can_view_review($prow, $rrow)) {
-                return $rrow;
-            } else if ($user->can_view_review_assignment($prow, $rrow)) {
-                return JsonResult::make_permission_error("r");
-            }
-        }
-        if (!$prow->parse_ordinal_id($r)) {
+        $rrow = $prow->full_review_by_ordinal_id($r);
+        if ($rrow && $user->can_view_review($prow, $rrow)) {
+            return $rrow;
+        } else if ($rrow && $user->can_view_review_assignment($prow, $rrow)) {
+            return JsonResult::make_permission_error("r");
+        } else if (!$prow->parse_ordinal_id($r)) {
             return JsonResult::make_parameter_error("r", "<0>Invalid review");
-        } else {
-            return JsonResult::make_not_found_error("r", "<0>Review not found");
         }
+        return JsonResult::make_not_found_error("r", "<0>Review not found");
     }
 
     static function reviewhistory(Contact $user, Qrequest $qreq, PaperInfo $prow) {
@@ -31,7 +28,7 @@ class ReviewMeta_API {
             return $rrow;
         }
         if (!$user->is_my_review($rrow)
-            && !$user->can_administer($prow)) {
+            && !$user->is_admin($prow)) {
             return JsonResult::make_permission_error("r");
         }
         $pex = new PaperExport($user);
@@ -64,7 +61,7 @@ class ReviewMeta_API {
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
             if ($qreq->user_rating === "clearall") {
-                if (!$user->can_administer($prow)) {
+                if (!$user->can_manage_reviews($prow)) {
                     return JsonResult::make_permission_error();
                 }
                 $rating = -1;
@@ -98,7 +95,7 @@ class ReviewMeta_API {
 
     /** @param PaperInfo $prow */
     static function reviewround(Contact $user, $qreq, $prow) {
-        if (!$user->can_administer($prow)) {
+        if (!$user->can_manage_reviews($prow)) {
             return JsonResult::make_permission_error();
         }
         $rrow = self::lookup_review($user, $prow, $qreq->r);

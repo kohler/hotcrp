@@ -148,8 +148,8 @@ class Authorize_Page {
 
         $this->token = (new TokenInfo($this->conf, TokenInfo::OAUTHCODE))
             ->set_token_pattern("hcop[36]")
-            ->set_invalid_after(3600)
-            ->set_expires_after(86400)
+            ->set_invalid_in(3600)
+            ->set_expires_in(86400)
             ->change_data("state", $this->qreq->state)
             ->change_data("nonce", $this->qreq->nonce)
             ->change_data("client_id", $client->client_id)
@@ -168,7 +168,7 @@ class Authorize_Page {
     }
 
     function print_form_title() {
-        echo '<h1>Choose an account</h1>';
+        echo '<h1 id="h-title">Choose an account</h1>';
         $clt = htmlspecialchars($this->client->title ?? $this->client->name);
         if ($this->client->client_uri) {
             $clt = Ht::link($clt, htmlspecialchars($this->client->client_uri));
@@ -257,7 +257,7 @@ class Authorize_Page {
         $jwt = JWTParser::make_mac((object) $payload, $client->client_secret);
 
         $tok->change_data("id_token", $jwt)
-            ->set_invalid_after(10 * 60)
+            ->set_invalid_in(10 * 60)
             ->update();
     }
 

@@ -1,6 +1,6 @@
 <?php
 // listactions/la_revpref.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Revpref_ListAction extends ListAction {
     /** @var string */
@@ -11,15 +11,15 @@ class Revpref_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->isPC;
     }
-    static function render_upload(PaperList $pl) {
-        return ["<b>&nbsp;preference file:</b> &nbsp;"
-                . "<input class=\"want-focus js-autosubmit\" type=\"file\" name=\"fileupload\" accept=\"text/plain,text/csv\" size=\"20\" data-submit-fn=\"tryuploadpref\" />"
-                . $pl->action_submit("tryuploadpref", ["class" => "can-submit-all"])];
+    static function render_upload(PaperList $pl, Qrequest $qreq, $plft) {
+        $plft->label_expansion = " preference file:";
+        return "<input class=\"want-focus js-autosubmit\" type=\"file\" name=\"preffile\" accept=\"text/plain,text/csv\" size=\"20\" data-submit-fn=\"tryuploadpref\" />"
+            . $pl->action_submit("tryuploadpref", ["class" => "can-submit-all"]);
     }
-    static function render_set(PaperList $pl) {
-        return ["<b> preferences:</b> &nbsp;"
-            . Ht::entry("pref", "", ["class" => "want-focus js-autosubmit", "size" => 4, "data-submit-fn" => "setpref"])
-            . $pl->action_submit("setpref")];
+    static function render_set(PaperList $pl, Qrequest $qreq, $plft) {
+        $plft->label_expansion = " preferences:";
+        return Ht::entry("pref", "", ["class" => "want-focus js-autosubmit", "size" => 4, "data-submit-fn" => "setpref"])
+            . $pl->action_submit("setpref");
     }
     /** @param ?string $reviewer
      * @return ?Contact */
@@ -62,7 +62,7 @@ class Revpref_ListAction extends ListAction {
         ];
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
-            if ($not_me && !$user->allow_administer($prow)) {
+            if ($not_me && !$user->allow_admin($prow)) {
                 continue;
             }
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
@@ -96,19 +96,34 @@ class Revpref_ListAction extends ListAction {
             ->select(array_keys(array_filter($fields)))
             ->append($texts);
     }
+
     function run_setpref(Contact $user, Qrequest $qreq, SearchSelection $ssel,
                          Contact $reviewer) {
+        $header = ["paper", "email", "preference"];
+        $data = [0, $reviewer->email, $qreq->preference ?? $qreq->pref];
+        if (isset($qreq->expertise)) {
+            $header[] = "expertise";
+            $data[] = $qreq->expertise;
+        }
+
         $csvg = new CsvGenerator;
-        $csvg->select(["paper", "email", "preference"]);
+        $csvg->select($header);
         foreach ($ssel->selection() as $p) {
-            $csvg->add_row([$p, $reviewer->email, $qreq->pref]);
+            $data[0] = $p;
+            $csvg->add_row($data);
         }
-        $aset = (new AssignmentSet($user))->set_override_conflicts(true);
+
+        $aset = new AssignmentSet($user);
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $aset->set_override_conflicts(true);
+        }
         $aset->parse($csvg->unparse());
-        $aset->execute();
-        if ($qreq->ajax) {
-            return $aset->json_result();
+
+        if ($qreq->page() === "api") {
+            return Assign_API::complete($aset, $qreq);
         }
+
+        $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
         if ($aset->has_error()) {
             return;
@@ -120,23 +135,28 @@ class Revpref_ListAction extends ListAction {
                             Contact $reviewer) {
         $reviewer_arg = $user->contactId === $reviewer->contactId ? null : $reviewer->email;
         $conf = $user->conf;
-        if ($qreq->cancel) {
+        if ($qreq->cancel && $qreq->page() !== "api") {
             return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
         }
 
-        if (($qf = $qreq->file("fileupload"))) {
+        if (($qf = $qreq->file("preffile"))) {
             $qf = $qf->content_or_docstore("prefassign-%s.csv", $user->conf);
-        } else if ($qreq->data) {
-            $qf = QrequestFile::make_string($qreq->data, $qreq->filename);
+        } else if ($qreq->preffile) {
+            $qf = QrequestFile::make_string($qreq->preffile, $qreq->filename);
         } else if ($qreq->data_source
                    && ($ds = $user->conf->docstore())
                    && ($f = $ds->open_tempfile($qreq->data_source, "prefassign-%s.csv"))) {
             $qf = QrequestFile::make_stream($f, $qreq->filename);
+        } else if ($qreq->upload) {
+            if (!($updoc = DocumentInfo::make_capability($user->conf, $qreq->upload))
+                || !($qf = QrequestFile::make_document($updoc))) {
+                return JsonResult::make_missing_error("upload", "<0>Upload not found");
+            }
         } else {
-            return MessageItem::error("<0>File upload required");
+            return JsonResult::make_missing_error("preffile", "<0>File upload required");
         }
         if (!$qf) {
-            return MessageItem::error("<0>Uploaded file too big to process");
+            return JsonResult::make_parameter_error("preffile", "<0>Uploaded file too big to process");
         }
         $qf->convert_to_utf8();
 
@@ -157,15 +177,25 @@ class Revpref_ListAction extends ListAction {
             }
         }
 
-        $execute = $this->name === "applyuploadpref" || $this->name === "uploadpref";
-        $aset = (new AssignmentSet($user))->set_override_conflicts(true);
+        $aset = new AssignmentSet($user);
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $aset->set_override_conflicts(true);
+        }
         $aset->set_search_type("editpref");
         $aset->set_reviewer($reviewer);
         $aset->enable_actions("pref");
-        if ($this->name === "applyuploadpref") {
+        if ($this->name === "applyuploadpref"
+            || ($qreq->page() === "api"
+                && ($qreq->q !== "" || !$ssel->is_default()))) {
             $aset->enable_papers($ssel->selection());
         }
         $aset->parse($csv);
+
+        if ($qreq->page() === "api") {
+            return Assign_API::complete($aset, $qreq);
+        }
+
+        $execute = $this->name === "applyuploadpref" || $this->name === "uploadpref";
         if ($execute) {
             $aset->execute();
         }
@@ -175,15 +205,15 @@ class Revpref_ListAction extends ListAction {
         }
 
         $qreq->print_header("Review preferences", "revpref");
-        $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE_IGNORE);
 
         echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]),
             ["class" => "ui-submit js-selector-summary differs need-unload-protection"]),
             Ht::hidden("fn", "applyuploadpref");
         if ($aset->assignment_count() < 5000) {
-            echo Ht::hidden("data", $aset->make_acsv()->unparse(), ["data-default-value" => ""]);
+            echo Ht::hidden("preffile", $aset->make_acsv()->unparse(), ["data-default-value" => ""]);
         } else if (is_string($qf->content)) {
-            echo Ht::hidden("data", $qf->content, ["data-default-value" => ""]);
+            echo Ht::hidden("preffile", $qf->content, ["data-default-value" => ""]);
         } else {
             echo Ht::hidden("data_source", $qf->docstore_tmp_name, ["data-default-value" => ""]);
         }

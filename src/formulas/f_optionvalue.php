@@ -5,15 +5,13 @@
 class OptionValue_Fexpr extends Fexpr {
     /** @var PaperOption */
     private $option;
-    function __construct(PaperOption $option) {
+    function __construct(PaperOption $option, $format, $detail) {
         parent::__construct("optionvalue");
         $this->option = $option;
+        $this->set_format($format, $detail);
     }
     function paper_options(&$oids) {
         $oids[$this->option->id] = true;
-    }
-    function viewable_by(Contact $user) {
-        return $user->can_view_some_option($this->option);
     }
     function compile(FormulaCompiler $state) {
         $id = $this->option->id;

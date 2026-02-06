@@ -1,7 +1,76 @@
 HotCRP NEWS
 ===========
 
-## Version 3.1
+## Version 3.2.1 – 30.Jan.2026
+
+* Security updates
+
+    * High vulnerability patched in document API. In version 3.2, all documents
+      were delivered with inline Content-Disposition. This opened a vector for
+      cross-site scripting: an attacker could upload an HTML document which, if
+      opened, ran in the user’s browser with their HotCRP credentials. Thanks to
+      Nils Bars for the report (MPI-SP). GitHub Security Advisory
+      GHSA-p88p-2f2p-2476.
+    * Recover automatic checking for security notices. To opt out, set
+      `$Opt["updatesSite"] = false`.
+
+* Other
+
+    * Display potential conflicts even for new papers.
+    * Improve responses to range requests, and other bug fixes.
+
+
+## Version 3.2 – 16.Jan.2026
+
+* Upgrade notes
+
+    * PHP 8.5 is supported, PHP 7.1 and 7.2 are not.
+
+* Security updates
+
+    * Critical vulnerability patched in formula construction. Thanks to Luca Di
+      Bartolomeo and Philipp Mao for the report (HexHive Lab, EPFL, PI Mathias
+      Payer). GitHub Security Advisory GHSA-hpqh-j6qx-x57h; CVE-2026-23836.
+    * Serious vulnerability patched in document API that allowed any author to
+      download any submitted document associated with any paper. GitHub Security
+      Advisory GHSA-vh3x-xwj4-jvqx; CVE-2026-23878.
+    * Default to not generating author view links.
+
+* Submissions
+
+    * Support resubmission deadlines, which allow updates to submissions that
+      are ready to review (but not drafts).
+    * Submission edit pages automatically update potential conflicts as the
+      authors change.
+    * Fix bugs in potential conflict computations.
+    * Fix interaction between edit conditions and read-only submission fields.
+    * Improve author certification option.
+    * Format checker can detect and disallow appendix pages.
+    * Format checker heading detection improvements.
+
+* Assignments
+
+    * Conflict assignment page allows assignment of (1) pinned conflict, (2)
+      normal conflict, (3) non-conflict, and (4) pinned non-conflict.
+
+* Search
+
+    * Desk rejected papers are not included in searches of “submitted” or
+      “active” papers.
+
+* Settings
+
+    * Improve advanced settings changes to avoid bogus error messages.
+
+* API
+
+    * Add and document additional API endpoints for /autoassign, /assigners,
+      /job, etc.
+
+* Many other bug fixes and improvements, especially around accessibility.
+
+
+## Version 3.1 – 12.Sep.2025
 
 * Upgrade notes
 
@@ -9,15 +78,16 @@ HotCRP NEWS
     * The `oAuthTypes` setting is no longer understood.
     * The `oAuthTypes` `group_mappings` subsetting is replaced by
       `group_roles`.
+    * Previous versions of the `batch/backupdb.php` script could produce
+      invalid backups in the case that the database contained large documents.
 
 * Accounts
 
-    * Remove old “merge accounts” functionality in favor of a new “Manage
-      email” page. Manage email allows transferring reviews and linking
-      accounts, where the primary linked account redirects review requests and
-      receives shared authorship.
+    * Replace “merge accounts” functionality with “Manage email”. Manage email
+      allows transferring reviews and linking accounts, where the primary
+      linked account redirects review requests and receives shared authorship.
     * OAuth can import group affiliations and roles (Tobias Fiebig).
-    * Expose ORCID and country in user lists and downloads.
+    * Expose ORCID iD and country in user lists and downloads.
     * Profile supports reauthentication more cleanly.
     * Improve LDAP support.
     * Add support for extension tracks. For instance, the `settings!`
@@ -41,15 +111,26 @@ HotCRP NEWS
     * Bulk assignments supports upload of very large assignment files.
     * Improve handling of assignment files that generate large numbers of
       errors.
+    * Assigner messages about potential conflicts include buttons for
+      immediately confirming or ignoring each conflict.
     * The `copytag` and `newtag` assigners can move all matching tags (for
       instance, set `tag` to `my*` and `newtag` to `renamed-*`).
+    * Improve UI display of large PC sets in conflict editing and review
+      assignment pages.
 
 * Submissions
 
     * Improve handling of complex field conditions: avoid crashes.
+    * Support fields with edit conditions that depend on other fields with
+      edit conditions.
+    * Introduce author certification submission field type.
 
 * Reviews
 
+    * Review preferences page supports shuffled preferences via
+      `sort:shuffle`.
+    * Preference fuzzing can group preferences into bands to reduce the impact
+      of collusion.
     * Assign review IDs randomly.
     * Improve handling of field names with no ASCII characters.
     * Administrators can clear all review ratings.
@@ -85,6 +166,7 @@ HotCRP NEWS
 
     * Prefer `{{TEMPLATE}}` style to `%TEMPLATE%`.
     * Add site URL to mail signatures.
+    * Better handle thousands of emails.
 
 * Batch scripts
 

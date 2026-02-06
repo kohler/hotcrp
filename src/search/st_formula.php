@@ -7,12 +7,11 @@ class Formula_SearchTerm extends SearchTerm {
     private $user;
     /** @var Formula */
     private $formula;
-    private $function;
     function __construct(Formula $formula) {
         parent::__construct("formula");
         $this->user = $formula->user;
         $this->formula = $formula;
-        $this->function = $formula->compile_function();
+        $formula->prepare();
     }
     /** @param string $word
      * @param SearchWord $sword
@@ -20,25 +19,20 @@ class Formula_SearchTerm extends SearchTerm {
      * @param bool $is_graph
      * @return ?Formula */
     static private function read_formula($word, $sword, $srch, $is_graph) {
-        $formula = null;
+        $nf = null;
         if (preg_match('/\A[^(){}\[\]]+\z/', $word)) {
-            $formula = $srch->conf->find_named_formula($word);
+            $nf = $srch->conf->find_named_formula($word);
         }
-        if (!$formula) {
-            $formula = new Formula($word, $is_graph ? Formula::ALLOW_INDEXED : 0);
+        if ($nf) {
+            $formula = $nf->realize($srch->user);
+        } else {
+            $formula = Formula::make($srch->user, $word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
-        if (!$formula->check($srch->user)) {
-            $srch->lwarning($sword, "<0>Invalid formula matches no submissions");
-            foreach ($formula->message_list() as $mi) {
-                $srch->message_set()->append_item($mi->with([
-                    "problem_status" => MessageSet::WARNING,
-                    "pos_offset" => $sword->pos1,
-                    "context" => $srch->q
-                ]));
-            }
-            $formula = null;
-        }
-        return $formula;
+        $srch->message_set()->append_list(MessageSet::list_with($formula->message_list(), [
+            "top_context" => $srch->q,
+            "top_pos_offset" => $sword->pos1
+        ]));
+        return $formula->ok() ? $formula : null;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (($formula = self::read_formula($word, $sword, $srch, false))) {
@@ -60,11 +54,9 @@ class Formula_SearchTerm extends SearchTerm {
         return "true";
     }
     function test(PaperInfo $row, $xinfo) {
-        $formulaf = $this->function;
         if ($xinfo && $xinfo instanceof ReviewInfo) {
-            return !!$formulaf($row, $xinfo->contactId, $this->user);
-        } else {
-            return !!$formulaf($row, null, $this->user);
+            return !!$this->formula->eval($row, $xinfo->contactId);
         }
+        return !!$this->formula->eval($row, null);
     }
 }

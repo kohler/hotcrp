@@ -118,10 +118,10 @@ function settings_delete(elt, message) {
 }
 
 function settings_field_unfold(evt) {
-    if (evt.which.n !== 2) {
+    if (evt.detail.n !== 2) {
         return;
     }
-    if (evt.which.open) {
+    if (evt.detail.open) {
         let ch = this.parentElement.firstChild;
         for (; ch; ch = ch.nextSibling) {
             if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
@@ -129,7 +129,7 @@ function settings_field_unfold(evt) {
         }
         $(this).find("textarea").css("height", "auto").autogrow();
         $(this).find("input[type=text]").autogrow();
-        if (!evt.which.nofocus) {
+        if (!evt.detail.nofocus) {
             $(this).scrollIntoView();
         }
     }
@@ -533,7 +533,7 @@ handle_ui.on("js-settings-automatic-tag-new", function () {
         ++ctr;
     h = $("#settings-new-automatic-tag").html().replace(/\/\$/g, "/" + ctr);
     odiv = $(h).appendTo("#settings-automatic-tags");
-    odiv.find("input[type=text]").autogrow();
+    $(odiv).awaken();
     $$("automatic_tag/".concat(ctr, "/tag")).focus();
 });
 
@@ -655,6 +655,27 @@ handle_ui.on("js-settings-submission-round-new", function () {
     $n.awaken();
     check_form_differs(this.form);
     this.form.elements["submission/" + i + "/tag"].focus();
+});
+
+handle_ui.on("input.js-settings-submission-round-name change.js-settings-submission-round-name", function () {
+    const e = this.closest(".js-settings-submission-round").querySelector(".js-settings-submission-round-label");
+    if (!e) {
+        return;
+    }
+    if (!this.hasAttribute("data-submission-round-labelled")) {
+        this.setAttribute("data-submission-round-labelled", input_default_value(this) !== input_default_value(e) ? "true" : "");
+    }
+    if (this.getAttribute("data-submission-round-labelled")) {
+        return;
+    }
+    e.value = this.value;
+});
+
+handle_ui.on("input.js-settings-submission-round-label", function (evt) {
+    const e = this.closest(".js-settings-submission-round").querySelector(".js-settings-submission-round-name");
+    if (e) {
+        e.setAttribute("data-submission-round-labelled", "true");
+    }
 });
 
 handle_ui.on("js-settings-submission-round-delete", function () {
@@ -2473,9 +2494,8 @@ function json_path_position(s, path) {
             ++ipos;
         }
         return new JsonParserPosition(null, null, null, ipos, json_skip(s, ipos));
-    } else {
-        return jpp;
     }
+    return jpp;
 }
 
 function make_json_validate() {
@@ -3082,16 +3102,8 @@ function initialize_json_settings() {
     });
 }
 
-handle_ui.on("click.js-settings-jpath", function () {
-    let path = this.querySelector("code.settings-jpath"),
-        el = document.getElementById("json_settings");
-    if (path && el) {
-        settings_path_jump(el, path.textContent, hasClass(this, "use-key"));
-    }
-});
-
 handle_ui.on("hashjump.js-hash", function (c) {
-    let el = document.getElementById("json_settings");
+    const el = document.getElementById("json_settings");
     if (el) {
         initialize_json_settings();
         for (let i = 0; i !== c.length; ++i) {

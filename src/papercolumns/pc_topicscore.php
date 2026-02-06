@@ -22,9 +22,7 @@ class TopicScore_PaperColumn extends PaperColumn {
                 && !$pl->user->is_manager())) {
             return false;
         }
-        if ($visible) {
-            $pl->qopts["topics"] = 1;
-        }
+        $pl->qopts["topics"] = 1;
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {

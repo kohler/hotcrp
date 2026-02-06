@@ -72,6 +72,7 @@ $config = [
     "file_list" => [
         Config::projectPath("api.php"),
         Config::projectPath("assign.php"),
+        Config::projectPath("authorize.php"),
         Config::projectPath("autoassign.php"),
         Config::projectPath("bulkassign.php"),
         Config::projectPath("buzzer.php"),

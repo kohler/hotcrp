@@ -1,6 +1,6 @@
 <?php
 // countmatcher.php -- HotCRP helper class for textual comparators
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class CountMatcher {
     /** @var int */
@@ -58,9 +58,8 @@ class CountMatcher {
             $this->op = $a[0];
             $this->value = $a[1];
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return bool */
@@ -257,9 +256,8 @@ class CountMatcher {
             return ($compar & 4) !== 0;
         } else if ($delta > -0.000001) {
             return ($compar & 2) !== 0;
-        } else {
-            return ($compar & 1) !== 0;
         }
+        return ($compar & 1) !== 0;
     }
 
     /** @param int $compar

@@ -168,11 +168,13 @@ class FailureReason extends Exception
             $end = $sr->register;
         } else if ($dn === "sub_update") {
             $end = $sr->update;
+        } else if ($dn === "sub_resub") {
+            $end = $sr->resubmit;
         } else {
             $end = $sr->submit;
         }
         return ["sub_sub", $sr->open, $dn, $end, [
-            new FmtArg("sclass", $sr->tag, 0),
+            new FmtArg("sclass", $sr->label, 0),
             new FmtArg("sclass_prefix", $sr->prefix, 0)
         ]];
     }
@@ -258,6 +260,9 @@ class FailureReason extends Exception
         }
         if ($this->_a["frozen"] ?? false) {
             $ms[] = $this->conf->_("<0>{Submission} #{} can no longer be edited", $paperId);
+        }
+        if ($this->_a["noUnsubmit"] ?? false) {
+            $ms[] = $this->conf->_("<0>{Submission} #{} is under review and can’t be returned to draft", $paperId);
         }
         if ($this->_a["notUploaded"] ?? false) {
             $ms[] = $this->conf->_("<0>A PDF upload is required to submit");

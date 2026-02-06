@@ -1,6 +1,6 @@
 <?php
 // qrequest.php -- HotCRP helper class for request objects (no warnings)
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     /** @var ?Conf */
@@ -13,6 +13,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_page;
     /** @var ?string */
     private $_path;
+    /** @var int */
+    private $_path_component_index = 0;
+    /** @var ?int */
+    private $_path_component_count;
     /** @var string */
     private $_method;
     /** @var ?array<string,string> */
@@ -64,8 +68,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function set_navigation($nav) {
         $this->_navigation = $nav;
         $this->_page = $nav->page;
-        $this->_path = $nav->path;
-        return $this;
+        return $this->set_path($nav->path);
     }
 
     /** @param string $page
@@ -79,6 +82,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return $this */
     function set_path($path) {
         $this->_path = $path;
+        $this->_path_component_index = 0;
+        $this->_path_component_count = null;
+        return $this;
+    }
+
+    /** @param int $n
+     * @return $this */
+    function set_path_component_index($n) {
+        $this->_path_component_index = $n;
         return $this;
     }
 
@@ -167,14 +179,17 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @param int $n
      * @return ?string */
     function path_component($n, $decoded = false) {
-        if ((string) $this->_path !== "") {
-            $p = explode("/", substr($this->_path, 1));
-            if ($n + 1 < count($p)
-                || ($n + 1 === count($p) && $p[$n] !== "")) {
-                return $decoded ? urldecode($p[$n]) : $p[$n];
-            }
+        if ($this->_path_component_count === null) {
+            $p = $this->_path ?? "";
+            $this->_path_component_count = substr_count($p, "/")
+                + (str_ends_with($p, "/") ? 0 : 1);
         }
-        return null;
+        $n += $this->_path_component_index + 1;
+        if ($n <= 0 || $n >= $this->_path_component_count) {
+            return null;
+        }
+        $pc = explode("/", $this->_path);
+        return $decoded ? urldecode($pc[$n]) : $pc[$n];
     }
     /** @return ?PaperInfo */
     function paper() {
@@ -188,6 +203,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @return ?string */
     function user_agent() {
         return $this->_headers["HTTP_USER_AGENT"] ?? null;
+    }
+
+    /** @param string $k
+     * @return ?string */
+    function raw_header($k) {
+        return $this->_headers[$k] ?? null;
     }
 
     /** @param string $k
@@ -585,6 +606,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         $qreq->_body_type = empty($_POST) ? self::BODY_FILE : self::BODY_NONE;
 
+        // Work around GET URL length limitations with `:method:` parameter.
+        // A POST request can set `:method:` to GET for GET semantics.
+        if (($v = $qreq->_v[":method:"] ?? null) === "GET"
+            && $qreq->method() === "POST") {
+            $qreq->_method = "GET";
+        }
+
         // $_FILES requires special processing since we want error messages.
         $errors = [];
         $too_big = false;
@@ -605,15 +633,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
                 } else if ($fi["error"] != UPLOAD_ERR_NO_FILE) {
                     if ($fi["error"] == UPLOAD_ERR_INI_SIZE
                         || $fi["error"] == UPLOAD_ERR_FORM_SIZE) {
-                        $errors[] = $e = MessageItem::error("Uploaded file too large");
+                        $errors[] = $e = MessageItem::error("<0>Uploaded file too large");
                         if (!$too_big) {
-                            $errors[] = MessageItem::inform("The maximum upload size is " . ini_get("upload_max_filesie") . "B.");
+                            $errors[] = MessageItem::inform("<0>The maximum upload size is " . ini_get("upload_max_filesie") . "B.");
                             $too_big = true;
                         }
                     } else if ($fi["error"] == UPLOAD_ERR_PARTIAL) {
-                        $errors[] = $e = MessageItem::error("File upload interrupted");
+                        $errors[] = $e = MessageItem::error("<0>File upload interrupted");
                     } else {
-                        $errors[] = $e = MessageItem::error("Error uploading file");
+                        $errors[] = $e = MessageItem::error("<0>Error uploading file");
                     }
                     $e->landmark = $fi["name"] ?? null;
                 }
@@ -678,9 +706,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     function print_footer() {
-        echo '<hr class="c"></div>', // close #p-body
+        echo '<hr class="c"></main>', // close #p-body
             '</div>',                // close #p-page
-            '<div id="p-footer" class="need-banner-offset banner-bottom">',
+            '<footer id="p-footer" class="need-banner-offset banner-bottom">',
             $this->_conf->opt("extraFooter") ?? "",
             '<a class="noq" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->_conf->opt("noFooterVersion")) {
@@ -695,7 +723,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
             }
         }
-        echo '</div>', Ht::unstash(), "</body>\n</html>\n";
+        echo '</footer>', Ht::unstash(), "</body>\n</html>\n";
     }
 
     static function print_footer_hook(Contact $user, Qrequest $qreq) {
@@ -895,6 +923,21 @@ class QrequestFile {
         }
         $qf->stream = $stream;
         $qf->error = 0;
+        return $qf;
+    }
+
+    /** @param DocumentInfo $doc
+     * @return ?QrequestFile */
+    static function make_document($doc) {
+        $qf = new QrequestFile;
+        $qf->name = $doc->filename;
+        $qf->type = $doc->mimetype;
+        if (($size = $doc->size()) >= 0) {
+            $qf->size = $size;
+        }
+        if (($qf->tmp_name = $doc->content_file()) === null) {
+            return null;
+        }
         return $qf;
     }
 

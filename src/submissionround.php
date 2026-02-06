@@ -8,6 +8,8 @@ class SubmissionRound {
     /** @var string */
     public $tag = "";
     /** @var string */
+    public $label = "";
+    /** @var string */
     public $prefix = "";
     /** @var int */
     public $open = 0;
@@ -19,6 +21,10 @@ class SubmissionRound {
     public $update = 0;
     /** @var int */
     public $submit = 0;
+    /** @var int */
+    public $resubmit = 0;
+    /** @var bool */
+    public $inferred_resubmit = false;
     /** @var int */
     public $grace = 0;
     /** @var bool */
@@ -36,6 +42,7 @@ class SubmissionRound {
         $sr->register = $conf->setting("sub_reg") ?? 0;
         $sr->submit = $conf->setting("sub_sub") ?? 0;
         $sr->update = $conf->setting("sub_update") ?? $sr->submit;
+        $sr->resubmit = $conf->setting("sub_resub") ?? 0;
         $sr->grace = $conf->setting("sub_grace") ?? 0;
         $sr->freeze = $conf->setting("sub_freeze") > 0;
         $sr->initialize($conf);
@@ -46,11 +53,13 @@ class SubmissionRound {
     static function make_json($j, SubmissionRound $main_sr, Conf $conf) {
         $sr = new SubmissionRound;
         $sr->tag = $j->tag;
-        $sr->prefix = $sr->tag . " ";
+        $sr->label = $j->label ?? $j->tag;
+        $sr->prefix = $sr->label . " ";
         $sr->open = $j->open ?? $main_sr->open;
         $sr->register = $j->register ?? 0;
         $sr->submit = $j->submit ?? 0;
         $sr->update = $j->update ?? $sr->submit;
+        $sr->resubmit = $j->resubmit ?? 0;
         $sr->grace = $j->grace ?? $main_sr->grace;
         $sr->freeze = $j->freeze ?? $main_sr->freeze;
         $sr->initialize($conf);
@@ -63,7 +72,11 @@ class SubmissionRound {
             $this->register = $this->update;
             $this->inferred_register = true;
         }
-        if ($this->time_submit(true)) {
+        if ($this->resubmit <= 0 && $this->update > 0) {
+            $this->resubmit = $this->update;
+            $this->inferred_resubmit = true;
+        }
+        if ($this->submit + $this->grace >= Conf::$now) {
             $this->incomplete_viewable = $conf->setting("pc_seeall") > 0;
             $this->pdf_viewable = $conf->setting("pc_seeallpdf") > 0
                 || $this->submit <= 0;
@@ -88,6 +101,20 @@ class SubmissionRound {
                 || $this->update + ($with_grace ? $this->grace : 0) >= Conf::$now);
     }
 
+    /** @param bool $submitted
+     * @param bool $with_grace
+     * @return bool */
+    function time_edit($submitted, $with_grace) {
+        if ($submitted && $this->freeze) {
+            return false;
+        }
+        $t = $submitted ? $this->resubmit : $this->update;
+        return $this->open > 0
+            && $this->open <= Conf::$now
+            && ($t <= 0
+                || $t + ($with_grace ? $this->grace : 0) >= Conf::$now);
+    }
+
     /** @param bool $with_grace
      * @return bool */
     function time_submit($with_grace) {
@@ -95,6 +122,13 @@ class SubmissionRound {
             && $this->open <= Conf::$now
             && ($this->submit <= 0
                 || $this->submit + ($with_grace ? $this->grace : 0) >= Conf::$now);
+    }
+
+    /** @param bool $with_grace
+     * @return bool */
+    function time_unsubmit($with_grace) {
+        return !$this->freeze
+            && $this->time_edit(false, $with_grace);
     }
 
     /** @return bool */

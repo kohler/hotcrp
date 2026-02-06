@@ -1,6 +1,6 @@
 <?php
 // api_search.php -- HotCRP search-related API calls
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Search_API {
     /** @return JsonResult|PaperSearch */
@@ -29,7 +29,7 @@ class Search_API {
         if ($search instanceof JsonResult) {
             return $search;
         }
-        $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
+        $pl = new PaperList($qreq->report ? : "empty", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
         if (friendly_boolean($qreq->session) !== false) {
             $pl->apply_view_session($qreq);
@@ -159,8 +159,11 @@ class Search_API {
         if (($qreq->action ?? "") === "") {
             return JsonResult::make_missing_error("action");
         }
-        $qreq->p = $qreq->p ?? "all";
-        $ssel = SearchSelection::make($qreq, $user, "p");
+        if (!isset($qreq->p)) {
+            $ssel = SearchSelection::make_default($qreq, $user);
+        } else {
+            $ssel = SearchSelection::make($qreq, $user, "p");
+        }
         $action = ListAction::lookup($qreq->action, $user, $qreq, $ssel, ListAction::F_API);
         if ($action instanceof ListAction) {
             $action = $action->run($user, $qreq, $ssel);
@@ -179,6 +182,7 @@ class Search_API {
             foreach ($ufs as $uf) {
                 if (str_starts_with($uf->name, "__")
                     || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
+                    || ($uf->api ?? null) === false
                     || !isset($uf->function)) {
                     continue;
                 }
@@ -200,7 +204,14 @@ class Search_API {
                     $fj["description"] = $uf->description;
                 }
                 if (isset($uf->parameters)) {
-                    $fj["parameters"] = $uf->parameters;
+                    if (is_string($uf->parameters)) {
+                        $vos = new ViewOptionSchema(...explode(" ", $uf->parameters));
+                    } else {
+                        $vos = new ViewOptionSchema(...$uf->parameters);
+                    }
+                    foreach ($vos->help_order() as $vot) {
+                        $fj["parameters"][] = $vot->unparse_export();
+                    }
                 }
                 $fjs[] = $fj;
             }

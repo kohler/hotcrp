@@ -12,7 +12,7 @@ class Tag_ListAction extends ListAction {
         }
     }
 
-    static function render(PaperList $pl, Qrequest $qreq) {
+    static function render(PaperList $pl, Qrequest $qreq, $plft) {
         // tagtype cell
         $tagopt = ["a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order"];
         $tagextra = ["class" => "js-submit-action-info-tag"];
@@ -27,7 +27,7 @@ class Tag_ListAction extends ListAction {
             $t .= '<span class="fx98"><button type="button" class="q ui js-foldup" data-fold-target="99">'
                 . expander(null, 99) . "</button></span>";
         }
-        $t .= 'tag<span class="fn98">(s)</span> &nbsp;'
+        $t .= '<span class="px-1">tag<span class="fn98">(s)</span></span> '
             . Ht::entry("tag", $qreq->tag,
                         ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-submit-fn" => "tag"])
             . $pl->action_submit("tag");
@@ -43,8 +43,8 @@ class Tag_ListAction extends ListAction {
                 . "</div></div>";
         }
 
-        return [Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " &nbsp;",
-            ["linelink-class" => "has-fold fold98c fold99c ui-fold js-tag-list-action", "content" => $t]];
+        $plft->tab_attr["class"] = "has-fold fold98c fold99c ui-fold js-tag-list-action";
+        $plft->content = Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " " . $t;
     }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_edit_some_tag();
@@ -76,6 +76,7 @@ class Tag_ListAction extends ListAction {
             $act = "aos";
         } else if ($act === "cr" || $act === "calculate_rank") {
             $act = "cr";
+            $gapless = $gapless ?? friendly_boolean($qreq->tagcr_gapless);
         } else {
             $act = "";
         }
@@ -115,10 +116,10 @@ class Tag_ListAction extends ListAction {
         $assignset->set_overrides(Contact::OVERRIDE_CONFLICT); // i.e., not other overrides
         if ($tagreq === "" || $act === "") {
             if ($act === "") {
-                $assignset->message_set()->append_item(MessageItem::error_at("tagfn", isset($qreq->tagfn) ? "<0>Parameter eror" : "<0>Parameter missing"));
+                $assignset->message_set()->append_item(MessageItem::error_at("tagfn", isset($qreq->tagfn) ? "<0>Parameter error" : "<0>Parameter missing"));
             }
             if ($tagreq === "") {
-                $assignset->message_set()->append_item(MessageItem::error_at("tag", "<0>Parameter missing"));
+                $assignset->message_set()->append_item(MessageItem::error_at("tag", "<0>Tags required"));
             }
         } else if (!empty($papers) && $action) {
             foreach ($papers as $p) {
@@ -128,7 +129,8 @@ class Tag_ListAction extends ListAction {
             }
             $assignset->parse(join("", $x));
         } else if (!empty($papers) && $act === "cr" && $user->privChair) {
-            $source_tag = trim((string) $qreq->tagcr_source);
+            $source_tag = $qreq->tagcr_source ?? $qreq->source_tag;
+            $source_tag = trim((string) $source_tag);
             if ($source_tag === "") {
                 $source_tag = (substr($tagreq, 0, 2) === "~~" ? substr($tagreq, 2) : $tagreq);
             }
@@ -137,9 +139,9 @@ class Tag_ListAction extends ListAction {
                 && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
                 $r = new PaperRank($papers);
                 $r->load_user_tag_ranks($user->conf, $source_tag);
-                $r->set_gapless(!!$qreq->tagcr_gapless);
+                $r->set_gapless($gapless);
                 $r->set_printable_header($qreq, "Search", "search");
-                $r->run($qreq->tagcr_method);
+                $r->run($qreq->tagcr_method ?? $qreq->rank_method);
                 $assignset->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TAG_CHECKS);
                 $assignset->parse($r->unparse_tag_assignment($tagreq));
                 if ($qreq->q === "") {
@@ -150,10 +152,11 @@ class Tag_ListAction extends ListAction {
             }
         }
 
-        $assignset->execute();
-        if ($qreq->page() === "api" || $qreq->ajax) {
-            return $assignset->json_result();
+        if ($qreq->page() === "api") {
+            return Assign_API::complete($assignset, $qreq);
         }
+
+        $assignset->execute();
         $assignset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
         $args = ["atab" => "tag"] + $qreq->subset_as_array("tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless");
         return new Redirection($user->conf->selfurl($qreq, $args, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));

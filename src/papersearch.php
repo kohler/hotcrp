@@ -33,6 +33,42 @@ class SearchStringContext {
     public $depth;
     /** @var ?SearchStringContext */
     public $parent;
+
+    /** @param string $q
+     * @param int $ppos1
+     * @param int $ppos2
+     * @param ?SearchStringContext $parent */
+    function __construct($q, $ppos1, $ppos2, $parent) {
+        $this->q = $q;
+        $this->ppos1 = $ppos1;
+        $this->ppos2 = $ppos2;
+        $this->depth = $parent ? $parent->depth + 1 : 1;
+        $this->parent = $parent;
+    }
+
+    /** @param MessageItem $mi
+     * @param int $pos1
+     * @param int $pos2
+     * @param ?SearchStringContext $context
+     * @param string $base
+     * @return list<MessageItem> */
+    static function expand($mi, $pos1, $pos2, $context, $base) {
+        $mi->pos1 = $pos1;
+        $mi->pos2 = $pos2;
+        $mis = [$mi];
+        while ($context) {
+            $mi->context = $context->q;
+            $mi->nested_context = true;
+            $mi = MessageItem::inform_at($mi->field, "");
+            $mi->landmark = "<5>→ <em>expanded from</em> ";
+            $mi->pos1 = $context->ppos1;
+            $mi->pos2 = $context->ppos2;
+            $mis[] = $mi;
+            $context = $context->parent;
+        }
+        $mi->context = $base;
+        return $mis;
+    }
 }
 
 class SearchQueryInfo {
@@ -211,8 +247,8 @@ class PaperSearch extends MessageSet {
     /** @var Limit_SearchTerm
      * @readonly */
     private $_limit_qe;
-    /** @var bool */
-    private $_limit_explicit = false;
+    /** @var int */
+    private $_limit_override;
     /** @var bool */
     private $_has_qe = false;
 
@@ -285,6 +321,9 @@ class PaperSearch extends MessageSet {
         // contact facts
         $this->conf = $user->conf;
         $this->user = $user;
+        if ($this->conf->is_updating_automatic_tags()) {
+            $this->expand_automatic = 1;
+        }
 
         // query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
@@ -296,7 +335,6 @@ class PaperSearch extends MessageSet {
         $this->q = trim($options["q"] ?? "");
         $this->_req_sort = $options["sort"] ?? null;
         $this->_req_scoresort = $options["scoresort"] ?? null;
-        $this->set_want_ftext(true);
 
         // reviewer
         if (($reviewer = $options["reviewer"] ?? null)) {
@@ -317,9 +355,11 @@ class PaperSearch extends MessageSet {
         }
 
         // paper selection
+        $toverride = friendly_boolean($options["toverride"] ?? null);
         if (isset($options["t"]) && $options["t"] !== "") {
             $lnames = Limit_SearchTerm::canonical_names($this->conf, $options["t"]);
             $limit = $lnames[0] ?? "none";
+            $toverride = $toverride ?? true;
         } else {
             // Empty limit should be the plausible limit for a default search,
             // as in entering text into a quicksearch box.
@@ -344,12 +384,13 @@ class PaperSearch extends MessageSet {
         }
         $lword = SearchWord::make_simple($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
+        $this->_limit_override = $toverride ? 0 : -1;
     }
 
     private function clear_compilation() {
         $this->clear_messages();
         $this->_qe = null;
-        // XXX does not reset _limit_explicit, that should be ok
+        // XXX does not reset _limit_override, that should be ok
         $this->_then_term = null;
         $this->_contact_searches = null;
         $this->_matches = null;
@@ -405,16 +446,23 @@ class PaperSearch extends MessageSet {
     /** @return bool */
     function show_submitted_status() {
         return in_array($this->limit(), ["a", "active", "all"], true)
-            && $this->q !== "re:me";
+            && !$this->query_is_re_me();
     }
     /** @return bool */
     function limit_explicit() {
-        return $this->_limit_explicit;
+        if ($this->_limit_override === 0 && !$this->_has_qe) {
+            $this->main_term();
+        }
+        return $this->_limit_override > 0;
     }
 
     /** @return Contact */
     function reviewer_user() {
         return $this->_reviewer_user ?? $this->user;
+    }
+    /** @return bool */
+    function query_is_re_me() {
+        return $this->q === "re:me" && $this->user === $this->reviewer_user();
     }
 
 
@@ -452,20 +500,7 @@ class PaperSearch extends MessageSet {
         } else {
             $mi = $message;
         }
-        $mi->pos1 = $pos1;
-        $mi->pos2 = $pos2;
-        $mis = [$mi];
-        while ($context) {
-            $mi->context = $context->q;
-            $mi = MessageItem::inform("");
-            $mi->landmark = "<5>→ <em>expanded from</em> ";
-            $mi->pos1 = $context->ppos1;
-            $mi->pos2 = $context->ppos2;
-            $mis[] = $mi;
-            $context = $context->parent;
-        }
-        $mi->context = $this->q;
-        return $mis;
+        return SearchStringContext::expand($mi, $pos1, $pos2, $context, $this->q);
     }
 
     /** @param SearchWord|SearchTerm $sw
@@ -599,12 +634,7 @@ class PaperSearch extends MessageSet {
             $this->lwarning($sword, "<0>Circular reference in named search definitions");
             return null;
         }
-        $context = new SearchStringContext;
-        $context->q = $body;
-        $context->ppos1 = $sword->kwpos1;
-        $context->ppos2 = $sword->pos2;
-        $context->depth = $this->_string_context ? $this->_string_context->depth + 1 : 1;
-        $context->parent = $this->_string_context;
+        $context = new SearchStringContext($body, $sword->kwpos1, $sword->pos2, $this->_string_context);
         $this->_string_context = $context;
         $qe = $this->_search_expression($body);
         $this->_string_context = $context->parent;
@@ -643,9 +673,8 @@ class PaperSearch extends MessageSet {
             return $qx;
         } else if ($qx) {
             return SearchTerm::combine_in("or", $this->_string_context, ...$qx);
-        } else {
-            return new False_SearchTerm; // assume error already given
         }
+        return new False_SearchTerm; // assume error already given
     }
 
     /** @param string $str
@@ -661,18 +690,16 @@ class PaperSearch extends MessageSet {
     static private function _search_word_inferred_keyword($str) {
         if (preg_match('/\A([_a-zA-Z0-9][-_.a-zA-Z0-9]*)([=!<>]=?|≠|≤|≥)([^:\"]+\z|[^:\"]*\".*)/s', $str, $m)) {
             return $m;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return list<string> */
     private function _qt_fields() {
         if ($this->_qt === "n") {
             return $this->user->can_view_some_authors() ? ["ti", "ab", "au"] : ["ti", "ab"];
-        } else {
-            return [$this->_qt];
         }
+        return [$this->_qt];
     }
 
     /** @param string $kw
@@ -758,9 +785,8 @@ class PaperSearch extends MessageSet {
         $pos = SearchParser::span_balanced_parens($str, 0, null, true);
         if ($pos === strlen($str)) {
             return $str;
-        } else {
-            return "\"" . str_replace("\"", "\\\"", $str) . "\"";
         }
+        return "\"" . str_replace("\"", "\\\"", $str) . "\"";
     }
 
     /** @param ?SearchExpr $sa
@@ -940,30 +966,6 @@ class PaperSearch extends MessageSet {
     // The query may be liberal (returning more papers than actually match);
     // QUERY EVALUATION makes it precise.
 
-    static function unusable_ratings(Contact $user) {
-        if ($user->privChair
-            || $user->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS) {
-            return [];
-        }
-        // This query should return those reviewIds whose ratings
-        // are not visible to the current querier:
-        // reviews by `$user` on papers with <=2 reviews and <=2 ratings
-        if ($user->conf->review_ratings() === 0) {
-            $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
-        } else {
-            $npr_constraint = "true";
-        }
-        $result = $user->conf->qe("select r.reviewId,
-            coalesce((select count(*) from ReviewRating force index (primary) where paperId=r.paperId),0) numRatings,
-            coalesce((select count(*) from PaperReview r force index (primary) where paperId=r.paperId and reviewNeedsSubmit=0 and {$npr_constraint}),0) numReviews
-            from PaperReview r
-            join ReviewRating rr on (rr.paperId=r.paperId and rr.reviewId=r.reviewId)
-            where r.contactId={$user->contactId}
-            having numReviews<=2 and numRatings<=2");
-        return Dbl::fetch_first_columns($result);
-    }
-
-
     /** @param SearchTerm $qe */
     private function _add_deleted_papers($qe) {
         if ($qe->type === "or" || $qe->type === "then") {
@@ -1044,8 +1046,8 @@ class PaperSearch extends MessageSet {
     function main_term() {
         if ($this->_qe === null) {
             $this->_has_qe = true;
-            if ($this->q === "re:me") {
-                $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r", true);
+            if ($this->query_is_re_me()) {
+                $this->_qe = new Limit_SearchTerm($this, "r", true);
             } else if (($qe = $this->_search_expression($this->q))) {
                 $this->_qe = $qe;
             } else {
@@ -1053,8 +1055,9 @@ class PaperSearch extends MessageSet {
             }
 
             // check for limit
-            if (($xlimit = $this->_qe->get_float("xlimit"))) {
-                $this->_limit_explicit = true;
+            if ($this->_limit_override === 0
+                && ($xlimit = $this->_qe->get_float("xlimit"))) {
+                $this->_limit_override = 1;
                 $this->_limit_qe->set_limit($xlimit->named_limit);
             }
 
@@ -1073,9 +1076,8 @@ class PaperSearch extends MessageSet {
         $this->_has_qe || $this->main_term();
         if ($this->limit() === "all") {
             return $this->_qe;
-        } else {
-            return SearchTerm::combine("and", $this->_limit_qe, $this->_qe);
         }
+        return SearchTerm::combine("and", $this->_limit_qe, $this->_qe);
     }
 
     private function _prepare_result(SearchTerm $qe) {
@@ -1125,7 +1127,9 @@ class PaperSearch extends MessageSet {
             $sqi->add_column("size", "Paper.size");
         }
         foreach ($this->conf->rights_terms() as $st) {
+            $ctx = $sqi->set_context(SearchQueryInfo::CTX_ANY);
             $st->sqlexpr($sqi);
+            $sqi->set_context($ctx);
         }
 
         // create query
@@ -1408,14 +1412,14 @@ class PaperSearch extends MessageSet {
 
     /** @return array<string,mixed>|false */
     function simple_search_options() {
+        // must request main_term first because that might reset _limit_qe
         $queryOptions = [];
         if ($this->_matches === null
-            && $this->_limit_qe->simple_search($queryOptions)
-            && $this->main_term()->simple_search($queryOptions)) {
+            && $this->main_term()->simple_search($queryOptions)
+            && $this->_limit_qe->simple_search($queryOptions)) {
             return $queryOptions;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return string|false */
@@ -1436,7 +1440,7 @@ class PaperSearch extends MessageSet {
     /** @return string */
     function default_limited_query() {
         if ($this->user->isPC
-            && !$this->_limit_explicit
+            && $this->_limit_override <= 0
             && $this->limit() !== ($this->user->can_view_some_incomplete() ? "active" : "s")) {
             return self::canonical_query($this->q, "", "", $this->_qt, $this->conf, $this->limit());
         }
@@ -1479,18 +1483,19 @@ class PaperSearch extends MessageSet {
 
     /** @return string */
     function description($listname) {
+        $is_re_me = $this->query_is_re_me();
         if ($listname) {
             $lx = $this->conf->_($listname);
         } else {
             $limit = $this->limit();
-            if ($this->q === "re:me" && in_array($limit, ["r", "s", "active"], true)) {
+            if ($is_re_me && in_array($limit, ["r", "s", "active"], true)) {
                 $limit = "r";
             }
             $lx = self::limit_description($this->conf, $limit);
         }
         if ($this->q === ""
-            || ($this->q === "re:me" && $this->limit() === "s")
-            || ($this->q === "re:me" && $this->limit() === "active")) {
+            || ($is_re_me && $this->limit() === "s")
+            || ($is_re_me && $this->limit() === "active")) {
             return $lx;
         } else if (str_starts_with($this->q, "au:")
                    && strlen($this->q) <= 36

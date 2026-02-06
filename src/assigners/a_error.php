@@ -22,7 +22,7 @@ class Error_AssignmentParser extends UserlessAssignmentParser {
         if (!Ftext::is_ftext($m)) {
             $m = "<0>{$m}";
         }
-        $state->msg_near($state->landmark(), $m, $this->iswarning ? 1 : 2);
+        $state->append_item_here(new MessageItem($this->iswarning ? 1 : 2, null, $m));
         return false;
     }
 }

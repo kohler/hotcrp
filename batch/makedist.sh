@@ -1,4 +1,4 @@
-export VERSION=3.1
+export VERSION=3.2.1
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -82,21 +82,29 @@ users.php
 
 batch/.htaccess
 batch/actionlog.php
+batch/apispec.php
 batch/assign.php
 batch/autoassign.php
 batch/backupdb.php
 batch/checkinvariants.php
+batch/cli/cli_assign.php
+batch/cli/cli_autoassign.php
+batch/cli/cli_document.php
+batch/cli/cli_job.php
 batch/cli/cli_paper.php
+batch/cli/cli_parameterhelp.php
 batch/cli/cli_search.php
 batch/cli/cli_settings.php
 batch/cli/cli_test.php
 batch/cli/cli_upload.php
+batch/collaboratordiff.php
 batch/createdb.php
 batch/deletepapers.php
 batch/fixdelegation.php
 batch/hotcrapi.php
 batch/killinactivedoc.php
 batch/paperjson.php
+batch/pcemails.php
 batch/reviewcsv.php
 batch/s3test.php
 batch/s3transfer.php
@@ -105,6 +113,7 @@ batch/savepapers.php
 batch/saveusers.php
 batch/search.php
 batch/settings.php
+batch/sparsifypref.php
 batch/updatecontactdb.php
 
 conf/.htaccess
@@ -123,6 +132,7 @@ devel/openapi.json
 
 etc/.htaccess
 etc/affiliationmatchers.json
+etc/apiexpansions.json
 etc/apifunctions.json
 etc/assignmentparsers.json
 etc/autoassigners.json
@@ -214,11 +224,14 @@ lib/utf8conversionfilter.php
 lib/xlsx.php
 
 src/.htaccess
+src/api/api_alerts.php
 src/api/api_alltags.php
 src/api/api_assign.php
+src/api/api_autoassign.php
 src/api/api_comment.php
 src/api/api_completion.php
 src/api/api_decision.php
+src/api/api_document.php
 src/api/api_error.php
 src/api/api_events.php
 src/api/api_follow.php
@@ -229,6 +242,7 @@ src/api/api_mail.php
 src/api/api_manageemail.php
 src/api/api_paper.php
 src/api/api_paperpc.php
+src/api/api_potentialconflicts.php
 src/api/api_preference.php
 src/api/api_requestreview.php
 src/api/api_review.php
@@ -238,6 +252,7 @@ src/api/api_search.php
 src/api/api_searchconfig.php
 src/api/api_session.php
 src/api/api_settings.php
+src/api/api_sharing.php
 src/api/api_specvalidator.php
 src/api/api_taganno.php
 src/api/api_tags.php
@@ -253,6 +268,7 @@ src/assigners/a_follow.php
 src/assigners/a_lead.php
 src/assigners/a_preference.php
 src/assigners/a_review.php
+src/assigners/a_sharing.php
 src/assigners/a_status.php
 src/assigners/a_tag.php
 src/assigners/a_taganno.php
@@ -283,6 +299,7 @@ src/conference.php
 src/confinvariants.php
 src/conflict.php
 src/contact.php
+src/contactalerts.php
 src/contactcounter.php
 src/contactcountmatcher.php
 src/contactlist.php
@@ -304,7 +321,9 @@ src/fieldrender.php
 src/filefilter.php
 src/formatspec.php
 src/formula.php
+src/formulacall.php
 src/formulagraph.php
+src/formulaparser.php
 src/formulas/f_author.php
 src/formulas/f_conflict.php
 src/formulas/f_decision.php
@@ -320,6 +339,7 @@ src/formulas/f_reviewermatch.php
 src/formulas/f_reviewround.php
 src/formulas/f_reviewwordcount.php
 src/formulas/f_revtype.php
+src/formulas/f_search.php
 src/formulas/f_submittedat.php
 src/formulas/f_tag.php
 src/formulas/f_timefield.php
@@ -372,9 +392,11 @@ src/meetingtracker.php
 src/mentionlister.php
 src/mentionparser.php
 src/multiconference.php
+src/namedformula.php
 src/notificationinfo.php
 src/options/o_abstract.php
 src/options/o_attachments.php
+src/options/o_authorcertification.php
 src/options/o_authors.php
 src/options/o_checkboxes.php
 src/options/o_checkboxesbase.php
@@ -394,7 +416,6 @@ src/pages/p_autoassign.php
 src/pages/p_bulkassign.php
 src/pages/p_buzzer.php
 src/pages/p_cacheable.php
-src/pages/p_changeemail.php
 src/pages/p_checkupdates.php
 src/pages/p_conflictassign.php
 src/pages/p_deadlines.php
@@ -563,6 +584,7 @@ src/tagrankparser.php
 src/tagsearchmatcher.php
 src/textformat.php
 src/tokeninfo.php
+src/tokenscope.php
 src/topicset.php
 src/track.php
 src/updateschema.php
@@ -576,6 +598,7 @@ src/valueformat.php
 src/viewcommand.php
 src/viewoptionlist.php
 src/viewoptionschema.php
+src/viewoptiontype.php
 src/xtparams.php
 
 devel/hotcrp.vim

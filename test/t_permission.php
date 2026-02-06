@@ -68,19 +68,19 @@ class Permission_Tester {
         xassert(!$this->u_kohler->can_view_paper($paper1));
         xassert(!$this->u_nobody->can_view_paper($paper1));
 
-        xassert($this->u_chair->allow_administer($paper1));
-        xassert(!$this->u_estrin->allow_administer($paper1));
-        xassert(!$this->u_marina->allow_administer($paper1));
-        xassert(!$this->u_van->allow_administer($paper1));
-        xassert(!$this->u_kohler->allow_administer($paper1));
-        xassert(!$this->u_nobody->allow_administer($paper1));
+        xassert($this->u_chair->allow_admin($paper1));
+        xassert(!$this->u_estrin->allow_admin($paper1));
+        xassert(!$this->u_marina->allow_admin($paper1));
+        xassert(!$this->u_van->allow_admin($paper1));
+        xassert(!$this->u_kohler->allow_admin($paper1));
+        xassert(!$this->u_nobody->allow_admin($paper1));
 
-        xassert($this->u_chair->can_administer($paper1));
-        xassert(!$this->u_estrin->can_administer($paper1));
-        xassert(!$this->u_marina->can_administer($paper1));
-        xassert(!$this->u_van->can_administer($paper1));
-        xassert(!$this->u_kohler->can_administer($paper1));
-        xassert(!$this->u_nobody->can_administer($paper1));
+        xassert($this->u_chair->is_admin($paper1));
+        xassert(!$this->u_estrin->is_admin($paper1));
+        xassert(!$this->u_marina->is_admin($paper1));
+        xassert(!$this->u_van->is_admin($paper1));
+        xassert(!$this->u_kohler->is_admin($paper1));
+        xassert(!$this->u_nobody->is_admin($paper1));
 
         xassert($this->u_chair->can_view_tags($paper1));
         xassert(!$this->u_estrin->can_view_tags($paper1));
@@ -168,11 +168,12 @@ class Permission_Tester {
         // grant user capability to read paper 1, check it doesn't allow PC view
         $user_capability = Contact::make($this->conf);
         xassert(!$user_capability->can_view_paper($paper1));
-        $user_capability->apply_capability_text(AuthorView_Capability::make($paper1));
+        $tok = AuthorView_Capability::make($paper1, AuthorView_Capability::AV_CREATE);
+        $user_capability->apply_capability_text($tok->salt);
         xassert(!$user_capability->contactId);
         xassert($user_capability->can_view_paper($paper1));
-        xassert(!$user_capability->allow_administer($paper1));
-        xassert(!$user_capability->can_administer($paper1));
+        xassert(!$user_capability->allow_admin($paper1));
+        xassert(!$user_capability->is_admin($paper1));
         xassert(!$user_capability->can_view_tags($paper1));
         xassert(!$user_capability->can_edit_paper($paper1));
 
@@ -218,9 +219,9 @@ class Permission_Tester {
 
         // role assignment works
         $paper18 = $user_mgbaker->checked_paper_by_id(18);
-        xassert($this->u_shenker->can_administer($paper18));
-        xassert(!$user_mgbaker->can_administer($paper1));
-        xassert(!$user_mgbaker->can_administer($paper18));
+        xassert($this->u_shenker->is_admin($paper18));
+        xassert(!$user_mgbaker->is_admin($paper1));
+        xassert(!$user_mgbaker->is_admin($paper18));
 
         // author derivation works
         xassert($user_mgbaker->act_author_view($paper18));
@@ -234,19 +235,19 @@ class Permission_Tester {
         xassert_search($user_randy, ["q" => "", "t" => "a"], "6");
 
         // correct conflict information returned
-        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker], "id conf");
+        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker], "id conflict");
         xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-        xassert_eqq($j[3]["conf"], "Y");
-        xassert_eqq($j[18]["conf"], "Y");
+        xassert_eqq($j[3]["conflict"], "Y");
+        xassert_eqq($j[18]["conflict"], "Y");
         foreach ([1, 2, 4, 5, 15, 16, 17] as $i) {
-            xassert_eqq($j[$i]["conf"], "N");
+            xassert_eqq($j[$i]["conflict"], "N");
         }
 
-        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon], "id conf");
+        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon], "id conflict");
         xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-        xassert_eqq($j[17]["conf"], "Y");
+        xassert_eqq($j[17]["conflict"], "Y");
         foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i) {
-            xassert_eqq($j[$i]["conf"], "N");
+            xassert_eqq($j[$i]["conflict"], "N");
         }
 
         // review search
@@ -1015,18 +1016,18 @@ class Permission_Tester {
         xassert_assign($this->conf->root_user(), "action,paper,user,tag\nconflict,4 5,chair@_.com\ntag,4 5,,testtag");
         $paper4 = $this->u_chair->checked_paper_by_id(4);
         $paper5 = $this->u_chair->checked_paper_by_id(5);
-        assert(!$this->u_chair->can_administer($paper4));
-        assert(!$this->u_chair->allow_administer($paper4));
-        assert(!$this->u_chair->can_administer($paper5));
-        assert($this->u_chair->allow_administer($paper5));
+        assert(!$this->u_chair->is_admin($paper4));
+        assert(!$this->u_chair->allow_admin($paper4));
+        assert(!$this->u_chair->is_admin($paper5));
+        assert($this->u_chair->allow_admin($paper5));
         xassert_eqq($paper4->viewable_tags($this->u_chair), "");
         xassert_eqq($paper5->viewable_tags($this->u_chair), "");
 
         $overrides = $this->u_chair->add_overrides(Contact::OVERRIDE_CONFLICT);
-        assert(!$this->u_chair->can_administer($paper4));
-        assert(!$this->u_chair->allow_administer($paper4));
-        assert($this->u_chair->can_administer($paper5));
-        assert($this->u_chair->allow_administer($paper5));
+        assert(!$this->u_chair->is_admin($paper4));
+        assert(!$this->u_chair->allow_admin($paper4));
+        assert($this->u_chair->is_admin($paper5));
+        assert($this->u_chair->allow_admin($paper5));
         xassert_eqq($paper4->viewable_tags($this->u_chair), "");
         xassert_match($paper5->viewable_tags($this->u_chair), '/\A fart#\d+ testtag#0\z/');
         $this->u_chair->set_overrides($overrides);
@@ -1094,20 +1095,20 @@ class Permission_Tester {
 
         // test conflict types
         $user_rguerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,pinned\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
         xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,pinned\n");
         $paper3->invalidate_conflicts();
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::GENERAL, true));
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::CT_DEFAULT, true));
         xassert_assign($user_sclin, "paper,action,user,conflict type\n3,conflict,rguerin@ibm.com,pinned\n");
         $paper3->invalidate_conflicts();
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::GENERAL, true));
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::CT_DEFAULT, true));
         xassert_assign($this->u_chair, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,none\n");
         xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,conflict\n");
         $paper3->invalidate_conflicts();
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
 
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,collaborator\n");
         $paper3->invalidate_conflicts();
@@ -1131,12 +1132,43 @@ class Permission_Tester {
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");
         $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 1);
-        xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,unpin\n");
+        xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,none\n");
         $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 0);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");
         $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 4);
+
+        // <empty-string> is not a valid conflict type
+        xassert_assign_fail($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,\n");
+
+        // normal user attempt to assign administrative type goes to preexisting
+        // or default
+        xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,administrative\n");
+        $paper3->invalidate_conflicts();
+        xassert_eqq($paper3->conflict_type($user_rguerin), 4);
+        xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,off\n3,conflict,rguerin@ibm.com,administrative\n");
+        $paper3->invalidate_conflicts();
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
+
+        // assignment of generic type preserves existing type
+        xassert_assign($this->u_chair, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,on\n");
+        $paper3->invalidate_conflicts();
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
+
+        // admin assignment of generic type goes to administrative type
+        xassert_assign($this->u_chair, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,off\n3,conflict,rguerin@ibm.com,on\n");
+        $paper3->invalidate_conflicts();
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_ADMINISTRATIVE);
+
+        // non-admin can assign administrative type once it exists,
+        // or can override it
+        xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,administrative\n");
+        $paper3->invalidate_conflicts();
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_ADMINISTRATIVE);
+        xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,collaborator\n");
+        $paper3->invalidate_conflicts();
+        xassert_eqq($paper3->conflict_type($user_rguerin), 2);
 
         $this->conf->save_setting("sub_update", Conf::$now - 5);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
@@ -1364,30 +1396,30 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("tracks", null);
         for ($pid = 1; $pid <= 3; ++$pid) {
             $p = $this->u_chair->checked_paper_by_id($pid);
-            xassert($this->u_chair->allow_administer($p));
-            xassert(!$this->u_marina->allow_administer($p));
-            xassert($this->u_chair->can_administer($p));
+            xassert($this->u_chair->allow_admin($p));
+            xassert(!$this->u_marina->allow_admin($p));
+            xassert($this->u_chair->is_admin($p));
             xassert($this->u_chair->is_primary_administrator($p));
         }
         xassert_assign($this->u_chair, "paper,action,user\n2,administrator,marina@poema.ru");
         for ($pid = 1; $pid <= 3; ++$pid) {
             $p = $this->u_chair->checked_paper_by_id($pid);
-            xassert($this->u_chair->allow_administer($p));
-            xassert_eqq($this->u_marina->allow_administer($p), $pid === 2);
-            xassert($this->u_chair->can_administer($p));
-            xassert_eqq($this->u_marina->can_administer($p), $pid === 2);
+            xassert($this->u_chair->allow_admin($p));
+            xassert_eqq($this->u_marina->allow_admin($p), $pid === 2);
+            xassert($this->u_chair->is_admin($p));
+            xassert_eqq($this->u_marina->is_admin($p), $pid === 2);
             xassert_eqq($this->u_chair->is_primary_administrator($p), $pid !== 2);
             xassert_eqq($this->u_marina->is_primary_administrator($p), $pid === 2);
         }
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"admin\":\"+red\"}}");
         for ($pid = 1; $pid <= 3; ++$pid) {
             $p = $this->u_chair->checked_paper_by_id($pid);
-            xassert($this->u_chair->allow_administer($p));
-            xassert_eqq($this->u_marina->allow_administer($p), $pid === 2);
-            xassert_eqq($this->u_estrin->allow_administer($p), $pid === 3);
-            xassert($this->u_chair->can_administer($p));
-            xassert_eqq($this->u_marina->can_administer($p), $pid === 2);
-            xassert_eqq($this->u_estrin->can_administer($p), $pid === 3);
+            xassert($this->u_chair->allow_admin($p));
+            xassert_eqq($this->u_marina->allow_admin($p), $pid === 2);
+            xassert_eqq($this->u_estrin->allow_admin($p), $pid === 3);
+            xassert($this->u_chair->is_admin($p));
+            xassert_eqq($this->u_marina->is_admin($p), $pid === 2);
+            xassert_eqq($this->u_estrin->is_admin($p), $pid === 3);
             xassert_eqq($this->u_chair->is_primary_administrator($p), $pid === 1);
             xassert_eqq($this->u_marina->is_primary_administrator($p), $pid === 2);
             xassert_eqq($this->u_estrin->is_primary_administrator($p), $pid === 3);
@@ -1470,7 +1502,7 @@ class Permission_Tester {
         xassert_eqq($paper16->tag_value("app"), 1.0);
         xassert_eqq($paper16->sorted_viewable_tags($this->u_chair), " app#1 crap#3 vote#6");
         xassert_eqq($paper16->sorted_searchable_tags($this->u_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
-        xassert(!$this->u_marina->allow_administer($paper16));
+        xassert(!$this->u_marina->allow_admin($paper16));
         xassert_eqq($paper16->sorted_viewable_tags($this->u_marina), " app#1 crap#3 vote#6");
         xassert_eqq($paper16->sorted_searchable_tags($this->u_marina), " 2~vote#5 4~app#0 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
         xassert(SettingValues::make_request($this->u_chair, [

@@ -762,11 +762,12 @@ class Unit_Tester {
         xassert_eqq(plural_word(2, "ass", "fun"), "fun");
     }
 
-    function test_parse_interval() {
-        xassert_eqq(SettingParser::parse_interval("2y"), 86400 * 365 * 2.0);
-        xassert_eqq(SettingParser::parse_interval("15m"), 60 * 15.0);
-        xassert_eqq(SettingParser::parse_interval("1h15m"), 60 * 75.0);
-        xassert_eqq(SettingParser::parse_interval("1h15mo"), false);
+    function test_parse_duration() {
+        xassert_eqq(SettingParser::parse_duration("2y"), 86400 * 365 * 2.0);
+        xassert_eqq(SettingParser::parse_duration("15m"), 60 * 15.0);
+        xassert_eqq(SettingParser::parse_duration("1h15m"), 60 * 75.0);
+        xassert_eqq(SettingParser::parse_duration("1h15mo"), null);
+        xassert_eqq(SettingParser::parse_duration("15"), 15.0);
     }
 
     function test_parse_preference() {
@@ -979,7 +980,7 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::deaccent_translate_offset($do[1], 4), 6);
         $regex = new TextPregexes(Text::word_regex("foo"), Text::utf8_word_regex("foo"));
         xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö", $regex),
-                    "Is <span class=\"match\">foo</span> bar <span class=\"match\">føo</span> bar <span class=\"match\">fóó</span> bar highlit right? <span class=\"match\">foö</span>");
+                    "Is <em class=\"match\">foo</em> bar <em class=\"match\">føo</em> bar <em class=\"match\">fóó</em> bar highlit right? <em class=\"match\">foö</em>");
         xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
     }
 
@@ -1008,28 +1009,28 @@ class Unit_Tester {
 
     function test_star_text_pregexes() {
         $pregex = Text::star_text_pregexes("foo");
-        xassert(Text::match_pregexes($pregex, "foo", null));
-        xassert(Text::match_pregexes($pregex, "foo", "foo"));
-        xassert(Text::match_pregexes($pregex, "fóo", "foo"));
-        xassert(!Text::match_pregexes($pregex, "foobar", null));
-        xassert(!Text::match_pregexes($pregex, "foobar", "foobar"));
-        xassert(!Text::match_pregexes($pregex, "fóobar", "foobar"));
+        xassert($pregex->match_da("foo", null));
+        xassert($pregex->match_da("foo", "foo"));
+        xassert($pregex->match_da("fóo", "foo"));
+        xassert(!$pregex->match_da("foobar", null));
+        xassert(!$pregex->match_da("foobar", "foobar"));
+        xassert(!$pregex->match_da("fóobar", "foobar"));
 
         $pregex = Text::star_text_pregexes("foo*");
-        xassert(Text::match_pregexes($pregex, "foo", null));
-        xassert(Text::match_pregexes($pregex, "foo", "foo"));
-        xassert(Text::match_pregexes($pregex, "fóo", "foo"));
-        xassert(Text::match_pregexes($pregex, "foobar", null));
-        xassert(Text::match_pregexes($pregex, "foobar", "foobar"));
-        xassert(Text::match_pregexes($pregex, "fóobar", "foobar"));
-        xassert(!Text::match_pregexes($pregex, "ffoobar", null));
-        xassert(!Text::match_pregexes($pregex, "ffoobar", "ffoobar"));
-        xassert(!Text::match_pregexes($pregex, "ffóobar", "ffoobar"));
+        xassert($pregex->match_da("foo", null));
+        xassert($pregex->match_da("foo", "foo"));
+        xassert($pregex->match_da("fóo", "foo"));
+        xassert($pregex->match_da("foobar", null));
+        xassert($pregex->match_da("foobar", "foobar"));
+        xassert($pregex->match_da("fóobar", "foobar"));
+        xassert(!$pregex->match_da("ffoobar", null));
+        xassert(!$pregex->match_da("ffoobar", "ffoobar"));
+        xassert(!$pregex->match_da("ffóobar", "ffoobar"));
 
         $pregex = Text::star_text_pregexes("foo@butt.com");
-        xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", null));
-        xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", "it's foo@butt.com and friends"));
-        xassert(Text::match_pregexes($pregex, "it's fóo@butt.com and friends", "it's foo@butt.com and friends"));
+        xassert($pregex->match_da("it's foo@butt.com and friends", null));
+        xassert($pregex->match_da("it's foo@butt.com and friends", "it's foo@butt.com and friends"));
+        xassert($pregex->match_da("it's fóo@butt.com and friends", "it's foo@butt.com and friends"));
     }
 
     function test_simple_search() {
@@ -1072,6 +1073,23 @@ class Unit_Tester {
         xassert_eqq(count($q), 3);
         xassert_eqq(json_encode($q), "{\"a\":1,\"b\":2,\"c\":\"s\"}");
         xassert_eqq(Json::encode($q), "{\"a\":1,\"b\":2,\"c\":\"s\"}");
+
+        $q->set_path("");
+        xassert_eqq($q->path_component(0), null);
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/");
+        xassert_eqq($q->path_component(0), null);
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/a");
+        xassert_eqq($q->path_component(0), "a");
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/a/");
+        xassert_eqq($q->path_component(0), "a");
+        xassert_eqq($q->path_component(1), null);
+        $q->set_path("/a/b");
+        xassert_eqq($q->path_component(0), "a");
+        xassert_eqq($q->path_component(1), "b");
+        xassert_eqq($q->path_component(2), null);
     }
 
     function test_is_anonymous_email() {
@@ -1378,6 +1396,11 @@ class Unit_Tester {
         xassert_eqq(Ftext::concat("<0><hello>", "?"), "<0><hello>?");
     }
 
+    function test_ftext_html() {
+        xassert_eqq(Ftext::convert_to(0, 5, "<dl><dt>a</dt><dt>b</dt><dd>c</dd></dl>"),
+                    "a\nb\n-> c\n");
+    }
+
     function test_str_list_lower_bound() {
         xassert_eqq(str_list_lower_bound("a", ["0", "ab", "ac", "ad"]), 1);
         xassert_eqq(str_list_lower_bound("aa", ["0", "ab", "ac", "ad"]), 1);
@@ -1454,19 +1477,19 @@ class Unit_Tester {
 
     function test_view_option_schema() {
         $sort_schema = "asc,ascending,up|desc,descending,down|forward|reverse";
-        xassert_eqq(ViewOptionSchema::validate_enum("ascending", $sort_schema), "asc");
-        xassert_eqq(ViewOptionSchema::validate_enum("asc", $sort_schema), "asc");
-        xassert_eqq(ViewOptionSchema::validate_enum("descending", $sort_schema), "desc");
-        xassert_eqq(ViewOptionSchema::validate_enum("forward", $sort_schema), "forward");
-        xassert_eqq(ViewOptionSchema::validate_enum("reverse", $sort_schema), "reverse");
-        xassert_eqq(ViewOptionSchema::validate_enum("fart", $sort_schema), null);
-        xassert_eqq(ViewOptionSchema::validate_enum("asc,ascending", $sort_schema), null);
+        xassert_eqq(ViewOptionType::parse_enum("ascending", $sort_schema), "asc");
+        xassert_eqq(ViewOptionType::parse_enum("asc", $sort_schema), "asc");
+        xassert_eqq(ViewOptionType::parse_enum("descending", $sort_schema), "desc");
+        xassert_eqq(ViewOptionType::parse_enum("forward", $sort_schema), "forward");
+        xassert_eqq(ViewOptionType::parse_enum("reverse", $sort_schema), "reverse");
+        xassert_eqq(ViewOptionType::parse_enum("fart", $sort_schema), null);
+        xassert_eqq(ViewOptionType::parse_enum("asc,ascending", $sort_schema), null);
 
         $vos = new ViewOptionSchema;
         xassert_eqq($vos->define_check("display=row|col,column"), true);
         xassert_eqq($vos->define_check((object) ["name" => "sort", "enum" => $sort_schema, "lifted" => true]), true);
         xassert_eqq($vos->define_check((object) ["name" => "test", "enum" => "all,yes|none,no|some"]), true);
-        xassert_eqq($vos->define_check("fart!"), true);
+        xassert_eqq($vos->define_check("fart$^"), true);
         xassert_eqq($vos->define_check(null), false);
 
         xassert_eqq($vos->validate("display", "row"), ["display", "row"]);
@@ -1481,8 +1504,8 @@ class Unit_Tester {
         xassert_eqq($vos->validate("test", "yes"), ["test", "all"]);
 
         $vos = new ViewOptionSchema;
-        $vos->define("display=row|col,column");
-        $vos->define("sort={$sort_schema}");
+        $vos->define("display=row|col,column^");
+        $vos->define("sort={$sort_schema}^");
         xassert_eqq($vos->validate("reverse", true), ["sort", "reverse"]);
     }
 
@@ -1555,5 +1578,18 @@ class Unit_Tester {
             ["\xFE\xFF", $spread_le, "H", "\x00e", "\x00l", "\x00l\x00o", "\x00"],
             $spread_half . "Hello"
         );
+    }
+
+    function test_hash_analysis() {
+        $ha = HashAnalysis::make_partial("abcdef");
+        xassert(!$ha->partial());
+        $ha = HashAnalysis::make_partial("sha2-01ABCDEF");
+        xassert($ha->partial());
+        xassert(!$ha->complete());
+        xassert_eqq($ha->algorithm(), "sha256");
+        $ha = HashAnalysis::make_partial("sha2-01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF01ABCDEF");
+        xassert($ha->partial());
+        xassert($ha->complete());
+        xassert_eqq($ha->algorithm(), "sha256");
     }
 }

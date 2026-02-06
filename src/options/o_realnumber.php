@@ -69,22 +69,21 @@ class RealNumber_PaperOption extends PaperOption {
         }
     }
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         return [
             $this->has_search_example(),
-            new SearchExample(
-                $this, $this->search_keyword() . ":{comparator}",
+            $this->make_search_example(
+                $this->search_keyword() . ":{comparator}",
                 "<0>submission’s {title} field is greater than 12.5",
-                new FmtArg("comparator", ">12.5")
+                new FmtArg("comparator", ">12.5", 0)
             )
         ];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if (is_numeric($sword->cword)) {
             return new RealNumberOption_SearchTerm($srch->user, $this, CountMatcher::parse_relation($sword->compar), floatval($sword->cword));
-        } else {
-            return null;
         }
+        return null;
     }
     function present_script_expression() {
         return ["type" => "text_present", "formid" => $this->formid];

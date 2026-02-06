@@ -1,9 +1,9 @@
 <?php
 // init.php -- HotCRP initialization (test or site)
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
-const HOTCRP_VERSION = "3.1";
+const HOTCRP_VERSION = "3.2.1";
 
 // All positive review types must be 1 digit
 const REVIEW_META = 5;
@@ -293,7 +293,7 @@ function initialize_user($qreq, $kwarg = null) {
 
     // check for bearer token
     if (($kwarg["bearer"] ?? false)
-        && ($htauth = $_SERVER["HTTP_AUTHORIZATION"] ?? null)
+        && ($htauth = $qreq->raw_header("HTTP_AUTHORIZATION"))
         && preg_match('/\A\s*+Bearer\s++(hct_[A-Za-z0-9]++)\s*+\z/i', $htauth, $m)) {
         $qreq->approve_token(); // explicit authorization
         $user = null;
@@ -310,6 +310,9 @@ function initialize_user($qreq, $kwarg = null) {
         $qreq->set_user($user);
         $qreq->set_qsession(new MemoryQsession($m[1], ["u" => $user->email]));
         $user->set_bearer_authorized();
+        if (($scope = $token->data("scope")) && is_string($scope)) {
+            $user->set_scope($scope);
+        }
         Contact::set_main_user($user);
         $ucounter = ContactCounter::find_by_uid($conf, $token->is_cdb, $token->contactId);
         $ucounter->api_refresh();
@@ -348,7 +351,16 @@ function initialize_user($qreq, $kwarg = null) {
     $nav = $qreq->navigation();
     if (str_starts_with($nav->shifted_path, "u/")) {
         // use explicit account index
-        $uindex = (int) substr($nav->shifted_path, 2);
+        $s = substr($nav->shifted_path, 2, -1);
+        if (ctype_digit($s)) {
+            $uindex = (int) $s;
+        } else if (($e = $conf->opt["publicUserPaths"][$s] ?? null)) {
+            $us = [$e];
+            $nus = 1;
+            $uindex = 0;
+        } else {
+            $uindex = -1;
+        }
     } else if ($nus > 1) {
         // no explicit account index, but a choice among accounts
         if ($reqemail !== "") {
@@ -397,7 +409,7 @@ function initialize_user($qreq, $kwarg = null) {
     // (garbage collect after 60 days)
     if ($nus > 1
         && $uemail !== ""
-        && ($referrer = $_SERVER["HTTP_REFERER"] ?? null) !== null
+        && ($referrer = $qreq->raw_header("HTTP_REFERER")) !== null
         && str_starts_with($referrer, $nav->server . $nav->base_path)
         && str_ends_with($referrer, $nav->raw_page . $nav->path . $nav->query)) {
         initialize_user_preferred_uindex($qreq, $uindex);
@@ -405,12 +417,12 @@ function initialize_user($qreq, $kwarg = null) {
 
     // look up and activate user
     $muser = ($conf->fresh_user_by_email($uemail)
-              ?? Contact::make_email($conf, $uemail, true))
+              ?? Contact::make_email_cflags($conf, $uemail, 0))
         ->activate($qreq, true, $uindex);
     Contact::set_main_user($muser);
     $qreq->set_user($muser);
 
-    // author view capability documents should not be indexed
+    // author view capability pages should not be indexed
     if ($muser->email === ""
         && $muser->has_author_view_capability()
         && !$conf->opt("allowIndexPapers")) {
@@ -438,7 +450,7 @@ function initialize_user($qreq, $kwarg = null) {
     }
 
     // remember recent addresses in session
-    $addr = $_SERVER["REMOTE_ADDR"];
+    $addr = $qreq->raw_header("REMOTE_ADDR");
     if ($addr
         && $qreq->qsid()
         && (!$muser->is_empty() || $qreq->has_gsession("addrs"))) {
@@ -446,7 +458,7 @@ function initialize_user($qreq, $kwarg = null) {
         if (!is_array($addrs) || empty($addrs)) {
             $addrs = [];
         }
-        if (($addrs[0] ?? null) !== $_SERVER["REMOTE_ADDR"]) {
+        if (($addrs[0] ?? null) !== $addr) {
             $naddrs = [$addr];
             foreach ($addrs as $a) {
                 if ($a !== $addr && count($naddrs) < 5)

@@ -155,12 +155,13 @@ a conflict type, such as “advisor” or “institutional”.</p>";
                 $n = "<a href=\"#{$hashid}\">{$n}</a>";
             }
             $t .= $n . '</td><td class="pad"><code>paper</code>';
-            foreach ($uf->parameters ?? [] as $param) {
+            $vos = new ViewOptionSchema(...($uf->parameters ?? []));
+            foreach ($vos as $vot) {
                 $t .= ', ';
-                if ($param[0] === "?") {
-                    $t .= '[<code>' . substr($param, 1) . '</code>]';
+                if (!$vot->required) {
+                    $t .= '[<code>' . htmlspecialchars($vot->name) . '</code>]';
                 } else {
-                    $t .= '<code>' . $param . '</code>';
+                    $t .= '<code>' . htmlspecialchars($vot->name) . '</code>';
                 }
             }
             $t .= '</td><td class="pad">';

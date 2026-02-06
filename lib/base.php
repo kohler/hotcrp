@@ -401,7 +401,8 @@ function ini_get_bytes($varname, $value = null) {
  * @return bool */
 function validate_email($email) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
-    return preg_match('/\A[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+\z/', $email);
+    return $email !== ""
+        && preg_match('/\A[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+\z/', $email);
 }
 
 /** @param string $s
@@ -411,9 +412,8 @@ function validate_email_at($s, $pos) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
     if (preg_match('/\G[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+(?=\z|[-,.;:()\[\]{}\s]|–|—)/', $s, $m, 0, $pos)) {
         return $m[0];
-    } else {
-        return null;
     }
+    return null;
 }
 
 /** @param string $word
@@ -725,9 +725,12 @@ function rm_rf_tempdir($tempdir) {
 /** @param int $mode
  * @return ?string */
 function tempdir($mode = 0700) {
-    $dir = sys_get_temp_dir() ? : "/";
+    $dir = sys_get_temp_dir();
     while (str_ends_with($dir, "/")) {
         $dir = substr($dir, 0, -1);
+    }
+    if ($dir === "" || !is_readable($dir)) {
+        $dir = is_readable("/var/tmp") ? "/var/tmp" : "/tmp";
     }
     for ($i = 0; $i !== 100; $i++) {
         $path = sprintf("%s/hotcrptmp%09d", $dir, mt_rand(0, 999999999));

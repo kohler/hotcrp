@@ -135,30 +135,6 @@
 		]
 	},
 
-	{
-		"name": "changeemail",
-		"subject": "[{{CONFSHORTNAME}}] Email change request",
-		"body": [
-			"Dear {{NAME}},\n\n",
-			"We received a request to change the email address for your account on the {{CONFNAME}} submission site. If you made this request, please use the following link to update your account to use {{EMAIL}}. The link will work for 3 days.\n\n",
-			"{{LINK(profile, changeemail={{CAPABILITY}})}}\n\n",
-			"If you did not make this request, it's safe to ignore this email.\n\n",
-			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n{{LINK}}\n"
-		]
-	},
-
-	{
-		"name": "mergeaccount",
-		"subject": "[{{CONFSHORTNAME}}] Merged account",
-		"body": [
-			"Dear {{NAME}},\n\n",
-			"Your account on the {{CONFSHORTNAME}} submission site has been merged with the account of {{OTHERCONTACT}}. From now on, you should log in using the {{OTHEREMAIL}} account.\n\n",
-			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n{{LINK}}\n"
-		]
-	},
-
 
 	{
 		"name": "registerpaper",

@@ -3,24 +3,25 @@
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Author {
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $firstName = "";
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $lastName = "";
     /** @var string */
     public $email = "";
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $affiliation = "";
     /** @var ?string */
     private $_name;
-    /** @var null|Author|array{string,string,string} */
-    private $_deaccents;
     /** @var ?int */
     public $contactId;
     /** @var int */
     public $roles = 0;
     /** @var int */
-    private $disablement = 0;
+    private $cflags = 0;
     /** @var ?int */
     public $conflictType;
     /** @var ?int */
@@ -34,26 +35,16 @@ class Author {
     const STATUS_PC = 4;
     const STATUS_NONAUTHOR = 5;
 
-    const COLLABORATORS_INDEX = -200;
-    const UNINITIALIZED_INDEX = -400; // see also PaperConflictInfo
-
-    /** @param null|string|object $x
-     * @param null|1|2|3|4|5 $status */
-    function __construct($x = null, $status = null) {
-        if (is_object($x)) {
-            $this->firstName = $x->firstName;
-            $this->lastName = $x->lastName;
-            $this->email = $x->email;
-            $this->affiliation = $x->affiliation;
-        } else if ($x !== null && $x !== "") {
-            $this->assign_string($x);
-        }
-        $this->status = $status;
-    }
+    const USER_COLLABORATOR_INDEX = -2000000;
+    const MAX_USER_COLLABORATOR_INDEX = -1000001;
+    const PAPER_COLLABORATOR_INDEX = -1000000;
+    const MAX_PAPER_COLLABORATOR_INDEX = -1;
+    const UNINITIALIZED_INDEX = -3000000; // see also PaperConflictInfo
 
     /** @param string $s
      * @param ?int $author_index
-     * @return Author */
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_tabbed($s, $author_index = null) {
         $au = new Author;
         $w = explode("\t", $s);
@@ -62,6 +53,7 @@ class Author {
         $au->email = $w[2] ?? "";
         $au->affiliation = $w[3] ?? "";
         $au->author_index = $author_index;
+        $au->seal_nea();
         return $au;
     }
 
@@ -70,6 +62,15 @@ class Author {
     static function make_string($s) {
         $au = new Author;
         $au->assign_string($s);
+        return $au;
+    }
+
+    /** @param string $name
+     * @param string $affiliation
+     * @return Author */
+    static function make_name_affiliation($name, $affiliation) {
+        $au = new Author;
+        $au->assign_name_affiliation($name, $affiliation);
         return $au;
     }
 
@@ -89,35 +90,67 @@ class Author {
         return $au;
     }
 
+    /** @param string $last
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
+    static function make_last($last) {
+        $au = new Author;
+        $au->lastName = $last;
+        $au->seal_nea();
+        return $au;
+    }
+
     /** @param string $email
-     * @return Author */
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_email($email) {
         $au = new Author;
         $au->email = $email;
         return $au;
     }
 
-    /** @param Contact $u
-     * @return Author */
-    static function make_user($u) {
-        $au = new Author($u);
-        $au->contactId = $u->contactId;
-        $au->roles = $u->roles;
-        $au->disablement = $u->disabled_flags();
+    /** @param string $first
+     * @param string $last
+     * @param string $email
+     * @param string $aff
+     * @return Author
+     * @suppress PhanAccessReadOnlyProperty */
+    static function make_nae($first, $last, $email, $aff) {
+        $au = new Author;
+        $au->firstName = $first;
+        $au->lastName = $last;
+        $au->email = $email;
+        $au->affiliation = $aff;
+        $au->seal_nea();
         return $au;
+    }
+
+    /** @param Contact $u
+     * @param ?int $status
+     * @return Author */
+    static function make_user($u, $status = null) {
+        $au = new Author;
+        $au->assign_user($u, $status);
+        return $au;
+    }
+
+    protected function seal_nea() {
+        $nonascii = is_usascii($this->firstName . $this->lastName . $this->affiliation)
+            ? 0 : Contact::CF_NEANONASCII;
+        if (($this->cflags & Contact::CF_NEANONASCII) !== $nonascii) {
+            $this->cflags = ($this->cflags & ~Contact::CF_NEANONASCII) | $nonascii;
+        }
     }
 
     /** @return $this */
     function copy() {
-        $au = clone $this;
-        if (!is_object($this->_deaccents)) {
-            $au->_deaccents = $this;
-        }
-        return $au;
+        return clone $this;
     }
 
-    /** @param Author|Contact $o */
+    /** @param Author|Contact $o
+     * @suppress PhanAccessReadOnlyProperty */
     function merge($o) {
+        $need_seal = false;
         if ($this->email === "") {
             $this->email = $o->email;
         }
@@ -125,41 +158,64 @@ class Author {
             $this->firstName = $o->firstName;
             $this->lastName = $o->lastName;
             $this->_name = null;
+            $need_seal = true;
         }
         if ($this->affiliation === "") {
             $this->affiliation = $o->affiliation;
+            $need_seal = true;
         }
-        $this->_deaccents = null;
+        if ($need_seal) {
+            $this->seal_nea();
+        }
     }
 
-    /** @param string $s */
-    function assign_string($s) {
+    /** @param string $s
+     * @return array{string,string,string} */
+    static function split_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
-            if (preg_match('/\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:%]).*)\z/', $s, $m, 0, $paren + 1)) {
-                $this->affiliation = trim($m[1]);
-                $s = rtrim(substr($s, 0, $paren));
-            } else {
-                $len = strlen($s);
-                while ($paren !== false) {
-                    $rparen = self::skip_balanced_parens($s, $paren);
-                    if ($rparen === $len
-                        || preg_match('{\A(?:[\s,;.]*|\s*(?:-+|–|—|[#:]).*)\z}', substr($s, $rparen + 1))) {
-                        $this->affiliation = trim(substr($s, $paren + 1, $rparen - $paren - 1));
-                        $s = rtrim(substr($s, 0, $paren));
-                        break;
-                    }
-                    $paren = strpos($s, "(", $rparen + 1);
+            if (preg_match('/\G([^()]*+)(?:\)|\z)\s*+(?:[\s,;.]*|(?:-+|–|—|[\#:])\s*+(.*))\z/', $s, $m, 0, $paren + 1)) {
+                return [trim(substr($s, 0, $paren)), trim($m[1]), $m[2] ?? ""];
+            }
+            $len = strlen($s);
+            while ($paren !== false) {
+                $rparen = self::skip_balanced_parens($s, $paren);
+                if ($rparen === $len) {
+                    return [trim(substr($s, 0, $paren)), trim(substr($s, $paren + 1)), ""];
+                } else if (preg_match('/\G(?:[\s,:.]*|\s*+(?:-+|–|—|[\#:])\s*+(.*))\z/', $s, $m, 0, $rparen + 1)) {
+                    return [trim(substr($s, 0, $paren)), trim(substr($s, $paren + 1, $rparen - $paren - 1)), $m[1] ?? ""];
                 }
+                $paren = strpos($s, "(", $rparen + 1);
             }
         }
-        if (strlen($s) > 4
-            || ($s !== "" && strcasecmp($s, "all") !== 0 && strcasecmp($s, "none") !== 0)) {
-            list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
-        }
-        $this->_name = $this->email === null ? trim($s) : null;
+        return [trim($s), "", ""];
     }
 
-    /** @param string $s */
+    /** @param string $s
+     * @suppress PhanAccessReadOnlyProperty */
+    function assign_string($s) {
+        list($n, $a, $x) =  self::split_string($s);
+        $this->assign_name_affiliation($n, $a);
+    }
+
+    /** @param string $name
+     * @param string $affiliation
+     * @suppress PhanAccessReadOnlyProperty */
+    function assign_name_affiliation($name, $affiliation) {
+        if (strlen($name) <= 4
+            && ($name === "" || strcasecmp($name, "all") === 0 || strcasecmp($name, "none") === 0)) {
+            $this->_name = null;
+            $this->firstName = $this->lastName = $this->email = "";
+        } else {
+            list($this->firstName, $this->lastName, $email) = Text::split_name($name, true);
+            $this->email = $email ?? "";
+            $this->_name = $email === null ? $name : null;
+        }
+        $this->affiliation = $affiliation;
+        $this->seal_nea();
+    }
+
+    /** @param string $s
+     * @suppress PhanAccessReadOnlyProperty */
     function assign_string_guess($s) {
         $hash = strpos($s, "#");
         $pct = strpos($s, "%");
@@ -185,9 +241,11 @@ class Author {
                 $this->affiliation = $s;
             }
         }
+        $this->seal_nea();
     }
 
-    /** @param object|array<string,mixed> $x */
+    /** @param object|array<string,mixed> $x
+     * @suppress PhanAccessReadOnlyProperty */
     function assign_keyed($x) {
         if (!is_object($x) && !is_array($x)) {
             throw new Exception("invalid Author::make_keyed");
@@ -206,21 +264,25 @@ class Author {
             }
             $e = $e ?? $ee;
         }
-        $this->firstName = $f ?? "";
-        $this->lastName = $l ?? "";
+        $this->firstName = simplify_whitespace($f ?? "");
+        $this->lastName = simplify_whitespace($l ?? "");
         $this->email = $e ?? "";
-        $this->affiliation = $a ?? "";
+        $this->affiliation = simplify_whitespace($a ?? "");
+        $this->seal_nea();
     }
 
-    /** @return $this */
-    function simplify_whitespace() {
-        $this->firstName = simplify_whitespace($this->firstName);
-        $this->lastName = simplify_whitespace($this->lastName);
-        $this->affiliation = simplify_whitespace($this->affiliation);
-        if ($this->_name !== null) {
-            $this->_name = simplify_whitespace($this->_name);
-        }
-        return $this;
+    /** @param Contact $u
+     * @param ?int $status
+     * @suppress PhanAccessReadOnlyProperty */
+    function assign_user($u, $status = null) {
+        $this->firstName = $u->firstName;
+        $this->lastName = $u->lastName;
+        $this->email = $u->email;
+        $this->affiliation = $u->affiliation;
+        $this->contactId = $u->contactId;
+        $this->roles = $u->roles;
+        $this->cflags = $u->cflags;
+        $this->status = $status;
     }
 
     /** @param string $s
@@ -263,25 +325,24 @@ class Author {
         return $name;
     }
 
-    /** @param 0|1|2 $component
+    /** @param 'firstName'|'lastName'|'affiliation' $key
      * @return string */
-    function deaccent($component) {
-        if (is_object($this->_deaccents)) {
-            return $this->_deaccents->deaccent($component);
+    function searchable_nea($key) {
+        $s = $this->$key;
+        if (($this->cflags & Contact::CF_NEANONASCII) !== 0) {
+            $s = UnicodeHelper::deaccent($s);
         }
-        if ($this->_deaccents === null) {
-            $this->_deaccents = [
-                strtolower(UnicodeHelper::deaccent($this->firstName)),
-                strtolower(UnicodeHelper::deaccent($this->lastName)),
-                strtolower(UnicodeHelper::deaccent($this->affiliation))
-            ];
-        }
-        return $this->_deaccents[$component];
+        return strtolower($s);
     }
 
     /** @return bool */
     function is_empty() {
         return $this->email === "" && $this->firstName === "" && $this->lastName === "" && $this->affiliation === "";
+    }
+
+    /** @return bool */
+    function is_nea_nonascii() {
+        return ($this->cflags & Contact::CF_NEANONASCII) !== 0;
     }
 
     /** @return bool */
@@ -297,18 +358,18 @@ class Author {
 
     /** @return bool */
     function is_placeholder() {
-        return ($this->disablement & Contact::CF_PLACEHOLDER) !== 0;
+        return ($this->cflags & Contact::CFM_PLACEHOLDER) === Contact::CF_PLACEHOLDER;
     }
 
     /** @return int */
     function disabled_flags() {
-        return $this->disablement;
+        return $this->cflags & Contact::CFM_DISABLEMENT;
     }
 
     /** @param Author|Contact $x
      * @return bool */
     function nea_equals($x) {
-        return $this->email === $x->email
+        return strcasecmp($this->email, $x->email) === 0
             && $this->firstName === $x->firstName
             && $this->lastName === $x->lastName
             && $this->affiliation === $x->affiliation;
@@ -351,6 +412,17 @@ class Author {
                 $j[$k] = $v;
         }
         return $j;
+    }
+
+    /** @param Author $au
+     * @param list<Author> $list
+     * @return ?Author */
+    static function find_match($au, $list) {
+        foreach ($list as $auth) {
+            if ($au->nea_equals($auth))
+                return $auth;
+        }
+        return null;
     }
 
     /** @param string $email

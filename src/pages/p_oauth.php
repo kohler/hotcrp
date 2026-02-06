@@ -147,7 +147,7 @@ class OAuth_Page {
 
         $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
         $tok->set_contactdb(!!$this->conf->contactdb())
-            ->set_expires_after(600)
+            ->set_expires_in(600)
             ->set_token_pattern("hcoa[20]")
             ->assign_data($tokdata)
             ->insert();
@@ -249,7 +249,7 @@ class OAuth_Page {
         $txt = curl_exec($curlh);
         $errno = curl_errno($curlh);
         $status = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
-        curl_close($curlh);
+        $curlh = null;
 
         // check response
         $response = $txt ? json_decode($txt) : null;

@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Get_ListAction {
-    static function render(PaperList $pl, Qrequest $qreq, ComponentSet $gex) {
+    static function render(PaperList $pl, Qrequest $qreq, $plft, ComponentSet $gex) {
         $sel_opt = ListAction::members_selector_options($gex, "get");
         if (empty($sel_opt)) {
             return null;

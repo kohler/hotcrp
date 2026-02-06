@@ -23,6 +23,11 @@ class FmtArg {
     function convert_to($format) {
         return Ftext::convert_to($format, $this->format, $this->value);
     }
+
+    /** @return FmtArg */
+    static function blank() {
+        return new FmtArg("", null);
+    }
 }
 
 class FmtItem {
@@ -158,8 +163,9 @@ class FmtContext {
     public $format;
     /** @var ?int */
     public $pos;
-    /** @var ?string */
-    public $replacement;
+
+    /** @var ?bool */
+    static private $complained;
 
     /** @param Fmt $fmt
      * @param ?string $context
@@ -180,7 +186,10 @@ class FmtContext {
     /** @param string $detail
      * @return array{?int,string} */
     function complain($detail) {
-        error_log("invalid Fmt replacement {$this->replacement}: {$detail}");
+        if (!self::$complained) {
+            self::$complained = true;
+            error_log("invalid Fmt replacement: {$detail}\n" . debug_string_backtrace());
+        }
         return [0, "ERROR"];
     }
 
@@ -229,9 +238,8 @@ class FmtContext {
         } else if (str_starts_with($fspec, ":plural ")) {
             $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
             return [$vformat, plural_word(count($value), substr($fspec, 8))];
-        } else {
-            return $this->complain("{$fspec} does not expect array");
         }
+        return $this->complain("{$fspec} does not expect array");
     }
 
     /** @param string $fspec
@@ -294,6 +302,16 @@ class FmtContext {
                 $vformat = null;
             }
             return [$vformat, $value];
+        } else if ($fspec === ":sq") {
+            if (!preg_match('/\A[-a-zA-Z_0-9.:]+\z/', $value)) {
+                $value = "\"{$value}\"";
+            }
+            return [$vformat, $value];
+        } else if ($fspec === ":nonempty") {
+            if ($value === "") {
+                return [0, "<empty>"];
+            }
+            return [$vformat, $value];
         } else if (str_starts_with($fspec, ":plural ")) {
             $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
             return [$vformat, plural_word($value, $word)];
@@ -302,9 +320,8 @@ class FmtContext {
                 return $this->complain("{$fspec} expected number");
             }
             return [$vformat, sprintf("%" . substr($fspec, 1), $value)];
-        } else {
-            return $this->complain("unknown format specification {$fspec}");
         }
+        return $this->complain("unknown format specification {$fspec}");
     }
 
     /** @param string $s
@@ -494,7 +511,6 @@ class FmtContext {
         if ($this->format === null && $pos !== 0) {
             $this->format = Ftext::format($s);
         }
-        $this->replacement = substr($s, $pos, $epos - $pos);
 
         foreach ($fmtspecs as $fmtspec) {
             list($vformat, $value) = $this->apply_fmtspec($fmtspec, $vformat, $value, $expansion);
@@ -534,6 +550,11 @@ class Fmt {
     function __construct($conf = null) {
         $this->conf = $conf;
         $this->_default_item = new FmtItem(null);
+    }
+
+    /** @return $this */
+    function fmt() {
+        return $this;
     }
 
     /** @param int|float $p */

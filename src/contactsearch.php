@@ -167,11 +167,10 @@ class ContactSearch {
                 return $this->select_ids("select contactId from ContactInfo where contactId?A", [$a]);
             }
         } else if ($need) {
-            $this->warn_html = "No users are tagged “" . htmlspecialchars($this->text) . "”.";
+            $this->warn_html = "No users are tagged ‘" . htmlspecialchars($this->text) . "’.";
             return [];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return list<int> */
@@ -186,7 +185,7 @@ class ContactSearch {
         // split name components
         list($f, $l, $e) = Text::split_name($this->text, true);
         if ($f !== "" && $l !== "") {
-            $n = "$f $l";
+            $n = "{$f} {$l}";
         } else {
             $n = $f . $l;
         }
@@ -221,13 +220,15 @@ class ContactSearch {
                 $where[] = "email like " . Dbl::utf8ci("'" . preg_replace('/[\s*]+/', "%", $x) . "'");
             }
             $q = "select " . $this->conf->user_query_fields() . " from ContactInfo where " . join(" or ", $where);
-            if ($this->type & self::F_ALLOW_DELETED) {
+            $allow_deleted = ($this->type & self::F_ALLOW_DELETED) !== 0;
+            if ($allow_deleted) {
                 $q .= " union select " . $this->conf->deleted_user_query_fields() . " from DeletedContactInfo where " . join(" or ", $where);
             }
             $result = $this->conf->qe_raw($q);
             $cs = [];
             while (($row = Contact::fetch($result, $this->conf))) {
-                $cs[$row->contactId] = $row;
+                if ($allow_deleted || !$row->is_deleted())
+                    $cs[$row->contactId] = $row;
             }
         }
 
@@ -253,11 +254,8 @@ class ContactSearch {
                     break;
                 }
                 $ids[] = $id;
-            } else if ($nreg) {
-                $n = $acct->searchable_name();
-                if (Text::match_pregexes($nreg, $n, UnicodeHelper::deaccent($n))) {
-                    $ids[] = $id;
-                }
+            } else if ($nreg && $nreg->match($acct->searchable_name())) {
+                $ids[] = $id;
             }
         }
 
@@ -301,5 +299,11 @@ class ContactSearch {
             }
         }
         return $this->contacts;
+    }
+
+    /** @return ?Contact */
+    function user1() {
+        $us = $this->users();
+        return count($us) === 1 ? $us[0] : null;
     }
 }

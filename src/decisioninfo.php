@@ -1,27 +1,33 @@
 <?php
 // decisioninfo.php -- HotCRP helper class for decisions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DecisionInfo {
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $id;
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $name;
-    /** @var int */
-    public $catbits;
-    /** @var -2|-1|0|1 */
+    /** @var int
+     * @readonly */
+    public $category;
+    /** @var -2|-1|0|1
+     * @readonly */
     public $sign;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $placeholder = false;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $order = 0;
 
 
-    const CAT_YES = 0x10;
-    const CAT_NO = 0x20;
-    const CAT_OTHER = 0x40;
-    const CAT_SUBTYPE = 0x0F;
-    const CB_DESKREJECT = 0x21;
+    const CAT_YES = 1;
+    const CAT_STDREJECT = 2;
+    const CAT_DESKREJECT = 4;
+    const CAT_OTHER = 8;
+    const CM_NO = 6;
     // see also DecisionSet::matchexpr
 
 
@@ -32,26 +38,31 @@ class DecisionInfo {
         $this->id = $id;
         $this->name = $name;
         if ($category !== null) {
-            $this->catbits = self::parse_category($category);
+            $this->category = self::parse_category($category);
         }
-        if ($this->catbits === null) {
+        if ($this->category === null) {
             if ($this->id === 0) {
-                $this->catbits = self::CAT_OTHER;
+                $this->category = self::CAT_OTHER;
+            } else if ($this->id > 0) {
+                $this->category = self::CAT_YES;
             } else {
-                $this->catbits = $this->id > 0 ? self::CAT_YES : self::CAT_NO;
+                $this->category = self::CAT_STDREJECT;
             }
         }
-        if (($this->catbits & self::CAT_YES) !== 0) {
+        if ($this->category === self::CAT_YES) {
             $this->sign = 1;
-        } else if (($this->catbits & self::CAT_NO) !== 0) {
-            $this->sign = $this->catbits === self::CB_DESKREJECT ? -2 : -1;
-        } else {
+        } else if ($this->category === self::CAT_OTHER) {
             $this->sign = 0;
+        } else if ($this->category === self::CAT_STDREJECT) {
+            $this->sign = -1;
+        } else {
+            $this->sign = -2;
         }
     }
 
     /** @param int $id
-     * @return DecisionInfo */
+     * @return DecisionInfo
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_placeholder($id) {
         $dec = new DecisionInfo($id, "[#{$id}]");
         $dec->placeholder = true;
@@ -72,44 +83,43 @@ class DecisionInfo {
         } else if ($s === "accept") {
             return self::CAT_YES;
         } else if ($s === "reject") {
-            return self::CAT_NO;
+            return self::CAT_STDREJECT;
         } else if ($s === "desk_reject" || $s === "deskreject") {
-            return self::CB_DESKREJECT;
-        } else {
-            return null;
+            return self::CAT_DESKREJECT;
         }
+        return null;
     }
 
-    /** @param int $catbits
+    /** @param int $category
      * @return string */
-    static function unparse_category($catbits) {
-        if (($catbits & self::CAT_YES) !== 0) {
+    static function unparse_category($category) {
+        if ($category === self::CAT_YES) {
             return "accept";
-        } else if (($catbits & self::CAT_NO) !== 0) {
-            return $catbits === self::CB_DESKREJECT ? "desk_reject" : "reject";
-        } else {
-            return "maybe";
+        } else if ($category === self::CAT_STDREJECT) {
+            return "reject";
+        } else if ($category === self::CAT_DESKREJECT) {
+            return "desk_reject";
         }
+        return "maybe";
     }
 
-    /** @param int $catbits
+    /** @param int $category
      * @return string */
-    static function unparse_category_class($catbits) {
-        if (($catbits & (self::CAT_YES | self::CAT_NO)) === 0) {
+    static function unparse_category_class($category) {
+        if (($category & (self::CAT_YES | self::CM_NO)) === 0) {
             return "dec-maybe";
-        } else {
-            return ($catbits & self::CAT_YES) !== 0 ? "dec-yes" : "dec-no";
         }
+        return $category === self::CAT_YES ? "dec-yes" : "dec-no";
     }
 
     /** @return string */
     function category_name() {
-        return self::unparse_category($this->catbits);
+        return self::unparse_category($this->category);
     }
 
     /** @return string */
     function status_class() {
-        return self::unparse_category_class($this->catbits);
+        return self::unparse_category_class($this->category);
     }
 
     /** @return Decision_Setting */

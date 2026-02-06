@@ -360,6 +360,7 @@
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
         "title": "/Presence condition",
         "type": "string", "subtype": "condition", "size": 30, "placeholder": "Search",
+        "parser_class": "SubFieldCondition_SettingParser",
         "parse_order": 3
     },
     {
@@ -392,7 +393,7 @@
     {
         "name_pattern": "sf/$/max_submissions",
         "title": "/Maximum submissions per author",
-        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
+        "type": "nonnegint", "size": 5, "placeholder": "no limit", "default_value": 0
     },
     {
         "name": "sf_abstract", "storage": "ova.noAbstract",
@@ -425,6 +426,14 @@
         "title": "Show accepted submissions’ author lists to reviewers",
         "type": "checkbox",
         "tags": "final visibility"
+    },
+    {
+        "name": "sf_author_orcid", "storage": "ova.requireOrcid",
+        "title": "ORCiD requirement",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["no", "yes", "final"],
+        "tags": "submission sf"
     },
     {
         "name": "sf_author_max", "storage": "ova.maxAuthors", "type": "nonnegint",
@@ -481,6 +490,12 @@
         "placeholder": "(Tag)"
     },
     {
+        "name_pattern": "submission/$/label",
+        "title": "Submission class title",
+        "type": "string", "size": 30, "autogrow": true,
+        "placeholder": "same as class tag"
+    },
+    {
         "name_pattern": "submission/$/title", "internal": true, "parser_class": "Sround_SettingParser"
     },
     {
@@ -498,6 +513,12 @@
     {
         "name_pattern": "submission/$/done", "storage": "member.submit",
         "title": "/Submission deadline",
+        "type": "date", "placeholder": "none",
+        "tags": "submission deadline"
+    },
+    {
+        "name_pattern": "submission/$/resubmission", "storage": "member.resubmit",
+        "title": "/Resubmission deadline",
         "type": "date", "placeholder": "none",
         "tags": "submission deadline"
     },
@@ -665,7 +686,7 @@
     },
     {
         "name": "review_identity_visibility_external", "storage": "viewrevid_ext",
-        "title": "External reviewers can view reviewer identities",
+        "title": "External reviewers can see reviewer identities",
         "type": "radio",
         "values": [-1, 0, 1], "default_value": 0,
         "json_values": ["never", "after_review", "always"],
@@ -673,10 +694,25 @@
     },
     {
         "name": "review_identity_visibility_pc", "storage": "viewrevid",
-        "title": "PC can see anonymous reviewers’ identities",
+        "title": "PC can see reviewer identities",
         "type": "radio",
         "values": [-1, 0, 5, 1], "default_value": 0, "initial_value": 1,
         "json_values": ["never", "after_review", "if_assigned", "always"],
+        "tags": "review visibility"
+    },
+    {
+        "name": "review_identity_visibility_meta_special", "internal": true,
+        "title": "Metareviewer identities are treated specially",
+        "type": "checkbox",
+        "parser_class": "Review_SettingParser"
+    },
+    {
+        "name": "review_identity_visibility_meta", "storage": "viewmetarevid",
+        "title": "PC can see metareviewer identities",
+        "type": "radio",
+        "values": [-2, -1, 0, 5, 1], "default_value": -2,
+        "json_values": ["default", "never", "after_review", "if_assigned", "always"],
+        "parser_class": "Review_SettingParser",
         "tags": "review visibility"
     },
     {
@@ -786,6 +822,14 @@
         "type": "radio",
         "values": [0, 1, -1], "default_value": 0,
         "json_values": ["pc", "all", "no"],
+        "tags": "review"
+    },
+    {
+        "name": "review_rating_visibility", "storage": "rev_seeratings",
+        "title": "Review rating visibility",
+        "type": "radio",
+        "values": [0, 1, -1], "default_value": 0,
+        "json_values": ["limited", "yes", "no"],
         "tags": "review"
     },
 
@@ -1014,6 +1058,11 @@
         "type": "checkbox"
     },
     {
+        "name_pattern": "format/$/appendix",
+        "title": "Allow appendix sections",
+        "type": "checkbox"
+    },
+    {
         "name_pattern": "format/$/wordlimit",
         "title": "PDF format checker word limit",
         "type": "string", "size": 8, "placeholder": "any"
@@ -1048,6 +1097,13 @@
         "name": "submission_done", "storage": "sub_sub",
         "title": "Submission deadline",
         "type": "date", "parse_order": 1,
+        "parser_class": "Submissions_SettingParser",
+        "tags": "submission deadline"
+    },
+    {
+        "name": "submission_resubmission", "storage": "sub_resub",
+        "title": "Resubmission deadline",
+        "type": "date", "parse_order": 2, "placeholder": "none",
         "parser_class": "Submissions_SettingParser",
         "tags": "submission deadline"
     },
@@ -1094,7 +1150,8 @@
     {
         "name_pattern": "tag_style/$/tags",
         "title": "/Tag list",
-        "type": "taglist", "subtype": "allow_wildcard_chair", "size": 40, "autogrow": true
+        "type": "taglist", "subtype": "allow_wildcard_chair", "size": 40,
+        "autogrow": true, "spellcheck": false
     },
 
     {   "name": "tag_badge", "internal": true, "type": "string"   },
@@ -1175,13 +1232,13 @@
     {
         "name_pattern": "automatic_tag/$/search", "storage": "member.q",
         "title": "/Search",
-        "type": "string", "subtype": "search", "size": 50, "placeholder": "Search", "autogrow": true,
+        "type": "string", "subtype": "search", "size": 50, "placeholder": "Search", "autogrow": true, "spellcheck": false,
         "parser_class": "AutomaticTag_SettingParser"
     },
     {
         "name_pattern": "automatic_tag/$/value", "storage": "member.v",
         "title": "/Value formula",
-        "type": "string", "subtype": "formula", "size": 10, "placeholder": "none", "autogrow": true,
+        "type": "string", "subtype": "formula", "size": 10, "placeholder": "none", "autogrow": true, "spellcheck": false,
         "parser_class": "AutomaticTag_SettingParser"
     },
 

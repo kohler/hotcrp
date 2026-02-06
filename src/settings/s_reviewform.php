@@ -1,6 +1,6 @@
 <?php
 // settings/s_reviewform.php -- HotCRP review form definition page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ReviewForm_SettingParser extends SettingParser {
     /** @var FieldConversions_Setting */
@@ -348,12 +348,12 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->mark_no_diff("review_form");
             }
         }
-        return true;
     }
 
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "rf") {
-            return $this->_apply_req_review_form($si, $sv);
+            $this->_apply_req_review_form($si, $sv);
+            return true;
         }
         assert($si->name0 === "rf/");
         $fs = $sv->oldv($si->name0 . $si->name1);
@@ -370,6 +370,7 @@ class ReviewForm_SettingParser extends SettingParser {
         } else if ($si->name2 === "/type") {
             $this->_apply_req_type($si, $fs, $sv);
         }
+        return true;
     }
 
 
@@ -547,7 +548,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             join("", MessageSet::feedback_html_items([
                 MessageItem::marked_note("Reviewers will be required to check this field to complete their reviews.")
             ])), '</li></ul>';
-        $sv->print_close_control_group(["horizontal" => true]);
+        $sv->print_group_close(["horizontal" => true]);
     }
 
     static function print_display(SettingValues $sv) {
@@ -575,9 +576,9 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_presence(SettingValues $sv) {
         Ht::stash_html('<div id="settings-rf-caption-condition" class="hidden">'
-            . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>'
+            . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl class="bsp"><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>'
             . '</div>', "settings-rf-caption-condition");
-        $sv->print_select_group("rf/\$/presence", "Present on",
+        $sv->print_select_group("rf/\$/presence", "Condition",
             ReviewFieldCondition_SettingParser::presence_options($sv->conf), [
                 "horizontal" => true,
                 "fold_values" => ["custom"], "group_open" => true,

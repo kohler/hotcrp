@@ -24,7 +24,7 @@ class SettingValues extends MessageSet {
     public $req_files = [];
     /** @var bool */
     private $_use_req = true;
-    /** @var 0|1|2|3 */
+    /** @var 0|1|2|3|4 */
     private $_req_parse_state = 0;
     /** @var bool */
     private $_req_sorted = false;
@@ -59,6 +59,8 @@ class SettingValues extends MessageSet {
     /** @var list<Si> */
     private $_saveable_si = [];
     /** @var list<Si> */
+    private $_validate_si = [];
+    /** @var list<Si> */
     private $_store_value_si = [];
     /** @var list<Si> */
     private $_changed_si = [];
@@ -88,8 +90,6 @@ class SettingValues extends MessageSet {
     private $_inputs_printed = false;
 
     function __construct(Contact $user) {
-        parent::__construct();
-        $this->set_want_ftext(true, 5);
         $this->conf = $user->conf;
         $this->user = $user;
         $this->allowed = $user->privChair || $user->check_xtrack("settings!");
@@ -435,59 +435,45 @@ class SettingValues extends MessageSet {
 
     /** @param null|string|Si $field
      * @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function msg_at($field, $msg, $status) {
-        $fname = $field instanceof Si ? $field->name : $field;
-        if ($this->_jp !== null) {
-            $mi = $this->with_jfield(new MessageItem($status, null, $msg), $fname);
-        } else {
-            $mi = new MessageItem($status, $fname, $msg ?? "");
-        }
-        return $this->append_item($mi);
+     * @return MessageItem */
+    function error_at($field, $msg = null, ...$args) {
+        return $this->append_item_at($field, MessageItem::error($msg, ...$args));
     }
 
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
-    function error_at($field, $msg = null) {
-        return $this->append_item_at($field, MessageItem::error($msg));
+    function warning_at($field, $msg = null, ...$args) {
+        return $this->append_item_at($field, MessageItem::warning($msg, ...$args));
     }
 
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
-    function warning_at($field, $msg = null) {
-        return $this->append_item_at($field, MessageItem::warning($msg));
-    }
-
-    /** @param null|string|Si $field
-     * @param ?string $msg
-     * @return MessageItem */
-    function inform_at($field, $msg = null) {
-        return $this->append_item_at($field, MessageItem::inform($msg));
+    function inform_at($field, $msg = null, ...$args) {
+        return $this->append_item_at($field, MessageItem::inform($msg, ...$args));
     }
 
     /** @param MessageItem $mi
      * @param list<string> $loc
-     * @param ?MessageItem $prevmi
-     * @return MessageItem */
-    static private function decorate_message_item($mi, $loc, $prevmi) {
+     * @param ?MessageItem $prevmi */
+    static private function decorate_message($mi, $loc, $prevmi) {
         if ($loc
+            && $mi->message !== ""
             && ($mi->status !== MessageSet::INFORM || !$prevmi)) {
             $mi->message = "<5>" . join(", ", $loc) . ": " . $mi->message_as(5);
         }
-        return $mi;
     }
 
     /** @return \Generator<MessageItem> */
     private function decorated_message_list() {
         $lastmi = $prevmi = null;
         $lastloc = [];
+        $this->apply_fmt($this->conf);
         foreach ($this->message_list() as $mi) {
             $mi = clone $mi;
-            if ($mi->status === MessageSet::WARNING) {
+            if ($mi->status === MessageSet::WARNING
+                && $mi->message !== "") {
                 $mi->message = "<5>Warning: " . $mi->message_as(5);
             }
             $loc = null;
@@ -503,7 +489,8 @@ class SettingValues extends MessageSet {
             }
             if ($lastmi
                 && ($lastmi->message !== $mi->message || $lastmi->pos1 !== null)) {
-                yield self::decorate_message_item($lastmi, $lastloc, $prevmi);
+                self::decorate_message($lastmi, $lastloc, $prevmi);
+                yield $lastmi;
                 $prevmi = $lastmi;
                 $lastmi = null;
                 $lastloc = [];
@@ -514,7 +501,8 @@ class SettingValues extends MessageSet {
             }
         }
         if ($lastmi) {
-            yield self::decorate_message_item($lastmi, $lastloc, $prevmi);
+            self::decorate_message($lastmi, $lastloc, $prevmi);
+            yield $lastmi;
         }
     }
 
@@ -531,6 +519,13 @@ class SettingValues extends MessageSet {
 
     function decorated_feedback_text() {
         return self::feedback_text($this->decorated_message_list());
+    }
+
+    /** @template T
+     * @param class-string<T> $name
+     * @return T */
+    function parser($name) {
+        return $this->cs()->callable($name);
     }
 
     /** @return SettingParser */
@@ -649,6 +644,12 @@ class SettingValues extends MessageSet {
         return $this->req[$name] ?? null;
     }
 
+    /** @param string $name
+     * @return ?bool */
+    function reqstr_boolean($name) {
+        return friendly_boolean($this->req[$name] ?? null);
+    }
+
 
     /** @param string|Si $id
      * @return string */
@@ -719,7 +720,7 @@ class SettingValues extends MessageSet {
             $this->_explicit_newv[$name] = $newv = $oldv ? clone $oldv : null;
             if ($newv) {
                 // skip member parsing if object is deleted (avoid errors)
-                if ($this->_use_req && $this->reqstr("{$name}/delete")) {
+                if ($this->_use_req && $this->reqstr_boolean("{$name}/delete")) {
                     $newv->deleted = true;
                 } else {
                     $this->_object_parsingv[$name] = $newv;
@@ -1007,7 +1008,7 @@ class SettingValues extends MessageSet {
     function oblist_nondeleted_keys($pfx) {
         $ctrs = [];
         foreach ($this->oblist_keys($pfx) as $ctr) {
-            if (!$this->reqstr("{$pfx}/{$ctr}/delete"))
+            if (!$this->reqstr_boolean("{$pfx}/{$ctr}/delete"))
                 $ctrs[] = $ctr;
         }
         return $ctrs;
@@ -1044,7 +1045,7 @@ class SettingValues extends MessageSet {
         }
         assert(is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)));
         $ctr = (int) $ctr;
-        if ($this->reqstr("{$pfx}{$ctr}/delete")) {
+        if ($this->reqstr_boolean("{$pfx}{$ctr}/delete")) {
             return false;
         }
         $oim = $this->swap_ignore_messages(true);
@@ -1052,7 +1053,7 @@ class SettingValues extends MessageSet {
         $v0 = $this->base_parse_req("{$pfx}{$ctr}{$sfx}");
         $badctr = null;
         for ($ctr1 = $ctr + 1; array_key_exists("{$pfx}{$ctr1}/id", $this->req); ++$ctr1) {
-            if (!$this->reqstr("{$pfx}{$ctr1}/delete")
+            if (!$this->reqstr_boolean("{$pfx}{$ctr1}/delete")
                 && ($v1 = $this->base_parse_req("{$pfx}{$ctr1}{$sfx}")) !== null
                 && $v0 !== null
                 && $collator->compare($v0, $v1) === 0) {
@@ -1061,14 +1062,13 @@ class SettingValues extends MessageSet {
             }
         }
         $this->swap_ignore_messages($oim);
-        if ($badctr !== null) {
-            $v0 = $v0 === "" ? "(empty)" : $v0;
-            $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v0}’ is not unique");
-            $this->error_at("{$pfx}{$badctr}{$sfx}");
-            return true;
-        } else {
+        if ($badctr === null) {
             return false;
         }
+        $v0 = $v0 === "" ? "(empty)" : $v0;
+        $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v0}’ is not unique");
+        $this->error_at("{$pfx}{$badctr}{$sfx}");
+        return true;
     }
 
     /** @param string|Si ...$fields */
@@ -1098,7 +1098,7 @@ class SettingValues extends MessageSet {
         $strs = [];
         $ctrs = [];
         for ($ctr = 1; array_key_exists("{$pfx}{$ctr}/id", $this->req); ++$ctr) {
-            if (!$this->reqstr("{$pfx}{$ctr}/delete")
+            if (!$this->reqstr_boolean("{$pfx}{$ctr}/delete")
                 && ($v = $this->base_parse_req("{$pfx}{$ctr}{$sfx}"))) {
                 $strs[] = $v;
                 $ctrs[] = $ctr;
@@ -1130,6 +1130,7 @@ class SettingValues extends MessageSet {
         $collator = $this->conf->collator();
         $nlist2 = count($list2);
         $map1 = array_fill(0, count($list1), []);
+        '@phan-var list<list<int>> $map1';
         $map2c = array_fill(0, $nlist2, 0);
         $n2unique = 0;
         for ($i = 0; $i !== count($list1); ++$i) {
@@ -1200,18 +1201,19 @@ class SettingValues extends MessageSet {
      * @param bool $force_name0
      * @return bool */
     function check_date_before($name0, $name1, $force_name0) {
-        if (($d1 = $this->newv($name1))) {
-            $d0 = $this->newv($name0);
-            if (!$d0) {
-                if ($force_name0) {
-                    $this->save($name0, $d1);
-                }
-            } else if ($d0 > $d1) {
-                $si1 = $this->si($name1);
-                $this->error_at($name0, "<5>Must come before " . $this->setting_link($si1->title_html($this), $si1));
-                $this->error_at($name1);
-                return false;
-            }
+        $d1 = $this->newv($name1);
+        if (!$d1) {
+            return true;
+        }
+        $d0 = $this->newv($name0);
+        if ($d0 && $d0 > $d1) {
+            $si1 = $this->si($name1);
+            $this->error_at($name0, "<5>Must come before " . $this->setting_link($si1->title_html($this), $si1));
+            $this->error_at($name1);
+            return false;
+        }
+        if (!$d0 && $force_name0) {
+            $this->save($name0, $d1);
         }
         return true;
     }
@@ -1421,7 +1423,27 @@ class SettingValues extends MessageSet {
         }
 
         $this->_req_parse_state = 2;
+        if (!empty($this->_validate_si)) {
+            usort($this->_validate_si, "Si::parse_order_compare");
+            $save = $this->conf->__save_settings();
+            foreach ($this->_savedv as $n => $v) {
+                $this->conf->change_setting($n, $v[0] ?? null, $v[1] ?? null);
+            }
+            $this->conf->refresh_settings(false);
+            foreach ($this->_validate_si as $si) {
+                $this->si_parser($si)->validate($si, $this);
+            }
+            $this->conf->__restore_settings($save);
+            $this->_validate_si = [];
+        }
+
+        $this->_req_parse_state = 3;
         return $this;
+    }
+
+    /** @return bool */
+    function validating() {
+        return $this->_req_parse_state === 2;
     }
 
     /** @param string $pfx
@@ -1452,7 +1474,7 @@ class SettingValues extends MessageSet {
 
     /** @return bool */
     function execute() {
-        assert($this->_req_parse_state !== 1 && $this->_req_parse_state !== 3);
+        assert($this->_req_parse_state !== 1 && $this->_req_parse_state !== 4);
         if ($this->_req_parse_state === 0) {
             $this->parse();
         }
@@ -1467,16 +1489,16 @@ class SettingValues extends MessageSet {
         }
 
         // lock
-        $this->_req_parse_state = 3;
+        $this->_req_parse_state = 4;
         $this->request_read_lock("ContactInfo");
         $tables = "Settings write";
         foreach ($this->_table_lock as $t => $need) {
             $tables .= ", {$t} " . ($need < 2 ? "read" : "write");
         }
         $this->conf->qe_raw("lock tables {$tables}");
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
 
-        // load db settings, pre-crosscheck
+        // load db settings
         $dbsettings = [];
         $result = $this->conf->qe("select name, value, data from Settings");
         while (($row = $result->fetch_row())) {
@@ -1545,7 +1567,7 @@ class SettingValues extends MessageSet {
         }
 
         $this->conf->qe_raw("unlock tables");
-        $this->conf->release_logs();
+        $this->conf->resume_log();
         if (!empty($this->_diffs)) {
             $this->user->log_activity("Settings edited: " . join(", ", array_keys($this->_diffs)));
         }
@@ -1595,6 +1617,13 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param Si $si */
+    function request_validate($si) {
+        if (!in_array($si, $this->_validate_si, true)) {
+            $this->_validate_si[] = $si;
+        }
+    }
+
     /** @param string ...$tables */
     function request_read_lock(...$tables) {
         foreach ($tables as $t) {
@@ -1639,9 +1668,8 @@ class SettingValues extends MessageSet {
                 && (!is_bool($oldv) || (int) $oldv !== ($vp[$vi] ?? null));
         } else if (($si->storage_type & Si::SI_VALUE) !== 0) {
             return $this->conf->setting($sn) !== ($vp[0] ?? null);
-        } else {
-            return $this->conf->setting_data($sn) !== ($vp[1] ?? null);
         }
+        return $this->conf->setting_data($sn) !== ($vp[1] ?? null);
     }
 
     /** @return list<Si> */
@@ -1690,9 +1718,9 @@ class SettingValues extends MessageSet {
      * @return string */
     function json_path_link($html, $jpath, $js = null) {
         $lpfx = $html !== "" ? "<u>{$html}</u> " : "";
+        $ujpath = urlencode($jpath);
         $hjpath = htmlspecialchars($jpath);
-        $lpath = "<code class=\"settings-jpath\">{$hjpath}</code>";
-        return "<a href=\"\" class=\"ui js-settings-jpath noul\">{$lpfx}{$lpath}</a>";
+        return "<a href=\"#path={$ujpath}\" class=\"noul\">{$lpfx}<code class=\"settings-jpath\">{$hjpath}</code></a>";
     }
 
     /** @param string $html
@@ -1700,18 +1728,17 @@ class SettingValues extends MessageSet {
      * @return string */
     function setting_group_link($html, $sg, $js = null) {
         $gj = $this->group_item($sg);
-        if ($gj) {
-            $page = $this->cs()->canonical_group($gj);
-            if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
-                $url = "#" . $gj->hashid;
-            } else {
-                $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
-            }
-            return Ht::link($html, $url, $js);
-        } else {
+        if (!$gj) {
             error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
             return $html;
         }
+        $page = $this->cs()->canonical_group($gj);
+        if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
+            $url = "#" . $gj->hashid;
+        } else {
+            $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
+        }
+        return Ht::link($html, $url, $js);
     }
 
     /** @param string $type
@@ -1791,10 +1818,14 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string|Si $name
-     * @param string $class
+     * @param array<string,mixed>|string $class
      * @param ?array<string,mixed> $js */
     function print_group_open($name, $class, $js = null) {
         $si = is_string($name) ? $this->si($name) : $name;
+        if ($js === null && is_array($class)) {
+            $js = $class;
+            $class = ($js["horizontal"] ?? false) ? "entryi" : "f-i";
+        }
         $xjs = ["class" => $class];
         if (!isset($js["no_control_class"])) {
             if (isset($js["feedback_items"])) {
@@ -1869,11 +1900,25 @@ class SettingValues extends MessageSet {
             assert(is_array($fold_values));
         }
 
+        $values = $json_values = null;
+        if ($rest["skip_unlisted_values"] ?? false) {
+            $si = $this->si($name);
+            $values = $si->values($this);
+            $json_values = $si->json_values($this);
+        }
+
         $this->print_group_open($name, "settings-radio f-i", $rest + ["group_id" => $name]);
         if ($heading) {
             echo '<div class="label n">', $heading, '</div>';
         }
         foreach ($varr as $k => $item) {
+            if ($values !== null
+                && !in_array($k, $values, false)
+                && !in_array($k, $json_values, false)
+                && $k != $x) {
+                continue;
+            }
+
             if (is_string($item)) {
                 $item = ["label" => $item];
             }
@@ -1904,7 +1949,9 @@ class SettingValues extends MessageSet {
         if (isset($rest["after"])) {
             echo $rest["after"];
         }
-        echo "</div>\n";
+        if (!($rest["group_open"] ?? null)) {
+            $this->print_group_close();
+        }
     }
 
     /** @param string $name
@@ -1924,6 +1971,10 @@ class SettingValues extends MessageSet {
         }
         if ($si->autogrow) {
             $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
+        }
+        if (!isset($js["spellcheck"])
+            && $si->spellcheck !== null) {
+            $js["spellcheck"] = $si->spellcheck ? "true" : "false";
         }
         if (($dv = $si->default_value($this)) !== null
             && isset($js["placeholder"])
@@ -1977,13 +2028,13 @@ class SettingValues extends MessageSet {
             echo '</div>';
         }
         if (!($js["group_open"] ?? null)) {
-            $this->print_close_control_group($js);
+            $this->print_group_close($js);
         }
     }
 
     /** @param ?array<string,mixed> $js
      * @return void */
-    function print_close_control_group($js) {
+    function print_group_close($js = []) {
         $horizontal = !!($js["horizontal"] ?? false);
         echo $horizontal ? "</div></div>\n" : "</div>\n";
     }

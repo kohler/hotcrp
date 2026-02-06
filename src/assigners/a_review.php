@@ -1,6 +1,6 @@
 <?php
 // a_review.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Review_Assignable extends Assignable {
     /** @var ?int */
@@ -106,15 +106,12 @@ class Review_AssignmentParser extends AssignmentParser {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($state->user->can_administer($prow)) {
-            if ($prow->timeWithdrawn <= 0 || $this->rtype === 0) {
-                return true;
-            } else {
-                return new AssignmentError($prow->failure_reason(["withdrawn" => 1]));
-            }
-        } else {
+        if (!$state->user->can_manage_reviews($prow)) {
             return false;
+        } else if ($prow->timeWithdrawn > 0 && $this->rtype !== 0) {
+            return new AssignmentError($prow->failure_reason(["withdrawn" => 1]));
         }
+        return true;
     }
     /** @param CsvRow $req */
     function user_universe($req, AssignmentState $state) {
@@ -124,28 +121,25 @@ class Review_AssignmentParser extends AssignmentParser {
                    || (($rdata = $this->make_rdata($req, $state))
                        && !$rdata->might_create_review())) {
             return "reviewers";
-        } else {
-            return "any";
         }
+        return "any";
     }
     function paper_filter($contact, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->might_create_review()) {
             return null;
-        } else {
-            return $state->make_filter("pid",
-                new Review_Assignable(null, $contact->contactId, $rdata->oldtype ? : null, $rdata->oldround));
         }
+        return $state->make_filter("pid",
+            new Review_Assignable(null, $contact->contactId, $rdata->oldtype ? : null, $rdata->oldround));
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->might_create_review()) {
             return null;
-        } else {
-            $cf = $state->make_filter("cid",
-                new Review_Assignable($prow->paperId, null, $rdata->oldtype ? : null, $rdata->oldround));
-            return $state->users_by_id(array_keys($cf));
         }
+        $cf = $state->make_filter("cid",
+            new Review_Assignable($prow->paperId, null, $rdata->oldtype ? : null, $rdata->oldround));
+        return $state->users_by_id(array_keys($cf));
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
@@ -162,9 +156,8 @@ class Review_AssignmentParser extends AssignmentParser {
         if (Contact::is_anonymous_email($user)
             && ($u = $state->user_by_email($user, true, []))) {
             return [$u];
-        } else {
-            return null;
         }
+        return null;
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // User “none” is never allowed
@@ -188,9 +181,9 @@ class Review_AssignmentParser extends AssignmentParser {
         // XXX this should use perm/can_create_review
         if ($contact->is_pc_member()
             && !$contact->pc_track_assignable($prow)
-            && !$contact->allow_administer($prow)
+            && !$contact->allow_admin($prow)
             && $prow->review_type($contact) <= 0
-            && (!$state->user->can_administer($prow)
+            && (!$state->user->can_manage_reviews($prow)
                 || !isset($req["override"])
                 || !friendly_boolean($req["override"]))) {
             $uname = $contact->name(NAME_E);
@@ -220,11 +213,13 @@ class Review_AssignmentParser extends AssignmentParser {
                 $state->add($rev);
             }
             return true;
-        } else if ($rev === null && !$rdata->might_create_review()) {
-            return true;
         }
 
-        if ($rev === null) {
+        $created = $rev === null;
+        if ($created) {
+            if (!$rdata->might_create_review()) {
+                return true;
+            }
             $rev = $revmatch;
             $rev->_rtype = 0;
             $rev->_round = $rdata->newround;
@@ -241,6 +236,19 @@ class Review_AssignmentParser extends AssignmentParser {
             && ($user->roles & Contact::ROLE_PC) !== 0) {
             $rev->_rtype = REVIEW_PC;
         }
+        if ($rev->_rtype === REVIEW_EXTERNAL
+            && $created
+            && $user->should_use_primary("extrev")) {
+            if ($user->cdb_confid !== 0) {
+                // need to look up by email
+                $pemail = Dbl::fetch_value($state->conf->contactdb(), "select email from ContactInfo where contactDbId=?", $user->primaryContactId);
+                $puser = $state->user_by_email($pemail);
+            } else {
+                $puser = $state->user_by_id($user->primaryContactId);
+            }
+            $state->append_item_here(MessageItem::warning_note("<0>Redirecting external review to {$user->email}’s primary account, {$puser->email}"));
+            return $this->apply($prow, $puser, $req, $state);
+        }
         if ($rdata->newround !== null && $rdata->explicitround) {
             $rev->_round = $rdata->newround;
         }
@@ -249,7 +257,7 @@ class Review_AssignmentParser extends AssignmentParser {
         }
         if (isset($req["override"])
             && friendly_boolean($req["override"])
-            && $state->user->can_administer($prow)) {
+            && $state->user->can_manage_reviews($prow)) {
             $rev->_override = 1;
         }
         $state->add($rev);
@@ -384,6 +392,10 @@ class Review_Assigner extends Assigner {
         $locks["PaperReview"] = $locks["PaperReviewRefused"] =
             $locks["PaperReviewHistory"] = $locks["ReviewRating"] =
             $locks["IDReservation"] = $locks["Settings"] = "write";
+        if ($this->contact->is_placeholder()
+            || ($this->rtype == REVIEW_EXTERNAL && $this->contact->primaryContactId > 0)) {
+            $locks["ContactInfo"] = "write";
+        }
     }
     function execute(AssignmentSet $aset) {
         $extra = ["no_autosearch" => true];
@@ -394,7 +406,7 @@ class Review_Assigner extends Assigner {
         if ($this->contact->is_anonymous_user()
             && (!$this->item->existed() || !$this->item["_rtype"])) {
             $extra["token"] = true;
-            $aset->register_cleanup_function("rev_token", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("rev_token", function ($aset, $vals) {
                 $aset->conf->update_rev_tokens_setting(min($vals));
             }, $this->item->existed() ? 0 : 1);
         }
@@ -413,16 +425,25 @@ class Review_Assigner extends Assigner {
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);
         }
         if ($this->notify) {
-            // ensure notification email gets a relatively fresh user
-            $aset->conf->invalidate_user($this->contact);
+            $aset->register_cleanup_function("rev_notify", "Review_Assigner::notify_all", $this);
         }
     }
-    function cleanup(AssignmentSet $aset) {
-        if ($this->notify) {
-            $prow = $aset->conf->paper_by_id($this->pid, $this->contact);
-            HotCRPMailer::send_to($this->contact, $this->notify, [
-                "prow" => $prow, "rrow" => $prow->fresh_review_by_user($this->cid),
-                "requester_contact" => $aset->user, "reason" => $this->item["_reason"]
+    /** @param list<Review_Assigner> $as */
+    static function notify_all(AssignmentSet $aset, $as) {
+        $pids = $cids = [];
+        foreach ($as as $a) {
+            $pids[] = $a->pid;
+            $cids[] = $a->cid;
+            $aset->conf->invalidate_user_by_id($a->cid);
+            $aset->conf->prefetch_user_by_id($a->cid);
+        }
+        $prows = $aset->conf->paper_set(["paperId" => $pids]);
+        foreach ($as as $a) {
+            $user = $aset->conf->user_by_id($a->cid);
+            $prow = $prows->paper_by_id($a->pid);
+            HotCRPMailer::send_to($user, $a->notify, [
+                "prow" => $prow, "rrow" => $prow->fresh_review_by_user($a->cid),
+                "requester_contact" => $aset->user, "reason" => $a->item["_reason"]
             ]);
         }
     }

@@ -99,7 +99,8 @@
         "type": "author_certification",
         "name": "Author certification",
         "description": "Every listed author must certify this field before submission.",
-        "required": "submit"
+        "required": "submit",
+        "visibility": "nonblind"
     },
     {
         "legend": "Section break",

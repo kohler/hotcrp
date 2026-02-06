@@ -99,6 +99,9 @@ class Si {
     /** @var ?bool
      * @readonly */
     public $autogrow;
+    /** @var ?bool
+     * @readonly */
+    public $spellcheck;
     /** @var 0|1|2|3
      * @readonly */
     public $json;
@@ -128,6 +131,7 @@ class Si {
         "placeholder" => "is_string",
         "required" => "is_bool",
         "size" => "is_int",
+        "spellcheck" => "is_bool",
         "subtype" => "is_string",
         "summary" => "is_string",
         "title" => "is_string",

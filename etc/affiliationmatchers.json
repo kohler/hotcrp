@@ -23,6 +23,9 @@
     "none": {
         "stop": true
     },
+    "independent": {
+        "stop": true
+    },
     "unaffiliated": {
         "stop": true
     },
@@ -290,6 +293,9 @@
     "hochschule": {
         "weak": true
     },
+    "hospital": {
+        "weak": true
+    },
     "informatics": {
         "weak": true
     },
@@ -331,6 +337,9 @@
         "weak": true
     },
     "llc": {
+        "weak": true
+    },
+    "london": {
         "weak": true
     },
     "ltd": {
@@ -425,7 +434,7 @@
     },
     "tech": {
         "weak": true,
-        "alternate": ["technology"]
+        "alternate": ["technology", {"word": "polytechnic", "if": "virginia"}]
     },
     "technology": {
         "weak": true,
@@ -535,6 +544,9 @@
     "birmingham": {
         "sync": "alabama"
     },
+    "brigham": {
+        "sync": "young"
+    },
     "cal": {
         "weak": true,
         "alternate": [
@@ -583,7 +595,8 @@
         "weak": true
     },
     "columbia": {
-        "sync": "british"
+        "sync": "british",
+        "alternate": [{"word": "ubc", "if": "british"}]
     },
     "csu": {
         "alternate": ["california state university", "cal state"]
@@ -639,7 +652,7 @@
     },
     "georgia": {
         "weak": true,
-        "sync": "tech"
+        "sync": "tech technology"
     },
     "germany": {
         "weak": true
@@ -739,6 +752,9 @@
     "kaist": {
         "alternate": ["korea advanced institute science technology"]
     },
+    "kansas": {
+        "sync": ["state"]
+    },
     "kong": {
         "weak": true, "nameish": true,
         "alternate": [
@@ -780,7 +796,7 @@
         ]
     },
     "michigan": {
-        "sync": ["state", "technological", "western"]
+        "sync": ["state", "tech technological", "western"]
     },
     "microsoft": {
         "nameish": false,
@@ -838,6 +854,9 @@
     },
     "rio": {
         "weak": true
+    },
+    "rochester": {
+        "sync": ["institute"]
     },
     "rome": {
         "sync": ["sapienza", "tor"]
@@ -898,6 +917,9 @@
     "tu": {
         "nameish": 2, "weak": true,
         "alternate": [{"word": "technische universitat"}]
+    },
+    "ubc": {
+        "alternate": ["university british columbia"]
     },
     "uc": {
         "weak": true,
@@ -985,9 +1007,13 @@
     "virginia": {
         "weak": true,
         "alternate": [
-            {"word": "uva", "if": "university"}
+            {"word": "uva", "if": "university"},
+            {"word": "vt", "if": "tech"}
         ],
         "sync": ["commonwealth", "rensselaer"]
+    },
+    "vt": {
+        "alternate": ["virginia tech"]
     },
     "wales": {
         "alternate": [
@@ -1000,7 +1026,7 @@
         "alternate": [
             {"word": "uw", "if": "university"}
         ],
-        "sync": ["george", "lee", "state", "louis"]
+        "sync": ["george", "lee", "state", "louis", "science", "technology tech"]
     },
     "western": {
         "sync": ["case", "australia"]
