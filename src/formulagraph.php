@@ -552,16 +552,13 @@ class FormulaGraph extends MessageSet {
      * @return list<CDF_GraphData> */
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
         $fx->prepare_json();
-        $reviewf = null;
-        if ($fx->indexed()) {
-            $reviewf = Formula::compile_indexes_function($this->user, $fx->index_type());
-        }
+        $reviewf = $fx->indexed() ? $fx->prepare_indexer() : null;
         $want_order = $this->_compile_xorder_function(!!$reviewf);
         $order_data = [];
 
         $data = [];
         foreach ($rowset as $prow) {
-            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
+            $revs = $reviewf ? $reviewf->eval_indexer($prow) : [null];
             $queries = $this->papermap[$prow->paperId];
             foreach ($revs as $rcid) {
                 if (($x = $fx->eval_json($prow, $rcid)) === null) {
@@ -732,7 +729,7 @@ class FormulaGraph extends MessageSet {
         $review_id = false;
         if ($this->_indexed()) {
             $index_type = $this->_index_type();
-            $reviewf = Formula::compile_indexes_function($this->user, $index_type);
+            $reviewf = $this->fx->prepare_indexer($index_type);
             $review_id = $this->fx->indexed()
                 && $this->fy->indexed()
                 && ($index_type & Fexpr::IDX_PC) !== 0;
@@ -744,7 +741,7 @@ class FormulaGraph extends MessageSet {
 
         foreach ($rowset as $prow) {
             $ps = $this->_paper_style($prow);
-            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
+            $revs = $reviewf ? $reviewf->eval_indexer($prow) : [null];
             foreach ($revs as $rcid) {
                 $rrow = $rcid ? $prow->review_by_user($rcid) : null;
                 $x = $this->fx->eval_json($prow, $rcid);
@@ -802,7 +799,10 @@ class FormulaGraph extends MessageSet {
         $this->fx->prepare_json();
         $this->fy->prepare_extractor();
         $index_type = $this->_indexed() ? $this->_index_type() : 0;
-        $reviewf = Formula::compile_indexes_function($this->user, $index_type);
+        $reviewf = null;
+        if ($index_type !== 0) {
+            $reviewf = $this->fx->prepare_indexer($index_type);
+        }
         $order_data = null;
         if ($this->fxorder) {
             $order_data = [];
@@ -816,7 +816,7 @@ class FormulaGraph extends MessageSet {
         foreach ($rowset as $prow) {
             $queries = $this->papermap[$prow->paperId];
             $ps = $this->_paper_style($prow);
-            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
+            $revs = $reviewf ? $reviewf->eval_indexer($prow) : [null];
             foreach ($revs as $rcid) {
                 $x = $this->fx->eval_json($prow, $rcid);
                 if ($x === null) {

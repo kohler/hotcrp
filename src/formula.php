@@ -1720,6 +1720,8 @@ class Formula implements JsonSerializable {
     private $_f_sortable;
     /** @var ?callable(PaperInfo,?int,Contact,Formula):mixed */
     private $_f_json;
+    /** @var ?callable(PaperInfo,Contact,Formula):list<mixed> */
+    private $_f_indexer;
     /** @var ?callable(PaperInfo,?int,Contact,Formula):mixed */
     private $_f_extractor;
     /** @var ?callable(list<mixed>):mixed */
@@ -2023,18 +2025,20 @@ class Formula implements JsonSerializable {
         return $rit;
     }
 
-    static function compile_indexes_function(Contact $user, $index_types) {
+    /** @param ?int $index_types
+     * @return $this */
+    function prepare_indexer($index_types = null) {
+        $index_types = $index_types ?? $this->index_type();
         if ($index_types === 0) {
-            return null;
+            $this->_f_indexer = function () { return [null]; };
+            return $this;
         }
-        $formula = Formula::make($user, "0");
-        $state = new FormulaCompiler($formula);
+        $state = new FormulaCompiler($this);
         $g = $state->index_range($index_types);
-        $body = "assert(\$user->contactXid === {$user->contactXid});\n  "
-            . join("\n  ", $state->gstmt) . "\n";
+        $body = join("\n  ", $state->gstmt) . "\n";
         if (($index_types & Fexpr::IDX_REVIEW) !== 0) {
             $check = "";
-            if ($index_types === Fexpr::IDX_CREVIEW) {
+            if ($index_tyeps === Fexpr::IDX_CREVIEW) {
                 $check = "    if (!\$rrow->reviewSubmitted) { continue; }\n";
             }
             $body .= "  \$cids = [];\n"
@@ -2046,11 +2050,22 @@ class Formula implements JsonSerializable {
         } else {
             $body .= "  return array_keys({$g});\n";
         }
-        $function = "function (\$prow, \$user) {\n  {$body}}";
+        $function = "function (\$prow, \$user, \$formula) {\n  ";
+        if (self::DEBUG) {
+            $function .= "// index types " . dechex($index_types) . "\n  ";
+        }
+        $function .= $body . "}";
         if (self::DEBUG) {
             self::debug_report($function);
         }
-        return eval("return {$function};");
+        $this->_f_indexer = eval("return {$function};");
+        return $this;
+    }
+
+    /** @param PaperInfo $prow
+     * @return mixed */
+    function eval_indexer($prow) {
+        return call_user_func($this->_f_indexer, $prow, $this->user, $this);
     }
 
     /** @return bool */

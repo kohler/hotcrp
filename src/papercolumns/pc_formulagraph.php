@@ -5,8 +5,8 @@
 class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     /** @var Formula */
     public $formula;
-    /** @var callable */
-    private $indexes_function;
+    /** @var ?Formula */
+    private $indexer;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
@@ -19,17 +19,16 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         }
         $this->format_field = $this->formula->result_format_detail();
         $this->formula->prepare_sortable();
-        $this->indexes_function = null;
+        $this->indexer = null;
         if ($this->formula->indexed()) {
-            $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->index_type());
+            $this->indexer = $this->formula->prepare_indexer();
         }
         $this->formula->add_query_options($pl->qopts);
         parent::prepare($pl, $visible);
         return true;
     }
     function score_info(PaperList $pl, PaperInfo $row) {
-        $indexesf = $this->indexes_function;
-        $indexes = $indexesf ? call_user_func($indexesf, $row, $pl->user) : [null];
+        $indexes = $this->indexer ? $this->indexer->eval_indexer($row) : [null];
         $sci = new ScoreInfo;
         foreach ($indexes as $i) {
             if (($v = $this->formula->eval_sortable($row, $i)) !== null
