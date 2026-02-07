@@ -208,7 +208,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
      * @return bool */
     function apply_round($word, Conf $conf) {
         if ($this->round_list !== null
-            || ($round = $conf->round_number($word)) === null) {
+            || !($round = $conf->round_number($word))) {
             return false;
         }
         $this->round_list = [$round];
