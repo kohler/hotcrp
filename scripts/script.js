@@ -10,6 +10,17 @@ function $$(id) {
     return document.getElementById(id);
 }
 
+function $$list(ids) {
+    const l = [];
+    if (ids) {
+        for (const id of ids.split(/\s+/)) {
+            const e = id === "" ? null : $$(id);
+            e && l.push(e);
+        }
+    }
+    return l;
+}
+
 if (!window.JSON || !window.JSON.parse) {
     window.JSON = {parse: $.parseJSON};
 }
@@ -4569,11 +4580,13 @@ function foldup(evt, opts) {
     // determine targets
     // XXX only partial support for ARIA method
     let foldname, m;
-    if (acting.ariaControlsElements && acting.ariaControlsElements.length > 0) {
+    const controls = acting.getAttribute("aria-controls"),
+        controlsElements = $$list(controls);
+    if (controlsElements.length > 0) {
         if (!("open" in opts)) {
             opts.open = acting.ariaExpanded !== "true";
         }
-        for (const e of acting.ariaControlsElements) {
+        for (const e of controlsElements) {
             if (e.hidden !== !opts.open && !hasClass(e, "no-fold")) {
                 e.hidden = !opts.open;
                 e.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
@@ -4581,7 +4594,6 @@ function foldup(evt, opts) {
         }
         const p = acting.closest(".expanded, .collapsed");
         if (p) {
-            const controls = acting.getAttribute("aria-controls");
             for (const e of p.querySelectorAll("button[aria-expanded]")) {
                 if (e.getAttribute("aria-controls") === controls) {
                     e.ariaExpanded = opts.open ? "true" : "false";
