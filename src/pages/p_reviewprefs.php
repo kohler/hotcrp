@@ -1,6 +1,6 @@
 <?php
 // pages/p_reviewprefs.php -- HotCRP review preference global settings page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ReviewPrefs_Page {
     // Update preferences
@@ -150,9 +150,9 @@ class ReviewPrefs_Page {
         echo Ht::form($conf->hoturl("=reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-list assignpc"]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
-        if ($search->has_message()) {
+        if ($pl->has_message()) {
             echo '<div class="msgs-wide">',
-                Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING), "mx-auto"),
+                Ht::msg($pl->full_feedback_html(), min($pl->problem_status(), MessageSet::WARNING), "mx-auto"),
                 '</div>';
         }
         echo '<noscript><div style="text-align:center">',

@@ -1,6 +1,6 @@
 <?php
 // test/setup.php -- HotCRP helper file to initialize tests
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));
@@ -826,10 +826,10 @@ function xassert_int_list_eqq($actual, $expected) {
 function search_json($user, $query, $cols = "id", $allow_warnings = false) {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
     $pl->parse_view($cols, PaperList::VIEWORIGIN_MAX);
-    if ($pl->search->has_problem() && !$allow_warnings) {
+    if ($pl->has_problem() && !$allow_warnings) {
         Xassert::will_print();
         list($first, $rest) = Xassert::landmark(true);
-        fwrite(STDERR, "{$first}Search reports warnings: " . $pl->search->full_feedback_text() . $rest);
+        fwrite(STDERR, "{$first}Search reports warnings: " . $pl->full_feedback_text() . $rest);
     }
     return $pl->text_json();
 }

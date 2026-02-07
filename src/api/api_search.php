@@ -1,6 +1,6 @@
 <?php
 // api_search.php -- HotCRP search-related API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Search_API {
     /** @return JsonResult|PaperSearch */
@@ -62,8 +62,8 @@ class Search_API {
         }
         $ih = $pl->ids_and_groups();
         $jr = JsonResult::make_ok();
-        if ($pl->search->has_message()) {
-            $jr->set("message_list", $pl->search->message_list());
+        if ($pl->has_message()) {
+            $jr->set("message_list", $pl->message_list());
         }
         $jr->set("ids", $ih[0]);
         $jr->set("groups", $ih[1]);
@@ -124,7 +124,7 @@ class Search_API {
 
         $j = [
             "ok" => !empty($response["fields"]),
-            "message_list" => $pl->message_set()->message_list()
+            "message_list" => $pl->message_list()
         ] + $response;
         if ($j["ok"]
             && $qreq->session
@@ -150,7 +150,7 @@ class Search_API {
 
         return [
             "ok" => !empty($response),
-            "message_list" => $pl->message_set()->message_list(),
+            "message_list" => $pl->message_list(),
             "data" => $response
         ];
     }

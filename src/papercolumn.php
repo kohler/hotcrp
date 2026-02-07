@@ -36,11 +36,20 @@ class PaperColumn extends Column {
     }
 
     /** @param Contact|XtParams $ctx
+     * @param string $name
      * @param string|MessageItem|list<MessageItem> $message */
-    static function column_error($ctx, $message) {
+    static function column_error_at($ctx, $name, $message) {
         if ($ctx instanceof XtParams && $ctx->paper_list) {
-            $ctx->paper_list->column_error($message);
+            $ml = is_string($message) ? MessageItem::warning($message) : $message;
+            $ctx->paper_list->column_error_at($name, $message);
         }
+    }
+
+    /** @param Contact|XtParams $ctx
+     * @param string|MessageItem|list<MessageItem> $message
+     * @deprecated */
+    static function column_error($ctx, $message) {
+        error_log(debug_string_backtrace());
     }
 
 

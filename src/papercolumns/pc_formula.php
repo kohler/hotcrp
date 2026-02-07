@@ -1,6 +1,6 @@
 <?php
 // pc_formula.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Formula_PaperColumn extends PaperColumn {
     /** @var Formula */
@@ -168,9 +168,11 @@ class Formula_PaperColumnFactory {
                 return [Formula_PaperColumnFactory::make($ff, $nf, $xfj)];
             }
         } else if ($want_error) {
-            PaperColumn::column_error($xtp, MessageSet::list_with($ff->message_list(), [
-                "top_context" => $prefix . $name, "top_pos_offset" => strlen($prefix)
-            ]));
+            PaperColumn::column_error_at($xtp, $name,
+                MessageSet::list_with($ff->message_list(), [
+                    "top_context" => $prefix . $name,
+                    "top_pos_offset" => strlen($prefix)
+                ]));
         }
         return null;
     }

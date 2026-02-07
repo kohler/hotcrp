@@ -1,6 +1,6 @@
 <?php
 // pc_tag.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Tag_PaperColumn extends PaperColumn {
     /** @var ?bool */
@@ -75,15 +75,16 @@ class Tag_PaperColumn extends PaperColumn {
     private function prepare_editable(PaperList $pl, $visible) {
         if (!$pl->user->can_edit_tag_somewhere($this->etag)) {
             $this->editable = false;
-            $pl->column_error("<0>Tag ‘#{$this->dtag}’ cannot be edited");
+            $ml = [MessageItem::warning("<0>Tag ‘#{$this->dtag}’ cannot be edited")];
             if ($pl->conf->tags()->is_automatic($this->etag)) {
                 if ($pl->conf->tags()->is_votish($this->etag)
                     && $pl->user->is_pc_member()) {
-                    $pl->column_error(MessageItem::inform("<0>This tag is set automatically based on per-user votes. Did you mean ‘edit:#~{$this->dtag}’?"));
+                    $ml[] = MessageItem::inform("<0>This tag is set automatically based on per-user votes. Did you mean ‘edit:#~{$this->dtag}’?");
                 } else {
-                    $pl->column_error(MessageItem::inform("<0>This tag is set automatically"));
+                    $ml[] = MessageItem::inform("<0>This tag is set automatically");
                 }
             }
+            $pl->column_error_at($this->name, $ml);
             return;
         }
         if ($this->is_value === null) {
@@ -229,7 +230,7 @@ class Tag_PaperColumn extends PaperColumn {
             $rs[] = (object) $fj;
         }
         foreach ($tsm->error_ftexts() as $e) {
-            PaperColumn::column_error($xtp, $e);
+            PaperColumn::column_error_at($xtp, $name, $e);
         }
         return $rs;
     }

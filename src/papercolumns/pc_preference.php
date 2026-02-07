@@ -1,6 +1,6 @@
 <?php
 // pc_preference.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Preference_PaperColumn extends PaperColumn {
     /** @var bool */
@@ -188,7 +188,7 @@ class Preference_PaperColumn extends PaperColumn {
             }
         }
         if (empty($rs)) {
-            PaperColumn::column_error($xtp, "<0>PC member ‘{$m[1]}’ not found");
+            PaperColumn::column_error_at($xtp, $name, "<0>PC member ‘{$m[1]}’ not found");
         }
         return $rs;
     }

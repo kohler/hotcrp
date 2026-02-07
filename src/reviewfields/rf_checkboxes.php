@@ -51,7 +51,7 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
         return $this->unpack_value_symbols($fval);
     }
 
-    function unparse_expanded_json($fval) {
+    function unparse_verbose_json($fval) {
         if ($fval === null) {
             return null;
         }

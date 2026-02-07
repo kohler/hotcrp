@@ -1,6 +1,6 @@
 <?php
 // fieldrender.php -- HotCRP helper class for rendering submission fields
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class FieldRender {
     /** @var ?Contact
@@ -26,6 +26,7 @@ class FieldRender {
 
     const CFHTML = 0x1;
     const CFTEXT = 0x2;
+    const CFJSON = 0x4;
 
     const CFPAGE = 0x10;
     const CFFORM = 0x20;

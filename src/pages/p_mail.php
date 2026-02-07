@@ -1,6 +1,6 @@
 <?php
 // pages/p_mail.php -- HotCRP mail tool
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Mail_Page {
     /** @var Conf */
@@ -301,7 +301,7 @@ class Mail_Page {
         if ($this->qreq->recheck && $this->qreq->plimit) {
             $plist = new PaperList($this->qreq->t === "req" ? "reqrevs" : "reviewers",
                 new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q]));
-            foreach ($plist->search->message_list() as $mi) {
+            foreach ($plist->message_list() as $mi) {
                 $this->recip->append_item_at("q", $mi);
             }
             if ($plist->is_empty()) {

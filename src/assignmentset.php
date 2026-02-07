@@ -2318,7 +2318,7 @@ class Assignment_PaperColumn extends PaperColumn {
     static function print_unparse_display(Assignment_PaperColumn $pc) {
         $search = new PaperSearch($pc->user, ["q" => $pc->search_query, "t" => "viewable", "reviewer" => $pc->reviewer]);
         $plist = new PaperList("reviewers", $search);
-        $plist->add_column($pc);
+        $plist->define_column($pc);
         $plist->set_table_id_class("foldpl", null);
         $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FULLWIDTH);
         echo '<div class="pltable-fullw-container demargin">';

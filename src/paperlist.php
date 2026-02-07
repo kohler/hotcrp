@@ -1,6 +1,6 @@
 <?php
 // paperlist.php -- HotCRP helper class for producing paper lists
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class PaperListTableRender {
     /** @var string */
@@ -202,7 +202,7 @@ class PaperListFooterTab {
     public $tab_attr = [];
 }
 
-class PaperList {
+final class PaperList extends MessageSet {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -291,10 +291,8 @@ class PaperList {
     private $_vcolumns = [];
     /** @var array<string,list<PaperColumn>> */
     private $_columns_by_name;
-    /** @var ?string */
-    private $_finding_column;
-    /** @var ?list<MessageItem> */
-    private $_finding_column_errors;
+    /** @var list<MessageItem> */
+    private $_column_error_stash;
     /** @var ?bool */
     private $_report_view_errors;
 
@@ -529,24 +527,16 @@ class PaperList {
         return $this;
     }
 
-    /** @return MessageSet */
-    function message_set() {
-        return $this->search->message_set();
-    }
-
-    /** @return list<MessageItem> */
-    function message_list() {
-        return $this->message_set()->message_list();
-    }
-
     /** @return string */
     function siteurl() {
         return $this->qreq->navigation()->siteurl();
     }
 
     /** @param PaperColumn $col
-     * @param ?string $default_name */
-    function add_column(PaperColumn $col, $default_name = null) {
+     * @param ?string $default_name
+     *
+     * Define a column that can be viewed. */
+    function define_column(PaperColumn $col, $default_name = null) {
         $decor = $this->_view_options[$col->name] ?? null;
         $col->view_order = $this->_view_order[$col->name] ?? null;
         if ($default_name) {
@@ -557,6 +547,13 @@ class PaperList {
             $col->add_view_options($decor);
         }
         $this->_columns_by_name[$col->name][] = $col;
+    }
+
+    /** @param PaperColumn $col
+     * @param ?string $default_name
+     * @deprecated */
+    function add_column(PaperColumn $col, $default_name = null) {
+        $this->define_column($col, $default_name);
     }
 
     static private $view_synonym = [
@@ -770,10 +767,11 @@ class PaperList {
         } else if (count($fs) > 1) {
             $warning = "<0>Sort ‘{$svc->keyword}’ is ambiguous";
         }
-        if ($svc->sword) {
-            $this->search->lwarning($svc->sword, $warning);
+        if (($sw = $svc->sword)) {
+            $mis = $this->expand_message_context($warning, $sw->pos1, $sw->pos2, $sw->string_context);
+            $this->append_list($mis);
         } else {
-            $this->search->warning($warning);
+            $this->warning_at(null, $warning);
         }
     }
 
@@ -1297,62 +1295,67 @@ class PaperList {
     }
 
 
-    /** @param string|MessageItem|list<MessageItem> $message */
-    function column_error($message) {
-        if (!($name = $this->_finding_column)
-            || !$this->want_column_errors($name)) {
+    /** @param string $name
+     * @param MessageItem|list<MessageItem> $ml */
+    function column_error_at($name, $ml) {
+        $ml = is_array($ml) ? $ml : [$ml];
+        if (empty($ml) || !$this->want_column_errors($name)) {
             return;
-        }
-        if (is_string($message)) {
-            $ml = [MessageItem::warning_at($name, $message)];
-        } else if (is_object($message)) {
-            $ml = [$message];
-        } else {
-            $ml = $message;
+        } else if ($this->_column_error_stash !== null) {
+            array_push($this->_column_error_stash, ...$ml);
+            return;
         }
         if (($sve = $this->search->main_term()->find_view_command($name))
             && ($sw = $sve->sword)) {
-            $mlx = [];
-            foreach ($ml as &$mi) {
-                if ($mi->nested_context) {
-                    $mlx[] = $mi;
-                } else if ($mi->pos1 !== null) {
-                    array_push($mlx, ...$this->search->expand_message_context($mi, $mi->pos1 + $sw->pos1, $mi->pos2 + $sw->pos1, $sw->string_context));
+            for ($i = 0; $i !== count($ml); ) {
+                $mi = $ml[$i];
+                if ($mi->pos1 !== null) {
+                    $exml = $this->search->expand_message_context($mi, $sw->pos1 + $mi->pos1, $sw->pos1 + $mi->pos2, $sw->string_context);
                 } else {
-                    array_push($mlx, ...$this->search->expand_message_context($mi, $sw->kwpos1, $sw->pos2, $sw->string_context));
+                    $exml = $this->search->expand_message_context($mi, $sw->pos1, $sw->pos2, $sw->string_context);
+                }
+                array_splice($ml, $i, 1, $exml);
+                $i += count($exml);
+                while ($i !== count($ml)
+                       && $ml[$i]->status === MessageSet::INFORM
+                       && $ml[$i]->pos1 === null) {
+                    ++$i;
                 }
             }
-            $ml = $mlx;
         }
-        $this->_finding_column_errors = $this->_finding_column_errors ?? [];
-        array_push($this->_finding_column_errors, ...$ml);
+        $this->append_list($ml);
+    }
+
+    /** @deprecated */
+    function column_error($message) {
+        error_log(debug_string_backtrace());
     }
 
     /** @param string $name
      * @return list<PaperColumn> */
     private function ensure_columns_by_name($name) {
-        if (!array_key_exists($name, $this->_columns_by_name)) {
-            $this->_finding_column = $name;
-            $this->_columns_by_name[$name] = [];
-            foreach ($this->conf->paper_columns($name, $this->xtp) as $fdef) {
-                if ($fdef->name === $name
-                    || !array_key_exists($fdef->name, $this->_columns_by_name)) {
-                    $this->add_column(PaperColumn::make($this->conf, $fdef), $name);
-                }
-                if ($fdef->name !== $name) {
-                    array_push($this->_columns_by_name[$name], ...$this->_columns_by_name[$fdef->name]);
-                }
+        if (array_key_exists($name, $this->_columns_by_name)) {
+            return $this->_columns_by_name[$name];
+        }
+        $this->_column_error_stash = [];
+        $this->_columns_by_name[$name] = [];
+        foreach ($this->conf->paper_columns($name, $this->xtp) as $fdef) {
+            if ($fdef->name === $name
+                || !array_key_exists($fdef->name, $this->_columns_by_name)) {
+                $this->define_column(PaperColumn::make($this->conf, $fdef), $name);
             }
-            if (empty($this->_columns_by_name[$name])
-                && $this->want_column_errors($name)) {
-                if (empty($this->_finding_column_errors)) {
-                    $this->column_error("<0>Field ‘{$name}’ not found");
-                }
-                foreach ($this->_finding_column_errors as $mi) {
-                    $this->message_set()->append_item($mi);
-                }
+            if ($fdef->name !== $name) {
+                array_push($this->_columns_by_name[$name], ...$this->_columns_by_name[$fdef->name]);
             }
-            $this->_finding_column = $this->_finding_column_errors = null;
+        }
+        $ces = $this->_column_error_stash;
+        $this->_column_error_stash = null;
+        if (empty($this->_columns_by_name[$name])
+            && $this->want_column_errors($name)) {
+            if (empty($ces)) {
+                $ces[] = MessageItem::warning_at($name, "<0>Field ‘{$name}’ not found");
+            }
+            $this->column_error_at($name, $ces);
         }
         return $this->_columns_by_name[$name];
     }
@@ -1402,6 +1405,8 @@ class PaperList {
         $this->need_render = false;
         $this->_vcolumns = [];
         $this->table_attr = [];
+        $this->clear_messages();
+        $this->append_list($this->search->message_list());
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->render_context = $context;
         assert(empty($this->row_attr));
@@ -1434,7 +1439,6 @@ class PaperList {
             $this->_viewf[$k] = $viewf[$k];
             $f->is_visible = true;
             $f->has_content = false;
-            $this->_finding_column = $k;
             if ($f->prepare($this, FieldRender::CFLIST)) {
                 if ($f->view_order !== null) {
                     $vcols1[] = $f;
@@ -1443,12 +1447,6 @@ class PaperList {
                 }
             }
         }
-
-        // report `prepare` errors
-        foreach ($this->_finding_column_errors ?? [] as $mi) {
-            $this->message_set()->append_item($mi);
-        }
-        $this->_finding_column_errors = null;
 
         // arrange by view_order, then insert unordered elements
         usort($vcols1, function ($a, $b) {
@@ -2527,6 +2525,8 @@ class PaperList {
         // get column list, check sort
         if ($format === self::FORMAT_HTML) {
             $frflags = FieldRender::CFLIST | FieldRender::CFHTML;
+        } else if ($format === self::FORMAT_JSON) {
+            $frflags = FieldRender::CFLIST | FieldRender::CFJSON | FieldRender::CFVERBOSE;
         } else {
             $frflags = FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE;
         }

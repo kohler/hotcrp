@@ -78,7 +78,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             $rs[] = (object) $fj;
         }
         if (empty($rs)) {
-            PaperColumn::column_error($xtp, "<0>PC member ‘{$m[1]}’ not found");
+            PaperColumn::column_error_at($xtp, $name, "<0>PC member ‘{$m[1]}’ not found");
         }
         return $rs;
     }

@@ -409,7 +409,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param ?int|?float|?string $fval
      * @return mixed */
-    function unparse_expanded_json($fval) {
+    function unparse_verbose_json($fval) {
         return $this->unparse_json($fval);
     }
 
@@ -979,7 +979,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
         return $fval > 0 ? $this->symbols[$fval - 1] : false;
     }
 
-    function unparse_expanded_json($fval) {
+    function unparse_verbose_json($fval) {
         if ($fval === null) {
             return null;
         } else if ($fval <= 0) {
