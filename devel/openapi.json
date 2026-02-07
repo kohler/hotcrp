@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-12-29:e36c3e0c4",
+        "version": "2026-02-07:ca0f595a8",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. Use this to work around URL length limits.\n"
     },
@@ -587,7 +587,7 @@
         "/{p}/share": {
             "get": {
                 "summary": "Fetch share link",
-                "description": "Fetch the share link for a submission, if any has been created. This link can\nbe accessed by users not signed in to HotCRP; it grants view-only access to the\nsubmission and its documents. Only authors and administrators can fetch the\nshare link.\n",
+                "description": "Fetch the share link for a submission. This link can be accessed by users not\nsigned in to HotCRP; it grants view-only access to the submission and its\ndocuments. Only authors and administrators can fetch the share link.\n",
                 "operationId": "share",
                 "tags": [
                     "Submissions"
@@ -614,6 +614,9 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
+                                        "url": {
+                                            "description": "The share link"
+                                        },
                                         "token": {
                                             "$ref": "#/components/schemas/author_view_token",
                                             "description": "Token for this share link"
@@ -624,9 +627,6 @@
                                         },
                                         "expires_at": {
                                             "type": "integer"
-                                        },
-                                        "url": {
-                                            "description": "The share link"
                                         }
                                     }
                                 }
@@ -791,7 +791,7 @@
         "/document": {
             "get": {
                 "summary": "Fetch document",
-                "description": "Fetch a document and return it in the response body. Specify the document to\nreturn either with the `doc` parameter, which names the document using a pattern\nlike `testconf-paper1.pdf`, or the `p`, `dt`, and optionally `attachment`\nparameters, which define the submission ID, submission field, and attachment\nname.\n\nThe `hash` and `docid` parameters let administrators and authors select a\nspecific version of a document. `hash` selects a document by hash, and `docid`\nby internal document ID. Responses to requests with `hash` or `docid` are\nusually cacheable.\n\nSuccessful requests (HTTP status code 200) return the requested document as the\nresponse, without any JSON wrapper. Find the document’s MIME type using the\nresponse’s `Content-Type` header. Unsuccessful requests (HTTP status code 300 or\nhigher) usually return a JSON object with `ok` set to `false` and a\n`message_list` describing the error.\n\nThis API understands conditional requests with HTTP headers `If-Match`,\n`If-None-Match`, `If-Modified-Since`, and `If-Unmodified-Since`, and many\nresponses include `ETag` and `Last-Modified` HTTP headers. It also understands\nrange requests.\n\n\n",
+                "description": "Fetch a document and return it in the response body. Specify the document to\nreturn either with the `doc` parameter, which names the document using a pattern\nlike `testconf-paper1.pdf`, or the `p`, `dt`, and optional `file` parameters,\nwhich define the submission ID and submission field and, in the case of fields\nthat accept multiple documents, the name of the desired file.\n\nThe `hash` and `docid` parameters select a specific version of a document.\n`hash` selects a document by hash, and `docid` by internal document ID.\nResponses to requests with `hash` or `docid` are usually cacheable. Only\nadministrators and authors can select specific document versions.\n\nSuccessful requests (HTTP status code 200) return the requested document as the\nresponse, without any JSON wrapper. Find the document’s MIME type using the\nresponse’s `Content-Type` header. Unsuccessful requests (HTTP status code 300 or\nhigher) usually return a JSON object with `ok` set to `false` and a\n`message_list` describing the error.\n\nThis API understands conditional requests with HTTP headers `If-Match`,\n`If-None-Match`, `If-Modified-Since`, and `If-Unmodified-Since`, and many\nresponses include `ETag` and `Last-Modified` HTTP headers. It also understands\nrange requests.\n\n\n",
                 "operationId": "document",
                 "tags": [
                     "Documents"
@@ -807,7 +807,7 @@
                         "$ref": "#/components/parameters/dt"
                     },
                     {
-                        "$ref": "#/components/parameters/attachment"
+                        "$ref": "#/components/parameters/file"
                     },
                     {
                         "$ref": "#/components/parameters/hash"
@@ -851,11 +851,11 @@
                 }
             }
         },
-        "/documenthistory": {
+        "/documentlist": {
             "get": {
-                "summary": "Fetch document history",
-                "description": "Fetch information about all versions of a document accessible to the requesting\nuser. Use the `doc` parameter to specify a document by name, or `p` and `dt` to\nspecify it by type.\n",
-                "operationId": "documenthistory",
+                "summary": "Fetch list of documents",
+                "description": "Fetch information about documents and document versions accessible to the\nrequesting user. A request with just the `p=PID` parameter lists all available\ndocuments currently associated with the submission. To request information about\na specific submission field, add a `dt` or `doc` parameter. Setting `all=1`\nrequests information about past document versions as well as current ones.\n",
+                "operationId": "documentlist",
                 "tags": [
                     "Documents"
                 ],
@@ -864,10 +864,18 @@
                         "$ref": "#/components/parameters/p"
                     },
                     {
+                        "$ref": "#/components/parameters/dt"
+                    },
+                    {
                         "$ref": "#/components/parameters/doc"
                     },
                     {
-                        "$ref": "#/components/parameters/dt"
+                        "name": "history",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
                     }
                 ],
                 "responses": {
@@ -946,7 +954,7 @@
                         }
                     },
                     {
-                        "$ref": "#/components/parameters/attachment"
+                        "$ref": "#/components/parameters/file"
                     },
                     {
                         "$ref": "#/components/parameters/hash"
@@ -1012,11 +1020,11 @@
                 }
             }
         },
-        "/archivelisting": {
+        "/archivecontents": {
             "get": {
-                "summary": "Fetch contents of archive document",
-                "description": "Fetch the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. The\ncontents are returned as a list of string filenames. The `consolidated=1`\nparameter requests an additional `consolidated_listing`, which returns a\npreformatted string that uses `{}` notation to represent subdirectories; for\ninstance, `subdir/{file1.txt, file2.txt}`.\n",
-                "operationId": "archivelisting",
+                "summary": "List contents of archive document",
+                "description": "List the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. The\ncontents are returned as a list of string filenames. The `consolidated=1`\nparameter requests an additional `consolidated_listing`, which returns a\npreformatted string that uses `{}` notation to represent subdirectories; for\ninstance, `subdir/{file1.txt, file2.txt}`.\n",
+                "operationId": "archivecontents",
                 "tags": [
                     "Documents"
                 ],
@@ -1040,13 +1048,16 @@
                         "$ref": "#/components/parameters/dt"
                     },
                     {
+                        "$ref": "#/components/parameters/file"
+                    },
+                    {
+                        "$ref": "#/components/parameters/hash"
+                    },
+                    {
                         "$ref": "#/components/parameters/docid"
                     },
                     {
-                        "$ref": "#/components/parameters/attachment"
-                    },
-                    {
-                        "name": "version",
+                        "name": "summary",
                         "in": "query",
                         "required": false,
                         "schema": {}
@@ -1061,7 +1072,9 @@
                                     "type": "object",
                                     "required": [
                                         "ok",
-                                        "listing"
+                                        "archive_contents",
+                                        "listing",
+                                        "consolidated_listing"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1070,6 +1083,8 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
+                                        "archive_contents": {},
+                                        "archive_contents_summary": {},
                                         "listing": {
                                             "type": "array",
                                             "items": {
@@ -1102,7 +1117,7 @@
         "/upload": {
             "post": {
                 "summary": "Upload file",
-                "description": "Upload large files to HotCRP for later use.\n\nServers limit how much data they will accept in a single request. The upload\nAPI uploads larger files over multiple requests. When an upload is complete,\nlater requests can refer to that file using an *upload token*.\n\nThe lifecycle of an upload is as follows.\n\n1. A request with `start=1` begins a new upload. This request should also\n   include a `size` parameter to define the size of the uploaded file, if that\n   is known.\n2. The response to this request will include the upload token for the uploaded\n   file in its `token` field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`.\n   All subsequent requests relating to the upload must include this token as a\n   `token` parameter.\n3. Subsequent requests upload the contents of the file in chunks. The `blob`\n   parameter (which can be an attached file) contains the chunk itself; the\n   `offset` parameter defines the offset of chunk relative to the file.\n4. A request with `finish=1` completes the upload. The server seals the upload\n   and responds with the file’s content hash. A `finish=1` request will fail\n   unless all expected chunks have been received.\n\n`start=1` and `finish=1` requests can also include a chunk. The `ranges`\nresponse field represents the ranges of bytes received so far.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n",
+                "description": "Upload large files for later use.\n\nServers limit how much data they will accept in a single request. The upload API\ncan upload large files using multiple requests. When an upload is complete,\nlater API requests can refer to that file using an *upload token*.\n\nThe lifecycle of an upload is as follows.\n\n1. A request with `start=1` begins a new upload. This request should also\n   include a `size` parameter to define the size of the uploaded file, if that\n   is known, and parameters defining its purpose (`dt`, `mimetype`, `filename`,\n   and `temp`).\n2. The response to this request includes the upload token in its `token`\n   property. This is a string like `hcupwhvGDVmHNYyDKdqeqA`. All subsequent\n   requests relating to the upload must include this token as a `token`\n   parameter.\n3. Subsequent requests upload the contents of the file in chunks. The `blob`\n   parameter (which can be an attached file) contains the chunk itself, and the\n   `offset` parameter defines the offset of chunk relative to the file.\n4. A request with `finish=1` completes the upload. The server seals the upload\n   and responds with the file’s content hash. A `finish=1` request will fail\n   unless all expected chunks have been received.\n\n`start=1` and `finish=1` requests can also include a chunk. The `ranges`\nresponse field represents the ranges of bytes received so far.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n",
                 "operationId": "upload",
                 "tags": [
                     "Documents"
@@ -1285,7 +1300,7 @@
         "/search": {
             "get": {
                 "summary": "Fetch search results",
-                "description": "Return IDs, and optionally other display fields, of submissions that match a\nsearch.\n\nPass the search query in the `q` parameter. The list of matching submission\nIDs is returned in the `ids` response property, ordered according to the\nsearch.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can also affect\nthe search. `t` defines the collection of submissions to search, where\n`t=viewable` checks all submissions the user can view. If `t` is not provided,\nHotCRP picks a default based on the user’s roles and the site’s current\nconfiguration; for PC members and chairs, the typical default is `t=s`, which\nsearches complete submissions.\n\n### Display fields\n\nPass `f` and `format` parameters to retrieve display fields for each submission\nin the search result.\n\n`f` defines the display fields to return. An example is `title authors[full]`.\nObtain the available display fields with the `/displayfields` API. `format` is\neither `csv` or `html`, and requests CSV or HTML format for the response data.\n\nThe response will contain `fields` and `papers` properties. `fields` is an array\nof objects defining the emitted display fields. Typically, each entry in\n`fields` corresponds to a member of `f`, but some field requests can expand into\nmultiple display fields. `papers` is an array of objects defining the exported\nfields for each matching submission. Each `papers` entry has a `pid` property\nwith the submission ID, and properties corresponding to the `fields`. The\n`papers` entries are in the same order as `ids`. In some cases, the response\nwill have a `statistics` property defining overall statistics for some of the\nrequested fields.\n\nAs an example, this response might be returned for the search `10-12` with\n`format=csv` and `f=title`.\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nPlease note that `html` format is unlikely to be useful outside the HotCRP web\napplication. The returned HTML uses elements, tag structures, and class names\nsuitable for HotCRP’s internal use, and may change at any time. Furthermore,\nin some cases (such as `f=allpref`), the returned data is compressed into a\nfield-specific format that the HotCRP web application expands.\n\n### Search annotations\n\nThe `groups` response property is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other properties, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nAs an example, this response might be returned for the search `10-12 THEN\n5-8`.\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n### More\n\nThe `search_params` response property is a URL-encoded string defining all\nrelevant parameters for the search.\n\nSet the `hotlist` parameter to get a `hotlist` response property, which is\nused by the HotCRP browser Javascript to remember information about a list of\npapers.\n\n",
+                "description": "Return IDs, and optionally other display fields, of submissions that match a\nsearch.\n\nThe `q` parameter defines the search. The list of matching submission IDs is\nreturned in the `ids` response property, ordered according to the search.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can modify the\nsearch. `t` defines the collection of searched submissions. `t=viewable` is the\nbroadest; it checks all submissions the user can view. If `t` is not provided,\nHotCRP picks a default based on the user’s roles and the site’s current\nconfiguration. For PC members and chairs, the typical default is `t=s`, which\nsearches complete submissions.\n\n### Display fields\n\nThe `f` and `format` parameters retrieve display fields for each submission in\nthe search result.\n\n`f` defines the display fields to return. An example is `title authors[full]`,\nwhich requests two fields: `title`, and `authors` with the `full` view option.\nThe `/displayfields` API lists available display fields. `format` is either\n`csv` or `html`, and requests CSV or HTML format for the response data.\n\nThe response will contain `fields` and `papers` properties. `fields` is an array\nof objects defining the emitted display fields. Typically, each entry in\n`fields` corresponds to a member of `f`, but some field requests can expand into\nmultiple display fields. `papers` is an array of objects defining the exported\nfields for each matching submission. Each `papers` entry has a `pid` property\nwith the submission ID, and properties corresponding to the `fields`. The\n`papers` entries are in the same order as `ids`. In some cases, the response\nwill have a `statistics` property defining overall statistics for some of the\nrequested fields.\n\nThis response might be returned for the search `10-12` with `format=csv` and\n`f=title`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nThe `html` format is unlikely to be useful outside the HotCRP web application.\nThe returned HTML uses elements, tag structures, and class names suitable for\nHotCRP’s internal use, and may change at any time. Furthermore, in some cases\n(such as `f=allpref`), the returned data is compressed into a field-specific\nformat that the HotCRP web application expands.\n\n### Search annotations\n\nThe `groups` response property is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other properties, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nThis response might be returned for the search `10-12 THEN 5-8`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n### More\n\nThe `search_params` response property is a URL-encoded string defining all\nrelevant parameters for the search.\n\nSet the `hotlist` parameter to get a `hotlist` response property, which is\nused by the HotCRP browser Javascript to remember information about a list of\npapers.\n\n",
                 "operationId": "search",
                 "tags": [
                     "Search"
@@ -1470,7 +1485,7 @@
         "/searchaction": {
             "get": {
                 "summary": "Perform search action",
-                "description": "Perform the search action specified by the `action` parameter on the papers\ndefined by the `q` and `t` search parameters.\n\nThe `action` parameter must correspond to the `name` of a valid search action,\nas returned from the `/searchactions` API endpoint. Other parameters may be\nprovided; the `/searchactions` response mentions relevant parameters for each\naction.\n\nSearch action responses do not follow HotCRP’s typical conventions. Successful\nresponses may not use the JSON content type. For instance, the `get/paper`\naction typically returns a ZIP file containing submission PDFs, and the\n`get/csv` action returns a CSV-formatted text file. Furthermore, successful JSON\nresponses may not be objects, or may not contain an `ok` property; for example,\na successful response to a `get/json` request is an array of objects.\nApplications wanting predictable JSON responses should use other API endpoints.\nNevertheless, `/searchaction` can be more convenient than using more\nstandardized APIs.\n",
+                "description": "Perform the search action specified by the `action` parameter on the papers\ndefined by the `q` and `t` search parameters.\n\nThe `action` parameter names a search action. The `/searchactions` API lists\navailable actions. Other parameters may be provided; the `/searchactions`\nresponse mentions relevant parameters for each action.\n\nSearch action responses do not follow HotCRP’s normal API conventions, in that\nsuccessful responses may not be JSON objects. For instance, the `get/paper`\naction typically returns a ZIP file containing submission PDFs, the `get/csv`\naction returns a CSV-formatted text file, and the `get/json` request returns a\nJSON array, rather than a JSON object. Applications wanting predictable JSON\nresponses should use other API endpoints. Nevertheless, `/searchaction` can be\nmore convenient than other more standardized APIs.\n",
                 "operationId": "searchaction",
                 "tags": [
                     "Search"
@@ -2836,7 +2851,7 @@
         "/autoassign": {
             "post": {
                 "summary": "Compute automatic assignment",
-                "description": "Compute and optionally perform an automatic assignment.\n\nSpecify the autoassignment action with the `autoassigner` parameter, and the\nsubmissions to assign with the `q` parameter. The `/autoassigners` endpoint\nlists the available autoassignment actions.\n\nMost autoassignment actions take additional parameters and a set of PC members\nto assign. Supply these in the `u`, `disjoint`, and `param` parameters. `u`\ndefines the assignable PC members; `disjoint` defines the classes of PC members\nthat should not be assigned to the same submission; and `param` defines\nadditional autoassigner parameters, such as the number of assignments to make or\nthe type of review to create.\n\nThe `u`, `disjoint`, and `param` parameters may be supplied multiple times,\neither as a single JSON-formatted array string named `PNAME` or as multiple\nstrings named `PNAME[]`. For instance, `/autoassign?u=%5B1,2%5D` and\n`/autoassign?u%5B%5D=1&u%5B%5D=2` each supply two `u` arguments, `1` and `2`.\n\nEach `u` argument is a search string defining a set of users. Valid strings\nare user IDs (`1`), emails (`kohler@g.harvard.edu`), or tags (`#heavy`).\nPrefix a string with a hyphen `-` to remove matching users from the assignable\nset.\n\nEach `disjoint` argument is a comma-separated list of users that should not be\nco-assigned to the same submission. Again, users can be defined using IDs,\nemails, or tags.\n\nEach `param` argument defines a parameter for the autoassignment action, and\nshould be a string with the format `NAME=VALUE`. The parameters required or\nunderstood by each action are listed by the `/autoassigners` endpoint.\n\nTo test an assignment, supply the `dry_run=1` parameter. This will create an\nassignment and test it, reporting any errors, but will make no changes to the\ndatabase. Supply `minimal_dry_run=1` to obtain the autoassignment output\nwithout additional testing. For instance, `dry_run=1` will report warnings for\npotential conflicts, but `minimal_dry_run=1` will not.\n\nAutoassignment is often time consuming, so `/autoassign` may return before the\nautoassignment completes. The response’s `job` parameter will list a job ID for\nthe autoassigner. Query the `/job` endpoint to monitor the job and obtain its\neventual CSV output.\n",
+                "description": "Compute and optionally perform an automatic assignment.\n\nSpecify the autoassignment action with the `autoassigner` parameter and the\nsubmissions to assign with the `q` parameter. The `/autoassigners` endpoint\nlists the available autoassignment actions.\n\nMost autoassignment actions take additional parameters. `u` defines the PC\nmembers to assign; it defaults to all PC members. `disjoint` defines classes of\nPC members that should not be co-assigned to the same submission. `param`\ndefines additional autoassigner parameters, such as the number of assignments to\nmake or the type of review to create.\n\nTo supply multiple values for these parameters, use a JSON-formatted array or\nmultiple parameters with `[]` appended to the name. For instance,\n`/autoassign?u=%5B1,2%5D` and `/autoassign?u%5B%5D=1&u%5B%5D=2` both supply `u`\narguments `1` and `2`, the first as a single `u=[1,2]` parameter and the second\nas separate `u[]=1` and `u[]=2` parameters.\n\nEach `u` argument is a user search string: a user ID (`1`), email\n(`kohler@g.harvard.edu`), or tag (`#heavy`). Prefix with a hyphen `-` to remove\nmatching users from the assignable set.\n\nEach `disjoint` argument is a comma-separated list of users (IDs, emails, or\ntags) that should not be co-assigned to the same submission.\n\nEach `param` argument has the format `NAME=VALUE`. See `/autoassigners` for the\nparameters understood by each action.\n\nTo test without making changes, set `dry_run=1`. This creates and tests an\nassignment, reporting errors without modifying the database. Set\n`minimal_dry_run=1` to skip additional testing—for example, `dry_run=1` reports\npotential conflicts, but `minimal_dry_run=1` does not.\n\nAutoassignment can be time-consuming, so `/autoassign` may return before\ncompletion. An early response uses HTTP status code 202 Accepted, and its\n`job` response property gives a job ID for the autoassignment. Query the `/job`\nendpoint to monitor progress and retrieve the CSV output.\n",
                 "operationId": "autoassign",
                 "tags": [
                     "Assignments"
@@ -3558,48 +3573,6 @@
                     {
                         "$ref": "#/components/parameters/p.path"
                     }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/review": {
-            "post": {
-                "summary": "/review",
-                "operationId": "review-post",
-                "tags": [
-                    "Reviews"
                 ],
                 "responses": {
                     "200": {
@@ -4457,7 +4430,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "tracker_status",
+                                        "tracker_eventid"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4465,7 +4440,9 @@
                                         },
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
-                                        }
+                                        },
+                                        "tracker_status": {},
+                                        "tracker_eventid": {}
                                     }
                                 }
                             }
@@ -4514,9 +4491,7 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok",
-                                        "tracker_status_at",
-                                        "tracker_eventid"
+                                        "ok"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4526,13 +4501,12 @@
                                             "$ref": "#/components/schemas/message_list"
                                         },
                                         "tracker": {},
-                                        "tracker_recent": {},
                                         "tracker_status": {},
                                         "now": {},
-                                        "tracker_status_at": {},
                                         "tracker_eventid": {},
-                                        "new_trackerid": {},
-                                        "tracker_site": {}
+                                        "tracker_recent": {},
+                                        "tracker_site": {},
+                                        "new_trackerid": {}
                                     }
                                 }
                             }
@@ -4920,7 +4894,7 @@
         "/job": {
             "get": {
                 "summary": "Monitor job",
-                "description": "Some HotCRP tasks can take too long for a single API request. Such tasks start a\n*job* and return its unique identifier. The `/job` endpoint monitors the job’s\nprogress and returns its output on completion. The response will use HTTP\nresponse status code 202 Accepted for in-progress jobs, and 200 for completed or\nfailed jobs.\n\nResponses always contain a `status` string. This is `\"wait\"` when the job has\nnot started, `\"run\"` while it is running, `\"done\"` after completion, and\n`\"fail\"` when it has definitely failed. The `update_at` property gives the UNIX\ntimestamp that the job was last updated; if it’s far in the past, the job likely\nhas crashed regardless of `status`. Specific jobs may return other response\nproperties, such as a `progress` string that describes the current phase of job\nexecution.\n\nSome jobs have output that becomes available upon successful completion. The\nresponse contains `output_mimetype` and `output_size` properties describing the\noutput. To fetch the output itself, supply an `output` parameter. If\n`output=string`, the `output` property contains the output as a string. If\n`output=json`, the `output` property contains the output as JSON. If\n`output=body`, then a successful response (HTTP status code 200 or 204)\ncomprises the output data on its own. If a job’s output is incompatible with the\nrequested `output` format (`output=string` and the output is not UTF-8 encoded;\n`output=json` and the output is not JSON; or `output=body` and the job failed),\nthen the response uses a 400 status code.\n",
+                "description": "The `/job` endpoint monitors the progress of long-running jobs and can return\ntheir output upon completion. Jobs represent HotCRP tasks that take too long for\na single API request; requests such as `/autoassign` may start a job and return\nits unique identifier.\n\nThe `status` response property is `\"wait\"` before the job starts, `\"run\"` while\nit is running, `\"done\"` after completion, and `\"failed\"` when it is known to\nhave failed. The `update_at` property gives the UNIX timestamp of the most\nrecent job update; if it’s far in the past but `status` is still `\"run\"`, the\njob has likely crashed. Specific jobs may return other response properties, such\nas a `progress` string that describes the current phase of job execution.\n\nSome jobs produce output when they complete. When `status` is `\"done\"` and\noutput is present, the response’s `output_mimetype` and `output_size` properties\ndescribe this output. To fetch the output itself, supply an `output` parameter.\nIf `output=string`, the `output` property contains the output as a string. If\n`output=json`, the `output` property contains the output as parsed JSON. If\n`output=body`, then the output is returned as the response body with the proper\nContent-Type header. `/job?output=body` understands range requests.\n\nA `/job` response uses HTTP response status code 202 Accepted for in-progress\njobs, and 200 OK for completed or failed jobs. However, if a job’s output is\nincompatible with the requested format (`output=string` but the output is not\nUTF-8 encoded, `output=json` but the output is not JSON, or `output=body` but\nthe job failed), then the response uses status code 409 Conflict.\n",
                 "operationId": "job",
                 "tags": [
                     "Task management"
@@ -4968,7 +4942,7 @@
                                         },
                                         "update_at": {
                                             "type": "integer",
-                                            "description": "UNIX time that job was last updated"
+                                            "description": "UNIX time job was last updated"
                                         },
                                         "output": {
                                             "description": "Job output"
@@ -4984,7 +4958,7 @@
                                         },
                                         "output_at": {
                                             "type": "integer",
-                                            "description": "UNIX time that job output was set"
+                                            "description": "UNIX time job output was set"
                                         }
                                     }
                                 }
@@ -6059,6 +6033,168 @@
                 }
             }
         },
+        "/dismissalert": {
+            "post": {
+                "summary": "/dismissalert",
+                "operationId": "dismissalert",
+                "parameters": [
+                    {
+                        "name": "alertid",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/oauthregister": {
+            "post": {
+                "summary": "/oauthregister",
+                "operationId": "oauthregister",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/potentialconflicts": {
+            "get": {
+                "summary": "/potentialconflicts",
+                "operationId": "potentialconflicts",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p"
+                    },
+                    {
+                        "name": "sclass",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "*has_authors",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "*authors",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "*collaborators",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "*json",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "potential_conflicts"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "potential_conflicts": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reviews": {
             "get": {
                 "summary": "/reviews",
@@ -6303,18 +6439,18 @@
                     },
                     "other": {
                         "summary": "Document type for other field",
-                        "value": 2
+                        "value": "supplementary_material"
                     }
                 }
             },
-            "attachment": {
-                "name": "attachment",
+            "file": {
+                "name": "file",
                 "in": "query",
                 "required": false,
                 "schema": {
                     "type": "string"
                 },
-                "description": "Filename of document within multi-document field",
+                "description": "Filename of document uploaded to multi-document field",
                 "examples": {
                     "file": {
                         "value": "example.txt"
@@ -6569,8 +6705,19 @@
                 "description": "Name of document"
             },
             "document_type": {
-                "type": "integer",
-                "description": "Type of document"
+                "oneOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "type": "string",
+                        "examples": [
+                            "submission",
+                            "final"
+                        ]
+                    }
+                ],
+                "description": "Document type"
             },
             "document_id": {
                 "type": "integer",
@@ -6586,20 +6733,30 @@
                 "type": "object",
                 "description": "Document description",
                 "required": [
+                    "docid",
                     "hash",
-                    "at",
+                    "created_at",
+                    "attached_at",
                     "mimetype",
                     "link"
                 ],
                 "properties": {
+                    "docid": {
+                        "type": "integer"
+                    },
                     "hash": {
                         "$ref": "#/components/schemas/document_hash"
                     },
-                    "at": {
-                        "type": "integer"
-                    },
                     "mimetype": {
                         "$ref": "#/components/schemas/mimetype"
+                    },
+                    "created_at": {
+                        "type": "integer",
+                        "description": "Time this version was first uploaded"
+                    },
+                    "attached_at": {
+                        "type": "integer",
+                        "description": "Most recent time this version was uploaded"
                     },
                     "size": {
                         "type": "integer"
@@ -6619,8 +6776,10 @@
                 },
                 "examples": [
                     {
+                        "docid": 3822,
                         "hash": "sha2-f4640a0c20c9797f625a4071c9b53c633d2eb9347695c83228adfeddc516c656",
-                        "at": 1760706447,
+                        "created_at": 1760706447,
+                        "attached_at": 1760706447,
                         "mimetype": "application/pdf",
                         "size": 187698,
                         "filename": "relationship-between-interrupts.pdf",

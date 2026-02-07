@@ -229,10 +229,6 @@ class Conf {
     /** @var ?ComponentSet */
     private $_page_components;
 
-    /** @var ?PaperInfo
-     * @deprecated */
-    public $paper; // current paper row
-
     /** @var Conf */
     static public $main;
     /** @var int */

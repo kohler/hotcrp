@@ -11310,11 +11310,11 @@ handle_ui.on("js-expand-archive", function (evt) {
         sp.className = "archiveexpansion fx";
         ar.appendChild(sp);
         const params = parse_docurl(ax.href);
-        params.set("consolidated", 1);
-        $.ajax(hoturl("api/archivelisting", params.toString()), {
+        params.set("summary", 1);
+        $.ajax(hoturl("api/archivecontents", params.toString()), {
             method: "GET", success: function (data) {
-                if (data.ok && data.consolidated_listing)
-                    sp.textContent = " (" + data.consolidated_listing + ")";
+                if (data.ok && data.archive_contents_summary)
+                    sp.textContent = " (" + data.archive_contents_summary + ")";
             }
         });
     }

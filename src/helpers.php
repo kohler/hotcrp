@@ -248,6 +248,12 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
     /** @param string $key
+     * @return bool */
+    function has($key) {
+        return array_key_exists($key, $this->content);
+    }
+
+    /** @param string $key
      * @return mixed */
     function get($key) {
         return $this->content[$key] ?? null;

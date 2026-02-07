@@ -50,7 +50,7 @@ would contact `https://sigcomm25.hotcrp.com` with token `hct_aep...`.
 
 ## `test`
 
-Use the `test` subcommand to check your configuration and API token. `php
+The `test` subcommand can check your configuration and API token. `php
 batch/hotcrapi.php test` will contact the site you specify and print `Success`
 if the connection succeeds. The command’s exit status is 0 on success and 1 on
 failure. Options change what’s printed; `-q` will print nothing (use the exit
@@ -61,7 +61,7 @@ any roles that user has on the given site.
 
 ## `paper`
 
-Use the `paper` subcommand to fetch, modify, or delete submissions from a site.
+The `paper` subcommand can fetch, modify, or delete submissions from a site.
 
 To fetch a single submission, run `php batch/hotcrapi.php paper PID`, where
 `PID` is the relevant submission ID. The JSON representation of the submission
@@ -91,9 +91,23 @@ To delete a submission, run `php batch/hotcrapi.php paper delete PID`.
 Error messages and warnings are written to standard error.
 
 
+## `document`
+
+The `document` subcommand downloads submission documents or lists available
+document versions.
+
+To fetch a single document, run `php batch/hotcrapi.php document DOCNAME`, where
+`DOCNAME` is HotCRP’s name for the document—something like
+`testconf-paper1.pdf`. Alternately, give `-p`, `--dt`, and (optionally) `--file`
+arguments to specify a paper, document type, and (for attachment fields) the
+name of the file to select. To list a paper’s current documents, run `php
+batch/hotcrapi.php document list -p PID`; to list past versions as well, run
+`php batch/hotcrapi.php document history -p PID`.
+
+
 ## `search`
 
-Use the `search` subcommand to perform searches and search actions.
+The `search` subcommand performs searches and search actions.
 
 To list the PIDs that match a search, run `php batch/hotcrapi.php search -q
 SEARCH`, where `SEARCH` is a search query. To list other fields in CSV format,
@@ -114,7 +128,7 @@ help action ACTION`.
 
 ## `assign`
 
-Use the `assign` subcommand to perform assignments. Given a bulk-assignment
+The `assign` subcommand performs assignments. Given a bulk-assignment
 CSV file, run `php batch/hotcrapi.php assign < FILE` to perform the
 assignments.
 
@@ -131,7 +145,7 @@ assign help ACTION`.
 
 ## `autoassign`
 
-Use the `autoassign` subcommand to perform automatic assignments. Use `php
+The `autoassign` subcommand performs automatic assignments. Use `php
 batch/hotcrapi.php autoassign help` to list the available autoassigners, `php
 batch/hotcrapi.php autoassign help AUTOASSIGNER` to list the parameters for a
 specific autoassigner, and `php batch/hotcrapi.php autoassign AUTOASSIGNER
@@ -143,7 +157,7 @@ performed, and accepts `--dry-run` and `--quiet`.
 
 ## `settings`
 
-Use the `settings` subcommand to fetch or modify site settings in JSON format.
+The `settings` subcommand fetches or modifies site settings in JSON format.
 Administrator privilege is required to access `settings`. The subcommand writes
 textual error messages and warnings to standard error.
 

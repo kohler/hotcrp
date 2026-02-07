@@ -133,11 +133,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this;
     }
 
-    /** @return $this
-     * @suppress PhanDeprecatedProperty */
+    /** @return $this */
     function set_paper(?PaperInfo $prow) {
         $this->_requested_paper = $prow;
-        $this->_conf->paper = $prow;
         return $this;
     }
 

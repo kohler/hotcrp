@@ -12,9 +12,9 @@ for input to another API.
 
 Fetch a document and return it in the response body. Specify the document to
 return either with the `doc` parameter, which names the document using a pattern
-like `testconf-paper1.pdf`, or the `p`, `dt`, and optionally `attachment`
-parameters, which define the submission ID, submission field, and attachment
-name.
+like `testconf-paper1.pdf`, or the `p`, `dt`, and optional `file` parameters,
+which define the submission ID and submission field and, in the case of fields
+that accept multiple documents, the name of the desired file.
 
 The `hash` and `docid` parameters select a specific version of a document.
 `hash` selects a document by hash, and `docid` by internal document ID.
@@ -33,14 +33,19 @@ responses include `ETag` and `Last-Modified` HTTP headers. It also understands
 range requests.
 
 
-# get /documenthistory
+# get /documentlist
 
-> Fetch document history
+> Fetch list of documents
 
-Fetch information about all versions of a document accessible to the requesting
-user. Use the `doc` parameter to specify a document by name, or `p` and `dt` to
-specify it by type.
+Fetch information about documents and document versions accessible to the
+requesting user. A request with just the `p=PID` parameter lists all available
+documents currently associated with the submission. To request information about
+a specific submission field, add a `dt` or `doc` parameter. Setting `all=1`
+requests information about past document versions as well as current ones.
 
+* param ?dt
+* param ?doc
+* param ?history boolean
 * response dt document_type
 * response document_history [document_history_entry]
 
@@ -67,19 +72,19 @@ and `"wordlimit"`.
 * response has_error boolean
 
 
-# get /archivelisting
+# get /archivecontents
 
-> Fetch contents of archive document
+> List contents of archive document
 
-Fetch the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. The
-contents are returned as a list of string filenames. The `consolidated=1`
-parameter requests an additional `consolidated_listing`, which returns a
+List the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. Returns
+the list of included filenames in the `archive_contents` property. The
+`summary=1` parameter requests an additional `archive_contents_summary`, which a
 preformatted string that uses `{}` notation to represent subdirectories; for
 instance, `subdir/{file1.txt, file2.txt}`.
 
-* param ?consolidated boolean: True requests a `consolidated_listing`
-* response listing [string]: List of archive elements
-* response consolidated_listing string: Parsed contents of archive
+* param ?summary boolean: True requests `archive_contents_summary`
+* response archive_contents [string]: List of archive elements
+* response archive_contents_summary string: Parsed archive listing
 
 
 # post /upload

@@ -205,16 +205,16 @@
                     },
                     "other": {
                         "summary": "Document type for other field",
-                        "value": 2
+                        "value": "supplementary_material"
                     }
                 }
             },
-            "attachment": {
-                "name": "attachment",
+            "file": {
+                "name": "file",
                 "in": "query",
                 "required": false,
                 "schema": {"type": "string"},
-                "description": "Filename of document within multi-document field",
+                "description": "Filename of document uploaded to multi-document field",
                 "examples": {
                     "file": {
                         "value": "example.txt"
@@ -452,8 +452,19 @@
                 "description": "Name of document"
             },
             "document_type": {
-                "type": "integer",
-                "description": "Type of document"
+                "oneOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "type": "string",
+                        "examples": [
+                            "submission",
+                            "final"
+                        ]
+                    }
+                ],
+                "description": "Document type"
             },
             "document_id": {
                 "type": "integer",
@@ -468,11 +479,13 @@
             "document_history_entry": {
                 "type": "object",
                 "description": "Document description",
-                "required": ["hash", "at", "mimetype", "link"],
+                "required": ["docid", "hash", "created_at", "attached_at", "mimetype", "link"],
                 "properties": {
+                    "docid": {"type": "integer"},
                     "hash": {"$ref": "#/components/schemas/document_hash"},
-                    "at": {"type": "integer"},
                     "mimetype": {"$ref": "#/components/schemas/mimetype"},
+                    "created_at": {"type": "integer", "description": "Time this version was first uploaded"},
+                    "attached_at": {"type": "integer", "description": "Most recent time this version was uploaded"},
                     "size": {"type": "integer"},
                     "filename": {"type": "string", "description": "Filename used for upload"},
                     "active": {"type": "boolean", "description": "True if this document is currently active"},
@@ -480,8 +493,10 @@
                 },
                 "examples": [
                     {
+                        "docid": 3822,
                         "hash": "sha2-f4640a0c20c9797f625a4071c9b53c633d2eb9347695c83228adfeddc516c656",
-                        "at": 1760706447,
+                        "created_at": 1760706447,
+                        "attached_at": 1760706447,
                         "mimetype": "application/pdf",
                         "size": 187698,
                         "filename": "relationship-between-interrupts.pdf",

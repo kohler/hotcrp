@@ -42,25 +42,25 @@
   {
     "name": "document", "get": true,
     "tags": ["Documents"], "order": 0,
-    "parameters": "?doc ?p ?dt ?attachment ?hash ?docid ?<at ?attachment"
+    "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment"
   },
   {
-    "name": "documenthistory", "get": true,
+    "name": "documentlist", "get": true,
     "tags": ["Documents"], "order": 1,
-    "parameters": "?doc ?p ?dt",
+    "parameters": "?doc ?p ?dt ?history",
     "response": "dt document_history"
   },
   {
     "name": "formatcheck", "get": true,
     "tags": ["Documents"], "order": 2,
-    "parameters": "?doc ?<file ?p ?dt ?attachment ?hash ?docid ?<at ?soft",
+    "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment ?soft",
     "response": "npages nwords problem_fields has_error docid"
   },
   {
-    "name": "archivelisting", "get": true,
+    "name": "archivecontents", "get": true,
     "tags": ["Documents"], "order": 3,
-    "parameters": "?doc ?<file ?p ?dt ?docid ?attachment ?version ?<at ?consolidated",
-    "response": "listing ?consolidated_listing"
+    "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment ?summary",
+    "response": "archive_contents ?archive_contents_summary"
   },
   {
     "name": "upload", "post": true,
