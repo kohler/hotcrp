@@ -790,7 +790,7 @@ class ReviewValues extends MessageSet {
                 continue;
             }
             if ($fval === false) {
-                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$f->short_id]), 100)));
+                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_word_abbreviate(trim($this->req[$f->short_id]), 100)));
                 $fval = $old_fval;
                 $allow_new_submit = false;
             }

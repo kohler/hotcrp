@@ -669,7 +669,7 @@ Ready\n";
             . "</a></td>"
             . "<td class=\"pl_eventid pl_rowclick\">{$a} class=\"pnum\">#{$prow->paperId}</a></td>"
             . "<td class=\"pl_eventdesc pl_rowclick\"><small>{$a} class=\"ptitle\">"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($prow->title, 80))
+            . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($prow->title, 80))
             . "</a>";
         if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
             if ($viewer->can_view_review_time($prow, $rrow)) {

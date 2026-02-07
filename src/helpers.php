@@ -607,9 +607,8 @@ function unparse_byte_size($n) {
         return round($n / 1000) . "kB";
     } else if ($n > 0) {
         return (max(round($n / 100), 1) / 10) . "kB";
-    } else {
-        return "0B";
     }
+    return "0B";
 }
 
 /** @param int|float $n
@@ -623,9 +622,8 @@ function unparse_byte_size_binary($n) {
         return round($n / 1024) . "KiB";
     } else if ($n > 0) {
         return (max(round($n / 102.4), 1) / 10) . "KiB";
-    } else {
-        return "0B";
     }
+    return "0B";
 }
 
 /** @param int|float $n
@@ -639,9 +637,8 @@ function unparse_byte_size_binary_f($n) {
         return sprintf("%.0fKiB", $n / 1024);
     } else if ($n > 0) {
         return sprintf("%.1fKiB", max(round($n / 102.4), 1) / 10);
-    } else {
-        return "0B";
     }
+    return "0B";
 }
 
 /** @param string $t

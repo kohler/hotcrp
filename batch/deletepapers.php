@@ -32,7 +32,7 @@ class DeletePapers_Batch {
             foreach ($this->user->paper_set(["paperId" => $pids]) as $prow) {
                 $pid = "#{$prow->paperId}";
                 if ($prow->title !== "") {
-                    $pid .= " (" . UnicodeHelper::utf8_abbreviate($prow->title, 40) . ")";
+                    $pid .= " (" . UnicodeHelper::utf8_word_abbreviate($prow->title, 40) . ")";
                 }
                 if (!$this->yes) {
                     $str = "";

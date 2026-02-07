@@ -879,7 +879,7 @@ class CommentInfo {
         $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . "</a></td><td class=\"pl_eventid pl_rowclick\">{$a} class=\"pnum\">#{$this->paperId}</a></td><td class=\"pl_eventdesc pl_rowclick\"><small>{$a} class=\"ptitle\">"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
+            . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($this->prow->title, 80))
             . "</a>";
         $idable = $viewer->can_view_comment_identity($this->prow, $this);
         if ($idable || $viewer->can_view_comment_time($this->prow, $this)) {
@@ -892,7 +892,7 @@ class CommentInfo {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $viewer->reviewer_html_for($this->contactId);
         }
         return $t . "</small><br>"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->content($viewer, 300), 300))
+            . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($this->content($viewer, 300), 300))
             . "</td></tr>";
     }
 

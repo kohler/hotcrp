@@ -904,6 +904,19 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_word_prefix("\xCC\x90_ \xCC\x8E", 1), "\xCC\x90_");
     }
 
+    function test_utf8_char_abbreviate() {
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("acaca", 5), "acaca");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("acacaa", 5), "ac...");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("açacaa", 5), "aç...");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("açacaa", 7, 3), "açacaa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 7, 3), "a...caa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 6, 3), "...caa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 5, 3), "...aa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 4, 3), "...a");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 3, 3), "...");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 2, 3), "..");
+    }
+
     function test_utf8_line_break() {
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("a aaaaaaabbb", 7), ["a", "aaaaaaabbb"]);
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 7), ["aaaaaaaa", "bbb"]);

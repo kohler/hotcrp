@@ -307,7 +307,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 echo "<label><span class=\"checkc\">", $confx, "</span>", $name, "</label>";
             }
             if ($p->affiliation) {
-                echo '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
+                echo '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($p->affiliation, 60)) . '</span>';
             }
             echo $hidden;
             if ($potconf) {
