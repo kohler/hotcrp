@@ -27,7 +27,7 @@ class Session_API {
         // expose user information or the CSRF token to other origins!
         $sfs = $qreq->raw_header("HTTP_SEC_FETCH_SITE");
         if ($sfs === null) {
-            $sfs = $qreq->raw_header("HTTP_ORIGIN") === null ? "same-origin" : "different-origin";
+            $sfs = $qreq->raw_header("HTTP_ORIGIN") === null ? "same-origin" : "cross-site";
         }
         if ($sfs !== "same-origin" && $sfs !== "none") {
             return ["ok" => true];

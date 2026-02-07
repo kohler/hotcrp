@@ -2980,7 +2980,7 @@ let global_tooltip = null;
 const tooltip_map = new WeakMap;
 
 function prepare_info(elt, info) {
-    var xinfo = elt.getAttribute("data-tooltip-info");
+    let xinfo = elt.getAttribute("data-tooltip-info");
     if (xinfo) {
         if (typeof xinfo === "string" && xinfo.charAt(0) === "{") {
             xinfo = JSON.parse(xinfo);
@@ -3001,15 +3001,15 @@ function prepare_info(elt, info) {
     if (info.className == null || elt.hasAttribute("data-tooltip-class")) {
         info.className = elt.getAttribute("data-tooltip-class") || "dark";
     }
+    let es;
     if (elt.hasAttribute("data-tooltip")) {
         info.content = elt.getAttribute("data-tooltip");
     } else if (info.content != null) {
         // leave alone
     } else if (elt.hasAttribute("aria-describedby")
-               && elt.ariaDescribedByElements
-               && elt.ariaDescribedByElements.length === 1
-               && hasClass(elt.ariaDescribedByElements[0], "bubble")) {
-        info.contentElement = elt.ariaDescribedByElements[0];
+               && (es = $$list(elt.getAttribute("aria-describedby"))).length === 1
+               && hasClass(es[0], "bubble")) {
+        info.contentElement = es[0];
     } else if (elt.hasAttribute("aria-label")) {
         info.content = elt.getAttribute("aria-label");
     } else if (elt.hasAttribute("title")) {
