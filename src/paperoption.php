@@ -1175,13 +1175,14 @@ class Checkbox_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($ov->value || $fr->verbose()) {
-            $fr->set_bool(!!$ov->value);
-            if ($fr->want(FieldRender::CFPAGE)) {
-                $fr->title = "";
-                $th = $this->title_html();
-                $fr->set_html($fr->value_html() . " <span class=\"pavfn\">{$th}</span>");
-            }
+        if (!$ov->value && !$fr->verbose()) {
+            return;
+        }
+        $fr->set_bool(!!$ov->value);
+        if ($fr->want(FieldRender::CFPAGE)) {
+            $fr->title = "";
+            $th = $this->title_html();
+            $fr->set_html($fr->value_html() . " <span class=\"pavfn\">{$th}</span>");
         }
     }
 

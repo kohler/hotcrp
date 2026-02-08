@@ -256,29 +256,43 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
     function render(FieldRender $fr, PaperValue $ov) {
         $vs = $ov->value_list();
-        if (!empty($vs)) {
-            $interests = $this->interests($fr->user);
-            $keyword = $fr->user && $fr->user->isPC ? $this->search_keyword() : null;
-            $lenclass = count($vs) < 4 ? "long" : "short";
-            $topicset = $this->topic_set();
-            $ts = [];
-            foreach ($vs as $tid) {
-                $t = '<li class="topicti';
-                if ($interests) {
-                    $t .= ' topic' . ($interests[$tid] ?? 0);
-                }
-                $tname = $topicset->name($tid);
-                $x = $topicset->unparse_name_html($tid);
-                if ($keyword !== null) {
-                    $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "{$keyword}:" . SearchWord::quote($tname)]), ["class" => "q"]);
-                }
-                $ts[] = "{$t}\">{$x}</li>";
-                $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
-            }
-            $fr->title = $this->title(new FmtArg("count", count($ts)));
-            $fr->set_html("<ul class=\"topict topict-{$lenclass}\">" . join("", $ts) . '</ul>');
-            $fr->value_long = true;
+        if (empty($vs)) {
+            return;
+        } else if ($fr->want(FieldRender::CFTEXT)) {
+            $this->render_text($fr, $ov);
+            return;
         }
+        $interests = $this->interests($fr->user);
+        $keyword = $fr->user && $fr->user->isPC ? $this->search_keyword() : null;
+        $lenclass = count($vs) < 4 ? "long" : "short";
+        $topicset = $this->topic_set();
+        $ts = [];
+        foreach ($vs as $tid) {
+            $t = '<li class="topicti';
+            if ($interests) {
+                $t .= ' topic' . ($interests[$tid] ?? 0);
+            }
+            $tname = $topicset->name($tid);
+            $x = $topicset->unparse_name_html($tid);
+            if ($keyword !== null) {
+                $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "{$keyword}:" . SearchWord::quote($tname)]), ["class" => "q"]);
+            }
+            $ts[] = "{$t}\">{$x}</li>";
+            $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
+        }
+        $fr->title = $this->title(new FmtArg("count", count($ts)));
+        $fr->set_html("<ul class=\"topict topict-{$lenclass}\">" . join("", $ts) . '</ul>');
+        $fr->value_long = true;
+    }
+
+    private function render_text(FieldRender $fr, PaperValue $ov) {
+        $interests = $this->interests($fr->user);
+        $ts = [];
+        $topicset = $this->topic_set();
+        foreach ($ov->value_list() as $tid) {
+            $ts[] = $topicset->name($tid);
+        }
+        $fr->set_text(join("\n", $ts));
     }
 
     function parse_search(SearchWord $sword, PaperSearch $srch) {
