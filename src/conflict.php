@@ -105,6 +105,11 @@ class Conflict {
         $this->_desc = !!$conf->setting("sub_pcconfsel");
     }
 
+    /** @return bool */
+    function want_description() {
+        return $this->_desc;
+    }
+
     /** @return list<int> */
     function basic_conflict_types() {
         return array_keys(self::$desc_map);

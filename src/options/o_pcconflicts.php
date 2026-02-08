@@ -58,21 +58,25 @@ class PCConflicts_PaperOption extends PaperOption {
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         $pcm = $this->conf->pc_members();
         $confset = $this->conf->conflict_set();
-        $can_view_authors = $pex->viewer->allow_view_authors($ov->prow);
+        $can_view_authors = $pex->viewer->can_view_authors($ov->prow);
         $pcc = [];
         foreach (self::value_map($ov) as $k => $v) {
-            if (($pc = $pcm[$k] ?? null) && Conflict::is_conflicted((int) $v)) {
-                $ct = (int) $v;
-                if (!$can_view_authors) {
-                    // Sometimes users can see conflicts but not authors.
-                    // Don't expose author-ness during that period.
-                    $ct = Conflict::set_pinned(Conflict::pc_part($ct), false);
-                    $ct = $ct ? : Conflict::CT_DEFAULT;
-                } else if (($ct & CONFLICT_CONTACTAUTHOR) !== 0) {
-                    $ct = ($ct | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
-                }
-                $pcc[$pc->email] = $confset->unparse_json($ct);
+            $v = (int) $v;
+            if (!Conflict::is_conflicted($v)
+                || !($pc = $pcm[$k] ?? null)) {
+                continue;
             }
+            if (!$can_view_authors) {
+                // Sometimes users can see conflicts but not authors.
+                // Don't expose the kind of conflict during that period.
+                $ct = true;
+            } else {
+                if (($v & CONFLICT_CONTACTAUTHOR) !== 0) {
+                    $v = ($v | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
+                }
+                $ct = $confset->unparse_json($v);
+            }
+            $pcc[$pc->email] = $ct;
         }
         return (object) $pcc;
     }
@@ -337,6 +341,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         // XXX potential conflicts?
         $user = $fr->user ?? Contact::make($this->conf);
+        $can_view_authors = $user->can_view_authors($ov->prow);
         $pcm = $this->conf->pc_members();
         $confset = $this->selectors ? $this->conf->conflict_set() : null;
         $names = [];
@@ -350,10 +355,12 @@ class PCConflicts_PaperOption extends PaperOption {
                 $t .= " <span class=\"auaff\">(" . htmlspecialchars($p->affiliation) . ")</span>";
             }
             $ch = "";
-            if (Conflict::is_author($cflt->conflictType)) {
-                $ch = "<strong>Author</strong>";
-            } else if ($confset) {
-                $ch = $confset->unparse_html($cflt->conflictType);
+            if ($can_view_authors) {
+                if (Conflict::is_author($cflt->conflictType)) {
+                    $ch = "<strong>Author</strong>";
+                } else if ($confset) {
+                    $ch = $confset->unparse_html($cflt->conflictType);
+                }
             }
             if ($ch !== "") {
                 $t .= " – {$ch}";

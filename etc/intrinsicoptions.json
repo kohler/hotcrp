@@ -58,7 +58,7 @@
         "name": "Contacts", "id": -1003,
         "type": "contacts", "include_empty": true,
         "json_key": "contacts",
-        "visibility": "conflict",
+        "visibility": "nonblind",
         "form_order": 3050,
         "display": "none",
         "configurable": false, "function": "+Contacts_PaperOption",
