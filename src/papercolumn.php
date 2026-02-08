@@ -35,13 +35,13 @@ class PaperColumn extends Column {
         return call_user_func($cj->function, $conf, $cj);
     }
 
-    /** @param Contact|XtParams $ctx
+    /** @param XtParams $ctx
      * @param string $name
      * @param string|MessageItem|list<MessageItem> $message */
     static function column_error_at($ctx, $name, $message) {
         if ($ctx instanceof XtParams && $ctx->paper_list) {
             $ml = is_string($message) ? MessageItem::warning($message) : $message;
-            $ctx->paper_list->column_error_at($name, $message);
+            $ctx->paper_list->column_error_at($name, $ml);
         }
     }
 
