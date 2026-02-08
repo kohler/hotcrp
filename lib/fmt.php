@@ -393,47 +393,14 @@ class FmtContext {
     private function expand_percent($s, $pos, $expansion) {
         if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)) {
             if (($fa = Fmt::find_arg($this->args, strtolower($m[1])))) {
+                error_log("Old percent specification (arg {$m[1]}) in Fmt");
                 return [$pos + strlen($m[0]), $fa->convert_to($this->format)];
             } else if (($imt = $this->fmt->find($this->context, strtolower($m[1]), [], null, 2))
                        && $imt->template) {
+                error_log("Old percent specification (template {$m[1]}) in Fmt");
                 return [$pos + strlen($m[0]), $this->expand($imt->out, $imt->expand)];
             }
         }
-
-        if ($expansion === 0
-            && count($this->args) > 0
-            && preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$|)(\#[AON]?|)(\d*(?:\.\d+|))([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
-            error_log("Old percent specification in Fmt: " . debug_string_backtrace());
-            $argi = $m[1] ? +$m[1] : ++$this->argnum;
-            if (($fa = Fmt::find_arg($this->args, $argi - 1))) {
-                $val = $fa->convert_to($this->format);
-                if ($m[2]) {
-                    assert(is_array($val));
-                    $val = $val[substr($m[2], 1, -1)] ?? null;
-                }
-                if ($m[3] && is_array($val)) {
-                    if ($m[3] === "#N") {
-                        $val = numrangejoin($val);
-                    } else if ($m[3] === "#O") {
-                        $val = commajoin($val, "or");
-                    } else {
-                        $val = commajoin($val, "and");
-                    }
-                }
-                $conv = $m[4];
-                if ($m[5] === "H") {
-                    $x = htmlspecialchars($conv === "" ? $val : sprintf("%{$conv}s", $val));
-                } else if ($m[5] === "U") {
-                    $x = urlencode($conv === "" ? $val : sprintf("%{$conv}s", $val));
-                } else if ($m[5] === "s" && $conv === "") {
-                    $x = (string) $val;
-                } else {
-                    $x = sprintf("%{$conv}{$m[5]}", $val);
-                }
-                return [$pos + strlen($m[0]), $x];
-            }
-        }
-
         return [$pos + 1, null];
     }
 
