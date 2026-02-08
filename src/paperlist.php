@@ -768,7 +768,7 @@ final class PaperList extends MessageSet {
             $warning = "<0>Sort ‘{$svc->keyword}’ is ambiguous";
         }
         if (($sw = $svc->sword)) {
-            $mis = $this->expand_message_context($warning, $sw->pos1, $sw->pos2, $sw->string_context);
+            $mis = $this->search->expand_message_context($warning, $sw->pos1, $sw->pos2, $sw->string_context);
             $this->append_list($mis);
         } else {
             $this->warning_at(null, $warning);
@@ -1296,9 +1296,9 @@ final class PaperList extends MessageSet {
 
 
     /** @param string $name
-     * @param MessageItem|list<MessageItem> $ml */
-    function column_error_at($name, $ml) {
-        $ml = is_array($ml) ? $ml : [$ml];
+     * @param MessageItem|list<MessageItem> $message */
+    function column_error_at($name, $message) {
+        $ml = is_array($message) ? $message : [$message];
         if (empty($ml) || !$this->want_column_errors($name)) {
             return;
         } else if ($this->_column_error_stash !== null) {

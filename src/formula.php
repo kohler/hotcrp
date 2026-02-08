@@ -1720,7 +1720,7 @@ class Formula implements JsonSerializable {
     private $_f_sortable;
     /** @var ?callable(PaperInfo,?int,Contact,Formula):mixed */
     private $_f_json;
-    /** @var ?callable(PaperInfo,Contact,Formula):list<mixed> */
+    /** @var ?callable(PaperInfo,Contact,Formula):list */
     private $_f_indexer;
     /** @var ?callable(PaperInfo,?int,Contact,Formula):mixed */
     private $_f_extractor;
@@ -2038,7 +2038,7 @@ class Formula implements JsonSerializable {
         $body = join("\n  ", $state->gstmt) . "\n";
         if (($index_types & Fexpr::IDX_REVIEW) !== 0) {
             $check = "";
-            if ($index_tyeps === Fexpr::IDX_CREVIEW) {
+            if ($index_types === Fexpr::IDX_CREVIEW) {
                 $check = "    if (!\$rrow->reviewSubmitted) { continue; }\n";
             }
             $body .= "  \$cids = [];\n"
