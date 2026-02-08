@@ -1,9 +1,9 @@
 <?php
 // api_document.php -- HotCRP document APIs
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Document_API {
-    static function archivecontents(Contact $user, Qrequest $qreq) {
+    static function archive_contents(Contact $user, Qrequest $qreq) {
         $qreq->qsession()->commit();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
