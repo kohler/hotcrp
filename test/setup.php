@@ -1043,6 +1043,7 @@ function call_api($fn, $user, $qreq, $prow = null) {
         if (is_array($jr->content) && !is_list($jr->content)) {
             return (object) $jr->content;
         }
+        /** @phan-suppress-next-line PhanTypeMismatchReturn */
         return $jr->content;
     }
     if (!isset($jr->content["status_code"]) && $jr->status > 299) {
