@@ -319,7 +319,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
                    && !isset($this->content["status_code"])) {
             $this->content["status_code"] = $this->status;
         }
-        header("Content-Type: application/json");
+        header("Content-Type: application/json; charset=utf-8");
         foreach ($this->_headers ?? [] as $h) {
             header($h);
         }

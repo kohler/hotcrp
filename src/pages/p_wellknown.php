@@ -36,7 +36,7 @@ class WellKnown_Page {
 
     static function oauth_protected_resource(NavigationState $nav, Conf $conf) {
         self::cache_headers(604800);
-        header("Content-Type: application/json");
+        header("Content-Type: application/json; charset=utf-8");
         $site = $conf->opt("paperSite");
         echo json_encode([
             "resource" => "{$site}/api",
@@ -51,7 +51,7 @@ class WellKnown_Page {
             return;
         }
         self::cache_headers(604800);
-        header("Content-Type: application/json");
+        header("Content-Type: application/json; charset=utf-8");
         $site = $conf->opt("paperSite");
         $j = ["issuer" => $conf->oauth_issuer()];
         // enumerate capabilities implied by clients

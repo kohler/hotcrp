@@ -56,7 +56,7 @@ class Cacheable_Page {
                     $prefix = "\"use strict\";\n";
                 }
             } else if ($ext === "map" || $ext === "json") {
-                header("Content-Type: application/json");
+                header("Content-Type: application/json; charset=utf-8");
             } else if ($ext === "css") {
                 header("Content-Type: text/css; charset=utf-8");
             } else if ($ext === "gif") {
