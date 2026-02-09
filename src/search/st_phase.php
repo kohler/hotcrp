@@ -28,7 +28,7 @@ class Phase_SearchTerm extends SearchTerm {
         return $this->phase === PaperInfo::PHASE_FINAL ? "(Paper.timeWithdrawn<=0 and Paper.outcome>0)" : "true";
     }
     function test(PaperInfo $row, $xinfo) {
-        return $row->visible_phase($this->user) === $this->phase;
+        return $row->viewable_phase($this->user) === $this->phase;
     }
     function about() {
         return self::ABOUT_PAPER;

@@ -648,7 +648,7 @@ class Home_Page {
                 $srinfo[$sr->tag] |= 2;
             }
             if ($prow->outcome > 0
-                && $prow->visible_phase($user) === PaperInfo::PHASE_FINAL) {
+                && $prow->viewable_phase($user) === PaperInfo::PHASE_FINAL) {
                 $srinfo[$sr->tag] |= 4;
             }
         }

@@ -4283,14 +4283,24 @@ class Contact implements JsonSerializable {
     /** @param PaperOption $opt
      * @return 0|1|2 */
     function edit_option_state(PaperInfo $prow, $opt) {
+        if ($opt->id === PaperOption::CONTACTSID) {
+            return 2;
+        }
         if (!$opt->on_form()
             || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
             || (!$opt->test_editable($prow) && !$this->can_manage($prow))
-            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
-            || ($opt->is_final() && $this->edit_paper_state($prow) !== 2)
-            || ($opt->id === 0 && $this->edit_paper_state($prow) === 2)) {
+            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))) {
             return 0;
-        } else if (!$opt->test_exists($prow)) {
+        }
+        if ($prow->outcome > 0
+            && $prow->viewable_phase($this) === PaperInfo::PHASE_FINAL) {
+            if ($this->edit_paper_state($prow) !== 2 || $opt->id === 0) {
+                return 0;
+            }
+        } else if ($opt->is_final()) {
+            return 0;
+        }
+        if (!$opt->test_exists($prow)) {
             return $opt->exists_script_expression($prow) ? 1 : 0;
         }
         return 2;

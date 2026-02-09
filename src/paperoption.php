@@ -1178,11 +1178,14 @@ class Checkbox_PaperOption extends PaperOption {
         if (!$ov->value && !$fr->verbose()) {
             return;
         }
-        $fr->set_bool(!!$ov->value);
         if ($fr->want(FieldRender::CFPAGE)) {
-            $fr->title = "";
             $th = $this->title_html();
-            $fr->set_html($fr->value_html() . " <span class=\"pavfn\">{$th}</span>");
+            $fr->title = "";
+            $fr->set_html(($ov->value ? "✓" : "✗") . " <span class=\"pavfn\">{$th}</span>");
+        } else if ($fr->want(FieldRender::CFFORM)) {
+            $fr->set_text($ov->value ? "Yes" : "No");
+        } else {
+            $fr->set_bool(!!$ov->value);
         }
     }
 

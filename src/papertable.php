@@ -2439,13 +2439,7 @@ class PaperTable {
                     $o->print_web_edit_hidden($this, $ov);
                     continue;
                 }
-                if ($o->type === "checkbox") {
-                    $heading = ($fr->value === "✓" ? "☑ " : "☐ ") . $this->edit_title_html($o);
-                    $fr->value = "";
-                } else {
-                    $heading = null;
-                }
-                $this->print_editable_option_papt($o, $heading, ["for" => false, "input" => false]);
+                $this->print_editable_option_papt($o, null, ["for" => false, "input" => false]);
                 $o->print_web_edit_hidden($this, $ov);
                 $klass = $fr->value_long ? "papev w-text" : "papev"; // XXX too one-weird-trick
                 echo $fr->value_html($klass), "</div>";

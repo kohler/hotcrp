@@ -1250,7 +1250,7 @@ class PaperInfo {
     }
 
     /** @return 0|1 */
-    function visible_phase(?Contact $user = null) {
+    function viewable_phase(?Contact $user = null) {
         $p = $this->phase();
         if ($p === self::PHASE_FINAL
             && $user
@@ -1797,9 +1797,8 @@ class PaperInfo {
             return 0;
         }
         $sr = $this->submission_round();
-        if ($this->phase() === self::PHASE_FINAL
-            && $sr->time_edit_final(true)) {
-            return 2;
+        if ($this->phase() === self::PHASE_FINAL) {
+            return $sr->time_edit_final(true) ? 2 : 0;
         }
         if (($this->is_new()
              && !$sr->time_register(true))
