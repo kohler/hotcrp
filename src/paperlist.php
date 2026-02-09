@@ -1275,11 +1275,12 @@ final class PaperList extends MessageSet {
                 return $row->has_nonempty_collaborators()
                     && $this->user->can_view_authors($row);
             });
-        } else if ($key === "accepted") {
+        } else if ($key === "accepted") { // XXX obsolete
+            error_log("Unexpected PaperList::_compute_has(accepted) at " . debug_string_backtrace());
             return $this->unordered_rowset()->any(function ($row) {
                 return $row->outcome > 0 && $this->user->can_view_decision($row);
             });
-        } else if ($key === "need_final") {
+        } else if ($key === "need_final") { // XXX obsolete
             return $this->has("accepted")
                 && $this->unordered_rowset()->any(function ($row) {
                        return $row->outcome > 0

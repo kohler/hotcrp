@@ -52,13 +52,17 @@ class Deadlines_Page {
                 $this->dl1($sr->register, "<5>{sclass} registration deadline",
                            "<5>You can register new {sclass} {submissions} until this deadline.", $srarg);
             }
-            if ($sr->update > 0 && $sr->update != $sr->submit) {
+            if ($sr->update > 0 && $sr->update !== $sr->submit) {
                 $this->dl1($sr->update, "<5>{sclass} update deadline",
                            "<5>You can update {sclass} {submissions} and upload new versions until this deadline.", $srarg);
             }
             if ($sr->submit) {
                 $this->dl1($sr->submit, "<5>{sclass} submission deadline",
-                           "<5>{sclass} {submissions} must be ready by this deadline to be reviewed.", $srarg);
+                           "<5>{sclass} {submissions} must be completed by this deadline to be reviewed.", $srarg);
+            }
+            if ($sr->resubmit > 0 && $sr->resubmit > $sr->submit) {
+                $this->dl1($sr->submit, "<5>{sclass} resubmission deadline",
+                           "<5>Completed {sclass} {submissions} may be updated until this deadline.", $srarg);
             }
         }
 

@@ -981,7 +981,7 @@ final class PaperStatus extends MessageSet {
             || $this->prow->outcome <= 0
             || !$this->user->can_view_decision($this->prow)
             || /* XXX not exactly the same check as override_deadlines */
-               (!$this->conf->time_edit_final_paper()
+               (!$this->prow->submission_round()->time_edit_final(true)
                 && !$this->user->allow_manage($this->prow))) {
             return;
         }

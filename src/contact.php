@@ -3793,13 +3793,13 @@ class Contact implements JsonSerializable {
             $whyNot["frozen"] = true;
             return $whyNot;
         }
+        $sr = $prow->submission_round();
         if ($prow->phase() === PaperInfo::PHASE_FINAL
             && $rights->can_view_decision()
-            && !$this->conf->time_edit_final_paper()) {
+            && !$sr->time_edit_final(true)) {
             $whyNot["deadline"] = "final_done";
             return $whyNot;
         }
-        $sr = $prow->submission_round();
         if ($prow->is_new() && !$sr->time_register(true)) {
             $whyNot["deadline"] = "sub_reg";
         } else if (!$sr->time_edit($prow->timeSubmitted > 0, true)) {
@@ -6055,18 +6055,17 @@ class Contact implements JsonSerializable {
         }
 
         // final copy deadlines
-        if ($this->conf->setting("final_open") > 0
+        if ($sr->final_open > 0
             && !$disabled) {
             $dl->final = (object) ["open" => true];
-            $final_soft = +$this->conf->setting("final_soft");
-            if ($final_soft > Conf::$now) {
-                $dl->final->done = $final_soft;
-            } else {
-                $dl->final->done = +$this->conf->setting("final_done");
-                $dl->final->ishard = true;
+            if (($t = $sr->final_deadline_for_display())) {
+                $dl->final->done = $t;
+                if ($t === $sr->final_done) {
+                    $dl->final->ishard = true;
+                }
             }
-            if (($g = $this->conf->setting("final_grace"))) {
-                array_push($graces, $dl->final, $g, ["done"]);
+            if ($sr->final_grace > 0) {
+                array_push($graces, $dl->final, $sr->final_grace, ["done"]);
             }
         }
 

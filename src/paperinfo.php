@@ -1234,17 +1234,19 @@ class PaperInfo {
             return self::PHASE_REVIEW;
         }
         $this->check_rights_version();
-        if (($this->_flags & self::HAS_PHASE) === 0) {
-            if ($this->timeSubmitted > 0
-                && $this->conf->allow_final_versions()
-                && $this->can_author_view_decision()) {
-                $phase = self::PHASE_FINAL;
-            } else {
-                $phase = self::PHASE_REVIEW;
-            }
-            $this->_flags = ($this->_flags & ~self::PHASE_MASK) | self::HAS_PHASE | ($phase << self::PHASE_SHIFT);
+        if (($this->_flags & self::HAS_PHASE) !== 0) {
+            return ($this->_flags & self::PHASE_MASK) >> self::PHASE_SHIFT;
         }
-        return ($this->_flags & self::PHASE_MASK) >> self::PHASE_SHIFT;
+        if ($this->timeSubmitted > 0
+            && $this->conf->allow_final_versions()
+            && $this->can_author_view_decision()) {
+            $phase = self::PHASE_FINAL;
+        } else {
+            $phase = self::PHASE_REVIEW;
+        }
+        $this->_flags = ($this->_flags & ~self::PHASE_MASK)
+            | self::HAS_PHASE | ($phase << self::PHASE_SHIFT);
+        return $phase;
     }
 
     /** @return 0|1 */
@@ -1794,11 +1796,11 @@ class PaperInfo {
             || $this->outcome_sign < 0) {
             return 0;
         }
+        $sr = $this->submission_round();
         if ($this->phase() === self::PHASE_FINAL
-            && $this->conf->time_edit_final_paper()) {
+            && $sr->time_edit_final(true)) {
             return 2;
         }
-        $sr = $this->submission_round();
         if (($this->is_new()
              && !$sr->time_register(true))
             || !$sr->time_edit($this->timeSubmitted > 0, true)) {

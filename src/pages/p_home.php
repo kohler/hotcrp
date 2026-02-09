@@ -579,27 +579,88 @@ class Home_Page {
         }
     }
 
-    private function submission_round_deadlines(&$deadlines, SubmissionRound $sr) {
-        if (!$sr->time_submit(true)) {
-            // Be careful not to refer to a future deadline; perhaps an admin
-            // just turned off submissions.
-            if (!$sr->submit || $sr->submit + $sr->grace > Conf::$now) {
-                $deadlines[] = "The site is currently closed for {$sr->prefix}{$this->conf->snouns[1]}.";
+    /** @param int $srf */
+    private function submission_round_deadlines(&$deadlines, SubmissionRound $sr, $srf) {
+        $conf = $this->conf;
+        $dlurl = $conf->hoturl("deadlines");
+        if (($srf & 4) !== 0
+            && $sr->final_open
+            && ($dl = $sr->final_deadline_for_display()) > 0) {
+            $d = $conf->unparse_time_with_local_span($dl);
+            if (!$sr->time_edit_final(true)) {
+                $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> for submitting {$sr->prefix}final versions has passed.";
+            } else if ($d <= Conf::$now) {
+                if ($d === $sr->final_done) {
+                    $dx = " They were required by {$d}.";
+                } else if ($sr->final_done > 0) {
+                    $dx = " They were requested by {$d} and are required by " . $conf->unparse_time_with_local_span($sr->final_done) . ".";
+                } else {
+                    $dx = " They were requested by {$d}.";
+                }
+                $final = $sr->prefix === "" ? "Final" : "final";
+                $deadlines[] = "<strong class=\"overdue\">{$sr->prefix}{$final} versions are overdue.</strong> {$dx}";
             } else {
-                $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->prefix}{$this->conf->snouns[0]} deadline</a> has passed.";
-            }
-        } else if (!$sr->time_update(true)) {
-            $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->prefix}update deadline</a> has passed, but you can still submit.";
-            if ($sr->submit > Conf::$now) {
-                $d = $this->conf->unparse_time_with_local_span($sr->submit);
-                $deadlines[] = "You have until {$d} to submit {$sr->prefix}papers.";
-            }
-        } else {
-            if ($sr->update > Conf::$now) {
-                $d = $this->conf->unparse_time_with_local_span($sr->update);
-                $deadlines[] = "You have until {$d} to submit {$sr->prefix}papers.";
+                $deadlines[] = "Submit final versions of your accepted {$sr->prefix}{$conf->snouns[1]} by {$d}.";
             }
         }
+        if (($srf & 3) === 0) {
+            return;
+        }
+        if (!$sr->time_open()) {
+            $deadlines[] = "The site is currently closed for {$sr->prefix}{$conf->snouns[1]}.";
+            return;
+        }
+        if (($srf & 2) !== 0
+            && $sr->time_edit(true, true)) {
+            if ($sr->time_edit(false, true)) {
+                $d = $conf->unparse_time_with_local_span($sr->update);
+                $deadlines[] = "You have until {$d} to update {$sr->prefix}{$conf->snouns[1]}.";
+            } else {
+                $d = $conf->unparse_time_with_local_span($sr->resubmit);
+                $deadlines[] = "You have until {$d} to update completed {$sr->prefix}{$conf->snouns[1]}.";
+            }
+        } else if (($srf & 2) !== 0) {
+            $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to update {$sr->prefix}{$conf->snouns[1]} has passed.";
+            if ($sr->time_submit(true)) {
+                $d = $conf->unparse_time_with_local_span($sr->submit);
+                $deadlines[] = "You have until {$d} to mark {$sr->prefix}{$conf->snouns[1]} as completed.";
+            }
+        } else if (($srf & 1) !== 0
+                   && $sr->time_edit(false, true)) {
+            $d = $conf->unparse_time_with_local_span($sr->update);
+            $deadlines[] = "You have until {$d} to complete {$sr->prefix}{$conf->snouns[1]}.";
+        } else if (($srf & 1) !== 0) {
+            $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to complete {$sr->prefix}{$conf->snouns[1]} has passed.";
+        }
+    }
+
+    private function submission_deadlines_for(PaperInfoSet $rowset, Contact $user) {
+        $srinfo = [];
+        foreach ($rowset as $prow) {
+            if ($prow->timeWithdrawn > 0) {
+                continue;
+            }
+            $sr = $prow->submission_round();
+            $srinfo[$sr->tag] = $srinfo[$sr->tag] ?? 0;
+            if ($prow->timeSubmitted > 0) {
+                $srinfo[$sr->tag] |= 1;
+            } else {
+                $srinfo[$sr->tag] |= 2;
+            }
+            if ($prow->outcome > 0
+                && $prow->visible_phase($user) === PaperInfo::PHASE_FINAL) {
+                $srinfo[$sr->tag] |= 4;
+            }
+        }
+        if (empty($srinfo)) {
+            return;
+        }
+        $dl = [];
+        foreach ($this->conf->submission_round_list() as $sr) {
+            if (($srf = $srinfo[$sr->tag] ?? 0) !== 0)
+                $this->submission_round_deadlines($dl, $sr, $srf);
+        }
+        return $dl;
     }
 
     function print_submissions(Contact $user, Qrequest $qreq, ComponentSet $gx) {
@@ -651,33 +712,13 @@ class Home_Page {
 
         $deadlines = [];
         if ($plist && !$plist->is_empty()) {
-            $dlr = [];
-            foreach ($plist->rowset() as $prow) {
-                if ($prow->timeSubmitted > 0 || $prow->timeWithdrawn > 0) {
-                    continue;
-                }
-                $sr = $prow->submission_round();
-                if (isset($dlr[$sr->tag])) {
-                    continue;
-                }
-                $dlr[$sr->tag] = true;
-                $this->submission_round_deadlines($deadlines, $sr);
-            }
+            $deadlines = $this->submission_deadlines_for($plist->rowset(), $user);
         }
         if (empty($srlist) && empty($deadlines)) {
             if ($any_open) {
                 $deadlines[] = "The <a href=\"" . $conf->hoturl("deadlines") . "\">deadline</a> for registering {$conf->snouns[1]} has passed.";
             } else {
                 $deadlines[] = "{$conf->snouns[3]} are currently closed.";
-            }
-        }
-        // NB only has("accepted") if author can see an accepted paper
-        if ($plist && $plist->has("accepted")) {
-            $d = $this->setting_time_span("final_soft");
-            if ($conf->time_after_setting("final_soft") && $plist->has("need_final")) {
-                $deadlines[] = "<strong class=\"overdue\">Final versions are overdue.</strong> They were requested by {$d}.";
-            } else if ($d) {
-                $deadlines[] = "Submit final versions of your accepted papers by {$d}.";
             }
         }
         if (!empty($deadlines)) {

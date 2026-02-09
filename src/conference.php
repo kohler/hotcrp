@@ -3715,10 +3715,6 @@ class Conf {
         return $this->setting("final_open") > 0;
     }
     /** @return bool */
-    function time_edit_final_paper() {
-        return $this->time_between_settings("final_open", "final_done", "final_grace") > 0;
-    }
-    /** @return bool */
     function time_some_author_view_review() {
         return $this->any_response_open || $this->_au_seerev;
     }
