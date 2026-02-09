@@ -161,9 +161,9 @@ class Hotcrapi_Batch extends MessageSet {
     /** @var bool
      * @readonly */
     public $quiet = false;
-    /** @var bool
+    /** @var int
      * @readonly */
-    public $verbose = false;
+    public $verbose = 0;
     /** @var int
      * @readonly */
     public $chunk = 8 << 20;
@@ -230,7 +230,7 @@ class Hotcrapi_Batch extends MessageSet {
         return $this;
     }
 
-    /** @param bool $x
+    /** @param int $x
      * @suppress PhanAccessReadOnlyProperty
      * @return $this */
     function set_verbose($x) {
@@ -476,6 +476,7 @@ class Hotcrapi_Batch extends MessageSet {
         if ($this->apitoken) {
             curl_setopt($curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
         }
+        curl_setopt($curlh, CURLINFO_HEADER_OUT, 1);
         return $curlh;
     }
 
@@ -604,8 +605,8 @@ class Hotcrapi_Batch extends MessageSet {
      * @param ?callable(Hotcrapi_Batch):bool $skip_function
      * @return bool */
     function exec_api($curlh, $skip_function = null) {
-        if ($this->verbose) {
-            $url = curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL);
+        $url = curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL);
+        if ($this->verbose > 0) {
             if ($this->_progress_active) {
                 $this->progress_snapshot();
                 fwrite(STDERR, "{$url}\n");
@@ -615,18 +616,36 @@ class Hotcrapi_Batch extends MessageSet {
         }
         rewind($this->headerf);
         ftruncate($this->headerf, 0);
+
         $this->content_string = curl_exec($curlh);
+
+        rewind($this->headerf);
+        $headerstr = stream_get_contents($this->headerf);
+        if ($this->content_string === false) {
+            if ($this->verbose === 0) {
+                fwrite(STDERR, $url);
+            }
+            fwrite(STDERR, ": " . curl_error($curlh) . "\n");
+            $this->status_code = 500;
+            $this->content_string = "";
+            $this->content_json = null;
+            return false;
+        }
         curl_setopt($curlh, CURLOPT_NOPROGRESS, 1);
         $this->status_code = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
         $this->decorated_content_type = curl_getinfo($curlh, CURLINFO_CONTENT_TYPE);
         $this->content_type = preg_replace('/\s*;.*\z/s', "", $this->decorated_content_type);
-        if ($this->verbose) {
+        if ($this->verbose > 0) {
             if ($this->_progress_active) {
                 $this->progress_snapshot();
                 fwrite(STDERR, curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL) . " → {$this->status_code}\n");
             } else {
                 fwrite(STDERR, " → {$this->status_code}\n");
             }
+        }
+        if ($this->verbose > 1) {
+            fwrite(STDERR, "  ↑ " . str_replace("\n", "\n    ", rtrim(curl_getinfo($curlh, CURLINFO_HEADER_OUT)))
+                . "\n  ↓ " . str_replace("\n", "\n    ", rtrim($headerstr)) . "\n\n");
         }
         $this->content_json = json_decode($this->content_string);
         if (!is_object($this->content_json)) {
@@ -652,12 +671,9 @@ class Hotcrapi_Batch extends MessageSet {
         foreach ($this->content_json->message_list ?? [] as $mj) {
             $this->append_item(MessageItem::from_json($mj));
         }
-        if ($this->status_code === 429) {
-            rewind($this->headerf);
-            $hdata = stream_get_contents($this->headerf);
-            if (preg_match('/^x-ratelimit-reset:\s*(\d+)\s*/mi', $hdata, $m)) {
-                $this->append_item(MessageItem::inform("<0>The rate limit will reset in " . plural(intval($m[1]) - Conf::$now, "second") . "."));
-            }
+        if ($this->status_code === 429
+            && preg_match('/^x-ratelimit-reset:\s*(\d+)\s*/mi', $headerstr, $m)) {
+            $this->append_item(MessageItem::inform("<0>The rate limit will reset in " . plural(intval($m[1]) - Conf::$now, "second") . "."));
         }
         if ($this->status_code <= 299
             && ($this->content_json->ok ?? false)) {
@@ -700,7 +716,7 @@ class Hotcrapi_Batch extends MessageSet {
             "S:,siteurl:,url: =SITE Site URL",
             "T:,token: =APITOKEN API token",
             "config: =FILE Set configuration file [~/.hotcrapi.conf]",
-            "verbose,V Be verbose",
+            "verbose#,V# Be verbose",
             "quiet Do not print error messages",
             "no-progress Do not print progress bars",
             "progress !",
@@ -749,7 +765,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             $hcli->set_quiet(true);
         }
         if (isset($arg["verbose"])) {
-            $hcli->set_verbose(true);
+            $hcli->set_verbose($arg["verbose"]);
         }
         if (isset($arg["progress"])
             || (!isset($arg["quiet"])
