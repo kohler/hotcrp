@@ -5646,7 +5646,8 @@ hotcrp.monitor_job = function (jobid, statuselt) {
     return new Promise(function (resolve, reject) {
         let tries = 0;
         function success(data) {
-            const dead = !data.ok || (data.update_at && data.update_at < now_sec() - 40);
+            const dead = !data.ok
+                || (data.update_at && data.update_at < now_sec() - 40);
             if (data.message_list) {
                 let ex = statuselt.firstElementChild;
                 while (ex && ex.nodeName === "H3") {

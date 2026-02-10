@@ -11,12 +11,15 @@ class Job_Token extends TokenInfo {
      * @param list<string> $argv
      * @return Job_Token */
     static function make(Contact $user, $batch_class, $argv = []) {
-        return (new Job_Token($user->conf))
-            ->set_user_from($user, false)
+        $tok = (new Job_Token($user->conf))
             ->set_token_pattern("hcj_[24]")
             ->set_invalid_in(86400)
             ->set_expires_in(86400)
             ->set_input(["batch_class" => $batch_class, "argv" => $argv]);
+        if (!$user->is_root_user()) {
+            $tok->set_user_from($user, false);
+        }
+        return $tok;
     }
 
     /** @param string $token

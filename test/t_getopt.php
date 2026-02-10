@@ -68,6 +68,10 @@ class Getopt_Tester {
         $arg = self::getopt_parse((new Getopt)->long("a: =FOO"),
             ["fart", "-a10", "c"]);
         xassert_eqq(json_encode($arg), '{"a":"10","_":["c"]}');
+
+        $arg = self::getopt_parse((new Getopt)->long("a:: =FOO", "b:: =BAR"),
+            ["fart", "-a", "-bc"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"b":"c","_":[]}');
     }
 
     function test_getopt_count() {
