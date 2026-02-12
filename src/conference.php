@@ -3541,9 +3541,8 @@ class Conf {
         }
         if ($format & 2) {
             return $d;
-        } else {
-            return $timestamp < $reference ? $d . " ago" : "in " . $d;
         }
+        return $timestamp < $reference ? $d . " ago" : "in " . $d;
     }
 
     /** @param string $s
@@ -3615,47 +3614,6 @@ class Conf {
         $time = $time ?? Conf::$now;
         $t = $this->settings[$lo] ?? 0;
         return $t > 0 && $time >= $t;
-    }
-
-    /** @param ?int $lo
-     * @param int $hi
-     * @param ?int $grace
-     * @param ?int $time
-     * @return 0|1|2 */
-    function time_between($lo, $hi, $grace = null, $time = null) {
-        // see also ResponseRound::time_allowed
-        $time = $time ?? Conf::$now;
-        if ($lo !== null && ($lo <= 0 || $time < $lo)) {
-            return 0;
-        } else if ($hi <= 0 || $time <= $hi) {
-            return 1;
-        } else if ($grace !== null && $time <= $hi + $grace) {
-            return 2;
-        } else {
-            return 0;
-        }
-    }
-
-    /** @param string $lo
-     * @param string $hi
-     * @param ?string $grace
-     * @param ?int $time
-     * @return 0|1|2 */
-    function time_between_settings($lo, $hi, $grace = null, $time = null) {
-        // see also ResponseRound::time_allowed
-        $time = $time ?? Conf::$now;
-        $t0 = $this->settings[$lo] ?? null;
-        if (($t0 === null || $t0 <= 0 || $time < $t0) && $lo !== "") {
-            return 0;
-        }
-        $t1 = $this->settings[$hi] ?? null;
-        if ($t1 === null || $t1 <= 0 || $time <= $t1) {
-            return 1;
-        } else if ($grace && $time <= $t1 + ($this->settings[$grace] ?? 0)) {
-            return 2;
-        } else {
-            return 0;
-        }
     }
 
 
