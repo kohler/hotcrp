@@ -3992,15 +3992,23 @@ class Contact implements JsonSerializable {
         if (!$rights->scope_allows(TS::S_SUB_READ | ($pdf ? TS::S_DOC_READ : 0))) {
             return false;
         }
-        return $rights->allow_author_view()
-            || ($pdf
-                // assigned reviewer can view PDF of withdrawn, but submitted, paper
-                ? $rights->review_status > PCI::CIRS_DECLINED
-                  && $prow->timeSubmitted != 0
-                : $rights->review_status > 0)
-            || ($rights->allow_pc_broad()
-                && $this->conf->time_pc_view($prow, $pdf)
-                && (!$pdf || $this->conf->check_tracks($prow, $this, Track::VIEWPDF)));
+        if ($rights->allow_author_view()) {
+            return true;
+        }
+        // reviewers can view papers; active reviewers can view PDFs submitted
+        // papers, including withdrawn + submitted papers
+        if ($rights->review_status > 0
+            && (!$pdf || ($rights->review_status > PCI::CIRS_DECLINED
+                          && $prow->timeSubmitted != 0))) {
+            return true;
+        }
+        // PC can see papers and usually PDFs
+        return $rights->allow_pc_broad()
+            && $this->conf->time_pc_view($prow, $pdf)
+            && (!$pdf
+                || ($this->conf->check_tracks($prow, $this, Track::VIEWPDF)
+                    && ($rights->allow_pc()
+                        || !$this->conf->setting("pc_confpdf"))));
     }
 
     /** @return ?FailureReason */

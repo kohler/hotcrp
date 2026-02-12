@@ -531,8 +531,18 @@
         "tags": "submission"
     },
     {
-        "name": "submitted_document_early_visibility", "storage": "pc_seeallpdf",
-        "title": "PC can see all submitted PDFs",
+        "name": "document_early_visibility", "storage": "pc_seeallpdf",
+        "title": "PC can see all completed submission PDFs before submission deadline",
+        "type": "checkbox",
+        "tags": "submission"
+    },
+    {
+        "name": "submitted_document_early_visibility",
+        "alias": "document_early_visibility"
+    },
+    {
+        "name": "conflict_document_visibility", "storage": "negval.pc_confpdf",
+        "title": "Conflicted PC members can see PDFs",
         "type": "checkbox",
         "tags": "submission"
     },
