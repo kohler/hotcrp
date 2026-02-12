@@ -3264,14 +3264,22 @@ class Contact implements JsonSerializable {
 
     /** @return int */
     function dangerous_track_mask() {
-        if ($this->_dangerous_track_mask === null) {
-            $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
-            if ($this->hidden_papers
-                || !$this->scope_allows(TS::S_SUB_READ)) {
-                $this->_dangerous_track_mask |= Track::FM_VIEWPDF;
-            } else if (!$this->scope_allows(TS::S_DOC_READ)) {
-                $this->_dangerous_track_mask |= 1 << Track::VIEWPDF;
-            }
+        if ($this->_dangerous_track_mask !== null) {
+            return $this->_dangerous_track_mask;
+        }
+        $confpdf = 0;
+        if ($this->isPC
+            && (!$this->privChair || !$this->conf->has_any_explicit_manager())) {
+            $confpdf = $this->conf->setting("pc_confpdf") ?? 0;
+        }
+        $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
+        if ($this->hidden_papers
+            || !$this->scope_allows(TS::S_SUB_READ)
+            || $confpdf > 1) {
+            $this->_dangerous_track_mask |= Track::FM_VIEWPDF;
+        } else if (!$this->scope_allows(TS::S_DOC_READ)
+                   || $confpdf > 0) {
+            $this->_dangerous_track_mask |= 1 << Track::VIEWPDF;
         }
         return $this->_dangerous_track_mask;
     }
@@ -3363,7 +3371,9 @@ class Contact implements JsonSerializable {
                     || $ci->reviewType >= REVIEW_PC
                     || $am_lead
                     || !$this->conf->check_track_view_sensitivity()
-                    || $this->conf->check_tracks($prow, $this, Track::VIEW));
+                    || $this->conf->check_tracks($prow, $this, Track::VIEW))
+                && ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED
+                    || $this->conf->allow_conflicted_pc_view());
 
             // check whether PC privileges apply
             $allow_pc_broad = $allow_administer || $isPC;
@@ -4006,9 +4016,10 @@ class Contact implements JsonSerializable {
         return $rights->allow_pc_broad()
             && $this->conf->time_pc_view($prow, $pdf)
             && (!$pdf
-                || ($this->conf->check_tracks($prow, $this, Track::VIEWPDF)
-                    && ($rights->allow_pc()
-                        || !$this->conf->setting("pc_confpdf"))));
+                || $this->conf->check_tracks($prow, $this, Track::VIEWPDF))
+            && ($rights->allow_pc()
+                || ($this->conf->setting("pc_confpdf") ?? 0) < ($pdf ? 1 : 2)
+                || $rights->allow_admin());
     }
 
     /** @return ?FailureReason */

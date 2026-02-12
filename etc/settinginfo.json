@@ -541,10 +541,12 @@
         "alias": "document_early_visibility"
     },
     {
-        "name": "conflict_document_visibility", "storage": "negval.pc_confpdf",
-        "title": "Conflicted PC members can see PDFs",
-        "type": "checkbox",
-        "tags": "submission"
+        "name": "submission_visibility_conflict", "storage": "pc_confpdf",
+        "title": "Visibility of submissions to conflicted PC members",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["yes", "no-pdf", "no"],
+        "tags": "submission visibility"
     },
     {
         "name": "pc_warn_bulk_download", "storage": "ova.pcWarnBulkDownload",

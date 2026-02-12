@@ -55,6 +55,7 @@ class Conf {
     const PB_HAS_AUTOMATIC_TAGS = 0x80;
     const PB_UPDATING_AUTOMATIC_TAGS = 0x100;
     const PB_HAS_COMPLEX_DECISION = 0x200;
+    const PB_HIDE_CONFLICT_SUB = 0x400;
     /** @var ?SearchTerm
      * @readonly */
     public $_au_seerev;
@@ -432,6 +433,9 @@ class Conf {
         }
         if (strpos($this->settingTexts["outcome_map"] ?? "{", "{", 1) !== false) {
             $this->_permbits |= self::PB_HAS_COMPLEX_DECISION;
+        }
+        if (($this->settings["pc_confpdf"] ?? 0) > 1) {
+            $this->_permbits |= self::PB_HIDE_CONFLICT_SUB;
         }
 
         // rounds
@@ -3732,6 +3736,11 @@ class Conf {
     function timePCReviewPreferences() {
         return $this->can_pc_view_some_incomplete()
             || $this->has_any_submitted();
+    }
+
+    /** @return bool */
+    function allow_conflicted_pc_view() {
+        return ($this->_permbits & self::PB_HIDE_CONFLICT_SUB) === 0;
     }
     /** @param bool $pdf
      * @return bool */
