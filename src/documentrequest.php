@@ -467,12 +467,12 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         // check for errors
         $key = $docid ? "docid" : $hashkey;
         if (!$doc) {
-            $this->error_at($key, "<0>Document version not found 1");
+            $this->error_at($key, "<0>Document version not found");
             $this->cacheable = false; // version might appear later
             return;
         }
         if ($doc->filterType) {
-            $this->error_at($key, "<0>Document version not found 2");
+            $this->error_at($key, "<0>Document version not found");
             return;
         }
         if ($doc->documentType !== $this->dtype) {
@@ -489,7 +489,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         }
         if (!$this->viewer->can_view_document_history($this->prow)
             && !$doc->is_active()) {
-            $this->error_at($key, "<0>Document version not found 3");
+            $this->error_at($key, "<0>Document version not found");
             $this->cacheable = false; // user might gain ability to see history
             return;
         }
