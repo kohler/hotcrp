@@ -7232,9 +7232,7 @@ const vismap = {
     emojiregex = /^(?:(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedc-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude7c\ude80-\ude89\ude8f-\udec6\udece-\udedc\udedf-\udee9\udef0-\udef8])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedc-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude7c\ude80-\ude89\ude8f-\udec6\udece-\udedc\udedf-\udee9\udef0-\udef8])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*)*[ \t]*){1,3}$/,
     cmts = {}, resp_rounds = {},
     twiddle_start = siteinfo.user && siteinfo.user.uid ? siteinfo.user.uid + "~" : "###";
-let has_unload = false, last_visibility = null,
-    last_topic = null, last_topic_viewer = false, last_topic_viewer_time = now_sec() - 14 * 86400,
-    editor_observer, editing_list;
+let has_unload = false, editor_observer, editing_list;
 
 function unparse_tag(tag, strip_value) {
     let pos;
@@ -7254,25 +7252,21 @@ function cj_find(elt) {
 }
 
 function cj_cid(cj) {
-    if (cj.response)
+    if (cj.response) {
         return (cj.response == 1 ? "" : cj.response) + "response";
-    else if (cj.is_new)
-        return "cnew";
-    else
-        return "c" + (cj.ordinal || "x" + cj.cid);
+    }
+    return cj.is_new ? "cnew" : "c" + (cj.ordinal || "x" + cj.cid);
 }
 
 function cj_name(cj) {
-    if (cj.response) {
-        var draft = cj.draft ? "Draft " : "";
-        if (cj.response != "1") {
-            return draft.concat(cj.response, " Response");
-        } else {
-            return draft + "Response";
-        }
-    } else {
+    if (!cj.response) {
         return "Comment";
     }
+    const draft = cj.draft ? "Draft " : "";
+    if (cj.response != "1") {
+        return draft + cj.response + " Response";
+    }
+    return draft + "Response";
 }
 
 function cmt_header_dotsep(hdre) {
@@ -7628,8 +7622,38 @@ function cmt_edit_messages(cj, form) {
     }
 }
 
+function cmt_annotate_new(celt, cj) {
+    // Choose new comment’s topic and visibility.
+    // - Submission thread if there is no review.
+    if (!document.querySelector("article.revsubmitted")) {
+        cj.topic = "paper";
+    } else {
+        cj.topic = "rev";
+    }
+
+    // - Author-visible if previous comment is by an author and not a
+    //   response; or this comment is by author.
+    let prevcelt = celt.closest("article").previousElementSibling;
+    while (prevcelt && prevcelt.tagName !== "ARTICLE") {
+        prevcelt = prevcelt.previousElementSibling;
+    }
+    const prevcj = prevcelt && hasClass(prevcelt, "cmtcard") && cj_find(prevcelt);
+    if (cj.by_author
+        || (prevcj && prevcj.by_author && !prevcj.response)) {
+        cj.visibility = "au";
+    } else if (hotcrp.status.myperm.some_external_reviewer_can_view_comment === false) {
+        cj.visibility = "pc";
+    } else {
+        cj.visibility = "rev";
+    }
+}
+
 function cmt_start_edit(celt, cj) {
-    var i, elt, tags = [], form = celt.querySelector("form");
+    if (cj.is_new && !cj.visibility) {
+        cmt_annotate_new(celt, cj);
+    }
+    let i, elt;
+    const form = celt.querySelector("form");
     cmt_edit_messages(cj, form);
 
     $(form.elements.text).text(cj.text || "")
@@ -7637,29 +7661,22 @@ function cmt_start_edit(celt, cj) {
         .on("hotcrprenderpreview", cmt_render_preview)
         .autogrow();
 
-    const vis = cj.visibility
-        || last_visibility
-        || (cj.by_author && "au")
-        || (hotcrp.status.myperm.some_external_reviewer_can_view_comment === false && "pc")
-        || "rev";
-    $(form.elements.visibility).val(vis)
-        .attr("data-default-value", vis)
+    $(form.elements.visibility).val(cj.visibility || "rev")
+        .attr("data-default-value", cj.visibility || "rev")
         .on("change", cmt_visibility_change);
 
-    const any_rev = !!document.querySelector("article.revsubmitted"),
-        new_topic = any_rev ? last_topic || "rev" : "paper",
-        topic = cj.is_new ? new_topic : cj.topic || "rev";
-    if (topic !== "rev" || new_topic !== "rev") {
+    if (cj.topic !== "rev") {
         fold(celt.querySelector(".cmteditinfo"), false, 4);
     }
-    $(form.elements.topic).val(topic)
-        .attr("data-default-value", topic)
+    $(form.elements.topic).val(cj.topic || "rev")
+        .attr("data-default-value", cj.topic || "rev")
         .on("change", cmt_visibility_change);
 
     if ((elt = form.elements.visibility || form.elements.topic)) {
         cmt_visibility_change.call(elt);
     }
 
+    const tags = [];
     for (i in cj.tags || []) {
         tags.push(unparse_tag(cj.tags[i]));
     }
@@ -7850,8 +7867,6 @@ function cmt_save_callback(cj) {
             if (new_cid) {
                 celt.id = new_cid;
                 navsidebar.redisplay(celt);
-                last_visibility = data.comment.visibility;
-                last_topic = data.comment.topic || "rev";
             } else {
                 celt.removeAttribute("id");
                 celt.replaceChildren($e("div", "cmtmsg"));
@@ -8183,20 +8198,6 @@ function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore($e("article", {
         id: cid, class: "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
-    if (!cj.is_new && !cj.response) {
-        if (cj.viewer_owned && cj.modified_at > last_topic_viewer_time) {
-            last_topic = cj.topic || "rev";
-            last_topic_viewer = true;
-            last_topic_viewer_time = cj.modified_at;
-        } else if (!last_topic_viewer) {
-            last_topic = cj.topic || "rev";
-        }
-        if (cj.viewer_owned) {
-            last_visibility = cj.visibility;
-        } else if (cj.visibility !== "au") {
-            last_visibility = cj.visibility === "admin" ? "rev" : cj.visibility;
-        }
-    }
 }
 
 function cmt_sidebar_content(item) {
