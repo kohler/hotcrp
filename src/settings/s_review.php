@@ -624,10 +624,12 @@ class Review_SettingParser extends SettingParser {
         }
 
         if ($sv->has_interest("mailbody_requestreview")
-            && $sv->vstr("mailbody_requestreview")
-            && (strpos($sv->oldv("mailbody_requestreview"), "%LOGINURL%") !== false
-                || strpos($sv->oldv("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
-            $sv->warning_at("mailbody_requestreview", "<5>The <code>%LOGINURL%</code> and <code>%LOGINURLPARTS%</code> keywords should no longer be used in email templates.");
+            && ($s = $sv->vstr("mailbody_requestreview"))
+            && preg_match('/%[A-Z]{3,}(?:\([^)]+\)|)%/', $s, $m, PREG_OFFSET_CAPTURE)) {
+            $mi = $sv->warning_at("mailbody_requestreview", "<5>The <code>%...%</code> template syntax is deprecated, use <code>{{...}}</code> instead");
+            $mi->context = $s;
+            $mi->pos1 = $m[0][1];
+            $mi->pos2 = $m[0][1] + strlen($m[0][0]);
         }
     }
 

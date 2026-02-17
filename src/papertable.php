@@ -1924,13 +1924,6 @@ class PaperTable {
 
     // Functions for editing
 
-    /** @param string $dname
-     * @param string $noun
-     * @return string */
-    function deadline_setting_is($dname, $noun = "deadline") {
-        return $this->deadline_is($this->conf->setting($dname) ?? 0, $noun);
-    }
-
     /** @param int $t
      * @param string $noun
      * @return string */
@@ -1945,9 +1938,8 @@ class PaperTable {
     private function _deadline_override_message() {
         if ($this->admin) {
             return " As an administrator, you can make changes anyway.";
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @param int $status
@@ -2051,7 +2043,8 @@ class PaperTable {
         if ($this->conf->allow_final_versions()
             && $viewable_decision->sign > 0) {
             if ($this->user->can_edit_paper($this->prow)) {
-                if (($t = $this->conf->_i("finalsubmit", new FmtArg("deadline", $this->deadline_setting_is("final_soft"))))) {
+                $sr = $this->prow->submission_round();
+                if (($t = $this->conf->_i("finalsubmit", new FmtArg("deadline", $this->deadline_is($sr->final_soft))))) {
                     $this->_main_message(MessageSet::SUCCESS, "<5>" . $t);
                 }
             } else if ($this->mode === "edit") {

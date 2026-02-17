@@ -393,11 +393,11 @@ class FmtContext {
     private function expand_percent($s, $pos, $expansion) {
         if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)) {
             if (($fa = Fmt::find_arg($this->args, strtolower($m[1])))) {
-                error_log("Old percent specification (arg {$m[1]}) in Fmt");
+                // error_log("Old percent specification (arg {$m[1]}) in Fmt");
                 return [$pos + strlen($m[0]), $fa->convert_to($this->format)];
             } else if (($imt = $this->fmt->find($this->context, strtolower($m[1]), [], null, 2))
                        && $imt->template) {
-                error_log("Old percent specification (template {$m[1]}) in Fmt");
+                // error_log("Old percent specification (template {$m[1]}) in Fmt");
                 return [$pos + strlen($m[0]), $this->expand($imt->out, $imt->expand)];
             }
         }

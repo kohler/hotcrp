@@ -321,20 +321,28 @@ class Response_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        if ($sv->has_interest("response")) {
-            foreach ($sv->conf->response_round_list() as $i => $rrd) {
-                $ctr = $i + 1;
-                if ($rrd->hard_wordlimit > 0
-                    && $rrd->wordlimit > $rrd->hard_wordlimit) {
-                    $sv->error_at("response/{$ctr}/wordlimit", "<0>Word limit cannot be larger than hard word limit");
-                    $sv->error_at("response/{$ctr}/hard_wordlimit", null);
+        if (!$sv->has_interest("response")) {
+            return;
+        }
+        foreach ($sv->conf->response_round_list() as $i => $rrd) {
+            $ctr = $i + 1;
+            if ($rrd->hard_wordlimit > 0
+                && $rrd->wordlimit > $rrd->hard_wordlimit) {
+                $sv->error_at("response/{$ctr}/wordlimit", "<0>Word limit cannot be larger than hard word limit");
+                $sv->error_at("response/{$ctr}/hard_wordlimit", null);
+            }
+            if ($rrd->condition !== null) {
+                $s = new PaperSearch($sv->conf->root_user(), $rrd->condition);
+                foreach ($s->message_list() as $mi) {
+                    $sv->append_item_at("response/{$ctr}/condition", $mi);
                 }
-                if ($rrd->condition !== null) {
-                    $s = new PaperSearch($sv->conf->root_user(), $rrd->condition);
-                    foreach ($s->message_list() as $mi) {
-                        $sv->append_item_at("response/{$ctr}/condition", $mi);
-                    }
-                }
+            }
+            if ($rrd->instructions !== null
+                && ($wlpos = stripos($rrd->instructions, "%wordlimit%")) !== false) {
+                $mi = $sv->warning_at("response/{$ctr}/instructions", "<5>The <code>%...%</code> template syntax is deprecated, use <code>{...}</code> instead");
+                $mi->context = $rrd->instructions;
+                $mi->pos1 = $wlpos;
+                $mi->pos2 = $wlpos + 11;
             }
         }
     }

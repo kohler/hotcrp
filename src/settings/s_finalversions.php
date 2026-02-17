@@ -27,5 +27,13 @@ class FinalVersions_SettingParser extends SettingParser {
             && !$sv->conf->time_all_author_view_decision()) {
             $sv->warning_at(null, "<5>The system is set to collect final versions, but authors cannot submit final versions until they can see decisions. You may want to update the " . $sv->setting_link("“Can authors see decisions” setting", "decision_visibility_author") . ".");
         }
+        if ($sv->has_interest("final_edit_message")
+            && ($s = $sv->vstr("final_edit_message"))
+            && ($p = strpos($s, "%deadline%")) !== false) {
+            $mi = $sv->warning_at("final_edit_message", "<5>The <code>%...%</code> template syntax is deprecated, use <code>{...}</code> instead");
+            $mi->context = $s;
+            $mi->pos1 = $p;
+            $mi->pos2 = $p + 10;
+        }
     }
 }
