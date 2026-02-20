@@ -118,11 +118,12 @@ class Mail_Page {
                 && $qreq->has_a("p")
                 && $qreq->get_a("p") !== $papersel) {
                 $papersel = $qreq->get_a("p");
-                $qreq->q = PaperSearch::encode_id_search($papersel);
+            } else {
+                unset($qreq["p"]);
             }
         } else {
             $qreq->q = "";
-            $papersel = null;
+            $search = $papersel = null;
         }
 
         // template
@@ -137,6 +138,7 @@ class Mail_Page {
         // set MailRecipients properties
         $this->recip->set_newrev_since($this->qreq->newrev_since);
         $this->recip->set_recipients($this->qreq->to);
+        $this->recip->set_search($search);
         $this->recip->set_paper_ids($papersel);
     }
 
@@ -291,7 +293,7 @@ class Mail_Page {
                 Ht::hidden("has_plimit", 1),
                 Ht::checkbox("plimit", 1, !!$this->qreq->plimit, ["id" => "plimit", "class" => "uich js-mail-recipients"]),
                 '</span>',
-                '<label for="plimit">Choose papers<span class="fx8">:</span></label>';
+                '<label for="plimit">Search</span><span class="fx8">:</span></label>';
         } else {
             echo '<div class="fx9">',
                 Ht::hidden("has_plimit", 1),
@@ -305,12 +307,12 @@ class Mail_Page {
                 $this->recip->append_item_at("q", $mi);
             }
             if ($plist->is_empty()) {
-                $this->recip->warning_at("q", "<0>No papers match that search");
+                $this->recip->warning_at("q", "<0>No {$this->conf->snouns[1]} match that search");
             }
         }
         echo '<div class="', $this->recip->control_class("q", "fx8 mt-1"), '"><div class="d-flex">';
         if (!$this->viewer->privChair) {
-            echo '<label for="q" class="mr-2">Papers:</label>';
+            echo '<label for="q" class="mr-2">', $this->conf->snouns[3], ':</label>';
         }
         echo Ht::entry("q", (string) $this->qreq->q, [
                 "placeholder" => "(All)", "spellcheck" => false,

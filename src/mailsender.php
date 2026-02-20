@@ -598,6 +598,13 @@ class MailSender {
                 }
             }
 
+            $prow = $this->recip->paper($pid);
+
+            // maybe we should check the review
+            if ($prow && !$this->recip->test_paper($prow, $user)) {
+                continue;
+            }
+
             $rest["prow"] = $prow = $this->recip->paper($pid);
             $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($user, $rest);

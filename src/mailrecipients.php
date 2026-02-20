@@ -41,6 +41,8 @@ class MailRecipients extends MessageSet {
     private $recipts = [];
     /** @var MailRecipientClass */
     private $rect;
+    /** @var ?SearchTerm */
+    private $search;
     /** @var ?list<int> */
     private $paper_ids;
     /** @var int */
@@ -58,7 +60,8 @@ class MailRecipients extends MessageSet {
     const F_GROUP = 2;
     const F_HIDE = 4;
     const F_NOPAPERS = 8;
-    const F_SINCE = 16;
+    const F_TESTREVIEW = 16;
+    const F_SINCE = 32;
 
     /** @param Contact $user */
     function __construct($user) {
@@ -207,20 +210,20 @@ class MailRecipients extends MessageSet {
             list($any_pcrev, $any_extrev, $any_newpcrev, $any_lead, $any_shepherd) = $row;
 
             $hide = $any_pcrev || $any_extrev ? 0 : self::F_HIDE;
-            $this->add_recpt("rev", "Reviewers", "s", $hide);
-            $this->add_recpt("crev", "Reviewers with complete reviews", "s", $hide);
-            $this->add_recpt("uncrev", "Reviewers with incomplete reviews", "s", $hide);
-            $this->add_recpt("allcrev", "Reviewers with no incomplete reviews", "s", $hide);
+            $this->add_recpt("rev", "Reviewers", "s", $hide | self::F_TESTREVIEW);
+            $this->add_recpt("crev", "Reviewers with complete reviews", "s", $hide | self::F_TESTREVIEW);
+            $this->add_recpt("uncrev", "Reviewers with incomplete reviews", "s", $hide | self::F_TESTREVIEW);
+            $this->add_recpt("allcrev", "Reviewers with no incomplete reviews", "s", $hide | self::F_TESTREVIEW);
 
             $hide = $any_pcrev ? 0 : self::F_HIDE;
-            $this->add_recpt("pcrev", "PC reviewers", "s", $hide);
-            $this->add_recpt("uncpcrev", "PC reviewers with incomplete reviews", "s", $hide);
-            $this->add_recpt("newpcrev", "PC reviewers with new review assignments", "s", ($any_newpcrev && $any_pcrev ? 0 : self::F_HIDE) | self::F_SINCE);
+            $this->add_recpt("pcrev", "PC reviewers", "s", $hide | self::F_TESTREVIEW);
+            $this->add_recpt("uncpcrev", "PC reviewers with incomplete reviews", "s", $hide | self::F_TESTREVIEW);
+            $this->add_recpt("newpcrev", "PC reviewers with new review assignments", "s", ($any_newpcrev && $any_pcrev ? 0 : self::F_HIDE) | self::F_SINCE | self::F_TESTREVIEW);
 
             $hide = $any_extrev ? 0 : self::F_HIDE;
-            $this->add_recpt("extrev", "External reviewers", "s", $hide);
-            $this->add_recpt("uncextrev", "External reviewers with incomplete reviews", "s", $hide);
-            $this->add_recpt("extrev-not-accepted", "External reviewers with outstanding requests", "s", $hide);
+            $this->add_recpt("extrev", "External reviewers", "s", $hide | self::F_TESTREVIEW);
+            $this->add_recpt("uncextrev", "External reviewers with incomplete reviews", "s", $hide | self::F_TESTREVIEW);
+            $this->add_recpt("extrev-not-accepted", "External reviewers with outstanding requests", "s", $hide | self::F_TESTREVIEW);
             $this->add_recpt_group("rev_group_end", null);
         } else {
             $any_lead = $any_shepherd = 0;
@@ -275,6 +278,19 @@ class MailRecipients extends MessageSet {
         return "fold8" . (!!$qreq->plimit ? "o" : "c")
             . " fold9" . ($this->rect->flags & self::F_NOPAPERS ? "c" : "o")
             . " fold10" . ($this->rect->flags & self::F_SINCE ? "o" : "c");
+    }
+
+    /** @param ?PaperSearch $srch
+     * @return $this */
+    function set_search($srch) {
+        if ($srch
+            && ($this->rect->flags & self::F_TESTREVIEW) !== 0
+            && $srch->main_term()->about() !== SearchTerm::ABOUT_PAPER) {
+            $this->search = $srch->main_term();
+        } else {
+            $this->search = null;
+        }
+        return $this;
     }
 
     /** @param ?list<int> $paper_ids
@@ -357,8 +373,11 @@ class MailRecipients extends MessageSet {
                 if (isset($rec->description)) {
                     $d["label"] = $rec->description;
                 }
-                $d["class"] = Ht::add_tokens($rec->flags & self::F_NOPAPERS ? "mail-want-no-papers" : "",
-                    $rec->flags & self::F_SINCE ? "mail-want-since" : "");
+                $d["class"] = Ht::add_tokens(
+                    $rec->flags & self::F_NOPAPERS ? "mail-want-no-papers" : "",
+                    $rec->flags & self::F_SINCE ? "mail-want-since" : "",
+                    $rec->flags & self::F_TESTREVIEW ? "mail-want-reviewer" : ""
+                );
                 $d["data-default-message"] = $rec->default_message;
                 if (isset($rec->limit)) {
                     $d["data-default-limit"] = $rec->limit;
@@ -375,6 +394,11 @@ class MailRecipients extends MessageSet {
     function is_authors() {
         return in_array($this->rect->name, ["s", "unsub", "active", "au"], true)
             || str_starts_with($this->rect->name, "dec:");
+    }
+
+    /** @return bool */
+    function is_reviewers() {
+        return ($this->rect->flags & self::F_TESTREVIEW) !== 0;
     }
 
     /** @return bool */
@@ -471,6 +495,17 @@ class MailRecipients extends MessageSet {
         return $paper_set ? $paper_set->get($pid) : null;
     }
 
+    /** @param PaperInfo $prow
+     * @param ContactInfo $user
+     * @return bool */
+    function test_paper($prow, $user) {
+        if ($this->search
+            && ($rrow = $prow->review_by_user($user->contactId))
+            && !$this->search->test($prow, $rrow)) {
+            return false;
+        }
+        return true;
+    }
 
     /** @param bool $paper_sensitive
      * @return string|false */
