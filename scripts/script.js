@@ -8588,9 +8588,45 @@ demand_load.mail_templates = demand_load.make(function (resolve) {
 
 demand_load.mentions = demand_load.make(function (resolve) {
     $.get(hoturl("api/mentioncompletion", {p: siteinfo.paperid}), null, function (v) {
-        var tlist = ((v && v.mentioncompletion) || []).map(completion_item);
-        tlist.sort(function (a, b) { return strnatcasecmp(a.s, b.s); });
-        resolve(tlist);
+        // The `mentioncompletion` list may contain different priorities and
+        // duplicate names. First we look for duplicates
+        let tlist = ((v && v.mentioncompletion) || []).map(completion_item);
+        let need_filter = false, need_prisort = false;
+        tlist.sort(function (a, b) {
+            const apri = a.pri || 0, bpri = b.pri || 0;
+            if (apri !== bpri) {
+                need_prisort = true;
+            }
+            const scmp = strnatcasecmp(a.s, b.s);
+            if (scmp !== 0) {
+                return scmp;
+            }
+            need_filter = true;
+            return apri < bpri ? 1 : (apri > bpri ? -1 : 0);
+        });
+        if (!need_filter && !need_prisort) {
+            resolve(tlist);
+            return;
+        }
+        // Filter duplicates if necessary and sort by priority
+        let nlist;
+        if (need_filter) {
+            nlist = [];
+            let last = null;
+            for (const it of tlist) {
+                if (last && last.s === it.s) {
+                    continue;
+                }
+                nlist.push((last = it));
+            }
+        } else {
+            nlist = tlist;
+        }
+        nlist.sort(function (a, b) { // rely on stable sort
+            const apri = a.pri || 0, bpri = b.pri || 0;
+            return apri < bpri ? 1 : (apri > bpri ? -1 : 0);
+        });
+        resolve(nlist);
     });
 });
 
@@ -8853,6 +8889,7 @@ CompletionSpan.prototype.filter = function (tlist) {
     // * `item.r`: Replacement text (defaults to `item.s`).
     // * `item.ml`: Integer. Ignore this item if it doesn’t match
     //   the first `item.ml` characters of the match region.
+    // * `item.pri`: Integer priority; higher is more important.
     // Shorthand:
     // * A string `item` sets `item.s`.
     // * A two-element array `item` sets `item.s` and `item.d`, respectively.
@@ -8891,32 +8928,31 @@ CompletionSpan.prototype.filter = function (tlist) {
         const text = titem.s,
             ltext = caseSensitive ? text : text.toLowerCase(),
             rl = titem.ml || 0;
-
-        if ((filter === null || ltext.startsWith(filter))
-            && (rl <= rlbound
-                || (lregion.length >= rl
-                    && lregion.startsWith(ltext.substr(0, rl))))
-            && (last_text === null || last_text !== text)) {
-            if (can_highlight
-                && ltext.startsWith(lregion)
-                && (best === null
-                    || (titem.pri || 0) > (res[best].pri || 0)
-                    || ltext.length === lregion.length)) {
-                best = res.length;
-                if (titem.hl_length
-                    && lregion.length < titem.hl_length
-                    && titem.shorter_hl) {
-                    best = 0;
-                    while (best < res.length && res[best].s !== titem.shorter_hl) {
-                        ++best;
-                    }
+        if ((last_text !== null && last_text === text)
+            || (filter !== null && !ltext.startsWith(filter))
+            || (rl > rlbound && lregion.length < rl)
+            || (rl > rlbound && !lregion.startsWith(ltext.substr(0, rl)))) {
+            continue;
+        }
+        if (can_highlight
+            && ltext.startsWith(lregion)
+            && (best === null
+                || (titem.pri || 0) > (res[best].pri || 0)
+                || ltext.length === lregion.length)) {
+            best = res.length;
+            if (titem.hl_length
+                && lregion.length < titem.hl_length
+                && titem.shorter_hl) {
+                best = 0;
+                while (best < res.length && res[best].s !== titem.shorter_hl) {
+                    ++best;
                 }
             }
-            res.push(titem);
-            last_text = text;
-            if (res.length === this.maxItems) {
-                break;
-            }
+        }
+        res.push(titem);
+        last_text = text;
+        if (res.length === this.maxItems) {
+            break;
         }
     }
     if (res.length === 0) {
@@ -8984,6 +9020,13 @@ function suggest() {
     function render_item(titem, prepend) {
         const node = document.createElement("div");
         node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
+        if (titem.pri) {
+            if (titem.pri === 1) {
+                node.className += " s9pri1";
+            } else {
+                node.className += " s9pri" + (titem.pri < 0 ? "m1" : "2");
+            }
+        }
         if (titem.r) {
             node.setAttribute("data-replacement", titem.r);
         }

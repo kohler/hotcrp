@@ -4064,10 +4064,19 @@ a.badge-white:hover {
 	overflow-wrap: anywhere;
 	font-weight: 500;
 	min-width: 8rem;
+	position: relative;
 }
 .suggestion.s9y {
 	background-color: #6088d0;
 	color: white;
+}
+.s9pri1::before, .s9pri2::before {
+	content: "·";
+	opacity: 0.5;
+	display: inline-block;
+	position: relative;
+	left: 0.6em;
+	width: 0;
 }
 .s9d {
 	padding-left: 0.5em;
