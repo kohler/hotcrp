@@ -77,6 +77,8 @@ class Dbl_MultiResult {
     private $mstate;
     /** @var string */
     private $query_string;
+    /** @var int */
+    public $errno = 0;
 
     /** @param int $flags
      * @param string $qstr
@@ -87,6 +89,10 @@ class Dbl_MultiResult {
         $this->flags = $flags;
         $this->mstate = $mqresult ? 2 : 1;
         $this->query_string = $qstr;
+    }
+    /** @return bool */
+    function had_error() {
+        return $this->errno !== 0;
     }
     /** @return ?Dbl_Result */
     function next() {
@@ -105,11 +111,15 @@ class Dbl_MultiResult {
         // process next result (which might be an error)
         $result = $this->mstate === 2 ? $this->dblink->store_result() : false;
         $this->mstate = 3;
-        return Dbl::do_result($this->dblink, $this->flags, $this->query_string, $result);
+        $dx = Dbl::do_result($this->dblink, $this->flags, $this->query_string, $result);
+        if ($this->dblink->errno) {
+            $this->errno = $this->dblink->errno;
+        }
+        return $dx;
     }
     function free_all() {
         while (($result = $this->next())) {
-            Dbl::free($result);
+            $result->close();
         }
     }
 }

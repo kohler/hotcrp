@@ -3712,7 +3712,7 @@ class PaperInfo {
         $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));
         $mresult->free_all();
 
-        if (Dbl::$nerrors) {
+        if ($mresult->had_error()) {
             return false;
         }
 
