@@ -215,7 +215,7 @@ class PaperStatus_Tester {
         }
         $options[] = (object) ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "order" => 2];
         $this->conf->save_setting("options", 1, json_encode($options));
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
 
         $ps = new PaperStatus($this->conf->root_user());
         $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}]}}"));
@@ -792,7 +792,7 @@ class PaperStatus_Tester {
 
     function test_save_no_abstract_submit_ok() {
         $this->conf->set_opt("noAbstract", 1);
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "has_submission" => "1"]);
         $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -804,7 +804,7 @@ class PaperStatus_Tester {
         $ps->abort_save();
 
         $this->conf->set_opt("noAbstract", null);
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
     }
 
     function test_save_abstract_format() {
@@ -1304,7 +1304,7 @@ Phil Porras.");
         $this->conf->qe("update ContactInfo set primaryContactId=? where contactId=?", $this->festrin_cid, $this->gestrin_cid);
         $this->conf->qe("update ContactInfo set cflags=cflags|? where contactId=?", Contact::CF_PRIMARY, $this->festrin_cid);
         $this->conf->qe("insert into ContactPrimary set contactId=?, primaryContactId=?", $this->gestrin_cid, $this->festrin_cid);
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         xassert_eqq($this->conf->resolve_primary_emails(["Gestrin@GUSC.gedu", "festrin@fusc.fedu"]), ["festrin@fusc.fedu", "festrin@fusc.fedu"]);
     }
 
@@ -1391,7 +1391,7 @@ Phil Porras.");
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
 
         $this->conf->qe("update ContactInfo set roles=1 where contactId=?", $this->festrin_cid);
-        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_caches("pc");
 
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_json((object) [
@@ -1531,7 +1531,7 @@ Phil Porras.");
         $spects = $this->conf->setting("sub_banal") ?? Conf::$now - 10;
         $spects = max($spects, @filemtime(SiteLoader::find("src/banal")));
         $this->conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
 
         $ps = new PaperStatus($this->conf->root_user());
@@ -1566,7 +1566,7 @@ Phil Porras.");
         // change the format spec
         ++$spects;
         $this->conf->save_setting("sub_banal", $spects, "letter;30;;7.5x9in");
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
 
         // that requires rerunning banal because cached result was truncated
         $doc = $paper3->document(DTYPE_SUBMISSION);
@@ -1598,7 +1598,7 @@ Phil Porras.");
         // we can reuse the banal JSON output on another spec
         ++$spects;
         $this->conf->save_setting("sub_banal", $spects, "letter;1;;7.5x9in");
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
 
         $paper3->invalidate_documents();
         $doc = $paper3->document(DTYPE_SUBMISSION);
@@ -1616,7 +1616,7 @@ Phil Porras.");
         xassert(!array_filter((array) $options, function ($o) { return $o->id === 3; }));
         $options[] = (object) ["id" => 3, "name" => "Supervisor(s)", "type" => "text", "order" => 3];
         $this->conf->save_setting("options", 1, json_encode($options));
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
 
         $ps = new PaperStatus($this->conf->root_user());
         $ps->save_paper_json(json_decode("{\"id\":3,\"Supervisor(s)\":\"fart fart barf barf\"}"));

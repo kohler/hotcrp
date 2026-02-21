@@ -287,7 +287,7 @@ class UserActions extends MessageSet {
 
         // clear caches
         if ($user->isPC || $user->privChair) {
-            $this->conf->invalidate_caches(["pc" => true]);
+            $this->conf->invalidate_caches("pc");
         }
 
         // done

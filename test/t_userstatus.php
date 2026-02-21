@@ -277,7 +277,7 @@ class UserStatus_Tester {
         ConfActions::link($this->conf, (object) ["u" => "raju@watson.ibm.com", "email" => "chris@w3.org"]);
         ConfActions::link($this->conf, (object) ["u" => "chris@w3.org", "email" => "raju@watson.ibm.com"]);
         xassert_eqq($this->conf->fetch_ivalue("select primaryContactId from ContactInfo where contactId=?", $this->chris_uid), $this->raju_uid);
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         (new ConfInvariants($this->conf))->check_users();
     }
 
@@ -297,7 +297,7 @@ class UserStatus_Tester {
         $this->conf->qe("insert into Settings set name='confactions', value=1, data=?",
             "\x1e{\"action\":\"link\",\"u\":\"raju@watson.ibm.com\",\"email\":\"rajuu@watson.edu\"}\n"
             . "\x1e{\"action\":\"link\",\"u\":\"rajuu@watson.edu\",\"email\":\"raju@watson.ibm.com\"}\n");
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         $this->conf->load_settings();
         $u_raju = $this->conf->fresh_user_by_id($this->raju_uid);
         $u_rajuu = $this->conf->fresh_user_by_email("rajuu@watson.edu");
@@ -310,7 +310,7 @@ class UserStatus_Tester {
         xassert_eqq($u_raju->primaryContactId, 0);
         xassert_eqq($u_raju->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
         xassert_eqq($u_rajuu->cflags & Contact::CF_PRIMARY, 0);
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         (new ConfInvariants($this->conf))->check_users();
     }
 

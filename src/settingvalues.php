@@ -72,7 +72,7 @@ class SettingValues extends MessageSet {
     private $_diffs = [];
     /** @var associative-array<string,false> */
     private $_no_diffs = [];
-    /** @var associative-array<string,true> */
+    /** @var list<string> */
     private $_invalidate_caches = [];
 
     /** @var ?SearchExpr */
@@ -1579,7 +1579,7 @@ class SettingValues extends MessageSet {
             $cb();
         }
         if (!empty($this->_invalidate_caches)) {
-            $this->conf->invalidate_caches($this->_invalidate_caches);
+            $this->conf->invalidate_caches(...$this->_invalidate_caches);
         }
 
         // create changed_si
@@ -1610,10 +1610,14 @@ class SettingValues extends MessageSet {
         $this->_no_diffs[$siname] = false;
     }
 
-    /** @param associative-array<string,true> $caches */
-    function mark_invalidate_caches($caches) {
-        foreach ($caches as $c => $t) {
-            $this->_invalidate_caches[$c] = true;
+    /** @param string ...$caches */
+    function mark_invalidate_caches(...$caches) {
+        if (count($caches) === 1 && is_array($caches[0])) { // XXX backward compat
+            $caches = array_keys($caches[0]);
+        }
+        foreach ($caches as $c) {
+            if (!in_array($c, $this->_invalidate_caches, true))
+                $this->_invalidate_caches[] = $c;
         }
     }
 

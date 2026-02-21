@@ -996,7 +996,7 @@ class Options_SettingParser extends SettingParser {
             $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
             $sv->request_validate($si);
             $sv->request_store_value($si);
-            $sv->mark_invalidate_caches(["options" => true]);
+            $sv->mark_invalidate_caches("options");
             foreach ($this->_delete_optionids as $oid) {
                 if (($opt = $sv->conf->option_by_id($oid))
                     && $opt->has_document()) {
@@ -1073,7 +1073,7 @@ class Options_SettingParser extends SettingParser {
             }
         }
         $sv->conf->save_setting("__sf_condition_recursion", null);
-        $sv->mark_invalidate_caches(["autosearch" => true]);
+        $sv->mark_invalidate_caches("autosearch");
     }
 
 

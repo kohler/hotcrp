@@ -769,7 +769,7 @@ class Conf {
         // other caches
         $sort_by_last = !!($this->opt["sortByLastName"] ?? false);
         if (!$this->sort_by_last != !$sort_by_last) {
-            $this->invalidate_caches(["pc" => true]);
+            $this->invalidate_caches("pc");
         }
         $this->sort_by_last = $sort_by_last;
 
@@ -3233,41 +3233,46 @@ class Conf {
         return false;
     }
 
-    /** @param array{all?:true,autosearch?:true,rf?:true,tags?:true,cdb?:true,pc?:true,users?:true,options?:true,linked_users?:true} $caches */
-    function invalidate_caches($caches) {
+    /** @param 'all'|'autosearch'|'rf'|'tags'|'cdb'|'users'|'cdb_users'|'pc'|'options'|'linked_users' ...$caches */
+    function invalidate_caches(...$caches) {
         if (self::$no_invalidate_caches) {
             return;
         }
-        $all = empty($caches) || isset($caches["all"]);
-        if ($all || isset($caches["pc"]) || isset($caches["users"])) {
+        if (count($caches) === 1 && is_array($caches[0])) { // XXX backward compat
+            $caches = array_keys($caches[0]);
+        }
+        $all = empty($caches) || in_array("all", $caches, true);
+        $users = $all || in_array("users", $caches, true);
+        $cdb = in_array("cdb", $caches, true);
+        if ($all || in_array("pc", $caches, true) || $users) {
             $this->_pc_set = null;
             $this->_pc_members_cache = $this->_pc_tags_cache = null;
             $this->_user_cache = $this->_user_email_cache = null;
         }
-        if ($all || isset($caches["users"]) || isset($caches["cdb"])) {
+        if ($all || $users || $cdb || in_array("cdb_users", $caches, true)) {
             $this->_cdb_user_cache = null;
         }
-        if (isset($caches["cdb"])) {
+        if ($cdb) {
             unset($this->opt["contactdbConfid"]);
             self::$_cdb = false;
         }
-        if ($all || isset($caches["users"]) || isset($caches["linked_users"])) {
+        if ($all || $users || in_array("linked_users", $caches, true)) {
             $this->_linked_user_cache = null;
         }
         // NB All setting-related caches cleared here should also be cleared
         // in refresh_settings().
-        if ($all || isset($caches["options"])) {
+        if ($all || in_array("options", $caches, true)) {
             $this->_paper_opts->invalidate_options();
             $this->_formatspec_cache = [];
             $this->_abbrev_matcher = null;
             $this->_topic_set = null;
         }
-        if ($all || isset($caches["rf"])) {
+        if ($all || in_array("rf", $caches, true)) {
             $this->_review_form = null;
             $this->_defined_rounds = null;
             $this->_abbrev_matcher = null;
         }
-        if ($all || isset($caches["tags"])) {
+        if ($all || in_array("tags", $caches, true)) {
             $this->_tag_map = null;
         }
         if ($all) {
@@ -3275,7 +3280,7 @@ class Conf {
             $this->_assignment_parsers = null;
             Contact::update_rights();
         }
-        if (isset($caches["autosearch"])) {
+        if (in_array("autosearch", $caches, true)) {
             $this->update_automatic_tags();
         }
     }

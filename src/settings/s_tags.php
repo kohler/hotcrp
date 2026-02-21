@@ -185,7 +185,7 @@ class Tags_SettingParser extends SettingParser {
                 $sv->conf->qe("delete from PaperTag where tag?a", array_values($removed_votish));
             }
 
-            $sv->mark_invalidate_caches(["autosearch" => true]);
+            $sv->mark_invalidate_caches("autosearch");
             $this->cleaned = true;
         }
     }

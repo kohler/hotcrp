@@ -131,7 +131,7 @@ class TagStyle_SettingParser extends SettingParser {
         }
         if ($sv->update($badge ? "tag_badge" : "tag_color", join(" ", $bs))) {
             $sv->request_store_value($si);
-            $sv->mark_invalidate_caches(["tags" => true]);
+            $sv->mark_invalidate_caches("tags");
         }
     }
 

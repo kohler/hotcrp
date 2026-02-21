@@ -1528,10 +1528,10 @@ class TestRunner {
                 return;
             }
             Conf::$main->set_opt("contactdbDsn", self::$original_opt["contactdbDsn"]);
-            Conf::$main->invalidate_caches(["cdb" => true]);
+            Conf::$main->invalidate_caches("cdb");
         } else if ($this->need_cdb === false && Conf::$main->opt("contactdbDsn")) {
             Conf::$main->set_opt("contactdbDsn", null);
-            Conf::$main->invalidate_caches(["cdb" => true]);
+            Conf::$main->invalidate_caches("cdb");
         }
         $this->need_cdb = null;
 
@@ -1551,7 +1551,7 @@ class TestRunner {
             return;
         } else if ($test === "no_cdb") {
             Conf::$main->set_opt("contactdbDsn", null);
-            Conf::$main->invalidate_caches(["cdb" => true]);
+            Conf::$main->invalidate_caches("cdb");
             $this->last_classname = null;
             return;
         } else if ($test === "reset_db") {

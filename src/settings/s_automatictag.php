@@ -141,7 +141,7 @@ class AutomaticTag_SettingParser extends SettingParser {
                     $sv->conf->_update_automatic_tags_csv($csv);
                 });
             }
-            $sv->mark_invalidate_caches(["tags" => true, "autosearch" => true]);
+            $sv->mark_invalidate_caches("tags", "autosearch");
         }
     }
 

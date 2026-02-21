@@ -330,7 +330,7 @@ class Users_Page {
 
         // that’s it
         Conf::$no_invalidate_caches = false;
-        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_caches("pc");
 
         // report
         if ($us->has_error()) {

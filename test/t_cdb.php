@@ -358,7 +358,7 @@ class Cdb_Tester {
         $pc_json = $this->conf->hotcrp_pc_json($this->user_chair, Conf::PCJM_UI);
         xassert_eqq($pc_json->pc[0]->email, "anne1@dudfield.org");
         $this->conf->sort_by_last = true;
-        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_caches("pc");
         $pc_json = $this->conf->hotcrp_pc_json($this->user_chair, Conf::PCJM_UI);
         xassert_eqq($pc_json->pc[0]->email, "mgbaker@cs.stanford.edu");
         xassert_eqq($pc_json->pc[0]->uid, 12);

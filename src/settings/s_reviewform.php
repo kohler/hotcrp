@@ -341,7 +341,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $sv->request_write_lock("PaperReview");
             $sv->request_write_lock("PaperReviewHistory");
             $sv->request_store_value($si);
-            $sv->mark_invalidate_caches(["rf" => true]);
+            $sv->mark_invalidate_caches("rf");
             // don’t claim there’s a diff if there’s no real diff, just a format change
             if (json_encode_db($sv->conf->review_form()->export_storage_json())
                 === $newv) {

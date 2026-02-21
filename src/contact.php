@@ -2210,7 +2210,7 @@ class Contact implements JsonSerializable {
         if ($this->cdb_confid === 0
             && array_key_exists("roles", $this->_mod_undo)) {
             $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_ROLES);
-            $this->conf->invalidate_caches(["pc" => true]);
+            $this->conf->invalidate_caches("pc");
         }
         if ($this->cdb_confid === 0
             && array_key_exists("cflags", $this->_mod_undo)) {
@@ -2296,7 +2296,7 @@ class Contact implements JsonSerializable {
         $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
         $this->roles = ($this->roles & ~self::ROLE_DBMASK) | $new_roles;
         $this->set_roles_properties();
-        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_caches("pc");
         $this->conf->invalidate_user($this, true);
         $this->update_cdb_roles();
         return $new_roles;

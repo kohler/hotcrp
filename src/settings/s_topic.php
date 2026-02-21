@@ -185,6 +185,6 @@ class Topic_SettingParser extends SettingParser {
         $has_topics = $sv->conf->fetch_ivalue("select exists (select * from TopicArea)");
         $sv->save("has_topics", !!$has_topics);
         $sv->mark_diff("topics");
-        $sv->mark_invalidate_caches(["autosearch" => true]);
+        $sv->mark_invalidate_caches("autosearch");
     }
 }
