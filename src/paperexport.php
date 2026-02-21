@@ -11,9 +11,6 @@ class PaperExport {
     public $viewer;
     /** @var bool
      * @readonly */
-    public $use_ids = false;
-    /** @var bool
-     * @readonly */
     public $include_docids = false;
     /** @var bool
      * @readonly */
@@ -38,15 +35,6 @@ class PaperExport {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
-
-    }
-
-    /** @param bool $x
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
-    function set_use_ids($x) {
-        $this->use_ids = $x;
-        return $this;
     }
 
     /** @param bool $x
@@ -186,11 +174,7 @@ class PaperExport {
             if ($oj === null) {
                 continue;
             }
-            if ($this->use_ids) {
-                $pj->{$opt->field_key()} = $oj;
-            } else {
-                $pj->{$opt->json_key()} = $oj;
-            }
+            $pj->{$opt->json_key()} = $oj;
         }
 
         $this->apply_paper_status($prow, $pj);
