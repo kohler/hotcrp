@@ -1458,13 +1458,13 @@ class Permission_Tester {
 
         $pex = new PaperExport($this->u_chair);
         $rjson = $pex->review_json($paper2, $review2b);
-        ReviewForm::update_review_author_seen();
+        $this->conf->call_shutdown_function("ReviewAuthorSeenUpdate");
         $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!$review2b->reviewAuthorSeen);
 
         $pex = new PaperExport($user_author2);
         $rjson = $pex->review_json($paper2, $review2b);
-        ReviewForm::update_review_author_seen();
+        $this->conf->call_shutdown_function("ReviewAuthorSeenUpdate");
         $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!!$review2b->reviewAuthorSeen);
 

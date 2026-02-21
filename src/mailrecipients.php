@@ -496,7 +496,7 @@ class MailRecipients extends MessageSet {
     }
 
     /** @param PaperInfo $prow
-     * @param ContactInfo $user
+     * @param Contact $user
      * @return bool */
     function test_paper($prow, $user) {
         if ($this->search

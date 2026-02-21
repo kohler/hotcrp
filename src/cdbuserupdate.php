@@ -9,12 +9,87 @@ class CdbUserUpdate {
     /** @var int
      * @readonly */
     private $cdb_confid;
+    /** @var list<int|string> */
+    private $_up = [];
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->cdb_confid = $conf->cdb_confid();
     }
 
+
+    // export updates from local database to cdb
+    /** @param 0|1|2|3 $type */
+    function add(Contact $user, $type) {
+        if ($type === Conf::CDB_UPDATE_PROFILE) {
+            array_push($this->_up, $type, $user->contactDbId);
+        } else if ($type === Conf::CDB_UPDATE_ROLES) {
+            array_push($this->_up, $type, $user->contactId, $user->email);
+        } else {
+            array_push($this->_up, $type, $user->email);
+        }
+    }
+
+    function __invoke() {
+        $cdb = $this->conf->contactdb();
+        if (empty($this->_up) || !$cdb || $this->cdb_confid < 0) {
+            return;
+        }
+
+        // prefetch users, prepare queries
+        $role_uids = $cu_uids = [];
+        $ph_emails = $confirm_emails = [];
+        for ($i = 0; $i !== count($this->_up); ) {
+            if ($this->_up[$i] === Conf::CDB_UPDATE_PROFILE) {
+                $cu_uids[] = $this->_up[$i + 1];
+                $i += 2;
+            } else if ($this->_up[$i] === Conf::CDB_UPDATE_ROLES) {
+                $role_uids[] = $this->_up[$i + 1];
+                $this->conf->prefetch_user_by_id($this->_up[$i + 1]);
+                $this->conf->prefetch_cdb_user_by_email($this->_up[$i + 2]);
+                $i += 3;
+            } else if ($this->_up[$i] === Conf::CDB_UPDATE_PLACEHOLDER) {
+                $ph_emails[] = $this->_up[$i + 1];
+                $this->conf->prefetch_cdb_user_by_email($this->_up[$i + 1]);
+                $i += 2;
+            } else if ($this->_up[$i] === Conf::CDB_UPDATE_CONFIRMED) {
+                $confirm_emails[] = $this->_up[$i + 1];
+                $this->conf->prefetch_cdb_user_by_email($this->_up[$i + 1]);
+                $i += 2;
+            }
+        }
+        $this->_up = [];
+
+        if (!empty($role_uids)) {
+            Contact::update_cdb_roles_list($this->conf, $role_uids);
+        }
+
+        if (!empty($ph_emails)) {
+            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
+                where email?a and (cflags&?)!=0",
+                Contact::CF_PLACEHOLDER, $ph_emails, Contact::CF_PLACEHOLDER);
+        }
+
+        if (!empty($confirm_emails)) {
+            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
+                where email?a and (cflags&?)!=0",
+                Contact::CF_UNCONFIRMED, $confirm_emails, Contact::CF_UNCONFIRMED);
+        }
+
+        if (!empty($cu_uids)) {
+            Dbl::qe($cdb, "insert into ConferenceUpdates (confid, user_update_at)
+                select confid, ? from Roles where contactDbId?a and confid!=?
+                on duplicate key update user_update_at=greatest(user_update_at,?)",
+                Conf::$now, $cu_uids, $this->cdb_confid, Conf::$now);
+        }
+
+        if (!empty($role_uids) || !empty($ph_emails) || !empty($confirm_emails)) {
+            $this->conf->invalidate_caches("cdb_users");
+        }
+    }
+
+
+    // import nonempty properties from cdb to local database
     function import_empty_props() {
         if ($this->cdb_confid <= 0) {
             return;

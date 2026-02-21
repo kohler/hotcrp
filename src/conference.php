@@ -150,8 +150,6 @@ class Conf {
     private $_cdb_user_cache;
     /** @var ?list<int|string> */
     private $_cdb_user_cache_missing;
-    /** @var ?list<int|string> */
-    private $_cdb_user_update_list;
     /** @var ?Contact */
     private $_root_user;
     /** @var ?Author */
@@ -181,6 +179,8 @@ class Conf {
     private $_format_info;
     /** @var ?DatabaseIDRandomizer */
     private $_id_randomizer;
+    /** @var ?array<string,object> */
+    private $_shutdown_functions;
 
     /** @var ?array<string,list<object>> */
     private $_xtbuild_map;
@@ -240,8 +240,6 @@ class Conf {
     static public $blocked_time = 0.0;
     /** @var false|null|\mysqli */
     static private $_cdb = false;
-    /** @var ?list<Conf> */
-    static private $_conf_update_list;
 
     /** @var bool */
     static public $test_mode;
@@ -320,7 +318,7 @@ class Conf {
 
     /** @suppress PhanAccessReadOnlyProperty */
     function close() {
-        $this->save_cdb_user_updates();
+        $this->call_shutdown_functions();
         $this->dblink->close();
         $this->dblink = null;
     }
@@ -953,6 +951,42 @@ class Conf {
             return 0;
         }
         return (int) substr($this->_site_locks, $p + strlen($name) + 2);
+    }
+
+
+    // shutdown functions
+
+    /** @template T
+     * @param class-string<T> $name
+     * @return T */
+    function register_shutdown_function($name) {
+        if ($this->_shutdown_functions === null) {
+            $this->_shutdown_functions = [];
+            register_shutdown_function([$this, "call_shutdown_functions"]);
+        }
+        $sf = $this->_shutdown_functions[$name] ?? null;
+        if ($sf === null) {
+            $sf = $this->_shutdown_functions[$name] = new $name($this);
+        }
+        return $sf;
+    }
+
+    /** @param class-string $name */
+    function call_shutdown_function($name) {
+        if (($sf = $this->_shutdown_functions[$name] ?? null)) {
+            unset($this->_shutdown_functions[$name]);
+            $sf($this);
+        }
+    }
+
+    function call_shutdown_functions() {
+        while (!empty($this->_shutdown_functions)) {
+            $shutdown_functions = $this->_shutdown_functions;
+            $this->_shutdown_functions = [];
+            foreach ($shutdown_functions as $sf) {
+                $sf($this);
+            }
+        }
     }
 
 
@@ -2816,9 +2850,7 @@ class Conf {
         if (!$cdb || (empty($ids) && empty($emails))) {
             return [];
         }
-        if ($this->_cdb_user_update_list !== null) {
-            $this->save_cdb_user_updates();
-        }
+        $this->call_shutdown_function("CdbUserUpdate");
         $q = "select ContactInfo.*, roles, " . Contact::ROLE_CDBMASK . " role_mask, activity_at";
         if (($confid = $this->opt("contactdbConfid") ?? 0) > 0) {
             $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
@@ -2965,93 +2997,7 @@ class Conf {
     /** @param Contact $user
      * @param 0|1|2|3 $type */
     function register_cdb_user_update($user, $type) {
-        if ($this->_cdb_user_update_list === null) {
-            if (self::$_conf_update_list === null) {
-                register_shutdown_function("Conf::perform_conf_updates");
-                self::$_conf_update_list = [];
-            }
-            self::$_conf_update_list[] = $this;
-            $this->_cdb_user_update_list = [];
-        }
-        if ($type === self::CDB_UPDATE_PROFILE) {
-            array_push($this->_cdb_user_update_list, $type, $user->contactDbId);
-        } else if ($type === self::CDB_UPDATE_ROLES) {
-            array_push($this->_cdb_user_update_list, $type, $user->contactId, $user->email);
-        } else {
-            array_push($this->_cdb_user_update_list, $type, $user->email);
-        }
-    }
-
-    static function perform_conf_updates() {
-        $culist = self::$_conf_update_list;
-        self::$_conf_update_list = [];
-        foreach ($culist as $conf) {
-            $conf->save_cdb_user_updates();
-        }
-    }
-
-    function save_cdb_user_updates() {
-        $ulist = $this->_cdb_user_update_list;
-        $this->_cdb_user_update_list = null;
-        while (($cuindex = array_search($this, self::$_conf_update_list ?? [], true)) !== false) {
-            array_splice(self::$_conf_update_list, $cuindex, 1);
-        }
-
-        $cdb = $this->contactdb();
-        $cdb_confid = $this->cdb_confid();
-        if (empty($ulist) || !$cdb || $cdb_confid < 0) {
-            return;
-        }
-
-        // prefetch users, prepare queries
-        $role_uids = $cu_uids = [];
-        $ph_emails = $confirm_emails = [];
-        for ($i = 0; $i !== count($ulist); ) {
-            if ($ulist[$i] === self::CDB_UPDATE_PROFILE) {
-                $cu_uids[] = $ulist[$i + 1];
-                $i += 2;
-            } else if ($ulist[$i] === self::CDB_UPDATE_ROLES) {
-                $role_uids[] = $ulist[$i + 1];
-                $this->prefetch_user_by_id($ulist[$i + 1]);
-                $this->prefetch_cdb_user_by_email($ulist[$i + 2]);
-                $i += 3;
-            } else if ($ulist[$i] === self::CDB_UPDATE_PLACEHOLDER) {
-                $ph_emails[] = $ulist[$i + 1];
-                $this->prefetch_cdb_user_by_email($ulist[$i + 1]);
-                $i += 2;
-            } else if ($ulist[$i] === self::CDB_UPDATE_CONFIRMED) {
-                $confirm_emails[] = $ulist[$i + 1];
-                $this->prefetch_cdb_user_by_email($ulist[$i + 1]);
-                $i += 2;
-            }
-        }
-
-        if (!empty($role_uids)) {
-            Contact::update_cdb_roles_list($this, $role_uids);
-        }
-
-        if (!empty($ph_emails)) {
-            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
-                where email?a and (cflags&?)!=0",
-                Contact::CF_PLACEHOLDER, $ph_emails, Contact::CF_PLACEHOLDER);
-        }
-
-        if (!empty($confirm_emails)) {
-            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
-                where email?a and (cflags&?)!=0",
-                Contact::CF_UNCONFIRMED, $confirm_emails, Contact::CF_UNCONFIRMED);
-        }
-
-        if (!empty($cu_uids)) {
-            Dbl::qe($cdb, "insert into ConferenceUpdates (confid, user_update_at)
-                select confid, ? from Roles where contactDbId?a and confid!=?
-                on duplicate key update user_update_at=greatest(user_update_at,?)",
-                Conf::$now, $cu_uids, $cdb_confid, Conf::$now);
-        }
-
-        if (!empty($role_uids) || !empty($ph_emails) || !empty($confirm_emails)) {
-            $this->_cdb_user_cache = null;
-        }
+        $this->register_shutdown_function("CdbUserUpdate")->add($user, $type);
     }
 
 

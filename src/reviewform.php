@@ -44,7 +44,6 @@ class ReviewForm {
         1 => "E", 2 => "P", 3 => "2", 4 => "1", 5 => "M"
     ];
 
-    static private $review_author_seen = null;
 
     /** @param null|array|object $rfj */
     function __construct(Conf $conf, $rfj) {
@@ -244,25 +243,6 @@ class ReviewForm {
     }
 
 
-    static function update_review_author_seen() {
-        while (self::$review_author_seen) {
-            $conf = self::$review_author_seen[0][0];
-            $qstager = Dbl::make_multi_qe_stager($conf->dblink);
-            $next = [];
-            foreach (self::$review_author_seen as $x) {
-                if ($x[0] === $conf) {
-                    array_shift($x);
-                    /** @phan-suppress-next-line PhanParamTooFewUnpack */
-                    $qstager(...$x);
-                } else {
-                    $next[] = $x;
-                }
-            }
-            $qstager(null);
-            self::$review_author_seen = $next;
-        }
-    }
-
     /** @param PaperInfo $prow
      * @param ?ReviewInfo $rrow
      * @param Contact $viewer
@@ -277,26 +257,12 @@ class ReviewForm {
             return;
         }
         // XXX combination of review tokens & authorship gets weird -- old comment
-        if (!$rrow->reviewAuthorSeen) {
-            $rrow->reviewAuthorSeen = Conf::$now;
-            if (!$no_update) {
-                self::add_review_author_seen_update($prow->conf, "update PaperReview set reviewAuthorSeen=? where paperId=? and reviewId=?", $rrow->reviewAuthorSeen, $rrow->paperId, $rrow->reviewId);
-            }
+        $rrow->reviewAuthorSeen = $rrow->reviewAuthorSeen ? : Conf::$now;
+        $rrow->rflags |= ReviewInfo::RF_AUSEEN;
+        if (!$no_update) {
+            $prow->conf->register_shutdown_function("ReviewAuthorSeenUpdate")
+                ->add(Conf::$now, $rrow->paperId, $rrow->reviewId);
         }
-        if (($rrow->rflags & ReviewInfo::RF_AUSEEN) === 0) {
-            $rrow->rflags |= ReviewInfo::RF_AUSEEN;
-            if (!$no_update) {
-                self::add_review_author_seen_update($prow->conf, "update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", ReviewInfo::RF_AUSEEN, $rrow->paperId, $rrow->reviewId);
-            }
-        }
-    }
-
-    static private function add_review_author_seen_update(...$args) {
-        if (!self::$review_author_seen) {
-            register_shutdown_function("ReviewForm::update_review_author_seen");
-            self::$review_author_seen = [];
-        }
-        self::$review_author_seen[] = $args;
     }
 
 
@@ -729,5 +695,44 @@ Ready\n";
             $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", $last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE);
         }
         $updatef(null);
+    }
+}
+
+class ReviewAuthorSeenUpdate {
+    /** @var Conf */
+    private $conf;
+    /** @var list<non-empty-list<int>> */
+    private $_up = [];
+
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
+
+    /** @param int $now
+     * @param int $pid
+     * @param int $rid */
+    function add($now, $pid, $rid) {
+        for ($i = 0; $i !== count($this->_up); ++$i) {
+            if ($this->_up[$i][0] === $now)
+                break;
+        }
+        if ($i === count($this->_up)) {
+            $this->_up[] = [$now];
+        }
+        $this->_up[$i][] = $pid;
+        $this->_up[$i][] = $rid;
+    }
+
+    function __invoke() {
+        $qstager = Dbl::make_multi_qe_stager($this->conf->dblink);
+        foreach ($this->_up as $l) {
+            $x = [];
+            for ($i = 1; $i !== count($l); $i += 2) {
+                $x[] = "(paperId={$l[$i]} and reviewId={$l[$i+1]})";
+            }
+            $qstager("update PaperReview set reviewAuthorSeen=if(reviewAuthorSeen=0,?,reviewAuthorSeen), rflags=rflags|? where " . join(" or ", $x), $l[0], ReviewInfo::RF_AUSEEN);
+        }
+        $qstager(null);
+        $this->_up = [];
     }
 }
