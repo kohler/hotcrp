@@ -584,7 +584,7 @@ class Users_Page {
         }
 
         // update from contactdb
-        (new CdbUserUpdate($viewer->conf))->check();
+        (new CdbUserUpdate($viewer->conf))->import_empty_props();
 
         // handle request
         if (isset($qreq["default"]) && $qreq->defaultfn) {

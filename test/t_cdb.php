@@ -816,20 +816,20 @@ class Cdb_Tester {
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set firstName='Gussie', lastName='Onufryk', orcid='XXXX-9999-CATK-ITTY', updateTime=? where email='gussie@cat.com'", Conf::$now);
         Dbl::qe($this->conf->contactdb(), "insert into ConferenceUpdates (confid, user_update_at) values (?,?) on duplicate key update user_update_at=greatest(?,user_update_at)", $this->conf->cdb_confid(), Conf::$now, Conf::$now);
 
-        // if requested fields already present, CdbUserUpdate does nothing
-        $nq = Dbl::$nqueries;
-        (new CdbUserUpdate($this->conf))->add("floyd@ee.lbl.gov")->check("firstName");
-        xassert_le(Dbl::$nqueries, $nq + 2);
-
-        // does something
         Conf::advance_current_time(Conf::$now + 5);
-        (new CdbUserUpdate($this->conf))->add("gussie@cat.com")->check();
+        (new CdbUserUpdate($this->conf))->import_empty_props();
 
         $gussie = $this->conf->user_by_email("gussie@cat.com");
         xassert_eqq($gussie->firstName, "Gussie");
         xassert_eqq($gussie->lastName, "Onufryk");
         xassert_eqq($gussie->unaccentedName, "gussie onufryk");
         xassert_ge($this->conf->setting("__cdb_user_update_at"), Conf::$now - 3);
+
+        // if no recent updates, CdbUserUpdate does nothing
+        Conf::advance_current_time(Conf::$now + 5);
+        $nq = Dbl::$nqueries;
+        (new CdbUserUpdate($this->conf))->import_empty_props();
+        xassert_le(Dbl::$nqueries, $nq + 2);
     }
 
     function test_import_secondary() {
