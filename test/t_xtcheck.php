@@ -19,6 +19,7 @@ class XtCheck_Tester {
     }
 
     function test_xt_check() {
+        self::$nchecks = 0;
         $xtp = new XtParams($this->conf, null);
         xassert($xtp->check("allow"));
         xassert(!$xtp->check("deny"));

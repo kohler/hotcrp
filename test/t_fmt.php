@@ -2,6 +2,7 @@
 // t_fmt.php -- HotCRP tests
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class Fmt_Tester {
     function test_percent_templates() {
         $ms = new Fmt;

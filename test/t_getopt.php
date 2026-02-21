@@ -2,6 +2,7 @@
 // t_getopt.php -- HotCRP tests
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class Getopt_Tester {
     static function getopt_parse($getopt, $argv) {
         assert($argv[0] === "fart");

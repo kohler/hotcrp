@@ -2,6 +2,7 @@
 // t_mimetype.php -- HotCRP tests
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class Mimetype_Tester {
     function test_mimetype() {
         xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);

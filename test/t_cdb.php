@@ -35,6 +35,7 @@ class Cdb_Tester {
         $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
+        $this->conf->invalidate_caches("users");
     }
 
     function test_passwords_1() {
@@ -175,7 +176,7 @@ class Cdb_Tester {
         $acct = $this->us1->save_user((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
         xassert(!!$acct);
         Dbl::qe("delete from ContactInfo where email=?", $anna);
-        $this->conf->invalidate_user(Contact::make_email($this->conf, $anna));
+        $this->conf->invalidate_user($acct);
         Dbl::qe($this->cdb, "update ContactInfo set passwordUseTime=1 where email=?", $anna);
         save_password($anna, "aquablouse", true);
         MailChecker::check0();
@@ -188,11 +189,12 @@ class Cdb_Tester {
         xassert(!maybe_user("akhmatova@poema.ru")); // but she is in cdb
 
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->save_paper_json((object) [
+        $saved = $ps->save_paper_json((object) [
             "id" => 1,
             "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,
                           $user_floyd->email, $user_van->email, "akhmatova@poema.ru"]
         ]);
+        xassert($saved);
 
         $paper1 = $this->user_chair->checked_paper_by_id(1);
         $user_anna = user("akhmatova@poema.ru");

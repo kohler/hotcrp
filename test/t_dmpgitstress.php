@@ -14,6 +14,7 @@ if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     exit(DMPGitStress_Tester::make_args($argv)->run());
 }
 
+#[RequireDb(false)]
 class DMPGitStress_Tester {
     /** @var list<string> */
     private $files;

@@ -9,6 +9,7 @@ ini_set("error_log", "");
 ini_set("log_errors", "0");
 ini_set("display_errors", "stderr");
 ini_set("assert.exception", "1");
+error_reporting(E_ALL);
 
 require_once(SiteLoader::find("src/init.php"));
 initialize_conf();
@@ -259,6 +260,15 @@ class SkipLandmark {
 
 #[Attribute]
 class RequireCdb {
+    public $required;
+    function __construct($required = true) {
+        $this->required = $required;
+    }
+}
+
+#[Attribute]
+class RequireDb {
+    /** @var bool|'fresh' */
     public $required;
     function __construct($required = true) {
         $this->required = $required;
@@ -1171,33 +1181,94 @@ function sorted_conflicts(PaperInfo $prow, $flags) {
 
 class TestRunner {
     static public $original_opt;
+
+    /** @var array<string,list<string>> */
+    static public $collections = [
+        "test01" => [
+            "fresh_db", "Permission_Tester", "Tags_Tester"
+        ],
+        "test02" => [
+            "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",
+            "AuthorMatch_Tester", "Ht_Tester", "Fmt_Tester",
+            "Getopt_Tester", "CleanHTML_Tester", "Abbreviation_Tester",
+            "DocumentBasics_Tester", "FixCollaborators_Tester",
+            "Mention_Tester", "Search_Tester", "Settings_Tester",
+            "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester"
+        ],
+        "test03" => [
+            "MinCostMaxFlow_Tester"
+        ],
+        "test04" => [
+            "Cdb_Tester"
+        ],
+        "test05" => [
+            "fresh_db", "PaperStatus_Tester", "AuthorCertification_Tester",
+            "Login_Tester", "UserStatus_Tester",
+            "(", "no_cdb", "Login_Tester", "UserStatus_Tester", ")"
+        ],
+        "test06" => [
+            "fresh_db", "Reviews_Tester", "Comments_Tester", "UserAPI_Tester",
+            "UploadAPI_Tester", "Mailer_Tester", "Events_Tester",
+            "Autoassign_Tester"
+        ],
+        "test07" => [
+            "DiffMatchPatch_Tester"
+        ],
+        "test08" => [
+            "(", "no_cdb", "fresh_db", "Permission_Tester", "Unit_Tester",
+            "XtCheck_Tester", "Abbreviation_Tester",
+            "DocumentBasics_Tester", "Mention_Tester",
+            "Invariants_Tester", "Search_Tester", "Settings_Tester",
+            "Invariants_Tester", "UpdateSchema_Tester",
+            "Invariants_Tester", "Batch_Tester",
+            "PaperStatus_Tester", "Login_Tester",
+            "fresh_db", "Reviews_Tester", "Comments_Tester",
+            "UserAPI_Tester", ")"
+        ],
+        "test09" => [
+            "fresh_db", "PaperAPI_Tester", "ReviewAPI_Tester",
+            "Scope_Tester"
+        ],
+        "default" => [
+            "test01", "test02", "test03", "test04", "test05", "test06",
+            "test07", "(", "if_all", "test08", ")", "test09"
+        ],
+        "all" => [
+            "test01", "test02", "test03", "test04", "test05", "test06",
+            "test07", "test08", "test09"
+        ]
+    ];
+
     /** @var bool */
     private $verbose;
     /** @var bool */
+    private $all;
+    /** @var bool */
+    private $skipping = false;
+    /** @var ?bool */
     private $reset;
     /** @var bool */
-    private $need_reset;
-    /** @var ?bool */
-    private $need_cdb;
-    /** @var ?bool
+    private $need_fresh = true;
+    /** @var bool
      * @readonly */
     public $color;
     /** @var int */
-    private $width = 47;
+    private $width = 64;
     /** @var ?string */
     private $last_classname;
     /** @var ?object */
     private $tester;
-    /** @var ?string */
-    private $requirement_failure;
     /** @var bool */
     private $need_newline = false;
     /** @var ?string */
     private $verbose_test;
+    /** @var ?object */
+    private $save_stack;
 
 
     function __construct($arg) {
         $this->verbose = isset($arg["verbose"]);
+        $this->all = isset($arg["all"]);
         if (isset($arg["stop"])) {
             Xassert::$stop = true;
         }
@@ -1212,7 +1283,6 @@ class TestRunner {
         } else {
             $this->reset = null;
         }
-        $this->need_reset = true;
         if (isset($arg["color"])) {
             $this->color = true;
         } else if (isset($arg["no-color"])) {
@@ -1258,7 +1328,7 @@ class TestRunner {
         }
 
         if ($rebuild
-            || !preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)\);/mi', $s, $m)
+            || !preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)[,\)]/mi', $s, $m)
             || Dbl::fetch_ivalue($dblink, "select value from Settings where name=?", $m[1]) !== intval($m[2])) {
             $rebuild = true;
         }
@@ -1275,6 +1345,7 @@ class TestRunner {
             error_log("* Error initializing database.\n{$dblink->error}");
             exit(1);
         }
+        Conf::set_current_time();
     }
 
     /** @param bool $first */
@@ -1429,7 +1500,7 @@ class TestRunner {
                 continue;
             }
             $this->set_verbose_test($ro, $m);
-            if (!$this->check_test_attributes($m, false)) {
+            if (!$this->check_test_attributes($m)) {
                 if ($this->verbose) {
                     if ($this->color) {
                         fwrite(STDERR, "\x1b[90m{$this->verbose_test} \x1b[1;90mSKIP\x1b[m\n");
@@ -1481,19 +1552,27 @@ class TestRunner {
         }
     }
 
-    private function check_test_attributes($class, $store) {
+    private function check_test_attributes($class) {
         if (PHP_MAJOR_VERSION < 8) {
             return true;
         }
+        $require_db = $require_cdb = null;
+        foreach ($class->getAttributes("RequireDb") ?? [] as $attr) {
+            $x = $attr->newInstance();
+            $require_db = $x->required;
+        }
         foreach ($class->getAttributes("RequireCdb") ?? [] as $attr) {
             $x = $attr->newInstance();
-            if ($x->required === !!Conf::$main->opt("contactdbDsn")) {
-                continue;
-            } else if ($store) {
-                $this->need_cdb = $x->required;
-            } else {
-                return false;
-            }
+            $require_cdb = $x->required;
+        }
+        if ($require_cdb !== null
+            && $require_cdb !== !!Conf::$main->opt("contactdbDsn")) {
+            return false;
+        }
+        if ($require_db === false) {
+            $this->need_fresh = false;
+        } else if ($require_db === "fresh") {
+            $this->need_fresh = true;
         }
         return true;
     }
@@ -1508,34 +1587,29 @@ class TestRunner {
             }
             $this->tester = null;
         }
-        $this->last_classname = $test;
-        $this->tester = null;
 
+        $need_fresh = $this->need_fresh;
         $class = new ReflectionClass($test);
-        $this->check_test_attributes($class, true);
+        if (!$this->check_test_attributes($class)) {
+            if (!$this->save_stack) {
+                Xassert::fail_with("!", "Cannot run `{$test}` due to requirement failure");
+            }
+            $this->need_fresh = $need_fresh;
+            return;
+        }
 
         // prepare database
-        if ($this->reset ?? $this->need_reset) {
+        if ($this->reset ?? $this->need_fresh) {
             self::reset_db($this->reset ?? false);
-            $this->need_reset = false;
+            $this->need_fresh = false;
             $this->reset = null;
+        } else {
+            $this->need_fresh = $need_fresh;
         }
-
-        // apply CDB requirement
-        if ($this->need_cdb === true && !Conf::$main->opt("contactdbDsn")) {
-            if (!(self::$original_opt["contactdbDsn"] ?? null)) {
-                $this->requirement_failure = "test class requires contactdb";
-                return;
-            }
-            Conf::$main->set_opt("contactdbDsn", self::$original_opt["contactdbDsn"]);
-            Conf::$main->invalidate_caches("cdb");
-        } else if ($this->need_cdb === false && Conf::$main->opt("contactdbDsn")) {
-            Conf::$main->set_opt("contactdbDsn", null);
-            Conf::$main->invalidate_caches("cdb");
-        }
-        $this->need_cdb = null;
 
         // construct tester
+        $this->last_classname = $test;
+        $this->tester = null;
         $ctor = $class->getConstructor();
         if ($ctor && $ctor->getNumberOfParameters() === 1) {
             $this->tester = $class->newInstance(Conf::$main);
@@ -1545,9 +1619,43 @@ class TestRunner {
         }
     }
 
+    private function push_test_state() {
+        $this->save_stack = (object) [
+            "contactdbDsn" => Conf::$main->opt("contactdbDsn"),
+            "skipping" => $this->skipping,
+            "next" => $this->save_stack
+        ];
+    }
+
+    private function pop_test_state() {
+        if (!$this->save_stack) {
+            return;
+        }
+        $cdb_dsn = $this->save_stack->contactdbDsn;
+        if (Conf::$main->opt("contactdbDsn") !== $cdb_dsn) {
+            Conf::$main->opt("contactdbDsn", $cdb_dsn);
+            Conf::$main->invalidate_caches("cdb");
+        }
+        $this->skipping = $this->save_stack->skipping;
+        $this->save_stack = $this->save_stack->next;
+    }
+
     /** @param string $test */
     private function run_test($test) {
         if ($test === "no_argv") {
+            return;
+        } else if ($test === "(") {
+            $this->push_test_state();
+            return;
+        } else if ($test === ")") {
+            $this->pop_test_state();
+            return;
+        } else if ($this->skipping) {
+            return;
+        } else if ($test === "if_all") {
+            if (!$this->all) {
+                $this->skipping = true;
+            }
             return;
         } else if ($test === "no_cdb") {
             Conf::$main->set_opt("contactdbDsn", null);
@@ -1556,12 +1664,12 @@ class TestRunner {
             return;
         } else if ($test === "reset_db") {
             if (!$this->reset) {
-                $this->need_reset = $this->reset = true;
+                $this->need_fresh = $this->reset = true;
             }
             $this->last_classname = null;
             return;
-        } else if ($test === "clear_db") {
-            $this->need_reset = true;
+        } else if ($test === "fresh_db") {
+            $this->need_fresh = true;
             $this->last_classname = null;
             return;
         }
@@ -1582,18 +1690,35 @@ class TestRunner {
         }
         if ($this->tester) {
             $this->run_object_tests($this->tester, $methodmatch);
-        } else {
-            Xassert::fail_with("!", "Cannot run `{$test}`: {$this->requirement_failure}");
         }
     }
 
-    /** @param 'no_cdb'|'reset_db'|class-string ...$tests */
+    private function run_test_list($tests) {
+        foreach ($tests as $test) {
+            $this->run_test($test);
+        }
+    }
+
+    private function expand($tests) {
+        $new_tests = [];
+        foreach ($tests as $test) {
+            if (isset(self::$collections[$test])) {
+                array_push($new_tests, ...$this->expand(self::$collections[$test]));
+            } else {
+                $new_tests[] = $test;
+            }
+        }
+        return $new_tests;
+    }
+
+    /** @param 'no_cdb'|'reset_db'|'fresh_db'|class-string ...$tests */
     static function run(...$tests) {
         if (($tests[0] ?? "") === "no_argv") {
             $arg = [];
         } else {
             global $argv;
             $arg = (new Getopt)->long(
+                "all,a run all test collections",
                 "verbose,V be verbose",
                 "help,h !",
                 "reset,reset reset test database",
@@ -1610,9 +1735,12 @@ class TestRunner {
 
         $tr = new TestRunner($arg);
         Xassert::$test_runner = $tr;
-        foreach (empty($arg["_"]) ? $tests : $arg["_"] as $test) {
-            $tr->run_test($test);
+        $test_list = $arg["_"];
+        if (empty($test_list)) {
+            $test_list = empty($tests) ? ["default"] : $tests;
         }
+        $test_list = $tr->expand($test_list);
+        $tr->run_test_list($test_list);
         xassert_exit();
     }
 }

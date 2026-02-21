@@ -108,5 +108,8 @@ class Batch_Tester {
         xassert_neqq($u, null);
         xassert_eqq($u->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC);
         xassert($u->is_disabled());
+
+        $this->conf->qe("delete from ContactInfo where email='addeduser@_.com'");
+        $this->conf->invalidate_user($u);
     }
 }

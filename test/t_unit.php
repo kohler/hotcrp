@@ -1640,4 +1640,9 @@ class Unit_Tester {
         xassert_eqq($hs->get_all("content-length"), ["10"]);
         xassert_eqq(count($hs), 1);
     }
+
+    function finalize() {
+        $this->conf->set_opt("timezone", "America/New_York");
+        date_default_timezone_set("America/New_York");
+    }
 }

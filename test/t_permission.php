@@ -2,6 +2,7 @@
 // t_permission.php -- HotCRP tests
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+#[RequireDb("fresh")]
 class Permission_Tester {
     /** @var Conf
      * @readonly */

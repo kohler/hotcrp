@@ -9,6 +9,7 @@ use dmp\diff_match_patch as diff_match_patch;
 use const dmp\DIFF_DELETE;
 use const dmp\DIFF_INSERT;
 
+#[RequireDb(false)]
 class DiffMatchPatch_Tester {
     function assertEquals($a, $b) {
         if ($a !== $b) {

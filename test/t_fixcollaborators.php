@@ -2,6 +2,7 @@
 // t_fixcollaborators.php -- HotCRP tests
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class FixCollaborators_Tester {
     function test_quoted_list() {
         xassert_eqq(AuthorMatcher::fix_collaborators("\"University of California, San Diego\", \"University of California, Los Angeles\", \"David Culler (University of California, Berkeley)\", \"Kamin Whitehouse (University of Virginia)\", \"Yuvraj Agarwal (Carnegie Mellon University)\", \"Mario Berges (Carnegie Mellon University)\", \"Joern Ploennigs (IBM)\", \"Mikkel Baun Kjaergaard (Southern Denmark University)\", \"Donatella Sciuto (Politecnico di Milano)\", \"Santosh Kumar (University of Memphis)\""),
