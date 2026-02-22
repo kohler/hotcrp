@@ -88,9 +88,6 @@ class Conflict_PaperColumn extends PaperColumn {
         }
         return $pl->user->reviewer_html_for($this->user) . "<br>conflict";
     }
-    protected function checked(PaperList $pl, PaperInfo $row) {
-        return $pl->is_selected($row->paperId, $row->has_conflict($this->user));
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return $this->not_me && !$pl->user->can_view_conflicts($row);
     }

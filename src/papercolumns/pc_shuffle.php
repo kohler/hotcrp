@@ -51,7 +51,7 @@ class Shuffle_PaperColumn extends PaperColumn {
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $this->idperm->order($row->paperId);
     }
-    function json(PaperList $pl, PaperInfo $row) {
+    function json_ctx(RenderContext $ctx, PaperInfo $row) {
         return $this->idperm->order($row->paperId);
     }
 }

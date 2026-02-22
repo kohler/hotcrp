@@ -154,7 +154,13 @@ class PaperColumn extends Column {
     function text(PaperList $pl, PaperInfo $row) {
         return "";
     }
-    /** @return mixed */
+    /** @return mixed
+     * @suppress PhanDeprecatedFunction */
+    function json_ctx(RenderContext $ctx, PaperInfo $row) {
+        return $this->json($ctx->paper_list(), $row);
+    }
+    /** @return mixed
+     * @deprecated */
     function json(PaperList $pl, PaperInfo $row) {
         return $this->text($pl, $row);
     }
@@ -183,7 +189,7 @@ class Id_PaperColumn extends PaperColumn {
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->paperId;
     }
-    function json(PaperList $pl, PaperInfo $row) {
+    function json_ctx(RenderContext $ctx, PaperInfo $row) {
         return $row->paperId;
     }
 }
@@ -191,6 +197,8 @@ class Id_PaperColumn extends PaperColumn {
 class Selector_PaperColumn extends PaperColumn {
     /** @var bool */
     private $selectall = false;
+    /** @var ?SearchSelection */
+    private $selection;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
@@ -201,6 +209,9 @@ class Selector_PaperColumn extends PaperColumn {
         $this->selectall = $this->view_option("selected") ?? false;
         return true;
     }
+    function reset(PaperList $pl) {
+        $this->selection = $pl->selection();
+    }
     function header(PaperList $pl, $is_text) {
         if ($is_text) {
             return "Selected";
@@ -209,12 +220,16 @@ class Selector_PaperColumn extends PaperColumn {
         }
         return '<input type="checkbox" class="uic js-range-click is-range-group ignore-diff" data-range-type="pap[]" aria-label="Select all">';
     }
-    protected function checked(PaperList $pl, PaperInfo $row) {
-        return $pl->is_selected($row->paperId, $this->selectall);
+
+    final function checked($pid) {
+        if ($this->selection) {
+            return $this->selection->is_selected($pid);
+        }
+        return $this->selectall;
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pl->mark_has("sel");
-        $c = $this->checked($pl, $row) ? " checked" : "";
+        $c = $this->checked($row->paperId) ? " checked" : "";
         $n = $pl->long_mode ? "data-range-type" : "name";
         return "<span class=\"pl_rownum fx6\">{$pl->count}. </span><input type=\"checkbox\" class=\"uic uikd js-range-click js-selector ignore-diff\" {$n}=\"pap[]\" value=\"{$row->paperId}\"{$c} aria-label=\"#{$row->paperId}\">";
     }
@@ -223,10 +238,10 @@ class Selector_PaperColumn extends PaperColumn {
         return "<input type=\"checkbox\" class=\"uic uikd js-range-click ignore-diff is-range-group\" data-range-type=\"pap[]\" data-range-group=\"auto\" aria-label=\"Select group\">";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $this->checked($pl, $row) ? "Y" : "N";
+        return $this->checked($row->paperId) ? "Y" : "N";
     }
-    function json(PaperList $pl, PaperInfo $row) {
-        return $this->checked($pl, $row);
+    function json_ctx(RenderContext $ctx, PaperInfo $row) {
+        return $this->checked($row->paperId);
     }
 }
 
@@ -571,9 +586,9 @@ class Authors_PaperColumn extends PaperColumn {
             return join("; ", $out);
         }
     }
-    function json(PaperList $pl, PaperInfo $row) {
+    function json_ctx(RenderContext $ctx, PaperInfo $row) {
         $au = [];
-        if ($pl->user->can_view_authors($row) || $this->anon) {
+        if ($ctx->viewer->can_view_authors($row) || $this->anon) {
             foreach ($row->author_list() as $auth) {
                 $au[] = $auth->unparse_nea_json();
             }

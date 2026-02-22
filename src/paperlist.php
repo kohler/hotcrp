@@ -1184,6 +1184,11 @@ final class PaperList extends MessageSet {
     }
 
 
+    /** @return ?SearchSelection */
+    function selection() {
+        return $this->_selection;
+    }
+
     /** @return $this */
     function set_selection(SearchSelection $ssel) {
         $this->_selection = $ssel;
@@ -2538,6 +2543,10 @@ final class PaperList extends MessageSet {
             return ["fields" => [], "papers" => []];
         }
         $ishtml = ($frflags & FieldRender::CFHTML) !== 0;
+        $jctx = null;
+        if (($frflags & FieldRender::CFJSON) !== 0) {
+            $jctx = (new RenderContext($frflags, $this->user))->set_paper_list($this);
+        }
 
         // turn off forceShow
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
@@ -2552,8 +2561,8 @@ final class PaperList extends MessageSet {
                     $content = $this->_column_html($fdef, $row);
                 } else if ($fdef->content_empty($this, $row)) {
                     $content = null;
-                } else if (($frflags & FieldRender::CFJSON) !== 0) {
-                    $content = $fdef->json($this, $row);
+                } else if ($jctx !== null) {
+                    $content = $fdef->json_ctx($jctx, $row);
                 } else {
                     $content = $fdef->text($this, $row);
                 }
