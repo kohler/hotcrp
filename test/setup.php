@@ -1353,6 +1353,7 @@ class TestRunner {
     /** @param bool $rebuild */
     static function reset_db($rebuild = false) {
         $conf = Conf::$main;
+        $conf->call_shutdown_functions();
         $timer = new ProfileTimer;
         MailChecker::clear();
 
