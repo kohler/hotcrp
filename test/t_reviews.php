@@ -1266,6 +1266,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         // no longer want clickthrough
         $this->conf->set_opt("clickthrough_review", null);
+        Conf::advance_current_time();
 
         // save review, check mail
         save_review(17, $user_external2, [
