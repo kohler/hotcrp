@@ -281,27 +281,6 @@ class AuthorCertification_PaperOption extends PaperOption {
         return $elist;
     }
 
-    function json(RenderContext $ctx, PaperValue $ov) {
-        if ($ov->value_count() === 0) {
-            return false;
-        }
-        $oj = (object) ["complete" => self::is_complete($ov), "entries" => []];
-        foreach (self::entries($ov) as $e) {
-            if (!$e->user || !$e->value) {
-                continue;
-            }
-            $oej = (object) ["email" => $e->user->email];
-            if (isset($e->at)) {
-                $oej->at = $e->at;
-            }
-            if ($e->admin) {
-                $oej->admin = true;
-            }
-            $oj->entries[] = $oej;
-        }
-        return $oj;
-    }
-
     /** @param string $email
      * @return bool */
     static function user_can_change(Contact $user, PaperInfo $prow, $email) {
@@ -760,6 +739,26 @@ class AuthorCertification_PaperOption extends PaperOption {
         }
         $fr->value = $t;
         $fr->value_format = 5;
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        if ($ov->value_count() === 0) {
+            return false;
+        }
+        $oj = (object) ["complete" => self::is_complete($ov), "entries" => []];
+        foreach (self::entries($ov) as $e) {
+            if (!$e->user || !$e->value) {
+                continue;
+            }
+            $oej = (object) ["email" => $e->user->email];
+            if (isset($e->at)) {
+                $oej->at = $e->at;
+            }
+            if ($e->admin) {
+                $oej->admin = true;
+            }
+            $oj->entries[] = $oej;
+        }
+        return $oj;
     }
 
     function search_examples(Contact $viewer, $venue) {

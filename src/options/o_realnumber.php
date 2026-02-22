@@ -19,10 +19,6 @@ class RealNumber_PaperOption extends PaperOption {
         }
     }
 
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return $ov->value !== null ? floatval($ov->data()) : null;
-    }
-
     static function int_version($fv) {
         return (int) max(PHP_INT_MIN, min(PHP_INT_MAX, $fv));
     }
@@ -67,6 +63,9 @@ class RealNumber_PaperOption extends PaperOption {
         if ($ov->value !== null) {
             $fr->set_text($ov->data());
         }
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return $ov->value !== null ? floatval($ov->data()) : null;
     }
 
     function search_examples(Contact $viewer, $venue) {

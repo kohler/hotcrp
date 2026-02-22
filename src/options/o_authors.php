@@ -16,14 +16,6 @@ class Authors_PaperOption extends PaperOption {
     function value_force(PaperValue $ov) {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        $au = [];
-        foreach (self::author_list($ov) as $auth) {
-            $au[] = $auth->unparse_nea_json();
-        }
-        return $au;
-    }
-
     function value_check(PaperValue $ov, Contact $user) {
         $aulist = self::author_list($ov);
         $nreal = 0;
@@ -381,6 +373,13 @@ class Authors_PaperOption extends PaperOption {
         }
         $names[] = "</ul>";
         $fr->set_html(join("", $names));
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        $au = [];
+        foreach (self::author_list($ov) as $auth) {
+            $au[] = $auth->unparse_nea_json();
+        }
+        return $au;
     }
 
     function jsonSerialize() {

@@ -38,14 +38,6 @@ class Attachments_PaperOption extends PaperOption {
         array_multisort($data, SORT_NUMERIC, $values);
         return $values;
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        $attachments = [];
-        foreach ($ov->documents() as $doc) {
-            if (($dj = $ctx->document_json($doc)))
-                $attachments[] = $dj;
-        }
-        return empty($attachments) ? null : $attachments;
-    }
     function value_store(PaperValue $ov, PaperStatus $ps) {
         $docs = $ov->anno("documents") ?? [];
         $dids = [];
@@ -232,6 +224,14 @@ class Attachments_PaperOption extends PaperOption {
             }
             $fr->value = "<div class=\"pgsm{$v}\">{$fr->value}</div>";
         }
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        $attachments = [];
+        foreach ($ov->documents() as $doc) {
+            if (($dj = $ctx->document_json($doc)))
+                $attachments[] = $dj;
+        }
+        return empty($attachments) ? null : $attachments;
     }
 
     function search_examples(Contact $viewer, $venue) {

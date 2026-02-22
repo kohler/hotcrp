@@ -16,9 +16,6 @@ class Collaborators_PaperOption extends PaperOption {
             && (strlen($ov->data()) > 10
                 || strcasecmp(trim($ov->data()), "none") !== 0);
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return $ov->value ? $ov->data() : null;
-    }
     function value_check(PaperValue $ov, Contact $user) {
         if (!$ov->value /* because "None" should cause no error */
             && !$ov->prow->allow_absent()
@@ -77,6 +74,9 @@ class Collaborators_PaperOption extends PaperOption {
         }
         $n[] = "</ul>";
         $fr->set_html(join("", $n));
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return $ov->value ? $ov->data() : null;
     }
     // XXX no render because paper strip
 }

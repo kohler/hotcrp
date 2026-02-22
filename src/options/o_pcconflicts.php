@@ -55,31 +55,6 @@ class PCConflicts_PaperOption extends PaperOption {
         /** @phan-suppress-next-line PhanTypeMismatchArgument */
         $ov->set_value_data(array_keys($vm), array_values($vm));
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        $pcm = $this->conf->pc_members();
-        $confset = $this->conf->conflict_set();
-        $can_view_authors = $ctx->viewer->can_view_authors($ov->prow);
-        $pcc = [];
-        foreach (self::value_map($ov) as $k => $v) {
-            $v = (int) $v;
-            if (!Conflict::is_conflicted($v)
-                || !($pc = $pcm[$k] ?? null)) {
-                continue;
-            }
-            if (!$can_view_authors) {
-                // Sometimes users can see conflicts but not authors.
-                // Don't expose the kind of conflict during that period.
-                $ct = true;
-            } else {
-                if (($v & CONFLICT_CONTACTAUTHOR) !== 0) {
-                    $v = ($v | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
-                }
-                $ct = $confset->unparse_json($v);
-            }
-            $pcc[$pc->email] = $ct;
-        }
-        return (object) $pcc;
-    }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_visible($ov->prow)) {
             if ($this->warn_missing) {
@@ -372,6 +347,31 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         ksort($names);
         $fr->set_html("<ul class=\"x namelist-columns\">" . join("", $names) . "</ul>");
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        $pcm = $this->conf->pc_members();
+        $confset = $this->conf->conflict_set();
+        $can_view_authors = $ctx->viewer->can_view_authors($ov->prow);
+        $pcc = [];
+        foreach (self::value_map($ov) as $k => $v) {
+            $v = (int) $v;
+            if (!Conflict::is_conflicted($v)
+                || !($pc = $pcm[$k] ?? null)) {
+                continue;
+            }
+            if (!$can_view_authors) {
+                // Sometimes users can see conflicts but not authors.
+                // Don't expose the kind of conflict during that period.
+                $ct = true;
+            } else {
+                if (($v & CONFLICT_CONTACTAUTHOR) !== 0) {
+                    $v = ($v | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
+                }
+                $ct = $confset->unparse_json($v);
+            }
+            $pcc[$pc->email] = $ct;
+        }
+        return (object) $pcc;
     }
 
     function export_setting() {

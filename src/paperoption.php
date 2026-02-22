@@ -991,8 +991,6 @@ class PaperOption implements JsonSerializable {
         return ($this->render_contexts & $venue) !== 0;
     }
 
-    function render(FieldRender $fr, PaperValue $ov) {
-    }
     /** @return list<string> */
     function view_option_schema() {
         return [];
@@ -1002,6 +1000,8 @@ class PaperOption implements JsonSerializable {
         return [];
     }
 
+    function render(FieldRender $fr, PaperValue $ov) {
+    }
     /** @return mixed
      * @suppress PhanDeprecatedFunction */
     function json(RenderContext $ctx, PaperValue $ov) {
@@ -1012,6 +1012,7 @@ class PaperOption implements JsonSerializable {
     function value_export_json(PaperValue $ov, RenderContext $ctx) {
         return null;
     }
+
 
     /** @return ?FormatSpec */
     function format_spec() {
@@ -1153,10 +1154,6 @@ class Checkbox_PaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) <=> ($bv && $bv->value ? 1 : 0);
     }
 
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return $ov->value ? true : false;
-    }
-
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $x = (string) $qreq[$this->formid];
         return PaperValue::make($prow, $this, $x !== "" && $x !== "0" ? 1 : null);
@@ -1194,6 +1191,10 @@ class Checkbox_PaperOption extends PaperOption {
         } else {
             $fr->set_bool(!!$ov->value);
         }
+    }
+
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return $ov->value ? true : false;
     }
 
     function search_examples(Contact $viewer, $venue) {
@@ -1314,9 +1315,6 @@ class Selector_PaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return $this->values[$ov->value - 1] ?? null;
-    }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $v = trim((string) $qreq[$this->formid]);
@@ -1380,6 +1378,10 @@ class Selector_PaperOption extends PaperOption {
 
     function render(FieldRender $fr, PaperValue $ov) {
         $fr->set_text($this->values[$ov->value - 1] ?? "");
+    }
+
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return $this->values[$ov->value - 1] ?? null;
     }
 
     /** @return ?string
@@ -1478,12 +1480,6 @@ class Document_PaperOption extends PaperOption {
             return [$ov->value];
         }
         return [];
-    }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        if (!$this->value_present($ov)) {
-            return null;
-        }
-        return $ctx->document_json($ov->document(0)) ?? false;
     }
     function value_check(PaperValue $ov, Contact $user) {
         parent::value_check($ov, $user);
@@ -1737,6 +1733,13 @@ class Document_PaperOption extends PaperOption {
         }
     }
 
+    function json(RenderContext $ctx, PaperValue $ov) {
+        if (!$this->value_present($ov)) {
+            return null;
+        }
+        return $ctx->document_json($ov->document(0)) ?? false;
+    }
+
     function format_spec() {
         $speckey = "sub_banal";
         if ($this->id) {
@@ -1796,11 +1799,6 @@ class Text_PaperOption extends PaperOption {
         return $this->conf->collator()->compare($av, $bv);
     }
 
-    function json(RenderContext $ctx, PaperValue $ov) {
-        $x = $ov->data();
-        return $x !== "" ? $x : null;
-    }
-
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return $this->parse_json_string($prow, $qreq[$this->formid] ?? "", PaperOption::PARSE_STRING_CONVERT);
     }
@@ -1826,6 +1824,11 @@ class Text_PaperOption extends PaperOption {
         if ($this->wordlimit > 0) {
             $fr->apply_wordlimit($this->wordlimit, $this->hard_wordlimit);
         }
+    }
+
+    function json(RenderContext $ctx, PaperValue $ov) {
+        $x = $ov->data();
+        return $x !== "" ? $x : null;
     }
 
     function search_examples(Contact $viewer, $venue) {

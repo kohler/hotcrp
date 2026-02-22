@@ -16,9 +16,6 @@ class Title_PaperOption extends PaperOption {
             && (strlen($ov->data()) > 6
                 || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return (string) $ov->data();
-    }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         if (!$ov->equals($ov->prow->base_option($this->id))) {
             $ov->prow->set_prop("title", $ov->data());
@@ -43,6 +40,9 @@ class Title_PaperOption extends PaperOption {
     function render(FieldRender $fr, PaperValue $ov) {
         $fr->value = $ov->prow->title ? : "[No title]";
         $fr->value_format = $ov->prow->title_format();
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return (string) $ov->data();
     }
     function present_script_expression() {
         return ["type" => "text_present", "formid" => $this->formid];

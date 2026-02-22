@@ -11,10 +11,6 @@ class Numeric_PaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return $ov->value;
-    }
-
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $v = trim((string) $qreq[$this->formid]);
         $iv = intval($v);
@@ -53,6 +49,9 @@ class Numeric_PaperOption extends PaperOption {
         if ($ov->value !== null) {
             $fr->set_text((string) $ov->value);
         }
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return $ov->value;
     }
 
     function search_examples(Contact $viewer, $venue) {

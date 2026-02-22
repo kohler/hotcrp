@@ -16,9 +16,6 @@ class Abstract_PaperOption extends PaperOption {
             && (strlen($ov->data()) > 6
                 || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return (string) $ov->data();
-    }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         if (!$ov->equals($ov->prow->base_option($this->id))) {
             $ab = $ov->data();
@@ -53,6 +50,9 @@ class Abstract_PaperOption extends PaperOption {
                 $fr->set_text("[No abstract]");
             }
         }
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return (string) $ov->data();
     }
     function search_examples(Contact $viewer, $venue) {
         return [$this->has_search_example(), $this->text_search_example()];

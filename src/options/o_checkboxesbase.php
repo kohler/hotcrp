@@ -76,15 +76,6 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         }
     }
 
-    function json(RenderContext $ctx, PaperValue $ov) {
-        $vs = $ov->value_list();
-        if (!empty($vs)) {
-            $tmap = $this->topic_set();
-            $vs = array_map(function ($t) use ($tmap) { return $tmap[$t]; }, $vs);
-        }
-        return $vs;
-    }
-
     function value_store(PaperValue $ov, PaperStatus $ps) {
         $badvs = $ov->anno("bad_values") ?? [];
         if (!empty($badvs)) {
@@ -293,6 +284,14 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             $ts[] = $topicset->name($tid);
         }
         $fr->set_text(join("\n", $ts));
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        $vs = $ov->value_list();
+        if (!empty($vs)) {
+            $tmap = $this->topic_set();
+            $vs = array_map(function ($t) use ($tmap) { return $tmap[$t]; }, $vs);
+        }
+        return $vs;
     }
 
     function parse_search(SearchWord $sword, PaperSearch $srch) {
