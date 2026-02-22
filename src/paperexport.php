@@ -11,12 +11,6 @@ class PaperExport {
     public $viewer;
     /** @var bool
      * @readonly */
-    public $include_docids = false;
-    /** @var bool
-     * @readonly */
-    public $include_content = false;
-    /** @var bool
-     * @readonly */
     public $include_permissions = true;
     /** @var bool
      * @readonly */
@@ -24,33 +18,22 @@ class PaperExport {
     /** @var bool
      * @readonly */
     public $override_ratings = false;
-    /** @var list<callable> */
-    private $_on_document_export = [];
 
-    /** @var ?CheckFormat */
-    private $_cf;
+    /** @var RenderContext */
+    private $_ctx;
     /** @var ?ReviewForm */
     private $_rf;
 
-    function __construct(Contact $viewer) {
+    /** @param int $context */
+    function __construct(Contact $viewer, $context = FieldRender::CFJSON) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
+        $this->_ctx = new RenderContext($context, $viewer);
     }
 
-    /** @param bool $x
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
-    function set_include_docids($x) {
-        $this->include_docids = $x;
-        return $this;
-    }
-
-    /** @param bool $x
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
-    function set_include_content($x) {
-        $this->include_content = $x;
-        return $this;
+    /** @return RenderContext */
+    function render_context() {
+        return $this->_ctx;
     }
 
     /** @param bool $x
@@ -77,81 +60,25 @@ class PaperExport {
         return $this;
     }
 
-    /** @param callable(object,DocumentInfo,int,PaperStatus):(?bool) $cb
+    /** @param callable(object,DocumentInfo,RenderContext):(?bool) $cb
      * @return $this */
     function on_document_export($cb) {
-        $this->_on_document_export[] = $cb;
+        $this->_ctx->on_document_export($cb);
         return $this;
     }
 
-
     /** @return ?object */
     function document_json(?DocumentInfo $doc) {
-        if (!$doc) {
-            return null;
-        }
-
-        $d = (object) [];
-        if ($doc->paperStorageId > 0 && $this->include_docids) {
-            $d->docid = $doc->paperStorageId;
-        }
-        if ($doc->mimetype) {
-            $d->mimetype = $doc->mimetype;
-        }
-        if ($doc->has_hash()) {
-            $d->hash = $doc->text_hash();
-        }
-        if ($doc->timestamp) {
-            $d->timestamp = $doc->timestamp;
-        }
-        if (($sz = $doc->size()) >= 0) {
-            $d->size = $sz;
-        }
-        if ($doc->filename) {
-            $d->filename = $doc->filename;
-        }
-        if ($this->include_content
-            && ($content = $doc->content()) !== false) {
-            $d->content_base64 = base64_encode($content);
-        }
-        if ($doc->mimetype === "application/pdf") {
-            $this->decorate_pdf_document_json($d, $doc);
-        }
-        foreach ($this->_on_document_export as $cb) {
-            if (call_user_func($cb, $d, $doc, $doc->documentType, $this) === false)
-                return null;
-        }
-        return count(get_object_vars($d)) ? $d : null;
-    }
-
-    /** @param object $d */
-    function decorate_pdf_document_json($d, DocumentInfo $doc) {
-        if (($spec = $this->conf->format_spec($doc->documentType))
-            && !$spec->is_empty()) {
-            $this->_cf = $this->_cf ?? new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
-            if ($this->_cf->check_document($doc)) {
-                if ($this->_cf->npages !== null) {
-                    $d->pages = $this->_cf->npages;
-                }
-                if ($this->_cf->has_problem()) {
-                    $d->format_status = $this->_cf->has_error() ? "error" : "warning";
-                    $d->format_problem_fields = $this->_cf->problem_fields();
-                } else {
-                    $d->format_status = "ok";
-                }
-                return;
-            }
-        }
-        if (($np = $doc->npages()) !== null) {
-            $d->pages = $np;
-        }
+        return $this->_ctx->document_json($doc);
     }
 
     /** @param int|PaperInfo $prow
      * @return ?object */
     function paper_json($prow) {
         if (is_int($prow)) {
-            $prow = $this->conf->paper_by_id($prow, $this->viewer, ["topics" => true, "options" => true]);
+            $prow = $this->conf->paper_by_id($prow, $this->viewer, [
+                "topics" => true, "options" => true
+            ]);
         }
         if (!$prow || !$this->viewer->can_view_paper($prow)) {
             return null;
@@ -170,7 +97,7 @@ class PaperExport {
                 continue;
             }
             $ov = $prow->force_option($opt);
-            $oj = $opt->value_export_json($ov, $this);
+            $oj = $opt->json($this->_ctx, $ov);
             if ($oj === null) {
                 continue;
             }

@@ -76,7 +76,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         }
     }
 
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         $vs = $ov->value_list();
         if (!empty($vs)) {
             $tmap = $this->topic_set();

@@ -42,7 +42,7 @@ class Contacts_PaperOption extends PaperOption {
         $ov->set_value_data(array_keys($va), array_values($va));
         $ov->set_anno("users", $ca);
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         $ca = [];
         foreach (self::users_anno($ov) as $u) {
             if ($u->contactId >= 0)

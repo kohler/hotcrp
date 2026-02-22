@@ -16,7 +16,7 @@ class Collaborators_PaperOption extends PaperOption {
             && (strlen($ov->data()) > 10
                 || strcasecmp(trim($ov->data()), "none") !== 0);
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         return $ov->value ? $ov->data() : null;
     }
     function value_check(PaperValue $ov, Contact $user) {

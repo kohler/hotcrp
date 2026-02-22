@@ -16,7 +16,7 @@ class Authors_PaperOption extends PaperOption {
     function value_force(PaperValue $ov) {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         $au = [];
         foreach (self::author_list($ov) as $auth) {
             $au[] = $auth->unparse_nea_json();

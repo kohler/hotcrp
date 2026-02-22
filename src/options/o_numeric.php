@@ -11,7 +11,7 @@ class Numeric_PaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function value_export_json(PaperValue $ov, PaperExport $ps) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         return $ov->value;
     }
 

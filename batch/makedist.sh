@@ -483,6 +483,7 @@ src/papertable.php
 src/paperrank.php
 src/papervalue.php
 src/quicklinksrenderer.php
+src/rendercontext.php
 src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php

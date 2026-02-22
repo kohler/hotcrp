@@ -281,7 +281,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         return $elist;
     }
 
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         if ($ov->value_count() === 0) {
             return false;
         }

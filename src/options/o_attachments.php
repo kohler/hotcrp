@@ -38,10 +38,10 @@ class Attachments_PaperOption extends PaperOption {
         array_multisort($data, SORT_NUMERIC, $values);
         return $values;
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         $attachments = [];
         foreach ($ov->documents() as $doc) {
-            if (($dj = $pex->document_json($doc)))
+            if (($dj = $ctx->document_json($doc)))
                 $attachments[] = $dj;
         }
         return empty($attachments) ? null : $attachments;

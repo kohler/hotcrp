@@ -709,10 +709,6 @@ class PaperOption implements JsonSerializable {
     function value_dids(PaperValue $ov) {
         return [];
     }
-    /** @return mixed */
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
-        return null;
-    }
 
     /** @return bool */
     function value_check_required(PaperValue $ov) {
@@ -1006,6 +1002,17 @@ class PaperOption implements JsonSerializable {
         return [];
     }
 
+    /** @return mixed
+     * @suppress PhanDeprecatedFunction */
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return $this->value_export_json($ov, $ctx);
+    }
+    /** @return mixed
+     * @deprecated */
+    function value_export_json(PaperValue $ov, RenderContext $ctx) {
+        return null;
+    }
+
     /** @return ?FormatSpec */
     function format_spec() {
         return null;
@@ -1146,7 +1153,7 @@ class Checkbox_PaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) <=> ($bv && $bv->value ? 1 : 0);
     }
 
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         return $ov->value ? true : false;
     }
 
@@ -1307,7 +1314,7 @@ class Selector_PaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         return $this->values[$ov->value - 1] ?? null;
     }
 
@@ -1472,11 +1479,11 @@ class Document_PaperOption extends PaperOption {
         }
         return [];
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         if (!$this->value_present($ov)) {
             return null;
         }
-        return $pex->document_json($ov->document(0)) ?? false;
+        return $ctx->document_json($ov->document(0)) ?? false;
     }
     function value_check(PaperValue $ov, Contact $user) {
         parent::value_check($ov, $user);
@@ -1789,7 +1796,7 @@ class Text_PaperOption extends PaperOption {
         return $this->conf->collator()->compare($av, $bv);
     }
 
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
     }

@@ -55,10 +55,10 @@ class PCConflicts_PaperOption extends PaperOption {
         /** @phan-suppress-next-line PhanTypeMismatchArgument */
         $ov->set_value_data(array_keys($vm), array_values($vm));
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         $pcm = $this->conf->pc_members();
         $confset = $this->conf->conflict_set();
-        $can_view_authors = $pex->viewer->can_view_authors($ov->prow);
+        $can_view_authors = $ctx->viewer->can_view_authors($ov->prow);
         $pcc = [];
         foreach (self::value_map($ov) as $k => $v) {
             $v = (int) $v;

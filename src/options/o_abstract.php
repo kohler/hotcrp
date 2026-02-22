@@ -16,7 +16,7 @@ class Abstract_PaperOption extends PaperOption {
             && (strlen($ov->data()) > 6
                 || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
     }
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    function json(RenderContext $ctx, PaperValue $ov) {
         return (string) $ov->data();
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
