@@ -544,18 +544,6 @@ function xassert($x, $description = "") {
     return !!$x;
 }
 
-/** @return void */
-function xassert_exit() {
-    $ok = Xassert::$nsuccess > 0
-        && Xassert::$nsuccess === Xassert::$n
-        && Xassert::$nerror === 0;
-    echo ($ok ? "* " : "! "), plural(Xassert::$nsuccess, "test"), " succeeded out of ", Xassert::$n, " tried.\n";
-    if (Xassert::$nerror !== 0) {
-        echo "! ", plural(Xassert::$nerror, "other error"), ".\n";
-    }
-    exit($ok ? 0 : 1);
-}
-
 /** @param string $rest
  * @return bool */
 function xassert_eqq($actual, $expected, $rest = "") {
@@ -1264,6 +1252,12 @@ class TestRunner {
     private $verbose_test;
     /** @var ?object */
     private $save_stack;
+    /** @var int */
+    private $test_index = 0;
+    /** @var int */
+    private $test_count = 1;
+    /** @var int */
+    private $test_digits = 1;
 
 
     function __construct($arg) {
@@ -1455,7 +1449,9 @@ class TestRunner {
         if (!$this->need_newline) {
             return;
         }
-        if ($this->color) {
+        if (!$this->color) {
+            fwrite(STDERR, "\n");
+        } else if (($this->verbose_test ?? "") !== "") {
             fwrite(STDERR, "\r{$this->verbose_test}\x1b[K\n");
         } else {
             fwrite(STDERR, "\n");
@@ -1465,6 +1461,7 @@ class TestRunner {
 
     function will_fail() {
         if ($this->verbose_test === null) {
+            $this->will_print();
             return;
         }
         if ($this->color) {
@@ -1674,6 +1671,12 @@ class TestRunner {
             return;
         }
 
+        if ($this->color && !$this->verbose) {
+            fwrite(STDERR, sprintf("\r\x1b[38;2;100;140;210m[%*d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
+                                   $this->test_digits, $this->test_index, $this->test_count, $test));
+            $this->need_newline = true;
+        }
+
         $methodmatch = "";
         if (($pos = strpos($test, "::")) !== false) {
             $methodmatch = substr($test, $pos + 2);
@@ -1694,8 +1697,15 @@ class TestRunner {
     }
 
     private function run_test_list($tests) {
+        $this->test_index = 0;
+        $this->test_count = count($tests);
+        $this->test_digits = (int) floor(log10(max($this->test_count, 1))) + 1;
         foreach ($tests as $test) {
+            ++$this->test_index;
             $this->run_test($test);
+        }
+        if ($this->color && !$this->verbose) {
+            fwrite(STDERR, "\r\x1b[K");
         }
     }
 
@@ -1709,6 +1719,26 @@ class TestRunner {
             }
         }
         return $new_tests;
+    }
+
+    private function complete() {
+        $ok = Xassert::$nsuccess > 0
+            && Xassert::$nsuccess === Xassert::$n
+            && Xassert::$nerror === 0;
+        $msg = ($ok ? "* " : "! ")
+            . plural(Xassert::$nsuccess, "test")
+            . " succeeded out of " . Xassert::$n . " tried.";
+        if ($this->color) {
+            $k = $ok ? "1;38;2;40;160;80" : "1;31";
+            $msg = "\x1b[{$k}m{$msg}\x1b[m";
+        }
+        echo $msg, "\n";
+        if (Xassert::$nerror !== 0) {
+            $k0 = $this->color ? "\x1b[31m" : "";
+            $k1 = $this->color ? "\x1b[m" : "";
+            echo $k0, "! ", plural(Xassert::$nerror, "other error"), ".", $k1, "\n";
+        }
+        return $ok;
     }
 
     /** @param 'no_cdb'|'reset_db'|'fresh_db'|class-string ...$tests */
@@ -1741,7 +1771,7 @@ class TestRunner {
         }
         $test_list = $tr->expand($test_list);
         $tr->run_test_list($test_list);
-        xassert_exit();
+        exit($tr->complete() ? 0 : 1);
     }
 }
 

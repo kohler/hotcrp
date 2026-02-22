@@ -50,6 +50,7 @@ class Cdb_Tester {
 
         // different password in localdb => both passwords work
         save_password(self::MARINA, "crapdevitch", false);
+        Xassert::will_print();
         xassert(user(self::MARINA)->check_password("crapdevitch"));
         xassert(user(self::MARINA)->check_password("rosdevitch"));
 
