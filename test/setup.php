@@ -1631,7 +1631,7 @@ class TestRunner {
         }
         $cdb_dsn = $this->save_stack->contactdbDsn;
         if (Conf::$main->opt("contactdbDsn") !== $cdb_dsn) {
-            Conf::$main->opt("contactdbDsn", $cdb_dsn);
+            Conf::$main->set_opt("contactdbDsn", $cdb_dsn);
             Conf::$main->invalidate_caches("cdb");
         }
         $this->skipping = $this->save_stack->skipping;
