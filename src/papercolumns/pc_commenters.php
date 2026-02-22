@@ -24,15 +24,15 @@ class Commenters_PaperColumn extends PaperColumn {
         }, CommentInfo::group_by_identity($crows, $pl->user, true));
         return join(" ", $cnames);
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        $crows = $row->viewable_comments($pl->user);
-        $cnames = array_map(function ($cx) use ($pl) {
-            $t = $cx[0]->unparse_commenter_text($pl->user);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        $crows = $row->viewable_comments($ctx->viewer);
+        $cnames = array_map(function ($cx) use ($ctx) {
+            $t = $cx[0]->unparse_commenter_text($ctx->viewer);
             if ($cx[1] > 1) {
                 $t .= " ({$cx[1]})";
             }
             return $t . $cx[2];
-        }, CommentInfo::group_by_identity($crows, $pl->user, false));
+        }, CommentInfo::group_by_identity($crows, $ctx->viewer, false));
         return join(" ", $cnames);
     }
 }

@@ -92,7 +92,7 @@ class Formula_PaperColumn extends PaperColumn {
         $this->statistics->add_overriding($v, $pl->overriding);
         return $this->value_format->html($v);
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         $v = $this->results[$row->paperId];
         return $this->value_format->text($v);
     }

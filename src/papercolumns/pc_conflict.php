@@ -163,8 +163,8 @@ class Conflict_PaperColumn extends PaperColumn {
         }
         return "<input type=\"radio\" class=\"uic uikd uich js-assign-review js-range-click btn cflt cflt-{$klass} need-tooltip\" data-tooltip-info=\"cflt\" data-range-type=\"assrev{$this->usuffix}cv{$cn}\" name=\"assrev{$row->paperId}u{$this->user->contactId}\" value=\"{$value}\" autocomplete=\"off\" title=\"{$title}\"{$checked}>";
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        $ct = $this->conflict_type($pl, $row);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        $ct = $this->conflict_type($ctx->paper_list(), $row);
         if (!Conflict::is_conflicted($ct)) {
             return "N";
         } else if (!$this->description) {

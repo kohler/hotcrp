@@ -56,8 +56,8 @@ class WordCount_PaperColumn extends PaperColumn {
         }
         return "";
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        return (string) $this->word_count($pl->user, $row);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        return (string) $this->word_count($ctx->viewer, $row);
     }
     function json_ctx(RenderContext $ctx, PaperInfo $row) {
         return $this->word_count($ctx->viewer, $row);

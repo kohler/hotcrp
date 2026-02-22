@@ -162,7 +162,7 @@ class Preference_PaperColumn extends PaperColumn {
 
         return $t;
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         if ($this->not_me && !$this->viewer->can_view_preference($row)) {
             return "";
         }

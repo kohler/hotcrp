@@ -29,7 +29,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
         ksort($y);
         return join(", ", $y);
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         $y = [];
         $pcm = $row->conf->pc_members();
         foreach ($row->conflict_types() as $uid => $ctype) {
@@ -37,7 +37,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
                 || !Conflict::is_conflicted($ctype)) {
                 continue;
             }
-            $y[$pc->pc_index] = $pl->user->reviewer_text_for($pc);
+            $y[$pc->pc_index] = $ctx->viewer->reviewer_text_for($pc);
         }
         ksort($y);
         return join("; ", $y);

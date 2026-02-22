@@ -150,7 +150,13 @@ class PaperColumn extends Column {
     function content(PaperList $pl, PaperInfo $row) {
         return "";
     }
-    /** @return string */
+    /** @return string
+     * @suppress PhanDeprecatedFunction */
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        return $this->text($ctx->paper_list(), $row);
+    }
+    /** @return string
+     * @deprecated */
     function text(PaperList $pl, PaperInfo $row) {
         return "";
     }
@@ -186,7 +192,7 @@ class Id_PaperColumn extends PaperColumn {
         $href = $pl->_paperLink($row);
         return "<a href=\"{$href}\" class=\"pnum taghl\">#{$row->paperId}</a>";
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         return (string) $row->paperId;
     }
     function json_ctx(RenderContext $ctx, PaperInfo $row) {
@@ -237,7 +243,7 @@ class Selector_PaperColumn extends PaperColumn {
         // See also `tagannorow_add` in script.js
         return "<input type=\"checkbox\" class=\"uic uikd js-range-click ignore-diff is-range-group\" data-range-type=\"pap[]\" data-range-group=\"auto\" aria-label=\"Select group\">";
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         return $this->checked($row->paperId) ? "Y" : "N";
     }
     function json_ctx(RenderContext $ctx, PaperInfo $row) {
@@ -314,7 +320,7 @@ class Title_PaperColumn extends PaperColumn {
         }
         return $t;
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         return $row->title();
     }
 }
@@ -368,8 +374,8 @@ class Status_PaperColumn extends PaperColumn {
         }
         return "<span class=\"pstat {$class}\">" . htmlspecialchars($name) . "</span>";
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        list($class, $name) = $row->status_class_and_name($pl->user);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        list($class, $name) = $row->status_class_and_name($ctx->viewer);
         return $name;
     }
 }
@@ -445,8 +451,8 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         list($done, $started) = $this->data($row, $pl->user);
         return "<b>{$done}</b>" . ($done == $started ? "" : "/{$started}");
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        list($done, $started) = $this->data($row, $pl->user);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        list($done, $started) = $this->data($row, $ctx->viewer);
         return $done . ($done == $started ? "" : "/{$started}");
     }
 }
@@ -562,8 +568,8 @@ class Authors_PaperColumn extends PaperColumn {
         }
         return $t;
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        if (!$pl->user->can_view_authors($row) && !$this->anon) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        if (!$ctx->viewer->can_view_authors($row) && !$this->anon) {
             return "";
         }
         $out = [];
@@ -622,7 +628,7 @@ class Collab_PaperColumn extends PaperColumn {
         $regex = $this->highlight ? $pl->search->field_highlighter("co", $row->_search_group) : null;
         return Text::highlight($x, $regex);
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         $x = "";
         foreach (explode("\n", $row->collaborators()) as $c) {
             $x .= ($x === "" ? "" : ", ") . trim($c);
@@ -658,7 +664,7 @@ class Abstract_PaperColumn extends PaperColumn {
         }
         return $t;
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         return $row->abstract();
     }
 }
@@ -806,8 +812,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
         return '<div class="' . join(" ", $c) . '">' . join(" ", $x) . '</div>';
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        list($ranal, $flags) = $this->analysis($pl, $row);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        list($ranal, $flags) = $this->analysis($ctx->paper_list(), $row);
         $t = [];
         if ($flags & self::F_LEAD) {
             $t[] = "Lead";
@@ -867,8 +873,8 @@ class TagList_PaperColumn extends PaperColumn {
             return "";
         }
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        return $pl->tagger->unparse_hashed($row->sorted_viewable_tags($pl->user));
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        return $ctx->paper_list()->tagger->unparse_hashed($row->sorted_viewable_tags($ctx->viewer));
     }
 }
 
@@ -924,8 +930,8 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
         $sci = $this->score_info($pl, $row);
         return $this->format_field->unparse_graph($sci, Discrete_ReviewField::GRAPH_STACK);
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        $si = $this->score_info($pl, $row);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        $si = $this->score_info($ctx->paper_list(), $row);
         $values = array_map([$this->format_field, "unparse_value"], $si->as_sorted_list());
         return join(" ", array_values($values));
     }

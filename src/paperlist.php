@@ -1484,6 +1484,12 @@ final class PaperList extends MessageSet {
         return $this;
     }
 
+    /** @return RenderContext */
+    function render_context() {
+        return (new RenderContext($this->render_context, $this->user))
+            ->set_paper_list($this);
+    }
+
 
     /** @return string */
     function _paperLink(PaperInfo $row) {
@@ -1522,14 +1528,6 @@ final class PaperList extends MessageSet {
             $h .= " " . $this->make_review_analysis($rrow, $prow)->icon_html(false);
         }
         return $h;
-    }
-
-    /** @param int $uid
-     * @param int $flags
-     * @return string */
-    function user_text($uid, $flags = 0) {
-        $u = $uid > 0 ? $this->conf->user_by_id($uid, USER_SLICE) : null;
-        return $u ? $this->user->name_for("t", $u, $flags) : "";
     }
 
     /** @param int $uid1
@@ -2502,6 +2500,7 @@ final class PaperList extends MessageSet {
         if (empty($this->_vcolumns)) {
             return [];
         }
+        $ctx = $this->render_context();
         $data = [];
         $overrides = $this->user->add_overrides($this->_view_force);
         foreach ($this->rowset() as $row) {
@@ -2509,7 +2508,7 @@ final class PaperList extends MessageSet {
             $p = ["id" => $row->paperId];
             foreach ($this->_vcolumns as $fdef) {
                 if (!$fdef->content_empty($this, $row)
-                    && ($text = $fdef->text($this, $row)) !== "") {
+                    && ($text = $fdef->text_ctx($ctx, $row)) !== "") {
                     $p[$fdef->name] = $text;
                 }
             }
@@ -2543,10 +2542,7 @@ final class PaperList extends MessageSet {
             return ["fields" => [], "papers" => []];
         }
         $ishtml = ($frflags & FieldRender::CFHTML) !== 0;
-        $jctx = null;
-        if (($frflags & FieldRender::CFJSON) !== 0) {
-            $jctx = (new RenderContext($frflags, $this->user))->set_paper_list($this);
-        }
+        $ctx = $this->render_context();
 
         // turn off forceShow
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
@@ -2561,10 +2557,10 @@ final class PaperList extends MessageSet {
                     $content = $this->_column_html($fdef, $row);
                 } else if ($fdef->content_empty($this, $row)) {
                     $content = null;
-                } else if ($jctx !== null) {
-                    $content = $fdef->json_ctx($jctx, $row);
+                } else if (($frflags & FieldRender::CFJSON) !== 0) {
+                    $content = $fdef->json_ctx($ctx, $row);
                 } else {
-                    $content = $fdef->text($this, $row);
+                    $content = $fdef->text_ctx($ctx, $row);
                 }
                 if ($content === null
                     || ($content === "" && $format !== self::FORMAT_JSON)) {
@@ -2621,12 +2617,12 @@ final class PaperList extends MessageSet {
     }
 
     /** @return list<string> */
-    private function _row_text_csv_data(PaperInfo $row) {
+    private function _row_text_csv_data(RenderContext $ctx, PaperInfo $row) {
         $csvrow = [];
         foreach ($this->_vcolumns as $fdef) {
             $t = "";
             if (!$fdef->content_empty($this, $row)) {
-                $t = $fdef->text($this, $row);
+                $t = $fdef->text_ctx($ctx, $row);
             }
             $csvrow[] = $t;
             if ($t !== "") {
@@ -2667,6 +2663,7 @@ final class PaperList extends MessageSet {
     function text_csv() {
         // get column list, check sort
         $this->_reset_vcolumns(FieldRender::CFLIST | FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
+        $ctx = $this->render_context();
         $overrides = $this->user->add_overrides($this->_view_force);
 
         // collect row data
@@ -2677,7 +2674,7 @@ final class PaperList extends MessageSet {
             if ($grouppos >= 0) {
                 $grouppos = $this->_mark_groups_csv($grouppos, $body);
             }
-            $body[] = $this->_row_text_csv_data($row);
+            $body[] = $this->_row_text_csv_data($ctx, $row);
         }
 
         // header cells

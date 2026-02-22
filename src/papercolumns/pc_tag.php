@@ -195,7 +195,7 @@ class Tag_PaperColumn extends PaperColumn {
         $vt = $v === null ? "" : ($v === true ? "0" : (string) $v);
         return "<input type=\"text\" class=\"uich uikd edittag\" size=\"4\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$vt}\">";
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         if (($v = $row->tag_value($this->etag)) === null) {
             return "";
         } else if ($v === 0.0 && !$this->is_value) {

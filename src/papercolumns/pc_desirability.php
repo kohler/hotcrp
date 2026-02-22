@@ -20,7 +20,7 @@ class Desirability_PaperColumn extends PaperColumn {
         $d = $row->desirability();
         return $d < 0 ? "−" /*U+2122*/ . (-$d) : (string) $d;
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         return (string) $row->desirability();
     }
     function json_ctx(RenderContext $ctx, PaperInfo $row) {

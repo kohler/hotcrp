@@ -33,7 +33,7 @@ class TopicScore_PaperColumn extends PaperColumn {
         $this->statistics->add_overriding($v, $pl->overriding);
         return self::unparse_value($v);
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         return (string) $row->topic_interest_score($this->contact);
     }
     function json_ctx(RenderContext $ctx, PaperInfo $row) {

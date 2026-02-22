@@ -76,7 +76,7 @@ class Option_PaperColumn extends PaperColumn {
         }
         return '<div class="' . $klass . '">' . $fr->value . '</div>';
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         $ov = $row->option($this->opt);
         if (!$ov) {
             return "";

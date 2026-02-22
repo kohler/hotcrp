@@ -38,7 +38,7 @@ class Administrator_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         return $pl->user_content($row->managerContactId, $row, $this->nameflags);
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        return $pl->user_text($row->managerContactId, $this->nameflags);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        return $ctx->user_text($row->managerContactId, $this->nameflags);
     }
 }

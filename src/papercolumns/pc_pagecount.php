@@ -86,8 +86,8 @@ class PageCount_PaperColumn extends PaperColumn {
         $dtx = $dt ? " data-dt=\"{$dt}\"" : "";
         return "<span class=\"need-format-check is-npages\"{$dtx}></span>";
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        return (string) $this->page_count($pl->user, $row);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        return (string) $this->page_count($ctx->viewer, $row);
     }
     function json_ctx(RenderContext $ctx, PaperInfo $row) {
         return $this->page_count($ctx->viewer, $row);

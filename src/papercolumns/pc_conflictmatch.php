@@ -50,7 +50,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         }
         return "<div class=\"potentialconflict-many\">" . join("", $m) . "</div>";
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
         $pf = $row->preference($this->contact);
         $ts = [];
         if ($pf->preference <= -100) {

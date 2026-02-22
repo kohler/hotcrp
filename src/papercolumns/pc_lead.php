@@ -41,7 +41,7 @@ class Lead_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         return $pl->user_content($row->leadContactId, $row, $this->nameflags);
     }
-    function text(PaperList $pl, PaperInfo $row) {
-        return $pl->user_text($row->leadContactId, $this->nameflags);
+    function text_ctx(RenderContext $ctx, PaperInfo $row) {
+        return $ctx->user_text($row->leadContactId, $this->nameflags);
     }
 }

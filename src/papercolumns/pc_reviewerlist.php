@@ -85,13 +85,13 @@ class ReviewerList_PaperColumn extends PaperColumn {
         }
         return $x ? "<ul class=\"comma\">" . join("", $x) . "</ul>" : "";
     }
-    function text(PaperList $pl, PaperInfo $prow) {
+    function text_ctx(RenderContext $ctx, PaperInfo $prow) {
         $x = [];
-        $pref = $this->pref && $pl->user->can_view_preference($prow);
+        $pref = $this->pref && $ctx->viewer->can_view_preference($prow);
         foreach ($prow->reviews_as_display() as $xrow) {
-            if ($pl->user->can_view_review_identity($prow, $xrow)
-                && (!$this->rsm || $this->rsm->test_review($pl->user, $prow, $xrow))) {
-                $t = $pl->user->reviewer_text_for($xrow);
+            if ($ctx->viewer->can_view_review_identity($prow, $xrow)
+                && (!$this->rsm || $this->rsm->test_review($ctx->viewer, $prow, $xrow))) {
+                $t = $ctx->viewer->reviewer_text_for($xrow);
                 if ($pref) {
                     $pf = $prow->preference($xrow->contactId);
                     $t .= " P" . unparse_number_pm_text($pf->preference) . unparse_expertise($pf->expertise);
