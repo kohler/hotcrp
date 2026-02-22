@@ -1673,7 +1673,7 @@ class TestRunner {
         }
 
         if ($this->color && !$this->verbose) {
-            fwrite(STDERR, sprintf("\r\x1b[38;2;100;140;210m[%{$this->test_digits}d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
+            fwrite(STDERR, sprintf("\r\x1b[38;2;212;23;67m[%{$this->test_digits}d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
                                    $this->test_index, $this->test_count, $test));
             $this->need_newline = true;
         }
