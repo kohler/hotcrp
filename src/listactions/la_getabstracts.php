@@ -4,75 +4,34 @@
 
 class GetAbstracts_ListAction extends ListAction {
     const WIDTH = 96;
-    /** @param FieldRender $fr
-     * @param PaperInfo $prow
-     * @param Contact $user
-     * @param PaperOption $o */
-    private static function render_abstract($fr, $prow, $user, $o) {
-        $fr->value = $prow->abstract();
-        $fr->value_format = $prow->abstract_format();
-    }
-    /** @param FieldRender $fr
-     * @param PaperInfo $prow
-     * @param Contact $user
-     * @param PaperOption $o */
-    private static function render_authors($fr, $prow, $user, $o) {
-        if ($user->can_view_authors($prow)
-            && ($alist = $prow->author_list())) {
-            $fr->title = $o->title(new FmtArg("count", count($alist)));
-            $fr->set_text("");
-            foreach ($alist as $i => $au) {
-                $marker = ($i || count($alist) > 1 ? ($i + 1) . ". " : "");
-                $fr->value .= prefix_word_wrap($marker, $au->name(NAME_E|NAME_A), strlen($marker), self::WIDTH);
-            }
-        }
-    }
-    /** @param FieldRender $fr
-     * @param PaperInfo $prow
-     * @param Contact $user
-     * @param PaperOption $o */
-    private static function render_topics($fr, $prow, $user, $o) {
-        if (($tlist = $prow->topic_map())) {
-            $fr->title = $o->title(new FmtArg("count", count($tlist)));
-            $fr->set_text("");
-            foreach ($tlist as $t) {
-                $fr->value .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
-            }
-        }
-    }
+
     static function render(PaperInfo $prow, Contact $user) {
         $n = prefix_word_wrap("", "Submission #{$prow->paperId}: {$prow->title}", 0, self::WIDTH);
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
-        $fr = new FieldRender(FieldRender::CFTEXT, $user);
+        $ctx = (new RenderContext(FieldRender::CFTEXT | FieldRender::CFDECORATE, $user))
+            ->set_width(self::WIDTH);
         foreach ($user->conf->options()->page_fields($prow) as $o) {
-            if (($o->id <= 0 || $user->allow_view_option($prow, $o))
-                && $o->on_page()) {
-                $fr->clear();
-                if ($o->id === -1004) {
-                    self::render_abstract($fr, $prow, $user, $o);
-                } else if ($o->id === -1001) {
-                    self::render_authors($fr, $prow, $user, $o);
-                } else if ($o->id === -1005) {
-                    self::render_topics($fr, $prow, $user, $o);
-                } else if ($o->id > 0
-                           && ($ov = $prow->option($o))) {
-                    $o->render($fr, $ov);
-                }
-                if (!$fr->is_empty()) {
-                    if ($fr->title === null) {
-                        $fr->title = $o->title();
-                    }
-                    $title = prefix_word_wrap("", $fr->title, 0, self::WIDTH);
-                    $text .= $title
-                        . str_repeat("-", min(self::WIDTH, strlen($title) - 1))
-                        . "\n" . rtrim($fr->value) . "\n\n";
-                }
+            if (!$o->on_page()
+                || !$user->allow_view_option($prow, $o)
+                || // of intrinsics, only author, abstract, topics
+                   ($o->id <= 0 && $o->id !== -1001 && $o->id !== -1004 && $o->id !== -1005)
+                || $o->has_document()
+                || !($ov = $prow->option($o))
+                || !$o->value_present($ov)
+                || ($t = $o->text($ctx, $ov) ?? "") === "") {
+                continue;
             }
+            $vt = $o->value_title($ov);
+            $title = prefix_word_wrap("", $vt, 0, self::WIDTH);
+            $text .= $title
+                . str_repeat("-", min(self::WIDTH, grapheme_strlen($vt)))
+                . "\n" . rtrim($t) . "\n\n";
         }
 
         return $text . "\n";
     }
+
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $texts = [];
         $lastpid = null;

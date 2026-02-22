@@ -14,9 +14,6 @@ class Nonblind_PaperOption extends PaperOption {
             $ov->set_value_data([1], [null]);
         }
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        return !!$ov->value;
-    }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         if (!$ov->equals($ov->prow->base_option($this->id))) {
             $ov->prow->set_prop("blind", $ov->value ? 0 : 1);
@@ -59,5 +56,11 @@ class Nonblind_PaperOption extends PaperOption {
                 '</span>', $s, '</label></div>';
         }
         echo "</div></div>\n\n";
+    }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return $ov->value ? "Non-anonymous submission" : "Anonymous submission";
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        return !!$ov->value;
     }
 }

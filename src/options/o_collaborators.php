@@ -75,6 +75,12 @@ class Collaborators_PaperOption extends PaperOption {
         $n[] = "</ul>";
         $fr->set_html(join("", $n));
     }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        if ($ov->value) {
+            return $ov->data();
+        }
+        return $ctx->context & FieldRender::CFVERBOSE ? "None" : "";
+    }
     function json(RenderContext $ctx, PaperValue $ov) {
         return $ov->value ? $ov->data() : null;
     }

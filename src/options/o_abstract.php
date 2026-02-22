@@ -41,7 +41,7 @@ class Abstract_PaperOption extends PaperOption {
         if ($fr->want(FieldRender::CFPAGE)) {
             $fr->table->render_abstract($fr, $this);
         } else {
-            $text = $ov->prow->abstract();
+            $text = (string) $ov->data();
             if ($text !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();
@@ -50,6 +50,13 @@ class Abstract_PaperOption extends PaperOption {
                 $fr->set_text("[No abstract]");
             }
         }
+    }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        $text = (string) $ov->data();
+        if ($text === "" && $this->required && $ctx->verbose()) {
+            $text = "[No abstract]";
+        }
+        return $text;
     }
     function json(RenderContext $ctx, PaperValue $ov) {
         return (string) $ov->data();

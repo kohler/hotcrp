@@ -64,6 +64,9 @@ class RealNumber_PaperOption extends PaperOption {
             $fr->set_text($ov->data());
         }
     }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return $ov->value !== null ? $ov->data() : "";
+    }
     function json(RenderContext $ctx, PaperValue $ov) {
         return $ov->value !== null ? floatval($ov->data()) : null;
     }

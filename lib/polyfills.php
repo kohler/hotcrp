@@ -102,6 +102,12 @@ if (!function_exists("normalizer_normalize")) {
     }
 }
 
+if (!function_exists("grapheme_strlen")) {
+    function grapheme_strlen($text) {
+        return strlen($text); /* XXX */
+    }
+}
+
 if (!function_exists("openssl_cipher_key_length")) {
     /** @param string $cipher
      * @return int|false */

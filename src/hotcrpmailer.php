@@ -472,12 +472,11 @@ class HotCRPMailer extends Mailer {
             || !($ov = $this->row->option($uf->option))) {
             return $isbool ? false : "";
         }
-        $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permuser);
-        $uf->option->render($fr, $ov);
+        $t = $uf->option->text(new RenderContext(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permuser), $ov);
         if ($isbool) {
-            return ($fr->value ?? "") !== "";
+            return ($t ?? "") !== "";
         }
-        return (string) $fr->value;
+        return (string) $t;
     }
     function kw_paperpc($args, $isbool, $uf) {
         $k = "{$uf->pctype}ContactId";

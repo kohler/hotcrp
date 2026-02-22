@@ -245,12 +245,17 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         echo '</fieldset>';
     }
 
+    function value_title(PaperValue $ov) {
+        return $this->title(new FmtArg("count", count($ov->value_list())));
+    }
+
     function render(FieldRender $fr, PaperValue $ov) {
         $vs = $ov->value_list();
         if (empty($vs)) {
             return;
         } else if ($fr->want(FieldRender::CFTEXT)) {
-            $this->render_text($fr, $ov);
+            $ctx = new RenderContext($fr->context, $fr->user ?? $this->conf->root_user());
+            $fr->set_text($this->text($ctx, $ov));
             return;
         }
         $interests = $this->interests($fr->user);
@@ -271,20 +276,25 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             $ts[] = "{$t}\">{$x}</li>";
             $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
         }
-        $fr->title = $this->title(new FmtArg("count", count($ts)));
+        $fr->title = $this->value_title($ov);
         $fr->set_html("<ul class=\"topict topict-{$lenclass}\">" . join("", $ts) . '</ul>');
         $fr->value_long = true;
     }
 
-    private function render_text(FieldRender $fr, PaperValue $ov) {
-        $interests = $this->interests($fr->user);
+    function text(RenderContext $ctx, PaperValue $ov) {
+        $decorate = ($ctx->context & FieldRender::CFDECORATE) !== 0;
         $ts = [];
         $topicset = $this->topic_set();
         foreach ($ov->value_list() as $tid) {
-            $ts[] = $topicset->name($tid);
+            $n = $topicset->name($tid);
+            if ($decorate) {
+                $n = rtrim($ctx->wrap_text("* ", $n, 2));
+            }
+            $ts[] = $n;
         }
-        $fr->set_text(join("\n", $ts));
+        return empty($ts) ? "None" : join("\n", $ts);
     }
+
     function json(RenderContext $ctx, PaperValue $ov) {
         $vs = $ov->value_list();
         if (!empty($vs)) {

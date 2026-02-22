@@ -225,6 +225,13 @@ class Attachments_PaperOption extends PaperOption {
             $fr->value = "<div class=\"pgsm{$v}\">{$fr->value}</div>";
         }
     }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        $ts = [];
+        foreach ($ov->document_set() as $doc) {
+            $ts[] = $ctx->document_text($doc, true);
+        }
+        return join("; ", $ts);
+    }
     function json(RenderContext $ctx, PaperValue $ov) {
         $attachments = [];
         foreach ($ov->documents() as $doc) {

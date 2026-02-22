@@ -168,7 +168,7 @@ class PaperColumn extends Column {
     /** @return mixed
      * @deprecated */
     function json(PaperList $pl, PaperInfo $row) {
-        return $this->text($pl, $row);
+        return $this->text_ctx($pl->render_context(), $row);
     }
 
     /** @return bool */

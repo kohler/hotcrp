@@ -78,13 +78,11 @@ class Option_PaperColumn extends PaperColumn {
     }
     function text_ctx(RenderContext $ctx, PaperInfo $row) {
         $ov = $row->option($this->opt);
-        if (!$ov) {
-            return "";
-        }
-
-        $this->fr->clear();
-        $this->opt->render($this->fr, $ov);
-        return (string) $this->fr->value;
+        return $ov ? $this->opt->text($ctx, $ov) : "";
+    }
+    function json_ctx(RenderContext $ctx, PaperInfo $row) {
+        $ov = $row->option($this->opt);
+        return $ov ? $this->opt->json($ctx, $ov) : null;
     }
 }
 

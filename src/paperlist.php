@@ -2507,9 +2507,11 @@ final class PaperList extends MessageSet {
             $this->_row_setup($row);
             $p = ["id" => $row->paperId];
             foreach ($this->_vcolumns as $fdef) {
-                if (!$fdef->content_empty($this, $row)
-                    && ($text = $fdef->text_ctx($ctx, $row)) !== "") {
-                    $p[$fdef->name] = $text;
+                if (!$fdef->content_empty($this, $row)) {
+                    $ctx->set_view_options($fdef->view_options());
+                    if (($t = $fdef->text_ctx($ctx, $row)) !== "") {
+                        $p[$fdef->name] = $t;
+                    }
                 }
             }
             $data[$row->paperId] = $p;
@@ -2556,11 +2558,14 @@ final class PaperList extends MessageSet {
                 if ($ishtml) {
                     $content = $this->_column_html($fdef, $row);
                 } else if ($fdef->content_empty($this, $row)) {
-                    $content = null;
-                } else if (($frflags & FieldRender::CFJSON) !== 0) {
-                    $content = $fdef->json_ctx($ctx, $row);
+                    continue;
                 } else {
-                    $content = $fdef->text_ctx($ctx, $row);
+                    $ctx->set_view_options($fdef->view_options());
+                    if (($frflags & FieldRender::CFJSON) !== 0) {
+                        $content = $fdef->json_ctx($ctx, $row);
+                    } else {
+                        $content = $fdef->text_ctx($ctx, $row);
+                    }
                 }
                 if ($content === null
                     || ($content === "" && $format !== self::FORMAT_JSON)) {
@@ -2622,6 +2627,7 @@ final class PaperList extends MessageSet {
         foreach ($this->_vcolumns as $fdef) {
             $t = "";
             if (!$fdef->content_empty($this, $row)) {
+                $ctx->set_view_options($fdef->view_options());
                 $t = $fdef->text_ctx($ctx, $row);
             }
             $csvrow[] = $t;

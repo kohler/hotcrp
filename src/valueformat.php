@@ -267,27 +267,26 @@ class ReviewField_ValueFormat extends ValueFormat {
 class SubmissionField_ValueFormat extends ValueFormat {
     /** @var PaperOption */
     private $sf;
-    /** @var FieldRender */
-    private $fr;
+    /** @var Contact */
+    private $viewer;
     /** @var PaperInfo */
     private $prow;
 
     function __construct(Contact $user, PaperOption $sf) {
         $this->sf = $sf;
-        $this->fr = new FieldRender(FieldRender::CFHTML, $user);
+        $this->viewer = $user;
         $this->prow = PaperInfo::make_placeholder($user->conf, -1);
     }
 
     function vtext($x) {
-        $this->fr->set_context(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
-        $this->sf->render($this->fr, PaperValue::make($this->prow, $this->sf, $x));
-        return $this->fr->value_text();
+        $ctx = new RenderContext(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE, $this->viewer);
+        return $this->sf->text($ctx, PaperValue::make($this->prow, $this->sf, $x));
     }
 
     function vhtml($x) {
-        $this->fr->set_context(FieldRender::CFHTML);
-        $this->sf->render($this->fr, PaperValue::make($this->prow, $this->sf, $x));
-        return $this->fr->value_html();
+        $fr = new FieldRender(FieldRender::CFHTML, $this->viewer);
+        $this->sf->render($fr, PaperValue::make($this->prow, $this->sf, $x));
+        return $fr->value_html();
     }
 
     function difference_format() {

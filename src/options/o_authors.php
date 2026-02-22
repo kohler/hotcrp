@@ -362,6 +362,10 @@ class Authors_PaperOption extends PaperOption {
         return [new FmtArg("max", $this->max_count)];
     }
 
+    function value_title(PaperValue $ov) {
+        return $this->title(new FmtArg("count", count(self::author_list($ov))));
+    }
+
     function render(FieldRender $fr, PaperValue $ov) {
         if ($fr->want(FieldRender::CFPAGE)) {
             $fr->table->render_authors($fr, $this);
@@ -374,10 +378,24 @@ class Authors_PaperOption extends PaperOption {
         $names[] = "</ul>";
         $fr->set_html(join("", $names));
     }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        $decorate = ($ctx->context & FieldRender::CFDECORATE) !== 0;
+        $alist = self::author_list($ov);
+        $names = [];
+        foreach ($alist as $i => $au) {
+            $name = $ctx->user_text($au, NAME_E | NAME_A);
+            if ($decorate) {
+                $pfx = count($alist) > 1 ? ($i + 1) . ". " : "";
+                $name = rtrim($ctx->wrap_text($pfx, $name, 4));
+            }
+            $names[] = $name;
+        }
+        return empty($names) ? "None" : join("\n", $names);
+    }
     function json(RenderContext $ctx, PaperValue $ov) {
         $au = [];
         foreach (self::author_list($ov) as $auth) {
-            $au[] = $auth->unparse_nea_json();
+            $au[] = $ctx->user_json($auth);
         }
         return $au;
     }

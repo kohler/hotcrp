@@ -310,6 +310,27 @@ class PCConflicts_PaperOption extends PaperOption {
             }
         }
     }
+
+    private function visible_conflict_list(Contact $viewer, PaperValue $ov) {
+        $can_view_authors = $viewer->can_view_authors($ov->prow);
+        $pcm = $this->conf->pc_members();
+        $l = [];
+        foreach (self::value_map($ov) as $cid => $v) {
+            $ct = (int) $v;
+            if (!Conflict::is_conflicted($ct)
+                || !($p = $pcm[$cid] ?? null)) {
+                continue;
+            }
+            if (!$can_view_authors) {
+                $ct = Conflict::CT_GENERIC;
+            } else if ($ct & CONFLICT_CONTACTAUTHOR) {
+                $ct = ($ct & ~CONFLICT_CONTACTAUTHOR) | CONFLICT_AUTHOR;
+            }
+            $l[$p->pc_index] = [$p, $ct];
+        }
+        ksort($l);
+        return array_values($l);
+    }
     function render(FieldRender $fr, PaperValue $ov) {
         if (!$this->test_visible($ov->prow)) {
             return;
@@ -320,56 +341,45 @@ class PCConflicts_PaperOption extends PaperOption {
         $pcm = $this->conf->pc_members();
         $confset = $this->selectors ? $this->conf->conflict_set() : null;
         $names = [];
-        foreach ($ov->prow->conflict_type_list() as $cflt) {
-            if (!Conflict::is_conflicted($cflt->conflictType)
-                || !($p = $pcm[$cflt->contactId] ?? null)) {
-                continue;
-            }
+        foreach ($this->visible_conflict_list($user, $ov) as $uct) {
+            list($p, $ct) = $uct;
             $t = $user->reviewer_extended_html_for($p);
             if ($p->affiliation) {
                 $t .= " <span class=\"auaff\">(" . htmlspecialchars($p->affiliation) . ")</span>";
             }
-            $ch = "";
-            if ($can_view_authors) {
-                if (Conflict::is_author($cflt->conflictType)) {
-                    $ch = "<strong>Author</strong>";
-                } else if ($confset) {
-                    $ch = $confset->unparse_html($cflt->conflictType);
-                }
-            }
-            if ($ch !== "") {
+            if ($ct === Conflict::CT_GENERIC) {
+                // nothing
+            } else if (Conflict::is_author($ct)) {
+                $t .= " – <strong>Author</strong>";
+            } else if ($confset && ($ch = $confset->unparse_html($ct))) {
                 $t .= " – {$ch}";
             }
-            $names[$p->pc_index] = "<li class=\"odname\">{$t}</li>";
+            $names[] = "<li class=\"odname\">{$t}</li>";
         }
         if (empty($names)) {
             $names[] = "<li class=\"odname\">None</li>";
         }
-        ksort($names);
         $fr->set_html("<ul class=\"x namelist-columns\">" . join("", $names) . "</ul>");
     }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        $pcm = $this->conf->pc_members();
+    function text(RenderContext $ctx, PaperValue $ov) {
         $confset = $this->conf->conflict_set();
-        $can_view_authors = $ctx->viewer->can_view_authors($ov->prow);
         $pcc = [];
-        foreach (self::value_map($ov) as $k => $v) {
-            $v = (int) $v;
-            if (!Conflict::is_conflicted($v)
-                || !($pc = $pcm[$k] ?? null)) {
-                continue;
+        foreach ($this->visible_conflict_list($ctx->viewer, $ov) as $uct) {
+            list($p, $ct) = $uct;
+            $t = $ctx->user_text($p);
+            if ($ct !== Conflict::CT_GENERIC) {
+                $t .= ": " . $confset->unparse_text($ct);
             }
-            if (!$can_view_authors) {
-                // Sometimes users can see conflicts but not authors.
-                // Don't expose the kind of conflict during that period.
-                $ct = true;
-            } else {
-                if (($v & CONFLICT_CONTACTAUTHOR) !== 0) {
-                    $v = ($v | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
-                }
-                $ct = $confset->unparse_json($v);
-            }
-            $pcc[$pc->email] = $ct;
+            $pcc[] = $t;
+        }
+        return empty($pcc) ? "None" : join("\n", $pcc);
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        $confset = $this->conf->conflict_set();
+        $pcc = [];
+        foreach ($this->visible_conflict_list($ctx->viewer, $ov) as $uct) {
+            list($p, $ct) = $uct;
+            $pcc[$p->email] = $confset->unparse_json($ct);
         }
         return (object) $pcc;
     }

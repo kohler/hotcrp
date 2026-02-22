@@ -41,6 +41,9 @@ class Title_PaperOption extends PaperOption {
         $fr->value = $ov->prow->title ? : "[No title]";
         $fr->value_format = $ov->prow->title_format();
     }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return (string) $ov->data();
+    }
     function json(RenderContext $ctx, PaperValue $ov) {
         return (string) $ov->data();
     }

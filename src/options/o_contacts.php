@@ -21,6 +21,25 @@ class Contacts_PaperOption extends PaperOption {
         }
         return false;
     }
+    /** @param PaperValue $ov
+     * @return list<Contact> */
+    private function value_users($ov) {
+        $ca = [];
+        foreach (self::users_anno($ov) as $u) {
+            if ($u->contactId >= 0)
+                $ca[$u->contactId] = $u;
+        }
+        foreach ($ov->value_list() as $uid) {
+            if (!isset($ca[$uid]))
+                $this->conf->prefetch_user_by_id($uid);
+        }
+        $us = [];
+        foreach ($ov->value_list() as $uid) {
+            if (($u = $ca[$uid] ?? $this->conf->user_by_id($uid, USER_SLICE)))
+                $us[] = $u;
+        }
+        return $us;
+    }
 
     function value_force(PaperValue $ov) {
         // $ov->value_list: contact IDs
@@ -41,23 +60,6 @@ class Contacts_PaperOption extends PaperOption {
         }
         $ov->set_value_data(array_keys($va), array_values($va));
         $ov->set_anno("users", $ca);
-    }
-    function json(RenderContext $ctx, PaperValue $ov) {
-        $ca = [];
-        foreach (self::users_anno($ov) as $u) {
-            if ($u->contactId >= 0)
-                $ca[$u->contactId] = $u;
-        }
-        foreach ($ov->value_list() as $uid) {
-            if (!isset($ca[$uid]))
-                $this->conf->prefetch_user_by_id($uid);
-        }
-        $j = [];
-        foreach ($ov->value_list() as $uid) {
-            if (($u = $ca[$uid] ?? $this->conf->user_by_id($uid, USER_SLICE)))
-                $j[] = Author::unparse_nea_json_for($u);
-        }
-        return $j;
     }
     function value_check(PaperValue $ov, Contact $user) {
         if (!$ov->anno("modified") || $user->allow_admin($ov->prow)) {
@@ -295,4 +297,19 @@ class Contacts_PaperOption extends PaperOption {
             "</div></div></fieldset>\n\n";
     }
     // XXX no render because paper strip
+
+    function text(RenderContext $ctx, PaperValue $ov) {
+        $au = [];
+        foreach ($this->value_users($ov) as $u) {
+            $au[] = $ctx->user_text($u, NAME_E);
+        }
+        return empty($au) ? "None" : join("\n", $au);
+    }
+    function json(RenderContext $ctx, PaperValue $ov) {
+        $j = [];
+        foreach ($this->value_users($ov) as $u) {
+            $j[] = $ctx->user_json($u);
+        }
+        return $j;
+    }
 }

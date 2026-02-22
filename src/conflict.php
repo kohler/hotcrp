@@ -287,7 +287,8 @@ class Conflict {
     function unparse_json($ct) {
         if ($ct <= 0) {
             return false;
-        } else if (!$this->_desc && $ct === self::CT_DEFAULT) {
+        } else if ((!$this->_desc && $ct === self::CT_DEFAULT)
+                   || $ct === self::CT_GENERIC) {
             return true;
         }
         $w = [];

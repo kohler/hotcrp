@@ -332,27 +332,31 @@ class PaperOption implements JsonSerializable {
     }
     /** @param FmtArg ...$context
      * @return string */
-    function title(...$context) {
+    final function title(...$context) {
         return $this->title
             ?? $this->conf->_i("sf_{$this->formid}", ...$context, ...$this->field_fmt_context())
             ?? $this->name;
     }
     /** @param FmtArg ...$context
      * @return string */
-    function title_html(...$context) {
+    final function title_html(...$context) {
         return htmlspecialchars($this->title(...$context));
     }
     /** @param ?PaperInfo $prow
      * @return string */
-    function edit_title($prow = null) {
+    final function edit_title($prow = null) {
         // see also Options_SettingParser::_intrinsic_member_defaults
         return $this->title
             ?? $this->conf->_i("sf_{$this->formid}", ...$this->edit_field_fmt_context($prow))
             ?? $this->name;
     }
     /** @return string */
-    function missing_title() {
+    final function missing_title() {
         return $this->title(new FmtArg("edit", true), new FmtArg("missing", true));
+    }
+    /** @return string */
+    function value_title(PaperValue $ov) {
+        return $this->title();
     }
 
     /** @param FieldRender $fr */
@@ -1002,14 +1006,18 @@ class PaperOption implements JsonSerializable {
 
     function render(FieldRender $fr, PaperValue $ov) {
     }
+    /** @return string */
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return "";
+    }
     /** @return mixed
      * @suppress PhanDeprecatedFunction */
     function json(RenderContext $ctx, PaperValue $ov) {
-        return $this->value_export_json($ov, $ctx);
+        return $this->value_export_json($ov, new FieldRender($ctx->context, $ctx->viewer));
     }
     /** @return mixed
      * @deprecated */
-    function value_export_json(PaperValue $ov, RenderContext $ctx) {
+    function value_export_json(PaperValue $ov, FieldRender $fr) {
         return null;
     }
 
@@ -1191,6 +1199,10 @@ class Checkbox_PaperOption extends PaperOption {
         } else {
             $fr->set_bool(!!$ov->value);
         }
+    }
+
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return $ctx->bool_text($ov->value ? true : false);
     }
 
     function json(RenderContext $ctx, PaperValue $ov) {
@@ -1378,6 +1390,10 @@ class Selector_PaperOption extends PaperOption {
 
     function render(FieldRender $fr, PaperValue $ov) {
         $fr->set_text($this->values[$ov->value - 1] ?? "");
+    }
+
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return $this->values[$ov->value - 1] ?? "";
     }
 
     function json(RenderContext $ctx, PaperValue $ov) {
@@ -1733,6 +1749,10 @@ class Document_PaperOption extends PaperOption {
         }
     }
 
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return $ctx->document_text($ov->document(0));
+    }
+
     function json(RenderContext $ctx, PaperValue $ov) {
         if (!$this->value_present($ov)) {
             return null;
@@ -1824,6 +1844,10 @@ class Text_PaperOption extends PaperOption {
         if ($this->wordlimit > 0) {
             $fr->apply_wordlimit($this->wordlimit, $this->hard_wordlimit);
         }
+    }
+
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return $ov->data() ?? "";
     }
 
     function json(RenderContext $ctx, PaperValue $ov) {

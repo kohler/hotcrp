@@ -740,6 +740,18 @@ class AuthorCertification_PaperOption extends PaperOption {
         $fr->value = $t;
         $fr->value_format = 5;
     }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        if ($ov->value_count() === 0) {
+            return "Incomplete";
+        }
+        $emails = [];
+        foreach (self::entries($ov) as $e) {
+            if ($e->user && $e->value)
+                $emails[] = $e->user->email;
+        }
+        return (self::is_complete($ov) ? "Complete" : "Incomplete")
+            . " (" . join("; ", $emails) . ")";
+    }
     function json(RenderContext $ctx, PaperValue $ov) {
         if ($ov->value_count() === 0) {
             return false;

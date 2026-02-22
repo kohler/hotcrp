@@ -50,6 +50,9 @@ class Numeric_PaperOption extends PaperOption {
             $fr->set_text((string) $ov->value);
         }
     }
+    function text(RenderContext $ctx, PaperValue $ov) {
+        return (string) $ov->value;
+    }
     function json(RenderContext $ctx, PaperValue $ov) {
         return $ov->value;
     }

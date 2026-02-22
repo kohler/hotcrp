@@ -44,6 +44,7 @@ class FieldRender {
     const CFROW = 0x2000;
     const CFCOLUMN = 0x4000;
     const CFVERBOSE = 0x8000;
+    const CFDECORATE = 0x10000;
 
 
     /** @param int $context
