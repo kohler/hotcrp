@@ -71,7 +71,7 @@ class AdminHome_Page {
         // Can anyone view submissions?
         if ($conf->has_tracks()) {
             $any_visible = false;
-            foreach ($conf->all_tracks() as $tr) {
+            foreach ($conf->track_list() as $tr) {
                 if ($tr->perm[Track::VIEW] !== "+none")
                     $any_visible = true;
             }

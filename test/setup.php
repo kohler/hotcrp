@@ -1173,7 +1173,7 @@ class TestRunner {
     /** @var array<string,list<string>> */
     static public $collections = [
         "test01" => [
-            "fresh_db", "Permission_Tester", "Tags_Tester"
+            "fresh_db", "Permission_Tester", "Tags_Tester", "Tracks_Tester"
         ],
         "test02" => [
             "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",

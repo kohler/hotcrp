@@ -517,8 +517,22 @@ final class PaperInfoSet implements IteratorAggregate, Countable {
      * @param ?Conf $conf
      * @return PaperInfoSet */
     static function make_result($result, $user, $conf = null) {
-        $set = new PaperInfoSet($conf);
+        $set = new PaperInfoSet($conf ?? $user->conf);
         $set->add_result($result, $user);
+        return $set;
+    }
+    /** @param PaperSearch|Contact $user_or_search
+     * @param ?string $q
+     * @return PaperInfoSet */
+    static function make_search($user_or_search, $q = null) {
+        if ($user_or_search instanceof PaperSearch) {
+            $srch = $user_or_search;
+        } else {
+            $srch = new PaperSearch($user_or_search, $q);
+        }
+        $result = $srch->conf->paper_result(["paperId" => $srch->paper_ids()], $srch->user);
+        $set = self::make_result($result, $srch->user);
+        $set->sort_by_search($srch);
         return $set;
     }
     function add_paper(PaperInfo $prow) {

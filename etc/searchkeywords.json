@@ -150,6 +150,10 @@
     {   "name": "manager", "alias": "admin"   },
     {   "name": "administrator", "alias": "admin"   },
     {
+        "name": "canadmin",
+        "parse_function": "Admin_SearchTerm::parse", "is_allow": true
+    },
+    {
         "name": "dec",
         "parse_function": "Decision_SearchTerm::parse", "has": "any"
     },

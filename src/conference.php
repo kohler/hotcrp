@@ -1521,8 +1521,14 @@ class Conf {
         return null;
     }
 
-    /** @return list<Track> */
+    /** @return list<Track>
+     * @deprecated */
     function all_tracks() {
+        return $this->track_list();
+    }
+
+    /** @return list<Track> */
+    function track_list() {
         return $this->_tracks ?? [];
     }
 

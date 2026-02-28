@@ -511,18 +511,34 @@ class PaperSearch extends MessageSet {
         return $cs;
     }
     /** @return ContactSearch */
-    private function _contact_search($type, $word, $quoted, $pc_only) {
+    private function _contact_search($type, $word, $quoted) {
         $xword = $word;
         if ($quoted === null) {
             $word = SearchWord::unquote($word);
             $quoted = strlen($word) !== strlen($xword);
         }
-        $type |= ($pc_only ? ContactSearch::F_PC : 0)
-            | ($quoted ? ContactSearch::F_QUOTED : 0)
+        $type |= ($quoted ? ContactSearch::F_QUOTED : 0)
             | (!$quoted && $this->user->isPC ? ContactSearch::F_TAG : 0);
         $cs = $this->_find_contact_search($type, $word);
         if ($cs->warn_html) {
             $this->warning("<5>{$cs->warn_html}");
+        }
+        return $cs;
+    }
+    /** @param int $type
+     * @param SearchWord $sword
+     * @return ContactSearch */
+    function user_search($type, $sword) {
+        if ($sword->quoted) {
+            $type |= ContactSearch::F_QUOTED;
+        } else if ($this->user->isPC) {
+            $type |= ContactSearch::F_TAG;
+        }
+        $cs = $this->_find_contact_search($type, $sword->word);
+        if ($cs->warn_html) {
+            $this->lwarning($sword, "<5>{$cs->warn_html}");
+        } else if ($cs->is_empty() && ($type & ContactSearch::F_USER) !== 0) {
+            $this->lwarning($sword, $type & ContactSearch::F_PC ? "<0>PC member not found" : "<0>User not found");
         }
         return $cs;
     }
@@ -531,7 +547,8 @@ class PaperSearch extends MessageSet {
      * @param bool $pc_only
      * @return list<int> */
     function matching_uids($word, $quoted, $pc_only) {
-        $scm = $this->_contact_search(ContactSearch::F_USER, $word, $quoted, $pc_only);
+        $pc_type = $pc_only ? ContactSearch::F_PC : 0;
+        $scm = $this->_contact_search(ContactSearch::F_USER | $pc_type, $word, $quoted);
         return $scm->user_ids();
     }
     /** @param string $word
@@ -539,7 +556,8 @@ class PaperSearch extends MessageSet {
      * @param bool $pc_only
      * @return list<Contact> */
     function matching_contacts($word, $quoted, $pc_only) {
-        $scm = $this->_contact_search(ContactSearch::F_USER, $word, $quoted, $pc_only);
+        $pc_type = $pc_only ? ContactSearch::F_PC : 0;
+        $scm = $this->_contact_search(ContactSearch::F_USER | $pc_type, $word, $quoted);
         return $scm->users();
     }
     /** @param string $word
@@ -547,7 +565,8 @@ class PaperSearch extends MessageSet {
      * @param bool $pc_only
      * @return ?list<int> */
     function matching_special_uids($word, $quoted, $pc_only) {
-        $scm = $this->_contact_search(0, $word, $quoted, $pc_only);
+        $pc_type = $pc_only ? ContactSearch::F_PC : 0;
+        $scm = $this->_contact_search($pc_type, $word, $quoted);
         return $scm->has_error() ? null : $scm->user_ids();
     }
 

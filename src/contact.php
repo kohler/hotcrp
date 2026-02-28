@@ -3063,6 +3063,29 @@ class Contact implements JsonSerializable {
         return ($this->roles & self::ROLE_TRACK_MANAGER) !== 0;
     }
 
+    /** @return ?list<string> */
+    function managed_track_tags() {
+        if ($this->privChair) {
+            return null;
+        }
+        $t = [];
+        if ($this->is_track_manager()) {
+            $unmatched = true;
+            foreach ($this->conf->track_list() as $tr) {
+                if (!$tr->perm[Track::ADMIN]
+                    || !$this->has_permission($tr->perm[Track::ADMIN])
+                    || ($tr->is_default && !$unmatched)) {
+                    continue;
+                } else if ($tr->is_default) {
+                    return null;
+                }
+                $unmatched = false;
+                $t[] = $tr->tag;
+            }
+        }
+        return $t;
+    }
+
     /** @return bool */
     function has_review_pending_approval($my_request_only = false) {
         $this->check_rights_version();
