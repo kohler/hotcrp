@@ -1279,13 +1279,13 @@ class Limit_SearchTerm extends SearchTerm {
         case "unsub":
             assert($act);
             $options["unsub"] = true;
-            return $this->user->allow_administer_all();
+            return $this->user->allow_admin_all();
         case "lead":
             $options["myLead"] = true;
             return true;
         case "alladmin":
         case "actadmin":
-            return $this->user->allow_administer_all();
+            return $this->user->allow_admin_all();
         case "admin":
             return false;
         case "req":
@@ -1312,7 +1312,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "alladmin":
         case "actadmin":
             // broad limits are precise only if allowed to administer all
-            return $this->user->allow_administer_all();
+            return $this->user->allow_admin_all();
         case "active":
         case "accepted":
         case "dec":

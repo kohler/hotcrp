@@ -47,7 +47,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         return true;
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        if ($state->user->can_manage_scope($prow, "preference")) {
+        if ($state->user->can_manage_reviews($prow)) {
             return $state->pc_users();
         }
         return [$state->user];
@@ -60,7 +60,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             return false;
         }
         if ($state->user->contactId !== $user->contactId) {
-            if (!$state->user->can_manage_scope($prow, "preference")) {
+            if (!$state->user->can_manage_reviews($prow)) {
                 return new AssignmentError($prow->failure_reason(["administer" => true]));
             } else if (!$user->isPC) {
                 return new AssignmentError("<0>User ‘{$user->email}’ is not a PC member");

@@ -84,7 +84,7 @@ class MailRecipients extends MessageSet {
         if ($this->_dcounts !== null) {
             return;
         }
-        if ($this->user->allow_administer_all()) {
+        if ($this->user->allow_admin_all()) {
             $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
         } else if ($this->user->is_manager()) {
             $psearch = new PaperSearch($this->user, ["q" => "", "t" => "alladmin"]);

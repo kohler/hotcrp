@@ -35,7 +35,7 @@ class Decision_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->decs)];
         if (in_array(0, $this->decs, true)
-            && !$this->user->allow_administer_all()) {
+            && !$this->user->allow_admin_all()) {
             $f[] = "Paper.outcome=0";
         }
         return "(" . join(" or ", $f) . ")";

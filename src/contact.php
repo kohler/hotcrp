@@ -3456,28 +3456,38 @@ class Contact implements JsonSerializable {
         return $this->rights($prow);
     }
 
-    /** @return bool */
-    function allow_administer_all() {
+    /** @return bool
+     *
+     * Is this user allowed to administer all papers? Ignores token scope. */
+    function allow_admin_all() {
         return $this->_root_user
             || ($this->privChair
                 && !$this->conf->has_any_explicit_manager()
                 && ($this->dangerous_track_mask() & Track::FM_VIEWADMIN) === 0);
     }
 
-    /** @return bool */
-    function allow_admin(?PaperInfo $prow) {
-        if ($prow === null) {
-            error_log(debug_string_backtrace());
-        }
-        if (!$prow) {
-            return $this->privChair;
-        }
+    /** @return bool
+     *
+     * Is this user allowed to administer `$prow`, possibly after overriding
+     * conflicts? Ignores token scope. */
+    function allow_admin(PaperInfo $prow) {
         return $this->rights($prow)->allow_admin();
     }
 
-    /** @return bool */
+    /** @return bool
+     *
+     * Is this user allowed to administer `$prow`? Implies `allow_admin($prow)`.
+     * Ignores token scope but obeys conflicts. (If `!$u->is_admin($p)` but
+     * `$u->allow_admin($p)`, then `$u->add_overrides(Contact::OVERRIDE_CONFLICT)`
+     * will access admin privilege.) */
     function is_admin(PaperInfo $prow) {
         return $this->rights($prow)->is_admin();
+    }
+
+    /** @return bool
+     * @deprecated */
+    function allow_administer_all() {
+        return $this->allow_admin_all();
     }
 
     /** @return bool
@@ -3489,7 +3499,10 @@ class Contact implements JsonSerializable {
         return $this->rights($prow)->allow_admin();
     }
 
-    /** @return bool */
+    /** @return bool
+     *
+     * Is this user allowed to administer `$prow` only after overriding their
+     * conflict? Ignores scope. */
     function has_overridable_conflict(PaperInfo $prow) {
         if (!$this->is_manager()) {
             return false;
@@ -3499,30 +3512,37 @@ class Contact implements JsonSerializable {
             && $rights->conflicted();
     }
 
-    /** @return bool */
+    /** @return bool
+     *
+     * Is this user allowed to administer `$prow`, possibly after overriding
+     * conflicts? Checks `submeta:admin` scope. */
     function allow_manage(PaperInfo $prow) {
         return $this->rights($prow)->allow_manage();
     }
 
-    /** @return bool */
+    /** @return bool
+     *
+     * Is this user allowed to administer `$prow`’s reviews, possibly after
+     * overriding conflicts? Checks `submeta:admin` and `rev:admin` scopes. */
     function allow_manage_reviews(PaperInfo $prow) {
         return $this->rights($prow)->allow_manage_reviews();
     }
 
-    /** @return bool */
+    /** @return bool
+     *
+     * Is this user allowed to administer `$prow`? Checks `submeta:admin` scope;
+     * implies `allow_manage($prow)`; obeys conflicts. */
     function can_manage(PaperInfo $prow) {
         return $this->rights($prow)->can_manage();
     }
 
-    /** @return bool */
+    /** @return bool
+     *
+     * Is this user allowed to administer `$prow`? Checks `submeta:admin` and
+     * `rev:admin` scopes; implies `allow_manage_reviews($prow)`; obeys
+     * conflicts. */
     function can_manage_reviews(PaperInfo $prow) {
         return $this->rights($prow)->can_manage_reviews();
-    }
-
-    /** @param string $scope
-     * @return bool */
-    function can_manage_scope(PaperInfo $prow, $scope) {
-        return $this->rights($prow)->can_manage();
     }
 
     /** @return bool
@@ -5392,7 +5412,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_all_decision() {
-        return $this->allow_administer_all()
+        return $this->allow_admin_all()
             || ($this->isPC && $this->conf->setting("seedec") === Conf::SEEDEC_REV);
     }
 

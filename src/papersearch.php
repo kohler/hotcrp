@@ -94,7 +94,7 @@ class SearchQueryInfo {
 
     function __construct(PaperSearch $srch) {
         $this->srch = $srch;
-        if (!$srch->user->allow_administer_all()) {
+        if (!$srch->user->allow_admin_all()) {
             $this->add_reviewer_columns();
         }
         $this->tables["Paper"] = [];
