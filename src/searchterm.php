@@ -1421,16 +1421,26 @@ class Limit_SearchTerm extends SearchTerm {
             break;
         case "alladmin":
         case "actadmin":
-            if ($this->user->privChair) {
+            if ($this->user->privChair
+                || ($mttl = $this->user->managed_track_tags()) === null) {
                 break;
             }
-            /* FALLTHRU */
-        case "admin":
-            if ($this->user->is_track_manager()) {
-                $ff[] = "(Paper.managerContactId={$this->user->contactXid} or Paper.managerContactId=0)";
-            } else {
-                $ff[] = "Paper.managerContactId={$this->user->contactXid}";
+            $fx = ["Paper.managerContactId={$this->user->contactXid}"];
+            if (!empty($mttl)) {
+                $tsm = (new TagSearchMatcher($this->user))->add_tag_list($mttl);
+                $fx[] = $tsm->exists_sqlexpr("Paper");
             }
+            $ff[] = "(" . join(" or ", $fx) . ")";
+            break;
+        case "admin":
+            $fx = ["Paper.managerContactId={$this->user->contactXid}"];
+            if (($mttl = $this->user->managed_track_tags()) === null) {
+                $fx[] = "Paper.managerContactId=0";
+            } else if (!empty($mttl)) {
+                $tsm = (new TagSearchMatcher($this->user))->add_tag_list($mttl);
+                $fx[] = "(Paper.managerContactId=0 and " . $tsm->exists_sqlexpr("Paper") . ")";
+            }
+            $ff[] = "(" . join(" or ", $fx) . ")";
             break;
         case "req":
             $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy={$this->user->contactXid})";

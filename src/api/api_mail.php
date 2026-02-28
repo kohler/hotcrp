@@ -1,6 +1,6 @@
 <?php
 // api_mail.php -- HotCRP mail API calls
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Mail_API {
     static function mailtext(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
@@ -60,11 +60,12 @@ class Mail_API {
                 }
             }
             return ["ok" => true, "templates" => array_values($mtjs)];
-        } else if (($mt = $user->conf->mail_template($qreq->template, false, $user))) {
-            return ["ok" => true] + self::expand_template($user, $mailer, $recip, $mt);
-        } else {
-            return JsonResult::make_error(404, "<0>Template not found");
         }
+        $mt = $user->conf->mail_template($qreq->template, false, $user);
+        if (!$mt) {
+            return JsonResult::make_not_found_error("template");
+        }
+        return ["ok" => true] + self::expand_template($user, $mailer, $recip, $mt);
     }
 
     /** @param HotCRPMailer $mailer
@@ -100,25 +101,22 @@ class Mail_API {
             return JsonResult::make_missing_error("mailid");
         } else if (!$user->privChair) {
             return JsonResult::make_permission_error();
-        } else if (($row = $user->conf->fetch_first_object("select * from MailLog where mailId=?", $qreq->mailid))) {
-            if (self::can_view_maillog($user, $row)) {
-                $j = ["ok" => true];
-                foreach (["recipients", "q", "t", "cc", "subject"] as $field) {
-                    if ($row->$field !== null && $row->$field !== "")
-                        $j[$field] = $row->$field;
-                }
-                if ($row->replyto !== null) {
-                    $j["reply-to"] = $row->replyto;
-                }
-                if ($row->emailBody !== null) {
-                    $j["body"] = $row->emailBody;
-                }
-                return $j;
-            } else {
-                return JsonResult::make_permission_error();
-            }
-        } else {
-            return JsonResult::make_error(404, "<0>Email not found");
         }
+        $row = $user->conf->fetch_first_object("select * from MailLog where mailId=?", $qreq->mailid);
+        if (!$row || !self::can_view_maillog($user, $row)) {
+            return JsonResult::make_not_found_error("mailid");
+        }
+        $j = ["ok" => true];
+        foreach (["recipients", "q", "t", "cc", "subject"] as $field) {
+            if ($row->$field !== null && $row->$field !== "")
+                $j[$field] = $row->$field;
+        }
+        if ($row->replyto !== null) {
+            $j["reply-to"] = $row->replyto;
+        }
+        if ($row->emailBody !== null) {
+            $j["body"] = $row->emailBody;
+        }
+        return $j;
     }
 }

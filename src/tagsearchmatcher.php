@@ -1,6 +1,6 @@
 <?php
 // tagsearchmatcher.php -- HotCRP helper class for tag search
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class TagSearchMatcher {
     /** @var Contact */
@@ -105,7 +105,8 @@ class TagSearchMatcher {
         return true;
     }
 
-    /** @param string $tag */
+    /** @param string $tag
+     * @return $this */
     function add_tag($tag) {
         if ($tag === "any" || $tag === "none") {
             $this->_mtype = $tag === "any" ? -1 : -2;
@@ -127,6 +128,16 @@ class TagSearchMatcher {
             }
         }
         $this->_re = null;
+        return $this;
+    }
+
+    /** @param list<string> $tag_list
+     * @return $this */
+    function add_tag_list($tag_list) {
+        foreach ($tag_list as $tag) {
+            $this->add_tag($tag);
+        }
+        return $this;
     }
 
     /** @param string $regex
@@ -239,6 +250,15 @@ class TagSearchMatcher {
             $s[] = "{$table}.tagIndex" . $valm->comparison();
         }
         return "(" . join(" and ", $s) . ")";
+    }
+
+    /** @return ?string */
+    function exists_sqlexpr($base_table = "Paper") {
+        $sqle = $this->sqlexpr("PaperTag");
+        if ($sqle === null) {
+            return null;
+        }
+        return "exists (select * from PaperTag where paperId={$base_table}.paperId and {$sqle})";
     }
 
     /** @return bool */

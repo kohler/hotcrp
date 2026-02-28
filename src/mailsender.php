@@ -1,6 +1,6 @@
 <?php
 // mailsender.php -- HotCRP mail merge manager
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class MailSender {
     /** @var Conf
@@ -565,6 +565,7 @@ class MailSender {
         $need_censored_prep = !$this->user->privChair || $this->conf->opt("chairHidePasswords");
 
         $mailer = new HotCRPMailer($this->conf);
+        $mailer->set_recip_set($this->recip);
         $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
         $fake_prep = new HotCRPMailPreparation($this->conf, null);
         $fake_prep->fake = true;
@@ -598,15 +599,13 @@ class MailSender {
                 }
             }
 
-            $prow = $this->recip->paper($pid);
 
-            // maybe we should check the review
+            // skip if reviews don’t match
+            $rest["prow"] = $prow = $this->recip->paper($pid);
             if ($prow && !$this->recip->test_paper($prow, $user)) {
                 continue;
             }
 
-            $rest["prow"] = $prow = $this->recip->paper($pid);
-            $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($user, $rest);
             $prep = $mailer->prepare($template, $rest);
 

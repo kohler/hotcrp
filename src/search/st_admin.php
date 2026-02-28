@@ -1,6 +1,6 @@
 <?php
 // search/st_admin.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Admin_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -55,16 +55,12 @@ class Admin_SearchTerm extends SearchTerm {
         if ($this->flags & self::F_TRACKMGR) {
             $tsm = new TagSearchMatcher($this->user);
             foreach ($this->match as $u) {
-                if (($utl = $u->managed_track_tags()) === null) {
+                if (($mttl = $u->managed_track_tags()) === null) {
                     return "true";
                 }
-                foreach ($utl as $t) {
-                    $tsm->add_tag($t);
-                }
+                $tsm->add_tag_list($mttl);
             }
-            $tsql = $tsm->sqlexpr("PaperTag");
-            assert($tsql !== null);
-            $where[] = "exists (select * from PaperTag where paperId=Paper.paperId and {$tsql})";
+            $where[] = $tsm->exists_sqlexpr("Paper");
         }
         $uids = array_map(function ($p) { return $p->contactId; }, $this->match);
         $where[] = "Paper.managerContactId" . CountMatcher::sqlexpr_using($uids);
