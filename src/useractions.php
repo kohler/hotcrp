@@ -246,7 +246,7 @@ class UserActions extends MessageSet {
 
         // load paper set for reviews and comments
         $prows = $this->conf->paper_set([
-            "where" => "paperId in (select paperId from PaperReview where contactId={$user->contactId} union select paperId from PaperComment where contactId={$user->contactId})"
+            "where" => "exists (select * from PaperReview where paperId=Paper.paperId and contactId={$user->contactId}) or exists (select * from PaperComment where paperId=Paper.paperId and contactId={$user->contactId})"
         ]);
 
         // delete reviews (needs to be logged, might update other information)

@@ -4515,7 +4515,7 @@ class Conf {
         }
         if (isset($options["where"]) && $options["where"]) {
             assert(strpos($options["where"], "?") === false);
-            $where[] = $options["where"];
+            $where[] = "(" . $options["where"] . ")";
         }
 
         // use authored papers if already loaded

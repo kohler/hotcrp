@@ -159,7 +159,7 @@ class ContactPrimary {
     }
 
     private function _update_author_records() {
-        $rowset = $this->conf->paper_set(["minimal" => true, "authorInformation" => true, "allConflictType" => true, "where" => "paperId in (select paperId from PaperConflict where contactId>0 and contactId" . sql_in_int_list($this->uids) . " and conflictType>=" . CONFLICT_AUTHOR . ")"]);
+        $rowset = $this->conf->paper_set(["minimal" => true, "authorInformation" => true, "allConflictType" => true, "where" => "exists (select * from PaperConflict where paperId=Paper.paperId and contactId>0 and contactId" . sql_in_int_list($this->uids) . " and conflictType>=" . CONFLICT_AUTHOR . ")"]);
 
         // prefetch authors and contact authors
         foreach ($rowset as $prow) {
