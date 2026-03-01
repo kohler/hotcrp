@@ -244,6 +244,19 @@ class UserActions extends MessageSet {
             (new ContactPrimary($this->viewer))->link($user, null);
         }
 
+        // unlink secondaries
+        if (($user->cflags & Contact::CF_PRIMARY) !== 0
+            && ($secids = $this->conf->linked_user_ids($user->contactId))
+            && is_array($secids)) {
+            $this->conf->prefetch_users_by_id($secids);
+            foreach ($secids as $secid) {
+                if (($secu = $this->conf->user_by_id($secid))
+                    && $secu->primaryContactId === $user->contactId) {
+                    (new ContactPrimary($this->viewer))->link($secu, null);
+                }
+            }
+        }
+
         // load paper set for reviews and comments
         $prows = $this->conf->paper_set([
             "where" => "exists (select * from PaperReview where paperId=Paper.paperId and contactId={$user->contactId}) or exists (select * from PaperComment where paperId=Paper.paperId and contactId={$user->contactId})"

@@ -118,7 +118,7 @@ class ContactPrimary {
         $oldid = $u->primaryContactId;
         $u->set_prop("primaryContactId", 0);
         Dbl::qe($u->dblink(), "delete from ContactPrimary where contactId=? and primaryContactId=?", $u->$idk, $oldid);
-        if (!Dbl::fetch_ivalue($u->dblink(), "select exists(select * from ContactPrimary where primaryContactId=?) from dual", $oldid)
+        if (!Dbl::fetch_ivalue($u->dblink(), "select exists (select * from ContactPrimary where primaryContactId=?) from dual", $oldid)
             && ($xpri = $this->user_by_id($oldid))) {
             $xpri->set_prop("cflags", $xpri->cflags & ~Contact::CF_PRIMARY);
             $xpri->save_prop();

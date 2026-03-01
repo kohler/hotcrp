@@ -933,4 +933,19 @@ class Cdb_Tester {
 
         (new ConfInvariants($this->conf))->check_users();
     }
+
+    function test_primary_nonascii() {
+        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName=?, lastName=?, email=?, password=?, cflags=? on duplicate key update firstName=firstName",
+            "Jérôme", "Girardas", "jerome@gotten.edu", "",
+            Contact::CF_NEANONASCII);
+        xassert_eqq($this->conf->user_by_email("jerome@gotten.edu"), null);
+        $cu_jerome = $this->conf->cdb_user_by_email("jerome@gotten.edu");
+
+        $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
+        (new ContactPrimary)->link($lu_mtnlion, $cu_jerome);
+
+        $lu_jerome = $this->conf->user_by_email("jerome@gotten.edu");
+        xassert_eqq($lu_jerome->cflags & Contact::CF_NEANONASCII, Contact::CF_NEANONASCII);
+        xassert_eqq($this->conf->fetch_ivalue("select cflags from ContactInfo where email='jerome@gotten.edu'") & Contact::CF_NEANONASCII, Contact::CF_NEANONASCII);
+    }
 }

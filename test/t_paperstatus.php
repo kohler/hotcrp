@@ -1315,7 +1315,7 @@ Phil Porras.");
         // input: gestrin -linksto-> festrin
         $ps = new PaperStatus($this->u_estrin);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
-        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:2:name" => "Geborah Gestrin", "authors:2:email" => "gestrin@gusc.gedu"]), $nprow1);
+        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:2:name" => "Géborah Géstrin", "authors:2:email" => "gestrin@gusc.gedu"]), $nprow1);
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["authors", "contacts"], true);
 
@@ -1824,7 +1824,7 @@ Phil Porras.");
             "abstract" => "Though it has an abstract",
             "has_authors" => "1",
             "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com",
-            "authors:2:name" => "Geborah Gestrin", "authors:2:email" => "gestrin@gusc.gedu"
+            "authors:2:name" => "Géborah Géstrin", "authors:2:email" => "gestrin@gusc.gedu"
         ]);
         xassert($ps->prepare_save_paper_web($qreq, null));
         xassert_eqq($ps->decorated_feedback_text(), "Submission: Entry required to complete submission\n");

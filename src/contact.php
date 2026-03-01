@@ -2076,16 +2076,14 @@ class Contact implements JsonSerializable {
         }
         if ($prop === "roles" || $prop === "cflags") {
             $this->set_roles_properties();
-        }
-        $neaidx = array_search($prop, ["firstName", "lastName", "email", "affiliation"], true);
-        if ($neaidx !== false) {
+        } else if ($prop === "email") {
             $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
-            if ($neaidx !== 2) {
-                $nonascii = is_usascii($this->firstName . $this->lastName . $this->affiliation)
-                    ? 0 : self::CF_NEANONASCII;
-                if (($this->cflags & self::CF_NEANONASCII) !== $nonascii) {
-                    $this->set_prop("cflags", ($this->cflags & ~self::CF_NEANONASCII) | $nonascii);
-                }
+        } else if ($prop === "firstName" || $prop === "lastName" || $prop === "affiliation") {
+            $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
+            $nonascii = is_usascii($this->firstName . $this->lastName . $this->affiliation)
+                ? 0 : self::CF_NEANONASCII;
+            if (($this->cflags & self::CF_NEANONASCII) !== $nonascii) {
+                $this->set_prop("cflags", ($this->cflags & ~self::CF_NEANONASCII) | $nonascii);
             }
         }
     }
