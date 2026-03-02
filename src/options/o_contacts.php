@@ -180,7 +180,7 @@ class Contacts_PaperOption extends PaperOption {
         // check emails
         $specau = [];
         foreach ($reqau as $au) {
-            if (validate_email($au->email)) {
+            if (Contact::is_plausible_or_example_email($au->email)) {
                 $specau[] = $au;
             } else if ($au->email !== "") {
                 $ov->error("<0>Invalid email address ‘{$au->email}’");

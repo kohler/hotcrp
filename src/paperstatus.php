@@ -1025,22 +1025,30 @@ final class PaperStatus extends MessageSet {
     }
 
     /** @param Author|Contact $au
+     * @return ?Contact */
+    private function _make_user_author($au) {
+        if (strcasecmp($au->email, $this->user->email) === 0) {
+            $this->user->ensure_account_here();
+            if ($this->user->contactId > 0) {
+                return $this->user;
+            }
+        }
+        if (!$this->conf->external_login()
+            && !Contact::is_plausible_or_example_email($au->email)) {
+            return null;
+        }
+        $j = $au->unparse_nea_json();
+        $j["disablement"] = Contact::CF_PLACEHOLDER;
+        return Contact::make_keyed($this->conf, $j)->store(0, $this->user);
+    }
+
+    /** @param Author|Contact $au
      * @param int $ctype
      * @return ?Contact */
     private function _make_user($au, $ctype) {
         $uu = $this->conf->user_by_email($au->email, USER_SLICE);
-        if (!$uu
-            && $ctype >= CONFLICT_AUTHOR
-            && strcasecmp($au->email, $this->user->email) === 0) {
-            $this->user->ensure_account_here();
-            if ($this->user->contactId > 0) {
-                $uu = $this->user;
-            }
-        }
         if (!$uu && $ctype >= CONFLICT_AUTHOR) {
-            $j = $au->unparse_nea_json();
-            $j["disablement"] = Contact::CF_PLACEHOLDER;
-            $uu = Contact::make_keyed($this->conf, $j)->store(0, $this->user);
+            $uu = $this->_make_user_author($au);
         }
         if (!$uu) {
             return null;

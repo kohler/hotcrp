@@ -1194,7 +1194,8 @@ class Contact implements JsonSerializable {
             $disabled |= self::CF_UNCONFIRMED;
         }
         $e = $this->preferredEmail ?? $this->email;
-        return ($this->cflags & $disabled) === 0 && self::is_real_email($e);
+        return ($this->cflags & $disabled) === 0
+            && self::is_plausible_email($e);
     }
 
     /** @return int */
@@ -1511,7 +1512,14 @@ class Contact implements JsonSerializable {
      * @return bool */
     static function is_plausible_email($email) {
         return validate_email($email)
-            && !preg_match('/[@.](invalid|test|tld|example(?:|\.com|\.net|\.org|\.edu)|.|_\.[^@]+)\z/i', $email);
+            && !preg_match('/[@.](?:invalid|test|tld|example(?:|\.com|\.net|\.org|\.edu)|.|_\.[^@]+)\z/i', $email);
+    }
+
+    /** @param string $email
+     * @return bool */
+    static function is_plausible_or_example_email($email) {
+        return validate_email($email)
+            && !preg_match('/[@.](?:invalid|.)\z/i', $email);
     }
 
     /** @param string $email

@@ -77,10 +77,11 @@ class Authors_PaperOption extends PaperOption {
                 $ov->append_item(MessageItem::warning_at("authors:{$n}"));
             }
             if ($auth->email !== ""
-                && !validate_email($auth->email)
+                && !Contact::is_plausible_or_example_email($auth->email)
                 && !$ov->prow->author_by_email($auth->email)) {
-                $ov->estop(null);
-                $ov->append_item(MessageItem::estop_at("authors:{$n}", "<0>Invalid email address ‘{$auth->email}’"));
+                $status = validate_email($auth->email) ? MessageSet::ERROR : MessageSet::ESTOP;
+                $ov->append_item(new MessageItem($status, "authors"));
+                $ov->append_item(new MessageItem($status, "authors:{$n}", "<0>Invalid email address ‘{$auth->email}’"));
                 continue;
             }
             if ($req_orcid > 0) {
@@ -158,7 +159,7 @@ class Authors_PaperOption extends PaperOption {
     function value_save_conflict_values(PaperValue $ov, PaperStatus $ps) {
         $ps->clear_conflict_values(CONFLICT_AUTHOR);
         foreach (self::author_list($ov) as $i => $auth) {
-            if (validate_email($auth->email)) {
+            if (Contact::is_plausible_or_example_email($auth->email)) {
                 $cflags = CONFLICT_AUTHOR
                     | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
                 $ps->update_conflict_value($auth, $cflags, $cflags);

@@ -1981,6 +1981,35 @@ Phil Porras.");
         xassert($sv->execute());
     }
 
+    function test_implausible_email_no_contact() {
+        $bad_email = "implausible@test.invalid";
+        xassert(validate_email($bad_email));
+        xassert(!Contact::is_plausible_or_example_email($bad_email));
+        xassert(!$this->conf->fresh_user_by_email($bad_email));
+
+        // implausible email in author list should not create ContactInfo
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) [
+            "id" => $this->pid2,
+            "authors" => [
+                (object) ["name" => "Deborah Estrin", "email" => "estrin@usc.edu"],
+                (object) ["name" => "Implausible Author", "email" => $bad_email]
+            ]
+        ]);
+        xassert($ps->has_problem());
+        xassert(!$this->conf->fresh_user_by_email($bad_email));
+
+        // implausible email in contact list should not create ContactInfo
+        $bad_email = "whatever@inria.f";
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) [
+            "id" => $this->pid2,
+            "contacts" => ["estrin@usc.edu", $bad_email]
+        ]);
+        xassert($ps->has_problem());
+        xassert(!$this->conf->fresh_user_by_email($bad_email));
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
