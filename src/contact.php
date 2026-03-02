@@ -1497,27 +1497,28 @@ class Contact implements JsonSerializable {
     /** @param string $email
      * @return bool */
     static function is_example_email($email) {
-        $len = strlen($email);
-        return ($at = strpos($email, "@")) !== false
-            && $at + 1 < $len
-            && ($email[$at + 1] === "_"
-                || ($at + 12 <= $len
-                    && (ord($email[$len - 11]) | 0x20) === 0x65 /* 'e' */
-                    && preg_match('/\G[@.]example\.(?:com|net|org|edu)\z/i', $email, $m, 0, $len - 12)));
+        return validate_email($email)
+            && preg_match('/[@.](test|example(?:|\.com|\.net|\.org|\.edu)|_\.[^@]+)\z/i' , $email);
     }
 
     /** @param string $email
      * @return bool */
     static function cdb_allows_email($email) {
-        return $email !== ""
-            && !self::is_anonymous_email($email)
-            && !self::is_example_email($email);
+        return self::is_plausible_email($email);
     }
 
     /** @param string $email
      * @return bool */
+    static function is_plausible_email($email) {
+        return validate_email($email)
+            && !preg_match('/[@.](invalid|test|tld|example(?:|\.com|\.net|\.org|\.edu)|.|_\.[^@]+)\z/i', $email);
+    }
+
+    /** @param string $email
+     * @return bool
+     * @deprecated */
     static function is_real_email($email) {
-        return validate_email($email) && !self::is_example_email($email);
+        return self::is_plausible_email($email);
     }
 
     /** @return bool */

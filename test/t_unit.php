@@ -1114,19 +1114,48 @@ class Unit_Tester {
         xassert(!Contact::is_anonymous_email("example@anonymous"));
     }
 
-    function test_is_real_email() {
-        xassert(!Contact::is_real_email("anonymous"));
-        xassert(!Contact::is_real_email("anonymous1"));
-        xassert(!Contact::is_real_email("anonymous10"));
-        xassert(!Contact::is_real_email("anonymous9"));
-        xassert(!Contact::is_real_email("anonymous@example.com"));
-        xassert(!Contact::is_real_email("example@anonymous")); // not enough dots
-        xassert(Contact::is_real_email("example@anonymous.com"));
-        xassert(Contact::is_real_email("ass@butt.com"));
-        xassert(Contact::is_real_email("ass@fxample.edu"));
-        xassert(!Contact::is_real_email("ass@_.com"));
-        xassert(!Contact::is_real_email("ass@_.co.uk"));
-        xassert(Contact::is_real_email("ass@underscore.com"));
+    function test_is_plausible_email() {
+        xassert(!Contact::is_plausible_email("anonymous"));
+        xassert(!Contact::is_plausible_email("anonymous1"));
+        xassert(!Contact::is_plausible_email("anonymous10"));
+        xassert(!Contact::is_plausible_email("anonymous9"));
+        xassert(!Contact::is_plausible_email("anonymous@example.com"));
+        xassert(!Contact::is_plausible_email("example@anonymous")); // not enough dots
+        xassert(Contact::is_plausible_email("example@anonymous.com"));
+        xassert(Contact::is_plausible_email("ass@butt.com"));
+        xassert(Contact::is_plausible_email("ass@fxample.edu"));
+        xassert(!Contact::is_plausible_email("ass@_.com"));
+        xassert(!Contact::is_plausible_email("ass@_.co.uk"));
+        xassert(Contact::is_plausible_email("ass@underscore.com"));
+        xassert(!Contact::is_plausible_email("ass@foo.example"));
+        xassert(!Contact::is_plausible_email("ass@foo.f"));
+        xassert(!Contact::is_plausible_email("ass@foo.tld"));
+        xassert(!Contact::is_plausible_email("ass@foo.invalid"));
+        xassert(Contact::is_plausible_email("ass@invalid.foo"));
+        xassert(!Contact::is_plausible_email("ass@invalid.test"));
+        xassert(Contact::is_plausible_email("ass@invalid.test.tst"));
+    }
+
+    function test_is_example_email() {
+        xassert(!Contact::is_example_email("anonymous"));
+        xassert(!Contact::is_example_email("anonymous1"));
+        xassert(!Contact::is_example_email("anonymous10"));
+        xassert(!Contact::is_example_email("anonymous9"));
+        xassert(Contact::is_example_email("anonymous@example.com"));
+        xassert(!Contact::is_example_email("example@anonymous")); // not enough dots
+        xassert(!Contact::is_example_email("example@anonymous.com"));
+        xassert(!Contact::is_example_email("ass@butt.com"));
+        xassert(!Contact::is_example_email("ass@fxample.edu"));
+        xassert(Contact::is_example_email("ass@_.com"));
+        xassert(!Contact::is_example_email("ass@_.co.uk"));
+        xassert(!Contact::is_example_email("ass@underscore.com"));
+        xassert(Contact::is_example_email("ass@foo.example"));
+        xassert(!Contact::is_example_email("ass@foo.f"));
+        xassert(!Contact::is_example_email("ass@foo.tld"));
+        xassert(!Contact::is_example_email("ass@foo.invalid"));
+        xassert(!Contact::is_example_email("ass@invalid.foo"));
+        xassert(Contact::is_example_email("ass@invalid.test"));
+        xassert(!Contact::is_example_email("ass@invalid.test.tst"));
     }
 
     function test_valid_email() {

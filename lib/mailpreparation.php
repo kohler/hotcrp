@@ -196,7 +196,7 @@ class MailPreparation implements JsonSerializable {
         foreach ($this->recip as $ru) {
             if ($ru->can_receive_mail($this->_self_requested)) {
                 continue;
-            } else if (!Contact::is_real_email($ru->preferredEmail ?? $ru->email)) {
+            } else if (!Contact::is_plausible_email($ru->preferredEmail ?? $ru->email)) {
                 $mx["fake"][] = $ru->email;
             } else if ($ru->is_disabled()) {
                 $mx["disabled"][] = $ru->email;
