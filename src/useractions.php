@@ -243,6 +243,11 @@ class UserActions extends MessageSet {
         $user->set_prop("passwordUseTime", 0);
         $user->set_prop("lastLogin", 0);
         $user->set_prop("defaultWatch", 2);
+        $user->set_prop("orcid", null);
+        $user->set_prop("phone", null);
+        $user->set_prop("country", null);
+        $user->set_prop("collaborators", null);
+        $user->set_prop("preferredEmail", null);
         $user->clear_data_prop();
         $user->save_prop();
 
