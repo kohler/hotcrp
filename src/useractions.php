@@ -176,7 +176,10 @@ class UserActions extends MessageSet {
         $this->change_roles($users, 0, Contact::ROLE_PC | Contact::ROLE_CHAIR, "remove_pc");
     }
 
-    private function check_delete(Contact $user) {
+    const DELETE_FORCE = 1;
+    const DELETE_LOCK = 2;
+
+    private function check_delete(Contact $user, $flags) {
         if (!$this->viewer->privChair) {
             $this->error_at(null, "<0>Only administrators can delete accounts");
             return false;
@@ -197,6 +200,9 @@ class UserActions extends MessageSet {
             $this->append_item(MessageItem::error("<0>Account {} is locked and can’t be deleted", $user->email));
             return false;
         }
+        if ($flags & self::DELETE_FORCE) {
+            return true;
+        }
         if (($user->cflags & Contact::CF_PRIMARY) !== 0) {
             $links = Dbl::fetch_first_columns($this->conf->dblink,
                 "select email from ContactInfo join ContactPrimary using (contactId)
@@ -216,9 +222,10 @@ class UserActions extends MessageSet {
         return true;
     }
 
-    function delete(Contact $user) {
+    /** @param 0|1|2|3 $flags */
+    function delete(Contact $user, $flags = 0, $reason = null) {
         $this->unames["deleted"] = [];
-        if (!$this->check_delete($user)) {
+        if (!$this->check_delete($user, $flags)) {
             return;
         }
 
@@ -226,6 +233,9 @@ class UserActions extends MessageSet {
         // also change roles (do not log roles change, as we will shortly log deletion)
         // and delete password
         $user->set_prop("cflags", $user->cflags | Contact::CF_DELETED);
+        if ($flags & self::DELETE_LOCK) {
+            $user->set_prop("cflags", $user->cflags | Contact::CF_SECURITYLOCK);
+        }
         $user->set_prop("roles", 0);
         $user->set_prop("contactTags", null);
         $user->set_prop("password", "");
@@ -302,7 +312,11 @@ class UserActions extends MessageSet {
 
         // done
         $user->update_cdb_roles();
-        $this->viewer->log_activity_for($user, "Account deleted {$user->email}");
+        $message = "Account deleted {$user->email}";
+        if (is_string($reason) && $reason !== "") {
+            $message .= " " . trim($reason);
+        }
+        $this->viewer->log_activity_for($user, $message);
         $this->unames["deleted"][] = $user->name(NAME_E);
     }
 }
