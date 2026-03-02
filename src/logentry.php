@@ -151,7 +151,7 @@ class LogEntryGenerator {
         $this->uids = $uids;
         if ($uids !== null) {
             $ex = [];
-            foreach (Dbl::fetch_first_columns($this->conf->dblink, "select email from ContactInfo where contactId?a union select email from DeletedContactInfo where contactId?a", $uids, $uids) as $email) {
+            foreach (Dbl::fetch_first_columns($this->conf->dblink, "select email from ContactInfo where contactId?a", $uids) as $email) {
                 $ex[] = addcslashes($email, '^$.*+?|(){}[]\\');
             }
             $this->email_regex = ' (' . join("|", $ex) . ')';
@@ -494,11 +494,6 @@ class LogEntryGenerator {
             foreach ($this->need_users as $cid => $x) {
                 $this->users[$cid] = Contact::make_deleted($this->conf, $cid);
             }
-            $result = $this->conf->qe("select " . $this->conf->deleted_user_query_fields() . " from DeletedContactInfo where contactId?a", array_keys($this->need_users));
-            while (($user = Contact::fetch($result, $this->conf))) {
-                $this->users[$user->contactId] = $user;
-            }
-            Dbl::free($result);
         }
         $this->need_users = [];
     }

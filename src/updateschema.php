@@ -1292,6 +1292,61 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
+    private function v322_retire_deleted_contact_info() {
+        // Migrate DeletedContactInfo rows into ContactInfo with CF_DELETED,
+        // then drop the table.
+        $result = $this->conf->ql("select * from DeletedContactInfo");
+        if (!$result) {
+            return true; // table doesn't exist, nothing to do
+        }
+        // Deduplicate by contactId (table has no PK)
+        $delus = [];
+        while (($row = $result->fetch_object())) {
+            $cid = (int) $row->contactId;
+            if ($cid > 0 && !isset($delus[$cid])) {
+                $delus[$cid] = $row;
+            }
+        }
+        $result->close();
+        if (!empty($delus)) {
+            // Find which contactIds already exist in ContactInfo
+            $existing = [];
+            $result = $this->conf->ql("select contactId from ContactInfo where contactId?a",
+                array_keys($delus));
+            while (($row = $result->fetch_row())) {
+                $existing[(int) $row[0]] = true;
+            }
+            $result->close();
+            // Find existing emails for conflict detection
+            $existing_emails = [];
+            $result = $this->conf->ql("select lower(email) from ContactInfo");
+            while (($row = $result->fetch_row())) {
+                $existing_emails[strtolower($row[0])] = true;
+            }
+            $result->close();
+            // Insert missing entries
+            foreach ($delus as $cid => $du) {
+                if (isset($existing[$cid])) {
+                    continue;
+                }
+                $email = $du->email;
+                if (isset($existing_emails[strtolower($email)])) {
+                    $email = "{$email}.deleted.invalid";
+                }
+                $this->conf->ql("insert into ContactInfo
+                    set contactId=?, email=?, firstName=?, lastName=?,
+                    unaccentedName=?, affiliation=?, cflags=?, password=''
+                    on duplicate key update contactId=contactId",
+                    $cid, $email,
+                    $du->firstName ?? "", $du->lastName ?? "",
+                    $du->unaccentedName ?? "", $du->affiliation ?? "",
+                    Contact::CF_DELETED);
+                $existing_emails[strtolower($email)] = true;
+            }
+        }
+        return $this->conf->ql_ok("drop table `DeletedContactInfo`");
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;

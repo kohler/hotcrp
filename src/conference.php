@@ -2171,14 +2171,6 @@ class Conf {
         return "{$f}, {$slice} _slice";
     }
 
-    /** @param string $prefix
-     * @return string */
-    function deleted_user_query_fields($prefix = "") {
-        // site configuration may require preferredEmail
-        $xf = $this->require_preferred_email() ? "null {$prefix}preferredEmail, " : "";
-        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, 0 primaryContactId, '' contactTags, " . Contact::CF_DELETED . " cflags, {$xf}0 _slice";
-    }
-
     /** @param int $slice
      * @param string $prefix
      * @return string */

@@ -117,21 +117,6 @@ CREATE TABLE `ContactPrimary` (
 
 
 
---
--- Table structure for table `DeletedContactInfo`
---
-
-DROP TABLE IF EXISTS `DeletedContactInfo`;
-CREATE TABLE `DeletedContactInfo` (
-  `contactId` int NOT NULL,
-  `firstName` varbinary(120) NOT NULL,
-  `lastName` varbinary(120) NOT NULL,
-  `unaccentedName` varbinary(2048) NOT NULL,
-  `email` varchar(120) NOT NULL,
-  `affiliation` varbinary(2048) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
 
 --
 -- Table structure for table `DocumentLink`
