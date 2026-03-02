@@ -286,7 +286,7 @@ class MailRecipients extends MessageSet {
     /** @return $this */
     function set_search(?PaperSearch $srch) {
         if ($srch
-            && ($this->rect->flags & self::F_TESTREVIEW) !== 0
+            && ($this->rect->flags & self::F_REV) !== 0
             && $srch->main_term()->about() !== SearchTerm::ABOUT_PAPER) {
             $this->search = $srch->main_term();
         } else {
