@@ -3267,6 +3267,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v321_correct_mimetypes("Paper")) {
             $conf->update_schema_version(321);
         }
+        if ($conf->sversion === 321
+            && $conf->ql_ok("delete from DeletedContactInfo where (select email from ContactInfo where contactId=DeletedContactInfo.contactId and (cflags&8)!=0)=DeletedContactInfo.email")) {
+            $conf->update_schema_version(322);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

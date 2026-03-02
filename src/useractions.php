@@ -222,9 +222,6 @@ class UserActions extends MessageSet {
             return;
         }
 
-        // insert deletion marker
-        $this->conf->qe("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?", $user->contactId, $user->firstName, $user->lastName, $user->unaccentedName, $user->email, $user->affiliation);
-
         // change cflags to mark user as deleted
         // also change roles (do not log roles change, as we will shortly log deletion)
         // and delete password
