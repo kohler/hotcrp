@@ -235,7 +235,7 @@ class MailRecipients extends MessageSet {
         $this->recipt_default_message = "reviewers";
         $hide = !$this->user->is_requester();
         $this->add_recpt("myextrev", "Your requested reviewers", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0) | self::F_REV | self::F_REV_EXT | self::F_REV_MYREQ);
-        $this->add_recpt("uncmyextrev", "Your requested reviewers with incomplete reviews", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0) | self::F_REV_INCOMPLETE | self::F_REV_EXT | self::F_REV_MYREQ);
+        $this->add_recpt("uncmyextrev", "Your requested reviewers with incomplete reviews", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0) | self::F_REV | self::F_REV_INCOMPLETE | self::F_REV_EXT | self::F_REV_MYREQ);
 
         if ($user->is_manager()) {
             $this->add_recpt("lead", "Discussion leads", "s", $any_lead ? 0 : self::F_HIDE);
