@@ -1,14 +1,14 @@
 {
   "name": "d3-hotcrp",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "scripts": {
     "prepare": "rollup -c"
   },
   "devDependencies": {
     "@rollup/plugin-json": "6",
-    "@rollup/plugin-node-resolve": "15",
-    "@rollup/plugin-terser": "^0.4.0",
-    "rollup": "3",
+    "@rollup/plugin-node-resolve": "16",
+    "@rollup/plugin-terser": "1",
+    "rollup": "4",
     "d3-array": "3",
     "d3-axis": "3",
     "d3-force": "3",
