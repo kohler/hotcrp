@@ -5452,19 +5452,18 @@ class Conf {
     private static function log_clean_user($user, &$text) {
         if (!$user) {
             return 0;
-        } else if (!is_numeric($user)) {
-            if ($user->email
-                && !$user->contactId
-                && !$user->is_root_user()) {
-                $suffix = " <{$user->email}>";
-                if (!str_ends_with($text, $suffix)) {
-                    $text .= $suffix;
-                }
-            }
-            return $user->contactId;
-        } else {
+        } else if (is_numeric($user)) {
             return $user;
         }
+        if ($user->email
+            && !$user->contactId
+            && !$user->is_root_user()) {
+            $suffix = " <{$user->email}>";
+            if (!str_ends_with($text, $suffix)) {
+                $text .= $suffix;
+            }
+        }
+        return $user->contactId;
     }
 
     /** @param null|int|Contact $user
