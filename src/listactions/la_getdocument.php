@@ -51,8 +51,8 @@ class GetDocument_ListAction extends ListAction {
         $dopt = new Downloader;
         $dopt->parse_qreq($qreq);
         $dopt->set_attachment(true);
+        $dopt->set_log_user($user);
         $dopt->single = true;
-        $dopt->log_user = $user;
         if ($docset->prepare_download($dopt)) {
             return $dopt;
         }

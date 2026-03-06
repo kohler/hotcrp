@@ -168,7 +168,7 @@ class Search_API {
         if ($action instanceof ListAction) {
             $action = $action->run($user, $qreq, $ssel);
         }
-        return ListAction::resolve_document($action, $qreq);
+        return ListAction::resolve_document($action, $user, $qreq);
     }
 
     static function searchactions(Contact $user) {

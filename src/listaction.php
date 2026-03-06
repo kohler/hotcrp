@@ -128,7 +128,7 @@ class ListAction {
         if ($res instanceof ListAction) {
             $res = $res->run($user, $qreq, $selection);
         }
-        $res = self::resolve_document($res, $qreq);
+        $res = self::resolve_document($res, $user, $qreq);
         if ($res instanceof JsonResult) {
             if ($qreq->page() === "api") {
                 json_exit($res);
@@ -147,7 +147,7 @@ class ListAction {
 
     /** @param null|JsonResult|Downloader|Redirection|CsvGenerator|DocumentInfo|DocumentInfoSet $res
      * @return null|JsonResult|Downloader|Redirection */
-    static function resolve_document($res, Qrequest $qreq) {
+    static function resolve_document($res, Contact $user, Qrequest $qreq) {
         if (!($res instanceof DocumentInfo)
             && !($res instanceof DocumentInfoSet)
             && !($res instanceof CsvGenerator)) {
@@ -156,6 +156,7 @@ class ListAction {
         $dopt = new Downloader;
         $dopt->parse_qreq($qreq);
         $dopt->set_attachment(true);
+        $dopt->set_log_user($user);
         if ($res->prepare_download($dopt)) {
             return $dopt;
         }

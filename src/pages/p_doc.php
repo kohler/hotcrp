@@ -74,7 +74,7 @@ class Doc_Page {
         // default is inline only for whitelisted formats
         $dopt->set_attachment(friendly_boolean($qreq->save) ? : null);
         $dopt->set_cacheable($dr->cacheable);
-        $dopt->log_user = $user;
+        $dopt->set_log_user($user);
         if ($doc->emit($dopt) === 500) {
             self::error(500, $doc->message_set(), $qreq);
         }
