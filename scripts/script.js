@@ -1651,7 +1651,7 @@ function redirect_with_messages(url, message_list) {
     $.post(hoturl("=api/stashmessages"),
         {message_list: JSON.stringify(message_list)},
         function (data) {
-            const smsg = data ? data.smsg || data._smsg /* XXX */ : false;
+            const smsg = data ? data.smsg : false;
             if (typeof smsg === "string"
                 && /^[a-zA-Z0-9_]*$/.test(smsg)) {
                 document.cookie = "hotcrp-smsg-".concat(smsg, "=", now_msec(), "; Max-Age=20", hoturl_cookie_params());

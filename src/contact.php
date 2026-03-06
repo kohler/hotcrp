@@ -894,8 +894,7 @@ class Contact implements JsonSerializable {
     function _activate_smsg($qreq, $smsgs) {
         $nsmsgs = [];
         foreach ($smsgs as $ml) {
-            if ($ml[0] === $qreq->_smsg
-                || isset($_COOKIE["hotcrp-smsg-{$ml[0]}"])) {
+            if (isset($_COOKIE["hotcrp-smsg-{$ml[0]}"])) {
                 for ($i = 2; $i !== count($ml); ++$i) {
                     Conf::msg_on($this->conf, $ml[$i][0], $ml[$i][1]);
                 }
