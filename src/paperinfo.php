@@ -1624,6 +1624,12 @@ class PaperInfo {
         return $this->conflict_type($contact) >= CONFLICT_AUTHOR;
     }
 
+    /** @param Contact|int $contact
+     * @return bool */
+    function has_listed_author($contact) {
+        return ($this->conflict_type($contact) & CONFLICT_AUTHOR) !== 0;
+    }
+
     /** @return bool */
     function has_author_view(Contact $user) {
         return $user->view_conflict_type($this) >= CONFLICT_AUTHOR;

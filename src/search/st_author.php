@@ -9,15 +9,13 @@ class Author_SearchTerm extends SearchTerm {
     private $csm;
     /** @var ?TextPregexes */
     private $regex;
+    /** @var bool */
+    private $listed;
 
-    function __construct(Contact $user, $countexpr, $contacts, $match, $quoted) {
+    function __construct(Contact $user, $countexpr, $contacts) {
         parent::__construct("au");
         $this->user = $user;
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
-        if (!$contacts && $match) {
-            $this->regex = Text::star_text_pregexes($match, $quoted);
-            $this->set_float("fhl:au", $this->regex);
-        }
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $count = ">0";
@@ -32,11 +30,19 @@ class Author_SearchTerm extends SearchTerm {
             } else if ($word === "none" && $count === ">0") {
                 $word = null;
                 $count = "=0";
-            } else if (trim($word) !== "") {
+            } else if ($word !== "") {
                 $cids = $srch->matching_special_uids($word, false, false);
             }
         }
-        return new Author_SearchTerm($srch->user, $count, $cids, $word, $sword->quoted);
+        $aust = new Author_SearchTerm($srch->user, $count, $cids);
+        if (!$cids && $word !== "") {
+            $aust->regex = Text::star_text_pregexes($word, $sword->quoted);
+            $aust->set_float("fhl:au", $aust->regex);
+        }
+        if ($sword->kwexplicit && ($sword->kwdef->listed ?? false)) {
+            $aust->listed = true;
+        }
+        return $aust;
     }
     function paper_requirements(&$options) {
         if ($this->csm->has_contacts()) {
@@ -66,10 +72,11 @@ class Author_SearchTerm extends SearchTerm {
         // XXX presence condition
         $n = 0;
         $can_view = $this->user->allow_view_authors($row);
+        $listed = $this->listed;
         if ($this->csm->has_contacts()) {
             foreach ($this->csm->contact_set() as $cid) {
                 if ((!$can_view && $cid !== $this->user->contactXid)
-                    || !$row->has_author($cid)) {
+                    || ($listed ? !$row->has_listed_author($cid) : !$row->has_author($cid))) {
                     continue;
                 }
                 ++$n;
@@ -81,7 +88,7 @@ class Author_SearchTerm extends SearchTerm {
         } else {
             foreach ($row->conflict_list() as $co) {
                 if ($co->conflictType < CONFLICT_AUTHOR
-                    || (!$this->regex_match($co->user)
+                    || (($listed || !$this->regex_match($co->user))
                         && !$this->regex_match($co->author($row)))) {
                     continue;
                 }

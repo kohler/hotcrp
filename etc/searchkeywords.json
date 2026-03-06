@@ -10,11 +10,14 @@
     },
     {   "name": "abstract", "alias": "ab"   },
     {
-        "name": "au",
-        "parse_function": "Author_SearchTerm::parse"
+        "name": "au", "parse_function": "Author_SearchTerm::parse"
     },
-    {   "name": "auth", "alias": "au", "deprecated": true   },
     {   "name": "author", "alias": "au"   },
+    {
+        "name": "listedauthor", "parse_function": "Author_SearchTerm::parse",
+        "listed": true
+    },
+    {   "name": "listedau", "alias": "listedauthor"   },
     {
         "name": "co",
         "parse_function": "TextMatch_SearchTerm::parse", "has": "any"
