@@ -460,6 +460,15 @@ final class PaperConflictInfo {
         $this->conflictType = $ctype;
         $this->author_index = self::UNINITIALIZED_INDEX;
     }
+
+    /** @param PaperInfo $prow
+     * @return ?Author */
+    function author($prow) {
+        if ($this->author_index === null) {
+            return null;
+        }
+        return $prow->author_by_index($this->author_index);
+    }
 }
 
 final class PaperDocumentLink {

@@ -713,9 +713,8 @@ class PaperSearch extends MessageSet {
         if ($kw !== "") {
             if (($kwdef = $this->_find_search_keyword($kw, $sword, $scope, false))) {
                 return $this->_kwdef_parse($kwdef, $sword, true);
-            } else {
-                return new False_SearchTerm;
             }
+            return new False_SearchTerm;
         }
 
         // Paper ID search term (`1-2`, `#1-#2`, `1-`, etc.)
@@ -753,9 +752,8 @@ class PaperSearch extends MessageSet {
             $sword->kwpos1 = $scope->defkw->kwpos1;
             if (($kwdef = $this->_find_search_keyword($scope->defkw->kword, $sword, $scope, true))) {
                 return $this->_kwdef_parse($kwdef, $sword, true);
-            } else {
-                return new False_SearchTerm;
             }
+            return new False_SearchTerm;
         }
 
         // Special words: unquoted `*`, `ANY`, `ALL`, `NONE`; empty string

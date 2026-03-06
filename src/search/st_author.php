@@ -1,6 +1,6 @@
 <?php
 // search/st_author.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Author_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -49,14 +49,18 @@ class Author_SearchTerm extends SearchTerm {
         } else if ($this->csm->has_contacts()) {
             $sqi->add_allConflictType_column();
             return "true";
-        } else {
-            $sqi->add_column("authorInformation", "Paper.authorInformation");
-            return $this->csm->test(0) ? "true" : "Paper.authorInformation!=''";
         }
+        $sqi->add_column("authorInformation", "Paper.authorInformation");
+        return $this->csm->test(0) ? "true" : "Paper.authorInformation!=''";
     }
     function is_sqlexpr_precise() {
         return $this->csm->single_cid() === $this->user->contactId
             && !$this->csm->test(0);
+    }
+    /** @param null|Author|Contact $au
+     * @return bool */
+    private function regex_match($au) {
+        return $au !== null && $this->regex->match($au->name(NAME_E|NAME_A));
     }
     function test(PaperInfo $row, $xinfo) {
         // XXX presence condition
@@ -64,14 +68,21 @@ class Author_SearchTerm extends SearchTerm {
         $can_view = $this->user->allow_view_authors($row);
         if ($this->csm->has_contacts()) {
             foreach ($this->csm->contact_set() as $cid) {
-                if (($cid === $this->user->contactXid || $can_view)
-                    && $row->has_author($cid))
-                    ++$n;
+                if ((!$can_view && $cid !== $this->user->contactXid)
+                    || !$row->has_author($cid)) {
+                    continue;
+                }
+                ++$n;
             }
-        } else if ($can_view) {
-            foreach ($row->author_list() as $au) {
-                if ($this->regex
-                    && !$this->regex->match($au->name(NAME_E|NAME_A))) {
+        } else if (!$can_view) {
+            // $n is always 0
+        } else if (!$this->regex) {
+            $n = count($row->author_list());
+        } else {
+            foreach ($row->conflict_list() as $co) {
+                if ($co->conflictType < CONFLICT_AUTHOR
+                    || (!$this->regex_match($co->user)
+                        && !$this->regex_match($co->author($row)))) {
                     continue;
                 }
                 ++$n;
@@ -84,12 +95,11 @@ class Author_SearchTerm extends SearchTerm {
             || $this->regex
             || ($about & self::ABOUT_PAPER) === 0) {
             return $this->test($row, null);
-        } else {
-            return ["type" => "compar", "compar" => $this->csm->relation(), "child" => [
-                ["type" => "author_count"],
-                $this->csm->value()
-            ]];
         }
+        return ["type" => "compar", "compar" => $this->csm->relation(), "child" => [
+            ["type" => "author_count"],
+            $this->csm->value()
+        ]];
     }
     function about() {
         return self::ABOUT_PAPER;
