@@ -50,7 +50,8 @@ class S3Client {
         "content_file" => false,
         "content_type" => "Content-Type",
         "content_encoding" => "Content-Encoding",
-        "content_disposition" => "Content-Disposition"
+        "content_disposition" => "Content-Disposition",
+        "if_none_match" => "If-None-Match"
     ];
 
     const CONFIRM_DELETE_BUCKET = 1203498141;
@@ -117,11 +118,11 @@ class S3Client {
 
     /** @return ?int */
     function check_403() {
-        if (!$this->reset_key) {
-            $this->s3_scope = $this->s3_signing_key = "";
-            return null;
+        if ($this->reset_key) {
+            return 403;
         }
-        return 403;
+        $this->s3_scope = $this->s3_signing_key = "";
+        return null;
     }
 
     /** @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method

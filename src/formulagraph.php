@@ -1103,7 +1103,7 @@ class FormulaGraph extends MessageSet {
         }
 
         $format = $isx ? $this->_fx_type : $this->fy->result_format();
-        $ticks = $named_ticks = null;
+        $named_ticks = null;
         $rotate_y = null;
         if ($isx && $this->_fx_type === Fexpr::FSEARCH) {
             $named_ticks = [];
@@ -1125,7 +1125,10 @@ class FormulaGraph extends MessageSet {
                 $named_ticks = ["no", "yes"];
             } else {
                 assert($field instanceof Score_ReviewField);
-                $ticks = ["score", $field->export_json(ReviewField::UJ_EXPORT)];
+                $scale = (object) [
+                    "type" => "review_field",
+                    "review_field" => $field->export_json(ReviewField::UJ_EXPORT)
+                ];
                 if ($field->flip && $isx) {
                     $j["flip"] = true;
                 }
@@ -1171,7 +1174,7 @@ class FormulaGraph extends MessageSet {
             } else if ($format === Fexpr::FREVTYPE) {
                 $named_ticks = ReviewForm::$revtype_names;
             } else if (is_int($format) && $format >= Fexpr::FDATE && $format <= Fexpr::FTIMEDELTA) {
-                $ticks = ["time"];
+                $scale = (object) ["type" => "time"];
             } else if ($isx && $this->_xorder_map) {
                 if (isset($j["label"])) {
                     $j["label"] .= " order";
@@ -1190,11 +1193,10 @@ class FormulaGraph extends MessageSet {
             $named_ticks = $newticks;
         }
 
-        if ($ticks !== null) {
-            $j["ticks"] = $ticks;
+        if ($scale !== null) {
+            $j["scale"] = $scale;
         } else if ($named_ticks !== null) {
-            $j["ticks"] = ["named", $named_ticks];
-            $j["discrete"] = true;
+            $j["scale"] = (object) ["type" => "ordinal", "range" => $named_ticks];
         }
 
         if ($this->_axis_remapped & ($isx ? 1 : 2)) {
@@ -1216,14 +1218,12 @@ class FormulaGraph extends MessageSet {
         return $tj[$this->type] ?? null;
     }
 
-    function graph_json() {
-        $j = [
-            "type" => $this->type_json(),
-            "data_format" => $this->data_format(),
-            "data" => $this->data(),
-            "x" => $this->axis_json("x"),
-            "y" => $this->axis_json("y")
-        ];
+    function graph_json($j = []) {
+        $j["type"] = $this->type_json();
+        $j["data_format"] = $this->data_format();
+        $j["data"] = $this->data();
+        $j["x"] = $this->axis_json("x");
+        $j["y"] = $this->axis_json("y");
         if ($this->type & self::CDF) {
             $j["cdf_tooltip_position"] = true;
         }

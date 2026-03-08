@@ -17,10 +17,9 @@ class GraphData_API {
             $fg->add_query($queries[$i], $styles[$i], isset($qreq->q1) ? "q$i" : "q");
         }
 
-        if (!$fg->has_error()) {
-            return ["ok" => true] + $fg->graph_json();
-        } else {
+        if ($fg->has_error()) {
             return new JsonResult(["ok" => false, "message_list" => $fg->message_list()]);
         }
+        return $fg->graph_json(["ok" => true]);
     }
 }
