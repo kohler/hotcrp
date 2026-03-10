@@ -33,7 +33,9 @@ class Preference_API {
             if (!$fr || isset($fr["invalidId"]) || isset($fr["noPaper"])) {
                 return Conf::paper_error_json_result($fr);
             }
-            if ($postpref && $fr->prow) {
+            if ($postpref
+                && $fr->prow
+                && $user->can_edit_preference_for($fr->prow, $u)) {
                 $postpref->save($fr->prow->paperId, $u->contactId, [$user->conf, "qe"]);
             }
             $jr = new JsonResult(["ok" => false]);
@@ -43,17 +45,23 @@ class Preference_API {
             return $jr;
         }
 
-        if ($postpref) {
+        $jr = null;
+        if ($postpref && $user->can_edit_preference_for($prow, $u)) {
             $postpref->save($prow->paperId, $u->contactId, [$user->conf, "qe"]);
             $prow->load_preferences();
+        } else if ($postpref) {
+            $jr = JsonResult::make_error(200, Preference_AssignmentParser::cannot_edit_preference_message($user, $prow, $u));
         }
         $pf = $prow->preference($u);
-        $jr = new JsonResult(["ok" => true, "value" => $pf->exists() ? $pf->unparse() : "", "pref" => $pf->preference]);
+        $jr = $jr ?? JsonResult::make_ok();
+
+        $jr->set("value", $pf->exists() ? $pf->unparse() : "");
+        $jr->set("pref", $pf->preference);
         if ($pf->expertise !== null) {
-            $jr->content["prefexp"] = unparse_expertise($pf->expertise);
+            $jr->set("prefexp", unparse_expertise($pf->expertise));
         }
         if ($prow->conf->has_topics()) {
-            $jr->content["topic_score"] = $prow->topic_interest_score($u);
+            $jr->set("topic_score", $prow->topic_interest_score($u));
         }
         return $jr;
     }

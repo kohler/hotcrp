@@ -155,6 +155,11 @@
         "tags": "home"
     },
     {
+        "name": "preference_editable", "storage": "pref_edit",
+        "title": "Allow PC to edit review preferences",
+        "type": "checkbox", "default_value": 1
+    },
+    {
         "name": "preference_instructions", "storage": "msg.revprefdescription",
         "title": "Review preference instructions",
         "type": "htmlstring", "size": 20, "default_value": "auto",

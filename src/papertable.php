@@ -1737,15 +1737,22 @@ class PaperTable {
     }
 
     function papstripReviewPreference() {
+        $pf = $this->prow->preference($this->user);
+        $editable = $this->user->can_edit_preference_for($this->prow, $this->user);
+        if (!$editable && !$pf->exists()) {
+            return;
+        }
+
         $this->_papstripBegin("revpref");
-        echo $this->papt("revpref", "Review preference", ["type" => "ps"]),
-            "<form class=\"ui\">";
-        $rp = $this->prow->preference($this->user)->unparse();
-        $rp = ($rp == "0" ? "" : $rp);
-        echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
-            "\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\">",
-            "</form></div>\n";
-        Ht::stash_script("hotcrp.add_preference_ajax(\"#revprefform_d\",true);hotcrp.shortcut(\"revprefform_d\").add()");
+        echo $this->papt("revpref", "Review preference", ["type" => "ps"]);
+        if ($editable) {
+            $rp = $pf->exists() ? $pf->unparse() : "";
+            echo "<form class=\"ui\"><input id=\"revprefform_d\" type=\"text\" name=\"revpref{$this->prow->paperId}\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\"></form>";
+            Ht::stash_script("hotcrp.add_preference_ajax(\"#revprefform_d\",true);hotcrp.shortcut(\"revprefform_d\").add()");
+        } else {
+            echo "<p class=\"odname\">", htmlspecialchars($pf->unparse_fancy()), "</p>";
+        }
+        echo "</div>\n";
     }
 
     private function papstrip_onetag_begin() {

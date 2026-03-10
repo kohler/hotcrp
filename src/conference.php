@@ -56,6 +56,7 @@ class Conf {
     const PB_UPDATING_AUTOMATIC_TAGS = 0x100;
     const PB_HAS_COMPLEX_DECISION = 0x200;
     const PB_HIDE_CONFLICT_SUB = 0x400;
+    const PB_EDIT_REVPREF = 0x800;
     /** @var ?SearchTerm
      * @readonly */
     public $_au_seerev;
@@ -434,6 +435,9 @@ class Conf {
         }
         if (($this->settings["pc_confpdf"] ?? 0) > 1) {
             $this->_permbits |= self::PB_HIDE_CONFLICT_SUB;
+        }
+        if (($this->settings["pref_edit"] ?? 1) > 0) {
+            $this->_permbits |= self::PB_EDIT_REVPREF;
         }
 
         // rounds
@@ -3689,10 +3693,17 @@ class Conf {
     function time_review($round, $reviewType, $hard) {
         return !$this->missed_review_deadline($round, $reviewType, $hard);
     }
+
     /** @return bool */
     function timePCReviewPreferences() {
-        return $this->can_pc_view_some_incomplete()
-            || $this->has_any_submitted();
+        return ($this->_permbits & self::PB_EDIT_REVPREF) !== 0
+            && ($this->can_pc_view_some_incomplete()
+                || $this->has_any_submitted());
+    }
+
+    /** @return bool */
+    function allow_pc_edit_preference() {
+        return ($this->_permbits & self::PB_EDIT_REVPREF) !== 0;
     }
 
     /** @return bool */

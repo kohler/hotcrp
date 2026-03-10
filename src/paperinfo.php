@@ -34,6 +34,16 @@ final class PaperReviewPreference {
         return $this->preference . unparse_expertise($this->expertise);
     }
 
+    /** @return string */
+    function unparse_fancy() {
+        if ($this->preference < 0) {
+            $t = "−" /* U+2212 */ . (-$this->preference);
+        } else {
+            $t = "{$this->preference}";
+        }
+        return $t . unparse_expertise($this->expertise);
+    }
+
     /** @param PaperReviewPreference $a
      * @param PaperReviewPreference $b
      * @return -1|0|1 */

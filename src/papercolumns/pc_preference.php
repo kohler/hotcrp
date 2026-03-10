@@ -122,7 +122,8 @@ class Preference_PaperColumn extends PaperColumn {
         $pf_exists = $pf->exists();
         $conflicted = $row->has_conflict($this->user);
         $editable = $this->editable
-            && ($this->all || $this->user->pc_track_assignable($row));
+            && ($this->all || $this->user->pc_track_assignable($row))
+            && $pl->user->can_edit_preference_for($row, $this->user);
 
         // compute HTML
         $t = "";
@@ -141,7 +142,7 @@ class Preference_PaperColumn extends PaperColumn {
                 $t .= " " . review_type_icon(-1);
             }
         } else if (!$conflicted || $pf_exists) {
-            $t = str_replace("-", "−" /* U+2212 */, $pf->unparse());
+            $t = $pf->unparse_fancy();
         } else if ($this->show_conflict) {
             $t = review_type_icon(-1);
         }

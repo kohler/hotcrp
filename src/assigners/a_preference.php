@@ -55,16 +55,22 @@ class Preference_AssignmentParser extends AssignmentParser {
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->isPC ? [$state->reviewer] : null;
     }
+    static function cannot_edit_preference_message(Contact $viewer, PaperInfo $prow, Contact $user) {
+        if ($viewer->contactId === $user->contactId) {
+            return $prow->conf->_("<0>You can’t enter a preference for {submission} #{}", $prow->paperId);
+        } else if (!$user->isPC) {
+            return "<0>Only PC members can enter preferences";
+        } else if (!$viewer->can_manage_reviews($prow)) {
+            return $prow->conf->_("<0>You can’t administer {submission} #{}", $prow->paperId);
+        }
+        return $prow->conf->_("<0>User {$user->email} can’t enter a preference for {submission} #{}", $prow->paperId);
+    }
     function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
         if (!$user->contactId) {
             return false;
         }
-        if ($state->user->contactId !== $user->contactId) {
-            if (!$state->user->can_manage_reviews($prow)) {
-                return new AssignmentError($prow->failure_reason(["administer" => true]));
-            } else if (!$user->isPC) {
-                return new AssignmentError("<0>User ‘{$user->email}’ is not a PC member");
-            }
+        if (!$state->user->can_edit_preference_for($prow, $user)) {
+            return new AssignmentError(self::cannot_edit_preference_message($state->user, $prow, $user));
         }
         return true;
     }

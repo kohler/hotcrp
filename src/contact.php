@@ -4849,24 +4849,32 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function allow_view_preference(?PaperInfo $prow = null, $aggregate = false) {
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return $aggregate
-                ? $rights->allow_pc() && $this->can_view_pc()
-                : $rights->allow_admin();
+        if (!$prow) {
+            return $this->is_manager();
         }
-        return $this->is_manager();
+        $rights = $this->rights($prow);
+        return $aggregate
+            ? $rights->allow_pc() && $this->can_view_pc()
+            : $rights->allow_admin();
     }
 
     /** @return bool */
     function can_view_preference(?PaperInfo $prow = null, $aggregate = false) {
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return $aggregate
-                ? $rights->allow_pc() && $this->can_view_pc()
-                : $rights->is_admin();
+        if (!$prow) {
+            return $this->is_manager();
         }
-        return $this->is_manager();
+        $rights = $this->rights($prow);
+        return $aggregate
+            ? $rights->allow_pc() && $this->can_view_pc()
+            : $rights->is_admin();
+    }
+
+    /** @return bool */
+    function can_edit_preference_for(?PaperInfo $prow, Contact $user) {
+        return $user->isPC
+            && (($user->contactId === $this->contactId
+                 && $user->conf->allow_pc_edit_preference())
+                || ($prow ? $this->can_manage_reviews($prow) : $this->is_manager()));
     }
 
     /** @return bool */
