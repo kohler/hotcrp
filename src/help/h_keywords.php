@@ -168,6 +168,7 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("cmt:>=3", "at least <em>three</em> visible reviewer comments");
         echo $hth->search_trow("has:aucmt", "at least one reviewer comment visible to authors");
         echo $hth->search_trow("cmt:sylvia", "“sylvia” (in name/email) wrote at least one visible comment; can combine with counts, use reviewer tags");
+        echo $hth->search_trow("cmt:#foo", "at least one visible reviewer comment has tag #foo");
         $rrds = $hth->conf->response_round_list();
         if (count($rrds) > 1) {
             echo $hth->search_trow("has:response", "has an author’s response");
