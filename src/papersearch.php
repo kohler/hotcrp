@@ -1,6 +1,6 @@
 <?php
 // papersearch.php -- HotCRP class for searching for papers
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class SearchScope {
     /** @var int */
@@ -1294,24 +1294,23 @@ class PaperSearch extends MessageSet {
 
     /** @return list<TagAnno> */
     function group_anno_list() {
-        if (($ng = $this->ngroups()) > 1) {
-            $gs = [];
-            for ($i = 0; $i !== $ng; ++$i) {
-                $ch = $this->_then_term->group_head_term($i);
-                $srchstr = $ch->source_subquery($this->q);
-                if ($ch->get_float("view") || str_starts_with($srchstr, "(")) {
-                    $srchstr = self::strip_show($srchstr);
-                }
-                $h = $ch->get_float("legend");
-                $ta = TagAnno::make_legend($h ?? $srchstr);
-                $ta->set_prop("search", $srchstr);
-                $gs[] = $ta;
-            }
-            return $gs;
-        } else if (($h = $this->_qe->get_float("legend"))) {
-            return [TagAnno::make_legend($h)];
+        if (($ng = $this->ngroups()) <= 1) {
+            $h = $this->_qe->get_float("legend");
+            return $h ? [TagAnno::make_legend($h)] : [];
         }
-        return [];
+        $gs = [];
+        for ($i = 0; $i !== $ng; ++$i) {
+            $ch = $this->_then_term->group_head_term($i);
+            $srchstr = $ch->source_subquery($this->q);
+            if ($ch->get_float("view") || str_starts_with($srchstr, "(")) {
+                $srchstr = self::strip_show($srchstr);
+            }
+            $h = $ch->get_float("legend");
+            $ta = TagAnno::make_legend($h ?? $srchstr);
+            $ta->set_prop("search", $srchstr);
+            $gs[] = $ta;
+        }
+        return $gs;
     }
 
     /** @param int $pid

@@ -2265,6 +2265,7 @@ final class PaperList extends MessageSet {
             && ($da = $this->_drag_action())) {
             $this->table_attr["class"][] = "pltable-draggable";
             $this->table_attr["data-drag-action"] = $da;
+            $this->need_render = true;
         }
         if ($this->_sort_etag) {
             $this->table_attr["data-drag-order"] = "tagval:{$this->_sort_etag}";
@@ -2273,7 +2274,7 @@ final class PaperList extends MessageSet {
         // collect row data
         $body = [];
         $grouppos = empty($this->_groups) ? -1 : 0;
-        $need_render = false;
+        $render_stashed = false;
         foreach ($rows as $row) {
             $this->_row_setup($row);
             if ($grouppos >= 0) {
@@ -2284,9 +2285,9 @@ final class PaperList extends MessageSet {
                 continue;
             }
             $body[] = $rowhtml;
-            if ($this->need_render && !$need_render) {
+            if ($this->need_render && !$render_stashed) {
                 $this->_stash_render();
-                $need_render = true;
+                $render_stashed = true;
             }
             if ($this->need_render && $this->count % 16 === 15) {
                 $body[count($body) - 1] .= "  " . Ht::script('hotcrp.render_list()') . "\n";
