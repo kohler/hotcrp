@@ -15470,6 +15470,7 @@ Object.assign(window.hotcrp, {
     // monitor_autoassignment
     // monitor_job
     // onload
+    pidcode: encode_session_list_ids,
     // render_list
     render_text: render_text,
     render_text_page: render_text.on_page,
