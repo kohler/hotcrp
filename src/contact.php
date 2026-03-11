@@ -3931,7 +3931,8 @@ class Contact implements JsonSerializable {
                 || $prow->timeSubmitted == 0)
             && ($sub_withdraw !== 0
                 || !$prow->has_author_seen_any_review())
-            && ($prow->outcome_sign === 0
+            && ($sub_withdraw === 2
+                || $prow->outcome_sign === 0
                 || ($display_only && !$prow->can_author_view_decision()));
     }
 
