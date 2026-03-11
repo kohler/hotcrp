@@ -155,9 +155,9 @@
         "tags": "home"
     },
     {
-        "name": "preference_editable", "storage": "pref_edit",
+        "name": "preference_editable", "storage": "negval.pref_noedit",
         "title": "Allow PC to edit review preferences",
-        "type": "checkbox", "default_value": 1
+        "type": "checkbox"
     },
     {
         "name": "preference_instructions", "storage": "msg.revprefdescription",

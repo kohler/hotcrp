@@ -436,7 +436,7 @@ class Conf {
         if (($this->settings["pc_confpdf"] ?? 0) > 1) {
             $this->_permbits |= self::PB_HIDE_CONFLICT_SUB;
         }
-        if (($this->settings["pref_edit"] ?? 1) > 0) {
+        if (($this->settings["pref_noedit"] ?? 0) <= 0) {
             $this->_permbits |= self::PB_EDIT_REVPREF;
         }
 
