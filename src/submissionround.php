@@ -109,7 +109,7 @@ class SubmissionRound {
     function time_register($with_grace) {
         return $this->open > 0
             && $this->open <= Conf::$now
-            && ($this->register <= 0
+            && (($this->register <= 0 && $this->resubmit <= 0)
                 || $this->register + ($with_grace ? $this->grace : 0) >= Conf::$now);
     }
 
@@ -118,7 +118,7 @@ class SubmissionRound {
     function time_update($with_grace) {
         return $this->open > 0
             && $this->open <= Conf::$now
-            && ($this->update <= 0
+            && (($this->update <= 0 && $this->resubmit <= 0)
                 || $this->update + ($with_grace ? $this->grace : 0) >= Conf::$now);
     }
 
@@ -132,7 +132,7 @@ class SubmissionRound {
         $t = $submitted ? $this->resubmit : $this->update;
         return $this->open > 0
             && $this->open <= Conf::$now
-            && ($t <= 0
+            && (($t <= 0 && $this->resubmit <= 0)
                 || $t + ($with_grace ? $this->grace : 0) >= Conf::$now);
     }
 
@@ -141,7 +141,7 @@ class SubmissionRound {
     function time_submit($with_grace) {
         return $this->open > 0
             && $this->open <= Conf::$now
-            && ($this->submit <= 0
+            && (($this->submit <= 0 && $this->resubmit <= 0)
                 || $this->submit + ($with_grace ? $this->grace : 0) >= Conf::$now);
     }
 
