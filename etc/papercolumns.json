@@ -44,6 +44,10 @@
         "order": 510
     },
     {
+        "name": "decision", "title": "Decision",
+        "function": "+Decision_PaperColumn", "sort": "descending"
+    },
+    {
         "name": "mypref",
         "sort": "descending", "className": "pl_revpref", "function": "+Preference_PaperColumn",
         "order": 550

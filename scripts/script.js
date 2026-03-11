@@ -14788,6 +14788,25 @@ handle_ui.on("js-assign-review", function (evt) {
     });
 });
 
+handle_ui.on("js-decide", function (evt) {
+    let form = this.form, m;
+    if (evt.type !== "change"
+        || !(m = /^decision(\d+)$/.exec(this.name))
+        || (form && form.autosave && !form.autosave.checked)) {
+        return;
+    }
+    const self = this, value = self.value;
+    function success(rv) {
+        input_set_default_value(self, value);
+        minifeedback(self, rv);
+    }
+    $ajax.condition(function () {
+        $.ajax(hoturl("=api/decision", {p: m[1], decision: value}), {
+            method: "POST", success: success, trackOutstanding: true
+        });
+    });
+});
+
 
 // focusing
 $(function () {
