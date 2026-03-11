@@ -1,6 +1,6 @@
 <?php
 // settings/s_review.php -- HotCRP settings > reviews page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Review_Setting {
     /** @var int */
@@ -565,7 +565,7 @@ class Review_SettingParser extends SettingParser {
         if (($n === "0" && !$external)
             || ($n !== "0" && !$sv->has_req("review/{$n}/id"))
             || ($n !== "0" && ($sv->reqstr("review/{$n}/delete") ?? "") !== "")) {
-            $sv->warning_at($si, "Invalid entry");
+            $sv->warning_at($si, "<0>Invalid entry");
         } else if ($n === "0") {
             $sv->save($savekey, "");
         } else {
