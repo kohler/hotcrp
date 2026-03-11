@@ -1404,16 +1404,6 @@ function graph_dot(element, args) {
 
     $(element).on("hotgraphhighlight", highlight);
 
-    svg.selectAll(".gdot")
-        .data(data)
-        .enter()
-        .append("circle")
-        .attr("cx", projx)
-        .attr("cy", projy)
-        .attr("r", 5)
-        .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
-        .style("fill", d => ensure_pattern(d.cc, "gdot"));
-
     svg.append("circle").attr("class", "gdot gdot-hover");
     const hovers = svg.selectAll(".gdot-hover")
             .attr("r", 5)
@@ -1423,18 +1413,18 @@ function graph_dot(element, args) {
     draw_axes(svg, axes[0], axes[1], args);
     draw_annotations(svg, args);
 
-    svg.append("rect")
-        .attr("x", -args.marginLeft)
-        .attr("width", args.plotWidth + args.marginLeft)
-        .attr("height", args.plotHeight + args.marginBottom)
-        .attr("fill", "none")
-        .attr("pointer-events", "all")
-        .on("mouseover", mousemoved)
-        .on("mousemove", mousemoved)
+    svg.selectAll(".gdot:not(.gdot-hover)")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", projx)
+        .attr("cy", projy)
+        .attr("r", 5)
+        .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
+        .style("fill", d => ensure_pattern(d.cc, "gdot"))
+        .on("mouseover", mouseover)
         .on("mouseout", hoverer.mouseout_soon)
         .on("click", mouseclick);
-
-    const gq = d3.quadtree(data, projx, projy);
 
     function make_tooltip(p) {
         return [
@@ -1443,8 +1433,7 @@ function graph_dot(element, args) {
         ];
     }
 
-    function mousemoved(event) {
-        let m = d3.pointer(event), p = gq.find(m[0], m[1], 6);
+    function mouseover(event, p) {
         if (!hoverer.move(p)) {
             return;
         }
@@ -1458,7 +1447,8 @@ function graph_dot(element, args) {
     }
 
     function mouseclick(event) {
-        clicker(hoverer.data ? hoverer.data.id : null, event);
+        const p = d3.select(this).datum();
+        clicker(p ? p.id : null, event);
     }
 
     function highlight(event) {
