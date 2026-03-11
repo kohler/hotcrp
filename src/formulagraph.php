@@ -1103,7 +1103,7 @@ class FormulaGraph extends MessageSet {
         }
 
         $format = $isx ? $this->_fx_type : $this->fy->result_format();
-        $named_ticks = null;
+        $scale = $named_ticks = null;
         $rotate_y = null;
         if ($isx && $this->_fx_type === Fexpr::FSEARCH) {
             $named_ticks = [];
