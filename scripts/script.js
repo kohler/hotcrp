@@ -10182,18 +10182,22 @@ function row_tagvalue(row, tag) {
 
 
 function tagannorow_fill(row, anno) {
-    if (!anno.blank) {
-        if (anno.tag && anno.annoid) {
-            row.setAttribute("data-tags", anno.tag + "#" + anno.tagval);
-        } else {
-            row.removeAttribute("data-tags");
-        }
-        var legend = anno.legend === null ? "" : anno.legend,
-            $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": legend});
-        $g.text(legend).toggleClass("pr-2", legend !== "");
-        anno.format && render_text.into($g[0]);
-        // `plheading-count` is taken care of in `tablelist_postreorder`
+    if (anno.blank) {
+        return;
     }
+    if (anno.tag && anno.annoid) {
+        row.setAttribute("data-tags", anno.tag + "#" + anno.tagval);
+    } else {
+        row.removeAttribute("data-tags");
+    }
+    const legend = anno.legend === null ? "" : anno.legend,
+        g = row.querySelector(".plheading-group");
+    g.setAttribute("data-format", anno.format || 0);
+    g.setAttribute("data-title", legend);
+    g.replaceChildren(legend);
+    toggleClass(g, "pr-2", legend !== "");
+    anno.format && render_text.into(g);
+    // `plheading-count` is taken care of in `tablelist_postreorder`
 }
 
 function tagannorow_add(tfacet, tbody, before, anno) {
@@ -10612,10 +10616,11 @@ function make_gapf() {
 }
 
 function taganno_success(rv) {
-    if (!rv.ok)
+    if (!rv.ok) {
         return;
+    }
     $(".pltable").each(function () {
-        var tblsort = hoturl_search(tablelist_search(this), "sort");
+        var tblsort = hoturl_search("?" + tablelist_search(this), "sort");
         if (!tblsort || strcasecmp_id(tblsort, "#" + rv.tag) !== 0) {
             return;
         }
