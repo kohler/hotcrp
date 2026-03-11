@@ -1384,10 +1384,33 @@ function dot_highlight(svg, data, klass) {
         .attr("r", 4.5);
 }
 
+function data_pidcode(data) {
+    const p = [];
+    for (const d of data) {
+        if (typeof d[2] === "object") {
+            p.push(...d[2]);
+        } else {
+            p.push(d[2]);
+        }
+    }
+    return hotcrp.pidcode(p);
+}
+
+function load_titles(titles, pidcode, success) {
+    $.getJSON(hoturl("api/search", {q: "pidcode:" + pidcode, f: "title", format: "json"}), null,
+        function (d) {
+            for (const pd of d.papers || []) {
+                titles[pd.pid] = pd.title;
+            }
+            success();
+        });
+}
+
 function graph_dot(element, args) {
     const svg = this;
     let data = ungroup_data(args.data);
-    const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
+    const pidcode = data_pidcode(data),
+        x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
         y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y)),
         axes = make_axis_pair(args, x, y);
     data = data.map(d => {
@@ -1426,11 +1449,25 @@ function graph_dot(element, args) {
         .on("mouseout", hoverer.mouseout_soon)
         .on("click", mouseclick);
 
+    let titles = null, hovering = null;
+
     function make_tooltip(p) {
-        return [
+        const a = [
             $e("p", null, render_position(args.x, p[0]), ", ", render_position(args.y, p[1])),
             render_pid_p([p], p.cc)
         ];
+        if (titles && titles[p.id]) {
+            a[1].append(" " + titles[p.id]);
+        }
+        return a;
+    }
+
+    function show_bubble() {
+        if (hoverer.data) {
+            hoverer.bubble.replace_content(...make_tooltip(hoverer.data))
+                .anchor("s")
+                .near(hovers.node());
+        }
     }
 
     function mouseover(event, p) {
@@ -1441,9 +1478,11 @@ function graph_dot(element, args) {
             .attr("cx", projx)
             .attr("cy", projy)
             .style("display", null);
-        hoverer.bubble.replace_content(...make_tooltip(p))
-            .anchor("s")
-            .near(hovers.node());
+        show_bubble();
+        if (titles === null) {
+            titles = [];
+            load_titles(titles, pidcode, show_bubble);
+        }
     }
 
     function mouseclick(event) {
