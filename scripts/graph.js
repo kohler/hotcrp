@@ -1447,7 +1447,42 @@ function graph_dot(element, args) {
         .style("fill", d => ensure_pattern(d.cc, "gdot"))
         .on("mouseover", mouseover)
         .on("mouseout", hoverer.mouseout_soon)
-        .on("click", mouseclick);
+        .on("click", mouseclick)
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    let dragging = false;
+
+    function dragstarted() {
+        dragging = true;
+        hoverer.mouseout();
+        d3.select(this).raise();
+    }
+
+    function dragged(event, d) {
+        d.x = event.x;
+        d.y = event.y;
+        d3.select(this).attr("cx", event.x).attr("cy", event.y);
+    }
+
+    function dragended(event, d) {
+        d.x = event.x;
+        d.y = event.y;
+        d.fx = event.x;
+        d.fy = event.y;
+        const resim = d3.forceSimulation(data)
+            .force("collide", d3.forceCollide(5))
+            .stop();
+        resim.tick(Math.ceil(Math.log(resim.alphaMin()) / Math.log(1 - resim.alphaDecay())));
+        d.fx = null;
+        d.fy = null;
+        svg.selectAll(".gdot:not(.gdot-hover)")
+            .attr("cx", projx)
+            .attr("cy", projy);
+        dragging = false;
+    }
 
     let titles = null, hovering = null;
 
@@ -1471,7 +1506,7 @@ function graph_dot(element, args) {
     }
 
     function mouseover(event, p) {
-        if (!hoverer.move(p)) {
+        if (dragging || !hoverer.move(p)) {
             return;
         }
         hovers.datum(p)
