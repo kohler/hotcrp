@@ -43,6 +43,9 @@ class TagAnno_API {
         $anno_by_id = [];
         $next_annoid = 1;
         foreach ($dt->order_anno_list() as $anno) {
+            if ($anno->annoId === null) { // skip fencepost
+                continue;
+            }
             $anno_by_id[$anno->annoId] = $anno;
             $next_annoid = max($anno->annoId + 1, $next_annoid);
         }
