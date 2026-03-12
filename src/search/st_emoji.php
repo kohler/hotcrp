@@ -28,9 +28,6 @@ class Emoji_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type, "match" => $this->codes];
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $word = strtolower($word);

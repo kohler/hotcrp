@@ -202,9 +202,6 @@ class Tag_SearchTerm extends SearchTerm {
             return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
         }
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
     function drag_assigners(Contact $user) {
         $t = $this->tsm->single_tag();
         if (!$t || !$user->can_edit_tag_somewhere($t)) {

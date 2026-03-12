@@ -68,7 +68,4 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         }
         return false;
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

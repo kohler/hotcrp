@@ -28,7 +28,4 @@ class OptionText_SearchTerm extends Option_SearchTerm {
         }
         return false;
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

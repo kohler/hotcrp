@@ -47,7 +47,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
         $nhlt = 0;
         $hlt = [];
         foreach ($pl->search->group_slice_terms() as $gt) {
-            if ($gt->about() === SearchTerm::ABOUT_REVIEW) {
+            if ($gt->about() & SearchTerm::ABOUT_REVIEW) {
                 $hlt[] = $gt;
                 ++$nhlt;
             } else {

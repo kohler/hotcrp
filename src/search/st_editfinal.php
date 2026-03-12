@@ -22,7 +22,4 @@ class EditFinal_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         return $row->author_edit_state() === 2;
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

@@ -26,9 +26,6 @@ class Color_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type, "style" => $this->word];
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 
     static function parse_style($word, SearchWord $sword, PaperSearch $srch) {
         $word = strtolower($word);

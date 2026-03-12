@@ -108,7 +108,4 @@ class Author_SearchTerm extends SearchTerm {
             $this->csm->value()
         ]];
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

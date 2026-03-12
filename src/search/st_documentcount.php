@@ -42,7 +42,4 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
             "compar" => CountMatcher::unparse_relation($this->compar)
         ];
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

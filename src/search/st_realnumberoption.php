@@ -33,7 +33,4 @@ class RealNumberOption_SearchTerm extends Option_SearchTerm {
         }
         return ["type" => "compar", "child" => [$se, $this->value], "compar" => CountMatcher::unparse_relation($this->compar)];
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

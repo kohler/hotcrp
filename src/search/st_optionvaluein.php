@@ -53,7 +53,4 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
         }
         return $this->option->match_script_expression($this->values);
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

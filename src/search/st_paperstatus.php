@@ -43,7 +43,4 @@ class PaperStatus_SearchTerm extends SearchTerm {
         }
         return true;
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

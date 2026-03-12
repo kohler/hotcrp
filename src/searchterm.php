@@ -292,13 +292,14 @@ abstract class SearchTerm {
         return null;
     }
 
-    const ABOUT_PAPER = 1;
-    const ABOUT_UNKNOWN = 2;
-    const ABOUT_REVIEW = 4;
-    const ABOUT_REVIEW_SET = 8;
-    const ABOUT_NO_SHORT_CIRCUIT = 16;
+    // What class of information does this search concern? (bitmask)
+    const ABOUT_PAPER = 1;              // Submission information
+    const ABOUT_REVIEW_SET = 2;         // About reviews as a class
+    const ABOUT_REVIEW = 4;             // About a single review
+    const ABOUT_OTHER = 8;              // About something else (prefs, comments)
+    const ABOUT_NO_SHORT_CIRCUIT = 16;  // script_expression only
 
-    /** @return 1|2|4|8 */
+    /** @return int */
     function about() {
         return self::ABOUT_PAPER;
     }
@@ -330,7 +331,7 @@ class False_SearchTerm extends SearchTerm {
         return false;
     }
     function about() {
-        return self::ABOUT_PAPER;
+        return 0;
     }
     function script_expression(PaperInfo $row, $about) {
         return false;
@@ -354,7 +355,7 @@ class True_SearchTerm extends SearchTerm {
         return true;
     }
     function about() {
-        return self::ABOUT_PAPER;
+        return 0;
     }
     function script_expression(PaperInfo $row, $about) {
         return true;
@@ -491,7 +492,7 @@ abstract class Op_SearchTerm extends SearchTerm {
     function about() {
         $x = 0;
         foreach ($this->child as $qv) {
-            $x = max($x, $qv->about());
+            $x |= $qv->about();
         }
         return $x;
     }
@@ -580,8 +581,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         return !$this->child[0]->test($row, $xinfo);
     }
     function about() {
-        $x = $this->child[0]->about();
-        return $x === self::ABOUT_REVIEW ? self::ABOUT_UNKNOWN : $x;
+        return $this->child[0]->about();
     }
 }
 
@@ -1600,9 +1600,6 @@ class TextMatch_SearchTerm extends SearchTerm {
         }
         return ["type" => $this->field, "match" => $this->trivial];
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
     function debug_json() {
         if ($this->trivial !== null) {
             return ["type" => $this->type, "any" => $this->trivial];
@@ -1791,9 +1788,6 @@ class PaperID_SearchTerm extends SearchTerm {
             return new PaperIDOrder_PaperColumn($pl->conf, $this);
         }
         return null;
-    }
-    function about() {
-        return self::ABOUT_PAPER;
     }
     static function parse_pidcode($word, SearchWord $sword, PaperSearch $srch) {
         if (($ids = SessionList::decode_ids($word)) === null) {

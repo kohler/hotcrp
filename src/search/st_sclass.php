@@ -46,7 +46,4 @@ class Sclass_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type, "sclass" => $this->negate ? "any" : $this->sr->tag];
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

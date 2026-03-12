@@ -30,9 +30,6 @@ class Phase_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         return $row->viewable_phase($this->user) === $this->phase;
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 
     /** @return ?int */
     static function term_phase(SearchTerm $st) {
