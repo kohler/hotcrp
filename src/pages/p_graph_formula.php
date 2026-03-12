@@ -46,7 +46,7 @@ class Graph_Formula_Page {
             echo Ht::msg(MessageSet::feedback_html($fg->decorated_message_list()), $fg->problem_status());
         }
 
-        $xhtml = htmlspecialchars($fg->fx_expression());
+        $xhtml = $fg->annotated_fx_expression_h();
         if ($fg->fx_format() === Fexpr::FTAG) {
             $xhtml = "tag";
         }
@@ -61,9 +61,9 @@ class Graph_Formula_Page {
                    && $fg->fy->expression === "sum(1)") {
             $h2 = $xhtml;
         } else if ($fg->type & FormulaGraph::BARCHART) {
-            $h2 = htmlspecialchars($fg->fy->expression) . " by {$xhtml}";
+            $h2 = $fg->fy->annotated_expression_h() . " by {$xhtml}";
         } else {
-            $h2 = htmlspecialchars($fg->fy->expression) . " vs. {$xhtml}";
+            $h2 = $fg->fy->annotated_expression_h() . " vs. {$xhtml}";
         }
         $highlightable = ($fg->type & (FormulaGraph::SCATTER | FormulaGraph::DOT | FormulaGraph::BOXPLOT)) !== 0;
 

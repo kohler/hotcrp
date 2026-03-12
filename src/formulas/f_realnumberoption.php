@@ -1,6 +1,6 @@
 <?php
 // formulas/f_realnumberoption.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class RealNumberOption_Fexpr extends Fexpr {
     /** @var PaperOption */
@@ -20,5 +20,8 @@ class RealNumberOption_Fexpr extends Fexpr {
             $state->gstmt[] = "{$oval} = {$ovv} && {$ovv}->value !== null ? floatval({$ovv}->data()) : null;";
         }
         return $oval;
+    }
+    function collect_range_anno(&$ranges) {
+        $this->record_range_anno($ranges, $this->option->title());
     }
 }

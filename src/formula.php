@@ -2,6 +2,21 @@
 // formula.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
+final class FormulaRangeAnno {
+    /** @var int */
+    public $pos1;
+    /** @var int */
+    public $pos2;
+    /** @var string */
+    public $description;
+
+    function __construct($pos1, $pos2, $description) {
+        $this->pos1 = $pos1;
+        $this->pos2 = $pos2;
+        $this->description = $description;
+    }
+}
+
 abstract class Fexpr implements JsonSerializable {
     /** @var string */
     public $op = "";
@@ -129,9 +144,8 @@ abstract class Fexpr implements JsonSerializable {
             return $this->_format_detail->name;
         } else if ($this->_format === Fexpr::FSUBFIELD) {
             return $this->_format_detail->name;
-        } else {
-            return Fexpr::FORMAT_DESCRIPTIONS[$this->_format];
         }
+        return Fexpr::FORMAT_DESCRIPTIONS[$this->_format];
     }
 
     /** @param int $format
@@ -220,9 +234,8 @@ abstract class Fexpr implements JsonSerializable {
         $f = $fexpr->format();
         if ($f === self::FBOOL || $f === self::FTAGVALUE) {
             return null;
-        } else {
-            return [$fexpr];
         }
+        return [$fexpr];
     }
 
     /** @return bool */
@@ -272,9 +285,8 @@ abstract class Fexpr implements JsonSerializable {
         }
         if (empty($nc)) {
             return $expr;
-        } else {
-            return "(" . join(" && ", $nc) . " ? {$expr} : null)";
         }
+        return "(" . join(" && ", $nc) . " ? {$expr} : null)";
     }
 
     /** @return bool */
@@ -314,6 +326,22 @@ abstract class Fexpr implements JsonSerializable {
             $x["args"][] = $e->jsonSerialize();
         }
         return $x;
+    }
+
+
+    /** @param list<FormulaRangeAnno> &$ranges
+     * @param string $description */
+    final function record_range_anno(&$ranges, $description) {
+        if ($this->pos1 !== null && $this->pos2 !== null && $this->string_context === null) {
+            $ranges[] = new FormulaRangeAnno($this->pos1, $this->pos2, $description);
+        }
+    }
+
+    /** @param list<FormulaRangeAnno> &$ranges */
+    function collect_range_anno(&$ranges) {
+        foreach ($this->args as $e) {
+            $e->collect_range_anno($ranges);
+        }
     }
 
     /** @return Constant_Fexpr */
@@ -508,7 +536,8 @@ class And_Fexpr extends Fexpr {
         return "({$t1} ? {$t2} : {$t1})";
     }
     function matches_at_most_once() {
-        return $this->args[0]->matches_at_most_once() || $this->args[1]->matches_at_most_once();
+        return $this->args[0]->matches_at_most_once()
+            || $this->args[1]->matches_at_most_once();
     }
 }
 
@@ -610,9 +639,8 @@ class Multiplicative_Fexpr extends Fexpr {
         $t2 = $state->_addltemp($this->args[1]->compile($state));
         if ($this->op === "*") {
             return $this->check_null_args("{$t1} * {$t2}", $t1, $t2);
-        } else {
-            return "({$t1} !== null && {$t2} ? {$t1} {$this->op} {$t2} : null)";
         }
+        return "({$t1} !== null && {$t2} ? {$t1} {$this->op} {$t2} : null)";
     }
 }
 
@@ -750,9 +778,8 @@ class Math_Fexpr extends Fexpr {
             return $this->check_null_args("log({$t1}, 2.0)", $t1);
         } else if ($this->op === "log" || $this->op === "ln") {
             return $this->check_null_args("log({$t1})", $t1);
-        } else {
-            return $this->check_null_args("{$this->op}({$t1})", $t1);
         }
+        return $this->check_null_args("{$this->op}({$t1})", $t1);
     }
 }
 
@@ -779,10 +806,9 @@ class Round_Fexpr extends Fexpr {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         if (count($this->args) === 1) {
             return $this->check_null_args("{$op}({$t1})", $t1);
-        } else {
-            $t2 = $state->_addltemp($this->args[1]->compile($state));
-            return "({$t1} !== null && {$t2} ? {$op}({$t1} / {$t2}) * {$t2} : null)";
         }
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "({$t1} !== null && {$t2} ? {$op}({$t1} / {$t2}) * {$t2} : null)";
     }
 }
 
@@ -1135,6 +1161,14 @@ class Pid_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         return $state->_prow() . '->paperId';
     }
+    function collect_range_anno(&$ranges) {
+        if (Conf::$main) {
+            $t = Conf::$main->_("{Submission} ID");
+        } else {
+            $t = "Submission ID";
+        }
+        $this->record_range_anno($ranges, $t);
+    }
 }
 
 class Score_Fexpr extends Fexpr {
@@ -1145,9 +1179,12 @@ class Score_Fexpr extends Fexpr {
     function inferred_index() {
         return self::IDX_REVIEW;
     }
+    /** @return ReviewField */
+    final function rf() {
+        return $this->format_detail();
+    }
     function compile(FormulaCompiler $state) {
-        $field = $this->format_detail();
-        '@phan-var-force ReviewField $field';
+        $field = $this->rf();
         if ($field->view_score <= $state->user->permissive_view_score_bound()) {
             return "null";
         }
@@ -1166,9 +1203,10 @@ class Score_Fexpr extends Fexpr {
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $field = $this->format_detail();
-        '@phan-var-force ReviewField $field';
-        return ["op" => "rf", "field" => $field->search_keyword()];
+        return ["op" => "rf", "field" => $this->rf()->search_keyword()];
+    }
+    function collect_range_anno(&$ranges) {
+        $this->record_range_anno($ranges, $this->rf()->name);
     }
 }
 
@@ -1846,6 +1884,31 @@ class Formula implements JsonSerializable {
     /** @param string $message */
     function fexpr_lerror(Fexpr $expr, $message) {
         $this->lcerror($expr->pos1, $expr->pos2, $expr->string_context, $message);
+    }
+
+
+    /** @return string */
+    function annotated_expression_h() {
+        $ranges = [];
+        $this->_fexpr->collect_range_anno($ranges);
+        usort($ranges, function ($a, $b) {
+            return ($a->pos1 <=> $b->pos1) ? : ($b->pos2 <=> $a->pos2);
+        });
+        $pos1 = 0;
+        $x = "";
+        for ($i = 0; $i < count($ranges); ++$i) {
+            $ri = $ranges[$i];
+            if ($ri->pos1 < $pos1
+                || ($i + 1 < count($ranges) && $ri->pos2 >= $ranges[$i + 1]->pos1)) {
+                continue;
+            }
+            $x .= htmlspecialchars(substr($this->expression, $pos1, $ri->pos1 - $pos1))
+                . '<abbr title="' . htmlspecialchars($ri->description) . '">'
+                . htmlspecialchars(substr($this->expression, $ri->pos1, $ri->pos2 - $ri->pos1))
+                . '</abbr>';
+            $pos1 = $ri->pos2;
+        }
+        return $x . htmlspecialchars(substr($this->expression, $pos1));
     }
 
 

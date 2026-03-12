@@ -192,6 +192,8 @@ class FormulaGraph extends MessageSet {
     private $fxs;
     /** @var string */
     private $fx_expression;
+    /** @var bool */
+    private $fx_annotatable;
     /** @var Formula */
     public $fy;
     /** @var int */
@@ -338,6 +340,7 @@ class FormulaGraph extends MessageSet {
 
         // X axis expression(s)
         $this->fx_expression = $fx;
+        $this->fx_annotatable = false;
         $this->fxs = [];
         if (preg_match('/\A(sort|order|rorder)\s+(\S.*)\z/i', $fx, $m)) {
             if (strcasecmp($m[1], "rorder") === 0) {
@@ -353,6 +356,7 @@ class FormulaGraph extends MessageSet {
             $this->_fx_type = Fexpr::FTAG;
         } else if (($this->type & self::CDF) === 0) {
             $this->fxs[] = Formula::make_indexed($this->user, $fx);
+            $this->fx_annotatable = true;
         } else {
             while (true) {
                 $fx = preg_replace('/\A\s*;*\s*/', '', $fx);
@@ -363,6 +367,7 @@ class FormulaGraph extends MessageSet {
                 $this->fxs[] = Formula::make_indexed($this->user, substr($fx, 0, $pos));
                 $fx = substr($fx, $pos);
             }
+            $this->fx_annotatable = true;
         }
         foreach ($this->fxs as $i => $f) {
             foreach ($f->message_list() as $mi) {
@@ -526,6 +531,18 @@ class FormulaGraph extends MessageSet {
     /** @return string */
     function fx_expression() {
         return $this->fx_expression;
+    }
+
+    /** @return string */
+    function annotated_fx_expression_h() {
+        if (!$this->fx_annotatable) {
+            return htmlspecialchars($this->fx_expression);
+        }
+        $x = [];
+        foreach ($this->fxs as $f) {
+            $x[] = $f->annotated_expression_h();
+        }
+        return join("; ", $x);
     }
 
     /** @return int */
