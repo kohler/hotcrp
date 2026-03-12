@@ -20,8 +20,7 @@ class Graph_Formula_Page {
 
     /** @param int|string $i
      * @param FormulaGraphDataset $ds
-     * @param MessageSet $ms
-     * @param string $field */
+     * @param MessageSet $ms */
     private function echo_formulas_qrow($i, $ds, $ms) {
         $field = "q{$ds->field_suffix}";
         $klass = $ms->control_class($field, "need-suggest papersearch want-focus");
@@ -82,7 +81,7 @@ class Graph_Formula_Page {
     }
 
     /** @param MessageSet $fgm
-     * @param list<FormulaQueryDataset> $datasets */
+     * @param list<FormulaGraphDataset> $datasets */
     private function print_ui($fgm, $datasets) {
         echo Ht::form($this->conf->hoturl("graph", "group=formula"), ["method" => "get"]);
         /*echo '<div>',
