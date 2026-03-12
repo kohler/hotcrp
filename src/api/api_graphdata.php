@@ -1,6 +1,6 @@
 <?php
 // api_graphdata.php -- HotCRP formula graph API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class GraphData_API {
     static function graphdata(Contact $user, Qrequest $qreq) {
@@ -11,10 +11,8 @@ class GraphData_API {
         if ($qreq->xorder) {
             $fg->set_xorder($qreq->xorder);
         }
-
-        list($queries, $styles) = FormulaGraph::parse_queries($qreq);
-        for ($i = 0; $i < count($queries); ++$i) {
-            $fg->add_query($queries[$i], $styles[$i], isset($qreq->q1) ? "q$i" : "q");
+        foreach (FormulaGraph::parse_datasets($qreq) as $dataset) {
+            $fg->add_dataset($dataset);
         }
 
         if ($fg->has_error()) {

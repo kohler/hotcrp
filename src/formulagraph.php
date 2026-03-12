@@ -2,6 +2,23 @@
 // formulagraph.php -- HotCRP class for drawing graphs
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
+class FormulaGraphDataset {
+    /** @var string */
+    public $q;
+    /** @var string */
+    public $style;
+    /** @var ?string */
+    public $in_field_suffix;
+    /** @var ?string */
+    public $field_suffix;
+
+    function __construct($q, $style, $field_suffix) {
+        $this->q = $q;
+        $this->style = $style;
+        $this->field_suffix = $this->in_field_suffix = $field_suffix;
+    }
+}
+
 class Scatter_GraphData implements JsonSerializable {
     /** @var int|float|bool */
     public $x;
@@ -269,9 +286,8 @@ class FormulaGraph extends MessageSet {
             return "paper";
         } else if ($data === self::DATA_REVIEW) {
             return "review";
-        } else {
-            return "none";
         }
+        return "none";
     }
 
     /** @param ?string $gtype
@@ -419,37 +435,50 @@ class FormulaGraph extends MessageSet {
         }
     }
 
-    /** @return array{list<string>,list<string>} */
-    static function parse_queries(Qrequest $qreq) {
-        $queries = $styles = [];
+    /** @return list<FormulaGraphDataset> */
+    static function parse_datasets(Qrequest $qreq) {
+        $datasets = [];
         for ($i = 1; isset($qreq["q{$i}"]); ++$i) {
             $q = trim($qreq["q{$i}"]);
-            $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
-            $styles[] = trim((string) $qreq["s{$i}"]);
+            $q = $q === "" || $q === "(All)" ? "" : $q;
+            $datasets[] = new FormulaGraphDataset($q, (string) $qreq["s{$i}"], "{$i}");
         }
-        if (empty($queries) && isset($qreq->q)) {
+        if (empty($datasets) && isset($qreq->q)) {
             $q = trim($qreq->q);
-            $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
-            $styles[] = trim((string) $qreq->s);
-        } else if (empty($queries)) {
-            $queries[] = $styles[] = "";
+            $q = $q === "" || $q === "(All)" ? "" : $q;
+            $datasets[] = new FormulaGraphDataset($q, (string) $qreq->s, "");
+        } else if (empty($datasets)) {
+            $datasets[] = new FormulaGraphDataset("", "", "");
         }
-        while (count($queries) > 1
-               && $queries[count($queries) - 1] === $queries[count($queries) - 2]) {
-            array_pop($queries);
-            array_pop($styles);
+        // remove redundant and intended-to-be-deleted queries
+        $i = 0;
+        while ($i < count($datasets) - 1) {
+            if ($datasets[$i]->q === $datasets[$i + 1]->q) {
+                array_splice($datasets, $i + 1, 1);
+            } else if ($datasets[$i]->q === "" && $i !== 0) {
+                array_splice($datasets, $i, 1);
+            } else {
+                ++$i;
+            }
         }
-        if (count($queries) === 1 && $queries[0] === "all") {
-            $queries[0] = "";
+        if (count($datasets) > 1 && $datasets[count($datasets) - 1]->q === "") {
+            array_pop($datasets);
         }
-        return [$queries, $styles];
+        // reset field suffixes to account for that
+        foreach ($datasets as $i => $ds) {
+            if ($ds->field_suffix !== "" && $ds->field_suffix != $i + 1) {
+                $ds->field_suffix = (string) ($i + 1);
+            }
+        }
+        return $datasets;
     }
 
-    /** @param string $q
-     * @param string $style */
-    function add_query($q, $style, $fieldname = false) {
+    /** @param FormulaGraphDataset $dataset */
+    function add_dataset($dataset) {
         $qn = count($this->queries);
+        $q = strcasecmp(trim($dataset->q), "all") === 0 ? "" : $dataset->q;
         $this->queries[] = $q;
+        $style = $dataset->style;
         if ($style === "by-tag" || $style === "default" || $style === "") {
             $style = "";
             $this->_qstyles_bytag[] = true;
@@ -471,7 +500,10 @@ class FormulaGraph extends MessageSet {
             $this->papermap[$pid][] = $qn;
         }
         foreach ($psearch->message_list() as $mi) {
-            $this->append_item($mi->with_field($fieldname));
+            if ($dataset->field_suffix !== null) {
+                $mi = $mi->with_field("q" . $dataset->field_suffix);
+            }
+            $this->append_item($mi);
         }
         $this->searches[] = $q !== "" ? $psearch : null;
     }
