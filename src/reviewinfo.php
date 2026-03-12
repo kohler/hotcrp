@@ -770,29 +770,38 @@ class ReviewInfo implements JsonSerializable {
      * @param bool $diff */
     function set_fval_prop($f, $v, $diff) {
         $diff = $this->prop_diff();
+        $changed = false;
         if ($f->main_storage) {
-            if (!array_key_exists($f->main_storage, $diff->_old_prop)) {
-                $diff->_old_prop[$f->main_storage] = $this->{$f->main_storage};
-            }
             $xv = is_int($v) ? ($v > 0 ? $v : -1) : 0;
-            $this->{$f->main_storage} = (string) $xv;
+            if ($this->{$f->main_storage} !== (string) $xv) {
+                if (!array_key_exists($f->main_storage, $diff->_old_prop)) {
+                    $diff->_old_prop[$f->main_storage] = $this->{$f->main_storage};
+                }
+                $this->{$f->main_storage} = (string) $xv;
+                $changed = true;
+            }
         }
         if ($f->json_storage) {
-            $k = $f->is_sfield ? "sfields" : "tfields";
-            if (!array_key_exists($k, $diff->_old_prop)) {
-                $diff->_old_prop[$k] = $this->$k;
-            }
             $a = &$this->_fstorage($f->is_sfield);
-            if ($v === null) {
-                unset($a[$f->json_storage]);
-            } else {
-                $a[$f->json_storage] = $v;
+            if (($a[$f->json_storage] ?? null) !== $v) {
+                $k = $f->is_sfield ? "sfields" : "tfields";
+                if (!array_key_exists($k, $diff->_old_prop)) {
+                    $diff->_old_prop[$k] = $this->$k;
+                }
+                if ($v === null) {
+                    unset($a[$f->json_storage]);
+                } else {
+                    $a[$f->json_storage] = $v;
+                }
+                $changed = true;
             }
         }
         if ($f->order) {
             $this->fields[$f->order] = $v;
         }
-        $diff->mark_field($f);
+        if ($changed) {
+            $diff->mark_field($f);
+        }
     }
 
     /** @param string $prop
@@ -1186,17 +1195,21 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @param int $time
+     * @param bool $earliest
      * @return ?ReviewInfo */
-    function version_at($time) {
-        if ($time >= $this->reviewModified) {
+    function version_at($time, $earliest = false) {
+        if ($time >= $this->reviewModified && !$earliest) {
             return $this;
         }
         $history = $this->_history ?? $this->load_history();
         $rrow = $this;
-        for ($i = count($history) - 1;
-             $i >= 0 && $time < $rrow->reviewModified;
-             --$i) {
+        $i = count($history) - 1;
+        while ($i >= 0) {
             $rhrow = $history[$i];
+            if ($time >= $rrow->reviewModified
+                && (!$earliest || $rhrow->reviewModified !== $rrow->reviewModified)) {
+                break;
+            }
             if ($rhrow instanceof ReviewInfo) {
                 $rrow = $rhrow;
             } else if ($rhrow->reviewNextTime !== $rrow->reviewTime) {
@@ -1205,6 +1218,7 @@ class ReviewInfo implements JsonSerializable {
             } else {
                 $rrow = $this->_history[$i] = $rrow->apply_history($rhrow);
             }
+            --$i;
         }
         return $rrow;
     }
