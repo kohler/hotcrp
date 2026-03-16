@@ -219,7 +219,7 @@ class MailPreparation implements JsonSerializable {
             $ml[] = MessageItem::warning($this->conf->_("<0>{emails:plural Account} {emails:list} {emails:plural has} not activated their {emails:plural account}", new FmtArg("emails", $mx["dormant"], 0)));
         }
         if (isset($mx["unconfirmed"])) {
-            $ml[] = MessageItem::warning($this->conf->_("<0>{emails:plural User} {emails:list} {emails:plural has} not yet signed in to their account (this site will not send mail to unconfirmed accounts)", new FmtArg("emails", $mx["unconfirmed"], 0)));
+            $ml[] = MessageItem::warning($this->conf->_("<0>{emails:plural User} {emails:list} {emails:plural has} not yet signed in (this site will not send mail to unconfirmed accounts)", new FmtArg("emails", $mx["unconfirmed"], 0)));
         }
         if (isset($mx["other"])) {
             $ml[] = MessageItem::warning($this->conf->_("<0>Cannot send mail to {emails:plural account} {emails:list}", new FmtArg("emails", $mx["other"], 0)));

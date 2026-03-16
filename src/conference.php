@@ -4139,7 +4139,7 @@ class Conf {
      * @param int $flags
      * @return string */
     function selfurl(Qrequest $qreq, $param = null, $flags = 0) {
-        if (!$qreq->page() || $qreq->page() === "api") {
+        if (($qreq->page() ?? "") === "" || $qreq->page() === "api") {
             error_log("selfurl for bad page: " . debug_string_backtrace());
         }
         return $this->qrequrl($qreq, $param ?? [], $flags);

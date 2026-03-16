@@ -5719,7 +5719,7 @@ handle_ui.on("change.js-mail-recipients", function () {
         toelt = f.elements.to,
         subjelt = f.elements.subject,
         bodyelt = f.elements.body,
-        recip = toelt ? toelt.options[toelt.selectedIndex] : null;
+        recip = toelt && toelt.options && toelt.options[toelt.selectedIndex];
     foldup.call(this, null, {open: !plimit || plimit.checked, n: 8});
     if (!recip) {
         return;
