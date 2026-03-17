@@ -1883,7 +1883,7 @@ final class PaperStatus extends MessageSet {
         }
 
         // update automatic tags
-        $this->conf->update_automatic_tags($this->paperId, "paper");
+        $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_PAPER);
 
         // after tags set, update document inactivity and send mail to
         // newly created users

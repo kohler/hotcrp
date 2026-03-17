@@ -10,6 +10,9 @@ class OptionPresent_Fexpr extends Fexpr {
         $this->option = $option;
         $this->set_format(Fexpr::FBOOL);
     }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     function paper_options(&$oids) {
         $oids[$this->option->id] = true;
     }

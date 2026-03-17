@@ -23,6 +23,9 @@ class Color_SearchTerm extends SearchTerm {
         return !empty($styles)
             && ($this->word === "any" || in_array($this->word, $styles, true));
     }
+    function about() {
+        return self::ABOUT_TAGS;
+    }
     function debug_json() {
         return ["type" => $this->type, "style" => $this->word];
     }

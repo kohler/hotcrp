@@ -959,6 +959,10 @@ class Assigner {
     function type() {
         return $this->item->type();
     }
+    /** @return int */
+    function about() {
+        return SearchTerm::ABOUT_ANY;
+    }
     /** @return string */
     function unparse_description() {
         return "";
@@ -2038,6 +2042,15 @@ class AssignmentSet {
         return false;
     }
 
+    /** @return int */
+    function assigned_about() {
+        $about = 0;
+        foreach ($this->assigners as $assigner) {
+            $about |= $assigner->about();
+        }
+        return $about;
+    }
+
     /** @return list<string> */
     function assigned_types() {
         $types = [];
@@ -2242,7 +2255,7 @@ class AssignmentSet {
             call_user_func($cb[0], $this, $cb[1]);
         }
         if (!empty($pids)) {
-            $this->conf->update_automatic_tags(array_keys($pids), $this->assigned_types());
+            $this->conf->update_automatic_tags(array_keys($pids), $this->assigned_about());
         }
         if (!empty($this->_cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite")) {

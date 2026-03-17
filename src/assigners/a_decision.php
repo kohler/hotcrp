@@ -104,6 +104,9 @@ class Decision_Assigner extends Assigner {
         $name_h = $dec->id === 0 ? "No decision" : $dec->name_as(5);
         return "<span class=\"pstat {$class}\">{$name_h}</span>";
     }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     function unparse_display(AssignmentSet $aset) {
         $t = [];
         if ($this->item->existed()) {

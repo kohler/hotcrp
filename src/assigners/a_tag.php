@@ -528,6 +528,9 @@ class Tag_Assigner extends Assigner {
         }
         return new Tag_Assigner($item, $state);
     }
+    function about() {
+        return SearchTerm::ABOUT_TAGS;
+    }
     function unparse_description() {
         return "tag";
     }

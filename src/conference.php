@@ -3106,8 +3106,8 @@ class Conf {
     }
 
     /** @param null|int|list<int>|PaperInfo $paper
-     * @param null|string|list<string> $types */
-    function update_automatic_tags($paper = null, $types = null) {
+     * @param ?int $about */
+    function update_automatic_tags($paper = null, $about = null) {
         if (($this->_permbits & (self::PB_HAS_AUTOMATIC_TAGS | self::PB_UPDATING_AUTOMATIC_TAGS)) !== self::PB_HAS_AUTOMATIC_TAGS
             || $this->_setting_lock) {
             return;
@@ -3150,15 +3150,16 @@ class Conf {
 
     /** @param list<string> $csv */
     function _update_automatic_tags_csv($csv) {
-        if (count($csv) > 1) {
-            $this->_permbits |= self::PB_UPDATING_AUTOMATIC_TAGS;
-            $aset = new AssignmentSet($this->root_user());
-            $aset->set_override_conflicts(true);
-            $aset->set_search_type("all");
-            $aset->parse($csv);
-            $aset->execute();
-            $this->_permbits &= ~self::PB_UPDATING_AUTOMATIC_TAGS;
+        if (count($csv) <= 1) {
+            return;
         }
+        $this->_permbits |= self::PB_UPDATING_AUTOMATIC_TAGS;
+        $aset = new AssignmentSet($this->root_user());
+        $aset->set_override_conflicts(true);
+        $aset->set_search_type("all");
+        $aset->parse($csv);
+        $aset->execute();
+        $this->_permbits &= ~self::PB_UPDATING_AUTOMATIC_TAGS;
     }
 
     /** @return bool */

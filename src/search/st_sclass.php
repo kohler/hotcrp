@@ -43,6 +43,9 @@ class Sclass_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         return ($row->submission_round() === $this->sr) !== $this->negate;
     }
+    function about() {
+        return self::ABOUT_TAGS;
+    }
     function debug_json() {
         return ["type" => $this->type, "sclass" => $this->negate ? "any" : $this->sr->tag];
     }

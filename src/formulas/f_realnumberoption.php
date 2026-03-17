@@ -9,6 +9,9 @@ class RealNumberOption_Fexpr extends Fexpr {
         parent::__construct("realnumberoption");
         $this->option = $option;
     }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     function paper_options(&$oids) {
         $oids[$this->option->id] = true;
     }

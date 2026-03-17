@@ -74,6 +74,9 @@ class TagAnno_Assigner extends Assigner {
         }
         return new TagAnno_Assigner($item, $state);
     }
+    function about() {
+        return SearchTerm::ABOUT_TAGS;
+    }
     function unparse_description() {
         return "tag annotation";
     }

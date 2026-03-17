@@ -1,6 +1,6 @@
 <?php
 // formulas/f_reviewer.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class Reviewer_Fexpr extends Fexpr {
     function __construct() {
@@ -12,6 +12,9 @@ class Reviewer_Fexpr extends Fexpr {
             return Fexpr::cnever();
         }
         return new Reviewer_Fexpr;
+    }
+    function about() {
+        return SearchTerm::ABOUT_REVIEWS;
     }
     function inferred_index() {
         return Fexpr::IDX_REVIEW;

@@ -28,6 +28,9 @@ class Badge_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type, "style" => $this->word];
     }
+    function about() {
+        return self::ABOUT_TAGS;
+    }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $word = strtolower($word);

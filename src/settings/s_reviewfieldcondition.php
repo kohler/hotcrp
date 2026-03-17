@@ -35,7 +35,7 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
                 }
             } else if (!in_array($e->type, ["xor", "not", "and", "or", "space", "true", "false"])) {
                 if ($e instanceof Op_SearchTerm
-                    || $e->about() !== SearchTerm::ABOUT_PAPER) {
+                    || ($e->about() & ~SearchTerm::ABOUT_PAPER)) {
                     return false;
                 }
             }

@@ -1,6 +1,6 @@
 <?php
 // formulas/f_pagecount.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class PageCount_Fexpr extends Fexpr {
     /** @var int */
@@ -17,6 +17,9 @@ class PageCount_Fexpr extends Fexpr {
         if ($this->chkindex === count(self::$checkers)) {
             self::$checkers[] = new CheckFormat($ff->user->conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
         }
+    }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
     }
     function compile(FormulaCompiler $state) {
         $doc = $state->_add_primary_document();

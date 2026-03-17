@@ -177,6 +177,9 @@ class Preference_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         return new Preference_Assigner($item, $state);
     }
+    function about() {
+        return SearchTerm::ABOUT_PREFS;
+    }
     function unparse_description() {
         return "preference";
     }

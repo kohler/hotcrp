@@ -1127,7 +1127,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
 
         // update automatic tags
         if (!($req["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->prow, "comment");
+            $this->conf->update_automatic_tags($this->prow, SearchTerm::ABOUT_COMMENTS);
         }
 
         // ordinal

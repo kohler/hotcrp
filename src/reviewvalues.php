@@ -1135,7 +1135,7 @@ class ReviewValues extends MessageSet {
 
         // notify automatic tags
         if ($this->autosearch) {
-            $this->conf->update_automatic_tags($prow, "review");
+            $this->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
         }
 
         // potentially email chair, reviewers, and authors

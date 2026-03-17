@@ -213,6 +213,9 @@ class Conflict_Assigner extends Assigner {
         }
     }
 
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     function unparse_description() {
         return "conflict";
     }

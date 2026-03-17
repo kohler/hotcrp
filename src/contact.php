@@ -6520,7 +6520,7 @@ class Contact implements JsonSerializable {
 
         self::update_rights();
         if (!($extra["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($pid, "review");
+            $this->conf->update_automatic_tags($pid, SearchTerm::ABOUT_REVIEWS);
         }
         if (($type > 0) !== ($oldtype > 0)) {
             $reviewer->update_cdb_roles();

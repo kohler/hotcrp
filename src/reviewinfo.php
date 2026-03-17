@@ -1303,7 +1303,7 @@ class ReviewInfo implements JsonSerializable {
         }
         // run autosearch
         if (!($opts["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->prow, "review");
+            $this->conf->update_automatic_tags($this->prow, SearchTerm::ABOUT_REVIEWS);
         }
         return true;
     }

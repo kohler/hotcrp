@@ -298,6 +298,9 @@ class Review_Assigner extends Assigner {
         }
         return new Review_Assigner($item, $state);
     }
+    function about() {
+        return SearchTerm::ABOUT_REVIEWS;
+    }
     function unparse_description() {
         return "review";
     }

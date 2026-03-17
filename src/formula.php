@@ -248,6 +248,15 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @return int */
+    function about() {
+        $a = 0;
+        foreach ($this->args as $e) {
+            $a |= $e->about();
+        }
+        return $a;
+    }
+
+    /** @return int */
     function inferred_index() {
         $index = 0;
         foreach ($this->args as $a) {
@@ -1161,6 +1170,9 @@ class Pid_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         return $state->_prow() . '->paperId';
     }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     function collect_range_anno(&$ranges) {
         if (Conf::$main) {
             $t = Conf::$main->_("{Submission} ID");
@@ -1175,6 +1187,9 @@ class Score_Fexpr extends Fexpr {
     function __construct(ReviewField $field) {
         parent::__construct("rf");
         $this->set_format(Fexpr::FREVIEWFIELD, $field);
+    }
+    function about() {
+        return SearchTerm::ABOUT_REVIEWS;
     }
     function inferred_index() {
         return self::IDX_REVIEW;

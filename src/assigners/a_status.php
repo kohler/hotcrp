@@ -190,6 +190,9 @@ class Status_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         return new Status_Assigner($item, $state);
     }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     private function status_html($type) {
         if ($this->item->get($type, "_withdrawn")) {
             return "Withdrawn";

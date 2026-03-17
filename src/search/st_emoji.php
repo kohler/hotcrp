@@ -25,6 +25,9 @@ class Emoji_SearchTerm extends SearchTerm {
         }
         return false;
     }
+    function about() {
+        return self::ABOUT_TAGS;
+    }
     function debug_json() {
         return ["type" => $this->type, "match" => $this->codes];
     }

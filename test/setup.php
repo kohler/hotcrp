@@ -162,9 +162,9 @@ class MailChecker {
                     "       got {$havel[$badline-1]}\n",
                     $color ? "\x1b[90m" : "",
                     "  expected ",
-                    str_replace("\n", "\n           ", rtrim($have)),
-                    "\n       got ",
                     str_replace("\n", "\n           ", rtrim($wtext)),
+                    "\n       got ",
+                    str_replace("\n", "\n           ", rtrim($have)),
                     $color ? "\x1b[m\n" : "\n"
                 );
             } else {

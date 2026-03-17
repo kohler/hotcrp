@@ -165,6 +165,9 @@ class Tag_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         return $this->tsm->test($row->searchable_tags($this->tsm->user));
     }
+    function about() {
+        return self::ABOUT_TAGS;
+    }
     /** @param PaperList $pl
      * @param string $tag
      * @param ?TagInfo $dt

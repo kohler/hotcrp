@@ -293,15 +293,22 @@ abstract class SearchTerm {
     }
 
     // What class of information does this search concern? (bitmask)
-    const ABOUT_PAPER = 1;              // Submission information
-    const ABOUT_REVIEW_SET = 2;         // About reviews as a class
-    const ABOUT_REVIEW = 4;             // About a single review
-    const ABOUT_OTHER = 8;              // About something else (prefs, comments)
-    const ABOUT_NO_SHORT_CIRCUIT = 16;  // script_expression only
+    const ABOUT_SUB = 0x1;               // Submission information
+    const ABOUT_TAGS = 0x2;              // About tags
+    const ABOUT_PAPER = 0x3;             // Submission information or tags
+    const ABOUT_REVIEW = 0x4;            // About a single review
+    const ABOUT_REVIEW_SET = 0x8;        // About reviews as a class
+    const ABOUT_REVIEWS = 0xC;           // Either ABOUT_REVIEW or ABOUT_REVIEW_SET
+    const ABOUT_COMMENTS = 0x10;         // About comments
+    const ABOUT_REACTIONS = 0x20;        // About reactions (e.g. review ratings)
+    const ABOUT_PREFS = 0x40;            // About review preferences
+    const ABOUT_OTHER = 0x8000;          // About something else (prefs, comments)
+    const ABOUT_ANY = 0xFFFF;            // Who knows what it's about
+    const ABOUT_NO_SHORT_CIRCUIT = 0x10000;  // script_expression only
 
     /** @return int */
     function about() {
-        return self::ABOUT_PAPER;
+        return self::ABOUT_SUB;
     }
 
 

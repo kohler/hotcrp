@@ -1,6 +1,6 @@
 <?php
 // formulas/f_tag.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class Tag_Fexpr extends Fexpr {
     /** @var string */
@@ -89,6 +89,9 @@ class Tag_Fexpr extends Fexpr {
     /** @return string */
     function tag() {
         return $this->tag;
+    }
+    function about() {
+        return SearchTerm::ABOUT_TAGS;
     }
     function inferred_index() {
         if (str_starts_with($this->tag, "_~")) {

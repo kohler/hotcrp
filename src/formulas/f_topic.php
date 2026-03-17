@@ -1,6 +1,6 @@
 <?php
 // formulas/f_topic.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class Topic_Fexpr extends Fexpr {
     /** @var true|array<int> */
@@ -27,6 +27,9 @@ class Topic_Fexpr extends Fexpr {
         $ff->modifier = $ff->conf->topic_set()->find_all(SearchWord::unquote($arg));
         // XXX warn if no match
         return true;
+    }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
     }
     function paper_options(&$oids) {
         $oids[PaperOption::TOPICSID] = true;
