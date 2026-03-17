@@ -853,6 +853,15 @@ class Unit_Tester {
         xassert_eqq($x, "(b(c(d(e) ) ) )");
     }
 
+    function test_safe_parenthesize() {
+        xassert_eqq(SearchParser::safe_parenthesize(""), "(*)");
+        xassert_eqq(SearchParser::safe_parenthesize("("), "(())");
+        xassert_eqq(SearchParser::safe_parenthesize("(hi"), "((hi))");
+        xassert_eqq(SearchParser::safe_parenthesize("fart[barf"), "(fart[barf])");
+        xassert_eqq(SearchParser::safe_parenthesize("“\\"), "(“\\\\\")");
+        xassert_eqq(SearchParser::safe_parenthesize(") fooled you ("), "( fooled you ())");
+    }
+
     function test_unpack_comparison() {
         xassert_eqq(CountMatcher::unpack_comparison("x:2"), ["x", 2, 2.0]);
         xassert_eqq(CountMatcher::unpack_comparison("x:2."), ["x", 2, 2.0]);

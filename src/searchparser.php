@@ -266,6 +266,78 @@ class SearchParser {
         return $w;
     }
 
+    /** @param string $str
+     * @return string */
+    static function safe_parenthesize($str) {
+        $pstack = "";
+        $plast = "";
+        $quote = 0;
+        $pos = $startpos = 0;
+        $len = strlen($str);
+        $out = "";
+        while ($pos < $len) {
+            $ch = $str[$pos];
+            // translate “” -> "
+            if ($ch === "\xE2"
+                && $pos + 2 < $len
+                && $str[$pos + 1] === "\x80"
+                && (ord($str[$pos + 2]) & 0xFE) === 0x9C) {
+                $ch = "\"";
+                $pos += 2;
+            }
+            if ($quote) {
+                if ($ch === "\\") {
+                    if ($pos + 1 < $len) {
+                        ++$pos;
+                    } else {
+                        $out .= substr($str, $startpos, $pos) . "\\";
+                        $startpos = $pos;
+                    }
+                } else if ($ch === "\"") {
+                    $quote = 0;
+                }
+            } else if ($ch === "(") {
+                $pstack .= $plast;
+                $plast = ")";
+            } else if ($ch === "[") {
+                $pstack .= $plast;
+                $plast = "]";
+            } else if ($ch === "{") {
+                $pstack .= $plast;
+                $plast = "}";
+            } else if ($ch === ")" || $ch === "]" || $ch === "}") {
+                while ($plast !== "" && $plast !== $ch) {
+                    $out .= substr($str, $startpos, $pos) . $plast;
+                    $startpos = $pos;
+                    $plast = (string) substr($pstack, -1);
+                    $pstack = (string) substr($pstack, 0, -1);
+                }
+                if ($plast === $ch) {
+                    // include this character in output
+                } else {
+                    $out .= substr($str, $startpos, $pos);
+                    $startpos = $pos + 1;
+                }
+            } else if ($ch === "\"") {
+                $quote = 1;
+            }
+            ++$pos;
+        }
+        $out .= substr($str, $startpos, $pos);
+        if ($quote) {
+            $out .= "\"";
+        }
+        while ($plast !== "") {
+            $out .= $plast;
+            $plast = (string) substr($pstack, -1);
+            $pstack = (string) substr($pstack, 0, -1);
+        }
+        if ($out === "") {
+            $out = "*";
+        }
+        return "({$out})";
+    }
+
     /** @param ?SearchOperatorSet $opset
      * @param 'SPACE'|'SPACEOR' $spaceop
      * @param int $max_ops

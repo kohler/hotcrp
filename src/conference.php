@@ -393,6 +393,13 @@ class Conf {
             $this->clean_tokens();
         }
 
+        // GC mcache
+        if (($mcv = ($this->settings["__mcache"] ?? 0)) > 0
+            && $mcv < Conf::$now - 7200) {
+            $this->qe("delete from Settings where name='__mcache' and value=?", $mcv);
+            unset($this->settings["__mcache"], $this->settingTexts["__mcache"]);
+        }
+
         // might need to redo automatic tags
         if ($this->settings["__recompute_automatic_tags"] ?? 0) {
             $this->qe("delete from Settings where name='__recompute_automatic_tags' and value=?", $this->settings["__recompute_automatic_tags"]);
@@ -914,13 +921,6 @@ class Conf {
         return $change;
     }
 
-    /** @param object $action */
-    function append_conference_action($action) {
-        assert(!$this->_setting_lock);
-        $this->qe("insert into Settings (name, value, data) values ('confactions', 1, ?) ?U on duplicate key update data=concat(Settings.data,?U(data))",
-            "\x1e" /* RS */ . json_encode_db($action) . "\n");
-    }
-
 
     /** @param string $name
      * @return mixed */
@@ -955,6 +955,41 @@ class Conf {
             return 0;
         }
         return (int) substr($this->_site_locks, $p + strlen($name) + 2);
+    }
+
+    /** @param object $action */
+    function append_conference_action($action) {
+        assert(!$this->_setting_lock);
+        $this->qe("insert into Settings (name, value, data) values ('confactions', 1, ?) ?U on duplicate key update data=concat(Settings.data,?U(data))",
+            "\x1e" /* RS */ . json_encode_db($action) . "\n");
+    }
+
+
+    /** @return int */
+    function request_mcache() {
+        $v = $this->settings["__mcache"] ?? 0;
+        $d = $this->settingTexts["__mcache"] ?? null;
+        if ($v > 0 && $v < Conf::$now && $d) {
+            return $v;
+        } else if ($v < Conf::$now && !$d) {
+            // Effectively compare-exchange
+            if ($v === 0) {
+                $this->qe("insert into Settings set name='__mcache', value=?, data='1' on duplicate key update value=value", Conf::$now);
+            } else {
+                $this->qe("update Settings set value=?, data='1' where name='__mcache' and value=?", Conf::$now, $v);
+            }
+            // Don't actually need to know if we succeeded
+            $this->settings["__mcache"] = Conf::$now;
+            $this->settingTexts["__mcache"] = "1";
+        }
+        return 0;
+    }
+
+    function invalidate_mcache() {
+        if ($this->settings["__mcache"] ?? 0) {
+            $this->qe("update Settings set value=?, data=null where name='__mcache'", Conf::$now);
+            $this->settings["__mcache"] = Conf::$now;
+        }
     }
 
 
@@ -3108,8 +3143,12 @@ class Conf {
     /** @param null|int|list<int>|PaperInfo $paper
      * @param ?int $about */
     function update_automatic_tags($paper = null, $about = null) {
-        if (($this->_permbits & (self::PB_HAS_AUTOMATIC_TAGS | self::PB_UPDATING_AUTOMATIC_TAGS)) !== self::PB_HAS_AUTOMATIC_TAGS
+        if (($this->_permbits & self::PB_UPDATING_AUTOMATIC_TAGS)
             || $this->_setting_lock) {
+            return;
+        }
+        $this->invalidate_mcache();
+        if (!($this->_permbits & self::PB_HAS_AUTOMATIC_TAGS)) {
             return;
         }
         $csv = ["paper,tag,tag value"];
@@ -5249,6 +5288,11 @@ class Conf {
             echo " class=\"{$body_class}\"";
         }
         echo ">\n";
+
+        // Handle paper banners
+        if (isset($this->settings["banners"])) {
+            (new PageBanners($this, $user, $qreq))->run();
+        }
 
         // If browser owns tracker, send it the script immediately
         if ($this->has_active_tracker()

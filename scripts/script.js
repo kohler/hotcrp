@@ -3516,7 +3516,7 @@ function resize(b) {
     }
 }
 return {
-    add: function (id) {
+    add: function (id, rest) {
         let e = $$(id);
         if (!e) {
             let b = $$("p-banner");
@@ -3525,7 +3525,7 @@ return {
                 b.id = "p-banner";
                 document.body.prepend(b);
             }
-            e = document.createElement("div");
+            e = $e("div", rest);
             e.id = id;
             b.append(e);
         }

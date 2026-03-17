@@ -1581,6 +1581,7 @@ class SettingValues extends MessageSet {
         if (!empty($this->_invalidate_caches)) {
             $this->conf->invalidate_caches(...$this->_invalidate_caches);
         }
+        $this->conf->invalidate_mcache();
 
         // create changed_si
         foreach ($this->_saveable_si as $si) {
