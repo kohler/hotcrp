@@ -410,6 +410,7 @@ src/options/o_pcconflicts.php
 src/options/o_realnumber.php
 src/options/o_title.php
 src/options/o_topics.php
+src/pagebanners.php
 src/pages/p_adminhome.php
 src/pages/p_api.php
 src/pages/p_assign.php
