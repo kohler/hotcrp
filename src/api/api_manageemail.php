@@ -120,9 +120,8 @@ class ManageEmail_API extends MessageSet {
             return $this->link();
         } else if ($action === "unlink") {
             return $this->unlink();
-        } else {
-            return JsonResult::make_not_found_error("action");
         }
+        return JsonResult::make_not_found_error("action");
     }
 
 
@@ -314,10 +313,7 @@ class ManageEmail_API extends MessageSet {
         $this->import_account();
         $this->conf->log_for($this->viewer, $this->dstuser, "Reviews transferred from {$this->user->email}");
         $this->conf->log_for($this->viewer, $this->user, "Reviews transferred to {$this->dstuser->email}");
-        if (($this->user->roles & Contact::ROLE_PCLIKE) !== 0) {
-            $this->transfer_pc_roles();
-            $this->change_list[] = "PC status";
-        }
+        $this->transfer_pc_roles();
         $this->transfer_paperpc();
         $this->transfer_user_tags();
         $this->transfer_conflicts();
@@ -336,25 +332,33 @@ class ManageEmail_API extends MessageSet {
         if (($this->user->roles & Contact::ROLE_PCLIKE) !== 0) {
             $this->change_list[] = "PC status";
         }
+        if ($this->user->contactTags) {
+            $this->change_list[] = "user tags";
+        }
         $row = $this->conf->fetch_first_row("select
+            exists (select * from Paper where leadContactId=? or shepherdContactId=? or managerContactId=?) lead,
             (select count(*) from PaperReview where contactId=?) reviews,
             (select count(*) from ReviewRequest where email=?) requests,
             (select count(*) from PaperComment where contactId=? and (commentType&?)=0) comments,
             (select count(*) from PaperTag where tag like '{$this->user->contactId}~%') tags
             from dual",
+            $this->user->contactId, $this->user->contactId, $this->user->contactId,
             $this->user->contactId,
             $this->user->email,
             $this->user->contactId, CommentInfo::CTM_BYAUTHOR);
         if ($row[0] > 0) {
-            $this->change_list[] = plural((int) $row[0], "review");
+            $this->change_list[] = "lead or shepherd";
         }
         if ($row[1] > 0) {
-            $this->change_list[] = plural((int) $row[1], "review request");
+            $this->change_list[] = plural((int) $row[1], "review");
         }
         if ($row[2] > 0) {
-            $this->change_list[] = plural((int) $row[2], "comment");
+            $this->change_list[] = plural((int) $row[2], "review request");
         }
         if ($row[3] > 0) {
+            $this->change_list[] = plural((int) $row[3], "comment");
+        }
+        if ($row[4] > 0) {
             $this->change_list[] = "private tags";
         }
     }
@@ -372,6 +376,7 @@ class ManageEmail_API extends MessageSet {
         }
         $this->dstuser->save_roles(($this->dstuser->roles | $pcr) & Contact::ROLE_DBMASK, $this->viewer);
         $this->user->save_roles($this->user->roles & ~$pcr & Contact::ROLE_DBMASK, $this->viewer);
+        $this->change_list[] = "PC status";
     }
 
     private function transfer_paperpc() {
@@ -385,6 +390,7 @@ class ManageEmail_API extends MessageSet {
             $this->dstuser->contactId, $this->user->contactId);
         $this->conf->qe("update Paper set managerContactId=? where managerContactId=?",
             $this->dstuser->contactId, $this->user->contactId);
+        $this->change_list[] = "lead or shepherd";
     }
 
     private function transfer_user_tags() {
@@ -397,6 +403,7 @@ class ManageEmail_API extends MessageSet {
         $this->dstuser->save_prop();
         $this->user->set_prop("contactTags", null);
         $this->user->save_prop();
+        $this->change_list[] = "user tags";
     }
 
     private function transfer_conflicts() {
@@ -411,8 +418,8 @@ class ManageEmail_API extends MessageSet {
         $result->close();
 
         $cfltf = Dbl::make_multi_qe_stager($this->conf->dblink);
-        $deletep = [];
-        $insertv = [];
+        $deletep = $insertv = [];
+        $changed = false;
         foreach ($conf as $pid => $sd) {
             if ($sd[0] === 0) {
                 continue;
@@ -423,6 +430,7 @@ class ManageEmail_API extends MessageSet {
             } else if ($wsc !== $sd[0]) {
                 $cfltf("update PaperConflict set conflictType=? where paperId=? and contactId=?",
                     $wsc, $pid, $this->user->contactId);
+                $changed = true;
             }
             $wdc = Conflict::merge($sd[1], $sd[0]);
             if ($sd[1] === 0) {
@@ -430,17 +438,23 @@ class ManageEmail_API extends MessageSet {
             } else if ($wdc !== $sd[1]) {
                 $cfltf("update PaperConflict set conflictType=? where paperId=? and contactId=?",
                     $wdc, $pid, $this->dstuser->contactId);
+                $changed = true;
             }
         }
         if (!empty($deletep)) {
             $cfltf("delete from PaperConflict where paperId?a and contactId=?",
                 $deletep, $this->user->contactId);
+            $changed = true;
         }
         if (!empty($insertv)) {
             $cfltf("insert into PaperConflict (paperId, contactId, conflictType) values ?v",
                 $insertv);
+            $changed = true;
         }
         $cfltf(null);
+        if ($changed) {
+            $this->change_list[] = "conflicts";
+        }
     }
 
     /** @suppress PhanTypeArraySuspiciousNullable */
@@ -660,5 +674,6 @@ class ManageEmail_API extends MessageSet {
         if ($this->dstuser) {
             $this->dstuser->update_cdb_roles();
         }
+        $this->conf->update_automatic_tags();
     }
 }
