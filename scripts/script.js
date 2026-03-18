@@ -3484,7 +3484,8 @@ function resize(b) {
     const offs = document.querySelectorAll(".need-banner-offset"),
         pbody = document.getElementById("p-page");
     if (b) {
-        const h = b.offsetHeight;
+        const dpr = window.devicePixelRatio || 1,
+            h = Math.floor(b.offsetHeight * dpr - 0.5) / dpr;
         for (const e of offs) {
             let bo;
             if (e.hasAttribute("data-banner-offset")) {

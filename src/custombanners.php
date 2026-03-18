@@ -1,8 +1,60 @@
 <?php
-// pagebanners.php -- HotCRP configurable page banners
+// custombanners.php -- HotCRP configurable page banners
 // Copyright (c) 2009-2023 Eddie Kohler; see LICENSE.
 
-class PageBanners {
+class CustomBannerParam {
+    /** @var string */
+    public $name;
+    /** @var PaperSearch */
+    public $srch;
+    /** @var ?Formula */
+    public $formula;
+
+    /** @return ?CustomBannerParam */
+    static function make(CustomBanners $cb, $pj) {
+        if (!isset($pj->name) || !isset($pj->q)) {
+            return null;
+        }
+        $type = $pj->type ?? "count";
+        $formula = null;
+        if ($type === "formula" && isset($pj->value)) {
+            $formula = Formula::make($cb->user, $pj->value);
+        }
+        if ($type !== "count"
+            && ($type !== "formula" || !$formula || !$formula->ok() || !$formula->support_combiner())) {
+            return null;
+        }
+        $cbp = new CustomBannerParam;
+        $cbp->name = $pj->name;
+        $cbp->srch = new PaperSearch($cb->user, ["q" => $pj->q, "t" => $pj->t ?? "default"]);
+        if (($cbp->formula = $formula)) {
+            $formula->prepare_extractor()->prepare_combiner();
+        }
+        return $cbp;
+    }
+
+    function eval(?PaperInfoSet $prows) {
+        if ($prows === null) {
+            if (!$this->formula) {
+                return new FmtArg($this->name, count($this->srch->paper_ids()), 0);
+            }
+            $prows = PaperInfoSet::make_search($this->srch);
+        }
+        if (!$this->formula) {
+            return new FmtArg($this->name, count($prows->filter([$this->srch, "test"])), 0);
+        }
+        $values = [];
+        foreach ($prows as $prow) {
+            if (!$this->srch->test($prow)) {
+                continue;
+            }
+            $values[] = $this->formula->eval_extractor($prow, null);
+        }
+        return new FmtArg($this->name, $this->formula->eval_combiner($values), 0);
+    }
+}
+
+class CustomBanners {
     /** @var Conf */
     public $conf;
     /** @var Contact */
@@ -19,6 +71,7 @@ class PageBanners {
     private $session_bs;
 
     const SVERSION = 1;
+    const CACHEABLE = true;
 
     function __construct(Conf $conf, Contact $user, Qrequest $qreq) {
         $this->conf = $conf;
@@ -56,48 +109,44 @@ class PageBanners {
     }
 
     function print($bannerj) {
-        if (!$this->user->isPC
-            || (!$this->user->privChair
-                && ($bannerj->visibility ?? "admin") === "admin")) {
+        $vis = $bannerj->visibility ?? "admin";
+        if ($vis === "none"
+            || !$this->user->isPC
+            || ($vis === "admin" && !$this->user->privChair)) {
             return;
         }
 
-        if ($this->try_mcache($bannerj->id)) {
+        if ($this->try_mcache($bannerj->id) && self::CACHEABLE) {
             return;
         }
         $this->session_ok = false;
 
-        $searches = [];
-        $sqns = [];
+        $params = [];
         foreach ($bannerj->params ?? [] as $pj) {
-            if (!isset($pj->name) || !isset($pj->q) || !isset($pj->type)
-                || $pj->type !== "count") {
-                continue;
-            }
-            $searches[] = new PaperSearch($this->user, ["q" => $pj->q, "t" => $pj->t ?? "default"]);
-            $sqns[] = $pj->name;
+            if (($p = CustomBannerParam::make($this, $pj)))
+                $params[] = $p;
         }
 
-        $params = [];
-        if (count($searches) === 1) {
-            $params[] = new FmtArg($sqns[0], count($searches[0]->paper_ids()), 0);
+        $pvalues = [];
+        if (count($params) === 1) {
+            $pvalues[] = $params[0]->eval(null);
         } else if (!empty($searches)) {
             $qs = [];
             $t = $searches[0]->limit();
-            foreach ($searches as $srch) {
-                $qs[] = SearchParser::safe_parenthesize($srch->q);
-                if ($t !== "viewable" && $t !== $srch->limit()) {
+            foreach ($params as $param) {
+                $qs[] = SearchParser::safe_parenthesize($param->srch->q);
+                if ($t !== "viewable" && $t !== $param->srch->limit()) {
                     $t = "viewable";
                 }
             }
             $csrch = new PaperSearch($this->user, ["q" => join(" OR ", $qs), "t" => $t]);
             $prows = PaperInfoSet::make_search($csrch);
-            foreach ($searches as $i => $srch) {
-                $params[] = new FmtArg($sqns[$i], count($prows->filter([$srch, "test"])), 0);
+            foreach ($params as $param) {
+                $pvalues[] = $param->eval($prows);
             }
         }
 
-        $html = $this->conf->_5($bannerj->ftext, ...$params);
+        $html = $this->conf->_5($bannerj->ftext, ...$pvalues);
         $this->record($bannerj->id, $html);
     }
 
@@ -115,8 +164,8 @@ class PageBanners {
         $x = [];
         for ($i = 0; $i !== count($this->bs); $i += 2) {
             $x[] = 'hotcrp.banner.add('
-                . json_encode_browser("p-ubanner-" . $this->bs[$i])
-                . ', "ubanner").innerHTML = '
+                . json_encode_browser("p-cbanner-" . $this->bs[$i])
+                . ', "cbanner").innerHTML = '
                 . json_encode_browser($this->bs[$i + 1]);
         }
         $x[] = "hotcrp.banner.resize()";

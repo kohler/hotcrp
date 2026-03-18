@@ -5291,7 +5291,7 @@ class Conf {
 
         // Handle paper banners
         if (isset($this->settings["banners"])) {
-            (new PageBanners($this, $user, $qreq))->run();
+            (new CustomBanners($this, $user, $qreq))->run();
         }
 
         // If browser owns tracker, send it the script immediately

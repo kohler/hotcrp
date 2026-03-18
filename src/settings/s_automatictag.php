@@ -98,7 +98,7 @@ class AutomaticTag_SettingParser extends SettingParser {
 
     function validate(Si $si, SettingValues $sv) {
         $old_at = $sv->oldv($si->name0 . $si->name1);
-        $pb = $sv->conf->set_updating_automatic_tags(true);
+        $before = $sv->conf->set_updating_automatic_tags(true);
         if ($si->name2 === "/search") {
             $q = $sv->newv($si);
             $search = new PaperSearch($sv->conf->root_user(), ["q" => $q, "t" => "all"]);
@@ -112,7 +112,7 @@ class AutomaticTag_SettingParser extends SettingParser {
             }
         } else if ($si->name2 === "/value") {
             $v = $sv->newv($si);
-            $formula = Formula::make($sv->conf->root_user(), $sv->newv($si));
+            $formula = Formula::make($sv->conf->root_user(), $v);
             if (!$formula->ok()) {
                 $method = $v === $old_at->v ? "warning_at" : "error_at";
                 $sv->$method($si);
@@ -121,7 +121,7 @@ class AutomaticTag_SettingParser extends SettingParser {
                 }
             }
         }
-        $sv->conf->set_updating_automatic_tags(false);
+        $sv->conf->set_updating_automatic_tags($before);
     }
 
     function store_value(Si $si, SettingValues $sv) {
