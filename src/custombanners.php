@@ -62,7 +62,7 @@ class CustomBanners {
     /** @var Qrequest */
     public $qreq;
     /** @var array<string,string> */
-    private $bs = [];
+    private $bs;
     /** @var int */
     private $mcacheid = -1;
     /** @var bool */
@@ -188,6 +188,11 @@ class CustomBanners {
             $this->check($bannerj);
         }
         return $this->bs;
+    }
+
+    /** @return bool */
+    function used_session_cache() {
+        return $this->bs !== null && $this->session_ok;
     }
 
     /** @return string */
