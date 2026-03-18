@@ -173,8 +173,14 @@ class CustomBanners {
             }
         }
 
-        $html = $this->conf->_5($bannerj->ftext, ...$pvalues);
-        $this->record($bannerj->id, $html);
+        $in = Ftext::ensure($bannerj->ftext, 0);
+        $out = $this->conf->_5($in, ...$pvalues);
+        if (str_starts_with($in, "<5>")) {
+            $out = CleanHTML::basic_clean($out);
+        }
+        if ($out !== null && $out !== "") {
+            $this->record($bannerj->id, $out);
+        }
     }
 
     /** @return array<string,string> */

@@ -578,9 +578,8 @@ class Si {
             return $this->name;
         } else if ($this->name_parts === null) {
             return $this->hashid;
-        } else {
-            return $this->_expand_pattern($this->hashid, null);
         }
+        return $this->_expand_pattern($this->hashid, null);
     }
 
     /** @return array<string,string> */

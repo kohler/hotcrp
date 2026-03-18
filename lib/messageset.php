@@ -950,7 +950,7 @@ class MessageSet {
                 && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
                 $lmx = $mi->landmark;
                 if (str_starts_with($lmx, "<5>")
-                    && ($clmx = CleanHTML::basic_clean(substr($lmx, 3))) !== false) {
+                    && ($clmx = CleanHTML::basic_clean(substr($lmx, 3))) !== null) {
                     $lmx = $clmx;
                 } else {
                     $lmx = htmlspecialchars($lmx);

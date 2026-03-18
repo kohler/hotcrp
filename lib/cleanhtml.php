@@ -309,19 +309,58 @@ class CleanHTML {
         } else if (!str_ends_with($comment, "-->")) {
             $this->lerror("<0>Unclosed HTML comment", $pos, $pos + strlen($comment));
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
 
-    /** @return false */
+    /** @return null */
     private function fail() {
         $this->context = $this->opentags = null;
-        return false;
+        return null;
+    }
+
+    /** @param string $tag
+     * @param string $attr
+     * @param ?string $value
+     * @return string */
+    function clean_attribute($tag, $attr, $value, $attrpos, $endpos) {
+        $lattr = strtolower($attr);
+        if ((strlen($lattr) > 2 && $lattr[0] === "o" && $lattr[1] === "n")
+            || $lattr === "style"
+            || $lattr === "script"
+            || $lattr === "id"
+            || (str_starts_with($lattr, "data-")
+                && !str_starts_with($lattr, "data-tooltip"))) {
+            $this->lerror("<0>HTML attribute {$attr} not allowed", $attrpos, $endpos);
+            return "";
+        }
+        if ($lattr === "class") {
+            $xvalue = "";
+            preg_match_all('/\S++/', $value ?? "", $m);
+            $stripped = false;
+            foreach ($m[0] as $class) {
+                if (str_starts_with($class, "ui")
+                    || str_starts_with($class, "js-")) {
+                    $this->lerror("<0>HTML class {$class} not allowed", $attrpos, $endpos);
+                } else {
+                    $xvalue .= ($xvalue === "" ? $class : " {$class}");
+                }
+            }
+            if (($value = $xvalue) === "") {
+                return "";
+            }
+        }
+        if ($lattr === "href"
+            && $value !== null
+            && preg_match('/\A\s*+((?!http[\s:]|https[\s:])[a-z][-+.a-z0-9]*+)\s*+:/i', $value, $m)) {
+            $this->lerror("<0>URL scheme {$m[1]} not allowed in links", $attr, $endpos);
+            return "";
+        }
+        return $value === null ? " {$lattr}" : " {$lattr}=\"" . htmlspecialchars($value) . "\"";
     }
 
     /** @param string $t
-     * @return string|false */
+     * @return ?string */
     function clean($t) {
         if (($this->flags & self::CLEAN_INLINE) !== 0) {
             $curtf = 0;
@@ -409,26 +448,20 @@ class CleanHTML {
                         break;
                     }
                     $ap = $p;
-                    $attr = strtolower($m[1]);
-                    if ((strlen($attr) > 2 && $attr[0] === "o" && $attr[1] === "n")
-                        || $attr === "style"
-                        || $attr === "script"
-                        || $attr === "id") {
-                        $this->lerror("<0>HTML attribute {$m[1]} not allowed", $p, $p + strlen($m[1]));
-                    }
-                    $x .= " {$attr}";
                     $p += strlen($m[0]);
-                    if (preg_match('/\G=\s*+(\'.*?\'|".*?"|\w++)\s*+/s', $t, $m, 0, $p)) {
-                        if ($m[1][0] === "'" || $m[1][0] === "\"") {
-                            $m[1] = substr($m[1], 1, -1);
+                    $value = null;
+                    if (preg_match('/\G=\s*+(\'[^\']*+\'|"[^\"]*+"|\w++)\s*+/s', $t, $mm, 0, $p)) {
+                        if ($mm[1][0] === "'" || $mm[1][0] === "\"") {
+                            $mm[1] = substr($mm[1], 1, -1);
                         }
-                        $m[1] = html_entity_decode($m[1], ENT_HTML5);
-                        if ($attr === "href" && preg_match('/\A\s*javascript\s*:/i', $m[1])) {
-                            $this->lerror("<5><code>javascript</code> URLs not allowed", $ap, $p + strlen($m[0]));
-                        }
-                        $x .= "=\"" . htmlspecialchars($m[1]) . "\"";
-                        $p += strlen($m[0]);
+                        $value = html_entity_decode($mm[1], ENT_HTML5);
+                        $p += strlen($mm[0]);
+                    } else if ($p !== $len && $t[$p] === "=") {
+                        $this->lerror("<0>Broken value on HTML attribute {$m[1]}", $ap, $p + 1);
+                        $p = $endp;
+                        break;
                     }
+                    $x .= $this->clean_attribute($tag, $m[1], $value, $ap, $p);
                 }
                 if ($p === $endp) {
                     if ($endp === $len) {
@@ -514,21 +547,21 @@ class CleanHTML {
 
         $this->context = $this->opentags = null;
         if (!empty($this->ml)) {
-            return false;
+            return null;
         }
         return preg_replace('/\r\n?/', "\n", $x);
     }
 
     /** @param string|list<string> $t
-     * @return list<string>|false */
+     * @return ?list<string> */
     function clean_all($t) {
         $x = [];
         foreach (is_array($t) ? $t : [$t] as $s) {
             if (is_string($s)
-                && ($s = $this->clean($s)) !== false) {
+                && ($s = $this->clean($s)) !== null) {
                 $x[] = $s;
             } else {
-                return false;
+                return null;
             }
         }
         return $x;
@@ -553,13 +586,13 @@ class CleanHTML {
     }
 
     /** @param string $t
-     * @return string|false */
+     * @return ?string */
     static function basic_clean($t) {
         return self::basic()->clean($t);
     }
 
     /** @param string|list<string> $t
-     * @return list<string>|false */
+     * @return ?list<string> */
     static function basic_clean_all($t) {
         return self::basic()->clean_all($t);
     }

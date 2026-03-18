@@ -422,6 +422,8 @@ class String_Sitype extends Sitype {
     private $allow_int = false;
     /** @var bool */
     private $condition = false;
+    /** @var bool */
+    private $ftext = false;
     /** @var ?string */
     private $example;
     function __construct($name, $subtype = null) {
@@ -442,6 +444,8 @@ class String_Sitype extends Sitype {
             $this->example = "formula expression";
         } else if ($subtype === "mailbody") {
             $this->long = $this->mailbody = true;
+        } else if ($subtype === "ftext") {
+            $this->long = $this->ftext = true;
         }
     }
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
@@ -455,11 +459,22 @@ class String_Sitype extends Sitype {
         if ($this->mailbody && $s !== "" && !str_ends_with($s, "\n")) {
             $s .= "\n";
         }
-        if ($s !== "" || $si->required !== true) {
-            return $s;
+        if ($s === "" && $si->required === true) {
+            $sv->error_at($si, "<0>Entry required");
+            return null;
         }
-        $sv->error_at($si, "<0>Entry required");
-        return null;
+        if ($s !== "" && $this->ftext) {
+            $s = Ftext::ensure($s, 0);
+            if (str_starts_with($s, "<5>")) {
+                $ch = CleanHTML::basic();
+                $html = $ch->clean(substr($s, 3));
+                foreach ($ch->message_list() as $mi) {
+                    $sv->append_item_at($si, $mi);
+                }
+                $s = $html === null ? null : "<5>{$html}";
+            }
+        }
+        return $s;
     }
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_string($jv) || $jv === null) {
@@ -558,13 +573,11 @@ class Html_Sitype extends Sitype {
     use Data_Sitype;
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         $ch = CleanHTML::basic();
-        if (($t = $ch->clean($vstr)) !== false) {
-            return $t;
-        }
+        $t = $ch->clean($vstr);
         foreach ($ch->message_list() as $mi) {
             $sv->append_item_at($si, $mi);
         }
-        return null;
+        return $t;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "HTML text";
