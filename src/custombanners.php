@@ -70,7 +70,7 @@ class CustomBanners {
     /** @var ?list<string> */
     private $session_bs;
 
-    const SVERSION = 1;
+    const SVERSION = 2;
     const CACHEABLE = true;
 
     function __construct(Conf $conf, Contact $user, Qrequest $qreq) {
@@ -130,9 +130,9 @@ class CustomBanners {
         $pvalues = [];
         if (count($params) === 1) {
             $pvalues[] = $params[0]->eval(null);
-        } else if (!empty($searches)) {
+        } else if (!empty($params)) {
             $qs = [];
-            $t = $searches[0]->limit();
+            $t = $params[0]->srch->limit();
             foreach ($params as $param) {
                 $qs[] = SearchParser::safe_parenthesize($param->srch->q);
                 if ($t !== "viewable" && $t !== $param->srch->limit()) {
