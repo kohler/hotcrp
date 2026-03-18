@@ -116,7 +116,9 @@ class CustomBanners {
             return;
         }
 
-        if ($this->try_mcache($bannerj->id) && self::CACHEABLE) {
+        if ($this->try_mcache($bannerj->id)
+            && self::CACHEABLE
+            && !$this->user->is_actas_user()) {
             return;
         }
         $this->session_ok = false;
