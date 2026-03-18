@@ -14,6 +14,8 @@ class ActionLog_Batch {
     public $narrow = true;
     /** @var int */
     public $page_size;
+    /** @var ?int */
+    public $count;
     /** @var ?list<int> */
     public $uids;
     /** @var resource */
@@ -27,6 +29,7 @@ class ActionLog_Batch {
         $this->conf = $conf;
         $this->narrow = !isset($arg["wide"]);
         $this->page_size = $arg["pagesize"] ?? 10000;
+        $this->count = $arg["count"] ?? 0;
         $this->sitename = isset($arg["N"]);
         $this->header = !isset($arg["no-header"]) || isset($arg["header"]);
         foreach ($arg["u"] ?? [] as $u) {
@@ -98,6 +101,7 @@ class ActionLog_Batch {
             $csvg->set_header($fields);
         }
 
+        $nrows = 0;
         for ($page = 1; ($rows = $leg->page_rows($page)); ++$page) {
             foreach ($rows as $row) {
                 if ($this->narrow && !$this->sitename) {
@@ -115,6 +119,9 @@ class ActionLog_Batch {
                         $csvg->add_row($data);
                     }
                 }
+                if ($this->count > 0 && ++$nrows >= $this->count) {
+                    break 2;
+                }
             }
         }
 
@@ -131,6 +138,7 @@ class ActionLog_Batch {
             "help,h !",
             "narrow !",
             "pagesize:,page-size: {n} !",
+            "count:,c: {n} Number of entries",
             "u[],user[] =USER Include entries about USER",
             "N,sitename,siteclass Include siteclass and sitename in CSV",
             "no-header Omit CSV header",
