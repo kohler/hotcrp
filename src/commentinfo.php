@@ -52,6 +52,8 @@ class CommentInfo {
     private $_commenter;
     /** @var ?bool */
     private $_recently_censored;
+    /** @var ?bool */
+    private $_recently_censorable;
 
     const CT_DRAFT = 0x01;
     const CT_BLIND = 0x02;
@@ -325,6 +327,14 @@ class CommentInfo {
     }
 
     /** @param Contact $viewer
+     * @return bool */
+    private function _mention_censorable($viewer) {
+        $this->_recently_censorable = !$viewer->is_my_comment($this->prow, $this)
+            && !$viewer->can_view_review_identity($this->prow, null);
+        return $this->_recently_censorable;
+    }
+
+    /** @param Contact $viewer
      * @param array{int,int,int,?bool} $mn
      * @param int $censor_until
      * @return bool */
@@ -333,7 +343,8 @@ class CommentInfo {
         if (!is_array($mn)
             || count($mn) < 4
             || !$mn[3]
-            || $mn[0] === $viewer->contactId) {
+            || $mn[0] === $viewer->contactId
+            || !($this->_recently_censorable ?? $this->_mention_censorable($viewer))) {
             return false;
         }
         // skip mentions beyond boundary
@@ -385,8 +396,7 @@ class CommentInfo {
             || !$viewer
             || !($mns = $this->data("mentions"))
             || !is_array($mns)
-            || $viewer->is_my_comment($this->prow, $this)
-            || $viewer->can_view_review_identity($this->prow, null)) {
+            || !$this->_mention_censorable($viewer)) {
             return $t;
         }
         $delta = 0;
@@ -399,6 +409,7 @@ class CommentInfo {
                 $this->_recently_censored = true;
             }
         }
+        $this->_recently_censorable = null;
         return $t;
     }
 
@@ -415,6 +426,7 @@ class CommentInfo {
                 $delta += strlen($r) - ($mn[2] - $mn[1]);
             }
         }
+        $this->_recently_censorable = null;
         return $result;
     }
 
