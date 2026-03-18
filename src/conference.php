@@ -1957,12 +1957,6 @@ class Conf {
         return $this->_resp_rounds;
     }
 
-    /** @return list<ResponseRound>
-     * @deprecated */
-    function response_rounds() {
-        return $this->response_round_list();
-    }
-
     /** @return list<ResponseRound> */
     private function _response_round_list() {
         $rrds = [];
@@ -5291,7 +5285,7 @@ class Conf {
 
         // Handle paper banners
         if (isset($this->settings["banners"])) {
-            (new CustomBanners($this, $user, $qreq))->run();
+            echo (new CustomBanners($this, $user, $qreq))->run();
         }
 
         // If browser owns tracker, send it the script immediately

@@ -58,6 +58,20 @@ class ResponseRound {
         return $this->_condition_term->test($prow, null);
     }
 
+    /** @param int $boundary
+     * @return int */
+    function closest_deadline_after($boundary) {
+        $t = $this->open >= $boundary ? $this->open : PHP_INT_MAX;
+        if ($this->open > 0) {
+            if ($this->done >= $boundary) {
+                $t = min($t, $this->done);
+            } else if ($this->done + $this->grace >= $boundary) {
+                $t = min($t, $this->done + $this->grace);
+            }
+        }
+        return $t;
+    }
+
     /** @return bool */
     function relevant(Contact $user, ?PaperInfo $prow = null) {
         if (($prow ? $user->allow_admin($prow) : $user->is_manager())

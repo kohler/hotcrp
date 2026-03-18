@@ -61,16 +61,16 @@ class CustomBanners {
     public $user;
     /** @var Qrequest */
     public $qreq;
-    /** @var list<string> */
+    /** @var array<string,string> */
     private $bs = [];
     /** @var int */
     private $mcacheid = -1;
     /** @var bool */
     private $session_ok = true;
-    /** @var ?list<string> */
+    /** @var ?array<string,string> */
     private $session_bs;
 
-    const SVERSION = 2;
+    const SVERSION = 3;
     const CACHEABLE = true;
 
     function __construct(Conf $conf, Contact $user, Qrequest $qreq) {
@@ -79,8 +79,34 @@ class CustomBanners {
         $this->qreq = $qreq;
     }
 
+    /** @param string $id
+     * @param string $html */
     private function record($id, $html) {
-        array_push($this->bs, $id, $html);
+        $this->bs[$id] = $html;
+    }
+
+    /** @return int */
+    private function next_deadline() {
+        $next = PHP_INT_MAX;
+        foreach ($this->conf->submission_round_list() as $sr) {
+            $next = min($next, $sr->closest_deadline_after(Conf::$now));
+        }
+        if (($t = $this->conf->setting("rev_open") ?? 0) >= Conf::$now) {
+            $next = min($next, $t);
+        }
+        if ($t > 0) {
+            foreach ($this->conf->round_list() as $i => $rname) {
+                $suf = $i ? "_{$i}" : "";
+                foreach (Conf::$review_deadlines as $dl) {
+                    if (($t = $this->conf->setting("{$dl}{$suf}")) >= Conf::$now)
+                        $next = min($next, $t);
+                }
+            }
+        }
+        foreach ($this->conf->response_round_list() as $rrd) {
+            $next = min($next, $rrd->closest_deadline_after(Conf::$now));
+        }
+        return $next < PHP_INT_MAX ? $next : 0;
     }
 
     private function try_mcache($id) {
@@ -95,20 +121,19 @@ class CustomBanners {
             $sval = $this->qreq->csession("banners");
             if (is_object($sval)
                 && ($sval->v ?? null) === self::SVERSION
-                && $sval->mcid === $this->mcacheid) {
+                && $sval->mcid === $this->mcacheid
+                && (($sval->dl ?? 0) === 0 || $sval->dl > Conf::$now)) {
                 $this->session_bs = $sval->bs ?? [];
             }
         }
-        for ($i = 0; $i !== count($this->session_bs); $i += 2) {
-            if ($this->session_bs[$i] === $id) {
-                $this->record($id, $this->session_bs[$i + 1]);
-                return true;
-            }
+        if (($html = $this->session_bs[$id] ?? null) !== null) {
+            $this->record($id, $html);
+            return true;
         }
         return false;
     }
 
-    function print($bannerj) {
+    private function check($bannerj) {
         $vis = $bannerj->visibility ?? "admin";
         if ($vis === "none"
             || !$this->user->isPC
@@ -152,31 +177,40 @@ class CustomBanners {
         $this->record($bannerj->id, $html);
     }
 
-    function run() {
+    /** @return array<string,string> */
+    function active() {
         $bannerlist = $this->conf->setting_json("banners");
         if (!is_array($bannerlist)) {
-            return;
+            return [];
         }
+        $this->bs = [];
         foreach ($bannerlist as $bannerj) {
-            $this->print($bannerj);
+            $this->check($bannerj);
         }
-        if (empty($this->bs)) {
-            return;
+        return $this->bs;
+    }
+
+    /** @return string */
+    function run() {
+        $bs = $this->active();
+        if (empty($bs)) {
+            return "";
+        }
+        if ($this->mcacheid > 0 && !$this->session_ok) {
+            $this->qreq->set_csession("banners", (object) [
+                "v" => self::SVERSION, "mcid" => $this->mcacheid,
+                "bs" => $bs, "dl" => $this->next_deadline()
+            ]);
         }
         $x = [];
-        for ($i = 0; $i !== count($this->bs); $i += 2) {
+        foreach ($bs as $id => $html) {
             $x[] = 'hotcrp.banner.add('
-                . json_encode_browser("p-cbanner-" . $this->bs[$i])
+                . json_encode_browser("p-cbanner-{$id}")
                 . ', "cbanner").innerHTML = '
-                . json_encode_browser($this->bs[$i + 1]);
+                . json_encode_browser($html);
         }
         $x[] = "hotcrp.banner.resize()";
         $x[] = '$(hotcrp.banner.resize)';
-        echo Ht::unstash_script(join(";", $x));
-        if ($this->mcacheid > 0 && !$this->session_ok) {
-            $this->qreq->set_csession("banners", (object) [
-                "v" => self::SVERSION, "mcid" => $this->mcacheid, "bs" => $this->bs
-            ]);
-        }
+        return Ht::unstash_script(join(";", $x));
     }
 }

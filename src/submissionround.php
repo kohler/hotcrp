@@ -172,6 +172,35 @@ class SubmissionRound {
         return $this->final_soft;
     }
 
+    /** @param int $bondary
+     * @return ?int */
+    function closest_deadline_after($boundary) {
+        $t = $this->open >= $boundary ? $this->open : PHP_INT_MAX;
+        if ($this->open > 0) {
+            foreach ([$this->register, $this->update, $this->submit,
+                      $this->resubmit] as $tt) {
+                if ($tt >= $boundary) {
+                    $t = min($t, $tt);
+                } else if ($tt + $this->grace >= $boundary) {
+                    $t = min($t, $tt + $this->grace);
+                }
+            }
+        }
+        if ($this->final_open > 0) {
+            if ($this->final_open >= $boundary) {
+                $t = min($t, $this->final_open);
+            }
+            foreach ([$this->final_soft, $this->final_done] as $tt) {
+                if ($tt >= $boundary) {
+                    $t = min($t, $tt);
+                } else if ($tt + $this->final_grace >= $boundary) {
+                    $t = min($t, $tt + $this->final_grace);
+                }
+            }
+        }
+        return $t;
+    }
+
     /** @return bool */
     function relevant(Contact $user, ?PaperInfo $prow = null) {
         if ($user->isPC) {
