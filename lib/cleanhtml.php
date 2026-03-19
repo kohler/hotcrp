@@ -147,6 +147,7 @@ class CleanHTML {
         // head: self::F_SPECIAL
         // header: self::F_SPECIAL | self::F_CLOSEP
         // hgroup: self::F_SPECIAL | self::F_CLOSEP
+        "hotcrp-multimeter" => 0, /* special! */
         "hr" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | self::F_VOID,
         "html" => self::F_DISABLED | self::F_SPECIAL | self::F_DEFAULT_SCOPE,
         "i" => self::F_FORMAT,

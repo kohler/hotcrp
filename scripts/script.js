@@ -246,6 +246,9 @@ if (!window.queueMicrotask) {
         setTimeout(f, 0);
     };
 }
+if (!window.customElements) {
+    window.customElements = { define: function () {} };
+}
 
 
 function lower_bound_index(a, v) {
@@ -15420,6 +15423,92 @@ $(function () {
             }
         }
         log_jserror(err.join("\n"));
+    }
+});
+
+customElements.define("hotcrp-multimeter", class extends HTMLElement {
+    static observedAttributes = ["values", "colors", "pointers"];
+
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        const style = document.createElement("style");
+        style.textContent = ":host { display: inline-block; width: 10em; height: 2ex; }";
+        const ctr = document.createElement("div"),
+            flex = document.createElement("div");
+        ctr.style.position = "relative";
+        ctr.style.width = flex.style.width = "100%";
+        ctr.style.height = flex.style.height = "100%";
+        flex.style.display = "flex";
+        flex.style.overflow = "hidden";
+        ctr.append(flex);
+        this.shadowRoot.append(style, ctr);
+    }
+
+    connectedCallback() {
+        const cs = getComputedStyle(this),
+            flex = this.shadowRoot.lastChild.firstChild;
+        flex.style.borderRadius = cs.borderRadius;
+        this.render();
+    }
+    attributeChangedCallback() { this.render(); }
+
+    resolveColor(value) {
+        if (!value.startsWith(".")) {
+            return value;
+        }
+        const e = document.createElement("div");
+        e.style.display = "none";
+        e.style.position = "absolute";
+        e.className = value.substring(1).replaceAll(".", " ");
+        this.appendChild(e);
+        const color = getComputedStyle(e).backgroundColor;
+        e.remove();
+        return color;
+    }
+
+    render() {
+        const vstr = (this.getAttribute("values") || "").trim(),
+            cstr = (this.getAttribute("colors") || "").trim(),
+            pstr = (this.getAttribute("pointers") || "").trim(),
+            vs = vstr === "" ? [] : vstr.split(/\s+/).map(Number),
+            ps = pstr === "" ? [] : pstr.split(/\s+/).map(Number).filter(x => Number.isFinite(x)),
+            cs = [];
+        if (vs.find(x => Number.isFinite(x) && x < 0)) {
+            vs.length = 0;
+        }
+        const vtotal = vs.reduce((a, b) => a + b, 0) || 1;
+        for (const cm of cstr.matchAll(/[a-z]+\((?:[^()]*|\([^()]*\))*\)|\S+/g)) {
+            cs.push(this.resolveColor(cm[0]));
+        }
+        const flex = this.shadowRoot.lastChild.firstChild;
+        flex.replaceChildren(...vs.map((v, i) => {
+            const e = document.createElement("div");
+            e.style.flex = v;
+            e.style.background = cs[i] ?? "transparent";
+            return e;
+        }));
+        let pe = flex.nextSibling;
+        for (const pv of ps) {
+            if (pv < 0 || pv > vtotal) {
+                continue;
+            }
+            if (!pe) {
+                pe = document.createElement("span");
+                pe.style.position = "absolute";
+                pe.style.top = "42%";
+                pe.style.transform = "translate(-50%,-50%)";
+                pe.textContent = "∗";
+                this.shadowRoot.lastChild.appendChild(pe);
+            }
+            pe.style.left = `${pv / vtotal * 100}%`;
+            pe = pe.nextSibling;
+        }
+        while (pe) {
+            const next = pe.nextSibling;
+            pe.remove();
+            pe = next;
+        }
     }
 });
 

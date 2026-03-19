@@ -4199,6 +4199,12 @@ a.badge-white:hover {
 	color: white;
 }
 
+/* hotcrp-multimeter */
+hotcrp-multimeter {
+	border-radius: 4px;
+	border: 1px solid silver;
+}
+
 /* paper */
 .paperinfo {
 	display: flex;
