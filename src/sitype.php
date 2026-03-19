@@ -466,7 +466,7 @@ class String_Sitype extends Sitype {
         if ($s !== "" && $this->ftext) {
             $s = Ftext::ensure($s, 0);
             if (str_starts_with($s, "<5>")) {
-                $ch = CleanHTML::basic();
+                $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
                 $html = $ch->clean(substr($s, 3));
                 foreach ($ch->message_list() as $mi) {
                     $sv->append_item_at($si, $mi);
@@ -572,7 +572,7 @@ class EmailHeader_Sitype extends Sitype {
 class Html_Sitype extends Sitype {
     use Data_Sitype;
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
-        $ch = CleanHTML::basic();
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
         $t = $ch->clean($vstr);
         foreach ($ch->message_list() as $mi) {
             $sv->append_item_at($si, $mi);

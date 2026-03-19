@@ -32,6 +32,7 @@ class CleanHTML {
     const CLEAN_INLINE = 1;
     const CLEAN_STRIP_UNKNOWN = 2;
     const CLEAN_IGNORE_UNKNOWN = 4;
+    const CLEAN_FIX = 8;
 
     /** @var int */
     private $flags;
@@ -60,6 +61,8 @@ class CleanHTML {
     const F_FORMAT = 0x20;          // Formatting elements
     const F_MARKER = 0x40;          // Acts as marker
     const F_DEFAULT_SCOPE = 0x80;   // “Has a particular element in scope” tag
+    const F_ENDOPTIONAL = 0x100;    // End tag is optional per HTML spec
+    const F_CLOSEP = 0x200;         // Open tag should close an open <p>
 
     // Scope values
     const SC_COLGROUP = 1;
@@ -73,6 +76,7 @@ class CleanHTML {
     const SC_TABLE = 9;
     const SC_TROWS = 10;
     const SC_TR = 11;
+    const SC_INVALID = 31;
     const SCMASK = 0x1F;
 
     // Scope bitshifts
@@ -85,11 +89,11 @@ class CleanHTML {
         "a" => self::F_FORMAT,
         "abbr" => 0,
         "acronym" => 0,
-        "address" => self::F_SPECIAL,
-        "applet" => self::F_DISABLED | self::F_MARKER | self::F_DEFAULT_SCOPE,
+        "address" => self::F_SPECIAL | self::F_CLOSEP,
+        "applet" => self::F_DISABLED | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE,
         // area: self::F_SPECIAL
-        // article: self::F_SPECIAL
-        // aside: self::F_SPECIAL
+        // article: self::F_SPECIAL | self::F_CLOSEP
+        // aside: self::F_SPECIAL | self::F_CLOSEP
         "audio" => self::F_BLOCK | (self::SC_MEDIA << self::SCP),
         "b" => self::F_FORMAT,
         // base: self::F_SPECIAL
@@ -98,47 +102,48 @@ class CleanHTML {
         "bdo" => 0,
         "big" => self::F_FORMAT,
         // bgsound: self::F_SPECIAL
-        "blockquote" => self::F_BLOCK | self::F_SPECIAL,
+        "blockquote" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
         // body: self::F_SPECIAL
         "br" => self::F_VOID | self::F_SPECIAL,
         // button: self::F_SPECIAL
         // canvas
         "caption" => self::F_BLOCK | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE | (self::SC_TABLE << self::REQSCP1),
-        "center" => self::F_BLOCK | self::F_SPECIAL,
+        "center" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
         "cite" => 0,
         "code" => self::F_FORMAT,
         "col" => self::F_VOID | self::F_SPECIAL | (self::SC_COLGROUP << self::REQSCP1),
-        "colgroup" => self::F_SPECIAL | (self::SC_COLGROUP << self::SCP) | (self::SC_TABLE << self::REQSCP1),
+        "colgroup" => self::F_SPECIAL | self::F_ENDOPTIONAL | (self::SC_COLGROUP << self::SCP) | (self::SC_TABLE << self::REQSCP1),
         // data
         // datalist
-        "dd" => self::F_BLOCK | self::F_SPECIAL | (self::SC_DL << self::REQSCP1),
+        "dd" => self::F_BLOCK | self::F_SPECIAL | self::F_ENDOPTIONAL | self::F_CLOSEP | (self::SC_DL << self::REQSCP1),
         "del" => 0,
-        "details" => self::F_BLOCK | self::F_SPECIAL | (self::SC_DETAILS << self::SCP),
+        "details" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | (self::SC_DETAILS << self::SCP),
         "dfn" => 0,
-        "dialog" => self::F_DISABLED | self::F_SPECIAL,
-        "div" => self::F_BLOCK | self::F_SPECIAL,
-        "dl" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | (self::SC_DL << self::SCP),
-        "dt" => self::F_BLOCK | self::F_SPECIAL | (self::SC_DL << self::REQSCP1),
+        "dialog" => self::F_DISABLED | self::F_CLOSEP,
+        // dir: self::F_SPECIAL | self::F_CLOSEP
+        "div" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
+        "dl" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_CLOSEP | (self::SC_DL << self::SCP),
+        "dt" => self::F_BLOCK | self::F_SPECIAL | self::F_ENDOPTIONAL | self::F_CLOSEP | (self::SC_DL << self::REQSCP1),
         "em" => self::F_FORMAT,
         // embed: self::F_SPECIAL
-        "fieldset" => self::F_BLOCK | self::F_SPECIAL | (self::SC_FIELDSET << self::SCP),
-        "figcaption" => self::F_BLOCK | self::F_SPECIAL | (self::SC_FIGURE << self::REQSCP1),
-        "figure" => self::F_BLOCK | self::F_SPECIAL | (self::SC_FIGURE << self::SCP),
+        "fieldset" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | (self::SC_FIELDSET << self::SCP),
+        "figcaption" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | (self::SC_FIGURE << self::REQSCP1),
+        "figure" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | (self::SC_FIGURE << self::SCP),
         // font: self::F_FORMAT
-        // footer: self::F_SPECIAL
-        // form: self::F_SPECIAL
+        // footer: self::F_SPECIAL | self::F_CLOSEP
+        // form: self::F_SPECIAL | self::F_CLOSEP
         // frame: self::F_SPECIAL
         // frameset: self::F_SPECIAL
-        "h1" => self::F_BLOCK | self::F_SPECIAL,
-        "h2" => self::F_BLOCK | self::F_SPECIAL,
-        "h3" => self::F_BLOCK | self::F_SPECIAL,
-        "h4" => self::F_BLOCK | self::F_SPECIAL,
-        "h5" => self::F_BLOCK | self::F_SPECIAL,
-        "h6" => self::F_BLOCK | self::F_SPECIAL,
+        "h1" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
+        "h2" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
+        "h3" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
+        "h4" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
+        "h5" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
+        "h6" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
         // head: self::F_SPECIAL
-        // header: self::F_SPECIAL
-        // hgroup: self::F_SPECIAL
-        "hr" => self::F_BLOCK | self::F_SPECIAL | self::F_VOID,
+        // header: self::F_SPECIAL | self::F_CLOSEP
+        // hgroup: self::F_SPECIAL | self::F_CLOSEP
+        "hr" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | self::F_VOID,
         "html" => self::F_DISABLED | self::F_SPECIAL | self::F_DEFAULT_SCOPE,
         "i" => self::F_FORMAT,
         // iframe: self::F_SPECIAL
@@ -150,42 +155,44 @@ class CleanHTML {
         // keygen: self::F_SPECIAL
         "label" => 0,
         "legend" => self::F_BLOCK | (self::SC_FIELDSET << self::REQSCP1),
-        "li" => self::F_BLOCK | self::F_SPECIAL | (self::SC_LIST << self::REQSCP1),
+        "li" => self::F_BLOCK | self::F_SPECIAL | self::F_ENDOPTIONAL | self::F_CLOSEP | (self::SC_LIST << self::REQSCP1),
         // link: self::F_SPECIAL
-        // main: self::F_SPECIAL
+        // listing: self::F_SPECIAL | self::F_CLOSEP
+        // main: self::F_SPECIAL | self::F_CLOSEP
         // map
         "mark" => 0,
         "marquee" => self::F_DISABLED | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE,
-        "menu" => self::F_BLOCK | self::F_SPECIAL | (self::SC_LIST << self::SCP),
+        "menu" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | (self::SC_LIST << self::SCP),
         // menuitem
         // meta: self::F_SPECIAL
         "meter" => 0,
-        // nav: self::F_SPECIAL
+        // nav: self::F_SPECIAL | self::F_CLOSEP
         // nobr: self::F_FORMAT
         // noembed: self::F_SPECIAL
         // noframes: self::F_SPECIAL
         "noscript" => self::F_SPECIAL,
         "object" => self::F_DISABLED | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE,
-        "ol" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | (self::SC_LIST << self::SCP),
-        // optgroup
-        // option
-        "p" => self::F_BLOCK | self::F_SPECIAL,
+        "ol" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_CLOSEP | (self::SC_LIST << self::SCP),
+        // optgroup: self::F_ENDOPTIONAL | (self::SC_OPTGROUP << self::SCP) | (self::SC_SELECT << self::REQSCP1)
+        // option: self::F_ENDOPTIONAL | (self::SC_OPTGROUP << self::REQSCP1) | (self::SC_SELECT << self::REQSCP2)
+        "p" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | self::F_ENDOPTIONAL,
         // param: self::F_SPECIAL
         "picture" => self::F_BLOCK | (self::SC_MEDIA << self::SCP),
         // plaintext: self::F_SPECIAL
-        "pre" => self::F_BLOCK | self::F_SPECIAL,
+        "pre" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP,
         "progress" => 0,
         "q" => 0,
-        // rb
-        "rp" => self::SC_RUBY << self::REQSCP1,
-        "rt" => self::SC_RUBY << self::REQSCP1,
-        // rtc
+        // rb: self::F_ENDOPTIONAL
+        "rp" => self::F_ENDOPTIONAL | (self::SC_RUBY << self::REQSCP1),
+        "rt" => self::F_ENDOPTIONAL | (self::SC_RUBY << self::REQSCP1),
+        // rtc: self::F_ENDOPTIONAL
         "ruby" => self::SC_RUBY << self::SCP,
         "s" => self::F_FORMAT,
         "samp" => 0,
         // script: self::F_SPECIAL
-        // search: self::F_SPECIAL
-        // select: self::F_SPECIAL
+        // search: self::F_SPECIAL | self::F_CLOSEP
+        // section: self::F_SPECIAL | self::F_CLOSEP
+        // select: self::F_SPECIAL | (self::SC_SELECT << self::SCP)
         // slot
         "small" => self::F_FORMAT,
         "source" => self::F_VOID | self::F_SPECIAL | (self::SC_MEDIA << self::REQSCP1),
@@ -194,27 +201,27 @@ class CleanHTML {
         "strong" => self::F_FORMAT,
         // style: self::F_SPECIAL
         "sub" => 0,
-        "summary" => self::F_BLOCK | self::F_SPECIAL | (self::SC_DETAILS << self::REQSCP1),
+        "summary" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | (self::SC_DETAILS << self::REQSCP1),
         "sup" => 0,
-        "table" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_DEFAULT_SCOPE | (self::SC_TABLE << self::SCP),
-        "tbody" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | (self::SC_TROWS << self::SCP) | (self::SC_TABLE << self::REQSCP1),
-        "td" => self::F_BLOCK | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE | (self::SC_TR << self::REQSCP1),
+        "table" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_DEFAULT_SCOPE | self::F_CLOSEP | (self::SC_TABLE << self::SCP),
+        "tbody" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_ENDOPTIONAL | (self::SC_TROWS << self::SCP) | (self::SC_TABLE << self::REQSCP1),
+        "td" => self::F_BLOCK | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE | self::F_ENDOPTIONAL | (self::SC_TR << self::REQSCP1),
         "template" => self::F_DISABLED | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE,
         // textarea: self::F_SPECIAL
-        "tfoot" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | (self::SC_TROWS << self::SCP) | (self::SC_TABLE << self::REQSCP1),
-        "th" => self::F_BLOCK | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE | (self::SC_TR << self::REQSCP1),
-        "thead" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | (self::SC_TROWS << self::SCP) | (self::SC_TABLE << self::REQSCP1),
+        "tfoot" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_ENDOPTIONAL | (self::SC_TROWS << self::SCP) | (self::SC_TABLE << self::REQSCP1),
+        "th" => self::F_BLOCK | self::F_SPECIAL | self::F_MARKER | self::F_DEFAULT_SCOPE | self::F_ENDOPTIONAL | (self::SC_TR << self::REQSCP1),
+        "thead" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_ENDOPTIONAL | (self::SC_TROWS << self::SCP) | (self::SC_TABLE << self::REQSCP1),
         "time" => 0,
         // title: self::F_SPECIAL
-        "tr" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | (self::SC_TR << self::SCP) | (self::SC_TROWS << self::REQSCP1) | (self::SC_TABLE << self::REQSCP2),
+        "tr" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_ENDOPTIONAL | (self::SC_TR << self::SCP) | (self::SC_TROWS << self::REQSCP1) | (self::SC_TABLE << self::REQSCP2),
         "track" => self::F_BLOCK | self::F_SPECIAL | (self::SC_MEDIA << self::REQSCP1),
         "tt" => self::F_FORMAT,
         "u" => self::F_FORMAT,
-        "ul" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | (self::SC_LIST << self::SCP),
+        "ul" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_CLOSEP | (self::SC_LIST << self::SCP),
         "var" => 0,
         "video" => self::F_BLOCK | (self::SC_MEDIA << self::SCP),
         "wbr" => self::F_VOID | self::F_SPECIAL
-        // xmp: self::F_SPECIAL
+        // xmp: self::F_SPECIAL | self::F_CLOSEP
     ];
     // XXX SVG
     // XXX MathML
@@ -266,11 +273,10 @@ class CleanHTML {
     /** @return MessageItem */
     private function inclusion_context($tag, $tagtf) {
         $tp1 = ($tagtf >> self::REQSCP1) & self::SCMASK;
-        $tp2 = ($tagtf >> self::REQSCP2) & self::SCMASK;
+        $tp2 = (($tagtf >> self::REQSCP2) & self::SCMASK) ? : self::SC_INVALID;
         $tlist = [];
         foreach ($this->tagflags as $n => $tf) {
-            if (($t = ($tf >> self::SCP) & self::SCMASK) !== 0
-                && ($t === $tp1 || $t === $tp2)) {
+            if (($t = ($tf >> self::SCP) & self::SCMASK) === $tp1 || $t === $tp2) {
                 $tlist[] = "<{$n}>";
             }
         }
@@ -284,6 +290,59 @@ class CleanHTML {
             return "inside <{$this->opentags->tag}>";
         }
         return "here";
+    }
+
+    /** @param int &$curtf
+     * @param string $tag
+     * @param int $tagtf
+     * @return string */
+    private function auto_close_before_open(&$curtf, $tag, $tagtf) {
+        $insertion = "";
+        // If F_CLOSEP is set, then close an open <p>
+        if (($tagtf & self::F_CLOSEP) !== 0) {
+            $xinsertion = "";
+            $travtf = $curtf;
+            $travtag = $this->opentags;
+            while (($travtf & self::F_ENDOPTIONAL) !== 0) {
+                $xinsertion .= "</{$travtag->tag}>";
+                $travtf = $travtag->tagfl;
+                if ($travtag->tag === "p") {
+                    $insertion .= $xinsertion;
+                    $curtf = $travtf;
+                    $this->opentags = $travtag->next;
+                    break;
+                }
+                $travtag = $travtag->next;
+            }
+        }
+        // Close F_ENDOPTIONAL elements until reaching required scope
+        if ($tagtf >= (1 << self::REQSCP1)) {
+            $pt1 = ($tagtf >> self::REQSCP1) & self::SCMASK;
+            $pt2 = ($tagtf >> self::REQSCP2) & self::SCMASK ? : self::SC_INVALID;
+            while (($curtf & self::F_ENDOPTIONAL) !== 0
+                   && ($oscp = ($curtf >> self::SCP) & self::SCMASK) !== $pt1
+                   && $oscp !== $pt2) {
+                $insertion .= "</{$this->opentags->tag}>";
+                $curtf = $this->opentags->tagfl;
+                $this->opentags = $this->opentags->next;
+            }
+        }
+        return $insertion;
+    }
+
+    /** @param int &$curtf
+     * @param string $tag
+     * @return string */
+    private function auto_close_before_close(&$curtf, $tag) {
+        $insertion = "";
+        while ($this->opentags !== null
+               && $this->opentags->tag !== $tag
+               && ($curtf & self::F_ENDOPTIONAL) !== 0) {
+            $insertion .= "</{$this->opentags->tag}>";
+            $curtf = $this->opentags->tagfl;
+            $this->opentags = $this->opentags->next;
+        }
+        return $insertion;
     }
 
     private function check_text($curtf, $pos1, $pos2) {
@@ -434,6 +493,9 @@ class CleanHTML {
                     $this->lerror("<0>HTML tag <{$m[2]}> not allowed", $tagp, $endp);
                     $tagtf = self::F_VOID;
                 }
+                if (($this->flags & self::CLEAN_FIX) !== 0) {
+                    $x .= $this->auto_close_before_open($curtf, $tag, $tagtf);
+                }
                 $x .= "<{$tag}";
                 if (($tagtf & self::F_BLOCK) !== 0
                     && ($curtf & self::F_BLOCK) === 0) {
@@ -441,10 +503,9 @@ class CleanHTML {
                 }
                 if ($tagtf >= (1 << self::REQSCP1)) {
                     $pt1 = ($tagtf >> self::REQSCP1) & self::SCMASK;
-                    $pt2 = ($tagtf >> self::REQSCP2) & self::SCMASK;
+                    $pt2 = ($tagtf >> self::REQSCP2) & self::SCMASK ? : self::SC_INVALID;
                     $curt = ($curtf >> self::SCP) & self::SCMASK;
-                    if ($curt === 0
-                        || ($pt1 !== $curt && $pt2 !== $curt)) {
+                    if ($curt !== $pt1 && $curt !== $pt2) {
                         $this->lerror("<0>Element not allowed here", $tagp, $endp);
                         $this->ml[] = $this->inclusion_context($tag, $tagtf);
                     }
@@ -522,6 +583,11 @@ class CleanHTML {
                     $xp = $p = $endp;
                     continue;
                 }
+                if (($this->flags & self::CLEAN_FIX) !== 0
+                    && ($ins = $this->auto_close_before_close($curtf, $tag)) !== "") {
+                    $x .= substr($t, $xp, $p - $xp) . $ins;
+                    $xp = $p;
+                }
                 if ($this->opentags && $this->opentags->tag === $tag) {
                     $curtf = $this->opentags->tagfl;
                     $this->opentags = $this->opentags->next;
@@ -550,6 +616,10 @@ class CleanHTML {
         if ($xp !== $len) {
             $this->check_text($curtf, $xp, $len);
             $x .= substr($t, $xp);
+        }
+        if (($this->flags & self::CLEAN_FIX) !== 0
+            && ($ins = $this->auto_close_before_close($curtf, "\0")) !== "") {
+            $x .= $ins;
         }
         if ($this->opentags) {
             $this->lerror("<0>Unclosed tag", $this->opentags->pos1, $this->opentags->pos2);

@@ -63,4 +63,111 @@ class CleanHTML_Tester {
         xassert_eqq($chtml->clean('<span class="hi" data-fart>Hi</span>'), null);
         xassert_eqq($chtml->clean('<span class="hi" data-tooltip="hi&">Hi</span>'), '<span class="hi" data-tooltip="hi&amp;">Hi</span>');
     }
+
+    function test_nesting_scope() {
+        $chtml = CleanHTML::basic();
+        // elements outside required scope fail
+        xassert_eqq($chtml->clean('<li>X</li>'), null);
+        xassert_eqq($chtml->clean('<td>X</td>'), null);
+        xassert_eqq($chtml->clean('<dt>X</dt>'), null);
+        xassert_eqq($chtml->clean('<dd>X</dd>'), null);
+        xassert_eqq($chtml->clean('<caption>X</caption>'), null);
+        xassert_eqq($chtml->clean('<legend>X</legend>'), null);
+        xassert_eqq($chtml->clean('<summary>X</summary>'), null);
+        xassert_eqq($chtml->clean('<figcaption>X</figcaption>'), null);
+        // valid structures
+        xassert_eqq($chtml->clean('<details><summary>X</summary>Y</details>'), '<details><summary>X</summary>Y</details>');
+        xassert_eqq($chtml->clean('<fieldset><legend>X</legend>Y</fieldset>'), '<fieldset><legend>X</legend>Y</fieldset>');
+        xassert_eqq($chtml->clean('<figure><figcaption>X</figcaption>Y</figure>'), '<figure><figcaption>X</figcaption>Y</figure>');
+        // tr via REQSCP1 (trows scope) and REQSCP2 (table scope)
+        xassert_eqq($chtml->clean('<table><tbody><tr><td>X</td></tr></tbody></table>'), '<table><tbody><tr><td>X</td></tr></tbody></table>');
+        xassert_eqq($chtml->clean('<table><tr><td>X</td></tr></table>'), '<table><tr><td>X</td></tr></table>');
+    }
+
+    function test_close_mismatch() {
+        $chtml = CleanHTML::basic();
+        // misnested tags
+        xassert_eqq($chtml->clean('<b><i>x</b></i>'), null);
+        // extra close tag
+        xassert_eqq($chtml->clean('<b>x</b></b>'), null);
+        // </br> silently ignored (void)
+        xassert_eqq($chtml->clean('x</br>y'), 'xy');
+        // close for disabled tag
+        xassert_eqq($chtml->clean('x</script>'), null);
+    }
+
+    function test_notext() {
+        $chtml = CleanHTML::basic();
+        xassert_eqq($chtml->clean('<ul>text</ul>'), null);
+        xassert_eqq($chtml->clean('<ol>text</ol>'), null);
+        xassert_eqq($chtml->clean('<dl>text</dl>'), null);
+        // whitespace ok
+        xassert_eqq($chtml->clean("<table> \n </table>"), "<table> \n </table>");
+    }
+
+    function test_inline_flag() {
+        $chtml = new CleanHTML(CleanHTML::CLEAN_INLINE);
+        // block elements fail
+        xassert_eqq($chtml->clean('<div>x</div>'), null);
+        xassert_eqq($chtml->clean('<p>x</p>'), null);
+        // inline elements pass
+        xassert_eqq($chtml->clean('<b>x</b>'), '<b>x</b>');
+        xassert_eqq($chtml->clean('<i>x</i>'), '<i>x</i>');
+        xassert_eqq($chtml->clean('<span>x</span>'), '<span>x</span>');
+    }
+
+    function test_strip_ignore_flags() {
+        // CLEAN_STRIP_UNKNOWN strips disabled open tags
+        $ch = new CleanHTML(CleanHTML::CLEAN_STRIP_UNKNOWN);
+        xassert_eqq($ch->clean('a<script>b'), 'ab');
+        xassert_eqq($ch->clean('a<html>b'), 'ab');
+        // close tags for disabled elements still error if first error
+        xassert_eqq($ch->clean('<script>alert(1)</script>'), null);
+        // CLEAN_IGNORE_UNKNOWN replaces < with &lt; for open and close
+        $ch = new CleanHTML(CleanHTML::CLEAN_IGNORE_UNKNOWN);
+        xassert_eqq($ch->clean('<script>alert(1)</script>'), '&lt;script>alert(1)&lt;/script>');
+        xassert_eqq($ch->clean('a<html>b</html>c'), 'a&lt;html>b&lt;/html>c');
+    }
+
+    function test_malformed() {
+        $chtml = CleanHTML::basic();
+        // truncated tag becomes &lt;
+        xassert_eqq($chtml->clean('<b'), '&lt;b');
+        xassert_eqq($chtml->clean('<>'), '&lt;>');
+        // self-closing non-void
+        xassert_eqq($chtml->clean('<div/>'), null);
+        // attribute with empty value
+        xassert_eqq($chtml->clean('<a href=>X</a>'), null);
+    }
+
+    function test_fix_implied_close() {
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
+        // li implied close
+        xassert_eqq($ch->clean('<ul><li>X<li>Y</ul>'), '<ul><li>X</li><li>Y</li></ul>');
+        xassert_eqq($ch->clean('<ul><li>X<li>Y<li>Z</ul>'), '<ul><li>X</li><li>Y</li><li>Z</li></ul>');
+        // dt/dd implied close
+        xassert_eqq($ch->clean('<dl><dt>X<dd>Y</dl>'), '<dl><dt>X</dt><dd>Y</dd></dl>');
+        xassert_eqq($ch->clean('<dl><dt>A<dt>B<dd>C<dd>D</dl>'), '<dl><dt>A</dt><dt>B</dt><dd>C</dd><dd>D</dd></dl>');
+        // td/th implied close
+        xassert_eqq($ch->clean('<table><tr><td>A<td>B</tr></table>'), '<table><tr><td>A</td><td>B</td></tr></table>');
+        xassert_eqq($ch->clean('<table><tr><th>H<td>D</tr></table>'), '<table><tr><th>H</th><td>D</td></tr></table>');
+        // tr implied close (cascading: closes td first)
+        xassert_eqq($ch->clean('<table><tr><td>A<tr><td>B</table>'), '<table><tr><td>A</td></tr><tr><td>B</td></tr></table>');
+        // p closed by block element
+        xassert_eqq($ch->clean('<p>X<p>Y'), '<p>X</p><p>Y</p>');
+        xassert_eqq($ch->clean('<p>X<div>Y</div>'), '<p>X</p><div>Y</div>');
+        // close tag closes intervening end-optional elements
+        xassert_eqq($ch->clean('<div><p>X</div>'), '<div><p>X</p></div>');
+        xassert_eqq($ch->clean('<table><tr><td>A</table>'), '<table><tr><td>A</td></tr></table>');
+        // unclosed end-optional tags at end of input
+        xassert_eqq($ch->clean('<p>X'), '<p>X</p>');
+        xassert_eqq($ch->clean('<ul><li>X<li>Y'), null);  // <ul> not end-optional
+        xassert_eqq($ch->clean('<div><p>X'), null);  // <div> not end-optional
+        // still rejects truly broken HTML
+        xassert_eqq($ch->clean('<b><i>X</b>Y</i>'), null);  // <i> not end-optional
+        xassert_eqq($ch->clean('<div><b>X</div>'), null);  // <b> not end-optional
+        // non-fix mode still rejects implied close cases
+        $basic = CleanHTML::basic();
+        xassert_eqq($basic->clean('<ul><li>X<li>Y</ul>'), null);
+    }
 }
