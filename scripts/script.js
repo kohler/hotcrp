@@ -8815,6 +8815,7 @@ function CompletionSpan(value, indexPos) {
     this.limitReplacement = false; // After completion, replace only the edit
                                 // region and any subsequent characters that
                                 // match the chosen replacement
+    this.visiblePriority = false;  // Dim items with priority <= 0
 }
 
 CompletionSpan.at = function (elt) {
@@ -9017,15 +9018,11 @@ function suggest() {
         }
     }
 
-    function render_item(titem, prepend) {
+    function render_item(titem, prepend, visiblePriority) {
         const node = document.createElement("div");
         node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
-        if (titem.pri) {
-            if (titem.pri === 1) {
-                node.className += " s9pri1";
-            } else {
-                node.className += " s9pri" + (titem.pri < 0 ? "m1" : "2");
-            }
+        if (visiblePriority && (titem.pri || 0) <= 0) {
+            node.className += " s9lopri";
         }
         if (titem.r) {
             node.setAttribute("data-replacement", titem.r);
@@ -9132,7 +9129,7 @@ function suggest() {
             div = document.createElement("div");
             div.className = "suggesttable suggesttable" + (i + 1);
             for (const cliste of clist) {
-                div.appendChild(render_item(cliste, cspan.prefix));
+                div.appendChild(render_item(cliste, cspan.prefix, cspan.visiblePriority));
             }
             hintdiv.html(div);
         } else {
@@ -9537,7 +9534,7 @@ hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
     cs.matchRight(/(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/uy);
     cs.prefix = "@";
     cs.minLength = Math.min(2, cs.indexPos - cs.startPos);
-    cs.smartPunctuation = cs.limitReplacement = true;
+    cs.smartPunctuation = cs.limitReplacement = cs.visiblePriority = true;
     let prom = demand_load.mentions();
     const vise = elt.form.elements.visibility;
     if (vise && vise.value === "admin") {
