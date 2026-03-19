@@ -164,10 +164,37 @@ class CleanHTML_Tester {
         xassert_eqq($ch->clean('<ul><li>X<li>Y'), null);  // <ul> not end-optional
         xassert_eqq($ch->clean('<div><p>X'), null);  // <div> not end-optional
         // still rejects truly broken HTML
-        xassert_eqq($ch->clean('<b><i>X</b>Y</i>'), null);  // <i> not end-optional
-        xassert_eqq($ch->clean('<div><b>X</div>'), null);  // <b> not end-optional
+        xassert_eqq($ch->clean('<div><div>X</div>'), null);  // <div> not end-optional
         // non-fix mode still rejects implied close cases
         $basic = CleanHTML::basic();
         xassert_eqq($basic->clean('<ul><li>X<li>Y</ul>'), null);
+    }
+
+    function test_fix_adoption_agency() {
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
+        // basic: close and reopen intervening formatting
+        xassert_eqq($ch->clean('<b><i>X</b>Y</i>'), '<b><i>X</i></b><i>Y</i>');
+        xassert_eqq($ch->clean('<b>X<i>Y</b>Z</i>'), '<b>X<i>Y</i></b><i>Z</i>');
+        // multiple intervening elements
+        xassert_eqq($ch->clean('<b><i><u>X</b>Y</u></i>'), '<b><i><u>X</u></i></b><i><u>Y</u></i>');
+        // with attributes preserved on reopen
+        xassert_eqq($ch->clean('<a href="u"><b>X</a>Y</b>'), '<a href="u"><b>X</b></a><b>Y</b>');
+        xassert_eqq($ch->clean('<b><a href="u">X</b>Y</a>'), '<b><a href="u">X</a></b><a href="u">Y</a>');
+        // formatting within block
+        xassert_eqq($ch->clean('<p><b><i>X</b>Y</i></p>'), '<p><b><i>X</i></b><i>Y</i></p>');
+        // closing CLOSEP elements also closes formatting elements
+        xassert_eqq($ch->clean('<div><b>X</div>'), '<div><b>X</b></div>');
+        xassert_eqq($ch->clean('<b><div>X</b>'), null);
+        // close tag not on stack at all
+        xassert_eqq($ch->clean('<i>X</b>Y</i>'), null);
+        // whitespace in tags: opener must use cleaned tag name
+        xassert_eqq($ch->clean('< B >< I >X</ B >Y</ I >'), '<b><i>X</i></b><i>Y</i>');
+        xassert_eqq($ch->clean('<B   ><I   >X</B>Y</I>'), '<b><i>X</i></b><i>Y</i>');
+        // whitespace in tags with attributes
+        xassert_eqq($ch->clean('< A  href="u" ><b>X</ A >Y</b>'), '<a href="u"><b>X</b></a><b>Y</b>');
+        xassert_eqq($ch->clean('<b>< A  href="u" >X</b>Y</ A >'), '<b><a href="u">X</a></b><a href="u">Y</a>');
+        // non-fix mode still rejects
+        $basic = CleanHTML::basic();
+        xassert_eqq($basic->clean('<b><i>X</b></i>'), null);
     }
 }

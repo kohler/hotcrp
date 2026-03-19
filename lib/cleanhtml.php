@@ -11,6 +11,8 @@ class CleanHTMLTag {
     public $pos2;
     /** @var int */
     public $tagfl;
+    /** @var string */
+    public $opener;
     /** @var ?CleanHTMLTag */
     public $next;
 
@@ -44,6 +46,8 @@ class CleanHTML {
     private $context;
     /** @var ?CleanHTMLTag */
     private $opentags;
+    /** @var bool */
+    private $fixed_by_adoption = false;
 
     /** @var CleanHTML */
     static private $main;
@@ -296,23 +300,22 @@ class CleanHTML {
      * @param string $tag
      * @param int $tagtf
      * @return string */
-    private function auto_close_before_open(&$curtf, $tag, $tagtf) {
+    private function fix_before_open(&$curtf, $tag, $tagtf) {
         $insertion = "";
-        // If F_CLOSEP is set, then close an open <p>
+        // Close formatting elements and then an open <p> before F_CLOSEP
+        // elements. Unlike the spec's "close a p element" algorithm, we
+        // check for <p> directly: in any fixable input, <p> will not contain
+        // any F_ENDOPTIONAL element.
         if (($tagtf & self::F_CLOSEP) !== 0) {
-            $xinsertion = "";
-            $travtf = $curtf;
-            $travtag = $this->opentags;
-            while (($travtf & self::F_ENDOPTIONAL) !== 0) {
-                $xinsertion .= "</{$travtag->tag}>";
-                $travtf = $travtag->tagfl;
-                if ($travtag->tag === "p") {
-                    $insertion .= $xinsertion;
-                    $curtf = $travtf;
-                    $this->opentags = $travtag->next;
-                    break;
-                }
-                $travtag = $travtag->next;
+            while (($curtf & self::F_FORMAT) !== 0) {
+                $insertion .= "</{$this->opentags->tag}>";
+                $curtf = $this->opentags->tagfl;
+                $this->opentags = $this->opentags->next;
+            }
+            if ($this->opentags && $this->opentags->tag === "p") {
+                $insertion .= "</p>";
+                $curtf = $this->opentags->tagfl;
+                $this->opentags = $this->opentags->next;
             }
         }
         // Close F_ENDOPTIONAL elements until reaching required scope
@@ -333,8 +336,22 @@ class CleanHTML {
     /** @param int &$curtf
      * @param string $tag
      * @return string */
-    private function auto_close_before_close(&$curtf, $tag) {
+    private function fix_before_close(&$curtf, $tag, $tagtf) {
         $insertion = "";
+        if ($this->opentags !== null && $this->opentags->tag === $tag) {
+            return $insertion;
+        }
+        if (($tagtf & self::F_FORMAT) !== 0
+            && ($insertion = $this->adoption_agency($curtf, $tag))) {
+            $this->fixed_by_adoption = true;
+            return $insertion;
+        } else if (($tagtf & self::F_CLOSEP) !== 0) {
+            while (($curtf & self::F_FORMAT) !== 0) {
+                $insertion .= "</{$this->opentags->tag}>";
+                $curtf = $this->opentags->tagfl;
+                $this->opentags = $this->opentags->next;
+            }
+        }
         while ($this->opentags !== null
                && $this->opentags->tag !== $tag
                && ($curtf & self::F_ENDOPTIONAL) !== 0) {
@@ -343,6 +360,28 @@ class CleanHTML {
             $this->opentags = $this->opentags->next;
         }
         return $insertion;
+    }
+
+    /** @param int &$curtf
+     * @param string $tag
+     * @return string */
+    private function adoption_agency(&$curtf, $tag) {
+        $prevtag = null;
+        $travtag = $this->opentags;
+        $travtf = $curtf;
+        $a = $b = "";
+        while (($travtf & self::F_FORMAT) !== 0) {
+            if ($travtag->tag === $tag) {
+                $prevtag->next = $travtag->next;
+                return "{$b}</{$tag}>{$a}";
+            }
+            $a = ($travtag->opener ?? "<{$travtag->tag}>") . $a;
+            $b .= "</{$travtag->tag}>";
+            $prevtag = $travtag;
+            $travtf = $travtag->tagfl;
+            $travtag = $travtag->next;
+        }
+        return "";
     }
 
     private function check_text($curtf, $pos1, $pos2) {
@@ -438,6 +477,7 @@ class CleanHTML {
         }
         $this->ml = [];
         $this->context = $t;
+        $this->fixed_by_adoption = false;
 
         $xp = $p = 0;
         $len = strlen($t);
@@ -494,8 +534,9 @@ class CleanHTML {
                     $tagtf = self::F_VOID;
                 }
                 if (($this->flags & self::CLEAN_FIX) !== 0) {
-                    $x .= $this->auto_close_before_open($curtf, $tag, $tagtf);
+                    $x .= $this->fix_before_open($curtf, $tag, $tagtf);
                 }
+                $tagstart = strlen($x);
                 $x .= "<{$tag}";
                 if (($tagtf & self::F_BLOCK) !== 0
                     && ($curtf & self::F_BLOCK) === 0) {
@@ -556,7 +597,15 @@ class CleanHTML {
                 if (($tagtf & self::F_VOID) !== 0) {
                     continue;
                 }
+                $opentag = substr($x, $tagstart) . ">";
                 $this->opentags = new CleanHTMLTag($tag, $tagp, $endp, $curtf, $this->opentags);
+                if (($tagtf & self::F_FORMAT) !== 0
+                    && strlen($x) > $tagstart + strlen($tag) + 1) {
+                    $this->opentags->opener = substr($x, $tagstart);
+                    if (!str_ends_with($x, ">")) {
+                        $this->opentags->opener .= ">";
+                    }
+                }
                 $curtf = $tagtf;
             } else if (preg_match('/\G<\s*+\/\s*+([A-Za-z][-A-Za-z0-9]*+)\s*+>/s', $t, $m, 0, $p)) {
                 $tag = strtolower($m[1]);
@@ -584,8 +633,12 @@ class CleanHTML {
                     continue;
                 }
                 if (($this->flags & self::CLEAN_FIX) !== 0
-                    && ($ins = $this->auto_close_before_close($curtf, $tag)) !== "") {
+                    && ($ins = $this->fix_before_close($curtf, $tag, $tagtf)) !== "") {
                     $x .= substr($t, $xp, $p - $xp) . $ins;
+                    if ($this->fixed_by_adoption) {
+                        $xp = $p = $endp;
+                        continue;
+                    }
                     $xp = $p;
                 }
                 if ($this->opentags && $this->opentags->tag === $tag) {
@@ -618,7 +671,7 @@ class CleanHTML {
             $x .= substr($t, $xp);
         }
         if (($this->flags & self::CLEAN_FIX) !== 0
-            && ($ins = $this->auto_close_before_close($curtf, "\0")) !== "") {
+            && ($ins = $this->fix_before_close($curtf, "\0", 0)) !== "") {
             $x .= $ins;
         }
         if ($this->opentags) {
