@@ -497,9 +497,9 @@ class PaperTable {
         }
         if ($fieldset) {
             $fsname = $fieldset === true ? $opt->formid : $fieldset;
-            echo "<fieldset name=\"{$fsname}\" class=\"pf pfe s-sf";
+            echo "<fieldset name=\"{$fsname}\" class=\"pf s-sf";
         } else {
-            echo "<div class=\"pf pfe s-sf";
+            echo "<div class=\"pf s-sf";
         }
         if ((!$opt->test_exists($this->prow) && !$this->settings_mode)
             || ($rest["hidden"] ?? false)) {
@@ -2198,15 +2198,15 @@ class PaperTable {
             // produce button
             $save_name = $this->_save_name();
             if (!$whyNot) {
-                $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper js-savepaper uic js-mark-submit"]), ""];
+                $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary js-savepaper uic js-mark-submit"]), ""];
             } else if ($this->admin) {
                 $revWhyNot = $whyNot->filter(["deadline", "frozen", "sclass"])->set("expand", true)->set("confirmOverride", true);
-                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper js-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
+                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary js-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["frozen"])
                        && $this->prow->author_user()->can_finalize_paper($this->prow)) {
-                $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper js-savepaper uic js-mark-submit"]);
+                $buttons[] = Ht::submit("update", $save_name, ["class" => "js-savepaper uic js-mark-submit"]);
             } else if ($this->prow->paperId) {
-                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper js-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);
+                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "js-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);
             }
             if (!empty($buttons)) {
                 $buttons[] = Ht::submit("cancel", "Cancel", ["class" => "uic js-mark-submit"]);

@@ -480,7 +480,7 @@ Ready\n";
         $reviewPostLink = $this->conf->hoturl("=review", "{$reviewlink}&amp;m=re{$forceShow}");
         $reviewDownloadLink = $this->conf->hoturl("review", "{$reviewlink}&amp;m=re&amp;download=1{$forceShow}");
 
-        echo '<div class="pcard s-review revcard" id="r', $reviewOrdinal, '" data-pid="',
+        echo '<div class="pcard s-review" id="r', $reviewOrdinal, '" data-pid="',
             $prow->paperId, '" data-rid="', ($rrow->reviewId ? : "new");
         if ($rrow->reviewOrdinal) {
             echo '" data-review-ordinal="', unparse_latin_ordinal($rrow->reviewOrdinal);

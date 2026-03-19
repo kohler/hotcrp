@@ -6253,7 +6253,7 @@ function initialize() {
     if (window.WeakMap) {
         linkmap = new WeakMap;
     }
-    pslcard = $(".s-psl")[0];
+    pslcard = document.querySelector(".s-psl");
 }
 function fe(idelt) {
     return typeof idelt === "string" ? $$(idelt) : idelt;
@@ -8175,7 +8175,7 @@ function add_new_comment_button(cj, cid) {
     }
     let eactions = $$("k-comment-actions");
     if (!eactions) {
-        eactions = $e("div", {id: "k-comment-actions", class: "pcard s-comment cmtcard"}, $e("div", "aab aabig"));
+        eactions = $e("div", {id: "k-comment-actions", class: "pcard s-comment"}, $e("div", "aab aabig"));
         $(".s-paper").append(eactions);
     }
     const rname = cj.response && (cj.response == "1" ? "response" : cj.response + " response"),
@@ -8196,7 +8196,7 @@ function add_new_comment_button(cj, cid) {
 
 function add_new_comment(cj, cid) {
     document.querySelector(".s-paper").insertBefore($e("article", {
-        id: cid, class: "pcard s-comment cmtcard comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
+        id: cid, class: "pcard s-comment comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
 }
 
