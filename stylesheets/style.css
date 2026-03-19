@@ -2320,13 +2320,13 @@ fieldset.grid-option.active > legend {
 .settings-xf-view h3 {
 	max-width: 768px;
 }
-.settings-xf-view > .pfe {
+.settings-xf-view > .s-sf, .settings-xf-view .pfe /*XXX*/ {
 	margin-bottom: 0;
 }
-.settings-xf-view > .pfe.pf-separator {
+.settings-xf-view > .s-sf.pf-separator, .settings-xf-view > .pfe.pf-separator /*XXX*/ {
 	margin-top: 0.5rem;
 }
-.settings-xf-view > .rfehead {
+.settings-xf-view > .s-rf-head, .settings-xf-view > .rfehead /*XXX*/ {
 	margin-top: 0;
 }
 .settings-radio {
@@ -2387,7 +2387,7 @@ a:hover .settings-jpath {
 	flex: 0 0 40%;
 	padding-left: 2rem;
 }
-.settings-json-info {
+.s-settings-json-info, .settings-json-info /*XXX*/ {
 	position: sticky;
 	top: 1rem;
 	font-size: smaller;
@@ -3187,7 +3187,7 @@ tr.pl_statheadrow > td.plstat, .pl-border-top {
 .pl_ip {
 	min-width: 4em;
 }
-.has-events {
+.js-events {
 	position: relative;
 	padding-top: 0.25rem;
 }
@@ -3901,13 +3901,13 @@ a.badge-white:hover {
 .pspcard-open {
 	margin-bottom: 8px;
 }
-.pslcard-nav {
+.s-psl-nav, .pslcard-nav /*XXX*/ {
 	-webkit-position: sticky;
 	position: sticky;
 	top: 104px; /* see also display_tracker */
 	margin: 20px 20px 0 24px;
 }
-.pslcard {
+.s-psl, .pslcard /*XXX*/ {
 	padding: 0;
 	margin: 0 0 20px;
 	list-style-type: none;
@@ -4412,12 +4412,12 @@ h3.pavfn, h3.psfn {
 }
 
 /* reviews */
-.revcard {
+.s-review, .revcard /*XXX*/ {
 	border-top: 5px solid var(--brand-decor-light);
 	margin-bottom: 48px;
 	position: relative;
 }
-.revcard.fold20c {
+.s-review.fold20c, .revcard.fold20c /*XXX*/ {
 	margin-bottom: 2.25rem;
 }
 .pedcard-head {
@@ -4488,7 +4488,7 @@ a:hover .t-editor,
 .rfe, .rge {
 	margin-bottom: 36px;
 }
-fieldset.pfe, fieldset.rfe, fieldset.form-section {
+fieldset.s-sf, fieldset.pfe /*XXX*/, fieldset.rfe, fieldset.form-section {
 	border: 0 none;
 	border-radius: 0;
 	padding: 0;
@@ -4496,7 +4496,7 @@ fieldset.pfe, fieldset.rfe, fieldset.form-section {
 	margin-left: 0;
 	margin-right: 0;
 }
-fieldset.pfe > legend, fieldset.rfe > legend, fieldset.form-section > legend {
+fieldset.s-sf > legend, fieldset.pfe > legend /*XXX*/, fieldset.rfe > legend, fieldset.form-section > legend {
 	padding: 0;
 }
 .revvt {
@@ -4505,13 +4505,13 @@ fieldset.pfe > legend, fieldset.rfe > legend, fieldset.form-section > legend {
 .revv.revscore {
 	margin-top: -2px;
 }
-.rfehead {
+.s-rf-head, .rfehead /*XXX*/ {
 	font-size: inherit;
 	color: #683131;
 	margin-top: 0;
 	margin-bottom: 0.25rem;
 }
-fieldset.pfe > legend {
+fieldset.s-sf > legend, fieldset.pfe > legend /*XXX*/ {
 	margin-bottom: 0.25rem;
 }
 .field-visibility {
@@ -4567,10 +4567,10 @@ fieldset.pfe > legend {
 .rfd2 {
 	grid-column: 3 / 4;
 }
-.pfe, .pge {
+.s-sf, .pfe /*XXX*/, .pge {
 	margin-bottom: 2.5rem;
 }
-.pfe.pf-separator {
+.s-sf.pf-separator, .pfe.pf-separator /*XXX*/ {
 	margin-top: 3rem;
 	border-top: 3px solid #9e9ece;
 	max-width: 720px;
@@ -4662,36 +4662,36 @@ fieldset.pfe > legend {
 }
 
 /* comments */
-.cmtcard {
+.s-comment, .cmtcard /*XXX*/ {
 	border-top: 5px solid #e6e1cf;
 	background: #f8f8f6;
 	position: relative;
 	padding-top: 1.25rem;
 	padding-bottom: 2.25rem;
 }
-.cmtcard.comment:last-child {
+.s-comment.comment:last-child, .cmtcard.comment:last-child /*XXX*/ {
 	border-bottom: 5px solid #e6e1cf;
 }
-.cmtcard.response {
+.s-comment.response, .cmtcard.response /*XXX*/ {
 	border-top: 5px solid #ffddc1;
 	background: #fcfcfb;
 	padding-bottom: 3rem;
 }
-.cmtcard.response.fold20c {
+.s-comment.response.fold20c, .cmtcard.response.fold20c /*XXX*/ {
 	padding-bottom: 1.25rem;
 }
-.cmtcard.response:last-child {
+.s-comment.response:last-child, .cmtcard.response:last-child /*XXX*/ {
 	border-bottom: 5px solid #ffddc1;
 }
-.cmtcard.comment.edit {
+.s-comment.comment.edit, .cmtcard.comment.edit /*XXX*/ {
 	background: #fdfdfa;
 }
-.cmtcard.comment.view + .cmtcard.comment.view {
+.s-comment.comment.view + .s-comment.comment.view, .cmtcard.comment.view + .cmtcard.comment.view /*XXX*/ {
 	border-top: 0 none;
 	padding-top: 0;
 	margin-top: -0.5rem;
 }
-.cmtcard.comment.view.hashtarget header::before {
+.s-comment.comment.view.hashtarget header::before, .cmtcard.comment.view.hashtarget header::before /*XXX*/ {
 	width: 1rem;
 	margin-left: -1.25rem;
 	position: absolute;
@@ -4702,7 +4702,7 @@ fieldset.pfe > legend {
 	background: var(--paper);
 	padding-top: 16px;
 }
-.cmtcard h2 {
+.s-comment h2, .cmtcard h2 /*XXX*/ {
 	display: inline-block;
 	margin-top: 0.75rem;
 	margin-right: 1.5rem;
@@ -4874,7 +4874,7 @@ a:hover .cmtnum,
 	height: 1rem;
 }
 @media screen and (min-width: 1024px) {
-.cmtcard.edit.popout {
+.s-comment.edit.popout, .cmtcard.edit.popout /*XXX*/ {
 	position: fixed;
 	right: 0;
 	bottom: 0;
@@ -4887,7 +4887,7 @@ a:hover .cmtnum,
 	z-index: 4;
 	overflow: auto;
 }
-.cmtcard.edit.popout .cmttext {
+.s-comment.edit.popout .cmttext, .cmtcard.edit.popout .cmttext /*XXX*/ {
 	max-height: 50vh;
 }
 }
@@ -4939,7 +4939,7 @@ body {
 .pspcard {
 	columns: 200px 2;
 }
-.pslcard-nav {
+.s-psl-nav, .pslcard-nav /*XXX*/ {
 	display: none;
 }
 #p-body, .pcard, .pspcard {

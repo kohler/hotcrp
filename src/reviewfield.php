@@ -464,7 +464,7 @@ abstract class ReviewField implements JsonSerializable {
             echo '<div class="rf rfe" data-rf="', $this->uid(), '">';
             $label_tag = "label";
         }
-        echo '<h3 class="', $rvalues->control_class($this->short_id, "rfehead");
+        echo '<h3 class="', $rvalues->control_class($this->short_id, "s-rf-head");
         if ($id !== null) {
             echo '" id="', $id;
         }

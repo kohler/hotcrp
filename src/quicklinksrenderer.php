@@ -74,7 +74,7 @@ class QuicklinksRenderer {
         // quicklinks
         $x = "";
         if (($list = $qreq->active_list())) {
-            $x .= '<div class="quicklink-item quicklinks"';
+            $x .= '<div id="n-quicklinks" class="quicklink-item"';
             if ($xmode || $goBase !== "paper") {
                 $x .= ' data-link-params="' . htmlspecialchars(json_encode_browser(["page" => $goBase] + $xmode)) . '"';
             }

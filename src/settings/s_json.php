@@ -33,7 +33,7 @@ class JSON_SettingParser extends SettingParser {
         }
         echo ' data-reflect-highlight-api="=api/settings?dry_run=1 settings">',
             $mainh, "\n</div>",
-            '</div><div class="settings-json-panel-info"><div class="settings-json-info">',
+            '</div><div class="settings-json-panel-info"><div class="s-settings-json-info">',
             '<h3 class="form-h">Selected settings</h3>',
             '<ul class="x">',
             '<li><a href="#path=sf"><code class="settings-jpath">sf</code></a>: Submission form</li>',

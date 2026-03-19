@@ -340,7 +340,9 @@ class CleanHTML {
             $stripped = false;
             foreach ($m[0] as $class) {
                 if (str_starts_with($class, "ui")
-                    || str_starts_with($class, "js-")) {
+                    || str_starts_with($class, "js-")
+                    || str_starts_with($class, "s-")
+                    || str_starts_with($class, "pl")) {
                     $this->lerror("<0>HTML class {$class} not allowed", $attrpos, $endpos);
                 } else {
                     $xvalue .= ($xvalue === "" ? $class : " {$class}");

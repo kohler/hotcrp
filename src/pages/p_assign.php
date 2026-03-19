@@ -498,7 +498,7 @@ class Assign_Page {
         // reviewer information
         $t = $this->pt->review_table();
         if ($t !== "") {
-            echo '<div class="pcard revcard">',
+            echo '<div class="pcard s-review revcard">',
                 '<h2 class="revcard-head" id="current-reviews">Current reviews</h2>',
                 '<div class="revpcard-body">', $t, '</div></div>';
         }
@@ -528,7 +528,7 @@ class Assign_Page {
         });
 
         if (!empty($requests)) {
-            echo '<div class="pcard revcard">',
+            echo '<div class="pcard s-review revcard">',
                 '<h2 class="revcard-head" id="review-requests">Review requests</h2>',
                 '<div class="revcard-body"><div class="ctable-wide">';
             foreach ($requests as $req) {
@@ -542,7 +542,7 @@ class Assign_Page {
             $acs = AssignmentCountSet::load($user, AssignmentCountSet::HAS_REVIEW);
 
             // PC conflicts row
-            echo '<div class="pcard revcard">',
+            echo '<div class="pcard s-review revcard">',
                 '<h2 class="revcard-head" id="pc-assignments">PC assignments</h2>',
                 '<div class="revcard-body">',
                 Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), [
@@ -613,7 +613,7 @@ class Assign_Page {
         if (!$user->allow_admin($prow) && $this->conf->setting("extrev_chairreq")) {
             $req = "Propose external review";
         }
-        echo '<div class="pcard revcard">',
+        echo '<div class="pcard s-review revcard">',
             Ht::form($this->conf->hoturl("=assign", "p={$prow->paperId}"), ["novalidate" => true]),
             "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 

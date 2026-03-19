@@ -1126,7 +1126,7 @@ class Separator_PaperOption extends PaperOption {
         parent::__construct($conf, $args, "only-form");
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        echo '<div class="pf pfe pf-separator">';
+        echo '<div class="pf pfe s-sf pf-separator">';
         if (($h = $pt->edit_title_html($this))) {
             echo '<h3 class="pfehead">', $h, '</h3>';
         }

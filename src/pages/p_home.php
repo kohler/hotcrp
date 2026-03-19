@@ -470,7 +470,7 @@ class Home_Page {
             echo "<div class=\"homesubgrp collapsed ui-fold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
                 '<button type="button" class="q ui js-foldup" aria-expanded="false" aria-controls="homeactivity-body">',
                 aria_expander(), 'Recent activity<span class="ifx">:</span></button>',
-                '<div id="homeactivity-body" class="has-events" hidden></div></div>';
+                '<div id="homeactivity-body" class="js-events" hidden></div></div>';
             Ht::stash_script("hotcrp.fold_storage()");
         }
 

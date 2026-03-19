@@ -21,9 +21,9 @@ Generic values
 * `.modal-dialog`: 16 (must be > `.modal`)
 * `.bubble`: 20
 
-* `body.page #p-header`: 3 (to occlude `.pslcard-nav`)
-* `.pspcard`: 3 (to occlude `.pslcard-nav`)
-* `.pslcard-nav`: (0)
+* `body.page #p-header`: 3 (to occlude `.s-psl-nav`)
+* `.pspcard`: 3 (to occlude `.s-psl-nav`)
+* `.s-psl-nav`: (0)
 * `.pslcard-home`: -1
 * `.home-sidebar`: 1
 * `button:hover`, `button:focus`, etc.: 1
@@ -33,6 +33,12 @@ Generic values
 * `.overlong-collapsed > .overlong-content`: 0
 * `.overlong-collapsed > .overlong-divider > .overlong-mark`: 2
 * `.cmtcard.edit.popout`: 4
+
+
+## `class`
+
+* `.s-`: page structure; need to sanitize
+
 
 ## `id`
 
@@ -66,6 +72,7 @@ Generic values
     * `#h-usermenu`
     * `#h-usermenubutton`
     * `#h-title`
+    * `#h-subtitle`
 * `id^=n-` is for navigation elements (quicklinks)
     * `#n-next`
     * `#n-prev`

@@ -410,24 +410,24 @@ Ready\n";
             $whyNot = new FailureReason($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"), "confirmOverride" => true]);
             $override_text = $whyNot->unparse_html();
             if (!$submitted) {
-                $buttons[] = [Ht::button("Submit review", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
-                $buttons[] = [Ht::button("Save draft", ["class" => "btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)"];
+                $buttons[] = [Ht::button("Submit review", ["class" => "btn-primary js-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
+                $buttons[] = [Ht::button("Save draft", ["class" => "js-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)"];
             } else {
-                $buttons[] = [Ht::button("Save changes", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
+                $buttons[] = [Ht::button("Save changes", ["class" => "btn-primary js-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
             }
         } else if (!$submitted && $rrow && $rrow->subject_to_approval()) {
             assert($rrow->reviewStatus <= ReviewInfo::RS_APPROVED);
             if ($rrow->reviewStatus === ReviewInfo::RS_APPROVED) {
-                $buttons[] = Ht::submit("update", "Update approved review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("update", "Update approved review", ["class" => "btn-primary js-savereview need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
                 if ($rrow->reviewStatus !== ReviewInfo::RS_DELIVERED) {
                     $subtext = "Submit for approval";
                 } else {
                     $subtext = "Resubmit for approval";
                 }
-                $buttons[] = Ht::submit("submitreview", $subtext, ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("submitreview", $subtext, ["class" => "btn-primary js-savereview need-clickthrough-enable", "disabled" => $disabled]);
             } else {
-                $class = "btn-highlight btn-savereview need-clickthrough-enable ui js-approve-review";
+                $class = "btn-highlight js-savereview need-clickthrough-enable ui js-approve-review";
                 $text = "Approve review";
                 if ($rrow->requestedBy === $user->contactId) {
                     $my_rrow = $prow->review_by_user($user);
@@ -446,15 +446,15 @@ Ready\n";
                 $buttons[] = Ht::submit("approvesubreview", $text, ["class" => $class, "disabled" => $disabled]);
             }
             if ($rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
-                $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "js-savereview need-clickthrough-enable", "disabled" => $disabled]);
             }
         } else if (!$submitted) {
             // NB see `PaperTable::_print_clickthrough` data-clickthrough-enable
-            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
-            $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn-primary js-savereview need-clickthrough-enable", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "js-savereview need-clickthrough-enable", "disabled" => $disabled]);
         } else {
             // NB see `PaperTable::_print_clickthrough` data-clickthrough-enable
-            $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn-primary js-savereview need-clickthrough-enable", "disabled" => $disabled]);
         }
         $buttons[] = Ht::submit("cancel", "Cancel");
 
@@ -480,7 +480,7 @@ Ready\n";
         $reviewPostLink = $this->conf->hoturl("=review", "{$reviewlink}&amp;m=re{$forceShow}");
         $reviewDownloadLink = $this->conf->hoturl("review", "{$reviewlink}&amp;m=re&amp;download=1{$forceShow}");
 
-        echo '<div class="pcard revcard" id="r', $reviewOrdinal, '" data-pid="',
+        echo '<div class="pcard s-review revcard" id="r', $reviewOrdinal, '" data-pid="',
             $prow->paperId, '" data-rid="', ($rrow->reviewId ? : "new");
         if ($rrow->reviewOrdinal) {
             echo '" data-review-ordinal="', unparse_latin_ordinal($rrow->reviewOrdinal);
@@ -580,7 +580,7 @@ Ready\n";
         // blind?
         if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
             $blind = !!($rvalues->req["blind"] ?? $rrow->reviewBlind);
-            echo '<div class="rge"><h3 class="rfehead checki"><label class="revfn">',
+            echo '<div class="rge"><h3 class="s-rf-head checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
                 '<span class="checkc">', Ht::checkbox("blind", 1, $blind), '</span>',
                 "Anonymous review</label></h3>\n",

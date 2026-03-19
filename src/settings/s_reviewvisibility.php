@@ -87,7 +87,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             ])
             . "</div></div>";
 
-        $hint = '<p class="f-d mt-0 if-response-active';
+        $hint = '<p class="f-d mt-0 js-if-response-active';
         if (!$sv->conf->setting("resp_active")) {
             $hint .= ' hidden';
         }

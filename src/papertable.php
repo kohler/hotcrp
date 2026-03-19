@@ -181,7 +181,7 @@ class PaperTable {
             $title = "#" . $prow->paperId;
             $viewable_tags = $prow->viewable_tags($paperTable->user);
             if ($viewable_tags || $paperTable->user->can_view_tags($prow)) {
-                $t .= ' has-tag-classes';
+                $t .= ' js-tag-classes';
                 if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
                     $t .= ' ' . $color;
             }
@@ -497,9 +497,9 @@ class PaperTable {
         }
         if ($fieldset) {
             $fsname = $fieldset === true ? $opt->formid : $fieldset;
-            echo "<fieldset name=\"{$fsname}\" class=\"pf pfe";
+            echo "<fieldset name=\"{$fsname}\" class=\"pf pfe s-sf";
         } else {
-            echo "<div class=\"pf pfe";
+            echo "<div class=\"pf pfe s-sf";
         }
         if ((!$opt->test_exists($this->prow) && !$this->settings_mode)
             || ($rest["hidden"] ?? false)) {
@@ -1476,7 +1476,7 @@ class PaperTable {
 
     private function _papstrip_framework() {
         if (!$this->npapstrip) {
-            echo '<article class="pcontainer"><div class="pcard-left">',
+            echo '<article class="s-paper"><div class="pcard-left">',
                 '<section class="pspcard" aria-label="Submission properties">',
                 '<div class="ui pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
@@ -1763,16 +1763,16 @@ class PaperTable {
      * @param 'rank'|'allotment'|'approval' $type
      * @return string */
     private function papstrip_onetag_result($tag, $type) {
-        // is-tag-index [is-tag-votish] [is-tag-report]
+        // js-tag-index [is-tag-votish] [is-tag-report]
         $mytag = "{$this->user->contactId}~{$tag}";
         $myval = $this->prow->tag_value($mytag);
         if (!$this->user->can_view_tag($this->prow, $tag)) {
             if ($type === "approval") {
                 return "";
             } else if ($myval === null) {
-                return "<span class=\"is-tag-index hidden\" data-tag=\"{$mytag}\" data-prefix=\": \"></span>";
+                return "<span class=\"js-tag-index hidden\" data-tag=\"{$mytag}\" data-prefix=\": \"></span>";
             } else {
-                return "<span class=\"is-tag-index\" data-tag=\"{$mytag}\" data-prefix=\": \">: {$myval}</span>";
+                return "<span class=\"js-tag-index\" data-tag=\"{$mytag}\" data-prefix=\": \">: {$myval}</span>";
             }
         }
 
@@ -1782,7 +1782,7 @@ class PaperTable {
         if ($totval === null) {
             $myclass = $myval === null || $type === "approval" ? " hidden" : "";
             $mytext = $myval === null || $type === "approval" ? "" : ": {$myval}";
-            return "<span class=\"is-tag-index is-tag-votish fn{$repclass}{$myclass}\" data-tag=\"{$mytag}\" data-vote-type=\"{$type}\">{$mytext}</span>";
+            return "<span class=\"js-tag-index is-tag-votish fn{$repclass}{$myclass}\" data-tag=\"{$mytag}\" data-vote-type=\"{$type}\">{$mytext}</span>";
         }
 
         $sort = $type === "rank" ? "#{$tag}" : "-#{$tag}";
@@ -1794,7 +1794,7 @@ class PaperTable {
             $totlink = "<a class=\"q\" href=\"{$url}\">{$totval} {$totword}</a>";
         }
         $mytext = $myval === null || $type === "approval" ? "" : "{$myval}, ";
-        return "<span class=\"is-tag-index is-tag-votish fn{$repclass}\" data-tag=\"{$tag}\" data-vote-type=\"{$type}\">: {$mytext}{$totlink}</span>";
+        return "<span class=\"js-tag-index is-tag-votish fn{$repclass}\" data-tag=\"{$tag}\" data-vote-type=\"{$type}\">: {$mytext}{$totlink}</span>";
     }
 
     /** @param string $tag
@@ -1852,7 +1852,7 @@ class PaperTable {
                  "rest" => $this->papstrip_onetag_result($tag, "rank")]),
             '<form class="ui-submit uin fx">',
             Ht::entry("tagindex", $myval ?? "",
-                ["size" => 4, "class" => "uich is-tag-index want-focus mf-label-success",
+                ["size" => 4, "class" => "uich js-tag-index want-focus mf-label-success",
                  "data-tag" => $mytag, "inputmode" => "decimal",
                  "id" => "tag:~{$tag} {$this->prow->paperId}"]),
             ' <span class="barsep">·</span> ',
@@ -1878,7 +1878,7 @@ class PaperTable {
                  "rest" => $this->papstrip_onetag_result($tag, "allotment")]),
             '<form class="ui-submit uin fx">',
             Ht::entry("tagindex", $myval ?? "",
-                ["size" => 4, "class" => "uich is-tag-index want-focus mf-label-success mr-1",
+                ["size" => 4, "class" => "uich js-tag-index want-focus mf-label-success mr-1",
                  "data-tag" => $mytag, "inputmode" => "decimal",
                  "id" => "tag:~{$tag} {$this->prow->paperId}"]),
             " of {$allotment}",
@@ -1901,7 +1901,7 @@ class PaperTable {
         echo $this->papt(null,
                 '<label><span class="checkc">'
                     . Ht::checkbox("tagindex", "0", $myval !== null,
-                        ["class" => "ui is-tag-index want-focus",
+                        ["class" => "ui js-tag-index want-focus",
                          "data-tag" => $mytag,
                          "id" => "tag:~{$tag} {$this->prow->paperId}"])
                     . "</span>{$xt}</label>",
@@ -2198,15 +2198,15 @@ class PaperTable {
             // produce button
             $save_name = $this->_save_name();
             if (!$whyNot) {
-                $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper uic js-mark-submit"]), ""];
+                $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper js-savepaper uic js-mark-submit"]), ""];
             } else if ($this->admin) {
                 $revWhyNot = $whyNot->filter(["deadline", "frozen", "sclass"])->set("expand", true)->set("confirmOverride", true);
-                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
+                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper js-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["frozen"])
                        && $this->prow->author_user()->can_finalize_paper($this->prow)) {
-                $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper uic js-mark-submit"]);
+                $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper js-savepaper uic js-mark-submit"]);
             } else if ($this->prow->paperId) {
-                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);
+                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper js-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);
             }
             if (!empty($buttons)) {
                 $buttons[] = Ht::submit("cancel", "Cancel", ["class" => "uic js-mark-submit"]);
@@ -2381,7 +2381,7 @@ class PaperTable {
     }
 
     static function print_review_clickthrough() {
-        echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard-head"><h2>Reviewing terms</h2></div><div class="revcard-body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
+        echo '<div class="pcard s-review revcard js-clickthrough-terms"><div class="revcard-head"><h2>Reviewing terms</h2></div><div class="revcard-body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
         self::_print_clickthrough("review");
         echo "</div></div>";
     }
@@ -2484,9 +2484,9 @@ class PaperTable {
             Ht::stash_script("hotcrp.load_paper_sidebar()");
             echo '</div></section>';
         } else {
-            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip">';
+            echo '<article class="s-paper"><div class="pcard-left pcard-left-nostrip">';
         }
-        echo '<nav class="pslcard-nav need-banner-offset" aria-label="';
+        echo '<nav class="s-psl-nav need-banner-offset" aria-label="';
         if ($this->mode === "re") {
             echo 'Review fields';
         } else if ($this->mode === "edit") {
@@ -2498,7 +2498,7 @@ class PaperTable {
         $viewable_tags = $this->prow->viewable_tags($this->user);
         if ($viewable_tags || $this->user->can_view_tags($this->prow)) {
             $color = $this->prow->conf->tags()->color_classes($viewable_tags);
-            echo '<span class="pslcard-home-tag has-tag-classes taghh',
+            echo '<span class="pslcard-home-tag js-tag-classes taghh',
                 ($color ? " $color" : ""), '">';
             $close = '</span>';
         } else {
@@ -2516,7 +2516,7 @@ class PaperTable {
         } else {
             echo "#", $this->prow->paperId, " review";
         }
-        echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
+        echo '</a>', $close, '</h4><ul class="s-psl"></ul></nav></div>';
 
         if ($this->allow_admin && $this->prow->paperId > 0) {
             if (!$this->admin) {

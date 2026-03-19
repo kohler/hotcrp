@@ -664,7 +664,7 @@ class Profile_Page {
             }
             echo "\">";
 
-            echo '<h2 class="leftmenu">';
+            echo '<h2 id="h-subtitle" class="leftmenu">';
             if ($this->page_type === 1) {
                 echo 'New account';
             } else {

@@ -4931,7 +4931,7 @@ function hashjump_destination(e, p) {
         return false;
     }
     $(".hashtarget").removeClass("hashtarget");
-    const border = wh > 300 && !hasClass(p, "revcard") ? 20 : 0;
+    const border = wh > 300 && !hasClass(p, "s-review") ? 20 : 0;
     window.scroll(0, pg.top - Math.max(border, (wh - pg.height) * 0.25));
     focus_at(e);
     return true;
@@ -4975,7 +4975,7 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
     }
 
     // highlight destination
-    if ((p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))
+    if ((p = e.closest(".s-sf, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))
         && hashjump_destination(e, p)) {
         $(p).find("label, .field-title, .label").first().addClass("hashtarget");
         return true;
@@ -4990,12 +4990,12 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
     if (hash.startsWith("cx")
         && hasClass(e, "cmtt")
         && (p = e.closest("article"))
-        && hasClass(p, "cmtcard")
+        && hasClass(p, "s-comment")
         && p.id) {
         hash = p.id;
         location.hash = "#" + hash;
     }
-    if ((hasClass(e, "cmtcard") || hasClass(e, "revcard"))
+    if ((hasClass(e, "s-comment") || hasClass(e, "s-review"))
         && hashjump_destination(e, e)
         && hash !== "cnew") {
         addClass(e, "hashtarget");
@@ -5444,7 +5444,7 @@ handle_ui.on("js-bulkassign-action", function () {
     foldup.call(this, null, {open: this.value === "review"});
     foldup.call(this, null, {open: /^(?:primary|secondary|(?:optional|meta)?review)$/.test(this.value), n:2});
     let selopt = this.selectedOptions[0] || this.options[0];
-    $("#k-bulkassign-entry").attr("placeholder", selopt.getAttribute("data-csv-header"));
+    $$("k-bulkassign-entry").setAttribute("placeholder", selopt.getAttribute("data-csv-header"));
 });
 
 (function () {
@@ -6253,7 +6253,7 @@ function initialize() {
     if (window.WeakMap) {
         linkmap = new WeakMap;
     }
-    pslcard = $(".pslcard")[0];
+    pslcard = $(".s-psl")[0];
 }
 function fe(idelt) {
     return typeof idelt === "string" ? $$(idelt) : idelt;
@@ -6515,7 +6515,7 @@ function render_review_body_in(rrow, bodye) {
             fte.setAttribute("aria-describedby", ttid);
         }
         const h3 = document.createElement("h3");
-        h3.className = "rfehead";
+        h3.className = "s-rf-head";
         h3.appendChild(fte);
         let vis = f.visibility || "re";
         if (vis === "audec" && hotcrp.status && hotcrp.status.myperm
@@ -6593,7 +6593,7 @@ function rating_counts(ratings) {
 }
 
 function closest_rating_url(e) {
-    const card = e.closest(".revcard");
+    const card = e.closest(".s-review");
     return hoturl("=api", {p: card.getAttribute("data-pid"), r: card.getAttribute("data-rid"), fn: "reviewrating"});
 }
 
@@ -6858,7 +6858,7 @@ hotcrp.add_review = function (rrow) {
 
     const earticle = document.createElement("article");
     earticle.id = "r" + rid;
-    earticle.className = "pcard revcard " + (rrow.subreview || rrow.draft ? "" : "revsubmitted ") + "need-anchor-unfold";
+    earticle.className = "pcard s-review " + (rrow.subreview || rrow.draft ? "" : "s-review-submitted ") + "need-anchor-unfold";
     earticle.setAttribute("data-pid", rrow.pid);
     earticle.setAttribute("data-rid", rrow.rid);
     if (rrow.ordinal) {
@@ -6899,7 +6899,7 @@ hotcrp.add_review = function (rrow) {
 
     // complete render
     earticle.append(eheader, ebody);
-    document.querySelector(".pcontainer").append(earticle);
+    document.querySelector(".s-paper").append(earticle);
     $(earticle).awaken();
     navsidebar.set("r" + rid, rdesc);
 };
@@ -7249,7 +7249,7 @@ function unparse_tag(tag, strip_value) {
 }
 
 function cj_find(elt) {
-    return cmts[elt.closest(".cmtid").id];
+    return cmts[elt.closest(".s-comment").id];
 }
 
 function cj_cid(cj) {
@@ -7370,7 +7370,7 @@ function cmt_is_editable(cj, override) {
 function cmt_render_form(cj) {
     const cid = cj_cid(cj),
         btnbox = $e("div", "btnbox"),
-        eform = $e("form", "cmtform");
+        eform = $e("form", "s-comment-form");
     cj.review_token && eform.append(hidden_input("review_token", cj.review_token));
     cj.by_author && eform.append(hidden_input("by_author", 1));
     cj.response && eform.append(hidden_input("response", cj.response));
@@ -7556,7 +7556,7 @@ function cmt_visibility_change() {
             topichint.replaceChildren("The comment will appear when the decision is visible.");
         } else {
             topichint.replaceChildren("The comment will appear when reviews are visible.");
-            if (!document.querySelector("article.revsubmitted")) {
+            if (!document.querySelector("article.s-review-submitted")) {
                 topichint.append("\n", $e("span", "is-diagnostic is-warning", "Reviews are not visible now."));
             }
         }
@@ -7626,7 +7626,7 @@ function cmt_edit_messages(cj, form) {
 function cmt_annotate_new(celt, cj) {
     // Choose new comment’s topic and visibility.
     // - Submission thread if there is no review.
-    if (!document.querySelector("article.revsubmitted")) {
+    if (!document.querySelector("article.s-review-submitted")) {
         cj.topic = "paper";
     } else {
         cj.topic = "rev";
@@ -7638,7 +7638,7 @@ function cmt_annotate_new(celt, cj) {
     while (prevcelt && prevcelt.tagName !== "ARTICLE") {
         prevcelt = prevcelt.previousElementSibling;
     }
-    const prevcj = prevcelt && hasClass(prevcelt, "cmtcard") && cj_find(prevcelt);
+    const prevcj = prevcelt && hasClass(prevcelt, "s-comment") && cj_find(prevcelt);
     if (cj.by_author
         || (prevcj && prevcj.by_author && !prevcj.response)) {
         cj.visibility = "au";
@@ -7738,7 +7738,7 @@ function cmt_render_attachment(doc) {
 }
 
 function cmt_beforeunload() {
-    var i, $cs = $(".cmtform"), text;
+    var i, $cs = $(".s-comment-form"), text;
     if (has_unload) {
         for (i = 0; i !== $cs.length; ++i) {
             text = $cs[i].elements.text.value.trimEnd();
@@ -7774,7 +7774,7 @@ function cmt_edit_observer(entries) {
             e.target.removeAttribute("data-intersecting");
         }
     }
-    const focus = document.activeElement && document.activeElement.closest(".cmtcard");
+    const focus = document.activeElement && document.activeElement.closest(".s-comment");
     for (i = 0; i !== editing_list.length; ++i) {
         e = editing_list[i];
         want = have = hasClass(e, "popout");
@@ -7871,7 +7871,6 @@ function cmt_save_callback(cj) {
             } else {
                 celt.removeAttribute("id");
                 celt.replaceChildren($e("div", "cmtmsg"));
-                removeClass(celt, "cmtid");
                 navsidebar.remove(celt);
             }
         }
@@ -7947,7 +7946,7 @@ function cmt_button_click(evt) {
         evt.preventDefault();
         cmt_save(this, "submit");
     } else if (this.name === "cancel") {
-        cj.collapsed && fold(this.closest(".cmtcard"), true, 20);
+        cj.collapsed && fold(this.closest(".s-comment"), true, 20);
         cmt_render(cj, false);
     } else if (this.name === "delete") {
         override_deadlines.call(this, function () {
@@ -7979,7 +7978,7 @@ function cmt_render(cj, editing) {
 
     if (cj.is_new && !editing) {
         cmt_toggle_editing(article, false);
-        var ide = article.closest(".cmtid");
+        var ide = article.closest(".s-comment");
         navsidebar.remove(ide);
         $("#k-comment-actions a[href='#" + ide.id + "']").closest(".aabut").removeClass("hidden");
         $(ide).remove();
@@ -8176,8 +8175,8 @@ function add_new_comment_button(cj, cid) {
     }
     let eactions = $$("k-comment-actions");
     if (!eactions) {
-        eactions = $e("div", {id: "k-comment-actions", class: "pcard cmtcard"}, $e("div", "aab aabig"));
-        $(".pcontainer").append(eactions);
+        eactions = $e("div", {id: "k-comment-actions", class: "pcard s-comment cmtcard"}, $e("div", "aab aabig"));
+        $(".s-paper").append(eactions);
     }
     const rname = cj.response && (cj.response == "1" ? "response" : cj.response + " response"),
         ebutton = $e("div", "aabut",
@@ -8196,8 +8195,8 @@ function add_new_comment_button(cj, cid) {
 }
 
 function add_new_comment(cj, cid) {
-    document.querySelector(".pcontainer").insertBefore($e("article", {
-        id: cid, class: "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
+    document.querySelector(".s-paper").insertBefore($e("article", {
+        id: cid, class: "pcard s-comment cmtcard comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
 }
 
@@ -8347,11 +8346,11 @@ function nextprev_shortcut(evt) {
         jqdir = key === "n" ? "first" : "last";
     if (hash
         && (ctr = document.getElementById(hash))
-        && (hasClass(ctr, "cmtcard") || hasClass(ctr, "revcard"))) {
+        && (hasClass(ctr, "s-comment") || hasClass(ctr, "s-review"))) {
         for (walk = ctr[siblingdir]; walk && !walk.hasAttribute("id"); walk = walk[siblingdir]) {
         }
     } else {
-        walk = $(".revcard[id], .cmtid")[jqdir]()[0];
+        walk = $(".s-review[id], .s-comment[id]")[jqdir]()[0];
     }
     if (walk && walk.hasAttribute("id"))
         location.hash = "#" + walk.getAttribute("id");
@@ -9991,30 +9990,28 @@ $(function () {
         document.body.setAttribute("data-hotlist", Hotlist.at(document.body).resolve().str);
     }
     // having resolved digests, insert quicklinks
-    if (siteinfo.paperid
-        && !$$("n-prev")
-        && !$$("n-next")) {
-        $(".quicklinks").each(function () {
-            var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos, page, mode;
-            try {
-                mode = JSON.parse(this.getAttribute("data-link-params") || "{}");
-            } catch (e) {
-                mode = {};
-            }
-            page = mode.page || "paper";
-            delete mode.page;
-            if ((ids = info.ids())
-                && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
-                if (pos > 0) {
-                    mode.p = ids[pos - 1];
-                    this.prepend($e("a", {id: "n-prev", class: "ulh", href: hoturl(page, mode)}, "< #" + ids[pos - 1]), " ");
-                }
-                if (pos < ids.length - 1) {
-                    mode.p = ids[pos + 1];
-                    this.append(" ", $e("a", {id: "n-next", class: "ulh", href: hoturl(page, mode)}, "#" + ids[pos + 1] + " >"));
-                }
-            }
-        });
+    const ql = $$("n-quicklinks");
+    if (!siteinfo.paperid || !ql || $$("n-prev") || $$("n-next")) {
+        return;
+    }
+    let info = Hotlist.at(ql.closest(".has-hotlist")), ids, pos, page, mode;
+    try {
+        mode = JSON.parse(ql.getAttribute("data-link-params") || "{}");
+    } catch (e) {
+        mode = {};
+    }
+    page = mode.page || "paper";
+    delete mode.page;
+    if ((ids = info.ids())
+        && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
+        if (pos > 0) {
+            mode.p = ids[pos - 1];
+            ql.prepend($e("a", {id: "n-prev", class: "ulh", href: hoturl(page, mode)}, "< #" + ids[pos - 1]), " ");
+        }
+        if (pos < ids.length - 1) {
+            mode.p = ids[pos + 1];
+            ql.append(" ", $e("a", {id: "n-next", class: "ulh", href: hoturl(page, mode)}, "#" + ids[pos + 1] + " >"));
+        }
     }
 });
 })($);
@@ -13150,7 +13147,7 @@ handle_ui.on("js-clickthrough", function () {
     var self = this,
         $container = $(this).closest(".js-clickthrough-container");
     if (!$container.length)
-        $container = $(this).closest(".pcontainer");
+        $container = $(this).closest(".s-paper");
     $.post(hoturl("=api/clickthrough", {p: siteinfo.paperid}),
         $(this.form).serialize() + "&accept=1",
         function (data) {
@@ -13345,7 +13342,7 @@ function save_pstags(evt) {
     });
 }
 
-handle_ui.on("is-tag-index", function () {
+handle_ui.on("js-tag-index", function () {
     const self = this;
     let m = self.id.match(/^tag:(\S+) (\d+)$/), value;
     if (this.type === "checkbox")
@@ -13688,7 +13685,7 @@ function prepare_autoready_condition(f) {
         } else {
             t = "Save and submit";
         }
-        $("button.btn-savepaper").each(function () {
+        $("button.js-savepaper").each(function () {
             this.firstChild.data = t;
         });
     }
@@ -13704,14 +13701,14 @@ hotcrp.load_editable_paper = function () {
     var f = $$("f-paper");
     hotcrp.add_diff_check(f);
     prepare_autoready_condition(f);
-    $(".pfe").each(add_pslitem_pfe);
-    var h = $(".btn-savepaper").first(),
+    $(".s-sf").each(add_pslitem_pfe);
+    var h = $(".js-savepaper").first(),
         k = hasClass(f, "differs") ? "" : " hidden";
-    $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
-        '"><button class="ui btn-highlight btn-savepaper">', h.html(),
+    $(".s-psl-nav").append('<div class="paper-alert mt-5'.concat(k,
+        '"><button class="ui btn-highlight js-savepaper">', h.html(),
         '</button></div>'))
-        .find(".btn-savepaper").click(function () {
-            $("#f-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
+        .find(".js-savepaper").click(function () {
+            $("#f-paper .js-savepaper").first().trigger({type: "click", sidebarTarget: this});
         });
     $(f).on("change", "input, select, textarea", fieldchange);
     if (f.querySelector(".has-edit-condition")) {
@@ -13731,19 +13728,19 @@ hotcrp.load_editable_paper = function () {
 };
 
 hotcrp.load_editable_review = function () {
-    const rfehead = $(".rfehead");
+    const rfehead = $(".s-rf-head");
     rfehead.each(add_pslitem_header);
     if (rfehead.length) {
-        $(".pslcard > .pslitem:last-child").addClass("mb-3");
+        $(".s-psl > .pslitem:last-child").addClass("mb-3");
     }
     hotcrp.add_diff_check("#f-review");
     const k = $("#f-review").hasClass("differs") ? "" : " hidden",
-        h = $(".btn-savereview").first();
-    $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
-        '"><button class="ui btn-highlight btn-savereview">', h.html(),
+        h = $(".js-savereview").first();
+    $(".s-psl-nav").append('<div class="review-alert mt-5'.concat(k,
+        '"><button class="ui btn-highlight js-savereview">', h.html(),
         '</button></div>'))
-        .find(".btn-savereview").click(function () {
-            $("#f-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
+        .find(".js-savereview").click(function () {
+            $("#f-review .js-savereview").first().trigger({type: "click", sidebarTarget: this});
         });
 };
 
@@ -13753,9 +13750,9 @@ hotcrp.load_editable_pc_assignments = function () {
     if (f) {
         hotcrp.add_diff_check(f);
         var k = hasClass(f, "differs") ? "" : " hidden";
-        $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
-            '"><button class="ui btn-highlight btn-savepaper">Save PC assignments</button></div>'))
-            .find(".btn-savepaper").click(function () {
+        $(".s-psl-nav").append('<div class="paper-alert mt-5'.concat(k,
+            '"><button class="ui btn-highlight js-savepaper">Save PC assignments</button></div>'))
+            .find(".js-savepaper").click(function () {
                 $("#f-pc-assignments .btn-primary").first().trigger({type: "click", sidebarTarget: this});
             });
     }
@@ -13770,9 +13767,9 @@ hotcrp.load_paper_sidebar = function () {
 };
 
 hotcrp.replace_editable_field = function (field, elt) {
-    var pfe = $$(field).closest(".pfe");
+    const pfe = $$(field).closest(".s-sf");
     if ((elt.tagName !== "DIV" && elt.tagName !== "FIELDSET")
-        || !hasClass(elt, "pfe")) {
+        || !hasClass(elt, "s-sf")) {
         throw new Error("bad replacement");
     }
     pfe.className = elt.className;
@@ -13868,13 +13865,13 @@ if (siteinfo.paperid) {
             return;
         }
         data.color_classes && ensure_pattern(data.color_classes, "", true);
-        $(".has-tag-classes").each(function () {
+        $(".js-tag-classes").each(function () {
             var t = $.trim(this.className.replace(/(?: |^)(?:tagbg|dark|tag-\S+)(?= |$)/g, " "));
             if (data.color_classes)
                 t += " " + data.color_classes;
             this.className = t;
         });
-        $(".is-tag-index").each(function () {
+        $(".js-tag-index").each(function () {
             set_tag_index(this, data.tags);
         });
         hotcrp.update_tag_decoration($("h1.paptitle"), data.tag_decoration_html);
@@ -13942,7 +13939,7 @@ handle_ui.on("js-disable-user", function () {
                     removeClass(self, "btn-success");
                     addClass(self, "btn-danger");
                 }
-                const h2 = document.querySelector("h2.leftmenu");
+                const h2 = document.querySelector("h2#h-subtitle");
                 if (h2) {
                     if (h2.lastChild.nodeType === 1
                         && h2.lastChild.className === "n dim user-disabled-marker") {
@@ -15174,7 +15171,7 @@ function load_more_events() {
                 events = (events || []).concat(data.rows);
                 events_at = data.to;
                 events_more = data.more;
-                $(".has-events").each(function () { render_events(this, data.rows); });
+                $(".js-events").each(function () { render_events(this, data.rows); });
             }
         }
     });

@@ -588,7 +588,7 @@ function settings_review_round_selectors() {
             a.push({value: ch.id.substring(7)|0, name: n});
         }
     }
-    $(form).find(".settings-review-round-selector").each(function () {
+    $(form).find(".js-settings-review-round-selector").each(function () {
         var cur = this.firstChild, j = 0, selidx = this.selectedIndex;
         while (cur || j < a.length) {
             if (cur && cur.value === "0") {
@@ -879,7 +879,7 @@ function rf_render_view(fld, example) {
     // header
     labele = $e("label", "revfn" + (fld.required ? " field-required" : ""),
         fld.name || (example ? "Field name" : "<unnamed>"));
-    xfv.append((e = $e("h3", "rfehead", labele)));
+    xfv.append((e = $e("h3", "s-rf-head", labele)));
     if ((t = rf_visibility_text(fld.visibility))) {
         e.append($e("div", "field-visibility", t));
     }
@@ -1130,7 +1130,7 @@ return rfs;
 
 
 handle_ui.on("js-settings-resp-active", function () {
-    $(".if-response-active").toggleClass("hidden", !this.checked);
+    $(".js-if-response-active").toggleClass("hidden", !this.checked);
 });
 
 $(function () { $(".js-settings-resp-active").trigger("change"); });
@@ -1231,7 +1231,7 @@ handle_ui.on("change.js-settings-decision-category", function () {
     removeClass(this, "dec-no");
     addClass(this, k);
     if (this.value === "desk_reject") {
-        $(".if-settings-decision-desk-reject").removeClass("hidden");
+        $(".js-if-decision-desk-reject").removeClass("hidden");
     }
 });
 
@@ -2928,7 +2928,7 @@ function settings_jsonpathchange(evt) {
     if (!head || head.startsWith("$")) {
         if (this.hasAttribute("data-caret-path-head")) {
             this.removeAttribute("data-caret-path-head");
-            $(".settings-json-info").empty();
+            $(".s-settings-json-info").empty();
         }
     } else if (head !== this.getAttribute("data-caret-path-head")) {
         this.setAttribute("data-caret-path-head", head);
@@ -2960,7 +2960,7 @@ function append_rendered_values(es, values) {
 }
 
 function settings_describe(d) {
-    var $i = $(".settings-json-info"), e, es, i;
+    var $i = $(".s-settings-json-info"), e, es, i;
     $i.empty();
     if (!d) {
         return;
