@@ -449,7 +449,7 @@ class CleanHTML {
                 if (str_starts_with($class, "ui")
                     || str_starts_with($class, "js-")
                     || str_starts_with($class, "s-")
-                    || str_starts_with($class, "pl")) {
+                    || (str_starts_with($class, "pl") || !preg_match('/\Apl-\d\z/', $class))) {
                     $this->lerror("<0>HTML class {$class} not allowed", $attrpos, $endpos);
                 } else {
                     $xvalue .= ($xvalue === "" ? $class : " {$class}");
