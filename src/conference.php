@@ -5237,7 +5237,7 @@ class Conf {
         // deadlines settings
         $my_deadlines = null;
         if ($user) {
-            $my_deadlines = $user->status_json($qreq->paper() ? [$qreq->paper()] : []);
+            $my_deadlines = $user->status_json([], $qreq->paper());
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 

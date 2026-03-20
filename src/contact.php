@@ -6075,11 +6075,14 @@ class Contact implements JsonSerializable {
 
     // deadlines
 
-    /** @param ?list<PaperInfo> $prows
+    /** @param array<string,mixed> $base
+     * @param ?PaperInfo $prow
      * @return object */
-    function status_json($prows = null) {
+    function status_json($base = [], $prow = null) {
         // Return cleaned deadline-relevant settings that this user can see.
-        $dl = (object) ["now" => Conf::$unow, "email" => $this->email ? : null];
+        $dl = (object) $base;
+        $dl->now = Conf::$unow;
+        $dl->email = $this->email ? : null;
         if (($disabled = $this->is_disabled())) {
             $dl->disabled = true;
         }
@@ -6096,7 +6099,7 @@ class Contact implements JsonSerializable {
 
         // submissions
         // XXX submission rounds
-        $sr = $prows ? $prows[0]->submission_round() : $this->conf->unnamed_submission_round();
+        $sr = $prow ? $prow->submission_round() : $this->conf->unnamed_submission_round();
         $dl->sub->open = $sr->open > 0 && $sr->open <= Conf::$now;
         if ($sr->submit > 0) {
             $dl->sub->sub = $sr->submit;
@@ -6217,12 +6220,10 @@ class Contact implements JsonSerializable {
         }
 
         // permissions
-        if ($prows && !$disabled) {
+        if ($prow && !$disabled) {
             $dl->perm = [];
-            foreach ($prows as $prow) {
-                if (($perm = $this->paper_permission_json($prow))) {
-                    $dl->perm[$prow->paperId] = $perm;
-                }
+            if (($perm = $this->paper_permission_json($prow))) {
+                $dl->perm[$prow->paperId] = $perm;
             }
         }
 

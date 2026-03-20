@@ -1,6 +1,6 @@
 <?php
 // custombanners.php -- HotCRP configurable page banners
-// Copyright (c) 2009-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class CustomBannerParam {
     /** @var string */
