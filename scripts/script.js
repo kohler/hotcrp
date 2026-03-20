@@ -15451,10 +15451,23 @@ customElements.define("hotcrp-multimeter", class extends HTMLElement {
         flex.style.borderRadius = cs.borderRadius;
         this.render();
     }
-    attributeChangedCallback() { this.render(); }
+
+    attributeChangedCallback() {
+        this.render();
+    }
 
     resolveColor(value) {
-        if (!value.startsWith(".")) {
+        let m;
+        if ((m = value.match(/^([a-z]+\(\s*from\s*)(\.[^\s)]+)(.*)$/))) {
+            return m[1] + this.resolveColor(m[2]) + m[3];
+        } else if ((m = value.match(/^(color-mix\([^,]+,\s*)(.*)\)$/))) {
+            let t = m[1], s = m[2];
+            while ((m = s.match(/^((?:[^,()\s]|\([^()]*\))+)(\s*,?\s*)(.*)$/))) {
+                t += this.resolveColor(m[1]) + m[2];
+                s = m[3];
+            }
+            return t + s;
+        } else if (!value.startsWith(".")) {
             return value;
         }
         const e = document.createElement("div");
@@ -15471,15 +15484,22 @@ customElements.define("hotcrp-multimeter", class extends HTMLElement {
         const vstr = (this.getAttribute("values") || "").trim(),
             cstr = (this.getAttribute("colors") || "").trim(),
             pstr = (this.getAttribute("pointers") || "").trim(),
+            pcstr = (this.getAttribute("pointer-colors") || "").trim(),
             vs = vstr === "" ? [] : vstr.split(/\s+/).map(Number),
             ps = pstr === "" ? [] : pstr.split(/\s+/).map(Number).filter(x => Number.isFinite(x)),
-            cs = [];
+            cs = [], pcs = [];
         if (vs.find(x => Number.isFinite(x) && x < 0)) {
             vs.length = 0;
         }
         const vtotal = vs.reduce((a, b) => a + b, 0) || 1;
         for (const cm of cstr.matchAll(/[a-z]+\((?:[^()]*|\([^()]*\))*\)|\S+/g)) {
             cs.push(this.resolveColor(cm[0]));
+        }
+        for (const cm of pcstr.matchAll(/[a-z]+\((?:[^()]*|\([^()]*\))*\)|\S+/g)) {
+            pcs.push(this.resolveColor(cm[0]));
+        }
+        if (pcs.length === 0) {
+            pcs.push("#888");
         }
         const flex = this.shadowRoot.lastChild.firstChild;
         flex.replaceChildren(...vs.map((v, i) => {
@@ -15489,16 +15509,19 @@ customElements.define("hotcrp-multimeter", class extends HTMLElement {
             return e;
         }));
         let pe = flex.nextSibling;
-        for (const pv of ps) {
+        for (const i in ps) {
+            const pv = ps[i];
             if (pv < 0 || pv > vtotal) {
                 continue;
             }
             if (!pe) {
                 pe = document.createElement("span");
                 pe.style.position = "absolute";
-                pe.style.top = "42%";
-                pe.style.transform = "translate(-50%,-50%)";
-                pe.textContent = "∗";
+                pe.style.top = "77.5%";
+                pe.style.transform = "translateX(-50%)";
+                pe.style.fontSize = "10%";
+                pe.style.color = pcs[Math.min(i, pcs.length - 1)];
+                pe.textContent = "▲";
                 this.shadowRoot.lastChild.appendChild(pe);
             }
             pe.style.left = `${pv / vtotal * 100}%`;
