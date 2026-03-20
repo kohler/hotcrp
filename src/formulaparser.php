@@ -594,6 +594,9 @@ class FormulaParser {
             } else {
                 $e = new Constant_Fexpr($m[1], Fexpr::FUNKNOWN);
             }
+        } else if ($ch === "#"
+                   && ($kwdef = $this->_find_formula_function($ch))) {
+            $e = $this->_parse_function($ch, $kwdef);
         } else if (!empty($this->_bind)
                    && preg_match('/\G[A-Za-z_][A-Za-z0-9_]*/', $t, $m, 0, $this->pos)
                    && isset($this->_bind[$m[0]])) {

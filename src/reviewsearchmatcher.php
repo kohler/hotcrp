@@ -47,9 +47,6 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     /** @var ?ReviewFieldSearch<ReviewField> */
     private $rfsrch;
 
-    /** @var int */
-    static public $mode = 0;
-
     static private $status_map = [
         // preferred names come first
         "complete" => self::COMPLETE,
