@@ -9964,9 +9964,7 @@ function default_click(evt) {
 }
 
 $(document).on("click", "a", function (evt) {
-    if (hasClass(this, "fn5")) {
-        foldup.call(this, evt, {n: 5, open: true});
-    } else if (!hasClass(this, "ui")) {
+    if (!hasClass(this, "ui")) {
         if (!event_key.is_default_a(evt)
             || this.target
             || !default_click.call(this, evt))
@@ -15405,10 +15403,10 @@ $(function () {
         err.push(locator(e.form) + ": no .js-selector-summary");
         elt.push(e.form);
     }
-    /*$(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,a.btn[href=''],.p,.mg,.editor").each(function () {
+    $("a.fn5,a.btn[href=''],.p,.mg,.editor").each(function () {
         err.push(locator(this));
         elt.push(this);
-    });*/
+    });
     if (document.documentMode || window.attachEvent) {
         var msg = $('<div class="msg msg-error"></div>').appendTo("#h-messages");
         feedback.append_item_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
