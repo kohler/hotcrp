@@ -172,7 +172,7 @@ class SubmissionRound {
         return $this->final_soft;
     }
 
-    /** @param int $bondary
+    /** @param int $boundary
      * @return ?int */
     function closest_deadline_after($boundary) {
         $t = $this->open >= $boundary ? $this->open : PHP_INT_MAX;

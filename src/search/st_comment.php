@@ -155,6 +155,6 @@ class Comment_SearchTerm extends SearchTerm {
         return $this->csm->test($n);
     }
     function about() {
-        return self::ABOUT_COMMENT;
+        return self::ABOUT_COMMENTS;
     }
 }

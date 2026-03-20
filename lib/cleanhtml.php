@@ -262,7 +262,10 @@ class CleanHTML {
         return $this;
     }
 
-    /** @return MessageItem */
+    /** @param string $str
+     * @param int $pos1
+     * @param int $pos2
+     * @return MessageItem */
     private function lerror($str, $pos1, $pos2) {
         $mi = MessageItem::error($str);
         $mi->pos1 = $pos1;
@@ -463,7 +466,7 @@ class CleanHTML {
         if ($lattr === "href"
             && $value !== null
             && preg_match('/\A\s*+((?!http[\s:]|https[\s:])[a-z][-+.a-z0-9]*+)\s*+:/i', $value, $m)) {
-            $this->lerror("<0>URL scheme {$m[1]} not allowed in links", $attr, $endpos);
+            $this->lerror("<0>URL scheme {$m[1]} not allowed in links", $attrpos, $endpos);
             return "";
         }
         return $value === null ? " {$lattr}" : " {$lattr}=\"" . htmlspecialchars($value) . "\"";
