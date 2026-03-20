@@ -99,6 +99,14 @@ class API_Page {
                 $jr["p"] = [$prow->paperId => $pj];
             }
         }
+        if (($btoken = $qreq->bannertoken) !== null
+            && $user->conf->setting("banners")) {
+            $cb = new CustomBanners($user->conf, $user, $qreq);
+            if (!$cb->check_token($btoken)) {
+                $jr["banners"] = $cb->active_json();
+                $jr["bannertoken"] = $cb->token();
+            }
+        }
         return $jr;
     }
 

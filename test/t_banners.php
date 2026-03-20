@@ -162,8 +162,8 @@ class Banners_Tester {
         xassert_eqq(count($bs), 1);
         xassert(!$cb->used_session_cache());
 
-        // run() stores results to csession
-        $cb->run();
+        // active() stores results to csession
+        $cb->active();
 
         // Second call with same qreq: should use session cache
         $cb2 = new CustomBanners($this->conf, $this->u_chair, $qreq);
@@ -187,7 +187,7 @@ class Banners_Tester {
         $this->establish_mcache();
         $qreq = $this->make_qreq($this->u_chair);
         $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
-        $cb->run();
+        $cb->active();
         xassert(!$cb->used_session_cache());
 
         // Confirm cache is being used
@@ -252,7 +252,7 @@ class Banners_Tester {
         $this->establish_mcache();
         $qreq = $this->make_qreq($this->u_chair);
         $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
-        $cb->run();
+        $cb->active();
         xassert(!$cb->used_session_cache());
 
         // Much later: cache should still be valid (no future deadlines)
@@ -283,7 +283,7 @@ class Banners_Tester {
         $this->establish_mcache();
         $qreq = $this->make_qreq($this->u_chair);
         $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
-        $cb->run();
+        $cb->active();
         xassert(!$cb->used_session_cache());
 
         // Time passes but before deadline: cache should still be valid
@@ -327,7 +327,7 @@ class Banners_Tester {
         $this->establish_mcache();
         $qreq = $this->make_qreq($this->u_chair);
         $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
-        $cb->run();
+        $cb->active();
         xassert(!$cb->used_session_cache());
 
         // Before first deadline: cache valid
@@ -343,7 +343,7 @@ class Banners_Tester {
         xassert(!$cb3->used_session_cache());
 
         // Re-cache after first deadline
-        $cb3->run();
+        $cb3->active();
 
         // Before second deadline: cache valid again
         Conf::advance_current_time($dl2 - 10);
@@ -358,7 +358,7 @@ class Banners_Tester {
         xassert(!$cb5->used_session_cache());
 
         // Re-cache after second deadline
-        $cb5->run();
+        $cb5->active();
 
         // No more deadlines: cache stays valid far in the future
         Conf::advance_current_time(Conf::$now + 100000);
@@ -392,7 +392,7 @@ class Banners_Tester {
         $this->establish_mcache();
         $qreq = $this->make_qreq($this->u_chair);
         $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
-        $cb->run();
+        $cb->active();
 
         // Cross the deadline
         Conf::advance_current_time($future + 1);

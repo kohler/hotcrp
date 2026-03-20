@@ -147,7 +147,6 @@ class CleanHTML {
         // head: self::F_SPECIAL
         // header: self::F_SPECIAL | self::F_CLOSEP
         // hgroup: self::F_SPECIAL | self::F_CLOSEP
-        "hotcrp-multimeter" => 0, /* special! */
         "hr" => self::F_BLOCK | self::F_SPECIAL | self::F_CLOSEP | self::F_VOID,
         "html" => self::F_DISABLED | self::F_SPECIAL | self::F_DEFAULT_SCOPE,
         "i" => self::F_FORMAT,
@@ -225,8 +224,11 @@ class CleanHTML {
         "ul" => self::F_BLOCK | self::F_SPECIAL | self::F_NOTEXT | self::F_CLOSEP | (self::SC_LIST << self::SCP),
         "var" => 0,
         "video" => self::F_BLOCK | (self::SC_MEDIA << self::SCP),
-        "wbr" => self::F_VOID | self::F_SPECIAL
-        // xmp: self::F_SPECIAL | self::F_CLOSEP
+        "wbr" => self::F_VOID | self::F_SPECIAL,
+        // xmp: self::F_SPECIAL | self::F_CLOSEP,
+
+        // HotCRP-specpfic custom elements
+        "hotcrp-multimeter" => 0
     ];
     // XXX SVG
     // XXX MathML

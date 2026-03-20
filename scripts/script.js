@@ -3483,6 +3483,15 @@ handle_ui.on("js-mark-submit", function () {
 
 // banner
 hotcrp.banner = (function () {
+function ensure_container() {
+    let b = $$("p-banner");
+    if (!b) {
+        b = document.createElement("div");
+        b.id = "p-banner";
+        document.body.prepend(b);
+    }
+    return b;
+}
 function resize(b) {
     const offs = document.querySelectorAll(".need-banner-offset"),
         pbody = document.getElementById("p-page");
@@ -3521,31 +3530,67 @@ function resize(b) {
 }
 return {
     add: function (id, rest) {
-        let e = $$(id);
-        if (!e) {
-            let b = $$("p-banner");
-            if (!b) {
-                b = document.createElement("div");
-                b.id = "p-banner";
-                document.body.prepend(b);
-            }
-            e = $e("div", rest);
-            e.id = id;
-            b.append(e);
+        let be = $$(id);
+        if (!be) {
+            be = $e("div", rest);
+            be.id = id;
+            ensure_container().append(be);
         }
-        return e;
+        return be;
     },
     remove: function (id) {
-        const e = $$(id);
-        if (e) {
-            hotcrp.tooltip.close_under(e);
-            const b = e.parentElement;
-            e.remove();
-            if (!b.firstChild) {
-                b.remove();
+        const be = $$(id);
+        if (be) {
+            hotcrp.tooltip.close_under(be);
+            const bc = be.parentElement;
+            be.remove();
+            if (!bc.firstChild) {
+                bc.remove();
                 resize(null);
             } else {
-                resize(b);
+                resize(bc);
+            }
+        }
+    },
+    replace_custom: function (banners) {
+        let bc = ensure_container(), be = bc.firstChild, changed = false;
+        for (const j of banners) {
+            const id = `p-cbanner-${j.id}`;
+            while (be && be.id !== id) {
+                const next = be.nextSibling;
+                if (hasClass(be, "cbanner")) {
+                    be.remove();
+                    changed = true;
+                }
+                be = next;
+            }
+            if (!be) {
+                be = $e("div", {class: "cbanner", id: id});
+                bc.append(be);
+            }
+            if (be.innerHTML !== j.html) {
+                be.innerHTML = j.html;
+                changed = true;
+            }
+            be = be.nextSibling;
+        }
+        while (be) {
+            const next = be.nextSibling;
+            if (hasClass(be, "cbanner")) {
+                be.remove();
+                changed = true;
+            }
+            be = next;
+        }
+        if (!bc.firstChild) {
+            bc.remove();
+            bc = null;
+        }
+        if (changed) {
+            if (document.readyState === "loading") {
+                $(hotcrp.banner.resize);
+            } else {
+                resize(bc);
             }
         }
     },
@@ -3571,7 +3616,7 @@ handle_ui.on("js-dismiss-alert", function (evt) {
 
 // initialization and tracker
 (function ($) {
-var dl, dlname, dltime, redisplay_timeout,
+let dl, dlname, dltime, redisplay_timeout, dlloading = 0,
     reload_outstanding = 0, reload_nerrors = 0, reload_count = 0,
     reload_token_max = 250, reload_token_rate = 500,
     reload_tokens = reload_token_max, reload_refill_at = 0, reload_refill_timeout = null,
@@ -4320,6 +4365,7 @@ function trevent_comet(prev_eventid, start_at) {
 
 // deadline loading
 function load(dlx, prev_eventid, is_initial) {
+    ++dlloading;
     siteinfo.snouns = siteinfo.snouns || ["submission", "submissions", "Submission", "Submissions"];
     if (dl && dl.tracker_recent && dlx)
         dlx.tracker_recent = dl.tracker_recent;
@@ -4343,12 +4389,14 @@ function load(dlx, prev_eventid, is_initial) {
     }
     if (dl.tracker_recent && (!is_initial || !dl.tracker_here))
         display_tracker();
+    if (dl.banners)
+        hotcrp.banner.replace_custom(dl.banners);
     if (!dl.tracker_here !== !tracker_refresher)
         tracker_refresh();
     if (tracker_configured)
         tracker_configure_success();
     if (reload_outstanding === 0) {
-        var t;
+        let t;
         if (is_initial && ($$("p-clock-drift") || dl.tracker_recent))
             t = 0.01;
         else if (dl.tracker_recent) {
@@ -4370,12 +4418,13 @@ function load(dlx, prev_eventid, is_initial) {
         trevent_store(dl.tracker_eventid || 0, prev_eventid, dl.load + t,
                       is_initial ? "initial" : "load");
     }
+    --dlloading;
 }
 
 function streload_track(trackparam, trackdata) {
     ++reload_outstanding;
     ++reload_count;
-    var prev_eventid = trevent().eventid;
+    const prev_eventid = trevent().eventid;
     function success(data) {
         --reload_outstanding;
         if (data && data.ok) {
@@ -4391,15 +4440,20 @@ function streload_track(trackparam, trackdata) {
             method: "POST", data: trackdata, success: success
         });
     } else {
-        $.ajax(hoturl("api/status", siteinfo.paperid ? {p: siteinfo.paperid} : {}), {
+        const arg = siteinfo.paperid ? {p: siteinfo.paperid} : {};
+        if (dl && dl.banners) {
+            arg.bannertoken = dl.bannertoken ?? "0";
+        }
+        $.ajax(hoturl("api/status", arg), {
             method: "GET", timeout: 30000, success: success
         });
     }
 }
 
 function streload() {
-    if (reload_outstanding > 0)
+    if (reload_outstanding > 0) {
         return;
+    }
     // token bucket rate limiter: at most one call to back end every 500ms on average
     clearTimeout(reload_refill_timeout);
     reload_refill_timeout = null;
@@ -4424,6 +4478,12 @@ hotcrp.init_deadlines = function (dl) {
 };
 
 hotcrp.tracker_show_elapsed = tracker_show_elapsed;
+
+hotcrp.update_banners = function () {
+    if (dl && dl.banners && dlloading === 0) {
+        streload();
+    }
+};
 
 })(jQuery);
 
@@ -11775,7 +11835,9 @@ handle_ui.on("js-plinfo-edittags", function () {
             {tags: $(ta).val(), search: tbl ? tablelist_search(tbl) : null},
             function (rv) {
                 minifeedback(ta, rv);
-                rv.ok && $(window).trigger("hotcrptags", [rv]);
+                if (rv.ok) {
+                    $(window).trigger("hotcrptags", [rv]);
+                }
             });
     }
     function do_cancel() {
@@ -12169,7 +12231,10 @@ function plist_hotcrptags(plistui, rv) {
 }
 
 $(window).on("hotcrptags", function (evt, rv) {
-    $(".need-plist").each(make_plist);
+    if (rv.ok) {
+        $(".need-plist").each(make_plist);
+        hotcrp.update_banners();
+    }
     if (rv.ids) {
         for (const plist of all_plists) {
             paperlist_tag_ui.try_reorder(plist.pltable, rv);
@@ -12182,11 +12247,6 @@ $(window).on("hotcrptags", function (evt, rv) {
     } else if (rv.papers) {
         for (const paper of rv.papers) {
             $(window).trigger("hotcrptags", [paper]);
-        }
-    } else if (rv.p) /* backward compat */ {
-        for (const i in rv.p) {
-            rv.p[i].pid = +i;
-            $(window).trigger("hotcrptags", [rv.p[i]]);
         }
     }
 });
@@ -13206,6 +13266,7 @@ function prepare_paper_select() {
                     ensure_pattern(data.color_classes);
                     $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');
                 }
+                hotcrp.update_banners();
             }
             ctl.disabled = false;
         }
@@ -14733,6 +14794,7 @@ handle_ui.on("js-assign-potential-conflict", function () {
         }
         div.replaceChildren($e("div", "is-diagnostic is-success",
             is_none ? "Conflict ignored" : "Conflict confirmed"));
+        hotcrp.update_banners();
     }
     $ajax.condition(function () {
         $.ajax(hoturl("=api/assign", {p: pid, format: "none"}), {
@@ -14780,6 +14842,7 @@ handle_ui.on("js-assign-review", function (evt) {
         input_set_default_value(self, value);
         minifeedback(self, rv);
         check_form_differs(form, self);
+        hotcrp.update_banners();
     }
     $ajax.condition(function () {
         $.ajax(hoturl("=api/assign", {p: m[1], format: "none"}), {
@@ -14800,6 +14863,7 @@ handle_ui.on("js-decide", function (evt) {
     function success(rv) {
         input_set_default_value(self, value);
         minifeedback(self, rv);
+        hotcrp.update_banners();
     }
     $ajax.condition(function () {
         $.ajax(hoturl("=api/decision", {p: m[1], decision: value}), {
@@ -15204,6 +15268,120 @@ handle_ui.on("js-open-activity", function (evt) {
 })(jQuery);
 
 
+customElements.define("hotcrp-multimeter", class extends HTMLElement {
+    static observedAttributes = ["values", "colors", "pointers"];
+
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        const style = document.createElement("style");
+        style.textContent = ":host { display: inline-block; width: 10em; height: 2ex; }";
+        const ctr = document.createElement("div"),
+            flex = document.createElement("div");
+        ctr.style.position = "relative";
+        ctr.style.width = flex.style.width = "100%";
+        ctr.style.height = flex.style.height = "100%";
+        flex.style.display = "flex";
+        flex.style.overflow = "hidden";
+        ctr.append(flex);
+        this.shadowRoot.append(style, ctr);
+    }
+
+    connectedCallback() {
+        const cs = getComputedStyle(this),
+            flex = this.shadowRoot.lastChild.firstChild;
+        flex.style.borderRadius = cs.borderRadius;
+        this.render();
+    }
+
+    attributeChangedCallback() {
+        this.render();
+    }
+
+    resolveColor(value) {
+        let m;
+        if ((m = value.match(/^([a-z]+\(\s*from\s*)(\.[^\s)]+)(.*)$/))) {
+            return m[1] + this.resolveColor(m[2]) + m[3];
+        } else if ((m = value.match(/^(color-mix\([^,]+,\s*)(.*)\)$/))) {
+            let t = m[1], s = m[2];
+            while ((m = s.match(/^((?:[^,()\s]|\([^()]*\))+)(\s*,?\s*)(.*)$/))) {
+                t += this.resolveColor(m[1]) + m[2];
+                s = m[3];
+            }
+            return t + s;
+        } else if (!value.startsWith(".")) {
+            return value;
+        }
+        const e = document.createElement("div");
+        e.style.display = "none";
+        e.style.position = "absolute";
+        e.className = value.substring(1).replaceAll(".", " ");
+        this.appendChild(e);
+        const style = getComputedStyle(e);
+        let color = style.backgroundColor;
+        if (color === "rgba(0, 0, 0, 0)") {
+            color = style.color;
+        }
+        e.remove();
+        return color;
+    }
+
+    render() {
+        const vstr = (this.getAttribute("values") || "").trim(),
+            cstr = (this.getAttribute("colors") || "").trim(),
+            pstr = (this.getAttribute("pointers") || "").trim(),
+            pcstr = (this.getAttribute("pointer-colors") || "").trim(),
+            vs = vstr === "" ? [] : vstr.split(/\s+/).map(Number),
+            ps = pstr === "" ? [] : pstr.split(/\s+/).map(Number).filter(x => Number.isFinite(x)),
+            cs = [], pcs = [];
+        if (vs.find(x => Number.isFinite(x) && x < 0)) {
+            vs.length = 0;
+        }
+        const vtotal = vs.reduce((a, b) => a + b, 0) || 1;
+        for (const cm of cstr.matchAll(/[a-z]+\((?:[^()]*|\([^()]*\))*\)|\S+/g)) {
+            cs.push(this.resolveColor(cm[0]));
+        }
+        for (const cm of pcstr.matchAll(/[a-z]+\((?:[^()]*|\([^()]*\))*\)|\S+/g)) {
+            pcs.push(this.resolveColor(cm[0]));
+        }
+        if (pcs.length === 0) {
+            pcs.push("#888");
+        }
+        const flex = this.shadowRoot.lastChild.firstChild;
+        flex.replaceChildren(...vs.map((v, i) => {
+            const e = document.createElement("div");
+            e.style.flex = v;
+            e.style.background = cs[i] ?? "transparent";
+            return e;
+        }));
+        let pe = flex.nextSibling;
+        for (const i in ps) {
+            const pv = ps[i];
+            if (pv < 0 || pv > vtotal) {
+                continue;
+            }
+            if (!pe) {
+                pe = document.createElement("span");
+                pe.style.position = "absolute";
+                pe.style.top = "100%";
+                pe.style.transform = "translateX(-50%)";
+                pe.style.borderLeft = "3px solid transparent";
+                pe.style.borderRight = "3px solid transparent";
+                pe.style.borderBottom = "5px solid " + pcs[Math.min(i, pcs.length - 1)];
+                this.shadowRoot.lastChild.appendChild(pe);
+            }
+            pe.style.left = `${pv / vtotal * 100}%`;
+            pe = pe.nextSibling;
+        }
+        while (pe) {
+            const next = pe.nextSibling;
+            pe.remove();
+            pe = next;
+        }
+    }
+});
+
+
 // autogrowing text areas; based on https://github.com/jaz303/jquery-grab-bag
 function textarea_shadow($self, width) {
     return jQuery("<div></div>").css({
@@ -15424,119 +15602,6 @@ $(function () {
     }
 });
 
-customElements.define("hotcrp-multimeter", class extends HTMLElement {
-    static observedAttributes = ["values", "colors", "pointers"];
-
-    constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
-        const style = document.createElement("style");
-        style.textContent = ":host { display: inline-block; width: 10em; height: 2ex; }";
-        const ctr = document.createElement("div"),
-            flex = document.createElement("div");
-        ctr.style.position = "relative";
-        ctr.style.width = flex.style.width = "100%";
-        ctr.style.height = flex.style.height = "100%";
-        flex.style.display = "flex";
-        flex.style.overflow = "hidden";
-        ctr.append(flex);
-        this.shadowRoot.append(style, ctr);
-    }
-
-    connectedCallback() {
-        const cs = getComputedStyle(this),
-            flex = this.shadowRoot.lastChild.firstChild;
-        flex.style.borderRadius = cs.borderRadius;
-        this.render();
-    }
-
-    attributeChangedCallback() {
-        this.render();
-    }
-
-    resolveColor(value) {
-        let m;
-        if ((m = value.match(/^([a-z]+\(\s*from\s*)(\.[^\s)]+)(.*)$/))) {
-            return m[1] + this.resolveColor(m[2]) + m[3];
-        } else if ((m = value.match(/^(color-mix\([^,]+,\s*)(.*)\)$/))) {
-            let t = m[1], s = m[2];
-            while ((m = s.match(/^((?:[^,()\s]|\([^()]*\))+)(\s*,?\s*)(.*)$/))) {
-                t += this.resolveColor(m[1]) + m[2];
-                s = m[3];
-            }
-            return t + s;
-        } else if (!value.startsWith(".")) {
-            return value;
-        }
-        const e = document.createElement("div");
-        e.style.display = "none";
-        e.style.position = "absolute";
-        e.className = value.substring(1).replaceAll(".", " ");
-        this.appendChild(e);
-        const style = getComputedStyle(e);
-        let color = style.backgroundColor;
-        if (color === "rgba(0, 0, 0, 0)") {
-            color = style.color;
-        }
-        e.remove();
-        return color;
-    }
-
-    render() {
-        const vstr = (this.getAttribute("values") || "").trim(),
-            cstr = (this.getAttribute("colors") || "").trim(),
-            pstr = (this.getAttribute("pointers") || "").trim(),
-            pcstr = (this.getAttribute("pointer-colors") || "").trim(),
-            vs = vstr === "" ? [] : vstr.split(/\s+/).map(Number),
-            ps = pstr === "" ? [] : pstr.split(/\s+/).map(Number).filter(x => Number.isFinite(x)),
-            cs = [], pcs = [];
-        if (vs.find(x => Number.isFinite(x) && x < 0)) {
-            vs.length = 0;
-        }
-        const vtotal = vs.reduce((a, b) => a + b, 0) || 1;
-        for (const cm of cstr.matchAll(/[a-z]+\((?:[^()]*|\([^()]*\))*\)|\S+/g)) {
-            cs.push(this.resolveColor(cm[0]));
-        }
-        for (const cm of pcstr.matchAll(/[a-z]+\((?:[^()]*|\([^()]*\))*\)|\S+/g)) {
-            pcs.push(this.resolveColor(cm[0]));
-        }
-        if (pcs.length === 0) {
-            pcs.push("#888");
-        }
-        const flex = this.shadowRoot.lastChild.firstChild;
-        flex.replaceChildren(...vs.map((v, i) => {
-            const e = document.createElement("div");
-            e.style.flex = v;
-            e.style.background = cs[i] ?? "transparent";
-            return e;
-        }));
-        let pe = flex.nextSibling;
-        for (const i in ps) {
-            const pv = ps[i];
-            if (pv < 0 || pv > vtotal) {
-                continue;
-            }
-            if (!pe) {
-                pe = document.createElement("span");
-                pe.style.position = "absolute";
-                pe.style.top = "100%";
-                pe.style.transform = "translateX(-50%)";
-                pe.style.borderLeft = "3px solid transparent";
-                pe.style.borderRight = "3px solid transparent";
-                pe.style.borderBottom = "5px solid " + pcs[Math.min(i, pcs.length - 1)];
-                this.shadowRoot.lastChild.appendChild(pe);
-            }
-            pe.style.left = `${pv / vtotal * 100}%`;
-            pe = pe.nextSibling;
-        }
-        while (pe) {
-            const next = pe.nextSibling;
-            pe.remove();
-            pe = next;
-        }
-    }
-});
-
 
 Object.assign(window.hotcrp, {
     $$: $$,
@@ -15598,6 +15663,7 @@ Object.assign(window.hotcrp, {
     // text
     // tooltip
     // tracker_show_elapsed
+    // update_banners
     // update_tag_decoration
     usere: usere
     // wstorage

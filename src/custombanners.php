@@ -59,24 +59,63 @@ class CustomBanners {
     public $conf;
     /** @var Contact */
     public $user;
-    /** @var Qrequest */
+    /** @var ?Qrequest */
     public $qreq;
     /** @var array<string,string> */
-    private $bs;
+    private $active_bs;
     /** @var int */
     private $mcacheid = -1;
-    /** @var bool */
-    private $session_ok = true;
     /** @var ?array<string,string> */
     private $session_bs;
+    /** @var int */
+    private $session_deadline = -1;
+    /** @var bool */
+    private $session_invalid = false;
 
     const SVERSION = 3;
     const CACHEABLE = true;
 
-    function __construct(Conf $conf, Contact $user, Qrequest $qreq) {
+    function __construct(Conf $conf, Contact $user, ?Qrequest $qreq = null) {
         $this->conf = $conf;
         $this->user = $user;
         $this->qreq = $qreq;
+        if ($this->qreq) {
+            $this->prepare_session_bs();
+        }
+    }
+
+    private function prepare_session_bs() {
+        $this->mcacheid = $this->conf->request_mcache();
+        if ($this->mcacheid > 0
+            && ($sval = $this->qreq ? $this->qreq->csession("banners") : null)
+            && is_object($sval)
+            && ($sval->v ?? null) === self::SVERSION
+            && $sval->mcid === $this->mcacheid
+            && (($sval->dl ?? 0) === 0 || $sval->dl > Conf::$now)) {
+            $this->session_bs = $sval->bs ?? [];
+            $this->session_deadline = $sval->dl ?? 0;
+        }
+    }
+
+    /** @return ?string */
+    function token() {
+        if ($this->active_bs === null) {
+            $this->active();
+        }
+        if ($this->session_deadline >= 0) {
+            return $this->mcacheid . "." . $this->session_deadline;
+        }
+        return null;
+    }
+
+    /** @return bool */
+    function check_token($token) {
+        return $this->mcacheid > 0
+            && is_string($token)
+            && ($dot = strpos($token, ".")) !== false
+            && substr($token, 0, $dot) === (string) $this->mcacheid
+            && ctype_digit(substr($token, $dot + 1))
+            && (($dl = (int) substr($token, $dot + 1)) === 0 || $dl > Conf::$now);
     }
 
     /** @param string $id
@@ -109,44 +148,31 @@ class CustomBanners {
         return $next < PHP_INT_MAX ? $next : 0;
     }
 
+    /** @return ?array{string,string} */
     private function try_mcache($id) {
-        if ($this->mcacheid < 0) {
-            $this->mcacheid = $this->conf->request_mcache();
-        }
-        if ($this->mcacheid === 0) {
-            return false;
-        }
-        if ($this->session_bs === null) {
-            $this->session_bs = [];
-            $sval = $this->qreq->csession("banners");
-            if (is_object($sval)
-                && ($sval->v ?? null) === self::SVERSION
-                && $sval->mcid === $this->mcacheid
-                && (($sval->dl ?? 0) === 0 || $sval->dl > Conf::$now)) {
-                $this->session_bs = $sval->bs ?? [];
-            }
-        }
         if (($html = $this->session_bs[$id] ?? null) !== null) {
-            $this->record($id, $html);
-            return true;
+            return [$id, $html];
         }
-        return false;
+        return null;
     }
 
-    private function check($bannerj) {
+    /** @param bool $allow_cache
+     * @return ?array{string,string} */
+    private function check($bannerj, $allow_cache) {
         $vis = $bannerj->visibility ?? "admin";
         if ($vis === "none"
             || !$this->user->isPC
             || ($vis === "admin" && !$this->user->privChair)) {
-            return;
+            return null;
         }
 
-        if ($this->try_mcache($bannerj->id)
-            && self::CACHEABLE
-            && !$this->user->is_actas_user()) {
-            return;
+        if ($allow_cache
+            && !$this->user->is_actas_user()
+            && ($mc = $this->try_mcache($bannerj->id))) {
+            return $mc;
+        } else if ($allow_cache) {
+            $this->session_invalid = true;
         }
-        $this->session_ok = false;
 
         $params = [];
         foreach ($bannerj->params ?? [] as $pj) {
@@ -178,50 +204,56 @@ class CustomBanners {
         if (str_starts_with($in, "<5>")) {
             $out = CleanHTML::basic_clean($out);
         }
-        if ($out !== null && $out !== "") {
-            $this->record($bannerj->id, $out);
+        if (($out ?? "") === "") {
+            return null;
         }
+        return [$bannerj->id, $out];
+    }
+
+    /** @return ?object */
+    function unparse_json($bannerj) {
+        if (($bi = $this->check($bannerj, false))) {
+            return (object) ["id" => $bi[0], "html" => $bi[1]];
+        }
+        return null;
     }
 
     /** @return array<string,string> */
     function active() {
+        if ($this->active_bs !== null) {
+            return $this->active_bs;
+        }
+        $this->active_bs = [];
         $bannerlist = $this->conf->setting_json("banners");
         if (!is_array($bannerlist)) {
             return [];
         }
-        $this->bs = [];
         foreach ($bannerlist as $bannerj) {
-            $this->check($bannerj);
+            if (($bi = $this->check($bannerj, self::CACHEABLE))) {
+                $this->active_bs[$bi[0]] = $bi[1];
+            }
         }
-        return $this->bs;
+        if ($this->mcacheid > 0 && $this->session_invalid && $this->qreq) {
+            $this->session_deadline = $this->next_deadline();
+            $this->qreq->set_csession("banners", (object) [
+                "v" => self::SVERSION, "mcid" => $this->mcacheid,
+                "bs" => $this->active_bs, "dl" => $this->session_deadline
+            ]);
+        }
+        return $this->active_bs;
+    }
+
+    /** @return list<object> */
+    function active_json() {
+        $jl = [];
+        foreach ($this->active() as $id => $html) {
+            $jl[] = (object) ["id" => $id, "html" => $html];
+        }
+        return $jl;
     }
 
     /** @return bool */
     function used_session_cache() {
-        return $this->bs !== null && $this->session_ok;
-    }
-
-    /** @return string */
-    function run() {
-        $bs = $this->active();
-        if (empty($bs)) {
-            return "";
-        }
-        if ($this->mcacheid > 0 && !$this->session_ok) {
-            $this->qreq->set_csession("banners", (object) [
-                "v" => self::SVERSION, "mcid" => $this->mcacheid,
-                "bs" => $bs, "dl" => $this->next_deadline()
-            ]);
-        }
-        $x = [];
-        foreach ($bs as $id => $html) {
-            $x[] = 'hotcrp.banner.add('
-                . json_encode_browser("p-cbanner-{$id}")
-                . ', "cbanner").innerHTML = '
-                . json_encode_browser($html);
-        }
-        $x[] = "hotcrp.banner.resize()";
-        $x[] = '$(hotcrp.banner.resize)';
-        return Ht::unstash_script(join(";", $x));
+        return $this->active_bs !== null && !$this->session_invalid;
     }
 }

@@ -989,6 +989,7 @@ class Conf {
         if ($this->settings["__mcache"] ?? 0) {
             $this->qe("update Settings set value=?, data=null where name='__mcache'", Conf::$now);
             $this->settings["__mcache"] = Conf::$now;
+            $this->settingTexts["__mcache"] = null;
         }
     }
 
@@ -5196,6 +5197,7 @@ class Conf {
     function print_body_entry($qreq, $title, $id, $extra = []) {
         $user = $qreq->user();
         $list = $qreq->active_list();
+        $need_unstash = false;
 
         $class = $extra["body_class"] ?? "";
         $body_elt_class = $list ? Ht::add_tokens($class, "has-hotlist") : $class;
@@ -5234,10 +5236,15 @@ class Conf {
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
-        // deadlines settings
-        $my_deadlines = null;
+        // deadlines settings, banners
         if ($user) {
             $my_deadlines = $user->status_json([], $qreq->paper());
+            if (isset($this->settings["banners"])) {
+                $cb = new CustomBanners($this, $user, $qreq);
+                $my_deadlines->banners = $cb->active_json();
+                $my_deadlines->bannertoken = $cb->token();
+                $need_unstash = !empty($cb->active());
+            }
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
@@ -5283,14 +5290,10 @@ class Conf {
         }
         echo ">\n";
 
-        // Handle paper banners
-        if (isset($this->settings["banners"])) {
-            echo (new CustomBanners($this, $user, $qreq))->run();
-        }
-
-        // If browser owns tracker, send it the script immediately
-        if ($this->has_active_tracker()
-            && MeetingTracker::session_owns_tracker($this, $qreq)) {
+        // Maybe send browser the script immediately
+        if ($need_unstash
+            || ($this->has_active_tracker()
+                && MeetingTracker::session_owns_tracker($this, $qreq))) {
             echo Ht::unstash();
         }
 
