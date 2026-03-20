@@ -15475,7 +15475,11 @@ customElements.define("hotcrp-multimeter", class extends HTMLElement {
         e.style.position = "absolute";
         e.className = value.substring(1).replaceAll(".", " ");
         this.appendChild(e);
-        const color = getComputedStyle(e).backgroundColor;
+        const style = getComputedStyle(e);
+        let color = style.backgroundColor;
+        if (color === "rgba(0, 0, 0, 0)") {
+            color = style.color;
+        }
         e.remove();
         return color;
     }
@@ -15517,11 +15521,11 @@ customElements.define("hotcrp-multimeter", class extends HTMLElement {
             if (!pe) {
                 pe = document.createElement("span");
                 pe.style.position = "absolute";
-                pe.style.top = "77.5%";
+                pe.style.top = "100%";
                 pe.style.transform = "translateX(-50%)";
-                pe.style.fontSize = "10%";
-                pe.style.color = pcs[Math.min(i, pcs.length - 1)];
-                pe.textContent = "▲";
+                pe.style.borderLeft = "3px solid transparent";
+                pe.style.borderRight = "3px solid transparent";
+                pe.style.borderBottom = "5px solid " + pcs[Math.min(i, pcs.length - 1)];
                 this.shadowRoot.lastChild.appendChild(pe);
             }
             pe.style.left = `${pv / vtotal * 100}%`;
