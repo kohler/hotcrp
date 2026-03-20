@@ -4978,7 +4978,7 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
     }
 
     // highlight destination
-    if ((p = e.closest(".s-sf, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))
+    if ((p = e.closest(".s-sf, .s-rf, .f-i, .form-g, .form-section, .entryi, .checki"))
         && hashjump_destination(e, p)) {
         $(p).find("label, .field-title, .label").first().addClass("hashtarget");
         return true;

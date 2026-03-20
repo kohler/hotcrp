@@ -457,11 +457,11 @@ abstract class ReviewField implements JsonSerializable {
     protected function print_web_edit_open($id, $label_for, $rvalues, $args = null) {
         $fieldset = $args["fieldset"] ?? false;
         if ($fieldset) {
-            echo '<fieldset class="rf rfe" data-rf="', $this->uid(), '"><legend>';
+            echo '<fieldset class="rf s-rf" data-rf="', $this->uid(), '"><legend>';
             assert(!$label_for);
             $label_tag = "span";
         } else {
-            echo '<div class="rf rfe" data-rf="', $this->uid(), '">';
+            echo '<div class="rf s-rf" data-rf="', $this->uid(), '">';
             $label_tag = "label";
         }
         echo '<h3 class="', $rvalues->control_class($this->short_id, "s-rf-head");

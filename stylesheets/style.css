@@ -4486,10 +4486,10 @@ a:hover .t-editor,
 .rve {
 	margin-top: 16px;
 }
-.rfe, .rge {
+.s-rf, .rge {
 	margin-bottom: 36px;
 }
-fieldset.s-sf, fieldset.rfe, fieldset.form-section {
+fieldset.s-sf, fieldset.s-rf, fieldset.form-section {
 	border: 0 none;
 	border-radius: 0;
 	padding: 0;
@@ -4497,7 +4497,7 @@ fieldset.s-sf, fieldset.rfe, fieldset.form-section {
 	margin-left: 0;
 	margin-right: 0;
 }
-fieldset.s-sf > legend, fieldset.rfe > legend, fieldset.form-section > legend {
+fieldset.s-sf > legend, fieldset.s-rf > legend, fieldset.form-section > legend {
 	padding: 0;
 }
 .revvt {
