@@ -29,12 +29,53 @@ class Formulas_Tester {
         $conf->save_refresh_setting("rev_open", 1);
     }
 
+    /** @param string $expr
+     * @return Formula */
     private function formula($expr) {
         $f = Formula::make($this->u_chair, $expr);
         if ($f && $f->ok()) {
             $f->prepare()->prepare_json();
         }
         return $f;
+    }
+
+    /** @param array<string,string> $exprs
+     * @return array{bool,array<string,Formula>} */
+    private function formula_set($exprs) {
+        $names = array_keys($exprs);
+        $formulas = [];
+        foreach ($exprs as $name => $expr) {
+            $config = Formula::make_config()->set_deferred(true);
+            foreach ($names as $other) {
+                if ($other !== $name) {
+                    $config->add_param($other);
+                }
+            }
+            $formulas[$name] = Formula::make($this->u_chair, $expr, $config);
+        }
+
+        $deps = [];
+        foreach ($formulas as $name => $f) {
+            $deps[$name] = $f->param_names();
+        }
+        $order = Toposort::sort($deps);
+        $ok = count($order) === count($formulas);
+
+        $fmap = $formats = [];
+        foreach ($order as $name) {
+            $f = $formulas[$name];
+            foreach ($fmap as $pname => $pf) {
+                $f->set_param_format($pname, $pf->format(), $pf->format_detail());
+            }
+            $f->finalize();
+            if ($f->ok()) {
+                $f->prepare()->prepare_json();
+                $fmap[$name] = $f;
+            } else {
+                $ok = false;
+            }
+        }
+        return [$ok, $fmap];
     }
 
     function test_numeric_constants() {
@@ -510,5 +551,182 @@ class Formulas_Tester {
         $f = $this->formula("overall-merit:mjh");
         xassert($f->ok());
         xassert_eqq($f->eval($p19, null), 5);
+    }
+
+    function test_toposort_independent() {
+        // No dependencies: all nodes in sorted order
+        $order = Toposort::sort([
+            "a" => [], "b" => [], "c" => []
+        ]);
+        xassert_eqq($order, ["a", "b", "c"]);
+    }
+
+    function test_toposort_chain() {
+        // a depends on b, b depends on c => order: c, b, a
+        $order = Toposort::sort([
+            "a" => ["b"], "b" => ["c"], "c" => []
+        ]);
+        xassert_eqq($order, ["c", "b", "a"]);
+    }
+
+    function test_toposort_diamond() {
+        // d depends on b and c; b and c depend on a
+        $order = Toposort::sort([
+            "a" => [], "c" => ["a"], "b" => ["a"], "d" => ["b", "c"]
+        ]);
+        xassert_eqq($order, ["a", "c", "b", "d"]);
+    }
+
+    function test_toposort_cycle() {
+        // a -> b -> a is a cycle
+        $order = Toposort::sort([
+            "a" => ["b"], "b" => ["a"]
+        ]);
+        xassert_eqq($order, []);
+    }
+
+    function test_toposort_partial_cycle() {
+        // c is independent, a and b form a cycle
+        $order = Toposort::sort([
+            "a" => ["b"], "b" => ["a"], "c" => []
+        ]);
+        xassert_eqq($order, ["c"]);
+    }
+
+    function test_toposort_external_dep() {
+        // dependency on name not in the graph is ignored
+        $order = Toposort::sort([
+            "a" => ["external"], "b" => []
+        ]);
+        xassert_eqq($order, ["a", "b"]);
+    }
+
+    function test_param_basic() {
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+
+        // Create a formula with a param
+        $config = Formula::make_config()
+            ->add_param("x", Fexpr::FNUMERIC);
+        $f = Formula::make($this->u_chair, "x + 1", $config);
+        xassert($f->ok());
+        $f->set_param("x", 10);
+        $f->prepare();
+        xassert_eqq($f->eval($p19, null), 11);
+
+        // Change param value
+        $f->set_param("x", 20);
+        xassert_eqq($f->eval($p19, null), 21);
+    }
+
+    function test_deferred_formula() {
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+
+        // Create a deferred formula
+        $config = Formula::make_config()
+            ->set_deferred(true)
+            ->add_param("x");
+        $f = Formula::make($this->u_chair, "x + 1", $config);
+        // Before finalize, format is unknown
+        xassert_eqq($f->format(), Fexpr::FUNKNOWN);
+
+        // Finalize with numeric format
+        $f->set_param_format("x", Fexpr::FNUMERIC);
+        $f->finalize();
+        xassert($f->ok());
+        xassert_eqq($f->format(), Fexpr::FNUMERIC);
+
+        // Set param and eval
+        $f->set_param("x", 5);
+        $f->prepare();
+        xassert_eqq($f->eval($p19, null), 6);
+    }
+
+    function test_deferred_unused_param() {
+        // Formula that doesn't use its param
+        $config = Formula::make_config()
+            ->set_deferred(true)
+            ->add_param("x")
+            ->add_param("y");
+        $f = Formula::make($this->u_chair, "x + 1", $config);
+        xassert_eqq($f->param_names(), ["x"]);
+    }
+
+    function test_deferred_let_shadowing() {
+        // let binding shadows param — param should NOT be marked used
+        $config = Formula::make_config()
+            ->set_deferred(true)
+            ->add_param("x");
+        $f = Formula::make($this->u_chair, "let x = 5 in x + 1", $config);
+        // x is shadowed by let, so the param is NOT used
+        xassert_eqq($f->param_names(), []);
+    }
+
+    function test_formulaset_basic() {
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+
+        // x = avg(OveMer) (no deps)
+        // z = x ** 2      (depends on x)
+        // y = z + 1       (depends on z)
+        list($ok, $fmap) = $this->formula_set([
+            "x" => "avg(OveMer)",
+            "y" => "z + 1",
+            "z" => "x ** 2"
+        ]);
+        xassert($ok);
+        // Eval order: x first (no deps), then z (depends on x), then y (depends on z)
+        xassert_eqq(array_keys($fmap), ["x", "z", "y"]);
+
+        // Evaluate in order, threading results
+        $x = $fmap["x"]->eval($p19, null);
+        xassert_eqq($x, 4.0);
+
+        $fmap["z"]->set_param("x", $x);
+        $z = $fmap["z"]->eval($p19, null);
+        xassert_eqq($z, 16.0);
+
+        $fmap["y"]->set_param("z", $z);
+        $y = $fmap["y"]->eval($p19, null);
+        xassert_eqq($y, 17.0);
+    }
+
+    function test_formulaset_cycle() {
+        // a depends on b, b depends on a => cycle
+        list($ok, $fmap) = $this->formula_set([
+            "a" => "b + 1",
+            "b" => "a + 1"
+        ]);
+        xassert(!$ok);
+        xassert_eqq(array_keys($fmap), []);
+    }
+
+    function test_formulaset_independent() {
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+
+        // All independent formulas
+        list($ok, $fmap) = $this->formula_set([
+            "a" => "avg(OveMer)",
+            "b" => "max(OveMer)",
+            "c" => "3 + 5"
+        ]);
+        xassert($ok);
+        xassert_eqq($fmap["a"]->eval($p19, null), 4.0);
+        xassert_eqq($fmap["b"]->eval($p19, null), 5);
+        xassert_eqq($fmap["c"]->eval($p19, null), 8);
+    }
+
+    function test_formulaset_different_paper() {
+        $p20 = $this->conf->checked_paper_by_id(20, $this->u_chair);
+
+        list($ok, $fmap) = $this->formula_set([
+            "x" => "avg(OveMer)",
+            "y" => "x * 2"
+        ]);
+        xassert($ok);
+
+        $x = $fmap["x"]->eval($p20, null);
+        xassert_eqq($x, 3.5);
+
+        $fmap["y"]->set_param("x", $x);
+        xassert_eqq($fmap["y"]->eval($p20, null), 7.0);
     }
 }

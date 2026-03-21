@@ -107,6 +107,19 @@ class FormulaParser {
     }
 
 
+    /** @param VarDef_Fexpr $vare
+     * @return $this */
+    function add_param($vare) {
+        $this->_bind[$vare->name()] = $vare;
+        return $this;
+    }
+
+    /** @return array<string,VarDef_Fexpr> */
+    function params() {
+        return $this->_bind;
+    }
+
+
     /** @param int $pos1
      * @param int $pos2
      * @return Constant_Fexpr */
@@ -641,6 +654,7 @@ class FormulaParser {
             $isfunc1 = $isfunc && $m[2] === "";
             if (!$isfunc1 && isset($this->_bind[$m[1]])) {
                 $this->pos += strlen($m[1]);
+                $this->_bind[$m[1]]->mark_used();
                 $e = new VarUse_Fexpr($this->_bind[$m[1]]);
             } else if (($kwdef = $this->_find_formula_function($m[1]))) {
                 $e = $this->_parse_function($m[1], $kwdef);

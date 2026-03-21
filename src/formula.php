@@ -1281,6 +1281,10 @@ class VarDef_Fexpr extends Fexpr {
     public $ltemp;
     /** @var ?int */
     public $_index_type;
+    /** @var int */
+    public $_info_index = -1;
+    /** @var bool */
+    private $_used = false;
     /** @param string $name */
     function __construct($name) {
         parent::__construct("vardef");
@@ -1289,6 +1293,13 @@ class VarDef_Fexpr extends Fexpr {
     /** @return string */
     function name() {
         return $this->name;
+    }
+    function mark_used() {
+        $this->_used = true;
+    }
+    /** @return bool */
+    function used() {
+        return $this->_used;
     }
     /** @return int */
     function inferred_index() {
@@ -1756,7 +1767,7 @@ class FormulaCompiler {
     }
 }
 
-class Formula implements JsonSerializable {
+final class Formula implements JsonSerializable {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -1775,6 +1786,10 @@ class Formula implements JsonSerializable {
     private $_indexed = false;
     /** @var int */
     private $_index_type = 0;
+    /** @var array<string,VarDef_Fexpr> */
+    private $_params = [];
+    /** @var int */
+    private $_flags = 0;
     /** @var int */
     private $_format = Fexpr::FUNKNOWN;
     private $_format_detail;
@@ -1834,25 +1849,55 @@ class Formula implements JsonSerializable {
     }
 
 
+    /** @return FormulaConfig */
+    static function make_config() {
+        return new FormulaConfig;
+    }
+
+
     const ALLOW_INDEXED = 1;
+    const DEFERRED = 2;
 
     /** @param string $expr
-     * @param int $flags
+     * @param int|FormulaConfig $config
      * @return Formula
      * @suppress PhanAccessReadOnlyProperty */
-    static function make(Contact $user, $expr, $flags = 0) {
+    static function make(Contact $user, $expr, $config = 0) {
         $f = new Formula;
         $f->conf = $user->conf;
         $f->user = $user;
         $f->expression = $expr;
 
         $fp = new FormulaParser($f, $expr);
-        $f->_fexpr = $f->_adjust_fexpr($fp->parse(), $flags);
-        if (MessageSet::list_status($f->lerrors) >= MessageSet::ERROR) {
-            $f->_fexpr->set_format_error();
+        if (is_int($config)) {
+            $f->_flags = $config;
+        } else {
+            $f->_flags = ($config->allow_indexed ? self::ALLOW_INDEXED : 0)
+                | ($config->deferred ? self::DEFERRED : 0);
+            foreach ($config->params as $name => $finfo) {
+                $idx = count($f->info);
+                $f->info[] = null;
+                $vare = new VarDef_Fexpr($name);
+                $vare->_index_type = 0;
+                $vare->_info_index = $idx;
+                $vare->ltemp = '$formula->info[' . $idx . ']';
+                if ($finfo !== null) {
+                    $vare->set_format($finfo[0], $finfo[1]);
+                }
+                $fp->add_param($vare);
+            }
         }
-        $f->_format = $f->_fexpr->format();
-        $f->_format_detail = $f->_fexpr->format_detail();
+
+        $f->_fexpr = $fp->parse();
+
+        foreach ($fp->params() as $param) {
+            if ($param->used())
+                $f->_params[$param->name()] = $param;
+        }
+        if (($f->_flags & self::DEFERRED) === 0) {
+            $f->_flags |= self::DEFERRED;
+            $f->finalize();
+        }
 
         return $f;
     }
@@ -1864,11 +1909,40 @@ class Formula implements JsonSerializable {
     }
 
 
+    /** @return list<string> */
+    function param_names() {
+        return array_keys($this->_params);
+    }
+
+    /** @param string $name
+     * @param int $format
+     * @param mixed $format_detail */
+    function set_param_format($name, $format, $format_detail = null) {
+        if (($vdef = $this->_params[$name] ?? null)
+            && !$vdef->has_format()) {
+            $vdef->set_format($format, $format_detail);
+        }
+    }
+
+    /** @return $this */
+    function finalize() {
+        if (($this->_flags & self::DEFERRED) === 0) {
+            return $this;
+        }
+        $this->_fexpr = $this->_adjust_fexpr($this->_fexpr);
+        if (MessageSet::list_status($this->lerrors) >= MessageSet::ERROR) {
+            $this->_fexpr->set_format_error();
+        }
+        $this->_format = $this->_fexpr->format();
+        $this->_format_detail = $this->_fexpr->format_detail();
+        $this->_flags &= ~self::DEFERRED;
+        return $this;
+    }
+
 
     /* parsing */
 
-    /** @param int $flags */
-    private function _adjust_fexpr(Fexpr $fe, $flags) {
+    private function _adjust_fexpr(Fexpr $fe) {
         if ($fe->format() === Fexpr::FERROR) {
             if (empty($this->lerrors)) {
                 $this->fexpr_lerror($fe, "<0>Formula parse error");
@@ -1883,11 +1957,11 @@ class Formula implements JsonSerializable {
         }
         $state = new FormulaCompiler($this);
         $fe->compile($state);
-        if ($state->indexed && ($flags & self::ALLOW_INDEXED) === 0) {
+        if ($state->indexed && ($this->_flags & self::ALLOW_INDEXED) === 0) {
             if ($fe->matches_at_most_once()) {
                 $some_fe = new Some_Fexpr($fe, $fe->some_inferred_index());
                 $some_fe->apply_strspan($fe->pos1, $fe->pos2, null);
-                return $this->_adjust_fexpr($some_fe, $flags);
+                return $this->_adjust_fexpr($some_fe);
             }
             $this->fexpr_lerror($fe, "<0>Need an aggregate function like ‘sum’ or ‘max’");
             return $fe;
@@ -1952,15 +2026,14 @@ class Formula implements JsonSerializable {
         return $index;
     }
 
-    /** @return bool */
-    function ok() {
-        return $this->_format !== Fexpr::FERROR;
+    /** @return PaperInfo */
+    function placeholder_prow() {
+        if ($this->_placeholder_prow === null) {
+            $this->_placeholder_prow = PaperInfo::make_placeholder($this->conf, -1);
+        }
+        return $this->_placeholder_prow;
     }
 
-    /** @return Fexpr */
-    function fexpr() {
-        return $this->_fexpr;
-    }
 
     /** @return list<MessageItem> */
     function message_list() {
@@ -1982,12 +2055,48 @@ class Formula implements JsonSerializable {
         return MessageSet::feedback_text($this->message_list());
     }
 
-    /** @return PaperInfo */
-    function placeholder_prow() {
-        if ($this->_placeholder_prow === null) {
-            $this->_placeholder_prow = PaperInfo::make_placeholder($this->conf, -1);
+
+    /** @return Fexpr */
+    function fexpr() {
+        return $this->_fexpr;
+    }
+
+
+    /** @return bool */
+    function ok() {
+        return $this->_format !== Fexpr::FERROR;
+    }
+
+    /** @return bool */
+    function viewable() {
+        return $this->_format !== Fexpr::FERROR
+            && $this->_format !== Fexpr::FNULL;
+    }
+
+    /** @return int */
+    function format() {
+        return $this->_format;
+    }
+
+    /** @return mixed */
+    function format_detail() {
+        return $this->_format_detail;
+    }
+
+    /** @return string */
+    function format_description() {
+        if (!$this->ok()) {
+            return "error";
         }
-        return $this->_placeholder_prow;
+        return $this->_fexpr->format_description();
+    }
+
+    /** @return bool */
+    function format_is_numeric() {
+        return $this->_format === Fexpr::FNULL
+            || $this->_format === Fexpr::FNUMERIC
+            || ($this->_format === Fexpr::FREVIEWFIELD
+                && $this->_format_detail->is_numeric());
     }
 
     /** @return PaperOption */
@@ -2000,6 +2109,15 @@ class Formula implements JsonSerializable {
     function format_rf() {
         assert($this->_format === Fexpr::FREVIEWFIELD);
         return $this->_format_detail;
+    }
+
+
+    /** @param string $name
+     * @param mixed $value */
+    function set_param($name, $value) {
+        if (($vdef = $this->_params[$name] ?? null)) {
+            $this->info[$vdef->_info_index] = $value;
+        }
     }
 
     private static function debug_report($function) {
@@ -2235,46 +2353,6 @@ class Formula implements JsonSerializable {
         if ($this->ok()) {
             $this->_fexpr->paper_options($oids);
         }
-    }
-
-    /** @return bool */
-    function viewable() {
-        return $this->_format !== Fexpr::FERROR && $this->_format !== Fexpr::FNULL;
-    }
-
-    /** @return int */
-    function result_format() {
-        if (!$this->ok()) {
-            return null;
-        }
-        return $this->_format;
-    }
-
-    /** @return mixed */
-    function result_format_detail() {
-        if (!$this->ok()) {
-            return null;
-        }
-        return $this->_fexpr->format_detail();
-    }
-
-    /** @return ?bool */
-    function result_format_is_numeric() {
-        if (!$this->ok()) {
-            return null;
-        }
-        return $this->_format === Fexpr::FNULL
-            || $this->_format === Fexpr::FNUMERIC
-            || ($this->_format === Fexpr::FREVIEWFIELD
-                && $this->_format_detail->is_numeric());
-    }
-
-    /** @return string */
-    function result_format_description() {
-        if (!$this->ok()) {
-            return "error";
-        }
-        return $this->_fexpr->format_description();
     }
 
     /** @return ValueFormat */

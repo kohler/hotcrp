@@ -13,11 +13,11 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->ok()
-            || $this->formula->result_format() !== Fexpr::FREVIEWFIELD
+            || $this->formula->format() !== Fexpr::FREVIEWFIELD
             || !$this->formula->viewable()) {
             return false;
         }
-        $this->format_field = $this->formula->result_format_detail();
+        $this->format_field = $this->formula->format_detail();
         $this->formula->prepare_sortable();
         $this->indexer = null;
         if ($this->formula->indexed()) {
@@ -56,9 +56,9 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
                     "top_pos_offset" => strlen($m[1])
                 ]));
             return null;
-        } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
+        } else if ($formula->format() !== Fexpr::FREVIEWFIELD) {
             PaperColumn::column_error_at($xtp, $name,
-                "<0>Formula type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");
+                "<0>Formula type " . $formula->format_description() . " can’t be used in graphs, review field value expected");
             return null;
         }
         $cj = (array) $xfj;

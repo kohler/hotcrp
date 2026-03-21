@@ -66,7 +66,7 @@ class Formula_PaperColumn extends PaperColumn {
     function reset(PaperList $pl) {
         if ($this->results === null) {
             $this->results = [];
-            $isreal = $this->formula->result_format() === Fexpr::FNUMERIC
+            $isreal = $this->formula->format() === Fexpr::FNUMERIC
                 && !$this->real_format;
             foreach ($pl->rowset() as $row) {
                 $v = $this->formula->eval($row, null);
@@ -76,7 +76,7 @@ class Formula_PaperColumn extends PaperColumn {
                 }
             }
         }
-        if ($this->real_format && $this->formula->result_format_is_numeric()) {
+        if ($this->real_format && $this->formula->format_is_numeric()) {
             $this->value_format = new Numeric_ValueFormat($this->real_format);
         } else {
             $this->value_format = $this->formula->value_format();

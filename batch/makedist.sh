@@ -218,6 +218,7 @@ lib/s3result.php
 lib/scoreinfo.php
 lib/subprocess.php
 lib/tagger.php
+lib/toposort.php
 lib/text.php
 lib/uconvertershim.php
 lib/unicodehelper.php
@@ -325,6 +326,7 @@ src/filefilter.php
 src/formatspec.php
 src/formula.php
 src/formulacall.php
+src/formulaconfig.php
 src/formulagraph.php
 src/formulaparser.php
 src/formulas/f_author.php

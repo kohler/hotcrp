@@ -381,12 +381,12 @@ class FormulaGraph extends MessageSet {
                 $this->error_at("fx", $this->conf->_("<0>Formula incompatible with data type ‘{}’", self::unparse_data_type($fx_data)));
             }
             if ($i === 0 && $this->_fx_type === 0) {
-                $this->_fx_type = $f->result_format();
+                $this->_fx_type = $f->format();
             }
             if (($this->_fx_type !== 0
-                 && $this->_fx_type !== $f->result_format())
+                 && $this->_fx_type !== $f->format())
                 || ($this->_fx_type === Fexpr::FREVIEWFIELD
-                    && $this->fxs[0]->result_format_detail() !== $f->result_format_detail())) {
+                    && $this->fxs[0]->format_detail() !== $f->format_detail())) {
                 $this->error_at("fx", "<0>X axis formulas must all use the same units");
                 $this->_fx_type = 0;
             }
@@ -430,7 +430,7 @@ class FormulaGraph extends MessageSet {
 
         if ($this->_fx_combine
             && !$this->has_error()) {
-            if ($this->fy->result_format() === Fexpr::FBOOL) {
+            if ($this->fy->format() === Fexpr::FBOOL) {
                 $this->fy = Formula::make_indexed($this->user, "sum({$fy})");
             } else if (!$this->fy->support_combiner()) {
                 $this->error_at("fy", "<0>Y axis formula cannot be used for this chart");
@@ -766,7 +766,7 @@ class FormulaGraph extends MessageSet {
     }
 
     private function _scatter_data(PaperInfoSet $rowset) {
-        if ($this->fx->result_format() === Fexpr::FREVIEWER
+        if ($this->fx->format() === Fexpr::FREVIEWER
             && ($this->type & self::BOXPLOT) !== 0) {
             $this->_prepare_reviewer_color($this->user);
         }
@@ -841,7 +841,7 @@ class FormulaGraph extends MessageSet {
     }
 
     private function _combine_data(PaperInfoSet $rowset) {
-        if ($this->fx->result_format() === Fexpr::FREVIEWER) {
+        if ($this->fx->format() === Fexpr::FREVIEWER) {
             $this->_prepare_reviewer_color($this->user);
         }
 
@@ -950,7 +950,7 @@ class FormulaGraph extends MessageSet {
             $axes |= 1;
         }
         if (($this->type & self::CDF) === 0
-            && $this->fy->result_format() === $format) {
+            && $this->fy->format() === $format) {
             $axes |= 2;
         }
         return $axes;
@@ -1151,7 +1151,7 @@ class FormulaGraph extends MessageSet {
             $j["label"] = $this->fy->expression;
         }
 
-        $format = $isx ? $this->_fx_type : $this->fy->result_format();
+        $format = $isx ? $this->_fx_type : $this->fy->format();
         $scale = $named_ticks = null;
         $rotate_y = null;
         if ($isx && $this->_fx_type === Fexpr::FSEARCH) {
@@ -1169,7 +1169,7 @@ class FormulaGraph extends MessageSet {
                 return $tagger->unparse($t);
             }, array_keys($this->tags));
         } else if ($format === Fexpr::FREVIEWFIELD) {
-            $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
+            $field = $isx ? $this->fxs[0]->format_detail() : $this->fy->format_detail();
             if ($field instanceof Checkbox_ReviewField) {
                 $named_ticks = ["no", "yes"];
             } else {
@@ -1186,7 +1186,7 @@ class FormulaGraph extends MessageSet {
                 }
             }
         } else if ($format === Fexpr::FSUBFIELD) {
-            $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
+            $field = $isx ? $this->fxs[0]->format_detail() : $this->fy->format_detail();
             assert($field instanceof Selector_PaperOption);
             $named_ticks = [];
             foreach ($field->values() as $i => $v) {
