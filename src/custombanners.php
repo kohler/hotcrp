@@ -23,10 +23,6 @@ class CustomBannerParam {
                 return null;
             }
             $config = Formula::make_config()->set_deferred(true);
-            foreach ($by_name as $name => $j) {
-                if ($name !== $pj->name)
-                    $config->add_param($name);
-            }
             $cbp = new CustomBannerParam;
             $cbp->name = $pj->name;
             $cbp->formula = Formula::make($cb->user, $pj->value, $config);
@@ -55,10 +51,8 @@ class CustomBannerParam {
 
     function eval(?PaperInfoSet $prows, ?CustomBannerParamSet $paramset) {
         if (!$this->srch) {
-            foreach ($this->formula->param_names() as $name) {
-                $this->formula->set_param($name, $paramset->value($name));
-            }
-            $v = $this->formula->eval($this->formula->placeholder_prow(), null);
+            $v = $this->formula->bind_all(...$paramset->values)
+                ->eval($this->formula->placeholder_prow(), null);
             return new FmtArg($this->name, $v, 0);
         }
         if (!$prows) {
@@ -137,16 +131,6 @@ class CustomBannerParamSet {
             }
         }
         $this->params = array_values($oparams);
-    }
-
-    /** @param string $name
-     * @return mixed */
-    function value($name) {
-        foreach ($this->values as $fa) {
-            if ($fa->name === $name)
-                return $fa->value;
-        }
-        return null;
     }
 
     /** @param Contact $user

@@ -27,6 +27,8 @@ class FormulaParser {
     /** @var ?FormulaCall */
     private $_macro;
     /** @var array<string,VarDef_Fexpr> */
+    private $_free_bind = [];
+    /** @var array<string,VarDef_Fexpr> */
     private $_bind = [];
     /** @var ?int */
     private $_last_lerror_pos;
@@ -92,6 +94,7 @@ class FormulaParser {
         $fp->recursion = $this->recursion + 1;
         if ($macro) {
             $fp->_macro = $macro;
+            $fp->_free_bind = &$this->_free_bind;
             $fp->_bind = $this->_bind;
         }
         $fp->string_context = new SearchStringContext($str, $ppos1, $ppos2, $this->string_context);
@@ -110,13 +113,13 @@ class FormulaParser {
     /** @param VarDef_Fexpr $vare
      * @return $this */
     function add_param($vare) {
-        $this->_bind[$vare->name()] = $vare;
+        $this->_free_bind[$vare->name()] = $vare;
         return $this;
     }
 
     /** @return array<string,VarDef_Fexpr> */
     function params() {
-        return $this->_bind;
+        return $this->_free_bind;
     }
 
 
@@ -502,7 +505,7 @@ class FormulaParser {
             }
 
             if ($varok) {
-                $vare = new VarDef_Fexpr($var);
+                $vare = new VarDef_Fexpr($var, null);
                 $vare->apply_strspan($varpos, $varpos + strlen($var), $this->string_context);
                 $this->_bind[$var] = $vare;
                 $vals[$var] = $vale;
@@ -646,7 +649,7 @@ class FormulaParser {
             if (count($fs) === 1) {
                 $e = $this->_parse_field($pos1, $fs[0]);
             } else {
-                $e = new Constant_Fexpr($m[1], Fexpr::FUNKNOWN);
+                $e = new VarUse_Fexpr(new VarDef_Fexpr($m[1], 0));
             }
         } else if ($ch === "#"
                    && ($kwdef = $this->_find_formula_function($ch))) {
@@ -654,10 +657,10 @@ class FormulaParser {
         } else if (preg_match('/\G((?:[A-Za-z_0-9]|\.[A-Za-z_0-9])(?:[A-Za-z_0-9]|[.@:][A-Za-z_0-9])*+)(-[A-Za-z_0-9](?:[A-Za-z_0-9]|[-.@:][A-Za-z_0-9])*+|)/s', $t, $m, 0, $this->pos)) {
             $isfunc = preg_match('/\G\s*+\(/s', $t, $mm, 0, $this->pos + strlen($m[0]));
             $isfunc1 = $isfunc && $m[2] === "";
-            if (!$isfunc1 && isset($this->_bind[$m[1]])) {
+            if (!$isfunc1
+                && ($vd = $this->_bind[$m[1]] ?? $this->_free_bind[$m[1]] ?? null)) {
                 $this->pos += strlen($m[1]);
-                $this->_bind[$m[1]]->mark_used();
-                $e = new VarUse_Fexpr($this->_bind[$m[1]]);
+                $e = new VarUse_Fexpr($vd);
             } else if (($kwdef = $this->_find_formula_function($m[1]))) {
                 $e = $this->_parse_function($m[1], $kwdef);
             } else if (!$isfunc && ($f = $this->_find_formula_field($m[0]))) {
@@ -665,7 +668,9 @@ class FormulaParser {
                 $e = $this->_parse_field($pos1, $f);
             } else if (!$isfunc) {
                 $this->pos += strlen($m[1]);
-                $e = new Constant_Fexpr($m[1], Fexpr::FUNKNOWN);
+                $vare = new VarDef_Fexpr($m[1], 0);
+                $this->_free_bind[$m[1]] = $vare;
+                $e = new VarUse_Fexpr($vare);
             } else {
                 $e = $this->_parse_function($m[1], (object) [
                     "name" => $m[1], "args" => true, "optional" => true,

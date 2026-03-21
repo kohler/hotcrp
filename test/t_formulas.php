@@ -46,11 +46,6 @@ class Formulas_Tester {
         $formulas = [];
         foreach ($exprs as $name => $expr) {
             $config = Formula::make_config()->set_deferred(true);
-            foreach ($names as $other) {
-                if ($other !== $name) {
-                    $config->add_param($other);
-                }
-            }
             $formulas[$name] = Formula::make($this->u_chair, $expr, $config);
         }
 
@@ -587,16 +582,34 @@ class Formulas_Tester {
         xassert_eqq($f->eval($p19, null), 0);
     }
 
+    function test_alpha_score_unknown_value() {
+        // XYZ is not a valid score symbol — should error
+        $f = $this->formula("count(OveMer == XYZ)");
+        xassert(!$f->ok());
+        xassert_str_contains($f->full_feedback_text(), "XYZ");
+    }
+
     function test_alpha_score_inequality() {
         $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
         // With alpha symbols (A=5 best, E=1 worst), this field has flip_relation
         // so OveMer >= B means score >= 4, i.e. lixia(4) and mjh(5)
         $f = $this->formula("count(OveMer >= B)");
         xassert($f->ok());
+        xassert_eqq($f->param_names(), []);
         xassert_eqq($f->eval($p19, null), 2);
 
         // OveMer < C means score < 3, i.e. nobody (scores are 3,4,5)
         $f = $this->formula("count(OveMer < C)");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 0);
+
+        // Quoted symbols work too
+        $f = $this->formula("count(OveMer >= \"B\")");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 2);
+
+        // OveMer < C means score < 3, i.e. nobody (scores are 3,4,5)
+        $f = $this->formula("count(OveMer < \"C\")");
         xassert($f->ok());
         xassert_eqq($f->eval($p19, null), 0);
     }
@@ -674,12 +687,12 @@ class Formulas_Tester {
             ->add_param("x", Fexpr::FNUMERIC);
         $f = Formula::make($this->u_chair, "x + 1", $config);
         xassert($f->ok());
-        $f->set_param("x", 10);
+        $f->bind("x", 10);
         $f->prepare();
         xassert_eqq($f->eval($p19, null), 11);
 
         // Change param value
-        $f->set_param("x", 20);
+        $f->bind("x", 20);
         xassert_eqq($f->eval($p19, null), 21);
     }
 
@@ -687,9 +700,7 @@ class Formulas_Tester {
         $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
 
         // Create a deferred formula
-        $config = Formula::make_config()
-            ->set_deferred(true)
-            ->add_param("x");
+        $config = Formula::make_config()->set_deferred(true);
         $f = Formula::make($this->u_chair, "x + 1", $config);
         // Before finalize, format is unknown
         xassert_eqq($f->format(), Fexpr::FUNKNOWN);
@@ -701,29 +712,9 @@ class Formulas_Tester {
         xassert_eqq($f->format(), Fexpr::FNUMERIC);
 
         // Set param and eval
-        $f->set_param("x", 5);
+        $f->bind("x", 5);
         $f->prepare();
         xassert_eqq($f->eval($p19, null), 6);
-    }
-
-    function test_deferred_unused_param() {
-        // Formula that doesn't use its param
-        $config = Formula::make_config()
-            ->set_deferred(true)
-            ->add_param("x")
-            ->add_param("y");
-        $f = Formula::make($this->u_chair, "x + 1", $config);
-        xassert_eqq($f->param_names(), ["x"]);
-    }
-
-    function test_deferred_let_shadowing() {
-        // let binding shadows param — param should NOT be marked used
-        $config = Formula::make_config()
-            ->set_deferred(true)
-            ->add_param("x");
-        $f = Formula::make($this->u_chair, "let x = 5 in x + 1", $config);
-        // x is shadowed by let, so the param is NOT used
-        xassert_eqq($f->param_names(), []);
     }
 
     function test_formulaset_basic() {
@@ -745,11 +736,11 @@ class Formulas_Tester {
         $x = $fmap["x"]->eval($p19, null);
         xassert_eqq($x, 4.0);
 
-        $fmap["z"]->set_param("x", $x);
+        $fmap["z"]->bind("x", $x);
         $z = $fmap["z"]->eval($p19, null);
         xassert_eqq($z, 16.0);
 
-        $fmap["y"]->set_param("z", $z);
+        $fmap["y"]->bind("z", $z);
         $y = $fmap["y"]->eval($p19, null);
         xassert_eqq($y, 17.0);
     }
@@ -791,7 +782,7 @@ class Formulas_Tester {
         $x = $fmap["x"]->eval($p20, null);
         xassert_eqq($x, 3.5);
 
-        $fmap["y"]->set_param("x", $x);
+        $fmap["y"]->bind("x", $x);
         xassert_eqq($fmap["y"]->eval($p20, null), 7.0);
     }
 }
