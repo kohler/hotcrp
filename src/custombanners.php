@@ -12,7 +12,7 @@ class CustomBannerParam {
 
     /** @param array<string,object> $by_name
      * @return ?CustomBannerParam */
-    static function make(CustomBanners $cb, $pj, $by_name = []) {
+    static function make(Contact $user, $pj, $by_name = []) {
         if (!isset($pj->name)) {
             return null;
         }
@@ -25,7 +25,7 @@ class CustomBannerParam {
             $config = Formula::make_config()->set_deferred(true);
             $cbp = new CustomBannerParam;
             $cbp->name = $pj->name;
-            $cbp->formula = Formula::make($cb->user, $pj->value, $config);
+            $cbp->formula = Formula::make($user, $pj->value, $config);
             return $cbp;
         }
 
@@ -34,7 +34,7 @@ class CustomBannerParam {
         }
         $formula = null;
         if ($type === "formula" && isset($pj->value)) {
-            $formula = Formula::make($cb->user, $pj->value);
+            $formula = Formula::make($user, $pj->value);
         }
         if ($type !== "count"
             && ($type !== "formula" || !$formula || !$formula->ok() || !$formula->support_combiner())) {
@@ -42,7 +42,7 @@ class CustomBannerParam {
         }
         $cbp = new CustomBannerParam;
         $cbp->name = $pj->name;
-        $cbp->srch = new PaperSearch($cb->user, ["q" => $pj->q, "t" => $pj->t ?? "default"]);
+        $cbp->srch = new PaperSearch($user, ["q" => $pj->q, "t" => $pj->t ?? "default"]);
         if (($cbp->formula = $formula)) {
             $formula->prepare_extractor()->prepare_combiner();
         }
@@ -76,14 +76,18 @@ class CustomBannerParam {
 }
 
 class CustomBannerParamSet {
+    /** @var Contact */
+    public $user;
     /** @var list<CustomBannerParam> */
     public $params = [];
     /** @var list<FmtArg> */
     public $values = [];
 
-    function __construct(CustomBanners $cb, $bannerj) {
+    function __construct(Contact $user, $paramsj) {
+        $this->user = $user;
+
         $by_name = [];
-        foreach ($bannerj->params ?? [] as $pj) {
+        foreach ($paramsj ?? [] as $pj) {
             if (isset($pj->name)) {
                 $by_name[$pj->name] = $pj;
             }
@@ -91,7 +95,7 @@ class CustomBannerParamSet {
 
         $calcs = [];
         foreach ($by_name as $pj) {
-            if (($p = CustomBannerParam::make($cb, $pj, $by_name))) {
+            if (($p = CustomBannerParam::make($user, $pj, $by_name))) {
                 if ($p->srch === null) {
                     $calcs[$p->name] = $p;
                 } else {
@@ -118,11 +122,11 @@ class CustomBannerParamSet {
         foreach (Toposort::sort($deps) as $name) {
             $p = $calcs[$name];
             $f = $p->formula;
-            foreach ($f->param_names() as $n) {
-                if (($ff = $oparams[$n]->formula)) {
-                    $f->set_param_format($n, $ff->format(), $ff->format_detail());
-                } else {
-                    $f->set_param_format($n, Fexpr::FNUMERIC);
+            foreach ($f->param_names() as $depn) {
+                if (($depp = $oparams[$depn] ?? null)) {
+                    $f->set_param_format($depn,
+                        $depp->formula ? $depp->formula->format() : Fexpr::FNUMERIC,
+                        $depp->formula ? $depp->formula->format_detail() : null);
                 }
             }
             $f->finalize()->prepare();
@@ -135,7 +139,7 @@ class CustomBannerParamSet {
 
     /** @param Contact $user
      * @return list<FmtArg> */
-    function eval($user) {
+    function eval() {
         $prows = null;
         if (count($this->params) > 1 && $this->params[1]->srch) {
             $qs = [];
@@ -151,7 +155,7 @@ class CustomBannerParamSet {
                     $t = "viewable";
                 }
             }
-            $csrch = new PaperSearch($user, ["q" => join(" OR ", $qs), "t" => $t]);
+            $csrch = new PaperSearch($this->user, ["q" => join(" OR ", $qs), "t" => $t]);
             $prows = PaperInfoSet::make_search($csrch);
         }
 
@@ -285,8 +289,8 @@ class CustomBanners {
         }
 
         if (isset($bannerj->params)) {
-            $paramset = new CustomBannerParamSet($this, $bannerj);
-            $values = $paramset->eval($this->user);
+            $paramset = new CustomBannerParamSet($this->user, $bannerj->params);
+            $values = $paramset->eval();
         } else {
             $values = [];
         }
