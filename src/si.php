@@ -418,6 +418,20 @@ class Si {
         return empty($this->name_parts) && !$this->internal;
     }
 
+    /** @return int */
+    function name_segment_count() {
+        return empty($this->name_parts) ? 1 : count($this->name_parts);
+    }
+
+    /** @param int $i
+     * @return ?string */
+    function name_segment($i) {
+        if (empty($this->name_parts)) {
+            return $i === 0 ? $this->name : null;
+        }
+        return $this->name_parts[$i] ?? null;
+    }
+
     /** @param string ...$parts
      * @return bool */
     function name_matches(...$parts) {

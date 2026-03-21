@@ -136,6 +136,12 @@ class MessageItem implements JsonSerializable {
         return $this->field === $field ? $this : $this->with(["field" => $field]);
     }
 
+    /** @param int $status
+     * @return MessageItem */
+    function with_max_status($status) {
+        return $this->status <= $status ? $this : $this->with(["status" => $status]);
+    }
+
     /** @param ?string $landmark
      * @return MessageItem */
     function with_landmark($landmark) {

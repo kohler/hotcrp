@@ -29,15 +29,13 @@ class CustomBannerParam {
             return $cbp;
         }
 
-        if (!isset($pj->q)) {
-            return null;
-        }
         $formula = null;
         if ($type === "formula" && isset($pj->value)) {
             $formula = Formula::make($user, $pj->value);
         }
-        if ($type !== "count"
-            && ($type !== "formula" || !$formula || !$formula->ok() || !$formula->support_combiner())) {
+        if (!isset($pj->q)
+            || ($type === "formula" && !$formula)
+            || ($type !== "count" && $type !== "formula")) {
             return null;
         }
         $cbp = new CustomBannerParam;
@@ -80,6 +78,8 @@ class CustomBannerParamSet {
     public $user;
     /** @var list<CustomBannerParam> */
     public $params = [];
+    /** @var list<CustomBannerParam> */
+    public $bad_params = [];
     /** @var list<FmtArg> */
     public $values = [];
 
@@ -98,8 +98,11 @@ class CustomBannerParamSet {
             if (($p = CustomBannerParam::make($user, $pj, $by_name))) {
                 if ($p->srch === null) {
                     $calcs[$p->name] = $p;
-                } else {
+                } else if (!$p->formula
+                           || $p->formula->support_combiner()) {
                     $this->params[] = $p;
+                } else {
+                    $this->bad_params[] = $p;
                 }
             }
         }
@@ -110,20 +113,21 @@ class CustomBannerParamSet {
     }
 
     private function resolve_calc($calcs) {
+        $nparams = [];
+        foreach ($this->params as $p) {
+            $nparams[$p->name] = $p;
+        }
         $deps = [];
         foreach ($calcs as $p) {
             $deps[$p->name] = $p->formula->param_names();
         }
 
-        $oparams = [];
-        foreach ($this->params as $p) {
-            $oparams[$p->name] = $p;
-        }
         foreach (Toposort::sort($deps) as $name) {
             $p = $calcs[$name];
+            unset($calcs[$name]);
             $f = $p->formula;
             foreach ($f->param_names() as $depn) {
-                if (($depp = $oparams[$depn] ?? null)) {
+                if (($depp = $nparams[$depn] ?? null)) {
                     $f->set_param_format($depn,
                         $depp->formula ? $depp->formula->format() : Fexpr::FNUMERIC,
                         $depp->formula ? $depp->formula->format_detail() : null);
@@ -131,10 +135,16 @@ class CustomBannerParamSet {
             }
             $f->finalize()->prepare();
             if ($f->ok()) {
-                $oparams[$name] = $p;
+                $this->params[] = $nparams[$name] = $p;
+            } else {
+                $this->bad_params[] = $p;
             }
         }
-        $this->params = array_values($oparams);
+
+        foreach ($calcs as $p) {
+            $p->formula->lerrors[] = new MessageItem(2, null, "<0>Circular reference in banner parameter");
+            $this->bad_params[] = $p;
+        }
     }
 
     /** @param Contact $user
