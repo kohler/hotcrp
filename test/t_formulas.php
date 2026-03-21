@@ -181,6 +181,31 @@ class Formulas_Tester {
         $f = $this->formula("let y = max(ovemer) in let z = min(ovemer) in y - z");
         xassert($f->ok());
         xassert_eqq($f->eval($p19, null), 2);
+
+        // Multiple bindings with comma
+        $prow = $this->conf->checked_paper_by_id(1, $this->u_chair);
+        $f = $this->formula("let x = 2, y = 3 in x + y");
+        xassert($f->ok());
+        xassert_eqq($f->eval($prow, null), 5);
+
+        $f = $this->formula("let x = 2, y = 3 in x * y");
+        xassert($f->ok());
+        xassert_eqq($f->eval($prow, null), 6);
+
+        // Later bindings can reference earlier ones
+        $f = $this->formula("let x = 2, y = x + 1 in x * y");
+        xassert($f->ok());
+        xassert_eqq($f->eval($prow, null), 6);
+
+        // Multiple bindings with aggregates
+        $f = $this->formula("let a = max(ovemer), b = min(ovemer) in a - b");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 2);
+
+        // Three bindings
+        $f = $this->formula("let x = 1, y = 2, z = 3 in x + y + z");
+        xassert($f->ok());
+        xassert_eqq($f->eval($prow, null), 6);
     }
 
     function test_ternary() {

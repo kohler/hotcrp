@@ -460,6 +460,63 @@ class FormulaParser {
         return $this->cerror($pos1, $this->pos);
     }
 
+    /** @param string $var
+     * @param int $varpos
+     * @param int $exprpos
+     * @param bool $in_qc
+     * @return Fexpr */
+    private function _parse_let($var, $varpos, $exprpos, $in_qc) {
+        $saved_bind = $this->_bind;
+        $vals = [];
+        while (true) {
+            if (in_array($var, ["null", "true", "false", "let", "and", "or", "xor", "not", "in"], true)) {
+                $this->lerror($varpos, $varpos + strlen($var), "<0>Cannot redefine reserved word ‘{$var}’");
+                $varok = false;
+            } else if (isset($vals[$var])) {
+                $this->lerror($varpos, $varpos + strlen($var), "<0>‘{$var}’ multiply defined");
+                $varok = false;
+            } else {
+                $varok = true;
+            }
+
+            $this->pos = $exprpos;
+            $vale = $this->_parse_ternary(false);
+            if (!$vale) {
+                $this->_bind = $saved_bind;
+                return null;
+            }
+
+            if ($varok) {
+                $vare = new VarDef_Fexpr($var);
+                $vare->apply_strspan($varpos, $varpos + strlen($var), $this->string_context);
+                $this->_bind[$var] = $vare;
+                $vals[$var] = $vale;
+            }
+
+            if (preg_match('/\G\s*in(?=[\s(])/si', $this->str, $m, 0, $this->pos)) {
+                $this->pos += strlen($m[0]);
+                break;
+            } else if (!preg_match('/\G(\s*,\s*)([A-Za-z_][A-Za-z0-9_]*)\s*=\s*/si', $this->str, $m, 0, $this->pos)) {
+                $this->weak_lerror($exprpos, "<0>Expected ‘in’");
+                $this->_bind = $saved_bind;
+                return null;
+            }
+            $var = $m[2];
+            $varpos = $this->pos + strlen($m[1]);
+            $exprpos = $this->pos + strlen($m[0]);
+        }
+
+        $e = $this->_parse_ternary($in_qc);
+
+        if ($e) {
+            foreach (array_reverse($vals, true) as $name => $vale) {
+                $e = new Let_Fexpr($this->_bind[$name], $vale, $e);
+            }
+        }
+        $this->_bind = $saved_bind;
+        return $e;
+    }
+
     /** @return Constant_Fexpr */
     static function make_error_call(FormulaCall $ff) {
         $ff->parser->lerror($ff->pos1, $ff->pos1 + strlen($ff->name), "<0>Function ‘{$ff->name}’ not found");
@@ -556,28 +613,7 @@ class FormulaParser {
             $e = $this->_reviewer_base($m[1]);
         } else if ($ch === "l"
                    && preg_match('/\G(let\s+)([A-Za-z_][A-Za-z0-9_]*)\s*=\s*/si', $t, $m, 0, $this->pos)) {
-            $var = $m[2];
-            $varpos = $this->pos + strlen($m[1]);
-            if (preg_match('/\A(?:null|true|false|let|and|or|not|in)\z/', $var)) {
-                $this->lerror($varpos, $varpos + strlen($var), "<0>Cannot redefine reserved word ‘{$var}’");
-            }
-            $vare = new VarDef_Fexpr($var);
-            $vare->apply_strspan($varpos, $varpos + strlen($var), $this->string_context);
-            $this->pos += strlen($m[0]);
-            $e = $this->_parse_ternary(false);
-            if ($e && preg_match('/\G\s*in(?=[\s(])/si', $t, $m, 0, $this->pos)) {
-                $this->pos += strlen($m[0]);
-                $old_bind = $this->_bind[$var] ?? null;
-                $this->_bind[$var] = $vare;
-                $e2 = $this->_parse_ternary($in_qc);
-                $this->_bind[$var] = $old_bind;
-            } else {
-                $this->weak_lerror($this->pos, "<0>Expected ‘in’");
-                $e2 = null;
-            }
-            if ($e && $e2) {
-                $e = new Let_Fexpr($vare, $e, $e2);
-            }
+            $e = $this->_parse_let($m[2], $this->pos + strlen($m[1]), $this->pos + strlen($m[0]), $in_qc);
         } else if ($ch === "\$"
                    && preg_match('/\G\$(\d+)/s', $t, $m, 0, $this->pos)
                    && $this->_macro
