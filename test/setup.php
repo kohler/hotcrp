@@ -1198,7 +1198,7 @@ class TestRunner {
         "test06" => [
             "fresh_db", "Reviews_Tester", "Comments_Tester", "UserAPI_Tester",
             "UploadAPI_Tester", "Mailer_Tester", "Events_Tester",
-            "Autoassign_Tester", "Formulas_Tester"
+            "Autoassign_Tester", "fresh_db", "Formulas_Tester"
         ],
         "test07" => [
             "DiffMatchPatch_Tester"
