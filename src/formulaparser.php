@@ -43,7 +43,7 @@ class FormulaParser {
 
     static private $_oprewrite = [
         "=" => "==", ":" => "==", "≤" => "<=", "≥" => ">=", "≠" => "!=",
-        "and" => "&&", "or" => "||"
+        "and" => "&&", "or" => "||", "xor" => "^^"
     ];
 
 
@@ -671,6 +671,8 @@ class FormulaParser {
                 $e = new And_Fexpr($e, $e2);
             } else if ($opx === "||") {
                 $e = new Or_Fexpr($e, $e2);
+            } else if ($opx === "^^") {
+                $e = new Xor_Fexpr($e, $e2);
             } else if ($opx === "??") {
                 $e = new Coalesce_Fexpr(FormulaCall::make_args($this, "??", [$e, $e2]));
             } else if ($opx === "+" || $opx === "-") {

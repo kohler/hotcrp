@@ -193,6 +193,33 @@ class Formulas_Tester {
         xassert_eqq($this->formula("avg(ovemer) >= 4 ? 1 : 0")->prepare()->eval($p20, null), 0);
     }
 
+    function test_xor_operator() {
+        $prow = $this->conf->checked_paper_by_id(1, $this->u_chair);
+
+        // ^^ returns null when both truthy, the truthy value when one is truthy,
+        // false when both falsy
+        xassert_eqq($this->formula("true ^^ false")->eval($prow, null), true);
+        xassert_eqq($this->formula("false ^^ true")->eval($prow, null), true);
+        xassert_eqq($this->formula("false ^^ false")->eval($prow, null), false);
+        xassert_eqq($this->formula("true ^^ true")->eval($prow, null), null);
+
+        // "xor" keyword works the same as ^^
+        xassert_eqq($this->formula("true xor false")->eval($prow, null), true);
+        xassert_eqq($this->formula("false xor true")->eval($prow, null), true);
+        xassert_eqq($this->formula("false xor false")->eval($prow, null), false);
+        xassert_eqq($this->formula("true xor true")->eval($prow, null), null);
+
+        // With numeric values: returns the truthy one, null if both truthy
+        xassert_eqq($this->formula("1 ^^ 0")->eval($prow, null), 1);
+        xassert_eqq($this->formula("0 ^^ 1")->eval($prow, null), 1);
+        xassert_eqq($this->formula("0 ^^ 0")->eval($prow, null), 0);
+        xassert_eqq($this->formula("1 ^^ 1")->eval($prow, null), null);
+
+        // In expressions
+        xassert_eqq($this->formula("(3 > 2) ^^ (1 > 2)")->eval($prow, null), true);
+        xassert_eqq($this->formula("(3 > 2) ^^ (1 < 2)")->eval($prow, null), null);
+    }
+
     function test_unary_operators() {
         $prow = $this->conf->checked_paper_by_id(1, $this->u_chair);
         xassert_eqq($this->formula("-3")->prepare()->eval($prow, null), -3);

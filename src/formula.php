@@ -564,6 +564,20 @@ class Or_Fexpr extends Fexpr {
     }
 }
 
+class Xor_Fexpr extends Fexpr {
+    function __construct($e0, $e1) {
+        parent::__construct("^^", [$e0, $e1]);
+    }
+    function inferred_format() {
+        return $this->args;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "({$t1} && {$t2} ? null : ({$t1} ? : {$t2}))";
+    }
+}
+
 class Not_Fexpr extends Fexpr {
     function __construct(Fexpr $e) {
         parent::__construct("!", [$e]);
@@ -1787,24 +1801,25 @@ class Formula implements JsonSerializable {
     /** @var list<mixed> */
     public $info = [];
 
-    const BINARY_OPERATOR_REGEX = '/\G(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|\?\?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠|(?:and|or|in)(?=[\s(]|\z))/';
+    const BINARY_OPERATOR_REGEX = '/\G(?:[-\+\/%]|\*\*?|\&\&?|\|\|?|\^\^?|\?\?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠|(?:and|or|xor|in)(?=[\s(]|\z))/';
 
     /** @var 0|1|2 */
     const DEBUG = 0;
 
     static public $opprec = [
-        "**" => 14,
-        "u+" => 13, "u-" => 13, "u!" => 13,
-        "*" => 12, "/" => 12, "%" => 12,
-        "+" => 11, "-" => 11,
-        "<<" => 10, ">>" => 10,
-        "<" => 9, ">" => 9, "<=" => 9, ">=" => 9, "≤" => 9, "≥" => 9,
-        "=" => 8, "==" => 8, "!=" => 8, "≠" => 8,
-        "&" => 7,
-        "^" => 6,
-        "|" => 5,
-        ":" => 4,
-        "&&" => 3, "and" => 3,
+        "**" => 15,
+        "u+" => 14, "u-" => 14, "u!" => 14,
+        "*" => 13, "/" => 13, "%" => 13,
+        "+" => 12, "-" => 12,
+        "<<" => 11, ">>" => 11,
+        "<" => 10, ">" => 10, "<=" => 10, ">=" => 10, "≤" => 10, "≥" => 10,
+        "=" => 9, "==" => 9, "!=" => 9, "≠" => 9,
+        "&" => 8,
+        "^" => 7,
+        "|" => 6,
+        ":" => 5,
+        "&&" => 4, "and" => 4,
+        "^^" => 3, "xor" => 3,
         "||" => 2, "or" => 2,
         "??" => 1,
         "?:" => 0,
