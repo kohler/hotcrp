@@ -553,6 +553,71 @@ class Formulas_Tester {
         xassert_eqq($f->eval($p19, null), 5);
     }
 
+    function test_setup_alpha_scores() {
+        // Change OveMer to alphabetical symbols: E=1, D=2, C=3, B=4, A=5
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01",
+            "rf/1/values_text" => "E. Reject\nD. Weak reject\nC. Weak accept\nB. Accept\nA. Strong accept\n"
+        ]);
+        xassert($sv->execute());
+    }
+
+    function test_alpha_score_equality() {
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+        // Paper 19 scores: lixia=B(4), mjh=A(5), floyd=C(3)
+        // count(OveMer == B) should find 1 review (lixia's score of 4=B)
+        $f = $this->formula("count(OveMer == B)");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 1);
+
+        // count(OveMer == A) should find 1 review (mjh's score of 5=A)
+        $f = $this->formula("count(OveMer == A)");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 1);
+
+        // count(OveMer == C) should find 1 review (floyd's score of 3=C)
+        $f = $this->formula("count(OveMer == C)");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 1);
+
+        // count(OveMer == E) should find 0 reviews
+        $f = $this->formula("count(OveMer == E)");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 0);
+    }
+
+    function test_alpha_score_inequality() {
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+        // With alpha symbols (A=5 best, E=1 worst), this field has flip_relation
+        // so OveMer >= B means score >= 4, i.e. lixia(4) and mjh(5)
+        $f = $this->formula("count(OveMer >= B)");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 2);
+
+        // OveMer < C means score < 3, i.e. nobody (scores are 3,4,5)
+        $f = $this->formula("count(OveMer < C)");
+        xassert($f->ok());
+        xassert_eqq($f->eval($p19, null), 0);
+    }
+
+    function test_alpha_score_aggregates() {
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+        // avg/min/max still return numeric values
+        xassert_eqq($this->formula("avg(OveMer)")->prepare()->eval($p19, null), 4.0);
+        xassert_eqq($this->formula("max(OveMer)")->prepare()->eval($p19, null), 5);
+        xassert_eqq($this->formula("min(OveMer)")->prepare()->eval($p19, null), 3);
+    }
+
+    function test_restore_numeric_scores() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01",
+            "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\n"
+        ]);
+        xassert($sv->execute());
+    }
+
     function test_toposort_independent() {
         // No dependencies: all nodes in sorted order
         $order = Toposort::sort([

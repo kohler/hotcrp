@@ -469,9 +469,8 @@ class Constant_Fexpr extends Fexpr {
             return false;
         } else if (is_numeric($this->x)) {
             return (float) $this->x;
-        } else {
-            return $this->x;
         }
+        return $this->x;
     }
 }
 

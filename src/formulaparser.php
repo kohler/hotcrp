@@ -149,13 +149,15 @@ class FormulaParser {
     /** @param string &$name
      * @return ?object */
     private function _find_formula_function(&$name) {
-        while ($name !== "") {
-            if (($kwdef = $this->conf->formula_function($name, $this->user))) {
+        $s = $name;
+        while ($s !== "") {
+            if (($kwdef = $this->conf->formula_function($s, $this->user))) {
+                $name = $s;
                 return $kwdef;
             }
-            $pos1 = strrpos($name, ":");
-            $pos2 = strrpos($name, ".");
-            $name = substr($name, 0, max((int) $pos1, (int) $pos2));
+            $pos1 = strrpos($s, ":");
+            $pos2 = strrpos($s, ".");
+            $s = substr($s, 0, max((int) $pos1, (int) $pos2));
         }
         return null;
     }
