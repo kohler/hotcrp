@@ -5,17 +5,37 @@
 class CustomBannerParam {
     /** @var string */
     public $name;
-    /** @var PaperSearch */
+    /** @var ?PaperSearch */
     public $srch;
     /** @var ?Formula */
     public $formula;
 
-    /** @return ?CustomBannerParam */
-    static function make(CustomBanners $cb, $pj) {
-        if (!isset($pj->name) || !isset($pj->q)) {
+    /** @param array<string,object> $by_name
+     * @return ?CustomBannerParam */
+    static function make(CustomBanners $cb, $pj, $by_name = []) {
+        if (!isset($pj->name)) {
             return null;
         }
         $type = $pj->type ?? "count";
+
+        if ($type === "calc") {
+            if (!isset($pj->value)) {
+                return null;
+            }
+            $config = Formula::make_config()->set_deferred(true);
+            foreach ($by_name as $name => $j) {
+                if ($name !== $pj->name)
+                    $config->add_param($name);
+            }
+            $cbp = new CustomBannerParam;
+            $cbp->name = $pj->name;
+            $cbp->formula = Formula::make($cb->user, $pj->value, $config);
+            return $cbp;
+        }
+
+        if (!isset($pj->q)) {
+            return null;
+        }
         $formula = null;
         if ($type === "formula" && isset($pj->value)) {
             $formula = Formula::make($cb->user, $pj->value);
@@ -33,8 +53,15 @@ class CustomBannerParam {
         return $cbp;
     }
 
-    function eval(?PaperInfoSet $prows) {
-        if ($prows === null) {
+    function eval(?PaperInfoSet $prows, ?CustomBannerParamSet $paramset) {
+        if (!$this->srch) {
+            foreach ($this->formula->param_names() as $name) {
+                $this->formula->set_param($name, $paramset->value($name));
+            }
+            $v = $this->formula->eval($this->formula->placeholder_prow(), null);
+            return new FmtArg($this->name, $v, 0);
+        }
+        if (!$prows) {
             if (!$this->formula) {
                 return new FmtArg($this->name, count($this->srch->paper_ids()), 0);
             }
@@ -51,6 +78,105 @@ class CustomBannerParam {
             $values[] = $this->formula->eval_extractor($prow, null);
         }
         return new FmtArg($this->name, $this->formula->eval_combiner($values), 0);
+    }
+}
+
+class CustomBannerParamSet {
+    /** @var list<CustomBannerParam> */
+    public $params = [];
+    /** @var list<FmtArg> */
+    public $values = [];
+
+    function __construct(CustomBanners $cb, $bannerj) {
+        $by_name = [];
+        foreach ($bannerj->params ?? [] as $pj) {
+            if (isset($pj->name)) {
+                $by_name[$pj->name] = $pj;
+            }
+        }
+
+        $calcs = [];
+        foreach ($by_name as $pj) {
+            if (($p = CustomBannerParam::make($cb, $pj, $by_name))) {
+                if ($p->srch === null) {
+                    $calcs[$p->name] = $p;
+                } else {
+                    $this->params[] = $p;
+                }
+            }
+        }
+
+        if ($calcs) {
+            $this->resolve_calc($calcs);
+        }
+    }
+
+    private function resolve_calc($calcs) {
+        $deps = [];
+        foreach ($calcs as $p) {
+            $deps[$p->name] = $p->formula->param_names();
+        }
+
+        $oparams = [];
+        foreach ($this->params as $p) {
+            $oparams[$p->name] = $p;
+        }
+        foreach (Toposort::sort($deps) as $name) {
+            $p = $calcs[$name];
+            $f = $p->formula;
+            foreach ($f->param_names() as $n) {
+                if (($ff = $oparams[$n]->formula)) {
+                    $f->set_param_format($n, $ff->format(), $ff->format_detail());
+                } else {
+                    $f->set_param_format($n, Fexpr::FNUMERIC);
+                }
+            }
+            $f->finalize()->prepare();
+            if ($f->ok()) {
+                $oparams[$name] = $p;
+            }
+        }
+        $this->params = array_values($oparams);
+    }
+
+    /** @param string $name
+     * @return mixed */
+    function value($name) {
+        foreach ($this->values as $fa) {
+            if ($fa->name === $name)
+                return $fa->value;
+        }
+        return null;
+    }
+
+    /** @param Contact $user
+     * @return list<FmtArg> */
+    function eval($user) {
+        $prows = null;
+        if (count($this->params) > 1 && $this->params[1]->srch) {
+            $qs = [];
+            $t = "";
+            foreach ($this->params as $i => $p) {
+                if (!$p->srch) {
+                    break;
+                }
+                $qs[] = SearchParser::safe_parenthesize($p->srch->q);
+                if ($i === 0) {
+                    $t = $p->srch->limit();
+                } else if ($t !== "viewable" && $t !== $p->srch->limit()) {
+                    $t = "viewable";
+                }
+            }
+            $csrch = new PaperSearch($user, ["q" => join(" OR ", $qs), "t" => $t]);
+            $prows = PaperInfoSet::make_search($csrch);
+        }
+
+        // Evaluate all params in topo order
+        $this->values = [];
+        foreach ($this->params as $p) {
+            $this->values[] = $p->eval($prows, $this);
+        }
+        return $this->values;
     }
 }
 
@@ -174,33 +300,15 @@ class CustomBanners {
             $this->session_invalid = true;
         }
 
-        $params = [];
-        foreach ($bannerj->params ?? [] as $pj) {
-            if (($p = CustomBannerParam::make($this, $pj)))
-                $params[] = $p;
-        }
-
-        $pvalues = [];
-        if (count($params) === 1) {
-            $pvalues[] = $params[0]->eval(null);
-        } else if (!empty($params)) {
-            $qs = [];
-            $t = $params[0]->srch->limit();
-            foreach ($params as $param) {
-                $qs[] = SearchParser::safe_parenthesize($param->srch->q);
-                if ($t !== "viewable" && $t !== $param->srch->limit()) {
-                    $t = "viewable";
-                }
-            }
-            $csrch = new PaperSearch($this->user, ["q" => join(" OR ", $qs), "t" => $t]);
-            $prows = PaperInfoSet::make_search($csrch);
-            foreach ($params as $param) {
-                $pvalues[] = $param->eval($prows);
-            }
+        if (isset($bannerj->params)) {
+            $paramset = new CustomBannerParamSet($this, $bannerj);
+            $values = $paramset->eval($this->user);
+        } else {
+            $values = [];
         }
 
         $in = Ftext::ensure($bannerj->ftext, 0);
-        $out = $this->conf->_5($in, ...$pvalues);
+        $out = $this->conf->_5($in, ...$values);
         if (str_starts_with($in, "<5>")) {
             $out = CleanHTML::basic_clean($out);
         }

@@ -44,6 +44,13 @@ class Banners_Tester {
         return (object) ["name" => $name, "q" => $q];
     }
 
+    /** @param string $name
+     * @param string $value
+     * @return object */
+    static private function calc_param($name, $value) {
+        return (object) ["name" => $name, "type" => "calc", "value" => $value];
+    }
+
     private function establish_mcache() {
         $this->conf->invalidate_mcache();
         Conf::advance_current_time(Conf::$now + 1);
@@ -405,6 +412,119 @@ class Banners_Tester {
         // Restore
         $this->conf->save_refresh_setting("sub_open", $old_sub_open);
         $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+    }
+
+
+    // Calc params
+
+    function test_calc_param_constant() {
+        $this->set_banners(json_encode([
+            (object) [
+                "id" => "b1",
+                "visibility" => "pc",
+                "ftext" => "<0>result is {x}",
+                "params" => [self::calc_param("x", "3 + 5")]
+            ]
+        ]));
+        $qreq = $this->make_qreq($this->u_chair);
+        $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
+        $bs = $cb->active();
+        xassert_eqq(count($bs), 1);
+        xassert(str_contains($bs["b1"], "8"));
+    }
+
+    function test_calc_param_depends_on_count() {
+        $this->set_banners(json_encode([
+            (object) [
+                "id" => "b1",
+                "visibility" => "pc",
+                "ftext" => "<0>{total} total from {n} and {m}",
+                "params" => [
+                    self::count_param("n", "status:submitted"),
+                    self::count_param("m", "status:submitted"),
+                    self::calc_param("total", "n + m")
+                ]
+            ]
+        ]));
+        $qreq = $this->make_qreq($this->u_chair);
+        $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
+        $bs = $cb->active();
+        xassert_eqq(count($bs), 1);
+        // n and m count the same query, so total = 2 * n
+        $bi = $cb->unparse_json((object) [
+            "id" => "b1",
+            "visibility" => "pc",
+            "ftext" => "<0>{total} total from {n} and {m}",
+            "params" => [
+                self::count_param("n", "status:submitted"),
+                self::count_param("m", "status:submitted"),
+                self::calc_param("total", "n + m")
+            ]
+        ]);
+        xassert(!!$bi);
+        // Extract the values: "{total} total from {n} and {m}"
+        // n == m, total == 2*n
+        xassert(preg_match('/^(\d+) total from (\d+) and (\d+)$/', $bi->html, $mm));
+        if ($mm) {
+            xassert_eqq((int) $mm[1], (int) $mm[2] + (int) $mm[3]);
+            xassert_eqq((int) $mm[2], (int) $mm[3]);
+        }
+    }
+
+    function test_calc_chain() {
+        $bi = (new CustomBanners($this->conf, $this->u_chair, $this->make_qreq($this->u_chair)))
+            ->unparse_json((object) [
+                "id" => "b1",
+                "visibility" => "pc",
+                "ftext" => "<0>{quad}",
+                "params" => [
+                    self::count_param("n", "status:submitted"),
+                    self::calc_param("double", "n * 2"),
+                    self::calc_param("quad", "double * 2")
+                ]
+            ]);
+        xassert(!!$bi);
+        // quad = n * 4; get n separately to verify
+        $srch = new PaperSearch($this->u_chair, ["q" => "status:submitted", "t" => "default"]);
+        $n = count($srch->paper_ids());
+        xassert_eqq($bi->html, (string) ($n * 4));
+    }
+
+    function test_calc_no_search_params() {
+        // All calc params, no search params
+        $bi = (new CustomBanners($this->conf, $this->u_chair, $this->make_qreq($this->u_chair)))
+            ->unparse_json((object) [
+                "id" => "b1",
+                "visibility" => "pc",
+                "ftext" => "<0>{y}",
+                "params" => [
+                    self::calc_param("x", "10"),
+                    self::calc_param("y", "x * x + 1")
+                ]
+            ]);
+        xassert(!!$bi);
+        xassert_eqq($bi->html, "101");
+    }
+
+    function test_calc_cycle_dropped() {
+        // a and b form a cycle; banner should still render but without those params
+        $this->set_banners(json_encode([
+            (object) [
+                "id" => "b1",
+                "visibility" => "pc",
+                "ftext" => "<0>ok",
+                "params" => [
+                    self::calc_param("a", "b + 1"),
+                    self::calc_param("b", "a + 1")
+                ]
+            ]
+        ]));
+        $qreq = $this->make_qreq($this->u_chair);
+        $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
+        $bs = $cb->active();
+        // Banner still renders (ftext doesn't depend on the cycled params)
+        xassert_eqq(count($bs), 1);
+        xassert_eqq($bs["b1"], "ok");
     }
 
 
