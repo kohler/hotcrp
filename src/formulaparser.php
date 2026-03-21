@@ -376,17 +376,20 @@ class FormulaParser {
     /** @param string &$field
      * @return ?object */
     private function _find_formula_field(&$field) {
-        while (true) {
-            if (strlen($field) > 1) {
-                $fs = $this->conf->find_all_fields($field);
-                if (count($fs) === 1) {
-                    return $fs[0];
-                }
+        $s = $field;
+        if (($colon = strpos($s, ":")) !== false) {
+            $s = substr($s, 0, $colon);
+        }
+        while (strlen($s) > 1) {
+            $fs = $this->conf->find_all_fields($s);
+            if (count($fs) === 1) {
+                $field = $s;
+                return $fs[0];
             }
-            if (($dash = strrpos($field, "-")) === false) {
+            if (($dash = strrpos($s, "-")) === false) {
                 break;
             }
-            $field = substr($field, 0, $dash);
+            $s = substr($s, 0, $dash);
         }
         return null;
     }
@@ -505,7 +508,7 @@ class FormulaParser {
                 return null;
             }
             $e = new Not_Fexpr($e);
-        } else if (preg_match('/\G(?:\d+\.?\d*|\.\d+)/s', $t, $m, 0, $this->pos)) {
+        } else if (preg_match('/\G(?:\d++\.?+\d*+|\.\d++)(?![A-Za-z])/s', $t, $m, 0, $this->pos)) {
             $this->pos += strlen($m[0]);
             $e = new Constant_Fexpr((float) $m[0], Fexpr::FNUMERIC);
         } else if (($ch === "f" || $ch === "t")
@@ -597,23 +600,26 @@ class FormulaParser {
         } else if ($ch === "#"
                    && ($kwdef = $this->_find_formula_function($ch))) {
             $e = $this->_parse_function($ch, $kwdef);
-        } else if (!empty($this->_bind)
-                   && preg_match('/\G[A-Za-z_][A-Za-z0-9_]*/', $t, $m, 0, $this->pos)
-                   && isset($this->_bind[$m[0]])) {
-            $this->pos += strlen($m[0]);
-            $e = new VarUse_Fexpr($this->_bind[$m[0]]);
-        } else if (preg_match('/\G(?:\#|[A-Za-z_][A-Za-z0-9_.@:]*)/is', $t, $m, 0, $this->pos)
-                   && ($kwdef = $this->_find_formula_function($m[0]))) {
-            $e = $this->_parse_function($m[0], $kwdef);
-        } else if (preg_match('/\G[-A-Za-z0-9_.@]+(?!\s*\()/s', $t, $m, 0, $this->pos)) {
-            $f = $this->_find_formula_field($m[0]);
-            $this->pos += strlen($m[0]);
-            $e = $f ? $this->_parse_field($pos1, $f) : new Constant_Fexpr($m[0], Fexpr::FUNKNOWN);
-        } else if (preg_match('/\G[A-Za-z][A-Za-z0-9_.@:]*/is', $t, $m, 0, $this->pos)) {
-            $e = $this->_parse_function($m[0], (object) [
-                "name" => $m[0], "args" => true, "optional" => true,
-                "function" => "FormulaParser::make_error_call"
-            ]);
+        } else if (preg_match('/\G((?:[A-Za-z_0-9]|\.[A-Za-z_0-9])(?:[A-Za-z_0-9]|[.@:][A-Za-z_0-9])*+)(-[A-Za-z_0-9](?:[A-Za-z_0-9]|[-.@:][A-Za-z_0-9])*+|)/s', $t, $m, 0, $this->pos)) {
+            $isfunc = preg_match('/\G\s*+\(/s', $t, $mm, 0, $this->pos + strlen($m[0]));
+            $isfunc1 = $isfunc && $m[2] === "";
+            if (!$isfunc1 && isset($this->_bind[$m[1]])) {
+                $this->pos += strlen($m[1]);
+                $e = new VarUse_Fexpr($this->_bind[$m[1]]);
+            } else if (($kwdef = $this->_find_formula_function($m[1]))) {
+                $e = $this->_parse_function($m[1], $kwdef);
+            } else if (!$isfunc && ($f = $this->_find_formula_field($m[0]))) {
+                $this->pos += strlen($m[0]);
+                $e = $this->_parse_field($pos1, $f);
+            } else if (!$isfunc) {
+                $this->pos += strlen($m[1]);
+                $e = new Constant_Fexpr($m[1], Fexpr::FUNKNOWN);
+            } else {
+                $e = $this->_parse_function($m[1], (object) [
+                    "name" => $m[1], "args" => true, "optional" => true,
+                    "function" => "FormulaParser::make_error_call"
+                ]);
+            }
         }
 
         if (!$e) {
