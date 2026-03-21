@@ -4734,7 +4734,11 @@ class Conf {
                 || (strtolower(substr($url, 0, 5)) !== "http:"
                     && strtolower(substr($url, 0, 6)) !== "https:"))) {
             if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
-                $url .= "?mtime={$mtime}";
+                if ($this->opt["assetsPathMtime"] ?? false) {
+                    $url = "@{$mtime}/{$url}";
+                } else {
+                    $url .= "?mtime={$mtime}";
+                }
             }
             $x["href"] = $this->_assets_url . $url;
         }
@@ -4745,16 +4749,23 @@ class Conf {
      * @return string */
     function make_script_file($url, $no_strict = false, $integrity = null) {
         if (str_starts_with($url, "scripts/")) {
-            $post = "";
-            if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
-                $post = "mtime={$mtime}";
-            }
+            $mtime = @filemtime(SiteLoader::find($url));
             if (($this->opt["strictJavascript"] ?? false) && !$no_strict) {
                 $url = $this->_script_assets_url . "cacheable.php/"
                     . str_replace("%2F", "/", urlencode($url))
-                    . "?strictjs=1" . ($post ? "&{$post}" : "");
+                    . "?strictjs=1";
+                if ($mtime !== false) {
+                    $url .= "&mtime={$mtime}";
+                }
             } else {
-                $url = $this->_script_assets_url . $url . ($post ? "?{$post}" : "");
+                if ($mtime !== false) {
+                    if ($this->opt["assetsPathMtime"] ?? false) {
+                        $url = "@{$mtime}/{$url}";
+                    } else {
+                        $url .= "?mtime={$mtime}";
+                    }
+                }
+                $url = $this->_script_assets_url . $url;
             }
             if ($this->_script_assets_site) {
                 return Ht::script_file($url, ["integrity" => $integrity]);
