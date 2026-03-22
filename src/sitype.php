@@ -510,7 +510,14 @@ class String_Sitype extends Sitype {
         return false;
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return $this->example ?? ($this->simple ? "short string" : "text");
+        if ($this->example !== null) {
+            return $this->example;
+        } else if ($this->ftext) {
+            return "text with format prefix";
+        } else if ($this->simple) {
+            return "short string";
+        }
+        return "text";
     }
 }
 
