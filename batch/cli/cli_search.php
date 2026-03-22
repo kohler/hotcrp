@@ -17,6 +17,8 @@ class Search_CLIBatch implements CLIBatchCommand {
     public $format;
     /** @var bool */
     public $warn_missing;
+    /** @var bool */
+    public $forceShow;
     /** @var int */
     public $help = 0;
     /** @var array<string,string> */
@@ -184,6 +186,9 @@ class Search_CLIBatch implements CLIBatchCommand {
         $pcb->fields = $arg["f"] ?? [];
         $pcb->format = $arg["F"] ?? "csv";
         $pcb->warn_missing = isset($arg["warn-missing"]);
+        if (($pcb->forceShow = isset($arg["force"]))) {
+            $pcb->param["forceShow"] = "1";
+        }
         $other_param = false;
         foreach ($arg["param"] ?? [] as $pstr) {
             if (($eq = strpos($pstr, "=")) === false) {
@@ -245,7 +250,8 @@ Usage: php batch/hotcrapi.php search -q SEARCH [-f FIELD...]
        php batch/hotcrapi.php search ACTION [-P] -q SEARCH"
         )->long(
             "q:,query: =SEARCH !search Submission search",
-            "t:,type: =TYPE !search Collection to search [viewable]",
+            "t:,scope:,type: =SCOPE !search Scope of search [viewable]",
+            "force !search Override conflicts",
             "json,j !search Output JSON response",
             "f[]+,field[]+ =FIELD !search Request additional display fields",
             "F:,format: !search Change display field format",

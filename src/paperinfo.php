@@ -1932,6 +1932,20 @@ class PaperInfo {
         return null;
     }
 
+    /** @param string $tag
+     * @return ?float */
+    function viewable_tag_value($tag, Contact $user) {
+        if ($this->paperTags === null) {
+            $this->load_tags();
+        }
+        $tags = $this->viewable_tags($user);
+        if ($tags !== ""
+            && ($pos = stripos($tags, " {$tag}#")) !== false) {
+            return (float) substr($tags, $pos + strlen($tag) + 2);
+        }
+        return null;
+    }
+
     /** @return string */
     function all_tags_text() {
         if ($this->paperTags === null) {

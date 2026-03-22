@@ -1107,7 +1107,7 @@ final class PaperList extends MessageSet {
         $aidx = $pidx = 0;
         $plist = $this->_rowset->as_list();
         $alist = $dt->order_anno_list();
-        $ptagval = $pidx !== count($plist) ? $plist[$pidx]->tag_value($etag) : null;
+        $ptagval = $pidx !== count($plist) ? $plist[$pidx]->viewable_tag_value($etag, $this->user) : null;
         while ($aidx !== count($alist) || $pidx !== count($plist)) {
             if ($aidx !== count($alist)
                 && $alist[$aidx]->tagIndex <= ($ptagval ?? TAG_INDEXBOUND)) {
@@ -1120,7 +1120,7 @@ final class PaperList extends MessageSet {
             } else {
                 $this->_then_map[$plist[$pidx]->paperId] = count($groups) - 1;
                 ++$pidx;
-                $ptagval = $pidx !== count($plist) ? $plist[$pidx]->tag_value($etag) : null;
+                $ptagval = $pidx !== count($plist) ? $plist[$pidx]->viewable_tag_value($etag, $this->user) : null;
             }
         }
         return $groups;

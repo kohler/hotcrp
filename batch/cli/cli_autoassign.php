@@ -157,7 +157,7 @@ Usage: php batch/hotcrapi.php autoassign AUTOASSIGNER -q SEARCH [PARAM=VALUE...]
        php batch/hotcrapi.php autoassign help AUTOASSIGNER"
         )->long(
             "q:,query: =SEARCH !autoassign Autoassignment papers",
-            "t:,type: =TYPE !autoassign Collection to autoassign [s]",
+            "t:,scope:,type: =SCOPE !autoassign Scope to autoassign [s]",
             "dry-run,d !autoassign Don’t actually save changes",
             "minimal-dry-run !autoassign Like `--dry-run`, but outputs unsimplified assignment",
             "summary !autoassign Request an assignment summary",
