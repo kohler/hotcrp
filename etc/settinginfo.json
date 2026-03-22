@@ -65,7 +65,7 @@
     },
     {
         "name_pattern": "decision/$",
-        "type": "object", "subtype": "Decision_Setting",
+        "type": "object", "subtype": "decision",
         "parser_class": "Decision_SettingParser"
     },
     {
@@ -277,7 +277,7 @@
     },
     {
         "name_pattern": "sf/$",
-        "type": "object", "subtype": "Sf_Setting",
+        "type": "object", "subtype": "submission_field",
         "parser_class": "Options_SettingParser",
         "title": "Submission field", "title_pattern": "‘${sv sf/$/title}’"
     },
@@ -313,13 +313,13 @@
     {
         "name_pattern": "sf/$/values", "type": "oblist", "storage": "member.xvalues",
         "parser_class": "Options_SettingParser", "parse_order": 3,
-        "title": "/Value list",
+        "title": "/List of choices",
         "hashid": "sf/$/values_text"
     },
     {   "name_pattern": "sf/$/values_storage", "internal": true, "storage": "member.values"   },
     {   "name_pattern": "sf/$/ids", "internal": true   },
     {
-        "name_pattern": "sf/$/values/$$", "type": "object", "subtype": "SfValue_Setting",
+        "name_pattern": "sf/$/values/$$", "type": "object", "subtype": "sf_value_choice",
         "parser_class": "Options_SettingParser"
     },
     {
@@ -479,7 +479,7 @@
     },
     {
         "name_pattern": "submission/$",
-        "type": "object", "subtype": "Sround_Setting",
+        "type": "object", "subtype": "sclass",
         "title": "Submission class", "title_pattern": "${sv submission/$/title}",
         "parser_class": "Sround_SettingParser"
     },
@@ -580,7 +580,7 @@
     },
     {
         "name_pattern": "response/$",
-        "type": "object", "subtype": "Response_Setting",
+        "type": "object", "subtype": "response",
         "parser_class": "Response_SettingParser",
         "title": "Response round", "title_pattern": "${sv response/$/title}"
     },
@@ -757,7 +757,7 @@
     },
     {
         "name_pattern": "review/$",
-        "type": "object", "subtype": "Review_Setting",
+        "type": "object", "subtype": "review_round",
         "title": "Review round", "title_pattern": "${sv review/$/title}",
         "parser_class": "Review_SettingParser"
     },
@@ -863,7 +863,7 @@
     },
     {
         "name_pattern": "rf/$",
-        "type": "object", "subtype": "Rf_Setting",
+        "type": "object", "subtype": "review_field",
         "title_pattern": "‘${sv rf/$/title}’",
         "parser_class": "ReviewForm_SettingParser"
     },
@@ -921,14 +921,14 @@
     {   "name_pattern": "rf/$/display_space", "internal": true   },
     {
         "name_pattern": "rf/$/values", "type": "oblist", "storage": "member.xvalues",
-        "title": "/Value list",
+        "title": "/List of choices",
         "parser_class": "ReviewForm_SettingParser", "parse_order": 2,
         "hashid": "rf/$/values_text"
     },
     {   "name_pattern": "rf/$/ids", "internal": true   },
     {   "name_pattern": "rf/$/values_storage", "internal": true, "storage": "member.values"   },
     {
-        "name_pattern": "rf/$/values/$$", "type": "object", "subtype": "RfValue_Setting",
+        "name_pattern": "rf/$/values/$$", "type": "object", "subtype": "rf_value_choice",
         "parser_class": "ReviewForm_SettingParser",
         "title": "/Value",
         "title_pattern": "${sv rf/$/values/$$/title}",
@@ -1028,7 +1028,7 @@
     },
     {
         "name_pattern": "format/$",
-        "type": "object", "subtype": "Banal_Setting",
+        "type": "object", "subtype": "format",
         "parser_class": "Banal_SettingParser"
     },
     {
@@ -1154,7 +1154,7 @@
     },
     {
         "name_pattern": "tag_style/$",
-        "type": "object", "subtype": "TagStyle_Setting",
+        "type": "object", "subtype": "tag_style",
         "title": "Tag style", "title_pattern": "‘${sv tag_style/$/style}’",
         "parser_class": "TagStyle_SettingParser"
     },
@@ -1178,7 +1178,7 @@
     },
     {
         "name_pattern": "badge/$", "internal": true,
-        "type": "object", "subtype": "TagStyle_Setting",
+        "type": "object", "subtype": "tag_style",
         "title": "Badge style", "title_pattern": "‘${sv badge/$/style}’",
         "parser_class": "TagStyle_SettingParser",
         "tags": "tags"
@@ -1236,7 +1236,7 @@
     },
     {
         "name_pattern": "automatic_tag/$", "internal": true,
-        "type": "object", "subtype": "AutomaticTag_Setting",
+        "type": "object", "subtype": "automatic_tag",
         "title_pattern": "Automatic tag ‘#${sv automatic_tag/$/tag}’",
         "parser_class": "AutomaticTag_SettingParser"
     },
@@ -1270,7 +1270,7 @@
     },
     {
         "name_pattern": "topic/$",
-        "type": "object", "subtype": "Topic_Setting",
+        "type": "object", "subtype": "topic",
         "parser_class": "Topic_SettingParser"
     },
     {
@@ -1313,7 +1313,7 @@
     },
     {
         "name_pattern": "track/$",
-        "type": "object", "subtype": "Track_Setting",
+        "type": "object", "subtype": "track",
         "title_pattern": "${sv track/$/title}",
         "parser_class": "Track_SettingParser"
     },
@@ -1327,7 +1327,7 @@
     {   "name_pattern": "track/$/title", "internal": true, "parser_class": "Track_SettingParser"   },
     {
         "name_pattern": "track/$/perm", "storage": "none",
-        "type": "object",
+        "type": "object", "subtype": "track_permissions",
         "title": "/Track permissions",
         "parser_class": "Track_SettingParser"
     },
@@ -1368,7 +1368,7 @@
     },
     {
         "name_pattern": "named_search/$",
-        "type": "object", "subtype": "NamedSearch_Setting",
+        "type": "object", "subtype": "named_search",
         "title_pattern": "${sv named_search/$/title}",
         "parser_class": "NamedSearch_SettingParser"
     },

@@ -2959,9 +2959,70 @@ function append_rendered_values(es, values) {
     }
 }
 
+function components_table(subtype, components, info) {
+    const tbody = $e("tbody", null, $e("tr", null,
+            $e("th", {colspan: 2, scope: "rowgroup"},
+                `Components of ${subtype ? subtype + " objects" : "object"}:`))),
+        table = $e("table", `key-value${info.top ? " p-sqz" : ""}`, tbody);
+    info.top = info.top || table;
+    info.fold = info.fold || 0;
+    for (const comp of components) {
+        const th = $e("th"), td = $e("td");
+        if (comp.title || comp.values) {
+            const div = $e("div");
+            td.append(div);
+            if (comp.title) {
+                const span = $e("span");
+                div.append(span);
+                render_text.ftext_onto(span, comp.title, 0);
+            }
+            const es = [];
+            if (comp.values) {
+                append_rendered_values(es, comp.values);
+            } else if (comp.type === "oblist") {
+                es.push(`list of ${comp.subtype || ""} objects`);
+            } else if (comp.type === "object") {
+                es.push(comp.subtype ? `${comp.subtype} object` : "object");
+            }
+            if (es.length !== 0) {
+                comp.title && div.append(" ");
+                div.append($e("span", "dim", "(", ...es, ")"));
+            }
+        }
+        if (comp.summary) {
+            const div = $e("div");
+            td.append(div);
+            render_text.ftext_onto(div, comp.summary, 0);
+        }
+        if (comp.components && comp.components.length > 1) {
+            const exp = make_expander_element(++info.fold);
+            if (!hasClass(info.top, "has-fold")) {
+                addClass(info.top, "has-fold");
+            }
+            addClass(info.top, `fold${info.fold}c`);
+            th.append($e("button", {
+                class: "q ui nw js-foldup", "aria-expanded": "false",
+                "data-fold-target": info.fold
+            }, exp, comp.name));
+        } else {
+            th.append(comp.name);
+        }
+        tbody.append($e("tr", null, th, td));
+        if (comp.components && comp.components.length > 1) {
+            const nt = components_table(comp.subtype, comp.components, info);
+            addClass(nt, "mt-1");
+            addClass(nt, "mb-2");
+            tbody.append($e("tr", `fx${info.fold}`,
+                $e("td", {class: "pl-3", colspan: 2}, nt)));
+        }
+    }
+    return table;
+}
+
 function settings_describe(d) {
     var $i = $(".s-settings-json-info"), e, es, i;
     $i.empty();
+    $i[0].parentElement.scroll(0, 0);
     if (!d) {
         return;
     }
@@ -2986,9 +3047,9 @@ function settings_describe(d) {
         es = ["Value: "];
         append_rendered_values(es, d.values);
     } else if (d.type === "oblist") {
-        es = ["Value: list of objects"];
+        es = [`Value: list of ${d.subtype || ""} objects`];
     } else if (d.type === "object") {
-        es = ["Value: object"];
+        es = [`Value: ${d.subtype || ""} object`];
     } else {
         es = [];
     }
@@ -3000,41 +3061,7 @@ function settings_describe(d) {
     }
 
     if (d.components && d.components.length > 1) {
-        var table, tbody, tr, th, td, div, span, comp;
-        $i.append((e = document.createElement("div")));
-        e.className = "p-sqz";
-        e.append(d.type === "oblist" ? "Object components:" : "Components:",
-            (table = document.createElement("table")));
-        table.className = "key-value";
-        table.append((tbody = document.createElement("tbody")));
-        for (i = 0; i !== d.components.length; ++i) {
-            comp = d.components[i];
-            tbody.append((tr = document.createElement("tr")));
-            tr.append((th = document.createElement("th")),
-                      (td = document.createElement("td")));
-            th.append(comp.name);
-            if (comp.title || comp.values) {
-                td.append((div = document.createElement("div")));
-                if (comp.title) {
-                    div.append((span = document.createElement("span")));
-                    render_text.ftext_onto(span, comp.title, 0);
-                }
-                es = [];
-                if (comp.values) {
-                    append_rendered_values(es, comp.values);
-                }
-                if (es.length !== 0) {
-                    comp.title && div.append(" ");
-                    div.append((span = document.createElement("span")));
-                    span.className = "dim";
-                    span.append("(", ...es, ")");
-                }
-            }
-            if (comp.summary) {
-                td.append((div = document.createElement("div")));
-                render_text.ftext_onto(div, comp.summary, 0);
-            }
-        }
+        $i.append(components_table(d.subtype, d.components, {}));
     }
 
     if (d.default_value != null && d.default_value !== "") {

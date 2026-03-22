@@ -42,7 +42,8 @@ class JSON_SettingParser extends SettingParser {
             '<li><a href="#path=track"><code class="settings-jpath">track</code></a>: Submission tracks</li>',
             '<li><a href="#path=tag_style"><code class="settings-jpath">tag_style</code></a>: Tag colors and styles</li>',
             '</ul>',
-            '</div></div></div>';
+            '</div><div class="s-settings-json-bottom-fader"></div></div>',
+            '</div>';
         // NB On Safari, HTMLTextAreaElement.setRangeText only works on displayed elements.
         echo '<textarea name="json_settings" id="json_settings" class="position-absolute invisible"';
         if ($mainj !== $defj) {

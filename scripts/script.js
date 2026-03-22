@@ -1696,7 +1696,9 @@ function render_with(context, renderer, text, ...rest) {
     var renderf = renderer.render;
     if (renderer.render_inline
         && (hasClass(context, "format-inline")
-            || window.getComputedStyle(context).display.startsWith("inline"))) {
+            || (context.isConnected
+                ? window.getComputedStyle(context).display.startsWith("inline")
+                : context.tagName === "SPAN"))) {
         renderf = renderer.render_inline;
     }
     var html = renderf.call(context, text, ...rest);

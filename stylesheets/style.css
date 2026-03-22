@@ -1618,6 +1618,9 @@ button.link, button.q, button.qo, button.qx {
 	max-width: 100%;
 	white-space: normal;
 }
+button.link.nw, button.q.nw, button.qo.nw, button.qx.nw {
+	white-space: nowrap;
+}
 button.link:hover, button.q:hover, button.qo:hover, button.qx:hover {
 	background: initial;
 	cursor: pointer;
@@ -2364,13 +2367,13 @@ a:hover .settings-jpath {
 }
 .settings-json-panels {
 	width: 100%;
-	display: flex;
 	display: grid;
 	grid-template-columns: 60% 40%;
+	margin-right: -12px;
+	position: relative;
 }
 .settings-json-panel-edit {
-	flex: 0 0 60%;
-	position: relative;
+	z-index: 2;
 	overflow-x: visible;
 	overflow-y: scroll;
 	height: 80vh;
@@ -2384,14 +2387,24 @@ a:hover .settings-jpath {
 	outline: none;
 }
 .settings-json-panel-info {
-	flex: 0 0 40%;
-	padding-left: 2rem;
+	max-height: 80vh;
+	overflow-y: auto;
 }
 .s-settings-json-info {
-	position: sticky;
-	top: 1rem;
 	font-size: smaller;
-	overflow-y: auto;
+	margin-left: 2rem;
+	margin-right: 12px;
+	position: relative;
+}
+.s-settings-json-bottom-fader {
+	z-index: 1;
+	position: absolute;
+	right: 0%;
+	bottom: 0%;
+	width: 40%;
+	height: 12px;
+	background: var(--paper);
+	background: linear-gradient(to top, var(--paper), var(--paper-transparent) 12px);
 }
 
 
