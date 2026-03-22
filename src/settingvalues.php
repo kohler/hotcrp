@@ -1664,17 +1664,18 @@ class SettingValues extends MessageSet {
 
     private function saveable_si_changed(Si $si) {
         $sn = $si->storage_name();
-        $vp = $this->_savedv[$sn];
+        $vp = $this->_savedv[$sn] ?? [null, null];
         if (str_starts_with($sn, "opt.")) {
             $okey = substr($sn, 4);
             $oldv = $this->conf->opt($okey);
             $vi = Si::$option_is_value[$okey] ? 0 : 1;
-            return $oldv !== ($vp[$vi] ?? null)
-                && (!is_bool($oldv) || (int) $oldv !== ($vp[$vi] ?? null));
-        } else if (($si->storage_type & Si::SI_VALUE) !== 0) {
-            return $this->conf->setting($sn) !== ($vp[0] ?? null);
+            return $oldv !== $vp[$vi]
+                && (!is_bool($oldv) || (int) $oldv !== $vp[$vi]);
         }
-        return $this->conf->setting_data($sn) !== ($vp[1] ?? null);
+        $vi = $si->storage_type & Si::SI_VALUE ? 0 : 1;
+        $vc = $vi === 0 ? $this->conf->setting($sn) : $this->conf->setting_data($sn);
+        return $vc !== $vp[$vi]
+            && ($vp[$vi] !== null || !$si->value_nullable($vc, $this));
     }
 
     /** @return list<Si> */
