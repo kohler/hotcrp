@@ -2963,7 +2963,7 @@ function components_table(subtype, components, info) {
     const tbody = $e("tbody", null, $e("tr", null,
             $e("th", {colspan: 2, scope: "rowgroup"},
                 `Components of ${subtype ? subtype + " objects" : "object"}:`))),
-        table = $e("table", `key-value${info.top ? " p-sqz" : ""}`, tbody);
+        table = $e("table", "key-value", tbody);
     info.top = info.top || table;
     info.fold = info.fold || 0;
     for (const comp of components) {
@@ -3044,23 +3044,24 @@ function settings_describe(d) {
     $i.append(e);
 
     if (d.values) {
-        es = ["Value: "];
+        es = [];
         append_rendered_values(es, d.values);
     } else if (d.type === "oblist") {
-        es = [`Value: list of ${d.subtype || ""} objects`];
+        es = [`list of ${d.subtype || ""} objects`];
     } else if (d.type === "object") {
-        es = [`Value: ${d.subtype || ""} object`];
+        es = [`${d.subtype || ""} object`];
     } else {
         es = [];
     }
+    let valdef;
     if (es.length > 0) {
-        e = document.createElement("p");
-        e.className = "p-sqz";
-        e.append(...es);
-        $i.append(e);
+        valdef = document.createElement("p");
+        valdef.append($e("strong", "sb", "Value:"), " ", ...es);
+        $i.append(valdef);
     }
 
     if (d.components && d.components.length > 1) {
+        addClass(valdef, "mb-0");
         $i.append(components_table(d.subtype, d.components, {}));
     }
 
