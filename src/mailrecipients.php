@@ -521,30 +521,62 @@ class MailRecipients extends MessageSet {
         if (($rf & self::F_REV) === 0) {
             return true;
         }
-        if ((($rf & self::F_REV_COMPLETE)
-             && ($rrow->reviewSubmitted ?? 0) <= 0)
-            || (($rf & self::F_REV_INCOMPLETE)
-                && ($rrow->reviewSubmitted !== null
-                    || $rrow->reviewNeedsSubmit == 0
-                    || $prow->timeSubmitted <= 0))
-            || (($rf & self::F_REV_SINCE)
-                && ($rrow->timeRequested <= $rrow->timeRequestNotified
-                    || ($this->newrev_since
-                        && $rrow->timeRequested < $this->newrev_since)))
-            || (($rf & self::FM_REV_SPECIFIC) === 0
-                && $prow->timeSubmitted <= 0
-                && ($rrow->reviewSubmitted ?? 0) <= 0)
-            || (($rf & self::F_REV_EXT)
-                && $rrow->reviewType !== REVIEW_EXTERNAL)
-            || (($rf & self::F_REV_MYREQ)
-                && $rrow->requestedBy !== $this->user->contactId)
-            || (($rf & self::F_REV_PC)
-                && $rrow->reviewType <= REVIEW_PC)
-            || (($rf & self::F_REV_NONACCEPTED)
-                && $rrow->reviewModified > 0)) {
+        // withdrawn papers + incomplete reviews generally uninteresting
+        if (($rf & self::FM_REV_SPECIFIC) === 0
+            && $prow->timeSubmitted <= 0
+            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            return false;
+        }
+        // check completeness
+        if (($rf & self::F_REV_COMPLETE)
+            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            return false;
+        }
+        if (($rf & self::F_REV_INCOMPLETE)
+            && (($rrow->reviewSubmitted ?? 0) > 0
+                || $rrow->reviewNeedsSubmit == 0
+                || $prow->timeSubmitted <= 0)) {
+            return false;
+        }
+        if (($rf & self::F_REV_NONACCEPTED)
+            && $rrow->reviewModified > 0) {
+            return false;
+        }
+        // check type
+        if (($rf & self::F_REV_EXT)
+            && $rrow->reviewType !== REVIEW_EXTERNAL) {
+            return false;
+        }
+        if (($rf & self::F_REV_PC)
+            && $rrow->reviewType <= REVIEW_PC) {
+            return false;
+        }
+        // check requester
+        if (($rf & self::F_REV_MYREQ)
+            && $rrow->requestedBy !== $this->user->contactId) {
+            return false;
+        }
+        // check time requested (NB requires full review)
+        if (($rf & self::F_REV_SINCE)
+            && ($this->newrev_since
+                ? $this->newrev_since > $rrow->timeRequested
+                : $rrow->timeRequested <= $rrow->timeRequestNotified)) {
             return false;
         }
         return true;
+    }
+
+    /** @return list<ReviewInfo> */
+    function reviews_for_recipient(PaperInfo $prow, Contact $recipient) {
+        if ($this->rect->flags & self::F_REV_SINCE) {
+            $prow->ensure_full_reviews();
+        }
+        $rrows = [];
+        foreach ($prow->reviews_by_user($recipient) as $rrow) {
+            if ($this->test_for_assignment_keyword($prow, $rrow))
+                $rrows[] = $rrow;
+        }
+        return $rrows;
     }
 
     /** @param bool $paper_sensitive
@@ -599,9 +631,10 @@ class MailRecipients extends MessageSet {
                 $where[] = "(PaperReview.rflags&" . ReviewInfo::RF_LIVE . ")!=0";
             }
             if ($rf & self::F_REV_SINCE) {
-                $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
                 if ($this->newrev_since) {
                     $where[] = "PaperReview.timeRequested>={$this->newrev_since}";
+                } else {
+                    $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
                 }
             }
             if ($rf & self::F_ALLCOMPLETEREV) {

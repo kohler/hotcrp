@@ -229,9 +229,9 @@ class HotCRPMailer extends Mailer {
     private function get_assignments($user, $review_round) {
         $lines = [];
         foreach ($this->recip_set->paper_set(true) as $prow) {
-            foreach ($prow->reviews_by_user($user) as $rrow) {
-                if ($this->recip_set->test_for_assignment_keyword($prow, $rrow)
-                    && ($review_round === null || $rrow->reviewRound === $review_round)) {
+            foreach ($this->recip_set->reviews_for_recipient($prow, $user) as $rrow) {
+                if ($review_round === null
+                    || $rrow->reviewRound === $review_round) {
                     $lines[] = "#{$prow->paperId} {$prow->title()}";
                     break;
                 }
