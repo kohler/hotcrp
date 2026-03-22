@@ -1,6 +1,6 @@
 <?php
 // sitype.php -- HotCRP conference settings types
-// Copyright (c) 2022-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 abstract class Sitype {
     /** @var associative-array<string,class-string> */
@@ -333,8 +333,11 @@ class Int_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         if (preg_match('/\A[+-]?[0-9]+\z/', $vstr)) {
             return intval($vstr);
-        } else if ($vstr === "" && ($defv = $si->default_value($sv)) !== null) {
-            return $defv;
+        } else if ($vstr === "") {
+            $defv = $si->default_value($sv);
+            if ($defv !== null || $si->required === false) {
+                return $defv ?? "";
+            }
         }
         $sv->error_at($si, "<0>Please enter a whole number");
         return null;
@@ -342,11 +345,14 @@ class Int_Sitype extends Sitype {
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_int($jv)) {
             return (string) $jv;
-        } else if ($jv === null) {
+        } else if ($jv === null || ($jv === "" && $si->required === false)) {
             return "";
         }
         $sv->error_at($si, "<0>Whole number required");
         return null;
+    }
+    function unparse_jsonv($jv, Si $si, SettingValues $sv) {
+        return $jv === "" ? $si->placeholder : $jv;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "whole number";
@@ -362,8 +368,11 @@ class Nonnegint_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         if (preg_match('/\A\+?[0-9]+\z/', $vstr)) {
             return intval($vstr);
-        } else if ($vstr === "" && ($defv = $si->default_value($sv)) !== null) {
-            return $defv;
+        } else if ($vstr === "") {
+            $defv = $si->default_value($sv);
+            if ($defv !== null || $si->required === false) {
+                return $defv ?? "";
+            }
         }
         $sv->error_at($si, "<0>Please enter a nonnegative whole number");
         return null;
@@ -371,11 +380,14 @@ class Nonnegint_Sitype extends Sitype {
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_int($jv) && $jv >= 0) {
             return (string) $jv;
-        } else if ($jv === null) {
+        } else if ($jv === null || ($jv === "" && $si->required === false)) {
             return "";
         }
         $sv->error_at($si, "<0>Nonnegative whole number required");
         return null;
+    }
+    function unparse_jsonv($jv, Si $si, SettingValues $sv) {
+        return $jv === "" ? $si->placeholder : $jv;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "nonnegative whole number";
@@ -390,8 +402,11 @@ class Float_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         if (is_numeric($vstr)) {
             return floatval($vstr);
-        } else if ($vstr === "" && ($defv = $si->default_value($sv)) !== null) {
-            return $defv;
+        } else if ($vstr === "") {
+            $defv = $si->default_value($sv);
+            if ($defv !== null || $si->required === false) {
+                return $defv ?? "";
+            }
         }
         $sv->error_at($si, "<0>Please enter a number");
         return null;
@@ -399,11 +414,14 @@ class Float_Sitype extends Sitype {
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_int($jv) || is_float($jv)) {
             return (string) $jv;
-        } else if ($jv === null) {
+        } else if ($jv === null || ($jv === "" && $si->required === false)) {
             return "";
         }
         $sv->error_at($si, "<0>Number required");
         return null;
+    }
+    function unparse_jsonv($jv, Si $si, SettingValues $sv) {
+        return $jv === "" ? $si->placeholder : $jv;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "number";

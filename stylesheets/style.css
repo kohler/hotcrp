@@ -180,9 +180,12 @@ a > img {
 	border: none;
 }
 input[type=text], input[type=email], input[type=password], input[type=date],
-textarea, .textarea {
+input[type=number], textarea, .textarea {
 	border: 1px solid silver;
 	padding: 3px 5px;
+}
+input[type=number] {
+	width: 8em;
 }
 form, fieldset {
 	margin: 0;
@@ -2547,12 +2550,14 @@ h3.has-error,
 .has-error input[type=email],
 .has-error input[type=password],
 .has-error input[type=date],
+.has-error input[type=number],
 .has-error textarea,
 .has-error select,
 input[type=text].has-error,
 input[type=email].has-error,
 input[type=password].has-error,
 input[type=date].has-error,
+input[type=number].has-error,
 textarea.has-error,
 select.has-error {
 	border: 1px solid red;
@@ -2572,12 +2577,15 @@ h3.has-warning,
 .has-warning input[type=email],
 .has-warning input[type=password],
 .has-warning input[type=date],
+.has-warning input[type=number],
 .has-warning textarea,
 .has-warning select,
 input[type=text].has-warning,
 input[type=email].has-warning,
 input[type=password].has-warning,
 input[type=date].has-warning,
+input[type=number].has-warning,
+input:invalid,
 textarea.has-warning,
 select.has-warning {
 	border: 1px solid var(--warning-fg);

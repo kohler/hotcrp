@@ -20,7 +20,11 @@ class RealNumberOption_Fexpr extends Fexpr {
         $oval = "\$optvalue" . ($id < 0 ? "m" . -$id : $id);
         if ($state->check_gvar($oval)) {
             $ovv = $state->_add_option_value($this->option);
-            $state->gstmt[] = "{$oval} = {$ovv} && {$ovv}->value !== null ? floatval({$ovv}->data()) : null;";
+            $fv = "floatval({$ovv}->data())";
+            if ($this->option->precision) {
+                $fv = "round({$fv}, {$this->option->precision})";
+            }
+            $state->gstmt[] = "{$oval} = {$ovv} && {$ovv}->value !== null ? {$fv} : null;";
         }
         return $oval;
     }

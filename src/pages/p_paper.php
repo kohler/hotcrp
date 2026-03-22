@@ -226,6 +226,7 @@ class Paper_Page {
         } else {
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
             $ml[] = MessageItem::success($conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", $is_final ? "final" : "review")));
+            $this->useRequest = false; // ????
         }
         if ($this->ps->has_error()) {
             if (!$this->ps->has_change()) {

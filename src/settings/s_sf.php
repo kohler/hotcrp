@@ -21,6 +21,9 @@ class Sf_Setting {
     public $max;
     public $wordlimit;
     public $hard_wordlimit;
+    public $min_value;
+    public $max_value;
+    public $precision;
     public $max_submissions;
 
     /** @var ?int */

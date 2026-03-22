@@ -295,11 +295,6 @@
         "internal": true, "parser_class": "Options_SettingParser"
     },
     {
-        "name_pattern": "sf/$/order",
-        "title": "/Order",
-        "type": "float"
-    },
-    {
         "name_pattern": "sf/$/type",
         "title": "/Field type",
         "type": "radio", "values": "auto",
@@ -309,6 +304,11 @@
         "name_pattern": "sf/$/description",
         "title": "/Description",
         "type": "htmlstring", "size": 2, "autogrow": true
+    },
+    {
+        "name_pattern": "sf/$/order",
+        "title": "/Position in form",
+        "type": "float"
     },
     {
         "name_pattern": "sf/$/values", "type": "oblist", "storage": "member.xvalues",
@@ -394,6 +394,21 @@
         "name_pattern": "sf/$/hard_wordlimit",
         "title": "/Hard word limit",
         "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
+    },
+    {
+        "name_pattern": "sf/$/min_value",
+        "title": "/Minimum value",
+        "type": "float", "required": false, "size": 5, "placeholder": "none"
+    },
+    {
+        "name_pattern": "sf/$/max_value",
+        "title": "/Maximum value",
+        "type": "float", "required": false, "size": 5, "placeholder": "none"
+    },
+    {
+        "name_pattern": "sf/$/precision",
+        "title": "/Decimal precision",
+        "type": "nonnegint", "required": false, "size": 5, "placeholder": "any"
     },
     {
         "name_pattern": "sf/$/max_submissions",
