@@ -15271,14 +15271,13 @@ handle_ui.on("js-open-activity", function (evt) {
 
 
 customElements.define("hotcrp-multimeter", class extends HTMLElement {
-    static observedAttributes = ["values", "colors", "pointers"];
+    static observedAttributes = ["values", "colors", "pointers", "pointer-colors", "width", "height"];
 
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
-        const style = document.createElement("style");
-        style.textContent = ":host { display: inline-block; width: 10em; height: 2ex; }";
-        const ctr = document.createElement("div"),
+        const style = document.createElement("style"),
+            ctr = document.createElement("div"),
             flex = document.createElement("div");
         ctr.style.position = "relative";
         ctr.style.width = flex.style.width = "100%";
@@ -15291,7 +15290,11 @@ customElements.define("hotcrp-multimeter", class extends HTMLElement {
 
     connectedCallback() {
         const cs = getComputedStyle(this),
+            style = this.shadowRoot.firstChild,
+            width = style.width || this.getAttribute("width") || "10em",
+            height = style.height || this.getAttribute("height") || "2ex",
             flex = this.shadowRoot.lastChild.firstChild;
+        style.textContent = `:host { display: inline-block; width: ${width}; height: ${height}; }`;
         flex.style.borderRadius = cs.borderRadius;
         this.render();
     }
