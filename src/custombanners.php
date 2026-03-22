@@ -42,7 +42,7 @@ class CustomBannerParam {
         $cbp->name = $pj->name;
         $cbp->srch = new PaperSearch($user, ["q" => $pj->q, "t" => $pj->t ?? "default"]);
         if (($cbp->formula = $formula)) {
-            $formula->prepare_extractor()->prepare_combiner();
+            $formula->prepare_indexer()->prepare_extractor()->prepare_combiner();
         }
         return $cbp;
     }
@@ -67,7 +67,9 @@ class CustomBannerParam {
             if (!$this->srch->test($prow)) {
                 continue;
             }
-            $values[] = $this->formula->eval_extractor($prow, null);
+            foreach ($this->formula->eval_indexer($prow) as $rrow) {
+                $values[] = $this->formula->eval_extractor($prow, $rrow);
+            }
         }
         return new FmtArg($this->name, $this->formula->eval_combiner($values), 0);
     }
