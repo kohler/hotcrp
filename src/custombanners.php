@@ -187,6 +187,8 @@ class CustomBanners {
     public $user;
     /** @var ?Qrequest */
     public $qreq;
+    /** @var ?CleanHTML */
+    private $cleanhtml;
     /** @var array<string,string> */
     private $active_bs;
     /** @var int */
@@ -310,7 +312,13 @@ class CustomBanners {
         $in = Ftext::ensure($bannerj->ftext, 0);
         $out = $this->conf->_5($in, ...$values);
         if (str_starts_with($in, "<5>")) {
-            $out = CleanHTML::basic_clean($out);
+            if (!$this->cleanhtml) {
+                $this->cleanhtml = new CleanHTML;
+                if ($this->qreq) {
+                    $this->cleanhtml->set_base_url($this->qreq->navigation()->site_path);
+                }
+            }
+            $out = $this->cleanhtml->clean($out);
         }
         if (($out ?? "") === "") {
             return null;

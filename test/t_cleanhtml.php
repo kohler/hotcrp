@@ -197,4 +197,28 @@ class CleanHTML_Tester {
         $basic = CleanHTML::basic();
         xassert_eqq($basic->clean('<b><i>X</b></i>'), null);
     }
+
+    function test_base_url() {
+        $ch = (new CleanHTML)->set_base_url('https://example.com/base/');
+        // relative href gets base prepended
+        xassert_eqq($ch->clean('<a href="page">X</a>'), '<a href="https://example.com/base/page">X</a>');
+        // relative src gets base prepended
+        xassert_eqq($ch->clean('<img src="img.png">'), '<img src="https://example.com/base/img.png">');
+        // absolute URLs are unchanged
+        xassert_eqq($ch->clean('<a href="https://other.com/x">X</a>'), '<a href="https://other.com/x">X</a>');
+        xassert_eqq($ch->clean('<a href="http://other.com/x">X</a>'), '<a href="http://other.com/x">X</a>');
+        // protocol-relative URLs are unchanged
+        xassert_eqq($ch->clean('<a href="//other.com/x">X</a>'), '<a href="//other.com/x">X</a>');
+        // root-relative, fragment-only, query-only URLs are unchanged
+        xassert_eqq($ch->clean('<a href="/path">X</a>'), '<a href="/path">X</a>');
+        xassert_eqq($ch->clean('<a href="#frag">X</a>'), '<a href="#frag">X</a>');
+        xassert_eqq($ch->clean('<a href="?q=1">X</a>'), '<a href="?q=1">X</a>');
+        // non-URL attributes are unaffected
+        xassert_eqq($ch->clean('<span class="rel">X</span>'), '<span class="rel">X</span>');
+        // disallowed schemes still rejected
+        xassert_eqq($ch->clean('<a href="javascript:alert(1)">X</a>'), null);
+        // no base_url: relative URLs pass through unchanged
+        $ch2 = new CleanHTML;
+        xassert_eqq($ch2->clean('<a href="page">X</a>'), '<a href="page">X</a>');
+    }
 }

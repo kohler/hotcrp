@@ -48,6 +48,8 @@ class CleanHTML {
     private $opentags;
     /** @var bool */
     private $fixed_by_adoption = false;
+    /** @var ?string */
+    private $base_url;
 
     /** @var CleanHTML */
     static private $main;
@@ -253,6 +255,13 @@ class CleanHTML {
         foreach ($tags as $tag) {
             $this->tagflags[$tag] = ($this->tagflags[$tag] ?? self::F_DISABLED) & ~self::F_DISABLED;
         }
+        return $this;
+    }
+
+    /** @param ?string $url
+     * @return $this */
+    function set_base_url($url) {
+        $this->base_url = $url;
         return $this;
     }
 
@@ -465,11 +474,17 @@ class CleanHTML {
                 return "";
             }
         }
-        if ($lattr === "href"
+        if (($lattr === "href" || $lattr === "src")
             && $value !== null
             && preg_match('/\A\s*+((?!http[\s:]|https[\s:])[a-z][-+.a-z0-9]*+)\s*+:/i', $value, $m)) {
             $this->lerror("<0>URL scheme {$m[1]} not allowed in links", $attrpos, $endpos);
             return "";
+        }
+        if ($this->base_url !== null
+            && ($lattr === "href" || $lattr === "src")
+            && $value !== null
+            && preg_match('/\A\s*+((?![a-z][-+.a-z0-9]*+:)[^\/?\#].*+)\z/i', $value, $m)) {
+            $value = $this->base_url . $m[1];
         }
         return $value === null ? " {$lattr}" : " {$lattr}=\"" . htmlspecialchars($value) . "\"";
     }
