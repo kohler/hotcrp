@@ -12261,10 +12261,22 @@ function change_color_classes(isconflicted) {
     };
 }
 
-function fold_override(tbl, dofold) {
+function fold_override(forcer, tbl, dofold) {
+    const formset = forcer.closest(".form-search-set");
+    for (const f of formset ? formset.querySelectorAll("form.form-search") : []) {
+        let fs = f.elements.forceShow;
+        if (fs === forcer) {
+            // do nothing
+        } else if (!dofold) {
+            fs || f.appendChild((fs = hidden_input("forceShow", "1")));
+            fs.value = "1";
+        } else if (fs) {
+            fs.id ? fs.value = "0" : fs.remove();
+        }
+    }
+    fold(tbl, dofold, 5);
+    tbl.closest("form").elements.forceShow.vaue = dofold ? "0" : "1";
     $(function () {
-        fold(tbl, dofold, 5);
-        $("#forceShow").val(dofold ? 0 : 1);
         // remove local hoverrides
         if (hasClass(tbl, "has-local-override")) {
             removeClass(tbl, "has-local-override");
@@ -12314,7 +12326,7 @@ handle_ui.on("change.js-plinfo", function (evt) {
         throw new Error("bad plinfo");
     }
     if (fname === "force") {
-        fold_override(plistui.pltable, hidden);
+        fold_override(this, plistui.pltable, hidden);
     } else if (fname === "rownum") {
         fold(plistui.pltable, hidden, 6);
     } else if (fname === "anonau") {
