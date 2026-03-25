@@ -914,9 +914,10 @@ abstract class AssignmentParser {
      * @return bool|AssignmentError */
     abstract function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
 
-    // Apply this action to `$state`. Return `true` iff the action succeeds.
-    // To indicate an error, call `$state->error($ftext)` and return `false`,
-    // or, equivalently, return an `AssignmentError`.
+    // Apply this action to `$state` for paper `$prow` and user `$contact`.
+    // Return `true` iff the action succeeds. To indicate an error, call
+    // `$state->error($ftext)` and return `false`, or, equivalently, return
+    // an `AssignmentError`.
     /** @param CsvRow $req
      * @return bool|AssignmentError */
     abstract function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);

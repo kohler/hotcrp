@@ -199,6 +199,7 @@
     ["permission_error", "<0>You aren’t allowed to comment on {submission} #{pid}", ["{action}=comment:edit"]],
     ["permission_error", "<0>You aren’t allowed to respond to the reviews for {submission} #{pid}", ["{action}=response:edit"]],
     ["permission_error", "<0>You aren’t allowed to edit the contacts of {submission} #{pid}", ["{action}=contact:edit"]],
+    ["permission_error", "<0>You aren’t allowed to view tags for {submission} #{pid}", ["{action}=tag:view"]],
     ["permission_error", "<0>You aren’t allowed to change tags for {submission} #{pid}", ["{action}=tag:edit"]],
     ["permission_error", "<0>You aren’t allowed to view the {field} field for {submission} #{pid}", ["{action}=field:view"]],
     ["permission_error", "<0>You aren’t allowed to view the {field} field", ["{action}=field:view", "!{pid}"]],

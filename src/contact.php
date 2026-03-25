@@ -5597,6 +5597,24 @@ class Contact implements JsonSerializable {
                     && $this->conf->tags()->has(TagInfo::TF_SITEWIDE)));
     }
 
+    /** @param string $tag
+     * @return ?FailureReason */
+    function perm_view_tags(PaperInfo $prow) {
+        if ($this->can_view_tags($prow)) {
+            return null;
+        }
+        $rights = $this->rights($prow);
+        $whyNot = $prow->failure_reason();
+        $whyNot["tag"] = $tag;
+        if (!$this->isPC
+            || $rights->scope_allows(TS::S_TAG_READ)) {
+            $whyNot["permission"] = "tag:view";
+        } else {
+            $whyNot["scope"] = TS::S_TAG_READ;
+        }
+        return $whyNot;
+    }
+
     /** @return bool */
     function can_view_most_tags(?PaperInfo $prow = null) {
         if (!$this->isPC

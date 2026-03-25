@@ -1530,9 +1530,8 @@ class Tagger {
             return [$tv, null];
         } else if ($pos === strlen($tv) - 1) {
             return [substr($tv, 0, $pos), null];
-        } else {
-            return [substr($tv, 0, $pos), (float) substr($tv, $pos + 1)];
         }
+        return [substr($tv, 0, $pos), (float) substr($tv, $pos + 1)];
     }
 
     /** @param string $tvlist

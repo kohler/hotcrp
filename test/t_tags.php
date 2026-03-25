@@ -420,6 +420,24 @@ class Tags_Tester {
         xassert_search_all($this->u_chair, "order:tiorder", "3 10 7 8 4 1 9 2 5 6");
     }
 
+    function test_checktag() {
+        xassert_assign($this->u_chair, "action,paper,tag\nchecktag,3,tiorder#1");
+        xassert_assign_fail($this->u_chair, "action,paper,tag\nchecktag,3,tiorder#0");
+        xassert_assign($this->u_chair, "action,paper,tag\nchecktag,3 4 5,tiorder#some");
+        xassert_assign($this->u_chair, "action,paper,tag\nchecktag,5,#xnone");
+        xassert_assign_fail($this->u_chair, "action,paper,tag\nchecktag,5 6,#xnone");
+        xassert_assign_fail($this->u_chair, "action,paper,tag\nchecktag,3,-tiorder");
+
+        xassert_assign($this->u_chair, "action,paper,tag\ncheckedittags,1,fart#4 tiorder#6 XFART#4 ORdEr#1\n");
+        xassert_assign_fail($this->u_chair, "action,paper,tag\ncheckedittags,1,fart#4 tiorder#6 XFART#4\n");
+        xassert_assign($this->u_chair, "action,paper,tag\ndeletetag,1,order\ncheckedittags,1,fart#4 tiorder#6 XFART#4\n");
+        xassert_assign($this->u_chair, "action,paper,tag\ncheckedittags,1,fart#4 tiorder#6 XFART#4\ntag,1,~~chair#0\n");
+
+        // checktag respects tag visibility
+        xassert_assign($this->u_chair, "action,paper,tag\nchecktag,1,~~chair#0");
+        xassert_assign_fail($this->u_varghese, "action,paper,tag\nchecktag,1,~~chair#0");
+    }
+
     function test_track_data() {
         xassert_eqq(Track::FM_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));
     }
