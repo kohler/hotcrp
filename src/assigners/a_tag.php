@@ -155,8 +155,12 @@ class TagAssignmentPiece {
         // special values
         if (strcasecmp($xvalue, "none") === 0
             || strcasecmp($xvalue, "clear") === 0
-            || strcasecmp($xvalue, "delete") === 0) {
+            || strcasecmp($xvalue, "delete") === 0
+            || strcasecmp($xvalue, "unset") === 0) {
             $this->nvalue = false;
+            return true;
+        } else if (strcasecmp($xvalue, "some") === 0) {
+            $this->xitype = Tag_AssignmentParser::I_SOME;
             return true;
         } else if (strcasecmp($xvalue, "next") === 0
                    || strcasecmp($xvalue, "increasing") === 0) {
@@ -166,9 +170,6 @@ class TagAssignmentPiece {
                    || strcasecmp($xvalue, "nextseq") === 0
                    || strcasecmp($xvalue, "sequential") === 0) {
             $this->xitype = Tag_AssignmentParser::I_NEXTSEQ;
-            return true;
-        } else if (strcasecmp($xvalue, "some") === 0) {
-            $this->xitype = Tag_AssignmentParser::I_SOME;
             return true;
         }
 

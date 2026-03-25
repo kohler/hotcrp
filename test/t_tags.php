@@ -160,7 +160,7 @@ class Tags_Tester {
         xassert_eqq($p1->tag_value("testtag"), 2.0);
 
         // set -> clear -> set resets value
-        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag\ntag,1,testtag#clear\ntag,1,testtag\n");
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag\ntag,1,testtag#unset\ntag,1,testtag\n");
         $p1->load_tags();
         xassert($p1->has_tag("testtag"));
         xassert_eqq($p1->tag_value("testtag"), 0.0);

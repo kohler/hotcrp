@@ -13424,7 +13424,7 @@ handle_ui.on("js-tag-index", function () {
         value = this.value.trim();
     if (value === "")
         value = "clear";
-    if (/^(?:\d+\.?\d*|\.\d+|clear)$/.test(value))
+    if (/^(?:\d+\.?\d*|\.\d+|clear|unset)$/.test(value))
         $.post(hoturl("=api/tags", {p: m[2]}), {addtags: m[1] + "#" + value}, done);
     else
         minifeedback(this, {ok: false, message_list: [{status: 2, message: "<0>Bad tag value"}]});

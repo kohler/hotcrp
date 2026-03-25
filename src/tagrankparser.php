@@ -69,7 +69,7 @@ class TagRankParser {
                     $settings[] = [null, null, $landmark, "Bad tag: " . Ftext::as(0, $tagger->error_ftext()), null];
                 }
             } else {
-                if ($idxs === "X" || $idxs === "x" || $idxs === "clear") {
+                if ($idxs === "X" || $idxs === "x" || $idxs === "clear" || $idxs === "unset") {
                     $idx = "clear";
                 } else if ($idxs === "" || $idxs === ">") {
                     ++$curIndex;
