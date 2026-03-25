@@ -22,7 +22,7 @@ class Tags_Tester {
         $this->u_varghese = $conf->checked_user_by_email("varghese@ccrc.wustl.edu");
         $this->u_floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
 
-        $this->conf->qe("delete from PaperTag where tag='fart'");
+        $this->conf->qe("delete from PaperTag where tag='fart' or tag='chairtest' or tag=':poop:' or tag='chairtest1'");
         $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values (1,'fart',4), (2,'fart',5), (3,'fart',6), (4,'fart',10), (5,'fart',9), (6,'fart',7), (7,'fart',11), (8,'fart',4.5)");
     }
 
@@ -416,7 +416,7 @@ class Tags_Tester {
 
     function test_assign_sorted_search() {
         $root = $this->conf->root_user();
-        xassert_assign($this->u_chair, "action,paper,tag,tag_value\ntag,1-10 sort:title,tiorder,seqnext\n");
+        xassert_assign($this->u_chair, "action,paper,tag,tag_value\ntag,1-10 sort:title,tiorder,seqnext\ntag,1,XFART,4\n");
         xassert_search_all($this->u_chair, "order:tiorder", "3 10 7 8 4 1 9 2 5 6");
     }
 

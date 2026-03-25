@@ -620,6 +620,7 @@ class Permission_Tester {
         xassert(!$this->conf->setting("has_colontag"));
         xassert_assign($user_chair, "paper,tag\n1,:poop:\n", true);
         xassert(!!$this->conf->setting("has_colontag"));
+        xassert_assign($user_chair, "paper,tag\n1,:poop:#clear\n", true);
 
         // NOT searches
         xassert_search($user_chair, "#fart", "1 8 2 3 6 5 4 7");
