@@ -187,13 +187,13 @@ class Tag_PaperColumn extends PaperColumn {
         }
         if (!$this->is_value) {
             $checked = $v === null ? "" : " checked";
-            return "<input type=\"checkbox\" class=\"uic uikd js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\"{$checked}>";
+            return "<input type=\"checkbox\" class=\"uic uikd js-range-click js-plist-tag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\"{$checked}>";
         }
         if ($this->editsort) {
             $pl->need_render = true;
         }
         $vt = $v === null ? "" : ($v === true ? "0" : (string) $v);
-        return "<input type=\"text\" class=\"uich uikd edittag\" size=\"4\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$vt}\">";
+        return "<input type=\"text\" class=\"uich uikd js-plist-tag\" size=\"4\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$vt}\">";
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->etag)) === null) {

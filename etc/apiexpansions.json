@@ -190,7 +190,7 @@
   },
   {
     "name": "tags", "post": true, "merge": true,
-    "parameters": "?=tags ?=addtags ?=deltags ?=search",
+    "parameters": "?=tags ?=add_tags ?=remove_tags ?=expected_tags ?=search ?<=addtags ?<=deltags",
     "response": "pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?ids ?groups ?hotlist ?search_params"
   },
   {

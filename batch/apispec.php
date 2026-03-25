@@ -286,14 +286,14 @@ class APISpec_Batch {
     }
 
 
-    const F_REQUIRED = 0x01;
-    const F_POST = 0x02;
-    const F_BODY = 0x04;
-    const F_FILE = 0x08;
-    const F_SUFFIX = 0x10;
+    const F_REQUIRED = 0x01;    // !
+    const F_POST = 0x02;        // +
+    const F_BODY = 0x04;        // =
+    const F_FILE = 0x08;        // @
+    const F_SUFFIX = 0x10;      // :
     const F_PATH = 0x20;
     const F_DEFAULT = 0x40;
-    const F_DEPRECATED = 0x80;
+    const F_DEPRECATED = 0x80;  // <
     const FM_NONGET = 0x0E;
 
     /** @param string $p

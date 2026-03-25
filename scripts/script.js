@@ -10896,7 +10896,7 @@ function make_tag_save_callback(elt) {
     };
 }
 
-handle_ui.on("edittag", function (evt) {
+handle_ui.on("js-plist-tag", function (evt) {
     var key = null, m, ch, newval;
     if (evt.type === "keydown" && event_key.modcode(evt) === 0) {
         key = event_key(evt);
@@ -10914,7 +10914,7 @@ handle_ui.on("edittag", function (evt) {
             return;
         }
         $.post(hoturl("=api/tags", {p: m[2], forceShow: 1}),
-            {addtags: ch, search: tablelist_search(tablelist(this))},
+            {add_tags: ch, search: tablelist_search(tablelist(this))},
             make_tag_save_callback(this));
     } else if (key === "ArrowDown" || key === "ArrowUp") {
         var tr = this.closest("tr"), td = this.closest("td"), prop, e;
@@ -10924,7 +10924,7 @@ handle_ui.on("edittag", function (evt) {
             }
             if (tr
                 && (td = tr.cells[td.cellIndex])
-                && (e = td.querySelector("input.edittag"))) {
+                && (e = td.querySelector("input.js-plist-tag"))) {
                 focus_and_scroll_into_view(e, key === "ArrowDown");
             }
         }
@@ -11818,13 +11818,13 @@ handle_ui.on("js-plinfo-edittags", function () {
             return;
         const elt = $e("div", "d-inline-flex",
             $e("div", "mf mf-text w-text",
-                $e("textarea", {name: "tags " + rv.pid, cols: 120, rows: 1, class: "want-focus need-suggest editable-tags suggest-emoji-codes w-text", style: "vertical-align:-0.5rem", "data-tooltip-anchor": "v", "id": "tags " + rv.pid, "spellcheck": "false"})),
+                $e("textarea", {name: "tags " + rv.pid, cols: 120, rows: 1, class: "want-focus need-suggest editable-tags suggest-emoji-codes w-text", style: "vertical-align:-0.5rem", "data-tooltip-anchor": "v", "id": "tags " + rv.pid, spellcheck: "false"}, rv.tags_edit_text)),
             $e("button", {type: "button", name: "tagsave " + rv.pid, class: "btn-primary ml-2"}, "Save"),
             $e("button", {type: "button", name: "tagcancel " + rv.pid, class: "ml-2"}, "Cancel"));
         set_pidfield(plistui.fields.tags, pidfe, elt);
         ta = pidfe.querySelector("textarea");
         hotcrp.suggest.call(ta);
-        $(ta).val(rv.tags_edit_text).autogrow()
+        $(ta).autogrow()
             .on("keydown", make_onkey("Enter", do_submit))
             .on("keydown", make_onkey("Escape", do_cancel));
         $(pidfe).find("button[name^=tagsave]").click(do_submit);
@@ -11832,15 +11832,16 @@ handle_ui.on("js-plinfo-edittags", function () {
         focus_within(pidfe);
     }
     function do_submit() {
-        var tbl = tablelist(pidfe);
-        $.post(hoturl("=api/tags", {p: pid, forceShow: 1}),
-            {tags: $(ta).val(), search: tbl ? tablelist_search(tbl) : null},
-            function (rv) {
-                minifeedback(ta, rv);
-                if (rv.ok) {
-                    $(window).trigger("hotcrptags", [rv]);
-                }
-            });
+        const tbl = tablelist(pidfe);
+        $.post(hoturl("=api/tags", {p: pid, forceShow: 1}), {
+            add_tags: hotcrp.parse_tags.delta(ta.defaultValue, ta.value).join(" "),
+            search: tbl ? tablelist_search(tbl) : null
+        }, function (rv) {
+            minifeedback(ta, rv);
+            if (rv.ok) {
+                $(window).trigger("hotcrptags", [rv]);
+            }
+        });
     }
     function do_cancel() {
         var focused = document.activeElement
@@ -13329,7 +13330,7 @@ function render_tag_messages(message_list) {
 function prepare_pstags() {
     var self = this,
         $f = this.tagName === "FORM" ? $(self) : $(self).find("form"),
-        $ta = $f.find("textarea");
+        ta = $f[0].elements.tags;
     removeClass(this, "need-tag-form");
     function handle_tag_report(data) {
         data.message_list && render_tag_messages.call(self, data.message_list);
@@ -13347,12 +13348,12 @@ function prepare_pstags() {
         handle_ui.stopImmediatePropagation(evt);
     });
     $f.find("button[name=cancel]").on("click", function (evt) {
-        $ta.val($ta.prop("defaultValue"));
-        $ta.removeClass("has-error");
+        ta.value = ta.defaultValue;
+        removeClass(ta, "has-error");
         $f.find(".is-error").remove();
         $f.find(".btn-highlight").removeClass("btn-highlight");
-        foldup.call($ta[0], evt, {open: false});
-        $ta[0].blur();
+        foldup.call(ta, evt, {open: false});
+        ta.blur();
     });
     $f.on("submit", save_pstags);
     $f.closest(".foldc, .foldo").on("foldtoggle", function (evt) {
@@ -13364,7 +13365,7 @@ function prepare_pstags() {
             $.get(hoturl("api/tagmessages", {p: $f.attr("data-pid")}), handle_tag_report);
         }
         $f.removeData("noTagReport");
-        $ta.autogrow();
+        $(ta).autogrow();
         focus_within($f[0]);
     });
     $(window).on("hotcrptags", function (evt, data) {
@@ -13375,30 +13376,31 @@ function prepare_pstags() {
             $p = $(self).find(".js-tag-result").first();
         if ($p.html() !== h)
             $p.html(h);
-        if ($ta.length
-            && $ta.val() !== data.tags_edit_text
-            && !$ta.is(":visible")
+        input_set_default_value(ta, data.tags_edit_text);
+        if (ta.value !== data.tags_edit_text
+            && !$(ta).is(":visible")
             && (!$f.data("everOpened")
-                || ($.trim($ta.val()).split(/\s+/).sort().join(" ")
-                    !== data.tags_edit_text.split(/\s+/).sort().join(" ")))) {
-            $ta.val(data.tags_edit_text);
+                || hotcrp.parse_tags.delta(data.tags_edit_text, ta.value).length)) {
+            ta.value = data.tags_edit_text;
         }
         handle_tag_report(data);
     });
 }
 
 function save_pstags(evt) {
-    var f = this, $f = $(f);
+    const f = this, $f = $(f), ta = f.elements.tags;
     evt.preventDefault();
     $f.find("input").prop("disabled", true);
     $.ajax(hoturl("=api/tags", {p: $f.attr("data-pid")}), {
-        method: "POST", data: $f.serialize(), timeout: 4000,
+        method: "POST", data: {
+            add_tags: hotcrp.parse_tags.delta(ta.defaultValue, ta.value).join(" ")
+        }, timeout: 4000,
         success: function (data) {
             $f.find("input").prop("disabled", false);
             if (data.ok) {
                 if (feedback.list_status(data.message_list) < 2) {
-                    foldup.call($f[0], null, {open: false});
-                    minifeedback(f.elements.tags, {ok: true});
+                    foldup.call(f, null, {open: false});
+                    minifeedback(ta, {ok: true});
                 }
                 $(window).trigger("hotcrptags", [data]);
                 removeClass(f.elements.tags, "has-error");
@@ -13425,7 +13427,7 @@ handle_ui.on("js-tag-index", function () {
     if (value === "")
         value = "clear";
     if (/^(?:\d+\.?\d*|\.\d+|clear|unset)$/.test(value))
-        $.post(hoturl("=api/tags", {p: m[2]}), {addtags: m[1] + "#" + value}, done);
+        $.post(hoturl("=api/tags", {p: m[2]}), {add_tags: m[1] + "#" + value}, done);
     else
         minifeedback(this, {ok: false, message_list: [{status: 2, message: "<0>Bad tag value"}]});
     function done(rv) {
@@ -13861,12 +13863,12 @@ hotcrp.evaluate_edit_condition = function (ec, form) {
 
 
 function tag_value(taglist, t) {
-    if (t.charCodeAt(0) === 126 /* ~ */ && t.charCodeAt(1) !== 126)
+    if (t.charCodeAt(0) === 126 /* ~ */ && t.charCodeAt(1) !== 126) {
         t = siteinfo.user.uid + t;
+    }
     t = t.toLowerCase();
-    var tlen = t.length;
-    for (var i = 0; i !== taglist.length; ++i) {
-        var s = taglist[i];
+    const tlen = t.length;
+    for (const s of taglist) {
         if (s.length > tlen + 1
             && s.charCodeAt(tlen) === 35 /* # */
             && s.substring(0, tlen).toLowerCase() === t)
@@ -13874,6 +13876,149 @@ function tag_value(taglist, t) {
     }
     return null;
 }
+
+hotcrp.parse_tags = (function () {
+
+function space_charcode(c) {
+    // * C whitespace: HT U+0009, NL U+000A, VT U+000B, FF U+000C,
+    //   CR U+000D, SP U+0020
+    // * Unicode space category: SP U+0020, NBSP U+00A0 (*C2 A0),
+    //   U+1680 (*E1 9A 80), U+2000-200A (*E2 80 80-E2 80 8A),
+    //   U+202F (*E2 80 AF), U+205F (*E2 81 9F), U+3000 (*E3 80 80),
+    //   U+2028 LINE SEPARATOR (*E2 80 A8),
+    //   U+2029 PARAGRAPH SEPARATOR (*E2 80 A9)
+    if (c < 0x2000) {
+        return (c >= 0x9 && c <= 0xD) || c === 0x20 || c === 0xA0;
+    }
+    return c === 0x1680 || (c >= 0x2000 && c <= 0x200A) || c === 0x2028
+        || c === 0x2029 || c === 0x202F || c === 0x205F || c === 0x3000;
+}
+
+function span_balanced_parens(str, pos, endchars) {
+    pos = pos ?? 0;
+    let pstack = "", plast = "", quote = false, startpos = pos, pcleared;
+    const len = str.length,
+        endsp = endchars === null || endchars.indexOf(" ") >= 0;
+    while (pos < len) {
+        let c = str.charCodeAt(pos), ch = str.charAt(pos);
+        // stop when done
+        if (plast === ""
+            && !quote
+            && ((endsp && space_charcode(c))
+                || (endchars !== null && endchars.indexOf(ch) >= 0))) {
+            break;
+        }
+        // translate “” -> "
+        if (c === 0x201C || c === 0x201D) {
+            c = 0x22 /* " */;
+        }
+        if (quote) {
+            if (c === 0x5C /* \ */ && pos + 1 < len) {
+                ++pos;
+            } else if (c === 0x22 /* " */) {
+                quote = false;
+            }
+        } else if (c === 0x28 /* ( */) {
+            pstack += plast;
+            plast = ")";
+        } else if (c === 0x5B /* [ */) {
+            pstack += plast;
+            plast = "]";
+        } else if (c === 0x7B /* { */) {
+            pstack += plast;
+            plast = "}";
+        } else if (c === 0x29 || c === 0x5D || c === 0x7D) {
+            if (pos === startpos) {
+                ++startpos;
+            } else {
+                do {
+                    pcleared = plast;
+                    plast = pstack.slice(-1);
+                    pstack = pstack.slice(0, -1);
+                } while (ch !== pcleared && pcleared !== "");
+                if (pcleared === "") {
+                    break;
+                }
+            }
+        } else if (c === 0x22 /* " */) {
+            quote = true;
+        }
+        ++pos;
+    }
+    return pos;
+}
+
+function split_tag_list(str) {
+    // [split, {str: word, ltag: ltag, value: value}, ...]
+    const len = str.length, a = [];
+    let pos = 0;
+    while (true) {
+        const pos1 = pos;
+        while (pos !== len) {
+            const c = str.charCodeAt(pos);
+            if (!space_charcode(c) && c !== 0x2C /* , */ && c !== 0x3B /* ; */) {
+                break;
+            }
+            ++pos;
+        }
+        a.push(str.substring(pos1, pos));
+
+        if (pos === len) {
+            return a;
+        }
+
+        const pos2 = pos;
+        pos = span_balanced_parens(str, pos2, " ,;");
+        const word = str.substring(pos2, pos);
+        let m = word.match(/^([-+]?)#*([^#=([{]*)(?:[#=]?)(.*)$/);
+        if (m && (m[1] === "" || m[3] === "")) {
+            let ltag = m[2].toLowerCase();
+            if (ltag.charCodeAt(0) === 126 && ltag.charCodeAt(1) !== 126) {
+                ltag = siteinfo.user.uid + ltag;
+            }
+            const value = m[1] === "-" ? "clear" : (m[3] === "" ? "0" : m[2]);
+            a.push({str: word, ltag: ltag, value: value});
+        } else {
+            a.push({str: word});
+        }
+    }
+}
+
+function find_tag_list_index(tl, ltag) {
+    for (let i = 1; i < tl.length; i += 2) {
+        if (tl[i].ltag === ltag)
+            return i;
+    }
+    return -1;
+}
+
+function find_tag_list_value(tl, ltag) {
+    const i = find_tag_list_index(tl, ltag);
+    return i < 0 ? null : tl[i].value;
+}
+
+return {
+    delta: function (oldstr, str) {
+        const atl = split_tag_list(oldstr), btl = split_tag_list(str), ch = [];
+        for (let i = 1; i < btl.length; i += 2) {
+            const x = btl[i];
+            if (!x.ltag
+                || x.ltag.indexOf("~") > 0
+                || find_tag_list_value(atl, x.ltag) !== x.value) {
+                ch.push(x.str);
+            }
+        }
+        for (let i = 1; i < atl.length; i += 2) {
+            const x = atl[i];
+            if (x.ltag && find_tag_list_index(btl, x.ltag) < 0) {
+                ch.push(x.ltag + "#clear");
+            }
+        }
+        return ch;
+    }
+};
+
+})();
 
 function set_tag_index(e, taglist) {
     const val = tag_value(taglist, e.getAttribute("data-tag"));
@@ -15666,6 +15811,7 @@ Object.assign(window.hotcrp, {
     // monitor_autoassignment
     // monitor_job
     // onload
+    // parse_tags
     pidcode: encode_session_list_ids,
     // render_list
     render_text: render_text,

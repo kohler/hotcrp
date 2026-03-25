@@ -97,17 +97,21 @@ class Tags_API {
 
         // save tags using assigner
         $x = ["paper,action,tag"];
+
+        if (isset($qreq->expected_tags)) {
+            $x[] = "{$prow->paperId},checktag," . CsvGenerator::quote($qreq->expected_tags);
+        }
         if (isset($qreq->tags)) {
             $x[] = "{$prow->paperId},tag,all#clear";
             foreach (Tagger::split($qreq->tags) as $t) {
                 $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
             }
         }
-        foreach (Tagger::split((string) $qreq->addtags) as $t) {
+        foreach (Tagger::split((string) ($qreq->add_tags ?? $qreq->addtags)) as $t) {
             $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
         }
-        foreach (Tagger::split((string) $qreq->deltags) as $t) {
-            $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t . "#clear");
+        foreach (Tagger::split((string) ($qreq->remove_tags ?? $qreq->deltags)) as $t) {
+            $x[] = "{$prow->paperId},cleartag," . CsvGenerator::quote($t);
         }
 
         $assigner = new AssignmentSet($user);

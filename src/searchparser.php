@@ -1,6 +1,6 @@
 <?php
 // searchparser.php -- HotCRP helper class for splitting search strings
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class SearchParser {
     /** @var string */
@@ -192,7 +192,7 @@ class SearchParser {
     static function span_balanced_parens($str, $pos = 0, $endchars = null, $allow_empty = false) {
         $pstack = "";
         $plast = "";
-        $quote = 0;
+        $quote = false;
         $startpos = $allow_empty ? -1 : $pos;
         $len = strlen($str);
         $endsp = $endchars === null || strpos($endchars, " ") !== false;
@@ -217,7 +217,7 @@ class SearchParser {
                 if ($ch === "\\" && $pos + 1 < $len) {
                     ++$pos;
                 } else if ($ch === "\"") {
-                    $quote = 0;
+                    $quote = false;
                 }
             } else if ($ch === "(") {
                 $pstack .= $plast;
@@ -242,7 +242,7 @@ class SearchParser {
                     }
                 }
             } else if ($ch === "\"") {
-                $quote = 1;
+                $quote = true;
             }
             ++$pos;
         }
@@ -271,7 +271,7 @@ class SearchParser {
     static function safe_parenthesize($str) {
         $pstack = "";
         $plast = "";
-        $quote = 0;
+        $quote = false;
         $pos = $startpos = 0;
         $len = strlen($str);
         $out = "";
@@ -294,7 +294,7 @@ class SearchParser {
                         $startpos = $pos;
                     }
                 } else if ($ch === "\"") {
-                    $quote = 0;
+                    $quote = false;
                 }
             } else if ($ch === "(") {
                 $pstack .= $plast;
@@ -319,7 +319,7 @@ class SearchParser {
                     $startpos = $pos + 1;
                 }
             } else if ($ch === "\"") {
-                $quote = 1;
+                $quote = true;
             }
             ++$pos;
         }
