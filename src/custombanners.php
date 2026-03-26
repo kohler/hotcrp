@@ -149,8 +149,7 @@ class CustomBannerParamSet {
         }
     }
 
-    /** @param Contact $user
-     * @return list<FmtArg> */
+    /** @return list<FmtArg> */
     function eval() {
         $prows = null;
         if (count($this->params) > 1 && $this->params[1]->srch) {
@@ -244,12 +243,6 @@ class CustomBanners {
             && substr($token, 0, $dot) === (string) $this->mcacheid
             && ctype_digit(substr($token, $dot + 1))
             && (($dl = (int) substr($token, $dot + 1)) === 0 || $dl > Conf::$now);
-    }
-
-    /** @param string $id
-     * @param string $html */
-    private function record($id, $html) {
-        $this->bs[$id] = $html;
     }
 
     /** @return int */

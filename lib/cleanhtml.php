@@ -387,6 +387,7 @@ class CleanHTML {
         $a = $b = "";
         while (($travtf & self::F_FORMAT) !== 0) {
             if ($travtag->tag === $tag) {
+                '@phan-var-force CleanHTMLTag $prevtag';
                 $prevtag->next = $travtag->next;
                 return "{$b}</{$tag}>{$a}";
             }

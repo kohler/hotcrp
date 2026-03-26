@@ -3,7 +3,7 @@
 // Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class RealNumberOption_Fexpr extends Fexpr {
-    /** @var PaperOption */
+    /** @var RealNumber_PaperOption */
     private $option;
     function __construct(PaperOption $option) {
         parent::__construct("realnumberoption");
