@@ -919,8 +919,8 @@ class ReviewValues extends MessageSet {
         }
         assert($newstatus === $newstatus2);
 
-        // get the current time
-        $now = max(time(), $rrow->reviewModified + 1);
+        // get the current time; include Conf::$now for tests
+        $now = max(Conf::$now, time(), $rrow->reviewModified + 1);
 
         // set status-related fields
         if ($newstatus === ReviewInfo::RS_ACKNOWLEDGED
