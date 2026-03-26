@@ -42,7 +42,7 @@ Generic values
 
 ## `id`
 
-* Any `id` starting with `[a-z][-_]` is reserved for HotCRP use
+* Any `id` starting with `[a-z][-_0-9]` is reserved for HotCRP use
     * Paper and review fields cannot follow that pattern
     * Paper and review fields also must not match JSON keys used for papers
       and reviews

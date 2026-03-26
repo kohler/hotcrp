@@ -342,17 +342,15 @@ class Paper_Page {
         $this->print_header(false);
         $pt->print_paper_info();
 
-        if ($pt->mode === "edit") {
-            $pt->paptabEndWithoutReviews();
-        } else {
+        if ($pt->mode !== "edit") {
             if ($pt->mode === "re") {
                 $pt->print_review_form();
                 $pt->print_main_link();
             } else if ($pt->can_view_reviews()) {
-                $pt->paptabEndWithReviewsAndComments();
+                $pt->print_prepare_reviews();
             } else {
-                $pt->paptabEndWithReviewMessage();
-                $pt->print_comments();
+                $pt->print_no_reviews_message();
+                $pt->request_comments();
             }
             // restore comment across logout bounce
             if ($this->qreq->editcomment) {
@@ -361,6 +359,7 @@ class Paper_Page {
         }
 
         echo "</article>\n";
+        $pt->print_finish_reviews();
         $this->qreq->print_footer();
     }
 

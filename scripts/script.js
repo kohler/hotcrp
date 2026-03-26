@@ -6964,7 +6964,9 @@ hotcrp.add_review = function (rrow) {
 
     // complete render
     earticle.append(eheader, ebody);
-    document.querySelector(".s-paper").append(earticle);
+    const particle = document.getElementById("p" + rrow.pid)
+        || document.querySelector(".s-paper");
+    particle.append(earticle);
     $(earticle).awaken();
     navsidebar.set("r" + rid, rdesc);
 };
@@ -8260,7 +8262,9 @@ function add_new_comment_button(cj, cid) {
 }
 
 function add_new_comment(cj, cid) {
-    document.querySelector(".s-paper").insertBefore($e("article", {
+    const particle = (cj.pid && document.getElementById("p" + cj.pid))
+        || document.querySelector(".s-paper");
+    particle.insertBefore($e("article", {
         id: cid, class: "pcard s-comment comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
 }

@@ -47,6 +47,8 @@ class PaperTable {
     private $prefer_approvable = false;
     /** @var bool */
     private $allreviewslink;
+    /** @var int */
+    private $need_rc_mode = 0;
 
     /** @var 0|1|2
      * @readonly */
@@ -1474,9 +1476,17 @@ class PaperTable {
     }
 
 
-    private function _papstrip_framework() {
+    private function _paper_article_open() {
+        if ($this->prow->paperId <= 0) {
+            return '<article class="s-paper">';
+        }
+        return "<article id=\"p{$this->prow->paperId}\" class=\"s-paper\">";
+    }
+
+    private function _print_papstrip_framework() {
         if (!$this->npapstrip) {
-            echo '<article class="s-paper"><div class="pcard-left">',
+            echo $this->_paper_article_open(),
+                '<div class="pcard-left">',
                 '<section class="pspcard" aria-label="Submission properties">',
                 '<div class="ui pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
@@ -1495,7 +1505,7 @@ class PaperTable {
     }
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
-        $this->_papstrip_framework();
+        $this->_print_papstrip_framework();
         echo '<div';
         if ($foldid) {
             echo " id=\"fold{$foldid}\"";
@@ -1517,7 +1527,7 @@ class PaperTable {
     }
 
     private function _ps_start_expandable($sfx, $open, $extra = null) {
-        $this->_papstrip_framework();
+        $this->_print_papstrip_framework();
         echo "<div id=\"s-{$sfx}\" class=\"psc", $open ? " expanded" : " collapsed";
         if (isset($extra["class"])) {
             echo " ", $extra["class"];
@@ -2472,7 +2482,7 @@ class PaperTable {
             $this->print_actions();
         }
 
-        echo "</div></form>";
+        echo "</form>";
         $this->user->set_overrides($overrides);
     }
 
@@ -2484,7 +2494,8 @@ class PaperTable {
             Ht::stash_script("hotcrp.load_paper_sidebar()");
             echo '</div></section>';
         } else {
-            echo '<article class="s-paper"><div class="pcard-left pcard-left-nostrip">';
+            echo $this->_paper_article_open(),
+                '<div class="pcard-left pcard-left-nostrip">';
         }
         echo '<nav class="s-psl-nav need-banner-offset" aria-label="';
         if ($this->mode === "re") {
@@ -2499,7 +2510,7 @@ class PaperTable {
         if ($viewable_tags || $this->user->can_view_tags($this->prow)) {
             $color = $this->prow->conf->tags()->color_classes($viewable_tags);
             echo '<span class="pslcard-home-tag js-tag-classes taghh',
-                ($color ? " $color" : ""), '">';
+                ($color ? " {$color}" : ""), '">';
             $close = '</span>';
         } else {
             $close = '';
@@ -2740,46 +2751,46 @@ class PaperTable {
         }
 
         // completion
-        if (!empty($subrev)) {
-            if ($want_requested_by) {
-                array_unshift($score_header, '<th class="rl"></th>');
-            }
-            $score_header_text = join("", $score_header);
-            $t = "<div class=\"reinfotable-container demargin\"><div class=\"reinfotable remargin-left remargin-right relative\"><table class=\"reviewers nw";
-            if ($score_header_text) {
-                $t .= " has-scores";
-            }
-            $t .= "\">";
-            $nscores = 0;
-            if ($score_header_text) {
-                foreach ($score_header as $x) {
-                    $nscores += $x !== "" ? 1 : 0;
-                }
-                $t .= '<thead><tr><th colspan="2"></th>';
-                if ($this->mode === "assign" && !$want_requested_by) {
-                    $t .= '<th></th>';
-                }
-                $t .= $score_header_text . "</tr></thead>";
-            }
-            $t .= '<tbody>';
-            foreach ($subrev as $r) {
-                $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
-                if ($r[2] ?? null) {
-                    foreach ($score_header as $fid => $header_needed) {
-                        if ($header_needed !== "") {
-                            $x = $r[2][$fid] ?? null;
-                            $t .= $x ? : "<td class=\"rlscore rs_$fid\"></td>";
-                        }
-                    }
-                } else if ($nscores > 0) {
-                    $t .= '<td colspan="' . $nscores . '"></td>';
-                }
-                $t .= "</tr>";
-            }
-            return $t . "</tbody></table></div></div>\n";
-        } else {
+        if (empty($subrev)) {
             return "";
         }
+
+        if ($want_requested_by) {
+            array_unshift($score_header, '<th class="rl"></th>');
+        }
+        $score_header_text = join("", $score_header);
+        $t = "<div class=\"reinfotable-container demargin\"><div class=\"reinfotable remargin-left remargin-right relative\"><table class=\"reviewers nw";
+        if ($score_header_text) {
+            $t .= " has-scores";
+        }
+        $t .= "\">";
+        $nscores = 0;
+        if ($score_header_text) {
+            foreach ($score_header as $x) {
+                $nscores += $x !== "" ? 1 : 0;
+            }
+            $t .= '<thead><tr><th colspan="2"></th>';
+            if ($this->mode === "assign" && !$want_requested_by) {
+                $t .= '<th></th>';
+            }
+            $t .= $score_header_text . "</tr></thead>";
+        }
+        $t .= '<tbody>';
+        foreach ($subrev as $r) {
+            $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
+            if ($r[2] ?? null) {
+                foreach ($score_header as $fid => $header_needed) {
+                    if ($header_needed !== "") {
+                        $x = $r[2][$fid] ?? null;
+                        $t .= $x ? : "<td class=\"rlscore rs_$fid\"></td>";
+                    }
+                }
+            } else if ($nscores > 0) {
+                $t .= '<td colspan="' . $nscores . '"></td>';
+            }
+            $t .= "</tr>";
+        }
+        return $t . "</tbody></table></div></div>\n";
     }
 
     /** @return string */
@@ -2961,7 +2972,7 @@ class PaperTable {
                 || $this->conf->any_response_open);
     }
 
-    function paptabEndWithReviewsAndComments() {
+    function print_prepare_reviews() {
         if ($this->prow->managerContactId === $this->user->contactXid
             && !$this->user->privChair) {
             $this->_paptabSepContaining("You are this {$this->conf->snouns[0]}’s administrator.");
@@ -2988,9 +2999,8 @@ class PaperTable {
                 . " in plain text</u></a></p>";
         }
 
-        if (!$this->_review_overview_card(true, '<p class="sd">There are no reviews or comments for you to view.</p>', $m)) {
-            $this->print_rc($this->viewable_rrows, $this->include_comments());
-        }
+        $no_reviews = $this->_review_overview_card(true, '<p class="sd">There are no reviews or comments for you to view.</p>', $m);
+        $this->need_rc_mode = $no_reviews ? 0 : 1;
     }
 
     /** @param int $respround
@@ -3070,15 +3080,22 @@ class PaperTable {
         }
     }
 
-    function print_comments() {
-        $this->print_rc([], $this->include_comments());
+    function request_comments() {
+        assert($this->need_rc_mode === 0);
+        $this->need_rc_mode = 2;
     }
 
-    function paptabEndWithoutReviews() {
-        echo "</div></div>\n";
+    function print_finish_reviews() {
+        if ($this->need_rc_mode === 1) {
+            $this->print_rc($this->viewable_rrows, $this->include_comments());
+        } else if ($this->need_rc_mode === 2) {
+            $this->print_rc([], $this->include_comments());
+        } else if ($this->need_rc_mode === 3) {
+            $this->print_rc([$this->editrrow], false);
+        }
     }
 
-    function paptabEndWithReviewMessage() {
+    function print_no_reviews_message() {
         assert($this->edit_mode === 0);
 
         $m = [];
@@ -3164,15 +3181,16 @@ class PaperTable {
         if ($this->editrrow) {
             $editable = $this->_mark_review_messages($editable, $this->editrrow);
         }
-        if ($editable) {
-            if (!$this->user->can_clickthrough("review", $this->prow)) {
-                self::print_review_clickthrough();
-            }
-            $rvalues = $this->review_values ?? new ReviewValues($this->conf);
-            $this->conf->review_form()->print_form($this->prow, $this->editrrow, $this->user, $rvalues);
-        } else {
-            $this->print_rc([$this->editrrow], false);
+        if (!$editable) {
+            assert($this->need_rc_mode === 0);
+            $this->need_rc_mode = 3;
+            return;
         }
+        if (!$this->user->can_clickthrough("review", $this->prow)) {
+            self::print_review_clickthrough();
+        }
+        $rvalues = $this->review_values ?? new ReviewValues($this->conf);
+        $this->conf->review_form()->print_form($this->prow, $this->editrrow, $this->user, $rvalues);
     }
 
     function print_main_link() {

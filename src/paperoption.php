@@ -314,7 +314,7 @@ class PaperOption implements JsonSerializable {
         if (str_ends_with($s, "-")) {
             $s = substr($s, 0, -1);
         }
-        if (!preg_match('/\A(?:title|paper|submission|final|authors|blind|nonblind|contacts|abstract|topics|pc_conflicts|pcconf|collaborators|reviews|sclass|status.*|submit.*|fold.*|[a-z]?[a-z]?[-_].*|has[-_].*|)\z/', $s)) {
+        if (!preg_match('/\A(?:title|paper|submission|final|authors|blind|nonblind|contacts|abstract|topics|pc_conflicts|pcconf|collaborators|reviews|sclass|status.*|submit.*|fold.*|[a-z]?[a-z]?[-_0-9].*|has[-_].*|)\z/', $s)) {
             return $s;
         }
         return "sf-" . $s;

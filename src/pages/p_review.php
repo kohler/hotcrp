@@ -355,17 +355,18 @@ class Review_Page {
             && !($this->rrow
                  ? $this->user->can_edit_review($this->prow, $this->rrow)
                  : $this->user->can_create_review($this->prow, $this->user))) {
-            $pt->paptabEndWithReviewMessage();
+            $pt->print_no_reviews_message();
         } else {
             if ($pt->mode === "re" || $this->rrow) {
                 $pt->print_review_form(); // might just render review
                 $pt->print_main_link();
             } else {
-                $pt->paptabEndWithReviewsAndComments();
+                $pt->print_prepare_reviews();
             }
         }
 
         echo "</article>\n";
+        $pt->print_finish_reviews();
         $this->qreq->print_footer();
     }
 
