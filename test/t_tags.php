@@ -436,6 +436,9 @@ class Tags_Tester {
         // checktag respects tag visibility
         xassert_assign($this->u_chair, "action,paper,tag\nchecktag,1,~~chair#0");
         xassert_assign_fail($this->u_varghese, "action,paper,tag\nchecktag,1,~~chair#0");
+
+        // can have multiple values; works if any match
+        xassert_assign($this->u_chair, "action,paper,tag\ncheckedittags,1,fart#none #fart#4 tiorder#5 fart#1 tiorder#6 XFART#4 ~~chair#0\n");
     }
 
     function test_track_data() {

@@ -252,6 +252,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     private $formula;
     /** @var list<TagAssignmentPiece> */
     private $pieces;
+    /** @var ?array<string,?string> */
+    private $checks;
 
     function __construct(Conf $conf, $aj) {
         parent::__construct("tag");
@@ -392,11 +394,14 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $ok = true;
+        if ($this->itype & self::I_CHECK) {
+            $this->prepare_apply_check($prow, $state);
+        }
         foreach ($this->pieces as $piece) {
             $ok = $this->apply_piece($piece, $prow, $state) && $ok;
         }
-        if ($ok && ($this->itype & self::I_CHECKEDITABLE)) {
-            $ok = $this->apply_check_editable($prow, $state);
+        if ($ok && ($this->itype & self::I_CHECK)) {
+            $ok = $this->finish_apply_check($state);
         }
         return $ok;
     }
@@ -541,42 +546,50 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         $current = empty($items) ? false : $items[0]->_index ?? 0.0;
         if ($piece->xitype & self::I_SOME
-            ? $current === false
-            : $current !== $piece->nvalue) {
-            $state->error("<0>Tag edit conflict on ‘{$piece->xtag}’");
-            $state->error_at("checktag");
-            return false;
+            ? $current !== false
+            : $current === $piece->nvalue) {
+            $this->checks[$ltag] = null;
+        } else if (!array_key_exists($ltag, $this->checks)) {
+            $this->checks[$ltag] = $ntag;
         }
         return true;
     }
 
-    private function apply_check_editable(PaperInfo $prow, AssignmentState $state) {
-        // Check that all editable tags were listed in the `tag` column
-
-        $user = $state->user;
-        $listed = [];
-        $self = $user->contactId . "~";
-        foreach ($this->pieces as $piece) {
-            if ($piece->nvalue !== false
-                && ($piece->xuser === "" || $piece->xuser === $self)) {
-                $listed[strtolower($piece->xuser . $piece->xtag)] = true;
-            }
+    private function prepare_apply_check(PaperInfo $prow, AssignmentState $state) {
+        $this->checks = [];
+        if (($this->itype & self::I_CHECKEDITABLE) === 0) {
+            return;
         }
-
+        $user = $state->user;
         $tags = "";
         foreach ($state->query(new Tag_Assignable($prow->paperId, null)) as $item) {
             $tags .= " {$item->_tag}#" . ($item->_index ?? 0);
         }
         $tags = $state->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $user, $prow);
         foreach (Tagger::split_unpack($tags) as $tv) {
-            if ($user->can_edit_tag($prow, $tv[0], 0, 1)
-                && !isset($listed[strtolower($tv[0])])) {
-                $state->error("<0>Tag edit conflict on ‘{$tv[0]}’");
-                $state->error_at("checktag");
-                return false;
+            if ($user->can_edit_tag($prow, $tv[0], 0, 1))
+                $this->checks[strtolower($tv[0])] = $tv[0];
+        }
+    }
+
+    private function finish_apply_check(AssignmentState $state) {
+        $self = $state->user->contactId . "~";
+        $bad = [];
+        foreach ($this->checks as $xtag) {
+            if ($xtag !== null) {
+                if (str_starts_with($xtag, $self)) {
+                    $bad[] = "‘" . substr($xtag, strlen($self) - 1) . "’";
+                } else {
+                    $bad[] = "‘{$xtag}’";
+                }
             }
         }
-        return true;
+        if (empty($bad)) {
+            return true;
+        }
+        $state->error($state->conf->_("<0>Tag check failed on {:list}", $bad));
+        $state->error_at("checktag");
+        return false;
     }
 }
 
