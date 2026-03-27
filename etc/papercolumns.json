@@ -161,7 +161,6 @@
     },
     {
         "match": "(tag:)(.*)", "priority": -1, "allow_if": "pc",
-        "tagvalue": false,
         "sort": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
@@ -169,15 +168,14 @@
     },
     {
         "match": "(tagval:)(.*)", "priority": -1, "allow_if": "pc",
-        "tagvalue": true,
-        "sort": true,
+        "sort": true, "tagvalue": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
         "order": 1400
     },
     {
         "match": "(#)([-a-zA-Z0-9!@*_:.\/~]+)", "priority": -1, "allow_if": "pc",
-        "tagvalue": null, "sort": true,
+        "sort": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
         "example_function": "Tag_PaperColumn::examples",

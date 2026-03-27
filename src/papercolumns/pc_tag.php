@@ -23,8 +23,16 @@ class Tag_PaperColumn extends PaperColumn {
     private $sortmap;
     /** @var ScoreInfo */
     private $statistics;
+    /** @var int */
+    private $format = 1;
     /** @var ?string */
     private $real_format;
+
+    const F_DEFAULT = 0x1;
+    const F_CHECK = 0x2;
+    const F_VALUE = 0x4;
+    const F_EMOJI = 0x8;
+    const F_TAGANNO = 0x10;
 
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
@@ -49,26 +57,43 @@ class Tag_PaperColumn extends PaperColumn {
         if (!($this->etag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID))) {
             return false;
         }
-        $this->editable = $this->view_option("edit") ?? false;
-        if (($v = $this->view_option("format")) !== null
-            && preg_match('/\A%?(\d*(?:\.\d*)[bdeEfFgGoxX])\z/', $v, $m)) {
-            $this->real_format = "%{$m[1]}";
-        }
         $this->ctag = " {$this->etag}#";
-        $pl->qopts["tags"] = 1;
         $this->ti = $pl->conf->tags()->ensure($this->dtag);
+
+        $this->editable = $this->view_option("edit") ?? false;
+        if ($this->is_value !== null) {
+            $this->format = $this->is_value ? self::F_VALUE : self::F_CHECK;
+        }
+        if (($f = $this->view_option("format")) !== null
+            && preg_match('/\A%?(\d*(?:\.\d*)[bdeEfFgGoxX])\z/', $f, $m)) {
+            $this->format = self::F_VALUE;
+            $this->real_format = "%{$m[1]}";
+        } else if ($f === "check") {
+            $this->format = self::F_CHECK;
+        } else if ($f === "value") {
+            $this->format = self::F_VALUE;
+        } else if ($f === "session") {
+            $this->format = self::F_TAGANNO;
+        }
         if ($this->as_row
             && $this->ti->has_order_anno()) {
-            $this->display = 1;
-        } else if (!$this->is_value
+            $this->format |= self::F_TAGANNO;
+        } else if ($this->format === self::F_DEFAULT
                    && count($this->ti->emoji ?? []) === 1) {
-            $this->display = 2;
+            $this->format |= self::F_EMOJI;
         }
+
         if ($this->editable) {
             $this->prepare_editable($pl, $visible);
         }
-        $this->className = ($this->editable ? "pl_edit" : "pl_")
-            . ($this->is_value ? "tagval" : "tag");
+        if ($this->editable) {
+            $this->className = "pl_edittag" . ($this->format & self::F_CHECK ? "" : "val");
+        } else if ($this->format & self::F_TAGANNO) {
+            $this->className = "pll";
+        } else {
+            $this->className = "pl_tag" . ($this->format & self::F_VALUE ? "val" : "");
+        }
+        $pl->qopts["tags"] = 1;
         return true;
     }
     private function prepare_editable(PaperList $pl, $visible) {
@@ -86,20 +111,22 @@ class Tag_PaperColumn extends PaperColumn {
             $pl->column_error_at($this->name, $ml);
             return;
         }
-        if ($this->is_value === null) {
+        if ($this->format & self::F_DEFAULT) {
             // XXX min/max values
             $dt = $pl->conf->tags()->find($this->etag);
             if (!$dt && ($tw = strpos($this->etag, "~"))) {
                 $dt = $pl->conf->tags()->find(substr($this->etag, $tw + 1));
             }
-            $this->is_value = !$dt || !$dt->is(TagInfo::TF_APPROVAL);
+            if ($dt && $dt->is(TagInfo::TF_APPROVAL)) {
+                $this->format ^= self::F_DEFAULT | self::F_CHECK;
+            }
         }
         if (($visible & FieldRender::CFLIST) !== 0
             && $pl->table_id()
             && !$pl->viewing("facets")) {
             $pl->has_editable_tags = true;
             if (strcasecmp($this->etag, $pl->sort_etag()) === 0
-                && $this->is_value) {
+                && ($this->format & self::F_VALUE)) {
                 $pl->table_attr["data-drag-tag"] = $this->dtag;
                 $this->editsort = true;
             }
@@ -149,38 +176,57 @@ class Tag_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $v = $row->tag_value($this->etag);
-        $sv = $v === 0.0 && !$this->is_value ? true : $v;
+        if ($this->format & self::F_CHECK) {
+            $sv = $v !== null;
+        } else if (($this->format & self::F_DEFAULT) && $v === 0.0) {
+            $sv = true;
+        } else {
+            $sv = $v;
+        }
         $this->statistics->add_overriding($sv, $pl->overriding);
 
         if ($this->editable
             && ($t = $this->edit_content($pl, $row, $v))) {
             return $t;
-        } else if ($v === null) {
+        }
+
+        if ($v === null) {
             return "";
-        } else if ($this->display === 1
-                   && ($ta = $this->ti->order_anno_search($v))
-                   && $ta->heading !== "") {
-            $h = htmlspecialchars($ta->heading);
-            $k = "pltagheading";
+        }
+
+        if ($v >= 0.0 && ($this->format & self::F_EMOJI)) {
+            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+            $s = Tagger::unparse_emoji_html($this->ti->emoji[0], $v);
+        } else if ($sv === true) {
+            $s = "✓";
+        } else if ($this->real_format) {
+            $s = sprintf($this->real_format, $v);
+        } else {
+            $s = (string) $v;
+        }
+        if (($this->format & self::F_TAGANNO)
+            && ($ta = $this->ti->order_anno_search($v))
+            && $ta->heading !== "") {
+            $js = $this->format === self::F_TAGANNO ? [] : ["class" => "pltagheading"];
             if (($format = $pl->conf->check_format(null, $ta->heading))) {
-                $k .= " need-format\" data-format\"{$format}";
+                $js["class"] = Ht::add_tokens($js["class"] ?? null, "need-format");
+                $js["data-format"] = $format;
                 $pl->need_render = true;
             }
-            return (string) $v . " <span class=\"{$k}\">({$h})</span>";
-        } else if ($v >= 0.0 && $this->display === 2) {
-            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-            return Tagger::unparse_emoji_html($this->ti->emoji[0], $v);
-        } else if ($sv === true) {
-            return "✓";
+            if ($this->format === self::F_TAGANNO) {
+                $s = Ht::wrap("span?", htmlspecialchars($ta->heading), $js);
+            } else {
+                $s .= " " . Ht::wrap("span?", "(" . htmlspecialchars($ta->heading) . ")", $js);
+            }
         }
-        return (string) $v;
+        return $s;
     }
     /** @param ?float $v */
     private function edit_content($pl, $row, $v) {
         if (!$pl->user->can_edit_tag($row, $this->dtag, 0, 0)) {
             return false;
         }
-        if (!$this->is_value) {
+        if ($this->format & self::F_CHECK) {
             $checked = $v === null ? "" : " checked";
             return "<input type=\"checkbox\" class=\"uic uikd js-range-click js-plist-tag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\"{$checked}>";
         }
@@ -191,12 +237,24 @@ class Tag_PaperColumn extends PaperColumn {
         return "<input type=\"text\" class=\"uich uikd js-plist-tag\" size=\"4\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$vt}\">";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (($v = $row->tag_value($this->etag)) === null) {
-            return "";
-        } else if ($v === 0.0 && !$this->is_value) {
-            return "Y";
+        $v = $row->tag_value($this->etag);
+        if ($v === null) {
+            return $this->format & self::F_CHECK ? "N" : "";
         }
-        return (string) $v;
+        if (($this->format & self::F_CHECK)
+            || (($this->format & self::F_DEFAULT) && $v === 0.0)) {
+            $s = "Y";
+        } else if ($this->real_format) {
+            $s = sprintf($this->real_format, $v);
+        } else {
+            $s = (string) $v;
+        }
+        if (($this->format & self::F_TAGANNO)
+            && ($ta = $this->ti->order_anno_search($v))
+            && $ta->heading !== "") {
+            $s = $this->format === self::F_TAGANNO ? $ta->heading : "{$s} {$ta->heading}";
+        }
+        return $s;
     }
 
     function has_statistics() {
