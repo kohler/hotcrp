@@ -25,8 +25,7 @@ class Tag_PaperColumn extends PaperColumn {
     private $statistics;
     /** @var ?string */
     private $real_format;
-    /** @var bool */
-    private $complex = false;
+
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
@@ -151,9 +150,6 @@ class Tag_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $v = $row->tag_value($this->etag);
         $sv = $v === 0.0 && !$this->is_value ? true : $v;
-        if ($sv !== null && $sv !== true) {
-            $this->complex = true;
-        }
         $this->statistics->add_overriding($sv, $pl->overriding);
 
         if ($this->editable
@@ -176,9 +172,8 @@ class Tag_PaperColumn extends PaperColumn {
             return Tagger::unparse_emoji_html($this->ti->emoji[0], $v);
         } else if ($sv === true) {
             return "✓";
-        } else {
-            return (string) $v;
         }
+        return (string) $v;
     }
     /** @param ?float $v */
     private function edit_content($pl, $row, $v) {
@@ -200,9 +195,8 @@ class Tag_PaperColumn extends PaperColumn {
             return "";
         } else if ($v === 0.0 && !$this->is_value) {
             return "Y";
-        } else {
-            return (string) $v;
         }
+        return (string) $v;
     }
 
     function has_statistics() {
