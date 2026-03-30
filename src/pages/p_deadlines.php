@@ -61,7 +61,7 @@ class Deadlines_Page {
                            "<5>{sclass} {submissions} must be completed by this deadline to be reviewed.", $srarg);
             }
             if ($sr->resubmit > 0 && $sr->resubmit > $sr->submit) {
-                $this->dl1($sr->submit, "<5>{sclass} resubmission deadline",
+                $this->dl1($sr->resubmit, "<5>{sclass} resubmission deadline",
                            "<5>Completed {sclass} {submissions} may be updated until this deadline.", $srarg);
             }
         }
