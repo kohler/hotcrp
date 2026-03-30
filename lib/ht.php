@@ -535,6 +535,18 @@ class Ht {
         return self::make_link($html, $href, $js);
     }
 
+    /** @return string */
+    static function wrap($tag, $html, $js = null) {
+        $jst = self::extra($js);
+        if ($tag === "span?") {
+            if ($jst === "") {
+                return $html;
+            }
+            $tag = "span";
+        }
+        return "<{$tag}{$jst}>{$html}</{$tag}>";
+    }
+
     /** @param string $html
      * @return string */
     static function link_urls($html) {
