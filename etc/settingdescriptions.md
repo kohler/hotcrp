@@ -145,6 +145,5 @@ numbers, respectively). `min_value` and `max_value` set the minimum and maximum
 acceptable values, and `precision` sets the number of decimal places saved for
 `"realnumber"` fields.
 
-The `"author_certification"` type requires author certifications. Its
-`"max_submissions"` property defines the maximum number of submissions that each
-author may certify.
+For the `"author_certification"` type, the `max_submissions` property defines
+the maximum number of submissions that each author may certify.

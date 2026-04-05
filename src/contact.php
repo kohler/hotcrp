@@ -99,6 +99,8 @@ class Contact implements JsonSerializable {
     /** @var ?string */
     private $collaborators;
     /** @var ?string */
+    private $collaboratorsOverflow;
+    /** @var ?string */
     public $preferredEmail;
     /** @var ?string */
     private $country;
@@ -535,27 +537,29 @@ class Contact implements JsonSerializable {
 
     /** @return string */
     function collaborators() {
-        if (($this->_slice & self::SLICEBIT_COLLABORATORS) === 0) {
-            return $this->collaborators ?? "";
+        if (($this->_slice & self::SLICEBIT_COLLABORATORS) !== 0) {
+            assert($this->cdb_confid === 0);
+            $set = $this->_row_set ?? ContactSet::make_singleton($this);
+            foreach ($set as $u) {
+                $u->collaborators = $u->collaboratorsOverflow = null;
+                $u->_slice &= ~self::SLICEBIT_COLLABORATORS;
+            }
+            $result = $this->conf->qe("select contactId, collaborators from ContactInfo where contactId?a", $set->user_ids());
+            while (($row = $result->fetch_row())) {
+                $set->get(intval($row[0]))->collaborators = $row[1];
+            }
+            $result->close();
         }
-        assert($this->cdb_confid === 0);
-        $set = $this->_row_set ?? ContactSet::make_singleton($this);
-        foreach ($set as $u) {
-            $u->collaborators = null;
-            $u->_slice &= ~self::SLICEBIT_COLLABORATORS;
-        }
-        $result = $this->conf->qe("select contactId, collaborators from ContactInfo where contactId?a", $set->user_ids());
-        while (($row = $result->fetch_row())) {
-            $set->get(intval($row[0]))->collaborators = $row[1];
-        }
-        $result->close();
-        return $this->collaborators ?? "";
+        return $this->collaboratorsOverflow
+            ?? $this->collaborators
+            ?? "";
     }
 
     /** @param ?string $x */
     function set_collaborators($x) {
         $this->_slice &= ~self::SLICEBIT_COLLABORATORS;
         $this->collaborators = $x;
+        $this->collaboratorsOverflow = null;
     }
 
     /** @return Generator<AuthorMatcher> */
