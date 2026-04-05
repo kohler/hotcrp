@@ -32,7 +32,7 @@ class Cdb_Tester {
     }
 
     function test_setup() {
-        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu"];
+        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu", "lynx@fart.edu", "bobcat@fart.edu"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
         $this->conf->invalidate_caches("users");
@@ -932,6 +932,23 @@ class Cdb_Tester {
         xassert_eqq($xu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
 
         (new ConfInvariants($this->conf))->check_users();
+    }
+
+    function test_assign_review_secondary() {
+        // Set up CDB-only primary and secondary users
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Lynx', lastName='Face', email='lynx@fart.edu', affiliation='Place University', password=' unset', cflags=0");
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Bobcat', lastName='Face', email='bobcat@fart.edu', affiliation='Place University', password=' unset', cflags=0");
+        $cu_lynx = $this->conf->cdb_user_by_email("lynx@fart.edu");
+        $cu_bobcat = $this->conf->cdb_user_by_email("bobcat@fart.edu");
+        (new ContactPrimary)->link($cu_bobcat, $cu_lynx);
+
+        // Neither exists in local DB
+        xassert_eqq($this->conf->user_by_email("lynx@fart.edu"), null);
+        xassert_eqq($this->conf->user_by_email("bobcat@fart.edu"), null);
+
+        // Assigning an external review to the secondary should not crash
+        xassert_assign($this->user_chair, "action,paper,email\nreview,1,bobcat@fart.edu");
+        xassert_search($this->user_chair, "re:lynx@fart.edu", "1");
     }
 
     function test_primary_nonascii() {
