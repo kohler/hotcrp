@@ -242,7 +242,7 @@ class Review_AssignmentParser extends AssignmentParser {
             if ($user->cdb_confid !== 0) {
                 // need to look up by email
                 $pemail = Dbl::fetch_value($state->conf->contactdb(), "select email from ContactInfo where contactDbId=?", $user->primaryContactId);
-                $puser = $state->user_by_email($pemail);
+                $puser = $state->user_by_email($pemail, true);
             } else {
                 $puser = $state->user_by_id($user->primaryContactId);
             }
