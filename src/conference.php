@@ -368,7 +368,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 322) {
+        if ($this->sversion < 323) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -2189,6 +2189,11 @@ class Conf {
         }
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
             $f .= ", {$prefix}collaborators";
+            if ($this->sversion >= 323) {
+                $f .= ", {$prefix}collaboratorsOverflow";
+            } else {
+                $f .= ", null {$prefix}collaboratorsOverflow";
+            }
         }
         if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
             $f .= ", {$prefix}password";
@@ -2222,7 +2227,7 @@ class Conf {
         }
         $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}primaryContactId, {$prefix}cflags";
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
-            $f .= ", {$prefix}collaborators";
+            $f .= ", {$prefix}collaborators, {$prefix}collaboratorsOverflow";
         }
         if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
             $f .= ", {$prefix}password";

@@ -274,6 +274,7 @@ class Contact implements JsonSerializable {
     const PROP_UPDATE = 0x4000;
     const PROP_IMPORT = 0x8000;
     const PROP_SPECIAL = 0x10000;
+    const PROP_OVERFLOWABLE = 0x20000;
     static public $props = [
         "email" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE,
         "firstName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
@@ -286,7 +287,7 @@ class Contact implements JsonSerializable {
         "password" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_NOUPDATECDB,
         "passwordTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
         "passwordUseTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
-        "collaborators" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE | self::PROP_IMPORT,
+        "collaborators" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE | self::PROP_IMPORT | self::PROP_OVERFLOWABLE,
         "updateTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
         "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
@@ -446,17 +447,23 @@ class Contact implements JsonSerializable {
         }
         $this->_slice = (int) $this->_slice;
 
+        // handle collaborators property
+        if (isset($this->collaboratorsOverflow)) {
+            $this->collaborators = $this->collaboratorsOverflow;
+            $this->collaboratorsOverflow = null;
+        }
+
         // handle unsliced properties
         if ($this->_slice === 0) {
             foreach (self::$props as $prop => $shape) {
-                if (($shape & (self::PROP_SLICE | self::PROP_DATA | self::PROP_STRING)) === 0
-                    && isset($this->$prop)) {
-                    if (($shape & self::PROP_INT) !== 0) {
-                        $this->$prop = (int) $this->$prop;
-                    } else {
-                        assert(($shape & self::PROP_BOOL) !== 0);
-                        $this->$prop = (bool) $this->$prop;
-                    }
+                if (($shape & (self::PROP_SLICE | self::PROP_DATA | self::PROP_STRING)) !== 0
+                    || !isset($this->$prop)) {
+                    continue;
+                } else if (($shape & self::PROP_INT) !== 0) {
+                    $this->$prop = (int) $this->$prop;
+                } else {
+                    assert(($shape & self::PROP_BOOL) !== 0);
+                    $this->$prop = (bool) $this->$prop;
                 }
             }
         }
@@ -501,16 +508,21 @@ class Contact implements JsonSerializable {
             $wantshape = self::PROP_CDB;
         }
         foreach (self::$props as $prop => $shape) {
-            if (($shape & $shapemask) === $wantshape) {
+            if (($shape & $shapemask) !== $wantshape) {
+                continue;
+            }
+            if (($shape & self::PROP_OVERFLOWABLE) !== 0) {
+                $value = $x->{"{$prop}Overflow"} ?? $x->$prop;
+            } else {
                 $value = $x->$prop;
-                if ($value === null || ($shape & self::PROP_STRING) !== 0) {
-                    $this->$prop = $value;
-                } else if (($shape & self::PROP_INT) !== 0) {
-                    $this->$prop = (int) $value;
-                } else {
-                    assert(($shape & self::PROP_BOOL) !== 0);
-                    $this->$prop = (bool) $value;
-                }
+            }
+            if ($value === null || ($shape & self::PROP_STRING) !== 0) {
+                $this->$prop = $value;
+            } else if (($shape & self::PROP_INT) !== 0) {
+                $this->$prop = (int) $value;
+            } else {
+                assert(($shape & self::PROP_BOOL) !== 0);
+                $this->$prop = (bool) $value;
             }
         }
         // unaccentedName and activity_at are special
@@ -544,22 +556,15 @@ class Contact implements JsonSerializable {
                 $u->collaborators = $u->collaboratorsOverflow = null;
                 $u->_slice &= ~self::SLICEBIT_COLLABORATORS;
             }
-            $result = $this->conf->qe("select contactId, collaborators from ContactInfo where contactId?a", $set->user_ids());
+            $co = $this->conf->sversion >= 323 ? "collaboratorsOverflow" : "null collaboratorsOverflow";
+            $result = $this->conf->qe("select contactId, collaborators, {$co} from ContactInfo where contactId?a", $set->user_ids());
             while (($row = $result->fetch_row())) {
-                $set->get(intval($row[0]))->collaborators = $row[1];
+                $u = $set->get(intval($row[0]));
+                $u->collaborators = $row[2] ?? $row[1];
             }
             $result->close();
         }
-        return $this->collaboratorsOverflow
-            ?? $this->collaborators
-            ?? "";
-    }
-
-    /** @param ?string $x */
-    function set_collaborators($x) {
-        $this->_slice &= ~self::SLICEBIT_COLLABORATORS;
-        $this->collaborators = $x;
-        $this->collaboratorsOverflow = null;
+        return $this->collaborators ?? "";
     }
 
     /** @return Generator<AuthorMatcher> */
@@ -1720,15 +1725,16 @@ class Contact implements JsonSerializable {
     /** @param string $key */
     function set_data_prop($key, $value) {
         $d = $this->make_data();
-        if (($d->$key ?? null) !== $value) {
-            if (!array_key_exists("data", $this->_mod_undo ?? [])) {
-                $this->_mod_undo["data"] = $this->data;
-            }
-            if ($value !== null) {
-                $d->$key = $value;
-            } else {
-                unset($d->$key);
-            }
+        if (($d->$key ?? null) === $value) {
+            return;
+        }
+        if (!array_key_exists("data", $this->_mod_undo ?? [])) {
+            $this->_mod_undo["data"] = $this->data;
+        }
+        if ($value !== null) {
+            $d->$key = $value;
+        } else {
+            unset($d->$key);
         }
     }
 
@@ -1980,6 +1986,15 @@ class Contact implements JsonSerializable {
         return $value;
     }
 
+    /** @param string $prop
+     * @param mixed $value
+     * @return bool */
+    private function prop_value_overflows($prop, $value) {
+        return $prop === "collaborators"
+            && is_string($value)
+            && strlen($value) >= 8190;
+    }
+
     /** @param string $prop */
     function prop($prop) {
         $shape = self::$props[$prop] ?? 0;
@@ -2163,21 +2178,29 @@ class Contact implements JsonSerializable {
         }
         $qf = $qv = [];
         foreach (self::$props as $prop => $shape) {
-            if (($shape & $flag) !== 0
-                && (array_key_exists($prop, $this->_mod_undo)
-                    || ($this->$idk <= 0 && ($shape & self::PROP_NULL) === 0))) {
+            if (($shape & $flag) === 0
+                || (!array_key_exists($prop, $this->_mod_undo)
+                    && ($this->$idk > 0 || ($shape & self::PROP_NULL) !== 0))) {
+                continue;
+            }
+            $value = $this->prop1($prop, $shape);
+            if (($shape & self::PROP_SPECIAL) !== 0) {
+                $value = $this->clean_prop_value($prop, $value);
+            }
+            if ($value === false || $value === true) {
+                $value = (int) $value;
+            } else if ($value === null && ($shape & self::PROP_NULL) === 0) {
+                $value = 0;
+            }
+            if (($shape & self::PROP_OVERFLOWABLE) !== 0) {
+                $overflow = $this->prop_value_overflows($prop, $value);
                 $qf[] = "{$prop}=?";
-                $value = $this->prop1($prop, $shape);
-                if (($shape & self::PROP_SPECIAL) !== 0) {
-                    $value = $this->clean_prop_value($prop, $value);
-                }
-                if ($value === false || $value === true) {
-                    $qv[] = (int) $value;
-                } else if ($value === null && ($shape & self::PROP_NULL) === 0) {
-                    $qv[] = 0;
-                } else {
-                    $qv[] = $value;
-                }
+                $qv[] = $overflow ? null : $value;
+                $qf[] = "{$prop}Overflow=?";
+                $qv[] = $overflow ? $value : null;
+            } else {
+                $qf[] = "{$prop}=?";
+                $qv[] = $value;
             }
         }
         if (array_key_exists("data", $this->_mod_undo)) {

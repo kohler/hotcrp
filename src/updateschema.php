@@ -3271,6 +3271,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("delete from DeletedContactInfo where (select email from ContactInfo where contactId=DeletedContactInfo.contactId and (cflags&8)!=0)=DeletedContactInfo.email")) {
             $conf->update_schema_version(322);
         }
+        if ($conf->sversion === 322
+            && $conf->ql_ok("alter table ContactInfo add `collaboratorsOverflow` longblob DEFAULT NULL")) {
+            $conf->update_schema_version(323);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

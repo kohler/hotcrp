@@ -91,6 +91,7 @@ CREATE TABLE `ContactInfo` (
   `passwordTime` bigint NOT NULL DEFAULT 0,
   `passwordUseTime` bigint NOT NULL DEFAULT 0,
   `collaborators` varbinary(8192) DEFAULT NULL,
+  `collaboratorsOverflow` longblob DEFAULT NULL,
   `preferredEmail` varchar(120) DEFAULT NULL,
   `updateTime` bigint NOT NULL DEFAULT 0,
   `lastLogin` bigint NOT NULL DEFAULT 0,
@@ -659,7 +660,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 322, null),   -- schema version
+  ('allowPaperOption', 323, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators
