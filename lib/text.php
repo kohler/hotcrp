@@ -1,6 +1,6 @@
 <?php
 // text.php -- HotCRP text helper functions
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class TextPregexes {
     /** @var ?string */
@@ -179,14 +179,13 @@ class Text {
      * @param int $flags
      * @return string */
     static function add_affiliation($name, $affiliation, $flags) {
-        if ($affiliation !== "") {
-            if (($flags & NAME_U) !== 0 && !is_usascii($affiliation)) {
-                $affiliation = UnicodeHelper::deaccent($affiliation);
-            }
-            return $name . ($name === "" ? "" : " ") . "(" . $affiliation . ")";
-        } else {
+        if ($affiliation === "") {
             return $name;
         }
+        if (($flags & NAME_U) !== 0 && !is_usascii($affiliation)) {
+            $affiliation = UnicodeHelper::deaccent($affiliation);
+        }
+        return $name . ($name === "" ? "" : " ") . "(" . $affiliation . ")";
     }
 
     /** @param string $name
@@ -194,15 +193,14 @@ class Text {
      * @param int $flags
      * @return string */
     static function add_affiliation_h($name, $affiliation, $flags) {
-        if ($affiliation !== "") {
-            if (($flags & NAME_U) !== 0 && !is_usascii($affiliation)) {
-                $affiliation = UnicodeHelper::deaccent($affiliation);
-            }
-            return $name . ($name === "" ? "" : " ") . "<span class=\"auaff\">("
-                . htmlspecialchars($affiliation) . ")</span>";
-        } else {
+        if ($affiliation === "") {
             return $name;
         }
+        if (($flags & NAME_U) !== 0 && !is_usascii($affiliation)) {
+            $affiliation = UnicodeHelper::deaccent($affiliation);
+        }
+        return $name . ($name === "" ? "" : " ") . "<span class=\"auaff\">("
+            . htmlspecialchars($affiliation) . ")</span>";
     }
 
     const SUFFIX_REGEX = 'Jr\.?|Sr\.?|Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Junior|Senior|Esquire|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th|1\dth';
@@ -277,9 +275,8 @@ class Text {
     static function split_first_prefix($first) {
         if (preg_match('/\A((?:(?:dr\.?|mr\.?|mrs\.?|ms\.?|prof\.?)\s+)+)(\S.*)\z/i', $first, $m)) {
             return [$m[2], rtrim($m[1])];
-        } else {
-            return [$first, ""];
         }
+        return [$first, ""];
     }
 
     /** @param string $first
@@ -288,9 +285,8 @@ class Text {
         if (preg_match('/\A((?:\pL\.\s*)*\pL[^\s.]\S*)\s+(.*)\z/', $first, $m)
             || preg_match('/\A(\pL[^\s.]\S*)\s*(.*)\z/', $first, $m)) {
             return [$m[1], $m[2]];
-        } else {
-            return [$first, ""];
         }
+        return [$first, ""];
     }
 
     /** @param string $last
@@ -301,9 +297,8 @@ class Text {
                 $m[2] .= ".";
             }
             return [$m[1], $m[2]];
-        } else {
-            return [$last, ""];
         }
+        return [$last, ""];
     }
 
     /** @param string $lastName
@@ -312,9 +307,8 @@ class Text {
         // see also split_name; NB intentionally case sensitive
         if (preg_match('/\A((?:(?:v[ao]n(?:|de[nr])|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z/s', $lastName, $m)) {
             return [rtrim($m[1]), $m[2]];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param ?string $s

@@ -97,7 +97,7 @@ class Ht {
             self::$_script_open = '<script';
         } else {
             self::$script_nonce = $nonce;
-            self::$_script_open = '<script nonce="' . htmlspecialchars($nonce) . '"';
+            self::$_script_open = '<script nonce="' . htmlspecialchars($nonce, ENT_COMPAT) . '"';
         }
     }
 
@@ -121,14 +121,14 @@ class Ht {
             && !preg_match('/\A([a-z]+:)?\/\//', $src)) {
             unset($js["crossorigin"]);
         }
-        return self::$_script_open . ' src="' . htmlspecialchars($src) . '"' . self::extra($js) . '></script>';
+        return self::$_script_open . ' src="' . htmlspecialchars($src, ENT_COMPAT) . '"' . self::extra($js) . '></script>';
     }
 
     /** @param string $src
      * @return string */
     static function stylesheet_file($src) {
         return "<link rel=\"stylesheet\" type=\"text/css\" href=\""
-            . htmlspecialchars($src) . "\">";
+            . htmlspecialchars($src, ENT_COMPAT) . "\">";
     }
 
     /** @param string|array<string,mixed> $action
