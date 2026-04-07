@@ -412,15 +412,20 @@ class Search_Page {
         $qreq->print_header("Search", "search");
         $ml = [MessageItem::error("<0>Account {} can’t search {submissions}", $user->email)];
 
-        $semails = Contact::session_emails($qreq);
-        $user->conf->prefetch_users_by_email($semails);
         $links = [];
-        foreach ($semails as $i => $email) {
-            if (strcasecmp($email, $user->email) !== 0
-                && ($u = $user->conf->user_by_email($email))
-                && PaperSearch::viewable_limits($u)) {
-                $links[] = Ht::link(htmlspecialchars($email),
-                    $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW));
+        if ($user->is_actas_user()) {
+            $links[] = Ht::link(htmlspecialchars($user->base_user()->email),
+                $user->conf->selfurl($qreq, ["actas" => null]));
+        } else {
+            $semails = Contact::session_emails($qreq);
+            $user->conf->prefetch_users_by_email($semails);
+            foreach ($semails as $i => $email) {
+                if (strcasecmp($email, $user->email) !== 0
+                    && ($u = $user->conf->user_by_email($email))
+                    && PaperSearch::viewable_limits($u)) {
+                    $links[] = Ht::link(htmlspecialchars($email),
+                        $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW));
+                }
             }
         }
         if ($links) {
