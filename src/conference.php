@@ -699,15 +699,14 @@ class Conf {
 
         // remove final slash from $Opt["paperSite"]
         $nav = Navigation::get();
-        if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] === "") {
-            $this->opt["paperSite"] = $nav->base_absolute();
+        if (($papersite = $this->opt["paperSite"] ?? "") === ""
+            && ($papersite = $nav->base_absolute() ?? "") === "") {
+            $papersite = $this->opt["defaultPaperSite"] ?? "";
         }
-        if ($this->opt["paperSite"] == "" && isset($this->opt["defaultPaperSite"])) {
-            $this->opt["paperSite"] = $this->opt["defaultPaperSite"];
+        while (str_ends_with($papersite, "/")) {
+            $papersite = substr($papersite, 0, -1);
         }
-        while (str_ends_with($this->opt["paperSite"], "/")) {
-            $this->opt["paperSite"] = substr($this->opt["paperSite"], 0, -1);
-        }
+        $this->opt["paperSite"] = $papersite;
 
         // asset URLs (general assets, scripts, jQuery)
         $baseurl = $nav->base_path_relative ?? "";

@@ -320,6 +320,9 @@ class NavigationState {
     /** @param bool $downcase_host
      * @return string */
     function base_absolute($downcase_host = false) {
+        if ($this->server === null) {
+            return null;
+        }
         $x = $downcase_host ? strtolower($this->server) : $this->server;
         return $x . $this->base_path;
     }
@@ -327,6 +330,9 @@ class NavigationState {
     /** @param bool $downcase_host
      * @return string */
     function site_absolute($downcase_host = false) {
+        if ($this->server === null) {
+            return null;
+        }
         $x = $downcase_host ? strtolower($this->server) : $this->server;
         return $x . $this->site_path;
     }
@@ -339,9 +345,8 @@ class NavigationState {
             return $x;
         } else if (substr($url, 0, 5) !== "index" || substr($url, 5, 1) === "/") {
             return $x . $url;
-        } else {
-            return ($x ? : $this->site_path) . substr($url, 5);
         }
+        return ($x ? : $this->site_path) . substr($url, 5);
     }
 
     /** @param ?string $url
