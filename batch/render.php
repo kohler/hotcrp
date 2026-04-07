@@ -22,6 +22,8 @@ class Render_Batch {
     public $req_headers;
     /** @var ?string */
     public $data;
+    /** @var ?list<string|QrequestFile> */
+    private $form_data;
     /** @var ?string */
     public $data_content_type;
     /** @var bool */
@@ -32,8 +34,24 @@ class Render_Batch {
     public $verbose;
     /** @var bool */
     public $follow_redirects;
+    /** @var ?string */
+    public $from;
+    /** @var ?string */
+    public $diff_file1;
+    /** @var ?string */
+    public $diff_file2;
+    /** @var int */
+    private $from_status = 0;
+    /** @var resource */
+    private $_from_stream;
 
-    function __construct(Contact $user, $arg) {
+    function __construct(?Contact $user, $arg) {
+        if (isset($arg["diff"]) && !isset($arg["from"])) {
+            $this->diff_file1 = $arg["_"][0];
+            $this->diff_file2 = $arg["_"][1];
+            return;
+        }
+
         $this->conf = $user->conf;
         $this->urlbase = $this->conf->opt("paperSite");
         if ($this->urlbase === "") {
@@ -47,38 +65,26 @@ class Render_Batch {
         $this->verbose = isset($arg["V"]);
         $this->follow_redirects = isset($arg["L"]);
 
+        if (isset($arg["from"])) {
+            $this->from = $arg["_"][0];
+            if (isset($arg["diff"])) {
+                $this->diff_file1 = $this->from;
+            }
+            return;
+        }
+
         $basenav = NavigationState::make_base($this->urlbase);
-        $this->url = $basenav->resolve($arg["_"][0]);
+        $this->url = $basenav->resolve(preg_replace('/\A\/++/', "", $arg["_"][0]));
         if (!str_starts_with($this->url, $this->urlbase)) {
             throw new CommandLineException("invalid URL `" . $arg["_"][0] . "`");
         }
 
         foreach ($arg["__"] as $nv) {
             list($n, $v) = $nv;
-            if ($n !== "data" && $n !== "data-raw" && $n !== "data-binary") {
-                continue;
-            }
-            if ($n !== "data-raw" && str_starts_with($v, "@")) {
-                $f = substr($v, 1);
-                // no protocol wrappers
-                if (!str_starts_with($f, "/") && strpos($f, "://") !== false) {
-                    $f = "./{$f}";
-                }
-                if (($v = @file_get_contents($f)) === false) {
-                    throw CommandLineException::make_file_error($f);
-                }
-                if ($n === "data") {
-                    $v = preg_replace('/[\r\n]++/', "", $v);
-                }
-            }
-            if ($n !== "data-binary") {
-                $v = urlencode($v);
-            }
-            if ($this->data === null) {
-                $this->data = $v;
-                $this->data_content_type = $this->data_content_type ?? "application/x-www-form-urlencoded";
-            } else {
-                $this->data .= "&" . $v;
+            if ($n === "data" || $n === "data-raw" || $n === "data-binary") {
+                $this->add_data($n, $v);
+            } else if ($n === "form" || $n === "form-string") {
+                $this->add_form($n, $v);
             }
         }
 
@@ -92,6 +98,92 @@ class Render_Batch {
         }
     }
 
+    /** @param string $f
+     * @return string */
+    static function read_file($f) {
+        // no protocol wrappers
+        if (!str_starts_with($f, "/") && strpos($f, "://") !== false) {
+            $f = "./{$f}";
+        }
+        if (($v = @file_get_contents($f)) === false) {
+            throw CommandLineException::make_file_error($f);
+        }
+        return $v;
+    }
+
+    /** @param string $n
+     * @param string $v */
+    private function add_data($n, $v) {
+        if ($this->data === null) {
+            $this->data_content_type = $this->data_content_type ?? "application/x-www-form-urlencoded";
+        }
+        if ($this->data_content_type === "multipart/form-data") {
+            throw new CommandLineException("cannot use `--{$n}` with multipart/form-data");
+        }
+        if ($n !== "data-raw" && str_starts_with($v, "@")) {
+            $v = self::read_file(substr($v, 1));
+            if ($n === "data") {
+                $v = preg_replace('/[\r\n]++/', "", $v);
+            }
+        }
+        if ($n !== "data-binary") {
+            $v = urlencode($v);
+        }
+        if ($this->data === null) {
+            $this->data = $v;
+        } else {
+            $this->data .= "&" . $v;
+        }
+    }
+
+    /** @param string $n
+     * @param string $v */
+    private function add_form($n, $v) {
+        if ($this->form_data === null) {
+            $this->data_content_type = $this->data_content_type ?? "multipart/form-data";
+        }
+        if ($this->data_content_type !== "multipart/form-data") {
+            throw new CommandLineException("cannot use `--{$n}` with {$this->data_content_type}");
+        }
+        $eq = strpos($v, "=");
+        if ($eq === false) {
+            throw new CommandLineException("`--{$n}` option must match `name=value`");
+        }
+        if ($n === "form-string") {
+            $qf = QrequestFile::make_string(substr($v, $eq + 1), "");
+            $qf->input_name = substr($v, 0, $eq);
+            $this->form_data[] = $qf;
+            return;
+        }
+        if (!preg_match('/\G=([@<]?+)(\"(?:[^\\\\"]|\\\\[\\\\"])*+\"|(?=;|\z)|[^;,\s][^;,]*+)/s', $v, $m, 0, $eq)
+            || ($m[2] !== "" && ctype_space(substr($m[2], -1)))) {
+            throw new CommandLineException("`--{$n}` option has bad value");
+        }
+        $ftype = $m[1];
+        $value = str_starts_with($m[2], "\"") ? stripcslashes(substr($m[2], 1, -1)) : $m[2];
+        $rest = [];
+        $pos = $eq + strlen($m[0]);
+        while ($pos < strlen($v)) {
+            if (!preg_match('/\G;(type|filename)=([^;]++|\"([^\\\\"]|\\\\[\\\\"])*+\")/', $v, $mm, 0, $pos)
+                || isset($rest[$mm[1]])) {
+                throw new CommandLineException("`--{$n}` option has bad parameters");
+            }
+            $rest[$mm[1]] = str_starts_with($mm[2], "\"") ? stripcslashes(substr($mm[2], 1, -1)) : $mm[2];
+            $pos += strlen($mm[0]);
+        }
+        if ($ftype !== "") {
+            $content = self::read_file($value);
+        } else {
+            $content = $value;
+        }
+        if ($ftype === "@" && !isset($rest["filename"])) {
+            $rest["filename"] = $value;
+        }
+        $qf = QrequestFile::make_string($content, $rest["filename"] ?? "", $rest["type"] ?? null);
+        $qf->input_name = substr($v, 0, $eq);
+        $this->form_data[] = $qf;
+    }
+
     /** @return Qrequest */
     private function make_qrequest($url) {
         $nav = NavigationState::make_base($this->urlbase,
@@ -103,11 +195,24 @@ class Render_Batch {
         if ($this->data_content_type === "application/x-www-form-urlencoded") {
             $qstr .= ($qstr === "" ? "" : "&") . $this->data;
         }
+        $qfiles = [];
+        foreach ($this->form_data ?? [] as $qf) {
+            if ($qf->name !== "") {
+                $qfiles[] = $qf;
+            } else {
+                $qstr .= ($qstr === "" ? "" : "&")
+                    . urlencode($qf->input_name)
+                    . "=" . urlencode($qf->content);
+            }
+        }
         parse_str($qstr, $args);
 
         $qreq = (new Qrequest($this->method, $args))
             ->set_user($this->user)
             ->set_navigation($nav);
+        foreach ($qfiles as $qf) {
+            $qreq->set_file($qf->input_name, $qf);
+        }
 
         if ($this->method === "POST" || $this->method === "DELETE") {
             $qreq->approve_token();
@@ -136,9 +241,206 @@ class Render_Batch {
         fwrite(STDOUT, "\r\n");
     }
 
+    /** @param string $urlarg
+     * @return string */
+    private function resolve_url($urlarg) {
+        $basenav = NavigationState::make_base($this->urlbase);
+        $url = $basenav->resolve(preg_replace('/\A\/++/', "", $urlarg));
+        if (!str_starts_with($url, $this->urlbase)) {
+            throw new CommandLineException("invalid URL `{$urlarg}`");
+        }
+        return $url;
+    }
+
+    private function from_flush($block, $pending_url) {
+        if ($pending_url === null) {
+            return;
+        }
+        $out = $this->_from_stream;
+        $url = $this->resolve_url($pending_url);
+        $this->method = "GET";
+        $this->data = null;
+        $this->form_data = null;
+        $this->data_content_type = null;
+        $rc = RenderCapture::make($this->make_qrequest($url));
+
+        if (!str_ends_with($block, "\n\n")) {
+            $block .= "\n";
+        }
+        fwrite($out, $block);
+        fwrite($out, "    HTTP/1.1 {$rc->status}\n");
+        // headers in sorted order
+        if (!empty($rc->headers)) {
+            $headers = $rc->headers;
+            sort($headers, SORT_STRING | SORT_FLAG_CASE);
+            fwrite($out, "    " . join("\n    ", $headers) . "\n");
+        }
+        // content (with terminating newline)
+        if (!empty($rc->content)) {
+            $content = $rc->content;
+            if (str_ends_with($content, "\n")) {
+                $content = substr($content, 0, -1);
+            }
+            fwrite($out, "    \n    " . str_replace("\n", "\n    ", $content) . "\n");
+        }
+        fwrite($out, "\n");
+        if ($rc->status < 200 || $rc->status >= 400) {
+            $this->from_status = 1;
+        }
+    }
+
+    /** @param ?resource $stream
+     * @return int */
+    private function run_from($stream = null) {
+        $this->_from_stream = $stream ?? STDOUT;
+        $str = self::read_file($this->from);
+        $this->from_status = 0;
+        $pending_url = null;
+        $out = $this->_from_stream;
+        $lastpos = $pos = 0;
+        $len = strlen($str);
+        $block = "";
+        while ($pos < $len) {
+            $epos = strpos($str, "\n", $pos);
+            $epos = $epos === false ? $len : $epos + 1;
+            if (preg_match('/\G\#[ \t]++(\S*+)/', $str, $m, 0, $pos)) {
+                $block .= substr($str, $lastpos, $pos - $lastpos);
+                $this->from_flush($block, $pending_url);
+                $pending_url = $m[1];
+                $block = "";
+                $lastpos = $pos;
+                $pos = $epos;
+            } else if (substr_compare($str, "    HTTP/1.1 ", $pos, 13) === 0) {
+                // skip existing HTTP response block
+                $block .= substr($str, $lastpos, $pos - $lastpos);
+                while (true) {
+                    $pos = $epos;
+                    if ($pos === $len
+                        || substr_compare($str, "    ", $pos, 4) !== 0) {
+                        break;
+                    }
+                    $epos = strpos($str, "\n", $pos);
+                    $epos = $epos === false ? $len : $epos + 1;
+                }
+                while ($pos !== $len && $str[$pos] === "\n") {
+                    ++$pos;
+                }
+                $lastpos = $pos;
+            } else {
+                $pos = $epos;
+            }
+        }
+        $block .= substr($str, $lastpos, $pos - $lastpos);
+        $this->from_flush($block, $pending_url);
+        return $this->from_status;
+    }
+
+    /** Parse a render .md file into an ordered map of heading => block content.
+     * @param string $text
+     * @return array<string,string> */
+    static function parse_blocks($text) {
+        $blocks = [];
+        $heading = null;
+        $content = "";
+        foreach (explode("\n", $text) as $line) {
+            if (preg_match('/\A#\s+(\S.*)/', $line)) {
+                if ($heading !== null) {
+                    $blocks[$heading] = $content;
+                }
+                $heading = $line;
+                $content = "";
+            } else if ($heading !== null) {
+                $content .= $line . "\n";
+            }
+        }
+        if ($heading !== null) {
+            $blocks[$heading] = $content;
+        }
+        return $blocks;
+    }
+
+    /** Normalize a block to remove semantically non-meaningful differences.
+     * @param string $s
+     * @return string */
+    static function normalize($s) {
+        $s = preg_replace('/"now":[0-9]+(?:\.[0-9]+)?/', '"now":0', $s);
+        $s = preg_replace('/name="[A-Za-z0-9\/+=]{8,}="/', 'name="TOKEN"', $s);
+        $s = preg_replace('/\[[0-9a-f]+\.\.\. [0-9]+M\]/', '[HASH... 0M]', $s);
+        return $s;
+    }
+
+    /** @return int */
+    private function run_diff() {
+        $text1 = self::read_file($this->diff_file1);
+        $text2 = self::read_file($this->diff_file2);
+        $blocks1 = self::parse_blocks($text1);
+        $blocks2 = self::parse_blocks($text2);
+
+        $all_headings = array_keys($blocks1 + $blocks2);
+        $has_diff = false;
+
+        foreach ($all_headings as $heading) {
+            if (!isset($blocks1[$heading])) {
+                fwrite(STDOUT, "{$heading}\n  Only in {$this->diff_file2}\n\n");
+                $has_diff = true;
+                continue;
+            }
+            if (!isset($blocks2[$heading])) {
+                fwrite(STDOUT, "{$heading}\n  Only in {$this->diff_file1}\n\n");
+                $has_diff = true;
+                continue;
+            }
+            $n1 = self::normalize($blocks1[$heading]);
+            $n2 = self::normalize($blocks2[$heading]);
+            if ($n1 !== $n2) {
+                fwrite(STDOUT, "{$heading}\n");
+                $f1 = tempnam(sys_get_temp_dir(), "rd1_");
+                $f2 = tempnam(sys_get_temp_dir(), "rd2_");
+                file_put_contents($f1, $n1);
+                file_put_contents($f2, $n2);
+                $label1 = basename($this->diff_file1);
+                $label2 = basename($this->diff_file2);
+                $cmd = "diff -u"
+                    . " --label " . escapeshellarg($label1)
+                    . " --label " . escapeshellarg($label2)
+                    . " " . escapeshellarg($f1)
+                    . " " . escapeshellarg($f2);
+                passthru($cmd);
+                unlink($f1);
+                unlink($f2);
+                fwrite(STDOUT, "\n");
+                $has_diff = true;
+            }
+        }
+
+        if (!$has_diff) {
+            fwrite(STDERR, "No semantic differences found.\n");
+        }
+
+        return $has_diff ? 1 : 0;
+    }
+
     /** @return int */
     function run() {
         Navigation::$test_mode = 2;
+
+        if ($this->diff_file1 !== null && $this->from !== null) {
+            // --diff --from: render from file, then diff against it
+            $f2 = tempnam(sys_get_temp_dir(), "rdf_");
+            $stream = fopen($f2, "wb");
+            $this->run_from($stream);
+            fclose($stream);
+            $this->diff_file2 = $f2;
+            $result = $this->run_diff();
+            unlink($f2);
+            return $result;
+        }
+        if ($this->diff_file1 !== null) {
+            return $this->run_diff();
+        }
+        if ($this->from !== null) {
+            return $this->run_from();
+        }
 
         $rc = RenderCapture::make($this->make_qrequest($this->url));
 
@@ -169,26 +471,46 @@ class Render_Batch {
 
     /** @return Render_Batch */
     static function make_args($argv) {
-        $arg = (new Getopt)->long(
+        $getopt = (new Getopt)->long(
             "name:,n: !",
             "config: !",
             "user:,u: =EMAIL Act as user EMAIL",
             "X:,request: =METHOD HTTP method (GET, POST, etc.) [default GET]",
             "H[],header[] =HEADER Add request header",
-            "data[],d[] =DATA Send DATA as request body",
+            "data[],d[] =NAME=VALUE Send parameter in request body",
             "data-raw[] !",
+            "form[],F[] =NAME=VALUE Send parameter or attach file",
+            "form-string[] !",
+            "from Read URLs from FILE and render each",
+            "diff Compare two render output files",
             "i,include Include response headers in output",
             "I,head Show response headers only",
             "V,verbose Show request/response headers",
             "L,location Follow redirects",
             "help,h !"
         )->description("Render a HotCRP page and print the output.
-Usage: php batch/render.php [-n CONFID] [-u EMAIL] [OPTIONS] URL")
+Usage: php batch/render.php [-n CONFID] [-u EMAIL] [OPTIONS] URL
+       php batch/render.php [-n CONFID] [-u EMAIL] --from FILE
+       php batch/render.php --diff FILE1 FILE2
+       php batch/render.php [-n CONFID] [-u EMAIL] --diff --from FILE")
          ->helpopt("help")
-         ->minarg(1)
-         ->maxarg(1)
-         ->order(true)
-         ->parse($argv);
+         ->maxarg(2)
+         ->order(true);
+        $arg = $getopt->parse($argv);
+
+        if (isset($arg["from"])) {
+            // --diff --from FILE: re-render FILE and diff against it
+            if (count($arg["_"]) !== 1) {
+                throw new CommandLineException("Too many arguments for `--from`", $getopt);
+            }
+        } else if (isset($arg["diff"])) {
+            if (count($arg["_"]) !== 2) {
+                throw new CommandLineException("Exactly two arguments required for `--diff`", $getopt);
+            }
+            return new Render_Batch(null, $arg);
+        } else if (count($arg["_"]) !== 1) {
+            throw new CommandLineException("URL argument required", $getopt);
+        }
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         $email = $arg["user"] ?? null;

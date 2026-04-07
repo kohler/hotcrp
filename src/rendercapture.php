@@ -65,7 +65,7 @@ class RenderCapture {
                 || substr_compare($h, $name, 0, strlen($name), true) !== 0) {
                 continue;
             }
-            $vx = trim(substr($h, strlen($name)));
+            $vx = trim(substr($h, strlen($name) + 1));
             if ($value === null) {
                 $value = $vx;
             } else {

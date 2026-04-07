@@ -446,11 +446,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param array|QrequestFile $finfo
      * @return $this */
     function set_file($name, $finfo) {
-        if (is_array($finfo)) {
-            $this->_files[$name] = QrequestFile::make_finfo($finfo);
-        } else {
-            $this->_files[$name] = $finfo;
-        }
+        $qf = is_array($finfo) ? QrequestFile::make_finfo($finfo) : $finfo;
+        $this->_files[$name] = $qf;
         return $this;
     }
     /** @param string $name
@@ -870,6 +867,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 }
 
 class QrequestFile {
+    /** @var ?string */
+    public $input_name;
     /** @var string */
     public $name;
     /** @var string */
