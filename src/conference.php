@@ -710,7 +710,7 @@ class Conf {
 
         // asset URLs (general assets, scripts, jQuery)
         $baseurl = $nav->base_path_relative ?? "";
-        $this->_assets_url = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? $baseurl;
+        $this->_assets_url = $this->opt["assetsUrl"] ?? $baseurl;
         if ($this->_assets_url !== "" && !str_ends_with($this->_assets_url, "/")) {
             $this->_assets_url .= "/";
         }
@@ -4937,7 +4937,7 @@ class Conf {
 
         // jQuery
         $stash = Ht::unstash();
-        if (($jqurl = $this->opt["jqueryUrl"] ?? $this->opt["jqueryURL"] ?? null)) {
+        if (($jqurl = $this->opt["jqueryUrl"] ?? null)) {
             Ht::stash_html($this->make_script_file($jqurl, true) . "\n");
         } else {
             $jqueryVersion = $this->opt["jqueryVersion"] ?? "3.7.1";
