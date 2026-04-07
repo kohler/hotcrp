@@ -469,14 +469,6 @@ class NavigationState {
 
     /** @param string $url
      * @param ?string $ref
-     * @return string
-     * @deprecated */
-    function make_absolute($url, $ref = null) {
-        return $this->resolve($url, $ref);
-    }
-
-    /** @param string $url
-     * @param ?string $ref
      * @return string */
     function resolve($url, $ref = null) {
         $up = parse_url($url);
@@ -582,14 +574,6 @@ class NavigationState {
             }
         }
         return $path;
-    }
-
-    /** @param ?string $url
-     * @param string $ref
-     * @return ?string
-     * @deprecated */
-    function make_absolute_under($url, $ref) {
-        return $this->resolve_within($url, $ref);
     }
 
     /** @param ?string $url
@@ -706,6 +690,10 @@ class Navigation {
             }
         }
         return self::$s;
+    }
+
+    static function set(NavigationState $state) {
+        self::$s = $state;
     }
 
     /** @return string */

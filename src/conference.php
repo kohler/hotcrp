@@ -4205,17 +4205,23 @@ class Conf {
         return $st;
     }
 
+    /** @param Qrequest $qreq */
+    function saved_messages_commit($qreq) {
+        if ($this->_save_msgs) {
+            $qreq->open_session();
+            $qreq->set_csession("msgs", $this->_save_msgs);
+            $this->_save_msgs = null;
+        }
+        $qreq->qsession()->commit();
+    }
+
     /** @param ?string $url
      * @param 301|302|303|307|308 $status
      * @return never
      * @throws Redirection */
     function redirect($url = null, $status = 302) {
         $qreq = Qrequest::$main_request;
-        if ($this->_save_msgs) {
-            $qreq->open_session();
-            $qreq->set_csession("msgs", $this->_save_msgs);
-        }
-        $qreq->qsession()->commit();
+        $this->saved_messages_commit($qreq);
         Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl("index")), $status);
     }
 

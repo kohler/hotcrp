@@ -1,24 +1,8 @@
 <?php
 // index.php -- HotCRP home page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 require_once("lib/navigation.php");
-
-/** @param Contact $user
- * @param Qrequest $qreq
- * @param object $pagej
- * @param ComponentSet $pc */
-function handle_request_components($user, $qreq, $pagej, $pc) {
-    if (isset($pagej->request_function)
-        && $pc->call_function($pagej, $pagej->request_function, $pagej) === false) {
-        return;
-    }
-    foreach ($pc->members($pagej->group, "request_function") as $gj) {
-        if ($pc->call_function($gj, $gj->request_function, $gj) === false) {
-            break;
-        }
-    }
-}
 
 /** @param NavigationState $nav */
 function handle_request($nav) {
@@ -39,7 +23,14 @@ function handle_request($nav) {
             Multiconference::fail_user_disabled($user, $qreq);
         }
         $pc->set_root($pagej->group);
-        handle_request_components($user, $qreq, $pagej, $pc);
+        if (!isset($pagej->request_function)
+            || $pc->call_function($pagej, $pagej->request_function, $pagej) !== false) {
+            foreach ($pc->members($pagej->group, "request_function") as $gj) {
+                if ($pc->call_function($gj, $gj->request_function, $gj) === false) {
+                    break;
+                }
+            }
+        }
         $pc->print_body_members($pagej->group);
     } catch (Redirection $redir) {
         Conf::$main->redirect($redir->url, $redir->status);

@@ -1426,26 +1426,6 @@ class TestRunner {
         MailChecker::clear();
     }
 
-    /** @param string $url */
-    static function set_navigation_base($url) {
-        $nav = Navigation::get();
-        $urlp = parse_url($url);
-        $nav->protocol = ($urlp["scheme"] ?? "http") . "://";
-        $nav->host = $urlp["host"] ?? "example.com";
-        $nav->server = $nav->protocol . $nav->host;
-        if (($s = $urlp["pass"] ?? null)) {
-            $nav->server .= ":{$s}";
-        }
-        if (($s = $urlp["user"] ?? null)) {
-            $nav->server .= "@{$s}";
-        }
-        if (($s = $urlp["port"] ?? null)) {
-            $nav->server .= ":{$s}";
-        }
-        $nav->base_path = $nav->base_path_relative = $nav->site_path = $nav->site_path_relative =
-            $urlp["path"] ?? "/";
-    }
-
 
     function will_print() {
         if (!$this->need_newline) {
@@ -1778,7 +1758,7 @@ class TestRunner {
 }
 
 TestRunner::$original_opt = $Opt;
-TestRunner::set_navigation_base("/");
+Navigation::set(NavigationState::make_base("https://hotcrp-test.invalid/"));
 
 
 class TestQreq {
