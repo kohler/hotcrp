@@ -661,8 +661,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     /** @return Qrequest */
     static function set_main_request(Qrequest $qreq) {
-        global $Qreq;
-        Qrequest::$main_request = $Qreq = $qreq;
+        Qrequest::$main_request = $qreq;
         return $qreq;
     }
 

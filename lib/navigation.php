@@ -172,9 +172,9 @@ class NavigationState {
     }
 
     /** @param string $base_uri
-     * @param string $path
+     * @param string $rest
      * @return NavigationState */
-    static function make_base($base_uri, $path = "") {
+    static function make_base($base_uri, $rest = "") {
         // no query or fragment allowed
         $is_https = substr_compare($base_uri, "https://", 0, 8, true) === 0;
         if (strpos($base_uri, "?") !== false
@@ -185,8 +185,8 @@ class NavigationState {
         }
         if (!str_ends_with($base_uri, "/")) {
             $base_uri .= "/";
-            if (str_starts_with($path, "/")) {
-                $path = substr($path, 1);
+            if (str_starts_with($rest, "/")) {
+                $rest = substr($rest, 1);
             }
         }
         // protocol, host
@@ -211,20 +211,25 @@ class NavigationState {
         }
         $nav->base_path_relative = $nav->site_path = $nav->site_path_relative = $nav->base_path;
         // rest
-        if (($n = strpos($path, "/")) === false) {
-            $n = strlen($path);
+        if (($q = strpos($rest, "?")) !== false) {
+            $nav->query = substr($rest, $q);
+            $rest = substr($rest, 0, $q);
+        } else {
+            $nav->query = "";
+        }
+        if (($n = strpos($rest, "/")) === false) {
+            $n = strlen($rest);
         }
         if ($n === 0) {
             $nav->raw_page = "";
             $nav->page = "index";
             $nav->path = "";
         } else {
-            $nav->raw_page = substr($path, 0, $n);
+            $nav->raw_page = substr($rest, 0, $n);
             $nav->page = $nav->raw_page;
-            $nav->path = substr($path, $n);
+            $nav->path = substr($rest, $n);
         }
-        $nav->query = "";
-        $nav->request_uri = $nav->base_path . $nav->path;
+        $nav->request_uri = $nav->base_path . $nav->path . $nav->query;
         return $nav;
     }
 

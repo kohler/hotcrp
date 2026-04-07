@@ -4661,7 +4661,7 @@ class Conf {
         assert(is_int($type) && is_string($text ?? ""));
         if (($text ?? "") === "") {
             // do nothing
-        } else if (PHP_SAPI === "cli") {
+        } else if (PHP_SAPI === "cli" && Navigation::$test_mode !== 2) {
             if ($type >= 2) {
                 fwrite(STDERR, "{$text}\n");
             } else if ($type === 1 || Navigation::$test_mode <= 0) {
