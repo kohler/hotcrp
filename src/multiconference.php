@@ -171,7 +171,7 @@ class Multiconference {
         }
 
         // print message
-        if (PHP_SAPI === "cli" && !Navigation::$test_mode) {
+        if (PHP_SAPI === "cli" && Navigation::$test_mode <= 0) {
             fwrite(STDERR, MessageSet::feedback_text($mis));
             exit(1);
         }

@@ -66,7 +66,7 @@ require_once(SiteLoader::find("src/conference.php"));
 require_once(SiteLoader::find("src/contact.php"));
 Conf::set_current_time();
 if (defined("HOTCRP_TESTHARNESS")) {
-    Navigation::$test_mode = true;
+    Navigation::$test_mode = 1;
 }
 if (PHP_SAPI === "cli") {
     set_exception_handler("BatchProcess::exception_handler");

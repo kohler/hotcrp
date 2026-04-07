@@ -677,8 +677,8 @@ class Navigation {
     /** @var ?NavigationState */
     static private $s;
 
-    /** @var bool */
-    static public $test_mode = false;
+    /** @var int */
+    static public $test_mode = 0;
     /** @var int */
     static public $http_response_code = 200;
     /** @var list<string> */
@@ -718,7 +718,7 @@ class Navigation {
         $prev = self::$http_response_code;
         if ($status) {
             self::$http_response_code = $status;
-            if (!self::$test_mode) {
+            if (self::$test_mode <= 0) {
                 http_response_code($status);
             }
         }
@@ -728,7 +728,7 @@ class Navigation {
     /** @param string $header
      * @param bool $replace */
     static function header($header, $replace = true) {
-        if (!self::$test_mode) {
+        if (self::$test_mode <= 0) {
             header($header, $replace);
             return;
         }
@@ -764,7 +764,7 @@ class Navigation {
         if ($status) {
             self::http_response_code($status);
         }
-        if (self::$test_mode) {
+        if (self::$test_mode > 0) {
             throw new PageCompletion(self::$http_response_code);
         }
         exit(0);
@@ -774,7 +774,7 @@ class Navigation {
      * @param 301|302|303|307|308 $status
      * @return never */
     static function redirect_absolute($url, $status = 302) {
-        if (self::$test_mode) {
+        if (self::$test_mode > 0) {
             throw new Redirection($url, $status);
         }
         assert(substr_compare($url, "https://", 0, 8) === 0

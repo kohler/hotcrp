@@ -4664,7 +4664,7 @@ class Conf {
         } else if (PHP_SAPI === "cli") {
             if ($type >= 2) {
                 fwrite(STDERR, "{$text}\n");
-            } else if ($type === 1 || !defined("HOTCRP_TESTHARNESS")) {
+            } else if ($type === 1 || Navigation::$test_mode <= 0) {
                 fwrite(STDOUT, "{$text}\n");
             }
         } else if ($conf && $conf->_save_msgs !== null) {

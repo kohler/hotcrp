@@ -42,7 +42,7 @@ class Qsession {
             return;
         }
         if (headers_sent($hsfn, $hsln)
-            && !Navigation::$test_mode) {
+            && Navigation::$test_mode <= 0) {
             error_log("{$hsfn}:{$hsln}: headers sent: " . debug_string_backtrace());
         }
 
