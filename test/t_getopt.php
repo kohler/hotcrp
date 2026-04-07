@@ -80,6 +80,28 @@ class Getopt_Tester {
         xassert_eqq(json_encode($arg), '{"v":false,"V":3,"x":false,"_":[]}');
     }
 
+    function test_getopt_order() {
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->order(true)
+            ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "c"]);
+        xassert_eqq(json_encode($arg["__"]), '[["a",false],["c","x"],["c","y"],["d","a"],["e","a"],["e","b"],["e","c"]]');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->order(true)->interleave(true)
+            ->parse(["fart", "-a", "-c", "x", "pos1", "-d=a", "pos2"]);
+        xassert_eqq(json_encode($arg["__"]), '[["a",false],["c","x"],["","pos1"],["d","a"],["","pos2"]]');
+
+        $arg = (new Getopt)->long("a")->otheropt(true)->order(true)
+            ->parse(["fart", "-a", "--unknown"]);
+        xassert_eqq(json_encode($arg["__"]), '[["a",false],["-","--unknown"]]');
+
+        $arg = (new Getopt)->short("vV#")->order(true)
+            ->parse(["fart", "-vVVv"]);
+        xassert_eqq(json_encode($arg["__"]), '[["v",false],["V",1],["V",2],["v",false]]');
+
+        // Without order, no __ key
+        $arg = (new Getopt)->long("a")->parse(["fart", "-a"]);
+        xassert_eqq(array_key_exists("__", $arg), false);
+    }
+
     function test_getopt_subcommand() {
         $getopt = (new Getopt)->subcommand("a", "b")
             ->long("x:,y: {n} !a", "y:,x: {i} !b");

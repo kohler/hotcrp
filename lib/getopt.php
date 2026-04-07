@@ -22,6 +22,8 @@ class Getopt {
     /** @var bool */
     private $interleave = false;
     /** @var bool */
+    private $order = false;
+    /** @var bool */
     private $require_subcommand = false;
     /** @var ?int */
     private $minarg;
@@ -276,6 +278,13 @@ class Getopt {
         return $this;
     }
 
+    /** @param bool $order
+     * @return $this */
+    function order($order) {
+        $this->order = $order;
+        return $this;
+    }
+
     /** @param string|list<string>|true ...$subcommands
      * @return $this */
     function subcommand(...$subcommands) {
@@ -508,6 +517,7 @@ class Getopt {
         $odone = false;
         $subcommand = "";
         $want_subcommand = $this->subcommand !== null;
+        $order = $this->order ? [] : null;
         for ($i = $first_arg ?? 1; $i !== count($argv); ++$i) {
             $arg = $argv[$i];
             $po = null;
@@ -589,10 +599,16 @@ class Getopt {
                 if (!$wantpo || $this->otheropt === null) {
                     $rest[] = $arg;
                     $odone = $odone || !$this->interleave;
+                    if ($order !== null) {
+                        $order[] = ["", $arg];
+                    }
                 } else if ($this->otheropt === false) {
                     throw new CommandLineException("Unknown option `{$oname}`", $this);
                 } else {
                     $res["-"][] = $arg;
+                    if ($order !== null) {
+                        $order[] = ["-", $arg];
+                    }
                 }
                 continue;
             }
@@ -643,11 +659,17 @@ class Getopt {
             } else {
                 $res[$name] = [$res[$name], $value];
             }
+            if ($order !== null) {
+                $order[] = [$name, $value];
+            }
 
             $active_po = $pot === self::MARG2 ? $po : null;
         }
 
         $res["_"] = $rest;
+        if ($order !== null) {
+            $res["__"] = $order;
+        }
 
         if ($this->helpopt !== null
             && (isset($res[$this->helpopt]) || $subcommand === "{help}")) {
