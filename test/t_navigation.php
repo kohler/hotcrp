@@ -790,21 +790,22 @@ class Navigation_Tester {
     }
 
     function test_test_mode() {
-        xassert(Navigation::$test_mode);
+        xassert(Navigation::$test_mode > 0);
         Navigation::headers_reset();
         xassert_eqq(Navigation::http_response_code(300), 200);
         xassert_eqq(Navigation::http_response_code(), 300);
         xassert_eqq(Navigation::http_response_code(), 300);
         Navigation::header("Fart: Barf");
         xassert_eqq(Navigation::headers_list(), ["Fart: Barf"]);
+        Navigation::header("F:B");
         Navigation::header("fart: Barf7");
-        xassert_eqq(Navigation::headers_list(), ["fart: Barf7"]);
+        xassert_eqq(Navigation::headers_list(), ["F:B", "fart: Barf7"]);
         Navigation::header("Content-Type: Bad");
         Navigation::header("Content-Type_Options: None");
         Navigation::header("FART: Barf7 Ass", false);
-        xassert_eqq(Navigation::headers_list(), ["fart: Barf7", "Content-Type: Bad", "Content-Type_Options: None", "FART: Barf7 Ass"]);
+        xassert_eqq(Navigation::headers_list(), ["F:B", "fart: Barf7", "Content-Type: Bad", "Content-Type_Options: None", "FART: Barf7 Ass"]);
         Navigation::header("Content-Type: Good");
-        xassert_eqq(Navigation::headers_list(), ["fart: Barf7", "Content-Type_Options: None", "FART: Barf7 Ass", "Content-Type: Good"]);
+        xassert_eqq(Navigation::headers_list(), ["F:B", "fart: Barf7", "Content-Type_Options: None", "FART: Barf7 Ass", "Content-Type: Good"]);
         Navigation::headers_reset();
     }
 }

@@ -740,14 +740,15 @@ class Navigation {
 
     /** @param string $name */
     static function header_remove($name) {
-        if (!self::$test_mode) {
+        if (self::$test_mode <= 0) {
             header_remove($name);
             return;
         }
-        $pfx = strtolower($name) . ":";
         self::$headers = array_values(array_filter(self::$headers ?? [],
-            function ($h) use ($pfx) {
-                return substr_compare($h, $pfx, 0, strlen($pfx), true) !== 0;
+            function ($h) use ($name) {
+                return strlen($h) <= strlen($name)
+                    || $h[strlen($name)] !== ":"
+                    || substr_compare($h, $name, 0, strlen($name), true) !== 0;
             }
         ));
     }
