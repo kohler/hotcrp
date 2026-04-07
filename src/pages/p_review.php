@@ -41,7 +41,7 @@ class Review_Page {
 
     /** @param ?FailureReason $perm */
     function error_exit($perm = null) {
-        http_response_code($this->user->is_signed_in() ? 403 : 401);
+        Navigation::http_response_code($this->user->is_signed_in() ? 403 : 401);
         if ($perm && (!$perm->secondary || $this->conf->saved_messages_status() < 2)) {
             $perm->set("expand", true);
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());

@@ -171,14 +171,14 @@ class Multiconference {
         }
 
         // print message
-        if (PHP_SAPI === "cli") {
+        if (PHP_SAPI === "cli" && !Navigation::$test_mode) {
             fwrite(STDERR, MessageSet::feedback_text($mis));
             exit(1);
         }
 
         if ($qreq->page() === "api" || ($_GET["ajax"] ?? null)) {
-            http_response_code($status);
-            header("Content-Type: application/json; charset=utf-8");
+            Navigation::http_response_code($status);
+            Navigation::header("Content-Type: application/json; charset=utf-8");
             $j = ["ok" => false, "message_list" => $mis];
             if ($maintenance && $status === 503) {
                 $j["maintenance"] = true;
@@ -187,7 +187,7 @@ class Multiconference {
             Navigation::complete();
         }
 
-        http_response_code($status);
+        Navigation::http_response_code($status);
         $qreq->print_header($title, "", [
             "action_bar" => $action_bar, "body_class" => "body-error"
         ]);

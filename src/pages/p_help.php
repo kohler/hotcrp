@@ -35,7 +35,7 @@ class Help_Page {
                 $conf->redirect_self($qreq, ["t" => $want_topic]);
             } else if (!$want_topic) {
                 $topic = "list";
-                http_response_code(404);
+                Navigation::http_response_code(404);
                 $conf->error_msg("<0>Help topic ‘{$qreq->t}’ not found");
             }
         }

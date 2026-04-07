@@ -472,7 +472,7 @@ class OAuth_Page {
         } else if ($qreq->qsid()) {
             $oap->resolve($oap->start());
         } else if ($qreq->setcookie) {
-            http_response_code(400);
+            Navigation::http_response_code(400);
             $user->conf->feedback_msg(MessageItem::error($user->conf->_i("session_failed_error")));
             $qreq->print_header("Authentication", "oauth", ["action_bar" => "", "body_class" => "body-error"]);
             $qreq->print_footer();

@@ -309,19 +309,19 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             // Don’t set status on unvalidated requests, since that can leak
             // information (e.g. via <link prefetch onerror>).
             if ($this->status) {
-                http_response_code($this->status);
+                Navigation::http_response_code($this->status);
             }
             if (($origin = $qreq->header("Origin"))) {
-                header("Access-Control-Allow-Origin: {$origin}");
+                Navigation::header("Access-Control-Allow-Origin: {$origin}");
             }
         } else if (!$this->minimal
                    && $this->status > 299
                    && !isset($this->content["status_code"])) {
             $this->content["status_code"] = $this->status;
         }
-        header("Content-Type: application/json; charset=utf-8");
+        Navigation::header("Content-Type: application/json; charset=utf-8");
         foreach ($this->_headers ?? [] as $h) {
-            header($h);
+            Navigation::header($h);
         }
         if ($qreq && isset($qreq->pretty)) {
             $pprint = friendly_boolean($qreq->pretty);

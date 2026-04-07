@@ -47,8 +47,8 @@ class API_Page {
         // CORS: Allow if user provides CSRF token or auth is explicitly false.
         if ((($uf && ($uf->auth ?? null) === false) || $qreq->valid_token())
             && ($origin = $qreq->raw_header("HTTP_ORIGIN")) !== null) {
-            header("Access-Control-Allow-Origin: {$origin}");
-            header("Access-Control-Allow-Credentials: true");
+            Navigation::header("Access-Control-Allow-Origin: {$origin}");
+            Navigation::header("Access-Control-Allow-Credentials: true");
         }
         $validator = null;
         if ($uf && $conf->opt("validateApiSpec")) {
@@ -144,29 +144,27 @@ class API_Page {
             $allow = "OPTIONS, GET, HEAD, POST";
         }
         if ($cors_type !== null) {
-            header("Access-Control-Allow-Origin: " . ($_SERVER["HTTP_ORIGIN"] ?? "*"));
+            Navigation::header("Access-Control-Allow-Origin: " . ($_SERVER["HTTP_ORIGIN"] ?? "*"));
         }
         if ($cors_type === "api") {
-            header("Access-Control-Allow-Credentials: true");
+            Navigation::header("Access-Control-Allow-Credentials: true");
         }
         $ok = true;
         if ($_SERVER["HTTP_ACCESS_CONTROL_REQUEST_METHOD"] ?? null) {
             if ($cors_type === null) {
-                http_response_code(403);
-                Navigation::complete();
+                Navigation::complete(403);
             }
-            header("Access-Control-Allow-Headers: *");
-            header("Access-Control-Allow-Methods: {$allow}");
-            header("Access-Control-Max-Age: 86400");
+            Navigation::header("Access-Control-Allow-Headers: *");
+            Navigation::header("Access-Control-Allow-Methods: {$allow}");
+            Navigation::header("Access-Control-Max-Age: 86400");
         }
-        header("Allow: {$allow}");
-        http_response_code(204);
-        Navigation::complete();
+        Navigation::header("Allow: {$allow}");
+        Navigation::complete(204);
     }
 
     static function parameter_error_exit($param, $message) {
-        http_response_code(400);
-        header("Content-Type: application/json; charset=utf-8");
+        Navigation::http_response_code(400);
+        Navigation::header("Content-Type: application/json; charset=utf-8");
         echo "{\"ok\": false, \"message_list\": [{\"field\": \"{$param}\", \"message\": \"{$message}\", \"status\": 2}]}\n";
         Navigation::complete();
     }

@@ -412,7 +412,7 @@ Assignment methods:
     static function go(Contact $user, Qrequest $qreq) {
         if ($user->is_manager()) {
             if ($qreq->valid_post()) {
-                header("X-Accel-Buffering: no"); // NGINX: do not buffer this output
+                Navigation::header("X-Accel-Buffering: no"); // NGINX: do not buffer this output
             }
             (new BulkAssign_Page($user, $qreq))->print();
         } else {

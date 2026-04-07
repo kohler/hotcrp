@@ -4808,7 +4808,7 @@ class Conf {
     function emit_security_headers() {
         $sts = $this->opt["httpStrictTransportSecurity"] ?? false;
         if ($sts !== false && $sts !== "") {
-            header("Strict-Transport-Security: " . $sts);
+            Navigation::header("Strict-Transport-Security: " . $sts);
         }
     }
 
@@ -4817,26 +4817,26 @@ class Conf {
         $csp = $this->opt["httpContentSecurityPolicy"] ?? true;
         if ($csp === true) {
             // disallow frame embedding by default
-            header("Content-Security-Policy: frame-ancestors 'none'");
+            Navigation::header("Content-Security-Policy: frame-ancestors 'none'");
         } else if ($csp !== false && $csp !== "") {
-            header("Content-Security-Policy: " . self::process_content_security_policy($csp));
+            Navigation::header("Content-Security-Policy: " . self::process_content_security_policy($csp));
         }
         $csp = $this->opt["httpContentSecurityPolicyReportOnly"] ?? null;
         if (is_string($csp) && $csp !== "") {
-            header("Content-Security-Policy-Report-Only: " . self::process_content_security_policy($csp));
+            Navigation::header("Content-Security-Policy-Report-Only: " . self::process_content_security_policy($csp));
         }
         $coop = $this->opt["httpCrossOriginOpenerPolicy"] ?? "same-origin";
         if ($coop !== false && $coop !== "") {
-            header("Cross-Origin-Opener-Policy: " . $coop);
+            Navigation::header("Cross-Origin-Opener-Policy: " . $coop);
         }
         $re = $this->opt["httpReportingEndpoints"] ?? false;
         if ($re !== false && $re !== "") {
             $re = str_replace("\${siteurl}", $qreq->navigation()->site_absolute(), $re);
-            header("Reporting-Endpoints: " . $re);
+            Navigation::header("Reporting-Endpoints: " . $re);
         }
         $ctopt = $this->opt["httpXContentTypeOptions"] ?? "nosniff";
         if ($ctopt !== false && $ctopt !== "") {
-            header("X-Content-Type-Options: " . $ctopt);
+            Navigation::header("X-Content-Type-Options: " . $ctopt);
         }
     }
 

@@ -1073,12 +1073,12 @@ class CsvGenerator {
         }
         if (($this->flags & (self::FLAG_EMIT_LIVE | self::FLAG_HTTP_HEADERS)) === self::FLAG_EMIT_LIVE) {
             $this->export_headers();
-            header("Content-Type: " . $this->mimetype_with_charset());
+            Navigation::header("Content-Type: " . $this->mimetype_with_charset());
             if (($this->flags & self::FLAG_COMPLETING) === 0) {
                 // signal to NGINX that buffering is a waste of time
-                header("X-Accel-Buffering: no");
+                Navigation::header("X-Accel-Buffering: no");
             } else if (!Downloader::skip_content_length_header()) {
-                header("Content-Length: " . (strlen($this->headerline) + $this->lines_length));
+                Navigation::header("Content-Length: " . (strlen($this->headerline) + $this->lines_length));
             }
         }
         $nw = $nwx = 0;
@@ -1289,7 +1289,7 @@ class CsvGenerator {
         assert(($this->flags & self::FLAG_HTTP_HEADERS) === 0);
         $this->flags |= self::FLAG_HTTP_HEADERS;
         $inline = $this->inline ?? !$this->is_csv();
-        header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($this->filename()));
+        Navigation::header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($this->filename()));
     }
 
     /** @return bool */

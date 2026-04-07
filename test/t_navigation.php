@@ -788,4 +788,23 @@ class Navigation_Tester {
         xassert_eqq($ns->site_path_relative, "../");
         xassert_eqq($ns->path, "/");
     }
+
+    function test_test_mode() {
+        xassert(Navigation::$test_mode);
+        Navigation::headers_reset();
+        xassert_eqq(Navigation::http_response_code(300), 200);
+        xassert_eqq(Navigation::http_response_code(), 300);
+        xassert_eqq(Navigation::http_response_code(), 300);
+        Navigation::header("Fart: Barf");
+        xassert_eqq(Navigation::headers_list(), ["Fart: Barf"]);
+        Navigation::header("fart: Barf7");
+        xassert_eqq(Navigation::headers_list(), ["fart: Barf7"]);
+        Navigation::header("Content-Type: Bad");
+        Navigation::header("Content-Type_Options: None");
+        Navigation::header("FART: Barf7 Ass", false);
+        xassert_eqq(Navigation::headers_list(), ["fart: Barf7", "Content-Type: Bad", "Content-Type_Options: None", "FART: Barf7 Ass"]);
+        Navigation::header("Content-Type: Good");
+        xassert_eqq(Navigation::headers_list(), ["fart: Barf7", "Content-Type_Options: None", "FART: Barf7 Ass", "Content-Type: Good"]);
+        Navigation::headers_reset();
+    }
 }

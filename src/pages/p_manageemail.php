@@ -90,7 +90,7 @@ class ManageEmail_Page {
 
     /** @return PageCompletion */
     private function print_error(JsonResult $jr) {
-        http_response_code($jr->status ?? 400);
+        Navigation::http_response_code($jr->status ?? 400);
         $this->print_header();
         $this->conf->feedback_msg($jr->content["message_list"] ?? []);
         $this->qreq->print_footer();

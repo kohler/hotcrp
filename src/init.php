@@ -215,13 +215,12 @@ function initialize_request($conf, $nav) {
         && $method !== "POST"
         && $method !== "HEAD"
         && ($page !== "api" || $method !== "DELETE")) {
-        http_response_code(405 /* Method Not Allowed */);
-        Navigation::complete();
+        Navigation::complete(405 /* Method Not Allowed */);
     }
 
     // mark as already expired to discourage caching, but allow the browser
     // to cache for history buttons
-    header("Cache-Control: max-age=0,must-revalidate,private");
+    Navigation::header("Cache-Control: max-age=0,must-revalidate,private");
 
     // set up Content-Security-Policy if appropriate
     $conf->emit_security_headers();
@@ -438,7 +437,7 @@ function initialize_user($qreq, $kwarg = null) {
     if ($muser->email === ""
         && $muser->has_author_view_capability()
         && !$conf->opt("allowIndexPapers")) {
-        header("X-Robots-Tag: noindex, noarchive");
+        Navigation::header("X-Robots-Tag: noindex, noarchive");
     }
 
     // exit early if no session

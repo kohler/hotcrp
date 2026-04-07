@@ -4,8 +4,8 @@
 
 class Cacheable_Page {
     static function cacheable_headers() {
-        header("Cache-Control: max-age=315576000, public");
-        header("Expires: " . Navigation::http_date(time() + 315576000));
+        Navigation::header("Cache-Control: max-age=315576000, public");
+        Navigation::header("Expires: " . Navigation::http_date(time() + 315576000));
     }
 
     static function skip_content_length_header() {
@@ -17,10 +17,10 @@ class Cacheable_Page {
      * @param string $text
      * @param bool $cacheable */
     static private function fail($status, $text, $cacheable) {
-        http_response_code($status);
-        header("Content-Type: text/plain; charset=utf-8");
+        Navigation::http_response_code($status);
+        Navigation::header("Content-Type: text/plain; charset=utf-8");
         if (!self::skip_content_length_header()) {
-            header("Content-Length: " . (strlen($text) + 2));
+            Navigation::header("Content-Length: " . (strlen($text) + 2));
         }
         if ($cacheable) {
             self::cacheable_headers();
@@ -32,7 +32,7 @@ class Cacheable_Page {
     static function go_nav($nav) {
         session_cache_limiter("");
         if (isset($_SERVER["HTTP_ORIGIN"])) {
-            header("Access-Control-Allow-Origin: *");
+            Navigation::header("Access-Control-Allow-Origin: *");
         }
 
         // read file
@@ -51,39 +51,39 @@ class Cacheable_Page {
             && ($dot = strrpos($file, ".")) !== false
             && ctype_alnum(($ext = substr($file, $dot + 1)))) {
             if ($ext === "js") {
-                header("Content-Type: text/javascript; charset=utf-8");
+                Navigation::header("Content-Type: text/javascript; charset=utf-8");
                 if (isset($_GET["strictjs"]) && $_GET["strictjs"]) {
                     $prefix = "\"use strict\";\n";
                 }
             } else if ($ext === "map" || $ext === "json") {
-                header("Content-Type: application/json; charset=utf-8");
+                Navigation::header("Content-Type: application/json; charset=utf-8");
             } else if ($ext === "css") {
-                header("Content-Type: text/css; charset=utf-8");
+                Navigation::header("Content-Type: text/css; charset=utf-8");
             } else if ($ext === "gif") {
-                header("Content-Type: image/gif");
+                Navigation::header("Content-Type: image/gif");
             } else if ($ext === "jpg") {
-                header("Content-Type: image/jpeg");
+                Navigation::header("Content-Type: image/jpeg");
             } else if ($ext === "png") {
-                header("Content-Type: image/png");
+                Navigation::header("Content-Type: image/png");
             } else if ($ext === "svg") {
-                header("Content-Type: image/svg+xml");
+                Navigation::header("Content-Type: image/svg+xml");
             } else if ($ext === "mp3") {
-                header("Content-Type: audio/mpeg");
+                Navigation::header("Content-Type: audio/mpeg");
             } else if ($ext === "woff") {
-                header("Content-Type: application/font-woff");
+                Navigation::header("Content-Type: application/font-woff");
             } else if ($ext === "woff2") {
-                header("Content-Type: application/font-woff2");
+                Navigation::header("Content-Type: application/font-woff2");
             } else if ($ext === "ttf") {
-                header("Content-Type: application/x-font-ttf");
+                Navigation::header("Content-Type: application/x-font-ttf");
             } else if ($ext === "otf") {
-                header("Content-Type: font/opentype");
+                Navigation::header("Content-Type: font/opentype");
             } else if ($ext === "eot") {
-                header("Content-Type: application/vnd.ms-fontobject");
+                Navigation::header("Content-Type: application/vnd.ms-fontobject");
             } else {
                 self::fail(403 /* Forbidden */, "File cannot be served", true);
                 return;
             }
-            header("Access-Control-Allow-Origin: *");
+            Navigation::header("Access-Control-Allow-Origin: *");
         } else {
             self::fail(403 /* Forbidden */, "File cannot be served", true);
             return;
@@ -97,8 +97,8 @@ class Cacheable_Page {
 
         $last_modified = Navigation::http_date($mtime);
         $etag = '"' . md5("{$file} {$last_modified}") . '"';
-        header("Last-Modified: {$last_modified}");
-        header("ETag: {$etag}");
+        Navigation::header("Last-Modified: {$last_modified}");
+        Navigation::header("ETag: {$etag}");
         $skip_length = self::skip_content_length_header();
 
         // check for a conditional request
@@ -107,7 +107,7 @@ class Cacheable_Page {
         if (($if_modified_since || $if_none_match)
             && (!$if_modified_since || $if_modified_since === $last_modified)
             && (!$if_none_match || $if_none_match === $etag)) {
-            http_response_code(304 /* Not Modified */);
+            Navigation::http_response_code(304 /* Not Modified */);
         } else if (function_exists("ob_gzhandler") && !$skip_length) {
             ob_start("ob_gzhandler");
             echo $prefix;
@@ -115,7 +115,7 @@ class Cacheable_Page {
             ob_end_flush();
         } else {
             if (!$skip_length) {
-                header("Content-Length: " . (filesize($file) + strlen($prefix)));
+                Navigation::header("Content-Length: " . (filesize($file) + strlen($prefix)));
             }
             echo $prefix;
             readfile($file);

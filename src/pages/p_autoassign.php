@@ -526,7 +526,7 @@ class Autoassign_Page {
     }
 
     function detach_request() {
-        header("Location: " . $this->redirect_uri());
+        Navigation::header("Location: " . $this->redirect_uri());
         $this->qreq->qsession()->commit();
     }
 
@@ -640,7 +640,7 @@ class Autoassign_Page {
             && $tok->is_active()) {
             $this->run_job($tok);
         }
-        http_response_code($tok ? 409 : 404);
+        Navigation::http_response_code($tok ? 409 : 404);
         $this->qreq->print_header("Assignments", "autoassign", [
             "subtitle" => "Automatic",
             "body_class" => "body-error"

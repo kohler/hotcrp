@@ -5,7 +5,7 @@
 class WellKnown_Page {
     static function go_nav(NavigationState $nav) {
         if (isset($_SERVER["HTTP_ORIGIN"])) {
-            header("Access-Control-Allow-Origin: *");
+            Navigation::header("Access-Control-Allow-Origin: *");
         }
         $conf = initialize_conf();
         if (!$conf) {
@@ -24,19 +24,19 @@ class WellKnown_Page {
 
     /** @param int $age */
     static function cache_headers($age) {
-        header("Cache-Control: max-age={$age}, public");
-        header("Expires: " . Navigation::http_date(Conf::$now + $age));
+        Navigation::header("Cache-Control: max-age={$age}, public");
+        Navigation::header("Expires: " . Navigation::http_date(Conf::$now + $age));
     }
 
     static function not_found() {
         self::cache_headers(300);
-        http_response_code(404);
+        Navigation::http_response_code(404);
         echo "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>HotCRP</center></body></html>\n";
     }
 
     static function oauth_protected_resource(NavigationState $nav, Conf $conf) {
         self::cache_headers(604800);
-        header("Content-Type: application/json; charset=utf-8");
+        Navigation::header("Content-Type: application/json; charset=utf-8");
         $site = $conf->opt("paperSite");
         echo json_encode([
             "resource" => "{$site}/api",
@@ -51,7 +51,7 @@ class WellKnown_Page {
             return;
         }
         self::cache_headers(604800);
-        header("Content-Type: application/json; charset=utf-8");
+        Navigation::header("Content-Type: application/json; charset=utf-8");
         $site = $conf->opt("paperSite");
         $j = ["issuer" => $conf->oauth_issuer()];
         // enumerate capabilities implied by clients

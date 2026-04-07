@@ -11,7 +11,7 @@ class GetCheckFormat_ListAction extends ListAction {
         }
         $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format_status", "format", "messages"]);
         $csvg->export_headers();
-        header("Content-Type: " . $csvg->mimetype_with_charset());
+        Navigation::header("Content-Type: " . $csvg->mimetype_with_charset());
         echo $csvg->unparse();
         $cf = new CheckFormat($user->conf, CheckFormat::RUN_IF_NECESSARY);
         foreach ($papers as $prow) {

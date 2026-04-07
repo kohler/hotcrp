@@ -544,11 +544,11 @@ class Downloader {
 
     /** @return int */
     function emit() {
-        http_response_code($this->response_code());
+        Navigation::http_response_code($this->response_code());
         // we never want the default CSP for a download
-        header_remove("Content-Security-Policy");
+        Navigation::header_remove("Content-Security-Policy");
         foreach ($this->headers() as $k => $v) {
-            header($k === "" ? $v : "{$k}: {$v}");
+            Navigation::header($k === "" ? $v : "{$k}: {$v}");
         }
         if ($this->_response_code >= 300
             || $this->_content_redirect !== null

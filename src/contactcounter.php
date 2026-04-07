@@ -214,22 +214,22 @@ class ContactCounter {
 
     function api_ratelimit_headers() {
         if ($this->apiLimit === 0 || $this->apiLimit2 === 0) {
-            header("x-ratelimit-limit: 0");
+            Navigation::header("x-ratelimit-limit: 0");
         } else if ($this->apiLimit < 0 && $this->apiLimit2 < 0) {
-            header("x-ratelimit-limit: unlimited");
+            Navigation::header("x-ratelimit-limit: unlimited");
         } else {
             $left = $this->apiLimit > 0 ? max(0, $this->apiLimit - $this->apiCount) : PHP_INT_MAX;
             $left2 = $this->apiLimit2 > 0 ? max(0, $this->apiLimit2 - $this->apiCount) : PHP_INT_MAX;
             if ($left === 0
                 ? $left2 > 0 || $this->apiRefreshMtime > $this->apiRefreshMtime2
                 : $left2 > 0 && $this->apiRefreshWindow >= $this->apiRefreshWindow2) {
-                header("x-ratelimit-limit: {$this->apiRefreshAmount}");
-                header("x-ratelimit-remaining: " . max($this->apiLimit - $this->apiCount, 0));
-                header("x-ratelimit-reset: " . (int) ($this->apiRefreshMtime / 1000));
+                Navigation::header("x-ratelimit-limit: {$this->apiRefreshAmount}");
+                Navigation::header("x-ratelimit-remaining: " . max($this->apiLimit - $this->apiCount, 0));
+                Navigation::header("x-ratelimit-reset: " . (int) ($this->apiRefreshMtime / 1000));
             } else {
-                header("x-ratelimit-limit: {$this->apiRefreshAmount2}");
-                header("x-ratelimit-remaining: " . max($this->apiLimit2 - $this->apiCount, 0));
-                header("x-ratelimit-reset: " . (int) ($this->apiRefreshMtime2 / 1000));
+                Navigation::header("x-ratelimit-limit: {$this->apiRefreshAmount2}");
+                Navigation::header("x-ratelimit-remaining: " . max($this->apiLimit2 - $this->apiCount, 0));
+                Navigation::header("x-ratelimit-reset: " . (int) ($this->apiRefreshMtime2 / 1000));
             }
         }
     }

@@ -408,7 +408,7 @@ class Search_Page {
 
     /** @return never */
     static private function not_allowed(Contact $user, Qrequest $qreq) {
-        http_response_code(403);
+        Navigation::http_response_code(403);
         $qreq->print_header("Search", "search");
         $ml = [MessageItem::error("<0>Account {} can’t search {submissions}", $user->email)];
 

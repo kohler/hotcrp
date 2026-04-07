@@ -13,11 +13,11 @@ class LoginHelper {
         // if user signed out of HTTP authentication, send a reauth request
         if ($qreq->has_gsession("reauth")) {
             $qreq->unset_gsession("reauth");
-            http_response_code(401 /* Unauthorized */);
+            Navigation::http_response_code(401 /* Unauthorized */);
             if (is_string($conf->opt("httpAuthLogin"))) {
-                header("WWW-Authenticate: " . $conf->opt("httpAuthLogin"));
+                Navigation::header("WWW-Authenticate: " . $conf->opt("httpAuthLogin"));
             } else {
-                header("WWW-Authenticate: Basic realm=\"HotCRP\"");
+                Navigation::header("WWW-Authenticate: Basic realm=\"HotCRP\"");
             }
             Navigation::complete();
         }
@@ -29,7 +29,7 @@ class LoginHelper {
 
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
-            http_response_code(401 /* Unauthorized */);
+            Navigation::http_response_code(401 /* Unauthorized */);
             $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication required"),
@@ -44,7 +44,7 @@ class LoginHelper {
         if ($info["ok"]) {
             $conf->redirect($info["redirect"] ?? "");
         } else {
-            http_response_code(401 /* Unauthorized */);
+            Navigation::http_response_code(401 /* Unauthorized */);
             $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication error"),

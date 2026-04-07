@@ -25,7 +25,7 @@ class Doc_Page {
         if (isset($qreq->fn)) {
             JsonResult::make_message_list($status, $ml)->complete();
         }
-        http_response_code($status);
+        Navigation::http_response_code($status);
         $qreq->print_header("Download", "", ["body_class" => "body-error"]);
         $qreq->conf()->feedback_msg($ml);
         $qreq->print_footer();

@@ -690,6 +690,10 @@ class Navigation {
 
     /** @var bool */
     static public $test_mode = false;
+    /** @var int */
+    static public $http_response_code = 200;
+    /** @var list<string> */
+    static public $headers = [];
 
 
     /** @return NavigationState */
@@ -710,10 +714,64 @@ class Navigation {
     }
 
 
-    /** @return never */
-    static function complete() {
+    static function headers_reset() {
+        self::$http_response_code = 200;
+        self::$headers = [];
+    }
+
+    /** @param ?int $status
+     * @return int */
+    static function http_response_code($status = null) {
+        $prev = self::$http_response_code;
+        if ($status) {
+            self::$http_response_code = $status;
+            if (!self::$test_mode) {
+                http_response_code($status);
+            }
+        }
+        return $prev;
+    }
+
+    /** @param string $header
+     * @param bool $replace */
+    static function header($header, $replace = true) {
+        if (!self::$test_mode) {
+            header($header, $replace);
+            return;
+        }
+        if ($replace && ($colon = strpos($header, ":")) !== false) {
+            self::header_remove(substr($header, 0, $colon));
+        }
+        self::$headers[] = $header;
+    }
+
+    /** @param string $name */
+    static function header_remove($name) {
+        if (!self::$test_mode) {
+            header_remove($name);
+            return;
+        }
+        $pfx = strtolower($name) . ":";
+        self::$headers = array_values(array_filter(self::$headers ?? [],
+            function ($h) use ($pfx) {
+                return substr_compare($h, $pfx, 0, strlen($pfx), true) !== 0;
+            }
+        ));
+    }
+
+    /** @return list<string> */
+    static function headers_list() {
+        return self::$headers;
+    }
+
+    /** @param ?int $status
+     * @return never */
+    static function complete($status = null) {
+        if ($status) {
+            self::http_response_code($status);
+        }
         if (self::$test_mode) {
-            throw new PageCompletion;
+            throw new PageCompletion(self::$http_response_code);
         }
         exit(0);
     }
@@ -740,6 +798,7 @@ class Navigation {
 <body><p>You should be redirected <a href=\"", htmlspecialchars($url), "\">to here</a>.</p></body></html>\n";
         exit(0);
     }
+
 
     /** @param int $t
      * @return string */

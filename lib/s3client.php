@@ -509,9 +509,9 @@ class S3Client {
      * @param string $accel */
     function get_accel_redirect($skey, $accel) {
         list($url, $hdr) = $this->signed_headers($skey, "GET", []);
-        header("X-Accel-Redirect: {$accel}{$url}");
+        Navigation::header("X-Accel-Redirect: {$accel}{$url}");
         foreach ($hdr as $h) {
-            header($h);
+            Navigation::header($h);
         }
     }
 

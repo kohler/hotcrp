@@ -51,7 +51,7 @@ class Settings_Page {
         }
         $canon_group = $this->sv->canonical_group($want_group);
         if (!$canon_group) {
-            http_response_code(404);
+            Navigation::http_response_code(404);
             $this->conf->error_msg("<0>Settings group not found");
             return "list";
         }
@@ -84,7 +84,7 @@ class Settings_Page {
      * @param Qrequest $qreq */
     function print($group, $qreq) {
         if ($group === "error404") {
-            http_response_code(404);
+            Navigation::http_response_code(404);
         }
 
         $qreq->print_header("Settings", "settings", [
