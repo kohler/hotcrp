@@ -87,6 +87,6 @@ class WellKnown_Page {
         }
         $j["scopes_supported"] = $scopes;
         echo json_encode($j, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "\n";
-        exit(0);
+        Navigation::complete();
     }
 }

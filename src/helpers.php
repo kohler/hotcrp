@@ -343,35 +343,6 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 }
 
-class Redirection extends Exception {
-    /** @var string */
-    public $url;
-    /** @var int */
-    public $status;
-    /** @param string $url
-     * @param 301|302|303|307|308 $status */
-    function __construct($url, $status = 302) {
-        parent::__construct("Redirect to {$url}");
-        $this->url = $url;
-        $this->status = $status;
-    }
-}
-
-class PageCompletion extends Exception {
-    /** @var ?int */
-    public $status;
-    function __construct($status = null) {
-        parent::__construct("Page complete");
-        $this->status = $status;
-    }
-    /** @param ?Qrequest $qreq */
-    function emit($qreq = null) {
-        if ($this->status !== null) {
-            http_response_code($this->status);
-        }
-    }
-}
-
 class JsonCompletion extends Exception {
     /** @var JsonResult */
     public $result;

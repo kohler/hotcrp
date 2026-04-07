@@ -775,7 +775,7 @@ class Upload_API {
                 fastcgi_finish_request();
             }
             $this->transfer(false, "{$offset}+{$length}");
-            exit(0);
+            Navigation::complete();
         }
 
         $this->transfer(true, "finish");

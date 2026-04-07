@@ -688,6 +688,10 @@ class Navigation {
     /** @var ?NavigationState */
     static private $s;
 
+    /** @var bool */
+    static public $test_mode = false;
+
+
     /** @return NavigationState */
     static function get() {
         if (!self::$s) {
@@ -705,10 +709,22 @@ class Navigation {
         return self::get()->self();
     }
 
+
+    /** @return never */
+    static function complete() {
+        if (self::$test_mode) {
+            throw new PageCompletion;
+        }
+        exit(0);
+    }
+
     /** @param string $url
      * @param 301|302|303|307|308 $status
      * @return never */
     static function redirect_absolute($url, $status = 302) {
+        if (self::$test_mode) {
+            throw new Redirection($url, $status);
+        }
         assert(substr_compare($url, "https://", 0, 8) === 0
                || substr_compare($url, "http://", 0, 7) === 0);
         // Might have an HTML-encoded URL; decode at least &amp;.
@@ -739,6 +755,35 @@ class Navigation {
             return $dt !== false ? $dt->getTimestamp() : null;
         } catch (Exception $ex) {
             return null;
+        }
+    }
+}
+
+class Redirection extends Exception {
+    /** @var string */
+    public $url;
+    /** @var int */
+    public $status;
+    /** @param string $url
+     * @param 301|302|303|307|308 $status */
+    function __construct($url, $status = 302) {
+        parent::__construct("Redirect to {$url}");
+        $this->url = $url;
+        $this->status = $status;
+    }
+}
+
+class PageCompletion extends Exception {
+    /** @var ?int */
+    public $status;
+    function __construct($status = null) {
+        parent::__construct("Page complete");
+        $this->status = $status;
+    }
+    /** @param ?Qrequest $qreq */
+    function emit($qreq = null) {
+        if ($this->status !== null) {
+            http_response_code($this->status);
         }
     }
 }

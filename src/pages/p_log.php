@@ -195,7 +195,7 @@ class Log_Page {
         }
 
         $csvg->emit();
-        exit(0);
+        Navigation::complete();
     }
 
 

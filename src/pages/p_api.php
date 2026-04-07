@@ -62,10 +62,10 @@ class API_Page {
         if ($jr instanceof Downloader) {
             $conf->emit_browser_security_headers($qreq);
             $jr->emit();
-            exit(0);
+            Navigation::complete();
         } else if ($jr instanceof PageCompletion) {
             $jr->emit($qreq);
-            exit(0);
+            Navigation::complete();
         }
         if ($uf
             && ($uf->redirect ?? false)
@@ -153,7 +153,7 @@ class API_Page {
         if ($_SERVER["HTTP_ACCESS_CONTROL_REQUEST_METHOD"] ?? null) {
             if ($cors_type === null) {
                 http_response_code(403);
-                exit(0);
+                Navigation::complete();
             }
             header("Access-Control-Allow-Headers: *");
             header("Access-Control-Allow-Methods: {$allow}");
@@ -161,14 +161,14 @@ class API_Page {
         }
         header("Allow: {$allow}");
         http_response_code(204);
-        exit(0);
+        Navigation::complete();
     }
 
     static function parameter_error_exit($param, $message) {
         http_response_code(400);
         header("Content-Type: application/json; charset=utf-8");
         echo "{\"ok\": false, \"message_list\": [{\"field\": \"{$param}\", \"message\": \"{$message}\", \"status\": 2}]}\n";
-        exit(0);
+        Navigation::complete();
     }
 
     /** @param NavigationState $nav

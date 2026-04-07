@@ -243,8 +243,6 @@ class Conf {
     static private $_cdb = false;
 
     /** @var bool */
-    static public $test_mode;
-    /** @var bool */
     static public $no_invalidate_caches = false;
     /** @var int */
     static public $next_xt_source_order = 0;
@@ -4212,10 +4210,6 @@ class Conf {
      * @return never
      * @throws Redirection */
     function redirect($url = null, $status = 302) {
-        if (self::$test_mode) {
-            $nav = Navigation::get();
-            throw new Redirection($nav->resolve($url ?? $this->hoturl("index")), $status);
-        }
         $qreq = Qrequest::$main_request;
         if ($this->_save_msgs) {
             $qreq->open_session();

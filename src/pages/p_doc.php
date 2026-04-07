@@ -9,7 +9,7 @@ class Doc_Page {
     static private function error($status, $msg, $qreq) {
         if ($status === 403 && $qreq->user()->is_empty()) {
             $qreq->user()->escape();
-            exit(0);
+            Navigation::complete();
         }
 
         $ml = MessageSet::make_list($msg);
@@ -29,7 +29,7 @@ class Doc_Page {
         $qreq->print_header("Download", "", ["body_class" => "body-error"]);
         $qreq->conf()->feedback_msg($ml);
         $qreq->print_footer();
-        exit(0);
+        Navigation::complete();
     }
 
     /** @param Contact $user

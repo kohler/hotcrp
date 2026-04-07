@@ -66,7 +66,7 @@ require_once(SiteLoader::find("src/conference.php"));
 require_once(SiteLoader::find("src/contact.php"));
 Conf::set_current_time();
 if (defined("HOTCRP_TESTHARNESS")) {
-    Conf::$test_mode = true;
+    Navigation::$test_mode = true;
 }
 if (PHP_SAPI === "cli") {
     set_exception_handler("BatchProcess::exception_handler");
@@ -216,7 +216,7 @@ function initialize_request($conf, $nav) {
         && $method !== "HEAD"
         && ($page !== "api" || $method !== "DELETE")) {
         http_response_code(405 /* Method Not Allowed */);
-        exit(0);
+        Navigation::complete();
     }
 
     // mark as already expired to discourage caching, but allow the browser

@@ -138,10 +138,9 @@ class ListAction {
             }
         } else if ($res instanceof Downloader) {
             $res->emit();
-            exit(0);
+            Navigation::complete();
         } else if ($res instanceof Redirection) {
             $user->conf->redirect($res->url, $res->status);
-            exit(0);
         }
     }
 
