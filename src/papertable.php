@@ -1267,7 +1267,7 @@ class PaperTable {
     }
 
     private function _print_decline_reason(Contact $capu, ReviewRefusalInfo $refusal) {
-        echo Ht::form($this->conf->hoturl("=api/declinereview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId]),
+        echo $this->conf->hotform("=api/declinereview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId],
             ["class" => "msg msg-warning demargin remargin-left remargin-right ui-submit js-acceptish-review"]);
         echo '<p>You have declined to complete this review. Thank you for informing us.</p>',
             '<div class="f-i mt-3"><label for="declinereason">Optional explanation</label>',
@@ -2427,7 +2427,7 @@ class PaperTable {
                 $form_js["class"] .= " need-highlight-differences";
             }
         }
-        echo Ht::form($this->conf->hoturl("=paper", $form_url), $form_js);
+        echo $this->conf->hotform("=paper", $form_url, $form_js);
         Ht::stash_script('$(hotcrp.load_editable_paper)');
     }
 

@@ -85,7 +85,7 @@ class Buzzer_Page {
 
         echo '<div id="tracker-table" class="demargin mt-3"></div>',
             "<audio id=\"tracker-sound\" crossorigin=\"anonymous\" preload=\"auto\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>",
-            Ht::form($conf->hoturl("=buzzer")),
+            $conf->hotform("=buzzer"),
             '<table class="mt-5"><tr>';
 
         // mute button

@@ -563,7 +563,7 @@ class Profile_Page {
         if (isset($this->qreq->ls)) {
             $form_params["ls"] = $this->qreq->ls;
         }
-        echo Ht::form($this->conf->hoturl("=profile", $form_params), [
+        echo $this->conf->hotform("=profile", $form_params, [
             "id" => "f-profile",
             "class" => "need-diff-check need-unload-protection",
             "data-user" => $this->page_type ? null : $this->user->email

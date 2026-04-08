@@ -31,7 +31,7 @@ class QuicklinksRenderer {
             return "";
         }
         $tabindex = $qreq->page() === "search" ? -1 : null;
-        $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get", "role" => "search"]);
+        $x = $qreq->conf()->hotform($baseUrl ?? "paper", null, ["method" => "get", "role" => "search"]);
         if ($baseUrl === "profile") {
             $x .= Ht::entry("u", "", ["id" => "n-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off", "tabindex" => $tabindex]);
         } else {

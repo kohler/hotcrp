@@ -172,7 +172,7 @@ class ManualAssign_Page {
         $pl = new PaperList("reviewAssignment", $search, ["sort" => true], $this->qreq);
         $pl->apply_view_session($this->qreq);
         $pl->apply_view_qreq($this->qreq);
-        echo Ht::form($this->conf->hoturl("=manualassign", ["reviewer" => $reviewer->email, "sort" => $this->qreq->sort]), ["class" => "need-diff-check assignpc ignore-diff"]),
+        echo $this->conf->hotform("=manualassign", ["reviewer" => $reviewer->email, "sort" => $this->qreq->sort], ["class" => "need-diff-check assignpc ignore-diff"]),
             Ht::hidden("t", $this->qreq->t),
             Ht::hidden("q", $this->qreq->q);
         $rev_rounds = $this->conf->round_selector_options(false);
@@ -257,7 +257,7 @@ class ManualAssign_Page {
 
         // Change PC member
         echo "<table><tr><td><div class=\"assignpc_pcsel\">",
-            Ht::form($this->conf->hoturl("manualassign"), ["method" => "get", "id" => "selectreviewerform", "class" => "need-diff-check"]);
+            $this->conf->hotform("manualassign", null, ["method" => "get", "id" => "selectreviewerform", "class" => "need-diff-check"]);
         Ht::stash_script('$("#selectreviewerform").awaken()');
 
         $acs = AssignmentCountSet::load($this->viewer, AssignmentCountSet::HAS_REVIEW);

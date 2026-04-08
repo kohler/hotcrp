@@ -135,7 +135,7 @@ class AuthenticationChecker {
                 '<div class="', $this->actions_class(), '">',
                 Ht::submit("Sign out", ["type" => "submit", "class" => "btn-danger", "form" => "f-signout"]),
                 '</div>';
-            Ht::stash_html(Ht::form($this->conf->hoturl("=signout", ["cap" => null]), ["id" => "f-signout"]) . "</form>", "f-signout");
+            Ht::stash_html($this->conf->hotform("=signout", ["cap" => null], ["id" => "f-signout"]) . "</form>", "f-signout");
             return false;
         }
         echo Ht::hidden("reason", $this->reason, ["form" => "f-reauth", "class" => "ignore-diff"]);

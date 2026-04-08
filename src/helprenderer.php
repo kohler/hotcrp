@@ -207,7 +207,7 @@ class HelpRenderer {
         if (is_string($q)) {
             $q = ["q" => $q];
         }
-        $t = Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "nw", "rel" => "nofollow"])
+        $t = $this->conf->hotform("search", null, ["method" => "get", "class" => "nw", "rel" => "nofollow"])
             . Ht::entry("q", $q["q"], ["size" => $size])
             . " &nbsp;"
             . Ht::submit("Search");

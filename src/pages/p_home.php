@@ -208,7 +208,7 @@ class Home_Page {
         $limits = PaperSearch::viewable_limits($user);
         echo '<div class="homegrp d-table" id="homelist">',
             $this->print_h2_home($this->conf->hotlink("Search", "search", null, ["class" => "q", "id" => "homesearch-label"])),
-            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search", "role" => "search"]),
+            $this->conf->hotform("search", null, ["method" => "get", "class" => "form-basic-search", "role" => "search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "id" => "homeq", "size" => 32,
                 "title" => "Enter paper numbers or search terms",

@@ -243,7 +243,7 @@ class MailSender {
     }
 
     private function print_request_form() {
-        echo Ht::form($this->conf->hoturl("=mail"), [
+        echo $this->conf->hotform("=mail", null, [
             "id" => "f-mail",
             "class" => $this->phase < 2 ? "ui-submit js-mail-send-phase-{$this->phase}" : null
         ]);

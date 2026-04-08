@@ -367,10 +367,10 @@ class Assign_Page {
             || ($rrow->reviewType !== REVIEW_REFUSAL
                 && $this->user->contactId > 0
                 && $rrow->requestedBy == $this->user->contactId)) {
-            echo Ht::form($this->conf->hoturl("=assign", [
+            echo $this->conf->hotform("=assign", [
                     "p" => $this->prow->paperId, "action" => "managerequest",
                     "email" => $rrowid->email, "round" => $rrow->reviewRound
-                ]), ["class" => "fx"]);
+                ], ["class" => "fx"]);
             if (!isset($rrow->contactId) || !$rrow->contactId) {
                 echo Ht::hidden("given_name", $rrowid->firstName),
                     Ht::hidden("family_name", $rrowid->lastName),
@@ -541,7 +541,7 @@ class Assign_Page {
             echo '<div class="pcard s-review">',
                 '<h2 class="revcard-head" id="pc-assignments">PC assignments</h2>',
                 '<div class="revcard-body">',
-                Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), [
+                $this->conf->hotform("=assign", ["p" => $prow->paperId], [
                     "id" => "f-pc-assignments",
                     "class" => "need-unload-protection need-diff-check",
                     "data-differs-toggle" => "paper-alert"
@@ -610,7 +610,7 @@ class Assign_Page {
             $req = "Propose external review";
         }
         echo '<div class="pcard s-review">',
-            Ht::form($this->conf->hoturl("=assign", "p={$prow->paperId}"), ["novalidate" => true]),
+            $this->conf->hotform("=assign", ["p" => $prow->paperId], ["novalidate" => true]),
             "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 
         echo '<p class="w-text">', $this->conf->_i("external_review_request_description");

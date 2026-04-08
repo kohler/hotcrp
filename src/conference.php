@@ -4120,6 +4120,14 @@ class Conf {
         return Ht::link($html, $this->hoturl($page, $param), $js);
     }
 
+    /** @param string $page
+     * @param ?array $param
+     * @param ?array $js
+     * @return string */
+    function hotform($page, $param = null, $js = null) {
+        return Ht::form($this->hoturl($page, $param), $js);
+    }
+
 
     static $selfurl_safe = [
         "p" => true, "paperId" => "p", "pap" => "p",
@@ -5116,7 +5124,7 @@ class Conf {
                 return;
             }
             echo '<li role="none">',
-                Ht::form($this->hoturl("=signout", ["cap" => null])),
+                $this->hotform("=signout", ["cap" => null]),
                 Ht::button("Sign out", ["type" => "submit", "class" => "qx", "role" => "menuitem"]),
                 '</form></li>';
         }

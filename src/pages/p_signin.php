@@ -129,7 +129,7 @@ class Signin_Page {
      * @param bool $folded */
     static function print_form_start_for(Qrequest $qreq, $page, $folded = false) {
         $klass = "ui-submit js-signin " . ($folded ? " foldc homegrp" : " signingrp");
-        echo Ht::form($qreq->conf()->hoturl($page), ["class" => $klass, "id" => "f-signin"]),
+        echo $qreq->conf()->hotform($page, null, ["class" => $klass, "id" => "f-signin"]),
             Ht::hidden("post", $qreq->maybe_post_value());
         if ($qreq->is_post() && !$qreq->valid_token()) {
             echo Ht::hidden("post_retry", "1");

@@ -375,7 +375,7 @@ class Mail_Page {
         $deftemplate = $templates[$this->recip->current_default_message()] ?? null;
 
         // form
-        echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
+        echo $this->conf->hotform("=mail", ["check" => 1, "monreq" => $this->qreq->monreq], [
                 "id" => "f-mail",
                 "data-default-messages" => json_encode_browser((object) $templates),
                 "class" => "ui-submit js-selector-summary"

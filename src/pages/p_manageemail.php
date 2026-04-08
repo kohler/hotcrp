@@ -233,7 +233,7 @@ class ManageEmail_Page {
 
     /** @return string */
     private function cur_hotform() {
-        return Ht::form($this->conf->hoturl("=manageemail", $this->step_param()));
+        return $this->conf->hotform("=manageemail", $this->step_param());
     }
 
     /** @param ManageEmailStep $step */
@@ -476,7 +476,7 @@ class ManageEmail_Page {
             }
             echo '</form>';
         } else if ($this->curstep->name === "done") {
-            echo Ht::form($this->conf->hoturl("manageemail"), ["method" => "get"]);
+            echo $this->conf->hotform("manageemail", null, ["method" => "get"]);
             $change_list = $this->token->data("change_list");
             if ($change_list === null) {
                 echo '<p>Transfer failed.</p>';
@@ -708,7 +708,7 @@ class ManageEmail_Page {
             }
             echo '</form>';
         } else if ($this->curstep->name === "done") {
-            echo Ht::form($this->conf->hoturl("manageemail", ["t" => "link", "u" => $this->user->email]), ["method" => "get"]);
+            echo $this->conf->hotform("manageemail", ["t" => "link", "u" => $this->user->email], ["method" => "get"]);
             $change_list = $this->token->data("change_list");
             if ($change_list === null) {
                 echo '<p>Account link failed.</p>';
@@ -942,7 +942,7 @@ class ManageEmail_Page {
             }
             echo '</form>';
         } else if ($this->curstep->name === "done") {
-            echo Ht::form($this->conf->hoturl("manageemail"), ["method" => "get"]);
+            echo $this->conf->hotform("manageemail", null, ["method" => "get"]);
             $change_list = $this->token->data("change_list");
             if ($change_list === null) {
                 echo '<p>Account unlink failed.</p>';

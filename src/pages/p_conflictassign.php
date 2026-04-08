@@ -85,7 +85,7 @@ class ConflictAssign_Page {
             $rstate = $paperlist->table_render();
             if (!$rstate->is_empty()) {
                 if (!$any) {
-                    echo Ht::form($conf->hoturl("conflictassign")),
+                    echo $conf->hotform("conflictassign"),
                         '<div class="pltable-fullw-container demargin">';
                     $rstate->print_table_start($paperlist->table_attr, true);
                 } else {

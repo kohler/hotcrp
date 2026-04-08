@@ -196,12 +196,12 @@ class BulkAssign_Page {
         if (strlen($apids) > 400) {
             $apids = "[many]";
         }
-        echo Ht::form($this->conf->hoturl("=bulkassign", [
+        echo $this->conf->hotform("=bulkassign", [
                 "saveassignment" => 1,
                 "assigntypes" => join(" ", $atypes),
                 "assignpids" => $apids,
                 "XDEBUG_TRIGGER" => $this->qreq->XDEBUG_TRIGGER
-            ]), ["class" => "ui-submit js-selector-summary"]),
+            ], ["class" => "ui-submit js-selector-summary"]),
             Ht::hidden("default_action", $defaults["action"] ?? "guess"),
             Ht::hidden("rev_round", $defaults["round"]);
         if (is_string($qf->content)) {
@@ -328,10 +328,10 @@ Assignment methods:
 
 
         // Form
-        echo Ht::form($conf->hoturl("=bulkassign", [
+        echo $conf->hotform("=bulkassign", [
             "upload" => 1,
             "XDEBUG_TRIGGER" => $qreq->XDEBUG_TRIGGER
-        ]));
+        ]);
 
         // Upload
         echo '<div class="f-i mt-3">',

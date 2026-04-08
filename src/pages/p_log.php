@@ -214,7 +214,7 @@ class Log_Page {
             $dplaceholder = $this->conf->unparse_time_log($this->first_timestamp);
         }
 
-        echo Ht::form($this->conf->hoturl("log"), ["method" => "get", "id" => "f-search", "class" => "mx-auto clearfix"]);
+        echo $this->conf->hotform("log", null, ["method" => "get", "id" => "f-search", "class" => "mx-auto clearfix"]);
         if ($this->qreq->forceShow) {
             echo Ht::hidden("forceShow", 1);
         }

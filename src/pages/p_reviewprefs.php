@@ -72,7 +72,7 @@ class ReviewPrefs_Page {
         $pl->set_table_fold_session("pfdisplay.");
 
         // display options
-        echo Ht::form($conf->hoturl("reviewprefs"), [
+        echo $conf->hotform("reviewprefs", null, [
             "method" => "get", "id" => "f-search",
             "class" => "tlcontainer mb-3 has-fold fold10" . ($pl->viewing("authors") ? "o" : "c")
         ]);
@@ -147,7 +147,7 @@ class ReviewPrefs_Page {
         if ($qreq->sort) {
             $hoturl_args["sort"] = $qreq->sort;
         }
-        echo Ht::form($conf->hoturl("=reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-list assignpc"]),
+        echo $conf->hotform("=reviewprefs", $hoturl_args, ["id" => "sel", "class" => "ui-submit js-submit-list assignpc"]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
         if ($pl->has_message()) {

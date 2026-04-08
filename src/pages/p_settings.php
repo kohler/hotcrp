@@ -101,7 +101,7 @@ class Settings_Page {
         $form_class = Ht::add_tokens("need-diff-check need-unload-protection",
             $groupj->form_classes ?? "");
 
-        echo Ht::form($this->conf->hoturl("=settings", "group={$group}"), [
+        echo $this->conf->hotform("=settings", ["group" => $group], [
                 "id" => "f-settings",
                 "name" => base64_encode(random_bytes(8)), // prevent FF from autofilling on reload
                 "class" => $form_class

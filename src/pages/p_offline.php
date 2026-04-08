@@ -123,7 +123,7 @@ class Offline_Page {
         $dldisabled = $pastDeadline && !$this->user->privChair ? " disabled" : "";
 
         echo '<fieldset class="f-i" form="f-offline"><legend><label for="uploader">Upload filled-out forms</label></legend>',
-            Ht::form($conf->hoturl("=offline", "upload=1"), ["id" => "f-offline"]),
+            $conf->hotform("=offline", ["upload" => 1], ["id" => "f-offline"]),
             Ht::hidden("postnonempty", 1),
             '<input id="uploader" type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
             Ht::submit("Go", ["disabled" => !!$dldisabled]);
@@ -146,7 +146,7 @@ class Offline_Page {
             echo '</ul></fieldset>', "\n";
 
             echo '<fieldset class="f-i" form="upload', $ranktag, 'form"><legend><label for="rank', $ranktag, 'uploader">Upload ranking file</label></legend>',
-                Ht::form($conf->hoturl("=offline", ["setrank" => 1, "tag" => "~{$ranktag}"]), ["id" => "upload{$ranktag}form"]),
+                $conf->hotform("=offline", ["setrank" => 1, "tag" => "~{$ranktag}"], ["id" => "upload{$ranktag}form"]),
                 Ht::hidden("upload", 1),
                 '<input id="rank', $ranktag, 'uploader" type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
                 Ht::submit("Go", ["disabled" => !!$dldisabled]);

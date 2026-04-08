@@ -207,7 +207,7 @@ class Revpref_ListAction extends ListAction {
         $qreq->print_header("Review preferences", "revpref");
         $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE_IGNORE);
 
-        echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]),
+        echo $conf->hotform("=reviewprefs", ["reviewer" => $reviewer_arg],
             ["class" => "ui-submit js-selector-summary differs need-unload-protection"]),
             Ht::hidden("fn", "applyuploadpref");
         if ($aset->assignment_count() < 5000) {

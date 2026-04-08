@@ -414,7 +414,7 @@ class Autoassign_Page {
 
         // open form
         $this->print_header();
-        echo Ht::form($conf->hoturl("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE]), [
+        echo $conf->hotform("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE], [
                 "id" => "autoassignform",
                 "class" => "need-diff-check ui-submit js-autoassign-prepare js-selector-summary"
             ]),
@@ -798,7 +798,7 @@ class Autoassign_Page {
         if (strlen($apids) > 512) {
             $apids = substr($apids, 0, 509) . "...";
         }
-        echo Ht::form($this->conf->hoturl("=autoassign", $this->qreq_parameters(["assignpids" => $apids])),
+        echo $this->conf->hotform("=autoassign", $this->qreq_parameters(["assignpids" => $apids]),
             ["class" => "ui-submit js-selector-summary"]),
             Ht::hidden("saveassignment", 1);
 

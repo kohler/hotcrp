@@ -408,7 +408,7 @@ class Users_Page {
         echo '<div class="tlcontainer mb-3">';
 
         echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
-            Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
+            $this->conf->hotform("users", null, ["method" => "get"]);
         if (isset($this->qreq->sort)) {
             echo Ht::hidden("sort", $this->qreq->sort);
         }
@@ -417,7 +417,7 @@ class Users_Page {
 
         // Display options
         echo '<div class="tld is-tla" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
-            Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
+            $this->conf->hotform("users", null, ["method" => "get"]);
         foreach (["t", "sort"] as $x) {
             if (isset($this->qreq[$x]))
                 echo Ht::hidden($x, $this->qreq[$x]);
@@ -535,7 +535,7 @@ class Users_Page {
         }
 
         if ($pl->has("sel")) {
-            echo Ht::form($this->conf->hoturl("=users", ["t" => $this->qreq->t]),
+            echo $this->conf->hotform("=users", ["t" => $this->qreq->t],
                     ["class" => "ui-submit js-submit-list"]),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden_default_submit("default", 1),
