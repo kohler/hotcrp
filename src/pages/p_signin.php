@@ -212,9 +212,8 @@ class Signin_Page {
         $lt = $user->conf->login_type();
         echo '<div class="', $this->control_class("password", "f-i fx"), '">';
         if (!$lt) {
-            echo '<div class="float-right"><a href="',
-                $user->conf->hoturl("forgotpassword"),
-                '" class="n ulh small uic js-href-add-email">Forgot your password?</a></div>';
+            echo '<div class="float-right">',
+                $user->conf->hotlink("Forgot your password?", "forgotpassword", null, ["class" => "n ulh small uic js-href-add-email"]), '</div>';
         }
         $password_reset = $qreq->csession("password_reset");
         echo Ht::label("Password", "k-password"),
@@ -240,9 +239,8 @@ class Signin_Page {
 
     static function print_signin_form_create(Contact $user) {
         if (!$user->conf->login_type() && $user->conf->allow_user_self_register()) {
-            echo '<p class="mt-3 mb-0 hint fx">New to the site? <a href="',
-                $user->conf->hoturl("newaccount"),
-                '" class="uic js-href-add-email">Create an account</a></p>';
+            echo '<p class="mt-3 mb-0 hint fx">New to the site? ',
+                $user->conf->hotlink("Create an account", "newaccount", null, ["class" => "uic js-href-add-email"]), '</p>';
         }
     }
 
@@ -280,9 +278,9 @@ class Signin_Page {
             $user->conf->redirect();
         } else if ($qreq->valid_post()) {
             LoginHelper::logout($user, $qreq, true);
-            $user->conf->redirect_hoturl("index", "signedout=1");
+            $user->conf->redirect_hoturl("index", ["signedout" => 1]);
         } else if ($user->is_empty()) {
-            $user->conf->redirect_hoturl("index", "signedout=1");
+            $user->conf->redirect_hoturl("index", ["signedout" => 1]);
         } else {
             self::bad_post_error($user, $qreq, "signout");
         }
@@ -291,7 +289,7 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_signout(Contact $user, Qrequest $qreq, $cs) {
         if ($user->is_empty()) {
-            $user->conf->error_msg("<5>You are not signed in. " . Ht::link("Return home", $user->conf->hoturl("index")));
+            $user->conf->error_msg("<5>You are not signed in. " . $user->conf->hotlink("Return home", "index"));
             $qreq->print_header("Sign out", "signout", ["action_bar" => "", "body_class" => "body-error"]);
         } else {
             $qreq->print_header("Sign out", "signout", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
@@ -387,7 +385,7 @@ class Signin_Page {
         $cs->print_on_leave("__footer");
         if (!$user->conf->allow_user_self_register()) {
             $user->conf->error_msg("<0>User self-registration is disabled on this site.");
-            echo '<p class="mb-5">', Ht::link("Return home", $user->conf->hoturl("index")), '</p>';
+            echo '<p class="mb-5">', $user->conf->hotlink("Return home", "index"), '</p>';
             return false;
         }
     }
@@ -421,7 +419,7 @@ class Signin_Page {
     // Forgot password request
     static function forgot_externallogin_message(Contact $user) {
         $user->conf->error_msg("<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.");
-        echo '<p class="mb-5">', Ht::link("Return home", $user->conf->hoturl("index")), '</p>';
+        echo '<p class="mb-5">', $user->conf->hotlink("Return home", "index"), '</p>';
         return false;
     }
     function forgot_request(Contact $user, Qrequest $qreq) {

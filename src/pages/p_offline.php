@@ -110,13 +110,13 @@ class Offline_Page {
         echo '<div class="f-eqcol">';
         echo '<fieldset class="f-i"><legend>Download forms</legend>',
             '<ul class="x mb-2">',
-            '<li><a href="', $conf->hoturl("search", ["fn" => "get", "getfn" => "revform", "q" => "", "t" => "r", "p" => "all"]), '">Your reviews</a></li>';
+            '<li>', $conf->hotlink("Your reviews", "search", ["fn" => "get", "getfn" => "revform", "q" => "", "t" => "r", "p" => "all"]), '</li>';
         if ($this->user->has_outstanding_review()) {
-            echo '<li><a href="', $conf->hoturl("search", ["fn" => "get", "getfn" => "revform", "q" => "", "t" => "rout", "p" => "all"]), '">Your incomplete reviews</a></li>';
+            echo '<li>', $conf->hotlink("Your incomplete reviews", "search", ["fn" => "get", "getfn" => "revform", "q" => "", "t" => "rout", "p" => "all"]), '</li>';
         }
-        echo '<li><a href="', $conf->hoturl("offline", "download=1"), '">Blank form</a></li>',
+        echo '<li>', $conf->hotlink("Blank form", "offline", ["download" => 1]), '</li>',
             '</ul>
-<div class="f-d"><strong>Tip:</strong> Use <a href="', $conf->hoturl("search", "q="), '">Search</a> &gt; Download to choose individual papers.</div>',
+<div class="f-d"><strong>Tip:</strong> Use ', $conf->hotlink("Search", "search", ["q" => ""]), ' &gt; Download to choose individual papers.</div>',
             "</fieldset>";
 
         $pastDeadline = !$conf->time_review(null, $this->user->isPC, true);
@@ -139,22 +139,22 @@ class Offline_Page {
             echo '<div class="f-eqcol">',
                 '<fieldset class="f-i"><legend>Download ranking file</legend>',
                 '<ul class="x mb-2">',
-                '<li><a href="', $conf->hoturl("search", ["fn" => "get", "getfn" => "rank", "tag" => "~{$ranktag}", "q" => "", "t" => "r", "p" => "all"]), '">Your reviews</a></li>';
+                '<li>', $conf->hotlink("Your reviews", "search", ["fn" => "get", "getfn" => "rank", "tag" => "~{$ranktag}", "q" => "", "t" => "r", "p" => "all"]), '</li>';
             if ($this->user->isPC) {
-                echo "<li><a href=\"", $conf->hoturl("search", ["fn" => "get", "getfn" => "rank", "tag" => "~{$ranktag}", "q" => "", "t" => "s", "p" => "all"]), "\">All submitted papers</a></li>";
+                echo "<li>", $conf->hotlink("All submitted papers", "search", ["fn" => "get", "getfn" => "rank", "tag" => "~{$ranktag}", "q" => "", "t" => "s", "p" => "all"]), "</li>";
             }
             echo '</ul></fieldset>', "\n";
 
             echo '<fieldset class="f-i" form="upload', $ranktag, 'form"><legend><label for="rank', $ranktag, 'uploader">Upload ranking file</label></legend>',
-                Ht::form($conf->hoturl("=offline", "setrank=1&amp;tag=%7E$ranktag"), ["id" => "upload{$ranktag}form"]),
+                Ht::form($conf->hoturl("=offline", ["setrank" => 1, "tag" => "~{$ranktag}"]), ["id" => "upload{$ranktag}form"]),
                 Ht::hidden("upload", 1),
                 '<input id="rank', $ranktag, 'uploader" type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
                 Ht::submit("Go", ["disabled" => !!$dldisabled]);
             if ($pastDeadline && $this->user->privChair) {
                 echo '<label class="checki"><span class="checkc">', Ht::checkbox("override"), '</span>Override deadlines</label>';
             }
-            echo '<div class="f-d"><strong>Tip:</strong> Search “<a href="', $conf->hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), '">editsort:#~', $ranktag, '</a>” to drag and drop your ranking.</span><br>',
-                '“<a href="', $conf->hoturl("search", "q=order:%23%7E$ranktag"), '">order:#~', $ranktag, '</a>” searches by your ranking.</div>',
+            echo '<div class="f-d"><strong>Tip:</strong> Search “', $conf->hotlink("editsort:#~{$ranktag}", "search", ["q" => "editsort:#~{$ranktag}"]), '” to drag and drop your ranking.</span><br>',
+                '“', $conf->hotlink("order:#~{$ranktag}", "search", ["q" => "order:#~{$ranktag}"]), '” searches by your ranking.</div>',
                 '</form></fieldset></div>';
         }
 

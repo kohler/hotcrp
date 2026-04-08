@@ -177,8 +177,7 @@ class Id_PaperColumn extends PaperColumn {
         return $a->paperId <=> $b->paperId;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $href = $pl->_paperLink($row);
-        return "<a href=\"{$href}\" class=\"pnum taghl\">#{$row->paperId}</a>";
+        return $pl->hotlink_to("#{$row->paperId}", $row, ["class" => "pnum taghl"]);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->paperId;
@@ -275,16 +274,14 @@ class Title_PaperColumn extends PaperColumn {
             $highlight_count = 0;
         }
 
+        $js = ["class" => "ptitle taghl"];
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->need_render = true;
-            $th = htmlspecialchars($title);
-            $klass_extra = " need-format\" data-format=\"{$format}\" data-title=\"{$th}";
-        } else {
-            $klass_extra = "";
+            $js["class"] .= " need-format";
+            $js["data-format"] = $format;
+            $js["data-title"] = htmlspecialchars($title);
         }
-
-        $link = $pl->_paperLink($row);
-        $t = "<a href=\"{$link}\" class=\"ptitle taghl{$klass_extra}\">{$highlight_text}</a>";
+        $t = $pl->hotlink_to($highlight_text, $row, $js);
         if ($this->want_pdf) {
             $dtype = $row->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION;
             if (($dtype === DTYPE_FINAL ? $row->finalPaperStorageId : $row->paperStorageId) > 1

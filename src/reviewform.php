@@ -475,10 +475,11 @@ Ready\n";
         self::check_review_author_seen($prow, $rrow, $viewer);
 
         $reviewOrdinal = $rrow->unparse_ordinal_id();
-        $forceShow = $viewer->is_override_conflict() ? "&amp;forceShow=1" : "";
-        $reviewlink = "p={$prow->paperId}" . ($rrow->reviewId ? "&amp;r={$reviewOrdinal}" : "");
-        $reviewPostLink = $this->conf->hoturl("=review", "{$reviewlink}&amp;m=re{$forceShow}");
-        $reviewDownloadLink = $this->conf->hoturl("review", "{$reviewlink}&amp;m=re&amp;download=1{$forceShow}");
+        $rlink1 = ["p" => $prow->paperId];
+        if ($rrow->reviewId) {
+            $rlink1["r"] = $reviewOrdinal;
+        }
+        $rlink2 = $viewer->is_override_conflict() ? ["forceShow" => 1] : [];
 
         echo '<div class="pcard s-review" id="r', $reviewOrdinal, '" data-pid="',
             $prow->paperId, '" data-rid="', ($rrow->reviewId ? : "new");
@@ -486,7 +487,7 @@ Ready\n";
             echo '" data-review-ordinal="', unparse_latin_ordinal($rrow->reviewOrdinal);
         }
         echo '">',
-            Ht::form($reviewPostLink, [
+            Ht::form($this->conf->hoturl("=review", $rlink1 + ["m" => "re"] + $rlink2), [
                 "id" => "f-review",
                 "class" => "need-unload-protection need-diff-check",
                 "data-differs-toggle" => "review-alert"
@@ -500,21 +501,15 @@ Ready\n";
 
         // Links
         if ($rrow->reviewId) {
-            echo '<div class="float-right"><a href="' . $this->conf->hoturl("review", "{$reviewlink}&amp;text=1{$forceShow}") . '" class="noul">',
-                Ht::img("txt.png", "[Text]", "b"),
-                "&nbsp;<u>Plain text</u></a>",
+            echo '<div class="float-right">',
+                $this->conf->hotlink(Ht::img("txt.png", "[Text]", "b") . "&nbsp;<u>Plain text</u>", "review", $rlink1 + ["text" => 1] + $rlink2, ["class" => "noul"]),
                 "</div>";
         }
 
         echo '<h2><span class="revcard-header-name">';
         if ($rrow->reviewId) {
-            echo '<a class="qo" href="',
-                $rrow->conf->hoturl("review", "{$reviewlink}{$forceShow}"),
-                '">Edit ', ($rrow->subject_to_approval() ? "Subreview" : "Review");
-            if ($rrow->reviewOrdinal) {
-                echo "&nbsp;#", $reviewOrdinal;
-            }
-            echo "</a>";
+            $t = "Edit " . ($rrow->subject_to_approval() ? "Subreview" : "Review") . ($rrow->reviewOrdinal ? " #{$reviewOrdinal}" : "");
+            echo $this->conf->hotlink($t, "review", $rlink1 + $rlink2, ["class" => "qo"]);
         } else {
             echo "New Review";
         }
@@ -562,9 +557,9 @@ Ready\n";
       &nbsp; ", Ht::submit("upload", "Go"), "</td>
     </tr><tr>
       <td></td>
-      <td><a href=\"$reviewDownloadLink\">Download form</a>
+      <td>", $this->conf->hotlink("Download form", "review", $rlink1 + ["m" => "re", "download" => 1] + $rlink2), "
       <span class=\"barsep\">·</span>
-      <span class=\"hint\"><strong>Tip:</strong> Use <a href=\"", $this->conf->hoturl("search"), "\">Search</a> or <a href=\"", $this->conf->hoturl("offline"), "\">Offline reviewing</a> to download or upload many forms at once.</span></td>
+      <span class=\"hint\"><strong>Tip:</strong> Use ", $this->conf->hotlink("Search", "search"), " or ", $this->conf->hotlink("Offline reviewing", "offline"), " to download or upload many forms at once.</span></td>
     </tr></table></div>\n";
 
         if (!empty($rrow->message_list)) {

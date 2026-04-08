@@ -87,20 +87,20 @@ class Tags_SettingParser extends SettingParser {
     static function print_tag_approval(SettingValues $sv) {
         $sv->print_entry_group("tag_vote_approval", null, [
             "class" => "need-suggest tags",
-            "hint" => "<a href=\"" . $sv->conf->hoturl("help", "t=voting") . "\">Help</a>",
+            "hint" => $sv->conf->hotlink("Help", "help", ["t" => "voting"]),
             "autocomplete" => "off"
         ]);
     }
     static function print_tag_vote(SettingValues $sv) {
         $sv->print_entry_group("tag_vote_allotment", null, [
             "class" => "need-suggest tags",
-            "hint" => "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=voting") . "\">Help</a>)",
+            "hint" => "“vote#10” declares an allotment of 10 votes per PC member. (" . $sv->conf->hotlink("Help", "help", ["t" => "voting"]) . ")",
             "autocomplete" => "off"
         ]);
     }
     static function print_tag_rank(SettingValues $sv) {
         $sv->print_entry_group("tag_rank", null, [
-            "hint" => 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)',
+            "hint" => "The " . $sv->conf->hotlink("offline reviewing page", "offline") . " will expose support for uploading rankings by this tag. (" . $sv->conf->hotlink("Help", "help", ["t" => "ranking"]) . ")",
             "autocomplete" => "off"
         ]);
     }

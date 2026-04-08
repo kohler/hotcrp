@@ -161,7 +161,7 @@ class Mail_Page {
         $plist->set_table_id_class("foldpl", "fullw");
         $plist->set_view("sel", false, PaperList::VIEWORIGIN_MAX);
         if ($plist->is_empty()) {
-            $this->conf->warning_msg("<5>You have not requested any external reviews. " . Ht::link("Return home", $this->conf->hoturl("index")));
+            $this->conf->warning_msg("<5>You have not requested any external reviews. " . $this->conf->hotlink("Return home", "index"));
         } else {
             echo "<h2>Requested reviews</h2>\n\n";
             $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
@@ -170,7 +170,7 @@ class Mail_Page {
             if ($plist->has("need_review")) {
                 echo "Some of your requested external reviewers have not completed their reviews. To send them an email reminder, check the text below and then select “Prepare mail.” You’ll get a chance to review the emails and select specific reviewers to remind.";
             } else {
-                echo 'All of your requested external reviewers have completed their reviews. ', Ht::link("Return home", $this->conf->hoturl("index"));
+                echo 'All of your requested external reviewers have completed their reviews. ', $this->conf->hotlink("Return home", "index");
             }
             echo "</p></div>\n";
         }
@@ -277,8 +277,9 @@ class Mail_Page {
                 "<strong>Recent mails:</strong>\n";
             $i = 1;
             while (($row = $result->fetch_object())) {
+                $s = htmlspecialchars($row->subject) . " – <span class=\"dim\">" . htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)) . "</span>";
                 echo '<div class="mhdd"><div style="position:relative;overflow:hidden">',
-                    '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> <a class="q" href="', $this->conf->hoturl("mail", "mailid=" . $row->mailId), '">', htmlspecialchars($row->subject), ' &ndash; <span class="dim">', htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
+                    '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> ', $this->conf->hotlink($s, "mail", ["mailid" => $row->mailId], ["class" => "q"]), "</div>",
                     "<br></div></div>\n";
                 ++$i;
             }

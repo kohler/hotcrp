@@ -342,10 +342,9 @@ class UserStatus extends MessageSet {
      * @return string */
     static function render_paper_link(Conf $conf, $pids) {
         if (count($pids) === 1) {
-            $l = Ht::link("#{$pids[0]}", $conf->hoturl("paper", ["p" => $pids[0]]));
+            $l = $conf->hotlink("#{$pids[0]}", "paper", ["p" => $pids[0]]);
         } else {
-            $l = Ht::link(commajoin(array_map(function ($p) { return "#$p"; }, $pids)),
-                          $conf->hoturl("search", ["q" => join(" ", $pids)]));
+            $l = $conf->hotlink(commajoin(array_map(function ($p) { return "#{$p}"; }, $pids)), "search", ["q" => join(" ", $pids)]);
         }
         return $conf->snouns[count($pids) !== 1 ? 0 : 1] . " " . $l;
     }
@@ -1618,9 +1617,9 @@ class UserStatus extends MessageSet {
             return;
         }
         if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
-            $link = "<p class=\"nearby\">" . Ht::link("Manage email →", $this->conf->hoturl("manageemail", ["u" => $this->user->email]), ["class" => "btn btn-success btn-sm"]) . "</p>";
+            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Manage email →", "manageemail", ["u" => $this->user->email], ["class" => "btn btn-success btn-sm"]) . "</p>";
         } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
-            $link = "<p class=\"nearby\">" . Ht::link("Transfer reviews →", $this->conf->hoturl("manageemail", ["t" => "transferreview", "u" => $this->user->email]), ["class" => "btn btn-primary btn-sm"]) . "</p>";
+            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Transfer reviews →", "manageemail", ["t" => "transferreview", "u" => $this->user->email], ["class" => "btn btn-primary btn-sm"]) . "</p>";
         } else {
             $link = "";
         }
@@ -1870,7 +1869,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo '<div class="', $us->control_class("tags", "f-i"), '">',
             $us->feedback_html_at("tags"),
             Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw", "id" => "tags"]),
-            "<p class=\"f-d\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p></div>\n";
+            "<p class=\"f-d\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use ", $us->conf->hotlink("tag colors", "settings", ["group" => "tags"]), " to highlight subgroups in review lists.</p></div>\n";
     }
 
     private static function print_delete_action(UserStatus $us) {

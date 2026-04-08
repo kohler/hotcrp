@@ -1480,18 +1480,19 @@ final class PaperList extends MessageSet {
     }
 
 
-    /** @return string */
-    function _paperLink(PaperInfo $row) {
+    /** @param string $html
+     * @return string */
+    function hotlink_to($html, PaperInfo $row, $js = []) {
         $pt = $this->_view_linkto ?? "paper";
-        $pm = "";
+        $pm = ["p" => $row->paperId];
         if ($pt === "finishreview") {
             $ci = $row->contact_info($this->user);
             $pt = $ci->review_status <= PaperContactInfo::CIRS_UNSUBMITTED ? "review" : "paper";
         } else if ($pt === "paperedit") {
             $pt = "paper";
-            $pm = "&amp;m=edit";
+            $pm["m"] = "edit";
         }
-        return $row->conf->hoturl($pt, "p=" . $row->paperId . $pm);
+        return $row->conf->hotlink($html, $pt, $pm, $js);
     }
 
     // content downloaders

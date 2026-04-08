@@ -161,8 +161,7 @@ class ManualAssign_Page {
 
         $show = " show:au" . ($this->conf->setting("sub_collab") ? " show:co" : "");
         echo '<div class="f-i">',
-            '<a href="', $this->conf->hoturl("search", "q=" . urlencode(join(" OR ", $hlsearch) . " OR conf:" . $reviewer->email . $show) . '&amp;linkto=assign&amp;reviewer=' . urlencode($reviewer->email)),
-            '">Search for current and potential conflicts</a></div>';
+            $this->conf->hotlink("Search for current and potential conflicts", "search", ["q" => join(" OR ", $hlsearch) . " OR conf:" . $reviewer->email . $show, "linkto" => "assign", "reviewer" => $reviewer->email]), '</div>';
 
         // main assignment form
         $search = (new PaperSearch($this->viewer, [
@@ -219,20 +218,20 @@ class ManualAssign_Page {
     function print(?Contact $reviewer = null) {
         $this->qreq->print_header("Assignments", "manualassign", ["subtitle" => "Manual"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("autoassign"), '">Automatic</a></li>',
-            '<li class="papmode active"><a href="', $this->conf->hoturl("manualassign"), '">Manual</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("conflictassign"), '">Conflicts</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("bulkassign"), '">Bulk update</a></li>',
+            '<li class="papmode">', $this->conf->hotlink("Automatic", "autoassign"), '</li>',
+            '<li class="papmode active">', $this->conf->hotlink("Manual", "manualassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Conflicts", "conflictassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Bulk update", "bulkassign"), '</li>',
             '</ul></nav>';
 
         // Help list
         echo '<div class="helpside"><div class="helpinside">
 <p>Assignment methods:</p>
-<ul><li><a href="', $this->conf->hoturl("autoassign"), '">Automatic</a></li>
- <li><a href="', $this->conf->hoturl("manualassign"), '" class="q"><strong>Manual by PC member</strong></a></li>
- <li><a href="', $this->conf->hoturl("assign"), '">Manual by paper</a></li>
- <li><a href="', $this->conf->hoturl("conflictassign"), '">Potential conflicts</a></li>
- <li><a href="', $this->conf->hoturl("bulkassign"), '">Bulk update</a></li>
+<ul><li>', $this->conf->hotlink("Automatic", "autoassign"), '</li>
+ <li>', $this->conf->hotlink("<strong>Manual by PC member</strong>", "manualassign", null, ["class" => "q"]), '</li>
+ <li>', $this->conf->hotlink("Manual by paper", "assign"), '</li>
+ <li>', $this->conf->hotlink("Potential conflicts", "conflictassign"), '</li>
+ <li>', $this->conf->hotlink("Bulk update", "bulkassign"), '</li>
 </ul>
 <hr>
 <p>Types of PC review:</p>
@@ -242,7 +241,7 @@ class ManualAssign_Page {
   <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 <hr>
 <dl class="bsp"><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>
-  <dt>Preference</dt><dd><a href="', $this->conf->hoturl("reviewprefs"), '">Review preference</a></dd>
+  <dt>Preference</dt><dd>', $this->conf->hotlink("Review preference", "reviewprefs"), '</dd>
   <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd></dl>
 <p>Click a heading to sort.</p></div></div>';

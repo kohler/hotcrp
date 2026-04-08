@@ -275,7 +275,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             $tname = $topicset->name($tid);
             $x = $topicset->unparse_name_html($tid);
             if ($keyword !== null) {
-                $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "{$keyword}:" . SearchWord::quote($tname)]), ["class" => "q"]);
+                $x = $this->conf->hotlink($x, "search", ["q" => "{$keyword}:" . SearchWord::quote($tname)], ["class" => "q"]);
             }
             $ts[] = "{$t}\">{$x}</li>";
             $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);

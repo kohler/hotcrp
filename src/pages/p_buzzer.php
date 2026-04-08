@@ -119,7 +119,7 @@ class Buzzer_Page {
         $buzzer_status = ["status" => "open", "muted" => false, "show_papers" => $show_papers];
         $no_discussion = '<div class="remargin-left remargin-right"><h2>No discussion</h2>';
         if ($kiosk_keys) {
-            $no_discussion .= '<p>To start a discussion, <a href="' . $conf->hoturl("search") . '">search</a> for a list, go to a paper in that list, and use the “&#9759;” button.</p>';
+            $no_discussion .= '<p>To start a discussion, ' . $conf->hotlink("search", "search") . ' for a list, go to a paper in that list, and use the “&#9759;” button.</p>';
             $buzzer_status["kiosk_urls"] = [
                 $conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[0]], Conf::HOTURL_ABSOLUTE),
                 $conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[1]], Conf::HOTURL_ABSOLUTE)

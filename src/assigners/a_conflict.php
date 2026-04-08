@@ -207,7 +207,7 @@ class Conflict_Assigner extends Assigner {
         if ($state->potential_conflict_warnings > 1) {
             // do nothing
         } else if ($can_admin) {
-            $state->append_item_near(MessageItem::inform("<5>You may want to <a href=\"" . $state->conf->hoturl("conflictassign") . "\" target=\"_blank\" rel=\"noopener\">confirm all potential conflicts</a>."), $item);
+            $state->append_item_near(MessageItem::inform("<5>You may want to " . $state->conf->hotlink("confirm all potential conflicts", "conflictassign", null, ["target" => "_blank", "rel" => "noopener"])), $item);
         } else {
             $state->append_item_near(MessageItem::inform("<5>You may want to ask an administrator to confirm potential conflicts."), $item);
         }

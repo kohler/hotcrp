@@ -70,7 +70,7 @@ class Decision_SettingParser extends SettingParser {
             echo Ht::button(Icons::ui_use("trash"), ["class" => "fx ui js-settings-decision-delete btn-licon-s ml-2 need-tooltip", "name" => "decision/{$ctr}/deleter", "aria-label" => "Delete decision", "tabindex" => "-1"]);
         }
         if ($count) {
-            echo Ht::link(plural($count, "submission"), $sv->conf->hoturl("search", ["q" => "dec:" . SearchWord::quote($sv->oldv("decision/{$ctr}/name"))]), ["class" => "ml-2"]);
+            echo $sv->conf->hotlink(plural($count, "submission"), "search", ["q" => "dec:" . SearchWord::quote($sv->oldv("decision/{$ctr}/name"))], ["class" => "ml-2"]);
         }
         if ($sv->has_error_at("decision/{$ctr}/category")) {
             echo '<label class="d-inline-block checki ml-2"><span class="checkc">',

@@ -295,13 +295,13 @@ class MailSender {
                 && $this->user->privChair
                 && preg_match('/(?:\{\{|%)(?:REVIEWS|COMMENTS)/', $this->qreq->body)
                 && !$this->conf->time_some_author_view_review()) {
-                $ms[] = MessageItem::warning("<5>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
+                $ms[] = MessageItem::warning("<5>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (" . $this->conf->hotlink("Change this setting", "settings", ["group" => "dec"], ["class" => "nw"]) . ")");
             }
             if (isset($this->qreq->body)
                 && $this->user->privChair
                 && substr($this->recipients, 0, 4) == "dec:"
                 && !$this->conf->time_some_author_view_decision()) {
-                $ms[] = MessageItem::warning("<5>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
+                $ms[] = MessageItem::warning("<5>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (" . $this->conf->hotlink("Change this setting", "settings", ["group" => "dec"], ["class" => "nw"]) . ")");
             }
             if (!empty($ms)) {
                 $this->conf->feedback_msg($ms);

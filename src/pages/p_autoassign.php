@@ -36,10 +36,10 @@ class Autoassign_Page {
     function print_header() {
         $this->qreq->print_header("Assignments", "autoassign", ["subtitle" => "Automatic"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
-            '<li class="papmode active"><a href="', $this->conf->hoturl("autoassign"), '">Automatic</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("manualassign"), '">Manual</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("conflictassign"), '">Conflicts</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("bulkassign"), '">Bulk update</a></li>',
+            '<li class="papmode active">', $this->conf->hotlink("Automatic", "autoassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Manual", "manualassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Conflicts", "conflictassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Bulk update", "bulkassign"), '</li>',
             '</ul></nav>';
     }
 
@@ -420,11 +420,11 @@ class Autoassign_Page {
             ]),
             '<div class="helpside"><div class="helpinside">
         Assignment methods:
-        <ul><li><a href="', $conf->hoturl("autoassign"), '" class="q"><strong>Automatic</strong></a></li>
-         <li><a href="', $conf->hoturl("manualassign"), '">Manual by PC member</a></li>
-         <li><a href="', $conf->hoturl("assign") . '">Manual by paper</a></li>
-         <li><a href="', $conf->hoturl("conflictassign"), '">Potential conflicts</a></li>
-         <li><a href="', $conf->hoturl("bulkassign"), '">Bulk update</a></li>
+        <ul><li>', $conf->hotlink("<strong>Automatic</strong>", "autoassign", null, ["class" => "q"]), '</li>
+         <li>', $conf->hotlink("Manual by PC member", "manualassign"), '</li>
+         <li>', $conf->hotlink("Manual by paper", "assign"), '</li>
+         <li>', $conf->hotlink("Potential conflicts", "conflictassign"), '</li>
+         <li>', $conf->hotlink("Bulk update", "bulkassign"), '</li>
         </ul>
         <hr>
         <p>Types of PC review:</p>
@@ -650,7 +650,7 @@ class Autoassign_Page {
         } else {
             $m = "Expired or nonexistent autoassignment job.";
         }
-        $this->conf->error_msg("<5>{$m} <a href=\"" . $this->conf->selfurl($this->qreq, ["a" => $this->qreq->a]) . "\">Try again</a>");
+        $this->conf->error_msg("<5>{$m} " . $this->conf->selflink("Try again", $this->qreq, ["a" => $this->qreq->a]));
         $this->qreq->print_footer();
         Navigation::complete();
     }
@@ -732,7 +732,7 @@ class Autoassign_Page {
             echo '<h3 class="form-h">Preparing assignment</h3>',
                 Ht::fmt_feedback_msg($this->conf, $this->ms),
                 '<div class="aab aabig btnp">',
-                Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
+                $this->conf->selflink("Revise assignment", $this->qreq, $this->qreq_parameters(), ["class" => "btn btn-primary"]),
                 '</div>';
         } else {
             echo '<div id="propass" class="propass">',
@@ -755,7 +755,7 @@ class Autoassign_Page {
         echo '<h3 class="form-h">Proposed assignment</h3>',
             Ht::fmt_feedback_msg($this->conf, $this->ms),
             '<div class="aab aabig btnp">',
-            Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
+            $this->conf->selflink("Revise assignment", $this->qreq, $this->qreq_parameters(), ["class" => "btn btn-primary"]),
             '</div>';
         $this->qreq->print_footer();
         Navigation::complete();

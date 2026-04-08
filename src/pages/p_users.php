@@ -522,13 +522,13 @@ class Users_Page {
 
         if ($this->viewer->privChair) {
             if ($this->qreq->t === "pc") {
-                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Add accounts</a>',
+                $this->print_pre_list_links($this->conf->hotlink("Add accounts", "profile", ["u" => "new", "role" => "pc"], ["class" => "btn"]),
                     'Select a user to edit their profile or remove them from the PC.');
             } else if (str_starts_with($this->qreq->t, "#")) {
-                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", ["u" => "new", "role" => "pc", "tags" => substr($this->qreq->t, 1)]) . '" class="btn">Add accounts</a>',
+                $this->print_pre_list_links($this->conf->hotlink("Add accounts", "profile", ["u" => "new", "role" => "pc", "tags" => substr($this->qreq->t, 1)], ["class" => "btn"]),
                     'Select a user to edit their profile or remove them from the PC.');
             } else if ($this->qreq->t === "all") {
-                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", "u=new") . '" class="btn">Add accounts</a>',
+                $this->print_pre_list_links($this->conf->hotlink("Add accounts", "profile", ["u" => "new"], ["class" => "btn"]),
                     'Select a user to edit their profile.',
                     'Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user.');
             }

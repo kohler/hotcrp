@@ -45,7 +45,7 @@ class Profile_Page {
      * @return Contact */
     private function handle_user_search($u) {
         if (!$this->viewer->privChair) {
-            Multiconference::fail($this->qreq, 403, ["title" => "Profile"], "<5>Permission error: you can only access <a href=\"" . $this->conf->hoturl("profile", ["u" => null]) . "\">your own profile</a>");
+            Multiconference::fail($this->qreq, 403, ["title" => "Profile"], "<5>Permission error: you can only access " . $this->conf->hotlink("your own profile", "profile", ["u" => null]));
         }
 
         $user = null;
@@ -181,7 +181,7 @@ class Profile_Page {
 
     /** @return MessageItem */
     private function linked_secondary_warning_note(UserStatus $ustatus, Contact $user) {
-        return MessageItem::warning_note("<5>" . htmlspecialchars($ustatus->linked_secondary) . " is linked to primary account " . Ht::link(htmlspecialchars($user->email), $this->conf->hoturl("profile", ["u" => $user->email])));
+        return MessageItem::warning_note("<5>" . htmlspecialchars($ustatus->linked_secondary) . " is linked to primary account " . $this->conf->hotlink(htmlspecialchars($user->email), "profile", ["u" => $user->email]));
     }
 
     /** @param string $text
@@ -255,8 +255,7 @@ class Profile_Page {
             $ustatus->set_notify(friendly_boolean($line["notify"]) ?? true);
             $saved_user = $this->save_user($ustatus);
             if ($saved_user) {
-                $url = $this->conf->hoturl("profile", "u=" . urlencode($saved_user->email));
-                $link = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
+                $link = $this->conf->hotlink($saved_user->name_h(NAME_E), "profile", ["u" => $saved_user->email], ["class" => "nb"]);
                 if ($ustatus->linked_secondary) {
                     $ms->append_item($this->linked_secondary_warning_note($ustatus, $saved_user));
                 }
@@ -327,19 +326,19 @@ class Profile_Page {
 
         // report messages
         $ml = [];
-        $purl = $this->conf->hoturl("profile", ["u" => $saved_user ? $saved_user->email : null]);
+        $plink = $saved_user ? $this->conf->hotlink($saved_user->name_h(NAME_E), "profile", ["u" => $saved_user->email]) : "";
         if ($this->ustatus->has_error()) {
             $ml[] = MessageItem::error("<0>Changes not saved; please correct the highlighted errors and try again");
         } else if ($this->ustatus->created && $this->ustatus->notified) {
-            $ml[] = MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created and notified");
+            $ml[] = MessageItem::success("<5>Account {$plink} created and notified");
         } else if ($this->ustatus->created) {
-            $ml[] = MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified");
+            $ml[] = MessageItem::success("<5>Account {$plink} created, but not notified");
         } else {
             if ($this->ustatus->linked_secondary) {
                 $ml[] = $this->linked_secondary_warning_note($this->ustatus, $saved_user);
             }
             if ($this->page_type !== 0) {
-                $ml[] = MessageItem::warning_note("<5>User " . Ht::link($saved_user->name_h(NAME_E), $purl) . " already had an account on this site");
+                $ml[] = MessageItem::warning_note("<5>User {$plink} already had an account on this site");
             }
             if ($this->page_type !== 0 || $this->user !== $this->viewer) {
                 $diffs = " to " . commajoin(array_keys($this->ustatus->diffs));
@@ -423,7 +422,7 @@ class Profile_Page {
         }
         $this->conf->feedback_msg($ua);
         if ($ok) {
-            $this->conf->redirect_hoturl("users", "t=all");
+            $this->conf->redirect_hoturl("users", ["t" => "all"]);
         }
     }
 
@@ -589,7 +588,7 @@ class Profile_Page {
                 if ($active) {
                     echo $t[0];
                 } else {
-                    echo Ht::link($t[0], $this->conf->selfurl($this->qreq, ["u" => $t[1], "t" => null]));
+                    echo $this->conf->selflink($t[0], $this->qreq, ["u" => $t[1], "t" => null]);
                 }
                 echo '</li>';
             }
@@ -623,7 +622,7 @@ class Profile_Page {
                     if ($disabled) {
                         $aextra["class"] = "dim";
                     }
-                    echo Ht::link($title, $this->conf->selfurl($this->qreq, ["t" => $gj->name]), $aextra);
+                    echo $this->conf->selflink($title, $this->qreq, ["t" => $gj->name], $aextra);
                 }
                 echo '</li>';
                 $first = false;

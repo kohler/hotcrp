@@ -39,7 +39,7 @@ class Deadlines_Page {
         $qreq->print_header("Deadlines", "deadlines");
 
         if ($this->user->privChair) {
-            echo "<p>As PC chair, you can <a href=\"", $this->conf->hoturl("settings"), "\">change the deadlines</a>.</p>\n";
+            echo "<p>As PC chair, you can ", $this->conf->hotlink("change the deadlines", "settings"), ".</p>\n";
         }
 
         // If you change these, also change Contact::has_reportable_deadline().

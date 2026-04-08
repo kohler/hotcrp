@@ -291,12 +291,12 @@ class Track_SettingParser extends SettingParser {
         echo "<fieldset class=\"settings-tracks\"><legend class=\"mb-1\">General permissions</legend>";
         $this->ctr = $sv->search_oblist("track", "id", "any");
         $this->cur_trx = $sv->oldv("track/{$this->ctr}");
-        $this->print_perm($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", self::PERM_DEFAULT_UNFOLDED);
+        $this->print_perm($sv, "viewtracker", "Who can see the " . $sv->conf->hotlink("meeting tracker", "help", ["t" => "chair", "#" => "meeting"]) . "?", self::PERM_DEFAULT_UNFOLDED);
         echo "</fieldset>\n\n";
     }
 
     function print(SettingValues $sv) {
-        echo "<p>Tracks offer fine-grained permission control over submissions with specific tags. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
+        echo "<p>Tracks offer fine-grained permission control over submissions with specific tags. <span class=\"nw\">(" . $sv->conf->hotlink("Help", "help", ["t" => "tracks"]) . ")</span></p>",
             Ht::hidden("has_track", 1);
 
         foreach ($sv->oblist_keys("track") as $ctr) {

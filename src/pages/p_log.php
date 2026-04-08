@@ -246,12 +246,12 @@ class Log_Page {
             '</form>';
 
         if ($page > 1 || $leg->has_page(2)) {
-            $urls = ["q=" . urlencode($this->qreq->q)];
+            $urlp = ["q" => $this->qreq->q];
             foreach (["p", "u", "n", "forceShow"] as $x) {
                 if ($this->qreq[$x])
-                    $urls[] = "{$x}=" . urlencode($this->qreq[$x]);
+                    $urlp[$x] = $this->qreq[$x];
             }
-            $leg->set_log_url_base($this->conf->hoturl("log", join("&amp;", $urls)));
+            $leg->set_log_url_base($this->conf->hoturl("log", $urlp));
             echo "<table class=\"lognav\"><tr><td><div class=\"lognavdr\">";
             if ($page > 1) {
                 echo $leg->page_link_html(1, "<strong>Newest</strong>"), " &nbsp;|&nbsp;&nbsp;";
@@ -304,8 +304,7 @@ class Log_Page {
                 $t = "<span class=\"{$colors} taghh\">{$t}</span>";
             }
         }
-        $url = $this->conf->hoturl("log", ["q" => "", "u" => $user->email, "n" => $this->qreq->n]);
-        $t = "<a href=\"{$url}\">{$t}</a>";
+        $t = $this->conf->hotlink($t, "log", ["q" => "", "u" => $user->email, "n" => $this->qreq->n]);
         if ($dt && $dt->has(TagInfo::TFM_DECORATION)) {
             $tagger = new Tagger($this->viewer);
             $t .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
@@ -411,9 +410,9 @@ class Log_Page {
                     $req["offset"] = $leg->page_delta();
                 }
                 if ($this->qreq->forceShow) { // XXX never true
-                    $conf->feedback_msg(MessageItem::marked_note("<5>Showing all entries (" . Ht::link("unprivileged view", $conf->selfurl($this->qreq, $req + ["forceShow" => null])) . ")"));
+                    $conf->feedback_msg(MessageItem::marked_note("<5>Showing all entries (" . $conf->selflink("unprivileged view", $this->qreq, $req + ["forceShow" => null]) . ")"));
                 } else {
-                    $conf->feedback_msg(MessageItem::marked_note("<5>Not showing entries for " . Ht::link("conflicted administered papers", $conf->hoturl("search", "q=" . join("+", array_keys($this->exclude_pids))))));
+                    $conf->feedback_msg(MessageItem::marked_note("<5>Not showing entries for " . $conf->hotlink("conflicted administered papers", "search", ["q" => join(" ", array_keys($this->exclude_pids))])));
                 }
             }
             $conf->set_mx_auto(false);
@@ -481,20 +480,19 @@ class Log_Page {
         $at = "";
         if (strpos($act, "eview ") !== false
             && preg_match('/\A(.* |)([Rr]eview )(\d+)( .*|)\z/', $act, $m)) {
-            $at = htmlspecialchars($m[1])
-                . Ht::link($m[2] . $m[3], $conf->hoturl("review", ["p" => $row->paperId, "r" => $m[3]]));
+            $at = htmlspecialchars($m[1]) . $conf->hotlink($m[2] . $m[3], "review", ["p" => $row->paperId, "r" => $m[3]]);
             $act = $m[4];
         } else if (substr($act, 0, 7) === "Comment"
                    && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
-            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cx{$m[1]}") . "\">Comment " . $m[1] . "</a>";
+            $at = $conf->hotlink("Comment {$m[1]}", "paper", ["p" => $row->paperId, "#" => "cx{$m[1]}"]);
             $act = $m[2];
         } else if (substr($act, 0, 8) === "Response"
                    && preg_match('/\AResponse (\d+)(.*)\z/s', $act, $m)) {
-            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cx{$m[1]}") . "\">Response " . $m[1] . "</a>";
+            $at = $conf->hotlink("Response {$m[1]}", "paper", ["p" => $row->paperId, "#" => "cx{$m[1]}"]);
             $act = $m[2];
         } else if (strpos($act, " mail ") !== false
                    && preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
-            $at = $m[1] . " <a href=\"" . $conf->hoturl("mail", "mailid=$m[2]") . "\">mail #$m[2]</a>";
+            $at = $m[1] . " " . $conf->hotlink("mail #{$m[2]}", "mail", ["mailid" => $m[2]]);
             $act = $m[3];
         } else if (substr($act, 0, 3) === "Tag"
                    && preg_match('/\ATag:? ((?:[-+]\#[^\s\#]*(?:\#[-+\d.]+|)(?: |\z))+)(.*)\z/s', $act, $m)) {
@@ -504,10 +502,10 @@ class Log_Page {
                 if (($hash = strpos($word, "#", 2)) === false) {
                     $hash = strlen($word);
                 }
-                $at .= " " . $word[0] . '<a href="'
-                    . $conf->hoturl("search", ["q" => substr($word, 1, $hash - 1)])
-                    . '">' . htmlspecialchars(substr($word, 1, $hash - 1))
-                    . '</a>' . substr($word, $hash);
+                $tagstr = substr($word, 1, $hash - 1);
+                $at .= " " . $word[0]
+                    . $conf->hotlink(htmlspecialchars($tagstr), "search", ["q" => $tagstr])
+                    . substr($word, $hash);
             }
         } else if ($row->paperId > 0
                    && str_starts_with($act, "Paper ")
@@ -517,19 +515,18 @@ class Log_Page {
             $act = substr($act, $colon);
             while (preg_match("/\\A(.*? )({$this->document_regexp})((?:,| |\\z).*)\\z/", $act, $m)) {
                 $at .= htmlspecialchars($m[1])
-                    . "<a href=\"" . $conf->hoturl("doc", ["p" => $row->paperId, "dt" => $m[2], "at" => $row->timestamp])
-                    . "\">{$m[2]}</a>";
+                    . $conf->hotlink($m[2], "doc", ["p" => $row->paperId, "dt" => $m[2], "at" => $row->timestamp]);
                 $act = $m[3];
             }
         }
         $at .= htmlspecialchars($act);
         if (($pids = $leg->paper_ids($row))) {
             if (count($pids) === 1)
-                $at .= ' (<a class="track" href="' . $conf->hoturl("paper", "p=" . $pids[0]) . '">paper ' . $pids[0] . "</a>)";
+                $at .= ' (' . $conf->hotlink("paper " . $pids[0], "paper", ["p" => $pids[0]], ["class" => "track"]) . ')';
             else {
-                $at .= ' (<a href="' . $conf->hoturl("search", "t=all&amp;q=" . join("+", $pids)) . '">papers</a>';
+                $at .= ' (' . $conf->hotlink("papers", "search", ["t" => "all", "q" => join(" ", $pids)]);
                 foreach ($pids as $i => $p) {
-                    $at .= ($i ? ', ' : ' ') . '<a class="track" href="' . $conf->hoturl("paper", "p=" . $p) . '">' . $p . '</a>';
+                    $at .= ($i ? ', ' : ' ') . $conf->hotlink($p, "paper", ["p" => $p], ["class" => "track"]);
                 }
                 $at .= ')';
             }

@@ -62,8 +62,7 @@ class Graph_Page {
         echo '<nav class="papmodes mb-5 clearfix"><ul>';
         foreach ($gtypes as $gjx) {
             echo '<li class="papmode', $gjx === $gj ? " active" : "", '">',
-                Ht::link(htmlspecialchars($gjx->title),
-                         $user->conf->hoturl("graph", ["group" => self::gj_group($gjx)])),
+                $user->conf->hotlink(htmlspecialchars($gjx->title), "graph", ["group" => self::gj_group($gjx)]),
                 '</li>';
         }
         echo '</ul></nav>';

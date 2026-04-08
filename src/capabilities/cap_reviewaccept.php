@@ -69,7 +69,7 @@ class ReviewAccept_Capability {
             && (!$refused || $refused->contactId !== $user->contactId)) {
             $t = "<5>The review link you followed to get here is invalid or expired.";
             if (!$user->contactId) {
-                $t .= " <a href=\"" . $user->conf->hoturl("signin") . "\">Sign in to the site</a> to view or edit your reviews.";
+                $t .= " " . $user->conf->hotlink("Sign in to the site", "signin") . " to view or edit your reviews.";
             }
             $user->conf->feedback_msg([
                 MessageItem::error("<0>Bad review link"),

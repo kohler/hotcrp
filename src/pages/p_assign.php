@@ -472,13 +472,9 @@ class Assign_Page {
         if ($ac->rev === 0) {
             echo "0 reviews";
         } else {
-            echo '<a class="q" href="',
-                $this->conf->hoturl("search", "q=re:" . urlencode($pc->email)), '">',
-                plural($ac->rev, "review"), "</a>";
+            echo $this->conf->hotlink(plural($ac->rev, "review"), "search", ["q" => "re:{$pc->email}"], ["class" => "q"]);
             if ($ac->pri && $ac->pri < $ac->rev) {
-                echo '&nbsp; (<a class="q" href="',
-                    $this->conf->hoturl("search", "q=pri:" . urlencode($pc->email)),
-                    "\">{$ac->pri} primary</a>)";
+                echo "&nbsp; (", $this->conf->hotlink("{$ac->pri} primary", "search", ["q" => "pri:{$pc->email}"], ["class" => "q"]), ")";
             }
         }
         echo "</div></div></div>\n"; // .pctbnrev .ctelti .ctelt

@@ -743,7 +743,7 @@ class PaperTable {
             && $this->mode !== "assign"
             && $this->mode !== "contact"
             && $this->prow->author_edit_state() === 1) {
-            $fr->value .= Ht::msg('The authors still have <a href="' . $this->conf->hoturl("deadlines") . '">time</a> to make changes.', 1);
+            $fr->value .= Ht::msg('The authors still have ' . $this->conf->hotlink("time", "deadlines") . ' to make changes.', 1);
         }
 
         // download
@@ -1129,9 +1129,7 @@ class PaperTable {
                     $mailt = $dec->category & DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
                 }
             }
-            $fr->value .= ' <a class="fx8 q" href="'
-                . $this->conf->hoturl("mail", ["t" => $mailt, "plimit" => 1, "q" => $this->prow->paperId])
-                . '">✉️</a>';
+            $fr->value .= ' ' . $this->conf->hotlink("✉️", "mail", ["t" => $mailt, "plimit" => 1, "q" => $this->prow->paperId], ["class" => "fx8 q"]);
         }
         $fr->value .= '</h3></div>';
 
@@ -1695,9 +1693,9 @@ class PaperTable {
                     join("</li><li>", MessageSet::feedback_html_items($treport->message_list)), "</li></ul>";
             }
             if ($is_sitewide) {
-                echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit its ", Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';
+                echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit its ", $this->conf->hotlink("site-wide tags", "settings", ["group" => "tags", "#" => "tag_sitewide"]), '.';
                 if ($this->user->allow_admin($this->prow)) {
-                    echo ' ', Ht::link("Override your conflict", $this->conf->selfurl($this->qreq, ["forceShow" => 1])), ' to view and edit all tags.';
+                    echo ' ', $this->conf->selflink("Override your conflict", $this->qreq, ["forceShow" => 1]), ' to view and edit all tags.';
                 }
                 echo '</p>';
             }
@@ -1711,7 +1709,7 @@ class PaperTable {
                 '</div><div class="aabut">',
                 Ht::submit("cancel", "Cancel"),
                 "</div></div>",
-                '<span class="hint"><a href="', $this->conf->hoturl("help", "t=tags"), '">Learn more</a> <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
+                '<span class="hint">', $this->conf->hotlink("Learn more", "help", ["t" => "tags"]), ' <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
                 "</div>";
         } else {
             echo '<div class="js-tag-result">', ($tx === "" ? "None" : $tx), '</div>';
@@ -1797,12 +1795,12 @@ class PaperTable {
 
         $sort = $type === "rank" ? "#{$tag}" : "-#{$tag}";
         $totword = $type === "rank" ? "overall" : "total";
-        $url = $this->conf->hoturl("search", ["q" => "show:#{$tag} sort:{$sort}"]);
         if ($report) {
-            $totlink = "<a class=\"q need-tooltip\" href=\"{$url}\" data-tooltip-anchor=\"h\" data-tooltip-info=\"votereport\" data-tag=\"{$tag}\">{$totval} {$totword}</a>";
+            $js = ["class" => "q need-tooltip", "data-tooltip-anchor" => "h", "data-tooltip-info" => "votereport", "data-tag" => $tag];
         } else {
-            $totlink = "<a class=\"q\" href=\"{$url}\">{$totval} {$totword}</a>";
+            $js = ["class" => "q"];
         }
+        $totlink = $this->conf->hotlink("{$totval} {$totword}", "search", ["q" => "show:#{$tag} sort:{$sort}"], $js);
         $mytext = $myval === null || $type === "approval" ? "" : "{$myval}, ";
         return "<span class=\"js-tag-index is-tag-votish fn{$repclass}\" data-tag=\"{$tag}\" data-vote-type=\"{$type}\">: {$mytext}{$totlink}</span>";
     }
@@ -1866,8 +1864,8 @@ class PaperTable {
                  "data-tag" => $mytag, "inputmode" => "decimal",
                  "id" => "tag:~{$tag} {$this->prow->paperId}"]),
             ' <span class="barsep">·</span> ',
-            '<a href="', $this->conf->hoturl("search", ["q" => "editsort:#~{$tag}"]), '">Edit all</a>',
-            ' <div class="hint" style="margin-top:4px"><strong>Tip:</strong> <a href="', $this->conf->hoturl("search", ["q" => "editsort:#~{$tag}"]), '">Search “editsort:#~', $tag, '”</a> to drag and drop your ranking, or <a href="', $this->conf->hoturl("offline"), '">use offline reviewing</a> to rank many papers at once.</div>',
+            $this->conf->hotlink("Edit all", "search", ["q" => "editsort:#~{$tag}"]),
+            ' <div class="hint" style="margin-top:4px"><strong>Tip:</strong> ', $this->conf->hotlink("Search “editsort:#~{$tag}”", "search", ["q" => "editsort:#~{$tag}"]), " to drag and drop your ranking, or ", $this->conf->hotlink("use offline reviewing", "offline"), ' to rank many papers at once.</div>',
             "</form></div>\n";
     }
 
@@ -1893,7 +1891,7 @@ class PaperTable {
                  "id" => "tag:~{$tag} {$this->prow->paperId}"]),
             " of {$allotment}",
             ' <span class="barsep">·</span> ',
-            '<a href="', $this->conf->hoturl("search", ["q" => "editsort:-#~{$tag}"]), '">Edit all</a>',
+            $this->conf->hotlink("Edit all", "search", ["q" => "editsort:-#~{$tag}"]),
             "</form></div>\n";
     }
 
@@ -1969,7 +1967,7 @@ class PaperTable {
         if ($sr->open <= 0 || $sr->open > Conf::$now) {
             $msg = "<5>The site is not open for {$this->conf->snouns[1]}." . $this->_deadline_override_message();
         } else {
-            $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . "\">deadline</a> for registering {$this->conf->snouns[1]} has passed." . $this->deadline_is($sr->register) . $this->_deadline_override_message();
+            $msg = '<5>The ' . $this->conf->hotlink("deadline", "deadlines") . " for registering {$this->conf->snouns[1]} has passed." . $this->deadline_is($sr->register) . $this->_deadline_override_message();
         }
         $this->_main_message($this->admin ? 1 : 2, $msg);
     }
@@ -2047,7 +2045,7 @@ class PaperTable {
             if ($sr->submit > 0 && Conf::$now <= $sr->submit) {
                 $this->_main_message(1, '<5>The site is not open for updates at the moment.' . $this->_deadline_override_message());
             } else {
-                $this->_main_message(1, "<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">submission deadline</a> has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_deadline_override_message());
+                $this->_main_message(1, "<5>The " . $this->conf->hotlink("submission deadline", "deadlines") . " has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_deadline_override_message());
             }
         } else {
             $this->_main_message(MessageSet::URGENT_NOTE, "<5>This {$this->conf->snouns[0]} is not ready for review and can’t be changed further. It will not be reviewed." . $this->_deadline_override_message());
@@ -2193,10 +2191,9 @@ class PaperTable {
             if ($revivable) {
                 return [Ht::submit("revive", "Revive {$this->conf->snouns[0]}", ["class" => "btn-primary"])];
             } else if ($this->admin) {
-                return [[Ht::button("Revive {$this->conf->snouns[0]}", ["class" => "ui js-override-deadlines", "data-override-text" => 'The <a href="' . $this->conf->hoturl("deadlines") . "\">deadline</a> for reviving withdrawn {$this->conf->snouns[1]} has passed. Are you sure you want to override it?", "data-override-submit" => "revive"]), "(admin only)"]];
-            } else {
-                return [];
+                return [[Ht::button("Revive {$this->conf->snouns[0]}", ["class" => "ui js-override-deadlines", "data-override-text" => "The " . $this->conf->hotlink("deadline", "deadlines") . " for reviving withdrawn {$this->conf->snouns[1]} has passed. Are you sure you want to override it?", "data-override-submit" => "revive"]), "(admin only)"]];
             }
+            return [];
         }
 
         $buttons = [];
@@ -2532,8 +2529,8 @@ class PaperTable {
         if ($this->allow_admin && $this->prow->paperId > 0) {
             if (!$this->admin) {
                 echo '<div class="pcard notecard override-conflict off"><p class="sd">',
-                    '<a class="noul" href="', $this->conf->selfurl($this->qreq, ["forceShow" => 1]), '">',
-                    '🔒&nbsp;<u>Override conflict</u></a> for administrator view</p></div>';
+                    $this->conf->selflink("🔒&nbsp;<u>Override conflict</u>", $this->qreq, ["forceShow" => 1], ["class" => "noul"]),
+                    ' for administrator view</p></div>';
             } else if ($this->user->is_override_conflict()
                        && $this->prow->has_conflict($this->user)) {
                 $unprivurl = $this->mode === "assign"
@@ -2541,7 +2538,7 @@ class PaperTable {
                     : $this->conf->selfurl($this->qreq, ["forceShow" => null]);
                 echo '<div class="pcard notecard override-conflict on"><p class="sd">',
                     "🔓 You are using administrator privilege to override your conflict with this {$this->conf->snouns[0]}. ",
-                    '<a class="noul ibw" href="', $unprivurl, '"><u>Unprivileged view</u></a>',
+                    Ht::link("<u>Unprivileged view</u>", $unprivurl, ["class" => "noul ibw"]),
                     '</p></div>';
             }
         }
@@ -2571,7 +2568,7 @@ class PaperTable {
             && $this->user->act_author_view($this->prow)
             && !$this->user->contactId) {
             echo '<div class="pcard notecard"><p class="sd">',
-                "To edit this {$this->conf->snouns[0]}, <a href=\"", $this->conf->hoturl("signin"), "\">sign in using your email and password</a>.",
+                "To edit this {$this->conf->snouns[0]}, ", $this->conf->hotlink("sign in using your email and password", "signin"), ".",
                 '</p></div>';
         }
 
@@ -2889,7 +2886,7 @@ class PaperTable {
         if ($this->mode !== "assign"
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
-            $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="noul revlink">'
+            $t[] = '<a href="' . $this->conf->hoturl("assign", ["p" => $prow->paperId]) . '" class="noul revlink">'
                 . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u></a>";
         }
 
@@ -3121,7 +3118,7 @@ class PaperTable {
         if (($this->user->is_owned_review($rrow) || $this->admin)
             && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             if ($this->conf->time_review_open()) {
-                $t = '<5>You can’t edit your review because the <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed.';
+                $t = '<5>You can’t edit your review because the ' . $this->conf->hotlink("review deadline", "deadlines") . ' has passed.';
             } else {
                 $t = "<0>You can’t edit your review because the site is not open for reviewing.";
             }
@@ -3162,7 +3159,7 @@ class PaperTable {
             }
 
             if ($ndelegated == 0) {
-                $t = "<5>As a secondary reviewer, you can <a href=\"" . $this->conf->hoturl("assign", "p={$rrow->paperId}") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
+                $t = "<5>As a secondary reviewer, you can " . $this->conf->hotlink("delegate this review to an external reviewer", "assign", ["p" => $rrow->paperId]) . ", but if your external reviewer declines to review the paper, you should complete this review yourself.";
             } else if ($rrow->reviewNeedsSubmit == 0) {
                 $t = "<0>A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
             } else if ($napproval) {

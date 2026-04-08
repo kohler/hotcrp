@@ -4104,23 +4104,16 @@ class Conf {
     }
 
     /** @param string $page
-     * @param null|string|array $param
+     * @param ?array $param
      * @param int $flags
      * @return string */
     function hoturl_raw($page, $param = null, $flags = 0) {
         return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
     }
 
-    /** @param string $page
-     * @param null|string|array $param
-     * @return string */
-    function hoturl_post($page, $param = null) {
-        return $this->hoturl($page, $param, self::HOTURL_POST);
-    }
-
     /** @param string $html
      * @param string $page
-     * @param null|string|array $param
+     * @param ?array $param
      * @param ?array $js
      * @return string */
     function hotlink($html, $page, $param = null, $js = null) {
@@ -4180,6 +4173,15 @@ class Conf {
             error_log("selfurl for bad page: " . debug_string_backtrace());
         }
         return $this->qrequrl($qreq, $param ?? [], $flags);
+    }
+
+    /** @param string $html
+     * @param Qrequest $qreq
+     * @param ?array $param
+     * @param ?array $js
+     * @return string */
+    function selflink($html, Qrequest $qreq, $param = null, $js = null) {
+        return Ht::link($html, $this->qrequrl($qreq, $param ?? [], 0), $js);
     }
 
     /** @return int */
@@ -5055,7 +5057,7 @@ class Conf {
             $attr["class"] .= " disabled";
             $t = Ht::button($html, $attr);
         } else {
-            $t = Ht::link($html, $this->hoturl($page, $args), $attr);
+            $t = $this->hotlink($html, $page, $args, $attr);
         }
         echo '<li role="none">', $t, '</li>';
     }
@@ -5064,7 +5066,7 @@ class Conf {
     function print_profilemenu_actas(Contact $user, Qrequest $qreq, $pagecs) {
         if ($user->is_actas_user()) {
             $pagecs->mark_separator("actas");
-            echo '<li role="none"><em>', Ht::link("Return to " . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</em></li>';
+            echo '<li role="none"><em>', $this->selflink("Return to " . htmlspecialchars($user->base_user()->email), $qreq, ["actas" => null], ["role" => "menuitem", "class" => "qx"]), '</em></li>';
             return;
         }
         if (!$user->privChair
@@ -5073,7 +5075,7 @@ class Conf {
             return;
         }
         $pagecs->mark_separator("actas");
-        echo '<li role="none"><em>', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email]), ["role" => "menuitem", "class" => "qx"]), '</em></li>';
+        echo '<li role="none"><em>', $this->selflink("Act as ". htmlspecialchars($actas_email), $qreq, ["actas" => $actas_email], ["role" => "menuitem", "class" => "qx"]), '</em></li>';
     }
 
     /** @param ComponentSet $pagecs */
@@ -5094,7 +5096,7 @@ class Conf {
                 }
             }
             $t = $user->has_email() ? "Add another account" : "Sign in";
-            echo '<li role="none">', Ht::link($t, $this->hoturl("signin", ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</li>';
+            echo '<li role="none">', $this->hotlink($t, "signin", ["actas" => null], ["role" => "menuitem", "class" => "qx"]), '</li>';
         } else if ($itemid === "my_submissions") {
             $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", "t=a");
         } else if ($itemid === "my_reviews") {
@@ -5169,19 +5171,21 @@ class Conf {
     }
 
     private function print_header_site_page() {
+        $sn = htmlspecialchars($this->short_name);
         echo '<div id="h-site" class="header-site-page">',
-            '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
-            '"><span class="header-site-name">', htmlspecialchars($this->short_name),
-            '</span></a></div>';
+            $this->hotlink("<span class=\"header-site-name\">{$sn}</span>",
+                           "index", ["cap" => null], ["class" => "q"]),
+            '</div>';
     }
 
     /** @param Qrequest $qreq
      * @param string|list<string> $title */
     private function print_body_header($qreq, $title, $id, $extra) {
         if ($id === "home" || ($extra["hide_title"] ?? false)) {
-            echo '<div id="h-site" class="header-site-home">',
-                '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
-                '">', htmlspecialchars($this->short_name), '</a></h1></div>';
+            $sn = htmlspecialchars($this->short_name);
+            echo '<div id="h-site" class="header-site-home"><h1>',
+                $this->hotlink($sn, "index", ["cap" => null], ["class" => "q"]),
+                '</h1></div>';
         } else {
             $this->print_header_site_page();
         }

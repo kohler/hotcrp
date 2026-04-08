@@ -140,7 +140,7 @@ class Search_Page {
             $this->set_header(30, "<strong>Scores:</strong>");
             $sortitem = '<div class="mt-2">Sort by: &nbsp;'
                 . Ht::select("scoresort", ScoreInfo::score_sort_selector_options(), $pl->score_sort(), ["id" => "scoresort"])
-                . '<a class="help" href="' . $this->conf->hoturl("help", "t=scoresort") . '" target="_blank" rel="noopener" title="Learn more">?</a></div>';
+                . $this->conf->hotlink("?", "help", ["t" => "scoresort"], ["class" => "help", "target" => "_blank", "rel" => "noopener", "title" => "Learn more"]) . '</div>';
             $this->item(30, $sortitem);
         }
 
@@ -228,7 +228,7 @@ class Search_Page {
      * @param list<string> $limits */
     private function print_list($pl_text, $qreq, $limits) {
         if ($this->pl->has_problem_at("warn_missing_repeatable")) {
-            $this->pl->inform_at(null, "<5>" . Ht::link("Repeat search in all submissions you can view", $this->conf->hoturl("search", ["t" => "viewable", "q" => $this->pl->search->q])));
+            $this->pl->inform_at(null, "<5>" . $this->conf->hotlink("Repeat search in all submissions you can view", "search", ["t" => "viewable", "q" => $this->pl->search->q]));
         }
         if (!empty($this->user->hidden_papers)
             && $this->user->is_actas_user()) {
@@ -365,9 +365,9 @@ class Search_Page {
         echo '<div class="entryi medium"><label></label><div class="entry">',
               Ht::submit("Search"),
               '<div class="d-inline-block padlb" style="font-size:69%">',
-                Ht::link("Search help", $this->conf->hoturl("help", "t=search")),
+                $this->conf->hotlink("Search help", "help", ["t" => "search"]),
                 ' <span class="barsep">·</span> ',
-                Ht::link("Search keywords", $this->conf->hoturl("help", "t=keywords")),
+                $this->conf->hotlink("Search keywords", "help", ["t" => "keywords"]),
               '</div>',
             '</div></div>',
             '</div></form></div>';

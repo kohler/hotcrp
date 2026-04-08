@@ -413,7 +413,7 @@ function initialize_user($qreq, $kwarg = null) {
     if ($reqemail !== ""
         && $uemail !== ""
         && strcasecmp($reqemail, $uemail) !== 0) {
-        $conf->error_msg("<5>You are signed in as " . htmlspecialchars($uemail) . ", not " . htmlspecialchars($reqemail) . ". <a href=\"" . $conf->hoturl("signin", ["email" => $reqemail]) . "\">Add account</a>");
+        $conf->error_msg("<5>You are signed in as " . htmlspecialchars($uemail) . ", not " . htmlspecialchars($reqemail) . ". " . $conf->hotlink("Add account", "signin", ["email" => $reqemail]));
     }
 
     // potentially mark preferred account index for this conference

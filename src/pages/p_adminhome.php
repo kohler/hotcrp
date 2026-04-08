@@ -59,14 +59,14 @@ class AdminHome_Page {
         }
         // Conference names
         if ($conf->opt("shortNameDefaulted")) {
-            $ml[] = MessageItem::warning_note("<5><a href=\"" . $conf->hoturl("settings", "group=basics") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”");
+            $ml[] = MessageItem::warning_note("<5>" . $conf->hotlink("Set the conference abbreviation", "settings", ["group" => "basics"]) . " to a short name for your conference, such as “OSDI ’14”");
         } else if (simplify_whitespace($conf->short_name) != $conf->short_name) {
-            $ml[] = MessageItem::warning("<5>The <a href=\"" . $conf->hoturl("settings", "group=basics") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more)");
+            $ml[] = MessageItem::warning("<5>The " . $conf->hotlink("conference abbreviation", "settings", ["group" => "basics"]) . " setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more)");
         }
         // Site contact
         $site_contact = $conf->site_contact();
         if (!$site_contact->email || $site_contact->email == "you@example.com") {
-            $ml[] = MessageItem::urgent_note("<5><a href=\"" . $conf->hoturl("settings", "group=basics") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong");
+            $ml[] = MessageItem::urgent_note("<5>" . $conf->hotlink("Set the conference contact’s name and email", "settings", ["group" => "basics"]) . " so submitters can reach someone if things go wrong");
         }
         // Can anyone view submissions?
         if ($conf->has_tracks()) {
@@ -76,13 +76,13 @@ class AdminHome_Page {
                     $any_visible = true;
             }
             if (!$any_visible) {
-                $ml[] = MessageItem::urgent_note('<5>PC members cannot view any submissions (see <a href="' . $conf->hoturl("settings", "group=tags#tracks") . "\">track settings</a>)");
+                $ml[] = MessageItem::urgent_note('<5>PC members cannot view any submissions (see ' . $conf->hotlink("track settings", "settings", ["group" => "tags", "#" => "tracks"]) . ")");
             }
         }
         // Any -100 preferences around?
         $result = PrefConflict_Autoassigner::query_result($conf, true);
         if (($row = $result->fetch_row())) {
-            $ml[] = MessageItem::marked_note('<5>PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href="' . $conf->hoturl("=conflictassign") . '" class="nw">Confirm these conflicts</a>');
+            $ml[] = MessageItem::marked_note('<5>PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. ' . $conf->hotlink("Confirm these conflicts", "=conflictassign", null, ["class" => "nw"]));
         }
         // Weird URLs?
         foreach (["conferenceSite", "paperSite"] as $k) {
@@ -96,7 +96,7 @@ class AdminHome_Page {
             $assigntime = $conf->setting("pcrev_assigntime");
             $result = $conf->fetch_ivalue("select exists(select * from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and (rflags&" . ReviewInfo::RF_LIVE . ")!=0) from dual");
             if ($result) {
-                $ml[] = MessageItem::marked_note("<5>PC review assignments have changed.&nbsp; <a href=\"" . $conf->hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . $conf->hoturl("=index", "clearnewpcrev={$assigntime}") . "\">Clear this message</a>");
+                $ml[] = MessageItem::marked_note("<5>PC review assignments have changed.&nbsp; " . $conf->hotlink("Send review assignment notifications", "mail", ["template" => "newpcrev"]) . " <span class=\"barsep\">·</span> " . $conf->hotlink("Clear this message", "=index", ["clearnewpcrev" => $assigntime]));
             } else {
                 $conf->save_setting("pcrev_informtime", $assigntime);
             }
@@ -109,7 +109,7 @@ class AdminHome_Page {
             foreach ($conf->defined_rounds() as $i => $rname) {
                 if (!$conf->missed_review_deadline($i, true, false)
                     && $conf->setting($conf->review_deadline_name($i, true, false))) {
-                    $ml[] = MessageItem::marked_note("<5>The deadline for review round " . htmlspecialchars($conf->assignment_round_option(false)) . " has passed. You may want to <a href=\"" . $conf->hoturl("settings", "group=reviews") . "\">change the round for new assignments</a> to " . htmlspecialchars($rname) . ".");
+                    $ml[] = MessageItem::marked_note("<5>The deadline for review round " . htmlspecialchars($conf->assignment_round_option(false)) . " has passed. You may want to " . $conf->hotlink("change the round for new assignments", "settings", ["group" => "reviews"]) . " to " . htmlspecialchars($rname) . ".");
                     break;
                 }
             }
@@ -117,7 +117,7 @@ class AdminHome_Page {
         // Condition recursion?
         if ($conf->setting("__sf_condition_recursion") > 0)  {
             $ml[] = MessageItem::error("<0>Circular reference in submission field conditions");
-            $ml[] = MessageItem::inform("<5>Some presence conditions in submission fields appear to be circularly defined. The fields involved will never appear. You should <a href=\"" . $conf->hoturl("settings", "group=subform") . "\">update the submission form settings</a> to fix this problem.");
+            $ml[] = MessageItem::inform("<5>Some presence conditions in submission fields appear to be circularly defined. The fields involved will never appear. You should " . $conf->hotlink("update the submission form settings", "settings", ["group" => "subform"]) . " to fix this problem.");
         }
         // Obsolete options?
         foreach ([["jqueryURL", "jqueryUrl"],
@@ -139,7 +139,7 @@ class AdminHome_Page {
 
         // Help message
         if (!$conf->has_any_submitted()) {
-            $conf->feedback_msg(MessageItem::success("<5>For help setting up the site, see " . Ht::link("Help &gt; Chair’s guide", $conf->hoturl("help", "t=chair"))));
+            $conf->feedback_msg(MessageItem::success("<5>For help setting up the site, see " . $conf->hotlink("Help &gt; Chair’s guide", "help", ["t" => "chair"])));
         }
     }
 }

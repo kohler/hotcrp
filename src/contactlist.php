@@ -842,7 +842,7 @@ class ContactList {
             }
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair) {
-                $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email)) . "\"" . ($row->is_disabled() ? ' class="qh"' : "") . ">$t</a>";
+                $t = $this->conf->hotlink($t, "profile", ["u" => $row->email], $row->is_disabled() ? ["class" => "qh"] : null);
             }
             if (($viewable = $row->viewable_tags($this->user))
                 && $this->conf->tags()->has(TagInfo::TFM_DECORATION)) {
@@ -857,9 +857,10 @@ class ContactList {
                 $t .= " {$rolet}";
             }
             if ($this->user->privChair && $row->email != $this->user->email) {
-                $t .= " <a href=\"" . $this->conf->hoturl("index", "actas=" . urlencode($row->email)) . "\">"
-                    . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . $row->name(NAME_P)])
-                    . "</a>";
+                $t .= " " . $this->conf->hotlink(
+                    Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . $row->name(NAME_P)]),
+                    "index", ["actas" => $row->email]
+                );
             }
             if ($row->is_disabled() && $this->user->isPC) {
                 $t .= ' <span class="hint">(disabled)</span>';
@@ -919,45 +920,37 @@ class ContactList {
             }
             return "{$np}P {$nt}T";
         case self::FIELD_REVIEWS:
-            if (($ct = $this->_rect_data[$row->contactId] ?? null)) {
-                $a1 = "<a href=\"" . $this->conf->hoturl("search", "t=s&amp;q=re:" . urlencode($row->email)) . "\">";
-                if ($ct[0] === $ct[1]) {
-                    return $a1 . "<b>{$ct[1]}</b></a>";
-                } else {
-                    return $a1 . "<b>{$ct[1]}</b>/{$ct[0]}</a>";
-                }
-            } else {
+            if (!($ct = $this->_rect_data[$row->contactId] ?? null)) {
                 return "";
             }
+            $t = "<b>{$ct[1]}</b>" . ($ct[0] === $ct[1] ? "" : "/{$ct[0]}");
+            return $this->conf->hotlink($t, "search", ["q" => "re:{$row->email}", "t" => "s"]);
         case self::FIELD_INCOMPLETE_REVIEWS:
-            if (($ct = $this->_rect_data[$row->contactId] ?? null)) {
-                return "<a href=\"" . $this->conf->hoturl("search", "t=s&amp;q=ire:" . urlencode($row->email)) . "\">{$ct[0]}</a>";
-            } else {
+            if (!($ct = $this->_rect_data[$row->contactId] ?? null)) {
                 return "";
             }
+            return $this->conf->hotlink($ct[0], "search", ["q" => "ire:{$row->email}", "t" => "s"]);
         case self::FIELD_LEADS:
-            if (($c = $this->_lead_data[$row->contactId] ?? null)) {
-                return "<a href=\"" . $this->conf->hoturl("search", "t=s&amp;q=lead:" . urlencode($row->email)) . "\">$c</a>";
-            } else {
+            if (!($c = $this->_lead_data[$row->contactId] ?? null)) {
                 return "";
             }
+            return $this->conf->hotlink($c, "search", ["q" => "lead:{$row->email}", "t" => "s"]);
         case self::FIELD_SHEPHERDS:
-            if (($c = $this->_shepherd_data[$row->contactId] ?? null)) {
-                return "<a href=\"" . $this->conf->hoturl("search", "t=s&amp;q=shepherd:" . urlencode($row->email)) . "\">$c</a>";
-            } else {
+            if (!($c = $this->_shepherd_data[$row->contactId] ?? null)) {
                 return "";
             }
+            return $this->conf->hotlink($c, "search", ["q" => "shepherd:{$row->email}", "t" => "s"]);
         case self::FIELD_REVIEW_RATINGS:
             if (($c = $this->_rating_data[$row->contactId] ?? null)
                 && ($c[0] || $c[1])) {
                 $a = $b = [];
                 if ($c[0]) {
                     $a[] = "{$c[0]} positive";
-                    $b[] = "<a href=\"" . $this->conf->hoturl("search", "q=rate:good:" . urlencode($row->email)) . "\">+{$c[0]}</a>";
+                    $b[] = $this->conf->hotlink("+{$c[0]}", "search", ["q" => "rate:good:" . $row->email]);
                 }
                 if ($c[1]) {
                     $a[] = "{$c[1]} negative";
-                    $b[] = "<a href=\"" . $this->conf->hoturl("search", "q=rate:bad:" . urlencode($row->email)) . "\">&minus;{$c[1]}</a>";
+                    $b[] = $this->conf->hotlink("&minus;{$c[1]}", "search", ["q" => "rate:bad:" . $row->email]);
                 }
                 return '<span class="hastitle" title="' . join(", ", $a) . '">' . join(" ", $b) . '</span>';
             } else {
@@ -967,7 +960,7 @@ class ContactList {
             if (($pids = $this->_au_data[$row->contactId] ?? null)) {
                 $t = [];
                 foreach ($pids as $p) {
-                    $t[] = '<a href="' . $this->conf->hoturl("paper", "p=$p") . '">' . $p . '</a>';
+                    $t[] = $this->conf->hotlink($p, "paper", ["p" => $p]);
                 }
                 $lsx = "au:{$row->email}";
                 if ($this->limit === "auuns") {
@@ -990,11 +983,10 @@ class ContactList {
                 foreach ($reords as $reord) {
                     if ($last !== $reord[0])  {
                         if ($reord[2]) {
-                            $url = $this->conf->hoturl("paper", "p={$reord[0]}#r{$reord[0]}" . unparse_latin_ordinal($reord[2]));
+                            $t[] = $this->conf->hotlink($reord[0], "paper", ["p" => $reord[0], "#" => "r" . $reord[0] . unparse_latin_ordinal($reord[2])]);
                         } else {
-                            $url = $this->conf->hoturl("review", "p={$reord[0]}&amp;r={$reord[1]}");
+                            $t[] = $this->conf->hotlink($reord[0], "review", ["p" => $reord[0], "r" => $reord[1]]);
                         }
-                        $t[] = "<a href=\"{$url}\">{$reord[0]}</a>";
                     }
                     $last = $reord[0];
                 }
@@ -1011,7 +1003,7 @@ class ContactList {
                 $x = [];
                 foreach (Tagger::split($tags) as $t) {
                     if ($t !== "pc#0")
-                        $x[] = '<a class="q nw" href="' . $this->conf->hoturl("users", "t=%23" . Tagger::tv_tag($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
+                        $x[] = $this->conf->hotlink($this->tagger->unparse_hashed($t), "users", ["t" => "#" . Tagger::tv_tag($t)], ["class" => "q nw"]);
                 }
                 return join(" ", $x);
             } else {

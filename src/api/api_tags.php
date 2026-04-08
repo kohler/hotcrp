@@ -41,12 +41,15 @@ class Tags_API {
         Dbl::free($result);
         foreach ($allotments as $tv) {
             $t = $tv[0];
-            $link = $user->conf->hoturl("search", ["q" => "editsort:-#~{$t->tag}"]);
+            if ($tv[1] == $t->allotment) {
+                continue;
+            }
+            $link = $user->conf->hotlink("#~{$t->tag}", "search", ["q" => "editsort:-#~{$t->tag}"]);
             if ($tv[1] < $t->allotment) {
                 $nleft = $t->allotment - $tv[1];
-                $tmr->message_list[] = MessageItem::marked_note("<5><a href=\"{$link}\">#~{$t->tag}</a>: " . plural($nleft, "vote") . " remaining");
-            } else if ($tv[1] > $t->allotment) {
-                $tmr->message_list[] = MessageItem::warning("<5><a href=\"{$link}\">#~{$t->tag}</a>: Too many votes");
+                $tmr->message_list[] = MessageItem::marked_note("<5>{$link}: " . plural($nleft, "vote") . " remaining");
+            } else {
+                $tmr->message_list[] = MessageItem::warning("<5>{$link}: Too many votes");
                 $tmr->message_list[] = MessageItem::inform("<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.");
             }
         }

@@ -835,7 +835,7 @@ class ReviewValues extends MessageSet {
                        && !($this->req["override"] ?? false)
                        && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
                 $this->clear_messages_since($before_msgcount);
-                $this->rvmsg(self::ERROR, null, "<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">deadline</a> for editing this review has passed");
+                $this->rvmsg(self::ERROR, null, "<5>The " . $this->conf->hotlink("deadline", "deadlines") . " for editing this review has passed");
                 $this->rvmsg(self::INFORM, null, "<0>Select “Override deadlines” and try again if you need to override the deadline.");
                 return false;
             }
@@ -1332,9 +1332,8 @@ class ReviewValues extends MessageSet {
     private function _confirm_message($status, $fmt, $info, $single = null) {
         $pids = [];
         foreach ($info as &$x) {
-            if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
-                $url = $this->conf->hoturl("paper", ["p" => $m[2], "#" => $m[3] ? "r$m[2]$m[3]" : null]);
-                $x = "<a href=\"{$url}\">{$x}</a>";
+            if (preg_match('/\A(\#?)(\d+)([A-Z]*)\z/', $x, $m)) {
+                $x = $this->conf->hotlink($x, "paper", ["p" => $m[2], "#" => $m[3] ? "r{$m[2]}{$m[3]}" : null]);
                 $pids[] = $m[2];
             }
         }

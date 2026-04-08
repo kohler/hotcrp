@@ -8,9 +8,9 @@ class Help_Page {
         echo "<dl class=\"bsp\">\n";
         foreach ($hth->groups() as $ht) {
             if ($ht->name !== "list" && isset($ht->title)) {
-                echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">',
-                    $ht->title, '</a></strong></dt><dd>',
-                    Ftext::as(5, $ht->description ?? ""), "</dd>\n";
+                echo '<dt><strong>',
+                    $hth->conf->hotlink($ht->title, "help", ["t" => $ht->name]),
+                    '</strong></dt><dd>', Ftext::as(5, $ht->description ?? ""), "</dd>\n";
             }
         }
         echo "</dl>\n";
@@ -60,8 +60,8 @@ class Help_Page {
             if ($gj->name === $topic) {
                 echo "<li class=\"leftmenu-item{$klass} active\" aria-current=\"page\">", $title ?? "(Unlisted)", "</li>";
             } else if ($title && !($gj->unlisted ?? false)) {
-                echo "<li class=\"leftmenu-item{$klass} ui js-click-child\"><a href=\"",
-                    $conf->hoturl("help", "t={$gj->name}"), "\">", $title, "</a></li>";
+                echo "<li class=\"leftmenu-item{$klass} ui js-click-child\">",
+                    $conf->hotlink($title, "help", ["t" => $gj->name]), "</li>";
             } else {
                 continue;
             }

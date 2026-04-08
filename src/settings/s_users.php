@@ -4,9 +4,9 @@
 
 class Users_SettingRenderer {
     static function print(SettingValues $sv) {
-        echo '<p><a href="', $sv->conf->hoturl("profile", ["u" => "new", "role" => "pc"]), '" class="btn">Create PC accounts</a> <span class="barsep">·</span> ',
-            "Select a user’s name to edit a profile.</p>\n";
+        echo "<p>", $sv->conf->hotlink("Create PC accounts", "profile", ["u" => "new", "role" => "pc"], ["class" => "btn"]),
+            " <span class=\"barsep\">·</span> Select a user’s name to edit a profile.</p>\n";
         $pl = new ContactList($sv->user, false);
-        echo $pl->table_html("pcadminx", $sv->conf->hoturl("users", "t=pcadmin"));
+        echo $pl->table_html("pcadminx", $sv->conf->hoturl("users", ["t" => "pcadmin"]));
     }
 }

@@ -1,6 +1,6 @@
 <?php
 // helprenderer.php -- HotCRP help renderer class
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class HelpRenderer {
     /** @var Conf */
@@ -50,9 +50,8 @@ class HelpRenderer {
         } else if ($id) {
             $this->_h3ids[$id] = true;
             return "<h3 class=\"helppage\" id=\"{$id}\">{$title}</h3>\n";
-        } else {
-            return "<h3 class=\"helppage\">{$title}</h3>\n";
         }
+        return "<h3 class=\"helppage\">{$title}</h3>\n";
     }
 
     /** @param bool $tabletype
@@ -151,6 +150,15 @@ class HelpRenderer {
         return $this->hotlink($html, "help", $topic);
     }
 
+    private function setting_param_link($html, $param) {
+        $js = ["rel" => "nofollow"];
+        if (!$this->user->privChair) {
+            $js["class"] = "noq need-tooltip";
+            $js["aria-label"] = "This link to a settings page only works for administrators.";
+        }
+        return $this->conf->hotlink($html, "settings", $param, $js);
+    }
+
     /** @param string $html
      * @param string $siname
      * @return string */
@@ -164,9 +172,7 @@ class HelpRenderer {
             error_log("missing setting information for {$siname}\n" . debug_string_backtrace());
             $param = [];
         }
-        $url = $this->conf->hoturl("settings", $param);
-        $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
-        return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
+        return $this->setting_param_link($html, $param);
     }
 
     /** @param string $siname
@@ -175,9 +181,8 @@ class HelpRenderer {
         if ($this->user->privChair
             && ($t = $this->setting_link("Change this setting", $siname)) !== "") {
             return " ({$t})";
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @param string $html
@@ -193,9 +198,7 @@ class HelpRenderer {
             error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
             $param = [];
         }
-        $url = $this->conf->hoturl("settings", $param);
-        $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
-        return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
+        return $this->setting_param_link($html, $param);
     }
 
     /** @param string|array{q:string} $q
@@ -253,11 +256,10 @@ class HelpRenderer {
         $ts = $this->tag_settings_having($flags);
         if (empty($ts)) {
             return "";
-        } else {
-            return " (currently " . join(", ", array_map(function ($t) {
-                return $this->search_link($t, "#{$t}");
-            }, $ts)) . ")";
         }
+        return " (currently " . join(", ", array_map(function ($t) {
+            return $this->search_link($t, "#{$t}");
+        }, $ts)) . ")";
     }
 
     /** @param string $topic */

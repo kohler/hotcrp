@@ -17,24 +17,24 @@ class ConflictAssign_Page {
 
         $qreq->print_header("Assignments", "conflictassign", ["subtitle" => "Conflicts"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
-            '<li class="papmode"><a href="', $conf->hoturl("autoassign"), '">Automatic</a></li>',
-            '<li class="papmode"><a href="', $conf->hoturl("manualassign"), '">Manual</a></li>',
-            '<li class="papmode active"><a href="', $conf->hoturl("conflictassign"), '">Conflicts</a></li>',
-            '<li class="papmode"><a href="', $conf->hoturl("bulkassign"), '">Bulk update</a></li>',
+            '<li class="papmode">', $conf->hotlink("Automatic", "autoassign"), '</li>',
+            '<li class="papmode">', $conf->hotlink("Manual", "manualassign"), '</li>',
+            '<li class="papmode active">', $conf->hotlink("Conflicts", "conflictassign"), '</li>',
+            '<li class="papmode">', $conf->hotlink("Bulk update", "bulkassign"), '</li>',
             '</ul></nav>';
 
         echo '<div class="w-text mt-5 mb-5">';
 
         if ($isneg) {
             echo '<p>This page lists conflicts declared by authors, but not justified by fuzzy matching between authors and PC members’ affiliations and collaborator lists.</p>';
-            echo '<p><a href="', $conf->hoturl("conflictassign"), '">Check for missing conflicts</a></p>';
+            echo '<p>', $conf->hotlink("Check for missing conflicts", "conflictassign"), '</p>';
         } else {
             echo '<p>This page shows potential missing conflicts detected by fuzzy matching between authors and PC members’ affiliations and collaborator lists. Confirm true conflicts and mark false positives using the buttons.</p>',
-                '<p><a href="', $conf->hoturl("conflictassign", "neg=1"), '">Check for inappropriate conflicts</a> <span class="barsep">·</span> ';
+                '<p>', $conf->hotlink("Check for inappropriate conflicts", "conflictassign", ["neg" => 1]), ' <span class="barsep">·</span> ';
             if ($isall) {
-                echo '<a href="', $conf->hoturl("conflictassign"), '">Hide previously-confirmed conflicts</a>';
+                echo $conf->hotlink("Hide previously-confirmed conflicts", "conflictassign");
             } else {
-                echo '<a href="', $conf->hoturl("conflictassign", "all=1"), '">Include previously-confirmed conflicts</a>';
+                echo $conf->hotlink("Include previously-confirmed conflicts", "conflictassign", ["all" => 1]);
             }
             echo '</p>';
         }

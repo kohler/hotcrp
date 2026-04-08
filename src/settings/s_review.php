@@ -140,8 +140,10 @@ class Review_SettingParser extends SettingParser {
         }
         if ($id > 0 && ($round_map[$id - 1] ?? 0) > 0) {
             echo '<span class="ml-3 d-inline-block">',
-                '<a href="', $sv->conf->hoturl("search", ["q" => "re:" . ($id > 1 ? $sv->conf->round_name($id - 1) : "unnamed")]), '" target="_blank" rel="noopener">',
-                plural($round_map[$id - 1], "review"), '</a></span>';
+                $sv->conf->hotlink(plural($round_map[$id - 1], "review"),
+                    "search", ["q" => "re:" . ($id > 1 ? $sv->conf->round_name($id - 1) : "unnamed")],
+                    ["target" => "_blank", "rel" => "noopener"]),
+                '</span>';
         }
         if ($ctr === '$') {
             echo '<div class="f-d fx">Names like “R1” and “R2” work well.</div>';
@@ -184,7 +186,7 @@ class Review_SettingParser extends SettingParser {
         self::print_round($sv, '$', []);
         echo '</template><hr class="form-sep nearby">',
             Ht::button("Add round", ["class" => "ui js-settings-review-round-new"]),
-            ' &nbsp; <span class="hint"><a href="', $sv->conf->hoturl("help", "t=revround"), '">What is this?</a></span>';
+            ' &nbsp; <span class="hint">', $sv->conf->hotlink("What is this?", "help", ["t" => "revround"]), '</span>';
 
         // default rounds for new assignments
         echo '<hr class="form-sep">';
@@ -309,7 +311,7 @@ class Review_SettingParser extends SettingParser {
         echo '<div class="fx1"><hr class="form-sep">';
         $label3 = "Yes, and external reviews are visible only to their requesters";
         if ($sv->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted>0)")) {
-            $label3 = '<label for="review_proposal_editable_3">' . $label3 . '</label><div class="f-d fx">Existing ' . Ht::link("submitted external reviews", $sv->conf->hoturl("search", ["q" => "re:ext:submitted"]), ["target" => "_new"]) . ' will remain visible to others.</div>';
+            $label3 = '<label for="review_proposal_editable_3">' . $label3 . '</label><div class="f-d fx">Existing ' . $sv->conf->hotlink("submitted external reviews", "search", ["q" => "re:ext:submitted"], ["target" => "_new"]) . ' will remain visible to others.</div>';
         }
         $sv->print_radio_table("review_proposal_editable", [
                 0 => "No",
@@ -331,7 +333,7 @@ class Review_SettingParser extends SettingParser {
             '<div class="f-c n">',
             '<button type="button" class="q ui js-foldup">', expander(null, 0),
             '<label for="mailbody_requestreview">Mail template for external review requests</label></button>',
-            '<span class="fx"> (<a href="', $sv->conf->hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
+            '<span class="fx"> (', $sv->conf->hotlink("keywords", "mail"), ' allowed; set to empty for default)</span></div>',
             $sv->textarea("mailbody_requestreview", ["class" => "text-monospace fx", "cols" => 80, "rows" => 20]);
         $sv->print_feedback_at("mailbody_requestreview");
         echo "</div></div>\n";
@@ -345,7 +347,7 @@ class Review_SettingParser extends SettingParser {
                 -1 => "No",
                 0 => "Yes, PC members can rate reviews",
                 1 => "Yes, PC members and external reviewers can rate reviews"
-            ], 'Can reviewers rate each other’s reviews? <a class="hint pl-3" href="' . $sv->conf->hoturl("help", "t=revrate") . '">Learn more</a>',
+            ], 'Can reviewers rate each other’s reviews? ' . $sv->conf->hotlink("Learn more", "help", ["t" => "revrate"], ["class" => "hint pl-3"]),
             ["item_class" => "uich js-foldup"]);
 
         echo '<div class="fx1"><hr class="form-sep">';

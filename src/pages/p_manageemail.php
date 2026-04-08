@@ -81,9 +81,9 @@ class ManageEmail_Page {
         if ($subtitle === null) {
             $this->qreq->print_header("Manage email", "manageemail", ["body_class" => "body-text"]);
         } else {
-            $title_div = "<div id=\"h-page\"><h1><a href=\""
-                . $this->conf->hoturl("manageemail", ["u" => $this->user ? $this->user->email : null])
-                . "\" class=\"q\">Manage email</a> <span class=\"pl-2 pr-2\">&#x2215;</span> <strong>{$subtitle}</strong></h1></div>";
+            $title_div = "<div id=\"h-page\"><h1>"
+                . $this->conf->hotlink("Manage email", "manageemail", ["u" => $this->user ? $this->user->email : null], ["class" => "q"])
+                . " <span class=\"pl-2 pr-2\">&#x2215;</span> <strong>{$subtitle}</strong></h1></div>";
             $this->qreq->print_header($subtitle, "manageemail", ["body_class" => "body-text", "title_div" => $title_div]);
         }
     }
@@ -170,7 +170,7 @@ class ManageEmail_Page {
                 $this->viewer->privChair ? "" : " You must be able to sign in to both accounts.",
                 '</p>';
         }
-        echo Ht::link("Transfer reviews", $this->conf->selfurl($this->qreq, ["t" => "transferreview"]), ["class" => "btn btn-primary"]),
+        echo $this->conf->selflink("Transfer reviews", $this->qreq, ["t" => "transferreview"], ["class" => "btn btn-primary"]),
             '</div>';
     }
 
@@ -178,7 +178,7 @@ class ManageEmail_Page {
         echo '<div class="form-section">',
             '<h3>Link accounts</h3>',
             '<p>If you have multiple accounts, this option can define a primary account for site use. New review requests and new PC assignments will be redirected from linked accounts to the primary account. Papers authored by any of the linked accounts will be accessible to the primary account, and emails intended for authors will be delivered only to the primary account.</p>',
-            Ht::link("Link accounts", $this->conf->selfurl($this->qreq, ["t" => "link"]), ["class" => "btn btn-primary"]),
+            $this->conf->selflink("Link accounts", $this->qreq, ["t" => "link"], ["class" => "btn btn-primary"]),
             '</div>';
     }
 
@@ -218,33 +218,34 @@ class ManageEmail_Page {
         } else {
             echo '<p>Use this option to unlink an account from its primary account.</p>';
         }
-        echo Ht::link("Unlink accounts", $this->conf->selfurl($this->qreq, ["t" => "unlink", "u" => $this->user->email]), ["class" => "btn btn-primary"]),
+        echo $this->conf->selflink("Unlink accounts", $this->qreq, ["t" => "unlink", "u" => $this->user->email], ["class" => "btn btn-primary"]),
             '</div>';
     }
 
-    /** @return string */
-    private function step_hoturl($arg = [], $flags = 0) {
-        return $this->conf->hoturl("manageemail", array_merge([
+    /** @return array */
+    private function step_param($arg = []) {
+        return array_merge([
             "t" => $this->type,
             "step" => $this->curstep->name,
             "mesess" => $this->token ? $this->token->salt : null
-        ], $arg), $flags);
+        ], $arg);
+    }
+
+    /** @return string */
+    private function cur_hotform() {
+        return Ht::form($this->conf->hoturl("=manageemail", $this->step_param()));
     }
 
     /** @param ManageEmailStep $step */
     private function print_enter_step($step) {
         $delta = $step->index - $this->curstep->index;
+        $t = "&#" . (0x278A + $step->index) . "; {$step->header}";
+        if ($delta < 0 && !$this->done) {
+            $t = $this->conf->hotlink($t, "manageemail", $this->step_param(["step" => $step->name]), ["class" => "q"]);
+        }
         echo '<fieldset class="wizard-accordion-step ',
             $delta < 0 ? "past" : ($delta === 0 ? "current" : "future"),
-            '"><legend>';
-        if ($delta < 0 && !$this->done) {
-            echo '<a href="', $this->step_hoturl(["step" => $step->name]), '" class="q">';
-        }
-        echo '&#', 0x278A + $step->index, '; ', $step->header;
-        if ($delta < 0 && !$this->done) {
-            echo '</a>';
-        }
-        echo '</legend>';
+            '"><legend>', $t, '</legend>';
     }
 
     private function print_leave_step() {
@@ -410,7 +411,7 @@ class ManageEmail_Page {
                 }
             }
 
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
+            echo $this->cur_hotform(),
                 '<p>Select the account whose current reviews and/or PC status should be transferred.';
             if (!$this->viewer->privChair) {
                 echo ' You must be signed in to all accounts involved in the transfer.';
@@ -427,7 +428,7 @@ class ManageEmail_Page {
             if (empty($what) || $this->user->has_review()) {
                 $what[] = "reviews";
             }
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
+            echo $this->cur_hotform(),
                 "<p>Select the account that should receive <strong class=\"sb\">{$srchemail}</strong>’s ",
                 join(" and ", $what), ".";
             if (!$this->viewer->privChair) {
@@ -448,7 +449,7 @@ class ManageEmail_Page {
             }
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => $this->step_hoturl(["back" => 1], Conf::HOTURL_POST),
+                "formaction" => htmlspecialchars($this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1]))),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));
@@ -460,7 +461,7 @@ class ManageEmail_Page {
                 ->set_dstuser($this->dstuser)
                 ->set_dry_run(true);
             $jr = $me->transferreview();
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST));
+            echo $this->cur_hotform();
             if (!$jr->ok()) {
                 echo "<p>You can’t transfer reviews from <strong class=\"sb\">{$srchemail}</strong> to <strong class=\"sb\">{$dsthemail}</strong>.</p>";
             }
@@ -498,8 +499,8 @@ class ManageEmail_Page {
             if ($this->token) {
                 $this->token->change_data($key, null)->update();
             }
-            $redirect = $this->step_hoturl(["signedin" => 1], Conf::HOTURL_SERVERREL | Conf::HOTURL_RAW);
-            throw new Redirection($this->conf->hoturl("signin", ["redirect" => $redirect]));
+            $redirect = $this->conf->hoturl_raw("manageemail", $this->step_param(["signedin" => 1]), Conf::HOTURL_SERVERREL | Conf::HOTURL_RAW);
+            throw new Redirection($this->conf->hoturl_raw("signin", ["redirect" => $redirect]));
         }
         if (($user = $this->parse_user($key, $email))) {
             $this->create_token()
@@ -663,13 +664,13 @@ class ManageEmail_Page {
                 $this->parse_user("u", $this->qreq->u);
             }
 
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
+            echo $this->cur_hotform(),
                 '<p>Select the <strong>primary</strong> account to link. This is the main account you’d like to use for email and reviewing. You must be signed in to the account.</p>';
             $this->print_user_selector("u");
             $this->print_step_actions();
             echo '</form>';
         } else if ($this->curstep->name === "secondary") {
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
+            echo $this->cur_hotform(),
                 '<p>Select the <strong>secondary</strong> account to link. Review requests sent to this account will be redirected to the primary account, ', $prihemail, '. You must be signed in to the account.</p>';
             $this->print_user_selector("email");
             $this->print_step_actions();
@@ -681,7 +682,7 @@ class ManageEmail_Page {
             echo '<p>You must confirm all accounts involved in the link to continue.</p>';
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => $this->step_hoturl(["back" => 1], Conf::HOTURL_POST),
+                "formaction" => htmlspecialchars($this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1]))),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));
@@ -693,7 +694,7 @@ class ManageEmail_Page {
                 ->set_dstuser($this->user)
                 ->set_dry_run(true);
             $jr = $me->link();
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST));
+            echo $this->cur_hotform();
             if (!$jr->ok()) {
                 echo "<p>You can’t link accounts {$sechemail} and {$prihemail}.</p>";
             }
@@ -748,9 +749,9 @@ class ManageEmail_Page {
         $this->conf->success_msg("<5><strong class=\"sb\">{$prihemail}</strong> is now the primary account for <strong class=\"sb\">{$sechemail}</strong>.");
         if ($this->dstuser->is_reviewer()
             || $this->dstuser->has_outstanding_request()) {
-            echo "<p>{$sechemail}’s existing reviews on this site have not been moved. If you would like to transfer them to {$prihemail}, use <a href=\"",
-                $this->conf->hoturl("manageemail", ["t" => "transferreview", "u" => $this->dstuser->email, "email" => $this->user->email]),
-                "\">“Transfer reviews”</a>.</p>";
+            echo "<p>{$sechemail}’s existing reviews on this site have not been moved. If you would like to transfer them to {$prihemail}, use ",
+                $this->conf->hotlink("“Transfer reviews”", "manageemail", ["t" => "transferreview", "u" => $this->dstuser->email, "email" => $this->user->email]),
+                ".</p>";
         } else if ($this->token->data("linktype") === "all_sites"
                    && ($cdb = $this->conf->contactdb())
                    && ($seccdbu = $this->dstuser->cdb_user())
@@ -904,7 +905,7 @@ class ManageEmail_Page {
                 $this->parse_user("u", $this->qreq->u);
             }
 
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
+            echo $this->cur_hotform(),
                 '<p>Select the account you’d like to unlink from other accounts. You must be signed in to the account you want to unlink.</p>';
             $this->print_user_selector("u");
             $this->print_step_actions();
@@ -916,7 +917,7 @@ class ManageEmail_Page {
             echo '<p>You must confirm this account to continue.</p>';
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => $this->step_hoturl(["back" => 1], Conf::HOTURL_POST),
+                "formaction" => htmlspecialchars($this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1]))),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));
@@ -927,7 +928,7 @@ class ManageEmail_Page {
                 ->set_user($this->user)
                 ->set_dry_run(true);
             $jr = $me->unlink();
-            echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST));
+            echo $this->cur_hotform();
             if (!$jr->ok()) {
                 echo "<p>You can’t unlink account <strong class=\"sb\">{$prihemail}</strong>.</p>";
             }

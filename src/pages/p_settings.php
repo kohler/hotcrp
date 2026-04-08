@@ -114,10 +114,10 @@ class Settings_Page {
         foreach ($this->sv->group_members("") as $gj) {
             $title = $gj->short_title ?? $gj->title;
             if ($gj->name === $group) {
-                echo '<li class="leftmenu-item active" aria-current="page">', $title ?? "(Unlisted)", '</li>';
+                echo '<li class="leftmenu-item active" aria-current="page">', Ht::escape($title ?? "(Unlisted)"), '</li>';
             } else if ($title && !($gj->unlisted ?? false)) {
-                echo '<li class="leftmenu-item ui js-click-child"><a href="',
-                    $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
+                echo '<li class="leftmenu-item ui js-click-child">',
+                    $this->conf->hotlink(Ht::escape($title), "settings", ["group" => $gj->name]), '</li>';
             }
         }
         echo '</ul><div class="leftmenu-if-left if-differs mt-5">',
@@ -143,7 +143,7 @@ class Settings_Page {
         $sv = $this->sv;
         echo '<h2 class="leftmenu">', $sv->group_title($group);
         if ($gj && isset($gj->title_help_group)) {
-            echo " ", Ht::link(Icons::ui_solid_question(), $sv->conf->hoturl("help", "t={$gj->title_help_group}"), ["class" => "ml-1"]);
+            echo " ", $sv->conf->hotlink(Icons::ui_solid_question(), "help", ["t" => $gj->title_help_group], ["class" => "ml-1"]);
         }
         echo '</h2>';
 
@@ -173,8 +173,9 @@ class Settings_Page {
         echo "<dl class=\"bsp\">\n";
         foreach ($this->sv->group_members("") as $gj) {
             if (isset($gj->title)) {
-                echo '<dt><strong><a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">',
-                    $gj->title, '</a></strong></dt><dd>',
+                echo '<dt><strong>',
+                    $this->conf->hotlink(Ht::escape($gj->title), "settings", ["group" => $gj->name]),
+                    '</strong></dt><dd>',
                     Ftext::as(5, $gj->description ?? ""), "</dd>\n";
             }
         }

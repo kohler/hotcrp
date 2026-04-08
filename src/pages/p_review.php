@@ -152,7 +152,7 @@ class Review_Page {
             $rv->error_at(null, "<0>Uploaded form was not for this {submission}");
         } else if ($other) {
             $rv->warning_at(null, "<0>Reviews for other {submissions} ignored");
-            $rv->inform_at(null, "<5>Upload multiple-review files " . Ht::link("here", $this->conf->hoturl("offline")) . ".");
+            $rv->inform_at(null, "<5>Upload multiple-review files " . $this->conf->hotlink("here", "offline") . ".");
         }
         $rv->report();
         if (!$rv->has_error()) {
@@ -327,7 +327,7 @@ class Review_Page {
                     $m = "<5>{$mx}";
                 }
             } else {
-                $m = "<5>You’re accessing this review using a special link for reviewer {$hemail}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
+                $m = "<5>You’re accessing this review using a special link for reviewer {$hemail}. " . $this->conf->hotlink("Sign in to the site", "signin", ["email" => $u->email, "cap" => null], ["class" => "nw"]);
             }
             $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
         }
