@@ -482,8 +482,7 @@ class Log_Page {
         if (strpos($act, "eview ") !== false
             && preg_match('/\A(.* |)([Rr]eview )(\d+)( .*|)\z/', $act, $m)) {
             $at = htmlspecialchars($m[1])
-                . Ht::link($m[2] . $m[3], $conf->hoturl("review", ["p" => $row->paperId, "r" => $m[3]]))
-                . "</a>";
+                . Ht::link($m[2] . $m[3], $conf->hoturl("review", ["p" => $row->paperId, "r" => $m[3]]));
             $act = $m[4];
         } else if (substr($act, 0, 7) === "Comment"
                    && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {

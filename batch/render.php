@@ -373,6 +373,7 @@ class Render_Batch {
     static function normalize($s) {
         $s = preg_replace('/"now":[0-9]+(?:\.[0-9]+)?/', '"now":0', $s);
         $s = preg_replace('/name="[A-Za-z0-9\/+=]{8,}="/', 'name="TOKEN"', $s);
+        $s = preg_replace('/"bannertoken":"[\w.]+"/', '"bannertoken":null', $s);
         $s = preg_replace('/\[[0-9a-f]+\.\.\. [0-9]+M\]/', '[HASH... 0M]', $s);
         // Normalize colons in href query strings to %3A
         $s = preg_replace_callback('/(href="[^"?]*+\?)([^"]*+)"/', function ($m) {
@@ -574,6 +575,7 @@ class Render_Batch {
                 } else {
                     $this->print_diff_plain($n1, $n2);
                 }
+                fwrite(STDOUT, "\n");
                 $has_diff = true;
             }
         }
@@ -662,6 +664,7 @@ Usage: php batch/render.php [-n CONFID] [-u EMAIL] [OPTIONS] URL
        php batch/render.php [-n CONFID] [-u EMAIL] --diff --from FILE")
          ->helpopt("help")
          ->maxarg(2)
+         ->interleave(true)
          ->order(true);
         $arg = $getopt->parse($argv);
 

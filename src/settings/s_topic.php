@@ -78,7 +78,7 @@ class Topic_SettingParser extends SettingParser {
                 }
             }
             echo '</tbody></table>',
-                Ht::link("Copy current topics to clipboard", "", ["class" => "ui js-settings-topics-copy"]),
+                Ht::button("Copy current topics to clipboard", ["class" => "ui js-settings-topics-copy link"]),
                 "</div>\n";
         }
 

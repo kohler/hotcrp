@@ -2339,7 +2339,7 @@ final class PaperList extends MessageSet {
                 if ($rstate->titlecol > 0) {
                     $t .= "<td class=\"plh\" colspan=\"{$rstate->titlecol}\"></td>";
                 }
-                $t .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\"><a class=\"ui js-annotate-order\" data-anno-tag=\"{$this->_sort_etag}\" href=\"\">Annotate order</a></td></tr>\n";
+                $t .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\"><button type=\"button\" class=\"ui js-annotate-order link\" data-anno-tag=\"{$this->_sort_etag}\">Annotate order</button></td></tr>\n";
                 Icons::stash_defs("trash");
             }
 
