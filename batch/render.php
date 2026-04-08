@@ -376,8 +376,12 @@ class Render_Batch {
         $s = preg_replace('/"bannertoken":"[\w.]+"/', '"bannertoken":null', $s);
         $s = preg_replace('/\[[0-9a-f]+\.\.\. [0-9]+M\]/', '[HASH... 0M]', $s);
         // Normalize colons in href query strings to %3A
-        $s = preg_replace_callback('/(href="[^"?]*+\?)([^"]*+)"/', function ($m) {
-            return $m[1] . str_replace(":", "%3A", $m[2]) . '"';
+        $s = preg_replace_callback('/(href="[^"?]*+\?)([^\#"]*+)/', function ($m) {
+            $x = str_replace(["%7E", ":"], ["~", "%3A"], $m[2]);
+            if (str_starts_with($x, "t=s&")) {
+                $x = preg_replace('/\A(t=s)(&(?:amp;)?+)([^&]*+)/', '$3$2$1', $x);
+            }
+            return $m[1] . $x;
         }, $s);
         // Normalize location of href attribute
         $s = preg_replace_callback('/(<a(?![a-z])[^>]*)( href="[^"]*+")( [^>]*+)/', function ($m) {
