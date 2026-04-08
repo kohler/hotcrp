@@ -40,12 +40,20 @@ class Render_Batch {
     public $diff_file1;
     /** @var ?string */
     public $diff_file2;
+    /** @var ?bool */
+    public $color;
     /** @var int */
     private $from_status = 0;
     /** @var resource */
     private $_from_stream;
 
     function __construct(?Contact $user, $arg) {
+        if (isset($arg["color"]) || isset($arg["no-color"])) {
+            $this->color = isset($arg["color"]);
+        } else {
+            $this->color = stream_isatty(STDOUT);
+        }
+
         if (isset($arg["diff"]) && !isset($arg["from"])) {
             $this->diff_file1 = $arg["_"][0];
             $this->diff_file2 = $arg["_"][1];
@@ -366,7 +374,173 @@ class Render_Batch {
         $s = preg_replace('/"now":[0-9]+(?:\.[0-9]+)?/', '"now":0', $s);
         $s = preg_replace('/name="[A-Za-z0-9\/+=]{8,}="/', 'name="TOKEN"', $s);
         $s = preg_replace('/\[[0-9a-f]+\.\.\. [0-9]+M\]/', '[HASH... 0M]', $s);
+        // Normalize colons in href query strings to %3A
+        $s = preg_replace_callback('/(href="[^"?]*+\?)([^"]*+)"/', function ($m) {
+            return $m[1] . str_replace(":", "%3A", $m[2]) . '"';
+        }, $s);
+        // Normalize location of href attribute
+        $s = preg_replace_callback('/(<a(?![a-z])[^>]*)( href="[^"]*+")( [^>]*+)/', function ($m) {
+            return $m[1] . $m[3] . $m[2];
+        }, $s);
+        // Normalize HTML entities
+        $s = str_replace("&ndash;", "\xE2\x80\x93", $s);
+        $s = str_replace("&#039;", "&apos;", $s);
         return $s;
+    }
+
+    /** @param string $n1
+     * @param string $n2 */
+    private function print_diff_plain($n1, $n2) {
+        $f1 = tempnam(sys_get_temp_dir(), "rd1_");
+        $f2 = tempnam(sys_get_temp_dir(), "rd2_");
+        file_put_contents($f1, $n1);
+        file_put_contents($f2, $n2);
+        $label1 = basename($this->diff_file1);
+        $label2 = basename($this->diff_file2);
+        $cmd = "diff -u"
+            . " --label " . escapeshellarg($label1)
+            . " --label " . escapeshellarg($label2)
+            . " " . escapeshellarg($f1)
+            . " " . escapeshellarg($f2);
+        passthru($cmd);
+        unlink($f1);
+        unlink($f2);
+    }
+
+    // ANSI escape sequences for terminal diff
+    const ANSI_RESET = "\e[0m";
+    const ANSI_BOLD = "\e[1m";
+    const ANSI_DEL_BG = "\e[48;5;224m";        // light red background
+    const ANSI_DEL_HIGHLIGHT = "\e[48;5;217m"; // medium red for changed part
+    const ANSI_INS_BG = "\e[48;5;194m";        // light green background
+    const ANSI_INS_HIGHLIGHT = "\e[48;5;76m";  // darker green for changed part
+    const ANSI_LINENO = "\e[2m";               // dim for line numbers
+
+    /** @param string $n1
+     * @param string $n2 */
+    private function print_diff_terminal($n1, $n2) {
+        $dmp = new \dmp\diff_match_patch;
+        $dmp->Line_Histogram = true;
+        $diffs = $dmp->line_diff($n1, $n2);
+        $ndiffs = count($diffs);
+        if ($ndiffs === 0 || ($ndiffs === 1 && $diffs[0]->op === \dmp\DIFF_EQUAL)) {
+            return;
+        }
+
+        // Collect hunks with context
+        $lines1 = explode("\n", rtrim($n1, "\n"));
+        $lines2 = explode("\n", rtrim($n2, "\n"));
+        $context = 3;
+        $l1 = 0; // line index in file1
+        $l2 = 0; // line index in file2
+
+        // Build display entries: each is [type, line1_num, line2_num, text, ?inline_diffs]
+        $entries = [];
+        for ($i = 0; $i < $ndiffs; ++$i) {
+            $diff = $diffs[$i];
+            $dlines = $dmp->split_lines($diff->text);
+            if ($diff->op === \dmp\DIFF_EQUAL) {
+                foreach ($dlines as $dl) {
+                    $entries[] = ["=", $l1, $l2, $dl];
+                    ++$l1;
+                    ++$l2;
+                }
+            } else if ($diff->op === \dmp\DIFF_DELETE) {
+                // Check if next diff is an insert (paired change)
+                $ins_lines = null;
+                if ($i + 1 < $ndiffs && $diffs[$i + 1]->op === \dmp\DIFF_INSERT) {
+                    $ins_lines = $dmp->split_lines($diffs[$i + 1]->text);
+                }
+                foreach ($dlines as $j => $dl) {
+                    $inline = null;
+                    if ($ins_lines !== null && $j < count($ins_lines)) {
+                        $inline = $dmp->diff($dl, $ins_lines[$j]);
+                        $dmp->diff_cleanupSemantic($inline);
+                    }
+                    $entries[] = ["-", $l1, null, $dl, $inline];
+                    ++$l1;
+                }
+                if ($ins_lines !== null) {
+                    ++$i; // consume the insert
+                    foreach ($ins_lines as $j => $il) {
+                        $inline = null;
+                        if ($j < count($dlines)) {
+                            $inline = $dmp->diff($dlines[$j], $il);
+                            $dmp->diff_cleanupSemantic($inline);
+                        }
+                        $entries[] = ["+", null, $l2, $il, $inline];
+                        ++$l2;
+                    }
+                }
+            } else { // DIFF_INSERT (unpaired)
+                foreach ($dlines as $dl) {
+                    $entries[] = ["+", null, $l2, $dl];
+                    ++$l2;
+                }
+            }
+        }
+
+        // Now render with context collapsing
+        $nentries = count($entries);
+        // Find ranges of changed entries, expanded by context
+        $visible = array_fill(0, $nentries, false);
+        for ($i = 0; $i < $nentries; ++$i) {
+            if ($entries[$i][0] !== "=") {
+                for ($j = max(0, $i - $context); $j < min($nentries, $i + $context + 1); ++$j) {
+                    $visible[$j] = true;
+                }
+            }
+        }
+
+        $was_visible = false;
+        for ($i = 0; $i < $nentries; ++$i) {
+            if (!$visible[$i]) {
+                $was_visible = false;
+                continue;
+            }
+            if (!$was_visible && $i > 0) {
+                fwrite(STDOUT, self::ANSI_LINENO . "  ..." . self::ANSI_RESET . "\n");
+            }
+            $was_visible = true;
+
+            $e = $entries[$i];
+            $type = $e[0];
+            $lnum = $type === "+" ? $e[2] : $e[1];
+            $lpad = str_pad((string)($lnum + 1), 5, " ", STR_PAD_LEFT);
+
+            if ($type === "=") {
+                fwrite(STDOUT, self::ANSI_LINENO . $lpad . self::ANSI_RESET . "  " . $e[3] . "\n");
+            } else if ($type === "-") {
+                $line_text = $this->render_inline_diff($e, \dmp\DIFF_DELETE);
+                fwrite(STDOUT, self::ANSI_DEL_BG . self::ANSI_LINENO . $lpad . self::ANSI_RESET
+                    . self::ANSI_DEL_BG . " " . $line_text . self::ANSI_RESET . "\n");
+            } else {
+                $line_text = $this->render_inline_diff($e, \dmp\DIFF_INSERT);
+                fwrite(STDOUT, self::ANSI_INS_BG . self::ANSI_LINENO . $lpad . self::ANSI_RESET
+                    . self::ANSI_INS_BG . " " . $line_text . self::ANSI_RESET . "\n");
+            }
+        }
+    }
+
+    /** @param array $entry
+     * @param -1|1 $side
+     * @return string */
+    private function render_inline_diff($entry, $side) {
+        if (!isset($entry[4]) || $entry[4] === null) {
+            return $entry[3];
+        }
+        $bg = $side === \dmp\DIFF_DELETE ? self::ANSI_DEL_BG : self::ANSI_INS_BG;
+        $highlight = $side === \dmp\DIFF_DELETE ? self::ANSI_DEL_HIGHLIGHT : self::ANSI_INS_HIGHLIGHT;
+        $out = "";
+        foreach ($entry[4] as $d) {
+            if ($d->op === \dmp\DIFF_EQUAL) {
+                $out .= $d->text;
+            } else if ($d->op === $side) {
+                $out .= $highlight . $d->text . $bg;
+            }
+            // skip the other side
+        }
+        return $out;
     }
 
     /** @return int */
@@ -380,35 +554,26 @@ class Render_Batch {
         $has_diff = false;
 
         foreach ($all_headings as $heading) {
+            $hdr = $this->color ? self::ANSI_BOLD . $heading . self::ANSI_RESET : $heading;
             if (!isset($blocks1[$heading])) {
-                fwrite(STDOUT, "{$heading}\n  Only in {$this->diff_file2}\n\n");
+                fwrite(STDOUT, "{$hdr}\n  Only in {$this->diff_file2}\n\n");
                 $has_diff = true;
                 continue;
             }
             if (!isset($blocks2[$heading])) {
-                fwrite(STDOUT, "{$heading}\n  Only in {$this->diff_file1}\n\n");
+                fwrite(STDOUT, "{$hdr}\n  Only in {$this->diff_file1}\n\n");
                 $has_diff = true;
                 continue;
             }
             $n1 = self::normalize($blocks1[$heading]);
             $n2 = self::normalize($blocks2[$heading]);
             if ($n1 !== $n2) {
-                fwrite(STDOUT, "{$heading}\n");
-                $f1 = tempnam(sys_get_temp_dir(), "rd1_");
-                $f2 = tempnam(sys_get_temp_dir(), "rd2_");
-                file_put_contents($f1, $n1);
-                file_put_contents($f2, $n2);
-                $label1 = basename($this->diff_file1);
-                $label2 = basename($this->diff_file2);
-                $cmd = "diff -u"
-                    . " --label " . escapeshellarg($label1)
-                    . " --label " . escapeshellarg($label2)
-                    . " " . escapeshellarg($f1)
-                    . " " . escapeshellarg($f2);
-                passthru($cmd);
-                unlink($f1);
-                unlink($f2);
-                fwrite(STDOUT, "\n");
+                fwrite(STDOUT, "{$hdr}\n");
+                if ($this->color) {
+                    $this->print_diff_terminal($n1, $n2);
+                } else {
+                    $this->print_diff_plain($n1, $n2);
+                }
                 $has_diff = true;
             }
         }
@@ -483,6 +648,8 @@ class Render_Batch {
             "form-string[] !",
             "from Read URLs from FILE and render each",
             "diff Compare two render output files",
+            "color Print diffs in color",
+            "no-color",
             "i,include Include response headers in output",
             "I,head Show response headers only",
             "V,verbose Show request/response headers",
