@@ -414,8 +414,8 @@ class Search_Page {
 
         $links = [];
         if ($user->is_actas_user()) {
-            $links[] = Ht::link(htmlspecialchars($user->base_user()->email),
-                $user->conf->selfurl($qreq, ["actas" => null]));
+            $links[] = Ht::link_raw(htmlspecialchars($user->base_user()->email),
+                $user->conf->selfurl($qreq, ["actas" => null], Conf::HOTURL_RAW));
         } else {
             $semails = Contact::session_emails($qreq);
             $user->conf->prefetch_users_by_email($semails);
@@ -423,7 +423,7 @@ class Search_Page {
                 if (strcasecmp($email, $user->email) !== 0
                     && ($u = $user->conf->user_by_email($email))
                     && PaperSearch::viewable_limits($u)) {
-                    $links[] = Ht::link(htmlspecialchars($email),
+                    $links[] = Ht::link_raw(htmlspecialchars($email),
                         $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW));
                 }
             }

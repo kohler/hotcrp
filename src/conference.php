@@ -4117,7 +4117,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function hotlink($html, $page, $param = null, $js = null) {
-        return Ht::link($html, $this->hoturl($page, $param), $js);
+        return Ht::link_raw($html, $this->hoturl($page, $param, self::HOTURL_RAW), $js);
     }
 
     /** @param string $page
@@ -4189,7 +4189,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function selflink($html, Qrequest $qreq, $param = null, $js = null) {
-        return Ht::link($html, $this->qrequrl($qreq, $param ?? [], 0), $js);
+        return Ht::link_raw($html, $this->qrequrl($qreq, $param ?? [], self::HOTURL_RAW), $js);
     }
 
     /** @return int */
@@ -4231,7 +4231,7 @@ class Conf {
     function redirect($url = null, $status = 302) {
         $qreq = Qrequest::$main_request;
         $this->saved_messages_commit($qreq);
-        Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl("index")), $status);
+        Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl_raw("index")), $status);
     }
 
     /** @param string $page
@@ -4745,8 +4745,8 @@ class Conf {
         $url = $x["href"];
         if ($url[0] !== "/"
             && (($url[0] !== "h" && $url[0] !== "H")
-                || (strtolower(substr($url, 0, 5)) !== "http:"
-                    && strtolower(substr($url, 0, 6)) !== "https:"))) {
+                || (substr_compare($url, "http:", 0, 5, true) !== 0
+                    && substr_compare($url, "https:", 0, 6, true) !== 0))) {
             if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
                 if ($this->opt["assetsPathMtime"] ?? false) {
                     $url = "@{$mtime}/{$url}";
@@ -4917,6 +4917,7 @@ class Conf {
                     $favicon = $qreq->navigation()->siteurl() . $favicon;
                 }
             }
+            $favicon = htmlspecialchars($favicon);
             if (substr($favicon, -4) == ".png") {
                 echo "<link rel=\"icon\" type=\"image/png\" href=\"{$favicon}\">\n";
             } else if (substr($favicon, -4) == ".ico") {
@@ -5094,13 +5095,13 @@ class Conf {
         } else if ($itemid === "other_accounts") {
             $base_email = $user->base_user()->email;
             $nav = $qreq->navigation();
-            $sfx = $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL);
+            $sfx = $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL | self::HOTURL_RAW);
             if ($sfx === "index" . $nav->php_suffix) {
                 $sfx = "";
             }
             foreach (Contact::session_emails($qreq) as $i => $email) {
                 if ($email !== "" && strcasecmp($email, $base_email) !== 0) {
-                    echo '<li role="none">', Ht::link("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}", ["role" => "menuitem", "class" => "qx"]), '</li>';
+                    echo '<li role="none">', Ht::link_raw("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}", ["role" => "menuitem", "class" => "qx"]), '</li>';
                 }
             }
             $t = $user->has_email() ? "Add another account" : "Sign in";

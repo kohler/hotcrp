@@ -271,7 +271,7 @@ class Authorize_Page {
 
     private function signin_url() {
         $nav = $this->qreq->navigation();
-        return $this->conf->hoturl("signin", ["redirect" => "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt)]);
+        return $this->conf->hoturl_raw("signin", ["redirect" => "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt)]);
     }
 
     function print_form() {
@@ -298,7 +298,7 @@ class Authorize_Page {
         echo '<h1 id="h-title">Sign in</h1>';
         $clt = $this->client->title_html();
         if ($this->client->client_uri) {
-            $clt = Ht::link($clt, htmlspecialchars($this->client->client_uri));
+            $clt = Ht::link_raw($clt, $this->client->client_uri);
         }
         echo '<div class="mb-4">to continue to ', $clt, '</div>';
         $this->conf->report_saved_messages();
@@ -330,7 +330,7 @@ class Authorize_Page {
             $top = " mt-2";
         }
 
-        $buttons[] = Ht::link("Use another account", $this->signin_url(),
+        $buttons[] = Ht::link_raw("Use another account", $this->signin_url(),
             ["class" => "btn{$top} w-100 flex-grow-1"]);
         echo '<div class="mb-5">', join("", $buttons), '</div>';
     }

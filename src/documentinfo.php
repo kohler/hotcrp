@@ -1628,9 +1628,10 @@ class DocumentInfo implements JsonSerializable {
     const DOCURL_INCLUDE_DOCID = 1024;
 
     /** @param ?list<FileFilter> $filters
-     * @param int $hoturl_flags
+     * @param ?int $hoturl_flags
      * @return string */
-    function url($filters = null, $hoturl_flags = 0) {
+    function url($filters = null, $hoturl_flags = null) {
+        $hoturl_flags = $hoturl_flags ?? Conf::HOTURL_RAW;
         if ($this->mimetype) {
             $f = ["file" => $this->export_filename($filters ?? $this->filters_applied)];
         } else {
@@ -1657,7 +1658,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?list<FileFilter> $filters
      * @return string */
     function link_html($html = "", $flags = 0, $filters = null) {
-        $p = $this->url($filters);
+        $p = htmlspecialchars($this->url($filters, Conf::HOTURL_RAW));
         $suffix = $info = "";
         $title = null;
         $small = ($flags & self::L_SMALL) != 0;

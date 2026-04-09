@@ -2091,7 +2091,7 @@ class PaperTable {
     static function field_title_links($fields, $title_method) {
         $x = [];
         foreach ($fields as $o) {
-            $x[] = Ht::link(htmlspecialchars($o->$title_method()), "#" . $o->readable_formid());
+            $x[] = Ht::link_raw(htmlspecialchars($o->$title_method()), "#" . $o->readable_formid());
         }
         return $x;
     }
@@ -2534,11 +2534,11 @@ class PaperTable {
             } else if ($this->user->is_override_conflict()
                        && $this->prow->has_conflict($this->user)) {
                 $unprivurl = $this->mode === "assign"
-                    ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => null])
-                    : $this->conf->selfurl($this->qreq, ["forceShow" => null]);
+                    ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => null], Conf::HOTURL_RAW)
+                    : $this->conf->selfurl($this->qreq, ["forceShow" => null], Conf::HOTURL_RAW);
                 echo '<div class="pcard notecard override-conflict on"><p class="sd">',
                     "🔓 You are using administrator privilege to override your conflict with this {$this->conf->snouns[0]}. ",
-                    Ht::link("<u>Unprivileged view</u>", $unprivurl, ["class" => "noul ibw"]),
+                    Ht::link_raw("<u>Unprivileged view</u>", $unprivurl, ["class" => "noul ibw"]),
                     '</p></div>';
             }
         }

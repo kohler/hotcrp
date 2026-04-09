@@ -251,7 +251,7 @@ class Log_Page {
                 if ($this->qreq[$x])
                     $urlp[$x] = $this->qreq[$x];
             }
-            $leg->set_log_url_base($this->conf->hoturl("log", $urlp));
+            $leg->set_log_url_base($this->conf->hoturl_raw("log", $urlp));
             echo "<table class=\"lognav\"><tr><td><div class=\"lognavdr\">";
             if ($page > 1) {
                 echo $leg->page_link_html(1, "<strong>Newest</strong>"), " &nbsp;|&nbsp;&nbsp;";
