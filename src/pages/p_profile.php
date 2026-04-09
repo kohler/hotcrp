@@ -566,7 +566,7 @@ class Profile_Page {
         echo $this->conf->hotform("=profile", $form_params, [
             "id" => "f-profile",
             "class" => "need-diff-check need-unload-protection",
-            "data-user" => $this->page_type ? null : $this->user->email
+            "data-user" => $this->page_type ? null : Ht::preescape($this->user->email)
         ]);
 
         // left menu

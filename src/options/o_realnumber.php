@@ -122,7 +122,7 @@ class RealNumber_PaperOption extends PaperOption {
             Ht::entry($this->formid, $reqx, [
                 "id" => $this->readable_formid(), "type" => "number",
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
-                "data-default-value" => $ov->data() ?? "",
+                "data-default-value" => Ht::preescape($ov->data() ?? ""),
                 "min" => $this->min_value, "max" => $this->max_value,
                 "step" => $this->precision === null ? "any" : pow(10, -$this->precision)
             ]),

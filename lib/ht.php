@@ -2,6 +2,19 @@
 // ht.php -- HotCRP HTML helper functions
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
+class HtEsc {
+    /** @var string */
+    public $str;
+    /** @param string $str */
+    function __construct($str) {
+        $this->str = $str;
+    }
+    #[\ReturnTypeWillChange]
+    function __toString() {
+        return $this->str;
+    }
+}
+
 class Ht {
     /** @var string */
     public static $img_base = "";
@@ -49,6 +62,23 @@ class Ht {
     ];
 
     /** @param string $str
+     * @return HtEsc */
+    static function preescape($str) {
+        if ($str === null) {
+            return null;
+        }
+        return new HtEsc(self::escape_attr($str));
+    }
+
+    /** @return string */
+    static private function unpreescape($str) {
+        if ($str instanceof HtEsc) {
+            return htmlspecialchars_decode($str->str);
+        }
+        return (string) $str;
+    }
+
+    /** @param string $str
      * @return string */
     static function escape_attr($str) {
         return htmlspecialchars($str, ENT_HTML5 | ENT_COMPAT | ENT_SUBSTITUTE, "UTF-8");
@@ -93,6 +123,8 @@ class Ht {
                     $x .= " {$k}=\"" . ($v ? "true" : "false") . "\"";
                 } else if ($v === "") {
                     $x .= " {$k}";
+                } else if ($v instanceof HtEsc) {
+                    $x .= " {$k}=\"{$v->str}\"";
                 } else {
                     $x .= " {$k}=\"" . str_replace("\"", "&quot;", $v) . "\"";
                 }
@@ -398,10 +430,10 @@ class Ht {
 
     private static function apply_placeholder(&$value, &$js) {
         $value = (string) $value;
-        if (isset($js["placeholder"]) && $value === (string) $js["placeholder"]) {
+        if (isset($js["placeholder"]) && $value === self::unpreescape($js["placeholder"])) {
             $value = "";
         }
-        if (isset($js["data-default-value"]) && $value === (string) $js["data-default-value"]) {
+        if (isset($js["data-default-value"]) && $value === self::unpreescape($js["data-default-value"])) {
             unset($js["data-default-value"]);
         }
     }
@@ -550,7 +582,7 @@ class Ht {
             $js = $js ?? [];
             $js["href"] = $href ?? "";
         }
-        $js["href"] = htmlspecialchars($js["href"]);
+        $js["href"] = self::preescape($js["href"]);
         return "<a" . self::extra($js) . ">{$html}</a>";
     }
 

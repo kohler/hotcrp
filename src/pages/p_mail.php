@@ -377,7 +377,7 @@ class Mail_Page {
         // form
         echo $this->conf->hotform("=mail", ["check" => 1, "monreq" => $this->qreq->monreq], [
                 "id" => "f-mail",
-                "data-default-messages" => json_encode_browser((object) $templates),
+                "data-default-messages" => Ht::preescape(json_encode_browser((object) $templates)),
                 "class" => "ui-submit js-selector-summary"
             ]),
             Ht::hidden("defaultfn", ""),
@@ -427,7 +427,7 @@ class Mail_Page {
                 "id" => "subject", "rows" => 1, "data-submit-fn" => "false",
                 "class" => $this->recip->control_class("subject", "js-autosubmit need-autogrow w-100"),
                 "spellcheck" => true,
-                "data-default-value" => $deftemplate["subject"] ?? ""
+                "data-default-value" => Ht::preescape($deftemplate["subject"] ?? "")
             ]), "</div></div>\n";
 
         // ** BODY
@@ -435,7 +435,7 @@ class Mail_Page {
             "id" => "email-body", "rows" => 12, "cols" => 70,
             "class" => "w-100 need-autogrow",
             "spellcheck" => "true",
-            "data-default-value" => $deftemplate["body"] ?? ""
+            "data-default-value" => Ht::preescape($deftemplate["body"] ?? "")
         ]);
 
         echo "</fieldset>\n\n";

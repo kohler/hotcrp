@@ -279,7 +279,7 @@ class Title_PaperColumn extends PaperColumn {
             $pl->need_render = true;
             $js["class"] .= " need-format";
             $js["data-format"] = $format;
-            $js["data-title"] = htmlspecialchars($title);
+            $js["data-title"] = Ht::preescape($title);
         }
         $t = $pl->hotlink_to($highlight_text, $row, $js);
         if ($this->want_pdf) {

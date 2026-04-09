@@ -176,7 +176,7 @@ class AuthenticationChecker {
         $this->print_actions(Ht::submit("Confirm " . htmlspecialchars($this->user->email), [
             "class" => "btn-success",
             "form" => "f-reauth",
-            "formaction" => htmlspecialchars($url),
+            "formaction" => Ht::preescape($url),
             "formmethod" => "post"
         ]));
         return true;

@@ -326,7 +326,7 @@ class Authorize_Page {
         $top = "";
         foreach ($this->actual_emails() as $i => $email) {
             $url = $nav->base_absolute() . "u/{$i}/authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1";
-            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "btn-primary{$top} w-100 flex-grow-1"]);
+            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => Ht::preescape($url), "formmethod" => "post", "class" => "btn-primary{$top} w-100 flex-grow-1"]);
             $top = " mt-2";
         }
 
