@@ -3902,6 +3902,9 @@ class Conf {
      * @param int $flags
      * @return string */
     function hoturl($page, $params = null, $flags = 0) {
+        if (($flags & self::HOTURL_RAW) === 0) {
+            error_log("Missing HOTURL_RAW at " . debug_string_backtrace());
+        }
         $qreq = Qrequest::$main_request;
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         if (str_starts_with($page, "=")) {

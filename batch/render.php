@@ -384,6 +384,7 @@ class Render_Batch {
         $s = preg_replace('/name="[A-Za-z0-9\/+=]{8,}="/', 'name="TOKEN"', $s);
         $s = preg_replace('/"bannertoken":"[\w.]+"/', '"bannertoken":null', $s);
         $s = preg_replace('/\[[0-9a-f]+\.\.\. [0-9]+M\]/', '[HASH... 0M]', $s);
+        $s = str_replace('<a tabindex="-1"', '<a', $s);
         // Normalize colons in href query strings to %3A
         $s = preg_replace_callback('/(href="[^"?]*+\?)([^\#"]*+)/', function ($m) {
             $x = str_replace(["%7E", ":"], ["~", "%3A"], $m[2]);

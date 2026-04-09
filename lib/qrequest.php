@@ -696,6 +696,20 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
 
+    /** @param Contact|Author $au
+     * @param string $prefix
+     * @return string */
+    function actas_link_for($au, $prefix = "") {
+        if (!$au->email
+            || !$this->_conf
+            || ($this->user && $au->contactId === $this->user->contactId)) {
+            return "";
+        }
+        $url = $this->_conf->selfurl($this, ["actas" => $au->email], Conf::HOTURL_RAW);
+        return $prefix . Ht::link_raw(Ht::img("viewas.png", "[Act as]", ["title" => Ht::preescape("Act as " . Text::nameo($au, NAME_P))]), $url, ["tabindex" => "-1"]);
+    }
+
+
     /** @param string|list<string> $title
      * @param string $id
      * @param array{paperId?:int|string,body_class?:string,action_bar?:string,title_div?:string,subtitle?:string,save_messages?:bool,hide_title?:bool,hide_header?:bool} $extra */

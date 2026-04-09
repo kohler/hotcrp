@@ -11,7 +11,7 @@ class PaperTable {
     public $user;
     /** @var Qrequest
      * @readonly */
-    private $qreq;
+    public $qreq;
     /** @var PaperInfo
      * @readonly */
     public $prow;
@@ -993,9 +993,7 @@ class PaperTable {
                 && $viewAs !== null
                 && $viewAs->email !== $au->email
                 && $viewAs->privChair) {
-                $t .= " <a href=\""
-                    . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
-                    . "\">" . Ht::img("viewas.png", "[Act as]", ["title" => Ht::preescape("Act as " . Text::nameo($au, NAME_P))]) . "</a>";
+                $t .= $this->qreq->actas_link_for($au, " ");
             }
             $names[] = '<li class="odname">' . $t . '</li>';
         }
@@ -2582,17 +2580,6 @@ class PaperTable {
         }
     }
 
-    /** @param Contact $reviewer
-     * @return string */
-    private function _review_table_actas($reviewer) {
-        if (!$reviewer->contactId || $reviewer->contactId === $this->user->contactId) {
-            return "";
-        }
-        $url = $this->conf->selfurl($this->qreq, ["actas" => $reviewer->email]);
-        $img = Ht::img("viewas.png", "[Act as]", ["title" => Ht::preescape("Act as " . Text::nameo($reviewer, NAME_P))]);
-        return " <a href=\"{$url}\">{$img}</a>";
-    }
-
     /** @return string */
     function review_table() {
         $user = $this->user;
@@ -2701,7 +2688,7 @@ class PaperTable {
                     $n = $user->reviewer_extended_html_for($rr);
                 }
                 if ($allow_actas) {
-                    $n .= $this->_review_table_actas($reviewer);
+                    $n .= $this->qreq->actas_link_for($reviewer, " ");
                 }
                 $rtypex = $rtype ? " {$rtype}" : "";
                 $t .= "<td class=\"rl\">{$n}{$rtypex}</td>";
@@ -2869,7 +2856,7 @@ class PaperTable {
             || !$prow) {
             /* no link */;
         } else if ($myrr) {
-            $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()]) . '" class="noul revlink">';
+            $a = '<a href="' . Ht::escape_attr($prow->reviewurl(["r" => $myrr->unparse_ordinal_id()], Conf::HOTURL_RAW)) . '" class="noul revlink">';
             if ($this->user->can_edit_review($prow, $myrr)) {
                 $x = Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u>";
             } else {
@@ -2987,7 +2974,7 @@ class PaperTable {
             }
         }
         if (!empty($viewable)) {
-            $m[] = '<p class="sd mt-5"><a href="' . $this->prow->reviewurl(["m" => "r", "text" => 1]) . '" class="noul">'
+            $m[] = '<p class="sd mt-5"><a href="' . Ht::escape_attr($this->prow->reviewurl(["m" => "r", "text" => 1], Conf::HOTURL_RAW)) . '" class="noul">'
                 . Ht::img("txt24.png", "[Text]", "dlimg")
                 . "&nbsp;<u>" . ucfirst(join(" and ", $viewable))
                 . " in plain text</u></a></p>";

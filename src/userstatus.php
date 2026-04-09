@@ -1598,12 +1598,12 @@ class UserStatus extends MessageSet {
     }
 
     function actas_link() {
-        if ($this->user !== $this->viewer
-            && $this->user->email !== ""
-            && $this->viewer->privChair) {
-            return "&nbsp;" . actas_link($this->user);
+        if ($this->user === $this->viewer
+            || $this->user->email === ""
+            || !$this->viewer->privChair) {
+            return "";
         }
-        return "";
+        return $this->qreq->actas_link_for($this->user, " ");
     }
 
     function print_main_email() {

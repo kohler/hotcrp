@@ -408,15 +408,6 @@ function aria_plus_expander($c = "") {
 }
 
 
-/** @param Contact|Author|ReviewInfo|CommentInfo $userlike
- * @return string */
-function actas_link($userlike) {
-    return '<a href="' . Conf::$main->selfurl(Qrequest::$main_request, ["actas" => $userlike->email])
-        . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", ["title" => Ht::preescape("Act as " . Text::nameo($userlike, NAME_P))])
-        . '</a>';
-}
-
-
 /** @return bool */
 function clean_tempdirs() {
     $dir = sys_get_temp_dir() ? : "/";

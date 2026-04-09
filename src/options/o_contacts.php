@@ -278,7 +278,7 @@ class Contacts_PaperOption extends PaperOption {
             }
             if ($pt->user->privChair
                 && $au->contactId !== $pt->user->contactId) {
-                echo ' ', actas_link($au);
+                echo $pt->qreq->actas_link_for($au, " ");
             }
             echo '</label></div>';
             ++$cidx;
