@@ -3,8 +3,8 @@
 // Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
-use Conf, ComponentSet, Contact, Ht, JsonResult, Qrequest, Redirection, PageCompletion;
-use TokenInfo, TokenScope, Signin_Page, Authorization_Token, XtParams;
+use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection, PageCompletion;
+use TokenInfo, TokenScope, Signin_Page, Authorization_Token, ComponentSet, XtParams;
 use MessageItem, FmtArg;
 
 class OAuthClient {

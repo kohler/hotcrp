@@ -1,6 +1,6 @@
 <?php
 // navigation.php -- HotCRP navigation helper functions
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class NavigationState {
     // Base URL:    PROTOCOL://HOST[:PORT]/BASEPATH/
@@ -287,17 +287,14 @@ class NavigationState {
     }
 
     private function apply_php_suffix() {
-        if ($this->page === $this->raw_page) {
-            $pagelen = strlen($this->page);
-            if ($pagelen > 4
-                && substr($this->page, $pagelen - 4) === ".php") {
-                $this->page = substr($this->page, 0, $pagelen - 4);
-            } else if ($this->php_suffix !== ""
-                       && $this->php_suffix !== ".php"
-                       && $pagelen > ($sfxlen = strlen($this->php_suffix))
-                       && substr($this->page, $pagelen - $sfxlen) === $this->php_suffix) {
-                $this->page = substr($this->page, 0, $pagelen - $sfxlen);
-            }
+        if ($this->page !== $this->raw_page) {
+            return;
+        } else if (str_ends_with($this->page, ".php")) {
+            $this->page = substr($this->page, 0, -4);
+        } else if ($this->php_suffix !== ""
+                   && $this->php_suffix !== ".php"
+                   && str_ends_with($this->page, $this->php_suffix)) {
+            $this->page = substr($this->page, 0, -strlen($this->php_suffix));
         }
     }
 
@@ -468,9 +465,7 @@ class NavigationState {
             $this->raw_page = "";
             $this->page = "index";
         }
-        // NB: str_ends_with is not available in this file in older PHPs
-        if (($pagelen = strlen($this->page)) > 4
-            && substr($this->page, $pagelen - 4) === ".php") {
+        if (str_ends_with($this->page, ".php")) {
             $this->page = substr($this->page, 0, $pagelen - 4);
         }
         $this->path = (string) substr($path, $spos);
