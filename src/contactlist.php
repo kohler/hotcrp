@@ -1387,12 +1387,11 @@ class ContactList {
         echo "  <thead class=\"pltable-thead\">\n  <tr class=\"pl_headrow\">";
 
         if ($this->sortable && $url) {
-            $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+            $sortUrl = $url . (strpos($url, "?") ? "&" : "?") . "sort=";
             $sortField = $this->sortField;
             if ($sortField === self::FIELD_FIRST || $sortField === self::FIELD_LAST) {
                 $sortField = self::FIELD_NAME;
             }
-            $q = '<a class="pl_sort" rel="nofollow" href="' . $sortUrl;
             foreach ($fieldDef as $fieldId => $fdef) {
                 if ($fdef->as_row) {
                     continue;
@@ -1405,10 +1404,9 @@ class ContactList {
                 $ftext = $this->header($fieldId);
                 if ($fieldId === $sortField) {
                     $klass = $this->reverseSort ? "sort-descending" : "sort-ascending";
-                    $qx = $this->_next_sort_link($sortUrl);
-                    echo "<a class=\"pl_sort {$klass}\" rel=\"nofollow\" href=\"{$qx}\">{$ftext}</a>";
+                    echo Ht::link_raw($ftext, $this->_next_sort_link($sortUrl), ["class" => "pl_sort {$klass}", "rel" => "nofollow"]);
                 } else if ($fdef->sort) {
-                    echo "{$q}{$fdef->name}\">{$ftext}</a>";
+                    echo Ht::link_raw($ftext, $sortUrl . $fdef->name, ["class" => "pl_sort", "rel" => "nofollow"]);
                 } else {
                     echo $ftext;
                 }

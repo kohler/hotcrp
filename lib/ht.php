@@ -145,13 +145,18 @@ class Ht {
 
     /** @param string|array<string,mixed> $action
      * @param array<string,mixed> $extra
+     * @param int $flags
      * @return string */
-    static function form($action, $extra = []) {
+    static function form($action, $extra = [], $flags = 0) {
         if (is_array($action)) {
+            $flags = $extra;
             $extra = $action;
             $action = $extra["action"] ?? "";
         } else {
             $action = $action ?? "";
+        }
+        if (($flags & Conf::HOTURL_RAW) === 0) {
+            $action = htmlspecialchars_decode($action);
         }
 
         // GET method requires special handling: extract params from URL
@@ -160,10 +165,10 @@ class Ht {
         $method = $extra["method"] ?? "post";
         if ($method === "get"
             && ($qpos = strpos($action, "?")) !== false) {
-            $decoded_query = htmlspecialchars_decode(substr($action, $qpos + 1));
+            $query = substr($action, $qpos + 1);
             $pos = 0;
-            while ($pos < strlen($decoded_query)
-                   && preg_match('/\G([^\#=&;]*)=([^\#&;]*)([\#&;]|\z)/', $decoded_query, $m, 0, $pos)) {
+            while ($pos < strlen($query)
+                   && preg_match('/\G([^\#=&]*+)=([^\#&]*+)([\#&]|\z)/', $query, $m, 0, $pos)) {
                 $suffix .= self::hidden(urldecode($m[1]), urldecode($m[2]));
                 $pos += strlen($m[0]);
                 if ($m[3] === "#") {
@@ -171,7 +176,7 @@ class Ht {
                     break;
                 }
             }
-            $action = substr($action, 0, $qpos) . htmlspecialchars((string) substr($decoded_query, $pos));
+            $action = substr($action, 0, $qpos) . (string) substr($query, $pos);
         }
 
         if (!isset($extra["enctype"]) && $method !== "get") {
@@ -183,7 +188,7 @@ class Ht {
             $x .= " method=\"{$method}\"";
         }
         if ($action !== "") {
-            $x .= " action=\"{$action}\"";
+            $x .= " action=\"" . self::escape_attr($action) . "\"";
         }
         return $x . ' accept-charset="UTF-8"' . $suffix;
     }

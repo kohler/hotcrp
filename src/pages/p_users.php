@@ -512,7 +512,7 @@ class Users_Page {
 
         $pl = new ContactList($this->viewer, true, $this->qreq);
         $pl_text = $pl->table_html($this->qreq->t,
-            $this->conf->hoturl("users", ["t" => $this->qreq->t]),
+            $this->conf->hoturl_raw("users", ["t" => $this->qreq->t]),
             $limit_title, 'uldisplay.');
 
         echo '<hr class="g">';

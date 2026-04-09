@@ -310,7 +310,7 @@ class Review_Page {
                 $mx = "You’re accessing this review using a special link for reviewer {$hemail}. (You are signed in as " . htmlspecialchars($this->user->email) . ".)";
                 if ($this->rrow->reviewStatus <= ReviewInfo::RS_DRAFTED) {
                     $m = "<5><p class=\"mb-0\">{$mx} If you wish, you can reassign the linked review to one your current accounts.</p>"
-                        . Ht::form("", ["class" => "has-fold foldo"])
+                        . Ht::form("", ["class" => "has-fold foldo"], Conf::HOTURL_RAW)
                         . '<div class="aab mt-2 fx">';
                     foreach ($this->user->session_emails($this->qreq) as $e) {
                         if ($e === "") {

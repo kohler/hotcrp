@@ -607,7 +607,7 @@ class Si {
 
     /** @return string */
     function hoturl() {
-        return $this->conf->hoturl("settings", $this->hoturl_param(), Conf::HOTURL_RAW);
+        return $this->conf->hoturl_raw("settings", $this->hoturl_param());
     }
 
     /** @param SettingValues $sv

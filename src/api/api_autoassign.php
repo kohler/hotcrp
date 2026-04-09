@@ -114,7 +114,7 @@ class Autoassign_API {
             $jr = new JsonResult(202 /* Accepted */, [
                 "ok" => true,
                 "job" => $jobid,
-                "job_url" => $qreq->conf()->hoturl("api/job", ["job" => $jobid], Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE)
+                "job_url" => $qreq->conf()->hoturl_raw("api/job", ["job" => $jobid], Conf::HOTURL_ABSOLUTE)
             ]);
             $jr->emit($qreq);
             $qreq->qsession()->commit();

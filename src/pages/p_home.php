@@ -579,7 +579,7 @@ class Home_Page {
     /** @param int $srf */
     private function submission_round_deadlines(&$deadlines, SubmissionRound $sr, $srf) {
         $conf = $this->conf;
-        $dlurl = $conf->hoturl("deadlines");
+        $dlurl = Ht::escape_attr($conf->hoturl_raw("deadlines"));
         if (($srf & 4) !== 0
             && $sr->final_open
             && ($dl = $sr->final_deadline_for_display()) > 0) {

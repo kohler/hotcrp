@@ -4125,7 +4125,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function hotform($page, $param = null, $js = null) {
-        return Ht::form($this->hoturl($page, $param), $js);
+        return Ht::form($this->hoturl_raw($page, $param), $js, self::HOTURL_RAW);
     }
 
 

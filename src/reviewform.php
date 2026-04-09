@@ -487,11 +487,11 @@ Ready\n";
             echo '" data-review-ordinal="', unparse_latin_ordinal($rrow->reviewOrdinal);
         }
         echo '">',
-            Ht::form($this->conf->hoturl("=review", $rlink1 + ["m" => "re"] + $rlink2), [
+            Ht::form($this->conf->hoturl_raw("=review", $rlink1 + ["m" => "re"] + $rlink2), [
                 "id" => "f-review",
                 "class" => "need-unload-protection need-diff-check",
                 "data-differs-toggle" => "review-alert"
-            ]),
+            ], Conf::HOTURL_RAW),
             Ht::hidden_default_submit("default", "");
         if ($rrow->reviewId) {
             echo Ht::hidden("edit_version", ($rrow->reviewEditVersion ?? 0) + 1),
@@ -624,7 +624,7 @@ Ready\n";
     function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $viewer) {
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
-        $a = '<a href="' . $prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()]) . '"';
+        $a = '<a href="' . Ht::escape_attr($prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()], Conf::HOTURL_RAW)) . '"';
         $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . "</a></td>"

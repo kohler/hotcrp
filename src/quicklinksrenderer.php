@@ -16,7 +16,7 @@ class QuicklinksRenderer {
             $paperText = "#{$id}";
             $urlrest["p"] = $id;
         }
-        $url = $qreq->conf()->hoturl($baseUrl, $urlrest);
+        $url = Ht::escape_attr($qreq->conf()->hoturl_raw($baseUrl, $urlrest));
         $icon = Icons::ui_linkarrow($isprev ? 3 : 1);
         if ($isprev) {
             return "<a id=\"n-prev\" class=\"ulh pnum\" href=\"{$url}\">{$icon}{$paperText}</a>";

@@ -70,7 +70,7 @@ class OAuthProvider {
         $instance->auth_uri = $authdata->auth_uri ?? null;
         $instance->token_uri = $authdata->token_uri ?? null;
         $instance->redirect_uri = $authdata->redirect_uri
-            ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
+            ?? $conf->hoturl_raw("oauth", null, Conf::HOTURL_ABSOLUTE);
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
         $instance->roles = $authdata->roles ?? false;

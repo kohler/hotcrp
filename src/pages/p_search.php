@@ -242,7 +242,7 @@ class Search_Page {
         echo "\n";
 
         if ($this->pl->has("sel")) {
-            echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST), ["id" => "sel", "class" => "ui-submit js-submit-list"]),
+            echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST | Conf::HOTURL_RAW), ["id" => "sel", "class" => "ui-submit js-submit-list"], Conf::HOTURL_RAW),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden("forceShow", (string) $qreq->forceShow, ["id" => "forceShow"]),
                 Ht::hidden_default_submit("default", 1);
