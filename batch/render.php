@@ -265,6 +265,15 @@ class Render_Batch {
             return;
         }
         $out = $this->_from_stream;
+        $save_user = $this->user;
+        if (preg_match('/\A-u[ \t]*+(\S++)\s++(.*+)\z/', $pending_url, $m)) {
+            $user = $this->conf->user_by_email($m[1]) ?? $this->conf->cdb_user_by_email($m[1]);
+            if (!$user) {
+                throw new CommandLineException("User {$m[1]} not found");
+            }
+            $this->user = $user;
+            $pending_url = $m[2];
+        }
         $url = $this->resolve_url($pending_url);
         $this->method = "GET";
         $this->data = null;
@@ -295,6 +304,7 @@ class Render_Batch {
         if ($rc->status < 200 || $rc->status >= 400) {
             $this->from_status = 1;
         }
+        $this->user = $save_user;
     }
 
     /** @param ?resource $stream
@@ -304,14 +314,13 @@ class Render_Batch {
         $str = self::read_file($this->from);
         $this->from_status = 0;
         $pending_url = null;
-        $out = $this->_from_stream;
         $lastpos = $pos = 0;
         $len = strlen($str);
         $block = "";
         while ($pos < $len) {
             $epos = strpos($str, "\n", $pos);
             $epos = $epos === false ? $len : $epos + 1;
-            if (preg_match('/\G\#[ \t]++(\S*+)/', $str, $m, 0, $pos)) {
+            if (preg_match('/\G\#[ \t]++((?:-u[ \t]*+\S++[ \t]++)?+\S*+)/', $str, $m, 0, $pos)) {
                 $block .= substr($str, $lastpos, $pos - $lastpos);
                 $this->from_flush($block, $pending_url);
                 $pending_url = $m[1];
