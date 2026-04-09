@@ -1373,7 +1373,7 @@ class AssignmentSet {
             } else {
                 $fml[] = MessageItem::success("<0>Assignments saved");
                 if ($this->conf->setting("pcrev_assigntime") === $this->executed) {
-                    $fml[] = MessageItem::inform("<5>You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
+                    $fml[] = MessageItem::inform("<5>You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", ["template" => "newpcrev"]) . ".");
                 }
             }
         } else if ($this->astate->has_error()) {

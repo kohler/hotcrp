@@ -3,7 +3,7 @@
 // Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
-use Conf, Contact, MessageItem, NavigationState, Qrequest, Redirection;
+use Conf, Contact, MessageItem, Navigation, NavigationState, Qrequest, Redirection;
 use LoginHelper, TokenInfo, UserSecurityEvent, UserStatus;
 
 class OAuthProvider {

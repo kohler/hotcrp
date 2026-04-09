@@ -10,7 +10,7 @@ class QuicklinksRenderer {
             $result = $qreq->conf()->ql("select email from ContactInfo where contactId=?", $id);
             $row = $result->fetch_row();
             Dbl::free($result);
-            $paperText = htmlspecialchars($row ? $row[0] : $id);
+            $paperText = htmlspecialchars($row ? $row[0] : (string) $id);
             $urlrest["u"] = (string) $id;
         } else {
             $paperText = "#{$id}";

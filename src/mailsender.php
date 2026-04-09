@@ -658,7 +658,7 @@ class MailSender {
             }
             $this->recip->append_list($mailer->message_list());
             $this->conf->feedback_msg($this->recip->decorated_message_list());
-            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('f-mail').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
+            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('f-mail').action=" . json_encode_browser($this->conf->hoturl_raw("=mail", ["check" => 1])));
             return;
         }
 

@@ -289,10 +289,14 @@ class NavigationState {
     private function apply_php_suffix() {
         if ($this->page !== $this->raw_page) {
             return;
-        } else if (str_ends_with($this->page, ".php")) {
+        }
+        $pagelen = strlen($this->page);
+        if ($pagelen > 4
+            && str_ends_with($this->page, ".php")) {
             $this->page = substr($this->page, 0, -4);
         } else if ($this->php_suffix !== ""
                    && $this->php_suffix !== ".php"
+                   && $pagelen > strlen($this->php_suffix)
                    && str_ends_with($this->page, $this->php_suffix)) {
             $this->page = substr($this->page, 0, -strlen($this->php_suffix));
         }
@@ -465,8 +469,9 @@ class NavigationState {
             $this->raw_page = "";
             $this->page = "index";
         }
-        if (str_ends_with($this->page, ".php")) {
-            $this->page = substr($this->page, 0, $pagelen - 4);
+        $pagelen = strlen($this->page);
+        if ($pagelen > 4 && str_ends_with($this->page, ".php")) {
+            $this->page = substr($this->page, 0, -4);
         }
         $this->path = (string) substr($path, $spos);
         return $this->page;

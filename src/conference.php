@@ -4111,7 +4111,7 @@ class Conf {
         return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
     }
 
-    /** @param string $html
+    /** @param int|float|string $html
      * @param string $page
      * @param ?array $param
      * @param ?array $js
