@@ -669,8 +669,8 @@ class NavigationState {
     function redirect_http_to_https($allow_http_if_localhost = false) {
         if ($this->protocol !== "http://"
             || ($allow_http_if_localhost
-                && ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
-                    || $_SERVER["REMOTE_ADDR"] !== "::1"))) {
+                && ($_SERVER["REMOTE_ADDR"] === "127.0.0.1"
+                    || $_SERVER["REMOTE_ADDR"] === "::1"))) {
             return;
         }
         Navigation::redirect_absolute("https://" . ($this->host ? : "localhost")
