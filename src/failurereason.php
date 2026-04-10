@@ -413,7 +413,7 @@ class FailureReason extends Exception
         if ($this->_a["expand"] ?? false) {
             $mx = [];
             if (($this->_a["forceShow"] ?? false) && Qrequest::$main_request) {
-                $mx[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1], Conf::HOTURL_RAW), 0));
+                $mx[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1]), 0));
             }
             if ($this->_a["listViewable"] ?? false) {
                 $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => ""]), 0));

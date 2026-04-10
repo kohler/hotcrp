@@ -2098,7 +2098,7 @@ final class PaperList extends MessageSet {
         $footsel_ncol = $this->_view_facets ? 0 : 1;
         return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
-            . ($selfhref ? Ht::escape_attr($this->conf->selfurl($this->qreq, ["selectall" => 1, "#" => "plact"], Conf::HOTURL_RAW)) : "")
+            . ($selfhref ? Ht::escape_attr($this->conf->selfurl($this->qreq, ["selectall" => 1, "#" => "plact"])) : "")
             . '">select all ' . $this->count . "</a>), then&nbsp;",
             $plfts);
     }

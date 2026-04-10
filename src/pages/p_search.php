@@ -242,7 +242,7 @@ class Search_Page {
         echo "\n";
 
         if ($this->pl->has("sel")) {
-            echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST | Conf::HOTURL_RAW), ["id" => "sel", "class" => "ui-submit js-submit-list"], Conf::HOTURL_RAW),
+            echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST), ["id" => "sel", "class" => "ui-submit js-submit-list"]),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden("forceShow", (string) $qreq->forceShow, ["id" => "forceShow"]),
                 Ht::hidden_default_submit("default", 1);
@@ -415,7 +415,7 @@ class Search_Page {
         $links = [];
         if ($user->is_actas_user()) {
             $links[] = Ht::link(htmlspecialchars($user->base_user()->email),
-                $user->conf->selfurl($qreq, ["actas" => null], Conf::HOTURL_RAW));
+                $user->conf->selfurl($qreq, ["actas" => null]));
         } else {
             $semails = Contact::session_emails($qreq);
             $user->conf->prefetch_users_by_email($semails);
@@ -424,7 +424,7 @@ class Search_Page {
                     && ($u = $user->conf->user_by_email($email))
                     && PaperSearch::viewable_limits($u)) {
                     $links[] = Ht::link(htmlspecialchars($email),
-                        $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW));
+                        $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL));
                 }
             }
         }

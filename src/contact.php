@@ -1941,7 +1941,7 @@ class Contact implements JsonSerializable {
         if (($path = $qreq->path())) {
             $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
         }
-        $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
+        $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_SITEREL);
 
         if (!$qreq->valid_post()) {
             Multiconference::fail($qreq, 401, new FailureReason($this->conf, [

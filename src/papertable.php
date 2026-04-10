@@ -2534,7 +2534,7 @@ class PaperTable {
                        && $this->prow->has_conflict($this->user)) {
                 $unprivurl = $this->mode === "assign"
                     ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => null], Conf::HOTURL_RAW)
-                    : $this->conf->selfurl($this->qreq, ["forceShow" => null], Conf::HOTURL_RAW);
+                    : $this->conf->selfurl($this->qreq, ["forceShow" => null]);
                 echo '<div class="pcard notecard override-conflict on"><p class="sd">',
                     "🔓 You are using administrator privilege to override your conflict with this {$this->conf->snouns[0]}. ",
                     Ht::link("<u>Unprivileged view</u>", $unprivurl, ["class" => "noul ibw"]),

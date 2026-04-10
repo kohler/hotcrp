@@ -4152,9 +4152,6 @@ class Conf {
     private function qrequrl($qreq, $param, $flags) {
         if (($flags & self::HOTURL_REDIRECTABLE) !== 0
             && ($url = $this->qreq_redirect_url($qreq))) {
-            if (($flags & self::HOTURL_RAW) === 0) {
-                $url = htmlspecialchars($url);
-            }
             return $url;
         }
         $x = [];
@@ -4172,7 +4169,7 @@ class Conf {
         foreach ($param as $k => $v) {
             $x[$k] = $v;
         }
-        return $this->hoturl($qreq->page(), $x, $flags);
+        return $this->hoturl($qreq->page(), $x, $flags | self::HOTURL_RAW);
     }
 
     /** @param Qrequest $qreq
@@ -4192,7 +4189,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function selflink($html, Qrequest $qreq, $param = null, $js = null) {
-        return Ht::link($html, $this->qrequrl($qreq, $param ?? [], self::HOTURL_RAW), $js);
+        return Ht::link($html, $this->qrequrl($qreq, $param ?? [], 0), $js);
     }
 
     /** @return int */
@@ -4250,7 +4247,7 @@ class Conf {
      * @return never
      * @throws Redirection */
     function redirect_self(Qrequest $qreq, $param = null) {
-        $this->redirect($this->selfurl($qreq, $param, self::HOTURL_RAW));
+        $this->redirect($this->selfurl($qreq, $param));
     }
 
     /** @param Qrequest $qreq
@@ -5098,7 +5095,7 @@ class Conf {
         } else if ($itemid === "other_accounts") {
             $base_email = $user->base_user()->email;
             $nav = $qreq->navigation();
-            $sfx = $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL | self::HOTURL_RAW);
+            $sfx = $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL);
             if ($sfx === "index" . $nav->php_suffix) {
                 $sfx = "";
             }

@@ -30,7 +30,7 @@ class Decide_ListAction extends ListAction {
             return Assign_API::complete($aset, $qreq);
         }
         if ($aset->execute()) {
-            return new Redirection($user->conf->selfurl($qreq, ["atab" => "decide", "decision" => $qreq->decision], Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+            return new Redirection($user->conf->selfurl($qreq, ["atab" => "decide", "decision" => $qreq->decision], Conf::HOTURL_REDIRECTABLE));
         }
         $user->conf->feedback_msg($aset->message_list());
     }

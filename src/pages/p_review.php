@@ -300,7 +300,7 @@ class Review_Page {
         if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = Contact::session_index_by_email($this->qreq, $u->email)) >= 0) {
-                $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
+                $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL);
                 $this->conf->redirect($this->qreq->navigation()->base_absolute() . "u/{$i}/{$selfurl}");
                 return;
             }

@@ -159,6 +159,6 @@ class Tag_ListAction extends ListAction {
         $assignset->execute();
         $assignset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
         $args = ["atab" => "tag"] + $qreq->subset_as_array("tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless");
-        return new Redirection($user->conf->selfurl($qreq, $args, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+        return new Redirection($user->conf->selfurl($qreq, $args, Conf::HOTURL_REDIRECTABLE));
     }
 }

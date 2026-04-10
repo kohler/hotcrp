@@ -253,7 +253,7 @@ class Signin_Page {
         $param = ["authtype" => null, "post" => $qreq->maybe_post_value()];
         $nav = $qreq->navigation();
         $param["success_redirect"] = $qreq->redirect;
-        $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
+        $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL);
         if ($this->_oauth_hoturl_param) {
             $param += $this->_oauth_hoturl_param;
         }

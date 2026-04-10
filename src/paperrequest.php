@@ -52,16 +52,16 @@ class PaperRequest {
             if (preg_match('/\A(\d+|new\z)(|[A-Z]+|r[1-9]\d*|rnew)\z/', $pc, $m)) {
                 $qreq->paperId = $qreq->paperId ?? $m[1];
                 if ($qreq->paperId !== $m[1]) {
-                    throw new Redirection($conf->selfurl($qreq, null, Conf::HOTURL_RAW), 307);
+                    throw new Redirection($conf->selfurl($qreq), 307);
                 }
                 if ($m[2] === "") {
                     // OK
                 } else if (!$review) {
-                    throw new Redirection($conf->selfurl($qreq, null, Conf::HOTURL_RAW), 307);
+                    throw new Redirection($conf->selfurl($qreq), 307);
                 } else {
                     $qreq->reviewId = $qreq->reviewId ?? $pc;
                     if ($qreq->reviewId !== $pc) {
-                        throw new Redirection($conf->selfurl($qreq, null, Conf::HOTURL_RAW), 307);
+                        throw new Redirection($conf->selfurl($qreq), 307);
                     }
                 }
             }
@@ -100,7 +100,7 @@ class PaperRequest {
                 if ("{$p}" === $pid) {
                     return $p;
                 } else if (str_pad("{$p}", strlen($pid), "0", STR_PAD_LEFT) === $pid) {
-                    throw new Redirection($conf->selfurl($qreq, ["p" => $p], Conf::HOTURL_RAW), 307);
+                    throw new Redirection($conf->selfurl($qreq, ["p" => $p]), 307);
                 }
             }
             throw new FailureReason($conf, ["invalidId" => "paper", "paperId" => $pid]);
@@ -121,7 +121,7 @@ class PaperRequest {
         // check query
         if (($q = $qreq->q) !== null) {
             if (preg_match('/\A\s*\#?(\d+)\s*\z/', $q, $m)) {
-                throw new Redirection($conf->selfurl($qreq, ["q" => null, "p" => $m[1]], Conf::HOTURL_RAW));
+                throw new Redirection($conf->selfurl($qreq, ["q" => null, "p" => $m[1]]));
             } else if ($q === "" || $q === "(All)") {
                 throw new Redirection($conf->hoturl_raw("search", ["q" => "", "t" => $qreq->t]));
             } else {
@@ -131,7 +131,7 @@ class PaperRequest {
                     // DISABLED: check if the paper is in the current list
                     $list = $search->session_list_object();
                     $list->set_cookie($qreq);
-                    throw new Redirection($conf->selfurl($qreq, ["q" => null, "p" => $ps[0]], Conf::HOTURL_RAW));
+                    throw new Redirection($conf->selfurl($qreq, ["q" => null, "p" => $ps[0]]));
                 } else {
                     throw new Redirection($conf->hoturl_raw("search", ["q" => $q, "t" => $qreq->t]));
                 }
@@ -143,7 +143,7 @@ class PaperRequest {
         if (empty($ps)) {
             throw new FailureReason($conf, ["missingId" => "paper"]);
         } else {
-            throw new Redirection($conf->selfurl($qreq, ["p" => $ps[0]], Conf::HOTURL_RAW));
+            throw new Redirection($conf->selfurl($qreq, ["p" => $ps[0]]));
         }
     }
 
@@ -154,7 +154,7 @@ class PaperRequest {
         $conf = $qreq->conf();
         return new FailureReason($conf, [
             "signin" => $pid ? "paper" : "paper:start",
-            "signinUrl" => $conf->hoturl_raw("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW)]),
+            "signinUrl" => $conf->hoturl_raw("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL)]),
             "secondary" => true
         ]);
     }
@@ -237,7 +237,7 @@ class PaperRequest {
                 throw $user->perm_view_paper($prow, false, $pid);
             }
         } else if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
-            throw new Redirection($user->conf->selfurl($qreq, ["p" => $prow->paperId], Conf::HOTURL_RAW));
+            throw new Redirection($user->conf->selfurl($qreq, ["p" => $prow->paperId]));
         }
         return $prow;
     }
