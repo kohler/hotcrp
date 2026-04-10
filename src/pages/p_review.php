@@ -319,7 +319,7 @@ class Review_Page {
                         $url = $this->conf->hoturl_raw("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "email" => $e]);
                         $m .= '<div class="aabut">'
                             . Ht::submit("Reassign to " . htmlspecialchars($e), [
-                                "formaction" => Ht::preescape($url), "class" => "ui js-acceptish-review"
+                                "formaction" => $url, "class" => "ui js-acceptish-review"
                             ]) . '</div>';
                     }
                     $m .= '</div></form>';

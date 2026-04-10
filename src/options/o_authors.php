@@ -269,9 +269,9 @@ class Authors_PaperOption extends PaperOption {
             $js["class"] .= " uii js-email-populate";
         }
         if ($val !== $auval) {
-            $js["data-default-value"] = Ht::preescape($auval);
+            $js["data-default-value"] = $auval;
             if ($component !== "email" && $pt->prow->is_new()) {
-                $js["data-populated-value"] = Ht::preescape($val);
+                $js["data-populated-value"] = $val;
             }
         }
         return Ht::entry("authors:{$n}:{$component}", $val, $js);

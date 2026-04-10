@@ -903,7 +903,7 @@ class PaperOption implements JsonSerializable {
         $reqd = $reqov->data();
         if ($od !== $reqd
             && rtrim($od ?? "") !== rtrim(cleannl($reqd ?? ""))) {
-            $default_value = Ht::preescape($od ?? "");
+            $default_value = $od ?? "";
         } else {
             $default_value = null;
         }

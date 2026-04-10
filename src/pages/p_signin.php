@@ -261,7 +261,7 @@ class Signin_Page {
         foreach ($conf->oauth_providers() as $authdata) {
             if ($authdata->button_html && !($authdata->disabled ?? false)) {
                 $param["authtype"] = $authdata->name;
-                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => Ht::preescape($conf->hoturl_raw("oauth", $param)), "formmethod" => "post", "class" => "{$top}w-100 flex-grow-1"]);
+                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl_raw("oauth", $param), "formmethod" => "post", "class" => "{$top}w-100 flex-grow-1"]);
                 $top = "mt-2 ";
             }
         }

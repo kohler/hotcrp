@@ -1174,7 +1174,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
             $opt["none"] = "N/A";
         }
         echo Ht::select($this->short_id, $opt, $this->unparse_choice($reqval), [
-            "data-default-value" => Ht::preescape($this->unparse_choice($fval))
+            "data-default-value" => $this->unparse_choice($fval)
         ]);
         echo '</div></div>';
     }
@@ -1403,7 +1403,7 @@ class Text_ReviewField extends ReviewField {
         }
         $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->short_id];
         if ($reqstr !== null && $fval !== $reqstr) {
-            $opt["data-default-value"] = Ht::preescape((string) $fval);
+            $opt["data-default-value"] = (string) $fval;
         }
         echo Ht::textarea($this->short_id, $reqstr ?? $fval ?? "", $opt), '</div></div>';
     }

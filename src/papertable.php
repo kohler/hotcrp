@@ -1253,10 +1253,10 @@ class PaperTable {
         }
         echo '</div><div class="aabr align-self-center">';
         if ($acc) {
-            echo '<div class="aabut">', Ht::submit("Decline review after all", ["class" => "btn-danger ui js-acceptish-review", "formaction" => Ht::preescape($this->conf->hoturl_raw("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId]))]), '</div>';
+            echo '<div class="aabut">', Ht::submit("Decline review after all", ["class" => "btn-danger ui js-acceptish-review", "formaction" => $this->conf->hoturl_raw("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId])]), '</div>';
         } else {
-            echo '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger ui js-acceptish-review", "formaction" => Ht::preescape($this->conf->hoturl_raw("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId]))]), '</div>',
-                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success ui js-acceptish-review", "formaction" => Ht::preescape($this->conf->hoturl_raw("=api/acceptreview", ["p" => $rrow->paperId, "r" => $rrow->reviewId]))]), '</div>';
+            echo '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger ui js-acceptish-review", "formaction" => $this->conf->hoturl_raw("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId])]), '</div>',
+                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success ui js-acceptish-review", "formaction" => $this->conf->hoturl_raw("=api/acceptreview", ["p" => $rrow->paperId, "r" => $rrow->reviewId])]), '</div>';
         }
         echo '</div></form>';
         if ($rrow->reviewStatus === ReviewInfo::RS_EMPTY) {
@@ -1274,7 +1274,7 @@ class PaperTable {
             '</div><div class="aab mt-3">',
             '<div class="aabut">', Ht::submit("Save explanation", ["class" => "btn-primary"]), '</div>';
         if ($this->conf->time_review($refusal->reviewRound, $refusal->refusedReviewType, true)) {
-            echo '<div class="aabut">', Ht::submit("Accept review after all", ["formaction" => Ht::preescape($this->conf->hoturl_raw("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId])), "class" => "ui js-acceptish-review"]), '</div>';
+            echo '<div class="aabut">', Ht::submit("Accept review after all", ["formaction" => $this->conf->hoturl_raw("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId]), "class" => "ui js-acceptish-review"]), '</div>';
         }
         echo '</div></form>';
     }
@@ -2189,7 +2189,7 @@ class PaperTable {
             if ($revivable) {
                 return [Ht::submit("revive", "Revive {$this->conf->snouns[0]}", ["class" => "btn-primary"])];
             } else if ($this->admin) {
-                return [[Ht::button("Revive {$this->conf->snouns[0]}", ["class" => "ui js-override-deadlines", "data-override-text" => Ht::preescape("The " . $this->conf->hotlink("deadline", "deadlines") . " for reviving withdrawn {$this->conf->snouns[1]} has passed. Are you sure you want to override it?"), "data-override-submit" => "revive"]), "(admin only)"]];
+                return [[Ht::button("Revive {$this->conf->snouns[0]}", ["class" => "ui js-override-deadlines", "data-override-text" => "The " . $this->conf->hotlink("deadline", "deadlines") . " for reviving withdrawn {$this->conf->snouns[1]} has passed. Are you sure you want to override it?", "data-override-submit" => "revive"]), "(admin only)"]];
             }
             return [];
         }
@@ -2206,7 +2206,7 @@ class PaperTable {
                 $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary js-savepaper uic js-mark-submit"]), ""];
             } else if ($this->admin) {
                 $revWhyNot = $whyNot->filter(["deadline", "frozen", "sclass"])->set("expand", true)->set("confirmOverride", true);
-                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary js-savepaper ui js-override-deadlines", "data-override-text" => Ht::preescape($revWhyNot->unparse_html()), "data-override-submit" => "update"]), "(admin only)"];
+                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary js-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["frozen"])
                        && $this->prow->author_user()->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "js-savepaper uic js-mark-submit"]);
@@ -2412,7 +2412,7 @@ class PaperTable {
             "data-differs-toggle" => "paper-alert"
         ];
         if ($this->ready_state() !== 0) {
-            $form_js["data-autoready-condition"] = Ht::preescape(json_encode_browser($this->_ready_condition));
+            $form_js["data-autoready-condition"] = json_encode_browser($this->_ready_condition);
         }
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;

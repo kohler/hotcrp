@@ -858,7 +858,7 @@ class ContactList {
             }
             if ($this->user->privChair && $row->email != $this->user->email) {
                 $t .= " " . $this->conf->hotlink(
-                    Ht::img("viewas.png", "[Act as]", ["title" => Ht::preescape("Act as " . $row->name(NAME_P))]),
+                    Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . $row->name(NAME_P)]),
                     "index", ["actas" => $row->email]
                 );
             }

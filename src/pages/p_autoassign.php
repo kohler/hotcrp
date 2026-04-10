@@ -309,7 +309,7 @@ class Autoassign_Page {
         }
         $n = "bp{$which}{$i}";
         return Ht::select($n, [], 0,
-            ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => Ht::preescape($this->qreq[$n]), "data-pcselector-options" => $this->_bp_pcselector_options, "data-default-value" => Ht::preescape($this->qreq[$n])]);
+            ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $this->qreq[$n], "data-pcselector-options" => $this->_bp_pcselector_options, "data-default-value" => $this->qreq[$n]]);
     }
 
     private function print_bad_pairs() {

@@ -1803,9 +1803,9 @@ class SettingValues extends MessageSet {
             && !isset($js["data-default-value"])
             && !isset($js["data-default-checked"])) {
             if ($si && $this->has_interest($si)) {
-                $x["data-default-value"] = Ht::preescape($si->base_unparse_reqv($this->oldv($si), $this));
+                $x["data-default-value"] = $si->base_unparse_reqv($this->oldv($si), $this);
             } else if (isset($this->_explicit_oldv[$name])) {
-                $x["data-default-value"] = Ht::preescape($this->_explicit_oldv[$name]);
+                $x["data-default-value"] = $this->_explicit_oldv[$name];
             }
         }
         foreach ($js ?? [] as $k => $v) {

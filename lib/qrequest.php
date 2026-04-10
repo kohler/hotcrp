@@ -706,7 +706,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             return "";
         }
         $url = $this->_conf->selfurl($this, ["actas" => $au->email], Conf::HOTURL_RAW);
-        return $prefix . Ht::link_raw(Ht::img("viewas.png", "[Act as]", ["title" => Ht::preescape("Act as " . Text::nameo($au, NAME_P))]), $url, ["tabindex" => "-1"]);
+        return $prefix . Ht::link_raw(Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($au, NAME_P)]), $url, ["tabindex" => "-1"]);
     }
 
 

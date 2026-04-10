@@ -449,7 +449,7 @@ class ManageEmail_Page {
             }
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => Ht::preescape($this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1]))),
+                "formaction" => $this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1])),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));
@@ -682,7 +682,7 @@ class ManageEmail_Page {
             echo '<p>You must confirm all accounts involved in the link to continue.</p>';
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => Ht::preescape($this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1]))),
+                "formaction" => $this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1])),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));
@@ -917,7 +917,7 @@ class ManageEmail_Page {
             echo '<p>You must confirm this account to continue.</p>';
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => Ht::preescape($this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1]))),
+                "formaction" => $this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1])),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));

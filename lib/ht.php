@@ -126,7 +126,7 @@ class Ht {
                 } else if ($v instanceof HtEsc) {
                     $x .= " {$k}=\"{$v->str}\"";
                 } else {
-                    $x .= " {$k}=\"" . str_replace("\"", "&quot;", $v) . "\"";
+                    $x .= " {$k}=\"" . self::escape_attr($v) . "\"";
                 }
             }
         }

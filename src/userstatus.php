@@ -1586,14 +1586,14 @@ class UserStatus extends MessageSet {
         }
 
         echo '<div class="f-mcol w-text">';
-        $t = Ht::entry("firstName", $qreq->firstName ?? $user->firstName, ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => Ht::preescape($user->firstName)]) . $us->global_profile_difference("firstName");
+        $t = Ht::entry("firstName", $qreq->firstName ?? $user->firstName, ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => $user->firstName]) . $us->global_profile_difference("firstName");
         $us->print_field("firstName", "First name (given name)", $t, "f-i");
 
-        $t = Ht::entry("lastName", $qreq->lastName ?? $user->lastName, ["size" => 24, "autocomplete" => $us->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => Ht::preescape($user->lastName)]) . $us->global_profile_difference("lastName");
+        $t = Ht::entry("lastName", $qreq->lastName ?? $user->lastName, ["size" => 24, "autocomplete" => $us->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => $user->lastName]) . $us->global_profile_difference("lastName");
         $us->print_field("lastName", "Last name (family name)", $t, "f-i");
         echo '</div>';
 
-        $t = Ht::entry("affiliation", $qreq->affiliation ?? $user->affiliation, ["size" => 52, "autocomplete" => $us->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => Ht::preescape($user->affiliation)]) . $us->global_profile_difference("affiliation");
+        $t = Ht::entry("affiliation", $qreq->affiliation ?? $user->affiliation, ["size" => 52, "autocomplete" => $us->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => $user->affiliation]) . $us->global_profile_difference("affiliation");
         $us->print_field("affiliation", "Affiliation", $t);
     }
 
@@ -1630,7 +1630,7 @@ class UserStatus extends MessageSet {
     function print_main_external_username() {
         if ($this->user->is_empty()) {
             $this->print_field("uemail", "Username",
-                Ht::entry("newUsername", $this->qreq->uemail ?? $this->user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => Ht::preescape($this->user->email)]));
+                Ht::entry("newUsername", $this->qreq->uemail ?? $this->user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => $this->user->email]));
             $peclass = "fullw";
         } else {
             $this->print_field("", "Username" . $this->actas_link(),
@@ -1638,7 +1638,7 @@ class UserStatus extends MessageSet {
             $peclass = "want-focus fullw";
         }
         $this->print_field("preferredEmail", "Email",
-            Ht::entry("preferredEmail", $this->qreq->preferredEmail ?? $this->user->preferredEmail, ["class" => $peclass, "size" => 52, "id" => "preferredEmail", "autocomplete" => $this->autocomplete("email"), "data-default-value" => Ht::preescape($this->user->preferredEmail), "type" => "email"]));
+            Ht::entry("preferredEmail", $this->qreq->preferredEmail ?? $this->user->preferredEmail, ["class" => $peclass, "size" => 52, "id" => "preferredEmail", "autocomplete" => $this->autocomplete("email"), "data-default-value" => $this->user->preferredEmail, "type" => "email"]));
     }
 
     static function print_country(UserStatus $us) {
@@ -1868,7 +1868,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             ->print_start_section("<5>" . Ht::label("Tags", "tags"));
         echo '<div class="', $us->control_class("tags", "f-i"), '">',
             $us->feedback_html_at("tags"),
-            Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => Ht::preescape($itags), "class" => "fullw", "id" => "tags"]),
+            Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw", "id" => "tags"]),
             "<p class=\"f-d\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use ", $us->conf->hotlink("tag colors", "settings", ["group" => "tags"]), " to highlight subgroups in review lists.</p></div>\n";
     }
 
