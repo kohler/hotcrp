@@ -4120,7 +4120,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function hotlink($html, $page, $param = null, $js = null) {
-        return Ht::link_raw($html, $this->hoturl($page, $param, self::HOTURL_RAW), $js);
+        return Ht::link($html, $this->hoturl($page, $param, self::HOTURL_RAW), $js);
     }
 
     /** @param string $page
@@ -4192,7 +4192,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function selflink($html, Qrequest $qreq, $param = null, $js = null) {
-        return Ht::link_raw($html, $this->qrequrl($qreq, $param ?? [], self::HOTURL_RAW), $js);
+        return Ht::link($html, $this->qrequrl($qreq, $param ?? [], self::HOTURL_RAW), $js);
     }
 
     /** @return int */
@@ -5104,7 +5104,7 @@ class Conf {
             }
             foreach (Contact::session_emails($qreq) as $i => $email) {
                 if ($email !== "" && strcasecmp($email, $base_email) !== 0) {
-                    echo '<li role="none">', Ht::link_raw("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}", ["role" => "menuitem", "class" => "qx"]), '</li>';
+                    echo '<li role="none">', Ht::link("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}", ["role" => "menuitem", "class" => "qx"]), '</li>';
                 }
             }
             $t = $user->has_email() ? "Add another account" : "Sign in";

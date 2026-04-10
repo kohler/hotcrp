@@ -373,7 +373,7 @@ function foldupbutton($foldnum = 0, $content = "", $js = null) {
         $js["data-fold-target"] = $foldnum;
     }
     $js["class"] = "ui q js-foldup";
-    return Ht::link_raw(expander(null, $foldnum) . $content, "#", $js);
+    return Ht::link(expander(null, $foldnum) . $content, "#", $js);
 }
 
 /** @param ?bool $open

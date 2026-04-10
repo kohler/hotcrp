@@ -2089,7 +2089,7 @@ class PaperTable {
     static function field_title_links($fields, $title_method) {
         $x = [];
         foreach ($fields as $o) {
-            $x[] = Ht::link_raw(htmlspecialchars($o->$title_method()), "#" . $o->readable_formid());
+            $x[] = Ht::link(htmlspecialchars($o->$title_method()), "#" . $o->readable_formid());
         }
         return $x;
     }
@@ -2537,7 +2537,7 @@ class PaperTable {
                     : $this->conf->selfurl($this->qreq, ["forceShow" => null], Conf::HOTURL_RAW);
                 echo '<div class="pcard notecard override-conflict on"><p class="sd">',
                     "🔓 You are using administrator privilege to override your conflict with this {$this->conf->snouns[0]}. ",
-                    Ht::link_raw("<u>Unprivileged view</u>", $unprivurl, ["class" => "noul ibw"]),
+                    Ht::link("<u>Unprivileged view</u>", $unprivurl, ["class" => "noul ibw"]),
                     '</p></div>';
             }
         }
@@ -2650,7 +2650,7 @@ class PaperTable {
                 } else {
                     $link = $prow->hoturl(["#" => "r{$rlink}"], Conf::HOTURL_RAW);
                 }
-                $t .= Ht::link_raw($id, $link);
+                $t .= Ht::link($id, $link);
                 if ($show_ratings
                     && $user->can_view_review_ratings($prow, $rr)
                     && ($ratings = $rr->ratings())) {
@@ -2839,7 +2839,7 @@ class PaperTable {
         if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
             && $this->mode !== "p") {
             $this->allreviewslink = true;
-            $t[] = Ht::link_raw(Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u>", $prow->hoturl([], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u>", $prow->hoturl([], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
         }
 
         // edit paper
@@ -2847,7 +2847,7 @@ class PaperTable {
             && $prow->has_author($this->user)
             && !$this->user->is_admin($prow)) {
             $es = $this->conf->_c5("paper_edit", "<0>Edit {submission}");
-            $t[] = Ht::link_raw(Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u>", $prow->hoturl(["m" => "edit"], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u>", $prow->hoturl(["m" => "edit"], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
         }
 
         // edit review
@@ -2862,16 +2862,16 @@ class PaperTable {
             } else {
                 $x = Ht::img("review48.png", "[Your review]", $dlimgjs) . "&nbsp;<u><b>Your review</b></u>";
             }
-            $t[] = Ht::link_raw($x, $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
+            $t[] = Ht::link($x, $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
         } else if ($this->user->can_edit_some_review($prow)) {
-            $t[] = Ht::link_raw(Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u>", $prow->reviewurl(["m" => "re"], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u>", $prow->reviewurl(["m" => "re"], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
         }
 
         // review assignments
         if ($this->mode !== "assign"
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
-            $t[] = Ht::link_raw(Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u>", $this->conf->hoturl("assign", ["p" => $prow->paperId], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u>", $this->conf->hoturl("assign", ["p" => $prow->paperId], Conf::HOTURL_RAW), ["class" => "noul revlink"]);
         }
 
         // new comment
@@ -3178,7 +3178,7 @@ class PaperTable {
         // intended for pages like review editing where we need a link back
         $title = count($this->viewable_rrows) > 1 ? "All reviews" : "Main";
         echo '<div class="pcard notecard"><p class="sd">',
-            Ht::link_raw(Ht::img("view48.png", "[{$title}]", ["class" => "dlimg", "width" => 24, "height" => 24]) . "&nbsp;<u>{$title}</u>", $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null], Conf::HOTURL_RAW), ["class" => "noul revlink"]),
+            Ht::link(Ht::img("view48.png", "[{$title}]", ["class" => "dlimg", "width" => 24, "height" => 24]) . "&nbsp;<u>{$title}</u>", $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null], Conf::HOTURL_RAW), ["class" => "noul revlink"]),
             "</p></div>\n";
     }
 

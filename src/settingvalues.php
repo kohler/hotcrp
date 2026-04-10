@@ -1716,7 +1716,7 @@ class SettingValues extends MessageSet {
         if ($this->link_json && ($jpath = $si->json_path())) {
             return $this->json_path_link($html, $jpath, $js);
         }
-        return Ht::link_raw($html, $si->sv_hoturl($this), $js);
+        return Ht::link($html, $si->sv_hoturl($this), $js);
     }
 
     /** @param string $html
@@ -1744,7 +1744,7 @@ class SettingValues extends MessageSet {
         } else {
             $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null], Conf::HOTURL_RAW);
         }
-        return Ht::link_raw($html, $url, $js);
+        return Ht::link($html, $url, $js);
     }
 
     /** @param string $type

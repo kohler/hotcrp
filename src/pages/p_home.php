@@ -156,7 +156,7 @@ class Home_Page {
     static function print_info_site(Contact $user) {
         if (($site = $user->conf->opt("conferenceSite"))
             && $site !== $user->conf->opt("paperSite")) {
-            echo '<li>', Ht::link_raw("Conference site", $site), '</li>';
+            echo '<li>', Ht::link("Conference site", $site), '</li>';
         }
     }
     static function print_info_accepted(Contact $user) {
@@ -187,7 +187,7 @@ class Home_Page {
         echo '<div class="homegrp"><p>Welcome to the ', htmlspecialchars($this->conf->full_name()), " submissions site.";
         if (($site = $this->conf->opt("conferenceSite"))
             && $site !== $this->conf->opt("paperSite"))
-            echo " For general information, see ", Ht::link_raw(htmlspecialchars($site), $site), ".";
+            echo " For general information, see ", Ht::link(htmlspecialchars($site), $site), ".";
         echo '</p></div>';
     }
 

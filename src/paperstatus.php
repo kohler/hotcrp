@@ -250,7 +250,7 @@ final class PaperStatus extends MessageSet {
                 if ($oids !== null && !in_array($o->id, $oids, true)) {
                     continue;
                 }
-                $link = Ht::link_raw(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
+                $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
                 $mi = $mi->with(["message" => "<5>{$link}: " . $mi->message_as(5)]);
             }
             $ms[] = $mi;

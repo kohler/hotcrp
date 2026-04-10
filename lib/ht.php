@@ -560,10 +560,13 @@ class Ht {
         if (is_string($js)) {
             $js = ["class" => $js];
         }
-        $src = self::escape_attr($src);
-        if (self::$img_base && !preg_match('/\A(?:https?:\/|\/)/i', $src)) {
+        if (self::$img_base
+            && !str_starts_with($src, "/")
+            && substr_compare($src, "http:", 0, 5, true) !== 0
+            && substr_compare($src, "https:", 0, 6, true) !== 0) {
             $src = self::$img_base . $src;
         }
+        $src = self::escape_attr($src);
         $altt = self::escape_attr($alt);
         $jst = self::extra($js);
         return "<img src=\"{$src}\" alt=\"{$altt}\"{$jst}>";
@@ -580,16 +583,10 @@ class Ht {
         return "<a" . self::extra($js) . ">{$html}</a>";
     }
 
-    /** @return string */
+    /** @return string
+     * @deprecated */
     static function link_raw($html, $href, $js = null) {
-        if ($js === null && is_array($href)) {
-            $js = $href;
-        } else {
-            $js = $js ?? [];
-            $js["href"] = $href ?? "";
-        }
-        $js["href"] = self::preescape($js["href"]);
-        return "<a" . self::extra($js) . ">{$html}</a>";
+        return self::link($html, $href, $js);
     }
 
     /** @return string */

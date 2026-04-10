@@ -182,7 +182,7 @@ class PaperListReviewAnalysis {
         } else {
             $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal_id()], Conf::HOTURL_RAW);
         }
-        return Ht::link_raw($html, $href, $klass ? ["class" => $klass] : []);
+        return Ht::link($html, $href, $klass ? ["class" => $klass] : []);
     }
 }
 

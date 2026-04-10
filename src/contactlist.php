@@ -1404,9 +1404,9 @@ class ContactList {
                 $ftext = $this->header($fieldId);
                 if ($fieldId === $sortField) {
                     $klass = $this->reverseSort ? "sort-descending" : "sort-ascending";
-                    echo Ht::link_raw($ftext, $this->_next_sort_link($sortUrl), ["class" => "pl_sort {$klass}", "rel" => "nofollow"]);
+                    echo Ht::link($ftext, $this->_next_sort_link($sortUrl), ["class" => "pl_sort {$klass}", "rel" => "nofollow"]);
                 } else if ($fdef->sort) {
-                    echo Ht::link_raw($ftext, $sortUrl . $fdef->name, ["class" => "pl_sort", "rel" => "nofollow"]);
+                    echo Ht::link($ftext, $sortUrl . $fdef->name, ["class" => "pl_sort", "rel" => "nofollow"]);
                 } else {
                     echo $ftext;
                 }
