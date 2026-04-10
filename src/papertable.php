@@ -1734,7 +1734,7 @@ class PaperTable {
             "</p><form id=\"f-{$sfx}\" class=\"ui-submit uin\" hidden>";
         $opts = [];
         foreach ($this->conf->decision_set() as $dec) {
-            $opts[$dec->id] = $dec->name_as(5);
+            $opts[$dec->id] = $dec->name;
         }
         echo Ht::select("decision", $opts,
                         (string) $this->prow->outcome,

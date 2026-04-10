@@ -86,6 +86,12 @@ class Ht {
 
     /** @param string $str
      * @return string */
+    static function escape_text($str) {
+        return htmlspecialchars($str, ENT_HTML5 | ENT_NOQUOTES | ENT_SUBSTITUTE, "UTF-8");
+    }
+
+    /** @param string $str
+     * @return string */
     static function escape($str) {
         return htmlspecialchars($str, ENT_HTML5 | ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
     }
@@ -286,7 +292,7 @@ class Ht {
             }
 
             $value = $info["value"] = $info["value"] ?? (string) $key;
-            $label = $info["label"] ?? $value;
+            $label = self::escape_text($info["label"] ?? $value);
             unset($info["label"], $info["type"], $info["optgroup"], $info["exclude"]);
             if (!isset($first_value)) {
                 $first_value = $value;
@@ -470,7 +476,7 @@ class Ht {
         $js = $js ?? [];
         self::apply_placeholder($value, $js);
         $nt = self::escape_attr($name);
-        $vt = self::escape($value);
+        $vt = self::escape_text($value);
         $jst = self::extra($js);
         return "<textarea name=\"{$nt}\"{$jst}>{$vt}</textarea>";
     }
@@ -526,7 +532,7 @@ class Ht {
         } else if (is_array($text) || is_object($text)) {
             $text = var_export($text, true);
         }
-        return "<pre>" . self::escape($text) . "</pre>";
+        return "<pre>" . self::escape_text($text) . "</pre>";
     }
 
     /** @return string */
@@ -538,12 +544,12 @@ class Ht {
         } else if (is_array($text) || is_object($text)) {
             $text = var_export($text, true);
         }
-        return "<pre style=\"white-space:pre-wrap\">" . self::escape($text) . "</pre>";
+        return "<pre style=\"white-space:pre-wrap\">" . self::escape_text($text) . "</pre>";
     }
 
     /** @return string */
     static function pre_export($x) {
-        return "<pre style=\"white-space:pre-wrap\">" . self::escape(var_export($x, true)) . "</pre>";
+        return "<pre style=\"white-space:pre-wrap\">" . self::escape_text(var_export($x, true)) . "</pre>";
     }
 
     /** @param string $src
@@ -735,9 +741,9 @@ class Ht {
      * @return string */
     static function mark_substring($s, $pos1, $pos2, $status = 2) {
         list($s, $pos1, $pos2) = self::make_mark_substring($s, $pos1, $pos2);
-        $h0 = self::escape(substr($s, 0, $pos1));
-        $h1 = self::escape(substr($s, $pos1, $pos2 - $pos1));
-        $h2 = self::escape(substr($s, $pos2));
+        $h0 = self::escape_text(substr($s, 0, $pos1));
+        $h1 = self::escape_text(substr($s, $pos1, $pos2 - $pos1));
+        $h2 = self::escape_text(substr($s, $pos2));
         $k = $status > 1 ? "is-error" : "is-warning";
         if ($pos2 > $pos1 + 2) {
             return "{$h0}<span class=\"context-mark {$k}\">{$h1}</span>{$h2}";

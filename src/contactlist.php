@@ -1112,7 +1112,7 @@ class ContactList {
 
         if ($this->user->privChair) {
             $plft = PaperList::make_tab("tag", "Tag");
-            $plft->content =Ht::select("tagfn", ["a" => "Add", "d" => "Remove", "s" => "Define"], $this->qreq->tagfn)
+            $plft->content = Ht::select("tagfn", ["a" => "Add", "d" => "Remove", "s" => "Define"], $this->qreq->tagfn)
                 . ' &nbsp;tag(s) &nbsp;'
                 . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-submit-fn" => "tag"])
                 . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-list ml-2"]);

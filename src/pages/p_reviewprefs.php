@@ -89,10 +89,10 @@ class ReviewPrefs_Page {
 
             $sel = [];
             foreach ($conf->pc_members() as $p) {
-                $sel[$p->email] = $p->name_h(NAME_P|NAME_S) . " &nbsp; [" . plural($prefcount[$p->contactId] ?? 0, "pref") . "]";
+                $sel[$p->email] = $p->name(NAME_P|NAME_S) . " [" . plural($prefcount[$p->contactId] ?? 0, "pref") . "]";
             }
             if (!isset($sel[$reviewer->email])) {
-                $sel[$reviewer->email] = $reviewer->name_h(NAME_P|NAME_S) . " &nbsp; [" . ($prefcount[$reviewer->contactId] ?? 0) . "; not on PC]";
+                $sel[$reviewer->email] = $reviewer->name(NAME_P|NAME_S) . " [" . ($prefcount[$reviewer->contactId] ?? 0) . "; not on PC]";
             }
 
             echo Ht::select("reviewer", $sel, $reviewer->email, ["id" => "k-prefs-user"]), '</div>';

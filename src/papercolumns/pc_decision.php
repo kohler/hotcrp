@@ -19,7 +19,7 @@ class Decision_PaperColumn extends PaperColumn {
         if ($this->edit) {
             $this->edit_opts = [];
             foreach ($pl->conf->decision_set() as $dec) {
-                $this->edit_opts[$dec->id] = $dec->name_as(5);
+                $this->edit_opts[$dec->id] = $dec->name;
             }
         }
         return true;

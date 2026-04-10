@@ -266,7 +266,7 @@ class ManualAssign_Page {
             $rev_opt[0] = "(Select a PC member)";
         }
         foreach ($this->conf->pc_members() as $pc) {
-            $rev_opt[$pc->email] = htmlspecialchars($pc->name(NAME_P|NAME_S)) . " ("
+            $rev_opt[$pc->email] = $pc->name(NAME_P|NAME_S) . " ("
                 . plural($acs->get($pc->contactId)->rev, "assignment") . ")";
         }
 
