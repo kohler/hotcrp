@@ -5107,9 +5107,9 @@ class Conf {
             $t = $user->has_email() ? "Add another account" : "Sign in";
             echo '<li role="none">', $this->hotlink($t, "signin", ["actas" => null], ["role" => "menuitem", "class" => "qx"]), '</li>';
         } else if ($itemid === "my_submissions") {
-            $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", "t=a");
+            $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", ["t" => "a"]);
         } else if ($itemid === "my_reviews") {
-            $this->_print_profilemenu_link_if_enabled($user, "Your reviews", "search", "t=r");
+            $this->_print_profilemenu_link_if_enabled($user, "Your reviews", "search", ["t" => "r"]);
         } else if ($itemid === "search") {
             $this->_print_profilemenu_link_if_enabled($user, "Search", "search");
         } else if ($itemid === "help") {

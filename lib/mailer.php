@@ -179,7 +179,8 @@ class Mailer {
                 }
             }
         }
-        return $m->conf->hoturl_raw($a[0], $a[1], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
+        parse_str($a[1], $param);
+        return $m->conf->hoturl_raw($a[0], $param, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
     }
 
     static function kw_php($args, $isbool, $m) {
