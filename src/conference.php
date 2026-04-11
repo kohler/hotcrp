@@ -4006,12 +4006,12 @@ class Conf {
                     $param = $mm[1] . $mm[4];
                 }
             } else if (($is_paper_page
-                        && preg_match($are . 'p=(\d++|%\w++%|\{\{\w++\}\}|new)' . $zre, $param, $m))
+                        && preg_match($are . 'p=(\d++|%25\w++%25|%7B%7B\w++%7D%7D|new)' . $zre, $param, $m))
                        || ($page === "help"
                            && preg_match($are . 't=(\w++)' . $zre, $param, $m))
                        || (($page === "settings" || $page === "graph")
                            && preg_match($are . 'group=(\w++)' . $zre, $param, $m))) {
-                $tp = "/" . $m[2];
+                $tp = "/" . urldecode($m[2]);
                 $param = $m[1] . $m[3];
                 if ($param !== ""
                     && $page === "paper"
