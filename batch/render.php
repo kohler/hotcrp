@@ -494,6 +494,7 @@ class Render_Batch {
                 }
             }
         }
+        '@phan-var-force list<array{string,?int,?int,string,?string}> $entries';
 
         // Now render with context collapsing
         $nentries = count($entries);

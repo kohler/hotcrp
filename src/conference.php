@@ -3898,12 +3898,17 @@ class Conf {
     const HOTURL_MAYBE_POST = 128;
 
     /** @param string $page
-     * @param null|string|array $params
+     * @param ?array $params
      * @param int $flags
      * @return string */
     function hoturl($page, $params = null, $flags = 0) {
         if (($flags & self::HOTURL_RAW) === 0) {
             error_log("Missing HOTURL_RAW at " . debug_string_backtrace());
+        }
+        if (is_string($params)) {
+            error_log("hoturl \$params is string at " . debug_string_backtrace());
+            parse_str($params, $xparams);
+            $params = $xparams;
         }
         $qreq = Qrequest::$main_request;
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
@@ -4235,7 +4240,7 @@ class Conf {
     }
 
     /** @param string $page
-     * @param null|string|array $param
+     * @param ?array $param
      * @return never
      * @throws Redirection */
     function redirect_hoturl($page, $param = null) {
@@ -5058,15 +5063,15 @@ class Conf {
     /** @param Contact $user
      * @param string $html
      * @param string $page
-     * @param null|string|array $args */
-    private function _print_profilemenu_link_if_enabled($user, $html, $page, $args = null) {
+     * @param ?array $param */
+    private function _print_profilemenu_link_if_enabled($user, $html, $page, $param = null) {
         $attr = ["role" => "menuitem", "class" => "qx"];
         if ($user->is_disabled()) {
             $attr["aria-disabled"] = "true";
             $attr["class"] .= " disabled";
             $t = Ht::button($html, $attr);
         } else {
-            $t = $this->hotlink($html, $page, $args, $attr);
+            $t = $this->hotlink($html, $page, $param, $attr);
         }
         echo '<li role="none">', $t, '</li>';
     }
