@@ -3911,7 +3911,6 @@ class Conf {
             $params = $xparams;
         }
         $qreq = Qrequest::$main_request;
-        $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         if (str_starts_with($page, "=")) {
             if ($page[1] === "?") {
                 $flags |= self::HOTURL_MAYBE_POST;
@@ -3921,55 +3920,26 @@ class Conf {
             }
             $flags |= self::HOTURL_POST;
         }
-        $t = $page;
-        $are = '/\A(|.*?(?:&|&amp;))';
-        $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
-        // parse options, separate fragment
-        $fragment = "";
-        $defaults = [];
+        $pm = [];
+        foreach ($params ?? [] as $k => $v) {
+            if ($v !== null) {
+                $pm[$k] = $v;
+            }
+        }
         if (($flags & self::HOTURL_NO_DEFAULTS) === 0
             && $qreq
             && $qreq->user()) {
-            $defaults = $qreq->user()->hoturl_defaults();
+            foreach ($qreq->user()->hoturl_defaults() as $k => $v) {
+                /* XXX urlencode($k) */
+                if (!array_key_exists($k, $params ?? [])) {
+                    $pm[$k] = $v;
+                }
+            }
         }
-        if (is_array($params)) {
-            $param = $sep = "";
-            foreach ($params as $k => $v) {
-                /* XXX urlencode($k) */
-                if ($v === null || $v === false) {
-                    continue;
-                }
-                if ($k === "#") {
-                    if (($flags & self::HOTURL_RAW) === 0
-                        && strcspn($v, "&<\"'") !== strlen($v)) {
-                        $v = htmlspecialchars($v);
-                    }
-                    $fragment = "#{$v}";
-                } else {
-                    $param .= "{$sep}{$k}=" . urlencode($v);
-                    $sep = $amp;
-                }
-            }
-            foreach ($defaults as $k => $v) {
-                /* XXX urlencode($k) */
-                if (!array_key_exists($k, $params)) {
-                    $param .= "{$sep}{$k}={$v}";
-                    $sep = $amp;
-                }
-            }
-        } else {
-            $param = (string) $params;
-            if (($pos = strpos($param, "#")) !== false) {
-                $fragment = substr($param, $pos);
-                $param = substr($param, 0, $pos);
-            }
-            $sep = $param === "" ? "" : $amp;
-            foreach ($defaults as $k => $v) {
-                if (!preg_match($are . preg_quote($k) . '=/', $param)) {
-                    $param .= "{$sep}{$k}={$v}";
-                    $sep = $amp;
-                }
-            }
+        $fragment = "";
+        if (isset($pm["#"])) {
+            $fragment = "#" . $pm["#"];
+            unset($pm["#"]);
         }
         if (($flags & (self::HOTURL_POST | self::HOTURL_MAYBE_POST)) !== 0) {
             if (($flags & self::HOTURL_MAYBE_POST) !== 0) {
@@ -3977,11 +3947,10 @@ class Conf {
             } else {
                 $post = $qreq->post_value();
             }
-            $param .= "{$sep}post={$post}";
-            $sep = $amp;
+            $pm["post"] = $post;
         }
         // append forceShow to links to same paper if appropriate
-        $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
+        $is_paper_page = in_array($page, ["paper", "review", "assign"], true);
         if ($is_paper_page
             && $qreq
             && ($paper = $qreq->paper())
@@ -3990,98 +3959,90 @@ class Conf {
             && Contact::$main_user->conf === $this
             && Contact::$main_user->is_admin($paper)
             && $paper->has_conflict(Contact::$main_user)
-            && preg_match("{$are}p={$paper->paperId}{$zre}", $param)
-            && (is_array($params) ? !array_key_exists("forceShow", $params) : !preg_match($are . 'forceShow=/', $param))) {
-            $param .= $amp . "forceShow=1";
+            && ($pm["p"] ?? null) == (string) $paper->paperId
+            && !array_key_exists("forceShow", $params)) {
+            $pm["forceShow"] = 1;
         }
         // create slash-based URLs if appropriate
-        if ($param) {
-            if ($page === "review"
-                && preg_match($are . 'p=(\d+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-                if (preg_match($are . 'r=(\d+)([A-Z]+|r\d+|rnew)' . $zre, $param, $mm)
-                    && $mm[2] === $m[2]) {
-                    $tp .= $mm[3];
-                    $param = $mm[1] . $mm[4];
+        $tp = "";
+        if ($params) {
+            if ($is_paper_page) {
+                if (isset($pm["p"])
+                    && (is_int($pm["p"])
+                        || preg_match('/\A(?:\d++|%\w++%|\{\{\w++\}\}|new)\z/', $pm["p"]))) {
+                    $pid = (string) $pm["p"];
+                    $tp = "/" . $pid;
+                    unset($pm["p"]);
+                    if ($page === "review"
+                        && isset($pm["r"])
+                        && str_starts_with($pm["r"], $pid)
+                        && preg_match('/\G([A-Z]++|r\d++|rnew)\z/', $pm["r"], $m, 0, strlen($pid))) {
+                        $tp .= $m[1];
+                        unset($pm["r"]);
+                    } else if ($page === "paper"
+                               && isset($pm["m"])
+                               && ctype_alnum($pm["m"])) {
+                        $tp .= "/" . $pm["m"];
+                        unset($pm["m"]);
+                    }
                 }
-            } else if (($is_paper_page
-                        && preg_match($are . 'p=(\d++|%\w++%|\{\{\w++\}\}|new)' . $zre, $param, $m))
-                       || ($page === "help"
-                           && preg_match($are . 't=(\w++)' . $zre, $param, $m))
-                       || (($page === "settings" || $page === "graph")
-                           && preg_match($are . 'group=(\w++)' . $zre, $param, $m))) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-                if ($param !== ""
-                    && $page === "paper"
-                    && preg_match($are . 'm=(\w++)' . $zre, $param, $m)) {
-                    $tp .= "/" . $m[2];
-                    $param = $m[1] . $m[3];
+            } else if ($page === "help" || $page === "users") {
+                if (isset($pm["t"])
+                    && ctype_alnum($pm["t"])) {
+                    $tp = "/" . $pm["t"];
+                    unset($pm["t"]);
                 }
-            } else if ($page === "doc"
-                       && preg_match($are . 'file=([^&]++)' . $zre, $param, $m)) {
-                $tp = "/" . str_replace("%2F", "/", $m[2]);
-                $param = $m[1] . $m[3];
-            } else if ($page === "profile"
-                       && preg_match($are . 'u=([^&?]++)' . $zre, $param, $m)) {
-                $tp = "/" . str_replace("%2F", "/", $m[2]);
-                $param = $m[1] . $m[3];
-                if ($param !== ""
-                    && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
-                    $tp .= "/" . $m[2];
-                    $param = $m[1] . $m[3];
+            } else if ($page === "settings" || $page === "graph") {
+                if (isset($pm["group"])
+                    && ctype_alnum($pm["group"])) {
+                    $tp = "/" . $pm["group"];
+                    unset($pm["group"]);
                 }
-            } else if ($page === "profile"
-                       && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-            } else if ($page === "api"
-                       && preg_match($are . 'fn=(\w+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-                if (preg_match($are . 'p=(\d+)' . $zre, $param, $m)) {
-                    $tp = "/" . $m[2] . $tp;
-                    $param = $m[1] . $m[3];
+            } else if ($page === "doc") {
+                if (isset($pm["file"])) {
+                    $tp = "/" . str_replace("%2F", "/", urlencode($pm["file"]));
+                    unset($pm["file"]);
                 }
-            } else if ($page === "users"
-                       && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-            } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)) {
-                $tp = "/" . urldecode($m[2]);
-                $param = $m[1] . $m[3];
-            } else {
-                $tp = "";
-            }
-            if ($tp !== "") {
-                $t .= $tp;
-                if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)
-                    && $tp === "/" . urldecode($m[2])) {
-                    $param = $m[1] . $m[3];
+            } else if ($page === "profile") {
+                if (isset($pm["u"])
+                    && strpos($pm["u"], "/") === false) {
+                    $tp = "/" . urlencode($pm["u"]);
+                    unset($pm["u"]);
+                }
+                if (isset($pm["t"])
+                    && ctype_alnum($pm["t"])) {
+                    $tp .= "/" . $pm["t"];
+                    unset($pm["t"]);
+                }
+            } else if ($page === "api") {
+                if (isset($pm["fn"])
+                    && preg_match('/\A\w++\z/', $pm["fn"])) {
+                    if (isset($pm["p"])
+                        && (is_int($pm["p"]) || ctype_digit($pm["p"]))) {
+                        $tp = "/" . $pm["p"];
+                        unset($pm["p"]);
+                    }
+                    $tp .= "/" . $pm["fn"];
+                    unset($pm["fn"]);
                 }
             }
-            $param = preg_replace('/&(?:amp;)?\z/', "", $param);
+            if (isset($pm["__PATH__"])) {
+                $path = "/" . str_replace("%2F", "/", urlencode($pm["__PATH__"]));
+                if ($tp === "" || $tp === $path) {
+                    $tp = $path;
+                    unset($pm["__PATH__"]);
+                }
+            }
         }
+        // prepare $t
+        $t = $page;
         $nav = $qreq ? $qreq->navigation() : Navigation::get();
         if ($nav->php_suffix !== "") {
-            if (($slash = strpos($t, "/")) !== false) {
-                $a = substr($t, 0, $slash);
-                $b = substr($t, $slash);
-            } else {
-                $a = $t;
-                $b = "";
-            }
-            if (!str_ends_with($a, $nav->php_suffix)) {
-                $a .= $nav->php_suffix;
-            }
-            $t = $a . $b;
+            $t .= $nav->php_suffix;
         }
-        if ($param !== "" && preg_match('/\A&(?:amp;)?(.*)\z/', $param, $m)) {
-            $param = $m[1];
-        }
-        if ($param !== "") {
-            $t .= "?" . $param;
+        $t .= $tp;
+        if (!empty($pm)) {
+            $t .= "?" . http_build_query($pm);
         }
         if ($fragment !== "") {
             $t .= $fragment;
