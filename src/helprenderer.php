@@ -107,14 +107,14 @@ class HelpRenderer {
 
     /** @param string $html
      * @param string $page
-     * @param null|string|array $options
+     * @param ?array $param
      * @param array $js
      * @return string */
-    function hotlink($html, $page, $options = null, $js = []) {
+    function hotlink($html, $page, $param = null, $js = []) {
         if (!isset($js["rel"])) {
             $js["rel"] = "nofollow";
         }
-        return $this->conf->hotlink($html, $page, $options, $js);
+        return $this->conf->hotlink($html, $page, $param, $js);
     }
 
     /** @param string $html

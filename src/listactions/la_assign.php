@@ -34,7 +34,7 @@ class Assign_ListAction extends ListAction {
                 $t = "all";
             }
             $q = join("+", $ssel->selection());
-            $user->conf->redirect_hoturl("autoassign", "q={$q}&t={$t}&pap={$q}");
+            $user->conf->redirect_hoturl("autoassign", ["q" => $q, "t" => $t]);
         }
 
         $mpc = (string) $qreq->markpc;
