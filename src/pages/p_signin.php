@@ -492,36 +492,38 @@ class Signin_Page {
 
         // derive `resetcap` parameter, maybe from URL
         if ($qreq->resetcap === null
-            && preg_match('/\A\/(hcpw[01][a-zA-Z]+)(?:\/|\z)/', $qreq->path(), $m)) {
-            $qreq->resetcap = $m[1];
+            && preg_match('/\A\/([^\/]++)/', $qreq->path(), $m)) {
+            $qreq->resetcap = urldecode($m[1]);
         }
 
         // find token string
         $resetcap = trim((string) $qreq->resetcap);
-        if (preg_match('/\A\/?(hcpw[01][a-zA-Z]+)\/?\z/', $resetcap, $m)) {
-            $this->_reset_tokstr = $m[1];
-        } else if (strpos($resetcap, "@") !== false) {
-            if ($qreq->valid_post()) {
-                $nqreq = new Qrequest("POST", ["email" => $resetcap]);
-                $nqreq->approve_token();
-                $nqreq->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL));
-                $this->forgot_request($user, $nqreq); // may redirect
-                if ($this->problem_status_at("email")) {
-                    $this->ms()->error_at("resetcap");
-                }
-            }
-        }
-        if (!$this->_reset_tokstr) {
+        if ($resetcap === "" || $resetcap === "/") {
             return;
+        }
+        if (strpos($resetcap, "@") !== false && $qreq->valid_post()) {
+            $nqreq = new Qrequest("POST", ["email" => $resetcap]);
+            $nqreq->approve_token();
+            $nqreq->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL));
+            $this->forgot_request($user, $nqreq); // may redirect
+            if ($this->problem_status_at("email")) {
+                $this->ms()->error_at("resetcap");
+            }
         }
 
         // look up token
-        $token = self::_find_reset_token($conf, $this->_reset_tokstr);
+        $token = null;
+        if (preg_match('/\A\/?(hcpw[01][a-zA-Z]+)\/?\z/', $resetcap, $m)) {
+            $this->_reset_tokstr = $m[1];
+            $token = self::_find_reset_token($conf, $m[1]);
+        }
         if (!$token) {
+            Navigation::http_response_code(404);
             $this->ms()->error_at("resetcap", "<0>Unknown or expired password reset code. Please check that you entered the code correctly.");
             return;
         }
         if (!$token->user()) {
+            Navigation::http_response_code(404);
             $this->ms()->error_at("resetcap", "<0>This password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
             return;
         }
