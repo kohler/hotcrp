@@ -1106,6 +1106,7 @@ final class PaperList extends MessageSet {
         $aidx = $pidx = 0;
         $plist = $this->_rowset->as_list();
         $alist = $dt->order_anno_list();
+        $overrides = $this->user->add_overrides($this->_view_force);
         $ptagval = $pidx !== count($plist) ? $plist[$pidx]->viewable_tag_value($etag, $this->user) : null;
         while ($aidx !== count($alist) || $pidx !== count($plist)) {
             if ($aidx !== count($alist)
@@ -1122,6 +1123,7 @@ final class PaperList extends MessageSet {
                 $ptagval = $pidx !== count($plist) ? $plist[$pidx]->viewable_tag_value($etag, $this->user) : null;
             }
         }
+        $this->user->set_overrides($overrides);
         return $groups;
     }
 
