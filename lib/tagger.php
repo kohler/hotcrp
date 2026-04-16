@@ -1228,7 +1228,7 @@ class TagMap {
             } else if (!$view_most) {
                 $dt = $this->find($t);
                 $ok = $dt
-                    && (!$strip_hidden || ($dt->flags & TagInfo::TF_HIDDEN) !== 0)
+                    && (!$strip_hidden || ($dt->flags & TagInfo::TF_HIDDEN) === 0)
                     && ($dt->flags & $conflict_free) !== 0;
             } else if ($strip_hidden) {
                 $dt = $this->find($t);
