@@ -5615,12 +5615,16 @@ class Contact implements JsonSerializable {
             return true;
         }
         $rights = $this->rights($prow);
-        return $rights->scope_allows(TS::S_TAG_READ)
-            && ($rights->allow_pc()
-                || ($rights->allow_pc_broad()
-                    && $this->conf->pc_can_view_conflicted_tags())
-                || ($this->privChair
-                    && $this->conf->tags()->has(TagInfo::TF_ADMIN_PUBLIC)));
+        if (!$rights->scope_allows(TS::S_TAG_READ)) {
+            return false;
+        } else if ($rights->allow_pc()) {
+            return true;
+        }
+        $dt = $this->conf->tags();
+        return ($rights->allow_pc_broad()
+                && $dt->has(TagInfo::TF_PC_PUBLIC))
+            || ($this->privChair
+                && $dt->has(TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC));
     }
 
     /** @return ?FailureReason */
@@ -5649,9 +5653,7 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         return $rights->scope_allows(TS::S_TAG_READ)
-            && ($rights->allow_pc()
-                || ($rights->allow_pc_broad()
-                    && $this->conf->pc_can_view_conflicted_tags()));
+            && $rights->allow_pc();
     }
 
     /** @return bool */
@@ -5731,8 +5733,7 @@ class Contact implements JsonSerializable {
                     && (!$this->privChair
                         || !$tagmap->is_admin_public($tag))
                     && (!$rights->allow_pc_broad()
-                        || (!$this->conf->pc_can_view_conflicted_tags()
-                    && !$tagmap->is_pc_public($tag))))) {
+                        || !$tagmap->is_pc_public($tag)))) {
                 return false;
             }
             $allow_administer = $rights->allow_admin();

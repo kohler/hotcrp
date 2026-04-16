@@ -64,7 +64,7 @@ class TagInfo {
     function __construct($tag, TagMap $tagmap, $flags = 0) {
         $this->conf = $tagmap->conf;
         $this->tag = $tag;
-        $this->flags = $flags;
+        $this->flags = $flags | $tagmap->all_flags;
         if (($ks = $tagmap->known_style($tag)) !== null) {
             $this->styles[] = $ks;
         } else if (str_starts_with($tag, ":")
@@ -507,6 +507,9 @@ class TagMap {
     public $conf;
     /** @var int */
     public $flags;
+    /** @var int
+     * @readonly */
+    public $all_flags = 0;
     /** @var bool */
     public $has_role_decoration = false;
     /** @var array<string,TagInfo> */
@@ -538,6 +541,10 @@ class TagMap {
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->flags = TagInfo::TF_CHAIR | TagInfo::TF_READONLY;
+        if ($conf->pc_can_view_conflicted_tags()) {
+            $this->all_flags |= TagInfo::TF_PC_PUBLIC;
+            $this->flags |= TagInfo::TF_PC_PUBLIC;
+        }
 
         // RGB colors taken from style.css
         $this->define_style("red", new TagStyle("red", TagStyle::BG | TagStyle::BADGE, 0xffd8d8));
@@ -686,7 +693,8 @@ class TagMap {
             && ($ltag[0] === "~"
                 || ($ltag[0] === ":" && $this->check_emoji_code($ltag))
                 || isset($this->style_lmap[$ltag])
-                || TagStyle::dynamic_style($ltag, $this))) {
+                || TagStyle::dynamic_style($ltag, $this)
+                || $this->all_flags !== 0)) {
             $ti = $this->ensure($tag);
         }
         if ($this->pattern_version > 0
