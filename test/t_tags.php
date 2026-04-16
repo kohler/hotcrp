@@ -109,15 +109,15 @@ class Tags_Tester {
         $ti = $this->conf->tags()->find("tan");
         xassert($ti->is(TagInfo::TF_READONLY));
         xassert(!$ti->is(TagInfo::TF_HIDDEN));
-        xassert($ti->is(TagInfo::TF_SITEWIDE));
+        xassert($ti->is(TagInfo::TF_ADMIN_PUBLIC));
         $ti = $this->conf->tags()->find("top");
         xassert($ti->is(TagInfo::TF_READONLY));
         xassert($ti->is(TagInfo::TF_HIDDEN));
-        xassert($ti->is(TagInfo::TF_SITEWIDE));
+        xassert($ti->is(TagInfo::TF_ADMIN_PUBLIC));
         $ti = $this->conf->tags()->find("tan");
         xassert($ti->is(TagInfo::TF_READONLY));
         xassert(!$ti->is(TagInfo::TF_HIDDEN));
-        xassert($ti->is(TagInfo::TF_SITEWIDE));
+        xassert($ti->is(TagInfo::TF_ADMIN_PUBLIC));
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "tag_readonly": "accept pcpaper reject",

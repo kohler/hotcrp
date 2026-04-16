@@ -5620,8 +5620,7 @@ class Contact implements JsonSerializable {
                 || ($rights->allow_pc_broad()
                     && $this->conf->pc_can_view_conflicted_tags())
                 || ($this->privChair
-                    && $rights->scope_allows(TS::S_TAG_ADMIN)
-                    && $this->conf->tags()->has(TagInfo::TF_SITEWIDE)));
+                    && $this->conf->tags()->has(TagInfo::TF_ADMIN_PUBLIC)));
     }
 
     /** @return ?FailureReason */
@@ -5730,10 +5729,10 @@ class Contact implements JsonSerializable {
             if (!$rights->scope_allows(TS::S_TAG_READ)
                 || (!$rights->allow_pc()
                     && (!$this->privChair
-                        || !$tagmap->is_sitewide($tag))
+                        || !$tagmap->is_admin_public($tag))
                     && (!$rights->allow_pc_broad()
                         || (!$this->conf->pc_can_view_conflicted_tags()
-                    && !$tagmap->is_conflict_free($tag))))) {
+                    && !$tagmap->is_pc_public($tag))))) {
                 return false;
             }
             $allow_administer = $rights->allow_admin();
@@ -5795,17 +5794,17 @@ class Contact implements JsonSerializable {
         $privChair = $this->privChair
             && $rights->scope_allows(TS::S_TAG_ADMIN);
         if (!$rights->allow_pc_broad()
-            || (!$rights->allow_pc() && !$tagmap->has(TagInfo::TF_CONFLICT_FREE))
+            || (!$rights->allow_pc() && !$tagmap->has(TagInfo::TF_PC_PUBLIC))
             || (!$rights->can_manage() && !$this->conf->time_pc_view($prow, false))) {
             if (!$privChair
-                || !$tagmap->has(TagInfo::TF_SITEWIDE)) {
+                || !$tagmap->has(TagInfo::TF_ADMIN_PUBLIC)) {
                 return false;
             }
             $tag = Tagger::tv_tag($tag);
             $tw = strpos($tag, "~");
             return ($tw === false || ($tw === 0 && $tag[1] === "~"))
                 && ($t = $tagmap->find($tag))
-                && $t->is(TagInfo::TF_SITEWIDE)
+                && $t->is(TagInfo::TF_ADMIN_PUBLIC)
                 && !$t->is(TagInfo::TF_AUTOMATIC);
         }
         $tag = Tagger::tv_tag($tag);
@@ -5814,7 +5813,7 @@ class Contact implements JsonSerializable {
             $t = $tagmap->find($tag);
             // conflicted PC can change conflict-free tags
             if (!$rights->allow_pc()
-                && (!$t || !$t->is(TagInfo::TF_CONFLICT_FREE))) {
+                && (!$t || !$t->is(TagInfo::TF_PC_PUBLIC))) {
                 return false;
             }
             // all other flags only limit rights
@@ -5829,11 +5828,11 @@ class Contact implements JsonSerializable {
                     || $this->can_view_hidden_tags($prow))
                 && (!$t->is(TagInfo::TF_READONLY | TagInfo::TF_RANK)
                     || $rights->can_manage_tags()
-                    || ($privChair && $t->is(TagInfo::TF_SITEWIDE)));
+                    || ($privChair && $t->is(TagInfo::TF_ADMIN_PUBLIC)));
         }
         $t = $tagmap->find(substr($tag, $tw + 1));
         return ($rights->allow_pc()
-                || ($t && $t->is(TagInfo::TF_CONFLICT_FREE)))
+                || ($t && $t->is(TagInfo::TF_PC_PUBLIC)))
             && ($tw === 0
                 || $rights->can_manage_tags()
                 || ($tw === strlen((string) $this->contactId)
@@ -5909,7 +5908,7 @@ class Contact implements JsonSerializable {
                     || $this->conf->time_pc_view($prow, false)))
             || ($this->privChair
                 && $rights->scope_allows(TS::S_TAG_ADMIN)
-                && $this->conf->tags()->has(TagInfo::TF_SITEWIDE));
+                && $this->conf->tags()->has(TagInfo::TF_ADMIN_PUBLIC));
     }
 
     /** @return ?FailureReason */

@@ -92,7 +92,7 @@ class AllTags_API {
     static private function finish_alltags_api($tags, TagMap $dt, Contact $user) {
         $tags = $dt->sort_array($tags);
         $j = ["ok" => true, "tags" => $tags];
-        if ($dt->has(TagInfo::TF_AUTOMATIC | ($user->privChair ? TagInfo::TF_SITEWIDE : TagInfo::TF_READONLY))) {
+        if ($dt->has(TagInfo::TF_AUTOMATIC | ($user->privChair ? TagInfo::TF_ADMIN_PUBLIC : TagInfo::TF_READONLY))) {
             $readonly = $sitewide = [];
             foreach ($tags as $tag) {
                 if (($tag[0] !== "~" || $tag[1] === "~")
@@ -101,7 +101,7 @@ class AllTags_API {
                         || (!$user->privChair && $ti->is(TagInfo::TF_READONLY))) {
                         $readonly[strtolower($tag)] = true;
                     }
-                    if ($user->privChair && $ti->is(TagInfo::TF_SITEWIDE)) {
+                    if ($user->privChair && $ti->is(TagInfo::TF_ADMIN_PUBLIC)) {
                         $sitewide[strtolower($tag)] = true;
                     }
                 }

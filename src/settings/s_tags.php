@@ -19,7 +19,7 @@ class Tags_SettingParser extends SettingParser {
         } else if ($si->name === "tag_readonly") {
             return TagInfo::TF_READONLY;
         } else if ($si->name === "tag_sitewide") {
-            return TagInfo::TF_SITEWIDE;
+            return TagInfo::TF_ADMIN_PUBLIC;
         } else if ($si->name === "tag_vote_approval") {
             return TagInfo::TF_APPROVAL;
         } else if ($si->name === "tag_vote_allotment") {

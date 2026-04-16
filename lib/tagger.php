@@ -43,7 +43,9 @@ class TagInfo {
     const TF_APPROVAL = 0x40;
     const TF_ALLOTMENT = 0x80;
     const TF_RANK = 0x100;
+    const TF_ADMIN_PUBLIC = 0x200;
     const TF_SITEWIDE = 0x200;
+    const TF_PC_PUBLIC = 0x400;
     const TF_CONFLICT_FREE = 0x400;
     const TF_PUBLIC_PERUSER = 0x800;
     const TF_AUTOMATIC = 0x1000;
@@ -859,13 +861,25 @@ class TagMap {
     }
     /** @param string $tag
      * @return bool */
+    function is_admin_public($tag) {
+        return !!$this->find_having($tag, TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC);
+    }
+    /** @param string $tag
+     * @return bool
+     * @deprecated */
     function is_sitewide($tag) {
-        return !!$this->find_having($tag, TagInfo::TF_SITEWIDE);
+        return $this->is_admin_public($tag);
     }
     /** @param string $tag
      * @return bool */
+    function is_pc_public($tag) {
+        return !!$this->find_having($tag, TagInfo::TF_PC_PUBLIC);
+    }
+    /** @param string $tag
+     * @return bool
+     * @deprecated */
     function is_conflict_free($tag) {
-        return !!$this->find_having($tag, TagInfo::TF_CONFLICT_FREE);
+        return $this->is_pc_public($tag);
     }
     /** @param string $tag
      * @return bool */
@@ -1154,7 +1168,7 @@ class TagMap {
         // preserve all tags/show no tags optimization
         $view_most = $user->can_view_most_tags($prow);
         $allow_admin = $prow ? $user->allow_admin($prow) : $user->privChair;
-        $conflict_free = TagInfo::TF_CONFLICT_FREE | ($user->privChair ? TagInfo::TF_SITEWIDE : 0);
+        $conflict_free = TagInfo::TF_PC_PUBLIC | ($user->privChair ? TagInfo::TF_ADMIN_PUBLIC : 0);
         if ($view_most) {
             if (($ctype === self::CENSOR_SEARCH && $allow_admin)
                 || (($this->flags & TagInfo::TF_HIDDEN) === 0 && strpos($tags, "~") === false)) {
@@ -1307,11 +1321,11 @@ class TagMap {
         }
         $ct = $conf->setting_data("tag_sitewide") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
-            $this->set($tv[0], TagInfo::TF_SITEWIDE);
+            $this->set($tv[0], TagInfo::TF_ADMIN_PUBLIC);
         }
         $ct = $conf->setting_data("tag_conflict_free") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
-            $this->set($tv[0], TagInfo::TF_CONFLICT_FREE);
+            $this->set($tv[0], TagInfo::TF_PC_PUBLIC);
         }
         $ppu = $conf->setting("tag_vote_private_peruser")
             || $conf->opt("secretPC");
@@ -1386,11 +1400,11 @@ class TagMap {
         if ($data->hidden ?? false) {
             $flags |= TagInfo::TF_HIDDEN;
         }
-        if ($data->sitewide ?? false) {
-            $flags |= TagInfo::TF_SITEWIDE;
+        if ($data->admin_public ?? $data->sitewide /* XXX */ ?? false) {
+            $flags |= TagInfo::TF_ADMIN_PUBLIC;
         }
-        if ($data->conflict_free ?? false) {
-            $flags |= TagInfo::TF_CONFLICT_FREE;
+        if ($data->pc_public ?? $data->conflict_free /* XXX */ ?? false) {
+            $flags |= TagInfo::TF_PC_PUBLIC;
         }
         if ($data->autosearch ?? null) {
             $flags |= TagInfo::TF_AUTOMATIC | TagInfo::TF_AUTOSEARCH;
