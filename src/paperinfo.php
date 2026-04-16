@@ -507,7 +507,7 @@ final class PaperDocumentLink {
     }
 }
 
-final class PaperInfoSet implements IteratorAggregate, Countable {
+final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -584,6 +584,26 @@ final class PaperInfoSet implements IteratorAggregate, Countable {
     /** @return bool */
     function is_empty() {
         return empty($this->prows);
+    }
+    #[\ReturnTypeWillChange]
+    /** @return bool */
+    function offsetExists($offset) {
+        return isset($this->by_pid[$offset]);
+    }
+    #[\ReturnTypeWillChange]
+    /** @return ?PaperInfo */
+    function offsetGet($offset) {
+        return $this->by_pid[$offset] ?? null;
+    }
+    #[\ReturnTypeWillChange]
+    /** @return void */
+    function offsetSet($offset, $value) {
+        assert(false);
+    }
+    #[\ReturnTypeWillChange]
+    /** @return void */
+    function offsetUnset($offset) {
+        assert(false);
     }
     /** @param callable(PaperInfo,PaperInfo):int $compare */
     function sort_by($compare) {

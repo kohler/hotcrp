@@ -441,6 +441,24 @@ class Tags_Tester {
         xassert_assign($this->u_chair, "action,paper,tag\ncheckedittags,1,fart#none #fart#4 tiorder#5 fart#1 tiorder#6 XFART#4 ~~chair#0\n");
     }
 
+    function test_pc_can_view_conflicted() {
+        $pset = $this->conf->paper_set(["paperId" => [1, 4]]);
+        xassert($pset[1]->has_viewable_tag("fart", $this->u_chair));
+        xassert($pset[1]->has_viewable_tag("fart", $this->u_varghese));
+        xassert($pset[4]->has_viewable_tag("fart", $this->u_chair));
+        xassert(!$pset[4]->has_viewable_tag("fart", $this->u_varghese));
+
+        $this->conf->save_refresh_setting("tag_seeall", 1);
+
+        $pset = $this->conf->paper_set(["paperId" => [1, 4]]);
+        xassert($pset[1]->has_viewable_tag("fart", $this->u_chair));
+        xassert($pset[1]->has_viewable_tag("fart", $this->u_varghese));
+        xassert($pset[4]->has_viewable_tag("fart", $this->u_chair));
+        xassert($pset[4]->has_viewable_tag("fart", $this->u_varghese));
+
+        $this->conf->save_refresh_setting("tag_seeall", null);
+    }
+
     function test_track_data() {
         xassert_eqq(Track::FM_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));
     }
