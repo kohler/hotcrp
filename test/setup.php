@@ -337,18 +337,6 @@ class Xassert {
         }
     }
 
-    static function print_landmark() {
-        list($location, $rest) = self::landmark(true);
-        $x = $location . $rest;
-        if ($x !== "") {
-            self::will_print();
-            if (!str_ends_with($x, "\n")) {
-                $x .= "\n";
-            }
-            fwrite(STDERR, $x);
-        }
-    }
-
     /** @param list<string> $sl */
     static private function fail_message($sl) {
         if (self::$retry) {
@@ -361,7 +349,11 @@ class Xassert {
             $x = join("", array_slice($sl, 1));
         } else {
             list($location, $rest) = self::landmark(true);
-            $x = $location . join("", $sl) . $rest;
+            $x = $location . join("", $sl);
+            if ($x !== "" && $rest !== "" && !str_ends_with($x, "\n")) {
+                $x .= "\n";
+            }
+            $x .= $rest;
         }
         if ($x !== "" && !str_ends_with($x, "\n")) {
             $x .= "\n";
