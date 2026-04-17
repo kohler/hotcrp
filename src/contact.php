@@ -5605,14 +5605,15 @@ class Contact implements JsonSerializable {
     }
 
 
+    // Tag permissions
+
     /** @return bool */
     function can_view_tags(?PaperInfo $prow = null) {
         // see also AllTags_API::alltags, PaperInfo::{searchable,viewable}_tags
-        if (!$this->isPC
-            || !$this->scope_allows_some(TS::S_TAG_READ)) {
+        if (!$this->isPC) {
             return false;
         } else if (!$prow) {
-            return true;
+            return $this->scope_allows_some(TS::S_TAG_READ);
         }
         $rights = $this->rights($prow);
         if (!$rights->scope_allows(TS::S_TAG_READ)) {
@@ -5645,11 +5646,10 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_most_tags(?PaperInfo $prow = null) {
-        if (!$this->isPC
-            || !$this->scope_allows_some(TS::S_TAG_READ)) {
+        if (!$this->isPC) {
             return false;
         } else if (!$prow) {
-            return true;
+            return $this->scope_allows_some(TS::S_TAG_READ);
         }
         $rights = $this->rights($prow);
         return $rights->scope_allows(TS::S_TAG_READ)
@@ -5658,12 +5658,12 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_hidden_tags(?PaperInfo $prow = null) {
-        if (!$this->isPC
-            || !$this->scope_allows_some(TS::S_TAG_READ)) {
+        if (!$this->isPC) {
             return false;
         } else if (!$prow) {
-            return $this->privChair
-                || $this->conf->check_default_track($this, Track::HIDDENTAG);
+            return $this->scope_allows_some(TS::S_TAG_READ)
+                && ($this->privChair
+                    || $this->conf->check_default_track($this, Track::HIDDENTAG));
         }
         $rights = $this->rights($prow);
         return $rights->scope_allows(TS::S_TAG_READ)
@@ -5784,11 +5784,11 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
         assert(!!$tag);
-        if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-            || $this->_root_user) {
-            return true;
-        } else if (!$this->isPC) {
+        if (!$this->isPC) {
             return false;
+        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+                   || $this->_root_user) {
+            return true;
         }
         $rights = $this->rights($prow);
         if (!$rights->scope_allows(TS::S_TAG_WRITE)) {
@@ -5895,11 +5895,11 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_edit_some_tag(?PaperInfo $prow = null) {
-        if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-            || $this->_root_user) {
-            return true;
-        } else if (!$this->isPC) {
+        if (!$this->isPC) {
             return false;
+        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+                   || $this->_root_user) {
+            return true;
         } else if (!$prow) {
             return $this->scope_allows_some(TS::S_TAG_WRITE);
         }
@@ -5945,8 +5945,7 @@ class Contact implements JsonSerializable {
     function can_edit_most_tags(?PaperInfo $prow = null) {
         if (!$this->isPC) {
             return false;
-        }
-        if (!$prow) {
+        } else if (!$prow) {
             return $this->scope_allows_some(TS::S_TAG_WRITE);
         }
         $rights = $this->rights($prow);
@@ -5960,11 +5959,12 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_edit_tag_somewhere($tag) {
         assert(!!$tag);
-        if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-            || $this->_root_user) {
+        if (!$this->isPC) {
+            return false;
+        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+                   || $this->_root_user) {
             return true;
-        } else if (!$this->isPC
-                   || !$this->scope_allows_some(TS::S_TAG_WRITE)) {
+        } else if (!$this->scope_allows_some(TS::S_TAG_WRITE)) {
             return false;
         }
         $tagmap = $this->conf->tags();
