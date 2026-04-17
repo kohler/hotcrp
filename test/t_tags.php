@@ -128,7 +128,7 @@ class Tags_Tester {
 
     function test_implicit_tag_patterns() {
         $ti = $this->conf->tags()->find("~~fxxxk");
-        xassert($ti && $ti->is(TagInfo::TF_CHAIR));
+        xassert($ti && $ti->is(TagInfo::TF_CHAIR_HIDDEN));
     }
 
     function test_assign_delete_create() {
@@ -531,7 +531,11 @@ class Tags_Tester {
         $this->conf->save_setting("tracks", null);
     }
 
-    function test_track_data() {
+    function test_flag_values() {
         xassert_eqq(Track::FM_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));
+        xassert_eqq(TagInfo::TFM_VOTES, TagInfo::TF_APPROVAL | TagInfo::TF_ALLOTMENT);
+        xassert_eqq(TagInfo::TFM_DECORATION, TagInfo::TF_EMOJI | TagInfo::TF_STYLE | TagInfo::TF_BADGE);
+        xassert_eqq(TagInfo::TF_SITEWIDE, TagInfo::TF_ADMIN_PUBLIC);
+        xassert_eqq(TagInfo::TF_CONFLICT_FREE, TagInfo::TF_PC_PUBLIC);
     }
 }

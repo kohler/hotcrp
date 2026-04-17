@@ -5746,9 +5746,12 @@ class Contact implements JsonSerializable {
 
         // twiddle and hidden-tag checks
         $twiddle = strpos($tag, "~");
+        if ($twiddle === 0 && $tag[1] === "~") {
+            return $this->privChair;
+        }
         return ($allow_administer
                 || $twiddle === false
-                || ($twiddle === 0 && $tag[1] !== "~")
+                || $twiddle === 0
                 || ($twiddle > 0
                     && (substr($tag, 0, $twiddle) == $this->contactId
                         || $tagmap->is_public_peruser(substr($tag, $twiddle + 1)))))
@@ -5823,7 +5826,7 @@ class Contact implements JsonSerializable {
             }
             // check remaining flags
             return !$t->is(TagInfo::TF_AUTOMATIC)
-                && (!$t->is(TagInfo::TF_CHAIR)
+                && (!$t->is(TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_CHAIR_READONLY)
                     || $privChair)
                 && (!$t->is(TagInfo::TF_HIDDEN)
                     || $this->can_view_hidden_tags($prow))
@@ -5971,17 +5974,15 @@ class Contact implements JsonSerializable {
             if ($twiddle > 0) {
                 return substr($tag, 0, $twiddle) == $this->contactId
                     || $this->is_manager();
-            } else {
-                return $tag[1] !== "~"
-                    || ($this->is_manager() && !$tagmap->is_automatic($tag));
             }
-        } else {
-            $t = $tagmap->find($tag);
-            return !$t
-                || (!$t->is(TagInfo::TF_AUTOMATIC)
-                    && (!$t->is(TagInfo::TF_CHAIR) || $this->privChair)
-                    && (!$t->is(TagInfo::TF_READONLY) || $this->is_manager()));
+            return $tag[1] !== "~"
+                || ($this->privChair && !$tagmap->is_automatic($tag));
         }
+        $t = $tagmap->find($tag);
+        return !$t
+            || (!$t->is(TagInfo::TF_AUTOMATIC)
+                && (!$t->is(TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_CHAIR_READONLY) || $this->privChair)
+                && (!$t->is(TagInfo::TF_HIDDEN | TagInfo::TF_READONLY) || $this->is_manager()));
     }
 
     /** @param string $tag
@@ -5996,7 +5997,7 @@ class Contact implements JsonSerializable {
         $t = $this->conf->tags()->find($tag);
         // XXXXXXX
         return $this->isPC
-            && (!$t || !$t->is(TagInfo::TF_CHAIR | TagInfo::TF_READONLY | TagInfo::TF_HIDDEN))
+            && (!$t || !$t->is(TagInfo::TF_CHAIR_READONLY | TagInfo::TF_READONLY | TagInfo::TF_HIDDEN))
             && ($twiddle === false
                 || ($twiddle === 0 && $tag[1] !== "~")
                 || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId));

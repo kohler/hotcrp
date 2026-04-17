@@ -34,30 +34,34 @@ class TagInfo {
     /** @var ?list<string> */
     public $emoji;
 
-    const TF_TRACK = 0x1;
-    const TF_SCLASS = 0x2;
-    const TF_CHAIR = 0x4;
-    const TF_PRIVATE = 0x8;
-    const TF_READONLY = 0x10;
-    const TF_HIDDEN = 0x20;
-    const TF_APPROVAL = 0x40;
-    const TF_ALLOTMENT = 0x80;
-    const TF_RANK = 0x100;
-    const TF_ADMIN_PUBLIC = 0x200;
-    const TF_SITEWIDE = 0x200;
-    const TF_PC_PUBLIC = 0x400;
-    const TF_CONFLICT_FREE = 0x400;
-    const TF_PUBLIC_PERUSER = 0x800;
-    const TF_AUTOMATIC = 0x1000;
-    const TF_AUTOSEARCH = 0x2000;
-    const TF_STYLE = 0x4000;
-    const TF_BADGE = 0x8000;
-    const TF_EMOJI = 0x10000;
-    const TF_IS_SETTINGS = 0x20000;
-    const TF_IS_PATTERN = 0x40000;
+    const TF_TRACK = 0x1;             // tag is name of track
+    const TF_SCLASS = 0x2;            // tag associated with submission class
+    const TF_PRIVATE = 0x4;           // tag private to user
+    const TF_CHAIR_HIDDEN = 0x8;      // tag only viewable by chairs
+    const TF_CHAIR_READONLY = 0x10;   // tag only modifiable by chairs
+    const TF_HIDDEN = 0x20;           // tag only viewable by submission admin
+    const TF_READONLY = 0x40;         // tag only modifiable by submission admin
+    const TF_ADMIN_PUBLIC = 0x80;     // accessible to chairs+admins despite conflicts
+    const TF_PC_PUBLIC = 0x100;       // accessible to pc despite conflicts
+    const TF_PUBLIC_PERUSER = 0x200;  // other users' private tags are viewable
+    const TF_APPROVAL = 0x400;        // approval voting tag
+    const TF_ALLOTMENT = 0x800;       // allotment voting tag
+    const TF_RANK = 0x1000;           // ranking tag
+    const TF_AUTOMATIC = 0x2000;      // automatic tag (voting or search)
+    const TF_AUTOSEARCH = 0x4000;     // automatic search
+    const TF_STYLE = 0x8000;          // style tag
+    const TF_BADGE = 0x10000;         // badge tag
+    const TF_EMOJI = 0x20000;         // emoji tag
+    const TF_IS_SETTINGS = 0x40000;   // this entry enforced by settings
+    const TF_IS_PATTERN = 0x80000;    // this entry is pattern
 
-    const TFM_VOTES = 0xC0;
-    const TFM_DECORATION = 0x1C000;
+    const TFM_VOTES = 0xC00;
+    const TFM_DECORATION = 0x38000;
+
+    /** @deprecated */
+    const TF_SITEWIDE = 0x80;
+    /** @deprecated */
+    const TF_CONFLICT_FREE = 0x100;
 
     /** @param string $tag
      * @param int $flags */
@@ -72,10 +76,10 @@ class TagInfo {
             $this->emoji[] = $e;
         }
         if ($tag[0] === "~") {
-            if ($tag[1] !== "~") {
-                $this->flags |= self::TF_PRIVATE;
+            if ($tag[1] === "~") {
+                $this->flags |= self::TF_CHAIR_HIDDEN;
             } else {
-                $this->flags |= self::TF_CHAIR;
+                $this->flags |= self::TF_PRIVATE;
             }
         }
     }
@@ -540,7 +544,7 @@ class TagMap {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->flags = TagInfo::TF_CHAIR | TagInfo::TF_READONLY;
+        $this->flags = TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_READONLY;
         if ($conf->pc_can_view_conflicted_tags()) {
             $this->all_flags |= TagInfo::TF_PC_PUBLIC;
             $this->flags |= TagInfo::TF_PC_PUBLIC;
@@ -846,11 +850,11 @@ class TagMap {
 
     /** @param string $tag
      * @return bool */
-    function is_chair($tag) {
+    function is_chair_hidden($tag) {
         if ($tag[0] === "~") {
             return $tag[1] === "~";
         }
-        return !!$this->find_having($tag, TagInfo::TF_CHAIR);
+        return !!$this->find_having($tag, TagInfo::TF_CHAIR_HIDDEN);
     }
     /** @param string $tag
      * @return bool */
@@ -1310,12 +1314,12 @@ class TagMap {
 
     private function merge_settings(Conf $conf) {
         foreach ($conf->track_tags() as $tn) {
-            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TF_CHAIR);
+            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TF_CHAIR_READONLY);
         }
         if ($conf->has_named_submission_rounds()) {
             foreach ($conf->submission_round_list() as $sr) {
                 if ($sr->tag !== "") {
-                    $this->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_CHAIR);
+                    $this->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_CHAIR_READONLY);
                 }
             }
         }
@@ -1400,7 +1404,7 @@ class TagMap {
     private function merge_json($tag, $data) {
         $flags = 0;
         if ($data->chair ?? false) {
-            $flags |= TagInfo::TF_CHAIR;
+            $flags |= TagInfo::TF_CHAIR_HIDDEN;
         }
         if ($data->readonly ?? false) {
             $flags |= TagInfo::TF_READONLY;
