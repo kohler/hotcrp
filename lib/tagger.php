@@ -38,30 +38,35 @@ class TagInfo {
     const TF_SCLASS = 0x2;            // tag associated with submission class
     const TF_PRIVATE = 0x4;           // tag private to user
     const TF_CHAIR_HIDDEN = 0x8;      // tag only viewable by chairs
-    const TF_CHAIR_READONLY = 0x10;   // tag only modifiable by chairs
-    const TF_HIDDEN = 0x20;           // tag only viewable by submission admin
-    const TF_READONLY = 0x40;         // tag only modifiable by submission admin
-    const TF_ADMIN_PUBLIC = 0x80;     // accessible to chairs+admins despite conflicts
-    const TF_PC_PUBLIC = 0x100;       // accessible to pc despite conflicts
-    const TF_PUBLIC_PERUSER = 0x200;  // other users' private tags are viewable
-    const TF_APPROVAL = 0x400;        // approval voting tag
-    const TF_ALLOTMENT = 0x800;       // allotment voting tag
-    const TF_RANK = 0x1000;           // ranking tag
-    const TF_AUTOMATIC = 0x2000;      // automatic tag (voting or search)
-    const TF_AUTOSEARCH = 0x4000;     // automatic search
-    const TF_STYLE = 0x8000;          // style tag
-    const TF_BADGE = 0x10000;         // badge tag
-    const TF_EMOJI = 0x20000;         // emoji tag
-    const TF_IS_SETTINGS = 0x40000;   // this entry enforced by settings
-    const TF_IS_PATTERN = 0x80000;    // this entry is pattern
+    const TF_HIDDEN = 0x10;           // tag only viewable by submission admin
+    const TF_ADMIN_PUBLIC = 0x20;     // accessible to chairs+admins despite conflicts
+    const TF_PC = 0x40;               // accessible to unconflicted pc (default)
+    const TF_PC_PUBLIC = 0x80;        // accessible to pc despite conflicts
+    const TF_OTHER_PRIVATE = 0x100;   // other users' private tags are viewable
+    const TF_PUBLIC_PERUSER = 0x100;  // other users' private tags are viewable
+    const TF_CHAIR_READONLY = 0x200;  // tag only modifiable by chairs
+    const TF_READONLY = 0x400;        // tag only modifiable by submission admin
+    const TF_APPROVAL = 0x800;        // approval voting tag
+    const TF_ALLOTMENT = 0x1000;      // allotment voting tag
+    const TF_RANK = 0x2000;           // ranking tag
+    const TF_AUTOMATIC = 0x4000;      // automatic tag (voting or search)
+    const TF_AUTOSEARCH = 0x8000;     // automatic search
+    const TF_STYLE = 0x10000;         // style tag
+    const TF_BADGE = 0x20000;         // badge tag
+    const TF_EMOJI = 0x40000;         // emoji tag
+    const TF_IS_SETTINGS = 0x80000;   // this entry enforced by settings
+    const TF_IS_PATTERN = 0x100000;   // this entry is pattern
 
-    const TFM_VOTES = 0xC00;
-    const TFM_DECORATION = 0x38000;
+    const TFM_VOTES = 0x1800;
+    const TFM_DECORATION = 0x70000;
+    const TFM_NOT_CHAIR_HIDDEN = 0x1F0;
+    const TFM_NOT_HIDDEN = 0x1C0;
+    const TFM_PERM = 0x1F8;
 
     /** @deprecated */
-    const TF_SITEWIDE = 0x80;
+    const TF_SITEWIDE = 0x20;
     /** @deprecated */
-    const TF_CONFLICT_FREE = 0x100;
+    const TF_CONFLICT_FREE = 0x80;
 
     /** @param string $tag
      * @param int $flags */
@@ -81,6 +86,11 @@ class TagInfo {
             } else {
                 $this->flags |= self::TF_PRIVATE;
             }
+        }
+        if ($this->flags & self::TF_CHAIR_HIDDEN) {
+            $this->flags &= ~self::TFM_NOT_CHAIR_HIDDEN;
+        } else if ($this->flags & self::TF_HIDDEN) {
+            $this->flags &= ~self::TFM_NOT_HIDDEN;
         }
     }
     /** @template T
@@ -120,6 +130,11 @@ class TagInfo {
             if ($ti->emoji) {
                 $this->emoji = self::merge_lists($this->emoji, $ti->emoji);
             }
+        }
+        if ($this->flags & self::TF_CHAIR_HIDDEN) {
+            $this->flags &= ~self::TFM_NOT_CHAIR_HIDDEN;
+        } else if ($this->flags & self::TF_HIDDEN) {
+            $this->flags &= ~self::TFM_NOT_HIDDEN;
         }
     }
 
@@ -513,7 +528,9 @@ class TagMap {
     public $flags;
     /** @var int
      * @readonly */
-    public $all_flags = 0;
+    public $all_flags;
+    /** @var int */
+    private $setting_flags = 0;
     /** @var bool */
     public $has_role_decoration = false;
     /** @var array<string,TagInfo> */
@@ -544,10 +561,12 @@ class TagMap {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->flags = TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_READONLY;
+        $this->flags = TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_PC;
+        $this->all_flags = TagInfo::TF_PC;
         if ($conf->pc_can_view_conflicted_tags()) {
             $this->all_flags |= TagInfo::TF_PC_PUBLIC;
             $this->flags |= TagInfo::TF_PC_PUBLIC;
+            $this->setting_flags |= TagInfo::TF_PC_PUBLIC;
         }
 
         // RGB colors taken from style.css
@@ -770,6 +789,7 @@ class TagMap {
             }
         }
         $this->flags |= $ti->flags;
+        $this->setting_flags |= $ti->flags;
         if (($ti->flags & TagInfo::TF_AUTOMATIC) !== 0) {
             $this->automatic_entries = null;
         }
@@ -849,12 +869,31 @@ class TagMap {
     }
 
     /** @param string $tag
+     * @param int $cid
+     * @return int */
+    function perm_flags($tag, $cid) {
+        $tw = strpos($tag, "~");
+        if ($tw === false) {
+            $ti = $this->setting_flags & TagInfo::TFM_PERM ? $this->find($tag) : null;
+            return $ti ? $ti->flags & TagInfo::TFM_PERM : TagInfo::TF_PC;
+        } else if ($tw === 0) {
+            return $tag[1] === "~" ? TagInfo::TF_CHAIR_HIDDEN : TagInfo::TF_PC;
+        } else if (intval($tag) === $cid) {
+            return TagInfo::TF_PC;
+        }
+        $ti = $this->flags & TagInfo::TF_OTHER_PRIVATE ? $this->find(substr($tag, $tw + 1)) : null;
+        if ($ti && ($ti->flags & TagInfo::TF_OTHER_PRIVATE) !== 0) {
+            return TagInfo::TF_PC;
+        }
+        return TagInfo::TF_OTHER_PRIVATE;
+    }
+
+    /** @param string $tag
      * @return bool */
     function is_chair_hidden($tag) {
-        if ($tag[0] === "~") {
-            return $tag[1] === "~";
-        }
-        return !!$this->find_having($tag, TagInfo::TF_CHAIR_HIDDEN);
+        return str_starts_with($tag, "~~")
+            || (($this->setting_flags & TagInfo::TF_CHAIR_HIDDEN) !== 0
+                && $this->find_having($tag, TagInfo::TF_CHAIR_HIDDEN));
     }
     /** @param string $tag
      * @return bool */

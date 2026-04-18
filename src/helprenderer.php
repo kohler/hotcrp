@@ -230,7 +230,7 @@ class HelpRenderer {
     function example_tag($flags) {
         if ($this->user->isPC) {
             foreach ($this->conf->tags()->settings_having($flags) as $dt) {
-                if ($this->user->can_view_some_tag($dt->tag))
+                if ($this->user->can_view_tag_somehwere($dt->tag))
                     return $dt->tag;
             }
         }
@@ -243,7 +243,7 @@ class HelpRenderer {
         $ts = [];
         if ($this->user->isPC) {
             foreach ($this->conf->tags()->sorted_settings_having($flags) as $dt) {
-                if ($this->user->can_view_some_tag($dt->tag))
+                if ($this->user->can_view_tag_somewhere($dt->tag))
                     $ts[] = $dt->tag;
             }
         }
