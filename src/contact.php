@@ -5641,7 +5641,7 @@ class Contact implements JsonSerializable {
                 $fl |= TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC | TagInfo::TF_HIDDEN | TagInfo::TF_OTHER_PRIVATE;
             } else {
                 if ($rights->allow_admin()) {
-                    $fl |= TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_HIDDEN;
+                    $fl |= TagInfo::TF_ADMIN_PUBLIC;
                 } else if ($this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)) {
                     $fl |= TagInfo::TF_HIDDEN;
                 }
