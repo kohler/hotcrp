@@ -451,9 +451,8 @@ class TagStyle {
         } else if (str_starts_with($s, "font-")
                    || str_starts_with($s, "weight-")) {
             return $s;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $color
@@ -667,9 +666,8 @@ class TagMap {
         if ($len >= 3 && $ltag[0] === ":" && $ltag[$len - 1] === ":") {
             $m = $this->conf->emoji_code_map();
             return $m[substr($ltag, 1, $len - 2)] ?? false;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param string $tag

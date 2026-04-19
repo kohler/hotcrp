@@ -470,18 +470,18 @@ class Tags_Tester {
         xassert(!$this->u_varghese->can_administer($pset[2]));
 
         xassert_search($this->u_chair, "#~~ch", "1-4");
-        xassert_search($this->u_varghese, "#~~ch", "");
-        xassert_search($u_guerin, "#~~ch", "");
         xassert($this->u_chair->can_view_tag_somewhere("~~ch"));
         xassert($this->u_chair->can_view_tag($pset[1], "~~ch"));
         xassert($this->u_chair->can_edit_tag($pset[1], "~~ch", null, 1));
         xassert($this->u_chair->can_edit_tag_somewhere("~~ch"));
         xassert_str_contains($pset[1]->viewable_tags($this->u_chair), "~~ch");
+        xassert_search($this->u_varghese, "#~~ch", "");
         xassert(!$this->u_varghese->can_view_tag_somewhere("~~ch"));
         xassert(!$this->u_varghese->can_view_tag($pset[1], "~~ch"));
         xassert(!$this->u_varghese->can_edit_tag($pset[1], "~~ch", null, 1));
         xassert(!$this->u_varghese->can_edit_tag_somewhere("~~ch"));
         xassert_not_str_contains($pset[1]->viewable_tags($this->u_varghese), "~~ch");
+        xassert_search($u_guerin, "#~~ch", "");
         xassert(!$u_guerin->can_view_tag_somewhere("~~ch"));
         xassert(!$u_guerin->can_view_tag($pset[1], "~~ch"));
         xassert(!$u_guerin->can_edit_tag($pset[1], "~~ch", null, 1));
@@ -489,18 +489,18 @@ class Tags_Tester {
         xassert_not_str_contains($pset[1]->viewable_tags($u_guerin), "~~ch");
 
         xassert_search($this->u_chair, "#ch", "1-4");
-        xassert_search($this->u_varghese, "#ch", "1");
-        xassert_search($u_guerin, "#ch", "");
         xassert($this->u_chair->can_view_tag_somewhere("ch"));
         xassert($this->u_chair->can_view_tag($pset[1], "ch"));
         xassert($this->u_chair->can_edit_tag($pset[1], "ch", null, 1));
         xassert($this->u_chair->can_edit_tag_somewhere("ch"));
         xassert_str_contains($pset[1]->viewable_tags($this->u_chair), "ch");
+        xassert_search($this->u_varghese, "#ch", "1");
         xassert($this->u_varghese->can_view_tag_somewhere("ch"));
         xassert($this->u_varghese->can_view_tag($pset[1], "ch"));
         xassert($this->u_varghese->can_edit_tag($pset[1], "ch", null, 1));
         xassert($this->u_varghese->can_edit_tag_somewhere("ch"));
         xassert_str_contains($pset[1]->viewable_tags($this->u_varghese), "ch");
+        xassert_search($u_guerin, "#ch", "");
         xassert(!$u_guerin->can_view_tag_somewhere("ch"));
         xassert(!$u_guerin->can_view_tag($pset[1], "ch"));
         xassert(!$u_guerin->can_edit_tag($pset[1], "ch", null, 1));
@@ -508,18 +508,18 @@ class Tags_Tester {
         xassert_not_str_contains($pset[1]->viewable_tags($u_guerin), "ch");
 
         xassert_search($this->u_chair, "#redt", "1");
-        xassert_search($this->u_varghese, "#redt", "1");
-        xassert_search($u_guerin, "#redt", "1");
         xassert($this->u_chair->can_view_tag_somewhere("redt"));
         xassert($this->u_chair->can_view_tag($pset[1], "redt"));
         xassert($this->u_chair->can_edit_tag($pset[1], "redt", 0, null));
         xassert($this->u_chair->can_edit_tag_somewhere("redt"));
         xassert_str_contains($pset[1]->viewable_tags($this->u_chair), "redt");
+        xassert_search($this->u_varghese, "#redt", "1");
         xassert($this->u_varghese->can_view_tag_somewhere("redt"));
         xassert($this->u_varghese->can_view_tag($pset[1], "redt"));
         xassert(!$this->u_varghese->can_edit_tag($pset[1], "redt", 0, null));
         xassert(!$this->u_varghese->can_edit_tag_somewhere("redt"));
         xassert_str_contains($pset[1]->viewable_tags($this->u_varghese), "redt");
+        xassert_search($u_guerin, "#redt", "1");
         xassert($u_guerin->can_view_tag_somewhere("redt"));
         xassert($u_guerin->can_view_tag($pset[1], "redt"));
         xassert(!$u_guerin->can_edit_tag($pset[1], "redt", 0, null));
@@ -529,6 +529,50 @@ class Tags_Tester {
         xassert_assign($this->u_chair, "action,paper,tag\ncleartag,1-4,ch ~~ch redt\n");
         $this->conf->save_setting("tag_hidden", null);
         $this->conf->save_setting("tracks", null);
+    }
+
+    function test_chair_conflict_tags() {
+        xassert_assign($this->u_chair, "action,paper,tag,user\nconflict,1-4,,huitema@bellcore.com\nadministrator,4,,lixia@cs.ucla.edu\nclearadministrator,2\n");
+        $u_huitema = $this->conf->checked_user_by_email("huitema@bellcore.com");
+
+        $pset = $this->conf->paper_set(["paperId" => [1, 2, 3, 4]]);
+        xassert(!$u_huitema->can_view_tags($pset[1]));
+        xassert(!$u_huitema->can_view_tags($pset[2]));
+        xassert(!$u_huitema->can_view_tags($pset[3]));
+        xassert(!$u_huitema->can_view_tags($pset[4]));
+        xassert(!$u_huitema->can_edit_tag($pset[1], "~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[2], "~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[3], "~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[4], "~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[1], "~~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[2], "~~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[3], "~~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[4], "~~ch", null, 0));
+        xassert(!$u_huitema->can_administer($pset[1]));
+        xassert(!$u_huitema->can_administer($pset[2]));
+        xassert(!$u_huitema->can_administer($pset[3]));
+        xassert(!$u_huitema->can_administer($pset[4]));
+        $u_huitema->add_overrides(Contact::OVERRIDE_CONFLICT);
+        xassert($u_huitema->can_view_tags($pset[1]));
+        xassert($u_huitema->can_view_tags($pset[2]));
+        xassert($u_huitema->can_view_tags($pset[3]));
+        xassert(!$u_huitema->can_view_tags($pset[4]));
+        xassert($u_huitema->can_edit_tag($pset[1], "~ch", null, 0));
+        xassert($u_huitema->can_edit_tag($pset[2], "~ch", null, 0));
+        xassert($u_huitema->can_edit_tag($pset[3], "~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[4], "~ch", null, 0));
+        xassert($u_huitema->can_edit_tag($pset[1], "~~ch", null, 0));
+        xassert($u_huitema->can_edit_tag($pset[2], "~~ch", null, 0));
+        xassert($u_huitema->can_edit_tag($pset[3], "~~ch", null, 0));
+        xassert(!$u_huitema->can_edit_tag($pset[4], "~~ch", null, 0));
+        xassert($u_huitema->can_administer($pset[1]));
+        xassert($u_huitema->can_administer($pset[2]));
+        xassert($u_huitema->can_administer($pset[3]));
+        xassert(!$u_huitema->can_administer($pset[4]));
+        xassert_assign_fail($u_huitema, "action,paper,tag\ntag,1,~~chx\n", false);
+        xassert_assign($u_huitema, "action,paper,tag\ntag,1,~~ch\n", true);
+
+        xassert_assign($this->u_chair, "action,paper,tag,user\nclearconflict,1-4,,huitema@bellcore.com\nclearadministrator,4\ncleartag,1-4,~~ch ~~chx\n");
     }
 
     function test_flag_values() {

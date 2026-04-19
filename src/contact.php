@@ -5623,11 +5623,14 @@ class Contact implements JsonSerializable {
         }
         $fl = 0;
         if ($this->privChair) {
-            $fl |= TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_ADMIN_PUBLIC;
+            $fl |= TagInfo::TF_ADMIN_PUBLIC;
         }
         if (!$rights) {
             $fl |= TagInfo::TF_PC_PUBLIC;
             if ($this->is_manager()) {
+                if ($this->privChair) {
+                    $fl |= TagInfo::TF_CHAIR_HIDDEN;
+                }
                 $fl |= TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC | TagInfo::TF_HIDDEN | TagInfo::TF_OTHER_PRIVATE;
             } else {
                 if ($this->conf->check_any_required_tracks($this, Track::HIDDENTAG)) {
@@ -5638,6 +5641,9 @@ class Contact implements JsonSerializable {
         } else if ($rights->allow_pc_broad()) {
             $fl |= TagInfo::TF_PC_PUBLIC;
             if ($rights->is_admin()) {
+                if ($this->privChair) {
+                    $fl |= TagInfo::TF_CHAIR_HIDDEN;
+                }
                 $fl |= TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC | TagInfo::TF_HIDDEN | TagInfo::TF_OTHER_PRIVATE;
             } else {
                 if ($rights->allow_admin()) {
