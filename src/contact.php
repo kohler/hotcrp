@@ -5648,11 +5648,12 @@ class Contact implements JsonSerializable {
             } else {
                 if ($rights->allow_admin()) {
                     $fl |= TagInfo::TF_ADMIN_PUBLIC;
-                } else if ($this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)) {
-                    $fl |= TagInfo::TF_HIDDEN;
                 }
                 if ($rights->allow_pc()) {
                     $fl |= TagInfo::TF_PC;
+                    if ($this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)) {
+                        $fl |= TagInfo::TF_HIDDEN;
+                    }
                 }
             }
         }
