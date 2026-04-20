@@ -5751,7 +5751,7 @@ class Contact implements JsonSerializable {
             return false;
         } else if (!$prow) {
             return $this->scope_allows_some(TS::S_TAG_READ)
-                && ($this->privChair
+                && ($this->is_manager()
                     || $this->conf->check_any_required_tracks($this, Track::HIDDENTAG));
         }
         $rights = $this->rights($prow);
