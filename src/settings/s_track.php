@@ -221,7 +221,8 @@ class Track_SettingParser extends SettingParser {
 
         $hint = "";
         if (is_array($label)) {
-            list($label, $hint) = $label;
+            $hint = $label[1] ?? "";
+            $label = $label[0];
         }
 
         echo '<div class="', $sv->control_class($pfx, "entryi wide"),
