@@ -5677,7 +5677,7 @@ class Contact implements JsonSerializable {
         $dt = $this->conf->tags();
         return ($rights->allow_pc_broad()
                 && $dt->has(TagInfo::TF_PC_PUBLIC))
-            || ($this->privChair
+            || (($this->privChair || $rights->allow_admin())
                 && $dt->has(TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC));
     }
 

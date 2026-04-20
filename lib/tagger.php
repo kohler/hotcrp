@@ -1212,7 +1212,8 @@ class TagMap {
         // preserve all tags/show no tags optimization
         $view_most = $user->can_view_most_tags($prow);
         $allow_admin = $prow ? $user->allow_admin($prow) : $user->privChair;
-        $conflict_free = TagInfo::TF_PC_PUBLIC | ($user->privChair ? TagInfo::TF_ADMIN_PUBLIC : 0);
+        $conflict_free = TagInfo::TF_PC_PUBLIC
+            | ($allow_admin || $user->privChair ? TagInfo::TF_ADMIN_PUBLIC : 0);
         if ($view_most) {
             if (($ctype === self::CENSOR_SEARCH && $allow_admin)
                 || (($this->flags & TagInfo::TF_HIDDEN) === 0 && strpos($tags, "~") === false)) {
