@@ -1353,7 +1353,7 @@ class TagMap {
             $this->setting_flags |= TagInfo::TF_PC_PUBLIC;
         }
         foreach ($conf->track_tags() as $tn) {
-            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TF_CHAIR_READONLY);
+            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_CHAIR_READONLY);
         }
         if ($conf->has_named_submission_rounds()) {
             foreach ($conf->submission_round_list() as $sr) {
