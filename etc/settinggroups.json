@@ -320,45 +320,36 @@
     },
     {
         "name": "tags/main", "order": 10,
-        "title": "Tags", "print_members": true
+        "title": "Tag permissions", "print_members": true
     },
     {
         "name": "__crosscheck/tags", "order": 700,
         "crosscheck_function": "Tags_SettingParser::crosscheck"
     },
     {
-        "name": "tags/main/chair", "order": 10,
+        "name": "tags/main/readonly", "order": 10,
         "print_function": "Tags_SettingParser::print_tag_chair",
         "settings": ["tag_readonly"]
     },
     {
-        "name": "tags/main/sitewide", "order": 20,
-        "print_function": "Tags_SettingParser::print_tag_sitewide",
-        "settings": ["tag_sitewide"]
+        "name": "tags/votes", "order": 50,
+        "title": "Votes and ranks",
+        "separator_before": true, "print_members": true
     },
     {
-        "name": "tags/main/approval", "order": 30,
+        "name": "tags/votes/approval", "order": 30,
         "print_function": "Tags_SettingParser::print_tag_approval",
         "settings": ["tag_vote_approval"]
     },
     {
-        "name": "tags/main/vote", "order": 40,
+        "name": "tags/votes/vote", "order": 40,
         "print_function": "Tags_SettingParser::print_tag_vote",
         "settings": ["tag_vote_allotment"]
     },
     {
-        "name": "tags/main/rank", "order": 50,
+        "name": "tags/votes/rank", "order": 50,
         "print_function": "Tags_SettingParser::print_tag_rank",
         "settings": ["tag_rank"]
-    },
-    {
-        "name": "tags/visibility", "order": 100,
-        "separator_before": true, "print_members": true
-    },
-    {
-        "name": "tags/visibility/seeall", "order": 10,
-        "print_function": "Tags_SettingParser::print_tag_seeall",
-        "settings": ["tag_visibility_conflict"]
     },
     {
         "name": "tag-styles", "group": "tags", "order": 720,

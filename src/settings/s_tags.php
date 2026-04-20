@@ -16,10 +16,14 @@ class Tags_SettingParser extends SettingParser {
     static function si_flag(Si $si) {
         if ($si->name === "tag_hidden") {
             return TagInfo::TF_HIDDEN;
+        } else if ($si->name === "tag_chair_hidden") {
+            return TagInfo::TF_CHAIR_HIDDEN;
         } else if ($si->name === "tag_readonly") {
             return TagInfo::TF_READONLY;
-        } else if ($si->name === "tag_sitewide") {
+        } else if ($si->name === "tag_admin_open") {
             return TagInfo::TF_ADMIN_PUBLIC;
+        } else if ($si->name === "tag_pc_open") {
+            return TagInfo::TF_PC_PUBLIC;
         } else if ($si->name === "tag_vote_approval") {
             return TagInfo::TF_APPROVAL;
         } else if ($si->name === "tag_vote_allotment") {
@@ -38,11 +42,12 @@ class Tags_SettingParser extends SettingParser {
     function __construct(SettingValues $sv) {
         $this->sv = $sv;
         $this->tagger = new Tagger($sv->user);
+        // `base_map` contains options, but not modifiable settings
         $this->base_map = TagMap::make($sv->conf, false);
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if (in_array($si->name, ["tag_hidden", "tag_readonly", "tag_sitewide", "tag_vote_approval"], true)) {
+        if (in_array($si->name, ["tag_hidden", "tag_readonly", "tag_admin_open", "tag_pc_open", "tag_vote_approval"], true)) {
             $sv->set_oldv($si->name, self::render_tags(self::sorted_settings_for($sv->conf->tags(), $si)));
         } else if ($si->name === "tag_vote_allotment") {
             $x = [];
@@ -76,10 +81,10 @@ class Tags_SettingParser extends SettingParser {
         ]);
     }
     static function print_tag_sitewide(SettingValues $sv) {
-        if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager()) {
-            $sv->print_entry_group("tag_sitewide", null, [
+        if ($sv->newv("tag_admin_open") || $sv->conf->has_any_manager()) {
+            $sv->print_entry_group("tag_admin_open", null, [
                 "class" => "need-suggest tags",
-                "hint" => "Administrators can see and change these tags for every submission.",
+                "hint" => "Administrators can see and change these tags even on conflicted submissions.",
                 "autocomplete" => "off"
             ]);
         }

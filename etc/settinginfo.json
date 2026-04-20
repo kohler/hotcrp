@@ -1157,7 +1157,7 @@
         "title": "Hidden tags",
         "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser",
-        "tags": "tags"
+        "tags": "tags visibility"
     },
 
     {   "name": "tag_color", "internal": true, "type": "string"   },
@@ -1223,10 +1223,19 @@
         "tags": "tags visibility"
     },
     {
-        "name": "tag_sitewide", "title": "Site-wide tags",
+        "name": "tag_admin_open", "storage": "tag_sitewide",
+        "title": "Open-administration tags",
         "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser",
-        "tags": "tags"
+        "tags": "tags visibility"
+    },
+    {   "name": "tag_sitewide", "alias": "tag_admin_open"   },
+    {
+        "name": "tag_pc_open", "storage": "tag_conflict_free",
+        "title": "Open tags",
+        "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
+        "parser_class": "Tags_SettingParser",
+        "tags": "tags visibility"
     },
     {
         "name": "tag_vote_allotment", "storage": "tag_vote",

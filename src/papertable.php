@@ -1691,7 +1691,7 @@ class PaperTable {
                     join("</li><li>", MessageSet::feedback_html_items($treport->message_list)), "</li></ul>";
             }
             if ($is_sitewide) {
-                echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit its ", $this->conf->hotlink("site-wide tags", "settings", ["group" => "tags", "#" => "tag_sitewide"]), '.';
+                echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit selected tags.";
                 if ($this->user->allow_admin($this->prow)) {
                     echo ' ', $this->conf->selflink("Override your conflict", $this->qreq, ["forceShow" => 1]), ' to view and edit all tags.';
                 }

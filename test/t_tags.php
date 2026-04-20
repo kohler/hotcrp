@@ -98,7 +98,7 @@ class Tags_Tester {
     function test_tag_patterns() {
         $sv = new SettingValues($this->u_chair);
         xassert_eqq($sv->oldv("tag_readonly"), "accept pcpaper reject");
-        xassert_eqq($sv->oldv("tag_sitewide"), "");
+        xassert_eqq($sv->oldv("tag_admin_open"), "");
         $sv->add_json_string('{
             "tag_readonly": "t*",
             "tag_hidden": "top",

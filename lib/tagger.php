@@ -562,11 +562,6 @@ class TagMap {
         $this->conf = $conf;
         $this->flags = TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_PC;
         $this->all_flags = TagInfo::TF_PC;
-        if ($conf->pc_can_view_conflicted_tags()) {
-            $this->all_flags |= TagInfo::TF_PC_PUBLIC;
-            $this->flags |= TagInfo::TF_PC_PUBLIC;
-            $this->setting_flags |= TagInfo::TF_PC_PUBLIC;
-        }
 
         // RGB colors taken from style.css
         $this->define_style("red", new TagStyle("red", TagStyle::BG | TagStyle::BADGE, 0xffd8d8));
@@ -1350,6 +1345,12 @@ class TagMap {
 
 
     private function merge_settings(Conf $conf) {
+        assert(empty($this->storage) && empty($this->setting_storage) && empty($this->patterns));
+        if ($conf->pc_can_view_conflicted_tags()) {
+            $this->all_flags |= TagInfo::TF_PC_PUBLIC;
+            $this->flags |= TagInfo::TF_PC_PUBLIC;
+            $this->setting_flags |= TagInfo::TF_PC_PUBLIC;
+        }
         foreach ($conf->track_tags() as $tn) {
             $this->set($tn, TagInfo::TF_TRACK | TagInfo::TF_CHAIR_READONLY);
         }
