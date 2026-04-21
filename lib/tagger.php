@@ -1216,7 +1216,7 @@ class TagMap {
         $conflict_free = TagInfo::TF_PC_PUBLIC
             | ($allow_admin || $user->privChair ? TagInfo::TF_ADMIN_PUBLIC : 0);
         if ($view_most) {
-            if (($ctype === self::CENSOR_SEARCH && $allow_admin)
+            if (($ctype === self::CENSOR_SEARCH && $allow_admin && $user->privChair)
                 || (($this->flags & TagInfo::TF_HIDDEN) === 0 && strpos($tags, "~") === false)) {
                 return $tags;
             }
