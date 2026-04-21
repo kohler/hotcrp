@@ -5615,7 +5615,7 @@ class Contact implements JsonSerializable {
 
     /** @param ?PaperInfo $prow
      * @return int */
-    private function tag_perm_flags(?PaperInfo $prow) {
+    function tag_perm_flags(?PaperInfo $prow) {
         if (!$this->isPC) {
             return 0;
         } else if ($this->_overrides & self::OVERRIDE_TAG_CHECKS) {
@@ -5671,7 +5671,7 @@ class Contact implements JsonSerializable {
         return ($rights->allow_pc_broad()
                 && $dt->has(TagInfo::TF_PC_PUBLIC))
             || (($this->privChair || $rights->allow_admin())
-                && $dt->has(TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC));
+                && $dt->has(TagInfo::TF_ADMIN_PUBLIC));
     }
 
     function __view_tags_complain(?PaperInfo $prow, $tag, $v1) {

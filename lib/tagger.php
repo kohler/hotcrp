@@ -64,6 +64,8 @@ class TagInfo {
     const TFM_PERM = 0x1F8;
     const TFM_PERM_CHAIR = 0x1F8;     // permissions for sysadmins (or chairs)
     const TFM_PERM_ADMIN = 0x1F0;     // permissions for track administrators
+    const TFM_PERM_NEG = 0x18;        // bits that restrict permissions
+    const TFM_PERM_POS = 0xA0;        // bits that grant permissions
 
     /** @deprecated */
     const TF_SITEWIDE = 0x20;
@@ -865,16 +867,20 @@ class TagMap {
 
     /** @param string $tag
      * @param int $cid
+     * @param ?int $censor_type
      * @return int */
-    function perm_flags($tag, $cid) {
+    function perm_flags($tag, $cid, $censor_type = null) {
         $tw = strpos($tag, "~");
         if ($tw === false) {
             $ti = $this->setting_flags & TagInfo::TFM_PERM ? $this->find($tag) : null;
             return $ti ? $ti->flags & TagInfo::TFM_PERM : TagInfo::TF_PC;
-        } else if ($tw === 0) {
-            return $tag[1] === "~" ? TagInfo::TF_CHAIR_HIDDEN : TagInfo::TF_PC;
-        } else if (intval($tag) === $cid) {
+        } else if ($tw === 0 && $tag[1] === "~") {
+            $ti = $this->setting_flags & TagInfo::TF_ADMIN_PUBLIC ? $this->find($tag) : null;
+            return $ti ? $ti->flags & TagInfo::TFM_PERM : TagInfo::TF_CHAIR_HIDDEN;
+        } else if ($tw === 0 || intval($tag) === $cid) {
             return TagInfo::TF_PC;
+        } else if ($censor_type === self::CENSOR_VIEW) {
+            return 0;
         }
         $ti = $this->flags & TagInfo::TF_OTHER_PRIVATE ? $this->find(substr($tag, $tw + 1)) : null;
         if ($ti && ($ti->flags & TagInfo::TF_OTHER_PRIVATE) !== 0) {
@@ -1204,7 +1210,7 @@ class TagMap {
     /** @param 0|1 $ctype
      * @param ?string $tags
      * @return string */
-    function censor($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
+    function __censor1($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
         // empty tag optimization
         if ($tags === null || $tags === "") {
             return "";
@@ -1285,6 +1291,61 @@ class TagMap {
             }
         }
         return $ip < $p ? substr($tags, 0, $ip) : $tags;
+    }
+
+    /** @param 0|1 $ctype
+     * @param ?string $tags
+     * @return string */
+    function __censor2($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
+        // empty tag optimization
+        if ($tags === null || $tags === "") {
+            return "";
+        }
+
+        // preserve all tags/show no tags optimization
+        $ufl = $user->tag_perm_flags($prow);
+        if ($ufl & TagInfo::TF_PC) {
+            if ((~$ufl & $this->flags & TagInfo::TFM_PERM_NEG) === 0
+                && ((($ufl & TagInfo::TF_OTHER_PRIVATE) !== 0
+                     && $ctype === self::CENSOR_SEARCH)
+                    || strpos($tags, "~") === false)) {
+                return $tags;
+            }
+        } else if (($ufl & $this->flags & TagInfo::TFM_PERM_POS) === 0) {
+            return "";
+        }
+
+        // go tag by tag
+        $p = $ip = 0;
+        $l = strlen($tags);
+        while ($p < $l) {
+            $np = strpos($tags, " ", $p + 1) ? : $l;
+            $t = substr($tags, $p + 1, strpos($tags, "#", $p + 1) - $p - 1);
+            $tfl = $this->perm_flags($t, $user->contactId, $ctype);
+            if (($tfl & $ufl) === 0) {
+                $p = $np;
+            } else if ($ip < $p) {
+                $tags = substr($tags, 0, $ip) . substr($tags, $p);
+                $l -= $p - $ip;
+                $p = $ip = $np - ($p - $ip);
+            } else {
+                $p = $ip = $np;
+            }
+        }
+        return $ip < $p ? substr($tags, 0, $ip) : $tags;
+    }
+
+    /** @param 0|1 $ctype
+     * @param ?string $tags
+     * @return string */
+    function censor($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
+        $c1 = $this->__censor1($ctype, $tags, $user, $prow);
+        $c2 = $this->__censor2($ctype, $tags, $user, $prow);
+        if ($c1 !== $c2) {
+            $ps = $prow ? sprintf("paper %d [%x]", $prow->paperId, $user->tag_perm_flags($prow)) : sprintf("[utp %x]", $user->tag_perm_flags(null));
+            error_log("censor alignment error, expected \"{$c1}\", got \"{$c2}\", user {$user->contactId}, {$ps}");
+        }
+        return $c1;
     }
 
     /** @param array<string,mixed> &$tagmap */
