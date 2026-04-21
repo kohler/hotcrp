@@ -5849,15 +5849,17 @@ class Contact implements JsonSerializable {
         $tagmap = $this->conf->tags();
         if ($prow) {
             $rights = $this->rights($prow);
-            if (!$rights->scope_allows(TS::S_TAG_READ)
-                || (!$rights->allow_pc()
-                    && (!$this->privChair
-                        || !$tagmap->is_admin_public($tag))
-                    && (!$rights->allow_pc_broad()
-                        || !$tagmap->is_pc_public($tag)))) {
+            if (!$rights->scope_allows(TS::S_TAG_READ)) {
                 return false;
             }
             $allow_administer = $rights->allow_admin();
+            if (!$rights->allow_pc()
+                && ((!$allow_administer && !$this->privChair)
+                    || !$tagmap->is_admin_public($tag))
+                && (!$rights->allow_pc_broad()
+                    || !$tagmap->is_pc_public($tag))) {
+                return false;
+            }
         } else {
             if (!$this->scope_allows_some(TS::S_TAG_READ)) {
                 return false;
