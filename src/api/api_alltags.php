@@ -9,11 +9,10 @@ class AllTags_API {
             $jr["tags"] = [];
             return $jr;
         } else if ($user->conf->check_track_view_sensitivity()
-                   || (!$user->conf->pc_can_view_conflicted_tags()
-                       && ($user->privChair
-                           ? $user->conf->has_any_manager()
-                           : $user->is_manager()
-                             || $user->conf->check_track_sensitivity(Track::HIDDENTAG)))
+                   || ($user->privChair
+                       ? $user->conf->has_any_manager()
+                       : $user->is_manager()
+                         || $user->check_any_required_tracks(Track::HIDDENTAG))
                    || ($user->can_view_some_incomplete()
                        && !$user->can_view_all_incomplete())) {
             return self::hard_alltags_api($user);
@@ -28,10 +27,10 @@ class AllTags_API {
         if ($twiddle === false
             || ($twiddle === 0
                 && $tag[1] === "~"
-                && ($prow ? $user->allow_admin($prow) : $user->privChair))) {
+                && $user->privChair)) {
             return $tag;
         } else if ($twiddle > 0
-                   && substr($tag, 0, $twiddle) == $user->contactId) {
+                   && intval($tag) === $user->contactId) {
             return substr($tag, $twiddle);
         }
         return null;

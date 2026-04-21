@@ -998,9 +998,8 @@ class TagMap {
         }
         if ($ks && ($ks->styleflags & $stylematch) !== 0) {
             return $ks;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $name
