@@ -5090,15 +5090,21 @@ class Contact implements JsonSerializable {
             return false;
         }
         $rights = $this->rights($prow);
-        if (!$rights->allow_pc() && !$rights->is_reviewer()) {
+        if (!$rights->allow_pc()
+            && !$rights->is_reviewer()) {
             return false;
         }
         if (!$rrow
             || $override_self
-            || $rrow->contactId != $this->contactId
-            || $this->is_admin($prow)
-            || $this->conf->review_ratings_visible() > 0
-            || $this->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS
+            || !$this->is_my_review($rrow)
+            || $this->is_admin($prow)) {
+            return true;
+        }
+        $rrv = $this->conf->review_ratings_visible();
+        if ($rrv != 0) {
+            return $rrv > 0;
+        }
+        if ($this->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS
             || $rrow->has_multiple_ratings()) {
             return true;
         }
