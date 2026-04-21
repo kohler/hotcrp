@@ -12,7 +12,7 @@ class AllTags_API {
                    || ($user->privChair
                        ? $user->conf->has_any_manager()
                        : $user->is_manager()
-                         || $user->check_any_required_tracks(Track::HIDDENTAG))
+                         || $user->conf->check_any_required_tracks($user, Track::HIDDENTAG))
                    || ($user->can_view_some_incomplete()
                        && !$user->can_view_all_incomplete())) {
             return self::hard_alltags_api($user);
