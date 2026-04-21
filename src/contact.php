@@ -5750,7 +5750,8 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         return $rights->scope_allows(TS::S_TAG_READ)
             && ($rights->is_admin()
-                || $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG));
+                || ($rights->allow_pc()
+                    && $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)));
     }
 
     /** @return bool */
