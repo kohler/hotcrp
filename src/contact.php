@@ -5614,47 +5614,34 @@ class Contact implements JsonSerializable {
             return 0;
         } else if ($this->_overrides & self::OVERRIDE_TAG_CHECKS) {
             return TagInfo::TFM_PERM;
+        } else if (!$prow) {
+            if (!$this->scope_allows_some(TS::S_TAG_READ)) {
+                return 0;
+            } else if ($this->privChair) {
+                return TagInfo::TFM_PERM_CHAIR;
+            } else if ($this->is_manager()) {
+                return TagInfo::TFM_PERM_ADMIN;
+            } else if ($this->conf->check_any_required_tracks($this, Track::HIDDENTAG)) {
+                return TagInfo::TF_HIDDEN | TagInfo::TF_PC_PUBLIC | TagInfo::TF_PC;
+            }
+            return TagInfo::TF_PC_PUBLIC | TagInfo::TF_PC;
         }
-        $rights = $prow ? $this->rights($prow) : null;
-        if ($rights
-            ? !$rights->scope_allows(TS::S_TAG_READ)
-            : !$this->scope_allows_some(TS::S_TAG_READ)) {
+        $rights = $this->rights($prow);
+        if (!$rights->scope_allows(TS::S_TAG_READ)) {
             return 0;
+        } else if ($rights->is_admin()) {
+            return $this->privChair ? TagInfo::TFM_PERM_CHAIR : TagInfo::TFM_PERM_ADMIN;
+        } else if (!$rights->allow_pc_broad()) {
+            return $this->privChair ? TagInfo::TF_ADMIN_PUBLIC : 0;
         }
-        $fl = 0;
-        if ($this->privChair) {
+        $fl = TagInfo::TF_PC_PUBLIC;
+        if ($this->privChair || $rights->allow_admin()) {
             $fl |= TagInfo::TF_ADMIN_PUBLIC;
         }
-        if (!$rights) {
-            $fl |= TagInfo::TF_PC_PUBLIC;
-            if ($this->is_manager()) {
-                if ($this->privChair) {
-                    $fl |= TagInfo::TF_CHAIR_HIDDEN;
-                }
-                $fl |= TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC | TagInfo::TF_HIDDEN | TagInfo::TF_OTHER_PRIVATE;
-            } else {
-                if ($this->conf->check_any_required_tracks($this, Track::HIDDENTAG)) {
-                    $fl |= TagInfo::TF_HIDDEN;
-                }
-                $fl |= TagInfo::TF_PC;
-            }
-        } else if ($rights->allow_pc_broad()) {
-            $fl |= TagInfo::TF_PC_PUBLIC;
-            if ($rights->is_admin()) {
-                if ($this->privChair) {
-                    $fl |= TagInfo::TF_CHAIR_HIDDEN;
-                }
-                $fl |= TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC | TagInfo::TF_HIDDEN | TagInfo::TF_OTHER_PRIVATE;
-            } else {
-                if ($rights->allow_admin()) {
-                    $fl |= TagInfo::TF_ADMIN_PUBLIC;
-                }
-                if ($rights->allow_pc()) {
-                    $fl |= TagInfo::TF_PC;
-                    if ($this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)) {
-                        $fl |= TagInfo::TF_HIDDEN;
-                    }
-                }
+        if ($rights->allow_pc()) {
+            $fl |= TagInfo::TF_PC;
+            if ($this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)) {
+                $fl |= TagInfo::TF_HIDDEN;
             }
         }
         return $fl;

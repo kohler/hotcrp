@@ -62,6 +62,8 @@ class TagInfo {
     const TFM_NOT_CHAIR_HIDDEN = 0x1F0;
     const TFM_NOT_HIDDEN = 0x1C0;
     const TFM_PERM = 0x1F8;
+    const TFM_PERM_CHAIR = 0x1F8;     // permissions for sysadmins (or chairs)
+    const TFM_PERM_ADMIN = 0x1F0;     // permissions for track administrators
 
     /** @deprecated */
     const TF_SITEWIDE = 0x20;

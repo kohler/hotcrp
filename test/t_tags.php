@@ -611,6 +611,8 @@ class Tags_Tester {
         xassert_eqq(TagInfo::TFM_PERM, TagInfo::TF_HIDDEN | TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_PC | TagInfo::TF_PC_PUBLIC | TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PUBLIC_PERUSER);
         xassert_eqq(TagInfo::TFM_NOT_CHAIR_HIDDEN, TagInfo::TFM_PERM & ~TagInfo::TF_CHAIR_HIDDEN);
         xassert_eqq(TagInfo::TFM_NOT_HIDDEN, TagInfo::TFM_PERM & ~TagInfo::TF_CHAIR_HIDDEN & ~TagInfo::TF_HIDDEN & ~TagInfo::TF_ADMIN_PUBLIC);
+        xassert_eqq(TagInfo::TFM_PERM_CHAIR, TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_HIDDEN | TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC | TagInfo::TF_PC | TagInfo::TF_OTHER_PRIVATE);
+        xassert_eqq(TagInfo::TFM_PERM_ADMIN, TagInfo::TF_HIDDEN | TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC | TagInfo::TF_PC | TagInfo::TF_OTHER_PRIVATE);
         xassert_eqq(TagInfo::TF_SITEWIDE, TagInfo::TF_ADMIN_PUBLIC);
         xassert_eqq(TagInfo::TF_CONFLICT_FREE, TagInfo::TF_PC_PUBLIC);
     }
