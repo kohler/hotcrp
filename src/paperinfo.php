@@ -156,6 +156,9 @@ final class PaperContactInfo {
     public $vreviews_array;
     /** @var ?int */
     public $vreviews_version;
+
+    /** @var ?int */
+    public $tag_perm_bits;
     /** @var ?string */
     public $viewable_tags;
     /** @var ?string */
@@ -440,7 +443,7 @@ final class PaperContactInfo {
         if (!$ci) {
             $ci = clone $this;
             $this->forced_rights_link = $ci;
-            $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
+            $ci->vreviews_array = $ci->tag_perm_bits = $ci->viewable_tags = $ci->searchable_tags = null;
             $ci->ciflags = $set0;
         }
         return $ci;

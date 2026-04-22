@@ -5633,25 +5633,30 @@ class Contact implements JsonSerializable {
             return TagInfo::TF_PC_PUBLIC | TagInfo::TF_PC;
         }
         $rights = $this->rights($prow);
+        if ($rights->tag_perm_bits !== null) {
+            return $rights->tag_perm_bits;
+        }
         if (!$rights->scope_allows(TS::S_TAG_READ)) {
-            return 0;
+            $fl = 0;
         } else if ($rights->is_admin()) {
-            return $this->privChair ? TagInfo::TFM_PERM_CHAIR : TagInfo::TFM_PERM_ADMIN;
+            $fl = $this->privChair ? TagInfo::TFM_PERM_CHAIR : TagInfo::TFM_PERM_ADMIN;
         } else if (!$rights->allow_pc_broad()) {
-            return $this->privChair ? TagInfo::TFM_ADMIN_PUBLIC : 0;
-        }
-        $fl = TagInfo::TF_PC_PUBLIC;
-        if ($this->privChair) {
-            $fl |= TagInfo::TFM_ADMIN_PUBLIC;
-        } else if ($rights->allow_admin()) {
-            $fl |= TagInfo::TF_ADMIN_PUBLIC;
-        }
-        if ($rights->allow_pc()) {
-            $fl |= TagInfo::TF_PC;
-            if ($this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)) {
-                $fl |= TagInfo::TF_HIDDEN;
+            $fl = $this->privChair ? TagInfo::TFM_ADMIN_PUBLIC : 0;
+        } else {
+            $fl = TagInfo::TF_PC_PUBLIC;
+            if ($this->privChair) {
+                $fl |= TagInfo::TFM_ADMIN_PUBLIC;
+            } else if ($rights->allow_admin()) {
+                $fl |= TagInfo::TF_ADMIN_PUBLIC;
+            }
+            if ($rights->allow_pc()) {
+                $fl |= TagInfo::TF_PC;
+                if ($this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)) {
+                    $fl |= TagInfo::TF_HIDDEN;
+                }
             }
         }
+        $rights->tag_perm_bits = $fl;
         return $fl;
     }
 
