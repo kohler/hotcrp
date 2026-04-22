@@ -1252,6 +1252,9 @@ class TagMap {
                     $dt = $this->find($t);
                     $ok = $dt && ($dt->flags & $conflict_free) !== 0;
                 }
+            } else if (!$view_most) {
+                $dt = $tw === false ? $this->find($t) : null;
+                $ok = $dt && ($dt->flags & $conflict_free) !== 0;
             } else if ($tw !== false) {
                 if ($tw === $my_tw
                     && str_starts_with($t, $my_uid)) {
@@ -1269,11 +1272,6 @@ class TagMap {
                         && ($view_most
                             || ($dt->flags & $conflict_free) !== 0);
                 }
-            } else if (!$view_most) {
-                $dt = $this->find($t);
-                $ok = $dt
-                    && (!$strip_hidden || ($dt->flags & TagInfo::TF_HIDDEN) === 0)
-                    && ($dt->flags & $conflict_free) !== 0;
             } else if ($strip_hidden) {
                 $dt = $this->find($t);
                 $ok = !$dt || ($dt->flags & TagInfo::TF_HIDDEN) === 0;
