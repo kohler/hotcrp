@@ -887,7 +887,7 @@ class TagMap {
         }
         $ti = $p & TagInfo::TF_OTHER_PRIVATE ? $this->find(substr($tag, $tw + 1)) : null;
         if ($ti && ($ti->flags & TagInfo::TF_OTHER_PRIVATE) !== 0) {
-            return TagInfo::TF_PC;
+            return TagInfo::TF_PC | TagInfo::TF_OTHER_PRIVATE;
         }
         return TagInfo::TF_OTHER_PRIVATE;
     }
