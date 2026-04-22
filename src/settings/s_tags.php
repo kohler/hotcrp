@@ -21,7 +21,7 @@ class Tags_SettingParser extends SettingParser {
         } else if ($si->name === "tag_readonly") {
             return TagInfo::TF_READONLY;
         } else if ($si->name === "tag_admin_open") {
-            return TagInfo::TF_ADMIN_PUBLIC;
+            return TagInfo::TFM_ADMIN_PUBLIC;
         } else if ($si->name === "tag_pc_open") {
             return TagInfo::TF_PC_PUBLIC;
         } else if ($si->name === "tag_vote_approval") {

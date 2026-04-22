@@ -5638,10 +5638,12 @@ class Contact implements JsonSerializable {
         } else if ($rights->is_admin()) {
             return $this->privChair ? TagInfo::TFM_PERM_CHAIR : TagInfo::TFM_PERM_ADMIN;
         } else if (!$rights->allow_pc_broad()) {
-            return $this->privChair ? TagInfo::TF_ADMIN_PUBLIC : 0;
+            return $this->privChair ? TagInfo::TFM_ADMIN_PUBLIC : 0;
         }
         $fl = TagInfo::TF_PC_PUBLIC;
-        if ($this->privChair || $rights->allow_admin()) {
+        if ($this->privChair) {
+            $fl |= TagInfo::TFM_ADMIN_PUBLIC;
+        } else if ($rights->allow_admin()) {
             $fl |= TagInfo::TF_ADMIN_PUBLIC;
         }
         if ($rights->allow_pc()) {
@@ -5671,7 +5673,7 @@ class Contact implements JsonSerializable {
         return ($rights->allow_pc_broad()
                 && $dt->has(TagInfo::TF_PC_PUBLIC))
             || (($this->privChair || $rights->allow_admin())
-                && $dt->has(TagInfo::TF_ADMIN_PUBLIC));
+                && $dt->has(TagInfo::TFM_ADMIN_PUBLIC));
     }
 
     function __view_tags_complain(?PaperInfo $prow, $tag, $v1) {
@@ -5927,7 +5929,7 @@ class Contact implements JsonSerializable {
                     || $this->conf->time_pc_view($prow, false)))
             || ($this->privChair
                 && $rights->scope_allows(TS::S_TAG_ADMIN)
-                && $this->conf->tags()->has(TagInfo::TF_ADMIN_PUBLIC));
+                && $this->conf->tags()->has(TagInfo::TFM_ADMIN_PUBLIC));
     }
 
     /** @return ?FailureReason */
@@ -6021,14 +6023,14 @@ class Contact implements JsonSerializable {
             || (!$rights->allow_pc() && !$tagmap->has(TagInfo::TF_PC_PUBLIC))
             || (!$rights->can_manage() && !$this->conf->time_pc_view($prow, false))) {
             if (!$privChair
-                || !$tagmap->has(TagInfo::TF_ADMIN_PUBLIC)) {
+                || !$tagmap->has(TagInfo::TFM_ADMIN_PUBLIC)) {
                 return false;
             }
             $tag = Tagger::tv_tag($tag);
             $tw = strpos($tag, "~");
             return ($tw === false || ($tw === 0 && $tag[1] === "~"))
                 && ($t = $tagmap->find($tag))
-                && $t->is(TagInfo::TF_ADMIN_PUBLIC)
+                && $t->is(TagInfo::TFM_ADMIN_PUBLIC)
                 && !$t->is(TagInfo::TF_AUTOMATIC);
         }
         $tag = Tagger::tv_tag($tag);
@@ -6052,7 +6054,7 @@ class Contact implements JsonSerializable {
                     || $this->can_view_hidden_tags($prow))
                 && (!$t->is(TagInfo::TF_READONLY | TagInfo::TF_RANK)
                     || $rights->can_manage_tags()
-                    || ($privChair && $t->is(TagInfo::TF_ADMIN_PUBLIC)));
+                    || ($privChair && $t->is(TagInfo::TFM_ADMIN_PUBLIC)));
         }
         $t = $tagmap->find(substr($tag, $tw + 1));
         return ($rights->allow_pc()

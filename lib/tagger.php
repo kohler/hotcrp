@@ -38,39 +38,41 @@ class TagInfo {
     const TF_SCLASS = 0x2;            // tag associated with submission class
     const TF_PRIVATE = 0x4;           // tag private to user
     const TF_CHAIR_HIDDEN = 0x8;      // tag only viewable by chairs
-    const TF_HIDDEN = 0x10;           // tag only viewable by submission admin
-    const TF_ADMIN_PUBLIC = 0x20;     // accessible to chairs+admins despite conflicts
-    const TF_PC = 0x40;               // accessible to unconflicted pc (default)
-    const TF_PC_PUBLIC = 0x80;        // accessible to pc despite conflicts
-    const TF_OTHER_PRIVATE = 0x100;   // other users' private tags are viewable
-    const TF_PUBLIC_PERUSER = 0x100;  // other users' private tags are viewable
-    const TF_CHAIR_READONLY = 0x200;  // tag only modifiable by chairs
-    const TF_READONLY = 0x400;        // tag only modifiable by submission admin
-    const TF_APPROVAL = 0x800;        // approval voting tag
-    const TF_ALLOTMENT = 0x1000;      // allotment voting tag
-    const TF_RANK = 0x2000;           // ranking tag
-    const TF_AUTOMATIC = 0x4000;      // automatic tag (voting or search)
-    const TF_AUTOSEARCH = 0x8000;     // automatic search
-    const TF_STYLE = 0x10000;         // style tag
-    const TF_BADGE = 0x20000;         // badge tag
-    const TF_EMOJI = 0x40000;         // emoji tag
-    const TF_IS_SETTINGS = 0x80000;   // this entry enforced by settings
-    const TF_IS_PATTERN = 0x100000;   // this entry is pattern
+    const TF_CHAIR_PUBLIC = 0x10;     // accessible to chairs despite conflics
+    const TF_HIDDEN = 0x20;           // tag only viewable by submission admin
+    const TF_ADMIN_PUBLIC = 0x40;     // accessible to chairs+admins despite conflicts
+    const TF_PC = 0x80;               // accessible to unconflicted pc (default)
+    const TF_PC_PUBLIC = 0x100;       // accessible to pc despite conflicts
+    const TF_OTHER_PRIVATE = 0x200;   // other users' private tags are viewable
+    const TF_PUBLIC_PERUSER = 0x200;  // other users' private tags are viewable
+    const TF_CHAIR_READONLY = 0x400;  // tag only modifiable by chairs
+    const TF_READONLY = 0x800;        // tag only modifiable by submission admin
+    const TF_APPROVAL = 0x1000;       // approval voting tag
+    const TF_ALLOTMENT = 0x2000;      // allotment voting tag
+    const TF_RANK = 0x4000;           // ranking tag
+    const TF_AUTOMATIC = 0x8000;      // automatic tag (voting or search)
+    const TF_AUTOSEARCH = 0x10000;    // automatic search
+    const TF_STYLE = 0x20000;         // style tag
+    const TF_BADGE = 0x40000;         // badge tag
+    const TF_EMOJI = 0x80000;         // emoji tag
+    const TF_IS_SETTINGS = 0x100000;  // this entry enforced by settings
+    const TF_IS_PATTERN = 0x200000;   // this entry is pattern
 
-    const TFM_VOTES = 0x1800;
-    const TFM_DECORATION = 0x70000;
-    const TFM_NOT_CHAIR_HIDDEN = 0x1F0;
-    const TFM_NOT_HIDDEN = 0x1C0;
-    const TFM_PERM = 0x1F8;
-    const TFM_PERM_CHAIR = 0x1F8;     // permissions for sysadmins (or chairs)
-    const TFM_PERM_ADMIN = 0x1F0;     // permissions for track administrators
-    const TFM_PERM_NEG = 0x18;        // bits that restrict permissions
-    const TFM_PERM_POS = 0xA0;        // bits that grant permissions
+    const TFM_VOTES = 0x3000;
+    const TFM_DECORATION = 0xE0000;
+    const TFM_NOT_CHAIR_HIDDEN = 0x3E0;
+    const TFM_NOT_HIDDEN = 0x380;
+    const TFM_ADMIN_PUBLIC = 0x50;
+    const TFM_PERM = 0x3F8;
+    const TFM_PERM_CHAIR = 0x3F8;     // permissions for sysadmins (or chairs)
+    const TFM_PERM_ADMIN = 0x3E0;     // permissions for track administrators
+    const TFM_PERM_NEG = 0x28;        // bits that restrict permissions relative to TF_PC
+    const TFM_PERM_POS = 0x150;       // bits that grant permissions relative to TF_PC
 
     /** @deprecated */
-    const TF_SITEWIDE = 0x20;
+    const TF_SITEWIDE = 0x40;
     /** @deprecated */
-    const TF_CONFLICT_FREE = 0x80;
+    const TF_CONFLICT_FREE = 0x100;
 
     /** @param string $tag
      * @param int $flags */
@@ -867,22 +869,23 @@ class TagMap {
 
     /** @param string $tag
      * @param int $cid
-     * @param ?int $censor_type
+     * @param ?int $relevant_perm
      * @return int */
-    function perm_flags($tag, $cid, $censor_type = null) {
+    function perm_flags($tag, $cid, $relevant_perm = null) {
         $tw = strpos($tag, "~");
+        $p = $this->setting_flags & ($relevant_perm ?? TagInfo::TFM_PERM);
         if ($tw === false) {
-            $ti = $this->setting_flags & TagInfo::TFM_PERM ? $this->find($tag) : null;
+            $ti = $p ? $this->find($tag) : null;
             return $ti ? $ti->flags & TagInfo::TFM_PERM : TagInfo::TF_PC;
         } else if ($tw === 0 && $tag[1] === "~") {
-            $ti = $this->setting_flags & TagInfo::TF_ADMIN_PUBLIC ? $this->find($tag) : null;
+            $ti = $p & TagInfo::TF_CHAIR_PUBLIC ? $this->find($tag) : null;
             return $ti ? $ti->flags & TagInfo::TFM_PERM : TagInfo::TF_CHAIR_HIDDEN;
         } else if ($tw === 0 || intval($tag) === $cid) {
             return TagInfo::TF_PC;
-        } else if ($censor_type === self::CENSOR_VIEW) {
+        } else if ((($relevant_perm ?? TagInfo::TFM_PERM) & TagInfo::TF_OTHER_PRIVATE) === 0) {
             return 0;
         }
-        $ti = $this->flags & TagInfo::TF_OTHER_PRIVATE ? $this->find(substr($tag, $tw + 1)) : null;
+        $ti = $p & TagInfo::TF_OTHER_PRIVATE ? $this->find(substr($tag, $tw + 1)) : null;
         if ($ti && ($ti->flags & TagInfo::TF_OTHER_PRIVATE) !== 0) {
             return TagInfo::TF_PC;
         }
@@ -914,7 +917,7 @@ class TagMap {
     /** @param string $tag
      * @return bool */
     function is_admin_public($tag) {
-        return !!$this->find_having($tag, TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC);
+        return !!$this->find_having($tag, TagInfo::TFM_ADMIN_PUBLIC);
     }
     /** @param string $tag
      * @return bool
@@ -1220,7 +1223,8 @@ class TagMap {
         $view_most = $user->can_view_most_tags($prow);
         $allow_admin = $prow ? $user->allow_admin($prow) : $user->privChair;
         $conflict_free = TagInfo::TF_PC_PUBLIC
-            | ($allow_admin || $user->privChair ? TagInfo::TF_ADMIN_PUBLIC : 0);
+            | ($allow_admin ? TagInfo::TF_ADMIN_PUBLIC : 0)
+            | ($user->privChair ? TagInfo::TFM_ADMIN_PUBLIC : 0);
         if ($view_most) {
             if (($ctype === self::CENSOR_SEARCH && $allow_admin && $user->privChair)
                 || (($this->flags & TagInfo::TF_HIDDEN) === 0 && strpos($tags, "~") === false)) {
@@ -1312,6 +1316,12 @@ class TagMap {
         } else if (($ufl & $this->flags & TagInfo::TFM_PERM_POS) === 0) {
             return "";
         }
+        $ntfl = ~$ufl & TagInfo::TFM_PERM_NEG;
+        if (($ufl & TagInfo::TF_PC) === 0) {
+            $ntfl |= $ufl & TagInfo::TFM_PERM_POS;
+        } else if ($ctype === self::CENSOR_SEARCH) {
+            $ntfl |= TagInfo::TF_OTHER_PRIVATE;
+        }
 
         // go tag by tag
         $p = $ip = 0;
@@ -1319,7 +1329,7 @@ class TagMap {
         while ($p < $l) {
             $np = strpos($tags, " ", $p + 1) ? : $l;
             $t = substr($tags, $p + 1, strpos($tags, "#", $p + 1) - $p - 1);
-            $tfl = $this->perm_flags($t, $user->contactId, $ctype);
+            $tfl = $this->perm_flags($t, $user->contactId, $ntfl);
             if (($tfl & $ufl) === 0) {
                 $p = $np;
             } else if ($ip < $p) {
@@ -1341,7 +1351,7 @@ class TagMap {
         $c2 = $this->__censor2($ctype, $tags, $user, $prow);
         if ($c1 !== $c2) {
             $ps = $prow ? sprintf("paper %d [%x]", $prow->paperId, $user->tag_perm_flags($prow)) : sprintf("[utp %x]", $user->tag_perm_flags(null));
-            error_log("censor alignment error, expected \"{$c1}\", got \"{$c2}\", user {$user->contactId}, {$ps}");
+            error_log("censor alignment error, expected \"{$c1}\", got \"{$c2}\", user {$user->contactId}, {$ps}, ct{$ctype}");
         }
         return $c1;
     }
@@ -1413,7 +1423,7 @@ class TagMap {
             $this->setting_flags |= TagInfo::TF_PC_PUBLIC;
         }
         foreach ($conf->track_tags() as $tn) {
-            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_CHAIR_READONLY);
+            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TFM_ADMIN_PUBLIC | TagInfo::TF_CHAIR_READONLY);
         }
         if ($conf->has_named_submission_rounds()) {
             foreach ($conf->submission_round_list() as $sr) {
@@ -1432,7 +1442,7 @@ class TagMap {
         }
         $ct = $conf->setting_data("tag_sitewide") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
-            $this->set($tv[0], TagInfo::TF_ADMIN_PUBLIC);
+            $this->set($tv[0], TagInfo::TFM_ADMIN_PUBLIC);
         }
         $ct = $conf->setting_data("tag_conflict_free") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
@@ -1512,7 +1522,7 @@ class TagMap {
             $flags |= TagInfo::TF_HIDDEN;
         }
         if ($data->admin_public ?? $data->sitewide /* XXX */ ?? false) {
-            $flags |= TagInfo::TF_ADMIN_PUBLIC;
+            $flags |= TagInfo::TFM_ADMIN_PUBLIC;
         }
         if ($data->pc_public ?? $data->conflict_free /* XXX */ ?? false) {
             $flags |= TagInfo::TF_PC_PUBLIC;
