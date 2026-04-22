@@ -460,24 +460,29 @@ class Tags_Tester {
     }
 
     function test_chair_tags() {
-        $pset = $this->conf->paper_set(["paperId" => [1, 2, 3, 4]]);
-        xassert(!$this->u_varghese->can_administer($pset[1]));
+        xassert(!$this->u_varghese->can_administer($this->conf->checked_paper_by_id(1)));
 
         $this->conf->save_setting("tag_hidden", 1, "ch");
         $this->conf->save_setting("tag_sitewide", 1, "~~ch2");
         $this->conf->save_refresh_setting("tracks", 1, '{"redt":{"admin":"+red","hiddentag":"+red"}}');
         Contact::update_rights();
-        xassert_assign($this->u_chair, "action,paper,tag,user\ntag,1,redt\ntag,1-4,~~ch\ntag,1-4,ch\ntag,1-4,~~ch2\nadministrator,4,,huitema@bellcore.com\nconflict,2,,chair@_.com\n");
+        xassert_assign($this->u_chair, "action,paper,tag,user\ntag,1,redt\ntag,1-4,~~ch\ntag,1-4,ch\ntag,1-4,~~ch2\nadministrator,2,,huitema@bellcore.com\nconflict,2,,chair@_.com\n");
+        Contact::update_rights();
         $u_guerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
         xassert($this->u_chair->privChair);
         xassert(!$this->u_varghese->privChair);
         $u_huitema = $this->conf->checked_user_by_email("huitema@bellcore.com");
         xassert($u_huitema->privChair);
 
+        $pset = $this->conf->paper_set(["paperId" => [1, 2, 3, 4]]);
         xassert($this->u_varghese->can_administer($pset[1]));
         xassert(!$this->u_varghese->can_administer($pset[2]));
+        xassert($this->u_chair->can_administer($pset[1]));
+        xassert(!$this->u_chair->can_administer($pset[2]));
+        xassert(!$this->u_chair->allow_administer($pset[2]));
+        xassert($pset[2]->has_conflict($this->u_chair));
 
-        xassert_search($this->u_chair, "#~~ch", "1-4");
+        xassert_search($this->u_chair, "#~~ch", "1 3 4");
 
         // chair can see ~~ch on nonconflicted/nonadministered papers
         // chair can see ~~ch2 (which is admin-public) on all papers
@@ -533,7 +538,7 @@ class Tags_Tester {
         xassert(!$u_guerin->can_edit_tag($pset[1], "~~ch", null, 1));
         xassert_not_str_contains($pset[1]->viewable_tags($u_guerin), "~~ch#");
 
-        xassert_search($this->u_chair, "#ch", "1-4");
+        xassert_search($this->u_chair, "#ch", "1 3 4");
         xassert($this->u_chair->can_view_tag_somewhere("ch"));
         xassert($this->u_chair->can_edit_tag_somewhere("ch"));
         xassert($this->u_chair->can_view_tag($pset[1], "ch"));
@@ -575,7 +580,7 @@ class Tags_Tester {
         Contact::update_rights();
         xassert($this->u_varghese->can_administer($pset[1]));
 
-        xassert_search($this->u_chair, "#ch", "1-4");
+        xassert_search($this->u_chair, "#ch", "1 3 4");
         xassert($this->u_chair->can_view_tag_somewhere("ch"));
         xassert($this->u_chair->can_view_tag($pset[1], "ch"));
         xassert($this->u_chair->can_edit_tag($pset[1], "ch", null, 1));
