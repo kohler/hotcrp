@@ -62,6 +62,7 @@
     {"name": "AUTHOR", "alias": "AUTHORS"},
     {"name": "AUTHORVIEWCAPABILITY", "function": "*kw_authorviewcapability", "global": true, "urlparam": true},
     {"name": "TAGVALUE", "function": "*kw_tagvalue", "expand_if": "*kw_haspaper"},
+    {"name": "TAGSESSION", "function": "*kw_tagvalue", "expand_if": "*kw_haspaper", "session": true},
     {"match": "#(~?~?[a-zA-Z@*_:.][-a-zA-Z0-9!@*_:.\/]*)", "function": "*kw_tagvalue", "expand_if": "*kw_haspaper"},
     {"name": "SHEPHERD", "function": "*kw_paperpc", "expand_if": "*kw_haspaper", "userx": "CONTACT", "pctype": "shepherd"},
     {"name": "SHEPHERDNAME", "function": "*kw_paperpc", "expand_if": "*kw_haspaper", "userx": "NAME", "pctype": "shepherd"},

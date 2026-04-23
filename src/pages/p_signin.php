@@ -310,7 +310,7 @@ class Signin_Page {
      * @return HotCRPMailPreparation */
     function mail_user(Conf $conf, $info) {
         $user = $info["user"];
-        $prep = $user->prepare_mail($info["mailtemplate"], $info["mailrest"] ?? null);
+        $prep = $user->prepare_mail($info["mailtemplate"], $info["mailrest"] ?? []);
         $prep->set_self_requested(true);
         if (!$prep->send()) {
             if ($conf->opt("sendEmail")) {

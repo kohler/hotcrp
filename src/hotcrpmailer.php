@@ -440,14 +440,49 @@ class HotCRPMailer extends Mailer {
         if (!$tag) {
             return null;
         }
-        $value = $this->row->tag_value($tag);
-        if ($isbool) {
-            return $value !== null;
-        } else if ($value !== null) {
-            return (string) $value;
+        if ($this->sending_user
+            && !$this->sending_user->privChair
+            && !$this->sending_user->can_view_tag($this->row, $tag)) {
+            if ($isbool) {
+                return false;
+            }
+            $this->warning("<0>You aren’t allowed to view the ‘{$tag}’ tag for submission #{$this->row->paperId}");
+            return "(none)";
         }
-        $this->warning("<0>Submission #{$this->row->paperId} has no #{$tag} tag");
-        return "(none)";
+        $value = $this->row->tag_value($tag);
+        if ($value === null) {
+            if ($isbool) {
+                return false;
+            }
+            $this->warning("<0>Submission #{$this->row->paperId} has no ‘{$tag}’ tag");
+            return "(none)";
+        }
+        if ($uf->session ?? false) {
+            $ti = $this->conf->tags()->find($tag);
+            $ta = $ti ? $ti->order_anno_search($value) : null;
+            if ($isbool) {
+                return $ta && !$ta->is_fencepost();
+            }
+            if (!$ta || $ta->is_fencepost()) {
+                $this->warning("<0>Tag ‘{$tag}#{$value}’ is not a session tag");
+                return "(none)";
+            }
+            $st = [];
+            if (($title = $ta->prop("session_title") ? : $ta->heading)) {
+                $st[] = "Session: {$title}";
+            }
+            if (($time = $ta->prop("time"))) {
+                $st[] = "Session time: {$time}";
+            }
+            if (empty($st)) {
+                $st[] = "(none)";
+            }
+            return join("\n", $st);
+        }
+        if ($isbool) {
+            return true;
+        }
+        return (string) $value;
     }
     function kw_is_paperfield($uf) {
         $uf->option = $this->conf->options()->find($uf->match_data[1]);

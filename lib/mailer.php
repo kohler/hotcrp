@@ -17,6 +17,8 @@ class Mailer {
     /** @var Conf */
     public $conf;
     /** @var ?Contact */
+    public $sending_user;
+    /** @var ?Contact */
     public $recipient;
     /** @var string */
     protected $eol;
@@ -71,6 +73,9 @@ class Mailer {
      * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
+        if (array_key_exists("sending_user", $settings ?? [])) {
+            $this->sending_user = $settings["sending_user"];
+        }
         $this->width = $settings["width"] ?? 72;
         if ($this->width <= 0) {
             $this->width = 10000000;

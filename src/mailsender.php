@@ -534,6 +534,7 @@ class MailSender {
         $is_authors = $this->recip->is_authors();
         $rest = [
             "requester_contact" => $this->user,
+            "sending_user" => $this->user,
             "cc" => $this->qreq->cc,
             "reply-to" => $this->qreq["reply-to"],
             "no_error_quit" => true,

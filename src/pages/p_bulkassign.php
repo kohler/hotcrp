@@ -379,7 +379,9 @@ Assignment methods:
 
         $null_mailer = new HotCRPMailer($conf, null, [
             "requester_contact" => $this->user,
-            "reason" => "", "width" => false
+            "sending_user" => $this->user,
+            "reason" => "",
+            "width" => false
         ]);
         if (($requestreview_template = $null_mailer->expand_template("requestreview"))) {
             echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);

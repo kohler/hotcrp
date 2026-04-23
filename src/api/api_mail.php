@@ -16,6 +16,7 @@ class Mail_API {
 
         $mailinfo = [
             "prow" => $prow,
+            "sending_user" => $user,
             "requester_contact" => $user,
             "width" => $qreq->width ?? 10000,
             "censor" => Mailer::CENSOR_DISPLAY
