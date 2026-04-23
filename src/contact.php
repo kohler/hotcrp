@@ -5688,7 +5688,7 @@ class Contact implements JsonSerializable {
             $ts = sprintf("[tp %x]", $this->conf->tags()->flags);
         }
         if ($prow) {
-            $ps = sprintf("paper %d [%x]", $prow->paperId, $this->tag_perm_flags($prow));
+            $ps = sprintf("paper %d [%x S%x]", $prow->paperId, $this->tag_perm_flags($prow), $this->rights($prow)->scope_bits & 0xFFFF);
         } else {
             $ps = sprintf("[utp %x]", $this->tag_perm_flags(null));
         }
@@ -6080,41 +6080,52 @@ class Contact implements JsonSerializable {
         assert(!!$tag);
         if (!$this->isPC) {
             return false;
-        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-                   || $this->_root_user) {
+        } else if ($this->_root_user
+                   || ($this->_overrides & self::OVERRIDE_TAG_CHECKS)) {
             return true;
         }
         $rights = $this->rights($prow);
         if (!$rights->scope_allows(TS::S_TAG_WRITE)) {
             return false;
         }
+        // look up permission flags for user and tag
         $ufl = $this->tag_perm_flags($prow);
         $tagmap = $this->conf->tags();
         $tfl = $tagmap->perm_flags($tag, $this->contactId);
-        if (($ufl & $tfl) === 0
-            || (!$rights->can_manage()
-                && !$this->conf->time_pc_view($prow, false))) {
+        // cannot view, or can only view because pc-public -> cannot edit
+        if (($ufl & $tfl & ~TagInfo::TF_PC_PUBLIC) === 0) {
             return false;
         }
-        if ($tfl & (TagInfo::TF_PRIVATE | TagInfo::TF_OTHER_PRIVATE)) {
-            if ($index < 0
-                && $tagmap->is_allotment(substr($tag, strpos($tag, "~") + 1))) {
-                return false;
+        // adjust tag flags
+        if ($tfl & TagInfo::TFM_PRIVATE) {
+            $ti = $tagmap->find_having(substr($tag, strpos($tag, "~") + 1), ~TagInfo::TFM_PERM & ~TagInfo::TF_AUTOMATIC);
+            $tfl |= $ti ? $ti->flags & ~TagInfo::TFM_PERM & ~TagInfo::TF_AUTOMATIC : 0;
+            $tfl &= ~TagInfo::TFM_READONLY;
+        } else {
+            $ti = $tagmap->find_having($tag, ~TagInfo::TFM_PERM);
+            $tfl |= $ti ? $ti->flags & ~TagInfo::TFM_PERM : 0;
+        }
+        // adjust user flags
+        if ($index >= 0 && ($tfl & TagInfo::TFM_PRIVATE)) {
+            $ufl |= TagInfo::TF_ALLOTMENT;
+        }
+        if ($this->privChair && $rights->scope_allows(TS::S_TAG_ADMIN)) {
+            $ufl |= TagInfo::TF_CHAIR_READONLY;
+            if ($tfl & TagInfo::TFM_ADMIN_PUBLIC) {
+                $ufl |= TagInfo::TF_READONLY;
             }
-            return ($tfl & TagInfo::TF_PRIVATE) !== 0
-                || $rights->can_manage_tags();
         }
-        $ti = $tagmap->find($tag);
-        if (!$rights->allow_pc()
-            && (!$ti || !$ti->is(TagInfo::TF_CHAIR_PUBLIC) || !$this->privChair)) {
+        if ($rights->can_manage_tags()) {
+            $ufl |= TagInfo::TF_READONLY | TagInfo::TF_OTHER_PRIVATE;
+        } else {
+            $ufl &= ~TagInfo::TF_OTHER_PRIVATE;
+        }
+        // check non-visibility flags
+        if ($tfl & ~$ufl & (TagInfo::TF_AUTOMATIC | TagInfo::TF_ALLOTMENT | TagInfo::TFM_READONLY | TagInfo::TF_OTHER_PRIVATE)) {
             return false;
         }
-        return !$ti
-            || (!$ti->is(TagInfo::TF_AUTOMATIC)
-                && (!$ti->is(TagInfo::TF_CHAIR_READONLY)
-                    || ($this->privChair && $rights->scope_allows(TS::S_TAG_ADMIN)))
-                && (!$ti->is(TagInfo::TF_READONLY)
-                    || $rights->can_manage_tags()));
+        return ($ufl & TagInfo::TFM_ADMIN_PUBLIC)
+            || $this->conf->time_pc_view($prow, false);
     }
 
     /** @param string $tag

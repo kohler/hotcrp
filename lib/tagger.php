@@ -63,12 +63,14 @@ class TagInfo {
     const TFM_NOT_CHAIR_HIDDEN = 0x3E0;
     const TFM_NOT_HIDDEN = 0x380;
     const TFM_ADMIN_PUBLIC = 0x50;
-    const TFM_PERM = 0x3F8;
-    const TFM_PERM_NONPRIVATE = 0x1F8;
+    const TFM_PRIVATE = 0x204;        // permission bits for my or other private tags
+    const TFM_READONLY = 0xC00;       // permission bits for readonly or chair-readonly
+    const TFM_PERM = 0x3F8;           // permission bits
+    const TFM_PERM_NONPRIVATE = 0x1F8; // permission bits for public tags
     const TFM_PERM_CHAIR = 0x3F8;     // permissions for sysadmins (or chairs)
     const TFM_PERM_ADMIN = 0x3E0;     // permissions for track administrators
     const TFM_PERM_NEG = 0x28;        // bits that restrict permissions relative to TF_PC
-    const TFM_PERM_POS = 0x150;       // bits that grant permissions relative to TF_PC
+    const TFM_PERM_POS = 0x1D0;       // bits that grant permissions (not including OTHER_PRIVATE)
 
     /** @deprecated */
     const TF_SITEWIDE = 0x40;
@@ -903,7 +905,7 @@ class TagMap {
     /** @param string $tag
      * @return bool */
     function is_readonly($tag) {
-        return !!$this->find_having($tag, TagInfo::TF_READONLY);
+        return !!$this->find_having($tag, TagInfo::TFM_READONLY);
     }
     /** @param string $tag
      * @return bool */
