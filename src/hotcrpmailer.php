@@ -469,10 +469,10 @@ class HotCRPMailer extends Mailer {
             }
             $st = [];
             if (($title = $ta->prop("session_title") ? : $ta->heading)) {
-                $st[] = "Session: {$title}";
+                $st[] = "* Session: {$title}";
             }
             if (($time = $ta->prop("time"))) {
-                $st[] = "Session time: {$time}";
+                $st[] = "* Session time: {$time}";
             }
             if (empty($st)) {
                 $st[] = "(none)";
