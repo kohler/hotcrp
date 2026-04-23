@@ -26,6 +26,7 @@ class PotentialConflicts_API {
         }
 
         // apply changes
+        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $ps = new PaperStatus($user);
         $ps->set_ignore_errors(true);
         if (isset($qreq->json)) {
@@ -61,6 +62,7 @@ class PotentialConflicts_API {
                 $ps->prepare_save_paper_web($nqreq, $prow);
             }
         }
+        $user->set_overrides($overrides);
 
         // compute potential conflict list
         $potconfs = [];
