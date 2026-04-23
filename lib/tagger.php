@@ -64,6 +64,7 @@ class TagInfo {
     const TFM_NOT_HIDDEN = 0x380;
     const TFM_ADMIN_PUBLIC = 0x50;
     const TFM_PERM = 0x3F8;
+    const TFM_PERM_NONPRIVATE = 0x1F8;
     const TFM_PERM_CHAIR = 0x3F8;     // permissions for sysadmins (or chairs)
     const TFM_PERM_ADMIN = 0x3E0;     // permissions for track administrators
     const TFM_PERM_NEG = 0x28;        // bits that restrict permissions relative to TF_PC
@@ -876,12 +877,12 @@ class TagMap {
         $p = $this->setting_flags & ($relevant_perm ?? TagInfo::TFM_PERM);
         if ($tw === false) {
             $ti = $p ? $this->find($tag) : null;
-            return $ti ? $ti->flags & TagInfo::TFM_PERM : TagInfo::TF_PC;
+            return $ti ? $ti->flags & TagInfo::TFM_PERM_NONPRIVATE : TagInfo::TF_PC;
         } else if ($tw === 0 && $tag[1] === "~") {
             $ti = $p & TagInfo::TF_CHAIR_PUBLIC ? $this->find($tag) : null;
-            return $ti ? $ti->flags & TagInfo::TFM_PERM : TagInfo::TF_CHAIR_HIDDEN;
+            return $ti ? $ti->flags & TagInfo::TFM_PERM_NONPRIVATE : TagInfo::TF_CHAIR_HIDDEN;
         } else if ($tw === 0 || intval($tag) === $cid) {
-            return TagInfo::TF_PC;
+            return TagInfo::TF_PC | TagInfo::TF_PRIVATE;
         } else if ((($relevant_perm ?? TagInfo::TFM_PERM) & TagInfo::TF_OTHER_PRIVATE) === 0) {
             return 0;
         }

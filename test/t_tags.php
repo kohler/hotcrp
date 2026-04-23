@@ -659,6 +659,7 @@ class Tags_Tester {
         xassert_eqq(TagInfo::TFM_VOTES, TagInfo::TF_APPROVAL | TagInfo::TF_ALLOTMENT);
         xassert_eqq(TagInfo::TFM_DECORATION, TagInfo::TF_EMOJI | TagInfo::TF_STYLE | TagInfo::TF_BADGE);
         xassert_eqq(TagInfo::TFM_PERM, TagInfo::TF_HIDDEN | TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_PC | TagInfo::TF_PC_PUBLIC | TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_CHAIR_PUBLIC | TagInfo::TF_PUBLIC_PERUSER);
+        xassert_eqq(TagInfo::TFM_PERM_NONPRIVATE, TagInfo::TFM_PERM & ~TagInfo::TF_OTHER_PRIVATE & ~TagInfo::TF_PRIVATE);
         xassert_eqq(TagInfo::TFM_NOT_CHAIR_HIDDEN, TagInfo::TFM_PERM & ~TagInfo::TF_CHAIR_HIDDEN & ~TagInfo::TF_CHAIR_PUBLIC);
         xassert_eqq(TagInfo::TFM_NOT_HIDDEN, TagInfo::TFM_PERM & ~TagInfo::TF_CHAIR_HIDDEN & ~TagInfo::TF_HIDDEN & ~TagInfo::TF_ADMIN_PUBLIC & ~TagInfo::TF_CHAIR_PUBLIC);
         xassert_eqq(TagInfo::TFM_PERM_CHAIR, TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_HIDDEN | TagInfo::TF_ADMIN_PUBLIC | TagInfo::TF_PC_PUBLIC | TagInfo::TF_PC | TagInfo::TF_OTHER_PRIVATE | TagInfo::TF_CHAIR_PUBLIC);

@@ -6009,7 +6009,7 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @return bool */
-    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
+    function __can_edit_tag1(PaperInfo $prow, $tag, $previndex, $index) {
         assert(!!$tag);
         if (!$this->isPC) {
             return false;
@@ -6071,6 +6071,61 @@ class Contact implements JsonSerializable {
             && (!($index < 0)
                 || !$t
                 || !$t->allotment);
+    }
+
+
+    /** @param string $tag
+     * @return bool */
+    function __can_edit_tag2(PaperInfo $prow, $tag, $previndex, $index) {
+        assert(!!$tag);
+        if (!$this->isPC) {
+            return false;
+        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+                   || $this->_root_user) {
+            return true;
+        }
+        $rights = $this->rights($prow);
+        if (!$rights->scope_allows(TS::S_TAG_WRITE)) {
+            return false;
+        }
+        $ufl = $this->tag_perm_flags($prow);
+        $tagmap = $this->conf->tags();
+        $tfl = $tagmap->perm_flags($tag, $this->contactId);
+        if (($ufl & $tfl) === 0
+            || (!$rights->can_manage()
+                && !$this->conf->time_pc_view($prow, false))) {
+            return false;
+        }
+        if ($tfl & (TagInfo::TF_PRIVATE | TagInfo::TF_OTHER_PRIVATE)) {
+            if ($index < 0
+                && $tagmap->is_allotment(substr($tag, strpos($tag, "~") + 1))) {
+                return false;
+            }
+            return ($tfl & TagInfo::TF_PRIVATE) !== 0
+                || $rights->can_manage_tags();
+        }
+        $ti = $tagmap->find($tag);
+        if (!$rights->allow_pc()
+            && (!$ti || !$ti->is(TagInfo::TF_CHAIR_PUBLIC) || !$this->privChair)) {
+            return false;
+        }
+        return !$ti
+            || (!$ti->is(TagInfo::TF_AUTOMATIC)
+                && (!$ti->is(TagInfo::TF_CHAIR_READONLY)
+                    || ($this->privChair && $rights->scope_allows(TS::S_TAG_ADMIN)))
+                && (!$ti->is(TagInfo::TF_READONLY)
+                    || $rights->can_manage_tags()));
+    }
+
+    /** @param string $tag
+     * @return bool */
+    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
+        $v1 = $this->__can_edit_tag1($prow, $tag, $previndex, $index);
+        $v2 = $this->__can_edit_tag2($prow, $tag, $previndex, $index);
+        if ($v1 !== $v2) {
+            $this->__view_tags_complain($prow, $tag, $v1);
+        }
+        return $v1;
     }
 
     /** @param string $tag
