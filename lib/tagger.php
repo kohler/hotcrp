@@ -1466,7 +1466,7 @@ class TagMap {
         }
         $rt = $conf->setting_data("tag_rank") ?? "";
         foreach (Tagger::split_unpack($rt) as $tv) {
-            $this->set($tv[0], TagInfo::TF_RANK | $ppuf);
+            $this->set($tv[0], TagInfo::TF_RANK | TagInfo::TF_READONLY | $ppuf);
         }
         $ct = $conf->setting_data("tag_color") ?? "";
         if ($ct !== "") {
