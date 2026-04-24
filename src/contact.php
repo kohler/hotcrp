@@ -5660,27 +5660,6 @@ class Contact implements JsonSerializable {
         return $fl;
     }
 
-    /** @return bool */
-    private function __can_view_tags(?PaperInfo $prow = null) {
-        // see also AllTags_API::alltags, PaperInfo::{searchable,viewable}_tags
-        if (!$this->isPC) {
-            return false;
-        } else if (!$prow) {
-            return $this->scope_allows_some(TS::S_TAG_READ);
-        }
-        $rights = $this->rights($prow);
-        if (!$rights->scope_allows(TS::S_TAG_READ)) {
-            return false;
-        } else if ($rights->allow_pc()) {
-            return true;
-        }
-        $dt = $this->conf->tags();
-        return ($rights->allow_pc_broad()
-                && $dt->has(TagInfo::TF_PC_PUBLIC))
-            || (($this->privChair || $rights->allow_admin())
-                && $dt->has(TagInfo::TFM_ADMIN_PUBLIC));
-    }
-
     function __view_tags_complain(?PaperInfo $prow, $tag, $v1) {
         if ($tag) {
             $ts = sprintf("tag %s [%x]", $tag, $this->conf->tags()->perm_flags($tag, $this->contactId));
@@ -5699,12 +5678,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_tags(?PaperInfo $prow = null) {
-        $v1 = $this->__can_view_tags($prow);
-        $v2 = ($this->tag_perm_flags($prow) & $this->conf->tags()->flags) !== 0;
-        if ($v1 !== $v2) {
-            $this->__view_tags_complain($prow, null, $v1);
-        }
-        return $v1;
+        return ($this->tag_perm_flags($prow) & $this->conf->tags()->flags) !== 0;
     }
 
     /** @return ?FailureReason */
@@ -5724,51 +5698,13 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    private function __can_view_most_tags(?PaperInfo $prow = null) {
-        if (!$this->isPC) {
-            return false;
-        } else if (!$prow) {
-            return $this->scope_allows_some(TS::S_TAG_READ);
-        }
-        $rights = $this->rights($prow);
-        return $rights->scope_allows(TS::S_TAG_READ)
-            && $rights->allow_pc();
-    }
-
-    /** @return bool */
     function can_view_most_tags(?PaperInfo $prow = null) {
-        $v1 = $this->__can_view_most_tags($prow);
-        $v2 = ($this->tag_perm_flags($prow) & TagInfo::TF_PC) !== 0;
-        if ($v1 !== $v2) {
-            $this->__view_tags_complain($prow, null, $v1);
-        }
-        return $v1;
-    }
-
-    /** @return bool */
-    private function __can_view_hidden_tags(?PaperInfo $prow = null) {
-        if (!$this->isPC) {
-            return false;
-        } else if (!$prow) {
-            return $this->scope_allows_some(TS::S_TAG_READ)
-                && ($this->is_manager()
-                    || $this->conf->check_any_required_tracks($this, Track::HIDDENTAG));
-        }
-        $rights = $this->rights($prow);
-        return $rights->scope_allows(TS::S_TAG_READ)
-            && ($rights->is_admin()
-                || ($rights->allow_pc()
-                    && $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG)));
+        return ($this->tag_perm_flags($prow) & TagInfo::TF_PC) !== 0;
     }
 
     /** @return bool */
     function can_view_hidden_tags(?PaperInfo $prow = null) {
-        $v1 = $this->__can_view_hidden_tags($prow);
-        $v2 = ($this->tag_perm_flags($prow) & TagInfo::TF_HIDDEN) !== 0;
-        if ($v1 !== $v2) {
-            $this->__view_tags_complain($prow, null, $v1);
-        }
-        return $v1;
+        return ($this->tag_perm_flags($prow) & TagInfo::TF_HIDDEN) !== 0;
     }
 
     /** @param string $tag
@@ -5780,119 +5716,14 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @return bool */
-    private function __can_view_tag_somewhere($tag) {
-        // non-PC or scope may prevent viewing
-        if (!$this->isPC) {
-            return false;
-        } else if ($this->_overrides & self::OVERRIDE_TAG_CHECKS) {
-            return true;
-        } else if (!$this->scope_allows_some(TS::S_TAG_READ)) {
-            return false;
-        }
-
-        // chair can always view
-        if ($this->privChair) {
-            return true;
-        }
-
-        // chair tag: only chairs can view
-        $tw = strpos($tag, "~");
-        if ($tw === 0 && $tag[1] === "~") {
-            return false;
-        }
-
-        // manager can always view
-        if ($this->is_manager()) {
-            return true;
-        }
-
-        // private: can always view own
-        if ($tw === 0
-            || ($tw > 0 && intval($tag) === $this->contactId)) {
-            return true;
-        }
-
-        // private other: can view others only if public per-user
-        $tagmap = $this->conf->tags();
-        if ($tw > 0) {
-            return $tagmap->has(TagInfo::TF_PUBLIC_PERUSER)
-                && $tagmap->is_public_peruser(substr($tag, $tw + 1));
-        }
-
-        // otherwise, public
-        return !$tagmap->is_hidden($tag)
-            || $this->conf->check_any_required_tracks($this, Track::HIDDENTAG);
-    }
-
-    /** @param string $tag
-     * @return bool */
     function can_view_tag_somewhere($tag) {
-        $v1 = $this->__can_view_tag_somewhere($tag);
-        $v2 = ($this->tag_perm_flags(null) & $this->conf->tags()->perm_flags($tag, $this->contactId)) !== 0;
-        if ($v1 !== $v2) {
-            $this->__view_tags_complain(null, $tag, $v1);
-        }
-        return $v1;
-    }
-
-    /** @param string $tag
-     * @return bool */
-    private function __can_view_tag(?PaperInfo $prow, $tag) {
-        // basic checks
-        if (!$this->isPC) {
-            return false;
-        } else if ($this->_overrides & self::OVERRIDE_TAG_CHECKS) {
-            return true;
-        }
-
-        // conflict checks
-        $tag = Tagger::tv_tag($tag);
-        $tagmap = $this->conf->tags();
-        if ($prow) {
-            $rights = $this->rights($prow);
-            if (!$rights->scope_allows(TS::S_TAG_READ)) {
-                return false;
-            }
-            $allow_administer = $rights->allow_admin();
-            if (!$rights->allow_pc()
-                && ((!$allow_administer && !$this->privChair)
-                    || !$tagmap->is_admin_public($tag))
-                && (!$rights->allow_pc_broad()
-                    || !$tagmap->is_pc_public($tag))) {
-                return false;
-            }
-        } else {
-            if (!$this->scope_allows_some(TS::S_TAG_READ)) {
-                return false;
-            }
-            $allow_administer = $this->privChair;
-        }
-
-        // twiddle and hidden-tag checks
-        $twiddle = strpos($tag, "~");
-        if ($twiddle === 0 && $tag[1] === "~") {
-            return $this->privChair;
-        }
-        return ($allow_administer
-                || $twiddle === false
-                || $twiddle === 0
-                || ($twiddle > 0
-                    && (substr($tag, 0, $twiddle) == $this->contactId
-                        || $tagmap->is_public_peruser(substr($tag, $twiddle + 1)))))
-            && ($twiddle !== false
-                || !$tagmap->is_hidden($tag)
-                || $this->can_view_hidden_tags($prow));
+        return ($this->tag_perm_flags(null) & $this->conf->tags()->perm_flags($tag, $this->contactId)) !== 0;
     }
 
     /** @param string $tag
      * @return bool */
     function can_view_tag(?PaperInfo $prow, $tag) {
-        $v1 = $this->__can_view_tag($prow, $tag);
-        $v2 = ($this->tag_perm_flags($prow) & $this->conf->tags()->perm_flags($tag, $this->contactId)) !== 0;
-        if ($v1 !== $v2) {
-            $this->__view_tags_complain($prow, $tag, $v1);
-        }
-        return $v1;
+        return ($this->tag_perm_flags($prow) & $this->conf->tags()->perm_flags($tag, $this->contactId)) !== 0;
     }
 
     /** @param string $tag
