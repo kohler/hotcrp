@@ -139,7 +139,7 @@ class OAuth_Page {
         if (friendly_boolean($this->qreq->quiet)) {
             $tokdata["quiet"] = true;
         }
-        if (($r = $this->qreq->sucess_redirect ?? $this->qreq->redirect) !== null) {
+        if (($r = $this->qreq->success_redirect ?? $this->qreq->redirect) !== null) {
             $tokdata["success_redirect"] = $r;
         }
         if (($r = $this->qreq->failure_redirect ?? $this->qreq->redirect) !== null) {
