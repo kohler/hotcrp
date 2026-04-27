@@ -1216,92 +1216,7 @@ class TagMap {
     /** @param 0|1 $ctype
      * @param ?string $tags
      * @return string */
-    function __censor1($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
-        // empty tag optimization
-        if ($tags === null || $tags === "") {
-            return "";
-        }
-
-        // preserve all tags/show no tags optimization
-        $view_most = $user->can_view_most_tags($prow);
-        $allow_admin = $prow ? $user->allow_admin($prow) : $user->privChair;
-        $conflict_free = TagInfo::TF_PC_PUBLIC
-            | ($allow_admin ? TagInfo::TF_ADMIN_PUBLIC : 0)
-            | ($user->privChair ? TagInfo::TFM_ADMIN_PUBLIC : 0);
-        if ($view_most) {
-            if (($ctype === self::CENSOR_SEARCH && $allow_admin && $user->privChair)
-                || (($this->flags & TagInfo::TF_HIDDEN) === 0 && strpos($tags, "~") === false)) {
-                return $tags;
-            }
-        } else {
-            if (($this->flags & $conflict_free) === 0) {
-                return "";
-            }
-        }
-
-        // go tag by tag
-        $strip_hidden = ($this->flags & TagInfo::TF_HIDDEN) !== 0
-            && !$user->can_view_hidden_tags($prow);
-        $my_uid = $user->contactId > 0 ? (string) $user->contactId : "";
-        $my_tw = strlen($my_uid);
-        $p = $ip = 0;
-        $l = strlen($tags);
-        while ($p < $l) {
-            $np = strpos($tags, " ", $p + 1) ? : $l;
-            $t = substr($tags, $p + 1, strpos($tags, "#", $p + 1) - $p - 1);
-            $tw = strpos($t, "~");
-            if ($tw === 0) {
-                if (!$user->privChair) {
-                    $ok = false;
-                } else if ($view_most) {
-                    $ok = true;
-                } else {
-                    $dt = $this->find($t);
-                    $ok = $dt && ($dt->flags & $conflict_free) !== 0;
-                }
-            } else if (!$view_most) {
-                $dt = $tw === false ? $this->find($t) : null;
-                $ok = $dt && ($dt->flags & $conflict_free) !== 0;
-            } else if ($tw !== false) {
-                if ($tw === $my_tw
-                    && str_starts_with($t, $my_uid)) {
-                    $ok = true;
-                } else if ($ctype === self::CENSOR_VIEW) {
-                    $ok = false;
-                } else if ($allow_admin && $view_most) {
-                    $ok = true;
-                } else if (($this->flags & TagInfo::TF_PUBLIC_PERUSER) === 0) {
-                    $ok = false;
-                } else {
-                    $dt = $this->find(substr($t, $tw + 1));
-                    $ok = $dt
-                        && ($dt->flags & TagInfo::TF_PUBLIC_PERUSER) !== 0
-                        && ($view_most
-                            || ($dt->flags & $conflict_free) !== 0);
-                }
-            } else if ($strip_hidden) {
-                $dt = $this->find($t);
-                $ok = !$dt || ($dt->flags & TagInfo::TF_HIDDEN) === 0;
-            } else {
-                $ok = true;
-            }
-            if ($ok && $ip < $p) {
-                $tags = substr($tags, 0, $ip) . substr($tags, $p);
-                $l -= $p - $ip;
-                $p = $ip = $np - ($p - $ip);
-            } else if ($ok) {
-                $p = $ip = $np;
-            } else {
-                $p = $np;
-            }
-        }
-        return $ip < $p ? substr($tags, 0, $ip) : $tags;
-    }
-
-    /** @param 0|1 $ctype
-     * @param ?string $tags
-     * @return string */
-    function __censor2($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
+    function censor($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
         // empty tag optimization
         if ($tags === null || $tags === "") {
             return "";
@@ -1344,19 +1259,6 @@ class TagMap {
             }
         }
         return $ip < $p ? substr($tags, 0, $ip) : $tags;
-    }
-
-    /** @param 0|1 $ctype
-     * @param ?string $tags
-     * @return string */
-    function censor($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
-        $c1 = $this->__censor1($ctype, $tags, $user, $prow);
-        $c2 = $this->__censor2($ctype, $tags, $user, $prow);
-        if ($c1 !== $c2) {
-            $ps = $prow ? sprintf("paper %d [%x]", $prow->paperId, $user->tag_perm_flags($prow)) : sprintf("[utp %x]", $user->tag_perm_flags(null));
-            error_log("censor alignment error, expected \"{$c1}\", got \"{$c2}\", user {$user->contactId}, {$ps}, ct{$ctype}");
-        }
-        return $c1;
     }
 
     /** @param array<string,mixed> &$tagmap */
