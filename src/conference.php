@@ -1226,13 +1226,11 @@ class Conf {
             || !($s = $this->opt["s3_secret"] ?? null)
             || !($b = $this->opt["s3_bucket"] ?? null)) {
             return null;
-        } else if ($this->_s3_client
-                   && $this->_s3_client->check_key_secret_bucket($k, $s, $b)) {
-            return $this->_s3_client;
         }
         return S3Client::make([
             "key" => $k, "secret" => $s, "bucket" => $b,
             "region" => $this->opt["s3_region"] ?? null,
+            "domain" => $this->opt["s3_domain"] ?? null,
             "setting_cache" => $this, "setting_cache_prefix" => "__s3"
         ]);
     }

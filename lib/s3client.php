@@ -21,6 +21,9 @@ class S3Client {
     /** @var string
      * @readonly */
     public $s3_region;
+    /** @var ?string
+     * @readonly */
+    public $s3_domain;
     /** @var ?Conf */
     private $setting_cache;
     /** @var string */
@@ -61,15 +64,20 @@ class S3Client {
         $this->s3_secret = $opt["secret"];
         $this->s3_bucket = $opt["bucket"];
         $this->s3_region = $opt["region"] ?? "us-east-1";
+        $this->s3_domain = $opt["domain"] ?? null;
         $this->setting_cache = $opt["setting_cache"] ?? null;
         $this->setting_cache_prefix = $opt["setting_cache_prefix"] ?? "__s3";
     }
 
-    /** @return S3Client */
+    /** @param array{key:string,secret:string,bucket:string} $opt
+     * @return S3Client */
     static function make($opt) {
         foreach (self::$instances as $s3) {
-            if ($s3->check_key_secret_bucket($opt["key"], $opt["secret"], $opt["bucket"])
-                && $s3->s3_region === ($opt["region"] ?? "us-east-1"))
+            if ($s3->s3_key === $opt["key"]
+                && $s3->s3_secret === $opt["secret"]
+                && $s3->s3_bucket === $opt["bucket"]
+                && $s3->s3_region === ($opt["region"] ?? "us-east-1")
+                && $s3->s3_domain === ($opt["domain"] ?? null))
                 return $s3;
         }
         $s3 = new S3Client($opt);
@@ -82,13 +90,6 @@ class S3Client {
     function set_fixed_time($t) {
         $this->fixed_time = $t;
         return $this;
-    }
-
-    /** @return bool */
-    function check_key_secret_bucket($key, $secret, $bucket) {
-        return $this->s3_key === $key
-            && $this->s3_secret === $secret
-            && $this->s3_bucket === $bucket;
     }
 
     /** @param int $time
@@ -229,8 +230,9 @@ class S3Client {
      * @param array<string,string|array<string,string>> $args
      * @return array{string,list<string>} */
     function signed_headers($skey, $method, $args) {
+        $domain = $this->s3_domain ?? "s3.{$this->s3_region}.amazonaws.com";
         $sep = str_starts_with($skey, "/") ? "" : "/";
-        $url = "https://{$this->s3_bucket}.s3.{$this->s3_region}.amazonaws.com{$sep}{$skey}";
+        $url = "https://{$this->s3_bucket}.{$domain}{$sep}{$skey}";
         $hdr = ["Date" => Navigation::http_date($this->fixed_time ?? time())];
         foreach ($args as $key => $value) {
             if ($key === "user_data") {
