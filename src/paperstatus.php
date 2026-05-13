@@ -477,6 +477,9 @@ final class PaperStatus extends MessageSet {
             $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
             Dbl::free($result);
             if ($edoc) {
+                if (($docj->inactive ?? null) === true) {
+                    $edoc->set_prefer_inactive();
+                }
                 return $edoc;
             }
         }
@@ -519,6 +522,9 @@ final class PaperStatus extends MessageSet {
             && is_int($docj->size)
             && ($this->doc_savef & DocumentInfo::SAVEF_SKIP_CONTENT) !== 0) {
             $doc->set_size($docj->size);
+        }
+        if (($docj->inactive ?? null) === true) {
+            $doc->set_prefer_inactive();
         }
 
         // analyze content, complain if not available
@@ -1769,7 +1775,9 @@ final class PaperStatus extends MessageSet {
             if ($doc->paperId === 0 || $doc->paperId === -1) {
                 $doc->set_prop("paperId", $this->paperId);
             }
-            $doc->set_prop("inactive", 0);
+            if (!$doc->prefer_inactive()) {
+                $doc->set_prop("inactive", 0);
+            }
             $baseov = $this->prow->base_option($doc->documentType);
             if (!in_array($doc->paperStorageId, $baseov->value_list())
                 && ($doc->timeReferenced ?? $doc->timestamp) < $this->prow->timeModified) {

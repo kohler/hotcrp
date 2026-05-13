@@ -77,6 +77,7 @@ class DocumentInfo implements JsonSerializable {
 
     const DF_PREFER_S3 = 1;
     const DF_WAS_INSERTED = 2;
+    const DF_PREFER_INACTIVE = 4;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -466,6 +467,15 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return $this */
+    function set_prefer_inactive() {
+        $this->_dflags |= self::DF_PREFER_INACTIVE;
+        if ($this->paperStorageId <= 0) {
+            $this->inactive = 1;
+        }
+        return $this;
+    }
+
+    /** @return $this */
     function analyze_content() {
         $info = Mimetype::content_info(null, $this->mimetype, $this);
         if (!$info) {
@@ -723,6 +733,11 @@ class DocumentInfo implements JsonSerializable {
     /** @return bool */
     function was_inserted() {
         return ($this->_dflags & self::DF_WAS_INSERTED) !== 0;
+    }
+
+    /** @return bool */
+    function prefer_inactive() {
+        return ($this->_dflags & self::DF_PREFER_INACTIVE) !== 0;
     }
 
     /** @return bool */
