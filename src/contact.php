@@ -5840,74 +5840,7 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @return bool */
-    function __can_edit_tag1(PaperInfo $prow, $tag, $previndex, $index) {
-        assert(!!$tag);
-        if (!$this->isPC) {
-            return false;
-        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-                   || $this->_root_user) {
-            return true;
-        }
-        $rights = $this->rights($prow);
-        if (!$rights->scope_allows(TS::S_TAG_WRITE)) {
-            return false;
-        }
-        $tagmap = $this->conf->tags();
-        $privChair = $this->privChair
-            && $rights->scope_allows(TS::S_TAG_ADMIN);
-        if (!$rights->allow_pc_broad()
-            || (!$rights->allow_pc() && !$tagmap->has(TagInfo::TF_PC_PUBLIC))
-            || (!$rights->can_manage() && !$this->conf->time_pc_view($prow, false))) {
-            if (!$privChair
-                || !$tagmap->has(TagInfo::TFM_ADMIN_PUBLIC)) {
-                return false;
-            }
-            $tag = Tagger::tv_tag($tag);
-            $tw = strpos($tag, "~");
-            return ($tw === false || ($tw === 0 && $tag[1] === "~"))
-                && ($t = $tagmap->find($tag))
-                && $t->is(TagInfo::TFM_ADMIN_PUBLIC)
-                && !$t->is(TagInfo::TF_AUTOMATIC);
-        }
-        $tag = Tagger::tv_tag($tag);
-        $tw = strpos($tag, "~");
-        if ($tw === false || ($tw === 0 && $tag[1] === "~")) {
-            $t = $tagmap->find($tag);
-            // conflicted PC can change conflict-free tags
-            if (!$rights->allow_pc()
-                && (!$t || !$t->is(TagInfo::TF_PC_PUBLIC))) {
-                return false;
-            }
-            // all other flags only limit rights
-            if (!$t) {
-                return true;
-            }
-            // check remaining flags
-            return !$t->is(TagInfo::TF_AUTOMATIC)
-                && (!$t->is(TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_CHAIR_READONLY)
-                    || $privChair)
-                && (!$t->is(TagInfo::TF_HIDDEN)
-                    || $this->can_view_hidden_tags($prow))
-                && (!$t->is(TagInfo::TF_READONLY | TagInfo::TF_RANK)
-                    || $rights->can_manage_tags()
-                    || ($privChair && $t->is(TagInfo::TFM_ADMIN_PUBLIC)));
-        }
-        $t = $tagmap->find(substr($tag, $tw + 1));
-        return ($rights->allow_pc()
-                || ($t && $t->is(TagInfo::TF_PC_PUBLIC)))
-            && ($tw === 0
-                || $rights->can_manage_tags()
-                || ($tw === strlen((string) $this->contactId)
-                    && str_starts_with($tag, (string) $this->contactId)))
-            && (!($index < 0)
-                || !$t
-                || !$t->allotment);
-    }
-
-
-    /** @param string $tag
-     * @return bool */
-    function __can_edit_tag2(PaperInfo $prow, $tag, $previndex, $index) {
+    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
         assert(!!$tag);
         if (!$this->isPC) {
             return false;
@@ -5957,17 +5890,6 @@ class Contact implements JsonSerializable {
         }
         return ($ufl & TagInfo::TFM_ADMIN_PUBLIC)
             || $this->conf->time_pc_view($prow, false);
-    }
-
-    /** @param string $tag
-     * @return bool */
-    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
-        $v1 = $this->__can_edit_tag1($prow, $tag, $previndex, $index);
-        $v2 = $this->__can_edit_tag2($prow, $tag, $previndex, $index);
-        if ($v1 !== $v2) {
-            $this->__view_tags_complain($prow, $tag, $v1);
-        }
-        return $v1;
     }
 
     /** @param string $tag
