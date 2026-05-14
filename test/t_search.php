@@ -247,6 +247,26 @@ class Search_Tester {
         xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false, false, ["type" => "x"], ["type" => "y"]]), ["type" => "xor", "child" => [["type" => "x"], ["type" => "y"], true]]);
     }
 
+    function test_listed_author() {
+        // Paper 30 has Christopher Walken as a listed author and
+        // d.francis2@place.edu (Dottie Francis, "Place Investigations")
+        // as a separately-added contact.
+        $u = $this->u_root;
+
+        // listed author: both `au:` and `listedau:` find Walken
+        xassert_search($u, "au:Walken", "30");
+        xassert_search($u, "listedau:Walken", "30");
+
+        // contact-only author: `au:` finds Dottie by email, name,
+        // or affiliation; `listedau:` does not
+        xassert_search($u, "au:d.francis2@place.edu", "30");
+        xassert_search($u, "listedau:d.francis2@place.edu", "");
+        xassert_search($u, "au:Dottie", "30");
+        xassert_search($u, "listedau:Dottie", "");
+        xassert_search($u, "au:\"Place Investigations\"", "30");
+        xassert_search($u, "listedau:\"Place Investigations\"", "");
+    }
+
     function test_named_searches() {
         $sv = (new SettingValues($this->u_root))->add_json_string('{
             "named_search": [

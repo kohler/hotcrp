@@ -84,15 +84,24 @@ class Author_SearchTerm extends SearchTerm {
         } else if (!$can_view) {
             // $n is always 0
         } else if (!$this->regex) {
+            // XXX always counts listed authors only, regardless of `$listed`
             $n = count($row->author_list());
         } else {
+            $aulist = $row->author_list();
             foreach ($row->conflict_list() as $co) {
-                if ($co->conflictType < CONFLICT_AUTHOR
-                    || (($listed || !$this->regex_match($co->user))
-                        && !$this->regex_match($co->author($row)))) {
-                    continue;
+                if ($co->conflictType >= CONFLICT_AUTHOR
+                    && (!$listed || $co->author_index !== null)
+                    && $this->regex_match($co->user)) {
+                    ++$n;
+                    if ($co->author_index !== null) {
+                        $aulist[$co->author_index - 1] = null;
+                    }
                 }
-                ++$n;
+            }
+            foreach ($aulist as $au) {
+                if ($au && $this->regex_match($au)) {
+                    ++$n;
+                }
             }
         }
         return $this->csm->test($n);
@@ -103,6 +112,7 @@ class Author_SearchTerm extends SearchTerm {
             || ($about & self::ABOUT_PAPER) === 0) {
             return $this->test($row, null);
         }
+        // XXX always behaves like `listedau:`
         return ["type" => "compar", "compar" => $this->csm->relation(), "child" => [
             ["type" => "author_count"],
             $this->csm->value()

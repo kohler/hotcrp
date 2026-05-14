@@ -385,7 +385,11 @@
     "authors": [
         {"name": "Sandeep Bajaj", "email": "bajaj@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center"},
         {"name": "Lee Breslau", "email": "breslau@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center"},
-        {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center", "contact": true}
+        {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center", "contact": true},
+        {"name": "Christopher Walken", "affiliation": "Screen Actors Guild"}
+    ],
+    "contacts": [
+        "d.francis2@place.edu"
     ],
     "submission": {"content": "%PDF-whatever30"},
     "submitted": true
