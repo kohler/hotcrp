@@ -76,6 +76,12 @@ class Contacts_PaperOption extends PaperOption {
     function value_save(PaperValue $ov, PaperStatus $ps) {
         // do not mark diff (will be marked later)
         $ps->clear_conflict_values(CONFLICT_CONTACTAUTHOR);
+        // do not clear explicitly requested contacts from authors
+        $auov = $ov->prow->option(PaperOption::AUTHORSID);
+        foreach ($auov->anno("explicit_contacts") ?? [] as $auth) {
+            $ps->update_conflict_value($auth, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+        }
+        // assign our contacts
         foreach (self::users_anno($ov) as $u) {
             if (($u->conflictType & CONFLICT_CONTACTAUTHOR) !== 0) {
                 $ps->update_conflict_value($u, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
@@ -190,9 +196,9 @@ class Contacts_PaperOption extends PaperOption {
         }
         // in JSON save (unlike web save), any unmentioned contacts are cleared
         foreach (self::users_anno($ov) as $au) {
-            if (self::ca_index($reqau, $au->email) === false) {
-                $specau[] = $au = Author::make_email($au->email);
-                $au->conflictType = 0;
+            if (self::ca_index($specau, $au->email) === false) {
+                $specau[] = $aux = Author::make_email($au->email);
+                $aux->conflictType = 0;
             }
         }
         // apply specified values

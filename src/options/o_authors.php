@@ -157,15 +157,22 @@ class Authors_PaperOption extends PaperOption {
         }
     }
     function value_save_conflict_values(PaperValue $ov, PaperStatus $ps) {
+        $explicit_contacts = [];
         $ps->clear_conflict_values(CONFLICT_AUTHOR);
         foreach (self::author_list($ov) as $i => $auth) {
             if (Contact::is_plausible_or_example_email($auth->email)) {
-                $cflags = CONFLICT_AUTHOR
-                    | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
+                $cflags = CONFLICT_AUTHOR;
+                if ($ov->anno("contact:{$auth->email}")) {
+                    $cflags |= CONFLICT_CONTACTAUTHOR;
+                    $explicit_contacts[] = $auth;
+                }
                 $ps->update_conflict_value($auth, $cflags, $cflags);
             }
         }
         $ps->checkpoint_conflict_values();
+        if (!empty($explicit_contacts)) {
+            $ov->set_anno("explicit_contacts", $explicit_contacts);
+        }
     }
     static private function expand_author(Author $au, PaperInfo $prow) {
         if ($au->email !== ""
