@@ -8432,7 +8432,7 @@ function make_selector_shortcut(type) {
             || $(e).find("input[type=text]")[0];
     }
     function end(evt) {
-        var e = $$("fold" + type);
+        var e = $$("fold" + type) || $$("s-" + type);
         e.className = e.className.replace(/ psfocus\b/g, "");
         e = find(e);
         e.removeEventListener("blur", end, false);
@@ -8441,7 +8441,7 @@ function make_selector_shortcut(type) {
             this.blur();
     }
     return function (evt) {
-        var e = $$("fold" + type);
+        var e = $$("fold" + type) || $$("s-" + type);
         if (e) {
             e.className += " psfocus";
             foldup.call(e, null, {open: true});
