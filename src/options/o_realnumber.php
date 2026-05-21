@@ -139,6 +139,13 @@ class RealNumber_PaperOption extends PaperOption {
         }
     }
 
+    function value_format(Contact $user) {
+        if ($this->precision !== null) {
+            return new Numeric_ValueFormat("%.{$this->precision}f");
+        }
+        return Numeric_ValueFormat::main();
+    }
+
     function search_examples(Contact $viewer, $venue) {
         return [
             $this->has_search_example(),

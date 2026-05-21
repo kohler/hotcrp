@@ -199,9 +199,8 @@ class Duration_ValueFormat extends ValueFormat {
             return $t . sprintf("%.1fh", $x / 3600);
         } else if ($x > 59) {
             return $t . sprintf("%.1fm", $x / 60);
-        } else {
-            return $t . sprintf("%.1fs", $x);
         }
+        return $t . sprintf("%.1fs", $x);
     }
 }
 
@@ -280,12 +279,18 @@ class SubmissionField_ValueFormat extends ValueFormat {
 
     function vtext($x) {
         $this->fr->set_context(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
+        if (is_float($x)) {
+            $x = (int) round($x);
+        }
         $this->sf->render($this->fr, PaperValue::make($this->prow, $this->sf, $x));
         return $this->fr->value_text();
     }
 
     function vhtml($x) {
         $this->fr->set_context(FieldRender::CFHTML);
+        if (is_float($x)) {
+            $x = (int) round($x);
+        }
         $this->sf->render($this->fr, PaperValue::make($this->prow, $this->sf, $x));
         return $this->fr->value_html();
     }

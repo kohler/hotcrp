@@ -736,9 +736,8 @@ class Contact implements JsonSerializable {
                 $c->_sortspec = $sortspec;
             }
             return $c->_sorter;
-        } else {
-            return self::make_sorter($c, $sortspec);
         }
+        return self::make_sorter($c, $sortspec);
     }
 
 

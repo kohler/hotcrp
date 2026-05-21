@@ -2403,7 +2403,7 @@ final class Formula implements JsonSerializable {
         } else if ($this->_format === Fexpr::FREVIEWFIELD) {
             $this->_value_format = new ReviewField_ValueFormat($this->format_rf());
         } else if ($this->_format === Fexpr::FSUBFIELD) {
-            $this->_value_format = new SubmissionField_ValueFormat($this->user, $this->format_sf());
+            $this->_value_format = $this->format_sf()->value_format($this->user);
         } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
             $this->_value_format = new Expertise_ValueFormat($this->conf);
         } else if ($this->_format === Fexpr::FREVIEWER) {

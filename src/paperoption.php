@@ -1010,6 +1010,10 @@ class PaperOption implements JsonSerializable {
     function format_spec() {
         return null;
     }
+    /** @return ValueFormat */
+    function value_format(Contact $user) {
+        return new SubmissionField_ValueFormat($user, $this);
+    }
 
     /** @param string $q
      * @param string $description
