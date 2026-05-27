@@ -278,7 +278,11 @@ class Home_Page {
                 $q .= ", " . $rf->main_storage;
                 $scores[] = [];
             }
-            $result = $user->conf->qe("{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)");
+            $q = "{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)";
+            if (!empty($user->hidden_papers)) {
+                $q .= "and paperId not in (" . join(",", array_keys($user->hidden_papers)) . ")";
+            }
+            $result = $user->conf->qe($q);
             while (($row = $result->fetch_row())) {
                 if ($row[1] || $row[3] < 0) {
                     $this->_r_num_submitted += 1;
