@@ -76,7 +76,8 @@ class ReviewerList_PaperColumn extends PaperColumn {
                     $tv = $this->topics ? $prow->topic_interest_score($xrow->contactId) : null;
                     $t .= " " . $pf->unparse_span($tv);
                 }
-                if (($hlt = $this->hlterms[$prow->_search_group] ?? null)
+                if ($prow->_search_group !== null
+                    && ($hlt = $this->hlterms[$prow->_search_group] ?? null)
                     && $hlt->test($prow, $xrow)) {
                     $t = "<span class=\"highlightmark taghh\">{$t}</span>";
                 }

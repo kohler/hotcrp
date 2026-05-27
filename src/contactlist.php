@@ -668,21 +668,18 @@ class ContactList {
     }
 
     private function test_paper_authors(PaperInfo $prow) {
-        if ($this->user->can_view_authors($prow)) {
-            if ($this->limit === "au") {
-                return $prow->timeSubmitted > 0;
-            } else if ($this->limit === "auuns") {
-                return $prow->timeSubmitted <= 0;
-            } else if ($this->limit === "aurej") {
-                return $prow->outcome_sign < 0 && $this->user->can_view_decision($prow);
-            } else if ($this->limit === "auacc") {
-                return $prow->outcome_sign > 0 && $this->user->can_view_decision($prow);
-            } else {
-                return true;
-            }
-        } else {
+        if (!$this->user->can_view_authors($prow)) {
             return false;
+        } else if ($this->limit === "au") {
+            return $prow->timeSubmitted > 0;
+        } else if ($this->limit === "auuns") {
+            return $prow->timeSubmitted <= 0;
+        } else if ($this->limit === "aurej") {
+            return $prow->outcome_sign < 0 && $this->user->can_view_decision($prow);
+        } else if ($this->limit === "auacc") {
+            return $prow->outcome_sign > 0 && $this->user->can_view_decision($prow);
         }
+        return true;
     }
 
     private function collect_paper_data() {
