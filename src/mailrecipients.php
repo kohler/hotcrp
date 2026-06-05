@@ -67,6 +67,7 @@ class MailRecipients extends MessageSet {
     const F_REV_EXT = 0x400;
     const F_REV_PC = 0x800;
     const F_REV_MYREQ = 0x1000;
+    const F_ACCEPT = 0x2000;
 
     const FM_REV = 0x30;
     const FM_REV_SPECIFIC = 0xD0;
@@ -128,9 +129,8 @@ class MailRecipients extends MessageSet {
             }
             if ($dmaxcount > 0) {
                 return "dec:{$dmaxname}";
-            } else {
-                return substr($t, 4);
             }
+            return substr($t, 4);
         } else if ($t === "myuncextrev") {
             return "uncmyextrev";
         }
@@ -183,11 +183,12 @@ class MailRecipients extends MessageSet {
             $this->add_recpt_group("bydec_group", "Contact authors by decision");
             foreach ($this->conf->decision_set() as $dec) {
                 if ($dec->id !== 0) {
-                    $hide = ($this->_dcounts[$dec->id] ?? 0) === 0;
-                    $this->add_recpt("dec:{$dec->name}", "Contact authors of {$dec->name} papers", "dec:{$dec->name}", $hide ? self::F_HIDE : 0);
+                    $hflag = ($this->_dcounts[$dec->id] ?? 0) === 0 ? self::F_HIDE : 0;
+                    $aflag = $dec->sign > 0 ? self::F_ACCEPT : 0;
+                    $this->add_recpt("dec:{$dec->name}", "Contact authors of {$dec->name} papers", "dec:{$dec->name}", $hflag | $aflag);
                 }
             }
-            $this->add_recpt("dec:yes", "Contact authors of accept-class papers", "dec:yes", $this->_has_dt[2] ? 0 : self::F_HIDE);
+            $this->add_recpt("dec:yes", "Contact authors of accept-class papers", "dec:yes", ($this->_has_dt[2] ? 0 : self::F_HIDE) | self::F_ACCEPT);
             $this->add_recpt("dec:no", "Contact authors of reject-class papers", "dec:no", $this->_has_dt[0] ? 0 : self::F_HIDE);
             $this->add_recpt("dec:none", "Contact authors of undecided papers", "dec:none", $this->_has_dt[1] && ($this->_has_dt[0] || $this->_has_dt[2]) ? 0 : self::F_HIDE);
             $this->add_recpt("dec:any", "Contact authors of decided papers", "dec:any", self::F_HIDE);
@@ -395,6 +396,11 @@ class MailRecipients extends MessageSet {
     function is_authors() {
         return in_array($this->rect->name, ["s", "unsub", "active", "au"], true)
             || str_starts_with($this->rect->name, "dec:");
+    }
+
+    /** @return bool */
+    function is_accepted_authors() {
+        return ($this->rect->flags & self::F_ACCEPT) !== 0;
     }
 
     /** @return bool */

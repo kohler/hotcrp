@@ -577,6 +577,7 @@ class MailSender {
         $nwarnings = 0;
         $has_decoration = false;
         $revinform = ($this->recipients === "newpcrev" ? [] : null);
+        $acceptnotify = ($this->recip->is_accepted_authors() ? [] : null);
         $last_pid = null;
         $pid_index = null;
 
@@ -643,8 +644,13 @@ class MailSender {
                     Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn{$nwarnings}').innerHTML;");
             }
 
-            if ($this->sending && $revinform !== null && $prow) {
-                $revinform[] = "(paperId={$prow->paperId} and contactId={$user->contactId})";
+            if ($this->sending && $prow) {
+                if ($revinform !== null) {
+                    $revinform[] = "(paperId={$prow->paperId} and contactId={$user->contactId})";
+                }
+                if ($acceptnotify !== null && $prow->timeAcceptNotified === 0) {
+                    $acceptnotify[] = $prow->paperId;
+                }
             }
         }
 
@@ -668,8 +674,12 @@ class MailSender {
             $this->print_actions();
         } else {
             $this->conf->qe("update MailLog set status=0 where mailId=?", $this->mailid);
+            $time = time();
             if ($revinform) {
-                $this->conf->qe_raw("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
+                $this->conf->qe_raw("update PaperReview set timeRequestNotified={$time} where " . join(" or ", $revinform));
+            }
+            if ($acceptnotify) {
+                $this->conf->qe("update Paper set timeAcceptNotified={$time} where paperId?a and timeAcceptNotified=0 and outcome>0", $acceptnotify);
             }
         }
         echo "</form>";

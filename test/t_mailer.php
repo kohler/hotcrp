@@ -34,4 +34,34 @@ class Mailer_Tester {
         $this->run_send_template($mr, "@authors");
         MailChecker::check_db("t_mailer-send-1");
     }
+
+    function test_accept_mail_marks_notified() {
+        MailChecker::clear();
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        // accept paper 13 and clear any prior notification mark
+        xassert_assign($chair, "paper,action,decision\n13,decision,yes\n");
+        $this->conf->qe("update Paper set timeAcceptNotified=0 where paperId=13");
+        xassert_eqq($this->conf->checked_paper_by_id(13)->timeAcceptNotified, 0);
+
+        // sending to accept-class authors marks the paper notified
+        $mr = (new MailRecipients($chair))->set_recipients("dec:yes")->set_paper_ids([13]);
+        $this->run_send_template($mr, "@authors");
+        xassert_gt($this->conf->checked_paper_by_id(13)->timeAcceptNotified, 0);
+
+        // a second accept mail does not move the timestamp
+        $t1 = $this->conf->checked_paper_by_id(13)->timeAcceptNotified;
+        $mr = (new MailRecipients($chair))->set_recipients("dec:yes")->set_paper_ids([13]);
+        $this->run_send_template($mr, "@authors");
+        xassert_eqq($this->conf->checked_paper_by_id(13)->timeAcceptNotified, $t1);
+
+        // a generic all-authors mail does NOT mark a non-notified accepted paper
+        $this->conf->qe("update Paper set timeAcceptNotified=0 where paperId=13");
+        $mr = (new MailRecipients($chair))->set_recipients("au")->set_paper_ids([13]);
+        $this->run_send_template($mr, "@authors");
+        xassert_eqq($this->conf->checked_paper_by_id(13)->timeAcceptNotified, 0);
+
+        // clean up: clear decision so no papers remain accepted
+        xassert_assign($chair, "paper,action,decision\n13,cleardecision,yes\n");
+        MailChecker::clear();
+    }
 }

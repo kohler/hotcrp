@@ -275,6 +275,8 @@ CREATE TABLE `Paper` (
   `timeWithdrawn` bigint NOT NULL DEFAULT 0,
   `timeModified` bigint NOT NULL DEFAULT 0,
   `timeFinalSubmitted` bigint NOT NULL DEFAULT 0,
+  `timeSubmittedReviewable` bigint NOT NULL DEFAULT 0,
+  `timeAcceptNotified` bigint NOT NULL DEFAULT 0,
   `paperStorageId` int NOT NULL DEFAULT 0,
   # `sha1` copied from PaperStorage to reduce joins
   `sha1` varbinary(64) NOT NULL DEFAULT '',
@@ -660,7 +662,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 323, null),   -- schema version
+  ('allowPaperOption', 324, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

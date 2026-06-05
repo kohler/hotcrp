@@ -683,6 +683,97 @@ class PaperStatus_Tester {
         return $this->conf->checked_paper_by_id($ps->paperId);
     }
 
+    function test_time_submitted_reviewable() {
+        // a brand-new paper saved by its author records timeSubmittedReviewable
+        $prow = $this->make_author_paper("Reviewable timing");
+        $pid = $prow->paperId;
+        xassert_gt($prow->timeSubmitted, 0);
+        xassert_gt($prow->timeSubmittedReviewable, 0);
+        xassert_eqq($prow->timeSubmittedReviewable, $prow->timeModified);
+        $v1 = $prow->timeSubmittedReviewable;
+
+        // a further author edit (no reviews yet) bumps it
+        Conf::advance_current_time();
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "abstract" => "Revised abstract"]));
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_gt($prow->timeSubmittedReviewable, $v1);
+        xassert_eqq($prow->timeSubmittedReviewable, $prow->timeModified);
+        $v2 = $prow->timeSubmittedReviewable;
+
+        // an administrative edit (chair, not an author) does NOT update it
+        Conf::advance_current_time();
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "abstract" => "Admin-revised abstract"]));
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->timeSubmittedReviewable, $v2);
+        xassert_gt($prow->timeModified, $prow->timeSubmittedReviewable);
+
+        // once a review exists, author edits no longer update it
+        xassert_assign($this->u_chair, "paper,action,email\n{$pid},primary,varghese@ccrc.wustl.edu\n");
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert(!empty($prow->all_reviews()));
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "abstract" => "Post-review abstract"]));
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->timeSubmittedReviewable, $v2);
+    }
+
+    function test_time_accept_notified_reset() {
+        $prow = $this->make_author_paper("Acceptance reset");
+        $pid = $prow->paperId;
+
+        // accept (assignment) + simulate that authors were notified
+        xassert_assign($this->u_chair, "paper,action,decision\n{$pid},decision,yes\n");
+        $this->conf->qe("update Paper set timeAcceptNotified=? where paperId=?", Conf::$now, $pid);
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_gt($prow->outcome, 0);
+        xassert_gt($prow->timeAcceptNotified, 0);
+
+        // moving to a reject decision (assignment) resets the field
+        xassert_assign($this->u_chair, "paper,action,decision\n{$pid},decision,no\n");
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_lt($prow->outcome, 0);
+        xassert_eqq($prow->timeAcceptNotified, 0);
+
+        // re-accept (JSON) + notify, then clear the decision via a JSON save: also resets
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "accepted"]));
+        $this->conf->qe("update Paper set timeAcceptNotified=? where paperId=?", Conf::$now, $pid);
+        xassert_gt($this->conf->checked_paper_by_id($pid)->timeAcceptNotified, 0);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "unknown"]));
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->outcome, 0);
+        xassert_eqq($prow->timeAcceptNotified, 0);
+    }
+
+    function test_time_accept_notified_view() {
+        $prow = $this->make_author_paper("Acceptance view");
+        $pid = $prow->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "accepted"]));
+        $this->conf->save_refresh_setting("au_seedec", 1);
+        $this->conf->qe("update Paper set timeAcceptNotified=0 where paperId=?", $pid);
+
+        // a non-author PC viewer does NOT set the field
+        $prow = $this->u_varghese->checked_paper_by_id($pid);
+        $prow->viewable_decision($this->u_varghese);
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeAcceptNotified, 0);
+
+        // the author viewing the visible accept decision sets the field
+        $prow = $this->u_estrin->checked_paper_by_id($pid);
+        $dec = $prow->viewable_decision($this->u_estrin);
+        xassert_gt($dec->id, 0);
+        xassert_gt($this->conf->checked_paper_by_id($pid)->timeAcceptNotified, 0);
+
+        // clean up: clear decision so no papers remain accepted
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "unknown"]));
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->outcome, 0);
+        $this->conf->save_refresh_setting("au_seedec", null);
+    }
+
     function test_decision_json_paperacc() {
         $prow = $this->make_author_paper("Paperacc tracking");
         $pid = $prow->paperId;

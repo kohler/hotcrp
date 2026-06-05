@@ -965,8 +965,20 @@ final class PaperStatus extends MessageSet {
 
         // mark whether submitted, mark diff
         $this->_paper_submitted = $pj_submitted && !$pj_withdrawn;
-        if ($pj_withdrawn !== $old_withdrawn || $pj_submitted !== $old_submitted) {
+        if ($pj_withdrawn !== $old_withdrawn
+            || $pj_submitted !== $old_submitted) {
             $this->status_change_at("status");
+        }
+
+
+        // track last author modification before review
+        if ($pj_submitted
+            && (($this->prow->timeSubmittedReviewable === 0
+                 && !$old_submitted)
+                || (($this->prow->user_prop_changed() || !empty($this->_fdiffs))
+                    && ($this->_save_status & self::SSF_ADMIN_UPDATE) === 0
+                    && empty($this->prow->all_reviews())))) {
+            $this->prow->set_prop("timeSubmittedReviewable", Conf::$now);
         }
     }
 
@@ -977,6 +989,10 @@ final class PaperStatus extends MessageSet {
         }
         if ($this->prow->outcome !== $pj->decision) {
             $this->prow->set_prop("outcome", $pj->decision);
+            // reset acceptance notification when leaving accept-class
+            if ($this->prow->timeAcceptNotified > 0 && $pj->decision <= 0) {
+                $this->prow->set_prop("timeAcceptNotified", 0);
+            }
             $this->status_change_at("decision");
         }
     }

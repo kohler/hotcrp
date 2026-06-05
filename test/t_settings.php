@@ -316,6 +316,70 @@ class Settings_Tester {
         xassert(ConfInvariants::test_summary_settings($this->conf));
     }
 
+    function test_decision_settings_accept_notified() {
+        // start from default decisions
+        $this->conf->save_refresh_setting("outcome_map", null);
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
+
+        // accept paper 1 and mark its authors as notified
+        xassert_assign($this->u_chair, "paper,action,decision\n1,decision,yes\n");
+        $this->conf->qe("update Paper set timeAcceptNotified=? where paperId=1", Conf::$now);
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert_gt($p1->outcome, 0);
+        xassert_gt($p1->timeAcceptNotified, 0);
+
+        // recategorizing the accept decision to reject remaps its id (the $changes
+        // path) and must reset timeAcceptNotified for papers that held it. A second
+        // decision row is present so a stale loop variable would map to the wrong id.
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_decision" => 1,
+            "decision/1/id" => "1",
+            "decision/1/name" => "Now Rejected",
+            "decision/1/category" => "reject",
+            "decision/2/id" => "-1",
+            "decision/2/name" => "Rejected"
+        ]);
+        xassert($sv->execute());
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert_lt($p1->outcome, 0);
+        xassert_eqq($this->conf->decision_name($p1->outcome), "Now Rejected");
+        xassert_eqq($p1->timeAcceptNotified, 0);
+
+        // restore default decisions
+        xassert_assign($this->u_chair, "paper,action,decision\n1,cleardecision,no\n");
+        $this->conf->save_refresh_setting("outcome_map", null);
+
+        // now exercise the delete path: a new accept decision, accept + notify, delete it
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_decision" => 1,
+            "decision/1/id" => "new",
+            "decision/1/name" => "Provisionally accepted",
+            "decision/1/category" => "accept"
+        ]);
+        xassert($sv->execute());
+        xassert_assign($this->u_chair, "paper,action,decision\n1,decision,Provisionally accepted\n");
+        $this->conf->qe("update Paper set timeAcceptNotified=? where paperId=1", Conf::$now);
+        $p1 = $this->conf->checked_paper_by_id(1);
+        $decid = $p1->outcome;
+        xassert_gt($decid, 0);
+        xassert_gt($p1->timeAcceptNotified, 0);
+
+        // delete that decision => paper reverts to no decision and notification clears
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_decision" => 1,
+            "decision/1/id" => (string) $decid,
+            "decision/1/delete" => "1"
+        ]);
+        xassert($sv->execute());
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($p1->outcome, 0);
+        xassert_eqq($p1->timeAcceptNotified, 0);
+
+        // cleanup
+        $this->conf->save_refresh_setting("outcome_map", null);
+        xassert(ConfInvariants::test_summary_settings($this->conf));
+    }
+
     function test_decision_setting_as_list() {
         $x = $this->conf->setting_data("outcome_map");
         $this->conf->save_refresh_setting("outcome_map", 1, '["Unspecified","Accepted","Accepted II"]'); // Old settings could save this format

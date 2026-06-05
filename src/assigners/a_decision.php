@@ -131,8 +131,17 @@ class Decision_Assigner extends Assigner {
         $locks["Paper"] = "write";
     }
     function execute(AssignmentSet $aset) {
+        $old = (int) $this->item->pre("_decision");
         $dec = $this->item->deleted() ? 0 : $this->item["_decision"];
-        $aset->stage_qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
+        $qf = "outcome=?";
+        $qv = [$dec];
+        if ($dec <= 0 && (int) $this->item->pre("_decision") > 0) {
+            // reset acceptance notification when leaving accept-class
+            $qf .= ", timeAcceptNotified=?";
+            $qv[] = 0;
+        }
+        $qv[] = $this->pid;
+        $aset->stage_qe_apply("update Paper set {$qf} where paperId=?", $qv);
         $aset->user->log_activity("Decision set: " . $aset->conf->decision_name($dec), $this->pid);
         if ($dec > 0 || $this->item->pre("_decision") > 0) {
             $aset->register_cleanup_function("paperacc", function ($aset, $vals) {

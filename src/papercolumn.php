@@ -314,6 +314,9 @@ class Status_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->show_submitted = $pl->search->show_submitted_status();
+        if ($pl->search->limit_term()->is_author()) {
+            $pl->qopts["timeAcceptNotified"] = true;
+        }
         return true;
     }
     function prepare_sort(PaperList $pl, $sortindex) {

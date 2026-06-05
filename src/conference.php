@@ -366,7 +366,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 323) {
+        if ($this->sversion < 324) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -4389,7 +4389,7 @@ class Conf {
             if ($this->submission_blindness() === self::BLIND_OPTIONAL) {
                 $cols[] = "Paper.blind";
             }
-            foreach (["title", "authorInformation", "shepherdContactId"] as $k) {
+            foreach (["title", "authorInformation", "shepherdContactId", "timeAcceptNotified"] as $k) {
                 if ($options[$k] ?? false)
                     $cols[] = "Paper.{$k}";
             }

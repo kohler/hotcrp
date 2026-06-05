@@ -22,6 +22,9 @@ class Decision_PaperColumn extends PaperColumn {
                 $this->edit_opts[$dec->id] = $dec->name;
             }
         }
+        if ($pl->search->limit_term()->is_author()) {
+            $pl->qopts["timeAcceptNotified"] = true;
+        }
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {

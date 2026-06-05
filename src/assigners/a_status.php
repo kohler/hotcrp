@@ -9,6 +9,8 @@ class Status_Assignable extends Assignable {
     public $_withdrawn;
     /** @var ?string */
     public $_withdraw_reason;
+    /** @var ?int */
+    public $_time_submitted_reviewable;
     /** @var ?bool */
     public $_notify;
     /** @param int $pid
@@ -16,12 +18,12 @@ class Status_Assignable extends Assignable {
      * @param ?int $withdrawn
      * @param ?string $withdraw_reason
      * @param ?bool $notify */
-    function __construct($pid, $submitted = null, $withdrawn = null, $withdraw_reason = null, $notify = null) {
+    function __construct($pid, $submitted = null, $withdrawn = null, $withdraw_reason = null, $tsr = null) {
         $this->pid = $pid;
         $this->_submitted = $submitted;
         $this->_withdrawn = $withdrawn;
         $this->_withdraw_reason = $withdraw_reason;
-        $this->_notify = $notify;
+        $this->_time_submitted_reviewable = $tsr;
     }
     /** @return string */
     function type() {
@@ -83,7 +85,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
     static function load_status_state(AssignmentState $state) {
         if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {
             foreach ($state->prows() as $prow) {
-                $state->load(new Status_Assignable($prow->paperId, (int) $prow->timeSubmitted, (int) $prow->timeWithdrawn, $prow->withdrawReason));
+                $state->load(new Status_Assignable($prow->paperId, (int) $prow->timeSubmitted, (int) $prow->timeWithdrawn, $prow->withdrawReason, (int) $prow->timeSubmittedReviewable));
             }
         }
     }
@@ -167,10 +169,12 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                                   AssignmentState $state) {
         $prow->set_prop("timeWithdrawn", $res->_withdrawn);
         $prow->set_prop("timeSubmitted", $res->_submitted);
+        $prow->set_prop("timeSubmittedReviewable", $res->_time_submitted_reviewable);
         $pstatus = new PaperStatus($state->user);
         $j = (object) ["submitted" => true, "draft" => false, "withdrawn" => false];
         if ($pstatus->prepare_save_paper_json($j, $prow)) {
             $res->_submitted = $prow->timeSubmitted;
+            $res->_time_submitted_reviewable = $prow->timeSubmittedReviewable;
         } else {
             foreach ($pstatus->message_list() as $mi) {
                 if ($mi->message !== "")
@@ -228,7 +232,14 @@ class Status_Assigner extends Assigner {
         $old_submitted = $this->item->pre("_submitted");
         $withdrawn = $this->item["_withdrawn"];
         $old_withdrawn = $this->item->pre("_withdrawn");
-        $aset->stage_qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $withdrawn, $this->item["_withdraw_reason"], $this->pid);
+        $qf = ["timeSubmitted=?", "timeWithdrawn=?", "withdrawReason=?"];
+        $qv = [$submitted, $withdrawn, $this->item["_withdraw_reason"]];
+        if ($this->item["_time_submitted_reviewable"] !== $this->item->pre("_time_submitted_reviewable")) {
+            $qf[] = "timeSubmittedReviewable=?";
+            $qv[] = $this->item["_time_submitted_reviewable"];
+        }
+        $qv[] = $this->pid;
+        $aset->stage_qe("update Paper set " . join(", ", $qf) . " where paperId=?", ...$qv);
         if (($withdrawn > 0) !== ($old_withdrawn > 0)) {
             $aset->user->log_activity($withdrawn > 0 ? "Paper withdrawn" : "Paper revived", $this->pid);
         } else if (($submitted > 0) !== ($old_submitted > 0)) {
