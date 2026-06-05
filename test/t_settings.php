@@ -2,7 +2,6 @@
 // t_settings.php -- HotCRP tests
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-#[RequireDb("fresh")]
 class Settings_Tester {
     /** @var Conf
      * @readonly */
@@ -2121,5 +2120,11 @@ class Settings_Tester {
 
         xassert_search($this->u_chair, "#dodanga", "1-10");
         xassert_assign($this->u_chair, "paper,tag\n1-10,dodanga#clear\n");
+    }
+
+    // Undo the settings this tester changes to avoid polluting later tests
+    function finalize() {
+        $this->conf->save_refresh_setting("outcome_map", null);
+        $this->conf->save_refresh_setting("au_seedec", null);
     }
 }
