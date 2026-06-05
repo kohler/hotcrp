@@ -2,6 +2,7 @@
 // t_settings.php -- HotCRP tests
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+#[RequireDb("fresh")]
 class Settings_Tester {
     /** @var Conf
      * @readonly */

@@ -460,7 +460,7 @@ class Tags_Tester {
     }
 
     function test_chair_tags() {
-        xassert(!$this->u_varghese->can_administer($this->conf->checked_paper_by_id(1)));
+        xassert(!$this->u_varghese->can_manage($this->conf->checked_paper_by_id(1)));
 
         $this->conf->save_setting("tag_hidden", 1, "ch");
         $this->conf->save_setting("tag_sitewide", 1, "~~ch2 dx");
@@ -476,17 +476,17 @@ class Tags_Tester {
         xassert($u_huitema->privChair);
 
         $pset = $this->conf->paper_set(["paperId" => [1, 2, 3, 4]]);
-        xassert($this->u_varghese->can_administer($pset[1]));
-        xassert(!$this->u_varghese->can_administer($pset[2]));
-        xassert($this->u_chair->can_administer($pset[1]));
-        xassert(!$this->u_chair->can_administer($pset[2]));
-        xassert(!$this->u_chair->allow_administer($pset[2]));
+        xassert($this->u_varghese->can_manage($pset[1]));
+        xassert(!$this->u_varghese->can_manage($pset[2]));
+        xassert($this->u_chair->can_manage($pset[1]));
+        xassert(!$this->u_chair->can_manage($pset[2]));
+        xassert(!$this->u_chair->allow_manage($pset[2]));
         xassert($pset[2]->has_conflict($this->u_chair));
 
         xassert_search($this->u_chair, "#~~ch", "1 3 4");
         xassert_search($this->u_chair, "#~~ch2", "1 2 3 4");
         xassert_search($this->u_chair, "#dx", "1 2 3 4");
-        xassert(!$this->u_chair->is_admin_force());
+        xassert(!$this->u_chair->is_override_conflict());
 
         // chair can see ~~ch on nonconflicted/nonadministered papers
         // chair can see ~~ch2 (which is admin-public) on all papers
@@ -578,7 +578,7 @@ class Tags_Tester {
 
         $this->conf->save_refresh_setting("tracks", 1, '{"redt":{"admin":"+red"}}');
         Contact::update_rights();
-        xassert($this->u_varghese->can_administer($pset[1]));
+        xassert($this->u_varghese->can_manage($pset[1]));
 
         xassert_search($this->u_chair, "#ch", "1 3 4");
         xassert($this->u_chair->can_view_tag_somewhere("ch"));
@@ -607,7 +607,7 @@ class Tags_Tester {
         $this->conf->save_setting("tag_sitewide", null);
         $this->conf->save_refresh_setting("tracks", null);
         Contact::update_rights();
-        xassert(!$this->u_varghese->can_administer($pset[1]));
+        xassert(!$this->u_varghese->can_manage($pset[1]));
     }
 
     function test_chair_conflict_tags() {
@@ -627,10 +627,10 @@ class Tags_Tester {
         xassert(!$u_huitema->can_edit_tag($pset[2], "~~ch", null, 0));
         xassert(!$u_huitema->can_edit_tag($pset[3], "~~ch", null, 0));
         xassert(!$u_huitema->can_edit_tag($pset[4], "~~ch", null, 0));
-        xassert(!$u_huitema->can_administer($pset[1]));
-        xassert(!$u_huitema->can_administer($pset[2]));
-        xassert(!$u_huitema->can_administer($pset[3]));
-        xassert(!$u_huitema->can_administer($pset[4]));
+        xassert(!$u_huitema->can_manage($pset[1]));
+        xassert(!$u_huitema->can_manage($pset[2]));
+        xassert(!$u_huitema->can_manage($pset[3]));
+        xassert(!$u_huitema->can_manage($pset[4]));
         $u_huitema->add_overrides(Contact::OVERRIDE_CONFLICT);
         xassert($u_huitema->can_view_tags($pset[1]));
         xassert($u_huitema->can_view_tags($pset[2]));
@@ -644,10 +644,10 @@ class Tags_Tester {
         xassert($u_huitema->can_edit_tag($pset[2], "~~ch", null, 0));
         xassert($u_huitema->can_edit_tag($pset[3], "~~ch", null, 0));
         xassert(!$u_huitema->can_edit_tag($pset[4], "~~ch", null, 0));
-        xassert($u_huitema->can_administer($pset[1]));
-        xassert($u_huitema->can_administer($pset[2]));
-        xassert($u_huitema->can_administer($pset[3]));
-        xassert(!$u_huitema->can_administer($pset[4]));
+        xassert($u_huitema->can_manage($pset[1]));
+        xassert($u_huitema->can_manage($pset[2]));
+        xassert($u_huitema->can_manage($pset[3]));
+        xassert(!$u_huitema->can_manage($pset[4]));
         xassert_assign_fail($u_huitema, "action,paper,tag\ntag,1,~~chx\n", false);
         xassert_assign($u_huitema, "action,paper,tag\ntag,1,~~ch\n", true);
 
