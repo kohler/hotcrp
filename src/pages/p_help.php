@@ -32,7 +32,7 @@ class Help_Page {
         if ($topic !== "list") {
             $want_topic = $help_topics->canonical_group($topic);
             if ($want_topic && $want_topic !== $topic) {
-                $conf->redirect_self($qreq, ["t" => $want_topic]);
+                $qreq->redirect_self(["t" => $want_topic]);
             } else if (!$want_topic) {
                 $topic = "list";
                 Navigation::http_response_code(404);

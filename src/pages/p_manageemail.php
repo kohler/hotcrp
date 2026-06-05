@@ -271,7 +271,7 @@ class ManageEmail_Page {
             $this->token->change_data("ms", $this->ms->message_list());
         }
         $this->token->update();
-        $this->conf->redirect_hoturl("manageemail", [
+        $this->qreq->redirect_hoturl("manageemail", [
             "t" => $this->token->input("t"),
             "step" => $this->token->data("step"),
             "mesess" => $this->token->salt
@@ -539,7 +539,7 @@ class ManageEmail_Page {
             && $this->qreq->valid_post()
             && (friendly_boolean($this->qreq->back) || $this->qreq->back === "restart")) {
             if ($this->done) {
-                $this->conf->redirect_hoturl("manageemail");
+                $this->qreq->redirect_hoturl("manageemail");
             }
             $step = $this->qreq->back === "restart" ? $this->steps[0] : $this->delta_step(-1);
             $this->token->change_data("step", $step->name);
@@ -625,7 +625,7 @@ class ManageEmail_Page {
         }
         if (!$tstep || $this->curstep->index > $tstep->index) {
             $this->conf->error_msg("<0>Email management session not found");
-            $this->conf->redirect_hoturl("manageemail");
+            $this->qreq->redirect_hoturl("manageemail");
         }
 
         // after completion, skip to end
@@ -802,7 +802,7 @@ class ManageEmail_Page {
             && $this->qreq->valid_post()
             && (friendly_boolean($this->qreq->back) || $this->qreq->back === "restart")) {
             if ($this->done) {
-                $this->conf->redirect_hoturl("manageemail");
+                $this->qreq->redirect_hoturl("manageemail");
             }
             $step = $this->qreq->back === "restart" ? $this->steps[0] : $this->delta_step(-1);
             $this->token->change_data("step", $step->name);
@@ -867,7 +867,7 @@ class ManageEmail_Page {
         }
         if (!$tstep || $this->curstep->index > $tstep->index) {
             $this->conf->error_msg("<0>Email management session not found");
-            $this->conf->redirect_hoturl("manageemail");
+            $this->qreq->redirect_hoturl("manageemail");
         }
 
         // after completion, skip to end
@@ -1019,7 +1019,7 @@ class ManageEmail_Page {
             && $this->qreq->valid_post()
             && (friendly_boolean($this->qreq->back) || $this->qreq->back === "restart")) {
             if ($this->done) {
-                $this->conf->redirect_hoturl("manageemail");
+                $this->qreq->redirect_hoturl("manageemail");
             }
             $step = $this->qreq->back === "restart" ? $this->steps[0] : $this->delta_step(-1);
             $this->token->change_data("step", $step->name);
@@ -1077,7 +1077,7 @@ class ManageEmail_Page {
         }
         if (!$tstep || $this->curstep->index > $tstep->index) {
             $this->conf->error_msg("<0>Email management session not found");
-            $this->conf->redirect_hoturl("manageemail");
+            $this->qreq->redirect_hoturl("manageemail");
         }
 
         // after completion, skip to end
@@ -1110,7 +1110,7 @@ class ManageEmail_Page {
             unset($this->qreq->t, $this->qreq->step, $this->qreq->mesess, $this->qreq->u);
             if ($this->qreq->is_post()) {
                 $this->ms->append_item(MessageItem::warning_note("<0>Operation canceled"));
-                $this->conf->redirect_self($this->qreq);
+                $this->qreq->redirect_self();
             }
         }
         $this->type = $this->qreq->t ?? "";
@@ -1151,7 +1151,7 @@ class ManageEmail_Page {
     }
 
     static function go_merge(Contact $user, Qrequest $qreq) {
-        $user->conf->redirect_hoturl("manageemail", ["t" => "link"]);
+        $qreq->redirect_hoturl("manageemail", ["t" => "link"]);
     }
 
     static function go_changeemail(Contact $user, Qrequest $qreq) {
@@ -1159,6 +1159,6 @@ class ManageEmail_Page {
             MessageItem::error("<0>Email address changes are not supported"),
             MessageItem::inform("<0>Use ‘Manage email’ to link accounts or transfer reviews.")
         );
-        $user->conf->redirect_hoturl("manageemail", ["t" => null]);
+        $qreq->redirect_hoturl("manageemail", ["t" => null]);
     }
 }

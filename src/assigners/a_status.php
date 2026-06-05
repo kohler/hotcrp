@@ -17,7 +17,7 @@ class Status_Assignable extends Assignable {
      * @param ?int $submitted
      * @param ?int $withdrawn
      * @param ?string $withdraw_reason
-     * @param ?bool $notify */
+     * @param ?int $tsr */
     function __construct($pid, $submitted = null, $withdrawn = null, $withdraw_reason = null, $tsr = null) {
         $this->pid = $pid;
         $this->_submitted = $submitted;

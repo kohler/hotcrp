@@ -140,7 +140,7 @@ class ListAction {
             $res->emit();
             Navigation::complete();
         } else if ($res instanceof Redirection) {
-            $user->conf->redirect($res->url, $res->status);
+            $qreq->redirect($res->url, $res->status);
         }
     }
 

@@ -17,7 +17,7 @@ class AdminHome_Page {
         }
         if (isset($qreq->clearbug) || isset($qreq->clearnewpcrev)) {
             unset($qreq->clearbug, $qreq->clearnewpcrev);
-            $user->conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
     }
     static function print(Contact $user) {

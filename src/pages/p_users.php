@@ -259,7 +259,7 @@ class Users_Page {
         }
 
         $this->conf->feedback_msg($ua);
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 
@@ -345,7 +345,7 @@ class Users_Page {
         }
         $this->conf->feedback_msg($ms);
         unset($this->qreq->fn, $this->qreq->tagfn);
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 
@@ -366,7 +366,7 @@ class Users_Page {
             $sv[] = "ulscoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
         }
         Session_API::change_session($this->qreq, join(" ", $sv));
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 

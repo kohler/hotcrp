@@ -116,14 +116,14 @@ class Assign_Page {
         $ok = $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         if ($ok) {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
     }
 
     /** @return never
      * @throws Redirection */
     private function redirect_requestreview() {
-        $this->conf->redirect_self($this->qreq, ["email" => null, "given_name" => null, "family_name" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "denyreview" => null, "retractreview" => null, "undeclinereview" => null]);
+        $this->qreq->redirect_self(["email" => null, "given_name" => null, "family_name" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "denyreview" => null, "retractreview" => null, "undeclinereview" => null]);
     }
 
     function handle_requestreview() {

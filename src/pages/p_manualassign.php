@@ -86,7 +86,7 @@ class ManualAssign_Page {
             }
         }
 
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
 

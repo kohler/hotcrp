@@ -702,7 +702,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function actas_link_for($au, $prefix = "") {
         if (!$au->email
             || !$this->_conf
-            || ($this->user && $au->contactId === $this->user->contactId)) {
+            || ($this->_user && $au->contactId === $this->_user->contactId)) {
             return "";
         }
         $url = $this->_conf->selfurl($this, ["actas" => $au->email]);
@@ -849,6 +849,31 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             return ".empty";
         }
         return urlencode(substr($sid, strlen($sid) > 16 ? 8 : 0, 12));
+    }
+
+
+    /** @param ?string $url
+     * @param 301|302|303|307|308 $status
+     * @return never
+     * @throws Redirection */
+    function redirect($url = null, $status = 302) {
+        $this->_conf->saved_messages_commit($this);
+        Navigation::redirect_absolute($this->_navigation->resolve($url ?? $this->_conf->hoturl_raw("index")), $status);
+    }
+
+    /** @param string $page
+     * @param ?array $param
+     * @return never
+     * @throws Redirection */
+    function redirect_hoturl($page, $param = null) {
+        $this->redirect($this->_conf->hoturl($page, $param, Conf::HOTURL_RAW));
+    }
+
+    /** @param ?array $param
+     * @return never
+     * @throws Redirection */
+    function redirect_self($param = null) {
+        $this->redirect($this->_conf->selfurl($this, $param));
     }
 
 

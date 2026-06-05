@@ -455,7 +455,7 @@ class Mail_Page {
 
     static function go(Contact $user, Qrequest $qreq) {
         if (isset($qreq->cancel)) {
-            $user->conf->redirect_self($qreq, $qreq->subset_as_array("monreq", "to", "has_plimit", "plimit", "q", "t", "cc", "reply-to", "subject", "body", "template"));
+            $qreq->redirect_self($qreq->subset_as_array("monreq", "to", "has_plimit", "plimit", "q", "t", "cc", "reply-to", "subject", "body", "template"));
         }
         if (!$user->is_manager() && !$user->isPC) {
             $user->escape();

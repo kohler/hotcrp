@@ -71,7 +71,7 @@ class API_Page {
             && ($uf->redirect ?? false)
             && ($url = $conf->qreq_redirect_url($qreq))) {
             $conf->feedback_msg(self::export_messages($jr));
-            $conf->redirect($url);
+            $qreq->redirect($url);
         }
         return $jr;
     }

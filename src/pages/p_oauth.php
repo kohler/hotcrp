@@ -478,7 +478,7 @@ class OAuth_Page {
             $qreq->print_footer();
         } else {
             $qreq->open_session();
-            $user->conf->redirect_self($qreq, ["setcookie" => 1]);
+            $qreq->redirect_self(["setcookie" => 1]);
         }
     }
 }

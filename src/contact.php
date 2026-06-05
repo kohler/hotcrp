@@ -1956,7 +1956,7 @@ class Contact implements JsonSerializable {
             MessageItem::error($this->conf->_i("signin_required", new FmtArg("action", $qreq->page()))),
             MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again")
         ]);
-        $this->conf->redirect();
+        $qreq->redirect(null);
     }
 
 

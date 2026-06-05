@@ -110,7 +110,7 @@ class Review_Page {
     }
 
     function handle_cancel() {
-        $this->conf->redirect($this->prow->hoturl([], Conf::HOTURL_RAW));
+        $this->qreq->redirect($this->prow->hoturl([], Conf::HOTURL_RAW));
     }
 
     function handle_update() {
@@ -121,7 +121,7 @@ class Review_Page {
         }
         $rv->report();
         if (!$rv->has_error() && !$rv->has_problem_at("ready")) {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
         $this->rv = $rv;
         $this->reload_prow();
@@ -156,7 +156,7 @@ class Review_Page {
         }
         $rv->report();
         if (!$rv->has_error()) {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
         $this->reload_prow();
     }
@@ -232,7 +232,7 @@ class Review_Page {
             }
         }
         $rv->report();
-        $this->conf->redirect_self($this->qreq, ["r" => $want_rid]);
+        $this->qreq->redirect_self(["r" => $want_rid]);
     }
 
     function handle_delete() {
@@ -245,7 +245,7 @@ class Review_Page {
         if ($this->rrow->delete($this->user)) {
             $this->conf->success_msg("<0>Review deleted");
         }
-        $this->conf->redirect_self($this->qreq, ["r" => null, "reviewId" => null]);
+        $this->qreq->redirect_self(["r" => null, "reviewId" => null]);
     }
 
     function handle_unsubmit() {
@@ -259,7 +259,7 @@ class Review_Page {
         if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
             $this->conf->success_msg("<0>Review unsubmitted");
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
     function handle_valid_post() {
@@ -301,7 +301,7 @@ class Review_Page {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = Contact::session_index_by_email($this->qreq, $u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL);
-                $this->conf->redirect($this->qreq->navigation()->base_absolute() . "u/{$i}/{$selfurl}");
+                $this->qreq->redirect($this->qreq->navigation()->base_absolute() . "u/{$i}/{$selfurl}");
                 return;
             }
 

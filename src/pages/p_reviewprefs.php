@@ -31,7 +31,7 @@ class ReviewPrefs_Page {
         $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
         if (!$aset->has_error()) {
-            $user->conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
     }
 
@@ -197,7 +197,7 @@ class ReviewPrefs_Page {
             }
         } else if (!$qreq->reviewer && !($user->roles & Contact::ROLE_PC)) {
             foreach ($conf->pc_members() as $pcm) {
-                $conf->redirect_self($qreq, ["reviewer" => $pcm->email]);
+                $qreq->redirect_self(["reviewer" => $pcm->email]);
                 // in case redirection fails:
                 $reviewer = $pcm;
                 break;
@@ -209,7 +209,7 @@ class ReviewPrefs_Page {
 
         // cancel action
         if ($qreq->cancel) {
-            $conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
 
         // backwards compat
@@ -249,7 +249,7 @@ class ReviewPrefs_Page {
                     $pfd .= substr($k, 4) . " ";
             }
             $qreq->set_csession("pfdisplay", $pfd);
-            $conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
 
         self::print($user, $reviewer, $qreq);

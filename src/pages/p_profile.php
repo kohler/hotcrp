@@ -52,7 +52,7 @@ class Profile_Page {
         if (ctype_digit($u)) {
             $user = $this->conf->user_by_id(intval($u));
         } else if ($u === "" && $this->qreq->search) {
-            $this->conf->redirect_hoturl("users");
+            $this->qreq->redirect_hoturl("users");
         } else if (($user = $this->conf->user_by_email($u))) {
             // OK
         } else if ($this->qreq->search) {
@@ -62,7 +62,7 @@ class Profile_Page {
                     ->set_urlbase($this->conf->hoturl_raw("users", ["t" => "all"], Conf::HOTURL_SITEREL));
                 $list->set_cookie($this->qreq);
                 $user = $this->conf->user_by_id($cs->user_ids()[0]);
-                $this->conf->redirect_hoturl("profile", ["u" => $user->email]);
+                $this->qreq->redirect_hoturl("profile", ["u" => $user->email]);
             } else {
                 $this->fail_user_search("<0>User matching ‘{$u}’ not found");
             }
@@ -76,7 +76,7 @@ class Profile_Page {
             if (isset($this->qreq->save) || isset($this->qreq->savebulk)) {
                 $this->conf->error_msg("<0>Changes not saved; your session has changed since you last loaded this tab");
             }
-            $this->conf->redirect_self($this->qreq, ["u" => $u]);
+            $this->qreq->redirect_self(["u" => $u]);
         }
 
         if ($user->contactId > 0 && $user->contactId === $this->viewer->contactId) {
@@ -364,7 +364,7 @@ class Profile_Page {
 
         // redirect on success
         if (isset($this->qreq->redirect)) {
-            $this->conf->redirect();
+            $this->qreq->redirect(null);
         }
         $xcj = [];
         if ($this->page_type !== 0) {
@@ -386,9 +386,9 @@ class Profile_Page {
         }
         $this->qreq->set_csession("profile_redirect", $xcj);
         if ($this->user !== $this->viewer && $this->page_type === 0) {
-            $this->conf->redirect_self($this->qreq, ["u" => $this->user->email]);
+            $this->qreq->redirect_self(["u" => $this->user->email]);
         } else {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
     }
 
@@ -406,7 +406,7 @@ class Profile_Page {
         }
         if (trim($text) !== "" && trim($text) !== "Enter users one per line") {
             if ($this->save_bulk($text, $filename)) {
-                $this->conf->redirect_self($this->qreq);
+                $this->qreq->redirect_self();
             }
         } else {
             $this->conf->feedback_msg(MessageItem::warning_note("<0>No changes"));
@@ -422,18 +422,18 @@ class Profile_Page {
         }
         $this->conf->feedback_msg($ua);
         if ($ok) {
-            $this->conf->redirect_hoturl("users", ["t" => "all"]);
+            $this->qreq->redirect_hoturl("users", ["t" => "all"]);
         }
     }
 
     function handle_request() {
         $this->find_user();
         if ($this->qreq->cancel) {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         } else if ($this->qreq->reauth
                    && $this->qreq->valid_post()) {
             if (!$this->ustatus->has_error()) {
-                $this->conf->redirect_self($this->qreq);
+                $this->qreq->redirect_self();
             }
         } else if ($this->qreq->savebulk
                    && $this->page_type !== 0
@@ -506,7 +506,7 @@ class Profile_Page {
             && $this->qreq->t !== $this->topic
             && $this->qreq->is_get()) {
             $this->qreq->t = $this->topic === "main" ? null : $this->topic;
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
         $this->ustatus->cs()->set_root($this->topic);
 

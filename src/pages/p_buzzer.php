@@ -40,7 +40,7 @@ class Buzzer_Page {
             $qreq->set_user($user);
             $qreq->qsession()->open_new_sid();
             $key = $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0];
-            $user->conf->redirect_self($qreq, ["__PATH__" => $key]);
+            $qreq->redirect_self(["__PATH__" => $key]);
         }
         return $kiosk_keys;
     }

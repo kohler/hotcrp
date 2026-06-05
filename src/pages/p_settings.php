@@ -58,7 +58,7 @@ class Settings_Page {
         if ($canon_group !== $this->reqsg
             && !$qreq->post
             && $qreq->post_empty()) {
-            $this->conf->redirect_self($qreq, [
+            $qreq->redirect_self([
                 "group" => $canon_group, "#" => $this->sv->group_hashid($want_group)
             ]);
         }
@@ -76,7 +76,7 @@ class Settings_Page {
                 $this->conf->feedback_msg(MessageItem::warning_note("<0>No changes"));
             }
             $this->sv->report();
-            $this->conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
     }
 
@@ -184,7 +184,7 @@ class Settings_Page {
 
     static function go(Contact $user, Qrequest $qreq) {
         if (isset($qreq->cancel)) {
-            $user->conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
 
         $sv = SettingValues::make_request($user, $qreq);

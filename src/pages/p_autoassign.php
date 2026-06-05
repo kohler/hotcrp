@@ -555,7 +555,7 @@ class Autoassign_Page {
             $argv[] = "-uenabled";
         }
 
-        if ($this->qreq->badpairs) {
+        if ($qreq->badpairs) {
             foreach ($this->qreq_badpairs() as $pair) {
                 $argv[] = "-X{$pair}";
             }
@@ -594,7 +594,7 @@ class Autoassign_Page {
         }
         $tok->load_data();
         if ($tok->data("exit_status") === 0) {
-            $this->conf->redirect_hoturl("autoassign", $this->qreq_parameters());
+            $qreq->redirect_hoturl("autoassign", $this->qreq_parameters());
         } else {
             $this->ms->append_list(self::token_message_list($tok));
             $tok->delete();
@@ -668,7 +668,7 @@ class Autoassign_Page {
                 $this->handle_download_assignment($tok);
             } else if ($qreq->cancel) {
                 $this->jobid = null;
-                $this->conf->redirect_self($this->qreq, $this->qreq_parameters());
+                $this->qreq->redirect_self($this->qreq_parameters());
             } else if ($qreq->submit) {
                 $this->handle_execute($tok);
             }
@@ -783,7 +783,7 @@ class Autoassign_Page {
         $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $this->jobid = null;
-        $this->conf->redirect_self($this->qreq, $this->qreq_parameters());
+        $this->qreq->redirect_self($this->qreq_parameters());
     }
 
     /** @return Assignment_PaperColumn */

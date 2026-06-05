@@ -70,7 +70,7 @@ class Paper_Page {
         if ($this->prow->timeSubmitted && $this->qreq->m === "edit") {
             unset($this->qreq->m);
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
     function handle_withdraw() {
@@ -93,7 +93,7 @@ class Paper_Page {
         if (!$aset->execute()) {
             error_log("{$this->conf->dbname}: withdraw #{$this->prow->paperId} failure: " . json_encode($aset->json_result()));
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
     function handle_revive() {
@@ -109,7 +109,7 @@ class Paper_Page {
         if (!$aset->execute()) {
             error_log("{$this->conf->dbname}: revive #{$this->prow->paperId} failure: " . json_encode($aset->json_result()));
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
     function handle_delete() {
@@ -139,7 +139,7 @@ class Paper_Page {
         $stripfields = $this->ps->strip_unchanged_fields_qreq($this->qreq, $this->prow);
         $fields = $this->ps->changed_fields_qreq($this->qreq, $this->prow);
         if (empty($fields) && $this->prow->paperId) {
-            $this->conf->redirect_self($this->qreq, ["p" => $this->prow->paperId, "m" => "edit"]);
+            $this->qreq->redirect_self(["p" => $this->prow->paperId, "m" => "edit"]);
         } else {
             $this->ps->inform_at("status:if_unmodified_since",
                 $this->conf->_("<5>Your changes were not saved because the {submission} has changed since you last loaded this page. Unsaved changes to {:list} are highlighted. Check them and save again, or <a href=\"{url}\" class=\"uic js-ignore-unload-protection\">discard your edits</a>.",
@@ -256,7 +256,7 @@ class Paper_Page {
         $this->qreq->set_paper($new_prow);
         $this->prow = $new_prow;
         if (!$this->ps->has_error() || $new_prow->is_new()) {
-            $conf->redirect_self($this->qreq, ["p" => $new_prow->paperId, "m" => "edit"]);
+            $this->qreq->redirect_self(["p" => $new_prow->paperId, "m" => "edit"]);
         }
     }
 
@@ -290,7 +290,7 @@ class Paper_Page {
         }
 
         if (!$this->ps->has_error()) {
-            $conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
     }
 
@@ -452,7 +452,7 @@ class Paper_Page {
         } else if ($qreq->delete && $qreq->valid_post()) {
             $pp->handle_delete();
         } else if ($qreq->updateoverride && $qreq->valid_token()) {
-            $pp->conf->redirect_self($qreq, ["m" => "edit", "forceShow" => 1]);
+            $qreq->redirect_self(["m" => "edit", "forceShow" => 1]);
         }
 
         // capability messages: decline, accept to different user

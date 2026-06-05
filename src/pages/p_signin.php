@@ -56,7 +56,7 @@ class Signin_Page {
             foreach ($cs->members("signin/request") as $gj) {
                 $info = $cs->call_function($gj, $gj->signin_function, $info, $gj);
             }
-            $conf->redirect();
+            $qreq->redirect(null);
         } else if (!$conf->allow_local_signin()) {
             // do nothing
         } else if ($conf->login_type() === "htauth") {
@@ -65,16 +65,16 @@ class Signin_Page {
             self::bad_post_error($user, $qreq, "signin");
         } else if (!$user->is_empty()
                    && strcasecmp($qreq->email, $user->email) === 0) {
-            $conf->redirect();
+            $qreq->redirect(null);
         } else if (!$qreq->start) {
             $info = ["ok" => true];
             foreach ($cs->members("signin/request") as $gj) {
                 $info = $cs->call_function($gj, $gj->signin_function, $info, $gj);
             }
             if ($info["ok"] || isset($info["redirect"])) {
-                $conf->redirect($info["redirect"] ?? "");
+                $qreq->redirect($info["redirect"] ?? "");
             } else if (($code = self::check_password_as_reset_code($user, $qreq))) {
-                $conf->redirect_hoturl("resetpassword", ["__PATH__" => $code]);
+                $qreq->redirect_hoturl("resetpassword", ["__PATH__" => $code]);
             } else {
                 $info["allow_redirect"] = true;
                 LoginHelper::login_error($conf, $qreq->email, $info, $this->ms());
@@ -275,12 +275,12 @@ class Signin_Page {
     static function signout_request(Contact $user, Qrequest $qreq) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
-            $user->conf->redirect();
+            $qreq->redirect(null);
         } else if ($qreq->valid_post()) {
             LoginHelper::logout($user, $qreq, true);
-            $user->conf->redirect_hoturl("index", ["signedout" => 1]);
+            $qreq->redirect_hoturl("index", ["signedout" => 1]);
         } else if ($user->is_empty()) {
-            $user->conf->redirect_hoturl("index", ["signedout" => 1]);
+            $qreq->redirect_hoturl("index", ["signedout" => 1]);
         } else {
             self::bad_post_error($user, $qreq, "signout");
         }
@@ -352,7 +352,7 @@ class Signin_Page {
         assert($qreq->method() === "POST");
         $conf = $user->conf;
         if ($qreq->cancel) {
-            $conf->redirect();
+            $qreq->redirect(null);
         } else if ($conf->login_type()
                    || !$conf->allow_user_self_register()) {
             return;
@@ -374,9 +374,9 @@ class Signin_Page {
         }
         if ($this->_reset_tokstr && isset($info["firstuser"])) {
             $conf->success_msg("<0>As the first user, you have been assigned system administrator privilege. Use this screen to set a password. All later users will have to sign in normally.");
-            $conf->redirect_hoturl("resetpassword", ["__PATH__" => $prep->reset_capability]);
+            $qreq->redirect_hoturl("resetpassword", ["__PATH__" => $prep->reset_capability]);
         } else {
-            $conf->redirect_hoturl("signin");
+            $qreq->redirect_hoturl("signin");
         }
     }
     /** @param ComponentSet $cs */
@@ -425,12 +425,12 @@ class Signin_Page {
     function forgot_request(Contact $user, Qrequest $qreq) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
-            $user->conf->redirect();
+            $qreq->redirect(null);
         } else if ($qreq->valid_post()) {
             $info = LoginHelper::forgot_password_info($user->conf, $qreq, false);
             if ($info["ok"]) {
                 $this->mail_user($user->conf, $info);
-                $user->conf->redirect($info["redirect"] ?? $qreq->annex("redirect"));
+                $qreq->redirect($info["redirect"] ?? $qreq->annex("redirect"));
             } else {
                 LoginHelper::login_error($user->conf, $qreq->email, $info, $this->ms());
             }
@@ -486,7 +486,7 @@ class Signin_Page {
             foreach ($cs->members("resetpassword/request") as $gj) {
                 $info = $cs->call_function($gj, $gj->signin_function, $info, $gj);
             }
-            $conf->redirect();
+            $qreq->redirect(null);
             return;
         }
 
@@ -546,7 +546,7 @@ class Signin_Page {
             $info = $cs->call_function($gj, $gj->signin_function, $info, $gj);
         }
         if (isset($info["redirect"])) {
-            $conf->redirect($info["redirect"]);
+            $qreq->redirect($info["redirect"]);
         }
     }
     function reset_request_basic(Contact $user, Qrequest $qreq, $cs, $info) {

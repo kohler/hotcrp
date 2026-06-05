@@ -42,7 +42,7 @@ class Offline_Page {
             $tf->clear_req();
         }
         $tf->report();
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 
@@ -74,7 +74,7 @@ class Offline_Page {
         if ($aset->has_error()) {
             return false;
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 

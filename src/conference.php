@@ -4230,17 +4230,18 @@ class Conf {
     /** @param ?string $url
      * @param 301|302|303|307|308 $status
      * @return never
-     * @throws Redirection */
+     * @throws Redirection
+     * @deprecated */
     function redirect($url = null, $status = 302) {
-        $qreq = Qrequest::$main_request;
-        $this->saved_messages_commit($qreq);
-        Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl_raw("index")), $status);
+        Qrequest::$main_request->redirect($url, $status);
     }
 
     /** @param string $page
      * @param ?array $param
      * @return never
-     * @throws Redirection */
+     * @throws Redirection
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function redirect_hoturl($page, $param = null) {
         $this->redirect($this->hoturl($page, $param, self::HOTURL_RAW));
     }
@@ -4248,9 +4249,11 @@ class Conf {
     /** @param Qrequest $qreq
      * @param ?array $param
      * @return never
-     * @throws Redirection */
+     * @throws Redirection
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function redirect_self(Qrequest $qreq, $param = null) {
-        $this->redirect($this->selfurl($qreq, $param));
+        $qreq->redirect_self($param);
     }
 
     /** @param Qrequest $qreq

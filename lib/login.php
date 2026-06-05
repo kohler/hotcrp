@@ -42,7 +42,7 @@ class LoginHelper {
 
         $info = self::login_info($conf, $qreq); // XXX
         if ($info["ok"]) {
-            $conf->redirect($info["redirect"] ?? "");
+            $qreq->redirect($info["redirect"] ?? "");
         } else {
             Navigation::http_response_code(401 /* Unauthorized */);
             $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
@@ -220,7 +220,7 @@ class LoginHelper {
             $qreq->set_csession("freshlogin", true);
             $where = $user->conf->hoturl_raw("index");
         }
-        $user->conf->redirect($where);
+        $qreq->redirect($where);
     }
 
 
@@ -420,9 +420,10 @@ class LoginHelper {
 
         if (($info["allow_redirect"] ?? false)
             && $problem !== "bad_password"
-            && ($urlarg = Fmt::find_arg($args, "forgotpassword"))) {
+            && ($urlarg = Fmt::find_arg($args, "forgotpassword"))
+            && Qrequest::$main_request) {
             $conf->error_msg($msg);
-            $conf->redirect($urlarg->value);
+            Qrequest::$main_request->redirect($urlarg->value);
         }
 
         if (!$ms) {
