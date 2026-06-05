@@ -21,9 +21,7 @@ class Login_Tester {
         $this->us1 = new UserStatus($conf->root_user());
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
         $this->cdb = $conf->contactdb();
-    }
 
-    function test_setup() {
         $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {

@@ -29,9 +29,7 @@ class Cdb_Tester {
             error_log("! You may need to run `lib/createdb.sh -c test/cdb-options.php --no-dbuser --batch`.");
             exit(1);
         }
-    }
 
-    function test_setup() {
         $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu", "lynx@fart.edu", "bobcat@fart.edu"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);

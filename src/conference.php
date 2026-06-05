@@ -298,7 +298,12 @@ class Conf {
 
     /** @param null|int|float $t */
     static function set_current_time($t = null) {
-        $t = $t ?? microtime(true);
+        if ($t === null) {
+            $t = microtime(true);
+            if (self::$unow !== null) {
+                $t = max($t, self::$unow);
+            }
+        }
         self::$unow = $t;
         $old_now = Conf::$now;
         Conf::$now = (int) $t;
