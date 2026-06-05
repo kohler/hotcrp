@@ -675,6 +675,66 @@ class PaperStatus_Tester {
         xassert_eqq($paper1->timeModified, $modtime);
     }
 
+    /** @return PaperInfo */
+    private function make_author_paper($title) {
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", ["status:submit" => 1, "title" => $title, "abstract" => "This is an abstract", "has_authors" => "1", "authors:1:name" => "Deborah Estrin", "authors:1:email" => "estrin@usc.edu", "has_submission" => 1]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        return $this->conf->checked_paper_by_id($ps->paperId);
+    }
+
+    function test_decision_json_paperacc() {
+        $prow = $this->make_author_paper("Paperacc tracking");
+        $pid = $prow->paperId;
+
+        // accepting via a JSON save must keep the `paperacc` setting consistent
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "accepted"]));
+        xassert_gt($this->conf->checked_paper_by_id($pid)->outcome, 0);
+        xassert_gt((int) $this->conf->setting("paperacc"), 0);
+        xassert(ConfInvariants::test_summary_settings($this->conf));
+
+        // clearing the decision via JSON keeps it consistent too
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "unknown"]));
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->outcome, 0);
+        xassert(ConfInvariants::test_summary_settings($this->conf));
+    }
+
+    function test_decision_paperacc_submit_state() {
+        // an accepted, submitted paper counts toward `paperacc`
+        $prow = $this->make_author_paper("Paperacc submit state");
+        $pid = $prow->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "accepted"]));
+        xassert_gt((int) $this->conf->setting("paperacc"), 0);
+        xassert(ConfInvariants::test_summary_settings($this->conf));
+
+        // withdrawing changes the submission state, so paperacc must update even
+        // though the outcome (still accepted) does not change
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert($p->timeWithdrawn > 0);
+        xassert($p->timeSubmitted <= 0);
+        xassert_gt($p->outcome, 0);
+        xassert(ConfInvariants::test_summary_settings($this->conf));
+
+        // reviving + resubmitting restores the accepted+submitted state
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => false, "submitted" => true]]));
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert($p->timeSubmitted > 0);
+        xassert_gt($p->outcome, 0);
+        xassert_gt((int) $this->conf->setting("paperacc"), 0);
+        xassert(ConfInvariants::test_summary_settings($this->conf));
+
+        // cleanup
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "decision" => "unknown"]));
+        xassert(ConfInvariants::test_summary_settings($this->conf));
+    }
+
     function test_save_options() {
         $this->newpaper1 = $this->newpaper1->reload();
         xassert($this->newpaper1->timeSubmitted > 0);

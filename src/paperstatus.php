@@ -1862,11 +1862,16 @@ final class PaperStatus extends MessageSet {
         $this->_execute_author_changes();
         $this->_execute_documents();
 
-        // maybe update `papersub` settings
+        // maybe update `papersub` and `paperacc` settings
         $was_submitted = $this->prow->base_prop("timeWithdrawn") <= 0
             && $this->prow->base_prop("timeSubmitted") > 0;
         if ($this->_paper_submitted !== $was_submitted) {
             $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
+        }
+        $was_accepted = $was_submitted && $this->prow->base_prop("outcome") > 0;
+        $paper_accepted = $this->_paper_submitted && $this->prow->outcome > 0;
+        if ($was_accepted !== $paper_accepted) {
+            $this->conf->update_paperacc_setting($paper_accepted ? 1 : -1);
         }
 
         // track submit-type flags
