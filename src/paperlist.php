@@ -310,7 +310,7 @@ final class PaperList extends MessageSet {
     public $qopts; // set by PaperColumn::prepare
     /** @var int
      * @readonly */
-    public $render_context;
+    public $render_context = FieldRender::CFLIST;
     /** @var bool
      * @readonly */
     public $long_mode;

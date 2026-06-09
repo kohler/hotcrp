@@ -695,6 +695,12 @@ class PaperOption implements JsonSerializable {
         return 0;
     }
     /** @param PaperValue $av
+     * @param PaperValue $bv
+     * @param ViewOptionList $vol */
+    function value_compare_with_options($av, $bv, $vol) {
+        return $this->value_compare($av, $bv);
+    }
+    /** @param PaperValue $av
      * @param PaperValue $bv */
     static function basic_value_compare($av, $bv) {
         $av = $av ? $av->value : null;
@@ -1118,10 +1124,9 @@ class PaperOption implements JsonSerializable {
         $negate = ($sword->compar === "!=") !== ($vs[0] === 0);
         if ($vs === [-1] || $vs === [0]) {
             return (new OptionPresent_SearchTerm($srch->user, $this))->negate_if($negate);
-        } else {
-            $vs = array_slice($vs, $vs[0] === 0 ? 1 : 0);
-            return (new OptionValueIn_SearchTerm($srch->user, $this, $vs))->negate_if($negate);
         }
+        $vs = array_slice($vs, $vs[0] === 0 ? 1 : 0);
+        return (new OptionValueIn_SearchTerm($srch->user, $this, $vs))->negate_if($negate);
     }
 }
 
@@ -1469,6 +1474,16 @@ class Document_PaperOption extends PaperOption {
         return (int) ($av && $this->value_present($av))
             <=> (int) ($bv && $this->value_present($bv));
     }
+    function value_compare_with_options($av, $bv, $vol) {
+        if ($vol->get("format") === "time") {
+            $ad = $av ? $av->document(0) : null;
+            $bd = $bv ? $bv->document(0) : null;
+            $at = $ad ? $ad->timestamp : INF;
+            $bt = $bd ? $bd->timestamp : INF;
+            return $at <=> $bt;
+        }
+        return $this->value_compare($av, $bv);
+    }
     function value_dids(PaperValue $ov) {
         if (($ov->value ?? 0) > 1) {
             /** @phan-suppress-next-line ParamTypeMismatchReturn */
@@ -1669,7 +1684,10 @@ class Document_PaperOption extends PaperOption {
     }
 
     function view_option_schema() {
-        return ["type"];
+        return ["format=type|time,timestamp^"];
+    }
+    function sort_view_options() {
+        return ["format"];
     }
 
     /** @param DocumentInfo $doc
@@ -1701,16 +1719,19 @@ class Document_PaperOption extends PaperOption {
                 $opt->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL
             ));
         } else {
-            $want_mimetype = $fr->column && $fr->column->view_option("type");
-            if ($want_mimetype) {
+            $display = $fr->column ? $fr->column->view_option("format") : null;
+            if ($display === "type") {
                 $t = $d->mimetype;
+            } else if ($display === "time") {
+                $ts = $d->timeReferenced ?? $d->timestamp;
+                $t = $ts > 1 ? $opt->conf->unparse_time($ts) : "";
             } else if (!$fr->want(FieldRender::CFLIST | FieldRender::CFCOLUMN)
                        || $fr->verbose()) {
                 $t = $d->export_filename();
             } else {
                 $t = "";
             }
-            if ($fr->want(FieldRender::CFTEXT) || $want_mimetype) {
+            if ($fr->want(FieldRender::CFTEXT) || $display) {
                 $fr->set_text($t);
             } else {
                 $fr->set_html(self::link_html(

@@ -33,8 +33,12 @@ class Option_PaperColumn extends PaperColumn {
         return $this->sort_name_with_options(...$this->opt->sort_view_options());
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $this->opt->value_compare($a->option($this->opt),
-                                         $b->option($this->opt));
+        $av = $a->option($this->opt);
+        $bv = $b->option($this->opt);
+        if (($vol = $this->view_options())) {
+            return $this->opt->value_compare_with_options($av, $bv, $vol);
+        }
+        return $this->opt->value_compare($av, $bv);
     }
     function header(PaperList $pl, $is_text) {
         return $is_text ? $this->opt->title() : $this->opt->title_html();
