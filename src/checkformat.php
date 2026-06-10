@@ -246,6 +246,11 @@ class CheckFormat extends MessageSet {
         }
     }
 
+    /** @return list<'body'|'blank'|'cover'|'appendix'|'bib'|'figure'> */
+    static function banal_page_type_list() {
+        return ["body", "blank", "cover", "appendix", "bib", "figure"];
+    }
+
     /** @return 'body'|'blank'|'cover'|'appendix'|'bib'|'figure' */
     static function banal_page_type($pg) {
         return $pg->type ?? $pg->pagetype ?? "body"; /* XXX pagetype obsolete */

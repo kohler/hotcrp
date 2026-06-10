@@ -79,11 +79,12 @@ class PageCount_PaperColumn extends PaperColumn {
             return (string) $pn;
         } else if (!$this->doc || !$this->cf->need_recheck()) {
             return "";
-        } else if ($this->type) {
-            return "?";
         }
         $dt = $this->dtype($pl->user, $row);
         $dtx = $dt ? " data-dt=\"{$dt}\"" : "";
+        if ($this->type) {
+            $dtx .= " data-npages-detail=\"{$this->type}\"";
+        }
         return "<span class=\"need-format-check is-npages\"{$dtx}></span>";
     }
     function text(PaperList $pl, PaperInfo $row) {

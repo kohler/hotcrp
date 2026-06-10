@@ -53,7 +53,7 @@
   {
     "name": "formatcheck", "get": true,
     "tags": ["Documents"], "order": 2,
-    "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment ?soft",
+    "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment ?soft ?detail",
     "response": "npages nwords problem_fields has_error docid"
   },
   {

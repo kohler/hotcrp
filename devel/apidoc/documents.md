@@ -58,18 +58,21 @@ Run HotCRP’s PDF format checker on a specified document. A human-readable
 response is returned in `message_list`. The `problem_fields` response property
 lists the names of any PDF checks that failed; examples include `"papersize"`,
 `"pagelimit"`, `"columns"`, `"textblock"`, `"bodyfontsize"`, `"bodylineheight"`,
-and `"wordlimit"`.
+and `"wordlimit"`. The `npages_detail` response property is provided only if the
+request’s `detail` parameter is truthy.
 
 * param ?doc document_name
 * param ?p
 * param ?dt document_type
 * param ?docid document_id
 * param ?soft boolean
+* param ?detail boolean
 * response docid document_id
 * response npages nullable_int: Number of pages in PDF
 * response nwords nullable_int: Number of words in PDF
 * response problem_fields [string]
 * response has_error boolean
+* response npages_detail: Number of pages in PDF per page type
 
 
 # get /archivecontents

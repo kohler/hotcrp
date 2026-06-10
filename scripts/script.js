@@ -12801,11 +12801,17 @@ function background_format_check() {
         });
     } else if (hasClass(needed, "is-npages")
                && (pid = needed.closest("[data-pid]"))) {
-        const dt = needed.getAttribute("data-dt") || "0";
-        $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dt: dt, soft: 1}), {
+        const dt = needed.getAttribute("data-dt") || "0",
+            detail = needed.getAttribute("data-npages-detail");
+        $.ajax(hoturl("api/formatcheck", {
+                p: pid.getAttribute("data-pid"),
+                dt: dt, soft: 1, detail: detail ? 1 : null
+            }), {
             success: function (data) {
-                if (data && data.ok)
-                    needed.parentNode.replaceChild(document.createTextNode(data.npages), needed);
+                if (data && data.ok) {
+                    const np = detail ? data.npages_detail[detail] : data.npages;
+                    needed.parentNode.replaceChild(document.createTextNode(np), needed);
+                }
                 next(data && data.ok);
             }
         });
