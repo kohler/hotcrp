@@ -45,7 +45,7 @@ class PotentialConflicts_API {
                 $ps->prepare_save_paper_json($njson, $prow);
             }
         } else {
-            $nqreq = new Qrequest("POST");
+            $nqreq = (new Qrequest("POST"))->set_user($user);
             $hasau = false;
             foreach ($qreq as $k => $v) {
                 if ($k === "collaborators") {

@@ -502,9 +502,10 @@ class Signin_Page {
             return;
         }
         if (strpos($resetcap, "@") !== false && $qreq->valid_post()) {
-            $nqreq = new Qrequest("POST", ["email" => $resetcap]);
-            $nqreq->approve_token();
-            $nqreq->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL));
+            $nqreq = (new Qrequest("POST", ["email" => $resetcap]))
+                ->set_conf($qreq->conf())
+                ->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL))
+                ->approve_token();
             $this->forgot_request($user, $nqreq); // may redirect
             if ($this->problem_status_at("email")) {
                 $this->ms()->error_at("resetcap");

@@ -77,7 +77,7 @@ class Document_API {
     static function paper_documentlist(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $all = friendly_boolean($qreq->history);
         $ajs = $hjs = [];
-        $xqreq = Qrequest::make("GET", ["p" => $prow->paperId])
+        $xqreq = (new Qrequest("GET", ["p" => $prow->paperId]))
             ->set_paper($qreq->paper());
         foreach ($prow->form_fields() as $opt) {
             if (!$opt->has_document()
