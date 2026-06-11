@@ -47,14 +47,7 @@ class PageCount_PaperColumn extends PaperColumn {
         } else {
             $this->doc = null;
         }
-        if (!$this->doc) {
-            return null;
-        } else if ($this->type === null) {
-            return $this->doc->npages($this->cf);
-        } else if (!$this->cf->check_document($this->doc)) {
-            return null;
-        }
-        return $this->cf->npages_of_type($this->type);
+        return $this->doc ? $this->doc->npages_of_type($this->type, $this->cf) : null;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];

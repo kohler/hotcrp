@@ -72,7 +72,7 @@ request’s `detail` parameter is truthy.
 * response nwords nullable_int: Number of words in PDF
 * response problem_fields [string]
 * response has_error boolean
-* response npages_detail: Number of pages in PDF per page type
+* response ?npages_detail object: Number of pages in PDF per page type
 
 
 # get /archivecontents
