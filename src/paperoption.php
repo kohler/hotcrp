@@ -1,6 +1,6 @@
 <?php
 // paperoption.php -- HotCRP helper class for paper options
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class PaperOption implements JsonSerializable {
     const TITLEID = -1000;
@@ -1691,56 +1691,51 @@ class Document_PaperOption extends PaperOption {
         return ["format"];
     }
 
-    /** @param DocumentInfo $doc
-     * @param string $html
-     * @param int $dif
-     * @return string */
-    static function link_html($doc, $html, $dif) {
-        $t = $doc->link_html($html, $dif);
-        if ($doc->is_archive()) {
+    /** @return string */
+    static function render_document(FieldRender $fr, PaperOption $opt, DocumentInfo $d) {
+        $format = $fr->column ? $fr->column->view_option("format") : null;
+        $is_attachment = $opt->has_attachments();
+        if ($format === "type") {
+            $t = $d->mimetype;
+        } else if ($format === "time") {
+            $ts = $d->timeReferenced ?? $d->timestamp;
+            $t = $ts > 1 ? $d->conf->unparse_time($ts) : "";
+        } else if ($is_attachment) {
+            $t = $d->member_filename();
+        } else if ($fr->want(FieldRender::CFFORM)) {
+            $t = $d->filename ?? "";
+        } else if ($fr->want_any(FieldRender::CFVERBOSE | FieldRender::CFTEXT | FieldRender::CFROW)) {
+            $t = $d->export_filename();
+        } else {
+            $t = "";
+        }
+        if ($fr->want(FieldRender::CFTEXT)) {
+            return $t;
+        }
+        $t = htmlspecialchars($t);
+        if ($format !== null) {
+            return $t;
+        }
+        $dif = 0;
+        if ($fr->want(FieldRender::CFFORM)) {
+            // OK
+        } else if ($fr->want(FieldRender::CFPAGE)) {
+            if ($opt->display() !== PaperOption::DISP_TOP) {
+                $dif = DocumentInfo::L_SMALL;
+            } else if ($is_attachment) {
+                $t = '<span class="pavfn">' . $opt->title_html() . '</span>/' . $t;
+            }
+            if ($t === "") {
+                $t = '<span class="pavfn">' . $opt->title_html() . '</span>';
+            }
+        } else {
+            $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
+        }
+        $t = $d->link_html($t, $dif);
+        if ($d->is_archive()) {
             $t = '<span class="archive foldc"><button type="button" class="q ui js-expand-archive pr-1">' . expander(null, 0) . '</button>' . $t . '</span>';
         }
         return $t;
-    }
-
-    /** @param ?DocumentInfo $d */
-    static function render_document(FieldRender $fr, PaperOption $opt, $d) {
-        if (!$d) {
-            if ($fr->verbose()) {
-                $fr->set_text("None");
-            }
-            return;
-        }
-        if ($fr->want(FieldRender::CFFORM)) {
-            $fr->set_html($d->link_html(htmlspecialchars($d->filename ?? ""), 0));
-        } else if ($fr->want(FieldRender::CFPAGE)) {
-            $fr->title = "";
-            $fr->set_html(self::link_html(
-                $d, '<span class="pavfn">' . $opt->title_html() . '</span>',
-                $opt->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL
-            ));
-        } else {
-            $display = $fr->column ? $fr->column->view_option("format") : null;
-            if ($display === "type") {
-                $t = $d->mimetype;
-            } else if ($display === "time") {
-                $ts = $d->timeReferenced ?? $d->timestamp;
-                $t = $ts > 1 ? $opt->conf->unparse_time($ts) : "";
-            } else if (!$fr->want(FieldRender::CFLIST | FieldRender::CFCOLUMN)
-                       || $fr->verbose()) {
-                $t = $d->export_filename();
-            } else {
-                $t = "";
-            }
-            if ($fr->want(FieldRender::CFTEXT) || $display) {
-                $fr->set_text($t);
-            } else {
-                $fr->set_html(self::link_html(
-                    $d, htmlspecialchars($t),
-                    DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE
-                ));
-            }
-        }
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
@@ -1748,11 +1743,26 @@ class Document_PaperOption extends PaperOption {
             if ($this->id === 0) {
                 $fr->table->render_submission($fr, $this);
             }
-        } else {
-            if ($fr->want(FieldRender::CFFORM)) {
-                $ov->document_set(true);
+            return;
+        }
+        if ($fr->want(FieldRender::CFFORM)) {
+            $ov->document_set(true);
+        }
+        $doc = $ov->document(0);
+        if (!$doc) {
+            if ($fr->verbose()) {
+                $fr->set_text("None");
             }
-            self::render_document($fr, $this, $ov->document(0));
+            return;
+        }
+        $t = Document_PaperOption::render_document($fr, $this, $doc);
+        if ($fr->want(FieldRender::CFTEXT)) {
+            $fr->set_text($t);
+        } else {
+            $fr->set_html($t);
+        }
+        if ($fr->want(FieldRender::CFPAGE)) {
+            $fr->title = "";
         }
     }
 

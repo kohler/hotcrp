@@ -1,6 +1,6 @@
 <?php
 // o_attachments.php -- HotCRP helper class for attachments options
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Attachments_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
@@ -14,7 +14,7 @@ class Attachments_PaperOption extends PaperOption {
         return true;
     }
     function view_option_schema() {
-        return ["type"];
+        return ["format=type^"];
     }
 
     function attachment(PaperValue $ov, $name) {
@@ -183,33 +183,9 @@ class Attachments_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        $want_mimetype = $fr->column && $fr->column->view_option("type");
         $ts = [];
         foreach ($ov->document_set() as $d) {
-            if ($want_mimetype) {
-                $t = $d->mimetype;
-            } else {
-                $t = $d->member_filename();
-            }
-            if ($fr->want(FieldRender::CFTEXT)) {
-                $ts[] = $t;
-            } else if ($want_mimetype) {
-                $ts[] = htmlspecialchars($t);
-            } else {
-                $linkname = htmlspecialchars($t);
-                $dif = 0;
-                if ($fr->want(FieldRender::CFLIST)) {
-                    $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
-                } else if ($fr->want(FieldRender::CFFORM)) {
-                    $dif = 0;
-                } else if ($this->display() === PaperOption::DISP_TOP) {
-                    $dif = 0;
-                    $linkname = '<span class="pavfn">' . $this->title_html() . '</span>/' . $linkname;
-                } else {
-                    $dif = DocumentInfo::L_SMALL;
-                }
-                $ts[] = Document_PaperOption::link_html($d, $linkname, $dif);
-            }
+            $ts[] = Document_PaperOption::render_document($fr, $this, $d);
         }
         if (empty($ts)) {
             if ($fr->verbose()) {
@@ -219,7 +195,7 @@ class Attachments_PaperOption extends PaperOption {
         }
         if ($fr->want(FieldRender::CFTEXT)) {
             $fr->set_text(join("; ", $ts));
-        } else if ($fr->want(FieldRender::CFLIST | FieldRender::CFROW)) {
+        } else if ($fr->want_all(FieldRender::CFLIST | FieldRender::CFROW)) {
             $fr->set_html('<ul class="semi"><li>' . join("</li><li>", $ts) . '</li></ul>');
         } else {
             $fr->set_html('<ul class="x"><li class="od">' . join('</li><li class="od">', $ts) . '</li></ul>');

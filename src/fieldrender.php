@@ -103,7 +103,20 @@ class FieldRender {
     /** @param int $context
      * @return bool */
     function want($context) {
+        assert(($context & ($context - 1)) === 0);
         return ($this->context & $context) === $context;
+    }
+
+    /** @param int $context
+     * @return bool */
+    function want_all($context) {
+        return ($this->context & $context) === $context;
+    }
+
+    /** @param int $context
+     * @return bool */
+    function want_any($context) {
+        return ($this->context & $context) !== 0;
     }
 
     /** @return bool */
