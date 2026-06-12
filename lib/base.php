@@ -755,8 +755,8 @@ function safe_filename($filename) {
 
 /** @return Exception */
 function error_get_last_as_exception($prefix) {
-    $msg = preg_replace('/.*: /', "", error_get_last()["message"]);
-    return new ErrorException($prefix . $msg);
+    $msg = preg_replace('/.*: /', "", error_get_last()["message"] ?? "");
+    return new ErrorException($prefix . ($msg === "" ? "unknown error" : $msg));
 }
 
 /** @return string */

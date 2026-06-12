@@ -82,6 +82,10 @@ class BackupDB_Batch {
     public $in;
     /** @var resource */
     public $out = STDOUT;
+    /** @var ?string */
+    private $_out_dstname;
+    /** @var ?string */
+    private $_out_srcname;
     /** @var ?DeflateContext */
     private $_deflate;
     /** @var ?string */
@@ -819,11 +823,12 @@ class BackupDB_Batch {
                 }
                 fwrite(STDERR, "{$output}\n");
             }
-            $outx = str_starts_with($output, "/") ? $output : "./{$output}";
+            $this->_out_dstname = str_starts_with($output, "/") ? $output : "./{$output}";
+            $this->_out_srcname = "{$this->_out_dstname}.tmp";
             if ($this->compress) {
-                $this->out = @gzopen($outx, "wb9");
+                $this->out = @gzopen($this->_out_srcname, "wb9");
             } else {
-                $this->out = @fopen($outx, "wb");
+                $this->out = @fopen($this->_out_srcname, "wb");
             }
         } else if ($this->_output_mode === "stdout") {
             if ($this->compress) {
@@ -904,6 +909,13 @@ class BackupDB_Batch {
         }
         if ($this->subcommand === self::S3_PUT) {
             $this->s3_put();
+        }
+        if ($this->_output_mode === "file") {
+            if (!@fclose($this->out)
+                || !@rename($this->_out_srcname, $this->_out_dstname)) {
+                throw error_get_last_as_exception("{$this->_out_dstname}: ");
+            }
+            $this->out = null;
         }
         return 0;
     }
