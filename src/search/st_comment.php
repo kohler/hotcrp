@@ -144,9 +144,12 @@ class Comment_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         $textless = $this->type_mask === (CommentInfo::CT_DRAFT | CommentInfo::CT_RESPONSE);
         $n = 0;
+        $ucsm = $this->csm->has_contacts() ? $this->csm : null;
         foreach ($row->viewable_comment_skeletons($this->user, $textless) as $crow) {
-            if ($this->csm->test_contact($crow->contactId)
-                && ($crow->commentType & $this->type_mask) == $this->type_value
+            if ((!$ucsm
+                 || ($this->user->can_view_comment_identity($row, $crow)
+                     && $ucsm->test_contact($crow->contactId)))
+                && ($crow->commentType & $this->type_mask) === $this->type_value
                 && ($this->commentRound === null || $crow->commentRound === $this->commentRound)
                 && (!$this->only_author || $crow->commentType >= CommentInfo::CTVIS_AUTHOR)
                 && (!$this->tags || $this->tags->test((string) $crow->viewable_tags($this->user))))

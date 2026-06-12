@@ -714,6 +714,34 @@ class Permission_Tester {
         xassert_search($this->u_chair, "cmt:#redcmt", "18");
     }
 
+    function test_comment_search_hidden_identity() {
+        $this->conf->save_refresh_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        $this->conf->save_refresh_setting("viewrevid", Conf::VIEWREV_NEVER);
+        Contact::update_rights();
+
+        // estrin can view marina’s comment on paper 18, but not its identity
+        $paper18 = $this->u_estrin->checked_paper_by_id(18);
+        $crow = null;
+        foreach ($paper18->viewable_comment_skeletons($this->u_estrin, false) as $c) {
+            if ($c->contactId === $this->u_marina->contactId) {
+                $crow = $c;
+            }
+        }
+        xassert(!!$crow);
+        xassert(!$this->u_estrin->can_view_comment_identity($paper18, $crow));
+
+        xassert_search($this->u_estrin, "18 cmt:any", "18");
+        xassert_search($this->u_estrin, "cmt:marina", "");
+        xassert_search($this->u_chair, "cmt:marina", "18");
+
+        $this->conf->save_refresh_setting("viewrevid", 1);
+        Contact::update_rights();
+        xassert_search($this->u_estrin, "cmt:marina", "18");
+
+        $this->conf->save_refresh_setting("viewrev", null);
+        Contact::update_rights();
+    }
+
     function test_comment_notification() {
         $paper2 = $this->u_chair->checked_paper_by_id(2);
         xassert($paper2->has_reviewer($this->u_chair));
