@@ -1,6 +1,77 @@
 HotCRP NEWS
 ===========
 
+## Version 3.3 – 12.Jun.2026
+
+* Security updates
+
+    * Patched serious search vulnerability that could expose commenter
+      identities. In prior versions, searching for a comment by commenter
+      identity worked even if the comment should be anonymous. GitHub Security
+      Advisory GHSA-vh3x-xwj4-jvqx.
+
+* Authorization
+
+    * Bearer token scopes can grant rights for specific subsets of papers;
+      for instance, a token with scope `paper:read#10` can read paper #10.
+    * OAuth supports dynamic client registration.
+
+* API
+
+    * Add `hotcrapi document list` and `hotcrapi document history`.
+
+* Search
+
+    * Add `listedau:` to search listed authors (not including contact-only
+      authors).
+    * Fix `au:` to check authors with no accounts.
+
+* Settings
+
+    * Numeric submission fields gain limits and precision (advanced settings
+      only).
+    * Add `conflict_document_visibility` advanced setting, which hides PDFs
+      from conflicted PC members.
+    * Add `preference_editable` advanced setting, which prevents users from
+      editing their own review preferences.
+
+* Mail
+
+    * Mail tool searches interact intelligently with intended recipients; if
+      you send mail to reviewers and the paper search mentions reviewers
+      (e.g., `ire:R1`), then each recipient is tested against the search.
+    * Improve mail tool usage for track administrators.
+
+* Formulas
+
+    * Formulas learn `xor`.
+    * Formula `let` can parse multiple bindings.
+    * Formulas recover support for alphabetic scores.
+
+* Other changes
+
+    * Support very long collaborator lists.
+    * Recover `re:unnamed` and `re:0` searches.
+    * Better support for simultaneous updates of tag lists for the same paper.
+    * Continue to improve the settings for fresh comments: default more
+      frequently to reviewer-visible comments on the review thread.
+    * Fix malplacement of mention markers on comments; we were censoring
+      comment identities differently in two places that should have been the
+      same.
+    * Add `batch/rewindreviews.php` script, which rewinds specified reviews to
+      an earlier version.
+    * HTML cleaning improvements: Strip classes; strip `data-*` attributes;
+      support a simplified adoption-agency algorithm so `<b><i>x</b></i>` is
+      parsable.
+    * Back-end support for custom page banners.
+    * Improve test framework.
+    * Add `batch/render.php` for tests, which renders a HotCRP page to stdout
+      and supports diffs.
+    * Improve and harmonize tag permission checks.
+    * Improve HTML escaping.
+    * Improve procrastination graph.
+
+
 ## Version 3.2.1 – 30.Jan.2026
 
 * Security updates

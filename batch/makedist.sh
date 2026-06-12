@@ -1,4 +1,4 @@
-export VERSION=3.2.1
+export VERSION=3.3
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -105,6 +105,7 @@ batch/hotcrapi.php
 batch/killinactivedoc.php
 batch/paperjson.php
 batch/pcemails.php
+batch/render.php
 batch/reviewcsv.php
 batch/s3test.php
 batch/s3transfer.php
@@ -487,6 +488,7 @@ src/papertable.php
 src/paperrank.php
 src/papervalue.php
 src/quicklinksrenderer.php
+src/rendercapture.php
 src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php
