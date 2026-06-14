@@ -1166,7 +1166,7 @@ class TestRunner {
     static public $collections = [
         "test01" => [
             "fresh_db", "Permission_Tester", "Tags_Tester", "Tracks_Tester",
-            "Banners_Tester"
+            "Banners_Tester", "Session_Tester"
         ],
         "test02" => [
             "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",

@@ -56,6 +56,8 @@ class APISpec_Batch {
     private $sort;
     /** @var array<string,int> */
     private $tag_order;
+    /** @var array<string,int> description item name => position in documentation */
+    private $doc_order = [];
 
     /** @var string */
     private $cur_path;
@@ -71,10 +73,17 @@ class APISpec_Batch {
     private $cur_fields;
     /** @var array<string,string> */
     private $cur_fieldd;
+    /** @var array<string,list<object>> */
+    private $cur_fieldbadges;
+    /** @var array<string,list<string>> */
+    private $cur_fieldconditions;
     /** @var list<object> */
     private $cur_badge;
     /** @var list<string> */
     private $cur_fieldsch;
+    /** @var array<string,string> response_schema name => field it follows (its
+     * position among the response fields, for inlining in document order) */
+    private $cur_fieldsch_after;
 
     const PT_QUERY = 1;
     const PT_BODY = 2;
@@ -218,6 +227,11 @@ class APISpec_Batch {
     function _add_description_item($xt) {
         if (isset($xt->name) && is_string($xt->name)) {
             $this->description_map[$xt->name][] = $xt;
+            // Record the order in which named items first appear in the
+            // documentation; used to order operations to match the docs.
+            if (!array_key_exists($xt->name, $this->doc_order)) {
+                $this->doc_order[$xt->name] = count($this->doc_order);
+            }
             return true;
         }
         return false;
@@ -360,7 +374,10 @@ class APISpec_Batch {
             $this->cur_fieldf = [];
             $this->cur_fields = [];
             $this->cur_fieldd = [];
+            $this->cur_fieldbadges = [];
+            $this->cur_fieldconditions = [];
             $this->cur_fieldsch = [];
+            $this->cur_fieldsch_after = [];
             $this->cur_badge = [];
             if ($uf->paper ?? false) {
                 $this->add_field("p", self::F_REQUIRED);
@@ -575,6 +592,23 @@ class APISpec_Batch {
             ];
         } else if (str_starts_with($info, "?")) {
             return $this->resolve_info(substr($info, 1) . "|null", $name);
+        } else if (str_starts_with($info, "=")) {
+            // Inline string enum: `=v1|v2|...` becomes {"type":"string","enum":[...]}.
+            // A `null` member (e.g. produced by a nullable `?=v1|v2`) is split off
+            // into a oneOf with the null type, matching other nullable types.
+            $enum = [];
+            $nullable = false;
+            foreach (explode("|", substr($info, 1)) as $v) {
+                if ($v === "null") {
+                    $nullable = true;
+                } else {
+                    $enum[] = $v;
+                }
+            }
+            $ej = (object) ["type" => "string", "enum" => $enum];
+            return $nullable
+                ? (object) ["oneOf" => [$ej, (object) ["type" => "null"]]]
+                : $ej;
         } else if (strpos($info, "|") !== false) {
             $res = (object) ["oneOf" => []];
             foreach (explode("|", $info) as $s) {
@@ -596,9 +630,11 @@ class APISpec_Batch {
 
     private function resolve_badge($name) {
         if ($name === "admin") {
-            return (object) [
-                "name" => "Admin only"
-            ];
+            return (object) ["name" => "Admin only"];
+        } else if ($name === "site-admin") {
+            return (object) ["name" => "Site admin only"];
+        } else if ($name === "paper-admin") {
+            return (object) ["name" => "Paper admin only"];
         }
         return null;
     }
@@ -608,7 +644,8 @@ class APISpec_Batch {
      * @param string $landmark */
     private function parse_description_fields($params, $response, $landmark) {
         $pos = 0;
-        while (preg_match('/\G\* (param(?:eter)?(?:_schema)?|response(?:_schema)?|badge)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+        $last_field = "";
+        while (preg_match('/\G\* (param(?:eter)?(?:_schema)?|response(?:_schema)?|badge)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)|\n)((?:(?:[ \t]*+\n)*+  [^\n]*+\n)*+)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
             $pos += strlen($m[0]);
             if ($m[1] === "badge") {
                 if (!$response) {
@@ -630,6 +667,9 @@ class APISpec_Batch {
                             $this->cur_fieldsch[] = "minimal_response";
                         }
                         $this->cur_fieldsch[] = $m[2];
+                        // remember which response field (in document order) this
+                        // schema follows, so its properties inline at that spot.
+                        $this->cur_fieldsch_after[$m[2]] = $last_field;
                     }
                 } else {
                     fwrite(STDERR, "{$landmark}: {$this->cur_prefix()}: unknown {$m[1]} `{$m[2]}`\n");
@@ -638,16 +678,103 @@ class APISpec_Batch {
             }
             list($name, $f) = self::parse_field_name($m[2]);
             $this->add_field($name, $f);
+            $last_field = $name;
             if ($m[3] !== "") {
                 $info = self::resolve_info($m[3], $name);
                 if (!self::is_empty_object($info)) {
                     $this->cur_fields[$name] = $info;
                 }
             }
-            if (str_starts_with($m[4], ":")
-                && ($d = trim(substr($m[4], 1))) !== "") {
+            $body = str_starts_with($m[4], ":") ? substr($m[4], 1) : "";
+            $body .= $m[5];
+            if (($d = $this->parse_field_body($name, $body)) !== "") {
                 $this->cur_fieldd[$name] = $d;
             }
+        }
+    }
+
+    /** Split a field body into a block-Markdown description and trailing badge
+     * metadata. The first line is the inline summary written after the `:`;
+     * continuation lines are de-indented a block at a time (blocks are
+     * separated by blank lines): each block is stripped of its own common
+     * leading indentation, capped at four spaces, so 2-, 3-, and 4-space
+     * list continuation all normalize to the left margin while indentation
+     * beyond four spaces survives as content (e.g. indented code). Relative
+     * indentation within a block (nested lists, multi-line code) is preserved.
+     *
+     * A trailing list of `* badge NAME` / `* condition TEXT` items standing in
+     * its own paragraph is then consumed as field-level metadata — `* badge`
+     * uses the same syntax as operation badges, while `* condition TEXT`
+     * records a presence condition (e.g. `format=csv`) shown as a pill. Items
+     * are recognized by position (a trailing list) and grammar; any other
+     * `*`-list is left untouched as Markdown. Returns the trimmed description.
+     * @param string $name
+     * @param string $body
+     * @return string */
+    private function parse_field_body($name, $body) {
+        $lines = explode("\n", $body);
+
+        // The summary sits right after the `:` and carries no block indentation.
+        $summary = ltrim((string) array_shift($lines), " ");
+
+        // De-indent the continuation one block at a time: each blank-separated
+        // block is stripped of its own common leading indentation, up to four
+        // spaces. This normalizes 2-/3-/4-space continuation independently per
+        // block while preserving relative indentation inside a block.
+        $out = $summary === "" ? [] : [$summary];
+        $n = count($lines);
+        for ($i = 0; $i !== $n; ) {
+            if (trim($lines[$i]) === "") {
+                $out[] = "";
+                ++$i;
+                continue;
+            }
+            $min = PHP_INT_MAX;
+            $j = $i;
+            while ($j !== $n && trim($lines[$j]) !== "") {
+                $w = strlen($lines[$j]) - strlen(ltrim($lines[$j], " "));
+                $min = $w < $min ? $w : $min;
+                ++$j;
+            }
+            $strip = $min < 4 ? $min : 4;
+            for (; $i !== $j; ++$i) {
+                $out[] = (string) substr($lines[$i], $strip);
+            }
+        }
+        $text = trim(implode("\n", $out));
+
+        // Consume a trailing list of `* badge`/`* condition` items standing in
+        // its own paragraph (preceded by a blank line or the start of the body).
+        if (preg_match('/(?:\A|\n\n)((?:\* (?:badge|condition)[ \t]++[^\n]++(?:\n|\z))++)\z/', $text, $mm)) {
+            foreach (explode("\n", trim($mm[1])) as $line) {
+                if (preg_match('/\A\* badge[ \t]++(\S++)/', $line, $bm)) {
+                    if (($b = $this->resolve_badge($bm[1]))) {
+                        $this->cur_fieldbadges[$name][] = $b;
+                    } else {
+                        fwrite(STDERR, $this->cur_prefix() . "unknown badge `{$bm[1]}` for field `{$name}`\n");
+                    }
+                } else if (preg_match('/\A\* condition[ \t]++(\S+?)[ \t]*+\z/', $line, $cm)) {
+                    // A condition tests an input parameter, either by value
+                    // (`format=csv`) or by presence (`search`).
+                    $this->cur_fieldconditions[$name][] = $cm[1];
+                }
+            }
+            $text = rtrim(substr($text, 0, strlen($text) - strlen($mm[1])));
+        }
+        return $text;
+    }
+
+    /** Attach any `* badge`/`* condition` metadata collected for field `$name`
+     * to `$target` as `x-badges`/`x-conditions` extensions. OpenAPI 3.1 permits
+     * these alongside a `$ref` (as the description code already relies on).
+     * @param string $name
+     * @param object $target */
+    private function apply_field_metadata($name, $target) {
+        if (!empty($this->cur_fieldbadges[$name])) {
+            $target->{"x-badges"} = $this->cur_fieldbadges[$name];
+        }
+        if (!empty($this->cur_fieldconditions[$name])) {
+            $target->{"x-conditions"} = $this->cur_fieldconditions[$name];
         }
     }
 
@@ -700,6 +827,7 @@ class APISpec_Batch {
                 if (isset($this->cur_fieldd[$name]) && !isset($bprop[$name]->{"\$ref"})) {
                     $bprop[$name]->description = $this->cur_fieldd[$name];
                 }
+                $this->apply_field_metadata($name, $bprop[$name]);
                 if (($f & self::F_REQUIRED) !== 0) {
                     $breq[] = $name;
                 }
@@ -723,6 +851,7 @@ class APISpec_Batch {
                     $pobj->description = $this->cur_fieldd[$name];
                 }
             }
+            $this->apply_field_metadata($name, $pobj);
             $params[$name] = $pobj;
         }
         if (!empty($params) || isset($x->parameters)) {
@@ -854,9 +983,10 @@ class APISpec_Batch {
      * @param object $uf
      * @param ?object $dj */
     private function expand_response($x, $uf, $dj) {
-        // Endpoints that return a raw (non-JSON) body, such as `/document`,
-        // declare a literal `response_content` media-type map instead of a list
-        // of JSON response fields.
+        // Endpoints that do not use HotCRP's JSON envelope declare a literal
+        // `response_content` map of responses instead of a list of JSON response
+        // fields. This covers raw bodies (such as `/document`) and special
+        // endpoints (such as the OAuth endpoints).
         if (isset($uf->response_content)) {
             $this->apply_raw_response($x, $uf);
             return;
@@ -865,7 +995,10 @@ class APISpec_Batch {
         $this->cur_fieldf = [];
         $this->cur_fields = [];
         $this->cur_fieldd = [];
+        $this->cur_fieldbadges = [];
+        $this->cur_fieldconditions = [];
         $this->cur_fieldsch = [];
+        $this->cur_fieldsch_after = [];
 
         $response = $uf->response ?? [];
         if (is_string($response)) {
@@ -898,16 +1031,36 @@ class APISpec_Batch {
         $this->apply_response($x, $bprop, $breq);
     }
 
-    /** Apply a raw (non-JSON) success response from `$uf->response_content`, a
-     * literal OpenAPI media-type map (e.g. `{"*\/*": {"schema": ...}}`). The
-     * `default` error response remains JSON, as for other endpoints.
+    /** Apply `$uf->response_content`, a literal map from HTTP status code (or
+     * `default`) to an OpenAPI Response Object, e.g.
+     * `{"200": {"description": ..., "content": {"*\/*": {"schema": ...}}}}`.
+     * The standard JSON error envelope is added as `default` unless the map
+     * supplies its own `default` (so OAuth-style endpoints can opt out with
+     * `{"default": {}}`).
      * @param object $x
      * @param object $uf */
     private function apply_raw_response($x, $uf) {
         $x->responses = $x->responses ?? (object) [];
 
-        // default (error) response
-        if (!isset($x->responses->default)) {
+        foreach (get_object_vars($uf->response_content) as $code => $robj) {
+            $r = $x->responses->{$code} = $x->responses->{$code} ?? (object) [];
+            foreach (get_object_vars(self::deep_clone($robj)) as $k => $v) {
+                // do not clobber an existing description unless overriding
+                if ($k === "description"
+                    && !$this->override_response
+                    && ($r->description ?? "") !== "") {
+                    continue;
+                }
+                $r->{$k} = $v;
+            }
+            // OpenAPI requires every response to have a description
+            $r->description = $r->description ?? "";
+        }
+
+        // add the JSON error envelope as `default` unless the endpoint defined
+        // its own `default` response
+        if (!isset($uf->response_content->default)
+            && !isset($x->responses->default)) {
             $x->responses->default = (object) [
                 "description" => "",
                 "content" => (object) [
@@ -917,13 +1070,6 @@ class APISpec_Batch {
                 ]
             ];
         }
-
-        // 200 raw response
-        $resp200 = $x->responses->{"200"} = $x->responses->{"200"} ?? (object) [];
-        if ($this->override_response || ($resp200->description ?? "") === "") {
-            $resp200->description = $uf->response_description ?? "";
-        }
-        $resp200->content = self::deep_clone($uf->response_content);
     }
 
     private static function deep_clone($x) {
@@ -983,6 +1129,10 @@ class APISpec_Batch {
         foreach ($this->cur_fieldsch as $sch) {
             $ref = $this->reference_common_schema($sch);
             assert(isset($ref->{"\$ref"}));
+            if (isset($this->cur_fieldsch_after[$sch])) {
+                // transient hint consumed by inline_response_schemas()
+                $ref->{"x-after"} = $this->cur_fieldsch_after[$sch];
+            }
             $i = 0;
             while (isset($rsch[$i])
                    && isset($rsch[$i]->{"\$ref"})
@@ -1038,6 +1188,7 @@ class APISpec_Batch {
                 && ($this->override_description || ($respprop->$k->description ?? "") === "")) {
                 $respprop->$k->description = $this->cur_fieldd[$k];
             }
+            $this->apply_field_metadata($k, $respprop->$k);
         }
 
         // result
@@ -1131,6 +1282,27 @@ class APISpec_Batch {
         return null;
     }
 
+    /** Position of a path in the documentation, or PHP_INT_MAX if undocumented.
+     * Uses the earliest documentation appearance among the path's operations
+     * (e.g. `# get /session`) or the path itself (e.g. `# /session`). */
+    private function path_doc_order($pj) {
+        $best = PHP_INT_MAX;
+        $path = $pj->__path ?? null;
+        if ($path === null) {
+            return $best;
+        }
+        if (isset($this->doc_order[$path])) {
+            $best = $this->doc_order[$path];
+        }
+        foreach ($pj as $method => $oj) {
+            if (is_object($oj)
+                && isset($this->doc_order["{$method} {$path}"])) {
+                $best = min($best, $this->doc_order["{$method} {$path}"]);
+            }
+        }
+        return $best;
+    }
+
     function compare_paths($a, $b) {
         $atag = self::path_first_tag($a);
         $btag = self::path_first_tag($b);
@@ -1141,6 +1313,13 @@ class APISpec_Batch {
             $ato = $this->tag_order[$atag] ?? PHP_INT_MAX;
             $bto = $this->tag_order[$btag] ?? PHP_INT_MAX;
             return $ato <=> $bto ? : strcmp($atag, $btag);
+        }
+        // Within a tag, follow documentation order when available, then fall
+        // back to the apifunctions.json `order`, then the path name.
+        $ado = $this->path_doc_order($a);
+        $bdo = $this->path_doc_order($b);
+        if ($ado !== $bdo) {
+            return $ado <=> $bdo;
         }
         $an = substr($a->__path, strrpos($a->__path, "/") + 1);
         $bn = substr($b->__path, strrpos($b->__path, "/") + 1);
@@ -1160,6 +1339,112 @@ class APISpec_Batch {
             }
         }
         return strcmp($an, $bn);
+    }
+
+
+    // INLINE response_schema
+
+    /** Inline `* response_schema` references in every 200 response: replace each
+     * `allOf` member that `$ref`s a common schema (other than `minimal_response`)
+     * with that schema's properties, appended to the response object. Generation
+     * already registered every schema, so no `$ref` can dangle; the now-unused
+     * common schema simply remains defined in `components`. */
+    private function inline_response_schemas() {
+        foreach ($this->paths as $pj) {
+            if (!is_object($pj)) {
+                continue;
+            }
+            foreach ($pj as $method => $opj) {
+                if ($method === "__path" || !is_object($opj)) {
+                    continue;
+                }
+                $schema = $opj->responses->{"200"}->content->{"application/json"}->schema ?? null;
+                if (is_object($schema) && is_array($schema->allOf ?? null)) {
+                    $this->inline_response_allof($schema);
+                }
+            }
+        }
+    }
+
+    /** @param object $schema */
+    private function inline_response_allof($schema) {
+        $kept = $inlines = [];
+        $target = null;
+        foreach ($schema->allOf as $member) {
+            $ref = is_object($member) ? ($member->{"\$ref"} ?? null) : null;
+            if (is_string($ref)
+                && preg_match('{\A#/components/schemas/(.+)\z}', $ref, $m)
+                && $m[1] !== "minimal_response"
+                && is_object($sch = $this->schemas->{$m[1]} ?? $this->basej->components->schemas->{$m[1]} ?? null)) {
+                $conds = $sch->{"x-conditions"} ?? null;
+                $props = [];
+                foreach (get_object_vars($sch->properties ?? (object) []) as $pn => $pdef) {
+                    $pd = is_object($pdef) ? self::deep_clone($pdef) : $pdef;
+                    if ($conds !== null && is_object($pd) && !isset($pd->{"x-conditions"})) {
+                        $pd->{"x-conditions"} = $conds;
+                    }
+                    $props[$pn] = $pd;
+                }
+                $inlines[] = [$props, $member->{"x-after"} ?? null, $sch->required ?? []];
+                continue; // drop this member; its properties are inlined below
+            }
+            if (is_object($member)) {
+                unset($member->{"x-after"});
+            }
+            $kept[] = $member;
+            if (is_object($member) && ($member->type ?? null) === "object") {
+                $target = $member;
+            }
+        }
+        if (empty($inlines)) {
+            return;
+        }
+        if ($target === null) {
+            $kept[] = $target = (object) ["type" => "object", "properties" => (object) []];
+        }
+        $props = (array) ($target->properties ?? (object) []);
+        $req = $target->required ?? [];
+        foreach ($inlines as [$sprops, $after, $sreq]) {
+            $props = self::insert_after($props, $sprops, $after);
+            foreach ($sreq as $rq) {
+                if (!in_array($rq, $req, true)) {
+                    $req[] = $rq;
+                }
+            }
+        }
+        $target->properties = (object) $props;
+        if (!empty($req)) {
+            $target->required = $req;
+        }
+        $schema->allOf = array_values($kept);
+    }
+
+    /** Insert ordered `$new` properties into ordered `$existing` immediately
+     * after key `$after` ("" means at the start; null or an unknown key means at
+     * the end). Keys already present in `$existing` are skipped.
+     * @param array<string,mixed> $existing
+     * @param array<string,mixed> $new
+     * @param ?string $after
+     * @return array<string,mixed> */
+    private static function insert_after($existing, $new, $after) {
+        $new = array_diff_key($new, $existing);
+        if (empty($new)) {
+            return $existing;
+        } else if ($after === "") {
+            return $new + $existing;
+        } else if ($after === null || !array_key_exists($after, $existing)) {
+            return $existing + $new;
+        }
+        $out = [];
+        foreach ($existing as $k => $v) {
+            $out[$k] = $v;
+            if ($k === $after) {
+                foreach ($new as $nk => $nv) {
+                    $out[$nk] = $nv;
+                }
+            }
+        }
+        return $out;
     }
 
 
@@ -1221,6 +1506,9 @@ class APISpec_Batch {
                 fwrite(STDERR, "{$dj->landmark}: description path {$m[2]}.{$m[1]} not specified\n");
             }
         }
+
+        // resolve `* response_schema` references inline
+        $this->inline_response_schemas();
 
         // maybe sort
         if ($this->sort || !$this->batch) {

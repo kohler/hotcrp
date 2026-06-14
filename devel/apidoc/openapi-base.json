@@ -147,6 +147,22 @@
                     "$ref": "#/components/schemas/search_sort"
                 }
             },
+            "email": {
+                "name": "email",
+                "in": "query",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/email"
+                }
+            },
+            "email.opt": {
+                "name": "email",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/email"
+                }
+            },
             "scoresort": {
                 "name": "scoresort",
                 "in": "query",
@@ -378,6 +394,51 @@
                     }
                 }
             },
+            "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Email address. Most HotCRP email addresses are ordinary email addresses, but some are markers for anonymous or pseudonymous users (for example `anonymous`, `anonymous1`, …). These markers are accepted and returned wherever an email is expected, even though they are not valid email addresses.",
+                "examples": [
+                    "ngomez@example.edu"
+                ]
+            },
+            "role": {
+                "type": "string",
+                "enum": [
+                    "chair",
+                    "pc",
+                    "sysadmin",
+                    "manager",
+                    "author",
+                    "reviewer"
+                ],
+                "description": "A user’s standing in the conference. `chair` is a conference chair; `pc` is a program committee member (also present for chairs); `sysadmin` is a system administrator; `manager` administers some submissions without being a full chair; `author` is an author or contact of some submission; `reviewer` has been assigned at least one review."
+            },
+            "sessioninfo": {
+                "type": "object",
+                "description": "Information about the current session, including the CSRF token for cookie-authenticated requests. Returned by the `session` endpoints (and omitted from cross-origin responses).",
+                "required": [
+                    "postvalue"
+                ],
+                "properties": {
+                    "postvalue": {
+                        "type": "string",
+                        "description": "CSRF token. Supply this value in the `post` parameter to authorize cookie-authenticated `POST` requests.",
+                        "examples": [
+                            "AnZIPC3idJqH"
+                        ]
+                    },
+                    "email": {
+                        "$ref": "#/components/schemas/email",
+                        "description": "Email of the signed-in user; omitted when no user is signed in"
+                    },
+                    "uid": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "User ID of the signed-in user; omitted when no user is signed in"
+                    }
+                }
+            },
             "nullable_int": {
                 "oneOf": [
                     {"type": "null"},
@@ -408,6 +469,16 @@
                 "examples": [
                     "hcj_PHkMnDMRkMuBydyCSBQCymPTqaqmsGWaftV"
                 ]
+            },
+            "job_status": {
+                "type": "string",
+                "enum": [
+                    "wait",
+                    "run",
+                    "done",
+                    "failed"
+                ],
+                "description": "Status of a long-running job. `wait` before the job starts, `run` while it is running, `done` after successful completion, and `failed` when it is known to have failed."
             },
             "paper_status": {
                 "type": "string",
@@ -702,6 +773,33 @@
                         "$ref": "#/components/schemas/hotlist"
                     }
                 }
+            },
+            "search_response.opt": {
+                "type": "object",
+                "description": "Search result whose properties are all optional. Use this where search results are merged into a response only under some conditions (for example, when a request supplies an optional `search` parameter); the same properties as `search_response`, but none are required.",
+                "properties": {
+                    "ids": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/pid"
+                        }
+                    },
+                    "groups": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/tag_annotation"
+                        }
+                    },
+                    "search_params": {
+                        "$ref": "#/components/schemas/encoded_search_parameters"
+                    },
+                    "hotlist": {
+                        "$ref": "#/components/schemas/hotlist"
+                    }
+                },
+                "x-conditions": [
+                    "search"
+                ]
             },
             "action_definition": {
                 "type": "object",
@@ -1118,7 +1216,7 @@
                         "type": "string"
                     },
                     "author_email": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/email"
                     },
                     "author_hidden": {
                         "type": "boolean"

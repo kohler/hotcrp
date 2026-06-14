@@ -38,10 +38,13 @@ class Session_API {
 
     /** @param Qrequest $qreq
      * @param string $v
-     * @return bool */
+     * @return true */
     static function change_session($qreq, $v) {
+        // Best effort: apply every preference component we understand and
+        // silently ignore the rest. These preferences are cosmetic and
+        // independent, so partial application is correct, and lenient parsing
+        // keeps clients and servers of different versions interoperable.
         $qreq->open_session();
-        $ok = true;
         $view = [];
         preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
@@ -92,14 +95,12 @@ class Session_API {
                 } else {
                     $qreq->unset_csession($m[1]);
                 }
-            } else {
-                $ok = false;
             }
         }
         foreach ($view as $report => $viewlist) {
             self::parse_view($qreq, $report, join(" ", $viewlist));
         }
-        return $ok;
+        return true;
     }
 
     /** @param Qrequest $qreq
@@ -108,8 +109,8 @@ class Session_API {
         // NB This is for POSTs and requires authentication.
         assert($user === $qreq->user());
         $qreq->open_session();
-        $ok = self::change_session($qreq, $qreq->v);
-        return self::session_result($user, $qreq, $ok);
+        self::change_session($qreq, $qreq->v);
+        return self::session_result($user, $qreq, true);
     }
 
     /** @param string $report

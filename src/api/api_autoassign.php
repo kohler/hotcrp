@@ -133,7 +133,9 @@ class Autoassign_API {
         if ($tok->data("exit_status") === 0) {
             return $tok->json_result("string");
         }
-        $jr = JsonResult::make_message_list($tok->data("message_list") ?? []);
+        // The job ran but failed; report `status: failed`, matching `/job`.
+        $jr = JsonResult::make_message_list($tok->data("message_list") ?? [])
+            ->set("status", "failed");
         $tok->delete();
         return $jr;
     }

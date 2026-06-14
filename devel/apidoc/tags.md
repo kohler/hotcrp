@@ -10,7 +10,7 @@
 > Change submission tags
 
 * response_schema tag_response
-* response_schema search_response
+* response_schema search_response.opt
 
 
 # post /assigntags
@@ -19,7 +19,7 @@
 
 * param =tagassignment string:Comma-separated list of paper IDs and tag assignments
 * param ?=search search_parameter_specification
-* response_schema search_response
+* response_schema search_response.opt
 
 
 # get /alltags
@@ -38,7 +38,7 @@
 * response tag tag
 * response editable boolean
 * response anno [tag_annotation]
-* response_schema search_response
+* response_schema search_response.opt
 
 
 # post /taganno
@@ -49,7 +49,7 @@
 * response tag tag
 * response editable boolean
 * response anno [tag_annotation]
-* response_schema search_response
+* response_schema search_response.opt
 
 
 # get /{p}/tagmessages

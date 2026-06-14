@@ -49,13 +49,13 @@ contain a `comment` component. Otherwise the comment is created or modified,
 and the response `comment` component contains the new comment.
 
 Comment attachments may be uploaded as files (requiring a request body in
-`multipart/form-data` encoding), or using the [upload API](#operation/upload).
+`multipart/form-data` encoding), or using the [upload API](#post-upload).
 To upload a single new attachment:
 
 * Set the `attachment:1` body parameter to `new`
 * Either:
 	* Set `attachment:1:file` as a uploaded file containing the relevant data
-	* Or use the [upload API](#operation/upload) to upload the file,
+	* Or use the [upload API](#post-upload) to upload the file,
 	  and supply the upload token in the `attachment:1:upload` body parameter
 
 To upload multiple attachments, number them sequentially (`attachment:2`,

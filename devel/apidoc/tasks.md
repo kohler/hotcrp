@@ -34,8 +34,8 @@ UTF-8 encoded, `output=json` but the output is not JSON, or `output=body` but
 the job failed), then the response uses status code 409 Conflict.
 
 * param job job_id
-* param ?output string: Format for job output
-* response status string
+* param ?output =string|json|body: Format for job output
+* response status job_status
 * response update_at integer: UNIX time job was last updated
 * response ?output: Job output
 * response ?output_mimetype mimetype: Output mimetype

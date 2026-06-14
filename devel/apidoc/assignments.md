@@ -1,153 +1,172 @@
 # Assignments
 
-These endpoints perform HotCRP assignments, including review assignments,
-review preference settings, tags, and anything else that can be modified by
-HotCRP’s bulk assignments interface. `/assign` lets users perform any
-assignment for which they have permission. `/autoassign` lets administrators
-compute assignments automatically.
+These endpoints perform and compute HotCRP assignments. An *assignment* is any
+change expressible through HotCRP’s bulk-assignment interface: review
+assignments, review preferences, conflicts, tags, decisions, lead and shepherd
+designations, and more. The exact set of assignment types depends on the
+conference’s configuration and the calling user’s privileges;
+[`/assigners`](#get-assigners) enumerates the types
+available.
+
+[`/assign`](#post-assign) applies an explicit
+assignment that the caller supplies as JSON or CSV; a user may perform any
+assignment they have permission to make. [`/autoassign`](#post-autoassign)
+instead *computes* an assignment automatically—for example, distributing reviews
+to balance load across the PC—and is restricted to administrators.
+
+Both endpoints can run in a *dry-run* mode that parses and checks an assignment,
+reporting any errors, without touching the database. Assignments are applied
+atomically: if any part of an assignment is invalid, none of it is performed.
 
 
 # post /assign
 
 > Perform assignments
 
-Perform assignments specified as JSON or CSV.
+Apply an explicit set of assignments supplied by the caller, in HotCRP’s
+bulk-assignment format.
 
-Assignments use HotCRP’s bulk assignments format, and can be provided in several
-ways:
+The assignment data can be provided in any of four ways:
 
-1. As a JSON request body (content-type `application/json`).
-2. As a CSV-formatted request body (content-type `text/csv`).
-3. As an `assignments` parameter containing JSON or CSV (content-type
-   `application/x-www-form-urlencoded` or `multipart/form-data`).
-4. As an `upload` parameter containing an upload token for a previously-uploaded
-   JSON or CSV file.
+1. As a JSON request body (content type `application/json`).
+2. As a CSV request body (content type `text/csv`).
+3. In the `assignments` parameter, holding JSON or CSV (with a form-encoded
+   request, content type `application/x-www-form-urlencoded` or
+   `multipart/form-data`).
+4. In the `upload` parameter, holding an upload token for a previously-uploaded
+   JSON or CSV file. Use this for assignment files too large to send inline; see
+   the [upload API](#post-upload).
 
-JSON assignments should parse to arrays of objects, each with `pid` and `action`
-properties (and possibly others). CSV assignments must contain a header with at
-least `pid` and `action` columns. The `action` determines the assignment type;
-the `/assigners` API endpoint lists the available actions.
+JSON assignment data is an array of objects, each with at least `pid` and
+`action` properties (a lone object is also accepted and treated as a
+one-element array). CSV assignment data is a table whose header includes at
+least `pid` and `action` columns. In both forms the `action` selects the
+assignment type and determines which other properties or columns are meaningful;
+[`/assigners`](#get-assigners) lists every action and
+its parameters.
 
-To test assignments without making changes, set `dry_run=1`. This will parses
-the assignment and reports errors without modifying the database.
+The `valid` response property reports whether the assignment was free of errors;
+any errors themselves are described in the standard `message_list`. For a
+non-dry-run request, `valid` is also the commit signal: `true` means the changes
+were saved, `false` means nothing changed.
 
-The `valid` response property is `true` if the assignments had no errors. In
-non-dry-run requests, `"valid": true` indicates any database changes were
-committed.
+On success the response describes the assignment that was performed (or, for a
+dry run, that would be performed). The amount of detail is controlled by the
+`format` parameter, ranging from a bare count up to the full list of individual
+(“atomic”) assignments. An atomic assignment is a single action applied to a
+single entity, such as adding one tag to one submission or assigning one
+review.
 
-For valid assignments, the response includes information about the performed
-assignments (or, for `dry_run` requests, the requested assignments).
-`assignment_count` indicates the number of atomic assignments, where an atomic
-assignment is a single action applied to a single entity (e.g., a submission or
-review). The `format` parameter can request additional detail. When
-`format=none` (default), only `assignment_count` is provided. When
-`format=summary`, the response includes `assignment_actions` (distinct actions
-performed) and `assignment_pids` (affected submission IDs). When `format=csv`,
-the `output` property contains the atomic assignments as a CSV string. When
-`format=json`, the `assignments` property contains the atomic assignments as a
-list of JSON objects.
+When the `search` parameter is supplied, a successful non-dry-run request also
+returns the result of evaluating that search *after* the assignment, together
+with refreshed tag and status information for the affected submissions. This
+lets a client apply an assignment and update a displayed submission list in a
+single round trip.
 
-When the optional `p` parameter is set, only assignments affecting that
-submission are performed; all other assignments are ignored.
+* param ?p pid: If set, restrict the operation to this submission: assignments naming any other submission are silently ignored. Handy for committing one submission’s worth of changes from a larger assignment.
+* param ?dry_run boolean: If true, parse and validate the assignment and report any errors, but make no database changes. `valid` still reports whether the assignment would have succeeded.
+* param ?assignments string: Assignment data as JSON or CSV, for requests that do not send it as the body. The value is parsed as JSON if it begins with `[` or `{`, and as CSV otherwise.
+* param ?upload upload_token: Upload token for assignment data uploaded earlier via the [upload API](#post-upload). The uploaded file may be JSON or CSV.
+* param ?json5 boolean: If true, JSON assignment data may use [JSON5](https://json5.org/) syntax, including comments, trailing commas, and unquoted keys.
+* param ?format =json|csv|summary|none: How much detail to include in the response. `json` (the default) lists each atomic assignment as an object (see `assignment_header` and `assignments`); `csv` returns the same rows as CSV text (see `output`); `summary` returns only the distinct actions and affected submissions (`assignment_actions`, `assignment_pids`); `none` returns only `assignment_count`.
+* param ?forceShow boolean: An administrator’s own conflicts are overridden by default; set `forceShow=false` to respect them instead.
+* param ?search search_parameter_specification: A search to evaluate after the assignment is applied. When supplied on a successful, non-dry-run request, the response gains the search results (`ids`, `groups`, `search_params`) and refreshed per-submission tag and status information (`papers`).
+* response valid boolean: True if the assignment parsed and validated with no errors. On a non-dry-run request, `true` additionally means the changes were committed; `false` means nothing was changed.
+* response ?dry_run boolean: Present and true when the request was a dry run.
+* response ?assignment_count integer: Number of atomic assignments performed (or, for a dry run, that would be performed). Present only when the assignment is valid.
+* response ?assignment_actions [string]: Distinct action names that were performed.
 
+  * condition format=summary
+* response ?assignment_pids [pid]: IDs of the submissions affected by the assignment.
 
-* param dry_run boolean: True checks input for errors, but does not save changes
-* param ?assignments string: JSON or CSV assignments
-* param ?upload upload_token: Upload token for JSON or CSV assignments
-* param ?format string: `none`, `summary`, `csv`, or `json`
-* param ?forceShow boolean: Explicit false means chair conflicts are not overridden
-* param ?search search_parameter_specification
-* response ?dry_run boolean: True if request was a dry run
-* response valid boolean: True if the assignments were valid
-* response ?assignment_count integer: Number of individual assignments performed
-* response ?assignment_actions [string]: List of distinct action names in performed assignment (`format=summary`)
-* response ?assignment_pids [pid]: List of submission IDs in performed assignment (`format=summary`)
-* response ?output string: Performed assignments as CSV with header (`format=csv`)
-* response ?output_mimetype string: `text/csv` (`format=csv`)
-* response ?output_size integer: Length of `output` (`format=csv`)
-* response ?assignment_header [string]: CSV header (`format=json`)
-* response ?assignments [object]: Performed assignments (`format=json`)
-* response ?papers
-* response ?ids
-* response ?groups
-* response ?search_params
+  * condition format=summary
+* response ?output string: The atomic assignments rendered as CSV text, including a header row.
+
+  * condition format=csv
+* response ?output_mimetype =text/csv: MIME type of `output`; always `text/csv`.
+
+  * condition format=csv
+* response ?output_size integer: Length of `output` in bytes.
+
+  * condition format=csv
+* response ?assignment_header [string]: Column names describing the fields of each `assignments` row.
+
+  * condition format=json
+* response ?assignments [object]: The atomic assignments, each an object keyed by the names in `assignment_header`. Returned by default.
+
+  * condition format=json
+* response_schema search_response.opt
+* response ?papers [tag_response]: Refreshed tag and status information for each submission affected by the assignment, suitable for updating a displayed submission list.
+
+  * condition search
 
 
 # get /assigners
 
 > List assignment actions
 
-List all assignment actions understood by this HotCRP, including their
-parameters.
+List every assignment action understood by this HotCRP installation, with the
+parameters each action accepts. Use this to discover the `action` values and
+columns valid in an [`/assign`](#post-assign) request.
+The visible set of actions reflects the calling user’s privileges.
 
-* response assigners [assignment_action]
+* response assigners [assignment_action]: Available assignment actions
 
 
 # post /autoassign
 
 > Compute automatic assignment
 
-Compute and optionally perform an automatic assignment.
+Compute an assignment automatically and, unless this is a dry run, perform it.
+This is an administrator operation.
 
-Specify the autoassignment action with the `autoassigner` parameter and the
-submissions to assign with the `q` parameter. The `/autoassigners` endpoint
-lists the available autoassignment actions.
+Select the algorithm with the `autoassigner` parameter and the submissions to
+operate on with the `q` (and optional `t`) search parameters;
+[`/autoassigners`](#get-autoassigners) lists the
+available algorithms and their parameters. Most algorithms take further settings
+through `u`, `disjoint`, and `param`.
 
-Most autoassignment actions take additional parameters. `u` defines the PC
-members to assign; it defaults to all PC members. `disjoint` defines classes of
-PC members that should not be co-assigned to the same submission. `param`
-defines additional autoassigner parameters, such as the number of assignments to
-make or the type of review to create.
+The `u`, `disjoint`, and `param` parameters each accept multiple values. Supply
+them either as a JSON array or by repeating the parameter name with `[]`
+appended. For instance, `u=%5B1,2%5D` (a single `u=[1,2]`) and
+`u%5B%5D=1&u%5B%5D=2` (separate `u[]=1` and `u[]=2`) both pass the two values `1`
+and `2`.
 
-To supply multiple values for these parameters, use a JSON-formatted array or
-multiple parameters with `[]` appended to the name. For instance,
-`/autoassign?u=%5B1,2%5D` and `/autoassign?u%5B%5D=1&u%5B%5D=2` both supply `u`
-arguments `1` and `2`, the first as a single `u=[1,2]` parameter and the second
-as separate `u[]=1` and `u[]=2` parameters.
+Autoassignment can be slow, so this endpoint may respond before the computation
+finishes. In that case the response uses HTTP status 202 Accepted and reports a
+`job` identifier (and `job_url`); poll the [`/job`](#get-job)
+endpoint with that identifier to follow progress and retrieve the resulting
+assignment as CSV. When the computation finishes quickly enough, the result is
+returned directly instead, in the same shape as a completed `/job` response.
 
-Each `u` argument is a user search string: a user ID (`1`), email
-(`kohler@g.harvard.edu`), or tag (`#heavy`). Prefix with a hyphen `-` to remove
-matching users from the assignable set.
-
-Each `disjoint` argument is a comma-separated list of users (IDs, emails, or
-tags) that should not be co-assigned to the same submission.
-
-Each `param` argument has the format `NAME=VALUE`. See `/autoassigners` for the
-parameters understood by each action.
-
-To test without making changes, set `dry_run=1`. This creates and tests an
-assignment, reporting errors without modifying the database. Set
-`minimal_dry_run=1` to skip additional testing—for example, `dry_run=1` reports
-potential conflicts, but `minimal_dry_run=1` does not.
-
-Autoassignment can be time-consuming, so `/autoassign` may return before
-completion. An early response uses HTTP status code 202 Accepted, and its
-`job` response property gives a job ID for the autoassignment. Query the `/job`
-endpoint to monitor progress and retrieve the CSV output.
-
-* param autoassigner string: Name of autoassignment action to run
-* param q
-* param t
-* param dry_run boolean: True computes the assignment, but does not perform it
-* param minimal_dry_run boolean: True computes an initial assignment, but does not validate it
-* param u [string]: Array of users to consider for assignment
-* param disjoint [string]: Array of user sets that should not be co-assigned
-* param param [string]: Array of `NAME=VALUE` autoassignment parameter settings
-* response ?dry_run boolean: True if request was a dry run
-* response ?job job_id: Job ID of autoassignment job
-* response ?job_url string: URL to monitor autoassignment job
-* response ?status string
-* response ?exit_status integer
-* response ?progress string
-* response ?assignment_pids [integer]
-* response ?output string: CSV of computed assignment
+* param autoassigner string: Name of the autoassignment algorithm to run, as listed by [`/autoassigners`](#get-autoassigners).
+* param q search_string: Search selecting the submissions to assign.
+* param ?t search_collection: Search collection (submission set) for `q`; defaults to `s`, the complete submissions.
+* param ?dry_run boolean: If true, compute and validate the assignment and report errors, but do not perform it. The computed assignment is still returned as `output`.
+* param ?minimal_dry_run boolean: Like `dry_run`, but skips extra validation passes. For example, an ordinary dry run reports potential conflicts created by the assignment; a minimal dry run does not.
+* param ?u [string]: PC members to consider for assignment; defaults to all PC members. Each value is a user search string—a user ID (`1`), an email (`kohler@g.harvard.edu`), or a tag (`#heavy`)—and may be prefixed with `-` to remove the matching users from the set.
+* param ?disjoint [string]: Sets of users that must not both be assigned to the same submission. Each value is a comma-separated list of user search strings (IDs, emails, or tags).
+* param ?param [string]: Additional algorithm-specific settings, each formatted `NAME=VALUE`. See [`/autoassigners`](#get-autoassigners) for the settings each algorithm understands.
+* param ?count integer: Convenience setting for the common `count` algorithm parameter (for example, the number of reviews per submission); equivalent to passing `count=N` in `param`.
+* response ?dry_run boolean: Present and true when the request was a dry run.
+* response ?job job_id: Identifier of the background job computing the assignment; present when the response is returned before completion.
+* response ?job_url string: Absolute URL of the [`/job`](#get-job) endpoint for `job`.
+* response status job_status: Job status, using the same vocabulary as [`/job`](#get-job). A successful response carries the computed assignment and reports `done`; a job that ran but failed reports `failed`.
+* response ?exit_status integer: Process exit status of the completed computation; `0` on success.
+* response ?progress string: Human-readable description of the current computation phase.
+* response ?assignment_pids [pid]: IDs of the submissions the computed assignment affects.
+* response ?output string: The computed assignment as CSV text, ready to be replayed through [`/assign`](#post-assign).
+* response ?output_mimetype =text/csv: MIME type of `output`; always `text/csv`.
+* response ?output_size integer: Length of `output` in bytes.
+* response ?output_at integer: UNIX time the output was produced.
 
 
 # get /autoassigners
 
 > List autoassignment actions
 
-List all autoassignment actions understood by this HotCRP, including their
-parameters.
+List every autoassignment algorithm understood by this HotCRP installation, with
+the parameters each one accepts. Use this to discover valid `autoassigner` values
+and `param` settings for [`/autoassign`](#post-autoassign).
 
-* response autoassigners [autoassignment_action]
+* response autoassigners [autoassignment_action]: Available autoassignment algorithms

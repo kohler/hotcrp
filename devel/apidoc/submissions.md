@@ -119,14 +119,25 @@ existing submission, set the submission JSON’s `status`.`if_unmodified_since`
 to `0`.
 
 * param dry_run boolean: True checks input for errors, but does not save changes
-* param disable_users boolean: True disables any newly-created users (site
-  administrators only)
+* param disable_users boolean: True disables any newly-created users.
+
+  When an administrator creates submissions on behalf of other people, HotCRP
+  normally creates accounts for any new contacts named in the input. Set
+  `disable_users=1` to leave those accounts *disabled*: the new users cannot
+  sign in or receive email until an administrator explicitly enables them. This
+  is useful when importing submissions in bulk and you don’t yet want to notify
+  the people involved.
+
+  * badge site-admin
 * param add_topics boolean: True automatically adds topics from input papers
-  (site administrators only)
-* param notify boolean: False disables all email notifications (site
-  administrators only)
+
+  * badge site-admin
+* param notify boolean: False disables all email notifications
+
+  * badge site-admin
 * param notify_authors boolean: False disables email notifications to authors
-  (paper administrators only)
+
+  * badge paper-admin
 * param reason string: Optional text included in notification emails
 * param ?json string
 * param ?upload upload_token: Upload token for large input file
@@ -144,10 +155,12 @@ to `0`.
 Delete the submission specified by `p`, a submission ID.
 
 * param ?dry_run boolean: True checks input for errors, but does not save changes
-* param ?notify boolean: False disables all email notifications (site
-  administrators only)
+* param ?notify boolean: False disables all email notifications
+
+  * badge site-admin
 * param ?notify_authors boolean: False disables email notifications to authors
-  (paper administrators only)
+
+  * badge paper-admin
 * param ?reason string: Optional text included in notification emails
 * param ?if_unmodified_since string: Don’t delete if modified since this time
 * response ?dry_run boolean: True for `dry_run` requests
@@ -210,9 +223,15 @@ applied to all papers returned by the `q` search query.
 
 
 * param dry_run boolean: True checks input for errors, but does not save changes
-* param disable_users boolean: True disables any newly-created users (administrators only)
-* param add_topics boolean: True automatically adds topics from input papers (administrators only)
-* param notify boolean: False does not notify contacts of changes (administrators only)
+* param disable_users boolean: True disables any newly-created users
+
+  * badge site-admin
+* param add_topics boolean: True automatically adds topics from input papers
+
+  * badge site-admin
+* param notify boolean: False does not notify contacts of changes
+
+  * badge site-admin
 * param ?json string
 * param ?upload upload_token: Defines upload token for large input file
 * param ?q search_string: Search query for match requests

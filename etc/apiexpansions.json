@@ -10,7 +10,7 @@
   },
   {
     "name": "paper", "post": true, "merge": true,
-    "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+json ?forceShow",
+    "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?=json ?forceShow *",
     "response": "?+dry_run +change_list +valid ?+pid ?paper"
   },
   {
@@ -43,9 +43,13 @@
     "name": "document", "get": true,
     "tags": ["Documents"], "order": 0,
     "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment",
-    "response_description": "The document contents. The response `Content-Type` header is the document's MIME type (e.g. `application/pdf`).",
     "response_content": {
-      "*/*": { "schema": { "type": "string", "format": "binary" } }
+      "200": {
+        "description": "The document contents. The response `Content-Type` header is the document's MIME type (e.g. `application/pdf`).",
+        "content": {
+          "*/*": { "schema": { "type": "string", "format": "binary" } }
+        }
+      }
     }
   },
   {
@@ -76,8 +80,8 @@
   {
     "name": "assign", "post": true,
     "tags": ["Assignments"],
-    "parameters": "?p ?dry_run format ?<quiet ?<summary ?<csv ?forceShow ?search ?upload ?=assignments",
-    "response": "?dry_run valid ?assignment_count ?assignment_actions ?assignment_pids ?output ?output_mimetype ?output_size ?assignment_header ?assignments ?papers ?ids ?groups ?search_params"
+    "parameters": "?p ?dry_run ?format ?<quiet ?<summary ?<csv ?forceShow ?search ?upload ?json5 ?=assignments",
+    "response": "?dry_run valid ?assignment_count ?assignment_actions ?assignment_pids ?output ?output_mimetype ?output_size ?assignment_header ?assignments ?papers"
   },
   {
     "name": "assigners", "get": true,
@@ -93,7 +97,7 @@
   {
     "name": "autoassign", "post": true,
     "tags": ["Assignments"],
-    "parameters": "autoassigner ?dry_run ?minimal_dry_run q ?t ?u ?disjoint ?param"
+    "parameters": "autoassigner ?dry_run ?minimal_dry_run q ?t ?u ?disjoint ?param ?count"
   },
   {
     "name": "autoassigners", "get": true,
@@ -237,8 +241,12 @@
     "tags": ["Reviews"], "order": 0
   },
   {
-    "name": "reviewhistory", "get": true, "merge": true,
+    "name": "reviews", "get": true,
     "tags": ["Reviews"], "order": 1
+  },
+  {
+    "name": "reviewhistory", "get": true, "merge": true,
+    "tags": ["Reviews"], "order": 2
   },
   {
     "name": "acceptreview", "post": true,
@@ -392,7 +400,7 @@
     "name": "job", "get": true,
     "tags": ["Task management"],
     "parameters": "job ?output",
-    "response": "status update_at ?output ?output_base64 *"
+    "response": "status update_at ?output *"
   },
   {
     "name": "jserror", "post": true,
@@ -400,8 +408,14 @@
     "parameters": "=error ?=url ?=lineno ?=colno ?=stack"
   },
   {
+    "name": "oauthregister", "post": true,
+    "tags": ["Session"],
+    "response_content": { "default": {} }
+  },
+  {
     "name": "oauthtoken", "post": true,
-    "tags": ["Session"]
+    "tags": ["Session"],
+    "response_content": { "default": {} }
   },
   {
     "name": "session", "get": true, "post": true,
@@ -414,8 +428,8 @@
   },
   {
     "name": "whoami", "get": true,
-    "tags": ["Profile"],
-    "response": "?email ?given_name ?family_name ?affiliation"
+    "tags": ["Session"],
+    "response": "email given_name family_name affiliation ?roles"
   },
   {
     "name": "reauth", "post": true,
