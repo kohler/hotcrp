@@ -1,6 +1,11 @@
 HotCRP NEWS
 ===========
 
+## Version 3.3.1 – 14.Jun.2026
+
+* Bug fix: Correct crash in forgot-password redirection
+
+
 ## Version 3.3 – 12.Jun.2026
 
 * Security updates

@@ -1,4 +1,4 @@
-export VERSION=3.3
+export VERSION=3.3.1
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -9,11 +9,26 @@ if [ "$updatenum" != "$schemanum" ]; then
     exit 1
 fi
 
-# check that HOTCRP_VERSION is up to date -- unless first argument is -n
+# check that HOTCRP_VERSION is up to date (unless -n)
 versionnum=`grep 'HOTCRP_VERSION' src/init.php | head -n 1 | sed 's/.*= "//;s/".*//'`
 if [ "$versionnum" != "$VERSION" -a "$1" != "-n" ]; then
     echo "error: HOTCRP_VERSION in src/init.php ($versionnum)" 1>&2
     echo "error: differs from current version ($VERSION)" 1>&2
+    exit 1
+fi
+
+# check that `version` in package.json is up to date (unless -n)
+versionnum=`grep '^  "version": ' package.json | head -n 1 | sed 's/.*: "//;s/".*//'`
+if [ "$versionnum" != "$VERSION" -a "$1" != "-n" ]; then
+    echo "error: version in package.json ($versionnum)" 1>&2
+    echo "error: differs from current version ($VERSION)" 1>&2
+    exit 1
+fi
+
+# check that NEWS.md is up to date (unless -n)
+versionnum=`grep '^## Version '"$VERSION"' –' NEWS.md | head -n 1`
+if [ -z "$versionnum" -a "$1" != "-n" ]; then
+    echo "error: NEWS.md lacks information about $VERSION" 1>&2
     exit 1
 fi
 
