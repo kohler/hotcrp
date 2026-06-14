@@ -12,8 +12,8 @@ HotCRP NEWS
 
     * Patched serious search vulnerability that could expose commenter
       identities. In prior versions, searching for a comment by commenter
-      identity worked even if the comment should be anonymous. GitHub Security
-      Advisory GHSA-vh3x-xwj4-jvqx.
+      identity worked even if the comment should be anonymous. Thanks to Nebula
+      Security for the report. GitHub Security Advisory GHSA-vh3x-xwj4-jvqx.
 
 * Authorization
 
