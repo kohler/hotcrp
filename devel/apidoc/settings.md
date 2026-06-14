@@ -1,11 +1,11 @@
 # Settings
 
-These endpoints fetch and modify site settings.
+These endpoints retrieve and modify site settings.
 
 
 # get /settings
 
-> Fetch site settings
+> Retrieve site settings
 
 This endpoint returns a JSON object defining all site settings. The result can
 be used to examine settings offline, change settings otherwise unavailable

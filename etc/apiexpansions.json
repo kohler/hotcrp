@@ -42,7 +42,11 @@
   {
     "name": "document", "get": true,
     "tags": ["Documents"], "order": 0,
-    "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment"
+    "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment",
+    "response_description": "The document contents. The response `Content-Type` header is the document's MIME type (e.g. `application/pdf`).",
+    "response_content": {
+      "*/*": { "schema": { "type": "string", "format": "binary" } }
+    }
   },
   {
     "name": "documentlist", "get": true,

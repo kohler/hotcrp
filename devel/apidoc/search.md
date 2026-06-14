@@ -5,7 +5,7 @@ These endpoints perform searches on submissions.
 
 # get /search
 
-> Fetch search results
+> Retrieve search results
 
 Return IDs, and optionally other display fields, of submissions that match a
 search.

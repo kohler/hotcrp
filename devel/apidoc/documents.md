@@ -8,9 +8,9 @@ for input to another API.
 
 # get /document
 
-> Fetch document
+> Retrieve document
 
-Fetch a document and return it in the response body. Specify the document to
+Retrieve a document and return it in the response body. Specify the document to
 return either with the `doc` parameter, which names the document using a pattern
 like `testconf-paper1.pdf`, or the `p`, `dt`, and optional `file` parameters,
 which define the submission ID and submission field and, in the case of fields
@@ -35,9 +35,9 @@ range requests.
 
 # get /documentlist
 
-> Fetch list of documents
+> List documents
 
-Fetch information about documents and document versions accessible to the
+Retrieve information about documents and document versions accessible to the
 requesting user. A request with just the `p=PID` parameter lists all available
 documents currently associated with the submission. To request information about
 a specific submission field, add a `dt` or `doc` parameter. Setting `all=1`

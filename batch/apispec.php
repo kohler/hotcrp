@@ -854,6 +854,14 @@ class APISpec_Batch {
      * @param object $uf
      * @param ?object $dj */
     private function expand_response($x, $uf, $dj) {
+        // Endpoints that return a raw (non-JSON) body, such as `/document`,
+        // declare a literal `response_content` media-type map instead of a list
+        // of JSON response fields.
+        if (isset($uf->response_content)) {
+            $this->apply_raw_response($x, $uf);
+            return;
+        }
+
         $this->cur_fieldf = [];
         $this->cur_fields = [];
         $this->cur_fieldd = [];
@@ -888,6 +896,34 @@ class APISpec_Batch {
         }
 
         $this->apply_response($x, $bprop, $breq);
+    }
+
+    /** Apply a raw (non-JSON) success response from `$uf->response_content`, a
+     * literal OpenAPI media-type map (e.g. `{"*\/*": {"schema": ...}}`). The
+     * `default` error response remains JSON, as for other endpoints.
+     * @param object $x
+     * @param object $uf */
+    private function apply_raw_response($x, $uf) {
+        $x->responses = $x->responses ?? (object) [];
+
+        // default (error) response
+        if (!isset($x->responses->default)) {
+            $x->responses->default = (object) [
+                "description" => "",
+                "content" => (object) [
+                    "application/json" => (object) [
+                        "schema" => $this->reference_common_schema("error_response")
+                    ]
+                ]
+            ];
+        }
+
+        // 200 raw response
+        $resp200 = $x->responses->{"200"} = $x->responses->{"200"} ?? (object) [];
+        if ($this->override_response || ($resp200->description ?? "") === "") {
+            $resp200->description = $uf->response_description ?? "";
+        }
+        $resp200->content = self::deep_clone($uf->response_content);
     }
 
     private static function deep_clone($x) {

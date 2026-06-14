@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2026-02-07:ca0f595a8",
+        "version": "2026-06-12:14b684fb6",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. Use this to work around URL length limits.\n"
     },
@@ -20,8 +20,8 @@
     "paths": {
         "/{p}/paper": {
             "get": {
-                "summary": "Fetch submission",
-                "description": "Fetch a submission object specified by `p`, a submission ID. The submission\nobject is returned in the `paper` response property. Error messages—for\ninstance, about permission errors or nonexistent submissions—are returned in\n`message_list`.\n",
+                "summary": "Retrieve submission",
+                "description": "Retrieve a submission object specified by `p`, a submission ID. The submission\nobject is returned in the `paper` response property. Error messages—for\ninstance, about permission errors or nonexistent submissions—are returned in\n`message_list`.\n",
                 "operationId": "paper",
                 "tags": [
                     "Submissions"
@@ -314,7 +314,7 @@
                                             "description": "True if the modification was valid"
                                         },
                                         "pid": {
-                                            "type": "integer",
+                                            "$ref": "#/components/schemas/pid",
                                             "description": "ID of modified submission"
                                         },
                                         "paper": {
@@ -341,8 +341,8 @@
         },
         "/papers": {
             "get": {
-                "summary": "Fetch multiple submissions",
-                "description": "Fetch submission objects matching a search.\n\nThe search is specified in the `q` parameter (and other search parameters,\nsuch as `t` and `qt`). All matching visible submissions are returned, as an\narray of submission objects, in the response property `papers`.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like “Submission #1010 does not exist” or “You aren’t\nallowed to view submission #1010”, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
+                "summary": "Retrieve multiple submissions",
+                "description": "Retrieve submission objects matching a search.\n\nThe search is specified in the `q` parameter (and other search parameters,\nsuch as `t` and `qt`). All matching visible submissions are returned, as an\narray of submission objects, in the response property `papers`.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like “Submission #1010 does not exist” or “You aren’t\nallowed to view submission #1010”, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
                 "operationId": "papers",
                 "tags": [
                     "Submissions"
@@ -586,8 +586,8 @@
         },
         "/{p}/share": {
             "get": {
-                "summary": "Fetch share link",
-                "description": "Fetch the share link for a submission. This link can be accessed by users not\nsigned in to HotCRP; it grants view-only access to the submission and its\ndocuments. Only authors and administrators can fetch the share link.\n",
+                "summary": "Retrieve share link",
+                "description": "Retrieve the share link for a submission. This link can be accessed by users not\nsigned in to HotCRP; it grants view-only access to the submission and its\ndocuments. Only authors and administrators can fetch the share link.\n",
                 "operationId": "share",
                 "tags": [
                     "Submissions"
@@ -790,8 +790,8 @@
         },
         "/document": {
             "get": {
-                "summary": "Fetch document",
-                "description": "Fetch a document and return it in the response body. Specify the document to\nreturn either with the `doc` parameter, which names the document using a pattern\nlike `testconf-paper1.pdf`, or the `p`, `dt`, and optional `file` parameters,\nwhich define the submission ID and submission field and, in the case of fields\nthat accept multiple documents, the name of the desired file.\n\nThe `hash` and `docid` parameters select a specific version of a document.\n`hash` selects a document by hash, and `docid` by internal document ID.\nResponses to requests with `hash` or `docid` are usually cacheable. Only\nadministrators and authors can select specific document versions.\n\nSuccessful requests (HTTP status code 200) return the requested document as the\nresponse, without any JSON wrapper. Find the document’s MIME type using the\nresponse’s `Content-Type` header. Unsuccessful requests (HTTP status code 300 or\nhigher) usually return a JSON object with `ok` set to `false` and a\n`message_list` describing the error.\n\nThis API understands conditional requests with HTTP headers `If-Match`,\n`If-None-Match`, `If-Modified-Since`, and `If-Unmodified-Since`, and many\nresponses include `ETag` and `Last-Modified` HTTP headers. It also understands\nrange requests.\n\n\n",
+                "summary": "Retrieve document",
+                "description": "Retrieve a document and return it in the response body. Specify the document to\nreturn either with the `doc` parameter, which names the document using a pattern\nlike `testconf-paper1.pdf`, or the `p`, `dt`, and optional `file` parameters,\nwhich define the submission ID and submission field and, in the case of fields\nthat accept multiple documents, the name of the desired file.\n\nThe `hash` and `docid` parameters select a specific version of a document.\n`hash` selects a document by hash, and `docid` by internal document ID.\nResponses to requests with `hash` or `docid` are usually cacheable. Only\nadministrators and authors can select specific document versions.\n\nSuccessful requests (HTTP status code 200) return the requested document as the\nresponse, without any JSON wrapper. Find the document’s MIME type using the\nresponse’s `Content-Type` header. Unsuccessful requests (HTTP status code 300 or\nhigher) usually return a JSON object with `ok` set to `false` and a\n`message_list` describing the error.\n\nThis API understands conditional requests with HTTP headers `If-Match`,\n`If-None-Match`, `If-Modified-Since`, and `If-Unmodified-Since`, and many\nresponses include `ETag` and `Last-Modified` HTTP headers. It also understands\nrange requests.\n\n\n",
                 "operationId": "document",
                 "tags": [
                     "Documents"
@@ -817,27 +817,6 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "default": {
                         "description": "",
                         "content": {
@@ -847,14 +826,25 @@
                                 }
                             }
                         }
+                    },
+                    "200": {
+                        "description": "The document contents. The response `Content-Type` header is the document's MIME type (e.g. `application/pdf`).",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/documentlist": {
             "get": {
-                "summary": "Fetch list of documents",
-                "description": "Fetch information about documents and document versions accessible to the\nrequesting user. A request with just the `p=PID` parameter lists all available\ndocuments currently associated with the submission. To request information about\na specific submission field, add a `dt` or `doc` parameter. Setting `all=1`\nrequests information about past document versions as well as current ones.\n",
+                "summary": "List documents",
+                "description": "Retrieve information about documents and document versions accessible to the\nrequesting user. A request with just the `p=PID` parameter lists all available\ndocuments currently associated with the submission. To request information about\na specific submission field, add a `dt` or `doc` parameter. Setting `all=1`\nrequests information about past document versions as well as current ones.\n",
                 "operationId": "documentlist",
                 "tags": [
                     "Documents"
@@ -927,7 +917,7 @@
         "/formatcheck": {
             "get": {
                 "summary": "Check PDF format",
-                "description": "Run HotCRP’s PDF format checker on a specified document. A human-readable\nresponse is returned in `message_list`. The `problem_fields` response property\nlists the names of any PDF checks that failed; examples include `\"papersize\"`,\n`\"pagelimit\"`, `\"columns\"`, `\"textblock\"`, `\"bodyfontsize\"`, `\"bodylineheight\"`,\nand `\"wordlimit\"`.\n",
+                "description": "Run HotCRP’s PDF format checker on a specified document. A human-readable\nresponse is returned in `message_list`. The `problem_fields` response property\nlists the names of any PDF checks that failed; examples include `\"papersize\"`,\n`\"pagelimit\"`, `\"columns\"`, `\"textblock\"`, `\"bodyfontsize\"`, `\"bodylineheight\"`,\nand `\"wordlimit\"`. The `npages_detail` response property is provided only if the\nrequest’s `detail` parameter is truthy.\n",
                 "operationId": "formatcheck",
                 "tags": [
                     "Documents"
@@ -947,6 +937,14 @@
                     },
                     {
                         "name": "soft",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "detail",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -1001,6 +999,10 @@
                                         },
                                         "docid": {
                                             "$ref": "#/components/schemas/document_id"
+                                        },
+                                        "npages_detail": {
+                                            "type": "object",
+                                            "description": "Number of pages in PDF per page type"
                                         }
                                     }
                                 }
@@ -1023,7 +1025,7 @@
         "/archivecontents": {
             "get": {
                 "summary": "List contents of archive document",
-                "description": "List the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. The\ncontents are returned as a list of string filenames. The `consolidated=1`\nparameter requests an additional `consolidated_listing`, which returns a\npreformatted string that uses `{}` notation to represent subdirectories; for\ninstance, `subdir/{file1.txt, file2.txt}`.\n",
+                "description": "List the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. Returns\nthe list of included filenames in the `archive_contents` property. The\n`summary=1` parameter requests an additional `archive_contents_summary`, which a\npreformatted string that uses `{}` notation to represent subdirectories; for\ninstance, `subdir/{file1.txt, file2.txt}`.\n",
                 "operationId": "archivecontents",
                 "tags": [
                     "Documents"
@@ -1033,13 +1035,13 @@
                         "$ref": "#/components/parameters/p"
                     },
                     {
-                        "name": "consolidated",
+                        "name": "summary",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True requests a `consolidated_listing`"
+                        "description": "True requests `archive_contents_summary`"
                     },
                     {
                         "$ref": "#/components/parameters/doc"
@@ -1055,12 +1057,6 @@
                     },
                     {
                         "$ref": "#/components/parameters/docid"
-                    },
-                    {
-                        "name": "summary",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
                     }
                 ],
                 "responses": {
@@ -1072,9 +1068,7 @@
                                     "type": "object",
                                     "required": [
                                         "ok",
-                                        "archive_contents",
-                                        "listing",
-                                        "consolidated_listing"
+                                        "archive_contents"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1083,18 +1077,16 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "archive_contents": {},
-                                        "archive_contents_summary": {},
-                                        "listing": {
+                                        "archive_contents": {
                                             "type": "array",
                                             "items": {
                                                 "type": "string"
                                             },
                                             "description": "List of archive elements"
                                         },
-                                        "consolidated_listing": {
+                                        "archive_contents_summary": {
                                             "type": "string",
-                                            "description": "Parsed contents of archive"
+                                            "description": "Parsed archive listing"
                                         }
                                     }
                                 }
@@ -1299,7 +1291,7 @@
         },
         "/search": {
             "get": {
-                "summary": "Fetch search results",
+                "summary": "Retrieve search results",
                 "description": "Return IDs, and optionally other display fields, of submissions that match a\nsearch.\n\nThe `q` parameter defines the search. The list of matching submission IDs is\nreturned in the `ids` response property, ordered according to the search.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can modify the\nsearch. `t` defines the collection of searched submissions. `t=viewable` is the\nbroadest; it checks all submissions the user can view. If `t` is not provided,\nHotCRP picks a default based on the user’s roles and the site’s current\nconfiguration. For PC members and chairs, the typical default is `t=s`, which\nsearches complete submissions.\n\n### Display fields\n\nThe `f` and `format` parameters retrieve display fields for each submission in\nthe search result.\n\n`f` defines the display fields to return. An example is `title authors[full]`,\nwhich requests two fields: `title`, and `authors` with the `full` view option.\nThe `/displayfields` API lists available display fields. `format` is either\n`csv` or `html`, and requests CSV or HTML format for the response data.\n\nThe response will contain `fields` and `papers` properties. `fields` is an array\nof objects defining the emitted display fields. Typically, each entry in\n`fields` corresponds to a member of `f`, but some field requests can expand into\nmultiple display fields. `papers` is an array of objects defining the exported\nfields for each matching submission. Each `papers` entry has a `pid` property\nwith the submission ID, and properties corresponding to the `fields`. The\n`papers` entries are in the same order as `ids`. In some cases, the response\nwill have a `statistics` property defining overall statistics for some of the\nrequested fields.\n\nThis response might be returned for the search `10-12` with `format=csv` and\n`f=title`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nThe `html` format is unlikely to be useful outside the HotCRP web application.\nThe returned HTML uses elements, tag structures, and class names suitable for\nHotCRP’s internal use, and may change at any time. Furthermore, in some cases\n(such as `f=allpref`), the returned data is compressed into a field-specific\nformat that the HotCRP web application expands.\n\n### Search annotations\n\nThe `groups` response property is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other properties, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nThis response might be returned for the search `10-12 THEN 5-8`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n### More\n\nThe `search_params` response property is a URL-encoded string defining all\nrelevant parameters for the search.\n\nSet the `hotlist` parameter to get a `hotlist` response property, which is\nused by the HotCRP browser Javascript to remember information about a list of\npapers.\n\n",
                 "operationId": "search",
                 "tags": [
@@ -2065,8 +2057,9 @@
                                 "type": "object",
                                 "properties": {
                                     "tags": {},
-                                    "addtags": {},
-                                    "deltags": {},
+                                    "add_tags": {},
+                                    "remove_tags": {},
+                                    "expected_tags": {},
                                     "search": {}
                                 }
                             }
@@ -3045,7 +3038,7 @@
         },
         "/{p}/decision": {
             "get": {
-                "summary": "Fetch submission decision",
+                "summary": "Retrieve submission decision",
                 "operationId": "decision",
                 "tags": [
                     "Submission administration"
@@ -3163,7 +3156,7 @@
         },
         "/{p}/lead": {
             "get": {
-                "summary": "Fetch submission discussion lead",
+                "summary": "Retrieve submission discussion lead",
                 "operationId": "lead",
                 "tags": [
                     "Submission administration"
@@ -3281,7 +3274,7 @@
         },
         "/{p}/manager": {
             "get": {
-                "summary": "Fetch submission administrator",
+                "summary": "Retrieve submission administrator",
                 "operationId": "manager",
                 "tags": [
                     "Submission administration"
@@ -3446,7 +3439,7 @@
         },
         "/{p}/shepherd": {
             "get": {
-                "summary": "Fetch submission shepherd",
+                "summary": "Retrieve submission shepherd",
                 "operationId": "shepherd",
                 "tags": [
                     "Submission administration"
@@ -5323,7 +5316,7 @@
         },
         "/settings": {
             "get": {
-                "summary": "Fetch site settings",
+                "summary": "Retrieve site settings",
                 "description": "This endpoint returns a JSON object defining all site settings. The result can\nbe used to examine settings offline, change settings otherwise unavailable\nthrough the settings UI, or transfer settings to another site.\n\nThe `filter` and `exclude` parameters can filter the returned settings to a\nsubset. For example, when exporting one site’s settings for use by another, you\nmight set `exclude` to `#id OR #deadline`; this excludes settings relevant to a\nconference’s identity (`conference_name`, `site_contact_email`, etc.) or\ndeadlines.\n",
                 "operationId": "settings",
                 "tags": [
@@ -7505,7 +7498,7 @@
     "tags": [
         {
             "name": "Submissions",
-            "description": "These endpoints query and modify HotCRP submissions. They deal with **submission\nobjects**, which are JSON representations of submissions.\n\nEach submission object has an `object` property (set to the constant string\n`\"paper\"`), a `pid` property, and a `status` property. Complete submission\nobjects also have one property per submission field, such as `title`,\n`abstract`, `authors`, `topics`, and `pc_conflicts`. However, methods that fetch\nsubmissions only fill in fields that exist and that the accessing user is\nallowed to see.\n\nSubmission endpoints always return complete submission objects. To select\nspecific properties of submissions, or to fetch computed properties, use the\n`/search` or `/searchaction` endpoints.\n\n\n"
+            "description": "These endpoints query and modify HotCRP submissions. They deal with **submission\nobjects**, which are JSON representations of submissions.\n\nEach submission object has an `object` property (set to the constant string\n`\"paper\"`), a `pid` property, and a `status` property. Complete submission\nobjects also have one property per submission field, such as `title`,\n`abstract`, `authors`, `topics`, and `pc_conflicts`. However, methods that\nreturn submissions only fill in fields that exist and that the accessing user is\nallowed to see.\n\nSubmission endpoints always return complete submission objects. To select\nspecific properties of submissions, or to return computed properties, use the\n`/search` or `/searchaction` endpoints.\n\n\n"
         },
         {
             "name": "Documents",
@@ -7560,7 +7553,7 @@
         },
         {
             "name": "Settings",
-            "description": "These endpoints fetch and modify site settings.\n\n\n"
+            "description": "These endpoints retrieve and modify site settings.\n\n\n"
         },
         {
             "name": "Session"

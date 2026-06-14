@@ -6,20 +6,20 @@ objects**, which are JSON representations of submissions.
 Each submission object has an `object` property (set to the constant string
 `"paper"`), a `pid` property, and a `status` property. Complete submission
 objects also have one property per submission field, such as `title`,
-`abstract`, `authors`, `topics`, and `pc_conflicts`. However, methods that fetch
-submissions only fill in fields that exist and that the accessing user is
+`abstract`, `authors`, `topics`, and `pc_conflicts`. However, methods that
+return submissions only fill in fields that exist and that the accessing user is
 allowed to see.
 
 Submission endpoints always return complete submission objects. To select
-specific properties of submissions, or to fetch computed properties, use the
+specific properties of submissions, or to return computed properties, use the
 `/search` or `/searchaction` endpoints.
 
 
 # get /{p}/paper
 
-> Fetch submission
+> Retrieve submission
 
-Fetch a submission object specified by `p`, a submission ID. The submission
+Retrieve a submission object specified by `p`, a submission ID. The submission
 object is returned in the `paper` response property. Error messages—for
 instance, about permission errors or nonexistent submissions—are returned in
 `message_list`.
@@ -131,7 +131,7 @@ to `0`.
 * param ?json string
 * param ?upload upload_token: Upload token for large input file
 * response ?dry_run boolean: True for `dry_run` requests
-* response ?pid integer: ID of modified submission
+* response ?pid pid: ID of modified submission
 * response ?paper paper: JSON of modified submission
 * response ?+valid boolean: True if the modification was valid
 * response ?+change_list [string]: List of changed fields
@@ -158,9 +158,9 @@ Delete the submission specified by `p`, a submission ID.
 
 # get /papers
 
-> Fetch multiple submissions
+> Retrieve multiple submissions
 
-Fetch submission objects matching a search.
+Retrieve submission objects matching a search.
 
 The search is specified in the `q` parameter (and other search parameters,
 such as `t` and `qt`). All matching visible submissions are returned, as an
@@ -225,9 +225,9 @@ applied to all papers returned by the `q` search query.
 
 # get /{p}/share
 
-> Fetch share link
+> Retrieve share link
 
-Fetch the share link for a submission. This link can be accessed by users not
+Retrieve the share link for a submission. This link can be accessed by users not
 signed in to HotCRP; it grants view-only access to the submission and its
 documents. Only authors and administrators can fetch the share link.
 

@@ -8,7 +8,7 @@ general-purpose `/assign` endpoint.
 
 # get /{p}/decision
 
-> Fetch submission decision
+> Retrieve submission decision
 
 
 # post /{p}/decision
@@ -18,7 +18,7 @@ general-purpose `/assign` endpoint.
 
 # get /{p}/lead
 
-> Fetch submission discussion lead
+> Retrieve submission discussion lead
 
 
 # post /{p}/lead
@@ -28,7 +28,7 @@ general-purpose `/assign` endpoint.
 
 # get /{p}/manager
 
-> Fetch submission administrator
+> Retrieve submission administrator
 
 
 # post /{p}/manager
@@ -38,7 +38,7 @@ general-purpose `/assign` endpoint.
 
 # get /{p}/shepherd
 
-> Fetch submission shepherd
+> Retrieve submission shepherd
 
 
 # post /{p}/shepherd
