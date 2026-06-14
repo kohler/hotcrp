@@ -504,6 +504,7 @@ class Signin_Page {
         if (strpos($resetcap, "@") !== false && $qreq->valid_post()) {
             $nqreq = (new Qrequest("POST", ["email" => $resetcap]))
                 ->set_conf($qreq->conf())
+                ->set_navigation($qreq->navigation())
                 ->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL))
                 ->approve_token();
             $this->forgot_request($user, $nqreq); // may redirect

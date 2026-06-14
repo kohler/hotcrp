@@ -96,6 +96,32 @@ class Login_Tester {
         }
     }
 
+    function test_reset_request_with_email() {
+        // Entering an *email* (not a reset code) in the `resetpassword` page's
+        // reset-code field triggers the forgot-password flow on a freshly
+        // constructed inner Qrequest. That inner Qrequest must inherit the
+        // outer request's navigation, otherwise the eventual redirect crashes
+        // in Qrequest::redirect() (`$this->_navigation->resolve()` on null).
+        $email = "chair@_.com";
+        $this->conf->invalidate_caches("users");
+
+        $user = Contact::make_email($this->conf, $email);
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
+        $qreq->set_req("resetcap", $email);
+        $result = null;
+        try {
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = $cs->callable("Signin_Page");
+            $signinp->reset_request($user, $qreq, $cs);
+        } catch (Redirection $redir) {
+            $result = $redir;
+        }
+        // With the navigation set on the inner request, the forgot-password
+        // flow redirects back to the resetpassword page rather than crashing.
+        xassert(!!$result);
+        xassert_str_contains($result->url, "resetpassword");
+    }
+
     function test_login_placeholder() {
         $email = "scapegoat2@baa.com";
         Contact::make_keyed($this->conf, [
