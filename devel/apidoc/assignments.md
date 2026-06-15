@@ -63,42 +63,129 @@ with refreshed tag and status information for the affected submissions. This
 lets a client apply an assignment and update a displayed submission list in a
 single round trip.
 
-* param ?p pid: If set, restrict the operation to this submission: assignments naming any other submission are silently ignored. Handy for committing one submission’s worth of changes from a larger assignment.
-* param ?dry_run boolean: If true, parse and validate the assignment and report any errors, but make no database changes. `valid` still reports whether the assignment would have succeeded.
-* param ?assignments string: Assignment data as JSON or CSV, for requests that do not send it as the body. The value is parsed as JSON if it begins with `[` or `{`, and as CSV otherwise.
-* param ?upload upload_token: Upload token for assignment data uploaded earlier via the [upload API](#post-upload). The uploaded file may be JSON or CSV.
-* param ?json5 boolean: If true, JSON assignment data may use [JSON5](https://json5.org/) syntax, including comments, trailing commas, and unquoted keys.
-* param ?format =json|csv|summary|none: How much detail to include in the response. `json` (the default) lists each atomic assignment as an object (see `assignment_header` and `assignments`); `csv` returns the same rows as CSV text (see `output`); `summary` returns only the distinct actions and affected submissions (`assignment_actions`, `assignment_pids`); `none` returns only `assignment_count`.
-* param ?forceShow boolean: An administrator’s own conflicts are overridden by default; set `forceShow=false` to respect them instead.
-* param ?search search_parameter_specification: A search to evaluate after the assignment is applied. When supplied on a successful, non-dry-run request, the response gains the search results (`ids`, `groups`, `search_params`) and refreshed per-submission tag and status information (`papers`).
-* response valid boolean: True if the assignment parsed and validated with no errors. On a non-dry-run request, `true` additionally means the changes were committed; `false` means nothing was changed.
-* response ?dry_run boolean: Present and true when the request was a dry run.
-* response ?assignment_count integer: Number of atomic assignments performed (or, for a dry run, that would be performed). Present only when the assignment is valid.
-* response ?assignment_actions [string]: Distinct action names that were performed.
+* param ?assignments string
 
-  * condition format=summary
-* response ?assignment_pids [pid]: IDs of the submissions affected by the assignment.
+    Assignment data as JSON or CSV, for requests that do not send it as the
+    body. The value is parsed as JSON if it begins with `[` or `{`, and as CSV
+    otherwise.
 
-  * condition format=summary
-* response ?output string: The atomic assignments rendered as CSV text, including a header row.
+* param ?upload upload_token
 
-  * condition format=csv
-* response ?output_mimetype =text/csv: MIME type of `output`; always `text/csv`.
+    Upload token for assignment data uploaded earlier via the [upload
+    API](#post-upload). The uploaded file may be JSON or CSV.
 
-  * condition format=csv
-* response ?output_size integer: Length of `output` in bytes.
+* param ?json5 boolean
 
-  * condition format=csv
-* response ?assignment_header [string]: Column names describing the fields of each `assignments` row.
+    If true, JSON assignment data may use [JSON5](https://json5.org/) syntax,
+    including comments, trailing commas, and unquoted keys.
 
-  * condition format=json
-* response ?assignments [object]: The atomic assignments, each an object keyed by the names in `assignment_header`. Returned by default.
+* param ?dry_run boolean
 
-  * condition format=json
+    If true, parse and validate the assignment and report any errors, but make
+    no database changes. `valid` still reports whether the assignment would have
+    succeeded.
+
+* param ?p pid
+
+    If set, restrict the operation to this submission: assignments naming any
+    other submission are silently ignored. Handy for committing one submission’s
+    worth of changes from a larger assignment.
+
+* param ?format =json|csv|summary|none
+
+    How much detail to include in the response. `json` (the default) lists each
+    atomic assignment as an object (see `assignment_header` and `assignments`);
+    `csv` returns the same rows as CSV text (see `output`); `summary` returns
+    only the distinct actions and affected submissions (`assignment_actions`,
+    `assignment_pids`); `none` returns only `assignment_count`.
+
+* param ?forceShow boolean
+
+    An administrator’s own conflicts are overridden by default; set
+    `forceShow=false` to respect them instead.
+
+* param ?search search_parameter_specification
+
+    A search to evaluate after the assignment is applied. When supplied on a
+    successful, non-dry-run request, the response gains the search results
+    (`ids`, `groups`, `search_params`) and refreshed per-submission tag and
+    status information (`papers`).
+
+* response valid boolean
+
+    True if the assignment parsed and validated with no errors. On a non-dry-run
+    request, `true` additionally means the changes were committed; `false` means
+    nothing was changed.
+
+* response ?dry_run boolean
+
+    Present and true when the request was a dry run.
+
+* response ?assignment_count integer
+
+    Number of atomic assignments performed (or, for a dry run, that would be
+    performed).
+
+    * condition valid
+
+* response ?assignment_header [string]
+
+    Column names describing the fields of each `assignments` row.
+
+    * condition valid
+    * condition format=json
+
+* response ?assignments [object]
+
+    The atomic assignments, each an object keyed by the names in
+    `assignment_header`.
+
+    * condition valid
+    * condition format=json
+
+* response ?assignment_actions [string]
+
+    Distinct action names that were performed.
+
+    * condition valid
+    * condition format=summary
+
+* response ?assignment_pids [pid]
+
+    IDs of the submissions affected by the assignment.
+
+    * condition valid
+    * condition format=summary
+
+* response ?output string
+
+    The atomic assignments rendered as CSV text, including a header row.
+
+    * condition valid
+    * condition format=csv
+
+* response ?output_mimetype =text/csv
+
+    MIME type of `output`; always `text/csv`.
+
+    * condition valid
+    * condition format=csv
+
+* response ?output_size integer
+
+    Length of `output` in bytes.
+
+    * condition valid
+    * condition format=csv
+
 * response_schema search_response.opt
-* response ?papers [tag_response]: Refreshed tag and status information for each submission affected by the assignment, suitable for updating a displayed submission list.
 
-  * condition search
+* response ?papers [tag_response]
+
+    Refreshed tag and status information for each submission affected by the
+    assignment, suitable for updating a displayed submission list.
+
+    * condition search
 
 
 # get /assigners
@@ -148,17 +235,59 @@ returned directly instead, in the same shape as a completed `/job` response.
 * param ?disjoint [string]: Sets of users that must not both be assigned to the same submission. Each value is a comma-separated list of user search strings (IDs, emails, or tags).
 * param ?param [string]: Additional algorithm-specific settings, each formatted `NAME=VALUE`. See [`/autoassigners`](#get-autoassigners) for the settings each algorithm understands.
 * param ?count integer: Convenience setting for the common `count` algorithm parameter (for example, the number of reviews per submission); equivalent to passing `count=N` in `param`.
-* response ?dry_run boolean: Present and true when the request was a dry run.
-* response ?job job_id: Identifier of the background job computing the assignment; present when the response is returned before completion.
-* response ?job_url string: Absolute URL of the [`/job`](#get-job) endpoint for `job`.
-* response status job_status: Job status, using the same vocabulary as [`/job`](#get-job). A successful response carries the computed assignment and reports `done`; a job that ran but failed reports `failed`.
-* response ?exit_status integer: Process exit status of the completed computation; `0` on success.
-* response ?progress string: Human-readable description of the current computation phase.
+
+* response ?dry_run boolean
+
+    Present and true when the request was a dry run.
+
+* response status job_status
+
+    Job status, using the same vocabulary as [`/job`](#get-job). A successful
+    response carries the computed assignment and reports `done`; a job that ran
+    but failed reports `failed`.
+
+* response ?job job_id
+
+    Identifier of the background job computing the assignment; present when the
+    response is returned before completion.
+
+    * condition status=wait|run
+
+* response ?job_url string
+
+    Absolute URL of the [`/job`](#get-job) endpoint for `job`.
+
+    * condition status=wait|run
+
+* response ?exit_status integer
+
+    Process exit status of the completed computation; `0` on success.
+
+    * condition status=done
+
 * response ?assignment_pids [pid]: IDs of the submissions the computed assignment affects.
+
+    * condition status=done
+
 * response ?output string: The computed assignment as CSV text, ready to be replayed through [`/assign`](#post-assign).
+
+    * condition status=done
+
 * response ?output_mimetype =text/csv: MIME type of `output`; always `text/csv`.
+
+    * condition status=done
+
 * response ?output_size integer: Length of `output` in bytes.
+
+    * condition status=done
+
 * response ?output_at integer: UNIX time the output was produced.
+
+    * condition status=done
+
+* response ?progress string
+
+    Human-readable description of the current computation phase.
 
 
 # get /autoassigners

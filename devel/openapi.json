@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2026-06-15:c4ea466e0",
+        "version": "2026-06-15:b18a4a743",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. Use this to work around URL length limits.\n"
     },
@@ -28,16 +28,18 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "forceShow",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "False to not override administrator conflict"
+                        "description": "False to not override administrator conflict",
+                        "x-order": 0
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -91,16 +93,14 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "dry_run",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True checks input for errors, but does not save changes"
+                        "description": "True checks input for errors, but does not save changes",
+                        "x-order": 0
                     },
                     {
                         "name": "notify",
@@ -114,7 +114,8 @@
                             {
                                 "name": "Site admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 1
                     },
                     {
                         "name": "notify_authors",
@@ -128,7 +129,8 @@
                             {
                                 "name": "Paper admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 2
                     },
                     {
                         "name": "reason",
@@ -137,7 +139,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Optional text included in notification emails"
+                        "description": "Optional text included in notification emails",
+                        "x-order": 3
                     },
                     {
                         "name": "if_unmodified_since",
@@ -146,10 +149,16 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Don’t delete if modified since this time"
+                        "description": "Don’t delete if modified since this time",
+                        "x-order": 4
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 5
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 6
                     }
                 ],
                 "responses": {
@@ -214,16 +223,14 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
-                    },
-                    {
                         "name": "dry_run",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True checks input for errors, but does not save changes"
+                        "description": "True checks input for errors, but does not save changes",
+                        "x-order": 0
                     },
                     {
                         "name": "disable_users",
@@ -237,7 +244,8 @@
                             {
                                 "name": "Site admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 1
                     },
                     {
                         "name": "add_topics",
@@ -251,7 +259,8 @@
                             {
                                 "name": "Site admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 2
                     },
                     {
                         "name": "notify",
@@ -265,7 +274,8 @@
                             {
                                 "name": "Site admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 3
                     },
                     {
                         "name": "notify_authors",
@@ -279,7 +289,8 @@
                             {
                                 "name": "Paper admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 4
                     },
                     {
                         "name": "reason",
@@ -288,7 +299,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Optional text included in notification emails"
+                        "description": "Optional text included in notification emails",
+                        "x-order": 5
                     },
                     {
                         "name": "upload",
@@ -297,10 +309,16 @@
                         "schema": {
                             "$ref": "#/components/schemas/upload_token"
                         },
-                        "description": "Upload token for large input file"
+                        "description": "Upload token for large input file",
+                        "x-order": 7
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 8
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 9
                     }
                 ],
                 "requestBody": {
@@ -311,7 +329,8 @@
                                 "type": "object",
                                 "properties": {
                                     "json": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "x-order": 6
                                     }
                                 }
                             }
@@ -339,17 +358,6 @@
                                             "type": "boolean",
                                             "description": "True for `dry_run` requests"
                                         },
-                                        "change_list": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            },
-                                            "description": "List of changed fields"
-                                        },
-                                        "valid": {
-                                            "type": "boolean",
-                                            "description": "True if the modification was valid"
-                                        },
                                         "pid": {
                                             "$ref": "#/components/schemas/pid",
                                             "description": "ID of modified submission"
@@ -357,6 +365,17 @@
                                         "paper": {
                                             "$ref": "#/components/schemas/paper",
                                             "description": "JSON of modified submission"
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the modification was valid"
+                                        },
+                                        "change_list": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of changed fields"
                                         }
                                     }
                                 }
@@ -392,28 +411,36 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Get warnings for missing submissions"
+                        "description": "Get warnings for missing submissions",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/q"
+                        "$ref": "#/components/parameters/q",
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/t"
+                        "$ref": "#/components/parameters/t",
+                        "x-order": 2
                     },
                     {
-                        "$ref": "#/components/parameters/qt"
+                        "$ref": "#/components/parameters/qt",
+                        "x-order": 3
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
+                        "$ref": "#/components/parameters/scoresort",
+                        "x-order": 4
                     },
                     {
-                        "$ref": "#/components/parameters/sort"
+                        "$ref": "#/components/parameters/sort",
+                        "x-order": 5
                     },
                     {
-                        "$ref": "#/components/parameters/reviewer"
+                        "$ref": "#/components/parameters/reviewer",
+                        "x-order": 6
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow"
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 7
                     }
                 ],
                 "responses": {
@@ -476,7 +503,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True checks input for errors, but does not save changes"
+                        "description": "True checks input for errors, but does not save changes",
+                        "x-order": 0
                     },
                     {
                         "name": "disable_users",
@@ -490,7 +518,8 @@
                             {
                                 "name": "Site admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 1
                     },
                     {
                         "name": "add_topics",
@@ -504,7 +533,8 @@
                             {
                                 "name": "Site admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 2
                     },
                     {
                         "name": "notify",
@@ -518,7 +548,8 @@
                             {
                                 "name": "Site admin only"
                             }
-                        ]
+                        ],
+                        "x-order": 3
                     },
                     {
                         "name": "json",
@@ -526,7 +557,8 @@
                         "required": false,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "x-order": 4
                     },
                     {
                         "name": "upload",
@@ -535,7 +567,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/upload_token"
                         },
-                        "description": "Defines upload token for large input file"
+                        "description": "Defines upload token for large input file",
+                        "x-order": 5
                     },
                     {
                         "name": "q",
@@ -544,7 +577,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_string"
                         },
-                        "description": "Search query for match requests"
+                        "description": "Search query for match requests",
+                        "x-order": 6
                     },
                     {
                         "name": "t",
@@ -553,34 +587,42 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_collection"
                         },
-                        "description": "Collection to search; defaults to `viewable`"
+                        "description": "Collection to search; defaults to `viewable`",
+                        "x-order": 7
                     },
                     {
-                        "$ref": "#/components/parameters/qt"
+                        "$ref": "#/components/parameters/qt",
+                        "x-order": 8
                     },
                     {
-                        "$ref": "#/components/parameters/sort"
+                        "$ref": "#/components/parameters/sort",
+                        "x-order": 9
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
+                        "$ref": "#/components/parameters/scoresort",
+                        "x-order": 10
                     },
                     {
-                        "$ref": "#/components/parameters/reviewer"
+                        "$ref": "#/components/parameters/reviewer",
+                        "x-order": 11
                     },
                     {
                         "name": "notify_authors",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 12
                     },
                     {
                         "name": "reason",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 13
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow"
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 14
                     }
                 ],
                 "responses": {
@@ -600,16 +642,16 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for `dry_run` requests"
+                                        },
                                         "papers": {
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/components/schemas/paper"
                                             },
                                             "description": "List of JSON versions of modified papers"
-                                        },
-                                        "dry_run": {
-                                            "type": "boolean",
-                                            "description": "True for `dry_run` requests"
                                         },
                                         "status_list": {
                                             "type": "array",
@@ -646,7 +688,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -706,15 +749,13 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "share",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/share_action"
-                        }
+                        },
+                        "x-order": 0
                     },
                     {
                         "name": "expires_in",
@@ -722,7 +763,12 @@
                         "required": false,
                         "schema": {
                             "type": "integer"
-                        }
+                        },
+                        "x-order": 1
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -786,19 +832,22 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     },
                     {
                         "name": "share",
                         "in": "query",
                         "required": true,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     },
                     {
                         "name": "expires_in",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -850,22 +899,28 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/doc"
+                        "$ref": "#/components/parameters/doc",
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/dt"
+                        "$ref": "#/components/parameters/dt",
+                        "x-order": 2
                     },
                     {
-                        "$ref": "#/components/parameters/file"
+                        "$ref": "#/components/parameters/file",
+                        "x-order": 3
                     },
                     {
-                        "$ref": "#/components/parameters/hash"
+                        "$ref": "#/components/parameters/hash",
+                        "x-order": 4
                     },
                     {
-                        "$ref": "#/components/parameters/docid"
+                        "$ref": "#/components/parameters/docid",
+                        "x-order": 5
                     }
                 ],
                 "responses": {
@@ -903,13 +958,12 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/dt",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/dt"
-                    },
-                    {
-                        "$ref": "#/components/parameters/doc"
+                        "$ref": "#/components/parameters/doc",
+                        "x-order": 1
                     },
                     {
                         "name": "history",
@@ -917,7 +971,12 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 2
+                    },
+                    {
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 3
                     }
                 ],
                 "responses": {
@@ -976,16 +1035,20 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/doc",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/doc"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/dt"
+                        "$ref": "#/components/parameters/dt",
+                        "x-order": 2
                     },
                     {
-                        "$ref": "#/components/parameters/docid"
+                        "$ref": "#/components/parameters/docid",
+                        "x-order": 3
                     },
                     {
                         "name": "soft",
@@ -993,7 +1056,8 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 4
                     },
                     {
                         "name": "detail",
@@ -1001,13 +1065,16 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 5
                     },
                     {
-                        "$ref": "#/components/parameters/file"
+                        "$ref": "#/components/parameters/file",
+                        "x-order": 6
                     },
                     {
-                        "$ref": "#/components/parameters/hash"
+                        "$ref": "#/components/parameters/hash",
+                        "x-order": 7
                     }
                 ],
                 "responses": {
@@ -1019,11 +1086,11 @@
                                     "type": "object",
                                     "required": [
                                         "ok",
+                                        "docid",
                                         "npages",
                                         "nwords",
                                         "problem_fields",
-                                        "has_error",
-                                        "docid"
+                                        "has_error"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1031,6 +1098,9 @@
                                         },
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "docid": {
+                                            "$ref": "#/components/schemas/document_id"
                                         },
                                         "npages": {
                                             "$ref": "#/components/schemas/nullable_int",
@@ -1048,9 +1118,6 @@
                                         },
                                         "has_error": {
                                             "type": "boolean"
-                                        },
-                                        "docid": {
-                                            "$ref": "#/components/schemas/document_id"
                                         },
                                         "npages_detail": {
                                             "type": "object",
@@ -1084,31 +1151,38 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
-                    },
-                    {
                         "name": "summary",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True requests `archive_contents_summary`"
+                        "description": "True requests `archive_contents_summary`",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/doc"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/dt"
+                        "$ref": "#/components/parameters/doc",
+                        "x-order": 2
                     },
                     {
-                        "$ref": "#/components/parameters/file"
+                        "$ref": "#/components/parameters/dt",
+                        "x-order": 3
                     },
                     {
-                        "$ref": "#/components/parameters/hash"
+                        "$ref": "#/components/parameters/file",
+                        "x-order": 4
                     },
                     {
-                        "$ref": "#/components/parameters/docid"
+                        "$ref": "#/components/parameters/hash",
+                        "x-order": 5
+                    },
+                    {
+                        "$ref": "#/components/parameters/docid",
+                        "x-order": 6
                     }
                 ],
                 "responses": {
@@ -1168,15 +1242,13 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
-                    },
-                    {
                         "name": "start",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 0
                     },
                     {
                         "name": "finish",
@@ -1184,7 +1256,8 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 1
                     },
                     {
                         "name": "cancel",
@@ -1192,7 +1265,8 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 2
                     },
                     {
                         "name": "token",
@@ -1200,7 +1274,8 @@
                         "required": false,
                         "schema": {
                             "$ref": "#/components/schemas/upload_token"
-                        }
+                        },
+                        "x-order": 3
                     },
                     {
                         "name": "offset",
@@ -1210,7 +1285,8 @@
                             "type": "integer",
                             "minimum": 0
                         },
-                        "description": "Offset of `blob` in uploaded file"
+                        "description": "Offset of `blob` in uploaded file",
+                        "x-order": 4
                     },
                     {
                         "name": "length",
@@ -1220,7 +1296,8 @@
                             "type": "integer",
                             "minimum": 0
                         },
-                        "description": "Length of `blob` in bytes (must match\nactual length of `blob`)"
+                        "description": "Length of `blob` in bytes (must match\nactual length of `blob`)",
+                        "x-order": 5
                     },
                     {
                         "name": "size",
@@ -1230,7 +1307,8 @@
                             "type": "integer",
                             "minimum": 0
                         },
-                        "description": "Size of uploaded file in bytes"
+                        "description": "Size of uploaded file in bytes",
+                        "x-order": 7
                     },
                     {
                         "name": "dt",
@@ -1239,7 +1317,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/document_type"
                         },
-                        "description": "(start only) Purpose of uploaded document;\ntypically corresponds to a submission field ID"
+                        "description": "(start only) Purpose of uploaded document;\ntypically corresponds to a submission field ID",
+                        "x-order": 8
                     },
                     {
                         "name": "temp",
@@ -1248,7 +1327,12 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "(start only) If true, the uploaded file is\nexpected to be temporary"
+                        "description": "(start only) If true, the uploaded file is\nexpected to be temporary",
+                        "x-order": 9
+                    },
+                    {
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 12
                     }
                 ],
                 "requestBody": {
@@ -1258,13 +1342,17 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "blob": {},
+                                    "blob": {
+                                        "x-order": 6
+                                    },
                                     "mimetype": {
-                                        "$ref": "#/components/schemas/mimetype"
+                                        "$ref": "#/components/schemas/mimetype",
+                                        "x-order": 10
                                     },
                                     "filename": {
                                         "type": "string",
-                                        "description": "(start only) Name of uploaded file"
+                                        "description": "(start only) Name of uploaded file",
+                                        "x-order": 11
                                     }
                                 }
                             }
@@ -1351,10 +1439,12 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/q"
+                        "$ref": "#/components/parameters/q",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/t"
+                        "$ref": "#/components/parameters/t",
+                        "x-order": 1
                     },
                     {
                         "name": "f",
@@ -1363,7 +1453,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Space-separated field definitions"
+                        "description": "Space-separated field definitions",
+                        "x-order": 2
                     },
                     {
                         "name": "format",
@@ -1372,19 +1463,24 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_field_format"
                         },
-                        "description": "Format for returned submission fields (`f`)"
+                        "description": "Format for returned submission fields (`f`)",
+                        "x-order": 3
                     },
                     {
-                        "$ref": "#/components/parameters/qt"
+                        "$ref": "#/components/parameters/qt",
+                        "x-order": 4
                     },
                     {
-                        "$ref": "#/components/parameters/sort"
+                        "$ref": "#/components/parameters/sort",
+                        "x-order": 5
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
+                        "$ref": "#/components/parameters/scoresort",
+                        "x-order": 6
                     },
                     {
-                        "$ref": "#/components/parameters/reviewer"
+                        "$ref": "#/components/parameters/reviewer",
+                        "x-order": 7
                     },
                     {
                         "name": "report",
@@ -1393,7 +1489,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Report defining default view options"
+                        "description": "Report defining default view options",
+                        "x-order": 8
                     },
                     {
                         "name": "warn_missing",
@@ -1402,7 +1499,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Get warnings for missing submissions"
+                        "description": "Get warnings for missing submissions",
+                        "x-order": 9
                     },
                     {
                         "name": "hotlist",
@@ -1411,19 +1509,22 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Get a `hotlist` response property"
+                        "description": "Get a `hotlist` response property",
+                        "x-order": 10
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 11
                     },
                     {
                         "name": "session",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 12
                     }
                 ],
                 "responses": {
@@ -1555,40 +1656,49 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
-                    },
-                    {
                         "name": "action",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Name of action"
+                        "description": "Name of action",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/q"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/t"
+                        "$ref": "#/components/parameters/q",
+                        "x-order": 2
                     },
                     {
-                        "$ref": "#/components/parameters/qt"
+                        "$ref": "#/components/parameters/t",
+                        "x-order": 3
                     },
                     {
-                        "$ref": "#/components/parameters/sort"
+                        "$ref": "#/components/parameters/qt",
+                        "x-order": 4
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort",
+                        "x-order": 5
                     },
                     {
                         "name": "report",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 6
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
+                        "$ref": "#/components/parameters/scoresort",
+                        "x-order": 7
                     },
                     {
-                        "$ref": "#/components/parameters/reviewer"
+                        "$ref": "#/components/parameters/reviewer",
+                        "x-order": 8
                     }
                 ],
                 "responses": {
@@ -1634,40 +1744,49 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
-                    },
-                    {
                         "name": "action",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Name of action"
+                        "description": "Name of action",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/q"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/t"
+                        "$ref": "#/components/parameters/q",
+                        "x-order": 2
                     },
                     {
-                        "$ref": "#/components/parameters/qt"
+                        "$ref": "#/components/parameters/t",
+                        "x-order": 3
                     },
                     {
-                        "$ref": "#/components/parameters/sort"
+                        "$ref": "#/components/parameters/qt",
+                        "x-order": 4
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort",
+                        "x-order": 5
                     },
                     {
                         "name": "report",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 6
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
+                        "$ref": "#/components/parameters/scoresort",
+                        "x-order": 7
                     },
                     {
-                        "$ref": "#/components/parameters/reviewer"
+                        "$ref": "#/components/parameters/reviewer",
+                        "x-order": 8
                     }
                 ],
                 "responses": {
@@ -1940,10 +2059,12 @@
                         "name": "report",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/q.opt"
+                        "$ref": "#/components/parameters/q.opt",
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -2001,10 +2122,12 @@
                         "name": "report",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/q.opt"
+                        "$ref": "#/components/parameters/q.opt",
+                        "x-order": 1
                     }
                 ],
                 "requestBody": {
@@ -2017,7 +2140,9 @@
                                     "display"
                                 ],
                                 "properties": {
-                                    "display": {}
+                                    "display": {
+                                        "x-order": 2
+                                    }
                                 }
                             }
                         }
@@ -2077,7 +2202,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -2155,7 +2281,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "requestBody": {
@@ -2165,11 +2292,21 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "tags": {},
-                                    "add_tags": {},
-                                    "remove_tags": {},
-                                    "expected_tags": {},
-                                    "search": {}
+                                    "tags": {
+                                        "x-order": 1
+                                    },
+                                    "add_tags": {
+                                        "x-order": 2
+                                    },
+                                    "remove_tags": {
+                                        "x-order": 3
+                                    },
+                                    "expected_tags": {
+                                        "x-order": 4
+                                    },
+                                    "search": {
+                                        "x-order": 5
+                                    }
                                 }
                             }
                         }
@@ -2292,10 +2429,12 @@
                                 "properties": {
                                     "tagassignment": {
                                         "type": "string",
-                                        "description": "Comma-separated list of paper IDs and tag assignments"
+                                        "description": "Comma-separated list of paper IDs and tag assignments",
+                                        "x-order": 0
                                     },
                                     "search": {
-                                        "$ref": "#/components/schemas/search_parameter_specification"
+                                        "$ref": "#/components/schemas/search_parameter_specification",
+                                        "x-order": 1
                                     }
                                 }
                             }
@@ -2431,7 +2570,8 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/tag"
-                        }
+                        },
+                        "x-order": 0
                     },
                     {
                         "name": "search",
@@ -2439,7 +2579,8 @@
                         "required": false,
                         "schema": {
                             "$ref": "#/components/schemas/search_parameter_specification"
-                        }
+                        },
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -2532,13 +2673,15 @@
                         "name": "tag",
                         "in": "query",
                         "required": true,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 2
                     }
                 ],
                 "requestBody": {
@@ -2555,7 +2698,8 @@
                                         "type": "array",
                                         "items": {
                                             "$ref": "#/components/schemas/tag_annotation"
-                                        }
+                                        },
+                                        "x-order": 0
                                     }
                                 }
                             }
@@ -2651,7 +2795,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -2700,15 +2845,17 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "tag",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/tag"
-                        }
+                        },
+                        "x-order": 0
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -2757,13 +2904,15 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     },
                     {
                         "name": "u",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -2814,13 +2963,15 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     },
                     {
                         "name": "u",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     }
                 ],
                 "requestBody": {
@@ -2833,7 +2984,9 @@
                                     "pref"
                                 ],
                                 "properties": {
-                                    "pref": {}
+                                    "pref": {
+                                        "x-order": 2
+                                    }
                                 }
                             }
                         }
@@ -2890,31 +3043,14 @@
                 ],
                 "parameters": [
                     {
-                        "name": "p",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/pid"
-                        },
-                        "description": "If set, restrict the operation to this submission: assignments naming any other submission are silently ignored. Handy for committing one submission’s worth of changes from a larger assignment."
-                    },
-                    {
-                        "name": "dry_run",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "If true, parse and validate the assignment and report any errors, but make no database changes. `valid` still reports whether the assignment would have succeeded."
-                    },
-                    {
                         "name": "upload",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "$ref": "#/components/schemas/upload_token"
                         },
-                        "description": "Upload token for assignment data uploaded earlier via the [upload API](#post-upload). The uploaded file may be JSON or CSV."
+                        "description": "Upload token for assignment data uploaded earlier via the [upload\nAPI](#post-upload). The uploaded file may be JSON or CSV.",
+                        "x-order": 1
                     },
                     {
                         "name": "json5",
@@ -2923,7 +3059,28 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "If true, JSON assignment data may use [JSON5](https://json5.org/) syntax, including comments, trailing commas, and unquoted keys."
+                        "description": "If true, JSON assignment data may use [JSON5](https://json5.org/) syntax,\nincluding comments, trailing commas, and unquoted keys.",
+                        "x-order": 2
+                    },
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "If true, parse and validate the assignment and report any errors, but make\nno database changes. `valid` still reports whether the assignment would have\nsucceeded.",
+                        "x-order": 3
+                    },
+                    {
+                        "name": "p",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/pid"
+                        },
+                        "description": "If set, restrict the operation to this submission: assignments naming any\nother submission are silently ignored. Handy for committing one submission’s\nworth of changes from a larger assignment.",
+                        "x-order": 4
                     },
                     {
                         "name": "format",
@@ -2938,7 +3095,8 @@
                                 "none"
                             ]
                         },
-                        "description": "How much detail to include in the response. `json` (the default) lists each atomic assignment as an object (see `assignment_header` and `assignments`); `csv` returns the same rows as CSV text (see `output`); `summary` returns only the distinct actions and affected submissions (`assignment_actions`, `assignment_pids`); `none` returns only `assignment_count`."
+                        "description": "How much detail to include in the response. `json` (the default) lists each\natomic assignment as an object (see `assignment_header` and `assignments`);\n`csv` returns the same rows as CSV text (see `output`); `summary` returns\nonly the distinct actions and affected submissions (`assignment_actions`,\n`assignment_pids`); `none` returns only `assignment_count`.",
+                        "x-order": 5
                     },
                     {
                         "name": "forceShow",
@@ -2947,7 +3105,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "An administrator’s own conflicts are overridden by default; set `forceShow=false` to respect them instead."
+                        "description": "An administrator’s own conflicts are overridden by default; set\n`forceShow=false` to respect them instead.",
+                        "x-order": 6
                     },
                     {
                         "name": "search",
@@ -2956,7 +3115,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_parameter_specification"
                         },
-                        "description": "A search to evaluate after the assignment is applied. When supplied on a successful, non-dry-run request, the response gains the search results (`ids`, `groups`, `search_params`) and refreshed per-submission tag and status information (`papers`)."
+                        "description": "A search to evaluate after the assignment is applied. When supplied on a\nsuccessful, non-dry-run request, the response gains the search results\n(`ids`, `groups`, `search_params`) and refreshed per-submission tag and\nstatus information (`papers`).",
+                        "x-order": 7
                     }
                 ],
                 "requestBody": {
@@ -2968,7 +3128,8 @@
                                 "properties": {
                                     "assignments": {
                                         "type": "string",
-                                        "description": "Assignment data as JSON or CSV, for requests that do not send it as the body. The value is parsed as JSON if it begins with `[` or `{`, and as CSV otherwise."
+                                        "description": "Assignment data as JSON or CSV, for requests that do not send it as the\nbody. The value is parsed as JSON if it begins with `[` or `{`, and as CSV\notherwise.",
+                                        "x-order": 0
                                     }
                                 }
                             }
@@ -2988,17 +3149,42 @@
                                         {
                                             "type": "object",
                                             "properties": {
+                                                "valid": {
+                                                    "type": "boolean",
+                                                    "description": "True if the assignment parsed and validated with no errors. On a non-dry-run\nrequest, `true` additionally means the changes were committed; `false` means\nnothing was changed."
+                                                },
                                                 "dry_run": {
                                                     "type": "boolean",
                                                     "description": "Present and true when the request was a dry run."
                                                 },
-                                                "valid": {
-                                                    "type": "boolean",
-                                                    "description": "True if the assignment parsed and validated with no errors. On a non-dry-run request, `true` additionally means the changes were committed; `false` means nothing was changed."
-                                                },
                                                 "assignment_count": {
                                                     "type": "integer",
-                                                    "description": "Number of atomic assignments performed (or, for a dry run, that would be performed). Present only when the assignment is valid."
+                                                    "description": "Number of atomic assignments performed (or, for a dry run, that would be\nperformed).",
+                                                    "x-conditions": [
+                                                        "valid"
+                                                    ]
+                                                },
+                                                "assignment_header": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": "Column names describing the fields of each `assignments` row.",
+                                                    "x-conditions": [
+                                                        "valid",
+                                                        "format=json"
+                                                    ]
+                                                },
+                                                "assignments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    },
+                                                    "description": "The atomic assignments, each an object keyed by the names in\n`assignment_header`.",
+                                                    "x-conditions": [
+                                                        "valid",
+                                                        "format=json"
+                                                    ]
                                                 },
                                                 "assignment_actions": {
                                                     "type": "array",
@@ -3007,6 +3193,7 @@
                                                     },
                                                     "description": "Distinct action names that were performed.",
                                                     "x-conditions": [
+                                                        "valid",
                                                         "format=summary"
                                                     ]
                                                 },
@@ -3017,6 +3204,7 @@
                                                     },
                                                     "description": "IDs of the submissions affected by the assignment.",
                                                     "x-conditions": [
+                                                        "valid",
                                                         "format=summary"
                                                     ]
                                                 },
@@ -3024,6 +3212,7 @@
                                                     "type": "string",
                                                     "description": "The atomic assignments rendered as CSV text, including a header row.",
                                                     "x-conditions": [
+                                                        "valid",
                                                         "format=csv"
                                                     ]
                                                 },
@@ -3034,6 +3223,7 @@
                                                     ],
                                                     "description": "MIME type of `output`; always `text/csv`.",
                                                     "x-conditions": [
+                                                        "valid",
                                                         "format=csv"
                                                     ]
                                                 },
@@ -3041,27 +3231,8 @@
                                                     "type": "integer",
                                                     "description": "Length of `output` in bytes.",
                                                     "x-conditions": [
+                                                        "valid",
                                                         "format=csv"
-                                                    ]
-                                                },
-                                                "assignment_header": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string"
-                                                    },
-                                                    "description": "Column names describing the fields of each `assignments` row.",
-                                                    "x-conditions": [
-                                                        "format=json"
-                                                    ]
-                                                },
-                                                "assignments": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object"
-                                                    },
-                                                    "description": "The atomic assignments, each an object keyed by the names in `assignment_header`. Returned by default.",
-                                                    "x-conditions": [
-                                                        "format=json"
                                                     ]
                                                 },
                                                 "ids": {
@@ -3099,7 +3270,7 @@
                                                     "items": {
                                                         "$ref": "#/components/schemas/tag_response"
                                                     },
-                                                    "description": "Refreshed tag and status information for each submission affected by the assignment, suitable for updating a displayed submission list.",
+                                                    "description": "Refreshed tag and status information for each submission affected by the\nassignment, suitable for updating a displayed submission list.",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
@@ -3194,7 +3365,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Name of the autoassignment algorithm to run, as listed by [`/autoassigners`](#get-autoassigners)."
+                        "description": "Name of the autoassignment algorithm to run, as listed by [`/autoassigners`](#get-autoassigners).",
+                        "x-order": 0
                     },
                     {
                         "name": "q",
@@ -3203,7 +3375,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_string"
                         },
-                        "description": "Search selecting the submissions to assign."
+                        "description": "Search selecting the submissions to assign.",
+                        "x-order": 1
                     },
                     {
                         "name": "t",
@@ -3212,7 +3385,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_collection"
                         },
-                        "description": "Search collection (submission set) for `q`; defaults to `s`, the complete submissions."
+                        "description": "Search collection (submission set) for `q`; defaults to `s`, the complete submissions.",
+                        "x-order": 2
                     },
                     {
                         "name": "dry_run",
@@ -3221,7 +3395,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "If true, compute and validate the assignment and report errors, but do not perform it. The computed assignment is still returned as `output`."
+                        "description": "If true, compute and validate the assignment and report errors, but do not perform it. The computed assignment is still returned as `output`.",
+                        "x-order": 3
                     },
                     {
                         "name": "minimal_dry_run",
@@ -3230,7 +3405,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Like `dry_run`, but skips extra validation passes. For example, an ordinary dry run reports potential conflicts created by the assignment; a minimal dry run does not."
+                        "description": "Like `dry_run`, but skips extra validation passes. For example, an ordinary dry run reports potential conflicts created by the assignment; a minimal dry run does not.",
+                        "x-order": 4
                     },
                     {
                         "name": "u",
@@ -3242,7 +3418,8 @@
                                 "type": "string"
                             }
                         },
-                        "description": "PC members to consider for assignment; defaults to all PC members. Each value is a user search string—a user ID (`1`), an email (`kohler@g.harvard.edu`), or a tag (`#heavy`)—and may be prefixed with `-` to remove the matching users from the set."
+                        "description": "PC members to consider for assignment; defaults to all PC members. Each value is a user search string—a user ID (`1`), an email (`kohler@g.harvard.edu`), or a tag (`#heavy`)—and may be prefixed with `-` to remove the matching users from the set.",
+                        "x-order": 5
                     },
                     {
                         "name": "disjoint",
@@ -3254,7 +3431,8 @@
                                 "type": "string"
                             }
                         },
-                        "description": "Sets of users that must not both be assigned to the same submission. Each value is a comma-separated list of user search strings (IDs, emails, or tags)."
+                        "description": "Sets of users that must not both be assigned to the same submission. Each value is a comma-separated list of user search strings (IDs, emails, or tags).",
+                        "x-order": 6
                     },
                     {
                         "name": "param",
@@ -3266,7 +3444,8 @@
                                 "type": "string"
                             }
                         },
-                        "description": "Additional algorithm-specific settings, each formatted `NAME=VALUE`. See [`/autoassigners`](#get-autoassigners) for the settings each algorithm understands."
+                        "description": "Additional algorithm-specific settings, each formatted `NAME=VALUE`. See [`/autoassigners`](#get-autoassigners) for the settings each algorithm understands.",
+                        "x-order": 7
                     },
                     {
                         "name": "count",
@@ -3275,7 +3454,8 @@
                         "schema": {
                             "type": "integer"
                         },
-                        "description": "Convenience setting for the common `count` algorithm parameter (for example, the number of reviews per submission); equivalent to passing `count=N` in `param`."
+                        "description": "Convenience setting for the common `count` algorithm parameter (for example, the number of reviews per submission); equivalent to passing `count=N` in `param`.",
+                        "x-order": 8
                     }
                 ],
                 "responses": {
@@ -3300,51 +3480,75 @@
                                             "type": "boolean",
                                             "description": "Present and true when the request was a dry run."
                                         },
+                                        "status": {
+                                            "$ref": "#/components/schemas/job_status",
+                                            "description": "Job status, using the same vocabulary as [`/job`](#get-job). A successful\nresponse carries the computed assignment and reports `done`; a job that ran\nbut failed reports `failed`."
+                                        },
                                         "job": {
                                             "$ref": "#/components/schemas/job_id",
-                                            "description": "Identifier of the background job computing the assignment; present when the response is returned before completion."
+                                            "description": "Identifier of the background job computing the assignment; present when the\nresponse is returned before completion.",
+                                            "x-conditions": [
+                                                "status=wait|run"
+                                            ]
                                         },
                                         "job_url": {
                                             "type": "string",
-                                            "description": "Absolute URL of the [`/job`](#get-job) endpoint for `job`."
-                                        },
-                                        "status": {
-                                            "$ref": "#/components/schemas/job_status",
-                                            "description": "Job status, using the same vocabulary as [`/job`](#get-job). A successful response carries the computed assignment and reports `done`; a job that ran but failed reports `failed`."
+                                            "description": "Absolute URL of the [`/job`](#get-job) endpoint for `job`.",
+                                            "x-conditions": [
+                                                "status=wait|run"
+                                            ]
                                         },
                                         "exit_status": {
                                             "type": "integer",
-                                            "description": "Process exit status of the completed computation; `0` on success."
-                                        },
-                                        "progress": {
-                                            "type": "string",
-                                            "description": "Human-readable description of the current computation phase."
+                                            "description": "Process exit status of the completed computation; `0` on success.",
+                                            "x-conditions": [
+                                                "status=done"
+                                            ]
                                         },
                                         "assignment_pids": {
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/components/schemas/pid"
                                             },
-                                            "description": "IDs of the submissions the computed assignment affects."
+                                            "description": "IDs of the submissions the computed assignment affects.",
+                                            "x-conditions": [
+                                                "status=done"
+                                            ]
                                         },
                                         "output": {
                                             "type": "string",
-                                            "description": "The computed assignment as CSV text, ready to be replayed through [`/assign`](#post-assign)."
+                                            "description": "The computed assignment as CSV text, ready to be replayed through [`/assign`](#post-assign).",
+                                            "x-conditions": [
+                                                "status=done"
+                                            ]
                                         },
                                         "output_mimetype": {
                                             "type": "string",
                                             "enum": [
                                                 "text/csv"
                                             ],
-                                            "description": "MIME type of `output`; always `text/csv`."
+                                            "description": "MIME type of `output`; always `text/csv`.",
+                                            "x-conditions": [
+                                                "status=done"
+                                            ]
                                         },
                                         "output_size": {
                                             "type": "integer",
-                                            "description": "Length of `output` in bytes."
+                                            "description": "Length of `output` in bytes.",
+                                            "x-conditions": [
+                                                "status=done"
+                                            ]
                                         },
                                         "output_at": {
                                             "type": "integer",
-                                            "description": "UNIX time the output was produced."
+                                            "description": "UNIX time the output was produced.",
+                                            "x-conditions": [
+                                                "status=done"
+                                            ]
+                                        },
+                                        "progress": {
+                                            "type": "string",
+                                            "description": "Human-readable description of the current computation phase."
                                         }
                                     }
                                 }
@@ -3424,7 +3628,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -3474,7 +3679,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "requestBody": {
@@ -3487,7 +3693,9 @@
                                     "decision"
                                 ],
                                 "properties": {
-                                    "decision": {}
+                                    "decision": {
+                                        "x-order": 1
+                                    }
                                 }
                             }
                         }
@@ -3542,7 +3750,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -3592,7 +3801,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "requestBody": {
@@ -3605,7 +3815,9 @@
                                     "lead"
                                 ],
                                 "properties": {
-                                    "lead": {}
+                                    "lead": {
+                                        "x-order": 1
+                                    }
                                 }
                             }
                         }
@@ -3660,7 +3872,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -3710,7 +3923,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "requestBody": {
@@ -3723,7 +3937,9 @@
                                     "manager"
                                 ],
                                 "properties": {
-                                    "manager": {}
+                                    "manager": {
+                                        "x-order": 1
+                                    }
                                 }
                             }
                         }
@@ -3778,7 +3994,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -3828,7 +4045,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "requestBody": {
@@ -3841,7 +4059,9 @@
                                     "shepherd"
                                 ],
                                 "properties": {
-                                    "shepherd": {}
+                                    "shepherd": {
+                                        "x-order": 1
+                                    }
                                 }
                             }
                         }
@@ -3896,7 +4116,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -3944,16 +4165,14 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "r",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/rid"
                         },
-                        "description": "Review to return, as a numeric review ID or a display ordinal (`A`)."
+                        "description": "Review to return, as a numeric review ID or a display ordinal (`A`).",
+                        "x-order": 0
                     },
                     {
                         "name": "forceShow",
@@ -3962,7 +4181,12 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Administrators override their own conflicts by default; set `forceShow=false` to respect them."
+                        "description": "Administrators override their own conflicts by default; set `forceShow=false` to respect them.",
+                        "x-order": 1
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -4021,7 +4245,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_string"
                         },
-                        "description": "Search selecting submissions whose reviews to return. Required unless `p` is given."
+                        "description": "Search selecting submissions whose reviews to return. Required unless `p` is given.",
+                        "x-order": 0
                     },
                     {
                         "name": "t",
@@ -4030,7 +4255,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_collection"
                         },
-                        "description": "Search collection for `q`; defaults to the submissions the caller can view."
+                        "description": "Search collection for `q`; defaults to the submissions the caller can view.",
+                        "x-order": 1
                     },
                     {
                         "name": "p",
@@ -4039,7 +4265,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/pid"
                         },
-                        "description": "Return reviews of this single submission instead of running a search."
+                        "description": "Return reviews of this single submission instead of running a search.",
+                        "x-order": 2
                     },
                     {
                         "name": "rq",
@@ -4048,7 +4275,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Review search expression limiting which reviews are returned."
+                        "description": "Review search expression limiting which reviews are returned.",
+                        "x-order": 3
                     },
                     {
                         "name": "u",
@@ -4057,7 +4285,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/email"
                         },
-                        "description": "Return only reviews written by this user. Mutually exclusive with `rq`."
+                        "description": "Return only reviews written by this user. Mutually exclusive with `rq`.",
+                        "x-order": 4
                     },
                     {
                         "name": "reviewer",
@@ -4066,7 +4295,8 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_reviewer"
                         },
-                        "description": "Reviewer viewpoint used to evaluate `rq`."
+                        "description": "Reviewer viewpoint used to evaluate `rq`.",
+                        "x-order": 5
                     },
                     {
                         "name": "forceShow",
@@ -4075,7 +4305,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Administrators override their own conflicts by default; set `forceShow=false` to respect them."
+                        "description": "Administrators override their own conflicts by default; set `forceShow=false` to respect them.",
+                        "x-order": 6
                     }
                 ],
                 "responses": {
@@ -4131,16 +4362,14 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "r",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/rid"
                         },
-                        "description": "Review whose history to return, as a numeric review ID or ordinal."
+                        "description": "Review whose history to return, as a numeric review ID or ordinal.",
+                        "x-order": 0
                     },
                     {
                         "name": "expand",
@@ -4149,7 +4378,12 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "If true, return each version as a complete review object rather than a delta."
+                        "description": "If true, return each version as a complete review object rather than a delta.",
+                        "x-order": 1
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -4215,16 +4449,18 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "r",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/rid"
                         },
-                        "description": "Review whose ratings to return."
+                        "description": "Review whose ratings to return.",
+                        "x-order": 0
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -4298,16 +4534,18 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "r",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/rid"
                         },
-                        "description": "Review to rate."
+                        "description": "Review to rate.",
+                        "x-order": 0
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 2
                     }
                 ],
                 "requestBody": {
@@ -4322,7 +4560,8 @@
                                 "properties": {
                                     "user_rating": {
                                         "type": "string",
-                                        "description": "New rating: a space-separated list of flags, `none`, or (administrators) `clearall`."
+                                        "description": "New rating: a space-separated list of flags, `none`, or (administrators) `clearall`.",
+                                        "x-order": 1
                                     }
                                 }
                             }
@@ -4402,16 +4641,18 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "round",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Review round to assign the review to."
+                        "description": "Review round to assign the review to.",
+                        "x-order": 5
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 8
                     }
                 ],
                 "requestBody": {
@@ -4425,31 +4666,38 @@
                                 ],
                                 "properties": {
                                     "email": {
-                                        "$ref": "#/components/schemas/email"
+                                        "$ref": "#/components/schemas/email",
+                                        "x-order": 0
                                     },
                                     "given_name": {
                                         "type": "string",
-                                        "description": "Reviewer’s first name (used when creating a new account)."
+                                        "description": "Reviewer’s first name (used when creating a new account).",
+                                        "x-order": 1
                                     },
                                     "family_name": {
                                         "type": "string",
-                                        "description": "Reviewer’s last name."
+                                        "description": "Reviewer’s last name.",
+                                        "x-order": 2
                                     },
                                     "name": {
                                         "type": "string",
-                                        "description": "Reviewer’s full name, as an alternative to `given_name`/`family_name`."
+                                        "description": "Reviewer’s full name, as an alternative to `given_name`/`family_name`.",
+                                        "x-order": 3
                                     },
                                     "affiliation": {
                                         "type": "string",
-                                        "description": "Reviewer’s affiliation."
+                                        "description": "Reviewer’s affiliation.",
+                                        "x-order": 4
                                     },
                                     "reason": {
                                         "type": "string",
-                                        "description": "Explanation included in the request email."
+                                        "description": "Explanation included in the request email.",
+                                        "x-order": 6
                                     },
                                     "override": {
                                         "type": "boolean",
-                                        "description": "Administrators only: bypass conflict and refusal checks."
+                                        "description": "Administrators only: bypass conflict and refusal checks.",
+                                        "x-order": 7
                                     }
                                 }
                             }
@@ -4515,16 +4763,18 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "r",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/rid"
                         },
-                        "description": "Numeric review ID of the assignment to accept."
+                        "description": "Numeric review ID of the assignment to accept.",
+                        "x-order": 0
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -4585,16 +4835,18 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "r",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/rid"
                         },
-                        "description": "Numeric review ID of the assignment to decline."
+                        "description": "Numeric review ID of the assignment to decline.",
+                        "x-order": 0
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 2
                     }
                 ],
                 "requestBody": {
@@ -4606,7 +4858,8 @@
                                 "properties": {
                                     "reason": {
                                         "type": "string",
-                                        "description": "Optional explanation, shown to the requester."
+                                        "description": "Optional explanation, shown to the requester.",
+                                        "x-order": 1
                                     }
                                 }
                             }
@@ -4675,16 +4928,14 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "r",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/rid"
                         },
-                        "description": "Numeric review ID to reassign."
+                        "description": "Numeric review ID to reassign.",
+                        "x-order": 0
                     },
                     {
                         "name": "email",
@@ -4693,7 +4944,12 @@
                         "schema": {
                             "$ref": "#/components/schemas/email"
                         },
-                        "description": "Email of the destination account; must be one you are signed in to this session."
+                        "description": "Email of the destination account; must be one you are signed in to this session.",
+                        "x-order": 1
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -4809,7 +5065,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Review token(s) to activate, separated by whitespace or commas, or a JSON array. Omit (or pass none) to clear active tokens."
+                        "description": "Review token(s) to activate, separated by whitespace or commas, or a JSON array. Omit (or pass none) to clear active tokens.",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -4865,19 +5122,22 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "content",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "False omits comment content from response"
+                        "description": "False omits comment content from response",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/c.opt"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 1
+                    },
+                    {
+                        "$ref": "#/components/parameters/c.opt",
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -4932,15 +5192,13 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
                         "name": "override",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 0
                     },
                     {
                         "name": "delete",
@@ -4948,10 +5206,16 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/c"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 12
+                    },
+                    {
+                        "$ref": "#/components/parameters/c",
+                        "x-order": 13
                     }
                 ],
                 "requestBody": {
@@ -4962,36 +5226,48 @@
                                 "type": "object",
                                 "properties": {
                                     "text": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "x-order": 2
                                     },
                                     "tags": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "x-order": 3
                                     },
                                     "topic": {
-                                        "$ref": "#/components/schemas/comment_topic"
+                                        "$ref": "#/components/schemas/comment_topic",
+                                        "x-order": 4
                                     },
                                     "visibility": {
-                                        "$ref": "#/components/schemas/comment_visibility"
+                                        "$ref": "#/components/schemas/comment_visibility",
+                                        "x-order": 5
                                     },
                                     "response": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "x-order": 6
                                     },
                                     "ready": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "x-order": 7
                                     },
                                     "draft": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "x-order": 8
                                     },
                                     "blind": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "x-order": 9
                                     },
                                     "by_author": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "x-order": 10
                                     },
                                     "review_token": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "x-order": 11
                                     },
-                                    "attachment": {}
+                                    "attachment": {
+                                        "x-order": 14
+                                    }
                                 }
                             }
                         }
@@ -5045,7 +5321,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -5094,19 +5371,22 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 0
                     },
                     {
                         "name": "track",
                         "in": "query",
                         "required": true,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     },
                     {
                         "name": "tracker_start_at",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 2
                     }
                 ],
                 "requestBody": {
@@ -5116,7 +5396,9 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "hotlist-info": {}
+                                    "hotlist-info": {
+                                        "x-order": 3
+                                    }
                                 }
                             }
                         }
@@ -5217,9 +5499,15 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "stopall": {},
-                                    "tr": {},
-                                    "has_tr": {}
+                                    "stopall": {
+                                        "x-order": 0
+                                    },
+                                    "tr": {
+                                        "x-order": 1
+                                    },
+                                    "has_tr": {
+                                        "x-order": 2
+                                    }
                                 }
                             }
                         }
@@ -5276,16 +5564,19 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 0
                     },
                     {
-                        "$ref": "#/components/parameters/email"
+                        "$ref": "#/components/parameters/email",
+                        "x-order": 1
                     },
                     {
                         "name": "potential_conflict",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -5344,7 +5635,8 @@
                         "name": "ui",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -5396,7 +5688,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 0
                     }
                 ],
                 "requestBody": {
@@ -5411,10 +5704,18 @@
                                     "clickthrough_time"
                                 ],
                                 "properties": {
-                                    "accept": {},
-                                    "clickthrough_id": {},
-                                    "clickthrough_type": {},
-                                    "clickthrough_time": {}
+                                    "accept": {
+                                        "x-order": 1
+                                    },
+                                    "clickthrough_id": {
+                                        "x-order": 2
+                                    },
+                                    "clickthrough_type": {
+                                        "x-order": 3
+                                    },
+                                    "clickthrough_time": {
+                                        "x-order": 4
+                                    }
                                 }
                             }
                         }
@@ -5467,7 +5768,8 @@
                         "name": "from",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -5522,13 +5824,15 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 0
                     },
                     {
                         "name": "u",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     }
                 ],
                 "requestBody": {
@@ -5541,7 +5845,9 @@
                                     "following"
                                 ],
                                 "properties": {
-                                    "following": {}
+                                    "following": {
+                                        "x-order": 2
+                                    }
                                 }
                             }
                         }
@@ -5599,7 +5905,8 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/components/schemas/job_id"
-                        }
+                        },
+                        "x-order": 0
                     },
                     {
                         "name": "output",
@@ -5613,7 +5920,8 @@
                                 "body"
                             ]
                         },
-                        "description": "Format for job output"
+                        "description": "Format for job output",
+                        "x-order": 1
                     }
                 ],
                 "responses": {
@@ -5684,67 +5992,79 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 0
                     },
                     {
                         "name": "template",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     },
                     {
-                        "$ref": "#/components/parameters/r.opt"
+                        "$ref": "#/components/parameters/r.opt",
+                        "x-order": 2
                     },
                     {
-                        "$ref": "#/components/parameters/email.opt"
+                        "$ref": "#/components/parameters/email.opt",
+                        "x-order": 3
                     },
                     {
                         "name": "given_name",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 4
                     },
                     {
                         "name": "family_name",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 5
                     },
                     {
                         "name": "affiliation",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 6
                     },
                     {
                         "name": "reason",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 7
                     },
                     {
                         "name": "width",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 8
                     },
                     {
                         "name": "text",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 9
                     },
                     {
                         "name": "subject",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 10
                     },
                     {
                         "name": "body",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 11
                     }
                 ],
                 "responses": {
@@ -5794,7 +6114,8 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/email"
+                        "$ref": "#/components/parameters/email",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -5845,25 +6166,29 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/email"
+                        "$ref": "#/components/parameters/email",
+                        "x-order": 0
                     },
                     {
                         "name": "disable",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     },
                     {
                         "name": "enable",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 2
                     },
                     {
                         "name": "sendinfo",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 3
                     }
                 ],
                 "responses": {
@@ -5966,7 +6291,9 @@
                                     "formula"
                                 ],
                                 "properties": {
-                                    "formula": {}
+                                    "formula": {
+                                        "x-order": 0
+                                    }
                                 }
                             }
                         }
@@ -6029,7 +6356,8 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 0
                     },
                     {
                         "name": "filter",
@@ -6038,7 +6366,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Search expression defining settings to include"
+                        "description": "Search expression defining settings to include",
+                        "x-order": 1
                     },
                     {
                         "name": "exclude",
@@ -6047,7 +6376,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Search expression defining settings to exclude"
+                        "description": "Search expression defining settings to exclude",
+                        "x-order": 2
                     }
                 ],
                 "responses": {
@@ -6108,7 +6438,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True checks input for errors, but does not save changes"
+                        "description": "True checks input for errors, but does not save changes",
+                        "x-order": 0
                     },
                     {
                         "name": "reset",
@@ -6116,7 +6447,8 @@
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "x-order": 1
                     },
                     {
                         "name": "filter",
@@ -6125,7 +6457,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Search expression defining settings to include"
+                        "description": "Search expression defining settings to include",
+                        "x-order": 2
                     },
                     {
                         "name": "exclude",
@@ -6134,7 +6467,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Search expression defining settings to exclude"
+                        "description": "Search expression defining settings to exclude",
+                        "x-order": 3
                     },
                     {
                         "name": "filename",
@@ -6143,7 +6477,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "File name for `settings` object (for error messages)"
+                        "description": "File name for `settings` object (for error messages)",
+                        "x-order": 5
                     }
                 ],
                 "requestBody": {
@@ -6155,7 +6490,8 @@
                                 "properties": {
                                     "settings": {
                                         "type": "object",
-                                        "description": "Settings to change"
+                                        "description": "Settings to change",
+                                        "x-order": 4
                                     }
                                 }
                             }
@@ -6417,7 +6753,8 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Whitespace-separated list of preference assignments"
+                        "description": "Whitespace-separated list of preference assignments",
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -6546,7 +6883,8 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "If true, include a success message on success"
+                        "description": "If true, include a success message on success",
+                        "x-order": 0
                     }
                 ],
                 "requestBody": {
@@ -6558,18 +6896,22 @@
                                 "properties": {
                                     "reason": {
                                         "type": "string",
-                                        "description": "Short tag describing why reauthentication is requested"
+                                        "description": "Short tag describing why reauthentication is requested",
+                                        "x-order": 1
                                     },
                                     "email": {
-                                        "$ref": "#/components/schemas/email"
+                                        "$ref": "#/components/schemas/email",
+                                        "x-order": 2
                                     },
                                     "password": {
                                         "type": "string",
-                                        "description": "Account password"
+                                        "description": "Account password",
+                                        "x-order": 3
                                     },
                                     "totpcode": {
                                         "type": "string",
-                                        "description": "Time-based one-time password code, if applicable"
+                                        "description": "Time-based one-time password code, if applicable",
+                                        "x-order": 4
                                     }
                                 }
                             }
@@ -6631,11 +6973,13 @@
                                 "properties": {
                                     "message_list": {
                                         "type": "string",
-                                        "description": "JSON-encoded array of `{status, message}` objects"
+                                        "description": "JSON-encoded array of `{status, message}` objects",
+                                        "x-order": 0
                                     },
                                     "smsg": {
                                         "type": "string",
-                                        "description": "Existing stash identifier to append to"
+                                        "description": "Existing stash identifier to append to",
+                                        "x-order": 1
                                     }
                                 }
                             }
@@ -6721,35 +7065,43 @@
                                 "properties": {
                                     "grant_type": {
                                         "type": "string",
-                                        "description": "`authorization_code` or `refresh_token`"
+                                        "description": "`authorization_code` or `refresh_token`",
+                                        "x-order": 0
                                     },
                                     "code": {
                                         "type": "string",
-                                        "description": "Authorization code (for `authorization_code` grants)"
+                                        "description": "Authorization code (for `authorization_code` grants)",
+                                        "x-order": 1
                                     },
                                     "redirect_uri": {
                                         "type": "string",
-                                        "description": "Redirect URI matching the authorization request"
+                                        "description": "Redirect URI matching the authorization request",
+                                        "x-order": 2
                                     },
                                     "code_verifier": {
                                         "type": "string",
-                                        "description": "PKCE code verifier"
+                                        "description": "PKCE code verifier",
+                                        "x-order": 3
                                     },
                                     "refresh_token": {
                                         "type": "string",
-                                        "description": "Refresh token (for `refresh_token` grants)"
+                                        "description": "Refresh token (for `refresh_token` grants)",
+                                        "x-order": 4
                                     },
                                     "client_id": {
                                         "type": "string",
-                                        "description": "Client identifier"
+                                        "description": "Client identifier",
+                                        "x-order": 5
                                     },
                                     "client_secret": {
                                         "type": "string",
-                                        "description": "Client secret"
+                                        "description": "Client secret",
+                                        "x-order": 6
                                     },
                                     "scope": {
                                         "type": "string",
-                                        "description": "Space-separated requested scopes"
+                                        "description": "Space-separated requested scopes",
+                                        "x-order": 7
                                     }
                                 }
                             }
@@ -6783,27 +7135,33 @@
                                 "properties": {
                                     "error": {
                                         "type": "string",
-                                        "description": "Error message"
+                                        "description": "Error message",
+                                        "x-order": 0
                                     },
                                     "url": {
                                         "type": "string",
-                                        "description": "URL where the error occurred"
+                                        "description": "URL where the error occurred",
+                                        "x-order": 1
                                     },
                                     "lineno": {
                                         "type": "integer",
-                                        "description": "Line number"
+                                        "description": "Line number",
+                                        "x-order": 2
                                     },
                                     "colno": {
                                         "type": "integer",
-                                        "description": "Column number"
+                                        "description": "Column number",
+                                        "x-order": 3
                                     },
                                     "stack": {
                                         "type": "string",
-                                        "description": "Stack trace"
+                                        "description": "Stack trace",
+                                        "x-order": 4
                                     },
                                     "detail": {
                                         "type": "string",
-                                        "description": "Additional detail (truncated when logged)"
+                                        "description": "Additional detail (truncated when logged)",
+                                        "x-order": 5
                                     }
                                 }
                             }
@@ -6897,7 +7255,8 @@
                         "name": "alertid",
                         "in": "query",
                         "required": true,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 0
                     }
                 ],
                 "responses": {
@@ -6941,37 +7300,43 @@
                 "operationId": "potentialconflicts",
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 0
                     },
                     {
                         "name": "sclass",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 1
                     },
                     {
                         "name": "*has_authors",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 2
                     },
                     {
                         "name": "*authors",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 3
                     },
                     {
                         "name": "*collaborators",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 4
                     },
                     {
                         "name": "*json",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {},
+                        "x-order": 5
                     }
                 ],
                 "responses": {

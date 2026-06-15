@@ -84,6 +84,9 @@ class APISpec_Batch {
     /** @var array<string,string> response_schema name => field it follows (its
      * position among the response fields, for inlining in document order) */
     private $cur_fieldsch_after;
+    /** @var list<string> field names in Markdown document order (authoritative
+     * for output ordering) */
+    private $cur_md_order;
 
     const PT_QUERY = 1;
     const PT_BODY = 2;
@@ -348,6 +351,26 @@ class APISpec_Batch {
         }
     }
 
+    /** Reorder `cur_fieldf` to follow the Markdown document order (`* param` /
+     * `* response` line order). Fields documented in the Markdown come first, in
+     * that order; any field known only from apifunctions/apiexpansions keeps its
+     * relative order afterward. */
+    private function apply_md_field_order() {
+        if (empty($this->cur_md_order)) {
+            return;
+        }
+        $ordered = [];
+        foreach ($this->cur_md_order as $name) {
+            if (isset($this->cur_fieldf[$name])) {
+                $ordered[$name] = $this->cur_fieldf[$name];
+            }
+        }
+        foreach ($this->cur_fieldf as $name => $f) {
+            $ordered[$name] = $f;
+        }
+        $this->cur_fieldf = $ordered;
+    }
+
     /** @param string $fn */
     private function expand_paths($fn) {
         $methods = [];
@@ -378,6 +401,7 @@ class APISpec_Batch {
             $this->cur_fieldconditions = [];
             $this->cur_fieldsch = [];
             $this->cur_fieldsch_after = [];
+            $this->cur_md_order = [];
             $this->cur_badge = [];
             if ($uf->paper ?? false) {
                 $this->add_field("p", self::F_REQUIRED);
@@ -679,6 +703,7 @@ class APISpec_Batch {
             list($name, $f) = self::parse_field_name($m[2]);
             $this->add_field($name, $f);
             $last_field = $name;
+            $this->cur_md_order[] = $name;
             if ($m[3] !== "") {
                 $info = self::resolve_info($m[3], $name);
                 if (!self::is_empty_object($info)) {
@@ -811,16 +836,21 @@ class APISpec_Batch {
             $this->parse_field_info($uf->parameter_info);
         }
         $this->apply_badges($x);
+        $this->apply_md_field_order();
 
         $params = $bprop = $breq = [];
         $query_plausible = isset($this->cur_fieldf["q"]);
         $has_file = false;
+        $order = 0;
         foreach ($this->cur_fieldf as $name => $f) {
             if ($name === "*"
                 || (($f & self::FM_NONGET) !== 0 && $this->cur_lmethod === "get")
                 || ($f & self::F_DEPRECATED) !== 0) {
                 continue;
             }
+            // Document order, so query params and form body fields can be shown
+            // together (and in order) by a renderer.
+            $idx = $order++;
             if (($f & (self::F_BODY | self::F_FILE)) !== 0) {
                 $schema = $this->cur_fields[$name] ?? null;
                 $bprop[$name] = $this->resolve_info($schema, $name);
@@ -828,6 +858,7 @@ class APISpec_Batch {
                     $bprop[$name]->description = $this->cur_fieldd[$name];
                 }
                 $this->apply_field_metadata($name, $bprop[$name]);
+                $bprop[$name]->{"x-order"} = $idx;
                 if (($f & self::F_REQUIRED) !== 0) {
                     $breq[] = $name;
                 }
@@ -852,6 +883,7 @@ class APISpec_Batch {
                 }
             }
             $this->apply_field_metadata($name, $pobj);
+            $pobj->{"x-order"} = $idx;
             $params[$name] = $pobj;
         }
         if (!empty($params) || isset($x->parameters)) {
@@ -999,6 +1031,7 @@ class APISpec_Batch {
         $this->cur_fieldconditions = [];
         $this->cur_fieldsch = [];
         $this->cur_fieldsch_after = [];
+        $this->cur_md_order = [];
 
         $response = $uf->response ?? [];
         if (is_string($response)) {
@@ -1014,6 +1047,7 @@ class APISpec_Batch {
         if (isset($uf->response_info)) {
             $this->parse_field_info($uf->response_info);
         }
+        $this->apply_md_field_order();
 
         $bprop = $breq = [];
         foreach ($this->cur_fieldf as $name => $f) {
