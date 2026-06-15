@@ -1,6 +1,16 @@
 # Search
 
-These endpoints perform searches on submissions.
+These endpoints run submission **searches** and manage the machinery around
+them: saved (named) searches, the display options that control how a result list
+is shown, search-box completions, formula graphs, and bulk **search actions**.
+
+A search is written as a HotCRP **search string** — the same syntax as the web
+search box — in the `q` parameter, and runs against a **collection** of
+submissions named by `t` (for example `t=s` for complete submissions, or
+`t=viewable` for everything the caller can see). [`/search`](#get-search)
+returns the matching submission IDs and, optionally, display fields; it is the
+backbone of every paper list, and several other endpoints (here and in other
+sections) accept the same `q`/`t` parameters to act on a search result.
 
 
 # get /search
@@ -192,3 +202,115 @@ examples include “Download > Review forms (zip)” and “Tag > Add to order�
 can access programmatically via the `/searchaction` API.
 
 * response actions [search_action]: List of available actions
+
+
+# get /viewoptions
+
+> Retrieve display options
+
+Return the **view options** for a report — the fields a result is displayed with
+and how it is sorted. View options are expressed as a HotCRP view string of
+`show:`, `hide:`, and `sort:` terms. `report` selects which display these options
+govern: `pl` is the paper list and `pf` is the paper form.
+
+The response gives the view from several angles: `display_current` is what the
+caller currently sees (the site default plus any of their own session
+adjustments), `display_default` is the site default, and `display_difference`
+expresses the caller’s view as a difference from HotCRP’s built-in default.
+
+* param ?report =pl|pf: Which report’s options to return; `pl` (paper list, the default) or `pf` (paper form).
+* param ?q search_string: A search whose result provides context for evaluating the view.
+* response report =pl|pf: The report these options apply to.
+* response display_current string: The view currently in effect for the caller.
+* response display_default string: The site default view.
+* response display_difference string: The caller’s view as a difference from the built-in default.
+* response display_default_message_list message_list: Diagnostics about the default view.
+
+
+# post /viewoptions
+
+> Set default display options
+
+Save the site default view options for a report. Chair only. Supply the new view
+string in `display`; the response reports the resulting options exactly as
+[`viewoptions` GET](#get-viewoptions) does.
+
+* param ?report =pl|pf: Which report to configure; `pl` (the default) or `pf`.
+* param ?q search_string: A search whose result provides context for evaluating the view.
+* param =display string: The new default view string (`show:`/`hide:`/`sort:` terms).
+* response report =pl|pf: The report these options apply to.
+* response display_current string: The view currently in effect for the caller.
+* response display_default string: The new site default view.
+* response display_difference string: The caller’s view as a difference from the built-in default.
+* response display_default_message_list message_list: Diagnostics about the default view.
+
+
+# get /namedsearch
+
+> List named searches
+
+Return the **named (saved) searches** available to the caller, in the `searches`
+array. PC members only. Each entry has a `name` and its search string `q`, and
+may also carry a `display` hint, a `description`, and `editable` (whether the
+caller may change it). Per-search diagnostics, if any, appear in `message_list`.
+
+* response searches [object]: The caller’s viewable named searches.
+
+
+# post /namedsearch
+
+> Save named searches
+
+Create, rename, retarget, or delete named searches. Changes are supplied as a
+numbered list of structured parameters `named_search/<n>/<field>`, one group per
+search; the fields are `id` (the existing search’s name, or `new` to create
+one), `name`, `search` (the search string), `highlight`, `description`, and
+`delete`. On success the updated list is returned exactly as [`namedsearch`
+GET](#get-namedsearch) returns it.
+
+* param ?=:named_search string: Structured per-search fields, `named_search/<n>/<field>` (see above).
+* response searches [object]: The named searches after the change.
+
+
+# get /searchcompletion
+
+> Retrieve search completions
+
+Return suggested search keywords for the search box, in `searchcompletion`.
+Without arguments the full suggestion set is returned; `category` limits it to a
+single class — for example `sf` (submission fields), `has`, `ss` (saved
+searches), `dec` (decisions), or `round` (review rounds). Most entries are
+completion strings; a few are grouped objects that bundle several related
+suggestions.
+
+* param ?category string: Limit suggestions to one category (e.g. `sf`, `has`, `ss`, `dec`, `round`).
+* response searchcompletion [string|object]: Completion suggestions.
+
+
+# get /graphdata
+
+> Retrieve formula graph data
+
+Return the data behind a **formula graph** (HotCRP’s “Graphs” feature) — for
+instance a scatter plot of one formula against another over a set of
+submissions. `x` (required) and `y` are formula expressions for the axes, and
+`gtype` selects the graph type (such as `scatter`). The submissions to plot come
+from a search: supply `q` (and optionally `t`). Several series can be overlaid by
+numbering the searches `q1`, `q2`, … with optional labels `s1`, `s2`, ….
+
+The response carries the graph in HotCRP’s internal plotting format — the axis
+descriptions (`x`, `y`), a `data_format` code, and the `data` points — intended
+for the HotCRP graphing UI rather than for general consumption.
+
+* param x string: Formula expression for the x-axis.
+* param ?y string: Formula expression for the y-axis.
+* param ?gtype string: Graph type, such as `scatter`.
+* param ?xorder string: Ordering expression for the x-axis.
+* param ?q search_string: Search selecting the submissions to plot.
+* param ?t search_collection: Collection for `q`.
+* param ?s string: Label for the data series.
+* response type object: Description of the graph type.
+* response data_format integer: Code identifying the encoding of `data`.
+* response data: The plotted data points; the exact shape depends on the graph type and `data_format`.
+* response x object: X-axis description (scale, ticks, labels).
+* response y object: Y-axis description (scale, ticks, labels).

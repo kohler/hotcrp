@@ -242,6 +242,45 @@ applied to all papers returned by the `q` search query.
 * badge admin
 
 
+# get /potentialconflicts
+
+> Compute potential PC conflicts
+
+Return the program-committee members who potentially conflict with a submission —
+either because they are an author of it, or because their name, affiliation, or
+collaborators overlap with the submission’s. Authors use this while preparing a
+submission to see who is conflicted; administrators use it to audit declared
+conflicts. It is available to a submission’s authors and to administrators, and
+only when the submission’s PC-conflicts field is present and visible to the
+caller.
+
+Identify the submission with `p`, or pass `p=new` (with an optional `sclass`) to
+analyze a not-yet-created submission.
+
+By default conflicts are computed from the submission’s saved authors and
+collaborators. To preview conflicts for *unsaved* data — as the submission form
+does while an author edits — supply prospective values instead, in one of two
+ways:
+
+* a `json` object with `authors` and/or `collaborators` members; or
+* submission-form fields: `collaborators` text, and author entries as
+  `authors:<n>:<field>` together with `has_authors=1`.
+
+Each entry in `potential_conflicts` carries the conflicting PC member’s `uid` and
+`email` and a `type`: `author` when they author the submission, or
+`potentialconflict` for a name/affiliation/collaborator match. A
+`potentialconflict` entry also includes a `description` (plain-text explanation)
+and a `tooltip` (HTML).
+
+* param ?p pid: Submission to analyze; use `new` for an unsaved submission.
+* param ?sclass string: Submission class, used when `p=new`.
+* param ?json string: JSON object of prospective `authors` and/or `collaborators` to analyze instead of the saved submission.
+* param ?collaborators string: Prospective collaborators text (a form-field alternative to `json`).
+* param ?:authors string: Prospective author fields, `authors:<n>:<field>` (a form-field alternative to `json`).
+* param ?has_authors boolean: Set when supplying `authors:<n>:<field>` fields.
+* response potential_conflicts [object]: The potentially-conflicted PC members.
+
+
 # get /{p}/share
 
 > Retrieve share link

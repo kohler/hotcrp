@@ -96,7 +96,7 @@ class APISpec_Batch {
         "Submissions", "Documents", "Search", "Tags", "Review preferences",
         "Assignments", "Submission administration",
         "Reviews", "Comments",
-        "Meeting tracker", "Users", "Profile",
+        "Meeting tracker", "Users", "Account",
         "Notifications", "Task management",
         "Site information", "Site administration", "Settings",
         "Session"
@@ -332,6 +332,10 @@ class APISpec_Batch {
                 $f |= self::F_SUFFIX;
             } else if ($p[$i] === "<") {
                 $f |= self::F_DEPRECATED;
+            } else if ($p[$i] === "*" && $i !== strlen($p) - 1) {
+                // location-flexible marker (as in the spec validator); strip it
+                // unless it is the standalone `*` catch-all field name
+                $f &= ~(self::F_REQUIRED | self::F_DEFAULT);
             } else {
                 break;
             }
@@ -901,6 +905,10 @@ class APISpec_Batch {
             $xbschema = $bodyj->schema = $bodyj->schema ?? (object) [];
             $xbschema->type = "object";
             $this->apply_body_parameters($xbschema, $bprop, $breq, $formtype);
+            // a `*` field means additional (unlisted) parameters are accepted
+            if (isset($this->cur_fieldf["*"])) {
+                $xbschema->additionalProperties = true;
+            }
         }
     }
 
@@ -1197,6 +1205,11 @@ class APISpec_Batch {
             $respb = $rsch[count($rsch) - 1];
         } else {
             $rsch[] = $respb = (object) ["type" => "object"];
+        }
+
+        // a `*` field means the response may include unlisted values
+        if (isset($this->cur_fieldf["*"])) {
+            $respb->additionalProperties = true;
         }
 
         // required properties

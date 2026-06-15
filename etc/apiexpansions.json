@@ -35,7 +35,7 @@
 
   {
     "name": "share", "get": true, "post": true, "delete": true,
-    "tags": ["Submissions"], "order": 2,
+    "tags": ["Submissions"], "order": 3,
     "parameters": "+share ?+expires_in"
   },
 
@@ -335,7 +335,7 @@
   },
   {
     "name": "clickthrough", "post": true,
-    "tags": ["Profile"],
+    "tags": ["Account"],
     "parameters": "?p ?=accept =clickthrough_id =clickthrough_type =clickthrough_time"
   },
   {
@@ -448,10 +448,12 @@
   },
   {
     "name": "dismissalert", "post": true,
+    "tags": ["Account"],
     "parameters": "alertid"
   },
   {
     "name": "potentialconflicts", "get": true,
+    "tags": ["Submissions"], "order": 2,
     "parameters": "?sclass ?p ?*has_authors ?:*authors ?*collaborators ?*json",
     "response": "potential_conflicts"
   }

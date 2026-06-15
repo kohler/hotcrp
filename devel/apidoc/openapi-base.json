@@ -1254,7 +1254,7 @@
             "apiToken": {
                 "type": "http",
                 "scheme": "bearer",
-                "description": "API token created via Profile > Developer"
+                "description": "API token created via Account settings > Developer"
             },
             "session": {
                 "type": "apiKey",
