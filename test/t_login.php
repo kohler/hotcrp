@@ -108,6 +108,17 @@ class Login_Tester {
         $user = Contact::make_email($this->conf, $email);
         $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
         $qreq->set_req("resetcap", $email);
+        // Email is disabled in the test environment, so the forgot-password
+        // flow reports an expected "cannot send email" error. Capture it into
+        // the saved-message buffer (committed to the redirect target's session)
+        // instead of letting it reach the terminal. This needs both test_mode 2
+        // (so Conf::msg_on skips the CLI-stderr branch) and a non-null
+        // `_save_msgs` (so the message lands in the buffer rather than being
+        // echoed to stdout).
+        $save_msgs = new ReflectionProperty(Conf::class, "_save_msgs");
+        $save_msgs->setValue($this->conf, []);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
         $result = null;
         try {
             $cs = $this->conf->page_components($user, $qreq);
@@ -115,6 +126,8 @@ class Login_Tester {
             $signinp->reset_request($user, $qreq, $cs);
         } catch (Redirection $redir) {
             $result = $redir;
+        } finally {
+            Navigation::$test_mode = $old_test_mode;
         }
         // With the navigation set on the inner request, the forgot-password
         // flow redirects back to the resetpassword page rather than crashing.
