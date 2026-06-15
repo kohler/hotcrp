@@ -43,8 +43,7 @@ class TextFormat {
         if ($d) {
             return '<div class="formatdescription">'
                 . join(' <span class="barsep">·</span> ', $d) . '</div>';
-        } else {
-            return "";
         }
+        return "";
     }
 }

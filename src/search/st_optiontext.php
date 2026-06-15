@@ -22,9 +22,14 @@ class OptionText_SearchTerm extends Option_SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         if ($this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))
-            && ($ov->data() ?? "") !== "") {
+            && ($v = $ov->data() ?? "") !== "") {
             $this->pregexes = $this->pregexes ?? Text::star_text_pregexes($this->match);
-            return $this->pregexes->match((string) $ov->data());
+            if (isset($this->option->hard_wordlimit)
+                && $this->option->hard_wordlimit > 0
+                && strlen($v) > $this->option->hard_wordlimit) {
+                list($v, ) = count_words_split($v, $this->option->hard_wordlimit);
+            }
+            return $this->pregexes->match($v);
         }
         return false;
     }

@@ -754,14 +754,14 @@ function plural_word(n, singular, plural) {
         return singular;
     } else if (plural != null) {
         return plural;
-    } else {
-        return pluralize(singular);
     }
+    return pluralize(singular);
 }
 
 function plural(n, singular) {
-    if ($.isArray(n))
+    if ($.isArray(n)) {
         n = n.length;
+    }
     return n + " " + plural_word(n, singular);
 }
 
@@ -788,14 +788,21 @@ function commajoin(a, joinword) {
 
 /* exported common_prefix */
 function common_prefix(a, b) {
-    var i = 0;
-    while (i != a.length && i != b.length && a.charAt(i) == b.charAt(i))
+    let i = 0;
+    while (i !== a.length && i !== b.length && a.charCodeAt(i) === b.charCodeAt(i)) {
         ++i;
+    }
     return a.substring(0, i);
 }
 
 function count_words(text) {
-    return ((text || "").match(/[^-\s.,;:<>!?*_~`#|]\S*/g) || []).length;
+    const re = /[^-\s.,;:<>!?*_~`#|]\S*/g;
+    let n = 0;
+    text = text || "";
+    while (re.exec(text) !== null) {
+        ++n;
+    }
+    return n;
 }
 
 function count_words_split(text, wlimit) {
@@ -7290,6 +7297,113 @@ hotcrp.set_review_form = function (rfj) {
 })($);
 
 
+// word limits
+function make_update_words() {
+    const ta = this;
+    if (ta.nodeName !== "TEXTAREA"
+        || !ta.hasAttribute("data-wordlimit")
+        || !hasClass(ta, "need-wordlimit")) {
+        return;
+    }
+    removeClass(ta, "need-wordlimit");
+    const wlimit = +ta.getAttribute("data-wordlimit");
+    let wce;
+    if (ta.hasAttribute("data-wordlimit-details")) {
+        wce = document.getElementById(ta.getAttribute("data-wordlimit-details"));
+    } else {
+        let fd = ta.previousElementSibling;
+        if (!fd || !hasClass(fd, "formatdescription")) {
+            ta.before((fd = $e("div", "formatdescription")));
+        }
+        wce = fd.querySelector(".words");
+        if (!wce) {
+            fd.firstChild && fd.append(" ", $e("span", "barsep", "·"), " ");
+            fd.append((wce = $e("span", "words")));
+        }
+    }
+    if (!wce || wlimit <= 0) {
+        return;
+    }
+    let scheduled = false, swc = null;
+    function setwc() {
+        scheduled = false;
+        const wc = count_words(ta.value);
+        if (wc === swc) {
+            return;
+        }
+        swc = wc;
+        wce.className = "words" + (wlimit < wc ? " wordsover" :
+                                   (wlimit * 0.9 < wc ? " wordsclose" : ""));
+        if (wlimit < wc) {
+            wce.textContent = plural(wc - wlimit, "word") + " over";
+        } else {
+            wce.textContent = plural(wlimit - wc, "word") + " left";
+        }
+        toggleClass(ta, "has-wordlimit-error", wlimit < wc);
+    }
+    function schedule() {
+        if (!scheduled) {
+            scheduled = true;
+            requestAnimationFrame(setwc);
+        }
+    }
+    ta.addEventListener("input", schedule);
+    setwc();
+}
+
+function overlong_truncation_site(e) {
+    let t = e;
+    while (t.nodeType === 1) {
+        let ch = t.lastChild;
+        while (ch && ch.nodeType === 3 && ch.data.trimEnd() === "") {
+            ch = ch.previousSibling;
+        }
+        const nn = ch ? ch.nodeName : null;
+        if (nn === "P"
+            || (nn === "LI" && ch.lastChild.nodeType === 3)) {
+            return ch;
+        } else if (nn === "DIV" || nn === "BLOCKQUOTE" || nn === "UL" || nn === "OL") {
+            t = ch;
+        } else {
+            break;
+        }
+    }
+    return e;
+}
+
+function render_with_overlong(onto, text, args, render_context) {
+    args = args || {};
+    const format = args.format || 0, wl = args.wl || 0, hwl = args.hwl || 0;
+    let aftertexte, wc = 0;
+    if (wl > 0) {
+        wc = count_words(text);
+        if (hwl > 0 && wc > hwl) {
+            const wcx = count_words_split(text, hwl);
+            text = wcx[0].trimEnd() + "… ";
+            aftertexte = $e("span", {class: "overlong-truncation", title: "Truncated for length"}, "✖");
+        }
+        if (wc > wl && ((hwl || 0) <= 0 || wl < hwl)) {
+            const wcx = count_words_split(text, wl),
+                allowede = $e("div", "overlong-allowed"),
+                dividere = $e("div", "overlong-divider",
+                    allowede,
+                    $e("div", "overlong-mark",
+                        $e("div", "overlong-expander",
+                            $e("button", {type: "button", class: "ui js-overlong-expand", "aria-expanded": "false"}, "Show more")))),
+                contente = $e("div", "overlong-content");
+            addClass(onto, "has-overlong");
+            addClass(onto, "overlong-collapsed");
+            onto.prepend(dividere, contente);
+            onto = contente;
+            render_text.onto(allowede, format, wcx[0], render_context);
+        }
+    }
+    render_text.onto(onto, format, text, render_context);
+    aftertexte && overlong_truncation_site(onto).append(aftertexte);
+    return wc;
+}
+
+
 // comments
 (function ($) {
 const vismap = {
@@ -7442,22 +7556,24 @@ function cmt_render_form(cj) {
     cj.by_author && eform.append(hidden_input("by_author", 1));
     cj.response && eform.append(hidden_input("response", cj.response));
 
-    const fmt = render_text.format(cj.format);
+    const fmt = render_text.format(cj.format),
+        etext = $e("textarea", {
+            name: "text", class: "w-text cmttext suggest-emoji mentions need-suggest c",
+            rows: 5, cols: 60, placeholder: "Leave a comment", spellcheck: "true"
+        });
     let efmtdesc = null;
     if (fmt.description || fmt.has_preview) {
         efmtdesc = $e("div", "formatdescription");
         if (fmt.description) {
             efmtdesc.innerHTML = fmt.description;
-            fmt.has_preview && efmtdesc.append(" ", $e("span", "barsep", "·"), " ");
         }
         if (fmt.has_preview) {
-            efmtdesc.append($e("button", {type: "button", class: "link ui js-togglepreview", "data-format": fmt.format || 0}, "Preview"));
+            efmtdesc.firstChild && efmtdesc.append(" ", $e("span", "barsep", "·"), " ");
+            efmtdesc.append($e("button", {type: "button", class: "link ui js-togglepreview"}, "Preview"));
+            etext.setAttribute("data-format", fmt.format || 0);
         }
     }
-    eform.append($e("div", "f-i", efmtdesc, $e("textarea", {
-        name: "text", class: "w-text cmttext suggest-emoji mentions need-suggest c",
-        rows: 5, cols: 60, placeholder: "Leave a comment"
-    })));
+    eform.append($e("div", "f-i", efmtdesc, etext));
 
     // attachments, visibility, tags, readiness
     eform.append(cmt_render_form_prop(cj, cid, btnbox));
@@ -7466,7 +7582,7 @@ function cmt_render_form(cj) {
     const eaa = $e("div", "w-text aabig aab mt-3");
     btnbox.firstChild && eaa.append($e("div", "aabut", btnbox));
     if (cj.response && resp_rounds[cj.response].wl > 0) {
-        eaa.append($e("div", "aabut", $e("div", "words")));
+        eaa.append($e("div", "aabut", $e("div", {class: "words", id: cid + "-wordlimit"})));
     }
     const btext = cj.response ? "Submit" : "Save",
         bnote = cmt_is_editable(cj) ? null : $e("div", "hint", "(admin only)");
@@ -7634,21 +7750,6 @@ function cmt_ready_change() {
     this.form.elements.bsubmit.textContent = this.checked ? "Submit" : "Save draft";
 }
 
-function make_update_words(celt, wlimit) {
-    var wce = celt.querySelector(".words");
-    function setwc() {
-        var wc = count_words(this.value);
-        wce.className = "words" + (wlimit < wc ? " wordsover" :
-                                   (wlimit * 0.9 < wc ? " wordsclose" : ""));
-        if (wlimit < wc)
-            wce.textContent = plural(wc - wlimit, "word") + " over";
-        else
-            wce.textContent = plural(wlimit - wc, "word") + " left";
-    }
-    if (wce)
-        $(celt).find("textarea").on("input", setwc).each(setwc);
-}
-
 function cmt_edit_messages(cj, form) {
     var ul = document.createElement("ul"), msg;
     ul.className = "feedback-list";
@@ -7724,10 +7825,19 @@ function cmt_start_edit(celt, cj) {
     const form = celt.querySelector("form");
     cmt_edit_messages(cj, form);
 
-    $(form.elements.text).text(cj.text || "")
+    const ta = form.elements.text;
+    $(ta).text(cj.text || "")
         .on("keydown", cmt_keydown)
-        .on("hotcrprenderpreview", cmt_render_preview)
         .autogrow();
+    if (cj.response && resp_rounds[cj.response].wl > 0) {
+        ta.setAttribute("data-wordlimit", resp_rounds[cj.response].wl);
+        if (resp_rounds[cj.response].hwl > 0) {
+            ta.setAttribute("data-hard-wordlimit", resp_rounds[cj.response].hwl);
+        }
+        ta.setAttribute("data-wordlimit-details", cj_cid(cj) + "-wordlimit");
+        addClass(ta, "need-wordlimit");
+        make_update_words.call(ta);
+    }
 
     $(form.elements.visibility).val(cj.visibility || "rev")
         .attr("data-default-value", cj.visibility || "rev")
@@ -7765,9 +7875,6 @@ function cmt_start_edit(celt, cj) {
     }
 
     if (cj.response) {
-        if (resp_rounds[cj.response].wl > 0) {
-            make_update_words(celt, resp_rounds[cj.response].wl);
-        }
         var $ready = $(form.elements.ready).on("click", cmt_ready_change);
         cmt_ready_change.call($ready[0]);
     }
@@ -8142,69 +8249,17 @@ function cmt_render(cj, editing) {
     return $(article);
 }
 
-function overlong_truncation_site(e) {
-    let t = e;
-    while (t.nodeType === 1) {
-        let ch = t.lastChild;
-        while (ch && ch.nodeType === 3 && ch.data.trimEnd() === "") {
-            ch = ch.previousSibling;
-        }
-        const nn = ch ? ch.nodeName : null;
-        if (nn === "P"
-            || (nn === "LI" && ch.lastChild.nodeType === 3)) {
-            return ch;
-        } else if (nn === "DIV" || nn === "BLOCKQUOTE" || nn === "UL" || nn === "OL") {
-            t = ch;
-        } else {
-            break;
-        }
-    }
-    return e;
-}
-
 function cmt_render_text(texte, cj, article) {
-    const rrd = cj.response && resp_rounds[cj.response];
-    let text = cj.text || "", aftertexte = null;
-    if (rrd && rrd.wl > 0) {
-        const wc = count_words(text);
-        if (wc > 0 && article) {
-            let cth = article.querySelector("header");
-            cmt_header_dotsep(cth);
-            cth.append($e("div", "cmtwords words" + (wc > rrd.wl ? " wordsover" : ""), plural(wc, "word")));
-        }
-        if ((rrd.hwl || 0) > 0
-            && wc > rrd.hwl) {
-            const wcx = count_words_split(text, rrd.hwl);
-            text = wcx[0].trimEnd() + "… ";
-            aftertexte = $e("span", {class: "overlong-truncation", title: "Truncated for length"}, "✖");
-        }
-        if (wc > rrd.wl
-            && ((rrd.hwl || 0) <= 0
-                || rrd.wl < rrd.hwl)) {
-            const wcx = count_words_split(text, rrd.wl),
-                allowede = $e("div", "overlong-allowed"),
-                dividere = $e("div", "overlong-divider",
-                    allowede,
-                    $e("div", "overlong-mark",
-                        $e("div", "overlong-expander",
-                            $e("button", {type: "button", class: "ui js-overlong-expand", "aria-expanded": "false"}, "Show more")))),
-                contente = $e("div", "overlong-content");
-            addClass(texte, "has-overlong");
-            addClass(texte, "overlong-collapsed");
-            texte.prepend(dividere, contente);
-            texte = contente;
-            render_text.onto(allowede, cj.format, wcx[0], cj);
-        }
+    const rrd = cj.response && resp_rounds[cj.response],
+        wc = render_with_overlong(texte, cj.text || "", {
+            format: cj.format, wl: rrd && rrd.wl, hwl: rrd && rrd.hwl
+        }, cj);
+    if (wc && wc > 0 && article) {
+        let cth = article.querySelector("header");
+        cmt_header_dotsep(cth);
+        cth.append($e("div", "cmtwords words" + (wc > rrd.wl ? " wordsover" : ""), plural(wc, "word")));
     }
-    render_text.onto(texte, cj.format, text, cj);
-    aftertexte && overlong_truncation_site(texte).append(aftertexte);
-    toggleClass(texte, "emoji-only", emojiregex.test(text));
-}
-
-function cmt_render_preview(evt, format, text, dest) {
-    const cj = cj_find(evt.target) || {};
-    cmt_render_text(dest, {object: "comment", format: format, text: text, response: cj.response}, null);
-    return false;
+    toggleClass(texte, "emoji-only", emojiregex.test(cj.text || ""));
 }
 
 function add_comment(cj, editing) {
@@ -8353,30 +8408,31 @@ handle_ui.on("js-overlong-expand", function () {
 // previewing
 (function ($) {
 function switch_preview(evt) {
-    var $j = $(this).parent(), $ta;
-    while ($j.length && ($ta = $j.find("textarea")).length == 0)
-        $j = $j.parent();
-    if ($ta.length) {
-        $ta = $ta.first();
-        if ($ta.is(":visible")) {
-            var format = +this.getAttribute("data-format");
-            $ta.addClass("hidden");
-            $ta.after('<div class="preview"><div class="preview-border" style="margin-bottom:6px"></div><div></div><div class="preview-border" style="margin-top:6px"></div></div>');
-            $ta.trigger("hotcrprenderpreview", [format, $ta[0].value, $ta[0].nextSibling.firstChild.nextSibling]);
-            this.innerHTML = "Edit";
+    let pe = this.parentElement, ta;
+    while (pe && !(ta = pe.querySelector("textarea"))) {
+        pe = pe.parentElement;
+    }
+    if (ta) {
+        if ($(ta).is(":visible")) {
+            const format = +this.getAttribute("data-format");
+            ta.hidden = true;
+            ta.after($e("div", "preview", $e("div", "preview-content")));
+            render_with_overlong(ta.nextSibling.firstChild, ta.value, {
+                format: ta.hasAttribute("data-format") && ta.getAttribute("data-format"),
+                wl: ta.hasAttribute("data-wordlimit") && +ta.getAttribute("data-wordlimit"),
+                hwl: ta.hasAttribute("data-hard-wordlimit") && +ta.getAttribute("data-hard-wordlimit")
+            });
+            this.textContent = "Edit";
         } else {
-            $ta.next().remove();
-            $ta.removeClass("hidden");
-            $ta[0].focus();
-            this.innerHTML = "Preview";
+            ta.nextSibling.remove();
+            ta.hidden = false;
+            ta.focus();
+            this.textContent = "Preview";
         }
     }
     evt.preventDefault();
     handle_ui.stopPropagation(evt);
 }
-$(document).on("hotcrprenderpreview", function (evt, format, value, dest) {
-    render_text.onto(dest, format, value);
-});
 handle_ui.on("js-togglepreview", switch_preview);
 })($);
 
@@ -15634,13 +15690,13 @@ function make_textarea_autogrower(e) {
                 setTimeout(autogrower_retry, timeout, f, e);
                 return;
             }
-            var css = window.getComputedStyle(e);
+            const css = window.getComputedStyle(e);
             minHeight = parseFloat(css.height);
             lineHeight = computed_line_height(css);
             borderPadding = parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
         }
         ++state;
-        var sh = state === 1 ? e : make_shadow(e),
+        let sh = state === 1 ? e : make_shadow(e),
             wh = Math.max(0.8 * window.innerHeight, 4 * lineHeight);
         e.style.height = Math.min(wh, Math.max(sh.scrollHeight + borderPadding, minHeight)) + "px";
     }
@@ -15721,10 +15777,12 @@ function awakenf() {
         hotcrp.suggest.call(this);
     if (hasClass(this, "need-tooltip"))
         hotcrp.tooltip.call(this);
+    if (hasClass(this, "need-wordlimit"))
+        make_update_words.call(this);
 }
 $.fn.awaken = function () {
     this.each(awakenf);
-    this.find(".need-diff-check, .need-autogrow, .need-suggest, .need-tooltip").each(awakenf);
+    this.find(".need-diff-check, .need-autogrow, .need-suggest, .need-tooltip, .need-wordlimit").each(awakenf);
     return this;
 };
 $(function () { $(document.body).awaken(); });

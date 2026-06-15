@@ -1401,9 +1401,16 @@ class Text_ReviewField extends ReviewField {
         if (($fi = $args["format"])) {
             echo $fi->description_preview_html();
         }
-        $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->short_id];
+        $opt = [
+            "id" => $this->short_id,
+            "class" => "w-text need-autogrow need-suggest suggest-emoji",
+            "rows" => $this->display_space, "cols" => 60, "spellcheck" => true
+        ];
         if ($reqstr !== null && $fval !== $reqstr) {
             $opt["data-default-value"] = (string) $fval;
+        }
+        if ($fi) {
+            $opt["data-format"] = $fi->format;
         }
         echo Ht::textarea($this->short_id, $reqstr ?? $fval ?? "", $opt), '</div></div>';
     }

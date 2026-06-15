@@ -2559,6 +2559,7 @@ input[type=password].has-error,
 input[type=date].has-error,
 input[type=number].has-error,
 textarea.has-error,
+textarea.has-wordlimit-error,
 select.has-error {
 	border: 1px solid red;
 	background-color: #fff9f9;
@@ -4801,9 +4802,19 @@ fieldset.s-sf > legend {
 .preview {
 	margin-bottom: 24px;
 }
-.preview-border {
+.preview::before {
+	content: "";
+	display: block;
 	border-top: 1px dashed black;
 	max-width: 720px;
+	padding-bottom: 6px;
+}
+.preview::after {
+	content: "";
+	display: block;
+	border-bottom: 1px dashed black;
+	max-width: 720px;
+	padding-top: 6px;
 }
 .has-overlong {
 	position: relative;

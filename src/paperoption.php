@@ -920,6 +920,9 @@ class PaperOption implements JsonSerializable {
             echo $fi->description_preview_html();
         }
         $class = Ht::add_tokens("w-text need-autogrow", $extra["class"] ?? null);
+        if (($extra["wordlimit"] ?? 0) > 0) {
+            $class .= " need-wordlimit";
+        }
         echo Ht::textarea($this->formid, $reqd, [
                 "id" => $this->readable_formid(),
                 "class" => $pt->control_class($this->formid, $class),
@@ -927,6 +930,7 @@ class PaperOption implements JsonSerializable {
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
                 "data-default-value" => $default_value,
+                "data-format" => $fi ? $fi->format : null,
                 "data-wordlimit" => ($extra["wordlimit"] ?? 0) > 0 ? $extra["wordlimit"] : null,
                 "data-hard-wordlimit" => ($extra["hard_wordlimit"] ?? 0) > 0 ? $extra["hard_wordlimit"] : null
             ]),
@@ -1813,21 +1817,51 @@ class Text_PaperOption extends PaperOption {
         $this->hard_wordlimit = $args->hard_wordlimit ?? 0;
     }
 
+    static function value_string(?PaperValue $ov, $hwl = 0) {
+        $s = $ov ? (string) $ov->data() : "";
+        if ($hwl > 0 && strlen($s) > $hwl) {
+            list($s, ) = count_words_split($s, $hwl);
+        }
+        return $s;
+    }
+
     function value_present(PaperValue $ov) {
         return (string) $ov->data() !== "";
     }
     function value_compare($av, $bv) {
-        $av = $av ? (string) $av->data() : "";
-        $bv = $bv ? (string) $bv->data() : "";
+        $av = self::value_string($av, $this->hard_wordlimit);
+        $bv = self::value_string($bv, $this->hard_wordlimit);
         if ($av === "" || $bv === "") {
             return ($av === "" ? 1 : 0) <=> ($bv === "" ? 1 : 0);
         }
         return $this->conf->collator()->compare($av, $bv);
     }
-
+    function value_check(PaperValue $ov, Contact $user) {
+        if (!$this->value_present($ov)
+            || $this->wordlimit <= 0
+            || strlen($ov->data()) <= $this->wordlimit) {
+            return;
+        }
+        $wc = count_words($ov->data());
+        if ($wc <= $this->wordlimit) {
+            return;
+        }
+        if ($this->hard_wordlimit !== $this->wordlimit) {
+            $ov->append_item(MessageItem::warning_note_at($this->field_key(), "<0>Entry too long; use at most " . plural($this->wordlimit, "word")));
+        }
+        if ($this->hard_wordlimit > 0 && $wc > $this->hard_wordlimit) {
+            $status = MessageSet::URGENT_NOTE;
+            if ($ov->prow->want_submitted()
+                && ($ov->prow->timeSubmitted <= 0
+                    || !$ov->equals($ov->prow->base_option($this->id)))) {
+                $status = MessageSet::ERROR;
+            }
+            $ov->append_item(new MessageItem($status, $this->field_key(), "<0>Entry cannot exceed " . plural($this->hard_wordlimit, "word")));
+        }
+    }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        $x = $ov->data();
-        return $x !== "" ? $x : null;
+        $s = self::value_string($ov, $this->hard_wordlimit);
+        return $s === "" ? null : $s;
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
