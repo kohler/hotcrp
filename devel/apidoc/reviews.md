@@ -184,6 +184,8 @@ proposal.
 * response action =propose|request|token: What happened: `request` (review assigned), `propose` (proposal filed for administrator approval), or `token` (anonymous review token created).
 * response ?review_token string: The review token, present only when `action` is `token`.
 
+    * condition action=token
+
 
 # post /{p}/acceptreview
 

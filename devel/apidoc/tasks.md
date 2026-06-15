@@ -38,6 +38,18 @@ the job failed), then the response uses status code 409 Conflict.
 * response status job_status
 * response update_at integer: UNIX time job was last updated
 * response ?output: Job output
+
+    * condition status=done
+    * condition output
+
 * response ?output_mimetype mimetype: Output mimetype
+
+    * condition status=done
+
 * response ?output_size integer: Length of output
+
+    * condition status=done
+
 * response ?output_at integer: UNIX time job output was set
+
+    * condition status=done

@@ -33,11 +33,29 @@ conflict with that submission and the caller may see its authors.
 * response match boolean: True if an account exactly matching `email` was found.
 * response ?email email: The found account’s email.
 * response ?given_name string: First (given) name.
+
+    * condition email
+
 * response ?family_name string: Last (family) name.
+
+    * condition email
+
 * response ?affiliation string: Affiliation.
+
+    * condition email
+
 * response ?country string: Country code, when set.
+
+    * condition email
+
 * response ?orcid string: ORCID iD, when set.
+
+    * condition email
+
 * response ?potential_conflict string: HTML describing a potential conflict with submission `p`, when requested and applicable.
+
+    * condition email
+    * condition potential_conflict
 
 
 # get /pc

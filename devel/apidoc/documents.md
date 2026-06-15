@@ -10,16 +10,9 @@ for input to another API.
 
 > Retrieve document
 
-Retrieve a document and return it in the response body. Specify the document to
-return either with the `doc` parameter, which names the document using a pattern
-like `testconf-paper1.pdf`, or the `p`, `dt`, and optional `file` parameters,
-which define the submission ID and submission field and, in the case of fields
-that accept multiple documents, the name of the desired file.
-
-The `hash` and `docid` parameters select a specific version of a document.
-`hash` selects a document by hash, and `docid` by internal document ID.
-Responses to requests with `hash` or `docid` are usually cacheable. Only
-administrators and authors can select specific document versions.
+Retrieve a document and return it in the response body. Add `hash` or `docid`
+to retrieve a specific document version; such requests are usually cacheable,
+and only administrators and authors can make them.
 
 Successful requests (HTTP status code 200) return the requested document as the
 response, without any JSON wrapper. Find the document’s MIME type using the
@@ -32,6 +25,23 @@ This API understands conditional requests with HTTP headers `If-Match`,
 responses include `ETag` and `Last-Modified` HTTP headers. It also understands
 range requests.
 
+* param ?doc document_name: Document name, e.g. `testconf-paper1.pdf`.
+
+    * oneof docspec doc
+* param ?p pid: Submission ID. Combine with `dt`, and optionally `file`, to
+  identify a document by submission field.
+
+    * oneof docspec p
+* param ?dt document_type: Submission field holding the document.
+
+  * oneof docspec p
+* param ?file string: For fields that hold multiple documents, the name of the
+  desired file.
+
+  * oneof docspec p
+* param ?hash string: Document version selected by hash.
+* param ?docid document_id: Document version selected by internal document ID.
+
 
 # get /documentlist
 
@@ -40,11 +50,18 @@ range requests.
 Retrieve information about documents and document versions accessible to the
 requesting user. A request with just the `p=PID` parameter lists all available
 documents currently associated with the submission. To request information about
-a specific submission field, add a `dt` or `doc` parameter. Setting `all=1`
+a specific submission field, add a `dt` or `doc` parameter. Setting `history=1`
 requests information about past document versions as well as current ones.
 
+* param ?doc document_name
+
+   * oneof docspec doc
+* param ?p pid
+
+   * oneof docspec p
 * param ?dt
-* param ?doc
+
+   * oneof docspec p
 * param ?history boolean
 * response dt document_type
 * response document_history [document_history_entry]
@@ -62,9 +79,15 @@ and `"wordlimit"`. The `npages_detail` response property is provided only if the
 request’s `detail` parameter is truthy.
 
 * param ?doc document_name
+    * oneof docspec doc
 * param ?p
+    * oneof docspec p
 * param ?dt document_type
+    * oneof docspec p
+* param ?file string
+    * oneof docspec p
 * param ?docid document_id
+* param ?hash
 * param ?soft boolean
 * param ?detail boolean
 * response docid document_id
@@ -73,6 +96,8 @@ request’s `detail` parameter is truthy.
 * response problem_fields [string]
 * response has_error boolean
 * response ?npages_detail object: Number of pages in PDF per page type
+
+    * condition detail
 
 
 # get /archivecontents
@@ -85,9 +110,21 @@ the list of included filenames in the `archive_contents` property. The
 preformatted string that uses `{}` notation to represent subdirectories; for
 instance, `subdir/{file1.txt, file2.txt}`.
 
+* param ?doc document_name
+    * oneof docspec doc
+* param ?p pid
+    * oneof docspec p
+* param ?dt document_type
+    * oneof docspec p
+* param ?file string
+    * oneof docspec p
+* param ?docid
+* param ?hash
 * param ?summary boolean: True requests `archive_contents_summary`
 * response archive_contents [string]: List of archive elements
 * response archive_contents_summary string: Parsed archive listing
+
+    * condition summary
 
 
 # post /upload
@@ -123,21 +160,44 @@ response field represents the ranges of bytes received so far.
 The upload API is only available on sites that have enabled the document
 store.
 
+* param ?p pid
 * param ?start boolean
-* param ?finish boolean
-* param ?cancel boolean
-* param ?token upload_token
-* param ?offset nonnegative_integer: Offset of `blob` in uploaded file
-* param ?length nonnegative_integer: Length of `blob` in bytes (must match
-  actual length of `blob`)
-* param blob
-* param ?size nonnegative_integer: Size of uploaded file in bytes
-* param ?dt document_type: (start only) Purpose of uploaded document;
+
+    Set to true to start a new upload.
+* param ?dt document_type: Purpose of uploaded document;
   typically corresponds to a submission field ID
-* param ?temp boolean: (start only) If true, the uploaded file is
+
+    * condition start
+* param ?temp boolean: If true, the uploaded file is
   expected to be temporary
-* param ?mimetype mimetype: (start only) Type of uploaded file
-* param ?filename string: (start only) Name of uploaded file
+
+    * condition start
+* param ?mimetype mimetype: Type of uploaded file
+
+    * condition start
+* param ?filename string: Name of uploaded file
+
+    * condition start
+* param ?token upload_token
+
+    Token for the ongoing upload. Required unless `start=1`.
+* param blob
+
+    Chunk being uploaded.
+* param ?offset nonnegative_integer: Offset of `blob` in uploaded file.
+
+    * condition blob
+* param ?length nonnegative_integer: Length of `blob` in bytes (must match
+  actual length of `blob`).
+
+    * condition blob
+* param ?size nonnegative_integer: Size of uploaded file in bytes.
+* param ?finish boolean
+
+    Set to true to complete the upload.
+* param ?cancel boolean
+
+    Set to true to cancel an ongoing upload.
 * response token upload_token
 * response dt document_type
 * response filename string

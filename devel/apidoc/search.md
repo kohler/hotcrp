@@ -127,21 +127,29 @@ used by the HotCRP browser Javascript to remember information about a list of
 papers.
 
 
-* param q
+* param q search_string: The search expression.
 * param t
-* param f string: Space-separated field definitions
-* param format search_field_format: Format for returned submission fields (`f`)
 * param qt
 * param sort
 * param scoresort
 * param reviewer
-* param report string: Report defining default view options
-* param warn_missing boolean: Get warnings for missing submissions
-* param hotlist boolean: Get a `hotlist` response property
+* param report string: Report defining default view options.
+* param f string: Space-separated display field definitions.
+* param format search_field_format: Format for returned display fields.
+* param warn_missing boolean: Get warnings for missing submissions.
+* param hotlist boolean: Get a `hotlist` response property.
 * response_schema search_response
 * response ?fields [object]
+
+    * condition format
+
 * response ?papers [object]
+
+    * condition format
+
 * response ?statistics
+
+    * condition format
 
 
 # get /displayfields
@@ -208,17 +216,19 @@ can access programmatically via the `/searchaction` API.
 
 > Retrieve display options
 
-Return the **view options** for a report — the fields a result is displayed with
-and how it is sorted. View options are expressed as a HotCRP view string of
-`show:`, `hide:`, and `sort:` terms. `report` selects which display these options
-govern: `pl` is the paper list and `pf` is the paper form.
+Return the **view options** for a report: the fields a result is displayed
+with and how it is sorted. View options are expressed as a HotCRP view string
+of `show:`, `hide:`, and `sort:` terms. `report` selects which display these
+options govern: `pl` is the default `search` page, and `pf` is the
+`reviewprefs` page.
 
 The response gives the view from several angles: `display_current` is what the
 caller currently sees (the site default plus any of their own session
 adjustments), `display_default` is the site default, and `display_difference`
 expresses the caller’s view as a difference from HotCRP’s built-in default.
 
-* param ?report =pl|pf: Which report’s options to return; `pl` (paper list, the default) or `pf` (paper form).
+* param ?report =pl|pf: Which report’s options to return; `pl` (paper list,
+  the default) or `pf` (review preferences).
 * param ?q search_string: A search whose result provides context for evaluating the view.
 * response report =pl|pf: The report these options apply to.
 * response display_current string: The view currently in effect for the caller.

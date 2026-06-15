@@ -78,10 +78,15 @@ optionally pin a specific submission and start time.
 * param ?tracker_start_at integer: Tracker start time.
 * response ?tracker object: Full tracker state, when a tracker is running and visible.
 * response ?tracker_status string: Compact status token.
+
+    * condition tracker
+
 * response ?tracker_eventid integer: Tracker change counter.
 * response ?tracker_recent integer: Time of the most recent tracker update.
 * response ?tracker_site string: Comet server URL, when configured.
 * response ?now number: Server time, for clock synchronization.
+
+    * condition tracker
 
 
 # post /trackerconfig
@@ -115,7 +120,12 @@ Set `stopall` to stop every tracker at once. (A legacy flat parameter form,
 * response ?new_trackerid integer: ID of a newly created tracker.
 * response ?tracker object: Full tracker state, when a tracker is running and visible.
 * response ?tracker_status string: Compact status token.
+
+    * condition tracker
+
 * response ?tracker_eventid integer: Tracker change counter.
 * response ?tracker_recent integer: Time of the most recent tracker update.
 * response ?tracker_site string: Comet server URL, when configured.
 * response ?now number: Server time, for clock synchronization.
+
+    * condition tracker

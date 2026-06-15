@@ -118,6 +118,8 @@ submission or create a new submission with that ID. To avoid overwriting an
 existing submission, set the submission JSON’s `status`.`if_unmodified_since`
 to `0`.
 
+* param ?json string
+* param ?upload upload_token: Upload token for large input file
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param disable_users boolean: True disables any newly-created users.
 
@@ -132,18 +134,19 @@ to `0`.
 * param add_topics boolean: True automatically adds topics from input papers
 
   * badge site-admin
+* param reason string: Optional text included in notification emails
 * param notify boolean: False disables all email notifications
 
   * badge site-admin
 * param notify_authors boolean: False disables email notifications to authors
 
   * badge paper-admin
-* param reason string: Optional text included in notification emails
-* param ?json string
-* param ?upload upload_token: Upload token for large input file
 * response ?dry_run boolean: True for `dry_run` requests
 * response ?pid pid: ID of modified submission
 * response ?paper paper: JSON of modified submission
+
+    * condition valid
+
 * response ?+valid boolean: True if the modification was valid
 * response ?+change_list [string]: List of changed fields
 
@@ -154,6 +157,8 @@ to `0`.
 
 Delete the submission specified by `p`, a submission ID.
 
+* param ?if_unmodified_since string: Don’t delete if modified since this time
+* param ?forceShow boolean
 * param ?dry_run boolean: True checks input for errors, but does not save changes
 * param ?notify boolean: False disables all email notifications
 
@@ -162,7 +167,6 @@ Delete the submission specified by `p`, a submission ID.
 
   * badge paper-admin
 * param ?reason string: Optional text included in notification emails
-* param ?if_unmodified_since string: Don’t delete if modified since this time
 * response ?dry_run boolean: True for `dry_run` requests
 * response valid boolean: True if the delete request was valid
 * response change_list [string]: `["delete"]`

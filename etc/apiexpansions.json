@@ -1,7 +1,7 @@
 [
   {
     "name": "paper", "get": true, "post": true, "delete": true,
-    "tags": ["Submissions"], "order": 0
+    "tags": ["Submissions"]
   },
   {
     "name": "paper", "get": true, "merge": true,
@@ -20,7 +20,7 @@
 
   {
     "name": "papers", "get": true, "post": true,
-    "tags": ["Submissions"], "order": 1
+    "tags": ["Submissions"]
   },
   {
     "name": "papers", "get": true, "merge": true,
@@ -35,13 +35,13 @@
 
   {
     "name": "share", "get": true, "post": true, "delete": true,
-    "tags": ["Submissions"], "order": 3,
+    "tags": ["Submissions"],
     "parameters": "+share ?+expires_in"
   },
 
   {
     "name": "document", "get": true,
-    "tags": ["Documents"], "order": 0,
+    "tags": ["Documents"],
     "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment",
     "response_content": {
       "200": {
@@ -54,25 +54,25 @@
   },
   {
     "name": "documentlist", "get": true,
-    "tags": ["Documents"], "order": 1,
+    "tags": ["Documents"],
     "parameters": "?doc ?p ?dt ?history",
     "response": "dt document_history"
   },
   {
     "name": "formatcheck", "get": true,
-    "tags": ["Documents"], "order": 2,
+    "tags": ["Documents"],
     "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment ?soft ?detail",
     "response": "npages nwords problem_fields has_error docid"
   },
   {
     "name": "archivecontents", "get": true,
-    "tags": ["Documents"], "order": 3,
+    "tags": ["Documents"],
     "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment ?summary",
     "response": "archive_contents ?archive_contents_summary"
   },
   {
     "name": "upload", "post": true,
-    "tags": ["Documents"], "order": 4,
+    "tags": ["Documents"],
     "parameters": "?p ?dt ?<dtype ?start ?temp ?offset ?size ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
     "response": "token ?dt ?filename ?mimetype ?size ?ranges ?hash ?crc32 ?progress_value ?progress_max"
   },
@@ -147,18 +147,18 @@
   },
   {
     "name": "search", "get": true,
-    "tags": ["Search"], "order": 0,
+    "tags": ["Search"],
     "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?search ?session",
     "response": "ids groups search_params ?hotlist ?fields ?papers ?statistics"
   },
   {
     "name": "searchactions", "get": true,
-    "tags": ["Search"], "order": 1,
+    "tags": ["Search"],
     "response": "actions"
   },
   {
     "name": "searchaction", "get": true, "post": true,
-    "tags": ["Search"], "order": 2,
+    "tags": ["Search"],
     "parameters": "?action q ?t ?qt ?sort ?report ?scoresort ?reviewer ?p"
   },
   {
@@ -193,7 +193,7 @@
   },
   {
     "name": "tags", "get": true, "post": true,
-    "tags": ["Tags"], "order": 0,
+    "tags": ["Tags"],
     "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes ?tags_conflicted ?color_classes_conflicted"
   },
   {
@@ -238,15 +238,15 @@
   },
   {
     "name": "review", "get": true, "post": true, "merge": true,
-    "tags": ["Reviews"], "order": 0
+    "tags": ["Reviews"]
   },
   {
     "name": "reviews", "get": true,
-    "tags": ["Reviews"], "order": 1
+    "tags": ["Reviews"]
   },
   {
     "name": "reviewhistory", "get": true, "merge": true,
-    "tags": ["Reviews"], "order": 2
+    "tags": ["Reviews"]
   },
   {
     "name": "acceptreview", "post": true,
@@ -287,14 +287,14 @@
   },
   {
     "name": "comment", "get": true,
-    "tags": ["Comments"], "order": 0,
+    "tags": ["Comments"],
     "parameters": "?c ?content",
     "response": "?comment ?comments",
     "response_info": {"comment": "comment", "comments": "[comment]"}
   },
   {
     "name": "comment", "post": true,
-    "tags": ["Comments"], "order": 0,
+    "tags": ["Comments"],
     "parameters": "c ?override ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=ready ?=draft ?=blind ?=response ?=by_author ?=review_token ?delete",
     "response": "?comment ?conflict",
     "response_info": {"comment": "comment"}
@@ -307,12 +307,12 @@
   },
   {
     "name": "track", "post": true,
-    "tags": ["Meeting tracker"], "order": 0,
+    "tags": ["Meeting tracker"],
     "parameters": "track ?tracker_start_at ?p ?=hotlist-info"
   },
   {
     "name": "trackerstatus", "get": true,
-    "tags": ["Meeting tracker"], "order": 1,
+    "tags": ["Meeting tracker"],
     "response": "tracker_status tracker_eventid"
   },
   {
@@ -323,7 +323,7 @@
   },
   {
     "name": "user", "get": true,
-    "tags": ["Users"], "order": 0,
+    "tags": ["Users"],
     "parameters": "email ?p ?potential_conflict",
     "response": "match ?email ?given_name ?family_name ?affiliation ?potential_conflict ?orcid ?country"
   },
@@ -358,7 +358,7 @@
   },
   {
     "name": "settings", "get": true, "post": true,
-    "tags": ["Settings"], "order": 0,
+    "tags": ["Settings"],
     "parameters": "?+dry_run ?=settings ?+filename ?filter ?exclude ?reset",
     "response": "?+dry_run +valid +change_list settings"
   },
@@ -453,7 +453,7 @@
   },
   {
     "name": "potentialconflicts", "get": true,
-    "tags": ["Submissions"], "order": 2,
+    "tags": ["Submissions"],
     "parameters": "?sclass ?p ?*has_authors ?:*authors ?*collaborators ?*json",
     "response": "potential_conflicts"
   }

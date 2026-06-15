@@ -77,6 +77,10 @@ class APISpec_Batch {
     private $cur_fieldbadges;
     /** @var array<string,list<string>> */
     private $cur_fieldconditions;
+    /** @var array<string,array{group:string,element:string}> field name =>
+     * mutually-exclusive group: `group` names the whole "one of" set, `element`
+     * the alternative within it that this field belongs to */
+    private $cur_fieldoneof;
     /** @var list<object> */
     private $cur_badge;
     /** @var list<string> */
@@ -403,6 +407,7 @@ class APISpec_Batch {
             $this->cur_fieldd = [];
             $this->cur_fieldbadges = [];
             $this->cur_fieldconditions = [];
+            $this->cur_fieldoneof = [];
             $this->cur_fieldsch = [];
             $this->cur_fieldsch_after = [];
             $this->cur_md_order = [];
@@ -456,6 +461,14 @@ class APISpec_Batch {
                 } else {
                     $opj->operationId = "{$fn}-{$lmethod}";
                 }
+            }
+
+            // record this operation's position in the Markdown documentation, so
+            // a renderer can order operations by document order even when they
+            // span distinct paths (e.g. `post /paper` between `get`/`delete
+            // /{p}/paper`, which is the path `/{p}/paper`).
+            if (isset($this->doc_order["{$lmethod} {$path}"])) {
+                $opj->{"x-order"} = $this->doc_order["{$lmethod} {$path}"];
             }
 
             // apply tags, request, response
@@ -731,12 +744,17 @@ class APISpec_Batch {
      * beyond four spaces survives as content (e.g. indented code). Relative
      * indentation within a block (nested lists, multi-line code) is preserved.
      *
-     * A trailing list of `* badge NAME` / `* condition TEXT` items standing in
-     * its own paragraph is then consumed as field-level metadata — `* badge`
-     * uses the same syntax as operation badges, while `* condition TEXT`
-     * records a presence condition (e.g. `format=csv`) shown as a pill. Items
-     * are recognized by position (a trailing list) and grammar; any other
-     * `*`-list is left untouched as Markdown. Returns the trimmed description.
+     * A trailing list of `* badge NAME` / `* condition TEXT` / `* oneof GROUP
+     * [ELEMENT]` items standing in its own paragraph is then consumed as
+     * field-level metadata — `* badge` uses the same syntax as operation
+     * badges, `* condition TEXT` records a presence condition (e.g.
+     * `format=csv`) shown as a pill, and `* oneof GROUP [ELEMENT]` marks the
+     * field as one alternative of a mutually-exclusive set: GROUP names the
+     * whole set and ELEMENT the alternative within it (fields sharing GROUP and
+     * ELEMENT belong to the same alternative). ELEMENT defaults to the field
+     * name. Items are recognized by position (a trailing list) and grammar; any
+     * other `*`-list is left untouched as Markdown. Returns the trimmed
+     * description.
      * @param string $name
      * @param string $body
      * @return string */
@@ -774,7 +792,7 @@ class APISpec_Batch {
 
         // Consume a trailing list of `* badge`/`* condition` items standing in
         // its own paragraph (preceded by a blank line or the start of the body).
-        if (preg_match('/(?:\A|\n\n)((?:\* (?:badge|condition)[ \t]++[^\n]++(?:\n|\z))++)\z/', $text, $mm)) {
+        if (preg_match('/(?:\A|\n\n)((?:\* (?:badge|condition|oneof)[ \t]++[^\n]++(?:\n|\z))++)\z/', $text, $mm)) {
             foreach (explode("\n", trim($mm[1])) as $line) {
                 if (preg_match('/\A\* badge[ \t]++(\S++)/', $line, $bm)) {
                     if (($b = $this->resolve_badge($bm[1]))) {
@@ -786,6 +804,13 @@ class APISpec_Batch {
                     // A condition tests an input parameter, either by value
                     // (`format=csv`) or by presence (`search`).
                     $this->cur_fieldconditions[$name][] = $cm[1];
+                } else if (preg_match('/\A\* oneof[ \t]++(\S++)(?:[ \t]++(\S++))?[ \t]*+\z/', $line, $om)) {
+                    // One alternative of a mutually-exclusive set; the element
+                    // (the alternative within the set) defaults to the field name.
+                    $this->cur_fieldoneof[$name] = [
+                        "group" => $om[1],
+                        "element" => $om[2] ?? $name
+                    ];
                 }
             }
             $text = rtrim(substr($text, 0, strlen($text) - strlen($mm[1])));
@@ -804,6 +829,9 @@ class APISpec_Batch {
         }
         if (!empty($this->cur_fieldconditions[$name])) {
             $target->{"x-conditions"} = $this->cur_fieldconditions[$name];
+        }
+        if (!empty($this->cur_fieldoneof[$name])) {
+            $target->{"x-oneof"} = (object) $this->cur_fieldoneof[$name];
         }
     }
 
@@ -1037,6 +1065,7 @@ class APISpec_Batch {
         $this->cur_fieldd = [];
         $this->cur_fieldbadges = [];
         $this->cur_fieldconditions = [];
+        $this->cur_fieldoneof = [];
         $this->cur_fieldsch = [];
         $this->cur_fieldsch_after = [];
         $this->cur_md_order = [];
@@ -1504,7 +1533,7 @@ class APISpec_Batch {
         $info = $mj->info = $mj->info ?? (object) [];
         if ($this->base) {
             $info->title = "HotCRP REST API";
-            $info->version = shell_exec("git log --format=\"format:%cs:%h\" -n1 devel/apidoc etc/apifunctions.json etc/apiexpansions.json batch/apispec.php");
+            $info->version = shell_exec("git log --format=\"format:%cs\" -n1 devel/apidoc etc/apifunctions.json etc/apiexpansions.json batch/apispec.php");
         } else {
             $info->title = $info->title ?? "HotCRP";
             $info->version = $info->version ?? "0.1";
