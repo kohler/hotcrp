@@ -920,6 +920,7 @@ class PaperTable {
         echo Ht::hidden("has_status:submit", 1), "</div>\n";
     }
 
+    /** @suppress PhanUndeclaredProperty -- hard_wordlimit/wordlimit exist */
     function render_abstract(FieldRender $fr, PaperValue $ov) {
         $fr->title = false;
         $fr->value_format = 5;

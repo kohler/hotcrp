@@ -1939,7 +1939,7 @@ class DocumentInfo implements JsonSerializable {
         return $this->npages >= 0 ? $this->npages : null;
     }
 
-    /** @param ?string $type
+    /** @param ?string $pagetype
      * @param ?CheckFormat $cf
      * @return ?int */
     function npages_of_type($pagetype, ?CheckFormat $cf = null) {

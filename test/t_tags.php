@@ -654,6 +654,7 @@ class Tags_Tester {
         xassert_assign($this->u_chair, "action,paper,tag,user\nclearconflict,1-4,,huitema@bellcore.com\nclearadministrator,4\ncleartag,1-4,~~ch ~~chx\n");
     }
 
+    /** @suppress PhanDeprecatedClassConstant */
     function test_flag_values() {
         xassert_eqq(Track::FM_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));
         xassert_eqq(TagInfo::TFM_VOTES, TagInfo::TF_APPROVAL | TagInfo::TF_ALLOTMENT);

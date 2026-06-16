@@ -97,8 +97,8 @@ class Autoassign_Tester {
     function xassert_run_autoassigner(Autoassigner $aa) {
         $aa->run();
         if ($aa->has_message()) {
-            Xassert::print_landmark();
-            fwrite(STDERR, preg_replace('/^/m', "  ", $aa->full_feedback_text(true)));
+            list($first, $rest) = Xassert::landmark(true);
+            fwrite(STDERR, $first . preg_replace('/^/m', "  ", $aa->full_feedback_text(true)) . $rest);
         }
         xassert($aa->has_assignment());
         xassert_assign($this->user, join("", $aa->assignments()), true);

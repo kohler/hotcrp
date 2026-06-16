@@ -19,6 +19,7 @@ class OptionText_SearchTerm extends Option_SearchTerm {
             "match" => $this->match
         ];
     }
+    /** @suppress PhanUndeclaredProperty -- hard_wordlimit check gated by isset */
     function test(PaperInfo $row, $xinfo) {
         if ($this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))
