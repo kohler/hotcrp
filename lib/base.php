@@ -305,9 +305,8 @@ function count_words_split($text, $wlimit) {
     if ($wlimit > 0
         || preg_match('/\G[-\s.,;:<>!?*_~`#|]*+\z/' . $refl, $text, $m, 0, $offset)) {
         return [$text, ""];
-    } else {
-        return [substr($text, 0, $offset), substr($text, $offset)];
     }
+    return [substr($text, 0, $offset), substr($text, $offset)];
 }
 
 /** @param string $s

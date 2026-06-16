@@ -610,14 +610,14 @@ class Ht {
     /** @param string $text
      * @return string */
     static function format0($text) {
-        return self::format0_html(self::escape($text));
+        return self::format0_html(self::escape_text($text));
     }
 
     /** @param string $html
      * @return string */
     static function format0_html($html) {
         $html = self::link_urls(Text::single_line_paragraphs($html));
-        return preg_replace('/(?:\r\n?){2,}|\n{2,}/', "</p><p>", "<p>$html</p>");
+        return preg_replace('/(?:\r\n?){2,}|\n{2,}/', "</p><p>", "<p>{$html}</p>");
     }
 
     /** @param string $uniqueid
@@ -693,14 +693,19 @@ class Ht {
             return [$s, 0, 0];
         }
         $pos2 = max($pos1, $pos2);
-        if ($pos1 > 0
-            && ($nl = strrpos($s, "\n", $pos1 - strlen($s))) !== false) {
-            $s = substr($s, $nl + 1);
-            $pos1 -= $nl + 1;
-            $pos2 -= $nl + 1;
+        $nl1 = $pos1 > 0 ? strrpos($s, "\n", $pos1 - strlen($s)) : false;
+        $nl2 = strpos($s, "\n", $pos2);
+        $nlx = (($nl1 !== false && $pos1 - $nl1 < 17)
+                || ($nl2 !== false && $nl2 - $pos2 < 24))
+            && $pos2 - $pos1 < 10;
+        if (!$nlx && $nl1 !== false) {
+            $s = substr($s, $nl1 + 1);
+            $pos1 -= $nl1 + 1;
+            $pos2 -= $nl1 + 1;
+            $nl2 -= $nl1 + 1;
         }
-        if (($nl = strpos($s, "\n", $pos2)) !== false) {
-            $s = substr($s, 0, $nl);
+        if (!$nlx && $nl2 !== false) {
+            $s = substr($s, 0, $nl2);
         }
         $pos1x = max(0, min($pos1 - 17, strlen($s) - 64));
         if ($pos1x > 0) {
@@ -727,6 +732,12 @@ class Ht {
                 ++$ml;
             }
             $s = substr($s, 0, $lpos + $ml) . "…";
+        }
+        if ($nlx) {
+            $s0 = str_replace("\n", "⏎", substr($s, 0, $pos1));
+            $s1 = str_replace("\n", "⏎", substr($s, $pos1, $pos2 - $pos1));
+            $s2 = str_replace("\n", "⏎", substr($s, $pos2));
+            return [$s0 . $s1 . $s2, strlen($s0), strlen($s0) + strlen($s1)];
         }
         return [$s, $pos1, $pos2];
     }

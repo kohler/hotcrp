@@ -425,12 +425,18 @@ class SettingValues extends MessageSet {
      * @return MessageItem */
     function append_item_at($field, $mi) {
         $fname = $field instanceof Si ? $field->name : $field;
-        if ($this->_jp !== null) {
-            $mi = $this->with_jfield($mi, $fname);
-        } else {
-            $mi = $mi->with_field($fname);
+        if ($this->_jp === null) {
+            return $this->append_item($mi->with_field($fname));
         }
-        return $this->append_item($mi);
+        $xmi = $this->append_item($this->with_jfield($mi, $fname));
+        if ($mi->context !== null && $xmi->context === null) {
+            $ymi = new MessageItem(MessageSet::INFORM, $xmi->field);
+            $ymi->pos1 = $mi->pos1;
+            $ymi->pos2 = $mi->pos2;
+            $ymi->context = $mi->context;
+            $this->append_item($ymi);
+        }
+        return $xmi;
     }
 
     /** @param null|string|Si $field
