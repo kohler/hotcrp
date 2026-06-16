@@ -1815,12 +1815,16 @@ class Text_PaperOption extends PaperOption {
         $this->display_space = $args->display_space ?? $bspace;
         $this->wordlimit = $args->wordlimit ?? 0;
         $this->hard_wordlimit = $args->hard_wordlimit ?? 0;
+        if ($this->hard_wordlimit > 0
+            && ($this->wordlimit <= 0 || $this->wordlimit > $this->hard_wordlimit)) {
+            $this->wordlimit = $this->hard_wordlimit;
+        }
     }
 
-    static function value_string(?PaperValue $ov, $hwl = 0) {
+    final function value_string(?PaperValue $ov) {
         $s = $ov ? (string) $ov->data() : "";
-        if ($hwl > 0 && strlen($s) > $hwl) {
-            list($s, ) = count_words_split($s, $hwl);
+        if ($this->hard_wordlimit > 0 && strlen($s) > $this->hard_wordlimit) {
+            list($s, ) = count_words_split($s, $this->hard_wordlimit);
         }
         return $s;
     }
@@ -1829,8 +1833,8 @@ class Text_PaperOption extends PaperOption {
         return (string) $ov->data() !== "";
     }
     function value_compare($av, $bv) {
-        $av = self::value_string($av, $this->hard_wordlimit);
-        $bv = self::value_string($bv, $this->hard_wordlimit);
+        $av = $this->value_string($av);
+        $bv = $this->value_string($bv);
         if ($av === "" || $bv === "") {
             return ($av === "" ? 1 : 0) <=> ($bv === "" ? 1 : 0);
         }
@@ -1860,7 +1864,7 @@ class Text_PaperOption extends PaperOption {
         }
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        $s = self::value_string($ov, $this->hard_wordlimit);
+        $s = $this->value_string($ov);
         return $s === "" ? null : $s;
     }
 

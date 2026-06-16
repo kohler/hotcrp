@@ -920,12 +920,13 @@ class PaperTable {
         echo Ht::hidden("has_status:submit", 1), "</div>\n";
     }
 
-    function render_abstract(FieldRender $fr, PaperOption $o) {
+    function render_abstract(FieldRender $fr, PaperValue $ov) {
         $fr->title = false;
         $fr->value_format = 5;
+        $o = $ov->option;
 
-        $html = $this->highlight($this->prow->abstract(), "ab", $match);
-        if (trim($html) === "") {
+        $text = $o->value_string($ov);
+        if (trim($text) === "") {
             if (!$o->test_required($this->prow)) {
                 return;
             }
@@ -939,10 +940,20 @@ class PaperTable {
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
             . $this->papt("abstract", $o->title_html(), $extra)
             . '<div id="s-abstract-body" class="pavb no-fold abstract';
-        if (!$match && ($format = $this->prow->format_of($html))) {
-            $fr->value .= " need-format\" data-format=\"{$format}\">{$html}";
+        list($ss, $ls) = FieldRender::split_wordlimit($text, $o->wordlimit, $o->hard_wordlimit);
+        if ($ss !== "") {
+            $ss = $this->highlight($ss, "ab", $match);
+            $sformat = $match ? 5 : $this->prow->format_of($ss);
+            $ls = $this->highlight($ls, "ab", $match);
+            $lformat = $match ? 5 : $this->prow->format_of($ls);
+            $fr->value .= '">' . FieldRender::render_overlong($ss, $sformat, $ls, $lformat);
         } else {
-            $fr->value .= ' format0">' . Ht::format0_html($html);
+            $ls = $this->highlight($ls, "ab", $match);
+            if (!$match && ($format = $this->prow->format_of($ls))) {
+                $fr->value .= " need-format\" data-format=\"{$format}\">{$ls}";
+            } else {
+                $fr->value .= ' format0">' . Ht::format0_html($ls);
+            }
         }
         $fr->value .= "</div></div></div>";
         if ($extra) {

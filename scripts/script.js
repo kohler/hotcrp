@@ -8399,9 +8399,11 @@ hotcrp.set_response_round = function (rname, rinfo) {
 })(jQuery);
 
 handle_ui.on("js-overlong-expand", function () {
-    var e = this.closest(".has-overlong");
+    const e = this.closest(".has-overlong");
     addClass(e, "overlong-expanded");
     removeClass(e, "overlong-collapsed");
+    const col = e.closest(".force-expanded");
+    col && $(col).trigger("foldtoggle");
 });
 
 

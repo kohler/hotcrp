@@ -4267,9 +4267,11 @@ hotcrp-multimeter {
 }
 .collapsed .paperinfo-abstract {
 	position: absolute;
-	width: 100%;
+	margin-left: -12px;
+	padding-left: 12px;
+	width: calc(100% + 12px);
 	height: 100%;
-	overflow: hidden;
+	overflow-y: hidden;
 }
 
 .pg, .pgsm, .paperinfo, .paperinfo-i-expand.collapsed {

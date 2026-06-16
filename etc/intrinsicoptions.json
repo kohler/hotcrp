@@ -33,7 +33,7 @@
         "form_order": 2001, "required": true,
         "display": "left", "page_expand": true,
         "function": "+Abstract_PaperOption",
-        "configurable": true, "properties": ["name", "description", "condition", "exists_if", "edit_condition", "editable_if", "required"]
+        "configurable": true, "properties": ["name", "description", "condition", "exists_if", "edit_condition", "editable_if", "required", "wordlimit", "hard_wordlimit"]
     },
     {
         "name": "Authors", "id": -1001,

@@ -1597,6 +1597,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         } else if ($this->trivial !== null) {
             return $this->trivial;
         }
+        // XXX truncate abstract for hard wordlimit
         return $this->regex->match($row->{$this->field}());
     }
     function script_expression(PaperInfo $row, $about) {
