@@ -4200,6 +4200,12 @@ class Conf {
         return Ht::link($html, $this->qrequrl($qreq, $param ?? [], 0), $js);
     }
 
+    /** @return $this */
+    function saved_messages_begin() {
+        $this->_save_msgs = $this->_save_msgs ?? [];
+        return $this;
+    }
+
     /** @return int */
     function saved_messages_status() {
         $st = 0;
