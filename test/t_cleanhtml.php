@@ -165,9 +165,57 @@ class CleanHTML_Tester {
         xassert_eqq($ch->clean('<div><p>X'), null);  // <div> not end-optional
         // still rejects truly broken HTML
         xassert_eqq($ch->clean('<div><div>X</div>'), null);  // <div> not end-optional
+        // stray </p> after a block element that implicitly closed the <p>
+        xassert_eqq($ch->clean('<p>A<ol><li>X</li></ol></p>'),
+            '<p>A</p><ol><li>X</li></ol>');
+        xassert_eqq($ch->clean('<p>A<ul><li>X</li></ul></p>'),
+            '<p>A</p><ul><li>X</li></ul>');
+        xassert_eqq($ch->clean('<p>A<div>B</div></p>'), '<p>A</p><div>B</div>');
+        // but a genuinely open <p> under a non-end-optional element is not dropped
+        xassert_eqq($ch->clean('<p><span>X</p>'), null);
         // non-fix mode still rejects implied close cases
         $basic = CleanHTML::basic();
         xassert_eqq($basic->clean('<ul><li>X<li>Y</ul>'), null);
+    }
+
+    function test_fix_stray_close_p() {
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
+        // Orphan </p> (no <p> was ever opened): the author signaled a
+        // paragraph break, so materialize an empty paragraph to preserve it.
+        xassert_eqq($ch->clean('bbb</p>'), 'bbb<p></p>');
+        xassert_eqq($ch->clean('bbb</p> xxxx</p>'), 'bbb<p></p> xxxx<p></p>');
+        // A </p> that balances an implicitly-closed <p> is redundant: drop it,
+        // rather than emit a spurious trailing empty paragraph.
+        xassert_eqq($ch->clean('<p>A<ol><li>X</li></ol></p>'),
+            '<p>A</p><ol><li>X</li></ol>');
+        xassert_eqq($ch->clean('<p>A<ol><li>X</li></ol> B </p>'),
+            '<p>A</p><ol><li>X</li></ol> B ');
+        xassert_eqq($ch->clean('<p>A<div>B</div></p>'), '<p>A</p><div>B</div>');
+        // One auto-close credit, two stray </p>: the first balances the
+        // implicit close (drop); the second is an orphan (emit empty).
+        xassert_eqq($ch->clean('<p>A<ol><li>X</li></ol></p> xxxx</p>'),
+            '<p>A</p><ol><li>X</li></ol> xxxx<p></p>');
+        // Nested <p> auto-closes the outer one; a trailing stray </p> then
+        // balances that implicit close.
+        xassert_eqq($ch->clean('<p>A<p>B</p></p>'), '<p>A</p><p>B</p>');
+        // <p> implicitly closed by a misnested block close (</div>) also
+        // earns a credit, so the following stray </p> drops rather than
+        // emitting an empty paragraph.
+        xassert_eqq($ch->clean('<div><p>A</div></p>'), '<div><p>A</p></div>');
+        xassert_eqq($ch->clean('<div><p>A</div></p></p>'),
+            '<div><p>A</p></div><p></p>');
+        // A normally-matched </p> must not consume the credit.
+        xassert_eqq($ch->clean('<p>A<p>B</p>'), '<p>A</p><p>B</p>');
+        // Known limitation: an unclaimed auto-close credit can leak across an
+        // intervening block and be spent by an unrelated </p>, so this drops
+        // rather than emitting <div>bbb<p></p></div>. Accepted as cosmetic.
+        xassert_eqq($ch->clean('<p>A<ol><li>X</li></ol><div>bbb</p></div>'),
+            '<p>A</p><ol><li>X</li></ol><div>bbb</div>');
+        // A genuinely open <p> under a non-end-optional element is still an
+        // error, not a stray close.
+        xassert_eqq($ch->clean('<p><span>X</p>'), null);
+        // non-fix mode keeps rejecting stray closes.
+        xassert_eqq(CleanHTML::basic()->clean('bbb</p>'), null);
     }
 
     function test_fix_adoption_agency() {

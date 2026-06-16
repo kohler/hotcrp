@@ -48,6 +48,8 @@ class CleanHTML {
     private $opentags;
     /** @var bool */
     private $fixed_by_adoption = false;
+    /** @var int */
+    private $autoclosed_p = 0;
     /** @var ?string */
     private $base_url;
 
@@ -303,6 +305,17 @@ class CleanHTML {
         return MessageItem::inform("<0>The <{$tag}> tag can only appear inside " . commajoin($tlist) . ".");
     }
 
+    /** @param string $tag
+     * @return bool */
+    private function has_open_tag($tag) {
+        for ($t = $this->opentags; $t !== null; $t = $t->next) {
+            if ($t->tag === $tag) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** @return string */
     private function here() {
         if ($this->opentags) {
@@ -331,6 +344,7 @@ class CleanHTML {
                 $insertion .= "</p>";
                 $curtf = $this->opentags->tagfl;
                 $this->opentags = $this->opentags->next;
+                ++$this->autoclosed_p;
             }
         }
         // Close F_ENDOPTIONAL elements until reaching required scope
@@ -370,6 +384,9 @@ class CleanHTML {
         while ($this->opentags !== null
                && $this->opentags->tag !== $tag
                && ($curtf & self::F_ENDOPTIONAL) !== 0) {
+            if ($this->opentags->tag === "p") {
+                ++$this->autoclosed_p;
+            }
             $insertion .= "</{$this->opentags->tag}>";
             $curtf = $this->opentags->tagfl;
             $this->opentags = $this->opentags->next;
@@ -501,6 +518,7 @@ class CleanHTML {
         $this->ml = [];
         $this->context = $t;
         $this->fixed_by_adoption = false;
+        $this->autoclosed_p = 0;
 
         $xp = $p = 0;
         $len = strlen($t);
@@ -672,6 +690,17 @@ class CleanHTML {
                         $x .= substr($t, $xp, $p - $xp) . "</{$tag}";
                         $xp = $endp - 1;
                     }
+                } else if (($this->flags & self::CLEAN_FIX) !== 0
+                           && $tag === "p"
+                           && !$this->has_open_tag("p")) {
+                    $x .= substr($t, $xp, $tagp - $xp);
+                    if ($this->autoclosed_p > 0) {
+                        // Prev `<p>` was implicitly closed; ignore this `</p>`
+                        --$this->autoclosed_p;
+                    } else {
+                        $x .= "<p></p>";
+                    }
+                    $xp = $endp;
                 } else {
                     $this->lerror("<0>HTML close tag does not match open tag", $tagp, $endp);
                     if ($this->opentags) {
