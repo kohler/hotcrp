@@ -115,7 +115,7 @@ class Graph_Formula_Page {
             $this->echo_formulas_qrow($i + 1, $ds, $fgm);
         }
         echo '</div><template id="formula-dataset-template" class="hidden">';
-        $this->echo_formulas_qrow('$', new FormulaGraphDataset("ALL", "by-tag", '$'), $fgm);
+        $this->echo_formulas_qrow('$', new FormulaGraphDataset("ALL", null, "by-tag", '$'), $fgm);
         echo '</template>',
             Ht::button("Add data set", ["class" => "ui row-order-append", "data-rowset" => "graph-datasets"]),
             '</div>',

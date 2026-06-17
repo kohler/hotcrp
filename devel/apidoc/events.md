@@ -1,7 +1,7 @@
 # Notifications
 
-These endpoints cover reviewing **activity** — the feed of recent reviews and
-comments — and the per-submission **follow** settings that determine who is
+These endpoints cover reviewing **activity**—the feed of recent reviews and
+comments—and the per-submission **follow** settings that determine who is
 emailed when that activity happens.
 
 
@@ -9,8 +9,8 @@ emailed when that activity happens.
 
 > Retrieve recent activity
 
-Return a page of recent reviewing activity visible to the caller — newly
-submitted reviews and comments — most recent first. Available to reviewers.
+Return a page of recent reviewing activity visible to the caller—newly
+submitted reviews and comments—most recent first. Available to reviewers.
 
 Results are paged in blocks of up to 10 events. Each request returns events
 strictly before the `from` timestamp (a UNIX time, defaulting to now). To fetch

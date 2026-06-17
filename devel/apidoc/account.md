@@ -9,7 +9,7 @@ agreement, and dismissing a UI **alert**.
 
 > Accept a clickthrough agreement
 
-Record that the user has accepted a clickthrough agreement — terms that HotCRP
+Record that the user has accepted a clickthrough agreement—terms that HotCRP
 can require someone to accept before proceeding, for example before entering
 reviews. Identify the agreement with `clickthrough_id` and set `accept=1`;
 acceptance is recorded only when `accept` is true. A successful call returns

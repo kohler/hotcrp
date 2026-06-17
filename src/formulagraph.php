@@ -5,6 +5,8 @@
 class FormulaGraphDataset {
     /** @var string */
     public $q;
+    /** @var ?string */
+    public $t;
     /** @var string */
     public $style;
     /** @var ?string */
@@ -12,8 +14,13 @@ class FormulaGraphDataset {
     /** @var ?string */
     public $field_suffix;
 
-    function __construct($q, $style, $field_suffix) {
+    /** @param string $q
+     * @param ?string $t
+     * @param string $style
+     * @param ?string $field_suffix */
+    function __construct($q, $t, $style, $field_suffix) {
         $this->q = $q;
+        $this->t = $t;
         $this->style = $style;
         $this->field_suffix = $this->in_field_suffix = $field_suffix;
     }
@@ -443,17 +450,20 @@ class FormulaGraph extends MessageSet {
     /** @return list<FormulaGraphDataset> */
     static function parse_datasets(Qrequest $qreq) {
         $datasets = [];
+        // The `t` (search collection) applies to every series; a per-series
+        // `t{$i}` overrides it for that series.
+        $t = $qreq->t ?? null;
         for ($i = 1; isset($qreq["q{$i}"]); ++$i) {
             $q = trim($qreq["q{$i}"]);
             $q = $q === "" || $q === "(All)" ? "" : $q;
-            $datasets[] = new FormulaGraphDataset($q, (string) $qreq["s{$i}"], "{$i}");
+            $datasets[] = new FormulaGraphDataset($q, $qreq["t{$i}"] ?? $t, (string) $qreq["s{$i}"], "{$i}");
         }
         if (empty($datasets) && isset($qreq->q)) {
             $q = trim($qreq->q);
             $q = $q === "" || $q === "(All)" ? "" : $q;
-            $datasets[] = new FormulaGraphDataset($q, (string) $qreq->s, "");
+            $datasets[] = new FormulaGraphDataset($q, $t, (string) $qreq->s, "");
         } else if (empty($datasets)) {
-            $datasets[] = new FormulaGraphDataset("", "", "");
+            $datasets[] = new FormulaGraphDataset("", $t, "", "");
         }
         // remove redundant and intended-to-be-deleted queries
         $i = 0;
@@ -500,7 +510,7 @@ class FormulaGraph extends MessageSet {
             ++$this->_qstyle_index;
         }
         $this->_qstyles[] = $style;
-        $psearch = new PaperSearch($this->user, ["q" => $q]);
+        $psearch = new PaperSearch($this->user, ["q" => $q, "t" => $dataset->t]);
         foreach ($psearch->paper_ids() as $pid) {
             $this->papermap[$pid][] = $qn;
         }

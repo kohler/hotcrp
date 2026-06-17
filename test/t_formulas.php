@@ -785,4 +785,49 @@ class Formulas_Tester {
         $fmap["y"]->bind("x", $x);
         xassert_eqq($fmap["y"]->eval($p20, null), 7.0);
     }
+
+    function test_graph_parse_datasets_t() {
+        // a global `t` applies to every series
+        $ds = FormulaGraph::parse_datasets(TestQreq::get(["q" => "1", "t" => "s"]));
+        xassert_eqq(count($ds), 1);
+        xassert_eqq($ds[0]->t, "s");
+
+        // a per-series `t{i}` overrides the global `t`; series without one fall
+        // back to the global value
+        $ds = FormulaGraph::parse_datasets(TestQreq::get([
+            "q1" => "1", "t1" => "all", "q2" => "2", "t" => "s"
+        ]));
+        xassert_eqq(count($ds), 2);
+        xassert_eqq($ds[0]->t, "all");
+        xassert_eqq($ds[1]->t, "s");
+
+        // no `t` leaves the collection unset (null), so PaperSearch picks its default
+        $ds = FormulaGraph::parse_datasets(TestQreq::get(["q" => "1"]));
+        xassert_eqq($ds[0]->t, null);
+    }
+
+    /** @return int number of plotted submissions */
+    private function graph_pid_count($t) {
+        $fg = new FormulaGraph($this->u_chair, "scatter", "pid", "pid");
+        $fg->add_dataset(new FormulaGraphDataset("", $t, "", ""));
+        $data = $fg->graph_json([])["data"];
+        $n = 0;
+        array_walk_recursive($data, function () use (&$n) { ++$n; });
+        return $n;
+    }
+
+    function test_graph_t_filters_results() {
+        // Unsubmit paper 1 so it leaves the `s` (submitted) collection but stays
+        // in `all`; the plotted set then differs by exactly that paper, proving
+        // the dataset's `t` reaches the underlying search.
+        $saved = $this->conf->fetch_ivalue("select timeSubmitted from Paper where paperId=1");
+        $this->conf->qe("update Paper set timeSubmitted=0 where paperId=1");
+
+        $all = $this->graph_pid_count("all");
+        $submitted = $this->graph_pid_count("s");
+        xassert($submitted > 0);
+        xassert_eqq($submitted, $all - 1);
+
+        $this->conf->qe("update Paper set timeSubmitted=? where paperId=1", $saved);
+    }
 }

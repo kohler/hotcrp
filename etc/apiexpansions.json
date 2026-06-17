@@ -107,7 +107,7 @@
 
   {
     "name": "decision", "get": true, "post": true,
-    "tags": ["Submission management"],
+    "tags": ["Submission administration"],
     "response": "decision decision_html ?editable"
   },
   {
@@ -116,7 +116,7 @@
   },
   {
     "name": "lead", "get": true, "post": true,
-    "tags": ["Submission management"],
+    "tags": ["Submission administration"],
     "response": "lead lead_html ?color_classes"
   },
   {
@@ -125,7 +125,7 @@
   },
   {
     "name": "manager", "get": true, "post": true,
-    "tags": ["Submission management"],
+    "tags": ["Submission administration"],
     "response": "manager manager_html ?color_classes"
   },
   {
@@ -134,11 +134,11 @@
   },
   {
     "name": "reviewround", "post": true, "merge": true,
-    "tags": ["Submission management"]
+    "tags": ["Submission administration"]
   },
   {
     "name": "shepherd", "get": true, "post": true,
-    "tags": ["Submission management"],
+    "tags": ["Submission administration"],
     "response": "shepherd shepherd_html ?color_classes"
   },
   {
@@ -288,9 +288,9 @@
   {
     "name": "comment", "get": true,
     "tags": ["Comments"],
-    "parameters": "?c ?content",
-    "response": "?comment ?comments",
-    "response_info": {"comment": "comment", "comments": "[comment]"}
+    "parameters": "c ?content",
+    "response": "?comment",
+    "response_info": {"comment": "comment"}
   },
   {
     "name": "comment", "post": true,

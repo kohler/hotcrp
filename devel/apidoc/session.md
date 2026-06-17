@@ -45,12 +45,12 @@ The response includes the user’s `email`, `given_name`, `family_name`, and
 `affiliation`. When the user holds any conference roles, a `roles` array lists
 them, drawn from:
 
-* `chair` — a conference chair
-* `pc` — a program committee member; this is also present for chairs
-* `sysadmin` — a system administrator
-* `manager` — an administrator of some submissions who is not a full chair
-* `author` — an author or contact of at least one submission
-* `reviewer` — assigned at least one review
+* `chair`—a conference chair
+* `pc`—a program committee member; this is also present for chairs
+* `sysadmin`—a system administrator
+* `manager`—an administrator of some submissions who is not a full chair
+* `author`—an author or contact of at least one submission
+* `reviewer`—assigned at least one review
 
 * badge featured
 * response email email: Email of the signed-in user

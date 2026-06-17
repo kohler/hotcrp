@@ -182,7 +182,8 @@
                 "required": false,
                 "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
                 "schema": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": true
                 }
             },
             "doc": {
@@ -420,6 +421,56 @@
                 ],
                 "description": "A user’s standing in the conference. `chair` is a conference chair; `pc` is a program committee member (also present for chairs); `sysadmin` is a system administrator; `manager` administers some submissions without being a full chair; `author` is an author or contact of some submission; `reviewer` has been assigned at least one review."
             },
+            "potential_conflict": {
+                "type": "object",
+                "description": "One program-committee member who potentially conflicts with a submission, as returned in the `potential_conflicts` array of [`/potentialconflicts`](#get-potentialconflicts).",
+                "required": [
+                    "uid",
+                    "email",
+                    "type"
+                ],
+                "properties": {
+                    "uid": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "User ID of the PC member."
+                    },
+                    "email": {
+                        "$ref": "#/components/schemas/email",
+                        "description": "Email of the PC member."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "author",
+                            "potentialconflict"
+                        ],
+                        "description": "`author` when the PC member is an author of the submission; `potentialconflict` for a name, affiliation, or collaborator match."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Plain-text explanation of the match, as a formatted-text string beginning with the `<0>` format sigil. Present only when `type` is `potentialconflict`."
+                    },
+                    "tooltip": {
+                        "type": "string",
+                        "description": "HTML explanation of the match suitable for a tooltip, as a formatted-text string beginning with the `<5>` format sigil. Present only when `type` is `potentialconflict`."
+                    }
+                },
+                "examples": [
+                    {
+                        "uid": 42,
+                        "email": "ngomez@example.edu",
+                        "type": "author"
+                    },
+                    {
+                        "uid": 17,
+                        "email": "dpc@example.edu",
+                        "type": "potentialconflict",
+                        "description": "<0>Shared affiliation (Example University)",
+                        "tooltip": "<5>Shared affiliation (<em>Example University</em>)"
+                    }
+                ]
+            },
             "sessioninfo": {
                 "type": "object",
                 "description": "Information about the current session, including the CSRF token for cookie-authenticated requests. Returned by the `session` endpoints (and omitted from cross-origin responses).",
@@ -607,7 +658,7 @@
             },
             "hotlist": {
                 "type": "object",
-                "description": "A **hotlist** captures an ordered list of submissions (or users) together with the search that produced it, so HotCRP's web client can remember the list across page loads — most visibly to offer “previous”/“next” navigation between submissions. It is an opaque token to most callers; external integrations can ignore it. Note that on the wire a hotlist is transmitted as a **JSON-encoded string** (a serialized form of the object documented here), not as a nested JSON object; HotCRP's client parses the string to recover these properties.",
+                "description": "A **hotlist** captures an ordered list of submissions (or users) together with the search that produced it, so HotCRP's web client can remember the list across page loads—most visibly to offer “previous”/“next” navigation between submissions. It is an opaque token to most callers; external integrations can ignore it. Note that on the wire a hotlist is transmitted as a **JSON-encoded string** (a serialized form of the object documented here), not as a nested JSON object; HotCRP's client parses the string to recover these properties.",
                 "properties": {
                     "listid": {
                         "type": "string",

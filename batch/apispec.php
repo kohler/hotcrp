@@ -84,6 +84,10 @@ class APISpec_Batch {
     /** @var array<string,string> field name => ad-hoc group label; consecutive
      * fields sharing a label render together inside a box titled with it */
     private $cur_fieldgroup;
+    /** @var array<string,mixed> field name => OpenAPI `default` value declared
+     * via `* default VALUE`. Keyed presence (not value truthiness) marks a
+     * default, so a literal `null` default is representable. */
+    private $cur_fielddefault;
     /** @var list<object> */
     private $cur_badge;
     /** @var list<string> */
@@ -107,7 +111,7 @@ class APISpec_Batch {
 
     static private $default_tag_order = [
         "Submissions", "Documents", "Search", "Tags", "Review preferences",
-        "Assignments", "Submission management",
+        "Assignments", "Submission administration",
         "Reviews", "Comments",
         "Meeting tracker", "Users", "Account",
         "Notifications", "Task management",
@@ -279,11 +283,43 @@ class APISpec_Batch {
             }
             if ($d !== "") {
                 $x["description"] = $d;
+                self::check_heading_nesting($d, $x["name"], $x["landmark"]);
             }
             $xs[] = (object) $x;
             $lineno += 1 + substr_count($m[$i + 1], "\n");
         }
         return $xs;
+    }
+
+    /** Warn about malformed heading nesting in a description: a first heading
+     * deeper than `##`, or a level skip (e.g. an `##` followed directly by
+     * `####`). Subsection headings should begin at `##` and step down one level
+     * at a time. The documentation renderer re-levels each description so its
+     * shallowest heading sits just beneath the tag/operation heading, preserving
+     * relative depth — so neither mistake breaks the output, but both make the
+     * source inconsistent (and a skip also yields a malformed outline).
+     * @param string $d
+     * @param string $name
+     * @param string $landmark */
+    static private function check_heading_nesting($d, $name, $landmark) {
+        // ignore `#` lines inside fenced code blocks
+        $d = preg_replace('/^```.*?^```/ms', "", $d);
+        if (!preg_match_all('/^(\#{2,6})[ \t]+(\S[^\n]*)/m', $d, $ms, PREG_SET_ORDER)) {
+            return;
+        }
+        $prev = 0;
+        foreach ($ms as $i => $mm) {
+            $lvl = strlen($mm[1]);
+            if ($i === 0 && $lvl > 2) {
+                fwrite(STDERR, "{$landmark}: first heading “" . simplify_whitespace($mm[2])
+                    . "” under “{$name}” is h{$lvl}; descriptions should start at h2 (##)\n");
+            }
+            if ($prev !== 0 && $lvl > $prev + 1) {
+                fwrite(STDERR, "{$landmark}: heading “" . simplify_whitespace($mm[2])
+                    . "” under “{$name}” skips from h{$prev} to h{$lvl}\n");
+            }
+            $prev = $lvl;
+        }
     }
 
     /** @param string $name
@@ -419,6 +455,7 @@ class APISpec_Batch {
             $this->cur_fieldconditions = [];
             $this->cur_fieldoneof = [];
             $this->cur_fieldgroup = [];
+            $this->cur_fielddefault = [];
             $this->cur_fieldsch = [];
             $this->cur_fieldsch_after = [];
             $this->cur_md_order = [];
@@ -606,6 +643,22 @@ class APISpec_Batch {
         return (object) ["\$ref" => "#/components/parameters/{$pname}"];
     }
 
+    /** Return an inline (non-`$ref`) copy of common parameter `$name`, or null
+     * if there is no matching common parameter. Used when an endpoint must
+     * attach instance-specific data — such as a `* default` — to a parameter
+     * that would otherwise be referenced; the copy keeps the shared description
+     * and schema, including any merged documentation.
+     * @param string $name
+     * @param int $f
+     * @return ?object */
+    private function inline_common_param($name, $f) {
+        if ($this->reference_common_param($name, $f) === null) {
+            return null;
+        }
+        $pname = self::find_parameter($this->parameters, $name, $f);
+        return $pname ? json_decode(json_encode($this->parameters->$pname)) : null;
+    }
+
     /** @param object $x
      * @param ?string $component
      * @return ?object */
@@ -686,17 +739,17 @@ class APISpec_Batch {
     /** Badge name produced by `* badge featured`. Marks the API calls most worth
      * using by external integrators; the apidoc renderer displays it as a yellow
      * star. `apply_badges()` sorts it before other badges. */
-    const FEATURED_BADGE = "featured";
+    const FEATURED_BADGE = "Featured";
 
     private function resolve_badge($name) {
-        if ($name === "admin") {
-            return (object) ["name" => "Admin only"];
-        } else if ($name === "site-admin") {
+        if ($name === "siteadmin") {
             return (object) ["name" => "Site admin only"];
-        } else if ($name === "paper-admin") {
-            return (object) ["name" => "Paper admin only"];
+        } else if ($name === "admin") {
+            return (object) ["name" => "Admin only"];
+        } else if ($name === "trackmanager") {
+            return (object) ["name" => "Track manager only"];
         } else if ($name === "featured") {
-            return (object) ["name" => self::FEATURED_BADGE];
+            return (object) ["name" => "Featured"];
         }
         return null;
     }
@@ -794,9 +847,12 @@ class APISpec_Batch {
      * and ELEMENT the alternative within it; fields sharing GROUP and ELEMENT
      * belong to the same alternative; ELEMENT defaults to the field name), and
      * `* group LABEL` puts the field in an ad-hoc group: consecutive fields
-     * sharing LABEL render together inside a box titled with it. Items are
-     * recognized by position (a trailing list) and grammar; any other `*`-list
-     * is left untouched as Markdown. Returns the trimmed description.
+     * sharing LABEL render together inside a box titled with it, and `* default
+     * VALUE` records the field's OpenAPI `default` (VALUE is parsed as JSON, so
+     * `* default true`, `* default 42`, `* default "rev"`, and `* default null`
+     * all work; a bare word that is not valid JSON is taken as a string). Items
+     * are recognized by position (a trailing list) and grammar; any other
+     * `*`-list is left untouched as Markdown. Returns the trimmed description.
      * @param string $name
      * @param string $body
      * @return string */
@@ -834,7 +890,7 @@ class APISpec_Batch {
 
         // Consume a trailing list of `* badge`/`* condition` items standing in
         // its own paragraph (preceded by a blank line or the start of the body).
-        if (preg_match('/(?:\A|\n\n)((?:\* (?:badge|condition|oneof|group)[ \t]++[^\n]++(?:\n|\z))++)\z/', $text, $mm)) {
+        if (preg_match('/(?:\A|\n\n)((?:\* (?:badge|condition|oneof|group|default)[ \t]++[^\n]++(?:\n|\z))++)\z/', $text, $mm)) {
             foreach (explode("\n", trim($mm[1])) as $line) {
                 if (preg_match('/\A\* badge[ \t]++(\S++)/', $line, $bm)) {
                     if (($b = $this->resolve_badge($bm[1]))) {
@@ -858,6 +914,11 @@ class APISpec_Batch {
                     // the box and keys it — consecutive fields with the same
                     // label group together.
                     $this->cur_fieldgroup[$name] = $gm[1];
+                } else if (preg_match('/\A\* default[ \t]++(\S.*?)[ \t]*+\z/', $line, $dm)) {
+                    // OpenAPI `default` for the field. The value is parsed as
+                    // JSON (`true`, `42`, `"rev"`, `null`, …); a bare word that
+                    // is not valid JSON is taken literally as a string.
+                    $this->cur_fielddefault[$name] = self::parse_default_value($dm[1]);
                 }
             }
             $text = rtrim(substr($text, 0, strlen($text) - strlen($mm[1])));
@@ -883,6 +944,33 @@ class APISpec_Batch {
         }
         if (isset($this->cur_fieldgroup[$name])) {
             $target->{"x-group"} = $this->cur_fieldgroup[$name];
+        }
+    }
+
+    /** Parse the VALUE of a `* default VALUE` line. The value is decoded as
+     * JSON, so booleans, numbers, strings, `null`, and JSON arrays/objects are
+     * all representable; a bare token that is not valid JSON (e.g. an unquoted
+     * `rev`) is returned verbatim as a string.
+     * @param string $s
+     * @return mixed */
+    static private function parse_default_value($s) {
+        $s = trim($s);
+        $v = json_decode($s);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $v;
+        }
+        return $s;
+    }
+
+    /** Set the OpenAPI `default` on schema object `$schema` if field `$name`
+     * declared one via `* default VALUE`. `default` is a JSON Schema keyword, so
+     * for query parameters it belongs on the parameter's `schema` and for
+     * body/response properties on the property schema itself.
+     * @param string $name
+     * @param object $schema */
+    private function apply_field_default($name, $schema) {
+        if (array_key_exists($name, $this->cur_fielddefault)) {
+            $schema->default = $this->cur_fielddefault[$name];
         }
     }
 
@@ -955,6 +1043,7 @@ class APISpec_Batch {
                     $bprop[$name]->description = $this->cur_fieldd[$name];
                 }
                 $this->apply_field_metadata($name, $bprop[$name]);
+                $this->apply_field_default($name, $bprop[$name]);
                 $bprop[$name]->{"x-order"} = $idx;
                 if (($f & self::F_REQUIRED) !== 0) {
                     $breq[] = $name;
@@ -965,8 +1054,16 @@ class APISpec_Batch {
                 continue;
             }
             $pobj = null;
+            $has_default = array_key_exists($name, $this->cur_fielddefault);
             if (!isset($this->cur_fieldd[$name])) {
-                $pobj = $this->reference_common_param($name, $f);
+                // A `* default` is parameter-specific, so it cannot ride the
+                // shared `$ref` to a common parameter (different endpoints give
+                // the same parameter different defaults). Materialize an inline
+                // copy of the common parameter instead, keeping its description
+                // and schema; otherwise reference the shared component.
+                $pobj = $has_default
+                    ? $this->inline_common_param($name, $f)
+                    : $this->reference_common_param($name, $f);
             }
             if (!$pobj) {
                 $pobj = (object) [
@@ -980,6 +1077,12 @@ class APISpec_Batch {
                 }
             }
             $this->apply_field_metadata($name, $pobj);
+            // `default` is a schema keyword; place it on the parameter's schema.
+            // OpenAPI 3.1 permits it as a sibling of the schema's `$ref`.
+            if ($has_default) {
+                $pobj->schema = $pobj->schema ?? (object) [];
+                $this->apply_field_default($name, $pobj->schema);
+            }
             $pobj->{"x-order"} = $idx;
             $params[$name] = $pobj;
         }
@@ -1183,6 +1286,7 @@ class APISpec_Batch {
         $this->cur_fieldconditions = [];
         $this->cur_fieldoneof = [];
         $this->cur_fieldgroup = [];
+        $this->cur_fielddefault = [];
         $this->cur_fieldsch = [];
         $this->cur_fieldsch_after = [];
         $this->cur_md_order = [];
@@ -1382,6 +1486,7 @@ class APISpec_Batch {
                 $respprop->$k->description = $this->cur_fieldd[$k];
             }
             $this->apply_field_metadata($k, $respprop->$k);
+            $this->apply_field_default($k, $respprop->$k);
         }
 
         // result

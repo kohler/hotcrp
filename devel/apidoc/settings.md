@@ -25,7 +25,7 @@ deadlines.
 * param ?filter string: Search expression defining settings to include
 * param ?exclude string: Search expression defining settings to exclude
 * response settings object
-* badge admin
+* badge siteadmin
 
 
 # post /settings
@@ -54,7 +54,7 @@ For more information on JSON settings, see [Help > Advanced settings](https://he
 * response valid boolean: True if the modification was valid
 * response change_list [string]: List of modified top-level settings
 * response settings object: New settings
-* badge admin
+* badge siteadmin
 
 
 # get /settingdescriptions
@@ -70,7 +70,7 @@ Each entry in `setting_descriptions` describes one top-level setting. The set
 mirrors the settings the caller is allowed to view.
 
 * response setting_descriptions [setting_description]: One descriptor per top-level setting.
-* badge admin
+* badge siteadmin
 
 
 # get /submissionfieldlibrary
@@ -85,7 +85,7 @@ the submission-field types this installation supports. Chair only.
 * response samples [object]: Sample submission-field configurations, each a
   settings object ready to merge into [`/settings`](#post-settings).
 * response types [object]: The submission-field types available on this site.
-* badge admin
+* badge siteadmin
 
 
 # get /reviewfieldlibrary
@@ -100,7 +100,7 @@ installation supports. Chair only.
 * response samples [object]: Sample review-field configurations, each a settings
   object ready to merge into [`/settings`](#post-settings).
 * response types [object]: The review-field types available on this site.
-* badge admin
+* badge siteadmin
 
 
 # get /mailtext
@@ -211,7 +211,7 @@ and an `id`; `editable` marks formulas the caller may change, and a per-formula
 
 > Save named formulas
 
-Create, edit, or delete named formulas. Chairs only. Changes are supplied as a
+Create, edit, or delete named formulas. Available to PC members. Changes are supplied as a
 numbered list of structured parameters `formula/<n>/<field>`, one group per
 formula; the fields are `id` (the existing formula’s ID, or `new`), `name`,
 `expression`, and `delete`. On success the updated list is returned as

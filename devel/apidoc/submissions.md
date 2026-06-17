@@ -24,9 +24,11 @@ object is returned in the `paper` response field. Error messages—for
 instance, about permission errors or nonexistent submissions—are returned in
 `message_list`.
 
-* badge featured
 * param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
+
+    * default true
 * response ?paper paper: The requested submission object.
+* badge featured
 
 
 # post /paper
@@ -48,7 +50,7 @@ The modification may be specified:
 3. As a JSON-formatted request parameter named `json` (when the request body
    has content-type `application/x-www-form-urlencoded` or
    `multipart/form-data`).
-4. As a previously-uploaded JSON or ZIP file, represented by an upload token in
+4. As a previously-uploaded JSON or ZIP file, represented by an [upload token](#post-upload) in
    the `upload` parameter.
 
 In all of these, the modification is defined by a JSON submission object. The
@@ -64,7 +66,7 @@ To test a modification, supply a `dry_run=1` parameter. This will test the
 uploaded JSON but make no changes to the database.
 
 
-### ZIP and form uploads
+## ZIP and form uploads
 
 A ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is
 also acceptable). This file’s content is parsed as JSON. Submission fields in
@@ -92,18 +94,17 @@ $ curl -H "Authorization: bearer hct_XXX" -F "json=<data.json" -F paper.pdf=@pap
 ```
 
 
-### Administrator use
+## Administrator use
 
-Administrators can use this endpoint to set some submission fields, such
-as `decision`, that have other endpoints as well.
+Submission administrators can use this endpoint to set some submission fields,
+such as `decision`, that have other endpoints as well.
 
-Administrators can choose specific IDs for new submissions by setting `p` (or
-JSON `pid`) to the chosen ID. Such a request will either modify an existing
+Site administrators can choose specific IDs for new submissions by setting `p`
+(or JSON `pid`) to the chosen ID. Such a request will either modify an existing
 submission or create a new submission with that ID. To avoid overwriting an
-existing submission, set the submission JSON’s `status`.`if_unmodified_since`
-to `0`.
+existing submission, set the submission JSON’s `status`.`if_unmodified_since` to
+`0`.
 
-* badge featured
 * body application/json paper: A submission object sent as a raw JSON body.
 
     * oneof body
@@ -113,31 +114,33 @@ to `0`.
 * param ?=json string: A submission object supplied in the `json` form field.
 
     * oneof body
-* param ?upload upload_token: An upload token for a previously-uploaded JSON or ZIP file.
+* param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
 
     * oneof body
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param disable_users boolean: True disables any newly-created users.
 
-  When an administrator creates submissions on behalf of other people, HotCRP
-  normally creates accounts for any new contacts named in the input. Set
-  `disable_users=1` to create those accounts as *disabled*: the new users cannot
-  sign in or receive email until an administrator explicitly enables them. This
-  is useful when importing submissions in bulk and you don’t yet want to notify
-  the people involved.
+    When an administrator creates submissions on behalf of other people, HotCRP
+    normally creates accounts for any new contacts named in the input. Set
+    `disable_users=1` to create those accounts as *disabled*: the new users cannot
+    sign in or receive email until an administrator explicitly enables them. This
+    is useful when importing submissions in bulk and you don’t yet want to notify
+    the people involved.
 
-  * badge site-admin
+    * badge siteadmin
 * param add_topics boolean: True automatically adds topics from input papers to
   the conference’s topics list.
 
-  * badge site-admin
+    * badge siteadmin
 * param reason string: Optional text included in notification emails
 * param notify boolean: False disables all email notifications
 
-  * badge site-admin
+    * default true
+    * badge siteadmin
 * param notify_authors boolean: False disables email notifications to authors
 
-  * badge paper-admin
+    * default true
+    * badge admin
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?pid pid: ID of the modified or newly created submission.
 * response ?+valid boolean: True if and only if the modification was valid.
@@ -156,26 +159,32 @@ to `0`.
     * condition valid
     * condition !dry_run
 
+* badge featured
+
+
 # delete /{p}/paper
 
 > Delete submission
 
 Delete the submission specified by `p`, a submission ID.
 
-* badge featured
 * param ?if_unmodified_since string: Don’t delete if modified since this time
 * param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
+
+    * default true
 * param ?dry_run boolean: True checks input for errors, but does not save changes
 * param ?notify boolean: False disables all email notifications
 
-  * badge site-admin
+    * default true
+    * badge siteadmin
 * param ?notify_authors boolean: False disables email notifications to authors
 
-  * badge paper-admin
+    * default true
 * param ?reason string: Optional text included in notification emails
 * response ?dry_run boolean: True for `dry_run` requests
 * response valid boolean: True if the delete request was valid
 * response change_list [string]: Always `["delete"]`.
+* badge featured
 * badge admin
 
 
@@ -196,10 +205,10 @@ allowed to view submission #1010”, whereas the `/papers` request will return
 no errors. To obtain warnings for missing submissions that were explicitly
 listed in a query, supply a `warn_missing=1` parameter.
 
-* badge featured
 * param q search_string: The search expression.
 * param t
 
+    * default viewable
     * group Search modifiers
 * param qt
 
@@ -215,6 +224,7 @@ listed in a query, supply a `warn_missing=1` parameter.
     * group Search modifiers
 * param warn_missing boolean: Get warnings for missing submissions
 * response ?papers [paper]: The matching submission objects.
+* badge featured
 
 
 # post /papers
@@ -228,7 +238,7 @@ request formats are similar to that of `POST /{p}/paper`: it can accept a
 JSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and
 form-encoded requests can also include attached files.
 
-### Modify submissions independently
+## Modify submissions independently
 
 The JSON provided for `/papers` should be an *array* of JSON objects; each
 object is applied independently. The per-submission results are returned in the
@@ -239,14 +249,13 @@ submissions. To filter out the messages for a single submission, use the
 messages’ `landmark` fields. `landmark` is set to the integer index of the
 relevant submission in the input JSON.
 
-### Modify all matching submissions
+## Modify all matching submissions
 
 Alternately, you can provide a `q` search query parameter and a *single* JSON
 modification object lacking the `pid` field. The JSON modification will be
 applied to all papers returned by the `q` search query.
 
 
-* badge featured
 * body application/json [paper]: An array of submission objects sent as a raw JSON body.
 
     * oneof body
@@ -256,22 +265,24 @@ applied to all papers returned by the `q` search query.
 * param ?=json string: Submission objects supplied in the `json` form field.
 
     * oneof body
-* param ?upload upload_token: An upload token for a previously-uploaded JSON or ZIP file.
+* param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
 
     * oneof body
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param disable_users boolean: True disables any newly-created users
 
-  * badge site-admin
+    * badge siteadmin
 * param add_topics boolean: True automatically adds topics from input papers
 
-  * badge site-admin
+    * badge siteadmin
 * param notify boolean: False does not notify contacts of changes
 
-  * badge site-admin
+    * default true
+    * badge siteadmin
 * param ?q search_string: Search query for match requests
 * param t
 
+    * default viewable
     * group Search modifiers
 * param qt
 
@@ -292,27 +303,28 @@ applied to all papers returned by the `q` search query.
     For array input, `status_list` has the same length and order as the input:
     entry *i* reports the `valid` flag, `change_list`, and `pid` of update *i*.
 
-* badge admin
+* badge featured
+* badge siteadmin
 
 
 # get /potentialconflicts
 
 > Compute potential PC conflicts
 
-Return the program-committee members who potentially conflict with a submission —
-either because they are an author of it, or because their name, affiliation, or
-collaborators overlap with the submission’s. Authors use this while preparing a
-submission to see who is conflicted; administrators use it to audit declared
-conflicts. It is available to a submission’s authors and to administrators, and
-only when the submission’s PC-conflicts field is present and visible to the
-caller.
+Return the program-committee members who potentially conflict with a
+submission—either because they are an author of it, or because their name,
+affiliation, or collaborators overlap with the submission’s. Authors use this
+while preparing a submission to see who is conflicted; administrators use it to
+audit declared conflicts. It is available to a submission’s authors and to
+administrators, and only when the submission’s PC-conflicts field is present and
+visible to the caller.
 
 Identify the submission with `p`, or pass `p=new` (with an optional `sclass`) to
 analyze a not-yet-created submission.
 
 By default conflicts are computed from the submission’s saved authors and
-collaborators. To preview conflicts for *unsaved* data — as the submission form
-does while an author edits — supply prospective values instead, in one of two
+collaborators. To preview conflicts for *unsaved* data—as the submission form
+does while an author edits—supply prospective values instead, in one of two
 ways:
 
 * a `json` object with `authors` and/or `collaborators` members; or
@@ -327,11 +339,19 @@ and a `tooltip` (HTML).
 
 * param ?p pid: Submission to analyze; use `new` for an unsaved submission.
 * param ?sclass string: Submission class, used when `p=new`.
-* param ?json string: JSON object of prospective `authors` and/or `collaborators` to analyze instead of the saved submission.
+* param ?json string: JSON object of prospective `authors` and/or `collaborators` to apply to the submission before analysis.
+
+    * oneof unsaved
 * param ?collaborators string: Prospective collaborators text (a form-field alternative to `json`).
+
+    * oneof unsaved params
 * param ?:authors string: Prospective author fields, `authors:<n>:<field>` (a form-field alternative to `json`).
+
+    * oneof unsaved params
 * param ?has_authors boolean: Set when supplying `authors:<n>:<field>` fields.
-* response potential_conflicts [object]: The potentially-conflicted PC members.
+
+    * oneof unsaved params
+* response potential_conflicts [potential_conflict]: The potentially-conflicted PC members.
 
 
 # get /{p}/share
@@ -340,7 +360,7 @@ and a `tooltip` (HTML).
 
 Retrieve the share link for a submission. This link can be accessed by users not
 signed in to HotCRP; it grants view-only access to the submission and its
-documents. Only authors and administrators can fetch the share link.
+documents. Only authors and submission administrators can fetch the share link.
 
 * response ?url: The share link
 * response ?token author_view_token: Token for this share link
@@ -368,7 +388,7 @@ whether a link should be created; it must be one of:
 `new`
 : Delete any existing share link and create a new one.
 
-Only authors and administrators can modify a share link.
+Only authors and submission administrators can modify a share link.
 
 * param !share share_action
 * param ?expires_in integer

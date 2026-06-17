@@ -10,16 +10,16 @@ to `"review"`. Every review object has a stable numeric `rid` (review ID) and
 the `pid` of the submission it belongs to. Beyond that core, a review object
 mixes three kinds of information, each gated by the caller’s permissions:
 
-* **Metadata** — `rtype` (review type, see below), `round` (review round name,
+* **Metadata**—`rtype` (review type, see below), `round` (review round name,
   if rounds are configured), `status` (lifecycle state, see below), `version`
   (a counter that increases on every edit), and `ordinal` (a display label like
   `A`, `B`, … assigned once the review becomes visible to authors/PC). Drafts
   have no `ordinal` and carry `"draft": true`. Booleans `blind`, `subreview`,
   and `ghost` may also appear.
-* **Reviewer identity** — `reviewer` (display name) and `reviewer_email`, present
+* **Reviewer identity**—`reviewer` (display name) and `reviewer_email`, present
   only when the caller may see who wrote the review. On anonymous reviews these
   are omitted even when the review itself is visible.
-* **Content** — the review-form field values. Each configured review field is
+* **Content**—the review-form field values. Each configured review field is
   keyed by its **field UID** (an uppercase identifier such as `S01` or
   `overAllMerit`’s UID), so field values never collide with the core fields
   above. Score fields render as their symbolic value, text fields as strings.
@@ -40,12 +40,12 @@ metareview. It is reported only to callers who may view review metadata.
 
 `status` names the review’s position in its lifecycle:
 
-* `empty` — assigned but not started
-* `acknowledged` — the reviewer has accepted the assignment but not entered content
-* `draft` — content saved but not submitted
-* `delivered` — submitted (for subreviews, awaiting approval)
-* `approved` — a subreview approved by its primary reviewer
-* `complete` — finished and counted
+* `empty`—assigned but not started
+* `acknowledged`—the reviewer has accepted the assignment but not entered content
+* `draft`—content saved but not submitted
+* `delivered`—submitted (for subreviews, awaiting approval)
+* `approved`—a subreview approved by its primary reviewer
+* `complete`—finished and counted
 
 ## Identifying a review
 
@@ -69,9 +69,10 @@ returned in the `review` field as a [review object](#tag-reviews). If the
 review does not exist the response is a `404`; if it exists but the caller may
 not see it, a `403`.
 
-* badge featured
 * param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
 * param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
+
+    * default true
 * response review object: The requested [review object](#tag-reviews).
 
 
@@ -91,14 +92,17 @@ which submissions are searched). Supply at most one of them:
 * `rq` is a review search expression (the same syntax as a `re:` search),
   evaluated with `reviewer` as its viewpoint, and returns only matching reviews.
 
-* badge featured
 * param ?q search_string: Search selecting submissions whose reviews to return. Required unless `p` is given.
 * param ?t search_collection: Search collection for `q`; defaults to the submissions the caller can view.
+
+    * default viewable
 * param ?p pid: Return reviews of this single submission instead of running a search.
 * param ?rq string: Review search expression limiting which reviews are returned.
 * param ?u email: Return only reviews written by this user. Mutually exclusive with `rq`.
 * param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
 * param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
+
+    * default true
 * response reviews [object]: Matching [review objects](#tag-reviews).
 
 

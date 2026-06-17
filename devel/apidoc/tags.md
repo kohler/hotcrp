@@ -4,17 +4,17 @@ These endpoints read and modify submission **tags** and the per-tag display
 metadata that depends on them.
 
 A tag is a label attached to a submission. A tag may carry a numeric **value**,
-written `tag#4`; valueless tags conventionally have value 0 (and are displayed
-without the `#0`). Tags drive much of HotCRP’s organization: chairs can
-configure tags as **votes** or **approval votes** (each PC member has an
-allotment), as **rankings**, or as **colors/styles** that highlight a
+written `tag#4`; if omitted, the value `#0` is the default, and `tag#0` is
+typically displayed as just `tag`. Tags drive much of HotCRP’s organization:
+chairs can configure tags as **votes** or **approval votes** (each PC member has
+an allotment), as **rankings**, or as **colors/styles** that highlight a
 submission. Some tags are **automatic** (maintained by a formula and read-only)
 or otherwise read-only to non-chairs.
 
 Tags also have visibility rules. **Twiddle tags** are private: `~tag` is stored
 per user (only you see your `~tag`), and `~~tag` is visible only to chairs.
 Ordinary tags are visible to the PC, except that a conflicted PC member may see
-a different set of tags on submissions they are conflicted with — which is why
+a different set of tags on submissions they are conflicted with—which is why
 several responses carry both a normal and a `…_conflicted` variant.
 
 ## Tag objects
@@ -23,12 +23,12 @@ Most endpoints return a submission’s tags as a **tag object** (the
 [`tag_response`](#tag-tags) schema). Because tags feed several different UI
 elements, the same tags are presented in several forms:
 
-* `tags` — the machine-readable list of tags (with values), as a
+* `tags`—the machine-readable list of tags (with values), as a
   [`tag_value_list`](#tag-tags).
-* `tags_edit_text` — the tags as editable text.
-* `tags_view_html` — rendered HTML for display.
-* `tag_decoration_html` — HTML for any badges and emoji the tags imply.
-* `color_classes` — CSS style classes implied by the tags.
+* `tags_edit_text`—the tags as editable text.
+* `tags_view_html`—rendered HTML for display.
+* `tag_decoration_html`—HTML for any badges and emoji the tags imply.
+* `color_classes`—CSS style classes implied by the tags.
 
 When the viewer is conflicted, `tags_conflicted` and `color_classes_conflicted`
 give the conflict-blind versions.
@@ -40,19 +40,19 @@ permission rules apply.
 
 ## Tag annotations
 
-An ordered tag — one used for a ranking or for votes — can carry **annotations**
+An ordered tag—one used for a ranking or for votes—can carry **annotations**
 that divide its submissions into labeled groups, such as the section headings in
 a discussion order. Each annotation is a [`tag_annotation`](#tag-tags) object:
 
-* `annoid` — a stable integer ID for the annotation within the tag.
-* `tagval` — the tag value at which the group begins. An annotation labels the
+* `annoid`—a stable integer ID for the annotation within the tag.
+* `tagval`—the tag value at which the group begins. An annotation labels the
   run of submissions whose value for the tag is at least its `tagval` and less
   than the next annotation’s, so the annotations’ `tagval`s define the group
   boundaries.
-* `legend` — the group’s display text (with a `format` code when it is not the
+* `legend`—the group’s display text (with a `format` code when it is not the
   default text format). A divider with no text instead carries `blank: true`.
-* `tag` — the tag the annotation belongs to.
-* `pos` — when annotations accompany a search result, the index in that result
+* `tag`—the tag the annotation belongs to.
+* `pos`—when annotations accompany a search result, the index in that result
   at which the annotation falls (the same meaning as `groups[].pos` from
   [`/search`](#get-search)).
 
@@ -80,9 +80,9 @@ Modify the tags on submission `p` and return the updated [tag object](#tag-tags)
 
 Two modes of change are available, and may be combined:
 
-* **Replace** — `tags` sets the submission’s complete tag list, removing any
+* **Replace**—`tags` sets the submission’s complete tag list, removing any
   tags not listed (subject to permissions).
-* **Incremental** — `add_tags` adds tags and `remove_tags` removes them, leaving
+* **Incremental**—`add_tags` adds tags and `remove_tags` removes them, leaving
   other tags untouched.
 
 To make a change conditional, set `expected_tags` to the tag list you believe is
@@ -143,7 +143,7 @@ the (lowercased) tags that are read-only or site-wide, respectively.
 > Retrieve tag annotations
 
 Return the **annotations** of a tag. Annotations divide an ordered (ranking or
-votes) tag into labeled groups — for example, section headings in a discussion
+votes) tag into labeled groups—for example, section headings in a discussion
 order. `editable` reports whether the caller may change them.
 
 * param tag tag: The tag whose annotations to return.
@@ -188,9 +188,9 @@ for [`taganno` GET](#get-taganno).
 > Retrieve tag edit messages
 
 Return advisory messages about the caller’s tags on submission `p`, in the
-standard `message_list`. These are the warnings HotCRP shows around voting tags
-— for instance, how many votes remain in an allotment, or that an allotment has
-been exceeded. The response carries the submission’s `pid`; the messages
+standard `message_list`. These are the warnings HotCRP shows around voting
+tags—for instance, how many votes remain in an allotment, or that an allotment
+has been exceeded. The response carries the submission’s `pid`; the messages
 themselves are in `message_list`.
 
 * response pid pid: Submission ID.

@@ -20,7 +20,7 @@ closest match at or after the query, and `match` reports whether that email is a
 When no account is found, the response is `{"ok": true, "match": false}` with no
 profile fields. When one is found, its `email`, `given_name`, `family_name`, and
 `affiliation` are returned (plus `country` and `orcid` when set). Visibility
-still applies — a caller who may only see PC members will only match PC members.
+still applies—a caller who may only see PC members will only match PC members.
 
 Give `email` as a full or nearly-complete address; very short, non-email queries
 return no match. Supplying a submission `p` together with `potential_conflict=1`
@@ -69,7 +69,7 @@ caller’s permissions. `sort` is `last` when the roster is ordered by last name
 and `tags` lists the user tags the caller may see.
 
 When the request is made in the context of a submission the caller administers,
-`p` carries per-submission information keyed by submission ID — notably which PC
+`p` carries per-submission information keyed by submission ID—notably which PC
 members are `assignable` as reviewers.
 
 Set `ui=1` to receive the richer representation HotCRP’s own interface uses.
@@ -87,8 +87,8 @@ Set `ui=1` to receive the richer representation HotCRP’s own interface uses.
 > Retrieve account status
 
 Return the status of a user account: its `email`, whether it is `disabled`, and
-whether it is a `placeholder` (a stub account created on someone’s behalf — for
-example a requested reviewer who has not yet signed in — that is not yet a fully
+whether it is a `placeholder` (a stub account created on someone’s behalf—for
+example a requested reviewer who has not yet signed in—that is not yet a fully
 activated account).
 
 Name the account in `email`; `me` or the caller’s own email selects the caller.
@@ -108,10 +108,10 @@ own.
 Perform an administrative action on the account named by `email`. Chairs only.
 Exactly one action applies per request:
 
-* `disable=1` — disable the account, blocking sign-in. (You cannot disable your
+* `disable=1`—disable the account, blocking sign-in. (You cannot disable your
   own account.)
-* `enable=1` — re-enable a disabled account.
-* `sendinfo=1` — email the account’s sign-in information to its owner.
+* `enable=1`—re-enable a disabled account.
+* `sendinfo=1`—email the account’s sign-in information to its owner.
 
 The response reports the account’s resulting status, as for
 [`account` GET](#get-account).
@@ -123,3 +123,4 @@ The response reports the account’s resulting status, as for
 * response email email: The account’s email.
 * response disabled boolean: Whether the account is disabled.
 * response placeholder boolean: Whether the account is an unactivated placeholder.
+* badge siteadmin

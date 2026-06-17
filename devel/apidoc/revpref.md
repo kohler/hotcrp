@@ -12,7 +12,7 @@ A preference has two parts:
 * An optional **expertise** indicator: `X` (expert), `Y` (some expertise), or
   `Z` (little expertise).
 
-In text the two combine as the value followed by the expertise letter — for
+In text the two combine as the value followed by the expertise letter—for
 example `10X` (strong preference, expert) or `-5` (mild aversion, no expertise
 stated).
 
@@ -29,7 +29,7 @@ These endpoints are also reachable under the aliases `pref` and `reviewpref`.
 
 > Retrieve a review preference
 
-Return a PC member’s review preference for submission `p` — by default the
+Return a PC member’s review preference for submission `p`—by default the
 caller’s own, or another PC member’s when `u` is given (administrators only).
 
 `pref` is the numeric preference and `value` is its text form (number plus any
@@ -55,7 +55,7 @@ Set a PC member’s review preference for submission `p`, then return it as
 administrators may set another PC member’s preference with `u`.
 
 Supply the new preference in `pref`, in text form: a signed integer, optionally
-followed by an expertise letter (`X`, `Y`, or `Z`) — for example `10`, `-5`, or
+followed by an expertise letter (`X`, `Y`, or `Z`)—for example `10`, `-5`, or
 `20X`. An empty value clears the preference.
 
 * badge featured

@@ -4,13 +4,27 @@ These endpoints run submission **searches** and manage the machinery around
 them: saved (named) searches, the display options that control how a result list
 is shown, search-box completions, formula graphs, and bulk **search actions**.
 
-A search is written as a HotCRP **search string** — the same syntax as the web
-search box — in the `q` parameter, and runs against a **collection** of
-submissions named by `t` (for example `t=s` for complete submissions, or
-`t=viewable` for everything the caller can see). [`/search`](#get-search)
-returns the matching submission IDs and, optionally, display fields; it is the
-backbone of every paper list, and several other endpoints (here and in other
-sections) accept the same `q`/`t` parameters to act on a search result.
+A search is written as a HotCRP **search string**—the same syntax as the web
+search box—in the `q` parameter, and runs against a **collection** of submissions
+named by `t`. [`/search`](#get-search) returns the matching submission IDs and,
+optionally, display fields; it is the backbone of every paper list, and several
+other endpoints (here and in other sections) accept the same search parameters to
+act on a search result.
+
+These shared search parameters are:
+
+- `q`—the search string.
+- `t`—the collection of submissions to search. `t=viewable`, the broadest,
+  checks every submission the caller can view; `t=s` is complete submissions. If
+  `t` is omitted, HotCRP picks a default from the caller’s roles and the site
+  configuration (typically `t=s` for PC members and chairs).
+- `qt`—default fields to search for query terms that do not name a field, such as
+  `ti` (title) or `au` (authors).
+- `sort`—the result sort order, such as `id` or `-title`.
+- `scoresort`—the sort order for review-score fields, such as `average` or
+  `counts`.
+- `reviewer`—the reviewer (email or ID) whose viewpoint evaluates
+  reviewer-relative search terms such as `myreview`.
 
 
 # get /search
@@ -18,19 +32,10 @@ sections) accept the same `q`/`t` parameters to act on a search result.
 > Retrieve search results
 
 Return IDs, and optionally other display fields, of submissions that match a
-search.
+search. The matching submission IDs are returned in the `ids` response field,
+ordered according to the search.
 
-The `q` parameter defines the search. The list of matching submission IDs is
-returned in the `ids` response field, ordered according to the search.
-
-The `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can modify the
-search. `t` defines the collection of searched submissions. `t=viewable` is the
-broadest; it checks all submissions the user can view. If `t` is not provided,
-HotCRP picks a default based on the user’s roles and the site’s current
-configuration. For PC members and chairs, the typical default is `t=s`, which
-searches complete submissions.
-
-### Display fields
+## Display fields
 
 The `f` and `format` parameters retrieve display fields for each submission in
 the search result.
@@ -85,7 +90,7 @@ HotCRP’s internal use, and may change at any time. Furthermore, in some cases
 (such as `f=allpref`), the returned data is compressed into a field-specific
 format that the HotCRP web application expands.
 
-### Search annotations
+## Search annotations
 
 The `groups` response field is an array of search annotations, and is
 returned for `THEN` searches, `LEGEND` searches, and searches on annotated
@@ -117,14 +122,14 @@ This response might be returned for the search `10-12 THEN 5-8`:
 }
 ```
 
-### More
+## More
 
 The `search_params` response field is a URL-encoded string defining all
 relevant parameters for the search.
 
 Set the `hotlist` parameter to get a `hotlist` response field. A
-[hotlist](#tag-search) records this ordered result — its members and the search
-that produced it — so the HotCRP web client can remember the list across page
+[hotlist](#tag-search) records this ordered result—its members and the search
+that produced it—so the HotCRP web client can remember the list across page
 loads and offer “previous”/“next” navigation between submissions. It is returned
 as an opaque JSON-encoded string (a serialized [`hotlist`](#tag-search) object);
 external integrations that just want the matching IDs should read `ids`
@@ -279,6 +284,8 @@ expresses the caller’s view as a difference from HotCRP’s built-in default.
 
 * param ?report =pl|pf: Which report’s options to return; `pl` (paper list,
   the default) or `pf` (review preferences).
+
+    * default pl
 * param ?q search_string: A search whose result provides context for evaluating the view.
 * response report =pl|pf: The report these options apply to.
 * response display_current string: The view currently in effect for the caller.
@@ -296,6 +303,8 @@ string in `display`; the response reports the resulting options exactly as
 [`viewoptions` GET](#get-viewoptions) does.
 
 * param ?report =pl|pf: Which report to configure; `pl` (the default) or `pf`.
+
+    * default pl
 * param ?q search_string: A search whose result provides context for evaluating the view.
 * param =display string: The new default view string (`show:`/`hide:`/`sort:` terms).
 * response report =pl|pf: The report these options apply to.
@@ -303,6 +312,7 @@ string in `display`; the response reports the resulting options exactly as
 * response display_default string: The new site default view.
 * response display_difference string: The caller’s view as a difference from the built-in default.
 * response display_default_message_list message_list: Diagnostics about the default view.
+* badge siteadmin
 
 
 # get /searchcompletion
@@ -311,7 +321,7 @@ string in `display`; the response reports the resulting options exactly as
 
 Return suggested search keywords for the search box, in `searchcompletion`.
 Without arguments the full suggestion set is returned; `category` limits it to a
-single class — for example `sf` (submission fields), `has`, `ss` (saved
+single class—for example `sf` (submission fields), `has`, `ss` (saved
 searches), `dec` (decisions), or `round` (review rounds). Most entries are
 completion strings; a few are grouped objects that bundle several related
 suggestions.
@@ -324,15 +334,15 @@ suggestions.
 
 > Retrieve formula graph data
 
-Return the data behind a **formula graph** (HotCRP’s “Graphs” feature) — for
+Return the data behind a **formula graph** (HotCRP’s “Graphs” feature)—for
 instance a scatter plot of one formula against another over a set of
 submissions. `x` (required) and `y` are formula expressions for the axes, and
 `gtype` selects the graph type (such as `scatter`). The submissions to plot come
 from a search: supply `q` (and optionally `t`). Several series can be overlaid by
 numbering the searches `q1`, `q2`, … with optional labels `s1`, `s2`, ….
 
-The response carries the graph in HotCRP’s internal plotting format — the axis
-descriptions (`x`, `y`), a `data_format` code, and the `data` points — intended
+The response carries the graph in HotCRP’s internal plotting format—the axis
+descriptions (`x`, `y`), a `data_format` code, and the `data` points—intended
 for the HotCRP graphing UI rather than for general consumption.
 
 * param x string: Formula expression for the x-axis.

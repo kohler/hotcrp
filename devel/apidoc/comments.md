@@ -7,7 +7,7 @@ Each comment has a *visibility* and a *topic* (which in the UI is called a
 
 The default comment visibility is `"rev"`, which makes the comment visible to
 PC and external reviewers. Other values are `"admin"` (visible only to
-submission administrators and the comment author), `"pc"` (visible to PC
+the submission’s managers and the comment author), `"pc"` (visible to PC
 reviewers, but not external reviewers), and `"au"` (visible to authors and
 reviewers).
 
@@ -26,19 +26,19 @@ carries a numeric `cid` (comment ID) and the `pid` of the submission it belongs
 to. Beyond that, the fields present depend on the comment and on what the caller
 is allowed to see:
 
-* **Placement** — `visibility` and `topic` (see above), and `ordinal` (a display
+* **Placement**—`visibility` and `topic` (see above), and `ordinal` (a display
   label like `A1` or `cA2`, assigned once the comment is visible).
-* **Content** — `text` (the comment body), `format` (the default text format for
+* **Content**—`text` (the comment body), `format` (the default text format for
   rendering it), `tags`, `docs` (attachments), and `word_count`. Content is
   omitted when the request passes `content=false`.
-* **Authorship** — `author`, `author_email`, `by_author` (true for a comment
+* **Authorship**—`author`, `author_email`, `by_author` (true for a comment
   written by a submission author), and `by_shepherd`. On anonymized comments the
   identity fields are replaced by `author_pseudonym`/`author_pseudonymous`, or
   hidden entirely (`author_hidden`).
-* **State** — `draft` (true for an unsubmitted response), `blind`, `collapsed`,
+* **State**—`draft` (true for an unsubmitted response), `blind`, `collapsed`,
   `response` (the response round name, for response comments), `modified_at`
   (and `modified_at_text`), and `review_token`.
-* **Permissions** — `editable` (the caller may edit this comment),
+* **Permissions**—`editable` (the caller may edit this comment),
   `author_editable`, and `viewer_owned` (the caller wrote it).
 
 ## Identifying a comment
@@ -48,34 +48,29 @@ The `c` parameter selects a comment on submission `p`. It may be:
 * a numeric comment ID (for example `42`);
 * `new`, to create a comment (POST only);
 * `response`, to select or create the unnamed response; or
-* a named-response selector such as `R2response` or `R2` together with a
-  `response=R2` parameter.
+* a named response selector such as `R2response` (or, equivalently, set
+  `c=response` and add a `response=R2` parameter).
 
-On [`GET /{p}/comment`](#get-comment), omitting `c` returns *all* viewable
-comments instead of a single one. On [`POST /{p}/comment`](#post-comment),
-omitting `c` defaults to `new`.
+On [`POST /{p}/comment`](#post-comment), omitting `c` defaults to `new`.
 
 
 # get /{p}/comment
 
 > Retrieve comment
 
-Return one comment, or all viewable comments, of submission `p`.
-
-If `c` selects a single comment (see [Identifying a
-comment](#tag-comments)), that comment is returned in the `comment` response
+Return one comment of submission `p`, selected by `c` (see [Identifying a
+comment](#tag-comments)). The comment is returned in the `comment` response
 field as a [comment object](#tag-comments); if it does not exist or the caller
-may not see it, an error is returned. If `c` is omitted, every comment the caller
-can view is returned in the `comments` array, in display order.
+may not see it, an error is returned.
 
-* badge featured
-* param ?c string: The comment to return (a numeric comment ID or a response
-  selector). Omit to return all viewable comments.
+* param c string: The comment to return (a numeric comment ID or a response
+  selector).
 * param ?response string: Response-round name, when selecting a named response.
 * param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
   from the response, returning only metadata. Defaults to `true`.
-* response ?comment comment: The requested comment, when `c` selects one.
-* response ?comments [comment]: All viewable comments, when `c` is omitted.
+
+    * default true
+* response ?comment comment: The requested comment.
 
 
 # post /{p}/comment
@@ -96,14 +91,14 @@ modified, and the saved [comment object](#tag-comments) is returned in
 Saving with `text` empty and no attachments is refused for a new comment, but
 deletes an existing one (it is treated as `delete=1`).
 
-### Concurrency
+## Concurrency
 
 Editing a response can collide with a concurrent edit. When that happens the
 response has `"ok": false` and a `"conflict": true` field, and the `comment`
 field holds the server’s current version of the response so the client can
 reconcile.
 
-### Attachments
+## Attachments
 
 Comment attachments may be uploaded as files (requiring a request body in
 `multipart/form-data` encoding), or using the [upload API](#post-upload).
@@ -119,12 +114,17 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 `attachment:3`, and so forth). To delete an existing attachment, supply its
 `docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
 
-* badge featured
 * param ?c string: The comment to create, modify, or delete. Defaults to `new`.
+
+    * default new
 * param ?=text string: The comment body. Required unless `delete=1`.
 * param ?delete boolean: Set to `1` to delete the selected comment.
 * param ?visibility comment_visibility: Who can see the comment: `admin`, `pc`, `rev` (default), or `au`.
+
+    * default rev
 * param ?topic comment_topic: The comment thread: `rev` (default), `paper`, or `dec`.
+
+    * default rev
 * param ?=tags string: Space-separated tags for the comment (ordinary comments only).
 * param ?response string: Response-round name, when creating or editing a named response.
 * param ?draft boolean: For responses, set to `1` to save as a draft instead of submitting.
@@ -159,8 +159,8 @@ is not listed unprompted; authors and other direct participants use `s`.
     Each item carries the candidate’s name in `s` or `sm1` (see above) and may
     also include:
 
-    * `au` (boolean) — true for the submission’s authors;
-    * `pri` (integer) — match priority; `1` for non-PC candidates, ranking them
+    * `au` (boolean)—true for the submission’s authors;
+    * `pri` (integer)—match priority; `1` for non-PC candidates, ranking them
       above PC members;
-    * `admin` (boolean) — true for PC members who administer the submission (or,
+    * `admin` (boolean)—true for PC members who administer the submission (or,
       when no submission is given, site chairs).

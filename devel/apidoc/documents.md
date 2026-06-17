@@ -91,6 +91,8 @@ request’s `detail` parameter is truthy.
 * param ?docid document_id
 * param ?hash
 * param ?soft boolean: If true, reuse a cached format check when one is available instead of re-running the checks. Defaults to false (always re-run).
+
+    * default false
 * param ?detail boolean: If true, include the per-page-type `npages_detail` breakdown.
 * response docid document_id: ID of the checked document.
 * response npages nullable_int: Number of pages in PDF
@@ -181,6 +183,9 @@ store.
 * param ?filename string: Name of uploaded file
 
     * condition start
+* param ?size nonnegative_integer: Size of uploaded file in bytes.
+
+    * condition start
 * param ?token upload_token
 
     Token for the ongoing upload. Required unless `start=1`.
@@ -194,7 +199,6 @@ store.
   actual length of `blob`).
 
     * condition blob
-* param ?size nonnegative_integer: Size of uploaded file in bytes.
 * param ?finish boolean
 
     Set to true to complete the upload.
