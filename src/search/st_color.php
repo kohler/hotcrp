@@ -38,10 +38,9 @@ class Color_SearchTerm extends SearchTerm {
             return new Color_SearchTerm($srch->user, "tagbg");
         } else if (($ks = $srch->conf->tags()->known_style($word))) {
             return new Color_SearchTerm($srch->user, "tag-" . $ks->style);
-        } else {
-            $srch->lwarning($sword, "<0>Unknown style ‘{$word}’");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>Unknown style ‘{$word}’");
+        return new False_SearchTerm;
     }
     static function parse_color($word, SearchWord $sword, PaperSearch $srch) {
         $word = strtolower($word);
@@ -49,9 +48,8 @@ class Color_SearchTerm extends SearchTerm {
             return (new Color_SearchTerm($srch->user, "tagbg"))->negate_if($word === "none");
         } else if (($ks = $srch->conf->tags()->known_style($word))) {
             return new Color_SearchTerm($srch->user, $ks->style);
-        } else {
-            $srch->lwarning($sword, "<0>Unknown color ‘{$word}’");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>Unknown color ‘{$word}’");
+        return new False_SearchTerm;
     }
 }

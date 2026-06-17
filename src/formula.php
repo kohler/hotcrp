@@ -1518,7 +1518,10 @@ class FormulaCompiler {
         $n = '$ov_' . ($o->id < 0 ? "m" . -$o->id : $o->id);
         if ($this->check_gvar($n)) {
             $this->queryOptions["options"] = true;
-            $this->gstmt[] = "$n = " . $this->_prow() . "->option({$o->id});";
+            $this->gstmt[] = "{$n} = " . $this->_prow() . "->option({$o->id});";
+            $this->gstmt[] = "if ({$n} && !\$user->can_view_option(" . $this->_prow() . ", {$n}->option)) {";
+            $this->gstmt[] = "  {$n} = null;";
+            $this->gstmt[] = "}";
         }
         return $n;
     }
@@ -1541,8 +1544,7 @@ class FormulaCompiler {
     function _add_primary_document() {
         if ($this->check_gvar('$primary_document')) {
             $prow = $this->_prow();
-            $decision = $this->_add_decision();
-            $this->gstmt[] = "\$primary_document = \$user->can_view_pdf({$prow}) ? {$prow}->document({$prow}->finalPaperStorageId > 0 ? " . DTYPE_FINAL . " : " . DTYPE_SUBMISSION . ") : null;";
+            $this->gstmt[] = "\$primary_document = {$prow}->viewable_primary_document(\$user);";
         }
         return '$primary_document';
     }

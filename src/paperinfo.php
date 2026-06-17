@@ -2638,6 +2638,23 @@ class PaperInfo {
         return $this->document($this->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION);
     }
 
+    /** @return ?DocumentInfo */
+    function viewable_primary_document(Contact $user) {
+        $doc = null;
+        if ($this->finalPaperStorageId > 1
+            && $this->outcome > 0
+            && $user->can_view_decision($this)
+            && $user->can_view_option($this, $this->conf->option_by_id(DTYPE_FINAL))) {
+            $doc = $this->document(DTYPE_FINAL);
+        }
+        if (!$doc
+            && $this->paperStorageId > 1
+            && $user->can_view_option($this, $this->conf->option_by_id(DTYPE_SUBMISSION))) {
+            $doc = $this->document(DTYPE_SUBMISSION);
+        }
+        return $doc;
+    }
+
     /** @return bool */
     function is_primary_document(DocumentInfo $doc) {
         return $doc->paperStorageId > 1
@@ -2681,7 +2698,8 @@ class PaperInfo {
         return $ov ? $ov->attachment($name) : null;
     }
 
-    /** @return ?int */
+    /** @return ?int
+     * @deprecated */
     function npages() {
         $doc = $this->document($this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL);
         return $doc ? $doc->npages() : 0;
