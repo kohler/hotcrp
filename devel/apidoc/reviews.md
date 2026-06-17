@@ -5,7 +5,7 @@ external-review request lifecycle (request, accept, decline, reassign).
 
 ## Review objects
 
-A review is returned as a JSON **review object** with an `object` property equal
+A review is returned as a JSON **review object** with an `object` field equal
 to `"review"`. Every review object has a stable numeric `rid` (review ID) and
 the `pid` of the submission it belongs to. Beyond that core, a review object
 mixes three kinds of information, each gated by the caller’s permissions:
@@ -21,7 +21,7 @@ mixes three kinds of information, each gated by the caller’s permissions:
   are omitted even when the review itself is visible.
 * **Content** — the review-form field values. Each configured review field is
   keyed by its **field UID** (an uppercase identifier such as `S01` or
-  `overAllMerit`’s UID), so field values never collide with the core properties
+  `overAllMerit`’s UID), so field values never collide with the core fields
   above. Score fields render as their symbolic value, text fields as strings.
   Fields the caller may not see are omitted; their UIDs may be listed in
   `hidden_fields`.
@@ -65,12 +65,13 @@ reviews by submission search rather than by ID.
 > Retrieve one review
 
 Return a single review of submission `p`, selected by `r`. The review is
-returned in the `review` property as a [review object](#tag-reviews). If the
+returned in the `review` field as a [review object](#tag-reviews). If the
 review does not exist the response is a `404`; if it exists but the caller may
 not see it, a `403`.
 
+* badge featured
 * param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
-* param ?forceShow boolean: Administrators override their own conflicts by default; set `forceShow=false` to respect them.
+* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
 * response review object: The requested [review object](#tag-reviews).
 
 
@@ -90,13 +91,14 @@ which submissions are searched). Supply at most one of them:
 * `rq` is a review search expression (the same syntax as a `re:` search),
   evaluated with `reviewer` as its viewpoint, and returns only matching reviews.
 
+* badge featured
 * param ?q search_string: Search selecting submissions whose reviews to return. Required unless `p` is given.
 * param ?t search_collection: Search collection for `q`; defaults to the submissions the caller can view.
 * param ?p pid: Return reviews of this single submission instead of running a search.
 * param ?rq string: Review search expression limiting which reviews are returned.
 * param ?u email: Return only reviews written by this user. Mutually exclusive with `rq`.
 * param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
-* param ?forceShow boolean: Administrators override their own conflicts by default; set `forceShow=false` to respect them.
+* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
 * response reviews [object]: Matching [review objects](#tag-reviews).
 
 
@@ -164,7 +166,7 @@ Ask a person identified by `email` to review submission `p`. Depending on
 conference policy and the caller’s role, this either assigns the review
 directly, files a **proposal** for an administrator to approve, or (for
 administrators requesting an anonymous reviewer) mints a review token. The
-`action` property reports which happened, and `message_list` carries the
+`action` field reports which happened, and `message_list` carries the
 human-readable outcome.
 
 If the person has no account yet, supply their name (`given_name` and

@@ -25,11 +25,11 @@ format. Use `multipart/form-data` encoding for requests that include uploaded
 files. Since servers limit upload size, you may need to use the upload API to
 upload a large file before processing it with another call.
 
-Responses are formatted as JSON. Every response has an `ok` property, which is
+Responses are formatted as JSON. Every response has an `ok` field, which is
 `true` if the request format succeeded and `false` otherwise. Typically `"ok":
 false` indicates a serious error with the request that prevented proper
 processing. Messages about the request, if any, are expressed in a
-`message_list` property.
+`message_list` field.
 
 `GET` operations retrieve system state and `POST` operations modify system
 state. Other operations are occasionally used when semantically meaningful—for
@@ -44,7 +44,9 @@ and `api/1/comment` are the same API call. `p` is a positive decimal integer,
 but some API calls accept `p=new` when defining a new submission.
 
 The `forceShow` boolean parameter allows administrators to override their
-conflicts when that is possible.
+conflicts when that is possible. It defaults to `true`, so administrators
+override their conflicts by default; pass `forceShow=false` to respect conflicts
+instead.
 
 
 ### Authentication

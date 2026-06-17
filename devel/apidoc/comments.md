@@ -18,35 +18,92 @@ the submission thread (visible to anyone who can see the submission), and
 `"dec"`, the decision thread (visible to users who can see the submission’s
 decision).
 
+## Comment objects
+
+A comment is returned as a JSON **comment object** (the [`comment`](#tag-comments)
+schema) with an `object` field equal to `"comment"`. Every comment object also
+carries a numeric `cid` (comment ID) and the `pid` of the submission it belongs
+to. Beyond that, the fields present depend on the comment and on what the caller
+is allowed to see:
+
+* **Placement** — `visibility` and `topic` (see above), and `ordinal` (a display
+  label like `A1` or `cA2`, assigned once the comment is visible).
+* **Content** — `text` (the comment body), `format` (the default text format for
+  rendering it), `tags`, `docs` (attachments), and `word_count`. Content is
+  omitted when the request passes `content=false`.
+* **Authorship** — `author`, `author_email`, `by_author` (true for a comment
+  written by a submission author), and `by_shepherd`. On anonymized comments the
+  identity fields are replaced by `author_pseudonym`/`author_pseudonymous`, or
+  hidden entirely (`author_hidden`).
+* **State** — `draft` (true for an unsubmitted response), `blind`, `collapsed`,
+  `response` (the response round name, for response comments), `modified_at`
+  (and `modified_at_text`), and `review_token`.
+* **Permissions** — `editable` (the caller may edit this comment),
+  `author_editable`, and `viewer_owned` (the caller wrote it).
+
+## Identifying a comment
+
+The `c` parameter selects a comment on submission `p`. It may be:
+
+* a numeric comment ID (for example `42`);
+* `new`, to create a comment (POST only);
+* `response`, to select or create the unnamed response; or
+* a named-response selector such as `R2response` or `R2` together with a
+  `response=R2` parameter.
+
+On [`GET /{p}/comment`](#get-comment), omitting `c` returns *all* viewable
+comments instead of a single one. On [`POST /{p}/comment`](#post-comment),
+omitting `c` defaults to `new`.
+
 
 # get /{p}/comment
 
 > Retrieve comment
 
-Return a comment object specified by ID.
+Return one comment, or all viewable comments, of submission `p`.
 
-The `c` parameter specifies the comment to return. If the comment exists and
-the user can view it, it will be returned in the `comment` component of the
-response. Otherwise, an error response is returned.
+If `c` selects a single comment (see [Identifying a
+comment](#tag-comments)), that comment is returned in the `comment` response
+field as a [comment object](#tag-comments); if it does not exist or the caller
+may not see it, an error is returned. If `c` is omitted, every comment the caller
+can view is returned in the `comments` array, in display order.
 
-If `c` is omitted, all viewable comments are returned in a `comments` list.
-
-* param content boolean: False omits comment content from response
+* badge featured
+* param ?c string: The comment to return (a numeric comment ID or a response
+  selector). Omit to return all viewable comments.
+* param ?response string: Response-round name, when selecting a named response.
+* param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
+  from the response, returning only metadata. Defaults to `true`.
+* response ?comment comment: The requested comment, when `c` selects one.
+* response ?comments [comment]: All viewable comments, when `c` is omitted.
 
 
 # post /{p}/comment
 
 > Create, modify, or delete comment
 
-Create, modify, or delete a comment specified by ID.
+Create, modify, or delete a comment on submission `p`. Select the comment with
+`c` (see [Identifying a comment](#tag-comments)): a numeric comment ID modifies
+or deletes an existing comment, `new` creates an ordinary comment, and
+`response`/`R2response` creates or updates a response.
 
-The `c` parameter specifies the comment to modify. It can be a numeric comment
-ID; `new`, to create a new comment; or `response` (or a compound like
-`R2response`), to create or modify a named response.
+A request must either supply `text` (the new comment body) or set `delete=1`;
+otherwise it is rejected. When `delete=1`, the comment is removed and the
+response carries no `comment` field. Otherwise the comment is created or
+modified, and the saved [comment object](#tag-comments) is returned in
+`comment`.
 
-Setting `delete=1` deletes the specified comment, and the response does not
-contain a `comment` component. Otherwise the comment is created or modified,
-and the response `comment` component contains the new comment.
+Saving with `text` empty and no attachments is refused for a new comment, but
+deletes an existing one (it is treated as `delete=1`).
+
+### Concurrency
+
+Editing a response can collide with a concurrent edit. When that happens the
+response has `"ok": false` and a `"conflict": true` field, and the `comment`
+field holds the server’s current version of the response so the client can
+reconcile.
+
+### Attachments
 
 Comment attachments may be uploaded as files (requiring a request body in
 `multipart/form-data` encoding), or using the [upload API](#post-upload).
@@ -62,15 +119,48 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 `attachment:3`, and so forth). To delete an existing attachment, supply its
 `docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
 
-* param override boolean
-* param delete boolean
-* param text string
-* param tags string
-* param topic comment_topic
-* param visibility comment_visibility
-* param response string
-* param ready boolean
-* param draft boolean
-* param blind boolean
-* param by_author boolean
-* param review_token string
+* badge featured
+* param ?c string: The comment to create, modify, or delete. Defaults to `new`.
+* param ?=text string: The comment body. Required unless `delete=1`.
+* param ?delete boolean: Set to `1` to delete the selected comment.
+* param ?visibility comment_visibility: Who can see the comment: `admin`, `pc`, `rev` (default), or `au`.
+* param ?topic comment_topic: The comment thread: `rev` (default), `paper`, or `dec`.
+* param ?=tags string: Space-separated tags for the comment (ordinary comments only).
+* param ?response string: Response-round name, when creating or editing a named response.
+* param ?draft boolean: For responses, set to `1` to save as a draft instead of submitting.
+* param ?blind boolean: Whether the comment is anonymous, where the configuration allows a choice.
+* param ?=:attachment string: Structured attachment fields, `attachment:<n>` (see above).
+* param ?review_token string: Review token authorizing the edit, when acting through one.
+* response ?comment comment: The saved comment, absent on delete.
+
+
+# get /mentioncompletion
+
+> List mention completions
+
+Return the people the caller may **@-mention** in a comment, in the format used
+by HotCRP’s autocompleter. The comment editor calls this when the user types `@`
+to populate the mention dropdown.
+
+Pass the submission in `p`; the candidate set—authors, reviewers, and PC
+members—depends on that submission and on what the caller is allowed to see. The
+list also reflects comment-mention visibility, so it never reveals a participant
+the caller could not otherwise discover.
+
+Each entry in `mentioncompletion` is one candidate, given as an autocompleter
+item. The candidate’s display name appears in either `s` or `sm1` (exactly one is
+present): `s` is offered immediately, while `sm1` is offered only once the user
+has typed at least one character. PC members use `sm1`, so the entire committee
+is not listed unprompted; authors and other direct participants use `s`.
+
+* param ?p pid: Submission whose participants may be mentioned.
+* response mentioncompletion [object]: Mention candidates, as autocompleter items.
+
+    Each item carries the candidate’s name in `s` or `sm1` (see above) and may
+    also include:
+
+    * `au` (boolean) — true for the submission’s authors;
+    * `pri` (integer) — match priority; `1` for non-PC candidates, ranking them
+      above PC members;
+    * `admin` (boolean) — true for PC members who administer the submission (or,
+      when no submission is given, site chairs).

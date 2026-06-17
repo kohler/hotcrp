@@ -25,6 +25,7 @@ This API understands conditional requests with HTTP headers `If-Match`,
 responses include `ETag` and `Last-Modified` HTTP headers. It also understands
 range requests.
 
+* badge featured
 * param ?doc document_name: Document name, e.g. `testconf-paper1.pdf`.
 
     * oneof docspec doc
@@ -53,6 +54,7 @@ documents currently associated with the submission. To request information about
 a specific submission field, add a `dt` or `doc` parameter. Setting `history=1`
 requests information about past document versions as well as current ones.
 
+* badge featured
 * param ?doc document_name
 
    * oneof docspec doc
@@ -72,10 +74,10 @@ requests information about past document versions as well as current ones.
 > Check PDF format
 
 Run HotCRP’s PDF format checker on a specified document. A human-readable
-response is returned in `message_list`. The `problem_fields` response property
+response is returned in `message_list`. The `problem_fields` response field
 lists the names of any PDF checks that failed; examples include `"papersize"`,
 `"pagelimit"`, `"columns"`, `"textblock"`, `"bodyfontsize"`, `"bodylineheight"`,
-and `"wordlimit"`. The `npages_detail` response property is provided only if the
+and `"wordlimit"`. The `npages_detail` response field is provided only if the
 request’s `detail` parameter is truthy.
 
 * param ?doc document_name
@@ -88,13 +90,13 @@ request’s `detail` parameter is truthy.
     * oneof docspec p
 * param ?docid document_id
 * param ?hash
-* param ?soft boolean
-* param ?detail boolean
-* response docid document_id
+* param ?soft boolean: If true, reuse a cached format check when one is available instead of re-running the checks. Defaults to false (always re-run).
+* param ?detail boolean: If true, include the per-page-type `npages_detail` breakdown.
+* response docid document_id: ID of the checked document.
 * response npages nullable_int: Number of pages in PDF
 * response nwords nullable_int: Number of words in PDF
-* response problem_fields [string]
-* response has_error boolean
+* response problem_fields [string]: Names of the format checks that failed (e.g. `papersize`, `pagelimit`).
+* response has_error boolean: True if any check failed.
 * response ?npages_detail object: Number of pages in PDF per page type
 
     * condition detail
@@ -105,7 +107,7 @@ request’s `detail` parameter is truthy.
 > List contents of archive document
 
 List the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. Returns
-the list of included filenames in the `archive_contents` property. The
+the list of included filenames in the `archive_contents` field. The
 `summary=1` parameter requests an additional `archive_contents_summary`, which a
 preformatted string that uses `{}` notation to represent subdirectories; for
 instance, `subdir/{file1.txt, file2.txt}`.
@@ -144,7 +146,7 @@ The lifecycle of an upload is as follows.
    is known, and parameters defining its purpose (`dt`, `mimetype`, `filename`,
    and `temp`).
 2. The response to this request includes the upload token in its `token`
-   property. This is a string like `hcupwhvGDVmHNYyDKdqeqA`. All subsequent
+   field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`. All subsequent
    requests relating to the upload must include this token as a `token`
    parameter.
 3. Subsequent requests upload the contents of the file in chunks. The `blob`
@@ -160,6 +162,7 @@ response field represents the ranges of bytes received so far.
 The upload API is only available on sites that have enabled the document
 store.
 
+* badge featured
 * param ?p pid
 * param ?start boolean
 
@@ -198,13 +201,13 @@ store.
 * param ?cancel boolean
 
     Set to true to cancel an ongoing upload.
-* response token upload_token
+* response token upload_token: Token identifying this upload; include it as `token` in later requests.
 * response dt document_type
 * response filename string
 * response mimetype mimetype
 * response size nonnegative_integer
-* response ranges [offset_range]
-* response hash string
-* response crc32 string
-* response progress_value integer
-* response progress_max integer
+* response ranges [offset_range]: Byte ranges received so far.
+* response ?hash string: The completed file’s content hash; present once the upload is finished.
+* response ?crc32 string: The completed file’s CRC32 checksum; present once the upload is finished.
+* response ?progress_value integer: Bytes received so far, for progress display.
+* response ?progress_max integer: Total expected bytes, when known.

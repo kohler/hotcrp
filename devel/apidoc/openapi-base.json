@@ -119,6 +119,7 @@
                 "name": "t",
                 "in": "query",
                 "required": false,
+                "description": "The collection of submissions to search, such as `s` (complete submissions) or `all`.",
                 "schema": {
                     "$ref": "#/components/schemas/search_collection"
                 }
@@ -127,6 +128,7 @@
                 "name": "qt",
                 "in": "query",
                 "required": false,
+                "description": "Default fields to search for query terms that do not name a field, such as `ti` or `au`.",
                 "schema": {
                     "$ref": "#/components/schemas/search_qt"
                 }
@@ -135,6 +137,7 @@
                 "name": "reviewer",
                 "in": "query",
                 "required": false,
+                "description": "Email or ID of the reviewer whose viewpoint evaluates reviewer-relative search terms such as `myreview`.",
                 "schema": {
                     "$ref": "#/components/schemas/search_reviewer"
                 }
@@ -143,6 +146,7 @@
                 "name": "sort",
                 "in": "query",
                 "required": false,
+                "description": "Sort order for the returned submissions, such as `id` or `-title`.",
                 "schema": {
                     "$ref": "#/components/schemas/search_sort"
                 }
@@ -167,6 +171,7 @@
                 "name": "scoresort",
                 "in": "query",
                 "required": false,
+                "description": "Sort order for review-score fields, such as `average` or `counts`.",
                 "schema": {
                     "$ref": "#/components/schemas/search_scoresort"
                 }
@@ -175,6 +180,7 @@
                 "name": "forceShow",
                 "in": "query",
                 "required": false,
+                "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
                 "schema": {
                     "type": "boolean"
                 }
@@ -601,22 +607,27 @@
             },
             "hotlist": {
                 "type": "object",
-                "description": "Properties of submission list or user list",
+                "description": "A **hotlist** captures an ordered list of submissions (or users) together with the search that produced it, so HotCRP's web client can remember the list across page loads — most visibly to offer “previous”/“next” navigation between submissions. It is an opaque token to most callers; external integrations can ignore it. Note that on the wire a hotlist is transmitted as a **JSON-encoded string** (a serialized form of the object documented here), not as a nested JSON object; HotCRP's client parses the string to recover these properties.",
                 "properties": {
                     "listid": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Identifies the list and the search that generated it. Begins with the list type (`p` for submissions, `u` for users) and, for searches, encodes the query and its parameters, e.g. `p/s/1-40`."
                     },
                     "description": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Human-readable description of the list, e.g. `1-40 in Submitted`."
                     },
                     "urlbase": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Base URL of the page the list came from, used to reconstruct links back to it."
                     },
                     "highlight": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Whether items newly matching the list should be visually highlighted."
                     },
                     "ids": {
-                        "$ref": "#/components/schemas/encoded_pid_list"
+                        "$ref": "#/components/schemas/encoded_pid_list",
+                        "description": "The list members, in order, in HotCRP's compact run-length ID encoding. For long lists this may be omitted in favor of `digest` (see `hotlist_input`)."
                     }
                 },
                 "examples": [
@@ -637,21 +648,25 @@
                         "type": "object",
                         "properties": {
                             "digest": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Reference to a full list cached client-side (a token of the form `listdigest<N>`), sent in place of `ids` when the encoded list would be too long for a cookie."
                             },
                             "curid": {
-                                "type": "integer"
+                                "type": "integer",
+                                "description": "The submission currently being viewed from the list."
                             },
                             "previd": {
-                                "type": "integer"
+                                "type": "integer",
+                                "description": "The submission before `curid` in the list, for “previous” navigation."
                             },
                             "nextid": {
-                                "type": "integer"
+                                "type": "integer",
+                                "description": "The submission after `curid` in the list, for “next” navigation."
                             }
                         }
                     }
                 ],
-                "description": "Properties of submission list or user list"
+                "description": "A [`hotlist`](#tag-search) as accepted on input (for example in a `hotlist-info` parameter), extended with the navigation/caching fields HotCRP's client adds when storing a list: a `digest` reference for long lists, and the current/previous/next submission IDs."
             },
             "encoded_pid_list": {
                 "type": "string",
@@ -949,6 +964,106 @@
                     }
                 }
             },
+            "named_search": {
+                "type": "object",
+                "description": "A named (saved) search. Returned by `/namedsearch`; PC members only.",
+                "required": ["name", "q"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The search’s name."
+                    },
+                    "q": {
+                        "type": "string",
+                        "description": "The search query string."
+                    },
+                    "display": {
+                        "type": "string",
+                        "description": "Display options applied when the search is shown, as `show:`/`sort:` terms."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Human-readable description of the search."
+                    },
+                    "editable": {
+                        "type": "boolean",
+                        "description": "Present and true when the caller may modify or delete the search."
+                    }
+                }
+            },
+            "named_formula": {
+                "type": "object",
+                "description": "A named (saved) formula: a reusable name for a formula expression, usable in searches, scoring, and graphs. Returned by `/namedformula`.",
+                "required": ["name", "expression", "id"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The formula’s name."
+                    },
+                    "expression": {
+                        "type": "string",
+                        "description": "The formula expression."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "Internal formula ID."
+                    },
+                    "editable": {
+                        "type": "boolean",
+                        "description": "Present and true when the caller may modify or delete the formula."
+                    },
+                    "message_list": {
+                        "$ref": "#/components/schemas/message_list",
+                        "description": "Diagnostics produced when evaluating the expression; present only when the formula has problems."
+                    }
+                }
+            },
+            "setting_description": {
+                "type": "object",
+                "description": "Machine-readable description of one setting—or, within `components`, one member field of an `object` or `oblist` setting. Returned by `/settingdescriptions`; names and types mirror the JSON that `/settings` accepts and returns. The text fields (`title`, `summary`, `description`) are formatted-text strings that begin with a format sigil, normally `<0>` for plain text.",
+                "required": ["name", "type"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Setting name: the key used for this setting in `/settings` JSON."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Value type of the setting, such as `string`, `int`, `checkbox`, `object`, or `oblist` (a list of objects)."
+                    },
+                    "subtype": {
+                        "type": "string",
+                        "description": "Optional refinement of `type`."
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Human-readable title (formatted text)."
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "Short one-line summary (formatted text)."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Longer explanation of the setting (formatted text)."
+                    },
+                    "values": {
+                        "type": "array",
+                        "description": "Example or permitted values for the setting.",
+                        "items": {}
+                    },
+                    "default_value": {
+                        "description": "The setting’s default value, in the same form `/settings` returns. Present only on top-level descriptors, not on `components` members."
+                    },
+                    "components": {
+                        "type": "array",
+                        "description": "For `object` and `oblist` settings, descriptors for the member fields, in order. Each member has the same shape as a top-level descriptor (without `default_value`).",
+                        "items": {
+                            "$ref": "#/components/schemas/setting_description"
+                        }
+                    }
+                }
+            },
             "tag": {
                 "type": "string",
                 "description": "Tag",
@@ -1048,30 +1163,55 @@
             },
             "tag_annotation": {
                 "type": "object",
-                "description": "Annotation for tag or submission group",
+                "description": "Annotation dividing an ordered (ranking or votes) tag into labeled groups. Annotations are positioned by tag value: an annotation applies to the run of submissions whose value for the tag is at least its `tagval` (up to the next annotation).",
                 "required": [
                     "annoid"
                 ],
                 "properties": {
+                    "annoid": {
+                        "type": "integer",
+                        "description": "Unique identifier for this annotation within the tag. (When creating an annotation via `POST /taganno`, supply a string beginning with `n`, such as `n1`, in place of an ID.)"
+                    },
+                    "tag": {
+                        "$ref": "#/components/schemas/tag",
+                        "description": "The tag this annotation belongs to."
+                    },
+                    "tagval": {
+                        "type": "number",
+                        "description": "Tag value at which the annotation begins; the annotation labels submissions whose value for the tag is at least this and less than the next annotation's value."
+                    },
+                    "legend": {
+                        "type": "string",
+                        "description": "Display text (heading) for the group. Absent for a blank separator."
+                    },
+                    "format": {
+                        "type": "integer",
+                        "description": "Text format code for `legend`, present only when it is not the default format."
+                    },
+                    "blank": {
+                        "type": "boolean",
+                        "description": "Present and `true` when the annotation is a blank separator with no legend."
+                    },
                     "pos": {
                         "type": "integer",
                         "minimum": 0,
-                        "description": "Position of annotation in associated submission list"
+                        "description": "Position of the annotation in the associated submission list, as an index into the result. Present only when the annotation is returned alongside a search result."
                     },
-                    "annoid": {
-                        "type": "integer"
+                    "session_title": {
+                        "type": "string",
+                        "description": "Optional session-scheduling metadata: the session's title, used when the tag organizes a meeting agenda."
                     },
-                    "tag": {
-                        "$ref": "#/components/schemas/tag"
+                    "time": {
+                        "type": "string",
+                        "description": "Optional session-scheduling metadata: the session's time."
                     },
-                    "tagval": {
-                        "type": "number"
+                    "location": {
+                        "type": "string",
+                        "description": "Optional session-scheduling metadata: the session's location."
                     },
-                    "blank": {
-                        "type": "boolean"
-                    },
-                    "legend": {
-                        "type": "string"
+                    "session_chair": {
+                        "type": "string",
+                        "description": "Optional session-scheduling metadata: the session's chair."
                     }
                 }
             },

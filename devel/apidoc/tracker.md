@@ -27,7 +27,7 @@ instead of polled.
 ## Tracker status fields
 
 The [`track`](#post-track) and [`trackerconfig`](#post-trackerconfig) responses
-report the current state through a common set of properties (each present only
+report the current state through a common set of fields (each present only
 when applicable):
 
 * `tracker` — the full tracker state object: its `trackerid`, list position, the
@@ -73,7 +73,7 @@ list, the same form produced elsewhere in the UI). `p` and `tracker_start_at`
 optionally pin a specific submission and start time.
 
 * param track string: Tracker command (see above).
-* param ?=hotlist-info string: Encoded submission list the tracker walks through.
+* param ?=hotlist-info string: The submission list the tracker walks through, as a [hotlist](#tag-search) string (the same `hotlist` value returned by [`/search`](#get-search)).
 * param ?p pid: Submission to position the tracker at.
 * param ?tracker_start_at integer: Tracker start time.
 * response ?tracker object: Full tracker state, when a tracker is running and visible.

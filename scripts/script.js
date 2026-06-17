@@ -10819,7 +10819,7 @@ handle_ui.on("js-annotate-order", function () {
                 legend: legend
             };
             if (deleted) {
-                anno.deleted = true;
+                anno["delete"] = true;
             } else if (need_session) {
                 anno.session_title = form.elements[pfx + "session_title"].value;
                 anno.time = form.elements[pfx + "time"].value;

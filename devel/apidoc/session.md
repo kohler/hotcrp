@@ -16,7 +16,7 @@ forgery](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/CSRF).
 Browser-driven `POST` requests (those authenticated with a session cookie
 rather than a bearer token) must include a CSRF token in the `post` parameter.
 The token is obtained from [`GET /session`](#get-session), where it
-is returned as the `sessioninfo.postvalue` property; send that value back as
+is returned as the `sessioninfo.postvalue` field; send that value back as
 the `post` query or body parameter on later `POST` requests in the same
 session.
 
@@ -31,6 +31,33 @@ The `session` endpoints create a session cookie if one is not already present
 are explicitly callable by unauthenticated clients and across origins; where
 that matters it is noted on the individual endpoint, since such endpoints take
 care never to leak user information or CSRF tokens to other origins.
+
+
+# get /whoami
+
+> Identify the current user
+
+Report which user the request authenticates as. This is the simplest way to
+confirm that a set of credentials (a session cookie or an `Authorization:
+bearer` token) is valid and to learn whom it identifies.
+
+The response includes the user’s `email`, `given_name`, `family_name`, and
+`affiliation`. When the user holds any conference roles, a `roles` array lists
+them, drawn from:
+
+* `chair` — a conference chair
+* `pc` — a program committee member; this is also present for chairs
+* `sysadmin` — a system administrator
+* `manager` — an administrator of some submissions who is not a full chair
+* `author` — an author or contact of at least one submission
+* `reviewer` — assigned at least one review
+
+* badge featured
+* response email email: Email of the signed-in user
+* response given_name string: First (given) name
+* response family_name string: Last (family) name
+* response affiliation string: Affiliation
+* response roles [role]: Conference roles held by the user
 
 
 # get /session
@@ -50,7 +77,7 @@ by the absence of an `Origin` header on clients that do not send
 `Sec-Fetch-Site`).
 
 The returned `sessioninfo.postvalue` is the CSRF token; see [CSRF tokens and
-`post`](#tag-session) above. The `email` and `uid` properties are present only
+`post`](#tag-session) above. The `email` and `uid` fields are present only
 when a user is signed in.
 
 * response sessioninfo sessioninfo: Session information, omitted for cross-origin requests
@@ -92,32 +119,6 @@ returns `ok` of `true` whether or not every component was recognized.
 
 * param v string: Whitespace-separated list of preference assignments
 * response sessioninfo sessioninfo: Updated session information
-
-
-# get /whoami
-
-> Identify the current user
-
-Report which user the request authenticates as. This is the simplest way to
-confirm that a set of credentials (a session cookie or an `Authorization:
-bearer` token) is valid and to learn whom it identifies.
-
-The response includes the user’s `email`, `given_name`, `family_name`, and
-`affiliation`. When the user holds any conference roles, a `roles` array lists
-them, drawn from:
-
-* `chair` — a conference chair
-* `pc` — a program committee member; this is also present for chairs
-* `sysadmin` — a system administrator
-* `manager` — an administrator of some submissions who is not a full chair
-* `author` — an author or contact of at least one submission
-* `reviewer` — assigned at least one review
-
-* response email email: Email of the signed-in user
-* response given_name string: First (given) name
-* response family_name string: Last (family) name
-* response affiliation string: Affiliation
-* response roles [role]: Conference roles held by the user
 
 
 # post /reauth
@@ -173,7 +174,7 @@ Markdown (`<1>`), and sanitized HTML (`<5>`) formats are accepted; entries in
 other formats, or with out-of-range `status`, are silently dropped. An empty
 `message` is allowed and produces a status-only entry.
 
-The response `smsg` property is the identifier under which the messages were
+The response `smsg` field is the identifier under which the messages were
 stashed; pass it to the page that should display them. If no usable messages
 were supplied, `smsg` is `false`. To append to an existing stash, supply its
 identifier in the `smsg` request parameter (a 10–64 character alphanumeric

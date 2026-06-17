@@ -58,7 +58,8 @@ class TagAnno_API {
                 || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid))) {
                 return JsonResult::make_parameter_error("anno");
             }
-            if (isset($anno->deleted) && $anno->deleted) {
+            if (($anno->delete ?? false)
+                || /* XXX backward compat */ ($anno->deleted ?? false)) {
                 if (is_int($anno->annoid)) {
                     $q[] = "delete from PaperTagAnno where tag=? and annoId=?";
                     array_push($qv, $tag, $anno->annoid);

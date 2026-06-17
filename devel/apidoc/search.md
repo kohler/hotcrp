@@ -21,7 +21,7 @@ Return IDs, and optionally other display fields, of submissions that match a
 search.
 
 The `q` parameter defines the search. The list of matching submission IDs is
-returned in the `ids` response property, ordered according to the search.
+returned in the `ids` response field, ordered according to the search.
 
 The `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can modify the
 search. `t` defines the collection of searched submissions. `t=viewable` is the
@@ -40,14 +40,14 @@ which requests two fields: `title`, and `authors` with the `full` view option.
 The `/displayfields` API lists available display fields. `format` is either
 `csv` or `html`, and requests CSV or HTML format for the response data.
 
-The response will contain `fields` and `papers` properties. `fields` is an array
+The response will contain two fields, `fields` and `papers`. `fields` is an array
 of objects defining the emitted display fields. Typically, each entry in
 `fields` corresponds to a member of `f`, but some field requests can expand into
 multiple display fields. `papers` is an array of objects defining the exported
-fields for each matching submission. Each `papers` entry has a `pid` property
-with the submission ID, and properties corresponding to the `fields`. The
+fields for each matching submission. Each `papers` entry has a `pid` field
+with the submission ID, and one field for each entry in `fields`. The
 `papers` entries are in the same order as `ids`. In some cases, the response
-will have a `statistics` property defining overall statistics for some of the
+will have a `statistics` field defining overall statistics for some of the
 requested fields.
 
 This response might be returned for the search `10-12` with `format=csv` and
@@ -87,12 +87,12 @@ format that the HotCRP web application expands.
 
 ### Search annotations
 
-The `groups` response property is an array of search annotations, and is
+The `groups` response field is an array of search annotations, and is
 returned for `THEN` searches, `LEGEND` searches, and searches on annotated
 tags. Each `groups` entry contains a position `pos`, which is an integer index
 into the search results. Annotations with `pos` `P` should appear immediately
 before the submission at index `P` in the result. A `groups` entry may also
-have other properties, including `legend` (the textual legend corresponding to
+have other fields, including `legend` (the textual legend corresponding to
 the annotation), `search` (for `THEN` searches, the search string representing
 the following results), and `annoid`.
 
@@ -119,25 +119,40 @@ This response might be returned for the search `10-12 THEN 5-8`:
 
 ### More
 
-The `search_params` response property is a URL-encoded string defining all
+The `search_params` response field is a URL-encoded string defining all
 relevant parameters for the search.
 
-Set the `hotlist` parameter to get a `hotlist` response property, which is
-used by the HotCRP browser Javascript to remember information about a list of
-papers.
+Set the `hotlist` parameter to get a `hotlist` response field. A
+[hotlist](#tag-search) records this ordered result — its members and the search
+that produced it — so the HotCRP web client can remember the list across page
+loads and offer “previous”/“next” navigation between submissions. It is returned
+as an opaque JSON-encoded string (a serialized [`hotlist`](#tag-search) object);
+external integrations that just want the matching IDs should read `ids`
+instead.
 
 
+* badge featured
 * param q search_string: The search expression.
 * param t
+
+    * group Search modifiers
 * param qt
+
+    * group Search modifiers
 * param sort
+
+    * group Search modifiers
 * param scoresort
+
+    * group Search modifiers
 * param reviewer
+
+    * group Search modifiers
 * param report string: Report defining default view options.
 * param f string: Space-separated display field definitions.
 * param format search_field_format: Format for returned display fields.
 * param warn_missing boolean: Get warnings for missing submissions.
-* param hotlist boolean: Get a `hotlist` response property.
+* param hotlist boolean: Get a `hotlist` response field.
 * response_schema search_response
 * response ?fields [object]
 
@@ -182,7 +197,24 @@ JSON array, rather than a JSON object. Applications wanting predictable JSON
 responses should use other API endpoints. Nevertheless, `/searchaction` can be
 more convenient than other more standardized APIs.
 
+* badge featured
 * param action string: Name of action
+* param q search_string: The search expression.
+* param t
+
+    * group Search modifiers
+* param qt
+
+    * group Search modifiers
+* param sort
+
+    * group Search modifiers
+* param scoresort
+
+    * group Search modifiers
+* param reviewer
+
+    * group Search modifiers
 
 
 # post /searchaction
@@ -194,7 +226,24 @@ defined by the `q` and `t` search parameters.
 
 The request format for POST requests is the same as for GET requests.
 
+* badge featured
 * param action string: Name of action
+* param q search_string: The search expression.
+* param t
+
+    * group Search modifiers
+* param qt
+
+    * group Search modifiers
+* param sort
+
+    * group Search modifiers
+* param scoresort
+
+    * group Search modifiers
+* param reviewer
+
+    * group Search modifiers
 
 
 # get /searchactions
@@ -209,6 +258,7 @@ examples include “Download > Review forms (zip)” and “Tag > Add to order�
 `/searchactions` API endpoint retrieves the search actions that the current user
 can access programmatically via the `/searchaction` API.
 
+* badge featured
 * response actions [search_action]: List of available actions
 
 
@@ -253,33 +303,6 @@ string in `display`; the response reports the resulting options exactly as
 * response display_default string: The new site default view.
 * response display_difference string: The caller’s view as a difference from the built-in default.
 * response display_default_message_list message_list: Diagnostics about the default view.
-
-
-# get /namedsearch
-
-> List named searches
-
-Return the **named (saved) searches** available to the caller, in the `searches`
-array. PC members only. Each entry has a `name` and its search string `q`, and
-may also carry a `display` hint, a `description`, and `editable` (whether the
-caller may change it). Per-search diagnostics, if any, appear in `message_list`.
-
-* response searches [object]: The caller’s viewable named searches.
-
-
-# post /namedsearch
-
-> Save named searches
-
-Create, rename, retarget, or delete named searches. Changes are supplied as a
-numbered list of structured parameters `named_search/<n>/<field>`, one group per
-search; the fields are `id` (the existing search’s name, or `new` to create
-one), `name`, `search` (the search string), `highlight`, `description`, and
-`delete`. On success the updated list is returned exactly as [`namedsearch`
-GET](#get-namedsearch) returns it.
-
-* param ?=:named_search string: Structured per-search fields, `named_search/<n>/<field>` (see above).
-* response searches [object]: The named searches after the change.
 
 
 # get /searchcompletion

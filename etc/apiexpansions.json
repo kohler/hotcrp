@@ -24,7 +24,7 @@
   },
   {
     "name": "papers", "get": true, "merge": true,
-    "parameters": "q ?t ?qt ?scoresort ?sort ?reviewer ?warn_missing ?forceShow",
+    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?warn_missing ?forceShow",
     "response": "?papers"
   },
   {
@@ -107,7 +107,7 @@
 
   {
     "name": "decision", "get": true, "post": true,
-    "tags": ["Submission administration"],
+    "tags": ["Submission management"],
     "response": "decision decision_html ?editable"
   },
   {
@@ -116,7 +116,7 @@
   },
   {
     "name": "lead", "get": true, "post": true,
-    "tags": ["Submission administration"],
+    "tags": ["Submission management"],
     "response": "lead lead_html ?color_classes"
   },
   {
@@ -125,7 +125,7 @@
   },
   {
     "name": "manager", "get": true, "post": true,
-    "tags": ["Submission administration"],
+    "tags": ["Submission management"],
     "response": "manager manager_html ?color_classes"
   },
   {
@@ -134,11 +134,11 @@
   },
   {
     "name": "reviewround", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "tags": ["Submission management"]
   },
   {
     "name": "shepherd", "get": true, "post": true,
-    "tags": ["Submission administration"],
+    "tags": ["Submission management"],
     "response": "shepherd shepherd_html ?color_classes"
   },
   {
@@ -159,7 +159,7 @@
   {
     "name": "searchaction", "get": true, "post": true,
     "tags": ["Search"],
-    "parameters": "?action q ?t ?qt ?sort ?report ?scoresort ?reviewer ?p"
+    "parameters": "?action q ?t ?qt ?sort ?scoresort ?reviewer ?report ?p"
   },
   {
     "name": "graphdata", "get": true,
@@ -167,7 +167,7 @@
   },
   {
     "name": "namedsearch", "get": true, "post": true,
-    "tags": ["Search"],
+    "tags": ["Settings"],
     "response": "searches"
   },
   {
@@ -295,7 +295,7 @@
   {
     "name": "comment", "post": true,
     "tags": ["Comments"],
-    "parameters": "c ?override ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=ready ?=draft ?=blind ?=response ?=by_author ?=review_token ?delete",
+    "parameters": "c ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete",
     "response": "?comment ?conflict",
     "response_info": {"comment": "comment"}
   },
@@ -352,9 +352,9 @@
   },
   {
     "name": "mailtext", "get": true,
-    "tags": ["Site information"],
+    "tags": ["Settings"],
     "parameters": "?template ?p ?r ?email ?given_name ?family_name ?affiliation ?reason ?width ?text ?subject ?body",
-    "response": "?templates ?subject ?body"
+    "response": "?templates ?subject ?body ?text ?recipients ?recipient_description ?t"
   },
   {
     "name": "settings", "get": true, "post": true,
@@ -379,7 +379,7 @@
   },
   {
     "name": "account", "get": true, "post": true,
-    "tags": ["Site administration"],
+    "tags": ["Users"],
     "parameters": "email",
     "response": "email disabled placeholder"
   },
@@ -389,7 +389,7 @@
   },
   {
     "name": "namedformula", "get": true, "post": true,
-    "tags": ["Site administration"],
+    "tags": ["Settings"],
     "response": "formulas"
   },
   {

@@ -3,15 +3,15 @@
 These endpoints query and modify HotCRP submissions. They deal with **submission
 objects**, which are JSON representations of submissions.
 
-Each submission object has an `object` property (set to the constant string
-`"paper"`), a `pid` property, and a `status` property. Complete submission
-objects also have one property per submission field, such as `title`,
+Each submission object has an `object` field (set to the constant string
+`"paper"`), a `pid` field, and a `status` field. Complete submission
+objects also include every submission field, such as `title`,
 `abstract`, `authors`, `topics`, and `pc_conflicts`. However, methods that
 return submissions only fill in fields that exist and that the accessing user is
 allowed to see.
 
 Submission endpoints always return complete submission objects. To select
-specific properties of submissions, or to return computed properties, use the
+specific fields of submissions, or to return computed fields, use the
 `/search` or `/searchaction` endpoints.
 
 
@@ -20,12 +20,13 @@ specific properties of submissions, or to return computed properties, use the
 > Retrieve submission
 
 Retrieve a submission object specified by `p`, a submission ID. The submission
-object is returned in the `paper` response property. Error messages—for
+object is returned in the `paper` response field. Error messages—for
 instance, about permission errors or nonexistent submissions—are returned in
 `message_list`.
 
-* param forceShow boolean: False to not override administrator conflict
-* response ?paper paper
+* badge featured
+* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
+* response ?paper paper: The requested submission object.
 
 
 # post /paper
@@ -47,16 +48,16 @@ The modification may be specified:
 3. As a JSON-formatted request parameter named `json` (when the request body
    has content-type `application/x-www-form-urlencoded` or
    `multipart/form-data`).
-4. As a previously-uploaded JSON or ZIP file, represented by a upload token in
+4. As a previously-uploaded JSON or ZIP file, represented by an upload token in
    the `upload` parameter.
 
 In all of these, the modification is defined by a JSON submission object. The
-properties of this object define the modifications applied to the submission.
-The object need not specify all submission properties; absent properties
+fields of this object define the modifications applied to the submission.
+The object need not specify all submission fields; absent fields
 remain unchanged.
 
 The `p` request parameter is optional. If it is unset, HotCRP uses the `pid`
-from the supplied JSON. If both the `p` parameter and the JSON `pid` property
+from the supplied JSON. If both the `p` parameter and the JSON `pid` field
 are present, then they must match.
 
 To test a modification, supply a `dry_run=1` parameter. This will test the
@@ -90,26 +91,10 @@ This shell session does the same, but using `multipart/form-data`.
 $ curl -H "Authorization: bearer hct_XXX" -F "json=<data.json" -F paper.pdf=@paper.pdf SITEURL/api/paper
 ```
 
-### Responses
-
-The `valid` response property is `true` if and only if the modification was
-valid. In non-dry-run requests, `"valid": true` indicates that database changes
-were committed.
-
-The `change_list` response property lists any modified field names. New
-submissions have `"pid"` as the first item in the list. `change_list` contains
-fields that the request *attempted* to modify; successful requests, erroneous
-requests, and dry-run requests can all return nonempty `change_list`s.
-
-The `paper` response property is the modified submission object.
-
-Dry-run requests return `change_list` and `valid` properties, but not `paper`
-properties, since no modifications are performed.
-
 
 ### Administrator use
 
-Administrators can use this endpoint to set some submission properties, such
+Administrators can use this endpoint to set some submission fields, such
 as `decision`, that have other endpoints as well.
 
 Administrators can choose specific IDs for new submissions by setting `p` (or
@@ -118,20 +103,32 @@ submission or create a new submission with that ID. To avoid overwriting an
 existing submission, set the submission JSON’s `status`.`if_unmodified_since`
 to `0`.
 
-* param ?json string
-* param ?upload upload_token: Upload token for large input file
+* badge featured
+* body application/json paper: A submission object sent as a raw JSON body.
+
+    * oneof body
+* body application/zip: A ZIP archive containing `data.json` (and any files it references).
+
+    * oneof body
+* param ?=json string: A submission object supplied in the `json` form field.
+
+    * oneof body
+* param ?upload upload_token: An upload token for a previously-uploaded JSON or ZIP file.
+
+    * oneof body
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param disable_users boolean: True disables any newly-created users.
 
   When an administrator creates submissions on behalf of other people, HotCRP
   normally creates accounts for any new contacts named in the input. Set
-  `disable_users=1` to leave those accounts *disabled*: the new users cannot
+  `disable_users=1` to create those accounts as *disabled*: the new users cannot
   sign in or receive email until an administrator explicitly enables them. This
   is useful when importing submissions in bulk and you don’t yet want to notify
   the people involved.
 
   * badge site-admin
-* param add_topics boolean: True automatically adds topics from input papers
+* param add_topics boolean: True automatically adds topics from input papers to
+  the conference’s topics list.
 
   * badge site-admin
 * param reason string: Optional text included in notification emails
@@ -141,15 +138,23 @@ to `0`.
 * param notify_authors boolean: False disables email notifications to authors
 
   * badge paper-admin
-* response ?dry_run boolean: True for `dry_run` requests
-* response ?pid pid: ID of modified submission
-* response ?paper paper: JSON of modified submission
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?pid pid: ID of the modified or newly created submission.
+* response ?+valid boolean: True if and only if the modification was valid.
+
+    For a non-dry-run request, `"valid": true` also means the database changes
+    were committed.
+
+* response ?+change_list [string]: Names of the fields the request attempted to modify.
+
+    New submissions list `pid` first. `change_list` reflects what the request
+    *attempted* to change, so successful, failed, and dry-run requests can all
+    return a nonempty list.
+
+* response ?paper paper: The modified submission object.
 
     * condition valid
-
-* response ?+valid boolean: True if the modification was valid
-* response ?+change_list [string]: List of changed fields
-
+    * condition !dry_run
 
 # delete /{p}/paper
 
@@ -157,8 +162,9 @@ to `0`.
 
 Delete the submission specified by `p`, a submission ID.
 
+* badge featured
 * param ?if_unmodified_since string: Don’t delete if modified since this time
-* param ?forceShow boolean
+* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
 * param ?dry_run boolean: True checks input for errors, but does not save changes
 * param ?notify boolean: False disables all email notifications
 
@@ -169,7 +175,7 @@ Delete the submission specified by `p`, a submission ID.
 * param ?reason string: Optional text included in notification emails
 * response ?dry_run boolean: True for `dry_run` requests
 * response valid boolean: True if the delete request was valid
-* response change_list [string]: `["delete"]`
+* response change_list [string]: Always `["delete"]`.
 * badge admin
 
 
@@ -181,7 +187,7 @@ Retrieve submission objects matching a search.
 
 The search is specified in the `q` parameter (and other search parameters,
 such as `t` and `qt`). All matching visible submissions are returned, as an
-array of submission objects, in the response property `papers`.
+array of submission objects, in the response field `papers`.
 
 Since searches silently filter out non-viewable submissions, `/papers?q=1010`
 and `/paper?p=1010` can return different error messages. The `/paper` request
@@ -190,8 +196,25 @@ allowed to view submission #1010”, whereas the `/papers` request will return
 no errors. To obtain warnings for missing submissions that were explicitly
 listed in a query, supply a `warn_missing=1` parameter.
 
+* badge featured
+* param q search_string: The search expression.
+* param t
+
+    * group Search modifiers
+* param qt
+
+    * group Search modifiers
+* param sort
+
+    * group Search modifiers
+* param scoresort
+
+    * group Search modifiers
+* param reviewer
+
+    * group Search modifiers
 * param warn_missing boolean: Get warnings for missing submissions
-* response ?papers [paper]
+* response ?papers [paper]: The matching submission objects.
 
 
 # post /papers
@@ -207,25 +230,35 @@ form-encoded requests can also include attached files.
 
 ### Modify submissions independently
 
-The JSON provided for `/papers` should be an *array* of JSON objects. The
-`status_list` response property is an array with the same number of elements
-as the input JSON. Component *i* of `status_list` reports the status of update
-*i* as an object with `valid`, `change_list`, and `pid` properties; these
-report the validity of the update, the list of changed fields, and the
-submission ID of the modified submission.
+The JSON provided for `/papers` should be an *array* of JSON objects; each
+object is applied independently. The per-submission results are returned in the
+`status_list` response field (described below).
 
 The response `message_list` contains messages relating to all modified
 submissions. To filter out the messages for a single submission, use the
-messages’ `landmark` properties. `landmark` is set to the integer index of the
+messages’ `landmark` fields. `landmark` is set to the integer index of the
 relevant submission in the input JSON.
 
 ### Modify all matching submissions
 
 Alternately, you can provide a `q` search query parameter and a *single* JSON
-modification object lacking the `pid` property. The JSON modification will be
+modification object lacking the `pid` field. The JSON modification will be
 applied to all papers returned by the `q` search query.
 
 
+* badge featured
+* body application/json [paper]: An array of submission objects sent as a raw JSON body.
+
+    * oneof body
+* body application/zip: A ZIP archive containing `data.json` (and any files it references).
+
+    * oneof body
+* param ?=json string: Submission objects supplied in the `json` form field.
+
+    * oneof body
+* param ?upload upload_token: An upload token for a previously-uploaded JSON or ZIP file.
+
+    * oneof body
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param disable_users boolean: True disables any newly-created users
 
@@ -236,13 +269,29 @@ applied to all papers returned by the `q` search query.
 * param notify boolean: False does not notify contacts of changes
 
   * badge site-admin
-* param ?json string
-* param ?upload upload_token: Defines upload token for large input file
 * param ?q search_string: Search query for match requests
-* param ?t search_collection: Collection to search; defaults to `viewable`
-* response ?dry_run boolean: True for `dry_run` requests
-* response ?papers [paper]: List of JSON versions of modified papers
-* response ?+status_list [update_status]: List of lists of changed fields
+* param t
+
+    * group Search modifiers
+* param qt
+
+    * group Search modifiers
+* param sort
+
+    * group Search modifiers
+* param scoresort
+
+    * group Search modifiers
+* param reviewer
+
+    * group Search modifiers
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?papers [paper]: The modified submission objects.
+* response ?+status_list [update_status]: Per-submission results, one entry per input object.
+
+    For array input, `status_list` has the same length and order as the input:
+    entry *i* reports the `valid` flag, `change_list`, and `pid` of update *i*.
+
 * badge admin
 
 

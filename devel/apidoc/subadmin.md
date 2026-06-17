@@ -1,4 +1,4 @@
-# Submission administration
+# Submission management
 
 These endpoints set per-submission administrative assignments — the **decision**,
 the discussion **lead**, the **shepherd**, and the submission **administrator
@@ -44,6 +44,7 @@ Set the decision for submission `p`. Supply `decision` as either a decision ID o
 a decision name. The caller’s conflicts are overridden. The response reports the
 new decision as [`decision` GET](#get-decision) does.
 
+* badge featured
 * param =decision string: New decision, given as a decision ID or name.
 * response decision integer: Decision ID; `0` means no decision.
 * response decision_html string: Decision name, as HTML.

@@ -38,6 +38,28 @@ uses HotCRP’s tag syntax (`tag`, `tag#value`, `tag#clear` to remove). Bulk
 changes go through the [assignment](#tag-assignments) machinery, so the same
 permission rules apply.
 
+## Tag annotations
+
+An ordered tag — one used for a ranking or for votes — can carry **annotations**
+that divide its submissions into labeled groups, such as the section headings in
+a discussion order. Each annotation is a [`tag_annotation`](#tag-tags) object:
+
+* `annoid` — a stable integer ID for the annotation within the tag.
+* `tagval` — the tag value at which the group begins. An annotation labels the
+  run of submissions whose value for the tag is at least its `tagval` and less
+  than the next annotation’s, so the annotations’ `tagval`s define the group
+  boundaries.
+* `legend` — the group’s display text (with a `format` code when it is not the
+  default text format). A divider with no text instead carries `blank: true`.
+* `tag` — the tag the annotation belongs to.
+* `pos` — when annotations accompany a search result, the index in that result
+  at which the annotation falls (the same meaning as `groups[].pos` from
+  [`/search`](#get-search)).
+
+When the tag organizes a meeting agenda, an annotation may also carry
+session-scheduling metadata: `session_title`, `time`, `location`, and
+`session_chair`.
+
 
 # get /{p}/tags
 
@@ -46,6 +68,7 @@ permission rules apply.
 Return the tags visible to the caller on submission `p`, as a
 [tag object](#tag-tags).
 
+* badge featured
 * response_schema tag_response
 
 
@@ -68,6 +91,7 @@ anything (optimistic concurrency control). As with other modifying endpoints,
 supplying `search` re-runs that search after the change so a client can refresh
 a list in one round trip.
 
+* badge featured
 * param ?=tags string: Complete new tag list; replaces all editable tags on the submission.
 * param ?=add_tags string: Tags to add, leaving others in place.
 * param ?=remove_tags string: Tags to remove, leaving others in place.
@@ -91,6 +115,7 @@ The response’s `p` array carries refreshed [tag objects](#tag-tags) for the
 affected submissions. Supplying `search` adds that search’s results to the
 response as well.
 
+* badge featured
 * param =tagassignment string: Submission IDs interleaved with the tags to assign to them.
 * param ?=search search_parameter_specification: A search to evaluate after the change; its results are added to the response.
 * response p [tag_response]: Refreshed tag objects for the affected submissions.
@@ -133,10 +158,21 @@ order. `editable` reports whether the caller may change them.
 
 > Change tag annotations
 
-Replace the annotations of a tag. Supply the full desired annotation list in
-`anno`; each entry may create, modify, or (with `"deleted": true`) remove an
-annotation. Requires permission to administer the tag. Returns the updated
-annotations, as for [`taganno` GET](#get-taganno).
+Replace the annotations of a tag. Supply the desired changes in `anno`, a JSON
+array of [`tag_annotation`](#tag-tags) objects (a single object is also
+accepted). Each entry is matched to an existing annotation by its `annoid`:
+
+* To **modify** an annotation, give its existing integer `annoid` along with the
+  fields to change (`legend`, `tagval`, and/or the session-scheduling fields
+  `session_title`, `time`, `location`, `session_chair`; pass `none` for a session
+  field to clear it).
+* To **create** an annotation, use an `annoid` string beginning with `n` (for
+  example `n1`); the server assigns the real ID.
+* To **delete** an annotation, give its `annoid` and `"delete": true`.
+
+Only the fields you supply are changed; omitted fields are left as they were.
+Requires permission to administer the tag. Returns the updated annotations, as
+for [`taganno` GET](#get-taganno).
 
 * param tag tag: The tag whose annotations to change.
 * param +anno [tag_annotation]: The new annotation list.

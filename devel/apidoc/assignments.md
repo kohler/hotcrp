@@ -38,14 +38,14 @@ The assignment data can be provided in any of four ways:
    the [upload API](#post-upload).
 
 JSON assignment data is an array of objects, each with at least `pid` and
-`action` properties (a lone object is also accepted and treated as a
+`action` fields (a lone object is also accepted and treated as a
 one-element array). CSV assignment data is a table whose header includes at
 least `pid` and `action` columns. In both forms the `action` selects the
-assignment type and determines which other properties or columns are meaningful;
+assignment type and determines which other fields or columns are meaningful;
 [`/assigners`](#get-assigners) lists every action and
 its parameters.
 
-The `valid` response property reports whether the assignment was free of errors;
+The `valid` response field reports whether the assignment was free of errors;
 any errors themselves are described in the standard `message_list`. For a
 non-dry-run request, `valid` is also the commit signal: `true` means the changes
 were saved, `false` means nothing changed.
@@ -63,6 +63,7 @@ with refreshed tag and status information for the affected submissions. This
 lets a client apply an assignment and update a displayed submission list in a
 single round trip.
 
+* badge featured
 * param ?assignments string
 
     Assignment data as JSON or CSV, for requests that do not send it as the
@@ -101,8 +102,8 @@ single round trip.
 
 * param ?forceShow boolean
 
-    An administrator’s own conflicts are overridden by default; set
-    `forceShow=false` to respect them instead.
+    Whether administrators override their own conflicts. Defaults to `true`; set
+    `forceShow=false` to respect conflicts instead.
 
 * param ?search search_parameter_specification
 
@@ -197,6 +198,7 @@ parameters each action accepts. Use this to discover the `action` values and
 columns valid in an [`/assign`](#post-assign) request.
 The visible set of actions reflects the calling user’s privileges.
 
+* badge featured
 * response assigners [assignment_action]: Available assignment actions
 
 
@@ -226,9 +228,10 @@ endpoint with that identifier to follow progress and retrieve the resulting
 assignment as CSV. When the computation finishes quickly enough, the result is
 returned directly instead, in the same shape as a completed `/job` response.
 
+* badge featured
 * param autoassigner string: Name of the autoassignment algorithm to run, as listed by [`/autoassigners`](#get-autoassigners).
 * param q search_string: Search selecting the submissions to assign.
-* param ?t search_collection: Search collection (submission set) for `q`; defaults to `s`, the complete submissions.
+* param t
 * param ?dry_run boolean: If true, compute and validate the assignment and report errors, but do not perform it. The computed assignment is still returned as `output`.
 * param ?minimal_dry_run boolean: Like `dry_run`, but skips extra validation passes. For example, an ordinary dry run reports potential conflicts created by the assignment; a minimal dry run does not.
 * param ?u [string]: PC members to consider for assignment; defaults to all PC members. Each value is a user search string—a user ID (`1`), an email (`kohler@g.harvard.edu`), or a tag (`#heavy`)—and may be prefixed with `-` to remove the matching users from the set.
@@ -298,4 +301,5 @@ List every autoassignment algorithm understood by this HotCRP installation, with
 the parameters each one accepts. Use this to discover valid `autoassigner` values
 and `param` settings for [`/autoassign`](#post-autoassign).
 
+* badge featured
 * response autoassigners [autoassignment_action]: Available autoassignment algorithms

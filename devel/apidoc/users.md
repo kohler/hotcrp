@@ -27,6 +27,7 @@ return no match. Supplying a submission `p` together with `potential_conflict=1`
 adds a `potential_conflict` description when the looked-up user has a possible
 conflict with that submission and the caller may see its authors.
 
+* badge featured
 * param email email: Email address to look up.
 * param ?p pid: Submission to check for a potential conflict with the user.
 * param ?potential_conflict boolean: With `p`, include a `potential_conflict` description if one applies.
@@ -73,8 +74,52 @@ members are `assignable` as reviewers.
 
 Set `ui=1` to receive the richer representation HotCRP’s own interface uses.
 
+* badge featured
 * param ?ui boolean: Return the representation used by the HotCRP web interface.
 * response pc [object]: The PC members.
 * response ?sort string: `last` when the roster is sorted by last name.
 * response ?tags tag_list: User tags visible to the caller.
 * response ?p object: Per-submission assignment information, when the request has an administered submission in context.
+
+
+# get /account
+
+> Retrieve account status
+
+Return the status of a user account: its `email`, whether it is `disabled`, and
+whether it is a `placeholder` (a stub account created on someone’s behalf — for
+example a requested reviewer who has not yet signed in — that is not yet a fully
+activated account).
+
+Name the account in `email`; `me` or the caller’s own email selects the caller.
+PC members may query other accounts by email; non-PC callers may query only their
+own.
+
+* param email email: Account to inspect; `me` or the caller’s own email for self.
+* response email email: The account’s email.
+* response disabled boolean: Whether the account is disabled.
+* response placeholder boolean: Whether the account is an unactivated placeholder.
+
+
+# post /account
+
+> Modify an account
+
+Perform an administrative action on the account named by `email`. Chairs only.
+Exactly one action applies per request:
+
+* `disable=1` — disable the account, blocking sign-in. (You cannot disable your
+  own account.)
+* `enable=1` — re-enable a disabled account.
+* `sendinfo=1` — email the account’s sign-in information to its owner.
+
+The response reports the account’s resulting status, as for
+[`account` GET](#get-account).
+
+* param email email: Account to modify; `me` or the caller’s own email for self.
+* param ?disable boolean: Disable the account.
+* param ?enable boolean: Re-enable the account.
+* param ?sendinfo boolean: Email account information to the owner.
+* response email email: The account’s email.
+* response disabled boolean: Whether the account is disabled.
+* response placeholder boolean: Whether the account is an unactivated placeholder.
