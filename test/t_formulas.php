@@ -19,6 +19,9 @@ class Formulas_Tester {
     /** @var Contact
      * @readonly */
     public $u_floyd;
+    /** @var ?string
+     * @readonly */
+    public $saved_options;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -27,6 +30,43 @@ class Formulas_Tester {
         $this->u_mjh = $conf->checked_user_by_email("mjh@isi.edu");
         $this->u_floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
         $conf->save_refresh_setting("rev_open", 1);
+
+        // Install the submission fields used by the option-visibility tests,
+        // with values stored on paper 1. Individual tests adjust the fields'
+        // presence and visibility; `finalize` removes them.
+        $this->saved_options = $conf->setting_data("options");
+        $this->install_option_fields();
+        $ps = new PaperStatus($conf->root_user());
+        xassert($ps->save_paper_json(json_decode('{"id":1,"calories":350,"weight":72.5,"vegan":true}')));
+        xassert_paper_status($ps);
+        $conf->invalidate_caches("options");
+    }
+
+    /** Define the Calories (numeric), Weight (real-number), and Vegan
+     * (checkbox) submission fields, merging $extra into each definition.
+     * @param array<string,mixed> $extra */
+    private function install_option_fields($extra = []) {
+        $defs = [
+            ["id" => 1, "name" => "Calories", "abbr" => "calories", "type" => "numeric", "position" => 1, "display" => "default"],
+            ["id" => 2, "name" => "Weight", "abbr" => "weight", "type" => "realnumber", "position" => 2, "display" => "default"],
+            ["id" => 3, "name" => "Vegan", "abbr" => "vegan", "type" => "checkbox", "position" => 3, "display" => "default"]
+        ];
+        foreach ($defs as &$d) {
+            $d += $extra;
+        }
+        unset($d);
+        $this->conf->save_refresh_setting("options", 1, json_encode($defs));
+        $this->conf->invalidate_caches("options");
+    }
+
+    function finalize() {
+        $this->conf->qe("delete from PaperOption where paperId=1 and optionId in (1,2,3)");
+        if ($this->saved_options === null) {
+            $this->conf->save_refresh_setting("options", null);
+        } else {
+            $this->conf->save_refresh_setting("options", 1, $this->saved_options);
+        }
+        $this->conf->invalidate_caches("options");
     }
 
     /** @param string $expr
@@ -829,5 +869,160 @@ class Formulas_Tester {
         xassert_eqq($submitted, $all - 1);
 
         $this->conf->qe("update Paper set timeSubmitted=? where paperId=1", $saved);
+    }
+
+    /** @param Contact $user
+     * @param int $pid
+     * @return mixed */
+    private function pagecount_eval($user, $pid) {
+        $f = Formula::make($user, "pagecount");
+        $f->prepare();
+        return $f->eval($this->conf->checked_paper_by_id($pid, $user), null);
+    }
+
+    function test_pagecount_respects_option_visibility() {
+        // A user who cannot view the submission document must not be able to
+        // learn its page count, either through the `pagecount` formula or the
+        // `pages:` search keyword.
+        $u_mgbaker = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+
+        // Give paper 1 a 50-page submission PDF and cache its page count.
+        $ps = new PaperStatus($this->conf->root_user());
+        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+            if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
+                $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
+            }
+        });
+        xassert($ps->save_paper_json(json_decode("{\"id\":1,\"submission\":{\"content_file\":\"test/sample50pg.pdf\",\"type\":\"application/pdf\"}}")));
+        xassert_paper_status($ps);
+        $this->conf->invalidate_caches("options");
+        $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
+        xassert_eqq($paper1->document(DTYPE_SUBMISSION)->npages(), 50);
+
+        // mgbaker is a non-conflicted PC member, so she can normally read the
+        // page count.
+        xassert_eqq($this->pagecount_eval($u_mgbaker, 1), 50);
+        xassert_search($u_mgbaker, "pages:>40", "1");
+
+        // Hide the submission field behind a presence condition that paper 1
+        // does not satisfy. mgbaker can still view the paper’s PDF in general,
+        // but the submission option is no longer visible to her.
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "submission",
+            "sf/1/presence" => "custom",
+            "sf/1/condition" => "#secret"
+        ]);
+        xassert($sv->execute());
+        $this->conf->invalidate_caches("options");
+
+        $subopt = $this->conf->option_by_id(DTYPE_SUBMISSION);
+        $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
+        xassert($u_mgbaker->can_view_pdf($paper1));
+        xassert(!$u_mgbaker->can_view_option($paper1, $subopt));
+
+        // The page count must no longer leak, through the formula...
+        xassert_eqq($this->pagecount_eval($u_mgbaker, 1), null);
+        // ...or through search.
+        xassert_search($u_mgbaker, "pages:>40", "");
+
+        // The document and its page count still exist; they are merely hidden.
+        xassert_eqq($paper1->document(DTYPE_SUBMISSION)->npages(), 50);
+
+        // Restore the submission field.
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "submission",
+            "sf/1/presence" => "all"
+        ]);
+        xassert($sv->execute());
+        $this->conf->invalidate_caches("options");
+    }
+
+    function test_formulas_respect_option_presence() {
+        // The formula terms that read submission-field values must not leak a
+        // value the viewer cannot see: OptionValue_Fexpr (numeric fields),
+        // RealNumberOption_Fexpr (real-number fields), and OptionPresent_Fexpr
+        // (checkbox fields).
+        $u_mgbaker = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $f_calories = Formula::make($u_mgbaker, "opt:calories")->prepare();
+        $f_weight = Formula::make($u_mgbaker, "opt:weight")->prepare();
+        $f_vegan = Formula::make($u_mgbaker, "opt:vegan")->prepare();
+
+        // Baseline: with the fields present on every submission, mgbaker (a
+        // non-conflicted PC member) can read the values through all three terms.
+        $this->install_option_fields();
+        $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
+        xassert($u_mgbaker->can_view_option($paper1, $this->conf->option_by_id(1)));
+        xassert_eqq($f_calories->eval($paper1, null), 350); // OptionValue_Fexpr
+        xassert_eqq($f_weight->eval($paper1, null), 72.5);  // RealNumberOption_Fexpr
+        xassert_eqq($f_vegan->eval($paper1, null), true);   // OptionPresent_Fexpr
+
+        // Hide all three behind a presence condition paper 1 does not satisfy.
+        $this->install_option_fields(["exists_if" => "#shown"]);
+
+        // The fields remain generally visible — so they still resolve in
+        // formulas — but they are no longer present on paper 1 for mgbaker.
+        $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
+        foreach ([1, 2, 3] as $oid) {
+            $opt = $this->conf->option_by_id($oid);
+            xassert($u_mgbaker->can_view_some_option($opt));
+            xassert(!$u_mgbaker->can_view_option($paper1, $opt));
+        }
+
+        // The stored values must no longer leak through any of the three terms.
+        xassert_eqq($f_calories->eval($paper1, null), null); // OptionValue_Fexpr
+        xassert_eqq($f_weight->eval($paper1, null), null);   // RealNumberOption_Fexpr
+        xassert_eqq($f_vegan->eval($paper1, null), false);   // OptionPresent_Fexpr
+    }
+
+    function test_formulas_respect_option_visibility() {
+        // The same three formula terms must also honor a field's `visibility`
+        // setting, as opposed to a presence condition. Here the fields are
+        // restricted to reviewers who can see a paper's reviews; an
+        // administrator can still read them.
+        $u_mgbaker = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $f_calories = Formula::make($u_mgbaker, "opt:calories")->prepare();
+        $f_weight = Formula::make($u_mgbaker, "opt:weight")->prepare();
+        $f_vegan = Formula::make($u_mgbaker, "opt:vegan")->prepare();
+
+        // Baseline: with the fields visible to everyone who can see the paper,
+        // mgbaker can read the values through all three terms.
+        $this->install_option_fields();
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($f_calories->eval($paper1, null), 350); // OptionValue_Fexpr
+        xassert_eqq($f_weight->eval($paper1, null), 72.5);  // RealNumberOption_Fexpr
+        xassert_eqq($f_vegan->eval($paper1, null), true);   // OptionPresent_Fexpr
+
+        // Restrict all three to reviewers who can view a paper's reviews.
+        $this->install_option_fields(["visibility" => "review"]);
+
+        // mgbaker is a reviewer (so the fields still resolve in formulas) but
+        // cannot see paper 1's reviews, so the fields are not visible to her
+        // on paper 1.
+        $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
+        foreach ([1, 2, 3] as $oid) {
+            $opt = $this->conf->option_by_id($oid);
+            xassert($u_mgbaker->can_view_some_option($opt));
+            xassert(!$u_mgbaker->can_view_option($paper1, $opt));
+        }
+
+        // The values must not leak to mgbaker through any of the three terms.
+        xassert_eqq($f_calories->eval($paper1, null), null); // OptionValue_Fexpr
+        xassert_eqq($f_weight->eval($paper1, null), null);   // RealNumberOption_Fexpr
+        xassert_eqq($f_vegan->eval($paper1, null), false);   // OptionPresent_Fexpr
+
+        // The administrator can read the values: a `visibility` restriction,
+        // unlike a presence condition, does not hide the field from admins.
+        $paper1c = $this->conf->checked_paper_by_id(1, $this->u_chair);
+        foreach ([1, 2, 3] as $oid) {
+            xassert($this->u_chair->can_view_option($paper1c, $this->conf->option_by_id($oid)));
+        }
+        $f_calories = Formula::make($this->u_chair, "opt:calories")->prepare();
+        $f_weight = Formula::make($this->u_chair, "opt:weight")->prepare();
+        $f_vegan = Formula::make($this->u_chair, "opt:vegan")->prepare();
+        xassert_eqq($f_calories->eval($paper1c, null), 350); // OptionValue_Fexpr
+        xassert_eqq($f_weight->eval($paper1c, null), 72.5);  // RealNumberOption_Fexpr
+        xassert_eqq($f_vegan->eval($paper1c, null), true);   // OptionPresent_Fexpr
     }
 }
