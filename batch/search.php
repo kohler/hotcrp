@@ -22,9 +22,10 @@ class Search_Batch {
     public $debug;
 
     function __construct(Contact $user, $arg) {
-        $t = $arg["t"] ?? "s";
-        if (!in_array($t, PaperSearch::viewable_limits($user, $t), true)) {
-            throw new CommandLineException("No search collection ‘{$t}’");
+        $tx = $arg["t"] ?? "";
+        $t = PaperSearch::canonical_limit($tx, $user);
+        if ($t === null) {
+            throw new CommandLineException("Search collection ‘{$tx}’ not found");
         }
 
         $this->user = $user;

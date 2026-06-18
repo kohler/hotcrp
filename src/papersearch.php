@@ -1624,8 +1624,9 @@ class PaperSearch extends MessageSet {
         }
         if ($user->isPC) {
             $ts[] = "s";
-            if ($user->conf->has_any_accepted()
-                && $user->can_view_some_decision()) {
+            if ($reqtype === "accepted"
+                || ($user->conf->has_any_accepted()
+                    && $user->can_view_some_decision())) {
                 $ts[] = "accepted";
             }
         }
@@ -1674,6 +1675,18 @@ class PaperSearch extends MessageSet {
             return "active";
         }
         return $limits[0] ?? "";
+    }
+
+    /** Return the canonical name of search limit `$limit`, or `null` if
+     * `$limit` is not a valid limit. An empty/null/`"default"` input returns
+     * `"default"`.
+     * @param ?string $limit
+     * @return ?string */
+    static function canonical_limit($limit, Contact $user) {
+        if ($limit === null || $limit === "" || $limit === "default") {
+            return "default";
+        }
+        return (Limit_SearchTerm::canonical_names($user->conf, $limit))[0] ?? null;
     }
 
     /** @return list<string> */
