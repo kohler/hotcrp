@@ -12338,7 +12338,7 @@ function fold_override(forcer, tbl, dofold) {
         }
     }
     fold(tbl, dofold, 5);
-    tbl.closest("form").elements.forceShow.vaue = dofold ? "0" : "1";
+    tbl.closest("form").elements.forceShow.value = dofold ? "0" : "1";
     $(function () {
         // remove local hoverrides
         if (hasClass(tbl, "has-local-override")) {
