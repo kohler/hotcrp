@@ -128,6 +128,7 @@ batch/s3verifyall.php
 batch/savepapers.php
 batch/saveusers.php
 batch/search.php
+batch/searchaction.php
 batch/settings.php
 batch/sparsifypref.php
 batch/updatecontactdb.php

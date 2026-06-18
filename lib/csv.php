@@ -1392,6 +1392,7 @@ class CsvGenerator {
         return $this->headerline . join("", $this->lines);
     }
 
+    /** @param stream $f */
     function unparse_to_stream($f) {
         if ($this->stream) {
             assert(!!$this->stream_filename);

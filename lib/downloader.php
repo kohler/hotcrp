@@ -560,16 +560,21 @@ class Downloader {
             // do nothing
         }
         $out = fopen("php://output", "wb");
-        foreach ($this->output_ranges($out) as $r) {
+        $this->emit_to_stream($out);
+        return $this->_response_code;
+    }
+
+    /** @param resource $f */
+    function emit_to_stream($f) {
+        foreach ($this->output_ranges($f) as $r) {
             if ($this->_content_function !== null) {
-                call_user_func($this->_content_function, $out, $r[0], $r[1]);
+                call_user_func($this->_content_function, $f, $r[0], $r[1]);
             } else if ($this->_content_file !== null) {
-                self::readfile_subrange($out, $r[0], $r[1], 0, $this->_content_file, $this->content_length);
+                self::readfile_subrange($f, $r[0], $r[1], 0, $this->_content_file, $this->content_length);
             } else {
-                self::print_subrange($out, $r[0], $r[1], 0, $this->_content);
+                self::print_subrange($f, $r[0], $r[1], 0, $this->_content);
             }
         }
-        return $this->_response_code;
     }
 
 
