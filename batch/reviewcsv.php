@@ -292,7 +292,7 @@ class ReviewCSV_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
-            "type:,t: =COLLECTION Search COLLECTION “s” (submitted) or “all” [s]",
+            "type:,t: =SCOPE Scope of search [s]",
             "narrow,x Narrow output",
             "wide,w !",
             "all,a Include all reviews, not just submitted ones",

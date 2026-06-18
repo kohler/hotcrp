@@ -245,9 +245,11 @@ class Search_CLIBatch implements CLIBatchCommand {
             "search",
             "Search HotCRP papers or perform search actions
 Usage: php batch/hotcrapi.php search -q SEARCH [-f FIELD...]
-       php batch/hotcrapi.php search help [fields | actions]
-       php batch/hotcrapi.php search help [field FIELD | action ACTION]
-       php batch/hotcrapi.php search ACTION [-P] -q SEARCH"
+       php batch/hotcrapi.php search help fields
+       php batch/hotcrapi.php search help field FIELD
+       php batch/hotcrapi.php search ACTION [-P] -q SEARCH
+       php batch/hotcrapi.php search help actions
+       php batch/hotcrapi.php search help action ACTION"
         )->long(
             "q:,query: =SEARCH !search Submission search",
             "t:,scope:,type: =SCOPE !search Scope of search [viewable]",

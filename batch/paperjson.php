@@ -91,7 +91,7 @@ class PaperJson_Batch {
             "config: !",
             "r,reviews Include reviews in output",
             "N,sitename Include site name and class in output",
-            "t:,type: =COLLECTION Search COLLECTION ‘s’ or ‘all’ [submitted]",
+            "t:,type: =SCOPE Scope of search [submitted]",
             "1,single Output first matching paper rather than an array",
             "help,h"
         )->description("Output a JSON file with papers matching SEARCH.

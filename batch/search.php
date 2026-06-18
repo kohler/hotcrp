@@ -1,6 +1,6 @@
 <?php
 // search.php -- HotCRP command-line search script
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -83,7 +83,7 @@ class Search_Batch {
         $arg = (new Getopt)->long(
             "name:,n: !",
             "config: !",
-            "t:,type: =COLLECTION Search “s” (submitted) or “all” [default s]",
+            "t:,type: =SCOPE Scope of search [default]",
             "f[],show[],field[] =FIELD Include FIELD in output",
             "N,sitename Include site name and class in output",
             "header Always include CSV header",
@@ -91,7 +91,7 @@ class Search_Batch {
             "debug",
             "help,h !"
         )->description("Output CSV of the papers matching HotCRP search QUERY.
-Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ QUERY...")
+Usage: php batch/search.php [-n CONFID] [-t SCOPE] [-f FIELD]+ QUERY...")
          ->helpopt("help")
          ->parse($argv);
 

@@ -93,7 +93,7 @@ which submissions are searched). Supply at most one of them:
   evaluated with `reviewer` as its viewpoint, and returns only matching reviews.
 
 * param ?q search_string: Search selecting submissions whose reviews to return. Required unless `p` is given.
-* param ?t search_collection: Search collection for `q`; defaults to the submissions the caller can view.
+* param ?t search_scope: Scope of search; defaults to the submissions the caller can view.
 
     * default viewable
 * param ?p pid: Return reviews of this single submission instead of running a search.

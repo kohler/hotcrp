@@ -119,9 +119,9 @@
                 "name": "t",
                 "in": "query",
                 "required": false,
-                "description": "The collection of submissions to search, such as `s` (complete submissions) or `all`.",
+                "description": "The scope of submissions to search, such as `s` (complete submissions) or `all`.",
                 "schema": {
-                    "$ref": "#/components/schemas/search_collection"
+                    "$ref": "#/components/schemas/search_scope"
                 }
             },
             "qt": {
@@ -741,12 +741,14 @@
                     "1-10 OR #ready"
                 ]
             },
-            "search_collection": {
+            "search_scope": {
                 "type": "string",
-                "description": "Collection to search",
+                "description": "Scope of search",
                 "examples": [
                     "s",
-                    "all"
+                    "all",
+                    "viewable",
+                    "accepted"
                 ]
             },
             "search_qt": {
@@ -785,7 +787,7 @@
                         "$ref": "#/components/schemas/search_string"
                     },
                     "t": {
-                        "$ref": "#/components/schemas/search_collection"
+                        "$ref": "#/components/schemas/search_scope"
                     },
                     "qt": {
                         "$ref": "#/components/schemas/search_qt"
@@ -1445,13 +1447,13 @@
             "apiToken": {
                 "type": "http",
                 "scheme": "bearer",
-                "description": "API token created via Account settings > Developer"
+                "description": "External applications should authenticate to HotCRP’s API using bearer tokens. Users can create tokens via Account settings > Developer; tokens can have limited scope (e.g., read-only rights, or rights only for a subset of papers). API requests supply a token with the `Authorization` header: `Authorization: bearer TOKENNAME`."
             },
             "session": {
                 "type": "apiKey",
                 "in": "cookie",
                 "name": "hotcrpsession",
-                "description": "Web sessions use a cookie. The name of the cookie varies by installation; `hotcrpcookie` is used on hotcrp.com. Operations other than GET and HEAD also require a `post` query parameter"
+                "description": "Browser sessions authenticate to HotCRP’s API via a cookie. The name of the cookie varies by installation. Operations other than GET and HEAD also require a `post` query parameter for CSRF protection."
             }
         }
     },

@@ -355,7 +355,7 @@ class PaperTimes_Batch {
             "name:,n: !",
             "config: !",
             "query:,q: =SEARCH Restrict to papers matching this search.",
-            "type:,t: =TYPE Search collection type [all].",
+            "type:,t: =SCOPE Scope of search [all].",
             "accept-only Only output accept-class papers.",
             "iso Format dates as ISO 8601 instead of human-readable log time.",
             "save Backfill Paper.timeSubmittedReviewable and Paper.timeAcceptNotified (only where currently 0).",
@@ -380,7 +380,7 @@ for papers where the column is currently 0, so values the running system has
 already recorded are never overwritten. All values are approximations from
 ActionLog and MailLog; pre-logging or SQL-imported data may be missing.
 
-Usage: php batch/papertimes.php [-q SEARCH] [-t TYPE] [--accept-only] [--iso] [--save] [--verbose]")
+Usage: php batch/papertimes.php [-q SEARCH] [-t SCOPE] [--accept-only] [--iso] [--save] [--verbose]")
          ->maxarg(0)
          ->helpopt("help")
          ->parse($argv);

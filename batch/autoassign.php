@@ -444,7 +444,7 @@ class Autoassign_Batch {
             "minimal-dry-run,unsorted-dry-run,D !",
             "autoassigner:,a: =AUTOASSIGNER !",
             "q:,search: =QUERY Use papers matching QUERY [all]",
-            "type:,t: =TYPE Set search type [s]",
+            "type:,t: =SCOPE Scope of search [s]",
             "all Include all papers (default is submitted papers)",
             "u[],user[] =USER Include users matching USER (`-u -USER` excludes)",
             "disjoint[],X[] =USER1,USER2 Don’t coassign users",

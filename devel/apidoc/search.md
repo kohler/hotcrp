@@ -350,7 +350,7 @@ for the HotCRP graphing UI rather than for general consumption.
 * param ?gtype string: Graph type, such as `scatter`.
 * param ?xorder string: Ordering expression for the x-axis.
 * param ?q search_string: Search selecting the submissions to plot.
-* param ?t search_collection: Collection for `q`.
+* param ?t search_scope: Scope of search.
 * param ?s string: Label for the data series.
 * response type object: Description of the graph type.
 * response data_format integer: Code identifying the encoding of `data`.
