@@ -1357,7 +1357,7 @@ function graph_scatter(element, args) {
     function highlight(event) {
         if (!event.ids) {
             if (event.q && event.ok) {
-                $.getJSON(hoturl("api/search", {q: event.q}), null, highlight);
+                $.getJSON(hoturl("api/search", {q: event.q, forceShow: 1}), null, highlight);
             }
             return;
         }
@@ -1397,7 +1397,7 @@ function data_pidcode(data) {
 }
 
 function load_titles(titles, pidcode, success) {
-    $.getJSON(hoturl("api/search", {q: "pidcode:" + pidcode, f: "title", format: "json"}), null,
+    $.getJSON(hoturl("api/search", {q: "pidcode:" + pidcode, f: "title", format: "json", forceShow: 1}), null,
         function (d) {
             for (const pd of d.papers || []) {
                 titles[pd.pid] = pd.title;
@@ -1493,7 +1493,7 @@ function graph_dot(element, args) {
     function highlight(event) {
         if (!event.ids) {
             if (event.q && event.ok) {
-                $.getJSON(hoturl("api/search", {q: event.q}), null, highlight);
+                $.getJSON(hoturl("api/search", {q: event.q, forceShow: 1}), null, highlight);
             }
             return;
         }

@@ -39,8 +39,13 @@ class Search_API {
 
     /** @return JsonResult */
     static function search(Contact $user, Qrequest $qreq) {
+        $old_overrides = $user->overrides();
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        }
         $pl = self::make_list($user, $qreq);
         if ($pl instanceof JsonResult) {
+            $user->set_overrides($old_overrides);
             return $pl;
         }
         $format = 0;
@@ -82,6 +87,7 @@ class Search_API {
             && friendly_boolean($qreq->session) === null) {
             Session_API::change_session($qreq, $qreq->session);
         }
+        $user->set_overrides($old_overrides);
         return $jr;
     }
 
@@ -159,6 +165,10 @@ class Search_API {
         if (($qreq->action ?? "") === "") {
             return JsonResult::make_missing_error("action");
         }
+        $old_overrides = $user->overrides();
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        }
         if (!isset($qreq->p)) {
             $ssel = SearchSelection::make_default($qreq, $user);
         } else {
@@ -168,7 +178,9 @@ class Search_API {
         if ($action instanceof ListAction) {
             $action = $action->run($user, $qreq, $ssel);
         }
-        return ListAction::resolve_document($action, $user, $qreq);
+        $result = ListAction::resolve_document($action, $user, $qreq);
+        $user->set_overrides($old_overrides);
+        return $result;
     }
 
     static function searchactions(Contact $user) {
