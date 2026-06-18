@@ -2,9 +2,9 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2026-06-16",
+        "version": "2026-06-18",
         "summary": "HotCRP conference management software API",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nParameters are provided in the query string or the request body, in most cases\nusing form encoding (`application/x-www-form-urlencoded` or\n`multipart/form-data`).\n\nResponses are formatted as JSON. Every response has an `ok` field, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` field.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n## Parameter types\n\n**Boolean** parameters accept `1` or `true` for true and `0` or `false` for\nfalse; the values `on`/`yes` and `off`/`no` are also accepted. Any other value\nis treated as if the parameter were absent. For example, `dry_run=1` and\n`dry_run=true` are equivalent.\n\n**Integer** and **number** parameters are written in decimal, such as `p=10`.\n**String** parameters are sent literally; an enumerated parameter is a string\nrestricted to a fixed set of values.\n\nMore complex inputs use other encodings. Some requests group parameters into\nlogical objects using structured keys, such as `named_search/1/q`; others define\nan object using JSON, supplied either as the request body or as a JSON-valued\nparameter such as `json`. Use `multipart/form-data` encoding for requests that\ninclude uploaded files; since servers limit upload size, you may need the upload\nAPI to send a large file before processing it with another call.\n\n\n## Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible. It defaults to `true`, so administrators\noverride their conflicts by default; pass `forceShow=false` to respect conflicts\ninstead.\n\nThe `:method:` parameter overrides the request’s HTTP method. Setting\n`:method:=GET` on a `POST` request makes HotCRP process it with `GET` semantics.\nThe parameter must appear in the URL query string, not the request body, and\n`GET` is its only meaningful value. Use this for read requests whose parameters\nare too large to fit within a URL’s length limit: send the parameters in a\n`POST` body while still getting `GET` behavior.\n\n\n## Search parameters\n\nMany endpoints act on a set of submissions chosen by a search rather than by a\nsingle `p`. These share a family of search parameters: `q` (the search\nexpression), `t` (the collection of submissions to search), and the modifiers\n`qt`, `sort`, `scoresort`, and `reviewer`. They mean the same thing everywhere\nthey appear—for example in [`/papers`](#get-papers),\n[`/reviews`](#get-reviews), and [`/assign`](#post-assign). See\n[Search](#tag-search) for the search-string syntax and the full meaning of each\nparameter.\n\n\n## Kinds of administrator\n\nTwo terms describe administrative authority in this documentation, and they are\nnot interchangeable.\n\nA **site administrator** has site-wide authority over the whole conference.\nChairs and system administrators are administrators; they can act on every\nsubmission, the review process, and conference settings. Endpoints restricted to\nthis authority are badged **Site admin only**.\n\nA **submission administrator** has administrative authority over a particular\nsubmission or a subset of submissions. For example, a track manager has\nadministrative authority over a track, and each submission can have an explicit\nmanager assigned from the PC. For most submissions, a site administrator is also\na submission administrator (there are exceptions involving track rights and\nconflicts), but a submission manager is not necessarily a site administrator.\nEndpoints that require administrative authority over specific submissions, but\ndo not require broad site administration rights, are badged **Admin only** or\n**Track manager only**.\n\n\n## Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n## Featured endpoints\n\nOperations marked with a yellow star (<span class=\"featured-star featured-star-op\" title=\"Featured\" aria-label=\"Featured\">★</span>) are **featured**: the parts of the API\nmost useful to external integrations, which we aim to keep stable and well\ndocumented. When several endpoints can accomplish a task, the featured one is\nusually the best choice.\n\nOther API endpoints may be unstable or may be intended to serve HotCRP’s own web\nclient. These endpoints are documented for completeness, but they are more\nlikely to change without notice, and sometimes return HotCRP-internal formats\n(such as pre-rendered HTML) rather than clean JSON. Prefer featured endpoints\nwhen building an external application.\n"
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\nParameters may be provided in the query string or (for non-GET requests) the\nrequest body. In most cases, the request body should have Content-Type\n`application/x-www-form-urlencoded` or `multipart/form-data`; exceptions are\ndocumented.\n\nResponses are formatted as JSON. Every response has an `ok` field, which is\n`true` if the request passed initial validation and `false` otherwise. Typically\n`\"ok\": false` indicates a serious error, such as a missing or malformatted\nparameter or a permission problem. `\"ok\": true` does not necessarily mean that\nthe request fully succeeded. Messages about the request, if any, are expressed\nin a [`message_list` field](#overview-message-lists); a successful response may\nstill carry errors and warnings there.\n\nOperations marked with a yellow star (<span class=\"featured-star\nfeatured-star-op\" title=\"Featured\" aria-label=\"Featured\">★</span>) are\n**featured**: the parts of the API most useful to external integrations, which\nwe aim to keep stable and well documented. When several endpoints can accomplish\na task, the featured one is usually the best choice. Other API endpoints may be\nunstable or may be intended to serve HotCRP’s own web client.\n\nExternal applications should [authenticate](#authentication) to HotCRP’s API\nusing bearer tokens obtained using Account settings > Developer.\n\n\n## Parameter types\n\n**Boolean** parameters accept `1` or `true` for true and `0` or `false` for\nfalse; the values `on`/`yes` and `off`/`no` are also accepted. Any other value\nis treated as if the parameter were absent. For example, `dry_run=1` and\n`dry_run=true` are equivalent.\n\n**Integer** and **number** parameters are written in decimal, such as `p=10`.\n**String** parameters are sent literally; an enumerated parameter is a string\nrestricted to a fixed set of values.\n\nMore complex inputs use other encodings. Some requests group parameters into\nlogical objects using structured keys, such as `named_search/1/q`; others define\nan object using JSON, supplied either as the request body or as a JSON-valued\nparameter such as `json`. Use `multipart/form-data` encoding for requests that\ninclude uploaded files; since servers limit upload size, you may need the upload\nAPI to send a large file before processing it with another call.\n\n\n## Common parameters\n\n**`p`**: The `p` parameter defines a submission ID. It can appear either in the\nquery string or immediately following `api/` in the query path:\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a positive\ndecimal integer, but some API calls accept `p=new` when defining a new\nsubmission.\n\n**`forceShow`**: HotCRP site administrators and track managers can administer\nsubmissions with which they are conflicted. For instance, when viewing a\nconflicted submission in the web UI, they see the conflicted view, but selecting\n“Override conflict” shows them a full administrator view. Conflict overriding\ncan affect many aspects of site behavior, including search order, visible tags,\nand whether modifications are accepted. The `forceShow` boolean API parameter\ndetermines whether conflicts should be overridden when that is possible. It\ndefaults to `true`, so administrators override their conflicts by default; pass\n`forceShow=false` to respect conflicts instead.\n\n**`actas`**: HotCRP site administrators can assume other users’ identities,\nallowing them to check how the site appears to users with less authority.\nThe `actas` parameter implements this in the API. Site administrators can set\n`actas` to an email address or numeric user ID; the API call will execute with\nthe named user’s privileges.\n\n**`:method:`**: The `:method:` parameter overrides the request’s HTTP method.\nSetting `:method:=GET` on a `POST` request makes HotCRP process it with `GET`\nsemantics. The parameter must appear in the URL query string, not the request\nbody, and `GET` is its only meaningful value. Use this for read requests whose\nparameters are too large to fit within a URL’s length limit: send the parameters\nin a `POST` body while still getting `GET` behavior.\n\n**`q` and search modifiers**: Many endpoints act on a set of submissions chosen\nby a search rather than by a single `p`. These share a family of search\nparameters: `q` (the search expression), `t` (the search scope—the collection of\nsubmissions to search), and the modifiers `qt`, `sort`, `scoresort`, and\n`reviewer`. They mean the same thing everywhere they appear—for example in\n[`/papers`](#get-papers), [`/reviews`](#get-reviews), and\n[`/assign`](#post-assign). See [Search](#tag-search) for the search-string\nsyntax and the full meaning of each parameter.\n\n\n## Message lists\n\nThe **`message_list`** response field holds an array of diagnostics about a\nrequest, such as why it failed, which field was invalid, or a note about what\nchanged. It can appear on successful or unsuccessful responses and may be empty.\nThe messages appear in display order.\n\nEach entry is a **message object** whose only required field is `status`, an\ninteger that classifies the message:\n\n- `2` or `3`—an **error**; the request was rejected or could not be fully\n  processed. (`3` marks an especially serious error.)\n- `1`—a **warning**.\n- `0`—a **plain** informational message.\n- `-3`—a **success** message.\n- `-5`—an **informational note** about the preceding non-informational message\n  (rendered indented).\n- other **negative** values—notes that are not full errors, but that should be\n  rendered with highlights.\n\nA message object may also have these fields:\n\n- `message`—the human-readable text, as a **formatted-text string**: a leading\n  format sigil gives the encoding, with `<0>` for plain text, `<1>` for\n  Markdown, and `<5>` for HTML. For example, `\"<0>Entry required\"` is the plain\n  text “Entry required”. The field may be absent or empty, since a message\n  object can carry only a field status.\n- `field`—when present, names the request parameter or submission field the\n  message is about (such as `title` or `abstract`), letting a client attach the\n  diagnostic to the corresponding input or highlight that input.\n- `pos1`, `pos2`, `context`—locate the message within the text it concerns. A\n  message carries **either** `pos1` and `pos2` (byte offsets of a span in the\n  UTF-8-encoded value of `field`) **or** a `context` array `[\"…excerpt…\", pos1,\n  pos2]` that bundles an excerpt of that text with the span’s byte offsets into\n  the excerpt. These let the web client underline the exact problem text.\n\nFor example, an unsuccessful submission update might return:\n\n```json\n{\n    \"ok\": false,\n    \"message_list\": [\n        {\n            \"status\": 2,\n            \"field\": \"abstract\",\n            \"message\": \"<0>Entry required to complete submission\"\n        },\n        {\n            \"status\": 1,\n            \"field\": \"other_topics\",\n            \"message\": \"<0>Please avoid superlatives\",\n            \"context\": [\"Extremely interesting ideas\", 0, 9]\n        },\n        {\n            \"status\": 2,\n            \"message\": \"<0>Submission not saved\"\n        }\n    ]\n}\n```\n\n\n## User rights\n\nTwo terms describe administrative authority in this documentation, and they are\nnot interchangeable.\n\nA **site administrator** has site-wide authority over the whole conference.\nChairs and sysadmins are site administrators; they can act on every submission,\nthe review process, and conference settings. Endpoints restricted to this\nauthority are badged **Site admin only**.\n\nA **submission administrator** has administrative authority over a particular\nsubmission or a subset of submissions. For example, a track manager has\nadministrative authority over a track, and each submission can have an explicit\nmanager assigned from the PC. For most submissions, a site administrator is also\na submission administrator (there are exceptions involving track rights and\nconflicts), but a submission manager is not necessarily a site administrator.\nEndpoints that require administrative authority over specific submissions, but\ndo not require broad site administration rights, are badged **Admin only** or\n**Track manager only**.\n"
     },
     "servers": [
         {
@@ -34,14 +34,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "forceShow",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true
-                        },
-                        "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
+                        "$ref": "#/components/parameters/forceShow",
                         "x-order": 0
                     },
                     {
@@ -115,14 +108,7 @@
                         "x-order": 0
                     },
                     {
-                        "name": "forceShow",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true
-                        },
-                        "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
+                        "$ref": "#/components/parameters/forceShow",
                         "x-order": 1
                     },
                     {
@@ -1952,6 +1938,10 @@
                         "x-order": 9
                     },
                     {
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 10
+                    },
+                    {
                         "name": "hotlist",
                         "in": "query",
                         "required": false,
@@ -1959,21 +1949,21 @@
                             "type": "boolean"
                         },
                         "description": "Get a `hotlist` response field.",
-                        "x-order": 10
+                        "x-order": 11
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "required": false,
                         "schema": {},
-                        "x-order": 11
+                        "x-order": 12
                     },
                     {
                         "name": "session",
                         "in": "query",
                         "required": false,
                         "schema": {},
-                        "x-order": 12
+                        "x-order": 13
                     }
                 ],
                 "responses": {
@@ -2167,15 +2157,19 @@
                         "x-order": 6
                     },
                     {
-                        "$ref": "#/components/parameters/p",
+                        "$ref": "#/components/parameters/forceShow",
                         "x-order": 7
+                    },
+                    {
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 8
                     },
                     {
                         "name": "report",
                         "in": "query",
                         "required": false,
                         "schema": {},
-                        "x-order": 8
+                        "x-order": 9
                     }
                 ],
                 "responses": {
@@ -2272,15 +2266,19 @@
                         "x-order": 6
                     },
                     {
-                        "$ref": "#/components/parameters/p",
+                        "$ref": "#/components/parameters/forceShow",
                         "x-order": 7
+                    },
+                    {
+                        "$ref": "#/components/parameters/p",
+                        "x-order": 8
                     },
                     {
                         "name": "report",
                         "in": "query",
                         "required": false,
                         "schema": {},
-                        "x-order": 8
+                        "x-order": 9
                     }
                 ],
                 "responses": {
@@ -3853,14 +3851,7 @@
                         "x-order": 5
                     },
                     {
-                        "name": "forceShow",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true
-                        },
-                        "description": "Whether administrators override their own conflicts. Defaults to `true`; set\n`forceShow=false` to respect conflicts instead.",
+                        "$ref": "#/components/parameters/forceShow",
                         "x-order": 6
                     },
                     {
@@ -5099,14 +5090,7 @@
                         "x-order": 0
                     },
                     {
-                        "name": "forceShow",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true
-                        },
-                        "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
+                        "$ref": "#/components/parameters/forceShow",
                         "x-order": 1
                     },
                     {
@@ -5226,14 +5210,7 @@
                         "x-order": 5
                     },
                     {
-                        "name": "forceShow",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true
-                        },
-                        "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
+                        "$ref": "#/components/parameters/forceShow",
                         "x-order": 6
                     }
                 ],
@@ -9040,7 +9017,7 @@
                 "name": "forceShow",
                 "in": "query",
                 "required": false,
-                "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
+                "description": "Whether to override administrator conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
                 "schema": {
                     "type": "boolean",
                     "default": true

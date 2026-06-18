@@ -70,9 +70,7 @@ review does not exist the response is a `404`; if it exists but the caller may
 not see it, a `403`.
 
 * param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
-* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
-
-    * default true
+* param ?forceShow
 * response review object: The requested [review object](#tag-reviews).
 
 
@@ -100,9 +98,7 @@ which submissions are searched). Supply at most one of them:
 * param ?rq string: Review search expression limiting which reviews are returned.
 * param ?u email: Return only reviews written by this user. Mutually exclusive with `rq`.
 * param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
-* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
-
-    * default true
+* param ?forceShow
 * response reviews [object]: Matching [review objects](#tag-reviews).
 
 

@@ -157,9 +157,6 @@ class Search_CLIBatch implements CLIBatchCommand {
             $this->file_param = $this->param + $this->file_param;
             $this->param = [":method:" => "GET"];
             $this->post = true;
-        } else if (!$this->post && $this->file_param) {
-            $this->param[":method:"] = "GET";
-            $this->post = true;
         }
         curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $this->post ? "POST" : "GET");
         curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/searchaction?" . http_build_query(["action" => $this->action] + $this->param));
@@ -200,12 +197,15 @@ class Search_CLIBatch implements CLIBatchCommand {
         }
         foreach ($arg["file-param"] ?? [] as $pstr) {
             if (($eq = strpos($pstr, "=")) === false) {
-                throw new CommandLineException("Expected `--file-param NAME=VALUE`", $clib->getopt);
+                throw new CommandLineException("Expected `--file-param NAME=FILE`", $clib->getopt);
             } else if (!is_readable(substr($pstr, $eq + 1))) {
-                throw new CommandLineException(substr($pstr, $eq + 1) . ": Count not read file", $clib->getopt);
+                throw new CommandLineException(substr($pstr, $eq + 1) . ": Cannot read file", $clib->getopt);
             }
             $pcb->file_param[substr($pstr, 0, $eq)] = new CURLFile(substr($pstr, $eq + 1));
             $other_param = true;
+        }
+        if ($pcb->file_param && !$pcb->post) {
+            throw new CommandLineException("`--file-param` requires `--post`", $clib->getopt);
         }
 
         $argv = $arg["_"];

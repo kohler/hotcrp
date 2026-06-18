@@ -288,7 +288,62 @@ class APISpec_Batch {
             $xs[] = (object) $x;
             $lineno += 1 + substr_count($m[$i + 1], "\n");
         }
+        // Fold documentation sections into the leading (tag) heading. A
+        // documentation section is a non-operation `#` heading that follows the
+        // file's first heading (the tag) but precedes any operation. It is
+        // stored on the tag item as `sections` and rendered by the doc
+        // generator as a standalone subsection of the tag, separately listed in
+        // the menu and separately addressable — not as an operation of its own.
+        if (count($xs) > 1 && !self::is_operation_name($xs[0]->name)) {
+            $nsec = 0;
+            while ($nsec + 1 < count($xs)
+                   && !self::is_operation_name($xs[$nsec + 1]->name)) {
+                ++$nsec;
+            }
+            if ($nsec > 0) {
+                $xs[0]->sections = array_slice($xs, 1, $nsec);
+                array_splice($xs, 1, $nsec);
+            }
+        }
         return $xs;
+    }
+
+    /** True if a heading name denotes an API operation (e.g. `get /paper`)
+     * rather than a tag or a documentation section.
+     * @param string $name
+     * @return bool */
+    static private function is_operation_name($name) {
+        return (bool) preg_match('/\A(?:get|post|put|delete|patch|head|options)\s+\//i', $name);
+    }
+
+    /** Build the public `x-sections` list (name, summary, description) for a tag
+     * from its parsed documentation-section items.
+     * @param list<object> $sections
+     * @return list<object> */
+    static private function clean_sections($sections) {
+        $out = [];
+        foreach ($sections as $s) {
+            // A trailing `{#id}` annotation sets an explicit anchor id for the
+            // section (e.g. `# The submission object {#object-submission}`).
+            $name = $s->name;
+            $id = null;
+            if (preg_match('/\A(.*?)\s*\{#([^}\s]+)\}\z/', $name, $mm)) {
+                $name = rtrim($mm[1]);
+                $id = $mm[2];
+            }
+            $o = ["name" => $name];
+            if ($id !== null) {
+                $o["id"] = $id;
+            }
+            if (($s->summary ?? "") !== "") {
+                $o["summary"] = $s->summary;
+            }
+            if (($s->description ?? "") !== "") {
+                $o["description"] = $s->description;
+            }
+            $out[] = (object) $o;
+        }
+        return $out;
     }
 
     /** Warn about malformed heading nesting in a description: a first heading
@@ -341,6 +396,10 @@ class APISpec_Batch {
         if (isset($dj->description)
             && ($this->override_description || ($xj->description ?? "") === "")) {
             $xj->description = $dj->description;
+        }
+        if (isset($dj->sections)
+            && ($this->override_description || !isset($xj->{"x-sections"}))) {
+            $xj->{"x-sections"} = self::clean_sections($dj->sections);
         }
     }
 

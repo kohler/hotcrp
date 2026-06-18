@@ -101,13 +101,7 @@ single round trip.
     `assignment_pids`); `none` returns only `assignment_count`.
 
     * default json
-* param ?forceShow boolean
-
-    Whether administrators override their own conflicts. Defaults to `true`; set
-    `forceShow=false` to respect conflicts instead.
-
-    * default true
-
+* param ?forceShow
 * param ?search search_parameter_specification
 
     A search to evaluate after the assignment is applied. When supplied on a

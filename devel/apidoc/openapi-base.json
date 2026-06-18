@@ -180,7 +180,7 @@
                 "name": "forceShow",
                 "in": "query",
                 "required": false,
-                "description": "Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
+                "description": "Whether to override administrator conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.",
                 "schema": {
                     "type": "boolean",
                     "default": true

@@ -157,6 +157,7 @@ instead.
 * param f string: Space-separated display field definitions.
 * param format search_field_format: Format for returned display fields.
 * param warn_missing boolean: Get warnings for missing submissions.
+* param ?forceShow
 * param hotlist boolean: Get a `hotlist` response field.
 * response_schema search_response
 * response ?fields [object]
@@ -220,6 +221,7 @@ more convenient than other more standardized APIs.
 * param reviewer
 
     * group Search modifiers
+* param ?forceShow
 
 
 # post /searchaction
@@ -249,6 +251,7 @@ The request format for POST requests is the same as for GET requests.
 * param reviewer
 
     * group Search modifiers
+* param ?forceShow
 
 
 # get /searchactions

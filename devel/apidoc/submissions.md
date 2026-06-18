@@ -24,9 +24,7 @@ object is returned in the `paper` response field. Error messages—for
 instance, about permission errors or nonexistent submissions—are returned in
 `message_list`.
 
-* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
-
-    * default true
+* param ?forceShow
 * response ?paper paper: The requested submission object.
 * badge featured
 
@@ -169,9 +167,7 @@ existing submission, set the submission JSON’s `status`.`if_unmodified_since` 
 Delete the submission specified by `p`, a submission ID.
 
 * param ?if_unmodified_since string: Don’t delete if modified since this time
-* param ?forceShow boolean: Whether administrators override their own conflicts. Defaults to `true`; set `forceShow=false` to respect conflicts instead.
-
-    * default true
+* param ?forceShow
 * param ?dry_run boolean: True checks input for errors, but does not save changes
 * param ?notify boolean: False disables all email notifications
 
