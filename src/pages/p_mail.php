@@ -78,7 +78,7 @@ class Mail_Page {
                     $qreq->to = $row->recipients;
                 }
                 if ($row->q) {
-                    $qreq->plimit = 1;
+                    $qreq->plimit = "1";
                 }
             }
         }
@@ -101,7 +101,7 @@ class Mail_Page {
         // It's OK to just set $qreq->p from the input without
         // validation because MailRecipients filters internally
         if (isset($qreq->prevt) && isset($qreq->prevq)) {
-            if (!isset($qreq->plimit)) {
+            if (!friendly_boolean($qreq->plimit)) {
                 unset($qreq->p);
             } else if (($qreq->prevt !== $qreq->t || $qreq->prevq !== $qreq->q)
                        && !isset($qreq->recheck)) {
@@ -110,7 +110,7 @@ class Mail_Page {
             }
         }
 
-        if ($qreq->plimit) {
+        if (friendly_boolean($qreq->plimit)) {
             $search = new PaperSearch($this->viewer, ["t" => $qreq->t, "q" => $qreq->q]);
             $papersel = $search->paper_ids();
             sort($papersel);
@@ -292,7 +292,8 @@ class Mail_Page {
         if ($this->viewer->privChair) {
             echo '<div class="fx9 checki mt-1"><span class="checkc">',
                 Ht::hidden("has_plimit", 1),
-                Ht::checkbox("plimit", 1, !!$this->qreq->plimit, ["id" => "plimit", "class" => "uich js-mail-recipients"]),
+                Ht::checkbox("plimit", 1, friendly_boolean($this->qreq->plimit) ?? false,
+                    ["id" => "plimit", "class" => "uich js-mail-recipients"]),
                 '</span>',
                 '<label for="plimit">Search</span><span class="fx8">:</span></label>';
         } else {

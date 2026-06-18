@@ -215,7 +215,7 @@ class Log_Page {
         }
 
         echo $this->conf->hotform("log", null, ["method" => "get", "id" => "f-search", "class" => "mx-auto clearfix"]);
-        if ($this->qreq->forceShow) {
+        if (friendly_boolean($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", 1);
         }
         echo '<div class="d-inline-block" style="padding-right:2rem">',
@@ -409,7 +409,7 @@ class Log_Page {
                 if ($page > 1 && $leg->page_delta() > 0) {
                     $req["offset"] = $leg->page_delta();
                 }
-                if ($this->qreq->forceShow) { // XXX never true
+                if (friendly_boolean($this->qreq->forceShow)) { // XXX never true
                     $conf->feedback_msg(MessageItem::marked_note("<5>Showing all entries (" . $conf->selflink("unprivileged view", $this->qreq, $req + ["forceShow" => null]) . ")"));
                 } else {
                     $conf->feedback_msg(MessageItem::marked_note("<5>Not showing entries for " . $conf->hotlink("conflicted administered papers", "search", ["q" => join(" ", array_keys($this->exclude_pids))])));

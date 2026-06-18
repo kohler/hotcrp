@@ -67,7 +67,7 @@ class MailSender {
         if (isset($qreq->mailid) && ctype_digit($qreq->mailid)) {
             $this->mailid = intval($qreq->mailid);
         }
-        $this->group = $qreq->group || !$qreq->ungroup;
+        $this->group = friendly_boolean($qreq->group) ?? !(friendly_boolean($qreq->ungroup));
         $this->recipients = (string) $qreq->to;
         if ($qreq->has_a("sendprep")) {
             foreach ($qreq->get_a("sendprep") ?? [] as $prepid) {
@@ -233,7 +233,7 @@ class MailSender {
             '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
             '<div class="aabut ml-3 need-tooltip', $this->groupable ? " hidden" : "", '" id="mail-group-disabled" aria-label="These messages cannot be gathered because their contents differ.">', Ht::submit("group", "Gather recipients", ["disabled" => true, "class" => "pe-none"]), '</div>',
             '<div class="aabut ml-3', $this->groupable ? "" : " hidden", '" id="mail-group-enabled">';
-        if (!$this->qreq->group && $this->qreq->ungroup) {
+        if (!$this->group) {
             echo Ht::submit("group", "Gather recipients");
         } else {
             echo Ht::submit("ungroup", "Separate recipients");

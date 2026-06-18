@@ -396,8 +396,8 @@ class Paper_Page {
             $j->visibility = $this->qreq->visibility;
             $tags = trim((string) $this->qreq->tags);
             $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
-            $j->blind = !!$this->qreq->blind;
-            $j->draft = !!$this->qreq->draft;
+            $j->blind = friendly_boolean($this->qreq->blind) ?? false;
+            $j->draft = friendly_boolean($this->qreq->draft) ?? false;
         }
         Ht::stash_script("hotcrp.edit_comment(" . json_encode_browser($j) . ")");
     }

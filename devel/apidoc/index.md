@@ -47,10 +47,9 @@ using bearer tokens obtained using Account settings > Developer.
 
 ## Parameter types
 
-**Boolean** parameters accept `1` or `true` for true and `0` or `false` for
-false; the values `on`/`yes` and `off`/`no` are also accepted. Any other value
-is treated as if the parameter were absent. For example, `dry_run=1` and
-`dry_run=true` are equivalent.
+**Boolean** parameters accept `1` or `true` for true and `0` or `false` or the
+empty string for false; the values `on`/`yes` and `off`/`no` are also
+accepted. For example, `dry_run=1` and `dry_run=true` are equivalent.
 
 **Integer** and **number** parameters are written in decimal, such as `p=10`.
 **String** parameters are sent literally; an enumerated parameter is a string

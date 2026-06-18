@@ -73,7 +73,7 @@ class RequestReview_API {
             $refusal = ($prow->review_refusals_by_email($pemail))[0] ?? null;
         }
         if ($refusal
-            && (!$user->can_manage_reviews($prow) || !$qreq->override)) {
+            && (!$user->can_manage_reviews($prow) || !friendly_boolean($qreq->override))) {
             if ($reviewer
                 && ($refusal->refusedBy == $reviewer->contactId
                     || ($refusal->refusedBy === null && $refusal->reason !== "request denied by chair"))) {
@@ -127,7 +127,7 @@ class RequestReview_API {
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");
         if ($can_manage
-            ? ($potconflist || $notrack) && !$qreq->override
+            ? ($potconflist || $notrack) && !friendly_boolean($qreq->override)
             : $extrev_chairreq === 1
               || ($extrev_chairreq === 2 && ($potconflist || $notrack))) {
             $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",

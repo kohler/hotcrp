@@ -1918,7 +1918,7 @@ class Contact implements JsonSerializable {
     function escape($qreq = null) {
         $qreq = $qreq ?? Qrequest::$main_request;
 
-        if ($qreq->ajax) {
+        if (friendly_boolean($qreq->ajax)) {
             if ($this->is_empty()) {
                 $m = "<0>You have been signed out";
             } else if (!$this->is_signed_in()) {
