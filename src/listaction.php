@@ -87,11 +87,6 @@ class ListAction {
         $namepfx = $slash > 0 ? substr($name, 0, $slash) : null;
         $cs->xtp->set_require_key_for_method($qreq->method());
         $uf = $cs->get($name) ?? ($namepfx ? $cs->get($namepfx) : null);
-        // XXX allow `POST` requests to `get`
-        if (!$uf && $qreq->is_post()) {
-            $cs->xtp->set_require_key_for_method("GET");
-            $uf = $cs->get($name) ?? ($namepfx ? $cs->get($namepfx) : null);
-        }
         if (!$uf) {
             $cs->reset_context();
             $cs->xtp->set_require_key_for_method(null);
