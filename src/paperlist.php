@@ -408,8 +408,11 @@ final class PaperList extends MessageSet {
             }
         }
 
-        if ($qreq->forceShow !== null) {
-            $this->set_view("force", !!$qreq->forceShow, self::VIEWORIGIN_REQUEST);
+        if (($fs = friendly_boolean($qreq->forceShow)) !== null) {
+            $this->set_view("force", $fs, self::VIEWORIGIN_REQUEST);
+        } else if ($this->user->overrides() & Contact::OVERRIDE_CONFLICT) {
+            // adopt override-conflict setting from user
+            $this->set_view("force", true, self::VIEWORIGIN_REQUEST);
         }
         if ($qreq->selectall) {
             $vd = $this->_view_options["sel"] = $this->_view_options["sel"] ?? new ViewOptionList;

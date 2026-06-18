@@ -891,7 +891,9 @@ class Contact implements JsonSerializable {
 
         // check forceShow
         $this->_overrides = 0;
-        if ($qreq->forceShow && $this->is_manager()) {
+        if (($fs = $qreq->forceShow) !== null
+            && friendly_boolean($fs) !== false
+            && $this->is_manager()) {
             $this->_overrides |= self::OVERRIDE_CONFLICT;
         }
 
