@@ -1498,6 +1498,14 @@ class Unit_Tester {
         xassert_eqq(friendly_boolean(""), false);
         xassert_eqq(friendly_boolean("0"), false);
         xassert_eqq(friendly_boolean("1"), true);
+        xassert_eqq(friendly_boolean("ON"), true);      // case-insensitive
+        xassert_eqq(friendly_boolean("No"), false);
+        xassert_eqq(friendly_boolean(" "), null);        // no longer trims
+        xassert_eqq(friendly_boolean(" 1 "), null);      // no longer trims
+        xassert_eqq(friendly_boolean("00"), null);
+        xassert_eqq(friendly_boolean("2"), null);
+        xassert_eqq(friendly_boolean(1), true);
+        xassert_eqq(friendly_boolean(0), false);
         xassert_eqq(friendly_boolean("!#($!"), null);
     }
 

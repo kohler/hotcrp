@@ -1,6 +1,6 @@
 <?php
 // base.php -- HotCRP base helper functions
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 /** @phan-file-suppress PhanRedefineFunction */
 
 // type helpers
@@ -366,9 +366,22 @@ function glob_to_regex($s, $flags = 0) {
 function friendly_boolean($x) {
     if (is_bool($x)) {
         return $x;
-    } else if (is_string($x) || is_int($x)) {
-        // 0, false, off, no: false; 1, true, on, yes: true
-        return filter_var($x, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    } else if (is_int($x)) {
+        return $x === 1 ? true : ($x === 0 ? false : null);
+    } else if (is_string($x) && strlen($x) <= 5 /* `false` is longest */) {
+        // Like `filter_var`, but avoid surprising behaviors like whitespace
+        // trimming
+        if ($x === "" || $x === "0") {
+            return false;
+        } else if ($x === "1") {
+            return true;
+        }
+        $s = strtolower($x);
+        if ($s === "on" || $s === "yes" || $s === "true") {
+            return true;
+        } else if ($s === "off" || $s === "no" || $s === "false") {
+            return false;
+        }
     }
     return null;
 }
