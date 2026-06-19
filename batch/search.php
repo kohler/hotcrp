@@ -19,6 +19,10 @@ class Search_Batch {
     /** @var bool */
     public $sitename;
     /** @var bool */
+    public $table;
+    /** @var ?int */
+    public $width;
+    /** @var bool */
     public $debug;
 
     function __construct(Contact $user, $arg) {
@@ -32,6 +36,8 @@ class Search_Batch {
         $this->search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
         $this->fields = $arg["f"] ?? [];
         $this->sitename = isset($arg["N"]);
+        $this->table = isset($arg["table"]);
+        $this->width = isset($arg["width"]) ? (int) $arg["width"] : null;
         $this->debug = isset($arg["debug"]);
         if (isset($arg["no-header"])) {
             $this->header = false;
@@ -58,10 +64,20 @@ class Search_Batch {
         if (empty($body)) {
             return 0;
         }
-        $csv = new CsvGenerator;
+        $csv = new CsvGenerator($this->table ? CsvGenerator::TYPE_TABLE : CsvGenerator::TYPE_COMMA);
+        if ($this->table) {
+            // wrap to `--width`, else to the terminal width when on a TTY
+            $w = $this->width ?? (stream_isatty(STDOUT) ? self::terminal_width() : 0);
+            if ($w > 0) {
+                $csv->set_table_max_width($w);
+            }
+        }
         $siteid = $this->search->conf->opt("confid");
         $siteclass = $this->search->conf->opt("siteclass");
-        if ($this->header ?? (count($header) > 1)) {
+        // a table always selects columns (for alignment); a header shows by
+        // default for a table, or for CSV with more than one column
+        $show_header = $this->header ?? ($this->table || count($header) > 1);
+        if ($show_header || $this->table) {
             if ($this->sitename) {
                 $xheader = ["sitename", "siteclass"];
                 foreach ($header as $i => $n) {
@@ -69,7 +85,10 @@ class Search_Batch {
                 }
                 $header = $xheader;
             }
-            $csv->set_keys(array_keys($header))->set_header($header);
+            $csv->set_keys(array_keys($header));
+            if ($show_header) {
+                $csv->set_header($header);
+            }
         }
         foreach ($body as $row) {
             $this->sitename && array_unshift($row, $siteid, $siteclass);
@@ -77,6 +96,21 @@ class Search_Batch {
         }
         fwrite(STDOUT, $csv->unparse());
         return 0;
+    }
+
+    /** @return int */
+    static function terminal_width() {
+        // `stty` is a plain POSIX ioctl (no terminfo, unlike `tput`); read the
+        // controlling terminal so a redirected stdin/stdout doesn't matter
+        if (($s = @exec("stty size 2>/dev/null </dev/tty")) !== false
+            && preg_match('/\A\d+ (\d+)/', $s, $m)
+            && ($w = (int) $m[1]) > 0) {
+            return $w;
+        }
+        if (($w = (int) getenv("COLUMNS")) > 0) {
+            return $w;
+        }
+        return 80;
     }
 
     /** @return Search_Batch */
@@ -87,12 +121,14 @@ class Search_Batch {
             "t:,type: =SCOPE Scope of search [default]",
             "f[],show[],field[] =FIELD Include FIELD in output",
             "N,sitename Include site name and class in output",
-            "header Always include CSV header",
-            "no-header Omit CSV header",
+            "table,T Output an aligned text table instead of CSV",
+            "width:,w: =WIDTH Wrap table output to WIDTH columns",
+            "header Always include header",
+            "no-header Omit header",
             "debug",
             "help,h !"
-        )->description("Output CSV of the papers matching HotCRP search QUERY.
-Usage: php batch/search.php [-n CONFID] [-t SCOPE] [-f FIELD]+ QUERY...")
+        )->description("Output the papers matching HotCRP search QUERY as CSV or a text table.
+Usage: php batch/search.php [-n CONFID] [-t SCOPE] [-f FIELD]+ [-T] QUERY...")
          ->helpopt("help")
          ->parse($argv);
 

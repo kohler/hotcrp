@@ -770,7 +770,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         if (isset($arg["progress"])
             || (!isset($arg["quiet"])
                 && !isset($arg["no-progress"])
-                && posix_isatty(STDERR))) {
+                && stream_isatty(STDERR))) {
             $hcli->set_progress(true);
         }
         if (isset($arg["chunk"])) {

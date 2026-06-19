@@ -316,13 +316,17 @@ class Unit_Tester {
     }
 
     function test_csv_table_unicode_width() {
-        xassert_eqq(CsvGenerator::table_width("abc"), 3);
-        xassert_eqq(CsvGenerator::table_width("café"), 4);
-        // a 5-wide accented value should pad the same as a 5-wide ASCII value
         $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE | CsvGenerator::TABLE_ASCII);
+        xassert_eqq($t->table_width("abc"), 3);
+        xassert_eqq($t->table_width("café"), 4);
+        // a 5-wide accented value should pad the same as a 5-wide ASCII value
         $t->add_row(["café", "x"]);
         $t->add_row(["abcde", "y"]);
         xassert_eqq($t->unparse(), "café   x\nabcde  y\n");
+        // truncate width counts the first line plus room for "..."
+        $tt = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_TRUNCATE);
+        xassert_eqq($tt->table_width("café"), 4);
+        xassert_eqq($tt->table_width("café\nlong"), 7);
     }
 
     function test_csv_table_align() {
@@ -459,6 +463,37 @@ class Unit_Tester {
             . "| abcdefghij |\n"
             . "| klmnop     |\n"
             . "+------------+\n");
+    }
+
+    function test_csv_table_truncate() {
+        // TABLE_TRUNCATE limits each cell to one line; a multi-line cell is
+        // clipped to its first line with "..." (column sized to fit the "...")
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII
+            | CsvGenerator::TABLE_TRUNCATE);
+        $t->select(["n", "v"]);
+        $t->add_row(["n" => "alpha\nbeta", "v" => "x"]);
+        $t->add_row(["n" => "g", "v" => "y"]);
+        xassert_eqq($t->unparse(),
+            "+----------+---+\n"
+            . "| n        | v |\n"
+            . "+----------+---+\n"
+            . "| alpha... | x |\n"
+            . "| g        | y |\n"
+            . "+----------+---+\n");
+
+        // with a max width, an over-wide cell is clipped to fit the column
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII
+            | CsvGenerator::TABLE_TRUNCATE);
+        $t->set_table_max_width(20)->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "the quick brown fox"]);
+        $t->add_row(["id" => 2, "title" => "hi"]);
+        xassert_eqq($t->unparse(),
+            "+----+-------------+\n"
+            . "| id | title       |\n"
+            . "+----+-------------+\n"
+            . "|  1 | the quic... |\n"
+            . "|  2 | hi          |\n"
+            . "+----+-------------+\n");
     }
 
     function test_numrangejoin() {

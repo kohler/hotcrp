@@ -846,12 +846,13 @@ class CsvGenerator {
     const FLAG_COMPLETING = 8192;   // final flush; content length is known (internal)
 
     // `TYPE_TABLE` rendering flags, set in the constructor
-    const TABLE_BOX = 0;        // full border around every cell (default)
-    const TABLE_RULE = 16384;   // header, a rule below it, then data; no borders
-    const TABLE_ASCII = 32768;  // ASCII "+-|" borders instead of box-drawing
+    const TABLE_BOX = 0;          // full border around every cell (default)
+    const TABLE_RULE = 16384;     // header, a rule below it, then data; no borders
+    const TABLE_ASCII = 32768;    // ASCII "+-|" borders instead of box-drawing
+    const TABLE_TRUNCATE = 65536; // limit each cell to one line, ending "..." if clipped
 
     // flags permitted in the constructor (others are set internally)
-    const FLAGM_CONSTRUCTOR = 0xFF | self::TABLE_RULE | self::TABLE_ASCII;
+    const FLAGM_CONSTRUCTOR = 0xFF | self::TABLE_RULE | self::TABLE_ASCII | self::TABLE_TRUNCATE;
 
     // Per-column `cell_flags` packing for `TYPE_TABLE`: alignment in bits 0–1,
     // the numeric flag in bit 2, and the column display width in bits 4+.
@@ -1333,18 +1334,21 @@ class CsvGenerator {
             foreach ($srow as $i => &$x) {
                 $cf = &$this->cell_flags[$i];
                 $x = (string) $x;
-                if ($x !== ""
-                    && ($cf & self::CELL_NUMERIC) !== 0
+                if ($x === "") {
+                    continue;
+                }
+                if (($cf & self::CELL_NUMERIC) !== 0
                     && !ctype_digit($x)
                     && !self::table_numeric($x)) {
                     $cf &= ~self::CELL_NUMERIC;
                 }
-                if (strpbrk($x, "\0\r\n") !== false) {
+                $special = strpbrk($x, "\0\r\n") !== false;
+                if ($special) {
                     $x = rtrim(preg_replace('/\r\n?/', "\n", str_replace("\0", "", $x)), "\n");
                 }
-                if ($x !== ""
-                    && (strlen($x) << self::CELL_WIDTH_SHIFT) > $cf) {
-                    $w = self::table_width($x) << self::CELL_WIDTH_SHIFT;
+                if ($special
+                    || (strlen($x) << self::CELL_WIDTH_SHIFT) > $cf) {
+                    $w = $this->table_width($x) << self::CELL_WIDTH_SHIFT;
                     if ($w > $cf) {
                         $cf = ($cf & self::CELLM_NONWIDTH) | $w;
                     }
@@ -1404,15 +1408,20 @@ class CsvGenerator {
     }
 
 
-    /** Return the display width of `$s` in terminal columns.
+    /** Return the display width of `$s` in terminal columns. Normally this is
+     * the width of the widest line; with `TABLE_TRUNCATE` only the first line
+     * shows, so it is that line's width plus 3 for the trailing "..." when more
+     * lines follow.
      * @param string $s
+     * @param bool $nonl -- true if input string has no \n
      * @return int */
-    static function table_width($s) {
+    function table_width($s, $nonl = false) {
+        $truncate = ($this->flags & self::TABLE_TRUNCATE) !== 0;
         $w = 0;
         $pos = 0;
         $len = strlen($s);
         while ($pos !== $len) {
-            $nl = strpos($s, "\n", $pos);
+            $nl = $nonl ? false : strpos($s, "\n", $pos);
             if ($nl !== false) {
                 $x = substr($s, $pos, $nl - $pos);
                 $pos = $nl + 1;
@@ -1420,17 +1429,32 @@ class CsvGenerator {
                 $x = substr($s, $pos);
                 $pos = $len;
             }
-            $w = max($w, is_usascii($x) ? strlen($x) : UnicodeHelper::utf8_glyphlen($x));
+            $lw = is_usascii($x) ? strlen($x) : UnicodeHelper::utf8_glyphlen($x);
+            if ($truncate) {
+                return $lw + ($nl !== false ? 3 : 0);
+            }
+            $w = max($w, $lw);
         }
         return $w;
+    }
+
+    /** Clip a single line to width `$w`, ending in "..." to mark the cut.
+     * @param string $s
+     * @param int $w
+     * @return string */
+    private static function table_ellipsize($s, $w) {
+        if ($w <= 3) {
+            return substr("...", 0, max($w, 0));
+        }
+        return UnicodeHelper::utf8_prefix($s, $w - 3) . "...";
     }
 
     /** @param string $s
      * @param int $w
      * @param int $align
      * @return string */
-    private static function table_pad($s, $w, $align) {
-        $pad = $w - self::table_width($s);
+    private function table_pad($s, $w, $align) {
+        $pad = $w - $this->table_width($s, true);
         if ($pad <= 0) {
             return $s;
         } else if (($align & self::CELLM_NONWIDTH) === self::CELL_ALIGN_C) {
@@ -1559,13 +1583,19 @@ class CsvGenerator {
      * @return string */
     private function render_table_row($cells, $widths, $rule, $v) {
         $ncol = count($widths);
+        $truncate = ($this->flags & self::TABLE_TRUNCATE) !== 0;
         $lines = "";
         while (true) {
             $next_cells = [];
             for ($i = 0; $i !== $ncol; ++$i) {
                 $s = (string) ($cells[$i] ?? "");
                 $x = UnicodeHelper::utf8_hard_line_break($s, $widths[$i]);
-                $x = self::table_pad($x, $widths[$i], $this->cell_flags[$i]);
+                if ($truncate && $s !== "") {
+                    // more content remains; clip this cell to one line + "..."
+                    $x = self::table_ellipsize($x, $widths[$i]);
+                    $s = "";
+                }
+                $x = $this->table_pad($x, $widths[$i], $this->cell_flags[$i]);
                 if ($rule) {
                     $lines .= $i ? "  {$x}" : $x;
                 } else {
