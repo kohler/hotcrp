@@ -174,18 +174,16 @@ class Search_API {
         } else {
             $ssel = SearchSelection::make($qreq, $user, "p");
         }
-        $action = ListAction::lookup($qreq->action, $user, $qreq, $ssel, ListAction::F_API);
-        if ($action instanceof ListAction) {
-            $action = $action->run($user, $qreq, $ssel);
-        }
-        $result = ListAction::resolve_document($action, $user, $qreq);
+        $result = (new ListActionCall($user, ListAction::F_API))
+            ->call($qreq->action, $qreq, $ssel)
+            ->resolved_result();
         $user->set_overrides($old_overrides);
         return $result;
     }
 
     static function searchactions(Contact $user) {
         $fjs = [];
-        $cs = ListAction::components($user, ListAction::F_API);
+        $cs = (new ListActionCall($user, ListAction::F_API))->cs();
         foreach ($cs->members("") as $rf) {
             if (str_starts_with($rf->name, "__")) {
                 continue;

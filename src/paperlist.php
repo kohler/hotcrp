@@ -2071,7 +2071,7 @@ final class PaperList extends MessageSet {
             $atab = $qreq->fn ?? $qreq->atab;
         }
 
-        $cs = ListAction::components($this->user);
+        $cs = (new ListActionCall($this->user))->cs();
         $cs->add_xt_checker([$this, "list_checker"]);
         $cs->apply_key_filter("display_if");
         if ($this->_footer_filter) {

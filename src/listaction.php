@@ -8,30 +8,17 @@ class ListAction {
         return true;
     }
 
-    /** @return null|JsonResult|Downloader|Redirection|CsvGenerator|DocumentInfo|DocumentInfoSet */
+    /** @return JsonResult|Downloader|Redirection|CsvGenerator|DocumentInfo|DocumentInfoSet */
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         return JsonResult::make_not_found_error(null, "<0>Action not found");
     }
 
     const F_API = 1;
 
-    /** @return ComponentSet */
+    /** @return ComponentSet
+     * @deprecated */
     static function components(Contact $user, $flags = 0) {
-        $cs = new ComponentSet($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
-        $cs->add_xt_checker(function ($e, $xt, $xtp) use ($flags) {
-            if ($e === "api") {
-                return ($flags & self::F_API) !== 0;
-            }
-            return null;
-        });
-        foreach ($cs->members("__expand") as $gj) {
-            if (isset($gj->allow_if) && !$cs->allowed($gj->allow_if, $gj)) {
-                continue;
-            }
-            Conf::xt_resolve_require($gj);
-            call_user_func($gj->expand_function, $cs, $gj);
-        }
-        return $cs;
+        return (new ListActionCall($user, $flags))->cs();
     }
 
     /** @param ComponentSet $cs
@@ -69,92 +56,6 @@ class ListAction {
             $sel_opt[] = $opt;
         }
         return $sel_opt;
-    }
-
-    /** @param string $name
-     * @param int $flags
-     * @return JsonResult|ListAction */
-    static function lookup($name, Contact $user, Qrequest $qreq,
-                           SearchSelection $selection, $flags = 0) {
-        if ($qreq->method() !== "GET"
-            && $qreq->method() !== "HEAD"
-            && !$qreq->valid_token()) {
-            return JsonResult::make_error(403, "<0>Missing credentials");
-        }
-        $wantapi = ($flags & self::F_API) !== 0;
-        $cs = self::components($user, $flags);
-        $slash = strpos($name, "/");
-        $namepfx = $slash > 0 ? substr($name, 0, $slash) : null;
-        $cs->xtp->set_require_key_for_method($qreq->method());
-        $uf = $cs->get($name) ?? ($namepfx ? $cs->get($namepfx) : null);
-        if (!$uf) {
-            $cs->reset_context();
-            $cs->xtp->set_require_key_for_method(null);
-            $uf1 = $cs->get($name) ?? ($namepfx ? $cs->get($namepfx) : null);
-            if ($uf1) {
-                return JsonResult::make_error(405, "<0>Method not supported");
-            }
-        }
-        if (!$uf
-            || !Conf::xt_resolve_require($uf)
-            || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
-            || ($wantapi && ($uf->api ?? null) === false)
-            || !is_string($uf->function)) {
-            return JsonResult::make_error(404, "<0>Action not found");
-        } else if (($uf->paper ?? false) && $selection->is_empty()) {
-            return JsonResult::make_error(400, "<0>Empty selection");
-        } else if ($uf->function[0] === "+") {
-            $class = substr($uf->function, 1);
-            /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
-            $action = new $class($user->conf, $uf);
-        } else {
-            $action = call_user_func($uf->function, $user->conf, $uf);
-        }
-        if (!$action || !$action->allow($user, $qreq)) {
-            return JsonResult::make_permission_error();
-        }
-        return $action;
-    }
-
-    /** @param string $name */
-    static function call($name, Contact $user, Qrequest $qreq,
-                         SearchSelection $selection) {
-        $res = self::lookup($name, $user, $qreq, $selection);
-        if ($res instanceof ListAction) {
-            $res = $res->run($user, $qreq, $selection);
-        }
-        $res = self::resolve_document($res, $user, $qreq);
-        if ($res instanceof JsonResult) {
-            if ($qreq->page() === "api") {
-                json_exit($res);
-            }
-            if (isset($res->content["message_list"])) {
-                $user->conf->feedback_msg($res->content["message_list"]);
-            }
-        } else if ($res instanceof Downloader) {
-            $res->emit();
-            Navigation::complete();
-        } else if ($res instanceof Redirection) {
-            $qreq->redirect($res->url, $res->status);
-        }
-    }
-
-    /** @param null|JsonResult|Downloader|Redirection|CsvGenerator|DocumentInfo|DocumentInfoSet $res
-     * @return null|JsonResult|Downloader|Redirection */
-    static function resolve_document($res, Contact $user, Qrequest $qreq) {
-        if (!($res instanceof DocumentInfo)
-            && !($res instanceof DocumentInfoSet)
-            && !($res instanceof CsvGenerator)) {
-            return $res;
-        }
-        $dopt = new Downloader;
-        $dopt->parse_qreq($qreq);
-        $dopt->set_attachment(true);
-        $dopt->set_log_user($user);
-        if ($res->prepare_download($dopt)) {
-            return $dopt;
-        }
-        return JsonResult::make_message_list(400, $res->message_list());
     }
 
 

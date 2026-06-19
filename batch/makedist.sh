@@ -385,6 +385,7 @@ src/helprenderer.php
 src/hotcrpmailer.php
 src/init.php
 src/listaction.php
+src/listactioncall.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php
 src/listactions/la_get.php

@@ -238,7 +238,9 @@ class ReviewPrefs_Page {
                 }
             }
         } else if ($qreq->fn !== null) {
-            ListAction::call($qreq->fn, $user, $qreq, $ssel);
+            (new ListActionCall($user))
+                ->call($qreq->fn, $qreq, $ssel)
+                ->emit();
         }
 
         // set options to view

@@ -483,7 +483,9 @@ class Search_Page {
             } else if ($slash === false && isset($qreq[$subkey])) {
                 $fn .= "/" . $qreq[$subkey];
             }
-            ListAction::call($fn, $user, $qreq, $ssel);
+            (new ListActionCall($user))
+                ->call($fn, $qreq, $ssel)
+                ->emit();
         }
 
         // display

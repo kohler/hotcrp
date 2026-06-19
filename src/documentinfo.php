@@ -604,7 +604,9 @@ class DocumentInfo implements JsonSerializable {
             return true;
         }
         // not found
-        $this->error("<0>Cannot load document");
+        if (!$this->has_error()) {
+            $this->error("<0>Document content cannot be loaded");
+        }
         return false;
     }
 
@@ -2014,9 +2016,6 @@ class DocumentInfo implements JsonSerializable {
             $s3_accel = $this->s3_accel_redirect();
         }
         if (!$s3_accel && !$this->ensure_content()) {
-            if (!$this->has_error()) {
-                $this->error("<0>Document cannot be prepared for download");
-            }
             return false;
         }
 

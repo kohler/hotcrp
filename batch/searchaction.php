@@ -133,11 +133,9 @@ class SearchAction_Batch {
         }
 
         // look up and run search action
-        $res = ListAction::lookup($this->actionname, $this->user, $qreq, $ssel);
-        if ($res instanceof ListAction) {
-            $res = $res->run($this->user, $qreq, $ssel);
-        }
-        $res = ListAction::resolve_document($res, $this->user, $qreq);
+        $res = (new ListActionCall($this->user, ListAction::F_API))
+            ->call($this->actionname, $qreq, $ssel)
+            ->resolved_result();
 
         // emit output to STDOUT, avoiding `emit()`’s header/buffer handling
         if ($res instanceof Downloader) {
