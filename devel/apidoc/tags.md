@@ -96,7 +96,7 @@ a list in one round trip.
 * param ?=add_tags string: Tags to add, leaving others in place.
 * param ?=remove_tags string: Tags to remove, leaving others in place.
 * param ?=expected_tags string: If set, apply the change only if the submission’s current tags match this list.
-* param ?=search search_parameter_specification: A search to evaluate after the change; its results are added to the response.
+* param ?+search search_parameter_specification
 * response_schema tag_response
 * response_schema search_response.opt
 
@@ -117,7 +117,7 @@ response as well.
 
 * badge featured
 * param =tagassignment string: Submission IDs interleaved with the tags to assign to them.
-* param ?=search search_parameter_specification: A search to evaluate after the change; its results are added to the response.
+* param ?+search search_parameter_specification
 * response p [tag_response]: Refreshed tag objects for the affected submissions.
 * response_schema search_response.opt
 
@@ -147,7 +147,7 @@ votes) tag into labeled groups—for example, section headings in a discussion
 order. `editable` reports whether the caller may change them.
 
 * param tag tag: The tag whose annotations to return.
-* param ?search search_parameter_specification: A search to evaluate; its results are added to the response.
+* param ?search search_parameter_specification
 * response tag tag: The tag.
 * response editable boolean: Whether the caller may edit these annotations.
 * response anno [tag_annotation]: The tag’s annotations, in order.
@@ -176,7 +176,7 @@ for [`taganno` GET](#get-taganno).
 
 * param tag tag: The tag whose annotations to change.
 * param +anno [tag_annotation]: The new annotation list.
-* param ?search search_parameter_specification: A search to evaluate; its results are added to the response.
+* param ?+search search_parameter_specification
 * response tag tag: The tag.
 * response editable boolean: Whether the caller may edit these annotations.
 * response anno [tag_annotation]: The updated annotations, in order.

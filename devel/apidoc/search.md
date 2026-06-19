@@ -122,19 +122,6 @@ This response might be returned for the search `10-12 THEN 5-8`:
 }
 ```
 
-## More
-
-The `search_params` response field is a URL-encoded string defining all
-relevant parameters for the search.
-
-Set the `hotlist` parameter to get a `hotlist` response field. A
-[hotlist](#tag-search) records this ordered result—its members and the search
-that produced it—so the HotCRP web client can remember the list across page
-loads and offer “previous”/“next” navigation between submissions. It is returned
-as an opaque JSON-encoded string (a serialized [`hotlist`](#tag-search) object);
-external integrations that just want the matching IDs should read `ids`
-instead.
-
 
 * badge featured
 * param q search_string: The search expression.
@@ -160,6 +147,9 @@ instead.
 * param ?forceShow
 * param hotlist boolean: Get a `hotlist` response field.
 * response_schema search_response
+* response ?hotlist hotlist
+
+    * condition hotlist
 * response ?fields [object]
 
     * condition format

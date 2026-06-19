@@ -22,7 +22,7 @@ session.
 
 CSRF protection does **not** apply to requests authenticated with an
 `Authorization: bearer` token, so external applications using API tokens never
-need the `post` parameter. See [Authentication](#overview-authentication).
+need the `post` parameter. See [Authentication](#authentication).
 
 ## Session cookies
 
@@ -228,8 +228,8 @@ provider for a registered client application; it is not a general HotCRP API
 call and does not use HotCRP’s usual `{"ok": ...}` response envelope.
 
 The request is form-encoded. Send `grant_type=authorization_code` with the
-`code` returned from the authorization step (plus `redirect_uri` and, for [PKCE]
-(https://datatracker.ietf.org/doc/html/rfc7636) clients, `code_verifier`), or
+`code` returned from the authorization step (plus `redirect_uri` and, for
+[PKCE](https://datatracker.ietf.org/doc/html/rfc7636) clients, `code_verifier`), or
 `grant_type=refresh_token` with a `refresh_token`. The client authenticates
 either with HTTP Basic authentication (`Authorization: Basic`) or by sending
 `client_id` and `client_secret` as body parameters. An optional `scope`

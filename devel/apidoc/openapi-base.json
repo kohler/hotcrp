@@ -658,7 +658,7 @@
             },
             "hotlist": {
                 "type": "object",
-                "description": "A **hotlist** captures an ordered list of submissions (or users) together with the search that produced it, so HotCRP's web client can remember the list across page loads—most visibly to offer “previous”/“next” navigation between submissions. It is an opaque token to most callers; external integrations can ignore it. Note that on the wire a hotlist is transmitted as a **JSON-encoded string** (a serialized form of the object documented here), not as a nested JSON object; HotCRP's client parses the string to recover these properties.",
+                "description": "Opaque token that captures the search, including its description and the ordered list of submission IDs. Intended for HotCRP’s web client, which uses it to remember the list across page loads—most visibly to offer “previous”/“next” navigation between submissions and to support the tracker. External integrations should ignore this. Transmitted as a **JSON-encoded string** (a serialized form of the object documented here), not as a nested JSON object; HotCRP's client parses the string to recover these properties.",
                 "properties": {
                     "listid": {
                         "type": "string",
@@ -729,7 +729,7 @@
             },
             "encoded_search_parameters": {
                 "type": "string",
-                "description": "URL-encoded search parameters",
+                "description": "URL-encoded string defining all relevant parameters for the search.",
                 "examples": [
                     "q=&t=s&sort=id&forceShow=&report=pl"
                 ]
@@ -804,6 +804,7 @@
                 }
             },
             "search_parameter_specification": {
+                "description": "Encoded description of a search, as returned from the `search_params` response field of [`/search`](#get-search). Provide to recompute the search after the assignment. The response will include `ids`, `groups`, and `search_params` from that search.",
                 "oneOf": [
                     {
                         "$ref": "#/components/schemas/encoded_search_parameters"
@@ -823,22 +824,13 @@
                 "required": ["ids", "groups", "search_params"],
                 "properties": {
                     "ids": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/pid"
-                        }
+                        "$ref": "#/components/schemas/search_response_ids"
                     },
                     "groups": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/tag_annotation"
-                        }
+                        "$ref": "#/components/schemas/search_response_groups"
                     },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
-                    },
-                    "hotlist": {
-                        "$ref": "#/components/schemas/hotlist"
                     }
                 }
             },
@@ -847,27 +839,32 @@
                 "description": "Search result whose properties are all optional. Use this where search results are merged into a response only under some conditions (for example, when a request supplies an optional `search` parameter); the same properties as `search_response`, but none are required.",
                 "properties": {
                     "ids": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/pid"
-                        }
+                        "$ref": "#/components/schemas/search_response_ids"
                     },
                     "groups": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/tag_annotation"
-                        }
+                        "$ref": "#/components/schemas/search_response_groups"
                     },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
-                    },
-                    "hotlist": {
-                        "$ref": "#/components/schemas/hotlist"
                     }
                 },
                 "x-conditions": [
                     "search"
                 ]
+            },
+            "search_response_ids": {
+                "type": "array",
+                "description": "Array of submission IDs matching the search, in the order implied by the search.",
+                "items": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            },
+            "search_response_groups": {
+                "type": "array",
+                "description": "Array of [search annotations](#tag-search) corresponding to the search, sourced from tag annotations, headings, or `THEN` searches. Often empty.",
+                "items": {
+                    "$ref": "#/components/schemas/tag_annotation"
+                }
             },
             "action_definition": {
                 "type": "object",

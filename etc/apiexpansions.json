@@ -92,7 +92,7 @@
     "name": "assigntags", "post": true,
     "tags": ["Tags"],
     "parameters": "=tagassignment ?=search",
-    "response": "p ?ids ?groups ?hotlist ?search_params"
+    "response": "p ?ids ?groups ?search_params"
   },
   {
     "name": "autoassign", "post": true,
@@ -199,7 +199,7 @@
   {
     "name": "tags", "post": true, "merge": true,
     "parameters": "?=tags ?=add_tags ?=remove_tags ?=expected_tags ?=search ?<=addtags ?<=deltags",
-    "response": "pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?ids ?groups ?hotlist ?search_params"
+    "response": "pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?ids ?groups ?search_params"
   },
   {
     "name": "alltags", "get": true,
@@ -211,13 +211,13 @@
     "name": "taganno", "get": true,
     "tags": ["Tags"],
     "parameters": "tag ?search",
-    "response": "tag editable anno ?ids ?groups ?hotlist ?search_params"
+    "response": "tag editable anno ?ids ?groups ?search_params"
   },
   {
     "name": "taganno", "post": true,
     "tags": ["Tags"],
     "parameters": "tag ?search =anno",
-    "response": "tag editable anno ?ids ?groups ?hotlist ?search_params"
+    "response": "tag editable anno ?ids ?groups ?search_params"
   },
   {
     "name": "tagmessages", "get": true,

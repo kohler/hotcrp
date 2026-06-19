@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2026-06-18",
+        "version": "2026-06-19",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\nParameters may be provided in the query string or (for non-GET requests) the\nrequest body. In most cases, the request body should have Content-Type\n`application/x-www-form-urlencoded` or `multipart/form-data`; exceptions are\ndocumented.\n\nResponses are formatted as JSON. Every response has an `ok` field, which is\n`true` if the request passed initial validation and `false` otherwise. Typically\n`\"ok\": false` indicates a serious error, such as a missing or malformatted\nparameter or a permission problem. `\"ok\": true` does not necessarily mean that\nthe request fully succeeded. Messages about the request, if any, are expressed\nin a [`message_list` field](#overview-message-lists); a successful response may\nstill carry errors and warnings there.\n\nOperations marked with a yellow star (<span class=\"featured-star\nfeatured-star-op\" title=\"Featured\" aria-label=\"Featured\">★</span>) are\n**featured**: the parts of the API most useful to external integrations, which\nwe aim to keep stable and well documented. When several endpoints can accomplish\na task, the featured one is usually the best choice. Other API endpoints may be\nunstable or may be intended to serve HotCRP’s own web client.\n\nExternal applications should [authenticate](#authentication) to HotCRP’s API\nusing bearer tokens obtained using Account settings > Developer.\n\n\n## Parameter types\n\n**Boolean** parameters accept `1` or `true` for true and `0` or `false` for\nfalse; the values `on`/`yes` and `off`/`no` are also accepted. Any other value\nis treated as if the parameter were absent. For example, `dry_run=1` and\n`dry_run=true` are equivalent.\n\n**Integer** and **number** parameters are written in decimal, such as `p=10`.\n**String** parameters are sent literally; an enumerated parameter is a string\nrestricted to a fixed set of values.\n\nMore complex inputs use other encodings. Some requests group parameters into\nlogical objects using structured keys, such as `named_search/1/q`; others define\nan object using JSON, supplied either as the request body or as a JSON-valued\nparameter such as `json`. Use `multipart/form-data` encoding for requests that\ninclude uploaded files; since servers limit upload size, you may need the upload\nAPI to send a large file before processing it with another call.\n\n\n## Common parameters\n\n**`p`**: The `p` parameter defines a submission ID. It can appear either in the\nquery string or immediately following `api/` in the query path:\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a positive\ndecimal integer, but some API calls accept `p=new` when defining a new\nsubmission.\n\n**`forceShow`**: HotCRP site administrators and track managers can administer\nsubmissions with which they are conflicted. For instance, when viewing a\nconflicted submission in the web UI, they see the conflicted view, but selecting\n“Override conflict” shows them a full administrator view. Conflict overriding\ncan affect many aspects of site behavior, including search order, visible tags,\nand whether modifications are accepted. The `forceShow` boolean API parameter\ndetermines whether conflicts should be overridden when that is possible. It\ndefaults to `true`, so administrators override their conflicts by default; pass\n`forceShow=false` to respect conflicts instead.\n\n**`actas`**: HotCRP site administrators can assume other users’ identities,\nallowing them to check how the site appears to users with less authority.\nThe `actas` parameter implements this in the API. Site administrators can set\n`actas` to an email address or numeric user ID; the API call will execute with\nthe named user’s privileges.\n\n**`:method:`**: The `:method:` parameter overrides the request’s HTTP method.\nSetting `:method:=GET` on a `POST` request makes HotCRP process it with `GET`\nsemantics. The parameter must appear in the URL query string, not the request\nbody, and `GET` is its only meaningful value. Use this for read requests whose\nparameters are too large to fit within a URL’s length limit: send the parameters\nin a `POST` body while still getting `GET` behavior.\n\n**`q` and search modifiers**: Many endpoints act on a set of submissions chosen\nby a search rather than by a single `p`. These share a family of search\nparameters: `q` (the search expression), `t` (the search scope—the collection of\nsubmissions to search), and the modifiers `qt`, `sort`, `scoresort`, and\n`reviewer`. They mean the same thing everywhere they appear—for example in\n[`/papers`](#get-papers), [`/reviews`](#get-reviews), and\n[`/assign`](#post-assign). See [Search](#tag-search) for the search-string\nsyntax and the full meaning of each parameter.\n\n\n## Message lists\n\nThe **`message_list`** response field holds an array of diagnostics about a\nrequest, such as why it failed, which field was invalid, or a note about what\nchanged. It can appear on successful or unsuccessful responses and may be empty.\nThe messages appear in display order.\n\nEach entry is a **message object** whose only required field is `status`, an\ninteger that classifies the message:\n\n- `2` or `3`—an **error**; the request was rejected or could not be fully\n  processed. (`3` marks an especially serious error.)\n- `1`—a **warning**.\n- `0`—a **plain** informational message.\n- `-3`—a **success** message.\n- `-5`—an **informational note** about the preceding non-informational message\n  (rendered indented).\n- other **negative** values—notes that are not full errors, but that should be\n  rendered with highlights.\n\nA message object may also have these fields:\n\n- `message`—the human-readable text, as a **formatted-text string**: a leading\n  format sigil gives the encoding, with `<0>` for plain text, `<1>` for\n  Markdown, and `<5>` for HTML. For example, `\"<0>Entry required\"` is the plain\n  text “Entry required”. The field may be absent or empty, since a message\n  object can carry only a field status.\n- `field`—when present, names the request parameter or submission field the\n  message is about (such as `title` or `abstract`), letting a client attach the\n  diagnostic to the corresponding input or highlight that input.\n- `pos1`, `pos2`, `context`—locate the message within the text it concerns. A\n  message carries **either** `pos1` and `pos2` (byte offsets of a span in the\n  UTF-8-encoded value of `field`) **or** a `context` array `[\"…excerpt…\", pos1,\n  pos2]` that bundles an excerpt of that text with the span’s byte offsets into\n  the excerpt. These let the web client underline the exact problem text.\n\nFor example, an unsuccessful submission update might return:\n\n```json\n{\n    \"ok\": false,\n    \"message_list\": [\n        {\n            \"status\": 2,\n            \"field\": \"abstract\",\n            \"message\": \"<0>Entry required to complete submission\"\n        },\n        {\n            \"status\": 1,\n            \"field\": \"other_topics\",\n            \"message\": \"<0>Please avoid superlatives\",\n            \"context\": [\"Extremely interesting ideas\", 0, 9]\n        },\n        {\n            \"status\": 2,\n            \"message\": \"<0>Submission not saved\"\n        }\n    ]\n}\n```\n\n\n## User rights\n\nTwo terms describe administrative authority in this documentation, and they are\nnot interchangeable.\n\nA **site administrator** has site-wide authority over the whole conference.\nChairs and sysadmins are site administrators; they can act on every submission,\nthe review process, and conference settings. Endpoints restricted to this\nauthority are badged **Site admin only**.\n\nA **submission administrator** has administrative authority over a particular\nsubmission or a subset of submissions. For example, a track manager has\nadministrative authority over a track, and each submission can have an explicit\nmanager assigned from the PC. For most submissions, a site administrator is also\na submission administrator (there are exceptions involving track rights and\nconflicts), but a submission manager is not necessarily a site administrator.\nEndpoints that require administrative authority over specific submissions, but\ndo not require broad site administration rights, are badged **Admin only** or\n**Track manager only**.\n"
     },
@@ -1850,7 +1850,7 @@
         "/search": {
             "get": {
                 "summary": "Retrieve search results",
-                "description": "Return IDs, and optionally other display fields, of submissions that match a\nsearch. The matching submission IDs are returned in the `ids` response field,\nordered according to the search.\n\n## Display fields\n\nThe `f` and `format` parameters retrieve display fields for each submission in\nthe search result.\n\n`f` defines the display fields to return. An example is `title authors[full]`,\nwhich requests two fields: `title`, and `authors` with the `full` view option.\nThe `/displayfields` API lists available display fields. `format` is either\n`csv` or `html`, and requests CSV or HTML format for the response data.\n\nThe response will contain two fields, `fields` and `papers`. `fields` is an array\nof objects defining the emitted display fields. Typically, each entry in\n`fields` corresponds to a member of `f`, but some field requests can expand into\nmultiple display fields. `papers` is an array of objects defining the exported\nfields for each matching submission. Each `papers` entry has a `pid` field\nwith the submission ID, and one field for each entry in `fields`. The\n`papers` entries are in the same order as `ids`. In some cases, the response\nwill have a `statistics` field defining overall statistics for some of the\nrequested fields.\n\nThis response might be returned for the search `10-12` with `format=csv` and\n`f=title`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nThe `html` format is unlikely to be useful outside the HotCRP web application.\nThe returned HTML uses elements, tag structures, and class names suitable for\nHotCRP’s internal use, and may change at any time. Furthermore, in some cases\n(such as `f=allpref`), the returned data is compressed into a field-specific\nformat that the HotCRP web application expands.\n\n## Search annotations\n\nThe `groups` response field is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other fields, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nThis response might be returned for the search `10-12 THEN 5-8`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n## More\n\nThe `search_params` response field is a URL-encoded string defining all\nrelevant parameters for the search.\n\nSet the `hotlist` parameter to get a `hotlist` response field. A\n[hotlist](#tag-search) records this ordered result—its members and the search\nthat produced it—so the HotCRP web client can remember the list across page\nloads and offer “previous”/“next” navigation between submissions. It is returned\nas an opaque JSON-encoded string (a serialized [`hotlist`](#tag-search) object);\nexternal integrations that just want the matching IDs should read `ids`\ninstead.\n\n",
+                "description": "Return IDs, and optionally other display fields, of submissions that match a\nsearch. The matching submission IDs are returned in the `ids` response field,\nordered according to the search.\n\n## Display fields\n\nThe `f` and `format` parameters retrieve display fields for each submission in\nthe search result.\n\n`f` defines the display fields to return. An example is `title authors[full]`,\nwhich requests two fields: `title`, and `authors` with the `full` view option.\nThe `/displayfields` API lists available display fields. `format` is either\n`csv` or `html`, and requests CSV or HTML format for the response data.\n\nThe response will contain two fields, `fields` and `papers`. `fields` is an array\nof objects defining the emitted display fields. Typically, each entry in\n`fields` corresponds to a member of `f`, but some field requests can expand into\nmultiple display fields. `papers` is an array of objects defining the exported\nfields for each matching submission. Each `papers` entry has a `pid` field\nwith the submission ID, and one field for each entry in `fields`. The\n`papers` entries are in the same order as `ids`. In some cases, the response\nwill have a `statistics` field defining overall statistics for some of the\nrequested fields.\n\nThis response might be returned for the search `10-12` with `format=csv` and\n`f=title`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nThe `html` format is unlikely to be useful outside the HotCRP web application.\nThe returned HTML uses elements, tag structures, and class names suitable for\nHotCRP’s internal use, and may change at any time. Furthermore, in some cases\n(such as `f=allpref`), the returned data is compressed into a field-specific\nformat that the HotCRP web application expands.\n\n## Search annotations\n\nThe `groups` response field is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other fields, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nThis response might be returned for the search `10-12 THEN 5-8`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n",
                 "operationId": "search",
                 "x-order": 38,
                 "tags": [
@@ -1980,22 +1980,19 @@
                                             "type": "object",
                                             "properties": {
                                                 "ids": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/pid"
-                                                    }
+                                                    "$ref": "#/components/schemas/search_response_ids"
                                                 },
                                                 "groups": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/tag_annotation"
-                                                    }
+                                                    "$ref": "#/components/schemas/search_response_groups"
                                                 },
                                                 "search_params": {
                                                     "$ref": "#/components/schemas/encoded_search_parameters"
                                                 },
                                                 "hotlist": {
-                                                    "$ref": "#/components/schemas/hotlist"
+                                                    "$ref": "#/components/schemas/hotlist",
+                                                    "x-conditions": [
+                                                        "hotlist"
+                                                    ]
                                                 },
                                                 "fields": {
                                                     "type": "array",
@@ -2963,31 +2960,19 @@
                                             "type": "object",
                                             "properties": {
                                                 "ids": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/pid"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_ids",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "groups": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/tag_annotation"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_groups",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "search_params": {
                                                     "$ref": "#/components/schemas/encoded_search_parameters",
-                                                    "x-conditions": [
-                                                        "search"
-                                                    ]
-                                                },
-                                                "hotlist": {
-                                                    "$ref": "#/components/schemas/hotlist",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
@@ -3106,31 +3091,19 @@
                                                     "description": "Refreshed tag objects for the affected submissions."
                                                 },
                                                 "ids": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/pid"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_ids",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "groups": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/tag_annotation"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_groups",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "search_params": {
                                                     "$ref": "#/components/schemas/encoded_search_parameters",
-                                                    "x-conditions": [
-                                                        "search"
-                                                    ]
-                                                },
-                                                "hotlist": {
-                                                    "$ref": "#/components/schemas/hotlist",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
@@ -3242,7 +3215,6 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_parameter_specification"
                         },
-                        "description": "A search to evaluate; its results are added to the response.",
                         "x-order": 1
                     }
                 ],
@@ -3275,31 +3247,19 @@
                                                     "description": "The tag’s annotations, in order."
                                                 },
                                                 "ids": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/pid"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_ids",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "groups": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/tag_annotation"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_groups",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "search_params": {
                                                     "$ref": "#/components/schemas/encoded_search_parameters",
-                                                    "x-conditions": [
-                                                        "search"
-                                                    ]
-                                                },
-                                                "hotlist": {
-                                                    "$ref": "#/components/schemas/hotlist",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
@@ -3354,7 +3314,6 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_parameter_specification"
                         },
-                        "description": "A search to evaluate; its results are added to the response.",
                         "x-order": 2
                     }
                 ],
@@ -3410,31 +3369,19 @@
                                                     "description": "The updated annotations, in order."
                                                 },
                                                 "ids": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/pid"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_ids",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "groups": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/tag_annotation"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_groups",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "search_params": {
                                                     "$ref": "#/components/schemas/encoded_search_parameters",
-                                                    "x-conditions": [
-                                                        "search"
-                                                    ]
-                                                },
-                                                "hotlist": {
-                                                    "$ref": "#/components/schemas/hotlist",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
@@ -3982,31 +3929,19 @@
                                                     ]
                                                 },
                                                 "ids": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/pid"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_ids",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "groups": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/tag_annotation"
-                                                    },
+                                                    "$ref": "#/components/schemas/search_response_groups",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
                                                 },
                                                 "search_params": {
                                                     "$ref": "#/components/schemas/encoded_search_parameters",
-                                                    "x-conditions": [
-                                                        "search"
-                                                    ]
-                                                },
-                                                "hotlist": {
-                                                    "$ref": "#/components/schemas/hotlist",
                                                     "x-conditions": [
                                                         "search"
                                                     ]
@@ -8643,7 +8578,7 @@
         "/oauthtoken": {
             "post": {
                 "summary": "OAuth 2.0 / OpenID Connect token endpoint",
-                "description": "Exchange an authorization grant for tokens, following [RFC\n6749](https://datatracker.ietf.org/doc/html/rfc6749). This is a standards-based\nOAuth/OpenID Connect token endpoint used when HotCRP acts as an identity\nprovider for a registered client application; it is not a general HotCRP API\ncall and does not use HotCRP’s usual `{\"ok\": ...}` response envelope.\n\nThe request is form-encoded. Send `grant_type=authorization_code` with the\n`code` returned from the authorization step (plus `redirect_uri` and, for [PKCE]\n(https://datatracker.ietf.org/doc/html/rfc7636) clients, `code_verifier`), or\n`grant_type=refresh_token` with a `refresh_token`. The client authenticates\neither with HTTP Basic authentication (`Authorization: Basic`) or by sending\n`client_id` and `client_secret` as body parameters. An optional `scope`\nparameter narrows the requested scopes.\n\nOn success the response is a standard OAuth token object containing\n`access_token`, `token_type` (`Bearer`), `expires_in`, `refresh_token`,\n`scope`, and—when the `openid` scope was granted—an `id_token` JWT. On failure\nthe response carries an HTTP `4xx` status and a body of the form `{\"error\":\n\"invalid_grant\"}` (other values include `invalid_request`, `invalid_client`,\n`invalid_scope`, and `unsupported_grant_type`).\n",
+                "description": "Exchange an authorization grant for tokens, following [RFC\n6749](https://datatracker.ietf.org/doc/html/rfc6749). This is a standards-based\nOAuth/OpenID Connect token endpoint used when HotCRP acts as an identity\nprovider for a registered client application; it is not a general HotCRP API\ncall and does not use HotCRP’s usual `{\"ok\": ...}` response envelope.\n\nThe request is form-encoded. Send `grant_type=authorization_code` with the\n`code` returned from the authorization step (plus `redirect_uri` and, for\n[PKCE](https://datatracker.ietf.org/doc/html/rfc7636) clients, `code_verifier`), or\n`grant_type=refresh_token` with a `refresh_token`. The client authenticates\neither with HTTP Basic authentication (`Authorization: Basic`) or by sending\n`client_id` and `client_secret` as body parameters. An optional `scope`\nparameter narrows the requested scopes.\n\nOn success the response is a standard OAuth token object containing\n`access_token`, `token_type` (`Bearer`), `expires_in`, `refresh_token`,\n`scope`, and—when the `openid` scope was granted—an `id_token` JWT. On failure\nthe response carries an HTTP `4xx` status and a body of the form `{\"error\":\n\"invalid_grant\"}` (other values include `invalid_request`, `invalid_client`,\n`invalid_scope`, and `unsupported_grant_type`).\n",
                 "operationId": "oauthtoken",
                 "x-order": 54,
                 "tags": [
@@ -9548,7 +9483,7 @@
             },
             "hotlist": {
                 "type": "object",
-                "description": "A **hotlist** captures an ordered list of submissions (or users) together with the search that produced it, so HotCRP's web client can remember the list across page loads—most visibly to offer “previous”/“next” navigation between submissions. It is an opaque token to most callers; external integrations can ignore it. Note that on the wire a hotlist is transmitted as a **JSON-encoded string** (a serialized form of the object documented here), not as a nested JSON object; HotCRP's client parses the string to recover these properties.",
+                "description": "Opaque token that captures the search, including its description and the ordered list of submission IDs. Intended for HotCRP’s web client, which uses it to remember the list across page loads—most visibly to offer “previous”/“next” navigation between submissions and to support the tracker. External integrations should ignore this. Transmitted as a **JSON-encoded string** (a serialized form of the object documented here), not as a nested JSON object; HotCRP's client parses the string to recover these properties.",
                 "properties": {
                     "listid": {
                         "type": "string",
@@ -9619,7 +9554,7 @@
             },
             "encoded_search_parameters": {
                 "type": "string",
-                "description": "URL-encoded search parameters",
+                "description": "URL-encoded string defining all relevant parameters for the search.",
                 "examples": [
                     "q=&t=s&sort=id&forceShow=&report=pl"
                 ]
@@ -9696,6 +9631,7 @@
                 }
             },
             "search_parameter_specification": {
+                "description": "Encoded description of a search, as returned from the `search_params` response field of [`/search`](#get-search). Provide to recompute the search after the assignment. The response will include `ids`, `groups`, and `search_params` from that search.",
                 "oneOf": [
                     {
                         "$ref": "#/components/schemas/encoded_search_parameters"
@@ -9719,22 +9655,13 @@
                 ],
                 "properties": {
                     "ids": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/pid"
-                        }
+                        "$ref": "#/components/schemas/search_response_ids"
                     },
                     "groups": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/tag_annotation"
-                        }
+                        "$ref": "#/components/schemas/search_response_groups"
                     },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
-                    },
-                    "hotlist": {
-                        "$ref": "#/components/schemas/hotlist"
                     }
                 }
             },
@@ -9743,27 +9670,32 @@
                 "description": "Search result whose properties are all optional. Use this where search results are merged into a response only under some conditions (for example, when a request supplies an optional `search` parameter); the same properties as `search_response`, but none are required.",
                 "properties": {
                     "ids": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/pid"
-                        }
+                        "$ref": "#/components/schemas/search_response_ids"
                     },
                     "groups": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/tag_annotation"
-                        }
+                        "$ref": "#/components/schemas/search_response_groups"
                     },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
-                    },
-                    "hotlist": {
-                        "$ref": "#/components/schemas/hotlist"
                     }
                 },
                 "x-conditions": [
                     "search"
                 ]
+            },
+            "search_response_ids": {
+                "type": "array",
+                "description": "Array of submission IDs matching the search, in the order implied by the search.",
+                "items": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            },
+            "search_response_groups": {
+                "type": "array",
+                "description": "Array of [search annotations](#tag-search) corresponding to the search, sourced from tag annotations, headings, or `THEN` searches. Often empty.",
+                "items": {
+                    "$ref": "#/components/schemas/tag_annotation"
+                }
             },
             "action_definition": {
                 "type": "object",
@@ -10473,7 +10405,7 @@
         },
         {
             "name": "Session",
-            "description": "These endpoints manage the *session* that ties a sequence of API calls to a\nsingle browser or client: the CSRF token required to modify state, lightweight\nper-user UI preferences, deferred (“stashed”) user messages, reauthentication\nfor sensitive operations, and a few diagnostic/reporting endpoints used by the\nHotCRP Javascript client. They are mostly intended for HotCRP’s own front-end\ncode rather than third-party integrations, but they are documented here because\nunderstanding them clarifies how HotCRP authenticates and protects write\nrequests.\n\n## CSRF tokens and `post`\n\nHotCRP protects state-changing requests against [cross-site request\nforgery](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/CSRF).\nBrowser-driven `POST` requests (those authenticated with a session cookie\nrather than a bearer token) must include a CSRF token in the `post` parameter.\nThe token is obtained from [`GET /session`](#get-session), where it\nis returned as the `sessioninfo.postvalue` field; send that value back as\nthe `post` query or body parameter on later `POST` requests in the same\nsession.\n\nCSRF protection does **not** apply to requests authenticated with an\n`Authorization: bearer` token, so external applications using API tokens never\nneed the `post` parameter. See [Authentication](#overview-authentication).\n\n## Session cookies\n\nThe `session` endpoints create a session cookie if one is not already present\n(this is how a fresh client obtains a CSRF token). Some endpoints in this group\nare explicitly callable by unauthenticated clients and across origins; where\nthat matters it is noted on the individual endpoint, since such endpoints take\ncare never to leak user information or CSRF tokens to other origins.\n\n\n"
+            "description": "These endpoints manage the *session* that ties a sequence of API calls to a\nsingle browser or client: the CSRF token required to modify state, lightweight\nper-user UI preferences, deferred (“stashed”) user messages, reauthentication\nfor sensitive operations, and a few diagnostic/reporting endpoints used by the\nHotCRP Javascript client. They are mostly intended for HotCRP’s own front-end\ncode rather than third-party integrations, but they are documented here because\nunderstanding them clarifies how HotCRP authenticates and protects write\nrequests.\n\n## CSRF tokens and `post`\n\nHotCRP protects state-changing requests against [cross-site request\nforgery](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/CSRF).\nBrowser-driven `POST` requests (those authenticated with a session cookie\nrather than a bearer token) must include a CSRF token in the `post` parameter.\nThe token is obtained from [`GET /session`](#get-session), where it\nis returned as the `sessioninfo.postvalue` field; send that value back as\nthe `post` query or body parameter on later `POST` requests in the same\nsession.\n\nCSRF protection does **not** apply to requests authenticated with an\n`Authorization: bearer` token, so external applications using API tokens never\nneed the `post` parameter. See [Authentication](#authentication).\n\n## Session cookies\n\nThe `session` endpoints create a session cookie if one is not already present\n(this is how a fresh client obtains a CSRF token). Some endpoints in this group\nare explicitly callable by unauthenticated clients and across origins; where\nthat matters it is noted on the individual endpoint, since such endpoints take\ncare never to leak user information or CSRF tokens to other origins.\n\n\n"
         }
     ],
     "security": [
