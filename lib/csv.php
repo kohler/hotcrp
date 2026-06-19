@@ -145,15 +145,15 @@ class CsvParser implements Iterator {
     /** @var ?int */
     private $_current_lnum = 0;
 
-    const TYPE_COMMA = 1;
-    const TYPE_PIPE = 2;
-    const TYPE_BAR = 2;
-    const TYPE_TAB = 4;
-    const TYPE_DOUBLEBAR = 8;
-    const TYPE_GUESS = 7;
-    const TYPEM_TYPES = 15;
-    const TYPE_HEADER = 16;
-    const TYPE_COMMA_HEADER = 17; /* TYPE_COMMA | TYPE_HEADER */
+    const TYPE_COMMA = 1;         // parse comma-separated values (CSV)
+    const TYPE_PIPE = 2;          // parse `|`-separated values
+    const TYPE_BAR = 2;           // alias for TYPE_PIPE
+    const TYPE_TAB = 4;           // parse tab-separated values
+    const TYPE_DOUBLEBAR = 8;     // parse `||`-separated values
+    const TYPE_GUESS = 7;         // auto-detect comma/pipe/tab (mask of the three)
+    const TYPEM_TYPES = 15;       // mask of all separator-type bits
+    const TYPE_HEADER = 16;       // treat the first row as a header
+    const TYPE_COMMA_HEADER = 17; // TYPE_COMMA | TYPE_HEADER
 
     /** @param string $str
      * @return list<string> */
@@ -826,23 +826,41 @@ class CsvParser implements Iterator {
 }
 
 class CsvGenerator {
-    const TYPE_COMMA = 0;
-    const TYPE_PIPE = 1;
-    const TYPE_TAB = 2;
-    const TYPE_STRING = 3;
+    const TYPE_COMMA = 0;   // comma-separated values (CSV)
+    const TYPE_PIPE = 1;    // `|`-separated values
+    const TYPE_TAB = 2;     // tab-separated values
+    const TYPE_STRING = 3;  // raw text via `add_string`; rows aren't formatted
+    const TYPE_TABLE = 4;   // aligned plain-text table (see `TABLE_*` flags)
 
-    const FLAG_TYPE = 3;
-    const FLAG_ALWAYS_QUOTE = 8;
-    const FLAG_CRLF = 16;
-    const FLAG_CR = 32;
-    const FLAG_LF = 0;
-    const FLAG_ITEM_COMMENTS = 64;
-    const FLAG_HEADERS = 256;
-    const FLAG_HTTP_HEADERS = 512;
-    const FLAG_FLUSHED = 1024;
-    const FLAG_ERROR = 2048;
-    const FLAG_EMIT_LIVE = 4096;
-    const FLAG_COMPLETING = 8192;
+    const FLAG_TYPE = 7;            // mask selecting the output TYPE
+    const FLAG_ALWAYS_QUOTE = 8;    // quote every CSV field
+    const FLAG_CRLF = 16;           // terminate lines with CRLF
+    const FLAG_CR = 32;             // terminate lines with CR
+    const FLAG_LF = 0;              // terminate lines with LF (default)
+    const FLAG_ITEM_COMMENTS = 64;  // honor per-row `__precomment__`/`__postcomment__`
+    const FLAG_HEADERS = 256;       // a header row is present (set internally)
+    const FLAG_HTTP_HEADERS = 512;  // Content-Disposition already sent (internal)
+    const FLAG_FLUSHED = 1024;      // some output already flushed (internal)
+    const FLAG_ERROR = 2048;        // a write failed (internal)
+    const FLAG_EMIT_LIVE = 4096;    // stream output to php://output as it is added
+    const FLAG_COMPLETING = 8192;   // final flush; content length is known (internal)
+
+    // `TYPE_TABLE` rendering flags, set in the constructor
+    const TABLE_BOX = 0;        // full border around every cell (default)
+    const TABLE_RULE = 16384;   // header, a rule below it, then data; no borders
+    const TABLE_ASCII = 32768;  // ASCII "+-|" borders instead of box-drawing
+
+    // flags permitted in the constructor (others are set internally)
+    const FLAGM_CONSTRUCTOR = 0xFF | self::TABLE_RULE | self::TABLE_ASCII;
+
+    // Per-column `cell_flags` packing for `TYPE_TABLE`: alignment in bits 0–1,
+    // the numeric flag in bit 2, and the column display width in bits 4+.
+    const CELL_ALIGN_L = 1;        // left-align the column
+    const CELL_ALIGN_R = 2;        // right-align the column
+    const CELL_ALIGN_C = 3;        // center the column
+    const CELL_NUMERIC = 4;        // every data cell numeric so far (auto right-align)
+    const CELLM_NONWIDTH = 0xF;    // mask for the align/numeric bits (not the width)
+    const CELL_WIDTH_SHIFT = 4;    // column display width is stored at bits >= this
 
     const FLUSH_JOINLIMIT = 12000000; // 12 MB
 
@@ -878,6 +896,10 @@ class CsvGenerator {
     private $inline;
     /** @var ?string */
     private $filename;
+    /** @var int */
+    private $table_max_width = 0;
+    /** @var list<int> */
+    private $cell_flags;
 
     /** @param string $text
      * @return string */
@@ -922,13 +944,18 @@ class CsvGenerator {
 
     /** @param int $flags */
     function __construct($flags = self::TYPE_COMMA) {
-        assert($flags === ($flags & 255));
+        assert(($flags & ~self::FLAGM_CONSTRUCTOR) === 0);
         $this->type = $flags & self::FLAG_TYPE;
-        $this->flags = $flags & 255;
+        $this->flags = $flags & self::FLAGM_CONSTRUCTOR;
         if ($this->flags & self::FLAG_CRLF) {
             $this->lf = "\r\n";
         } else if ($this->flags & self::FLAG_CR) {
             $this->lf = "\r";
+        }
+        if ($this->type === self::TYPE_TABLE) {
+            // Streaming path doesn’t apply
+            $this->stream = false;
+            $this->cell_flags = [];
         }
     }
 
@@ -962,8 +989,49 @@ class CsvGenerator {
             $this->lines = [];
             $this->lines_length = 0;
             $this->flags |= self::FLAG_HEADERS;
+            if ($this->type === self::TYPE_TABLE) {
+                // reset numericity
+                foreach ($this->cell_flags as &$cf) {
+                    if (($cf & self::CELLM_NONWIDTH) === 0)
+                        $cf |= self::CELL_NUMERIC;
+                }
+                unset($cf);
+            }
         }
         return $this;
+    }
+
+    /** @param list<int|string> $fields
+     * @return $this */
+    function select($fields) {
+        return $this->set_keys($fields)->set_header($fields);
+    }
+
+    /** @param int|string $key
+     * @return ?int */
+    private function column($key) {
+        if (is_int($key) || ctype_digit($key)) {
+            $col = (int) $key;
+        } else if ($this->selection) {
+            $col = array_search($key, $this->selection, true);
+            if ($col === false && $this->aliases) {
+                foreach ($this->aliases as $i => $alist) {
+                    if (!empty($alist)
+                        && array_search($key, $alist, true) !== false) {
+                        $col = $i;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $col = false;
+        }
+        if ($col !== false
+            && $col >= 0
+            && (!$this->selection || $col < count($this->selection))) {
+            return $col;
+        }
+        return null;
     }
 
     /** @param resource $stream
@@ -984,12 +1052,6 @@ class CsvGenerator {
             $this->flush();
         }
         return $this;
-    }
-
-    /** @param list<int|string> $fields
-     * @return $this */
-    function select($fields) {
-        return $this->set_keys($fields)->set_header($fields);
     }
 
     /** @return string */
@@ -1035,6 +1097,36 @@ class CsvGenerator {
             }
         }
         assert(false);
+        return $this;
+    }
+
+    /** Set the maximum total output width (in terminal columns) used to wrap
+     * cells. <=0 means no wrapping.
+     * @param int $width
+     * @return $this */
+    function set_table_max_width($width) {
+        $this->table_max_width = $width;
+        return $this;
+    }
+
+    /** Set per-column alignment for `TYPE_TABLE` output. `$align` maps a
+     * column key (selection name or integer index) to `"l"`, `"r"`, or `"c"`.
+     * Columns without an entry are auto-aligned: right if every nonempty cell
+     * looks numeric, otherwise left.
+     * @param int|string $key
+     * @param 'l'|'r'|'c'|1|2|3 $align
+     * @return $this */
+    function set_cell_align($key, $align) {
+        if (($col = $this->column($key)) === null) {
+            assert(false);
+            return $this;
+        }
+        while ($col >= count($this->cell_flags)) {
+            $this->cell_flags[] = self::CELL_NUMERIC;
+        }
+        $this->cell_flags[$col] =
+            ($this->cell_flags[$col] & ~self::CELLM_NONWIDTH)
+            | (is_string($align) ? strpos("xlrc", $align) : $align);
         return $this;
     }
 
@@ -1175,7 +1267,8 @@ class CsvGenerator {
             ++$i;
             if (array_key_exists($key, $row)) {
                 $value = $row[$key];
-            } else if ($this->aliases && ($xkey = $this->apply_aliases($row, $i)) !== null) {
+            } else if ($this->aliases
+                       && ($xkey = $this->apply_aliases($row, $i)) !== null) {
                 $value = $row[$xkey];
             } else {
                 continue;
@@ -1201,41 +1294,73 @@ class CsvGenerator {
         if ($row instanceof CsvRow) {
             $row = $row->as_map();
         }
-        if (!empty($row)) {
-            if (($this->flags & self::FLAG_ITEM_COMMENTS) !== 0
-                && $this->selection
-                && isset($row["__precomment__"])
-                && ($cmt = (string) $row["__precomment__"]) !== "") {
-                $this->add_comment($cmt);
+        if (empty($row)) {
+            return $this;
+        }
+        if (($this->flags & self::FLAG_ITEM_COMMENTS) !== 0
+            && $this->selection
+            && isset($row["__precomment__"])
+            && ($cmt = (string) $row["__precomment__"]) !== "") {
+            $this->add_comment($cmt);
+        }
+        $srow = $row;
+        if ($this->selection) {
+            $srow = $this->apply_selection($srow);
+        }
+        if ($this->type === self::TYPE_COMMA) {
+            if (($this->flags & self::FLAG_ALWAYS_QUOTE) !== 0) {
+                foreach ($srow as &$x) {
+                    $x = self::always_quote($x);
+                }
+            } else {
+                foreach ($srow as &$x) {
+                    $x = self::quote($x);
+                }
             }
-            $srow = $row;
-            if ($this->selection) {
-                $srow = $this->apply_selection($srow);
+            unset($x);
+            $this->add_string(join(",", $srow) . $this->lf);
+        } else if ($this->type === self::TYPE_TAB) {
+            $this->add_string(join("\t", $srow) . $this->lf);
+        } else if ($this->type === self::TYPE_TABLE) {
+            // Store cells `\0`-separated. An interior newline splits a cell
+            // across lines at render; NUL is dropped, CR/CRLF is normalized to
+            // LF, and trailing newlines are trimmed so a data row never ends in
+            // a newline (which is how `render_table` tells data rows from
+            // comments).
+            while (count($srow) > count($this->cell_flags)) {
+                $this->cell_flags[] = self::CELL_NUMERIC;
             }
-            if ($this->type === self::TYPE_COMMA) {
-                if (($this->flags & self::FLAG_ALWAYS_QUOTE) !== 0) {
-                    foreach ($srow as &$x) {
-                        $x = self::always_quote($x);
-                    }
-                } else {
-                    foreach ($srow as &$x) {
-                        $x = self::quote($x);
+            foreach ($srow as $i => &$x) {
+                $cf = &$this->cell_flags[$i];
+                $x = (string) $x;
+                if ($x !== ""
+                    && ($cf & self::CELL_NUMERIC) !== 0
+                    && !ctype_digit($x)
+                    && !self::table_numeric($x)) {
+                    $cf &= ~self::CELL_NUMERIC;
+                }
+                if (strpbrk($x, "\0\r\n") !== false) {
+                    $x = rtrim(preg_replace('/\r\n?/', "\n", str_replace("\0", "", $x)), "\n");
+                }
+                if ($x !== ""
+                    && (strlen($x) << self::CELL_WIDTH_SHIFT) > $cf) {
+                    $w = self::table_width($x) << self::CELL_WIDTH_SHIFT;
+                    if ($w > $cf) {
+                        $cf = ($cf & self::CELLM_NONWIDTH) | $w;
                     }
                 }
-                unset($x);
-                $this->add_string(join(",", $srow) . $this->lf);
-            } else if ($this->type === self::TYPE_TAB) {
-                $this->add_string(join("\t", $srow) . $this->lf);
-            } else {
-                $this->add_string(join("|", $srow) . $this->lf);
             }
-            if (($this->flags & self::FLAG_ITEM_COMMENTS) !== 0
-                && $this->selection
-                && isset($row["__postcomment__"])
-                && ($cmt = (string) $row["__postcomment__"]) !== "") {
-                $this->add_comment($cmt);
-                $this->add_string($this->lf);
-            }
+            unset($x, $cf);
+            $this->add_string(join("\0", $srow));
+        } else {
+            $this->add_string(join("|", $srow) . $this->lf);
+        }
+        if (($this->flags & self::FLAG_ITEM_COMMENTS) !== 0
+            && $this->selection
+            && isset($row["__postcomment__"])
+            && ($cmt = (string) $row["__postcomment__"]) !== "") {
+            $this->add_comment($cmt);
+            $this->add_string($this->lf);
         }
         return $this;
     }
@@ -1261,6 +1386,9 @@ class CsvGenerator {
     /** @return string */
     function unparse() {
         assert($this->stream_length === 0);
+        if ($this->type === self::TYPE_TABLE) {
+            return $this->render_table();
+        }
         return $this->headerline . join("", $this->lines);
     }
 
@@ -1276,13 +1404,199 @@ class CsvGenerator {
     }
 
 
+    /** Return the display width of `$s` in terminal columns.
+     * @param string $s
+     * @return int */
+    static function table_width($s) {
+        $w = 0;
+        $pos = 0;
+        $len = strlen($s);
+        while ($pos !== $len) {
+            $nl = strpos($s, "\n", $pos);
+            if ($nl !== false) {
+                $x = substr($s, $pos, $nl - $pos);
+                $pos = $nl + 1;
+            } else {
+                $x = substr($s, $pos);
+                $pos = $len;
+            }
+            $w = max($w, is_usascii($x) ? strlen($x) : UnicodeHelper::utf8_glyphlen($x));
+        }
+        return $w;
+    }
+
+    /** @param string $s
+     * @param int $w
+     * @param int $align
+     * @return string */
+    private static function table_pad($s, $w, $align) {
+        $pad = $w - self::table_width($s);
+        if ($pad <= 0) {
+            return $s;
+        } else if (($align & self::CELLM_NONWIDTH) === self::CELL_ALIGN_C) {
+            $l = intdiv($pad, 2);
+            return str_repeat(" ", $l) . $s . str_repeat(" ", $pad - $l);
+        } else if (($align & (self::CELL_ALIGN_R | self::CELL_NUMERIC)) !== 0) {
+            return str_repeat(" ", $pad) . $s;
+        }
+        return $s . str_repeat(" ", $pad);
+    }
+
+    /** @param string $s
+     * @return bool */
+    private static function table_numeric($s) {
+        return $s !== ""
+            && preg_match('/\A[-+]?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?%?\z/', $s) === 1;
+    }
+
+    /** @return string */
+    private function render_table() {
+        // Column widths come straight from the accumulated `cell_flags`.
+        $ncol = count($this->cell_flags);
+        $widths = [];
+        foreach ($this->cell_flags as $cf) {
+            $widths[] = $cf >> self::CELL_WIDTH_SHIFT;
+        }
+
+        // When wrapping, shrink columns so the whole table fits the max width.
+        // Per-column overhead is 3 for boxes ("│ x "), and 2 of gutter between
+        // rule-style columns; reduce the widest columns first, never below 1.
+        if ($this->table_max_width > 0) {
+            $overhead = ($this->flags & self::TABLE_RULE) !== 0
+                ? 2 * ($ncol - 1)
+                : 3 * $ncol + 1;
+            $budget = max($ncol, $this->table_max_width - $overhead);
+            $excess = array_sum($widths) - $budget;
+            while ($excess > 0) {
+                $mi = 0;
+                for ($i = 1; $i !== $ncol; ++$i) {
+                    if ($widths[$i] > $widths[$mi]) {
+                        $mi = $i;
+                    }
+                }
+                if ($widths[$mi] <= 1) {
+                    break;
+                }
+                --$widths[$mi];
+                --$excess;
+            }
+        }
+
+        // Precompute block borders (box) or the header rule (rule style).
+        // `$top`/`$bottom` open and close a contiguous run of rows; `$mid` is
+        // drawn just below the header. Pieces a style omits are empty strings.
+        $ascii = ($this->flags & self::TABLE_ASCII) !== 0;
+        $rule = ($this->flags & self::TABLE_RULE) !== 0;
+        $v = null;
+        if ($rule) {
+            $rulech = $ascii ? "-" : "─";
+            $top = $bottom = "";
+            $parts = [];
+            for ($i = 0; $i !== $ncol; ++$i) {
+                $parts[] = str_repeat($rulech, max(1, $widths[$i]));
+            }
+            $mid = rtrim(join("  ", $parts)) . "\n";
+        } else {
+            if ($ascii) {
+                $h = "-";
+                $v = "|";
+                $corner = ["+", "+", "+",  "+", "+", "+",  "+", "+", "+"];
+            } else {
+                $h = "─";
+                $v = "│";
+                $corner = ["┌", "┬", "┐",  "├", "┼", "┤",  "└", "┴", "┘"];
+            }
+            $segs = [];
+            for ($i = 0; $i !== $ncol; ++$i) {
+                $segs[] = str_repeat($h, $widths[$i] + 2);
+            }
+            $top = $corner[0] . join($corner[1], $segs) . $corner[2] . "\n";
+            $mid = $corner[3] . join($corner[4], $segs) . $corner[5] . "\n";
+            $bottom = $corner[6] . join($corner[7], $segs) . $corner[8] . "\n";
+        }
+
+        // Open a block on the first row of a run; close it when a comment/text
+        // line (which ends in CR/LF, unlike a `\0`-joined data row) interrupts
+        // the run or the table ends. The header, if any, is the first row and
+        // is followed by `$mid`.
+        $out = "";
+        $inblock = false;
+        if (($this->flags & self::FLAG_HEADERS) !== 0
+            && $this->headerline !== "") {
+            $out .= $top;
+            $inblock = true;
+            $out .= $this->render_table_row(explode("\0", $this->headerline), $widths, $rule, $v);
+            $out .= $mid;
+        }
+        foreach ($this->lines as $ln) {
+            $c = $ln === "" ? "" : $ln[strlen($ln) - 1];
+            if ($ln === "" || $c === "\n" || $c === "\r") {
+                if ($inblock) {
+                    $out .= $bottom;
+                    $inblock = false;
+                }
+                $out .= $ln;
+            } else {
+                if (!$inblock) {
+                    $out .= $top;
+                    $inblock = true;
+                }
+                $out .= $this->render_table_row(explode("\0", $ln), $widths, $rule, $v);
+            }
+        }
+        if ($inblock) {
+            $out .= $bottom;
+        }
+        return $out;
+    }
+
+    /** Render one logical row (`$cells`) to physical output lines. `$v` is the
+     * vertical border for box style, or null for rule style.
+     * @param list<string> $cells
+     * @param list<int> $widths
+     * @param bool $rule
+     * @param ?string $v
+     * @return string */
+    private function render_table_row($cells, $widths, $rule, $v) {
+        $ncol = count($widths);
+        $lines = "";
+        while (true) {
+            $next_cells = [];
+            for ($i = 0; $i !== $ncol; ++$i) {
+                $s = (string) ($cells[$i] ?? "");
+                $x = UnicodeHelper::utf8_hard_line_break($s, $widths[$i]);
+                $x = self::table_pad($x, $widths[$i], $this->cell_flags[$i]);
+                if ($rule) {
+                    $lines .= $i ? "  {$x}" : $x;
+                } else {
+                    $lines .= "{$v} {$x} ";
+                }
+                if ($s !== "") {   // leftover text for next line
+                    while (count($next_cells) < $i) {
+                        $next_cells[] = "";
+                    }
+                    $next_cells[] = $s;
+                }
+            }
+            if ($rule) {
+                $lines = rtrim($lines) . "\n";
+            } else {
+                $lines .= $v . "\n";
+            }
+            if (empty($next_cells)) {
+                return $lines;
+            }
+            $cells = $next_cells;
+        }
+    }
+
+
     /** @return string */
     function mimetype_with_charset() {
         if ($this->is_csv()) {
             return "text/csv; charset=utf-8; header=" . ($this->flags & self::FLAG_HEADERS ? "present" : "absent");
-        } else {
-            return "text/plain; charset=utf-8";
         }
+        return "text/plain; charset=utf-8";
     }
 
     function export_headers() {

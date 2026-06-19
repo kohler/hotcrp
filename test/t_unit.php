@@ -287,6 +287,180 @@ class Unit_Tester {
         xassert_eqq($csvr["Fungi"], "10");
     }
 
+    function test_csv_table_box() {
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "Short"]);
+        $t->add_row(["id" => 137, "title" => "A longer title"]);
+        // numeric `id` column auto-right-aligned, `title` left-aligned
+        xassert_eqq($t->unparse(),
+            "+-----+----------------+\n"
+            . "|  id | title          |\n"
+            . "+-----+----------------+\n"
+            . "|   1 | Short          |\n"
+            . "| 137 | A longer title |\n"
+            . "+-----+----------------+\n");
+    }
+
+    function test_csv_table_rule() {
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE | CsvGenerator::TABLE_ASCII);
+        $t->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "Short"]);
+        $t->add_row(["id" => 137, "title" => "A longer title"]);
+        // trailing whitespace on the last column is trimmed
+        xassert_eqq($t->unparse(),
+            " id  title\n"
+            . "---  --------------\n"
+            . "  1  Short\n"
+            . "137  A longer title\n");
+    }
+
+    function test_csv_table_unicode_width() {
+        xassert_eqq(CsvGenerator::table_width("abc"), 3);
+        xassert_eqq(CsvGenerator::table_width("café"), 4);
+        // a 5-wide accented value should pad the same as a 5-wide ASCII value
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE | CsvGenerator::TABLE_ASCII);
+        $t->add_row(["café", "x"]);
+        $t->add_row(["abcde", "y"]);
+        xassert_eqq($t->unparse(), "café   x\nabcde  y\n");
+    }
+
+    function test_csv_table_align() {
+        // explicit alignment overrides the numeric auto-detection
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n", "v"]);
+        $t->set_cell_align("n", "l")->set_cell_align("v", "c");
+        $t->add_row(["n" => 1, "v" => "x"]);
+        $t->add_row(["n" => 200, "v" => "yyy"]);
+        xassert_eqq($t->unparse(),
+            "n     v\n"
+            . "---  ---\n"
+            . "1     x\n"
+            . "200  yyy\n");
+    }
+
+    function test_csv_table_center() {
+        // centering with odd padding puts the extra space on the right
+        // ("a" in width 4: 1 space left, 2 right); box style keeps both sides
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["c"]);
+        $t->set_cell_align("c", "c");
+        $t->add_row(["c" => "a"]);
+        $t->add_row(["c" => "wxyz"]);
+        xassert_eqq($t->unparse(),
+            "+------+\n"
+            . "|  c   |\n"
+            . "+------+\n"
+            . "|  a   |\n"
+            . "| wxyz |\n"
+            . "+------+\n");
+    }
+
+    function test_csv_table_wrap() {
+        // long word boundaries soft-wrap; the row grows to multiple lines
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE
+            | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(18)->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "the quick brown fox jumps"]);
+        $t->add_row(["id" => 2, "title" => "short"]);
+        // budget 18 - 2 gutter = 16 content; id width 2, title shrinks to 14
+        xassert_eqq($t->unparse(),
+            "id  title\n"
+            . "--  --------------\n"
+            . " 1  the quick\n"
+            . "    brown fox\n"
+            . "    jumps\n"
+            . " 2  short\n");
+    }
+
+    function test_csv_table_wrap_box() {
+        // box style: continuation lines keep borders and pad the non-wrapped
+        // column blank; a short row stays single-line
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(22)->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "the quick brown fox"]);
+        $t->add_row(["id" => 2, "title" => "hi"]);
+        xassert_eqq($t->unparse(),
+            "+----+---------------+\n"
+            . "| id | title         |\n"
+            . "+----+---------------+\n"
+            . "|  1 | the quick     |\n"
+            . "|    | brown fox     |\n"
+            . "|  2 | hi            |\n"
+            . "+----+---------------+\n");
+    }
+
+    function test_csv_table_wrap_multicolumn() {
+        // when an earlier column wraps deeper than a later one, continuation
+        // lines render the later column blank (and emit no warnings)
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(20)->select(["title", "x"]);
+        $t->add_row(["title" => "the quick brown fox", "x" => "y"]);
+        xassert_eqq($t->unparse(),
+            "+--------------+---+\n"
+            . "| title        | x |\n"
+            . "+--------------+---+\n"
+            . "| the quick    | y |\n"
+            . "| brown fox    |   |\n"
+            . "+--------------+---+\n");
+    }
+
+    function test_csv_table_newline() {
+        // an interior newline splits a cell across lines...
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n", "v"]);
+        $t->add_row(["n" => "alpha\nbeta", "v" => "x"]);
+        $t->add_row(["n" => "g", "v" => "y"]);
+        xassert_eqq($t->unparse(),
+            "+-------+---+\n"
+            . "| n     | v |\n"
+            . "+-------+---+\n"
+            . "| alpha | x |\n"
+            . "| beta  |   |\n"
+            . "| g     | y |\n"
+            . "+-------+---+\n");
+
+        // ...a trailing newline is trimmed (not misread as a comment line)...
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n", "v"]);
+        $t->add_row(["n" => "a", "v" => "trailing\n"]);
+        $t->add_row(["n" => "b", "v" => "z"]);
+        xassert_eqq($t->unparse(),
+            "+---+----------+\n"
+            . "| n | v        |\n"
+            . "+---+----------+\n"
+            . "| a | trailing |\n"
+            . "| b | z        |\n"
+            . "+---+----------+\n");
+
+        // ...and CRLF normalizes to a split with no stray CR.
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n"]);
+        $t->add_row(["n" => "one\r\ntwo"]);
+        xassert_eqq($t->unparse(),
+            "+-----+\n"
+            . "| n   |\n"
+            . "+-----+\n"
+            . "| one |\n"
+            . "| two |\n"
+            . "+-----+\n");
+    }
+
+    function test_csv_table_wrap_hardbreak() {
+        // a word longer than its column is hard-broken across lines rather
+        // than overflowing and breaking the box alignment
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(14)->select(["w"]);
+        $t->add_row(["w" => "abcdefghijklmnop"]);
+        xassert_eqq($t->unparse(),
+            "+------------+\n"
+            . "| w          |\n"
+            . "+------------+\n"
+            . "| abcdefghij |\n"
+            . "| klmnop     |\n"
+            . "+------------+\n");
+    }
+
     function test_numrangejoin() {
         xassert_eqq(numrangejoin([1, 2, 3, 4, 6, 8]), "1–4, 6, and 8");
         xassert_eqq(numrangejoin(["#1", "#2", "#3", 4, "xx6", "xx7", 8]), "#1–3, 4, xx6–7, and 8");
@@ -939,6 +1113,21 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa   bbb", 9, true), ["aaaaaaaa   ", "bbb"]);
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 10, true), ["aaaaaaaa ", "bbb"]);
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("a\naaaaaa bbb", 10), ["a", "aaaaaa bbb"]);
+    }
+
+    function test_utf8_hard_line_break() {
+        // breaks at word boundaries just like utf8_line_break...
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("a aaaaaaabbb", 7), ["a", "aaaaaaabbb"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("the quick brown", 9), ["the quick", "brown"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("abc def", 4), ["abc", "def"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("ab   cd", 4), ["ab", "cd"]);
+        // ...but a word longer than the width is broken instead of overflowing
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("aaaaaaaa bbb", 7), ["aaaaaaa", "a bbb"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("abcdefghijklmnop", 10), ["abcdefghij", "klmnop"]);
+        // whole string fits; newline cuts; preserve_space keeps the break space
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("the quick", 9), ["the quick", ""]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("a\nbcd", 10), ["a", "bcd"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("the quick brown", 9, true), ["the quick ", "brown"]);
     }
 
     function test_utf8_glyphlen() {

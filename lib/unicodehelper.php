@@ -418,6 +418,52 @@ class UnicodeHelper {
         return [$line, $str];
     }
 
+    /** Like `utf8_line_break`, but a word longer than `$len` is broken at
+     * `$len` rather than overflowing the line.
+     * @param string &$str
+     * @param int $len
+     * @param bool $preserve_space
+     * @return string|false */
+    static function utf8_hard_line_break(&$str, $len, $preserve_space = false) {
+        if ($str === "") {
+            return false;
+        }
+        $line = self::utf8_prefix($str, $len);
+        if (($nl = strpos($line, "\n")) !== false) {
+            $line = substr($line, 0, $nl);
+        } else if (strlen($line) !== strlen($str)) {
+            if (preg_match('/\G(?!\pZ|\s)/u', $str, $m, 0, strlen($line))) {
+                // The cut falls inside a word (a non-space follows). Back up to
+                // the last break point in the line, dropping the partial word;
+                // with none (a single word wider than `$len`) the hard cut at
+                // `$len` stands.
+                $line = preg_replace('/(?:\pZ|\s)+(?:(?!\pZ|\s)\X)*\z/u', "", $line, 1);
+            } else {
+                // The cut falls at a word boundary; just drop trailing space.
+                $line = preg_replace('/(?:\pZ|\s)+\z/u', "", $line, 1);
+            }
+        }
+        $pos = strlen($line);
+        if (preg_match('/\G(?:\pZ|[\t\f\r])*\n?/u', $str, $m, 0, $pos)) {
+            $pos += strlen($m[0]);
+        }
+        if ($preserve_space && $pos !== strlen($line)) {
+            $ends_nl = $str[$pos - 1] === "\n" ? 1 : 0;
+            $line .= substr($str, strlen($line), $pos - strlen($line) - $ends_nl);
+        }
+        $str = substr($str, $pos);
+        return $line;
+    }
+
+    /** @param string $str
+     * @param int $len
+     * @param bool $preserve_space
+     * @return array{string|false,string} */
+    static function utf8_hard_line_break_parts($str, $len, $preserve_space = false) {
+        $line = self::utf8_hard_line_break($str, $len, $preserve_space);
+        return [$line, $str];
+    }
+
     /** @param string $str
      * @return string */
     static function demojibake($str) {
