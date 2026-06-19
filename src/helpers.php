@@ -305,9 +305,10 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             && !isset($this->content["ok"])) {
             $this->content["ok"] = $this->status <= 299;
         }
-        if ($qreq && $qreq->valid_token()) {
-            // Don’t set status on unvalidated requests, since that can leak
-            // information (e.g. via <link prefetch onerror>).
+        if ($qreq && ($qreq->valid_token() || $qreq->same_origin())) {
+            // Surface the real status only for requests that can’t be a forged
+            // cross-site no-cors load; otherwise the 2xx-vs-error status leaks
+            // (e.g. via `<link prefetch onerror>`), so report 200 + status_code.
             if ($this->status) {
                 Navigation::http_response_code($this->status);
             }

@@ -25,11 +25,7 @@ class Session_API {
         // update its CSRF token. It also may be called by unauthenticated
         // users (`auth: false`), which enables CORS. We do not want to
         // expose user information or the CSRF token to other origins!
-        $sfs = $qreq->raw_header("HTTP_SEC_FETCH_SITE");
-        if ($sfs === null) {
-            $sfs = $qreq->raw_header("HTTP_ORIGIN") === null ? "same-origin" : "cross-site";
-        }
-        if ($sfs !== "same-origin" && $sfs !== "none") {
+        if (!$qreq->same_origin()) {
             return ["ok" => true];
         }
 

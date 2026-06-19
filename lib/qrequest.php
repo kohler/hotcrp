@@ -232,6 +232,18 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_headers["HTTP_" . strtoupper(str_replace("-", "_", $k))] = $v;
     }
 
+    /** True if this request was not initiated by a cross-site context.
+     * Uses the `Sec-Fetch-Site` header (`same-origin`/`none` vs
+     * `same-site`/`cross-site`), falling back to Origin presence when absent.
+     * @return bool */
+    function same_origin() {
+        $sfs = $this->raw_header("HTTP_SEC_FETCH_SITE");
+        if ($sfs === null) {
+            $sfs = $this->raw_header("HTTP_ORIGIN") === null ? "same-origin" : "cross-site";
+        }
+        return $sfs === "same-origin" || $sfs === "none";
+    }
+
     /** @return ?string */
     function body() {
         if ($this->_body !== null || $this->_body_type === self::BODY_NONE) {

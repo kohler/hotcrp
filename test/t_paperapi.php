@@ -656,4 +656,59 @@ class PaperAPI_Tester {
 
         $this->u_estrin->set_scope();
     }
+
+    // An API response’s real HTTP status is surfaced only for non-cross-site
+    // requests; otherwise it’s 200 + status_code to avoid an XS-Leak oracle.
+    // See JsonResult::emit and Qrequest::same_origin.
+    function test_emit_status_disclosure() {
+        $save_code = Navigation::$http_response_code;
+        // emit a 404 through $qreq, return [wire status, decoded body]
+        $emit = function ($qreq) {
+            Navigation::$http_response_code = 200;
+            ob_start();
+            JsonResult::make_error(404, "<0>Function not found")->emit($qreq);
+            return [Navigation::$http_response_code, json_decode(ob_get_clean())];
+        };
+
+        // cross-site no-cors element load: status veiled as 200 + status_code
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "cross-site");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 200);
+        xassert_eqq($body->ok, false);
+        xassert_eqq($body->status_code, 404);
+
+        // no Sec-Fetch-Site but a cross-origin Origin: inferred cross-site, veiled
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Origin", "https://evil.example");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 200);
+        xassert_eqq($body->status_code, 404);
+
+        // same-origin request: real 404 on the wire, no status_code veil
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "same-origin");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+        xassert_eqq($body->status_code ?? null, null);
+
+        // direct navigation (Sec-Fetch-Site: none): real 404
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "none");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+
+        // no fetch-metadata and no Origin (non-browser client): treated same-origin
+        $qreq = TestQreq::get()->set_user($this->user);
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+
+        // authorized request (valid CSRF/bearer token) is surfaced even cross-site
+        $qreq = TestQreq::post()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "cross-site");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+
+        Navigation::$http_response_code = $save_code;
+    }
 }
