@@ -454,6 +454,27 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    function test_response_not_found_message() {
+        // ensure response round 1 exists (configured, need not be open)
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => "1",
+            "response_active" => "1",
+            "response/1/id" => "1",
+            "response/1/name" => ""
+        ]);
+        xassert($sv->execute());
+
+        // GET a valid response round with no response posted on this paper
+        // => 404, and the message names the response, not "Comment"
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        xassert(!$paper3->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0"));
+        $jr = call_api_result("comment", $this->u_chair, ["response" => "1"], $paper3);
+        xassert_eqq($jr->status, 404);
+        xassert_match($jr->content["message_list"][0]->message, '/response not found/i');
+
+        MailChecker::clear();
+    }
+
     function test_comment_attachment_json_shape() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $qreq = new Qrequest("POST", ["c" => "new", "text" => "Has attachment", "visibility" => "rev", "attachment:1" => "new"]);
@@ -472,6 +493,97 @@ class Comments_Tester {
         xassert_eqq($doc->filename, "fig.txt");
         xassert_eqq($doc->mimetype, "text/plain");
         xassert(isset($doc->docid)); // present because the comment is editable
+
+        MailChecker::clear();
+    }
+
+    function test_comments_multi() {
+        // comments on two different papers
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $paper2 = $this->conf->checked_paper_by_id(2);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Multi one", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $c1 = $j->comment->cid;
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Multi two", "visibility" => "rev"], $paper2);
+        xassert($j->ok);
+        $c2 = $j->comment->cid;
+
+        // `comments?q=...` aggregates viewable comments across matching papers
+        $j = call_api("comments", $this->u_chair, ["q" => "1 OR 2"]);
+        xassert($j->ok);
+        xassert(is_array($j->comments));
+        $byid = [];
+        foreach ($j->comments as $c) {
+            $byid[$c->cid] = $c;
+        }
+        xassert(isset($byid[$c1]));
+        xassert(isset($byid[$c2]));
+        xassert_eqq($byid[$c1]->text, "Multi one");
+        xassert_eqq($byid[$c2]->text, "Multi two");
+
+        // `content=0` omits comment text
+        $j = call_api("comments", $this->u_chair, ["q" => "1 OR 2", "content" => "0"]);
+        xassert($j->ok);
+        foreach ($j->comments as $c) {
+            xassert(!isset($c->text));
+        }
+
+        // missing `q` => parameter error
+        $jr = call_api_result("comments", $this->u_chair, []);
+        xassert_eqq($jr->status, 400);
+        xassert_match($jr->content["message_list"][0]->message, '/required|missing/i');
+
+        MailChecker::clear();
+    }
+
+    function test_comments_multi_paper_param() {
+        // `comments?p=N` resolves the paper like a single-paper request and
+        // returns just that paper's comments
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $paper2 = $this->conf->checked_paper_by_id(2);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "P-param one", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $c1 = $j->comment->cid;
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "P-param two", "visibility" => "rev"], $paper2);
+        xassert($j->ok);
+        $c2 = $j->comment->cid;
+
+        $j = call_api("comments", $this->u_chair, ["p" => "1"]);
+        xassert($j->ok);
+        xassert(is_array($j->comments));
+        $byid = [];
+        foreach ($j->comments as $c) {
+            $byid[$c->cid] = $c;
+        }
+        xassert(isset($byid[$c1]));   // paper 1's comment is present
+        xassert(!isset($byid[$c2]));  // paper 2's comment is not
+
+        // an unresolvable `p` reports a paper error (not a generic "missing q")
+        $jr = call_api_result("comments", $this->u_chair, ["p" => "99999999"]);
+        xassert_eqq($jr->status, 404);
+
+        // `q` and `p` together is a conflict error
+        $jr = call_api_result("comments", $this->u_chair, ["q" => "1", "p" => "2"]);
+        xassert_eqq($jr->status, 400);
+        xassert_eqq($jr->content["message_list"][0]->field, "p");
+        xassert_match($jr->content["message_list"][0]->message, '/conflict/i');
+
+        MailChecker::clear();
+    }
+
+    function test_comments_multi_permission() {
+        // an admin-only comment is invisible to a non-admin via `comments`
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Admin eyes", "visibility" => "admin"], $paper1);
+        xassert($j->ok);
+        $acid = $j->comment->cid;
+
+        $lixia = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $j = call_api("comments", $lixia, ["q" => "1"]);
+        xassert($j->ok);
+        foreach ($j->comments as $c) {
+            xassert_neqq($c->cid, $acid);
+        }
 
         MailChecker::clear();
     }

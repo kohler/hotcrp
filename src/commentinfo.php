@@ -198,15 +198,14 @@ class CommentInfo {
             return self::CT_BYAUTHOR
                 | ($this->prow->blind ? self::CT_BLIND : 0)
                 | ($ctype & (self::CTM_TOPIC | self::CTM_VIS | self::CT_SUBMIT));
-        } else {
-            $rb = $this->conf->review_blindness();
-            if ($rb === Conf::BLIND_NEVER) {
-                $ctype &= ~self::CT_BLIND;
-            } else if ($rb !== Conf::BLIND_OPTIONAL) {
-                $ctype |= self::CT_BLIND;
-            }
-            return $ctype & ~(self::CT_DRAFT | self::CTM_BYAUTHOR);
         }
+        $rb = $this->conf->review_blindness();
+        if ($rb === Conf::BLIND_NEVER) {
+            $ctype &= ~self::CT_BLIND;
+        } else if ($rb !== Conf::BLIND_OPTIONAL) {
+            $ctype |= self::CT_BLIND;
+        }
+        return $ctype & ~(self::CT_DRAFT | self::CTM_BYAUTHOR);
     }
 
     /** @param int $ctype
@@ -266,9 +265,8 @@ class CommentInfo {
     function response_round() {
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             return $this->conf->response_round_by_id($this->commentRound);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $ctype
@@ -308,9 +306,8 @@ class CommentInfo {
             return "c{$o}";
         } else if (($rrd = $this->response_round()) !== null) {
             return $rrd->unnamed ? "response" : "{$rrd->name}response";
-        } else {
-            return "cx{$this->commentId}";
         }
+        return "cx{$this->commentId}";
     }
 
     /** @return int */
