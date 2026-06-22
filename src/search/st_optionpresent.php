@@ -29,7 +29,4 @@ class OptionPresent_SearchTerm extends Option_SearchTerm {
         }
         return $this->option->present_script_expression();
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

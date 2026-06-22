@@ -2,6 +2,7 @@
 // t_reviews.php -- HotCRP tests
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+#[RequireDb("fresh")]
 class Reviews_Tester {
     /** @var Conf
      * @readonly */
@@ -1265,6 +1266,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         // no longer want clickthrough
         $this->conf->set_opt("clickthrough_review", null);
+        Conf::advance_current_time(Conf::$now + 5);
 
         // save review, check mail
         save_review(17, $user_external2, [

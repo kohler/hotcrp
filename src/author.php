@@ -1,6 +1,6 @@
 <?php
 // author.php -- HotCRP author objects
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Author {
     /** @var string
@@ -380,23 +380,23 @@ class Author {
         return "{$this->firstName}\t{$this->lastName}\t{$this->email}\t{$this->affiliation}";
     }
 
-    /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
+    /** @return array{email?:string,given_name?:string,family_name?:string,affiliation?:string} */
     function unparse_nea_json() {
         return self::unparse_nea_json_for($this);
     }
 
     /** @param Author|Contact $x
-     * @return array{email?:string,first?:string,last?:string,affiliation?:string} */
+     * @return array{email?:string,given_name?:string,family_name?:string,affiliation?:string} */
     static function unparse_nea_json_for($x) {
         $j = [];
         if ($x->email !== "") {
             $j["email"] = $x->email;
         }
         if ($x->firstName !== "") {
-            $j["first"] = $x->firstName;
+            $j["given_name"] = $x->firstName;
         }
         if ($x->lastName !== "") {
-            $j["last"] = $x->lastName;
+            $j["family_name"] = $x->lastName;
         }
         if ($x->affiliation !== "") {
             $j["affiliation"] = $x->affiliation;

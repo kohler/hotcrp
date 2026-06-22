@@ -116,14 +116,14 @@ class Assign_Page {
         $ok = $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         if ($ok) {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
     }
 
     /** @return never
      * @throws Redirection */
     private function redirect_requestreview() {
-        $this->conf->redirect_self($this->qreq, ["email" => null, "given_name" => null, "family_name" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "denyreview" => null, "retractreview" => null, "undeclinereview" => null]);
+        $this->qreq->redirect_self(["email" => null, "given_name" => null, "family_name" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "denyreview" => null, "retractreview" => null, "undeclinereview" => null]);
     }
 
     function handle_requestreview() {
@@ -217,7 +217,7 @@ class Assign_Page {
     private function print_reqrev_main($rrow, $namex, $time) {
         $rname = $rrow->status_title(true) . " (" . $rrow->status_description() . ")";
         if ($this->user->can_view_review($this->prow, $rrow)) {
-            $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId]));
+            $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId], Conf::HOTURL_RAW));
         }
         echo $rname, ': ', $namex,
             '</div><div class="f-d"><ul class="x mb-0">';
@@ -329,7 +329,7 @@ class Assign_Page {
                 && $this->user->privChair
                 && $this->user->allow_admin($this->prow)) {
                 $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
-                    $this->prow->reviewurl(["actas" => $rrowid->email]));
+                    $this->prow->reviewurl(["actas" => $rrowid->email], Conf::HOTURL_RAW));
             }
         } else {
             $name = Text::nameo_h($rrowid, NAME_P);
@@ -367,10 +367,10 @@ class Assign_Page {
             || ($rrow->reviewType !== REVIEW_REFUSAL
                 && $this->user->contactId > 0
                 && $rrow->requestedBy == $this->user->contactId)) {
-            echo Ht::form($this->conf->hoturl("=assign", [
+            echo $this->conf->hotform("=assign", [
                     "p" => $this->prow->paperId, "action" => "managerequest",
                     "email" => $rrowid->email, "round" => $rrow->reviewRound
-                ]), ["class" => "fx"]);
+                ], ["class" => "fx"]);
             if (!isset($rrow->contactId) || !$rrow->contactId) {
                 echo Ht::hidden("given_name", $rrowid->firstName),
                     Ht::hidden("family_name", $rrowid->lastName),
@@ -472,13 +472,9 @@ class Assign_Page {
         if ($ac->rev === 0) {
             echo "0 reviews";
         } else {
-            echo '<a class="q" href="',
-                $this->conf->hoturl("search", "q=re:" . urlencode($pc->email)), '">',
-                plural($ac->rev, "review"), "</a>";
+            echo $this->conf->hotlink(plural($ac->rev, "review"), "search", ["q" => "re:{$pc->email}"], ["class" => "q"]);
             if ($ac->pri && $ac->pri < $ac->rev) {
-                echo '&nbsp; (<a class="q" href="',
-                    $this->conf->hoturl("search", "q=pri:" . urlencode($pc->email)),
-                    "\">{$ac->pri} primary</a>)";
+                echo "&nbsp; (", $this->conf->hotlink("{$ac->pri} primary", "search", ["q" => "pri:{$pc->email}"], ["class" => "q"]), ")";
             }
         }
         echo "</div></div></div>\n"; // .pctbnrev .ctelti .ctelt
@@ -498,7 +494,7 @@ class Assign_Page {
         // reviewer information
         $t = $this->pt->review_table();
         if ($t !== "") {
-            echo '<div class="pcard revcard">',
+            echo '<div class="pcard s-review">',
                 '<h2 class="revcard-head" id="current-reviews">Current reviews</h2>',
                 '<div class="revpcard-body">', $t, '</div></div>';
         }
@@ -528,7 +524,7 @@ class Assign_Page {
         });
 
         if (!empty($requests)) {
-            echo '<div class="pcard revcard">',
+            echo '<div class="pcard s-review">',
                 '<h2 class="revcard-head" id="review-requests">Review requests</h2>',
                 '<div class="revcard-body"><div class="ctable-wide">';
             foreach ($requests as $req) {
@@ -542,10 +538,10 @@ class Assign_Page {
             $acs = AssignmentCountSet::load($user, AssignmentCountSet::HAS_REVIEW);
 
             // PC conflicts row
-            echo '<div class="pcard revcard">',
+            echo '<div class="pcard s-review">',
                 '<h2 class="revcard-head" id="pc-assignments">PC assignments</h2>',
                 '<div class="revcard-body">',
-                Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), [
+                $this->conf->hotform("=assign", ["p" => $prow->paperId], [
                     "id" => "f-pc-assignments",
                     "class" => "need-unload-protection need-diff-check",
                     "data-differs-toggle" => "paper-alert"
@@ -613,8 +609,8 @@ class Assign_Page {
         if (!$user->allow_admin($prow) && $this->conf->setting("extrev_chairreq")) {
             $req = "Propose external review";
         }
-        echo '<div class="pcard revcard">',
-            Ht::form($this->conf->hoturl("=assign", "p={$prow->paperId}"), ["novalidate" => true]),
+        echo '<div class="pcard s-review">',
+            $this->conf->hotform("=assign", ["p" => $prow->paperId], ["novalidate" => true]),
             "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 
         echo '<p class="w-text">', $this->conf->_i("external_review_request_description");

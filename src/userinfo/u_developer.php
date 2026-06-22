@@ -1,6 +1,6 @@
 <?php
 // u_developer.php -- HotCRP Profile > Developer
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Developer_UserInfo {
     /** @var UserStatus */
@@ -86,20 +86,21 @@ class Developer_UserInfo {
             return ($bu <=> $au) ? : ($a->timeCreated <=> $b->timeCreated);
         });
 
-        if (!empty($toks)) {
-            Icons::stash_defs("trash");
-            echo Ht::unstash();
-            $us->print_start_section("Active tokens");
-            $n = 1;
-            foreach ($toks as $tok) {
-                if ($tok->timeCreated >= Conf::$now - 10) {
-                    $this->print_fresh_bearer_token($us, $tok, $n);
-                } else {
-                    $this->print_bearer_token($us, $tok, $n);
-                }
-                ++$n;
-            }
+        if (empty($toks)) {
+            return;
         }
+        Icons::stash_defs("trash");
+        echo '<div class="mt-4">', Ht::unstash();
+        $n = 1;
+        foreach ($toks as $tok) {
+            if ($tok->timeCreated >= Conf::$now - 10) {
+                $this->print_fresh_bearer_token($us, $tok, $n);
+            } else {
+                $this->print_bearer_token($us, $tok, $n);
+            }
+            ++$n;
+        }
+        echo '</div>';
     }
 
     /** @param int $n */
@@ -110,7 +111,7 @@ class Developer_UserInfo {
             return;
         }
         $dbid = $tok->is_cdb ? "A" : "L";
-        $id = "{$tok->timeCreated}.{$dbid}." . substr($tok->salt, 0, 9);
+        $id = "{$tok->timeCreated}.{$dbid}." . substr($tok->salt, 0, 12);
         echo Ht::hidden("bearer_token/{$n}/id", $id),
             Ht::hidden("bearer_token/{$n}/delete", "", ["class" => "deleter", "data-default-value" => ""]),
             Ht::button(Icons::ui_use("trash"), [
@@ -122,35 +123,52 @@ class Developer_UserInfo {
 
     /** @param int $n */
     function print_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
+        $short_salt = substr($tok->salt, 0, 10) . (strlen($tok->salt) > 9 ? "…" : "");
         $note = $tok->data("note") ?? "";
-        echo '<div class="f-i w-text"><label class="f-c">',
-            $note === "" ? "[Unnamed token]" : htmlspecialchars($note);
+        echo '<div class="f-i w-text"><div class="f-c">';
+        if ($note !== "") {
+            echo htmlspecialchars($note), ' <span class="barsep">·</span> ';
+        }
+        echo '<code>', $short_salt, '</code>';
         $this->print_bearer_token_deleter($us, $tok, $n);
-        echo '</label>',
-            '<code>', substr($tok->salt, 0, 10), strlen($tok->salt) > 9 ? "…" : "", '</code>',
-            ' <span class="barsep">·</span> ',
+        echo '</div>';
+        $this->print_bearer_token_info($us->conf, $tok);
+        echo '</div>';
+    }
+
+    private function print_bearer_token_info(Conf $conf, TokenInfo $tok) {
+        $ts = TokenScope::parse($tok->data("scope") ?? "", null);
+        if ($ts) {
+            $tsu = htmlspecialchars(TokenScope::unparse($ts));
+            if ($tsu === "read" || $tsu === "write" || $tsu === "admin") {
+                echo $tsu, ' scope';
+            } else {
+                echo 'scope ', $tsu;
+            }
+        } else {
+            echo 'full scope';
+        }
+        echo ' <span class="barsep">·</span> ',
             self::unparse_last_used($tok->timeUsed),
             ' <span class="barsep">·</span> ',
-            $tok->timeExpires > 0 ? "expires " . $us->conf->unparse_time_point($tok->timeExpires) : "never expires",
-            '</div>';
+            $tok->timeExpires > 0 ? "expires " . $conf->unparse_time_point($tok->timeExpires) : "never expires";
     }
 
     /** @param int $n */
     function print_fresh_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
         $note = $tok->data("note") ?? "";
         echo '<div class="form-section form-outline-section mb-4 tag-yellow">',
-            '<div class="f-i w-text mb-0"><label class="f-c">',
-            $note === "" ? "[Unnamed token]" : htmlspecialchars($note),
-            '</label>',
-            '<p class="w-text mb-1"><code><strong>', $tok->salt, '</strong></code>';
-        $this->print_bearer_token_deleter($us, $tok, $n);
-        echo '</p>',
+            '<div class="f-i w-text mb-0"><div class="f-c">';
+        if ($note !== "") {
+            echo htmlspecialchars($note), ' <span class="barsep">·</span> ';
+        }
+        echo '<code><strong>', $tok->salt, '</strong></code>';
+        // $this->print_bearer_token_deleter($us, $tok, $n);
+        echo '</div>',
             '<p class="feedback is-urgent-note">This is the new token you just created. Copy it now—you won’t be able to recover it later.</p>',
-            '<p class="w-text mb-0">',
-            self::unparse_last_used($tok->timeUsed),
-            ' <span class="barsep">·</span> ',
-            $tok->timeExpires > 0 ? "expires " . $us->conf->unparse_time($tok->timeExpires) : "never expires",
-            '</p></div></div>';
+            '<p class="w-text mb-0">';
+        $this->print_bearer_token_info($us->conf, $tok);
+        echo '</p></div></div>';
     }
 
     static function unparse_last_used($time) {
@@ -159,12 +177,11 @@ class Developer_UserInfo {
         } else if ($time + 31622400 < Conf::$now) { // 366 days
             return "last used more than a year ago";
         } else if ($time + 2592000 < Conf::$now) { // 30 days
-            return "last used within the last " . plural(min(ceil($time / 2592000), 12), "month");
+            return "used in the last " . plural(min(ceil((Conf::$now - $time) / 2592000), 12), "month");
         } else if ($time + 86400 < Conf::$now) {
-            return "last used within the last " . plural(ceil($time / 86400), "day");
-        } else {
-            return "last used within the last day";
+            return "used in the last " . plural(ceil((Conf::$now - $time) / 86400), "day");
         }
+        return "used in the last day";
     }
 
     function print_new_bearer_token(UserStatus $us) {
@@ -199,7 +216,7 @@ class Developer_UserInfo {
             ]));
 
         if ($us->conf->contactdb()) {
-            $us->print_field("bearer_token/new/sites", "Site scope",
+            $us->print_field("bearer_token/new/sites", "Site availability",
                 Ht::select("bearer_token/new/sites", [
                     "all" => "All sites",
                     "here" => "This site only"
@@ -207,21 +224,52 @@ class Developer_UserInfo {
                     "id" => "bearer_token/new/sites", "data-default-value" => "all"
                 ]));
         }
+
+        $us->print_field("bearer_token/new/scope", "Scope",
+            Ht::entry("bearer_token/new/scope", $us->qreq["bearer_token/new/scope"] ?? "", [
+                "size" => 30, "id" => "bearer_token/new/scope", "data-default-value" => "",
+                "placeholder" => "all"
+            ]) . '<div class="f-d">What rights should this token have?<br>Examples: ‘read’, ‘read paper:write’, ‘review:admin#10’, ‘submission:write?q=dec:no’</div>');
+
         $us->cs()->print_end_section();
     }
 
     function request_new_bearer_token(UserStatus $us) {
         assert($us->is_auth_self());
+        $cdbu = $us->user->cdb_user();
         if (!$us->qreq["bearer_token/new/enable"]
-            || $us->user->security_locked()) {
+            || $us->user->security_locked()
+            || ($cdbu && $cdbu->security_locked())) {
             return;
         }
 
-        $this->_new_token = $token = new TokenInfo($us->conf, TokenInfo::BEARER);
+        $sites = $us->qreq["bearer_token/new/sites"] ?? "here";
+        if ($sites === "all" && $cdbu) {
+            $tuser = $cdbu;
+        } else {
+            $us->user->ensure_account_here();
+            $tuser = $us->user;
+        }
+
+        $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
+        if ($exp === "never") {
+            $expiry = -1;
+        } else {
+            $expiry = (int) ((stonum($exp) ?? 30) * 86400);
+        }
+
+        $token = Authorization_Token::prepare_bearer($tuser, $expiry);
+        $this->_new_token = $token;
 
         $note = simplify_whitespace($us->qreq["bearer_token/new/note"] ?? "");
         if ($note !== "") {
             $token->assign_data(["note" => $note]);
+        }
+
+        $scope = simplify_whitespace($us->qreq["bearer_token/new/scope"] ?? "");
+        if ($scope !== ""
+            && preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)++\z/', $scope)) {
+            $token->assign_data(["scope" => $scope]);
         }
 
         $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
@@ -231,21 +279,13 @@ class Developer_UserInfo {
             $expiry = (ctype_digit($exp) ? intval($exp) : 30) * 86400;
             $token->set_invalid_in($expiry)->set_expires_in($expiry + 604800);
         }
-
-        $sites = $us->qreq["bearer_token/new/sites"] ?? "here";
-        if ($sites === "all" && ($cdbu = $us->user->cdb_user())) {
-            $token->set_cdb_user($cdbu);
-        } else {
-            $us->user->ensure_account_here();
-            $token->set_user($us->user);
-        }
     }
 
     function save_new_bearer_token(UserStatus $us) {
         if ($this->_new_token === null) {
             return;
         }
-        $this->_new_token->set_token_pattern("hct_[30]")->insert();
+        $this->_new_token->insert();
         if ($this->_new_token->stored()) {
             $us->diffs["API tokens"] = true;
         } else {
@@ -260,8 +300,8 @@ class Developer_UserInfo {
             return;
         }
         for ($i = 1; isset($us->qreq["bearer_token/{$i}/id"]); ++$i) {
-            if (preg_match('/\A(\d+)\.([AL])\.(hct_\w+)\z/', $us->qreq["bearer_token/{$i}/id"], $m)
-                && $us->qreq["bearer_token/{$i}/delete"]) {
+            if (preg_match('/\A(\d+)\.([AL])\.(hc[tT]_\w+)\z/', $us->qreq["bearer_token/{$i}/id"], $m)
+                && friendly_boolean($us->qreq["bearer_token/{$i}/delete"])) {
                 $this->_delete_tokens[] = [intval($m[1]), $m[2] === "A", $m[3]];
             }
         }

@@ -63,6 +63,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_qsession = new Qsession;
     }
 
+    /** @param string $method
+     * @param array<string,string> $data
+     * @return Qrequest */
+    static function make($method, $data = []) {
+        return new Qrequest($method, $data);
+    }
+
     /** @param NavigationState $nav
      * @return $this */
     function set_navigation($nav) {
@@ -126,11 +133,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this;
     }
 
-    /** @return $this
-     * @suppress PhanDeprecatedProperty */
+    /** @return $this */
     function set_paper(?PaperInfo $prow) {
+        assert(!$prow || !$this->_conf || $this->_conf === $prow->conf);
+        if ($prow) {
+            $this->_conf = $prow->conf;
+        }
         $this->_requested_paper = $prow;
-        $this->_conf->paper = $prow;
         return $this;
     }
 
@@ -221,6 +230,18 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param ?string $v */
     function set_header($k, $v) {
         $this->_headers["HTTP_" . strtoupper(str_replace("-", "_", $k))] = $v;
+    }
+
+    /** True if this request was not initiated by a cross-site context.
+     * Uses the `Sec-Fetch-Site` header (`same-origin`/`none` vs
+     * `same-site`/`cross-site`), falling back to Origin presence when absent.
+     * @return bool */
+    function same_origin() {
+        $sfs = $this->raw_header("HTTP_SEC_FETCH_SITE");
+        if ($sfs === null) {
+            $sfs = $this->raw_header("HTTP_ORIGIN") === null ? "same-origin" : "cross-site";
+        }
+        return $sfs === "same-origin" || $sfs === "none";
     }
 
     /** @return ?string */
@@ -441,11 +462,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param array|QrequestFile $finfo
      * @return $this */
     function set_file($name, $finfo) {
-        if (is_array($finfo)) {
-            $this->_files[$name] = QrequestFile::make_finfo($finfo);
-        } else {
-            $this->_files[$name] = $finfo;
-        }
+        $qf = is_array($finfo) ? QrequestFile::make_finfo($finfo) : $finfo;
+        $this->_files[$name] = $qf;
         return $this;
     }
     /** @param string $name
@@ -531,9 +549,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $x;
     }
-    /** @param string $name */
+    /** @param string $name
+     * @return $this */
     function set_annex($name, $x) {
         $this->_annexes[$name] = $x;
+        return $this;
     }
     /** @return $this */
     function approve_token() {
@@ -599,16 +619,16 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         if (empty($_POST)) {
             $qreq->set_post_empty();
+            $qreq->_body_type = self::BODY_FILE;
         }
         $qreq->_headers = $_SERVER;
         if (isset($_SERVER["HTTP_REFERER"])) {
             $qreq->set_referrer($_SERVER["HTTP_REFERER"]);
         }
-        $qreq->_body_type = empty($_POST) ? self::BODY_FILE : self::BODY_NONE;
 
         // Work around GET URL length limitations with `:method:` parameter.
         // A POST request can set `:method:` to GET for GET semantics.
-        if (($v = $qreq->_v[":method:"] ?? null) === "GET"
+        if (($_GET[":method:"] ?? null) === "GET"
             && $qreq->method() === "POST") {
             $qreq->_method = "GET";
         }
@@ -656,8 +676,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     /** @return Qrequest */
     static function set_main_request(Qrequest $qreq) {
-        global $Qreq;
-        Qrequest::$main_request = $Qreq = $qreq;
+        Qrequest::$main_request = $qreq;
         return $qreq;
     }
 
@@ -692,6 +711,20 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param int $expires_at */
     function set_httponly_cookie($name, $value, $expires_at) {
         $this->set_cookie_opt($name, $value, ["expires" => $expires_at, "httponly" => true]);
+    }
+
+
+    /** @param Contact|Author $au
+     * @param string $prefix
+     * @return string */
+    function actas_link_for($au, $prefix = "") {
+        if (!$au->email
+            || !$this->_conf
+            || ($this->_user && $au->contactId === $this->_user->contactId)) {
+            return "";
+        }
+        $url = $this->_conf->selfurl($this, ["actas" => $au->email]);
+        return $prefix . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($au, NAME_P)]), $url, ["tabindex" => "-1"]);
     }
 
 
@@ -837,6 +870,31 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
 
+    /** @param ?string $url
+     * @param 301|302|303|307|308 $status
+     * @return never
+     * @throws Redirection */
+    function redirect($url = null, $status = 302) {
+        $this->_conf->saved_messages_commit($this);
+        Navigation::redirect_absolute($this->_navigation->resolve($url ?? $this->_conf->hoturl_raw("index")), $status);
+    }
+
+    /** @param string $page
+     * @param ?array $param
+     * @return never
+     * @throws Redirection */
+    function redirect_hoturl($page, $param = null) {
+        $this->redirect($this->_conf->hoturl($page, $param, Conf::HOTURL_RAW));
+    }
+
+    /** @param ?array $param
+     * @return never
+     * @throws Redirection */
+    function redirect_self($param = null) {
+        $this->redirect($this->_conf->selfurl($this, $param));
+    }
+
+
     /** @return array<string,string|list> */
     function debug_json() {
         $a = [];
@@ -866,6 +924,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 }
 
 class QrequestFile {
+    /** @var ?string */
+    public $input_name;
     /** @var string */
     public $name;
     /** @var string */

@@ -27,11 +27,23 @@ class Track {
     const COMMENT = 9;
     const NPERM = 10;
 
+    /** @deprecated */
     const BITS_VIEW = 0x1;        // 1 << VIEW
+    /** @deprecated */
     const BITS_REVIEW = 0x30;     // (1 << ASSREV) | (1 << SELFASSREV)
+    /** @deprecated */
     const BITS_ADMIN = 0x40;      // 1 << ADMIN
+    /** @deprecated */
     const BITS_VIEWADMIN = 0x41;  // (1 << VIEW) | (1 << ADMIN)
+    /** @deprecated */
     const BITS_REQUIRED = 0xC0;   // (1 << HIDDENTAG) | (1 << ADMIN)
+
+    const FM_VIEW = 0x1;          // 1 << VIEW
+    const FM_VIEWPDF = 0x3;       // (1 << VIEW) | (1 << VIEWPDF)
+    const FM_REVIEW = 0x30;       // (1 << ASSREV) | (1 << SELFASSREV)
+    const FM_ADMIN = 0x40;        // 1 << ADMIN
+    const FM_VIEWADMIN = 0x41;    // (1 << VIEW) | (1 << ADMIN)
+    const FM_REQUIRED = 0xC0;     // (1 << HIDDENTAG) | (1 << ADMIN)
 
     /** @readonly */
     static public $perm_name_map = [

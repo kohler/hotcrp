@@ -4,7 +4,7 @@
 
 class Preference_SettingParser extends SettingParser {
     static function print_pref_shuffle(SettingValues $sv) {
-        $sv->print_checkbox("preference_shuffle", "Shuffle submissions on " . Ht::link("review preferences page", $sv->conf->hoturl("reviewprefs")), [
+        $sv->print_checkbox("preference_shuffle", "Shuffle submissions on " . $sv->conf->hotlink("review preferences page", "reviewprefs"), [
             "hint" => "The page will display submissions in a reviewer-specific random order."
         ]);
     }

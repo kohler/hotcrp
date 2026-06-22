@@ -38,10 +38,8 @@ class AssignmentCount {
         $t = $plural ? plural($count, $item) : $count . "&nbsp;" . $item;
         if ($count === 0) {
             return $t;
-        } else {
-            $url = $pc->conf->hoturl("search", "q=" . urlencode("$prefix:{$pc->email}"));
-            return "<a class=\"q\" href=\"{$url}\">{$t}</a>";
         }
+        return $pc->conf->hotlink($t, "search", ["q" => "{$prefix}:{$pc->email}"], ["class" => "q"]);
     }
     /** @param Contact $pc
      * @return string */

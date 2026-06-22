@@ -1,6 +1,6 @@
 <?php
-// cdbuserupdate.php -- HotCRP class to update local database from cdb
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// cdbuserupdate.php -- HotCRP class to update local database <-> cdb
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class CdbUserUpdate {
     /** @var Conf
@@ -9,112 +9,119 @@ class CdbUserUpdate {
     /** @var int
      * @readonly */
     private $cdb_confid;
-    /** @var int
-     * @readonly */
-    private $cdb_user_update_at = 0;
-    /** @var list<int> */
-    private $cids = [];
-    /** @var list<string> */
-    private $emails = [];
-    /** @var bool */
-    private $all = false;
+    /** @var list<int|string> */
+    private $_up = [];
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->cdb_confid = $conf->cdb_confid();
+    }
+
+
+    // export updates from local database to cdb
+    /** @param 0|1|2|3 $type */
+    function add(Contact $user, $type) {
+        if ($type === Conf::CDB_UPDATE_PROFILE) {
+            array_push($this->_up, $type, $user->contactDbId);
+        } else if ($type === Conf::CDB_UPDATE_ROLES) {
+            array_push($this->_up, $type, $user->contactId, $user->email);
+        } else {
+            array_push($this->_up, $type, $user->email);
+        }
+    }
+
+    function __invoke() {
+        $cdb = $this->conf->contactdb();
+        if (empty($this->_up) || !$cdb || $this->cdb_confid < 0) {
+            return;
+        }
+
+        // prefetch users, prepare queries
+        $role_uids = $cu_uids = [];
+        $ph_emails = $confirm_emails = [];
+        for ($i = 0; $i !== count($this->_up); ) {
+            if ($this->_up[$i] === Conf::CDB_UPDATE_PROFILE) {
+                $cu_uids[] = $this->_up[$i + 1];
+                $i += 2;
+            } else if ($this->_up[$i] === Conf::CDB_UPDATE_ROLES) {
+                $role_uids[] = $this->_up[$i + 1];
+                $this->conf->prefetch_user_by_id($this->_up[$i + 1]);
+                $this->conf->prefetch_cdb_user_by_email($this->_up[$i + 2]);
+                $i += 3;
+            } else if ($this->_up[$i] === Conf::CDB_UPDATE_PLACEHOLDER) {
+                $ph_emails[] = $this->_up[$i + 1];
+                $this->conf->prefetch_cdb_user_by_email($this->_up[$i + 1]);
+                $i += 2;
+            } else if ($this->_up[$i] === Conf::CDB_UPDATE_CONFIRMED) {
+                $confirm_emails[] = $this->_up[$i + 1];
+                $this->conf->prefetch_cdb_user_by_email($this->_up[$i + 1]);
+                $i += 2;
+            }
+        }
+        $this->_up = [];
+
+        if (!empty($role_uids)) {
+            Contact::update_cdb_roles_list($this->conf, $role_uids);
+        }
+
+        if (!empty($ph_emails)) {
+            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
+                where email?a and (cflags&?)!=0",
+                Contact::CF_PLACEHOLDER, $ph_emails, Contact::CF_PLACEHOLDER);
+        }
+
+        if (!empty($confirm_emails)) {
+            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
+                where email?a and (cflags&?)!=0",
+                Contact::CF_UNCONFIRMED, $confirm_emails, Contact::CF_UNCONFIRMED);
+        }
+
+        if (!empty($cu_uids)) {
+            Dbl::qe($cdb, "insert into ConferenceUpdates (confid, user_update_at)
+                select confid, ? from Roles where contactDbId?a and confid!=?
+                on duplicate key update user_update_at=greatest(user_update_at,?)",
+                Conf::$now, $cu_uids, $this->cdb_confid, Conf::$now);
+        }
+
+        if (!empty($role_uids) || !empty($ph_emails) || !empty($confirm_emails)) {
+            $this->conf->invalidate_caches("cdb_users");
+        }
+    }
+
+
+    // import nonempty properties from cdb to local database
+    function import_empty_props() {
         if ($this->cdb_confid <= 0) {
             return;
         }
-        $this->cdb_user_update_at = Dbl::fetch_ivalue($this->conf->contactdb(),
+        $cdb_user_update_at = Dbl::fetch_ivalue($this->conf->contactdb(),
             "select user_update_at from ConferenceUpdates where confid=?",
             $this->cdb_confid) ?? 0;
-        if ($this->cdb_user_update_at === 0
-            || $this->cdb_user_update_at > Conf::$now - 3) {
-            $this->cdb_user_update_at = Conf::$now - 3;
+        if ($cdb_user_update_at === 0
+            || $cdb_user_update_at > Conf::$now - 3) {
+            $cdb_user_update_at = Conf::$now - 3;
         }
-        if ($this->cdb_user_update_at <= ($conf->setting("__cdb_user_update_at") ?? 0)) {
+        $my_user_update_at = $this->conf->setting("__cdb_user_update_at") ?? 0;
+        if ($cdb_user_update_at <= $my_user_update_at) {
             // nothing to do
-            $this->cdb_confid = -1;
-        }
-    }
-
-    /** @param int|string ...$ids
-     * @return $this */
-    function add(...$ids) {
-        if ($this->cdb_confid <= 0) {
-            return $this;
-        }
-        foreach ($ids as $id) {
-            if (is_int($id)) {
-                $this->cids[] = $id;
-            } else {
-                $this->emails[] = $id;
-            }
-        }
-        return $this;
-    }
-
-    /** @return $this */
-    function add_all() {
-        return $this;
-    }
-
-    /** @param string ...$fields
-     * @return bool */
-    function needed(...$fields) {
-        if ($this->cdb_confid <= 0) {
-            return false;
-        } else if (empty($this->cids) && empty($this->emails)) {
-            return true;
-        }
-
-        $qf = $qv = $fc = [];
-        if (!empty($this->cids)) {
-            $qf[] = "contactId?a";
-            $qv[] = $this->cids;
-        }
-        if (!empty($this->emails)) {
-            $qf[] = "email?a";
-            $qv[] = $this->emails;
-        }
-        if (empty($fields)) {
-            $fields = ["firstName", "lastName", "affiliation", "country", "orcid", "collaborators"];
-        }
-        foreach ($fields as $f) {
-            if ($f === "firstName" || $f === "lastName" || $f === "affiliation") {
-                $fc[] = "{$f}=''";
-            } else if ($f === "country" || $f === "orcid" || $f === "collaborators") {
-                $fc[] = "coalesce({$f},'')=''";
-            } else {
-                throw new Exception("unknown Contact field {$f}");
-            }
-        }
-        return $this->conf->fetch_ivalue("select exists (select * from ContactInfo
-            where (" . join(" or ", $qf) . ") and (" . join(" or ", $fc) . "))",
-            ...$qv) > 0;
-    }
-
-    /** @param string ...$fields */
-    function check(...$fields) {
-        if ($this->cdb_confid <= 0
-            || (!$this->all && !$this->needed(...$fields))) {
             return;
         }
 
-        $result = $this->conf->qe("select email, contactId, if(firstName='' and lastName='',1,0)|if(affiliation='',2,0)|if(coalesce(country,'')='',4,0)|if(coalesce(orcid,'')='',8,0)|if(coalesce(collaborators,'')='',16,0) x from ContactInfo having x!=0");
+        $result = $this->conf->qe("select email, contactId, if(firstName='' and lastName='',1,0)|if(affiliation='',2,0)|if(coalesce(country,'')='',4,0)|if(coalesce(orcid,'')='',8,0)|if(coalesce(collaborators,'')='',16,0) x
+            from ContactInfo
+            having x!=0");
         $eflags = [];
         while (($row = $result->fetch_row())) {
             $eflags[strtolower($row[0])] = [(int) $row[1], (int) $row[2]];
         }
         $result->close();
 
-        $old_time = $this->conf->setting("__cdb_user_update_at") ?? 0;
         $result = Dbl::qe($this->conf->contactdb(),
             "select email, firstName, lastName, affiliation, country, orcid, collaborators, updateTime
             from ContactInfo
             where contactDbId in (select contactDbId from Roles where confid=?)
             and updateTime>?",
-            $this->cdb_confid, $old_time);
+            $this->cdb_confid, $my_user_update_at);
         $updatef = Dbl::make_multi_qe_stager($this->conf->dblink);
         $ids = $need_unaccented_ids = [];
         while (($row = $result->fetch_object())) {

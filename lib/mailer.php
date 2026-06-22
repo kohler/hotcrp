@@ -1,6 +1,6 @@
 <?php
 // mailer.php -- HotCRP mail template manager
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Mailer {
     const CONTEXT_BODY = 0;
@@ -16,6 +16,8 @@ class Mailer {
 
     /** @var Conf */
     public $conf;
+    /** @var ?Contact */
+    public $sending_user;
     /** @var ?Contact */
     public $recipient;
     /** @var string */
@@ -71,6 +73,9 @@ class Mailer {
      * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
+        if (array_key_exists("sending_user", $settings ?? [])) {
+            $this->sending_user = $settings["sending_user"];
+        }
         $this->width = $settings["width"] ?? 72;
         if ($this->width <= 0) {
             $this->width = 10000000;
@@ -179,7 +184,8 @@ class Mailer {
                 }
             }
         }
-        return $m->conf->hoturl_raw($a[0], $a[1], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
+        parse_str($a[1], $param);
+        return $m->conf->hoturl_raw($a[0], $param, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
     }
 
     static function kw_php($args, $isbool, $m) {
@@ -265,9 +271,9 @@ class Mailer {
         if (!$this->censor && !$this->preparation->reset_capability) {
             $capinfo = new TokenInfo($this->conf, TokenInfo::RESETPASSWORD);
             if (($cdbu = $this->recipient->cdb_user())) {
-                $capinfo->set_cdb_user($cdbu)->set_token_pattern("hcpw1[20]");
+                $capinfo->set_user_from($cdbu, true)->set_token_pattern("hcpw1[20]");
             } else {
-                $capinfo->set_user($this->recipient)->set_token_pattern("hcpw0[20]");
+                $capinfo->set_user_from($this->recipient, false)->set_token_pattern("hcpw0[20]");
             }
             $capinfo->set_expires_in(259200)->insert();
             assert($capinfo->stored());

@@ -1,6 +1,6 @@
 <?php
 // pages/p_reviewprefs.php -- HotCRP review preference global settings page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ReviewPrefs_Page {
     // Update preferences
@@ -31,7 +31,7 @@ class ReviewPrefs_Page {
         $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
         if (!$aset->has_error()) {
-            $user->conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
     }
 
@@ -72,7 +72,7 @@ class ReviewPrefs_Page {
         $pl->set_table_fold_session("pfdisplay.");
 
         // display options
-        echo Ht::form($conf->hoturl("reviewprefs"), [
+        echo $conf->hotform("reviewprefs", null, [
             "method" => "get", "id" => "f-search",
             "class" => "tlcontainer mb-3 has-fold fold10" . ($pl->viewing("authors") ? "o" : "c")
         ]);
@@ -89,10 +89,10 @@ class ReviewPrefs_Page {
 
             $sel = [];
             foreach ($conf->pc_members() as $p) {
-                $sel[$p->email] = $p->name_h(NAME_P|NAME_S) . " &nbsp; [" . plural($prefcount[$p->contactId] ?? 0, "pref") . "]";
+                $sel[$p->email] = $p->name(NAME_P|NAME_S) . " [" . plural($prefcount[$p->contactId] ?? 0, "pref") . "]";
             }
             if (!isset($sel[$reviewer->email])) {
-                $sel[$reviewer->email] = $reviewer->name_h(NAME_P|NAME_S) . " &nbsp; [" . ($prefcount[$reviewer->contactId] ?? 0) . "; not on PC]";
+                $sel[$reviewer->email] = $reviewer->name(NAME_P|NAME_S) . " [" . ($prefcount[$reviewer->contactId] ?? 0) . "; not on PC]";
             }
 
             echo Ht::select("reviewer", $sel, $reviewer->email, ["id" => "k-prefs-user"]), '</div>';
@@ -147,12 +147,12 @@ class ReviewPrefs_Page {
         if ($qreq->sort) {
             $hoturl_args["sort"] = $qreq->sort;
         }
-        echo Ht::form($conf->hoturl("=reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-list assignpc"]),
+        echo $conf->hotform("=reviewprefs", $hoturl_args, ["id" => "sel", "class" => "ui-submit js-submit-list assignpc"]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
-        if ($search->has_message()) {
+        if ($pl->has_message()) {
             echo '<div class="msgs-wide">',
-                Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING)),
+                Ht::msg($pl->full_feedback_html(), min($pl->problem_status(), MessageSet::WARNING), "mx-auto"),
                 '</div>';
         }
         echo '<noscript><div style="text-align:center">',
@@ -197,7 +197,7 @@ class ReviewPrefs_Page {
             }
         } else if (!$qreq->reviewer && !($user->roles & Contact::ROLE_PC)) {
             foreach ($conf->pc_members() as $pcm) {
-                $conf->redirect_self($qreq, ["reviewer" => $pcm->email]);
+                $qreq->redirect_self(["reviewer" => $pcm->email]);
                 // in case redirection fails:
                 $reviewer = $pcm;
                 break;
@@ -209,7 +209,7 @@ class ReviewPrefs_Page {
 
         // cancel action
         if ($qreq->cancel) {
-            $conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
 
         // backwards compat
@@ -249,7 +249,7 @@ class ReviewPrefs_Page {
                     $pfd .= substr($k, 4) . " ";
             }
             $qreq->set_csession("pfdisplay", $pfd);
-            $conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
 
         self::print($user, $reviewer, $qreq);

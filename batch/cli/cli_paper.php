@@ -303,7 +303,7 @@ Usage: php batch/hotcrapi.php paper [PID | -q SEARCH]
         )->long(
             "p:,paper: =PID !paper Submission ID",
             "q:,query: =SEARCH !paper Submission search",
-            "t:,type: =TYPE !paper Collection to search [viewable]",
+            "t:,type: =SCOPE !paper Scope of search [viewable]",
             "F[],file[] =FILE !paper Add attachment",
             "dry-run,d !paper Don’t actually save changes",
             "disable-users !paper Disable newly created users",

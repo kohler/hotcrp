@@ -45,14 +45,14 @@ class Profile_Page {
      * @return Contact */
     private function handle_user_search($u) {
         if (!$this->viewer->privChair) {
-            Multiconference::fail($this->qreq, 403, ["title" => "Profile"], "<5>Permission error: you can only access <a href=\"" . $this->conf->hoturl("profile", ["u" => null]) . "\">your own profile</a>");
+            Multiconference::fail($this->qreq, 403, ["title" => "Profile"], "<5>Permission error: you can only access " . $this->conf->hotlink("your own profile", "profile", ["u" => null]));
         }
 
         $user = null;
         if (ctype_digit($u)) {
             $user = $this->conf->user_by_id(intval($u));
         } else if ($u === "" && $this->qreq->search) {
-            $this->conf->redirect_hoturl("users");
+            $this->qreq->redirect_hoturl("users");
         } else if (($user = $this->conf->user_by_email($u))) {
             // OK
         } else if ($this->qreq->search) {
@@ -62,7 +62,7 @@ class Profile_Page {
                     ->set_urlbase($this->conf->hoturl_raw("users", ["t" => "all"], Conf::HOTURL_SITEREL));
                 $list->set_cookie($this->qreq);
                 $user = $this->conf->user_by_id($cs->user_ids()[0]);
-                $this->conf->redirect_hoturl("profile", ["u" => $user->email]);
+                $this->qreq->redirect_hoturl("profile", ["u" => $user->email]);
             } else {
                 $this->fail_user_search("<0>User matching ‘{$u}’ not found");
             }
@@ -76,7 +76,7 @@ class Profile_Page {
             if (isset($this->qreq->save) || isset($this->qreq->savebulk)) {
                 $this->conf->error_msg("<0>Changes not saved; your session has changed since you last loaded this tab");
             }
-            $this->conf->redirect_self($this->qreq, ["u" => $u]);
+            $this->qreq->redirect_self(["u" => $u]);
         }
 
         if ($user->contactId > 0 && $user->contactId === $this->viewer->contactId) {
@@ -181,7 +181,7 @@ class Profile_Page {
 
     /** @return MessageItem */
     private function linked_secondary_warning_note(UserStatus $ustatus, Contact $user) {
-        return MessageItem::warning_note("<5>" . htmlspecialchars($ustatus->linked_secondary) . " is linked to primary account " . Ht::link(htmlspecialchars($user->email), $this->conf->hoturl("profile", ["u" => $user->email])));
+        return MessageItem::warning_note("<5>" . htmlspecialchars($ustatus->linked_secondary) . " is linked to primary account " . $this->conf->hotlink(htmlspecialchars($user->email), "profile", ["u" => $user->email]));
     }
 
     /** @param string $text
@@ -255,8 +255,7 @@ class Profile_Page {
             $ustatus->set_notify(friendly_boolean($line["notify"]) ?? true);
             $saved_user = $this->save_user($ustatus);
             if ($saved_user) {
-                $url = $this->conf->hoturl("profile", "u=" . urlencode($saved_user->email));
-                $link = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
+                $link = $this->conf->hotlink($saved_user->name_h(NAME_E), "profile", ["u" => $saved_user->email], ["class" => "nb"]);
                 if ($ustatus->linked_secondary) {
                     $ms->append_item($this->linked_secondary_warning_note($ustatus, $saved_user));
                 }
@@ -327,19 +326,19 @@ class Profile_Page {
 
         // report messages
         $ml = [];
-        $purl = $this->conf->hoturl("profile", ["u" => $saved_user ? $saved_user->email : null]);
+        $plink = $saved_user ? $this->conf->hotlink($saved_user->name_h(NAME_E), "profile", ["u" => $saved_user->email]) : "";
         if ($this->ustatus->has_error()) {
             $ml[] = MessageItem::error("<0>Changes not saved; please correct the highlighted errors and try again");
         } else if ($this->ustatus->created && $this->ustatus->notified) {
-            $ml[] = MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created and notified");
+            $ml[] = MessageItem::success("<5>Account {$plink} created and notified");
         } else if ($this->ustatus->created) {
-            $ml[] = MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified");
+            $ml[] = MessageItem::success("<5>Account {$plink} created, but not notified");
         } else {
             if ($this->ustatus->linked_secondary) {
                 $ml[] = $this->linked_secondary_warning_note($this->ustatus, $saved_user);
             }
             if ($this->page_type !== 0) {
-                $ml[] = MessageItem::warning_note("<5>User " . Ht::link($saved_user->name_h(NAME_E), $purl) . " already had an account on this site");
+                $ml[] = MessageItem::warning_note("<5>User {$plink} already had an account on this site");
             }
             if ($this->page_type !== 0 || $this->user !== $this->viewer) {
                 $diffs = " to " . commajoin(array_keys($this->ustatus->diffs));
@@ -365,7 +364,7 @@ class Profile_Page {
 
         // redirect on success
         if (isset($this->qreq->redirect)) {
-            $this->conf->redirect();
+            $this->qreq->redirect(null);
         }
         $xcj = [];
         if ($this->page_type !== 0) {
@@ -387,9 +386,9 @@ class Profile_Page {
         }
         $this->qreq->set_csession("profile_redirect", $xcj);
         if ($this->user !== $this->viewer && $this->page_type === 0) {
-            $this->conf->redirect_self($this->qreq, ["u" => $this->user->email]);
+            $this->qreq->redirect_self(["u" => $this->user->email]);
         } else {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
     }
 
@@ -407,7 +406,7 @@ class Profile_Page {
         }
         if (trim($text) !== "" && trim($text) !== "Enter users one per line") {
             if ($this->save_bulk($text, $filename)) {
-                $this->conf->redirect_self($this->qreq);
+                $this->qreq->redirect_self();
             }
         } else {
             $this->conf->feedback_msg(MessageItem::warning_note("<0>No changes"));
@@ -423,18 +422,18 @@ class Profile_Page {
         }
         $this->conf->feedback_msg($ua);
         if ($ok) {
-            $this->conf->redirect_hoturl("users", "t=all");
+            $this->qreq->redirect_hoturl("users", ["t" => "all"]);
         }
     }
 
     function handle_request() {
         $this->find_user();
         if ($this->qreq->cancel) {
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         } else if ($this->qreq->reauth
                    && $this->qreq->valid_post()) {
             if (!$this->ustatus->has_error()) {
-                $this->conf->redirect_self($this->qreq);
+                $this->qreq->redirect_self();
             }
         } else if ($this->qreq->savebulk
                    && $this->page_type !== 0
@@ -507,7 +506,7 @@ class Profile_Page {
             && $this->qreq->t !== $this->topic
             && $this->qreq->is_get()) {
             $this->qreq->t = $this->topic === "main" ? null : $this->topic;
-            $this->conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
         $this->ustatus->cs()->set_root($this->topic);
 
@@ -564,7 +563,7 @@ class Profile_Page {
         if (isset($this->qreq->ls)) {
             $form_params["ls"] = $this->qreq->ls;
         }
-        echo Ht::form($this->conf->hoturl("=profile", $form_params), [
+        echo $this->conf->hotform("=profile", $form_params, [
             "id" => "f-profile",
             "class" => "need-diff-check need-unload-protection",
             "data-user" => $this->page_type ? null : $this->user->email
@@ -589,7 +588,7 @@ class Profile_Page {
                 if ($active) {
                     echo $t[0];
                 } else {
-                    echo Ht::link($t[0], $this->conf->selfurl($this->qreq, ["u" => $t[1], "t" => null]));
+                    echo $this->conf->selflink($t[0], $this->qreq, ["u" => $t[1], "t" => null]);
                 }
                 echo '</li>';
             }
@@ -623,7 +622,7 @@ class Profile_Page {
                     if ($disabled) {
                         $aextra["class"] = "dim";
                     }
-                    echo Ht::link($title, $this->conf->selfurl($this->qreq, ["t" => $gj->name]), $aextra);
+                    echo $this->conf->selflink($title, $this->qreq, ["t" => $gj->name], $aextra);
                 }
                 echo '</li>';
                 $first = false;
@@ -664,7 +663,7 @@ class Profile_Page {
             }
             echo "\">";
 
-            echo '<h2 class="leftmenu">';
+            echo '<h2 id="h-subtitle" class="leftmenu">';
             if ($this->page_type === 1) {
                 echo 'New account';
             } else {

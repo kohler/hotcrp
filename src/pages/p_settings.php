@@ -51,14 +51,14 @@ class Settings_Page {
         }
         $canon_group = $this->sv->canonical_group($want_group);
         if (!$canon_group) {
-            http_response_code(404);
+            Navigation::http_response_code(404);
             $this->conf->error_msg("<0>Settings group not found");
             return "list";
         }
         if ($canon_group !== $this->reqsg
             && !$qreq->post
             && $qreq->post_empty()) {
-            $this->conf->redirect_self($qreq, [
+            $qreq->redirect_self([
                 "group" => $canon_group, "#" => $this->sv->group_hashid($want_group)
             ]);
         }
@@ -76,7 +76,7 @@ class Settings_Page {
                 $this->conf->feedback_msg(MessageItem::warning_note("<0>No changes"));
             }
             $this->sv->report();
-            $this->conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
     }
 
@@ -84,7 +84,7 @@ class Settings_Page {
      * @param Qrequest $qreq */
     function print($group, $qreq) {
         if ($group === "error404") {
-            http_response_code(404);
+            Navigation::http_response_code(404);
         }
 
         $qreq->print_header("Settings", "settings", [
@@ -101,7 +101,7 @@ class Settings_Page {
         $form_class = Ht::add_tokens("need-diff-check need-unload-protection",
             $groupj->form_classes ?? "");
 
-        echo Ht::form($this->conf->hoturl("=settings", "group={$group}"), [
+        echo $this->conf->hotform("=settings", ["group" => $group], [
                 "id" => "f-settings",
                 "name" => base64_encode(random_bytes(8)), // prevent FF from autofilling on reload
                 "class" => $form_class
@@ -114,10 +114,10 @@ class Settings_Page {
         foreach ($this->sv->group_members("") as $gj) {
             $title = $gj->short_title ?? $gj->title;
             if ($gj->name === $group) {
-                echo '<li class="leftmenu-item active" aria-current="page">', $title ?? "(Unlisted)", '</li>';
+                echo '<li class="leftmenu-item active" aria-current="page">', Ht::escape($title ?? "(Unlisted)"), '</li>';
             } else if ($title && !($gj->unlisted ?? false)) {
-                echo '<li class="leftmenu-item ui js-click-child"><a href="',
-                    $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
+                echo '<li class="leftmenu-item ui js-click-child">',
+                    $this->conf->hotlink(Ht::escape($title), "settings", ["group" => $gj->name]), '</li>';
             }
         }
         echo '</ul><div class="leftmenu-if-left if-differs mt-5">',
@@ -143,7 +143,7 @@ class Settings_Page {
         $sv = $this->sv;
         echo '<h2 class="leftmenu">', $sv->group_title($group);
         if ($gj && isset($gj->title_help_group)) {
-            echo " ", Ht::link(Icons::ui_solid_question(), $sv->conf->hoturl("help", "t={$gj->title_help_group}"), ["class" => "ml-1"]);
+            echo " ", $sv->conf->hotlink(Icons::ui_solid_question(), "help", ["t" => $gj->title_help_group], ["class" => "ml-1"]);
         }
         echo '</h2>';
 
@@ -173,8 +173,9 @@ class Settings_Page {
         echo "<dl class=\"bsp\">\n";
         foreach ($this->sv->group_members("") as $gj) {
             if (isset($gj->title)) {
-                echo '<dt><strong><a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">',
-                    $gj->title, '</a></strong></dt><dd>',
+                echo '<dt><strong>',
+                    $this->conf->hotlink(Ht::escape($gj->title), "settings", ["group" => $gj->name]),
+                    '</strong></dt><dd>',
                     Ftext::as(5, $gj->description ?? ""), "</dd>\n";
             }
         }
@@ -183,7 +184,7 @@ class Settings_Page {
 
     static function go(Contact $user, Qrequest $qreq) {
         if (isset($qreq->cancel)) {
-            $user->conf->redirect_self($qreq);
+            $qreq->redirect_self();
         }
 
         $sv = SettingValues::make_request($user, $qreq);

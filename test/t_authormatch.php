@@ -2,6 +2,7 @@
 // t_authormatch.php -- HotCRP tests
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class AuthorMatch_Tester {
     function test_affiliations() {
         $aum = AuthorMatcher::make_string_guess("ETH Zürich");

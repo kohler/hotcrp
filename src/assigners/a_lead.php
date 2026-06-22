@@ -126,6 +126,9 @@ class Lead_Assigner extends Assigner {
         }
         return new Lead_Assigner($item, $state);
     }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     function icon() {
         if ($this->type() === "lead") {
             return review_lead_icon();

@@ -914,9 +914,10 @@ abstract class AssignmentParser {
      * @return bool|AssignmentError */
     abstract function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
 
-    // Apply this action to `$state`. Return `true` iff the action succeeds.
-    // To indicate an error, call `$state->error($ftext)` and return `false`,
-    // or, equivalently, return an `AssignmentError`.
+    // Apply this action to `$state` for paper `$prow` and user `$contact`.
+    // Return `true` iff the action succeeds. To indicate an error, call
+    // `$state->error($ftext)` and return `false`, or, equivalently, return
+    // an `AssignmentError`.
     /** @param CsvRow $req
      * @return bool|AssignmentError */
     abstract function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
@@ -958,6 +959,10 @@ class Assigner {
     /** @return string */
     function type() {
         return $this->item->type();
+    }
+    /** @return int */
+    function about() {
+        return SearchTerm::ABOUT_ANY;
     }
     /** @return string */
     function unparse_description() {
@@ -1368,7 +1373,7 @@ class AssignmentSet {
             } else {
                 $fml[] = MessageItem::success("<0>Assignments saved");
                 if ($this->conf->setting("pcrev_assigntime") === $this->executed) {
-                    $fml[] = MessageItem::inform("<5>You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
+                    $fml[] = MessageItem::inform("<5>You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", ["template" => "newpcrev"]) . ".");
                 }
             }
         } else if ($this->astate->has_error()) {
@@ -2038,6 +2043,15 @@ class AssignmentSet {
         return false;
     }
 
+    /** @return int */
+    function assigned_about() {
+        $about = 0;
+        foreach ($this->assigners as $assigner) {
+            $about |= $assigner->about();
+        }
+        return $about;
+    }
+
     /** @return list<string> */
     function assigned_types() {
         $types = [];
@@ -2242,7 +2256,7 @@ class AssignmentSet {
             call_user_func($cb[0], $this, $cb[1]);
         }
         if (!empty($pids)) {
-            $this->conf->update_automatic_tags(array_keys($pids), $this->assigned_types());
+            $this->conf->update_automatic_tags(array_keys($pids), $this->assigned_about());
         }
         if (!empty($this->_cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite")) {
@@ -2318,7 +2332,7 @@ class Assignment_PaperColumn extends PaperColumn {
     static function print_unparse_display(Assignment_PaperColumn $pc) {
         $search = new PaperSearch($pc->user, ["q" => $pc->search_query, "t" => "viewable", "reviewer" => $pc->reviewer]);
         $plist = new PaperList("reviewers", $search);
-        $plist->add_column($pc);
+        $plist->define_column($pc);
         $plist->set_table_id_class("foldpl", null);
         $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FULLWIDTH);
         echo '<div class="pltable-fullw-container demargin">';

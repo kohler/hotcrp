@@ -225,6 +225,11 @@ class CheckInvariants_Batch {
             $this->fix_whitespace();
             $ic->resolve_problem("user_whitespace");
         }
+        if ($ic->has_problem("user_nonascii") && $this->want_fix("user_nonascii")) {
+            $this->report_fix("nonascii cflag");
+            $this->fix_user_nonascii();
+            $ic->resolve_problem("user_nonascii");
+        }
         if ($ic->has_problem("reviewNeedsSubmit") && $this->want_fix("reviews")) {
             $this->report_fix("reviewNeedsSubmit");
             $this->fix_reviewNeedsSubmit();
@@ -452,8 +457,31 @@ class CheckInvariants_Batch {
         $result->close();
     }
 
+    function fix_user_nonascii() {
+        $this->conf->qe("lock tables ContactInfo write");
+        $add = $rem = [];
+        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, cflags from ContactInfo");
+        while (($row = $result->fetch_row())) {
+            $wantf = !is_usascii($row[1] . $row[2] . $row[3]);
+            $cflags = (int) $row[4];
+            if ($wantf && ($cflags & Contact::CF_NEANONASCII) === 0) {
+                $add[] = (int) $row[0];
+            } else if (!$wantf && ($cflags & Contact::CF_NEANONASCII) !== 0) {
+                $rem[] = (int) $row[0];
+            }
+        }
+        $result->close();
+        if (!empty($add)) {
+            $this->conf->qe("update ContactInfo set cflags=cflags|? where contactId?a", Contact::CF_NEANONASCII, $add);
+        }
+        if (!empty($rem)) {
+            $this->conf->qe("update ContactInfo set cflags=cflags&~? where contactId?a", Contact::CF_NEANONASCII, $rem);
+        }
+        $this->conf->qe("unlock tables");
+    }
+
     static function list_fixes() {
-        return prefix_word_wrap("", "PROBLEMs for `--fix` include summary, autosearch, inactive, document-match, whitespace, reviews, roles, and cdbroles.", 0);
+        return prefix_word_wrap("", "PROBLEMs for `--fix` include summary, autosearch, inactive, document-match, whitespace, reviews, roles, user_nonascii, and cdbroles.", 0);
     }
 
     /** @return CheckInvariants_Batch */

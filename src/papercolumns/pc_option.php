@@ -1,6 +1,6 @@
 <?php
 // pc_option.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Option_PaperColumn extends PaperColumn {
     /** @var PaperOption */
@@ -33,8 +33,12 @@ class Option_PaperColumn extends PaperColumn {
         return $this->sort_name_with_options(...$this->opt->sort_view_options());
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $this->opt->value_compare($a->option($this->opt),
-                                         $b->option($this->opt));
+        $av = $a->option($this->opt);
+        $bv = $b->option($this->opt);
+        if (($vol = $this->view_options())) {
+            return $this->opt->value_compare_with_options($av, $bv, $vol);
+        }
+        return $this->opt->value_compare($av, $bv);
     }
     function header(PaperList $pl, $is_text) {
         return $is_text ? $this->opt->title() : $this->opt->title_html();
@@ -104,25 +108,26 @@ class Option_PaperColumnFactory {
     }
     static function expand($name, XtParams $xtp, $xfj, $m) {
         list($ocolon, $oname) = [$m[1], $m[2]];
+        $rc = $xtp->paper_list ? $xtp->paper_list->render_context : FieldRender::CFLIST;
         if (!$ocolon && $oname === "options") {
             $x = [];
             foreach ($xtp->conf->options() as $opt) {
                 if ($xtp->user->can_view_some_option($opt)
-                    && $opt->published(FieldRender::CFLIST))
+                    && $opt->published($rc))
                     $x[] = self::option_json($xfj, $opt);
             }
             return $x;
         }
         $opts = $xtp->conf->options()->find_all($oname);
-        if (count($opts) == 1) {
+        if (count($opts) === 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->published(FieldRender::CFLIST)) {
+            if ($opt->published($rc)) {
                 return self::option_json($xfj, $opt);
             }
-            PaperColumn::column_error($xtp, "<0>Submission field ‘{$oname}’ can’t be displayed");
+            PaperColumn::column_error_at($xtp, $name, "<0>Submission field ‘{$oname}’ can’t be displayed");
         } else if ($ocolon) {
-            PaperColumn::column_error($xtp, "<0>Submission field ‘{$oname}’ not found");
+            PaperColumn::column_error_at($xtp, $name, "<0>Submission field ‘{$oname}’ not found");
         }
         return null;
     }

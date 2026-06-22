@@ -40,6 +40,8 @@ class Paper_Page {
 
     /** @param ?FailureReason $perm */
     function error_exit($perm = null) {
+        Navigation::http_response_code($this->user->is_signed_in() ? 403 : 401);
+        // 401 spec requires WWW-Authenticate, but many sites omit it
         if ($perm && (!$perm->secondary || $this->conf->saved_messages_status() < 2)) {
             $perm->set("expand", true);
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
@@ -68,7 +70,7 @@ class Paper_Page {
         if ($this->prow->timeSubmitted && $this->qreq->m === "edit") {
             unset($this->qreq->m);
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
     function handle_withdraw() {
@@ -91,7 +93,7 @@ class Paper_Page {
         if (!$aset->execute()) {
             error_log("{$this->conf->dbname}: withdraw #{$this->prow->paperId} failure: " . json_encode($aset->json_result()));
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
     function handle_revive() {
@@ -107,7 +109,7 @@ class Paper_Page {
         if (!$aset->execute()) {
             error_log("{$this->conf->dbname}: revive #{$this->prow->paperId} failure: " . json_encode($aset->json_result()));
         }
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
     }
 
     function handle_delete() {
@@ -137,7 +139,7 @@ class Paper_Page {
         $stripfields = $this->ps->strip_unchanged_fields_qreq($this->qreq, $this->prow);
         $fields = $this->ps->changed_fields_qreq($this->qreq, $this->prow);
         if (empty($fields) && $this->prow->paperId) {
-            $this->conf->redirect_self($this->qreq, ["p" => $this->prow->paperId, "m" => "edit"]);
+            $this->qreq->redirect_self(["p" => $this->prow->paperId, "m" => "edit"]);
         } else {
             $this->ps->inform_at("status:if_unmodified_since",
                 $this->conf->_("<5>Your changes were not saved because the {submission} has changed since you last loaded this page. Unsaved changes to {:list} are highlighted. Check them and save again, or <a href=\"{url}\" class=\"uic js-ignore-unload-protection\">discard your edits</a>.",
@@ -224,6 +226,7 @@ class Paper_Page {
         } else {
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
             $ml[] = MessageItem::success($conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", $is_final ? "final" : "review")));
+            $this->useRequest = false; // ????
         }
         if ($this->ps->has_error()) {
             if (!$this->ps->has_change()) {
@@ -253,7 +256,7 @@ class Paper_Page {
         $this->qreq->set_paper($new_prow);
         $this->prow = $new_prow;
         if (!$this->ps->has_error() || $new_prow->is_new()) {
-            $conf->redirect_self($this->qreq, ["p" => $new_prow->paperId, "m" => "edit"]);
+            $this->qreq->redirect_self(["p" => $new_prow->paperId, "m" => "edit"]);
         }
     }
 
@@ -287,7 +290,7 @@ class Paper_Page {
         }
 
         if (!$this->ps->has_error()) {
-            $conf->redirect_self($this->qreq);
+            $this->qreq->redirect_self();
         }
     }
 
@@ -327,7 +330,8 @@ class Paper_Page {
         $pt->resolve_comments();
         if ($pt->can_view_reviews()
             || $pt->mode === "re"
-            || ($this->prow->paperId > 0 && $this->user->can_edit_some_review($this->prow))) {
+            || ($this->prow->paperId > 0
+                && $this->user->can_edit_some_review($this->prow))) {
             $pt->resolve_review(false);
         }
         if ($pt->mode === "edit") {
@@ -338,17 +342,15 @@ class Paper_Page {
         $this->print_header(false);
         $pt->print_paper_info();
 
-        if ($pt->mode === "edit") {
-            $pt->paptabEndWithoutReviews();
-        } else {
+        if ($pt->mode !== "edit") {
             if ($pt->mode === "re") {
                 $pt->print_review_form();
                 $pt->print_main_link();
             } else if ($pt->can_view_reviews()) {
-                $pt->paptabEndWithReviewsAndComments();
+                $pt->print_prepare_reviews();
             } else {
-                $pt->paptabEndWithReviewMessage();
-                $pt->print_comments();
+                $pt->print_no_reviews_message();
+                $pt->request_comments();
             }
             // restore comment across logout bounce
             if ($this->qreq->editcomment) {
@@ -357,6 +359,7 @@ class Paper_Page {
         }
 
         echo "</article>\n";
+        $pt->print_finish_reviews();
         $this->qreq->print_footer();
     }
 
@@ -449,7 +452,7 @@ class Paper_Page {
         } else if ($qreq->delete && $qreq->valid_post()) {
             $pp->handle_delete();
         } else if ($qreq->updateoverride && $qreq->valid_token()) {
-            $pp->conf->redirect_self($qreq, ["m" => "edit", "forceShow" => 1]);
+            $qreq->redirect_self(["m" => "edit", "forceShow" => 1]);
         }
 
         // capability messages: decline, accept to different user

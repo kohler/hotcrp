@@ -29,12 +29,11 @@ class Cdb_Tester {
             error_log("! You may need to run `lib/createdb.sh -c test/cdb-options.php --no-dbuser --batch`.");
             exit(1);
         }
-    }
 
-    function test_setup() {
-        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu"];
+        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu", "lynx@fart.edu", "bobcat@fart.edu"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
+        $this->conf->invalidate_caches("users");
     }
 
     function test_passwords_1() {
@@ -49,6 +48,7 @@ class Cdb_Tester {
 
         // different password in localdb => both passwords work
         save_password(self::MARINA, "crapdevitch", false);
+        Xassert::will_print();
         xassert(user(self::MARINA)->check_password("crapdevitch"));
         xassert(user(self::MARINA)->check_password("rosdevitch"));
 
@@ -175,7 +175,7 @@ class Cdb_Tester {
         $acct = $this->us1->save_user((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
         xassert(!!$acct);
         Dbl::qe("delete from ContactInfo where email=?", $anna);
-        $this->conf->invalidate_user(Contact::make_email($this->conf, $anna));
+        $this->conf->invalidate_user($acct);
         Dbl::qe($this->cdb, "update ContactInfo set passwordUseTime=1 where email=?", $anna);
         save_password($anna, "aquablouse", true);
         MailChecker::check0();
@@ -188,11 +188,12 @@ class Cdb_Tester {
         xassert(!maybe_user("akhmatova@poema.ru")); // but she is in cdb
 
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->save_paper_json((object) [
+        $saved = $ps->save_paper_json((object) [
             "id" => 1,
             "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,
                           $user_floyd->email, $user_van->email, "akhmatova@poema.ru"]
         ]);
+        xassert($saved);
 
         $paper1 = $this->user_chair->checked_paper_by_id(1);
         $user_anna = user("akhmatova@poema.ru");
@@ -358,7 +359,7 @@ class Cdb_Tester {
         $pc_json = $this->conf->hotcrp_pc_json($this->user_chair, Conf::PCJM_UI);
         xassert_eqq($pc_json->pc[0]->email, "anne1@dudfield.org");
         $this->conf->sort_by_last = true;
-        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_caches("pc");
         $pc_json = $this->conf->hotcrp_pc_json($this->user_chair, Conf::PCJM_UI);
         xassert_eqq($pc_json->pc[0]->email, "mgbaker@cs.stanford.edu");
         xassert_eqq($pc_json->pc[0]->uid, 12);
@@ -816,20 +817,20 @@ class Cdb_Tester {
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set firstName='Gussie', lastName='Onufryk', orcid='XXXX-9999-CATK-ITTY', updateTime=? where email='gussie@cat.com'", Conf::$now);
         Dbl::qe($this->conf->contactdb(), "insert into ConferenceUpdates (confid, user_update_at) values (?,?) on duplicate key update user_update_at=greatest(?,user_update_at)", $this->conf->cdb_confid(), Conf::$now, Conf::$now);
 
-        // if requested fields already present, CdbUserUpdate does nothing
-        $nq = Dbl::$nqueries;
-        (new CdbUserUpdate($this->conf))->add("floyd@ee.lbl.gov")->check("firstName");
-        xassert_le(Dbl::$nqueries, $nq + 2);
-
-        // does something
         Conf::advance_current_time(Conf::$now + 5);
-        (new CdbUserUpdate($this->conf))->add("gussie@cat.com")->check();
+        (new CdbUserUpdate($this->conf))->import_empty_props();
 
         $gussie = $this->conf->user_by_email("gussie@cat.com");
         xassert_eqq($gussie->firstName, "Gussie");
         xassert_eqq($gussie->lastName, "Onufryk");
         xassert_eqq($gussie->unaccentedName, "gussie onufryk");
         xassert_ge($this->conf->setting("__cdb_user_update_at"), Conf::$now - 3);
+
+        // if no recent updates, CdbUserUpdate does nothing
+        Conf::advance_current_time(Conf::$now + 5);
+        $nq = Dbl::$nqueries;
+        (new CdbUserUpdate($this->conf))->import_empty_props();
+        xassert_le(Dbl::$nqueries, $nq + 2);
     }
 
     function test_import_secondary() {
@@ -929,5 +930,37 @@ class Cdb_Tester {
         xassert_eqq($xu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
 
         (new ConfInvariants($this->conf))->check_users();
+    }
+
+    function test_assign_review_secondary() {
+        // Set up CDB-only primary and secondary users
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Lynx', lastName='Face', email='lynx@fart.edu', affiliation='Place University', password=' unset', cflags=0");
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Bobcat', lastName='Face', email='bobcat@fart.edu', affiliation='Place University', password=' unset', cflags=0");
+        $cu_lynx = $this->conf->cdb_user_by_email("lynx@fart.edu");
+        $cu_bobcat = $this->conf->cdb_user_by_email("bobcat@fart.edu");
+        (new ContactPrimary)->link($cu_bobcat, $cu_lynx);
+
+        // Neither exists in local DB
+        xassert_eqq($this->conf->user_by_email("lynx@fart.edu"), null);
+        xassert_eqq($this->conf->user_by_email("bobcat@fart.edu"), null);
+
+        // Assigning an external review to the secondary should not crash
+        xassert_assign($this->user_chair, "action,paper,email\nreview,1,bobcat@fart.edu");
+        xassert_search($this->user_chair, "re:lynx@fart.edu", "1");
+    }
+
+    function test_primary_nonascii() {
+        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName=?, lastName=?, email=?, password=?, cflags=? on duplicate key update firstName=firstName",
+            "Jérôme", "Girardas", "jerome@gotten.edu", "",
+            Contact::CF_NEANONASCII);
+        xassert_eqq($this->conf->user_by_email("jerome@gotten.edu"), null);
+        $cu_jerome = $this->conf->cdb_user_by_email("jerome@gotten.edu");
+
+        $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
+        (new ContactPrimary)->link($lu_mtnlion, $cu_jerome);
+
+        $lu_jerome = $this->conf->user_by_email("jerome@gotten.edu");
+        xassert_eqq($lu_jerome->cflags & Contact::CF_NEANONASCII, Contact::CF_NEANONASCII);
+        xassert_eqq($this->conf->fetch_ivalue("select cflags from ContactInfo where email='jerome@gotten.edu'") & Contact::CF_NEANONASCII, Contact::CF_NEANONASCII);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 // xtparams.php -- HotCRP class for expanding extensions
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class XtParams {
     /** @var Conf
@@ -12,7 +12,7 @@ class XtParams {
     /** @var bool */
     private $follow_alias = true;
     /** @var bool */
-    private $warn_deprecated = true;
+    private $warn_deprecated = false;
     /** @var string */
     private $reflags = "";
     /** @var ?string */
@@ -369,7 +369,7 @@ class XtParams {
             }
             if (isset($xt->deprecated) && $xt->deprecated && $this->warn_deprecated) {
                 $name = $xt->name ?? "<unknown>";
-                error_log("{$this->conf->dbname}: deprecated use of `{$name}`\n" . debug_string_backtrace());
+                error_log("{$this->conf->dbname}: deprecated use of `{$name}` in " . caller_landmark(1, '/\AXt/'));
             }
             $this->last_match = $xt;
             if ($this->checkf($xt)) {

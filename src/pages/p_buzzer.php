@@ -40,7 +40,7 @@ class Buzzer_Page {
             $qreq->set_user($user);
             $qreq->qsession()->open_new_sid();
             $key = $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0];
-            $user->conf->redirect_self($qreq, ["__PATH__" => $key]);
+            $qreq->redirect_self(["__PATH__" => $key]);
         }
         return $kiosk_keys;
     }
@@ -85,7 +85,7 @@ class Buzzer_Page {
 
         echo '<div id="tracker-table" class="demargin mt-3"></div>',
             "<audio id=\"tracker-sound\" crossorigin=\"anonymous\" preload=\"auto\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>",
-            Ht::form($conf->hoturl("=buzzer")),
+            $conf->hotform("=buzzer"),
             '<table class="mt-5"><tr>';
 
         // mute button
@@ -119,7 +119,7 @@ class Buzzer_Page {
         $buzzer_status = ["status" => "open", "muted" => false, "show_papers" => $show_papers];
         $no_discussion = '<div class="remargin-left remargin-right"><h2>No discussion</h2>';
         if ($kiosk_keys) {
-            $no_discussion .= '<p>To start a discussion, <a href="' . $conf->hoturl("search") . '">search</a> for a list, go to a paper in that list, and use the “&#9759;” button.</p>';
+            $no_discussion .= '<p>To start a discussion, ' . $conf->hotlink("search", "search") . ' for a list, go to a paper in that list, and use the “&#9759;” button.</p>';
             $buzzer_status["kiosk_urls"] = [
                 $conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[0]], Conf::HOTURL_ABSOLUTE),
                 $conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[1]], Conf::HOTURL_ABSOLUTE)

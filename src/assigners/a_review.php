@@ -242,7 +242,7 @@ class Review_AssignmentParser extends AssignmentParser {
             if ($user->cdb_confid !== 0) {
                 // need to look up by email
                 $pemail = Dbl::fetch_value($state->conf->contactdb(), "select email from ContactInfo where contactDbId=?", $user->primaryContactId);
-                $puser = $state->user_by_email($pemail);
+                $puser = $state->user_by_email($pemail, true);
             } else {
                 $puser = $state->user_by_id($user->primaryContactId);
             }
@@ -297,6 +297,9 @@ class Review_Assigner extends Assigner {
             throw new AssignmentError("<0>{$uname} has already modified their review for #" . $item->pid() . ", so it cannot be unassigned");
         }
         return new Review_Assigner($item, $state);
+    }
+    function about() {
+        return SearchTerm::ABOUT_REVIEWS;
     }
     function unparse_description() {
         return "review";

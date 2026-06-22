@@ -1,6 +1,6 @@
 <?php
 // hotcrpmailer.php -- HotCRP mail template manager
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class HotCRPMailPreparation extends MailPreparation {
     /** @var int */
@@ -48,6 +48,8 @@ class HotCRPMailer extends Mailer {
     protected $contacts = [];
     /** @var ?Contact */
     protected $permuser;
+    /** @var ?MailRecipients */
+    protected $recip_set;
 
     /** @var ?PaperInfo */
     protected $row;
@@ -115,6 +117,12 @@ class HotCRPMailer extends Mailer {
             && (!$this->censor || $this->censor === self::CENSOR_DISPLAY)) {
             $this->censor = self::CENSOR_ALL;
         }
+    }
+
+    /** @return $this */
+    function set_recip_set(?MailRecipients $recip_set) {
+        $this->recip_set = $recip_set;
+        return $this;
     }
 
 
@@ -215,41 +223,37 @@ class HotCRPMailer extends Mailer {
         return $text;
     }
 
-    const GA_SINCE = 1;
-    const GA_ROUND = 2;
-    const GA_NEEDS_SUBMIT = 4;
-
     /** @param Contact $user
-     * @param int $flags
      * @param ?int $review_round
      * @return string */
-    private function get_assignments($user, $flags, $review_round) {
-        $where = [
-            "r.contactId={$user->contactId}",
-            "p.timeSubmitted>0"
-        ];
-        if (($flags & self::GA_SINCE) !== 0) {
-            $where[] = "r.timeRequested>r.timeRequestNotified";
-            if ($this->newrev_since) {
-                $where[] = "r.timeRequested>={$this->newrev_since}";
+    private function get_assignments($user, $review_round) {
+        $lines = [];
+        foreach ($this->recip_set->paper_set(true) as $prow) {
+            foreach ($this->recip_set->reviews_for_recipient($prow, $user) as $rrow) {
+                if ($review_round === null
+                    || $rrow->reviewRound === $review_round) {
+                    $lines[] = "#{$prow->paperId} {$prow->title()}";
+                    break;
+                }
             }
         }
-        if (($flags & self::GA_NEEDS_SUBMIT) !== 0) {
-            $where[] = "r.reviewSubmitted is null";
-            $where[] = "r.reviewNeedsSubmit!=0";
+        return join("\n", $lines);
+    }
+
+    function kw_assignments($args, $isbool, $uf) {
+        if (!$this->recip_set
+            || !$this->recip_set->user->is_manager()) {
+            return $isbool ? false : null;
         }
-        if (($flags & self::GA_ROUND) !== 0 && $review_round !== null) {
-            $where[] = "r.reviewRound={$review_round}";
+        $round = null;
+        if ($args || isset($uf->match_data)) {
+            $rname = trim(isset($uf->match_data) ? $uf->match_data[1] : $args);
+            $round = $this->conf->round_number($rname);
+            if ($round === null) {
+                return $isbool ? false : null;
+            }
         }
-        $result = $this->conf->qe("select r.paperId, p.title
-                from PaperReview r join Paper p using (paperId)
-                where " . join(" and ", $where) . " order by r.paperId");
-        $text = "";
-        while (($row = $result->fetch_row())) {
-            $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
-        }
-        Dbl::free($result);
-        return $text;
+        return $this->get_assignments($this->recipient, $round);
     }
 
 
@@ -327,24 +331,6 @@ class HotCRPMailer extends Mailer {
         return $isbool ? false : null;
     }
 
-    function kw_assignments($args, $isbool, $uf) {
-        $flags = 0;
-        $round = null;
-        if ($args || isset($uf->match_data)) {
-            $rname = trim(isset($uf->match_data) ? $uf->match_data[1] : $args);
-            $round = $this->conf->round_number($rname);
-            if ($round === null) {
-                return $isbool ? false : null;
-            }
-            $flags |= self::GA_ROUND;
-        }
-        return $this->get_assignments($this->recipient, $flags, $round);
-    }
-
-    function kw_newassignments() {
-        return $this->get_assignments($this->recipient, self::GA_SINCE | self::GA_NEEDS_SUBMIT, null);
-    }
-
     function kw_haspaper($uf = null, $name = null) {
         if ($this->row && $this->row->paperId > 0) {
             if ($this->preparation
@@ -388,7 +374,7 @@ class HotCRPMailer extends Mailer {
         return $this->row->title;
     }
     function kw_titlehint() {
-        if (($tw = UnicodeHelper::utf8_abbreviate($this->row->title, 40))) {
+        if (($tw = UnicodeHelper::utf8_word_abbreviate($this->row->title, 40))) {
             return "\"{$tw}\"";
         }
         return "";
@@ -454,14 +440,49 @@ class HotCRPMailer extends Mailer {
         if (!$tag) {
             return null;
         }
-        $value = $this->row->tag_value($tag);
-        if ($isbool) {
-            return $value !== null;
-        } else if ($value !== null) {
-            return (string) $value;
+        if ($this->sending_user
+            && !$this->sending_user->privChair
+            && !$this->sending_user->can_view_tag($this->row, $tag)) {
+            if ($isbool) {
+                return false;
+            }
+            $this->warning("<0>You aren’t allowed to view the ‘{$tag}’ tag for submission #{$this->row->paperId}");
+            return "(none)";
         }
-        $this->warning("<0>Submission #{$this->row->paperId} has no #{$tag} tag");
-        return "(none)";
+        $value = $this->row->tag_value($tag);
+        if ($value === null) {
+            if ($isbool) {
+                return false;
+            }
+            $this->warning("<0>Submission #{$this->row->paperId} has no ‘{$tag}’ tag");
+            return "(none)";
+        }
+        if ($uf->session ?? false) {
+            $ti = $this->conf->tags()->find($tag);
+            $ta = $ti ? $ti->order_anno_search($value) : null;
+            if ($isbool) {
+                return $ta && !$ta->is_fencepost();
+            }
+            if (!$ta || $ta->is_fencepost()) {
+                $this->warning("<0>Tag ‘{$tag}#{$value}’ is not a session tag");
+                return "(none)";
+            }
+            $st = [];
+            if (($title = $ta->prop("session_title") ? : $ta->heading)) {
+                $st[] = "* Session: {$title}";
+            }
+            if (($time = $ta->prop("time"))) {
+                $st[] = "* Session time: {$time}";
+            }
+            if (empty($st)) {
+                $st[] = "(none)";
+            }
+            return join("\n", $st);
+        }
+        if ($isbool) {
+            return true;
+        }
+        return (string) $value;
     }
     function kw_is_paperfield($uf) {
         $uf->option = $this->conf->options()->find($uf->match_data[1]);

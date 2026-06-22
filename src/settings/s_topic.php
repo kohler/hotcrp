@@ -78,7 +78,7 @@ class Topic_SettingParser extends SettingParser {
                 }
             }
             echo '</tbody></table>',
-                Ht::link("Copy current topics to clipboard", "", ["class" => "ui js-settings-topics-copy"]),
+                Ht::button("Copy current topics to clipboard", ["class" => "ui js-settings-topics-copy link"]),
                 "</div>\n";
         }
 
@@ -185,6 +185,6 @@ class Topic_SettingParser extends SettingParser {
         $has_topics = $sv->conf->fetch_ivalue("select exists (select * from TopicArea)");
         $sv->save("has_topics", !!$has_topics);
         $sv->mark_diff("topics");
-        $sv->mark_invalidate_caches(["autosearch" => true]);
+        $sv->mark_invalidate_caches("autosearch");
     }
 }

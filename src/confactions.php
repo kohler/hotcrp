@@ -1,6 +1,6 @@
 <?php
 // confactions.php -- HotCRP conference actions
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class ConfActions {
     /** @var Conf */
@@ -58,10 +58,15 @@ class ConfActions {
             // perform action
             if ($aj->action === "link") {
                 self::link($conf, $aj);
+            } else if ($aj->action === "delete_user") {
+                self::delete_user($conf, $aj);
             }
         }
     }
 
+    /** @param string $actions
+     * @param string $myid
+     * @return array{object,string} */
     static private function first_action(Conf $conf, $actions, $myid) {
         if ($actions === "") {
             return [(object) ["action" => "done"], ""];
@@ -127,5 +132,19 @@ class ConfActions {
             return;
         }
         (new ContactPrimary($conf->root_user()))->link($srcuser, $dstuser);
+    }
+
+    static function delete_user(Conf $conf, $aj) {
+        $email = $aj->u ?? null;
+        if (!is_string($email)) {
+            return;
+        }
+        $user = $conf->user_by_email($email);
+        if (!$user) {
+            return;
+        }
+        $lockflag = (($aj->lock ?? false) ? UserActions::DELETE_LOCK : 0)
+            | UserActions::DELETE_FORCE;
+        (new UserActions($conf->root_user()))->delete($user, $lockflag, $aj->reason ?? null);
     }
 }

@@ -14,6 +14,7 @@ application/json				json
 image/jpeg					jpg jpeg jpe jfif JPG JPEG
 image/png					png PNG
 image/gif					gif GIF
+image/webp					webp
 
 # builtin synonyms
 #!! application/mspowerpoint			application/vnd.ms-powerpoint

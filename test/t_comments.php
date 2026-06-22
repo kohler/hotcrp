@@ -12,11 +12,32 @@ class Comments_Tester {
     /** @var Contact
      * @readonly */
     public $u_floyd;
+    /** @var Contact
+     * @readonly */
+    public $u_mgbaker;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
+        $this->u_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+    }
+
+    /** Ensure mgbaker has a submitted review on paper 1. The mention tests
+     * below rely on this: under VIEWREV_UNLESSINCOMPLETE a reviewer must
+     * finish their own review before they can view others' comments, so an
+     * unsubmitted mgbaker is neither notified nor anonymized as a reviewer.
+     * In the normal test06/test08 ordering Reviews_Tester establishes this;
+     * doing it here lets Comments_Tester also pass when run on its own.
+     * Idempotent: a no-op once the review is submitted. */
+    private function ensure_paper1_review(PaperInfo $paper1) {
+        $rrow = $paper1->review_by_user($this->u_mgbaker);
+        if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
+            return;
+        }
+        $tf = new ReviewValues($this->conf);
+        xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
+        xassert($tf->check_and_save($this->u_mgbaker, $paper1));
     }
 
     function test_responses() {
@@ -145,6 +166,8 @@ class Comments_Tester {
 
     function test_multiple_mentions() {
         $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);
+        MailChecker::clear();
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "@Christian Huitema @Christian Huitema @Christian Huitema Hello"], $paper1);
         xassert($j->ok);
         MailChecker::check_db("t_comments-multiple-mentions");
@@ -161,8 +184,10 @@ class Comments_Tester {
     }
 
     function test_mention_censor() {
-        // paper1 wants at least two submitted reviews
+        // paper1 wants at least two submitted reviews: mgbaker (Reviewer A,
+        // ordinal 1) then lixia (Reviewer B, ordinal 2)
         $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);
         $reviewer = $this->conf->user_by_email("lixia@cs.ucla.edu");
         $tf = new ReviewValues($this->conf);
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Flanges", "comaut" => "On the Wilbur Cross Parkway, December 15, 2024"]));
@@ -304,5 +329,150 @@ class Comments_Tester {
         xassert(!!$cmt);
         xassert_eqq($cmt->content(), "Hello!");
         xassert(!$cmt->has_attachments());
+    }
+
+    function test_plain_comment_visibility_topic() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+
+        // create a normal (non-response) comment with explicit visibility + topic
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Visible comment", "visibility" => "rev", "topic" => "paper"], $paper1);
+        xassert($j->ok);
+        xassert(is_object($j->comment));
+        xassert_eqq($j->comment->text, "Visible comment");
+        xassert_eqq($j->comment->visibility, "rev");
+        xassert_eqq($j->comment->topic, "paper");
+        $cid = $j->comment->cid;
+
+        // editing changes visibility + topic, round-tripping through the JSON
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Visible comment", "visibility" => "au", "topic" => "rev"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->comment->cid, $cid);
+        xassert_eqq($j->comment->visibility, "au");
+        xassert_eqq($j->comment->topic, "rev");
+
+        // GET the single comment by `c`
+        $j = call_api("comment", $this->u_chair, ["c" => (string) $cid], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->comment->cid, $cid);
+        xassert_eqq($j->comment->text, "Visible comment");
+
+        // GET all comments: the list contains our comment, with content
+        $j = call_api("comment", $this->u_chair, [], $paper1);
+        xassert($j->ok);
+        xassert(is_array($j->comments));
+        $found = null;
+        foreach ($j->comments as $c) {
+            if ($c->cid === $cid)
+                $found = $c;
+        }
+        xassert(!!$found);
+        xassert_eqq($found->text, "Visible comment");
+
+        // GET with content=0 omits the comment text
+        $j = call_api("comment", $this->u_chair, ["c" => (string) $cid, "content" => "0"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->comment->cid, $cid);
+        xassert(!isset($j->comment->text));
+
+        MailChecker::clear();
+    }
+
+    function test_comment_blind() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        // blindness is forced by config unless review blindness is optional
+        $this->conf->save_refresh_setting("rev_blind", Conf::BLIND_OPTIONAL);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Blind on", "blind" => 1], $paper1);
+        xassert($j->ok);
+        xassert($j->comment->blind === true);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Blind off", "blind" => 0], $paper1);
+        xassert($j->ok);
+        xassert(!isset($j->comment->blind));
+
+        $this->conf->save_refresh_setting("rev_blind", null);
+        MailChecker::clear();
+    }
+
+    function test_comment_tags() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Tagged comment", "visibility" => "rev", "tags" => "hot fixme"], $paper1);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+        xassert(is_array($j->comment->tags));
+        // tags are reported with their values (e.g. "hot#0")
+        $tagnames = array_map(function ($t) { return explode("#", $t)[0]; }, $j->comment->tags);
+        xassert(in_array("hot", $tagnames, true));
+        xassert(in_array("fixme", $tagnames, true));
+
+        // tags persist on the stored comment
+        $cmt = ($paper1->fetch_comments("commentId={$cid}"))[0];
+        xassert(!!$cmt);
+        xassert($cmt->has_tag("hot"));
+        xassert($cmt->has_tag("fixme"));
+
+        MailChecker::clear();
+    }
+
+    function test_comment_delete_flag() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Doomed comment", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+
+        // explicit delete via `delete` flag
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper1);
+        xassert($j->ok);
+        xassert(!isset($j->comment));
+
+        $paper1->load_comments();
+        xassert(!$paper1->comment_by_id($cid));
+
+        MailChecker::clear();
+    }
+
+    function test_comment_request_errors() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+
+        // nonexistent comment id => 404
+        $jr = call_api_result("comment", $this->u_chair, ["c" => "99999999"], $paper1);
+        xassert_eqq($jr->status, 404);
+
+        // unknown response round => 400
+        $jr = call_api_result("comment", $this->u_chair, ["response" => "99"], $paper1);
+        xassert_eqq($jr->status, 400);
+
+        // a non-admin cannot view an admin-only comment
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Eyes only", "visibility" => "admin"], $paper1);
+        xassert($j->ok);
+        $acid = $j->comment->cid;
+        $lixia = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($lixia->can_view_paper($paper1));
+        $jr = call_api_result("comment", $lixia, ["c" => (string) $acid], $paper1);
+        xassert(in_array($jr->status, [403, 404], true));
+
+        MailChecker::clear();
+    }
+
+    function test_comment_attachment_json_shape() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $qreq = new Qrequest("POST", ["c" => "new", "text" => "Has attachment", "visibility" => "rev", "attachment:1" => "new"]);
+        $qreq->approve_token();
+        $qreq->set_file_content("attachment:1:file", "FIGURE", "fig.txt", "text/plain");
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper1);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+
+        // GET the comment and inspect the docs JSON shape used by the round-trip importer
+        $j = call_api("comment", $this->u_chair, ["c" => (string) $cid], $paper1);
+        xassert($j->ok);
+        xassert(isset($j->comment->docs));
+        xassert_eqq(count($j->comment->docs), 1);
+        $doc = $j->comment->docs[0];
+        xassert_eqq($doc->filename, "fig.txt");
+        xassert_eqq($doc->mimetype, "text/plain");
+        xassert(isset($doc->docid)); // present because the comment is editable
+
+        MailChecker::clear();
     }
 }

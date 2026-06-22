@@ -2,9 +2,10 @@
 // o_abstract.php -- HotCRP helper class for abstract intrinsic
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
-class Abstract_PaperOption extends PaperOption {
+class Abstract_PaperOption extends Text_PaperOption {
     function __construct($conf, $args) {
         parent::__construct($conf, $args);
+        $this->display_space = 5;
     }
     function value_force(PaperValue $ov) {
         if (($ab = $ov->prow->abstract()) !== "") {
@@ -17,7 +18,7 @@ class Abstract_PaperOption extends PaperOption {
                 || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        return (string) $ov->data();
+        return $this->value_string($ov);
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         if (!$ov->equals($ov->prow->base_option($this->id))) {
@@ -37,14 +38,11 @@ class Abstract_PaperOption extends PaperOption {
     function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         return $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_TRIM);
     }
-    function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        $this->print_web_edit_text($pt, $ov, $reqov, ["rows" => 5]);
-    }
     function render(FieldRender $fr, PaperValue $ov) {
         if ($fr->want(FieldRender::CFPAGE)) {
-            $fr->table->render_abstract($fr, $this);
+            $fr->table->render_abstract($fr, $ov);
         } else {
-            $text = $ov->prow->abstract();
+            $text = $this->value_string($ov);
             if ($text !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();

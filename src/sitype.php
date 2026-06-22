@@ -1,6 +1,6 @@
 <?php
 // sitype.php -- HotCRP conference settings types
-// Copyright (c) 2022-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 abstract class Sitype {
     /** @var associative-array<string,class-string> */
@@ -333,8 +333,11 @@ class Int_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         if (preg_match('/\A[+-]?[0-9]+\z/', $vstr)) {
             return intval($vstr);
-        } else if ($vstr === "" && ($defv = $si->default_value($sv)) !== null) {
-            return $defv;
+        } else if ($vstr === "") {
+            $defv = $si->default_value($sv);
+            if ($defv !== null || $si->required === false) {
+                return $defv ?? "";
+            }
         }
         $sv->error_at($si, "<0>Please enter a whole number");
         return null;
@@ -342,11 +345,14 @@ class Int_Sitype extends Sitype {
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_int($jv)) {
             return (string) $jv;
-        } else if ($jv === null) {
+        } else if ($jv === null || ($jv === "" && $si->required === false)) {
             return "";
         }
         $sv->error_at($si, "<0>Whole number required");
         return null;
+    }
+    function unparse_jsonv($jv, Si $si, SettingValues $sv) {
+        return $jv === "" ? $si->placeholder : $jv;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "whole number";
@@ -362,8 +368,11 @@ class Nonnegint_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         if (preg_match('/\A\+?[0-9]+\z/', $vstr)) {
             return intval($vstr);
-        } else if ($vstr === "" && ($defv = $si->default_value($sv)) !== null) {
-            return $defv;
+        } else if ($vstr === "") {
+            $defv = $si->default_value($sv);
+            if ($defv !== null || $si->required === false) {
+                return $defv ?? "";
+            }
         }
         $sv->error_at($si, "<0>Please enter a nonnegative whole number");
         return null;
@@ -371,11 +380,14 @@ class Nonnegint_Sitype extends Sitype {
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_int($jv) && $jv >= 0) {
             return (string) $jv;
-        } else if ($jv === null) {
+        } else if ($jv === null || ($jv === "" && $si->required === false)) {
             return "";
         }
         $sv->error_at($si, "<0>Nonnegative whole number required");
         return null;
+    }
+    function unparse_jsonv($jv, Si $si, SettingValues $sv) {
+        return $jv === "" ? $si->placeholder : $jv;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "nonnegative whole number";
@@ -390,8 +402,11 @@ class Float_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         if (is_numeric($vstr)) {
             return floatval($vstr);
-        } else if ($vstr === "" && ($defv = $si->default_value($sv)) !== null) {
-            return $defv;
+        } else if ($vstr === "") {
+            $defv = $si->default_value($sv);
+            if ($defv !== null || $si->required === false) {
+                return $defv ?? "";
+            }
         }
         $sv->error_at($si, "<0>Please enter a number");
         return null;
@@ -399,11 +414,14 @@ class Float_Sitype extends Sitype {
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_int($jv) || is_float($jv)) {
             return (string) $jv;
-        } else if ($jv === null) {
+        } else if ($jv === null || ($jv === "" && $si->required === false)) {
             return "";
         }
         $sv->error_at($si, "<0>Number required");
         return null;
+    }
+    function unparse_jsonv($jv, Si $si, SettingValues $sv) {
+        return $jv === "" ? $si->placeholder : $jv;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "number";
@@ -422,6 +440,8 @@ class String_Sitype extends Sitype {
     private $allow_int = false;
     /** @var bool */
     private $condition = false;
+    /** @var bool */
+    private $ftext = false;
     /** @var ?string */
     private $example;
     function __construct($name, $subtype = null) {
@@ -442,6 +462,8 @@ class String_Sitype extends Sitype {
             $this->example = "formula expression";
         } else if ($subtype === "mailbody") {
             $this->long = $this->mailbody = true;
+        } else if ($subtype === "ftext") {
+            $this->long = $this->ftext = true;
         }
     }
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
@@ -455,11 +477,22 @@ class String_Sitype extends Sitype {
         if ($this->mailbody && $s !== "" && !str_ends_with($s, "\n")) {
             $s .= "\n";
         }
-        if ($s !== "" || $si->required !== true) {
-            return $s;
+        if ($s === "" && $si->required === true) {
+            $sv->error_at($si, "<0>Entry required");
+            return null;
         }
-        $sv->error_at($si, "<0>Entry required");
-        return null;
+        if ($s !== "" && $this->ftext) {
+            $s = Ftext::ensure($s, 0);
+            if (str_starts_with($s, "<5>")) {
+                $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
+                $html = $ch->clean(substr($s, 3));
+                foreach ($ch->message_list() as $mi) {
+                    $sv->append_item_at($si, $mi);
+                }
+                $s = $html === null ? null : "<5>{$html}";
+            }
+        }
+        return $s;
     }
     function jsonv_reqstr($jv, Si $si, SettingValues $sv) {
         if (is_string($jv) || $jv === null) {
@@ -495,7 +528,14 @@ class String_Sitype extends Sitype {
         return false;
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return $this->example ?? ($this->simple ? "short string" : "text");
+        if ($this->example !== null) {
+            return $this->example;
+        } else if ($this->ftext) {
+            return "text with format prefix";
+        } else if ($this->simple) {
+            return "short string";
+        }
+        return "text";
     }
 }
 
@@ -557,14 +597,12 @@ class EmailHeader_Sitype extends Sitype {
 class Html_Sitype extends Sitype {
     use Data_Sitype;
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
-        $ch = CleanHTML::basic();
-        if (($t = $ch->clean($vstr)) !== false) {
-            return $t;
-        }
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
+        $t = $ch->clean($vstr);
         foreach ($ch->message_list() as $mi) {
             $sv->append_item_at($si, $mi);
         }
-        return null;
+        return $t;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return "HTML text";

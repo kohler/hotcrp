@@ -44,6 +44,10 @@
         "order": 510
     },
     {
+        "name": "decision", "title": "Decision",
+        "function": "+Decision_PaperColumn", "sort": "descending"
+    },
+    {
         "name": "mypref",
         "sort": "descending", "className": "pl_revpref", "function": "+Preference_PaperColumn",
         "order": 550
@@ -157,7 +161,6 @@
     },
     {
         "match": "(tag:)(.*)", "priority": -1, "allow_if": "pc",
-        "tagvalue": false,
         "sort": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
@@ -165,15 +168,14 @@
     },
     {
         "match": "(tagval:)(.*)", "priority": -1, "allow_if": "pc",
-        "tagvalue": true,
-        "sort": true,
+        "sort": true, "tagvalue": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
         "order": 1400
     },
     {
         "match": "(#)([-a-zA-Z0-9!@*_:.\/~]+)", "priority": -1, "allow_if": "pc",
-        "tagvalue": null, "sort": true,
+        "sort": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
         "example_function": "Tag_PaperColumn::examples",
@@ -269,7 +271,7 @@
         "description": "<0>List of tags"
     },
     {
-        "match": "(?:tagreport:|tagrep:|tagreports\\z)(.*)", "priority": -1,
+        "match": "(?:tag|vote)(?:report:|rep:|reports?\\z)(.*)", "priority": -1,
         "prefer_row": true, "className": "pl_tagrep",
         "function": "+TagReport_PaperColumn",
         "expand_function": "TagReport_PaperColumn::expand",

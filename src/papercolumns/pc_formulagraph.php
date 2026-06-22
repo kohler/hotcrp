@@ -1,35 +1,34 @@
 <?php
 // pc_formulagraph.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     /** @var Formula */
     public $formula;
-    /** @var callable */
-    private $indexes_function;
+    /** @var ?Formula */
+    private $indexer;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->ok()
-            || $this->formula->result_format() !== Fexpr::FREVIEWFIELD
+            || $this->formula->format() !== Fexpr::FREVIEWFIELD
             || !$this->formula->viewable()) {
             return false;
         }
-        $this->format_field = $this->formula->result_format_detail();
+        $this->format_field = $this->formula->format_detail();
         $this->formula->prepare_sortable();
-        $this->indexes_function = null;
+        $this->indexer = null;
         if ($this->formula->indexed()) {
-            $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->index_type());
+            $this->indexer = $this->formula->prepare_indexer();
         }
         $this->formula->add_query_options($pl->qopts);
         parent::prepare($pl, $visible);
         return true;
     }
     function score_info(PaperList $pl, PaperInfo $row) {
-        $indexesf = $this->indexes_function;
-        $indexes = $indexesf ? call_user_func($indexesf, $row, $pl->user) : [null];
+        $indexes = $this->indexer ? $this->indexer->eval_indexer($row) : [null];
         $sci = new ScoreInfo;
         foreach ($indexes as $i) {
             if (($v = $this->formula->eval_sortable($row, $i)) !== null
@@ -51,12 +50,15 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     static function expand($name, XtParams $xtp, $xfj, $m) {
         $formula = Formula::make_indexed($xtp->user, $m[2]);
         if (!$formula->ok()) {
-            PaperColumn::column_error($xtp, MessageSet::list_with($formula->message_list(), [
-                "top_context" => $m[0], "top_pos_offset" => strlen($m[1])
-            ]));
+            PaperColumn::column_error_at($xtp, $name,
+                MessageSet::list_with($formula->message_list(), [
+                    "top_context" => $m[0],
+                    "top_pos_offset" => strlen($m[1])
+                ]));
             return null;
-        } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
-            PaperColumn::column_error($xtp, "<0>Formula of type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");
+        } else if ($formula->format() !== Fexpr::FREVIEWFIELD) {
+            PaperColumn::column_error_at($xtp, $name,
+                "<0>Formula type " . $formula->format_description() . " can’t be used in graphs, review field value expected");
             return null;
         }
         $cj = (array) $xfj;

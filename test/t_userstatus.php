@@ -1,6 +1,6 @@
 <?php
 // t_userstatus.php -- HotCRP tests
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class UserStatus_Tester {
     /** @var Conf
@@ -277,7 +277,7 @@ class UserStatus_Tester {
         ConfActions::link($this->conf, (object) ["u" => "raju@watson.ibm.com", "email" => "chris@w3.org"]);
         ConfActions::link($this->conf, (object) ["u" => "chris@w3.org", "email" => "raju@watson.ibm.com"]);
         xassert_eqq($this->conf->fetch_ivalue("select primaryContactId from ContactInfo where contactId=?", $this->chris_uid), $this->raju_uid);
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         (new ConfInvariants($this->conf))->check_users();
     }
 
@@ -297,7 +297,7 @@ class UserStatus_Tester {
         $this->conf->qe("insert into Settings set name='confactions', value=1, data=?",
             "\x1e{\"action\":\"link\",\"u\":\"raju@watson.ibm.com\",\"email\":\"rajuu@watson.edu\"}\n"
             . "\x1e{\"action\":\"link\",\"u\":\"rajuu@watson.edu\",\"email\":\"raju@watson.ibm.com\"}\n");
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         $this->conf->load_settings();
         $u_raju = $this->conf->fresh_user_by_id($this->raju_uid);
         $u_rajuu = $this->conf->fresh_user_by_email("rajuu@watson.edu");
@@ -310,7 +310,7 @@ class UserStatus_Tester {
         xassert_eqq($u_raju->primaryContactId, 0);
         xassert_eqq($u_raju->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
         xassert_eqq($u_rajuu->cflags & Contact::CF_PRIMARY, 0);
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         (new ConfInvariants($this->conf))->check_users();
     }
 
@@ -362,7 +362,43 @@ class UserStatus_Tester {
         $this->conf->qe("delete from ContactPrimary where contactId?a", [$u1->contactId, $u2->contactId]);
     }
 
-    function test_cleanup() {
+    function test_collaborators() {
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        $qreq->collaborators = "Judy Estrin (Packet Design, LLC)\n";
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        xassert($us->is_auth_self());
+        xassert($us->has_recent_authentication());
+        $us->request_group("");
+        xassert($us->execute_update());
+        xassert_eqq($us->user->collaborators(), "Judy Estrin (Packet Design, LLC)");
+    }
+
+    function test_long_collaborators() {
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        $cl = join("\n", array_fill(0, 1024, "Judy Estrin (Packet Design, LLC)"));
+        $qreq->collaborators = $cl;
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update());
+        xassert_eqq($us->user->collaborators(), $cl);
+    }
+
+    function test_collaborators_ifempty() {
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        $cl = $u->collaborators();
+        xassert_gt(strlen($cl), 8192);
+        $u->set_prop("collaborators", "hi", 1);
+        xassert_eqq($u->collaborators(), $cl);
+        $u->set_prop("collaborators", "hi", 2);
+        xassert_eqq($u->collaborators(), $cl);
+        $u->set_prop("collaborators", "hi", 0);
+        xassert_eqq($u->collaborators(), "hi");
+        $u->abort_prop();
+    }
+
+    function finalize() {
         $emails = ["van@ee.lbl.gov", "raju@watson.ibm.com", "chris@w3.org"];
         $this->delete_secondary(false, "xvan@usc.edu");
         $this->delete_secondary(false, "yvan@usc.edu");

@@ -71,11 +71,17 @@ class Settings_API {
 
     /** @param SettingValues $sv
      * @param Si $si
+     * @param SettingInfoSet $si_set
      * @param array &$x */
-    static private function export_si($sv, $si, &$x) {
+    static private function export_si($sv, $si, $si_set, &$x) {
         $x["type"] = $si->type;
         if ($si->subtype) {
             $x["subtype"] = $si->subtype;
+        } else if ($si->type === "oblist"
+                   && ($csi = $sv->conf->si("{$si->name}/1"))
+                   && $csi->type === "object"
+                   && $csi->subtype) {
+            $x["subtype"] = $csi->subtype;
         }
         if ($si->summary) {
             $x["summary"] = Ftext::ensure($si->summary, 0);
@@ -85,6 +91,13 @@ class Settings_API {
         }
         if (($je = $si->json_examples($sv)) !== null) {
             $x["values"] = $je;
+        }
+        if ($si->type === "oblist" || $si->type === "object") {
+            $pfx = $si->type === "oblist" ? "{$si->name}/1" : $si->name;
+            $comp = self::components($sv, $si_set, $pfx);
+            if (!empty($comp)) {
+                $x["components"] = $comp;
+            }
         }
     }
 
@@ -99,7 +112,7 @@ class Settings_API {
                 if (($t = $xsi->member_title($sv))) {
                     $x["title"] = "<0>{$t}";
                 }
-                self::export_si($sv, $xsi, $x);
+                self::export_si($sv, $xsi, $si_set, $x);
                 $comp[] = (object) $x;
             }
         }
@@ -121,18 +134,10 @@ class Settings_API {
                 if (($t = $si->title($sv))) {
                     $o["title"] = "<0>{$t}";
                 }
-                self::export_si($sv, $si, $o);
+                self::export_si($sv, $si, $si_set, $o);
                 if (($dv = $si->initial_value($sv)) !== null) {
                     $o["default_value"] = $si->base_unparse_jsonv($dv, $sv);
                 }
-                if ($si->type === "oblist" || $si->type === "object") {
-                    $pfx = $si->type === "oblist" ? "{$si->name}/1" : $si->name;
-                    $comp = self::components($sv, $si_set, $pfx);
-                    if (!empty($comp)) {
-                        $o["components"] = $comp;
-                    }
-                }
-
                 $m[] = $o;
             }
         }

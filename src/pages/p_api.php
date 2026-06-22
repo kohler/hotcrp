@@ -44,25 +44,34 @@ class API_Page {
         JsonCompletion::$allow_short_circuit = true;
         $conf = $user->conf;
         $uf = $conf->api($fn, $user, $qreq->method());
-        if (($validate = $uf && $conf->opt("validateApiSpec"))) {
-            SpecValidator_API::request($uf, $qreq);
+        // CORS: Allow if user provides CSRF token or auth is explicitly false.
+        if ((($uf && ($uf->auth ?? null) === false) || $qreq->valid_token())
+            && ($origin = $qreq->raw_header("HTTP_ORIGIN")) !== null) {
+            Navigation::header("Access-Control-Allow-Origin: {$origin}");
+            Navigation::header("Access-Control-Allow-Credentials: true");
+        }
+        $validator = null;
+        if ($uf && $conf->opt("validateApiSpec")) {
+            $validator = new SpecValidator_API($fn, $uf, $qreq);
+            $validator->request();
         }
         $jr = $conf->call_api_on($uf, $fn, $user, $qreq);
-        if ($validate) {
-            SpecValidator_API::response($uf, $qreq, $jr);
+        if ($validator) {
+            $validator->response($jr);
         }
         if ($jr instanceof Downloader) {
+            $conf->emit_browser_security_headers($qreq);
             $jr->emit();
-            exit(0);
+            Navigation::complete();
         } else if ($jr instanceof PageCompletion) {
             $jr->emit($qreq);
-            exit(0);
+            Navigation::complete();
         }
         if ($uf
             && ($uf->redirect ?? false)
             && ($url = $conf->qreq_redirect_url($qreq))) {
             $conf->feedback_msg(self::export_messages($jr));
-            $conf->redirect($url);
+            $qreq->redirect($url);
         }
         return $jr;
     }
@@ -74,10 +83,10 @@ class API_Page {
     static private function status_api($fn, $user, $qreq) {
         $prow = $qreq->paper();
         // default status API to not being pretty printed; it's frequently called
-        $jr = (new JsonResult($user->status_json($prow ? [$prow] : [])))
+        $jr = (new JsonResult($user->status_json(["ok" => true], $prow)))
             ->set_pretty_print(false);
-        $jr["ok"] = true;
-        if ($fn === "track" && ($new_trackerid = $qreq->annex("new_trackerid"))) {
+        if ($fn === "track"
+            && ($new_trackerid = $qreq->annex("new_trackerid"))) {
             $jr["new_trackerid"] = $new_trackerid;
         }
         if ($prow
@@ -88,6 +97,14 @@ class API_Page {
             $prow->add_tag_info_json($pj, $user);
             if (count((array) $pj) > 1) {
                 $jr["p"] = [$prow->paperId => $pj];
+            }
+        }
+        if (($btoken = $qreq->bannertoken) !== null
+            && $user->conf->setting("banners")) {
+            $cb = new CustomBanners($user->conf, $user, $qreq);
+            if (!$cb->check_token($btoken)) {
+                $jr["banners"] = $cb->active_json();
+                $jr["bannertoken"] = $cb->token();
             }
         }
         return $jr;
@@ -116,36 +133,40 @@ class API_Page {
             && ctype_digit($unum)) {
             $nav->shift_path_components(2);
         }
-        $ok = true;
-        if (($m = $_SERVER["HTTP_ACCESS_CONTROL_REQUEST_METHOD"] ?? null)) {
-            if ($nav->page === "api") {
-                $origin = $_SERVER["HTTP_ORIGIN"] ?? "*";
-                header("Access-Control-Allow-Origin: {$origin}");
-                if (($hdrs = $_SERVER["HTTP_ACCESS_CONTROL_REQUEST_HEADERS"] ?? null)) {
-                    header("Access-Control-Allow-Headers: {$hdrs}");
-                }
-                header("Access-Control-Allow-Credentials: true");
-                header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD, POST, DELETE");
-                header("Access-Control-Max-Age: 86400");
-            } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets"], true)) {
-                header("Access-Control-Allow-Origin: *");
-                header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD");
-                header("Access-Control-Max-Age: 86400");
-            } else {
-                $ok = false;
-            }
+        if ($nav->page === "api") {
+            $cors_type = "api";
+            $allow = "OPTIONS, GET, HEAD, POST, DELETE";
+        } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets", ".well-known"], true)) {
+            $cors_type = "static";
+            $allow = "OPTIONS, GET, HEAD";
         } else {
-            header("Allow: OPTIONS, GET, HEAD, POST, DELETE"); // XXX other methods?
+            $cors_type = null;
+            $allow = "OPTIONS, GET, HEAD, POST";
         }
-        http_response_code($ok ? 200 : 403);
-        exit(0);
+        if ($cors_type !== null) {
+            Navigation::header("Access-Control-Allow-Origin: " . ($_SERVER["HTTP_ORIGIN"] ?? "*"));
+        }
+        if ($cors_type === "api") {
+            Navigation::header("Access-Control-Allow-Credentials: true");
+        }
+        $ok = true;
+        if ($_SERVER["HTTP_ACCESS_CONTROL_REQUEST_METHOD"] ?? null) {
+            if ($cors_type === null) {
+                Navigation::complete(403);
+            }
+            Navigation::header("Access-Control-Allow-Headers: *");
+            Navigation::header("Access-Control-Allow-Methods: {$allow}");
+            Navigation::header("Access-Control-Max-Age: 86400");
+        }
+        Navigation::header("Allow: {$allow}");
+        Navigation::complete(204);
     }
 
     static function parameter_error_exit($param, $message) {
-        http_response_code(400);
-        header("Content-Type: application/json");
+        Navigation::http_response_code(400);
+        Navigation::header("Content-Type: application/json; charset=utf-8");
         echo "{\"ok\": false, \"message_list\": [{\"field\": \"{$param}\", \"message\": \"{$message}\", \"status\": 2}]}\n";
-        exit(0);
+        Navigation::complete();
     }
 
     /** @param NavigationState $nav
@@ -166,6 +187,7 @@ class API_Page {
             self::parameter_error_exit("fn", "<0>Parameter missing");
         }
 
+        // process request
         $qreq = initialize_request($conf, $nav);
         $qreq->set_path_component_index($pcindex + 1);
         try {

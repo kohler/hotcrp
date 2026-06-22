@@ -1,6 +1,6 @@
 <?php
 // pc_formula.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Formula_PaperColumn extends PaperColumn {
     /** @var Formula */
@@ -66,7 +66,7 @@ class Formula_PaperColumn extends PaperColumn {
     function reset(PaperList $pl) {
         if ($this->results === null) {
             $this->results = [];
-            $isreal = $this->formula->result_format() === Fexpr::FNUMERIC
+            $isreal = $this->formula->format() === Fexpr::FNUMERIC
                 && !$this->real_format;
             foreach ($pl->rowset() as $row) {
                 $v = $this->formula->eval($row, null);
@@ -76,7 +76,7 @@ class Formula_PaperColumn extends PaperColumn {
                 }
             }
         }
-        if ($this->real_format && $this->formula->result_format_is_numeric()) {
+        if ($this->real_format && $this->formula->format_is_numeric()) {
             $this->value_format = new Numeric_ValueFormat($this->real_format);
         } else {
             $this->value_format = $this->formula->value_format();
@@ -168,9 +168,11 @@ class Formula_PaperColumnFactory {
                 return [Formula_PaperColumnFactory::make($ff, $nf, $xfj)];
             }
         } else if ($want_error) {
-            PaperColumn::column_error($xtp, MessageSet::list_with($ff->message_list(), [
-                "top_context" => $prefix . $name, "top_pos_offset" => strlen($prefix)
-            ]));
+            PaperColumn::column_error_at($xtp, $name,
+                MessageSet::list_with($ff->message_list(), [
+                    "top_context" => $prefix . $name,
+                    "top_pos_offset" => strlen($prefix)
+                ]));
         }
         return null;
     }

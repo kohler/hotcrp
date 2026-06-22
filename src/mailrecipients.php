@@ -1,6 +1,6 @@
 <?php
 // mailrecipients.php -- HotCRP mail tool
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class MailRecipientClass {
     /** @var string */
@@ -41,6 +41,8 @@ class MailRecipients extends MessageSet {
     private $recipts = [];
     /** @var MailRecipientClass */
     private $rect;
+    /** @var ?SearchTerm */
+    private $search;
     /** @var ?list<int> */
     private $paper_ids;
     /** @var int */
@@ -49,16 +51,26 @@ class MailRecipients extends MessageSet {
     private $_dcounts;
     /** @var ?array{bool,bool,bool} */
     private $_has_dt;
-    /** @var bool */
-    private $_has_paper_set = false;
     /** @var ?PaperInfoSet */
     private $_paper_set;
 
-    const F_ANYPC = 1;
-    const F_GROUP = 2;
-    const F_HIDE = 4;
-    const F_NOPAPERS = 8;
-    const F_SINCE = 16;
+    const F_ANYPC = 0x1;
+    const F_GROUP = 0x2;
+    const F_HIDE = 0x4;
+    const F_NOPAPERS = 0x8;
+    const F_ALLCOMPLETEREV = 0x10;
+    const F_REV = 0x20;
+    const F_REV_COMPLETE = 0x40;
+    const F_REV_INCOMPLETE = 0x80;
+    const F_REV_NONACCEPTED = 0x100;
+    const F_REV_SINCE = 0x200;
+    const F_REV_EXT = 0x400;
+    const F_REV_PC = 0x800;
+    const F_REV_MYREQ = 0x1000;
+    const F_ACCEPT = 0x2000;
+
+    const FM_REV = 0x30;
+    const FM_REV_SPECIFIC = 0xD0;
 
     /** @param Contact $user */
     function __construct($user) {
@@ -81,7 +93,7 @@ class MailRecipients extends MessageSet {
         if ($this->_dcounts !== null) {
             return;
         }
-        if ($this->user->allow_administer_all()) {
+        if ($this->user->allow_admin_all()) {
             $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
         } else if ($this->user->is_manager()) {
             $psearch = new PaperSearch($this->user, ["q" => "", "t" => "alladmin"]);
@@ -117,9 +129,8 @@ class MailRecipients extends MessageSet {
             }
             if ($dmaxcount > 0) {
                 return "dec:{$dmaxname}";
-            } else {
-                return substr($t, 4);
             }
+            return substr($t, 4);
         } else if ($t === "myuncextrev") {
             return "uncmyextrev";
         }
@@ -172,11 +183,12 @@ class MailRecipients extends MessageSet {
             $this->add_recpt_group("bydec_group", "Contact authors by decision");
             foreach ($this->conf->decision_set() as $dec) {
                 if ($dec->id !== 0) {
-                    $hide = ($this->_dcounts[$dec->id] ?? 0) === 0;
-                    $this->add_recpt("dec:{$dec->name}", "Contact authors of " . $dec->name_as(5) . " papers", "dec:{$dec->name}", $hide ? self::F_HIDE : 0);
+                    $hflag = ($this->_dcounts[$dec->id] ?? 0) === 0 ? self::F_HIDE : 0;
+                    $aflag = $dec->sign > 0 ? self::F_ACCEPT : 0;
+                    $this->add_recpt("dec:{$dec->name}", "Contact authors of {$dec->name} papers", "dec:{$dec->name}", $hflag | $aflag);
                 }
             }
-            $this->add_recpt("dec:yes", "Contact authors of accept-class papers", "dec:yes", $this->_has_dt[2] ? 0 : self::F_HIDE);
+            $this->add_recpt("dec:yes", "Contact authors of accept-class papers", "dec:yes", ($this->_has_dt[2] ? 0 : self::F_HIDE) | self::F_ACCEPT);
             $this->add_recpt("dec:no", "Contact authors of reject-class papers", "dec:no", $this->_has_dt[0] ? 0 : self::F_HIDE);
             $this->add_recpt("dec:none", "Contact authors of undecided papers", "dec:none", $this->_has_dt[1] && ($this->_has_dt[0] || $this->_has_dt[2]) ? 0 : self::F_HIDE);
             $this->add_recpt("dec:any", "Contact authors of decided papers", "dec:any", self::F_HIDE);
@@ -187,40 +199,35 @@ class MailRecipients extends MessageSet {
 
             // XXX this exposes information about PC review assignments
             // for conflicted papers to the chair; not worth worrying about
-            if (!$user->privChair) {
-                $pids = [];
-                $result = $this->conf->qe("select paperId from Paper where managerContactId=?", $user->contactId);
-                while (($row = $result->fetch_row())) {
-                    $pids[] = (int) $row[0];
-                }
-                Dbl::free($result);
-                $pidw = empty($pids) ? "false" : "paperId in (" . join(",", $pids) . ")";
-            } else {
+            if ($user->privChair) {
                 $pidw = "true";
+            } else {
+                $managing = (new PaperSearch($this->user, ["q" => "", "limit" => "actadmin"]))->paper_ids();
+                $pidw = empty($managing) ? "false" : "paperId in (" . join(",", $managing) . ")";
             }
             $row = $this->conf->fetch_first_row("select
-                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and $pidw),
-                exists (select * from PaperReview where reviewType>0 and reviewType<" . REVIEW_PC . "  and $pidw),
-                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and reviewSubmitted is null and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and $pidw),
-                exists (select * from Paper where timeSubmitted>0 and leadContactId!=0 and $pidw),
-                exists (select * from Paper where timeSubmitted>0 and shepherdContactId!=0 and $pidw)");
+                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and {$pidw}),
+                exists (select * from PaperReview where reviewType>0 and reviewType<" . REVIEW_PC . "  and {$pidw}),
+                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and reviewSubmitted is null and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and {$pidw}),
+                exists (select * from Paper where timeSubmitted>0 and leadContactId!=0 and {$pidw}),
+                exists (select * from Paper where timeSubmitted>0 and shepherdContactId!=0 and {$pidw})");
             list($any_pcrev, $any_extrev, $any_newpcrev, $any_lead, $any_shepherd) = $row;
 
-            $hide = $any_pcrev || $any_extrev ? 0 : self::F_HIDE;
-            $this->add_recpt("rev", "Reviewers", "s", $hide);
-            $this->add_recpt("crev", "Reviewers with complete reviews", "s", $hide);
-            $this->add_recpt("uncrev", "Reviewers with incomplete reviews", "s", $hide);
-            $this->add_recpt("allcrev", "Reviewers with no incomplete reviews", "s", $hide);
+            $hflag = $any_pcrev || $any_extrev ? 0 : self::F_HIDE;
+            $this->add_recpt("rev", "Reviewers", "s", $hflag | self::F_REV);
+            $this->add_recpt("crev", "Reviewers with complete reviews", "s", $hflag | self::F_REV | self::F_REV_COMPLETE);
+            $this->add_recpt("uncrev", "Reviewers with incomplete reviews", "s", $hflag | self::F_REV | self::F_REV_INCOMPLETE);
+            $this->add_recpt("allcrev", "Reviewers with no incomplete reviews", "s", $hflag | self::F_ALLCOMPLETEREV);
 
-            $hide = $any_pcrev ? 0 : self::F_HIDE;
-            $this->add_recpt("pcrev", "PC reviewers", "s", $hide);
-            $this->add_recpt("uncpcrev", "PC reviewers with incomplete reviews", "s", $hide);
-            $this->add_recpt("newpcrev", "PC reviewers with new review assignments", "s", ($any_newpcrev && $any_pcrev ? 0 : self::F_HIDE) | self::F_SINCE);
+            $hflag = ($any_pcrev ? 0 : self::F_HIDE) | self::F_REV | self::F_REV_PC;
+            $this->add_recpt("pcrev", "PC reviewers", "s", $hflag);
+            $this->add_recpt("uncpcrev", "PC reviewers with incomplete reviews", "s", $hflag | self::F_REV_INCOMPLETE);
+            $this->add_recpt("newpcrev", "PC reviewers with new review assignments", "s", $hflag | ($any_newpcrev ? 0 : self::F_HIDE) | self::F_REV_INCOMPLETE | self::F_REV_SINCE);
 
-            $hide = $any_extrev ? 0 : self::F_HIDE;
-            $this->add_recpt("extrev", "External reviewers", "s", $hide);
-            $this->add_recpt("uncextrev", "External reviewers with incomplete reviews", "s", $hide);
-            $this->add_recpt("extrev-not-accepted", "External reviewers with outstanding requests", "s", $hide);
+            $hflag = ($any_extrev ? 0 : self::F_HIDE) | self::F_REV | self::F_REV_EXT;
+            $this->add_recpt("extrev", "External reviewers", "s", $hflag);
+            $this->add_recpt("uncextrev", "External reviewers with incomplete reviews", "s", $hflag | self::F_REV_INCOMPLETE);
+            $this->add_recpt("extrev-not-accepted", "External reviewers with outstanding requests", "s", $hflag | self::F_REV_NONACCEPTED);
             $this->add_recpt_group("rev_group_end", null);
         } else {
             $any_lead = $any_shepherd = 0;
@@ -228,8 +235,8 @@ class MailRecipients extends MessageSet {
 
         $this->recipt_default_message = "reviewers";
         $hide = !$this->user->is_requester();
-        $this->add_recpt("myextrev", "Your requested reviewers", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
-        $this->add_recpt("uncmyextrev", "Your requested reviewers with incomplete reviews", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
+        $this->add_recpt("myextrev", "Your requested reviewers", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0) | self::F_REV | self::F_REV_EXT | self::F_REV_MYREQ);
+        $this->add_recpt("uncmyextrev", "Your requested reviewers with incomplete reviews", "req", self::F_ANYPC | ($hide ? self::F_HIDE : 0) | self::F_REV | self::F_REV_INCOMPLETE | self::F_REV_EXT | self::F_REV_MYREQ);
 
         if ($user->is_manager()) {
             $this->add_recpt("lead", "Discussion leads", "s", $any_lead ? 0 : self::F_HIDE);
@@ -274,7 +281,19 @@ class MailRecipients extends MessageSet {
     function current_fold_classes(Qrequest $qreq) {
         return "fold8" . (!!$qreq->plimit ? "o" : "c")
             . " fold9" . ($this->rect->flags & self::F_NOPAPERS ? "c" : "o")
-            . " fold10" . ($this->rect->flags & self::F_SINCE ? "o" : "c");
+            . " fold10" . ($this->rect->flags & self::F_REV_SINCE ? "o" : "c");
+    }
+
+    /** @return $this */
+    function set_search(?PaperSearch $srch) {
+        if ($srch
+            && ($this->rect->flags & self::F_REV) !== 0
+            && ($srch->main_term()->about() & ~SearchTerm::ABOUT_PAPER)) {
+            $this->search = $srch->main_term();
+        } else {
+            $this->search = null;
+        }
+        return $this;
     }
 
     /** @param ?list<int> $paper_ids
@@ -308,7 +327,7 @@ class MailRecipients extends MessageSet {
     /** @param ?string $type
      * @return $this */
     function set_recipients($type) {
-        $this->_has_paper_set = false;
+        $this->_paper_set = null;
         $type = $this->canonical_recipients($type);
         foreach ($this->recipts as $i => $rec) {
             if ($rec->name === $type && ($rec->flags & self::F_GROUP) === 0) {
@@ -357,8 +376,10 @@ class MailRecipients extends MessageSet {
                 if (isset($rec->description)) {
                     $d["label"] = $rec->description;
                 }
-                $d["class"] = Ht::add_tokens($rec->flags & self::F_NOPAPERS ? "mail-want-no-papers" : "",
-                    $rec->flags & self::F_SINCE ? "mail-want-since" : "");
+                $d["class"] = Ht::add_tokens(
+                    $rec->flags & self::F_NOPAPERS ? "mail-want-no-papers" : "",
+                    $rec->flags & self::F_REV_SINCE ? "mail-want-since" : ""
+                );
                 $d["data-default-message"] = $rec->default_message;
                 if (isset($rec->limit)) {
                     $d["data-default-limit"] = $rec->limit;
@@ -375,6 +396,11 @@ class MailRecipients extends MessageSet {
     function is_authors() {
         return in_array($this->rect->name, ["s", "unsub", "active", "au"], true)
             || str_starts_with($this->rect->name, "dec:");
+    }
+
+    /** @return bool */
+    function is_accepted_authors() {
+        return ($this->rect->flags & self::F_ACCEPT) !== 0;
     }
 
     /** @return bool */
@@ -403,15 +429,11 @@ class MailRecipients extends MessageSet {
     }
 
     /** @return ?PaperInfoSet */
-    function paper_set() {
-        if ($this->_has_paper_set) {
-            return $this->_paper_set;
-        }
-
-        $this->_has_paper_set = true;
-        if (!$this->need_papers()) {
-            $this->_paper_set = null;
+    function paper_set($force = false) {
+        if (!$force && !$this->need_papers()) {
             return null;
+        } else if ($this->_paper_set !== null) {
+            return $this->_paper_set;
         }
 
         $options = ["allConflictType" => true];
@@ -436,41 +458,132 @@ class MailRecipients extends MessageSet {
         } else if ($t === "shepherd") {
             $options["anyShepherd"] = $options["reviewSignatures"] = true;
         } else {
-            assert(strpos($t, "rev") !== false);
             $options["reviewSignatures"] = true;
+            $options["decision"] = ["standard"]; // skip desk rejects (???)
         }
 
         // additional manager limit
-        $paper_ids = $this->paper_ids;
+        $need_filter = false;
         if (!$this->user->privChair
             && ($this->rect->flags & self::F_ANYPC) === 0) {
-            if ($this->conf->check_any_admin_tracks($this->user)) {
-                $ps = new PaperSearch($this->user, ["q" => "", "t" => "admin"]);
-                if ($paper_ids === null) {
-                    $paper_ids = $ps->paper_ids();
-                } else {
-                    $paper_ids = array_values(array_intersect($paper_ids, $ps->paper_ids()));
-                }
-            } else {
+            if (!$this->user->is_track_manager()) {
                 $options["myManaged"] = true;
+            } else if (($mtt = $this->user->managed_track_tags()) !== null) {
+                $tsm = (new TagSearchMatcher($this->user))->add_tag_list($mtt);
+                $options["where"] = $tsm->exists_sqlexpr("Paper") . " or managerContactId={$this->user->contactId}";
+            } else {
+                $need_filter = true;
             }
         }
-        if ($paper_ids !== null) {
-            $options["paperId"] = $paper_ids;
+
+        if (!($this->rect->flags & self::F_NOPAPERS)
+            && $this->paper_ids !== null) {
+            $options["paperId"] = $this->paper_ids;
         }
 
         // load paper set
         $this->_paper_set = $this->conf->paper_set($options, $this->user);
+        if ($need_filter) {
+            $this->_paper_set->apply_filter(function ($p) {
+                return $this->user->allow_admin($p);
+            });
+        }
         return $this->_paper_set;
     }
 
     /** @param int $pid
      * @return ?PaperInfo */
     function paper($pid) {
-        $paper_set = $this->paper_set();
-        return $paper_set ? $paper_set->get($pid) : null;
+        if ($pid <= 0) {
+            return null;
+        }
+        return $this->paper_set(true)->get($pid);
     }
 
+    /** @param PaperInfo $prow
+     * @param Contact $user
+     * @return bool */
+    function test_paper($prow, $user) {
+        if (!$this->search) {
+            return true;
+        }
+        foreach ($prow->reviews_by_user($user) as $rrow) {
+            if ($this->user->can_view_review_identity($prow, $rrow)
+                && $this->search->test($prow, $rrow))
+                return true;
+        }
+        return false;
+    }
+
+    /** @param PaperInfo $prow
+     * @param ReviewInfo $rrow
+     * @return bool */
+    function test_for_assignment_keyword($prow, $rrow) {
+        if ($rrow->is_ghost()
+            || !$this->user->can_view_review_identity($prow, $rrow)) {
+            return false;
+        }
+        $rf = $this->rect->flags;
+        if (($rf & self::F_REV) === 0) {
+            return true;
+        }
+        // withdrawn papers + incomplete reviews generally uninteresting
+        if (($rf & self::FM_REV_SPECIFIC) === 0
+            && $prow->timeSubmitted <= 0
+            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            return false;
+        }
+        // check completeness
+        if (($rf & self::F_REV_COMPLETE)
+            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            return false;
+        }
+        if (($rf & self::F_REV_INCOMPLETE)
+            && (($rrow->reviewSubmitted ?? 0) > 0
+                || $rrow->reviewNeedsSubmit == 0
+                || $prow->timeSubmitted <= 0)) {
+            return false;
+        }
+        if (($rf & self::F_REV_NONACCEPTED)
+            && $rrow->reviewModified > 0) {
+            return false;
+        }
+        // check type
+        if (($rf & self::F_REV_EXT)
+            && $rrow->reviewType !== REVIEW_EXTERNAL) {
+            return false;
+        }
+        if (($rf & self::F_REV_PC)
+            && $rrow->reviewType <= REVIEW_PC) {
+            return false;
+        }
+        // check requester
+        if (($rf & self::F_REV_MYREQ)
+            && $rrow->requestedBy !== $this->user->contactId) {
+            return false;
+        }
+        // check time requested (NB requires full review)
+        if (($rf & self::F_REV_SINCE)
+            && ($this->newrev_since
+                ? $this->newrev_since > $rrow->timeRequested
+                : $rrow->timeRequested <= $rrow->timeRequestNotified)) {
+            return false;
+        }
+        return true;
+    }
+
+    /** @return list<ReviewInfo> */
+    function reviews_for_recipient(PaperInfo $prow, Contact $recipient) {
+        if ($this->rect->flags & self::F_REV_SINCE) {
+            $prow->ensure_full_reviews();
+        }
+        $rrows = [];
+        foreach ($prow->reviews_by_user($recipient) as $rrow) {
+            if ($this->test_for_assignment_keyword($prow, $rrow))
+                $rrows[] = $rrow;
+        }
+        return $rrows;
+    }
 
     /** @param bool $paper_sensitive
      * @return string|false */
@@ -478,13 +591,8 @@ class MailRecipients extends MessageSet {
         $cols = [];
         $where = ["(cflags&" . Contact::CFM_DISABLEMENT . ")=0"];
         $joins = ["ContactInfo"];
-
-        // reviewer limit
         $t = $this->rect->name;
-        if (!preg_match('/\A(new|unc|c|allc|)(pc|ext|myext|)rev(|-not-accepted)\z/',
-                        $t, $revmatch)) {
-            $revmatch = false;
-        }
+        $rf = $this->rect->flags;
 
         // build query
         if ($t === "all") {
@@ -497,7 +605,7 @@ class MailRecipients extends MessageSet {
                 $x = sqlq(Dbl::escape_like(substr($t, 3)));
                 $where[] = "ContactInfo.contactTags like " . Dbl::utf8ci("'% {$x}#%'");
             }
-        } else if ($revmatch) {
+        } else if ($rf & self::FM_REV) {
             $needpaper = true;
             $joins[] = "join Paper";
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>0)";
@@ -519,39 +627,42 @@ class MailRecipients extends MessageSet {
         }
 
         // reviewer match
-        if ($revmatch) {
+        if ($rf & self::FM_REV) {
             // Submission status
-            if ($revmatch[1] === "c") {
+            if ($rf & self::F_REV_COMPLETE) {
                 $where[] = "PaperReview.reviewSubmitted>0";
-            } else if ($revmatch[1] === "unc" || $revmatch[1] === "new") {
+            } else if ($rf & self::F_REV_INCOMPLETE) {
                 $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0 and Paper.timeSubmitted>0";
+            } else {
+                $where[] = "(PaperReview.rflags&" . ReviewInfo::RF_LIVE . ")!=0";
             }
-            if ($revmatch[1] === "new") {
-                $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
+            if ($rf & self::F_REV_SINCE) {
                 if ($this->newrev_since) {
                     $where[] = "PaperReview.timeRequested>={$this->newrev_since}";
+                } else {
+                    $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
                 }
             }
-            if ($revmatch[1] === "allc") {
+            if ($rf & self::F_ALLCOMPLETEREV) {
                 $joins[] = "left join (select contactId, max(if(reviewNeedsSubmit!=0 and timeSubmitted>0,1,0)) anyReviewNeedsSubmit from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) group by contactId) AllReviews on (AllReviews.contactId=ContactInfo.contactId)";
                 $where[] = "AllReviews.anyReviewNeedsSubmit=0";
             }
+            // Not accepted
+            if ($rf & self::F_REV_NONACCEPTED) {
+                $where[] = "PaperReview.reviewModified=0";
+            }
             // Withdrawn papers may not count
-            if ($revmatch[1] === "") {
+            if (($rf & self::FM_REV_SPECIFIC) === 0) {
                 $where[] = "(Paper.timeSubmitted>0 or PaperReview.reviewSubmitted>0)";
             }
             // Review type
-            if ($revmatch[2] === "myext") {
+            if ($rf & self::F_REV_EXT) {
                 $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-                $where[] = "PaperReview.requestedBy=" . $this->user->contactId;
-            } else if ($revmatch[2] === "ext") {
-                $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-            } else if ($revmatch[2] === "pc") {
+            } else if ($rf & self::F_REV_PC) {
                 $where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
             }
-            // Not accepted
-            if ($revmatch[3] === "-not-accepted") {
-                $where[] = "PaperReview.reviewModified=0";
+            if ($rf & self::F_REV_MYREQ) {
+                $where[] = "PaperReview.requestedBy=" . $this->user->contactId;
             }
         }
 

@@ -2,6 +2,7 @@
 // t_getopt.php -- HotCRP tests
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class Getopt_Tester {
     static function getopt_parse($getopt, $argv) {
         assert($argv[0] === "fart");
@@ -68,11 +69,37 @@ class Getopt_Tester {
         $arg = self::getopt_parse((new Getopt)->long("a: =FOO"),
             ["fart", "-a10", "c"]);
         xassert_eqq(json_encode($arg), '{"a":"10","_":["c"]}');
+
+        $arg = self::getopt_parse((new Getopt)->long("a:: =FOO", "b:: =BAR"),
+            ["fart", "-a", "-bc"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"b":"c","_":[]}');
     }
 
     function test_getopt_count() {
         $arg = (new Getopt)->short("vV#x")->parse(["fart", "-vVVxV"]);
         xassert_eqq(json_encode($arg), '{"v":false,"V":3,"x":false,"_":[]}');
+    }
+
+    function test_getopt_order() {
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->order(true)
+            ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "c"]);
+        xassert_eqq(json_encode($arg["__"]), '[["a",false],["c","x"],["c","y"],["d","a"],["e","a"],["e","b"],["e","c"]]');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->order(true)->interleave(true)
+            ->parse(["fart", "-a", "-c", "x", "pos1", "-d=a", "pos2"]);
+        xassert_eqq(json_encode($arg["__"]), '[["a",false],["c","x"],["","pos1"],["d","a"],["","pos2"]]');
+
+        $arg = (new Getopt)->long("a")->otheropt(true)->order(true)
+            ->parse(["fart", "-a", "--unknown"]);
+        xassert_eqq(json_encode($arg["__"]), '[["a",false],["-","--unknown"]]');
+
+        $arg = (new Getopt)->short("vV#")->order(true)
+            ->parse(["fart", "-vVVv"]);
+        xassert_eqq(json_encode($arg["__"]), '[["v",false],["V",1],["V",2],["v",false]]');
+
+        // Without order, no __ key
+        $arg = (new Getopt)->long("a")->parse(["fart", "-a"]);
+        xassert_eqq(array_key_exists("__", $arg), false);
     }
 
     function test_getopt_subcommand() {

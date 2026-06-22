@@ -292,15 +292,23 @@ abstract class SearchTerm {
         return null;
     }
 
-    const ABOUT_PAPER = 1;
-    const ABOUT_UNKNOWN = 2;
-    const ABOUT_REVIEW = 4;
-    const ABOUT_REVIEW_SET = 8;
-    const ABOUT_NO_SHORT_CIRCUIT = 16;
+    // What class of information does this search concern? (bitmask)
+    const ABOUT_SUB = 0x1;               // Submission information
+    const ABOUT_TAGS = 0x2;              // About tags
+    const ABOUT_PAPER = 0x3;             // Submission information or tags
+    const ABOUT_REVIEW = 0x4;            // About a single review
+    const ABOUT_REVIEW_SET = 0x8;        // About reviews as a class
+    const ABOUT_REVIEWS = 0xC;           // Either ABOUT_REVIEW or ABOUT_REVIEW_SET
+    const ABOUT_COMMENTS = 0x10;         // About comments
+    const ABOUT_REACTIONS = 0x20;        // About reactions (e.g. review ratings)
+    const ABOUT_PREFS = 0x40;            // About review preferences
+    const ABOUT_OTHER = 0x8000;          // About something else (prefs, comments)
+    const ABOUT_ANY = 0xFFFF;            // Who knows what it's about
+    const ABOUT_NO_SHORT_CIRCUIT = 0x10000;  // script_expression only
 
-    /** @return 1|2|4|8 */
+    /** @return int */
     function about() {
-        return self::ABOUT_PAPER;
+        return self::ABOUT_SUB;
     }
 
 
@@ -330,7 +338,7 @@ class False_SearchTerm extends SearchTerm {
         return false;
     }
     function about() {
-        return self::ABOUT_PAPER;
+        return 0;
     }
     function script_expression(PaperInfo $row, $about) {
         return false;
@@ -354,7 +362,7 @@ class True_SearchTerm extends SearchTerm {
         return true;
     }
     function about() {
-        return self::ABOUT_PAPER;
+        return 0;
     }
     function script_expression(PaperInfo $row, $about) {
         return true;
@@ -491,7 +499,7 @@ abstract class Op_SearchTerm extends SearchTerm {
     function about() {
         $x = 0;
         foreach ($this->child as $qv) {
-            $x = max($x, $qv->about());
+            $x |= $qv->about();
         }
         return $x;
     }
@@ -580,8 +588,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         return !$this->child[0]->test($row, $xinfo);
     }
     function about() {
-        $x = $this->child[0]->about();
-        return $x === self::ABOUT_REVIEW ? self::ABOUT_UNKNOWN : $x;
+        return $this->child[0]->about();
     }
 }
 
@@ -1108,6 +1115,29 @@ class Limit_SearchTerm extends SearchTerm {
             $limword = $limit;
         }
 
+        // default limit should be the plausible limit for a default search,
+        // as in entering text into a quicksearch box
+        if ($limstr === "default") {
+            if ($this->user->privChair
+                && ($this->user->is_root_user()
+                    || $conf->unnamed_submission_round()->time_update(true))) {
+                $limstr = "all";
+            } else if ($this->user->isPC) {
+                if ($this->user->can_view_some_incomplete()
+                    && $conf->can_pc_view_some_incomplete()) {
+                    $limstr = "active";
+                } else {
+                    $limstr = "s";
+                }
+            } else if (!$this->user->is_reviewer()) {
+                $limstr = "a";
+            } else if (!$this->user->is_author()) {
+                $limstr = "r";
+            } else {
+                $limstr = "ar";
+            }
+        }
+
         // find limit
         $limitpair = self::canonical_names($conf, $limstr);
         if (!$limitpair) {
@@ -1176,11 +1206,20 @@ class Limit_SearchTerm extends SearchTerm {
         return $this->limit === "a";
     }
 
+    /** @param Limit_SearchTerm $set_limit
+     * @return bool */
+    function prefer_to($set_limit) {
+        return ($this->lflag & self::LFLAG_IMPLICIT) === 0
+            || ($this->limit_class === "dec"
+                && ($this->lflag & self::LFLAG_STDDEC) === 0
+                && ($set_limit->lflag & self::LFLAG_STDDEC) !== 0);
+    }
+
     /** @param array<string,mixed> &$options
      * @return bool */
     function simple_search(&$options) {
         // hidden papers => complex search
-        if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
+        if (($this->user->dangerous_track_mask() & Track::FM_VIEW) !== 0) {
             return false;
         }
         // if tracks, nonchairs get simple search only for "a", "r", sometimes "s"
@@ -1247,13 +1286,13 @@ class Limit_SearchTerm extends SearchTerm {
         case "unsub":
             assert($act);
             $options["unsub"] = true;
-            return $this->user->allow_administer_all();
+            return $this->user->allow_admin_all();
         case "lead":
             $options["myLead"] = true;
             return true;
         case "alladmin":
         case "actadmin":
-            return $this->user->allow_administer_all();
+            return $this->user->allow_admin_all();
         case "admin":
             return false;
         case "req":
@@ -1272,7 +1311,7 @@ class Limit_SearchTerm extends SearchTerm {
 
     function is_sqlexpr_precise() {
         // hidden papers, view limits => imprecise
-        if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
+        if (($this->user->dangerous_track_mask() & Track::FM_VIEW) !== 0) {
             return false;
         }
         switch ($this->limit_class) {
@@ -1280,7 +1319,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "alladmin":
         case "actadmin":
             // broad limits are precise only if allowed to administer all
-            return $this->user->allow_administer_all();
+            return $this->user->allow_admin_all();
         case "active":
         case "accepted":
         case "dec":
@@ -1389,16 +1428,26 @@ class Limit_SearchTerm extends SearchTerm {
             break;
         case "alladmin":
         case "actadmin":
-            if ($this->user->privChair) {
+            if ($this->user->privChair
+                || ($mttl = $this->user->managed_track_tags()) === null) {
                 break;
             }
-            /* FALLTHRU */
-        case "admin":
-            if ($this->user->is_track_manager()) {
-                $ff[] = "(Paper.managerContactId={$this->user->contactXid} or Paper.managerContactId=0)";
-            } else {
-                $ff[] = "Paper.managerContactId={$this->user->contactXid}";
+            $fx = ["Paper.managerContactId={$this->user->contactXid}"];
+            if (!empty($mttl)) {
+                $tsm = (new TagSearchMatcher($this->user))->add_tag_list($mttl);
+                $fx[] = $tsm->exists_sqlexpr("Paper");
             }
+            $ff[] = "(" . join(" or ", $fx) . ")";
+            break;
+        case "admin":
+            $fx = ["Paper.managerContactId={$this->user->contactXid}"];
+            if (($mttl = $this->user->managed_track_tags()) === null) {
+                $fx[] = "Paper.managerContactId=0";
+            } else if (!empty($mttl)) {
+                $tsm = (new TagSearchMatcher($this->user))->add_tag_list($mttl);
+                $fx[] = "(Paper.managerContactId=0 and " . $tsm->exists_sqlexpr("Paper") . ")";
+            }
+            $ff[] = "(" . join(" or ", $fx) . ")";
             break;
         case "req":
             $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy={$this->user->contactXid})";
@@ -1548,6 +1597,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         } else if ($this->trivial !== null) {
             return $this->trivial;
         }
+        // XXX truncate abstract for hard wordlimit
         return $this->regex->match($row->{$this->field}());
     }
     function script_expression(PaperInfo $row, $about) {
@@ -1557,9 +1607,6 @@ class TextMatch_SearchTerm extends SearchTerm {
             return null;
         }
         return ["type" => $this->field, "match" => $this->trivial];
-    }
-    function about() {
-        return self::ABOUT_PAPER;
     }
     function debug_json() {
         if ($this->trivial !== null) {
@@ -1749,9 +1796,6 @@ class PaperID_SearchTerm extends SearchTerm {
             return new PaperIDOrder_PaperColumn($pl->conf, $this);
         }
         return null;
-    }
-    function about() {
-        return self::ABOUT_PAPER;
     }
     static function parse_pidcode($word, SearchWord $sword, PaperSearch $srch) {
         if (($ids = SessionList::decode_ids($word)) === null) {

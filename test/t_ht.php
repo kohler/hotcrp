@@ -2,6 +2,7 @@
 // t_ht.php -- HotCRP tests
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class Ht_Tester {
     function test_select() {
         xassert_eqq(Ht::select("x", ["a", "b", "c"], "a"),

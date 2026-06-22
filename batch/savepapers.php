@@ -210,7 +210,7 @@ class SavePapers_Batch {
             $title = simplify_whitespace($j->title);
         }
         if ($title !== "") {
-            $titletext = " (" . UnicodeHelper::utf8_abbreviate($title, 40) . ")";
+            $titletext = " (" . UnicodeHelper::utf8_word_abbreviate($title, 40) . ")";
         }
 
         foreach ($this->filters as $f) {

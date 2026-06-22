@@ -35,12 +35,21 @@ class PaperColumn extends Column {
         return call_user_func($cj->function, $conf, $cj);
     }
 
-    /** @param Contact|XtParams $ctx
+    /** @param XtParams $ctx
+     * @param string $name
      * @param string|MessageItem|list<MessageItem> $message */
-    static function column_error($ctx, $message) {
+    static function column_error_at($ctx, $name, $message) {
         if ($ctx instanceof XtParams && $ctx->paper_list) {
-            $ctx->paper_list->column_error($message);
+            $ml = is_string($message) ? MessageItem::warning($message) : $message;
+            $ctx->paper_list->column_error_at($name, $ml);
         }
+    }
+
+    /** @param Contact|XtParams $ctx
+     * @param string|MessageItem|list<MessageItem> $message
+     * @deprecated */
+    static function column_error($ctx, $message) {
+        error_log(debug_string_backtrace());
     }
 
 
@@ -168,8 +177,7 @@ class Id_PaperColumn extends PaperColumn {
         return $a->paperId <=> $b->paperId;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $href = $pl->_paperLink($row);
-        return "<a href=\"{$href}\" class=\"pnum taghl\">#{$row->paperId}</a>";
+        return $pl->hotlink_to("#{$row->paperId}", $row, ["class" => "pnum taghl"]);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->paperId;
@@ -266,16 +274,14 @@ class Title_PaperColumn extends PaperColumn {
             $highlight_count = 0;
         }
 
+        $js = ["class" => "ptitle taghl"];
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->need_render = true;
-            $th = htmlspecialchars($title);
-            $klass_extra = " need-format\" data-format=\"{$format}\" data-title=\"{$th}";
-        } else {
-            $klass_extra = "";
+            $js["class"] .= " need-format";
+            $js["data-format"] = $format;
+            $js["data-title"] = $title;
         }
-
-        $link = $pl->_paperLink($row);
-        $t = "<a href=\"{$link}\" class=\"ptitle taghl{$klass_extra}\">{$highlight_text}</a>";
+        $t = $pl->hotlink_to($highlight_text, $row, $js);
         if ($this->want_pdf) {
             $dtype = $row->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION;
             if (($dtype === DTYPE_FINAL ? $row->finalPaperStorageId : $row->paperStorageId) > 1
@@ -308,6 +314,9 @@ class Status_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->show_submitted = $pl->search->show_submitted_status();
+        if ($pl->search->limit_term()->is_author()) {
+            $pl->qopts["timeAcceptNotified"] = true;
+        }
         return true;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
@@ -561,6 +570,15 @@ class Authors_PaperColumn extends PaperColumn {
             }
             return join("; ", $out);
         }
+    }
+    function json(PaperList $pl, PaperInfo $row) {
+        $au = [];
+        if ($pl->user->can_view_authors($row) || $this->anon) {
+            foreach ($row->author_list() as $auth) {
+                $au[] = $auth->unparse_nea_json();
+            }
+        }
+        return $au;
     }
 }
 

@@ -5,7 +5,7 @@
 class JSON_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
         $wantjreq = $sv->use_req() && $sv->has_req("json_settings");
-        $defj = json_encode_browser($sv->all_jsonv(), JSON_PRETTY_PRINT);
+        $defj = json_encode_browser($sv->all_jsonv(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         $mainj = $wantjreq ? $sv->reqstr("json_settings") : $defj;
         $mainh = htmlspecialchars($mainj);
         echo '<div class="settings-json-panels">',
@@ -33,7 +33,7 @@ class JSON_SettingParser extends SettingParser {
         }
         echo ' data-reflect-highlight-api="=api/settings?dry_run=1 settings">',
             $mainh, "\n</div>",
-            '</div><div class="settings-json-panel-info"><div class="settings-json-info">',
+            '</div><div class="settings-json-panel-info"><div class="s-settings-json-info">',
             '<h3 class="form-h">Selected settings</h3>',
             '<ul class="x">',
             '<li><a href="#path=sf"><code class="settings-jpath">sf</code></a>: Submission form</li>',
@@ -42,7 +42,8 @@ class JSON_SettingParser extends SettingParser {
             '<li><a href="#path=track"><code class="settings-jpath">track</code></a>: Submission tracks</li>',
             '<li><a href="#path=tag_style"><code class="settings-jpath">tag_style</code></a>: Tag colors and styles</li>',
             '</ul>',
-            '</div></div></div>';
+            '</div><div class="s-settings-json-bottom-fader"></div></div>',
+            '</div>';
         // NB On Safari, HTMLTextAreaElement.setRangeText only works on displayed elements.
         echo '<textarea name="json_settings" id="json_settings" class="position-absolute invisible"';
         if ($mainj !== $defj) {

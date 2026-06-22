@@ -190,7 +190,7 @@ class Conflict_PaperColumn extends PaperColumn {
             }
         }
         if (empty($rs)) {
-            PaperColumn::column_error($xtp, "<0>PC member ‘{$m[2]}’ not found");
+            PaperColumn::column_error_at($xtp, $name, "<0>PC member ‘{$m[2]}’ not found");
         }
         return $rs;
     }

@@ -1,6 +1,6 @@
 <?php
 // messageset.php -- HotCRP sets of messages by fields
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class MessageItem implements JsonSerializable {
     /** @var ?string */
@@ -134,6 +134,12 @@ class MessageItem implements JsonSerializable {
      * @return MessageItem */
     function with_field($field) {
         return $this->field === $field ? $this : $this->with(["field" => $field]);
+    }
+
+    /** @param int $status
+     * @return MessageItem */
+    function with_max_status($status) {
+        return $this->status <= $status ? $this : $this->with(["status" => $status]);
     }
 
     /** @param ?string $landmark
@@ -825,13 +831,9 @@ class MessageSet {
             if ($ml instanceof MessageItem) {
                 $mlx[] = $ml;
             } else if ($ml instanceof MessageSet) {
-                if ($ml->has_message()) { // old PHPs require at least 2 args
-                    array_push($mlx, ...$ml->message_list());
-                }
-            } else {
-                foreach ($ml ?? [] as $mi) {
-                    $mlx[] = $mi;
-                }
+                array_push($mlx, ...$ml->message_list());
+            } else if (!empty($ml)) {
+                array_push($mlx, ...$ml);
             }
         }
         return $mlx;
@@ -898,7 +900,7 @@ class MessageSet {
      * @return list<string> */
     static function feedback_html_items($message_list) {
         $ts = [];
-        $t = "";
+        $t = $tcontext = "";
         $last_mi = $last_landmark = null;
         foreach ($message_list as $mi) {
             if ($mi->message === null) {
@@ -937,9 +939,15 @@ class MessageSet {
                 && $mi->pos1 !== null
                 && $mi->context !== null) {
                 $s = "";
-            } else if ($mi->status !== self::INFORM && $t !== "") {
-                $ts[] = $t;
-                $t = "";
+            } else if ($mi->status !== self::INFORM
+                       && ($t !== "" || $tcontext !== "")) {
+                $ts[] = $t . $tcontext;
+                $t = $tcontext = "";
+            } else if ($mi->context !== null
+                       && $mi->pos1 !== null
+                       && $tcontext !== "") {
+                $t .= $tcontext;
+                $tcontext = "";
             }
 
             // render landmark
@@ -948,7 +956,7 @@ class MessageSet {
                 && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
                 $lmx = $mi->landmark;
                 if (str_starts_with($lmx, "<5>")
-                    && ($clmx = CleanHTML::basic_clean(substr($lmx, 3))) !== false) {
+                    && ($clmx = CleanHTML::basic_clean(substr($lmx, 3))) !== null) {
                     $lmx = $clmx;
                 } else {
                     $lmx = htmlspecialchars($lmx);
@@ -979,10 +987,11 @@ class MessageSet {
             }
 
             // add context
-            if ($mi->pos1 !== null && $mi->context !== null) {
+            if ($mi->context !== null
+                && $mi->pos1 !== null) {
                 $mark = Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status);
                 $lmx = $s === "" ? $lm : "";
-                $t .= "<div class=\"msg-context\">{$lmx}{$mark}</div>";
+                $tcontext = "<div class=\"msg-context\">{$lmx}{$mark}</div>";
             }
 
             // cleanup
@@ -991,8 +1000,8 @@ class MessageSet {
                 $last_landmark = $mi->landmark;
             }
         }
-        if ($t !== "") {
-            $ts[] = $t;
+        if ($t !== "" || $tcontext !== "") {
+            $ts[] = $t . $tcontext;
         }
         return $ts;
     }
@@ -1031,6 +1040,7 @@ class MessageSet {
      * @return string */
     static function feedback_text($message_list, $include_fields = false) {
         $t = [];
+        $tcontext = "";
         foreach ($message_list as $mi) {
             if ($mi->message === null) {
                 if ($mi->fmessage !== null) {
@@ -1040,6 +1050,12 @@ class MessageSet {
             }
             if ($mi->message === "") {
                 continue;
+            }
+            if ($tcontext !== ""
+                && ($mi->status !== MessageSet::INFORM
+                    || ($mi->context !== null && $mi->pos1 !== null))) {
+                $t[] = $tcontext;
+                $tcontext = "";
             }
             $mt = $mi->message_as(0);
             if ($include_fields && $mi->field !== null) {
@@ -1052,9 +1068,12 @@ class MessageSet {
                 $mt = "    " . str_replace("\n", "\n    ", $mt);
             }
             $t[] = rtrim($mt) . "\n";
-            if ($mi->pos1 !== null && $mi->context !== null) {
-                $t[] = Ht::mark_substring_text($mi->context, $mi->pos1, $mi->pos2, "    ");
+            if ($mi->context !== null && $mi->pos1 !== null) {
+                $tcontext = Ht::mark_substring_text($mi->context, $mi->pos1, $mi->pos2, "    ");
             }
+        }
+        if ($tcontext !== "") {
+            $t[] = $tcontext;
         }
         return empty($t) ? "" : join("", $t);
     }

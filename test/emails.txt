@@ -1833,7 +1833,7 @@ site. The Abstract field was changed.
 
 * Title: Paper about mantis shrimp
 * Authors: David Attenborough (BBC);
-  Geborah Gestrin
+  Géborah Géstrin
 * Site: http://hotcrp.lcdf.org/test/paper/{{}}?cap={{}}
 
 The submission is ready for review. You have until {{}} to make further changes.

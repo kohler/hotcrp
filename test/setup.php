@@ -1,6 +1,6 @@
 <?php
 // test/setup.php -- HotCRP helper file to initialize tests
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));
@@ -9,6 +9,7 @@ ini_set("error_log", "");
 ini_set("log_errors", "0");
 ini_set("display_errors", "stderr");
 ini_set("assert.exception", "1");
+error_reporting(E_ALL);
 
 require_once(SiteLoader::find("src/init.php"));
 initialize_conf();
@@ -161,9 +162,9 @@ class MailChecker {
                     "       got {$havel[$badline-1]}\n",
                     $color ? "\x1b[90m" : "",
                     "  expected ",
-                    str_replace("\n", "\n           ", rtrim($have)),
-                    "\n       got ",
                     str_replace("\n", "\n           ", rtrim($wtext)),
+                    "\n       got ",
+                    str_replace("\n", "\n           ", rtrim($have)),
                     $color ? "\x1b[m\n" : "\n"
                 );
             } else {
@@ -265,6 +266,15 @@ class RequireCdb {
     }
 }
 
+#[Attribute]
+class RequireDb {
+    /** @var bool|'fresh' */
+    public $required;
+    function __construct($required = true) {
+        $this->required = $required;
+    }
+}
+
 class Xassert {
     /** @var int */
     static public $n = 0;
@@ -327,18 +337,6 @@ class Xassert {
         }
     }
 
-    static function print_landmark() {
-        list($location, $rest) = self::landmark(true);
-        $x = $location . $rest;
-        if ($x !== "") {
-            self::will_print();
-            if (!str_ends_with($x, "\n")) {
-                $x .= "\n";
-            }
-            fwrite(STDERR, $x);
-        }
-    }
-
     /** @param list<string> $sl */
     static private function fail_message($sl) {
         if (self::$retry) {
@@ -351,7 +349,11 @@ class Xassert {
             $x = join("", array_slice($sl, 1));
         } else {
             list($location, $rest) = self::landmark(true);
-            $x = $location . join("", $sl) . $rest;
+            $x = $location . join("", $sl);
+            if ($x !== "" && $rest !== "" && !str_ends_with($x, "\n")) {
+                $x .= "\n";
+            }
+            $x .= $rest;
         }
         if ($x !== "" && !str_ends_with($x, "\n")) {
             $x .= "\n";
@@ -532,18 +534,6 @@ function xassert($x, $description = "") {
         Xassert::fail_with($description ? : "assertion failed");
     }
     return !!$x;
-}
-
-/** @return void */
-function xassert_exit() {
-    $ok = Xassert::$nsuccess > 0
-        && Xassert::$nsuccess === Xassert::$n
-        && Xassert::$nerror === 0;
-    echo ($ok ? "* " : "! "), plural(Xassert::$nsuccess, "test"), " succeeded out of ", Xassert::$n, " tried.\n";
-    if (Xassert::$nerror !== 0) {
-        echo "! ", plural(Xassert::$nerror, "other error"), ".\n";
-    }
-    exit($ok ? 0 : 1);
 }
 
 /** @param string $rest
@@ -826,10 +816,10 @@ function xassert_int_list_eqq($actual, $expected) {
 function search_json($user, $query, $cols = "id", $allow_warnings = false) {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
     $pl->parse_view($cols, PaperList::VIEWORIGIN_MAX);
-    if ($pl->search->has_problem() && !$allow_warnings) {
+    if ($pl->has_problem() && !$allow_warnings) {
         Xassert::will_print();
         list($first, $rest) = Xassert::landmark(true);
-        fwrite(STDERR, "{$first}Search reports warnings: " . $pl->search->full_feedback_text() . $rest);
+        fwrite(STDERR, "{$first}Search reports warnings: " . $pl->full_feedback_text() . $rest);
     }
     return $pl->text_json();
 }
@@ -990,7 +980,7 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
 }
 
 
-/** @param Contact $user
+/** @param Contact|TokenInfo $user
  * @param ?PaperInfo $prow
  * @return Downloader|JsonResult */
 function call_api_result($fn, $user, $qreq, $prow = null) {
@@ -1005,19 +995,33 @@ function call_api_result($fn, $user, $qreq, $prow = null) {
             $qreq = new Qrequest("GET", $qreq);
         }
     }
+    if ($user instanceof TokenInfo) {
+        $token = $user;
+        if ($token->capabilityType !== TokenInfo::BEARER
+            || !$token->is_active()) {
+            return JsonResult::make_error(401, "<0>Unauthorized");
+        }
+        $qreq->set_header("Authorization", "Bearer {$token->salt}");
+        $qreq->approve_token();
+        $user = clone $token->local_user();
+        $user->set_bearer_authorized();
+        $user->set_scope($token->data("scope"));
+    } else {
+        assert(!$user->is_bearer_authorized());
+    }
+    $qreq->set_navigation(Navigation::get());
     $qreq->set_user($user);
     if ($prow) {
         $qreq->set_paper($prow);
     } else if ($qreq->p && ctype_digit((string) $qreq->p)) {
         $user->conf->set_paper_request($qreq, $user);
     }
-    $qreq->set_navigation(Navigation::get());
     Qrequest::set_main_request($qreq);
     $uf = $user->conf->api($fn, $user, $qreq->method());
     return $user->conf->call_api_on($uf, $fn, $user, $qreq);
 }
 
-/** @param Contact $user
+/** @param Contact|TokenInfo $user
  * @param ?PaperInfo $prow
  * @return object */
 function call_api($fn, $user, $qreq, $prow = null) {
@@ -1029,6 +1033,7 @@ function call_api($fn, $user, $qreq, $prow = null) {
         if (is_array($jr->content) && !is_list($jr->content)) {
             return (object) $jr->content;
         }
+        /** @phan-suppress-next-line PhanTypeMismatchReturn */
         return $jr->content;
     }
     if (!isset($jr->content["status_code"]) && $jr->status > 299) {
@@ -1156,33 +1161,101 @@ function sorted_conflicts(PaperInfo $prow, $flags) {
 
 class TestRunner {
     static public $original_opt;
+
+    /** @var array<string,list<string>> */
+    static public $collections = [
+        "test01" => [
+            "fresh_db", "Permission_Tester", "Tags_Tester", "Tracks_Tester",
+            "Banners_Tester", "Session_Tester"
+        ],
+        "test02" => [
+            "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",
+            "AuthorMatch_Tester", "Ht_Tester", "Fmt_Tester",
+            "Getopt_Tester", "CleanHTML_Tester", "Abbreviation_Tester",
+            "DocumentBasics_Tester", "FixCollaborators_Tester",
+            "Mention_Tester", "Search_Tester", "Settings_Tester",
+            "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester"
+        ],
+        "test03" => [
+            "MinCostMaxFlow_Tester"
+        ],
+        "test04" => [
+            "Cdb_Tester"
+        ],
+        "test05" => [
+            "fresh_db", "PaperStatus_Tester", "AuthorCertification_Tester",
+            "Login_Tester", "UserStatus_Tester",
+            "(", "no_cdb", "Login_Tester", "UserStatus_Tester", ")"
+        ],
+        "test06" => [
+            "fresh_db", "Reviews_Tester", "Comments_Tester", "UserAPI_Tester",
+            "UploadAPI_Tester", "Mailer_Tester", "Events_Tester",
+            "Autoassign_Tester", "fresh_db", "Formulas_Tester"
+        ],
+        "test07" => [
+            "DiffMatchPatch_Tester"
+        ],
+        "test08" => [
+            "(", "no_cdb", "fresh_db", "Permission_Tester", "Unit_Tester",
+            "XtCheck_Tester", "Abbreviation_Tester",
+            "DocumentBasics_Tester", "Mention_Tester",
+            "Invariants_Tester", "Search_Tester", "Settings_Tester",
+            "Invariants_Tester", "UpdateSchema_Tester",
+            "Invariants_Tester", "Batch_Tester",
+            "PaperStatus_Tester", "Login_Tester",
+            "fresh_db", "Reviews_Tester", "Comments_Tester",
+            "UserAPI_Tester", ")"
+        ],
+        "test09" => [
+            "fresh_db", "PaperAPI_Tester", "ReviewAPI_Tester",
+            "Scope_Tester"
+        ],
+        "default" => [
+            "test01", "test02", "test03", "test04", "test05", "test06",
+            "test07", "(", "if_all", "test08", ")", "test09"
+        ],
+        "all" => [
+            "test01", "test02", "test03", "test04", "test05", "test06",
+            "test07", "test08", "test09"
+        ]
+    ];
+
     /** @var bool */
     private $verbose;
     /** @var bool */
+    private $all;
+    /** @var bool */
+    private $skipping = false;
+    /** @var ?bool */
     private $reset;
     /** @var bool */
-    private $need_reset;
-    /** @var ?bool */
-    private $need_cdb;
-    /** @var ?bool
+    private $need_fresh = true;
+    /** @var bool
      * @readonly */
     public $color;
     /** @var int */
-    private $width = 47;
+    private $width = 64;
     /** @var ?string */
     private $last_classname;
     /** @var ?object */
     private $tester;
-    /** @var ?string */
-    private $requirement_failure;
     /** @var bool */
     private $need_newline = false;
     /** @var ?string */
     private $verbose_test;
+    /** @var ?object */
+    private $save_stack;
+    /** @var int */
+    private $test_index = 0;
+    /** @var int */
+    private $test_count = 1;
+    /** @var int */
+    private $test_digits = 1;
 
 
     function __construct($arg) {
         $this->verbose = isset($arg["verbose"]);
+        $this->all = isset($arg["all"]);
         if (isset($arg["stop"])) {
             Xassert::$stop = true;
         }
@@ -1197,7 +1270,6 @@ class TestRunner {
         } else {
             $this->reset = null;
         }
-        $this->need_reset = true;
         if (isset($arg["color"])) {
             $this->color = true;
         } else if (isset($arg["no-color"])) {
@@ -1243,7 +1315,7 @@ class TestRunner {
         }
 
         if ($rebuild
-            || !preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)\);/mi', $s, $m)
+            || !preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)[,\)]/mi', $s, $m)
             || Dbl::fetch_ivalue($dblink, "select value from Settings where name=?", $m[1]) !== intval($m[2])) {
             $rebuild = true;
         }
@@ -1260,6 +1332,7 @@ class TestRunner {
             error_log("* Error initializing database.\n{$dblink->error}");
             exit(1);
         }
+        Conf::set_current_time();
     }
 
     /** @param bool $first */
@@ -1273,6 +1346,7 @@ class TestRunner {
     /** @param bool $rebuild */
     static function reset_db($rebuild = false) {
         $conf = Conf::$main;
+        $conf->call_shutdown_functions();
         $timer = new ProfileTimer;
         MailChecker::clear();
 
@@ -1339,29 +1413,9 @@ class TestRunner {
         $timer->mark("papers");
 
         self::setup_assignments($json->assignments_1, $user_chair);
-        $conf->save_cdb_user_updates();
+        $conf->call_shutdown_function("CdbUserUpdate");
         $timer->mark("assignment");
         MailChecker::clear();
-    }
-
-    /** @param string $url */
-    static function set_navigation_base($url) {
-        $nav = Navigation::get();
-        $urlp = parse_url($url);
-        $nav->protocol = ($urlp["scheme"] ?? "http") . "://";
-        $nav->host = $urlp["host"] ?? "example.com";
-        $nav->server = $nav->protocol . $nav->host;
-        if (($s = $urlp["pass"] ?? null)) {
-            $nav->server .= ":{$s}";
-        }
-        if (($s = $urlp["user"] ?? null)) {
-            $nav->server .= "@{$s}";
-        }
-        if (($s = $urlp["port"] ?? null)) {
-            $nav->server .= ":{$s}";
-        }
-        $nav->base_path = $nav->base_path_relative = $nav->site_path = $nav->site_path_relative =
-            $urlp["path"] ?? "/";
     }
 
 
@@ -1369,7 +1423,9 @@ class TestRunner {
         if (!$this->need_newline) {
             return;
         }
-        if ($this->color) {
+        if (!$this->color) {
+            fwrite(STDERR, "\n");
+        } else if (($this->verbose_test ?? "") !== "") {
             fwrite(STDERR, "\r{$this->verbose_test}\x1b[K\n");
         } else {
             fwrite(STDERR, "\n");
@@ -1379,6 +1435,7 @@ class TestRunner {
 
     function will_fail() {
         if ($this->verbose_test === null) {
+            $this->will_print();
             return;
         }
         if ($this->color) {
@@ -1409,11 +1466,12 @@ class TestRunner {
             if (!str_starts_with($m->name, "test")
                 || strlen($m->name) <= 4
                 || ($m->name[4] !== "_" && !ctype_upper($m->name[4]))
-                || ($methodmatch !== "" && !fnmatch($methodmatch, $m->name))) {
+                || ($methodmatch !== "" && !fnmatch($methodmatch, $m->name))
+                || !$m->isPublic()) {
                 continue;
             }
             $this->set_verbose_test($ro, $m);
-            if (!$this->check_test_attributes($m, false)) {
+            if (!$this->check_test_attributes($m)) {
                 if ($this->verbose) {
                     if ($this->color) {
                         fwrite(STDERR, "\x1b[90m{$this->verbose_test} \x1b[1;90mSKIP\x1b[m\n");
@@ -1424,7 +1482,7 @@ class TestRunner {
                 continue;
             }
             if (!$this->verbose) {
-                $testo->{$m->name}();
+                $m->invoke($testo);
                 continue;
             }
             if ($this->color) {
@@ -1435,7 +1493,7 @@ class TestRunner {
             $this->need_newline = true;
             $before_nfail = Xassert::$n - Xassert::$nsuccess;
             $before_nerror = Xassert::$nerror;
-            $testo->{$m->name}();
+            $m->invoke($testo);
             $fail = Xassert::$n - Xassert::$nsuccess > $before_nfail;
             $ok = !$fail && Xassert::$nerror === $before_nerror;
             if ($this->verbose_test !== null) {
@@ -1465,53 +1523,64 @@ class TestRunner {
         }
     }
 
-    private function check_test_attributes($class, $store) {
+    private function check_test_attributes($class) {
         if (PHP_MAJOR_VERSION < 8) {
             return true;
         }
+        $require_db = $require_cdb = null;
+        foreach ($class->getAttributes("RequireDb") ?? [] as $attr) {
+            $x = $attr->newInstance();
+            $require_db = $x->required;
+        }
         foreach ($class->getAttributes("RequireCdb") ?? [] as $attr) {
             $x = $attr->newInstance();
-            if ($x->required === !!Conf::$main->opt("contactdbDsn")) {
-                continue;
-            } else if ($store) {
-                $this->need_cdb = $x->required;
-            } else {
-                return false;
-            }
+            $require_cdb = $x->required;
+        }
+        if ($require_cdb !== null
+            && $require_cdb !== !!Conf::$main->opt("contactdbDsn")) {
+            return false;
+        }
+        if ($require_db === false) {
+            $this->need_fresh = false;
+        } else if ($require_db === "fresh") {
+            $this->need_fresh = true;
         }
         return true;
     }
 
     /** @param string $test */
     private function set_test_class($test) {
-        $this->last_classname = $test;
-        $this->tester = null;
+        if ($this->tester) {
+            $ro = new ReflectionObject($this->tester);
+            if ($ro->hasMethod("finalize")
+                && ($m = $ro->getMethod("finalize"))->isPublic()) {
+                $m->invoke($this->tester);
+            }
+            $this->tester = null;
+        }
 
+        $need_fresh = $this->need_fresh;
         $class = new ReflectionClass($test);
-        $this->check_test_attributes($class, true);
+        if (!$this->check_test_attributes($class)) {
+            if (!$this->save_stack) {
+                Xassert::fail_with("!", "Cannot run `{$test}` due to requirement failure");
+            }
+            $this->need_fresh = $need_fresh;
+            return;
+        }
 
         // prepare database
-        if ($this->reset ?? $this->need_reset) {
+        if ($this->reset ?? $this->need_fresh) {
             self::reset_db($this->reset ?? false);
-            $this->need_reset = false;
+            $this->need_fresh = false;
             $this->reset = null;
+        } else {
+            $this->need_fresh = $need_fresh;
         }
-
-        // apply CDB requirement
-        if ($this->need_cdb === true && !Conf::$main->opt("contactdbDsn")) {
-            if (!(self::$original_opt["contactdbDsn"] ?? null)) {
-                $this->requirement_failure = "test class requires contactdb";
-                return;
-            }
-            Conf::$main->set_opt("contactdbDsn", self::$original_opt["contactdbDsn"]);
-            Conf::$main->invalidate_caches(["cdb" => true]);
-        } else if ($this->need_cdb === false && Conf::$main->opt("contactdbDsn")) {
-            Conf::$main->set_opt("contactdbDsn", null);
-            Conf::$main->invalidate_caches(["cdb" => true]);
-        }
-        $this->need_cdb = null;
 
         // construct tester
+        $this->last_classname = $test;
+        $this->tester = null;
         $ctor = $class->getConstructor();
         if ($ctor && $ctor->getNumberOfParameters() === 1) {
             $this->tester = $class->newInstance(Conf::$main);
@@ -1521,25 +1590,65 @@ class TestRunner {
         }
     }
 
+    private function push_test_state() {
+        $this->save_stack = (object) [
+            "contactdbDsn" => Conf::$main->opt("contactdbDsn"),
+            "skipping" => $this->skipping,
+            "next" => $this->save_stack
+        ];
+    }
+
+    private function pop_test_state() {
+        if (!$this->save_stack) {
+            return;
+        }
+        $cdb_dsn = $this->save_stack->contactdbDsn;
+        if (Conf::$main->opt("contactdbDsn") !== $cdb_dsn) {
+            Conf::$main->set_opt("contactdbDsn", $cdb_dsn);
+            Conf::$main->invalidate_caches("cdb");
+        }
+        $this->skipping = $this->save_stack->skipping;
+        $this->save_stack = $this->save_stack->next;
+    }
+
     /** @param string $test */
     private function run_test($test) {
         if ($test === "no_argv") {
             return;
+        } else if ($test === "(") {
+            $this->push_test_state();
+            return;
+        } else if ($test === ")") {
+            $this->pop_test_state();
+            return;
+        } else if ($this->skipping) {
+            return;
+        } else if ($test === "if_all") {
+            if (!$this->all) {
+                $this->skipping = true;
+            }
+            return;
         } else if ($test === "no_cdb") {
             Conf::$main->set_opt("contactdbDsn", null);
-            Conf::$main->invalidate_caches(["cdb" => true]);
+            Conf::$main->invalidate_caches("cdb");
             $this->last_classname = null;
             return;
         } else if ($test === "reset_db") {
             if (!$this->reset) {
-                $this->need_reset = $this->reset = true;
+                $this->need_fresh = $this->reset = true;
             }
             $this->last_classname = null;
             return;
-        } else if ($test === "clear_db") {
-            $this->need_reset = true;
+        } else if ($test === "fresh_db") {
+            $this->need_fresh = true;
             $this->last_classname = null;
             return;
+        }
+
+        if ($this->color && !$this->verbose) {
+            fwrite(STDERR, sprintf("\r\x1b[38;2;212;23;67m[%{$this->test_digits}d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
+                                   $this->test_index, $this->test_count, $test));
+            $this->need_newline = true;
         }
 
         $methodmatch = "";
@@ -1558,18 +1667,62 @@ class TestRunner {
         }
         if ($this->tester) {
             $this->run_object_tests($this->tester, $methodmatch);
-        } else {
-            Xassert::fail_with("!", "Cannot run `{$test}`: {$this->requirement_failure}");
         }
     }
 
-    /** @param 'no_cdb'|'reset_db'|class-string ...$tests */
+    private function run_test_list($tests) {
+        $this->test_index = 0;
+        $this->test_count = count($tests);
+        $this->test_digits = (int) floor(log10(max($this->test_count, 1))) + 1;
+        foreach ($tests as $test) {
+            ++$this->test_index;
+            $this->run_test($test);
+        }
+        if ($this->color && !$this->verbose) {
+            fwrite(STDERR, "\r\x1b[K");
+        }
+    }
+
+    private function expand($tests) {
+        $new_tests = [];
+        foreach ($tests as $test) {
+            if (isset(self::$collections[$test])) {
+                array_push($new_tests, ...$this->expand(self::$collections[$test]));
+            } else {
+                $new_tests[] = $test;
+            }
+        }
+        return $new_tests;
+    }
+
+    private function complete() {
+        $ok = Xassert::$nsuccess > 0
+            && Xassert::$nsuccess === Xassert::$n
+            && Xassert::$nerror === 0;
+        $msg = ($ok ? "* " : "! ")
+            . plural(Xassert::$nsuccess, "test")
+            . " succeeded out of " . Xassert::$n . " tried.";
+        if ($this->color) {
+            $k = $ok ? "1;38;2;40;160;80" : "1;31";
+            $msg = "\x1b[{$k}m{$msg}\x1b[m";
+        }
+        echo $msg, "\n";
+        if (Xassert::$nerror !== 0) {
+            $k0 = $this->color ? "\x1b[31m" : "";
+            $k1 = $this->color ? "\x1b[m" : "";
+            echo $k0, "! ", plural(Xassert::$nerror, "other error"), ".", $k1, "\n";
+        }
+        return $ok;
+    }
+
+    /** @param 'no_cdb'|'reset_db'|'fresh_db'|class-string ...$tests */
     static function run(...$tests) {
         if (($tests[0] ?? "") === "no_argv") {
             $arg = [];
         } else {
             global $argv;
             $arg = (new Getopt)->long(
+                "all,a run all test collections",
                 "verbose,V be verbose",
                 "help,h !",
                 "reset,reset reset test database",
@@ -1586,15 +1739,18 @@ class TestRunner {
 
         $tr = new TestRunner($arg);
         Xassert::$test_runner = $tr;
-        foreach (empty($arg["_"]) ? $tests : $arg["_"] as $test) {
-            $tr->run_test($test);
+        $test_list = $arg["_"];
+        if (empty($test_list)) {
+            $test_list = empty($tests) ? ["default"] : $tests;
         }
-        xassert_exit();
+        $test_list = $tr->expand($test_list);
+        $tr->run_test_list($test_list);
+        exit($tr->complete() ? 0 : 1);
     }
 }
 
 TestRunner::$original_opt = $Opt;
-TestRunner::set_navigation_base("/");
+Navigation::set(NavigationState::make_base("https://hotcrp-test.invalid/"));
 
 
 class TestQreq {

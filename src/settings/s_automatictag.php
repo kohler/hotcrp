@@ -98,30 +98,29 @@ class AutomaticTag_SettingParser extends SettingParser {
 
     function validate(Si $si, SettingValues $sv) {
         $old_at = $sv->oldv($si->name0 . $si->name1);
-        $pb = $sv->conf->set_updating_automatic_tags(true);
+        $before = $sv->conf->set_updating_automatic_tags(true);
         if ($si->name2 === "/search") {
             $q = $sv->newv($si);
+            $status = $q === $old_at->q ? 1 : 2;
             $search = new PaperSearch($sv->conf->root_user(), ["q" => $q, "t" => "all"]);
-            $search->full_term();
+            foreach ($search->message_list() as $mi) {
+                $sv->append_item_at($si, $mi->with_max_status($status));
+            }
             if ($search->has_problem()) {
-                $method = $q === $old_at->q ? "warning_at" : "error_at";
-                $sv->$method($si);
-                foreach ($search->message_list() as $mi) {
-                    $sv->append_item_at($si, $mi);
-                }
+                $sv->append_item_at($si, new MessageItem($status));
             }
         } else if ($si->name2 === "/value") {
             $v = $sv->newv($si);
-            $formula = Formula::make($sv->conf->root_user(), $sv->newv($si));
+            $status = $v === $old_at->v ? 1 : 2;
+            $formula = Formula::make($sv->conf->root_user(), $v);
+            foreach ($formula->message_list() as $mi) {
+                $sv->append_item_at($si, $mi->with_max_status($status));
+            }
             if (!$formula->ok()) {
-                $method = $v === $old_at->v ? "warning_at" : "error_at";
-                $sv->$method($si);
-                foreach ($formula->message_list() as $mi) {
-                    $sv->append_item_at($si, $mi);
-                }
+                $sv->append_item_at($si, new MessageItem($status));
             }
         }
-        $sv->conf->set_updating_automatic_tags(false);
+        $sv->conf->set_updating_automatic_tags($before);
     }
 
     function store_value(Si $si, SettingValues $sv) {
@@ -141,7 +140,7 @@ class AutomaticTag_SettingParser extends SettingParser {
                     $sv->conf->_update_automatic_tags_csv($csv);
                 });
             }
-            $sv->mark_invalidate_caches(["tags" => true, "autosearch" => true]);
+            $sv->mark_invalidate_caches("tags", "autosearch");
         }
     }
 

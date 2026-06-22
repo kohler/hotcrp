@@ -86,7 +86,7 @@ class ContactPrimary {
         }
         $this->sec->save_prop();
         $this->conf->resume_log();
-        $this->conf->invalidate_caches(["linked_users" => true]);
+        $this->conf->invalidate_caches("linked_users");
         // authorship changes
         if (!$this->cdb) {
             $this->_update_author_records();
@@ -118,7 +118,7 @@ class ContactPrimary {
         $oldid = $u->primaryContactId;
         $u->set_prop("primaryContactId", 0);
         Dbl::qe($u->dblink(), "delete from ContactPrimary where contactId=? and primaryContactId=?", $u->$idk, $oldid);
-        if (!Dbl::fetch_ivalue($u->dblink(), "select exists(select * from ContactPrimary where primaryContactId=?) from dual", $oldid)
+        if (!Dbl::fetch_ivalue($u->dblink(), "select exists (select * from ContactPrimary where primaryContactId=?) from dual", $oldid)
             && ($xpri = $this->user_by_id($oldid))) {
             $xpri->set_prop("cflags", $xpri->cflags & ~Contact::CF_PRIMARY);
             $xpri->save_prop();
@@ -159,7 +159,7 @@ class ContactPrimary {
     }
 
     private function _update_author_records() {
-        $rowset = $this->conf->paper_set(["minimal" => true, "authorInformation" => true, "allConflictType" => true, "where" => "paperId in (select paperId from PaperConflict where contactId>0 and contactId" . sql_in_int_list($this->uids) . " and conflictType>=" . CONFLICT_AUTHOR . ")"]);
+        $rowset = $this->conf->paper_set(["minimal" => true, "authorInformation" => true, "allConflictType" => true, "where" => "exists (select * from PaperConflict where paperId=Paper.paperId and contactId>0 and contactId" . sql_in_int_list($this->uids) . " and conflictType>=" . CONFLICT_AUTHOR . ")"]);
 
         // prefetch authors and contact authors
         foreach ($rowset as $prow) {

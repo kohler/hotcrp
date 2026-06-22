@@ -465,7 +465,7 @@ class LogEntryGenerator {
 
     /** @param string $url */
     function set_log_url_base($url) {
-        $this->log_url_base = $url;
+        $this->log_url_base = htmlspecialchars($url);
     }
 
     /** @param int|'earliest' $pageno

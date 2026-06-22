@@ -9,7 +9,7 @@ class Doc_Page {
     static private function error($status, $msg, $qreq) {
         if ($status === 403 && $qreq->user()->is_empty()) {
             $qreq->user()->escape();
-            exit(0);
+            Navigation::complete();
         }
 
         $ml = MessageSet::make_list($msg);
@@ -25,11 +25,11 @@ class Doc_Page {
         if (isset($qreq->fn)) {
             JsonResult::make_message_list($status, $ml)->complete();
         }
-        http_response_code($status);
+        Navigation::http_response_code($status);
         $qreq->print_header("Download", "", ["body_class" => "body-error"]);
         $qreq->conf()->feedback_msg($ml);
         $qreq->print_footer();
-        exit(0);
+        Navigation::complete();
     }
 
     /** @param Contact $user
@@ -74,7 +74,7 @@ class Doc_Page {
         // default is inline only for whitelisted formats
         $dopt->set_attachment(friendly_boolean($qreq->save) ? : null);
         $dopt->set_cacheable($dr->cacheable);
-        $dopt->log_user = $user;
+        $dopt->set_log_user($user);
         if ($doc->emit($dopt) === 500) {
             self::error(500, $doc->message_set(), $qreq);
         }

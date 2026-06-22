@@ -86,6 +86,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     public $pretty_print;
     /** @var bool */
     public $minimal = false;
+    /** @var ?HeaderSet */
+    private $_headers;
 
     /** @param int|array<string,mixed>|\stdClass|\JsonSerializable $a1
      * @param ?array<string,mixed> $a2 */
@@ -211,6 +213,15 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         return $this;
     }
 
+    /** @param string $header
+     * @param bool $replace
+     * @return $this */
+    function set_header($header, $replace = true) {
+        $this->_headers = $this->_headers ?? new HeaderSet;
+        $this->_headers->set($header, $replace);
+        return $this;
+    }
+
 
     /** @param MessageItem $mi
      * @return $this */
@@ -227,7 +238,19 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @return int */
     function response_code() {
-        return $this->status;
+        return $this->status ?? 200;
+    }
+
+    /** @param string $key
+     * @return ?string */
+    function header($key) {
+        return $this->_headers ? $this->_headers->get($key) : null;
+    }
+
+    /** @param string $key
+     * @return bool */
+    function has($key) {
+        return array_key_exists($key, $this->content);
     }
 
     /** @param string $key
@@ -277,24 +300,30 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @param ?Qrequest $qreq */
     function emit($qreq = null) {
-        if ($this->status && !$this->minimal && !isset($this->content["ok"])) {
+        if (!$this->minimal
+            && $this->status
+            && !isset($this->content["ok"])) {
             $this->content["ok"] = $this->status <= 299;
         }
-        if ($qreq && $qreq->valid_token()) {
-            // Don’t set status on unvalidated requests, since that can leak
-            // information (e.g. via <link prefetch onerror>).
+        if ($qreq && ($qreq->valid_token() || $qreq->same_origin())) {
+            // Surface the real status only for requests that can’t be a forged
+            // cross-site no-cors load; otherwise the 2xx-vs-error status leaks
+            // (e.g. via `<link prefetch onerror>`), so report 200 + status_code.
             if ($this->status) {
-                http_response_code($this->status);
+                Navigation::http_response_code($this->status);
             }
             if (($origin = $qreq->header("Origin"))) {
-                header("Access-Control-Allow-Origin: {$origin}");
+                Navigation::header("Access-Control-Allow-Origin: {$origin}");
             }
-        } else if ($this->status > 299
-                   && !$this->minimal
+        } else if (!$this->minimal
+                   && $this->status > 299
                    && !isset($this->content["status_code"])) {
             $this->content["status_code"] = $this->status;
         }
-        header("Content-Type: application/json");
+        Navigation::header("Content-Type: application/json; charset=utf-8");
+        foreach ($this->_headers ?? [] as $h) {
+            Navigation::header($h);
+        }
         if ($qreq && isset($qreq->pretty)) {
             $pprint = friendly_boolean($qreq->pretty);
         } else {
@@ -312,35 +341,6 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->content;
-    }
-}
-
-class Redirection extends Exception {
-    /** @var string */
-    public $url;
-    /** @var int */
-    public $status;
-    /** @param string $url
-     * @param 301|302|303|307|308 $status */
-    function __construct($url, $status = 302) {
-        parent::__construct("Redirect to {$url}");
-        $this->url = $url;
-        $this->status = $status;
-    }
-}
-
-class PageCompletion extends Exception {
-    /** @var ?int */
-    public $status;
-    function __construct($status = null) {
-        parent::__construct("Page complete");
-        $this->status = $status;
-    }
-    /** @param ?Qrequest $qreq */
-    function emit($qreq = null) {
-        if ($this->status !== null) {
-            http_response_code($this->status);
-        }
     }
 }
 
@@ -406,15 +406,6 @@ function aria_expander($c = "") {
 function aria_plus_expander($c = "") {
     $c = Ht::add_tokens("expander", $c);
     return '<span class="' . Ht::add_tokens("expander", $c) . '" role="none"><span class="ifx">−</span><span class="ifnx">+</span></span>';
-}
-
-
-/** @param Contact|Author|ReviewInfo|CommentInfo $userlike
- * @return string */
-function actas_link($userlike) {
-    return '<a href="' . Conf::$main->selfurl(Qrequest::$main_request, ["actas" => $userlike->email])
-        . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($userlike, NAME_P)])
-        . '</a>';
 }
 
 
@@ -585,9 +576,8 @@ function unparse_byte_size($n) {
         return round($n / 1000) . "kB";
     } else if ($n > 0) {
         return (max(round($n / 100), 1) / 10) . "kB";
-    } else {
-        return "0B";
     }
+    return "0B";
 }
 
 /** @param int|float $n
@@ -601,9 +591,8 @@ function unparse_byte_size_binary($n) {
         return round($n / 1024) . "KiB";
     } else if ($n > 0) {
         return (max(round($n / 102.4), 1) / 10) . "KiB";
-    } else {
-        return "0B";
     }
+    return "0B";
 }
 
 /** @param int|float $n
@@ -617,9 +606,8 @@ function unparse_byte_size_binary_f($n) {
         return sprintf("%.0fKiB", $n / 1024);
     } else if ($n > 0) {
         return sprintf("%.1fKiB", max(round($n / 102.4), 1) / 10);
-    } else {
-        return "0B";
     }
+    return "0B";
 }
 
 /** @param string $t

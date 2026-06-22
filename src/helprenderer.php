@@ -1,6 +1,6 @@
 <?php
 // helprenderer.php -- HotCRP help renderer class
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class HelpRenderer {
     /** @var Conf */
@@ -50,9 +50,8 @@ class HelpRenderer {
         } else if ($id) {
             $this->_h3ids[$id] = true;
             return "<h3 class=\"helppage\" id=\"{$id}\">{$title}</h3>\n";
-        } else {
-            return "<h3 class=\"helppage\">{$title}</h3>\n";
         }
+        return "<h3 class=\"helppage\">{$title}</h3>\n";
     }
 
     /** @param bool $tabletype
@@ -108,14 +107,14 @@ class HelpRenderer {
 
     /** @param string $html
      * @param string $page
-     * @param null|string|array $options
+     * @param ?array $param
      * @param array $js
      * @return string */
-    function hotlink($html, $page, $options = null, $js = []) {
+    function hotlink($html, $page, $param = null, $js = []) {
         if (!isset($js["rel"])) {
             $js["rel"] = "nofollow";
         }
-        return $this->conf->hotlink($html, $page, $options, $js);
+        return $this->conf->hotlink($html, $page, $param, $js);
     }
 
     /** @param string $html
@@ -151,6 +150,15 @@ class HelpRenderer {
         return $this->hotlink($html, "help", $topic);
     }
 
+    private function setting_param_link($html, $param) {
+        $js = ["rel" => "nofollow"];
+        if (!$this->user->privChair) {
+            $js["class"] = "noq need-tooltip";
+            $js["aria-label"] = "This link to a settings page only works for administrators.";
+        }
+        return $this->conf->hotlink($html, "settings", $param, $js);
+    }
+
     /** @param string $html
      * @param string $siname
      * @return string */
@@ -164,9 +172,7 @@ class HelpRenderer {
             error_log("missing setting information for {$siname}\n" . debug_string_backtrace());
             $param = [];
         }
-        $url = $this->conf->hoturl("settings", $param);
-        $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
-        return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
+        return $this->setting_param_link($html, $param);
     }
 
     /** @param string $siname
@@ -175,9 +181,8 @@ class HelpRenderer {
         if ($this->user->privChair
             && ($t = $this->setting_link("Change this setting", $siname)) !== "") {
             return " ({$t})";
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @param string $html
@@ -193,9 +198,7 @@ class HelpRenderer {
             error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
             $param = [];
         }
-        $url = $this->conf->hoturl("settings", $param);
-        $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
-        return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
+        return $this->setting_param_link($html, $param);
     }
 
     /** @param string|array{q:string} $q
@@ -204,7 +207,7 @@ class HelpRenderer {
         if (is_string($q)) {
             $q = ["q" => $q];
         }
-        $t = Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "nw", "rel" => "nofollow"])
+        $t = $this->conf->hotform("search", null, ["method" => "get", "class" => "nw", "rel" => "nofollow"])
             . Ht::entry("q", $q["q"], ["size" => $size])
             . " &nbsp;"
             . Ht::submit("Search");
@@ -227,7 +230,7 @@ class HelpRenderer {
     function example_tag($flags) {
         if ($this->user->isPC) {
             foreach ($this->conf->tags()->settings_having($flags) as $dt) {
-                if ($this->user->can_view_some_tag($dt->tag))
+                if ($this->user->can_view_tag_somewhere($dt->tag))
                     return $dt->tag;
             }
         }
@@ -240,7 +243,7 @@ class HelpRenderer {
         $ts = [];
         if ($this->user->isPC) {
             foreach ($this->conf->tags()->sorted_settings_having($flags) as $dt) {
-                if ($this->user->can_view_some_tag($dt->tag))
+                if ($this->user->can_view_tag_somewhere($dt->tag))
                     $ts[] = $dt->tag;
             }
         }
@@ -253,11 +256,10 @@ class HelpRenderer {
         $ts = $this->tag_settings_having($flags);
         if (empty($ts)) {
             return "";
-        } else {
-            return " (currently " . join(", ", array_map(function ($t) {
-                return $this->search_link($t, "#{$t}");
-            }, $ts)) . ")";
         }
+        return " (currently " . join(", ", array_map(function ($t) {
+            return $this->search_link($t, "#{$t}");
+        }, $ts)) . ")";
     }
 
     /** @param string $topic */

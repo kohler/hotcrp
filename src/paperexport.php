@@ -11,9 +11,6 @@ class PaperExport {
     public $viewer;
     /** @var bool
      * @readonly */
-    public $use_ids = false;
-    /** @var bool
-     * @readonly */
     public $include_docids = false;
     /** @var bool
      * @readonly */
@@ -38,15 +35,6 @@ class PaperExport {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
-
-    }
-
-    /** @param bool $x
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
-    function set_use_ids($x) {
-        $this->use_ids = $x;
-        return $this;
     }
 
     /** @param bool $x
@@ -137,7 +125,7 @@ class PaperExport {
     }
 
     /** @param object $d */
-    private function decorate_pdf_document_json($d, DocumentInfo $doc) {
+    function decorate_pdf_document_json($d, DocumentInfo $doc) {
         if (($spec = $this->conf->format_spec($doc->documentType))
             && !$spec->is_empty()) {
             $this->_cf = $this->_cf ?? new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
@@ -147,12 +135,14 @@ class PaperExport {
                 }
                 if ($this->_cf->has_problem()) {
                     $d->format_status = $this->_cf->has_error() ? "error" : "warning";
-                    $d->format = join(" ", $this->_cf->problem_fields());
+                    $d->format_problem_fields = $this->_cf->problem_fields();
                 } else {
                     $d->format_status = "ok";
                 }
+                return;
             }
-        } else if (($np = $doc->npages()) !== null) {
+        }
+        if (($np = $doc->npages()) !== null) {
             $d->pages = $np;
         }
     }
@@ -184,13 +174,16 @@ class PaperExport {
             if ($oj === null) {
                 continue;
             }
-            if ($this->use_ids) {
-                $pj->{$opt->field_key()} = $oj;
-            } else {
-                $pj->{$opt->json_key()} = $oj;
-            }
+            $pj->{$opt->json_key()} = $oj;
         }
 
+        $this->apply_paper_status($prow, $pj);
+        $this->apply_paper_tags($prow, $pj);
+        return $pj;
+    }
+
+    /** @param object $pj */
+    function apply_paper_status(PaperInfo $prow, $pj) {
         $submitted_status = "submitted";
         $dec = $prow->viewable_decision($this->viewer);
         if ($dec->id !== 0) {
@@ -230,12 +223,13 @@ class PaperExport {
         if ($prow->timeModified > 0) {
             $pj->modified_at = $prow->timeModified;
         }
+    }
 
+    /** @param object $pj */
+    function apply_paper_tags(PaperInfo $prow, $pj) {
         if (($tlist = $prow->sorted_viewable_tags($this->viewer))) {
             $pj->tags = Tagger::split($tlist);
         }
-
-        return $pj;
     }
 
     /** @return ?object */

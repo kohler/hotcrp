@@ -383,24 +383,24 @@ class Abbreviation_Tester {
 
     function test_unknown_decision() {
         $dm = $this->conf->decision_set();
-        xassert_eqq($dm->matchexpr("unknown", true), [0]);
-        xassert_eqq($dm->matchexpr("unk", true), [0]);
-        xassert_eqq($dm->matchexpr("und", true), [0]);
-        xassert_eqq($dm->matchexpr("undecided", true), [0]);
-        xassert_eqq($dm->matchexpr("?", true), [0]);
-        xassert_eqq($dm->matchexpr("any", true), [1, -1]);
-        xassert_eqq($dm->matchexpr("yes", true), [1]);
-        xassert_eqq($dm->matchexpr("no", true), [-1]);
+        xassert_eqq($dm->match("unknown"), [0]);
+        xassert_eqq($dm->match("unk"), [0]);
+        xassert_eqq($dm->match("und"), [0]);
+        xassert_eqq($dm->match("undecided"), [0]);
+        xassert_eqq($dm->match("?"), [0]);
+        xassert_eqq($dm->match("any"), [1, -1]);
+        xassert_eqq($dm->match("yes"), [1]);
+        xassert_eqq($dm->match("no"), [-1]);
     }
 
     function test_japanese() {
         $dm = new DecisionSet($this->conf, [1 => "採択-10分枠", 2 => "採択-15分枠", 3 => "採択-20分枠", 4 => "採択-30分枠", -1 => "不採択"]);
-        xassert_eqq($dm->matchexpr("採択", true), [1, 2, 3, 4]);
-        xassert_eqq($dm->matchexpr("採択-10分枠", true), [1]);
-        xassert_eqq($dm->matchexpr("採択-15分枠", true), [2]);
-        xassert_eqq($dm->matchexpr("採択-20分枠", true), [3]);
-        xassert_eqq($dm->matchexpr("採択-30分枠", true), [4]);
-        xassert_eqq($dm->matchexpr("不採択", true), [-1]);
-        xassert_eqq($dm->matchexpr("不採", true), [-1]);
+        xassert_eqq($dm->match("採択"), [1, 2, 3, 4]);
+        xassert_eqq($dm->match("採択-10分枠"), [1]);
+        xassert_eqq($dm->match("採択-15分枠"), [2]);
+        xassert_eqq($dm->match("採択-20分枠"), [3]);
+        xassert_eqq($dm->match("採択-30分枠"), [4]);
+        xassert_eqq($dm->match("不採択"), [-1]);
+        xassert_eqq($dm->match("不採"), [-1]);
     }
 }

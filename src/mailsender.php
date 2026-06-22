@@ -1,6 +1,6 @@
 <?php
 // mailsender.php -- HotCRP mail merge manager
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class MailSender {
     /** @var Conf
@@ -243,7 +243,7 @@ class MailSender {
     }
 
     private function print_request_form() {
-        echo Ht::form($this->conf->hoturl("=mail"), [
+        echo $this->conf->hotform("=mail", null, [
             "id" => "f-mail",
             "class" => $this->phase < 2 ? "ui-submit js-mail-send-phase-{$this->phase}" : null
         ]);
@@ -295,13 +295,13 @@ class MailSender {
                 && $this->user->privChair
                 && preg_match('/(?:\{\{|%)(?:REVIEWS|COMMENTS)/', $this->qreq->body)
                 && !$this->conf->time_some_author_view_review()) {
-                $ms[] = MessageItem::warning("<5>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
+                $ms[] = MessageItem::warning("<5>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (" . $this->conf->hotlink("Change this setting", "settings", ["group" => "dec"], ["class" => "nw"]) . ")");
             }
             if (isset($this->qreq->body)
                 && $this->user->privChair
                 && substr($this->recipients, 0, 4) == "dec:"
                 && !$this->conf->time_some_author_view_decision()) {
-                $ms[] = MessageItem::warning("<5>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
+                $ms[] = MessageItem::warning("<5>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (" . $this->conf->hotlink("Change this setting", "settings", ["group" => "dec"], ["class" => "nw"]) . ")");
             }
             if (!empty($ms)) {
                 $this->conf->feedback_msg($ms);
@@ -534,6 +534,7 @@ class MailSender {
         $is_authors = $this->recip->is_authors();
         $rest = [
             "requester_contact" => $this->user,
+            "sending_user" => $this->user,
             "cc" => $this->qreq->cc,
             "reply-to" => $this->qreq["reply-to"],
             "no_error_quit" => true,
@@ -565,6 +566,7 @@ class MailSender {
         $need_censored_prep = !$this->user->privChair || $this->conf->opt("chairHidePasswords");
 
         $mailer = new HotCRPMailer($this->conf);
+        $mailer->set_recip_set($this->recip);
         $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
         $fake_prep = new HotCRPMailPreparation($this->conf, null);
         $fake_prep->fake = true;
@@ -575,6 +577,7 @@ class MailSender {
         $nwarnings = 0;
         $has_decoration = false;
         $revinform = ($this->recipients === "newpcrev" ? [] : null);
+        $acceptnotify = ($this->recip->is_accepted_authors() ? [] : null);
         $last_pid = null;
         $pid_index = null;
 
@@ -598,8 +601,13 @@ class MailSender {
                 }
             }
 
+
+            // skip if reviews don’t match
             $rest["prow"] = $prow = $this->recip->paper($pid);
-            $rest["newrev_since"] = $this->recip->newrev_since;
+            if ($prow && !$this->recip->test_paper($prow, $user)) {
+                continue;
+            }
+
             $mailer->reset($user, $rest);
             $prep = $mailer->prepare($template, $rest);
 
@@ -636,8 +644,13 @@ class MailSender {
                     Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn{$nwarnings}').innerHTML;");
             }
 
-            if ($this->sending && $revinform !== null && $prow) {
-                $revinform[] = "(paperId={$prow->paperId} and contactId={$user->contactId})";
+            if ($this->sending && $prow) {
+                if ($revinform !== null) {
+                    $revinform[] = "(paperId={$prow->paperId} and contactId={$user->contactId})";
+                }
+                if ($acceptnotify !== null && $prow->timeAcceptNotified === 0) {
+                    $acceptnotify[] = $prow->paperId;
+                }
             }
         }
 
@@ -652,7 +665,7 @@ class MailSender {
             }
             $this->recip->append_list($mailer->message_list());
             $this->conf->feedback_msg($this->recip->decorated_message_list());
-            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('f-mail').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
+            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('f-mail').action=" . json_encode_browser($this->conf->hoturl_raw("=mail", ["check" => 1])));
             return;
         }
 
@@ -661,8 +674,12 @@ class MailSender {
             $this->print_actions();
         } else {
             $this->conf->qe("update MailLog set status=0 where mailId=?", $this->mailid);
+            $time = time();
             if ($revinform) {
-                $this->conf->qe_raw("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
+                $this->conf->qe_raw("update PaperReview set timeRequestNotified={$time} where " . join(" or ", $revinform));
+            }
+            if ($acceptnotify) {
+                $this->conf->qe("update Paper set timeAcceptNotified={$time} where paperId?a and timeAcceptNotified=0 and outcome>0", $acceptnotify);
             }
         }
         echo "</form>";

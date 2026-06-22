@@ -25,6 +25,7 @@ it using command line scripts.</p>";
     function print_tokens() {
         echo "<p>HotCRP’s API is most easily accessed using bearer tokens,
 which are long strings of letters and numbers starting with <code>hct_</code>
+or <code>hcT_</code>
 (for example, <code>hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF</code>).
 Any HotCRP user can create bearer tokens using ",
     $this->hth->hotlink("Profile &gt; Developer", "profile", ["t" => "developer"]),

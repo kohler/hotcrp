@@ -1,6 +1,6 @@
 <?php
 // api_search.php -- HotCRP search-related API calls
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Search_API {
     /** @return JsonResult|PaperSearch */
@@ -39,8 +39,13 @@ class Search_API {
 
     /** @return JsonResult */
     static function search(Contact $user, Qrequest $qreq) {
+        $old_overrides = $user->overrides();
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        }
         $pl = self::make_list($user, $qreq);
         if ($pl instanceof JsonResult) {
+            $user->set_overrides($old_overrides);
             return $pl;
         }
         $format = 0;
@@ -62,8 +67,8 @@ class Search_API {
         }
         $ih = $pl->ids_and_groups();
         $jr = JsonResult::make_ok();
-        if ($pl->search->has_message()) {
-            $jr->set("message_list", $pl->search->message_list());
+        if ($pl->has_message()) {
+            $jr->set("message_list", $pl->message_list());
         }
         $jr->set("ids", $ih[0]);
         $jr->set("groups", $ih[1]);
@@ -82,6 +87,7 @@ class Search_API {
             && friendly_boolean($qreq->session) === null) {
             Session_API::change_session($qreq, $qreq->session);
         }
+        $user->set_overrides($old_overrides);
         return $jr;
     }
 
@@ -124,7 +130,7 @@ class Search_API {
 
         $j = [
             "ok" => !empty($response["fields"]),
-            "message_list" => $pl->message_set()->message_list()
+            "message_list" => $pl->message_list()
         ] + $response;
         if ($j["ok"]
             && $qreq->session
@@ -150,7 +156,7 @@ class Search_API {
 
         return [
             "ok" => !empty($response),
-            "message_list" => $pl->message_set()->message_list(),
+            "message_list" => $pl->message_list(),
             "data" => $response
         ];
     }
@@ -158,6 +164,10 @@ class Search_API {
     static function searchaction(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (($qreq->action ?? "") === "") {
             return JsonResult::make_missing_error("action");
+        }
+        $old_overrides = $user->overrides();
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         if (!isset($qreq->p)) {
             $ssel = SearchSelection::make_default($qreq, $user);
@@ -168,7 +178,9 @@ class Search_API {
         if ($action instanceof ListAction) {
             $action = $action->run($user, $qreq, $ssel);
         }
-        return ListAction::resolve_document($action, $qreq);
+        $result = ListAction::resolve_document($action, $user, $qreq);
+        $user->set_overrides($old_overrides);
+        return $result;
     }
 
     static function searchactions(Contact $user) {

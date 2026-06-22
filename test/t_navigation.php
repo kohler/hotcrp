@@ -737,7 +737,6 @@ class Navigation_Tester {
         self::assert_navstate($ns, "/", "assign", "/%3F");
     }
 
-
     function test_php_suffix_override() {
         $ns = NavigationState::make_server([
             "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
@@ -747,5 +746,66 @@ class Navigation_Tester {
             "HOTCRP_PHP_SUFFIX" => ".xxx"
         ]);
         xassert_eqq($ns->php_suffix, ".xxx");
+    }
+
+    function test_double_slash() {
+        $ns = NavigationState::make_server([
+            "HTTP_HOST" => "hotcrap.com", "SERVER_PORT" => 443,
+            "SERVER_SORTWARE" => "nginx/1.28.1", "SCRIPT_FILENAME" => __FILE__,
+            "REQUEST_URI" => "//wp-content/about.php",
+            "DOCUMENT_URI" => "/wp-content/about.php",
+            "SCRIPT_NAME" => ""
+        ]);
+        xassert_eqq($ns->page, "wp-content");
+
+        $ns = NavigationState::make_server([
+            "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
+            "SCRIPT_FILENAME" => __FILE__,
+            "REQUEST_URI" => "//fart/barf//?butt",
+            "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->page, "barf");
+        xassert_eqq($ns->site_path_relative, "/fart/");
+        xassert_eqq($ns->path, "/");
+
+        $ns = NavigationState::make_server([
+            "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
+            "SCRIPT_FILENAME" => __FILE__,
+            "REQUEST_URI" => "////fart////barf////?butt",
+            "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->page, "barf");
+        xassert_eqq($ns->site_path_relative, "/fart/");
+        xassert_eqq($ns->path, "/");
+
+        $ns = NavigationState::make_server([
+            "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
+            "SCRIPT_FILENAME" => __FILE__,
+            "REQUEST_URI" => "/fart/barf/?butt",
+            "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->page, "barf");
+        xassert_eqq($ns->site_path_relative, "../");
+        xassert_eqq($ns->path, "/");
+    }
+
+    function test_test_mode() {
+        xassert(Navigation::$test_mode > 0);
+        Navigation::headers_reset();
+        xassert_eqq(Navigation::http_response_code(300), 200);
+        xassert_eqq(Navigation::http_response_code(), 300);
+        xassert_eqq(Navigation::http_response_code(), 300);
+        Navigation::header("Fart: Barf");
+        xassert_eqq(Navigation::headers_list(), ["Fart: Barf"]);
+        Navigation::header("F:B");
+        Navigation::header("fart: Barf7");
+        xassert_eqq(Navigation::headers_list(), ["F:B", "fart: Barf7"]);
+        Navigation::header("Content-Type: Bad");
+        Navigation::header("Content-Type_Options: None");
+        Navigation::header("FART: Barf7 Ass", false);
+        xassert_eqq(Navigation::headers_list(), ["F:B", "fart: Barf7", "Content-Type: Bad", "Content-Type_Options: None", "FART: Barf7 Ass"]);
+        Navigation::header("Content-Type: Good");
+        xassert_eqq(Navigation::headers_list(), ["F:B", "fart: Barf7", "Content-Type_Options: None", "FART: Barf7 Ass", "Content-Type: Good"]);
+        Navigation::headers_reset();
     }
 }

@@ -87,11 +87,6 @@ class ListAction {
         $namepfx = $slash > 0 ? substr($name, 0, $slash) : null;
         $cs->xtp->set_require_key_for_method($qreq->method());
         $uf = $cs->get($name) ?? ($namepfx ? $cs->get($namepfx) : null);
-        // XXX allow `POST` requests to `get`
-        if (!$uf && $qreq->is_post()) {
-            $cs->xtp->set_require_key_for_method("GET");
-            $uf = $cs->get($name) ?? ($namepfx ? $cs->get($namepfx) : null);
-        }
         if (!$uf) {
             $cs->reset_context();
             $cs->xtp->set_require_key_for_method(null);
@@ -128,7 +123,7 @@ class ListAction {
         if ($res instanceof ListAction) {
             $res = $res->run($user, $qreq, $selection);
         }
-        $res = self::resolve_document($res, $qreq);
+        $res = self::resolve_document($res, $user, $qreq);
         if ($res instanceof JsonResult) {
             if ($qreq->page() === "api") {
                 json_exit($res);
@@ -138,16 +133,15 @@ class ListAction {
             }
         } else if ($res instanceof Downloader) {
             $res->emit();
-            exit(0);
+            Navigation::complete();
         } else if ($res instanceof Redirection) {
-            $user->conf->redirect($res->url, $res->status);
-            exit(0);
+            $qreq->redirect($res->url, $res->status);
         }
     }
 
     /** @param null|JsonResult|Downloader|Redirection|CsvGenerator|DocumentInfo|DocumentInfoSet $res
      * @return null|JsonResult|Downloader|Redirection */
-    static function resolve_document($res, Qrequest $qreq) {
+    static function resolve_document($res, Contact $user, Qrequest $qreq) {
         if (!($res instanceof DocumentInfo)
             && !($res instanceof DocumentInfoSet)
             && !($res instanceof CsvGenerator)) {
@@ -156,6 +150,7 @@ class ListAction {
         $dopt = new Downloader;
         $dopt->parse_qreq($qreq);
         $dopt->set_attachment(true);
+        $dopt->set_log_user($user);
         if ($res->prepare_download($dopt)) {
             return $dopt;
         }

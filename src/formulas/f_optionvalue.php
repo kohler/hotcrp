@@ -1,6 +1,6 @@
 <?php
 // formulas/f_optionvalue.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class OptionValue_Fexpr extends Fexpr {
     /** @var PaperOption */
@@ -9,6 +9,9 @@ class OptionValue_Fexpr extends Fexpr {
         parent::__construct("optionvalue");
         $this->option = $option;
         $this->set_format($format, $detail);
+    }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
     }
     function paper_options(&$oids) {
         $oids[$this->option->id] = true;
@@ -21,5 +24,8 @@ class OptionValue_Fexpr extends Fexpr {
             $state->gstmt[] = "{$oval} = {$ovv} ? {$ovv}->value : null;";
         }
         return $oval;
+    }
+    function collect_range_anno(&$ranges) {
+        $this->record_range_anno($ranges, $this->option->title());
     }
 }

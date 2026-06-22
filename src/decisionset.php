@@ -186,29 +186,56 @@ class DecisionSet implements IteratorAggregate, Countable {
     }
 
     /** @param string|list<int> $word
-     * @param bool $prefer_list
-     * @return string|list<int> */
-    function matchexpr($word, $prefer_list = false) {
+     * @return list<int> */
+    function match($word) {
         if (is_list($word)) {
             return $word;
         }
         foreach ($this->_decision_map as $dinfo) {
             if ($word === $dinfo->name)
-                return $prefer_list ? [$dinfo->id] : "={$dinfo->id}";
+                return [$dinfo->id];
         }
         if (strcasecmp($word, "yes") === 0) {
-            return $prefer_list ? $this->cat_ids(DecisionInfo::CAT_YES) : ">0";
+            return $this->cat_ids(DecisionInfo::CAT_YES);
         } else if (strcasecmp($word, "no") === 0) {
-            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CM_NO) : "<0";
+            return $this->cat_ids(DecisionInfo::CM_NO);
         } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
-            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
+            return $this->cat_ids(DecisionInfo::CAT_OTHER);
         } else if (strcasecmp($word, "standard") === 0) {
             if (!$this->_has_desk_reject) {
-                return $prefer_list ? $this->ids() : "!={$this->_nonexistent_id}";
+                return $this->ids();
             }
             return $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES | DecisionInfo::CAT_STDREJECT);
         } else if (strcasecmp($word, "any") === 0) {
-            return $prefer_list ? array_values(array_diff($this->ids(), [0])) : "!=0";
+            return array_values(array_diff($this->ids(), [0]));
+        }
+        return $this->abbrev_matcher()->find_all($word);
+    }
+
+    /** @param string|list<int> $word
+     * @param bool $prefer_list
+     * @return string|list<int> */
+    function matchexpr($word, $prefer_list = false) {
+        if (is_list($word) || $prefer_list /* XXX deprecated */) {
+            return $this->match($word);
+        }
+        foreach ($this->_decision_map as $dinfo) {
+            if ($word === $dinfo->name)
+                return "={$dinfo->id}";
+        }
+        if (strcasecmp($word, "yes") === 0) {
+            return ">0";
+        } else if (strcasecmp($word, "no") === 0) {
+            return $this->_has_other ? $this->cat_ids(DecisionInfo::CM_NO) : "<0";
+        } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
+            return $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
+        } else if (strcasecmp($word, "standard") === 0) {
+            if (!$this->_has_desk_reject) {
+                return "!={$this->_nonexistent_id}";
+            }
+            return $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES | DecisionInfo::CAT_STDREJECT);
+        } else if (strcasecmp($word, "any") === 0) {
+            return "!=0";
         }
         return $this->abbrev_matcher()->find_all($word);
     }

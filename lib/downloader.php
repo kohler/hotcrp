@@ -3,13 +3,17 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Downloader {
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     public $etag;
-    /** @var ?int */
+    /** @var ?int
+     * @readonly */
     public $last_modified;
-    /** @var ?int */
+    /** @var ?int
+     * @readonly */
     public $content_length;
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     public $mimetype;
 
     /** @var ?string */
@@ -39,6 +43,8 @@ class Downloader {
     /** @var ?Contact */
     public $log_user;
 
+    /** @var ?Conf */
+    private $conf;
     /** @var ?string */
     private $_content;
     /** @var ?string */
@@ -53,11 +59,18 @@ class Downloader {
     private $_boundary;
     /** @var ?int */
     private $_response_code;
-    /** @var list<string> */
-    private $_headers = [];
+    /** @var HeaderSet */
+    private $_headers;
+
+    function __construct(?Conf $conf = null) {
+        $this->conf = $conf;
+        $this->_headers = new HeaderSet;
+    }
 
     /** @return $this */
     function parse_qreq(Qrequest $qreq) {
+        $this->conf = $qreq->conf();
+
         $this->if_match = $qreq->header("If-Match");
         if ($this->if_match === null
             && ($s = $qreq->header("If-Unmodified-Since"))) {
@@ -123,7 +136,8 @@ class Downloader {
     }
 
     /** @param string $mimetype
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_mimetype($mimetype) {
         $this->mimetype = $mimetype;
         return $this;
@@ -144,14 +158,16 @@ class Downloader {
     }
 
     /** @param int $content_length
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_content_length($content_length) {
         $this->content_length = $content_length;
         return $this;
     }
 
     /** @param string $content
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_content($content) {
         assert(!$this->has_content());
         $this->_content = $content;
@@ -160,7 +176,8 @@ class Downloader {
     }
 
     /** @param string $content_file
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_content_file($content_file) {
         assert(!$this->has_content());
         $this->_content_file = $content_file;
@@ -192,14 +209,16 @@ class Downloader {
     }
 
     /** @param ?string $etag
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_etag($etag) {
         $this->etag = $etag;
         return $this;
     }
 
     /** @param ?int $last_modified
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_last_modified($last_modified) {
         $this->last_modified = $last_modified;
         return $this;
@@ -212,30 +231,11 @@ class Downloader {
         return $this;
     }
 
-    /** @param string $h */
-    private function _remove_matching_headers($h) {
-        $n = strpos($h, ":") ? : strlen($h) - 1;
-        $delta = 0;
-        foreach ($this->_headers as $i => &$s) {
-            if (substr_compare($s, $h, 0, $n + 1, true) === 0) {
-                ++$delta;
-            } else if ($delta > 0) {
-                $this->_headers[$i - $delta] = $s;
-            }
-        }
-        if ($delta > 0) {
-            array_splice($this->_headers, count($this->_headers) - $delta);
-        }
-    }
-
     /** @param string $header
      * @param bool $replace
      * @return $this */
     function set_header($header, $replace = true) {
-        if ($replace) {
-            $this->_remove_matching_headers($header);
-        }
-        $this->_headers[] = $header;
+        $this->_headers->set($header, $replace);
         return $this;
     }
 
@@ -342,6 +342,17 @@ class Downloader {
         }
         $this->range = $rs === [[0, $filesize]] ? null : $rs;
         return true;
+    }
+
+    /** @param Downloader $dl
+     * @return ?string */
+    static function content_security_policy_for($dl) {
+        if ($dl->mimetype === "image/svg+xml"
+            || $dl->mimetype === "text/html"
+            || $dl->mimetype === "application/xhtml+xml") {
+            return "default-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net; img-src 'self' data: https://*.typekit.net; font-src data: https://fonts.gstatic.com https://*.typekit.net; sandbox";
+        }
+        return null;
     }
 
     /** @param string|list<string> $dars */
@@ -461,10 +472,19 @@ class Downloader {
             $this->_boundary = $this->_boundary ?? "hcmpb-" . base64_encode(random_bytes(32));
             yield "Content-Type" => "multipart/byteranges; boundary={$this->_boundary}";
         }
-        if ($this->_filename !== null) {
+        if ($this->_filename !== null
+            && !$this->_headers->has("Content-Disposition")) {
             $this->attachment = $this->attachment ?? !Mimetype::disposition_inline($this->mimetype);
             $a = $this->attachment ? "attachment" : "inline";
             yield "Content-Disposition" => "{$a}; filename=" . mime_quote_string($this->_filename);
+        }
+        if (!$this->_headers->has("Content-Security-Policy")
+            && ($conf = $this->conf ?? Conf::$main)
+            && ($cspf = $conf->opt("downloadContentSecurityPolicyFunction")) !== false) {
+            $cspf = $cspf ?? "Downloader::content_security_policy_for";
+            if (($csph = call_user_func($cspf, $this))) {
+                yield "Content-Security-Policy" => $csph;
+            }
         }
         if ($this->_content_redirect !== null
             || (!$this->head && self::skip_content_length_header())) {
@@ -481,30 +501,22 @@ class Downloader {
             $bs += strlen($this->_range_separator(count($this->range), null));
         }
         if ($bs !== null) {
-            yield "Content-Length" => "{$bs}";
+            yield "Content-Length" => "{$bs}"; // require string
         }
         if ($bs !== null && $bs > 2000000) {
             yield "X-Accel-Buffering" => "no";
         }
-        foreach ($this->_headers as $h) {
-            if (($p = strpos($h, ":")) === false) {
-                yield "" => $h;
-            } else {
-                for ($q = $p + 1; $q !== strlen($h) && $h[$q] === " "; ++$q) {
-                }
-                yield substr($h, 0, $p) => substr($h, $q);
-            }
-        }
+        yield from $this->_headers->by_name();
         if ($this->_content_redirect !== null) {
             yield "X-Accel-Redirect" => $this->_content_redirect;
         }
     }
 
-    /** @param string $key
+    /** @param string $name
      * @return ?string */
-    function header($key) {
-        foreach ($this->headers() as $k => $v) {
-            if (strcasecmp($k, $key) === 0)
+    function header($name) {
+        foreach ($this->headers() as $n => $v) {
+            if (strcasecmp($name, $n) === 0)
                 return $v;
         }
         return null;
@@ -532,9 +544,11 @@ class Downloader {
 
     /** @return int */
     function emit() {
-        http_response_code($this->response_code());
+        Navigation::http_response_code($this->response_code());
+        // we never want the default CSP for a download
+        Navigation::header_remove("Content-Security-Policy");
         foreach ($this->headers() as $k => $v) {
-            header($k === "" ? $v : "{$k}: {$v}");
+            Navigation::header($k === "" ? $v : "{$k}: {$v}");
         }
         if ($this->_response_code >= 300
             || $this->_content_redirect !== null

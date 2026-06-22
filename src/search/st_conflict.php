@@ -101,7 +101,4 @@ final class Conflict_SearchTerm extends SearchTerm {
             return $this->test($row, null);
         }
     }
-    function about() {
-        return self::ABOUT_PAPER;
-    }
 }

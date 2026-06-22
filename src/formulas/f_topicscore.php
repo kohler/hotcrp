@@ -1,6 +1,6 @@
 <?php
 // formulas/f_topicscore.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class TopicScore_Fexpr extends Fexpr {
     function __construct() {
@@ -8,6 +8,9 @@ class TopicScore_Fexpr extends Fexpr {
     }
     static function make(FormulaCall $ff) {
         return $ff->user->isPC ? new TopicScore_Fexpr : Fexpr::cnever();
+    }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
     }
     function inferred_index() {
         return Fexpr::IDX_PC;

@@ -1,6 +1,6 @@
 <?php
 // formulas/f_revtype.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class Revtype_Fexpr extends Fexpr {
     function __construct() {
@@ -9,6 +9,9 @@ class Revtype_Fexpr extends Fexpr {
     }
     static function make(Contact $user) {
         return $user->is_reviewer() ? new Revtype_Fexpr : Fexpr::cnever();
+    }
+    function about() {
+        return SearchTerm::ABOUT_REVIEWS;
     }
     function inferred_index() {
         return Fexpr::IDX_REVIEW;

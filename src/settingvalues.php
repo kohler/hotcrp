@@ -68,11 +68,11 @@ class SettingValues extends MessageSet {
     private $_cleanup_callbacks = [];
     /** @var array<string,int> */
     private $_table_lock = [];
-    /** @var associative-array<string,true> */
+    /** @var associative-array<string,null|int|string> */
     private $_diffs = [];
     /** @var associative-array<string,false> */
     private $_no_diffs = [];
-    /** @var associative-array<string,true> */
+    /** @var list<string> */
     private $_invalidate_caches = [];
 
     /** @var ?SearchExpr */
@@ -425,12 +425,18 @@ class SettingValues extends MessageSet {
      * @return MessageItem */
     function append_item_at($field, $mi) {
         $fname = $field instanceof Si ? $field->name : $field;
-        if ($this->_jp !== null) {
-            $mi = $this->with_jfield($mi, $fname);
-        } else {
-            $mi = $mi->with_field($fname);
+        if ($this->_jp === null) {
+            return $this->append_item($mi->with_field($fname));
         }
-        return $this->append_item($mi);
+        $xmi = $this->append_item($this->with_jfield($mi, $fname));
+        if ($mi->context !== null && $xmi->context === null) {
+            $ymi = new MessageItem(MessageSet::INFORM, $xmi->field);
+            $ymi->pos1 = $mi->pos1;
+            $ymi->pos2 = $mi->pos2;
+            $ymi->context = $mi->context;
+            $this->append_item($ymi);
+        }
+        return $xmi;
     }
 
     /** @param null|string|Si $field
@@ -1540,15 +1546,24 @@ class SettingValues extends MessageSet {
             //error_log("{$n}: " . json_encode($dbsettings[$n][1] ?? null) . "=>" . json_encode($v[0] ?? null) . "; " . json_encode($dbsettings[$n][2] ?? null) . "=>" . json_encode($v[1] ?? null));
             // remember what changed
             if (!isset($this->_no_diffs[$n])) {
-                $this->_diffs[$n] = true;
-                if ($v === null || !isset($dbsettings[$n])) {
-                    $chmap[$n] = 3;
-                } else if ($dbsettings[$n][1] === $v[0]) {
-                    $chmap[$n] = 2;
-                } else if ($dbsettings[$n][2] === $v[1]) {
-                    $chmap[$n] = 1;
-                } else {
-                    $chmap[$n] = 3;
+                $chtype = 3;
+                if ($v !== null && isset($dbsettings[$n])) {
+                    if ($dbsettings[$n][1] === $v[0]) {
+                        $chtype = 2;
+                    } else if ($dbsettings[$n][2] === $v[1]) {
+                        $chtype = 1;
+                    }
+                }
+                $chmap[$n] = $chtype;
+                if (!isset($this->_diffs[$n])) {
+                    $this->_diffs[$n] = null;
+                    if ($v !== null
+                        && $chtype !== 2
+                        && ($v[0] !== 1 || $v[1] === null)) {
+                        $this->_diffs[$n] = $v[0];
+                    } else {
+                        $this->_diffs[$n] = null;
+                    }
                 }
             }
             if ($v !== null) {
@@ -1569,7 +1584,11 @@ class SettingValues extends MessageSet {
         $this->conf->qe_raw("unlock tables");
         $this->conf->resume_log();
         if (!empty($this->_diffs)) {
-            $this->user->log_activity("Settings edited: " . join(", ", array_keys($this->_diffs)));
+            $difftext = [];
+            foreach ($this->_diffs as $n => $dv) {
+                $difftext[] = ($dv === null ? $n : "{$n}={$dv}");
+            }
+            $this->user->log_activity("Settings edited: " . join(", ", $difftext));
         }
 
         // clean up
@@ -1579,8 +1598,9 @@ class SettingValues extends MessageSet {
             $cb();
         }
         if (!empty($this->_invalidate_caches)) {
-            $this->conf->invalidate_caches($this->_invalidate_caches);
+            $this->conf->invalidate_caches(...$this->_invalidate_caches);
         }
+        $this->conf->invalidate_mcache();
 
         // create changed_si
         foreach ($this->_saveable_si as $si) {
@@ -1600,9 +1620,10 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string $siname */
-    function mark_diff($siname)  {
-        $this->_diffs[$siname] = true;
+    /** @param string $siname
+     * @param null|int|string $diffmarker */
+    function mark_diff($siname, $diffmarker = null)  {
+        $this->_diffs[$siname] = $diffmarker;
     }
 
     /** @param string $siname */
@@ -1610,10 +1631,14 @@ class SettingValues extends MessageSet {
         $this->_no_diffs[$siname] = false;
     }
 
-    /** @param associative-array<string,true> $caches */
-    function mark_invalidate_caches($caches) {
-        foreach ($caches as $c => $t) {
-            $this->_invalidate_caches[$c] = true;
+    /** @param string ...$caches */
+    function mark_invalidate_caches(...$caches) {
+        if (count($caches) === 1 && is_array($caches[0])) { // XXX backward compat
+            $caches = array_keys($caches[0]);
+        }
+        foreach ($caches as $c) {
+            if (!in_array($c, $this->_invalidate_caches, true))
+                $this->_invalidate_caches[] = $c;
         }
     }
 
@@ -1659,17 +1684,18 @@ class SettingValues extends MessageSet {
 
     private function saveable_si_changed(Si $si) {
         $sn = $si->storage_name();
-        $vp = $this->_savedv[$sn];
+        $vp = $this->_savedv[$sn] ?? [null, null];
         if (str_starts_with($sn, "opt.")) {
             $okey = substr($sn, 4);
             $oldv = $this->conf->opt($okey);
             $vi = Si::$option_is_value[$okey] ? 0 : 1;
-            return $oldv !== ($vp[$vi] ?? null)
-                && (!is_bool($oldv) || (int) $oldv !== ($vp[$vi] ?? null));
-        } else if (($si->storage_type & Si::SI_VALUE) !== 0) {
-            return $this->conf->setting($sn) !== ($vp[0] ?? null);
+            return $oldv !== $vp[$vi]
+                && (!is_bool($oldv) || (int) $oldv !== $vp[$vi]);
         }
-        return $this->conf->setting_data($sn) !== ($vp[1] ?? null);
+        $vi = $si->storage_type & Si::SI_VALUE ? 0 : 1;
+        $vc = $vi === 0 ? $this->conf->setting($sn) : $this->conf->setting_data($sn);
+        return $vc !== $vp[$vi]
+            && ($vp[$vi] !== null || !$si->value_nullable($vc, $this));
     }
 
     /** @return list<Si> */
@@ -1736,7 +1762,7 @@ class SettingValues extends MessageSet {
         if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
             $url = "#" . $gj->hashid;
         } else {
-            $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
+            $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null], Conf::HOTURL_RAW);
         }
         return Ht::link($html, $url, $js);
     }

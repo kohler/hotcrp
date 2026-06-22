@@ -21,11 +21,13 @@
     },
     {
         "name": "numeric", "title": "Whole number", "order": 400,
-        "function": "+Numeric_PaperOption"
+        "function": "+Numeric_PaperOption",
+        "properties": ["common", "min_value", "max_value"]
     },
     {
         "name": "realnumber", "title": "Decimal number", "order": 401,
         "function": "+RealNumber_PaperOption",
+        "properties": ["common", "min_value", "max_value", "precision"],
         "conversions": [{"from": "numeric", "setting_function": "RealNumber_PaperOption::convert_from_numeric_setting"}]
     },
     {

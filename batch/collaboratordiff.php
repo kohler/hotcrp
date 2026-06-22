@@ -224,7 +224,7 @@ class CollaboratorDiff_Batch {
             return;
         }
 
-        $url = $this->conf->hoturl("profile", ["i" => $this->user->email, "#" => "collaborators"], Conf::HOTURL_NO_DEFAULTS | Conf::HOTURL_ABSOLUTE);
+        $url = Ht::escape_attr($this->conf->hoturl_raw("profile", ["i" => $this->user->email, "#" => "collaborators"], Conf::HOTURL_NO_DEFAULTS | Conf::HOTURL_ABSOLUTE));
         $ml = [];
         $ml[] = MessageItem::urgent_note("<5>Your <a href=\"{$url}\">collaborators</a> may be out of date");
         $ml[] = MessageItem::inform("<0>Your collaborator list helps authors and administrators find potential conflicts, and it is important that you keep it up to date. This message lists some apparent discrepancies based on your recent submissions. This may include both missing collaborators (recent co-authors that aren’t currently listed as conflicts) and possibly-obsolete collaborators (listed collaborators that haven’t co-authored a paper with you recently).");

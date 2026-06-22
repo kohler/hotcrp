@@ -259,7 +259,7 @@ class Users_Page {
         }
 
         $this->conf->feedback_msg($ua);
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 
@@ -330,7 +330,7 @@ class Users_Page {
 
         // that’s it
         Conf::$no_invalidate_caches = false;
-        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_caches("pc");
 
         // report
         if ($us->has_error()) {
@@ -345,7 +345,7 @@ class Users_Page {
         }
         $this->conf->feedback_msg($ms);
         unset($this->qreq->fn, $this->qreq->tagfn);
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 
@@ -366,7 +366,7 @@ class Users_Page {
             $sv[] = "ulscoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
         }
         Session_API::change_session($this->qreq, join(" ", $sv));
-        $this->conf->redirect_self($this->qreq);
+        $this->qreq->redirect_self();
         return true;
     }
 
@@ -408,7 +408,7 @@ class Users_Page {
         echo '<div class="tlcontainer mb-3">';
 
         echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
-            Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
+            $this->conf->hotform("users", null, ["method" => "get"]);
         if (isset($this->qreq->sort)) {
             echo Ht::hidden("sort", $this->qreq->sort);
         }
@@ -417,7 +417,7 @@ class Users_Page {
 
         // Display options
         echo '<div class="tld is-tla" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
-            Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
+            $this->conf->hotform("users", null, ["method" => "get"]);
         foreach (["t", "sort"] as $x) {
             if (isset($this->qreq[$x]))
                 echo Ht::hidden($x, $this->qreq[$x]);
@@ -512,7 +512,7 @@ class Users_Page {
 
         $pl = new ContactList($this->viewer, true, $this->qreq);
         $pl_text = $pl->table_html($this->qreq->t,
-            $this->conf->hoturl("users", ["t" => $this->qreq->t]),
+            $this->conf->hoturl_raw("users", ["t" => $this->qreq->t]),
             $limit_title, 'uldisplay.');
 
         echo '<hr class="g">';
@@ -522,20 +522,20 @@ class Users_Page {
 
         if ($this->viewer->privChair) {
             if ($this->qreq->t === "pc") {
-                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Add accounts</a>',
+                $this->print_pre_list_links($this->conf->hotlink("Add accounts", "profile", ["u" => "new", "role" => "pc"], ["class" => "btn"]),
                     'Select a user to edit their profile or remove them from the PC.');
             } else if (str_starts_with($this->qreq->t, "#")) {
-                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", ["u" => "new", "role" => "pc", "tags" => substr($this->qreq->t, 1)]) . '" class="btn">Add accounts</a>',
+                $this->print_pre_list_links($this->conf->hotlink("Add accounts", "profile", ["u" => "new", "role" => "pc", "tags" => substr($this->qreq->t, 1)], ["class" => "btn"]),
                     'Select a user to edit their profile or remove them from the PC.');
             } else if ($this->qreq->t === "all") {
-                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", "u=new") . '" class="btn">Add accounts</a>',
+                $this->print_pre_list_links($this->conf->hotlink("Add accounts", "profile", ["u" => "new"], ["class" => "btn"]),
                     'Select a user to edit their profile.',
                     'Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user.');
             }
         }
 
         if ($pl->has("sel")) {
-            echo Ht::form($this->conf->hoturl("=users", ["t" => $this->qreq->t]),
+            echo $this->conf->hotform("=users", ["t" => $this->qreq->t],
                     ["class" => "ui-submit js-submit-list"]),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden_default_submit("default", 1),
@@ -584,7 +584,7 @@ class Users_Page {
         }
 
         // update from contactdb
-        (new CdbUserUpdate($viewer->conf))->check();
+        (new CdbUserUpdate($viewer->conf))->import_empty_props();
 
         // handle request
         if (isset($qreq["default"]) && $qreq->defaultfn) {

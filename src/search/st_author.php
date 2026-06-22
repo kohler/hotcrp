@@ -1,6 +1,6 @@
 <?php
 // search/st_author.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Author_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -9,15 +9,13 @@ class Author_SearchTerm extends SearchTerm {
     private $csm;
     /** @var ?TextPregexes */
     private $regex;
+    /** @var bool */
+    private $listed;
 
-    function __construct(Contact $user, $countexpr, $contacts, $match, $quoted) {
+    function __construct(Contact $user, $countexpr, $contacts) {
         parent::__construct("au");
         $this->user = $user;
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
-        if (!$contacts && $match) {
-            $this->regex = Text::star_text_pregexes($match, $quoted);
-            $this->set_float("fhl:au", $this->regex);
-        }
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $count = ">0";
@@ -32,11 +30,19 @@ class Author_SearchTerm extends SearchTerm {
             } else if ($word === "none" && $count === ">0") {
                 $word = null;
                 $count = "=0";
-            } else if (trim($word) !== "") {
+            } else if ($word !== "") {
                 $cids = $srch->matching_special_uids($word, false, false);
             }
         }
-        return new Author_SearchTerm($srch->user, $count, $cids, $word, $sword->quoted);
+        $aust = new Author_SearchTerm($srch->user, $count, $cids);
+        if (!$cids && $word !== "") {
+            $aust->regex = Text::star_text_pregexes($word, $sword->quoted);
+            $aust->set_float("fhl:au", $aust->regex);
+        }
+        if ($sword->kwexplicit && ($sword->kwdef->listed ?? false)) {
+            $aust->listed = true;
+        }
+        return $aust;
     }
     function paper_requirements(&$options) {
         if ($this->csm->has_contacts()) {
@@ -49,32 +55,53 @@ class Author_SearchTerm extends SearchTerm {
         } else if ($this->csm->has_contacts()) {
             $sqi->add_allConflictType_column();
             return "true";
-        } else {
-            $sqi->add_column("authorInformation", "Paper.authorInformation");
-            return $this->csm->test(0) ? "true" : "Paper.authorInformation!=''";
         }
+        $sqi->add_column("authorInformation", "Paper.authorInformation");
+        return $this->csm->test(0) ? "true" : "Paper.authorInformation!=''";
     }
     function is_sqlexpr_precise() {
         return $this->csm->single_cid() === $this->user->contactId
             && !$this->csm->test(0);
     }
+    /** @param null|Author|Contact $au
+     * @return bool */
+    private function regex_match($au) {
+        return $au !== null && $this->regex->match($au->name(NAME_E|NAME_A));
+    }
     function test(PaperInfo $row, $xinfo) {
         // XXX presence condition
         $n = 0;
         $can_view = $this->user->allow_view_authors($row);
+        $listed = $this->listed;
         if ($this->csm->has_contacts()) {
             foreach ($this->csm->contact_set() as $cid) {
-                if (($cid === $this->user->contactXid || $can_view)
-                    && $row->has_author($cid))
-                    ++$n;
-            }
-        } else if ($can_view) {
-            foreach ($row->author_list() as $au) {
-                if ($this->regex
-                    && !$this->regex->match($au->name(NAME_E|NAME_A))) {
+                if ((!$can_view && $cid !== $this->user->contactXid)
+                    || ($listed ? !$row->has_listed_author($cid) : !$row->has_author($cid))) {
                     continue;
                 }
                 ++$n;
+            }
+        } else if (!$can_view) {
+            // $n is always 0
+        } else if (!$this->regex) {
+            // XXX always counts listed authors only, regardless of `$listed`
+            $n = count($row->author_list());
+        } else {
+            $aulist = $row->author_list();
+            foreach ($row->conflict_list() as $co) {
+                if ($co->conflictType >= CONFLICT_AUTHOR
+                    && (!$listed || $co->author_index !== null)
+                    && $this->regex_match($co->user)) {
+                    ++$n;
+                    if ($co->author_index !== null) {
+                        $aulist[$co->author_index - 1] = null;
+                    }
+                }
+            }
+            foreach ($aulist as $au) {
+                if ($au && $this->regex_match($au)) {
+                    ++$n;
+                }
             }
         }
         return $this->csm->test($n);
@@ -84,14 +111,11 @@ class Author_SearchTerm extends SearchTerm {
             || $this->regex
             || ($about & self::ABOUT_PAPER) === 0) {
             return $this->test($row, null);
-        } else {
-            return ["type" => "compar", "compar" => $this->csm->relation(), "child" => [
-                ["type" => "author_count"],
-                $this->csm->value()
-            ]];
         }
-    }
-    function about() {
-        return self::ABOUT_PAPER;
+        // XXX always behaves like `listedau:`
+        return ["type" => "compar", "compar" => $this->csm->relation(), "child" => [
+            ["type" => "author_count"],
+            $this->csm->value()
+        ]];
     }
 }

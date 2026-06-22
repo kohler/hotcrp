@@ -13,7 +13,7 @@ class FormatCheck_API {
         $cf = new CheckFormat($user->conf, $runflag);
         $cf->check_document($doc);
         $ms = $cf->document_messages($doc);
-        return [
+        $jd = [
             "ok" => $cf->check_ok(),
             "docid" => $doc->paperStorageId,
             "npages" => $cf->npages,
@@ -22,5 +22,13 @@ class FormatCheck_API {
             "has_error" => $cf->has_error(),
             "message_list" => $ms->message_list()
         ];
+        if (friendly_boolean($qreq->detail)) {
+            $npd = [];
+            foreach (CheckFormat::banal_page_type_list() as $bpt) {
+                $npd[$bpt] = $cf->npages_of_type($bpt);
+            }
+            $jd["npages_detail"] = $npd;
+        }
+        return $jd;
     }
 }

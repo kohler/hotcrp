@@ -9,7 +9,7 @@ class Decide_ListAction extends ListAction {
     static function render(PaperList $pl, Qrequest $qreq) {
         $opts = [];
         foreach ($pl->conf->decision_set() as $dec) {
-            $opts[$dec->id] = $dec->name_as(5);
+            $opts[$dec->id] = $dec->name;
         }
         return "Set to &nbsp;"
             . Ht::select("decision", $opts, "", ["class" => "want-focus js-submit-action-info-decide"])
@@ -30,7 +30,7 @@ class Decide_ListAction extends ListAction {
             return Assign_API::complete($aset, $qreq);
         }
         if ($aset->execute()) {
-            return new Redirection($user->conf->selfurl($qreq, ["atab" => "decide", "decision" => $qreq->decision], Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+            return new Redirection($user->conf->selfurl($qreq, ["atab" => "decide", "decision" => $qreq->decision], Conf::HOTURL_REDIRECTABLE));
         }
         $user->conf->feedback_msg($aset->message_list());
     }

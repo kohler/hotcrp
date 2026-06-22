@@ -121,14 +121,15 @@ class ContactAlerts {
         if ($iscdb || strlen(json_encode($alert)) > 100) {
             $tok = new TokenInfo($this->conf, TokenInfo::ALERT);
             if ($iscdb && ($cdbu = $this->user->cdb_user())) {
-                $tok->set_cdb_user($cdbu)->set_token_pattern("hca{$cdbu->contactId}g_[20]");
+                $tok->set_user_from($cdbu, true);
             } else {
-                $tok->set_user($this->user)->set_token_pattern("hca{$this->user->contactId}_[20]");
+                $tok->set_user_from($this->user, false);
             }
             if (is_int($alert->expires_at ?? null)) {
                 $tok->set_expires_at($alert->expires_at);
             }
             $tok->assign_data($alert);
+            $tok->set_token_pattern("hci{$tok->contactId}_[20]");
             $tok->insert();
             assert($tok->stored());
             $alert = clone $alert;

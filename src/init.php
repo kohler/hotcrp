@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
-const HOTCRP_VERSION = "3.2.1";
+const HOTCRP_VERSION = "3.3.1";
 
 // All positive review types must be 1 digit
 const REVIEW_META = 5;
@@ -66,7 +66,7 @@ require_once(SiteLoader::find("src/conference.php"));
 require_once(SiteLoader::find("src/contact.php"));
 Conf::set_current_time();
 if (defined("HOTCRP_TESTHARNESS")) {
-    Conf::$test_mode = true;
+    Navigation::$test_mode = 1;
 }
 if (PHP_SAPI === "cli") {
     set_exception_handler("BatchProcess::exception_handler");
@@ -210,21 +210,23 @@ function initialize_request($conf, $nav) {
 
     // check method
     $method = $qreq->method();
+    $page = $qreq->page();
     if ($method !== "GET"
         && $method !== "POST"
         && $method !== "HEAD"
-        && ($qreq->page() !== "api"
-            || $method !== "DELETE")) {
-        header("HTTP/1.0 405 Method Not Allowed");
-        exit(0);
+        && ($page !== "api" || $method !== "DELETE")) {
+        Navigation::complete(405 /* Method Not Allowed */);
     }
 
     // mark as already expired to discourage caching, but allow the browser
     // to cache for history buttons
-    header("Cache-Control: max-age=0,must-revalidate,private");
+    Navigation::header("Cache-Control: max-age=0,must-revalidate,private");
 
     // set up Content-Security-Policy if appropriate
-    $conf->prepare_security_headers($qreq);
+    $conf->emit_security_headers();
+    if ($page !== "api" && $page !== ".well-known") {
+        $conf->emit_browser_security_headers($qreq);
+    }
 
     return $qreq;
 }
@@ -294,21 +296,30 @@ function initialize_user($qreq, $kwarg = null) {
     // check for bearer token
     if (($kwarg["bearer"] ?? false)
         && ($htauth = $qreq->raw_header("HTTP_AUTHORIZATION"))
-        && preg_match('/\A\s*+Bearer\s++(hct_[A-Za-z0-9]++)\s*+\z/i', $htauth, $m)) {
-        $qreq->approve_token(); // explicit authorization
-        $user = null;
-        $token = TokenInfo::find_cdb($m[1], $conf)
-            ?? TokenInfo::find($m[1], $conf);
+        && substr_compare($htauth, "bearer", 0, 6, true) === 0
+        && (strlen($htauth) === 6 || ctype_space($htauth[6]))) {
+        $user = $token = null;
+        $salt = trim(substr($htauth, 6));
+        if (strlen($salt) > 20 && ctype_alnum(substr($salt, 4))) {
+            if (str_starts_with($salt, "hcT_")) {
+                $token = TokenInfo::find_from($salt, $conf, true);
+            } else if (str_starts_with($salt, "hct_")) {
+                $token = TokenInfo::find_from($salt, $conf, true) /* XXX backward compat */
+                    ?? TokenInfo::find_from($salt, $conf, false);
+            }
+        }
         if ($token
             && $token->capabilityType === TokenInfo::BEARER
             && $token->is_active()) {
             $user = $token->local_user();
         }
         if (!$user) {
+            $conf->www_authenticate_header("invalid_token", $qreq);
             JsonResult::make_error(401, "<0>Unauthorized")->complete();
         }
+        $qreq->approve_token(); // explicit authorization
         $qreq->set_user($user);
-        $qreq->set_qsession(new MemoryQsession($m[1], ["u" => $user->email]));
+        $qreq->set_qsession(new MemoryQsession($salt, ["u" => $user->email]));
         $user->set_bearer_authorized();
         if (($scope = $token->data("scope")) && is_string($scope)) {
             $user->set_scope($scope);
@@ -376,7 +387,7 @@ function initialize_user($qreq, $kwarg = null) {
             initialize_user_preferred_uindex($qreq, $uindex);
         }
         if ($uindex < $nus
-            && !in_array($nav->page, ["api", "scripts", "stylesheets", "images", "cacheable"], true)
+            && !in_array($nav->page, ["api", "scripts", "stylesheets", "images", "cacheable", ".well-known"], true)
             && ($qreq->method() === "GET" || $qreq->method() === "HEAD")) {
             // redirect to `/u` version
             $nav->query = preg_replace('/[?&;]i=[^&;]++/', '', $nav->query);
@@ -402,7 +413,7 @@ function initialize_user($qreq, $kwarg = null) {
     if ($reqemail !== ""
         && $uemail !== ""
         && strcasecmp($reqemail, $uemail) !== 0) {
-        $conf->error_msg("<5>You are signed in as " . htmlspecialchars($uemail) . ", not " . htmlspecialchars($reqemail) . ". <a href=\"" . $conf->hoturl("signin", ["email" => $reqemail]) . "\">Add account</a>");
+        $conf->error_msg("<5>You are signed in as " . htmlspecialchars($uemail) . ", not " . htmlspecialchars($reqemail) . ". " . $conf->hotlink("Add account", "signin", ["email" => $reqemail]));
     }
 
     // potentially mark preferred account index for this conference
@@ -426,19 +437,25 @@ function initialize_user($qreq, $kwarg = null) {
     if ($muser->email === ""
         && $muser->has_author_view_capability()
         && !$conf->opt("allowIndexPapers")) {
-        header("X-Robots-Tag: noindex, noarchive");
+        Navigation::header("X-Robots-Tag: noindex, noarchive");
+    }
+
+    // exit early if no session
+    if (!$qreq->qsid()) {
+        return $muser;
     }
 
     // if bounced through login, add post data
     $login_bounce = $qreq->gsession("login_bounce");
-    if (isset($login_bounce[4]) && $login_bounce[4] <= Conf::$now) {
+    if (isset($login_bounce[4])
+        && $login_bounce[4] <= Conf::$now) {
         $qreq->unset_gsession("login_bounce");
         $login_bounce = null;
     }
-
-    if (!$muser->is_empty() && $login_bounce !== null) {
-        if ($login_bounce[0] === $conf->session_key
-            && $login_bounce[2] !== "index"
+    if ($login_bounce !== null
+        && $login_bounce[0] === $conf->session_key
+        && !$muser->is_empty()) {
+        if ($login_bounce[2] !== "index"
             && $login_bounce[2] === $nav->page) {
             foreach ($login_bounce[3] as $k => $v) {
                 if (!isset($qreq[$k]))
@@ -452,7 +469,6 @@ function initialize_user($qreq, $kwarg = null) {
     // remember recent addresses in session
     $addr = $qreq->raw_header("REMOTE_ADDR");
     if ($addr
-        && $qreq->qsid()
         && (!$muser->is_empty() || $qreq->has_gsession("addrs"))) {
         $addrs = $qreq->gsession("addrs");
         if (!is_array($addrs) || empty($addrs)) {

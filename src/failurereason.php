@@ -218,6 +218,14 @@ class FailureReason extends Exception
         if ($this->_a["site_lock"] ?? false) {
             $ms[] = $this->conf->_("<0>Action locked");
         }
+        if (($scope = $this->_a["scope"] ?? null) !== null) {
+            if (is_int($scope)) {
+                $scope = join(" ", TokenScope::unparse_missing_bits($scope));
+            }
+            if ($scope) {
+                $ms[] = $this->conf->_("<0>Action requires scope ‘{}’", $scope);
+            }
+        }
         if ($this->_a["noPaper"] ?? false) {
             $ms[] = $this->conf->_("<0>{Submission} #{} does not exist", $paperId);
         }
@@ -405,10 +413,10 @@ class FailureReason extends Exception
         if ($this->_a["expand"] ?? false) {
             $mx = [];
             if (($this->_a["forceShow"] ?? false) && Qrequest::$main_request) {
-                $mx[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1], Conf::HOTURL_RAW), 0));
+                $mx[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1]), 0));
             }
             if ($this->_a["listViewable"] ?? false) {
-                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", "q="), 0));
+                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => ""]), 0));
             }
             if ($this->_a["reviewsOutstanding"] ?? false) {
                 $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0));

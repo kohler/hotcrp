@@ -154,7 +154,7 @@ class RequestReview_API {
                 $ml[] = MessageItem::inform_at("email", "<0>An administrator must approve this proposal for it to take effect.");
             }
             $user->log_activity("Review proposal added for {$pemail}", $prow);
-            $prow->conf->update_automatic_tags($prow, "review");
+            $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
             HotCRPMailer::send_administrators("@proposereview", $prow,
                                               ["requester_contact" => $requester,
                                                "reviewer_contact" => $xreviewer,
@@ -285,8 +285,8 @@ class RequestReview_API {
             "reason" => $reason
         ]);
 
-        $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
-        $prow->conf->update_automatic_tags($prow, "review");
+        $user->log_activity_for($requester, "Review proposal denied for {$email}", $prow);
+        $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
         return new JsonResult(["ok" => true, "action" => "deny"]);
     }
 
@@ -362,7 +362,7 @@ class RequestReview_API {
             if ($rrow->reviewToken) {
                 $prow->conf->update_rev_tokens_setting(1);
             }
-            $prow->conf->update_automatic_tags($prow, "review");
+            $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
         }
 
         if ($rrow->reviewStatus < ReviewInfo::RS_ACKNOWLEDGED) {
@@ -448,7 +448,7 @@ class RequestReview_API {
             if ($rrow->reviewToken) {
                 $prow->conf->update_rev_tokens_setting(-1);
             }
-            $prow->conf->update_automatic_tags($prow, "review");
+            $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
             $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} declined", $prow);
             $user->update_cdb_roles();
 
@@ -594,7 +594,7 @@ class RequestReview_API {
             $user->log_activity("Review proposal retracted for $req->email", $prow);
         }
 
-        $prow->conf->update_automatic_tags($prow, "review");
+        $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
 
         // send mail to reviewer
         $notified = false;

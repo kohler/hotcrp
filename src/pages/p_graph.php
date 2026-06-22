@@ -45,10 +45,10 @@ class Graph_Page {
         }
         $gj = $gx->get("graph/{$gtype}");
         if ($gtype === "" && !empty($gtypes) && $qreq->is_get()) {
-            $user->conf->redirect_self($qreq, ["group" => self::gj_group($gtypes[0])]);
+            $qreq->redirect_self(["group" => self::gj_group($gtypes[0])]);
             return false;
         } else if ($gj && $gj->name !== "graph/{$gtype}" && $qreq->is_get()) {
-            $user->conf->redirect_self($qreq, ["group" => self::gj_group($gj)]);
+            $qreq->redirect_self(["group" => self::gj_group($gj)]);
             return false;
         }
         if (!$gj) {
@@ -62,8 +62,7 @@ class Graph_Page {
         echo '<nav class="papmodes mb-5 clearfix"><ul>';
         foreach ($gtypes as $gjx) {
             echo '<li class="papmode', $gjx === $gj ? " active" : "", '">',
-                Ht::link(htmlspecialchars($gjx->title),
-                         $user->conf->hoturl("graph", ["group" => self::gj_group($gjx)])),
+                $user->conf->hotlink(htmlspecialchars($gjx->title), "graph", ["group" => self::gj_group($gjx)]),
                 '</li>';
         }
         echo '</ul></nav>';

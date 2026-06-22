@@ -13,13 +13,13 @@ class LoginHelper {
         // if user signed out of HTTP authentication, send a reauth request
         if ($qreq->has_gsession("reauth")) {
             $qreq->unset_gsession("reauth");
-            header("HTTP/1.0 401 Unauthorized");
+            Navigation::http_response_code(401 /* Unauthorized */);
             if (is_string($conf->opt("httpAuthLogin"))) {
-                header("WWW-Authenticate: " . $conf->opt("httpAuthLogin"));
+                Navigation::header("WWW-Authenticate: " . $conf->opt("httpAuthLogin"));
             } else {
-                header("WWW-Authenticate: Basic realm=\"HotCRP\"");
+                Navigation::header("WWW-Authenticate: Basic realm=\"HotCRP\"");
             }
-            exit(0);
+            Navigation::complete();
         }
 
         // if user is still valid, OK
@@ -29,29 +29,29 @@ class LoginHelper {
 
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
-            header("HTTP/1.0 401 Unauthorized");
+            Navigation::http_response_code(401 /* Unauthorized */);
             $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication required"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.")
             ]);
             $qreq->print_footer();
-            exit(0);
+            Navigation::complete();
         }
         $qreq->email = $_SERVER["REMOTE_USER"];
 
         $info = self::login_info($conf, $qreq); // XXX
         if ($info["ok"]) {
-            $conf->redirect($info["redirect"] ?? "");
+            $qreq->redirect($info["redirect"] ?? "");
         } else {
-            header("HTTP/1.0 401 Unauthorized");
+            Navigation::http_response_code(401 /* Unauthorized */);
             $qreq->print_header("Error", "home", ["body_class" => "body-error"]);
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication error"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users. You have provided incorrect authentication data.")
             ]);
             $qreq->print_footer();
-            exit(0);
+            Navigation::complete();
         }
     }
 
@@ -220,8 +220,7 @@ class LoginHelper {
             $qreq->set_csession("freshlogin", true);
             $where = $user->conf->hoturl_raw("index");
         }
-        $user->conf->redirect($where);
-        exit(0);
+        $qreq->redirect($where);
     }
 
 
@@ -421,9 +420,10 @@ class LoginHelper {
 
         if (($info["allow_redirect"] ?? false)
             && $problem !== "bad_password"
-            && ($urlarg = Fmt::find_arg($args, "forgotpassword"))) {
+            && ($urlarg = Fmt::find_arg($args, "forgotpassword"))
+            && Qrequest::$main_request) {
             $conf->error_msg($msg);
-            $conf->redirect($urlarg->value);
+            Qrequest::$main_request->redirect($urlarg->value);
         }
 
         if (!$ms) {

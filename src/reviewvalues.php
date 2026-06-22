@@ -790,7 +790,7 @@ class ReviewValues extends MessageSet {
                 continue;
             }
             if ($fval === false) {
-                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$f->short_id]), 100)));
+                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_word_abbreviate(trim($this->req[$f->short_id]), 100)));
                 $fval = $old_fval;
                 $allow_new_submit = false;
             }
@@ -835,7 +835,7 @@ class ReviewValues extends MessageSet {
                        && !($this->req["override"] ?? false)
                        && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
                 $this->clear_messages_since($before_msgcount);
-                $this->rvmsg(self::ERROR, null, "<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">deadline</a> for editing this review has passed");
+                $this->rvmsg(self::ERROR, null, "<5>The " . $this->conf->hotlink("deadline", "deadlines") . " for editing this review has passed");
                 $this->rvmsg(self::INFORM, null, "<0>Select “Override deadlines” and try again if you need to override the deadline.");
                 return false;
             }
@@ -919,8 +919,8 @@ class ReviewValues extends MessageSet {
         }
         assert($newstatus === $newstatus2);
 
-        // get the current time
-        $now = max(time(), $rrow->reviewModified + 1);
+        // get the current time; include Conf::$now for tests
+        $now = max(Conf::$now, time(), $rrow->reviewModified + 1);
 
         // set status-related fields
         if ($newstatus === ReviewInfo::RS_ACKNOWLEDGED
@@ -1135,7 +1135,7 @@ class ReviewValues extends MessageSet {
 
         // notify automatic tags
         if ($this->autosearch) {
-            $this->conf->update_automatic_tags($prow, "review");
+            $this->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
         }
 
         // potentially email chair, reviewers, and authors
@@ -1332,9 +1332,8 @@ class ReviewValues extends MessageSet {
     private function _confirm_message($status, $fmt, $info, $single = null) {
         $pids = [];
         foreach ($info as &$x) {
-            if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
-                $url = $this->conf->hoturl("paper", ["p" => $m[2], "#" => $m[3] ? "r$m[2]$m[3]" : null]);
-                $x = "<a href=\"{$url}\">{$x}</a>";
+            if (preg_match('/\A(\#?)(\d+)([A-Z]*)\z/', $x, $m)) {
+                $x = $this->conf->hotlink($x, "paper", ["p" => $m[2], "#" => $m[3] ? "r{$m[2]}{$m[3]}" : null]);
                 $pids[] = $m[2];
             }
         }

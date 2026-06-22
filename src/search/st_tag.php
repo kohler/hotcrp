@@ -35,10 +35,12 @@ class Tag_SearchTerm extends SearchTerm {
 
         // check value matchers
         $tsm = new TagSearchMatcher($srch->user);
-        if (preg_match('/\A([^\#=!<>\x80-\xFF]+)(?:\#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)) {
+        if (preg_match('/\A([^\#=!<>\x80-\xFF]+)[\#=](-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(|-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)) {
             $tagword = $m[1];
             $tsm->add_value_matcher(new CountMatcher(">={$m[2]}"));
-            $tsm->add_value_matcher(new CountMatcher("<={$m[3]}"));
+            if ($m[3] !== "") {
+                $tsm->add_value_matcher(new CountMatcher("<={$m[3]}"));
+            }
         } else if (preg_match('/\A([^\#=!<>\x80-\xFF]+)(\#?)([=!<>]=?|≠|≤|≥|)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)
                    && $m[1] !== "any"
                    && $m[1] !== "none"
@@ -165,6 +167,9 @@ class Tag_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         return $this->tsm->test($row->searchable_tags($this->tsm->user));
     }
+    function about() {
+        return self::ABOUT_TAGS;
+    }
     /** @param PaperList $pl
      * @param string $tag
      * @param ?TagInfo $dt
@@ -201,9 +206,6 @@ class Tag_SearchTerm extends SearchTerm {
         } else {
             return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
         }
-    }
-    function about() {
-        return self::ABOUT_PAPER;
     }
     function drag_assigners(Contact $user) {
         $t = $this->tsm->single_tag();

@@ -77,6 +77,7 @@ class DocumentInfo implements JsonSerializable {
 
     const DF_PREFER_S3 = 1;
     const DF_WAS_INSERTED = 2;
+    const DF_PREFER_INACTIVE = 4;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -466,6 +467,15 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return $this */
+    function set_prefer_inactive() {
+        $this->_dflags |= self::DF_PREFER_INACTIVE;
+        if ($this->paperStorageId <= 0) {
+            $this->inactive = 1;
+        }
+        return $this;
+    }
+
+    /** @return $this */
     function analyze_content() {
         $info = Mimetype::content_info(null, $this->mimetype, $this);
         if (!$info) {
@@ -723,6 +733,11 @@ class DocumentInfo implements JsonSerializable {
     /** @return bool */
     function was_inserted() {
         return ($this->_dflags & self::DF_WAS_INSERTED) !== 0;
+    }
+
+    /** @return bool */
+    function prefer_inactive() {
+        return ($this->_dflags & self::DF_PREFER_INACTIVE) !== 0;
     }
 
     /** @return bool */
@@ -1628,9 +1643,10 @@ class DocumentInfo implements JsonSerializable {
     const DOCURL_INCLUDE_DOCID = 1024;
 
     /** @param ?list<FileFilter> $filters
-     * @param int $hoturl_flags
+     * @param ?int $hoturl_flags
      * @return string */
-    function url($filters = null, $hoturl_flags = 0) {
+    function url($filters = null, $hoturl_flags = null) {
+        $hoturl_flags = $hoturl_flags ?? Conf::HOTURL_RAW;
         if ($this->mimetype) {
             $f = ["file" => $this->export_filename($filters ?? $this->filters_applied)];
         } else {
@@ -1657,7 +1673,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?list<FileFilter> $filters
      * @return string */
     function link_html($html = "", $flags = 0, $filters = null) {
-        $p = $this->url($filters);
+        $p = htmlspecialchars($this->url($filters, Conf::HOTURL_RAW));
         $suffix = $info = "";
         $title = null;
         $small = ($flags & self::L_SMALL) != 0;
@@ -1921,6 +1937,18 @@ class DocumentInfo implements JsonSerializable {
             }
         }
         return $this->npages >= 0 ? $this->npages : null;
+    }
+
+    /** @param ?string $pagetype
+     * @param ?CheckFormat $cf
+     * @return ?int */
+    function npages_of_type($pagetype, ?CheckFormat $cf = null) {
+        if ($pagetype === null) {
+            return $this->npages($cf);
+        } else if ($cf->check_document($this)) {
+            return $cf->npages_of_type($pagetype);
+        }
+        return null;
     }
 
     /** @param ?CheckFormat $cf

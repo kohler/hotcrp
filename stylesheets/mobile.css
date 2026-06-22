@@ -124,7 +124,7 @@ h2.paptitle {
 .pspcard-open {
 	padding-bottom: 4px;
 }
-.pslcard-nav {
+.s-psl-nav {
 	display: none;
 }
 .leftmenu-menu {
@@ -176,7 +176,7 @@ h1.leftmenu > a:after {
 .pspcard-open {
 	display: none;
 }
-.pcard, .pcontainer-nostrip > .pcard {
+.pcard {
 	margin-left: -12px;
 	margin-right: -12px;
 	padding-left: 16px;

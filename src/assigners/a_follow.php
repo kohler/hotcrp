@@ -107,6 +107,9 @@ class Follow_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         return new Follow_Assigner($item, $state);
     }
+    function about() {
+        return SearchTerm::ABOUT_OTHER;
+    }
     function unparse_description() {
         return "follow";
     }

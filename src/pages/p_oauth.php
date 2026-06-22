@@ -1,9 +1,9 @@
 <?php
 // pages/p_oauth.php -- HotCRP OAuth 2 authentication page
-// Copyright (c) 2022-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
-use Conf, Contact, MessageItem, NavigationState, Qrequest, Redirection;
+use Conf, Contact, MessageItem, Navigation, NavigationState, Qrequest, Redirection;
 use LoginHelper, TokenInfo, UserSecurityEvent, UserStatus;
 
 class OAuthProvider {
@@ -36,7 +36,6 @@ class OAuthProvider {
 
     /** @var ?string */
     public $nonce;
-
     public $require;
 
     function __construct($name) {
@@ -71,7 +70,7 @@ class OAuthProvider {
         $instance->auth_uri = $authdata->auth_uri ?? null;
         $instance->token_uri = $authdata->token_uri ?? null;
         $instance->redirect_uri = $authdata->redirect_uri
-            ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
+            ?? $conf->hoturl_raw("oauth", null, Conf::HOTURL_ABSOLUTE);
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
         $instance->roles = $authdata->roles ?? false;
@@ -140,9 +139,11 @@ class OAuth_Page {
         if (friendly_boolean($this->qreq->quiet)) {
             $tokdata["quiet"] = true;
         }
-        foreach (["redirect", "success_redirect", "failure_redirect"] as $k) {
-            if ($this->qreq->$k)
-                $tokdata[$k] = $this->qreq->$k;
+        if (($r = $this->qreq->success_redirect ?? $this->qreq->redirect) !== null) {
+            $tokdata["success_redirect"] = $r;
+        }
+        if (($r = $this->qreq->failure_redirect ?? $this->qreq->redirect) !== null) {
+            $tokdata["failure_redirect"] = $r;
         }
 
         $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
@@ -180,25 +181,10 @@ class OAuth_Page {
         if (!isset($state)) {
             return MessageItem::error("<0>OAuth authentication response parameters required");
         }
-        if ($this->conf->contactdb()) {
-            $tok = TokenInfo::find_cdb($state, $this->conf);
-        } else {
-            $tok = TokenInfo::find($state, $this->conf);
-        }
+        $tok = TokenInfo::find_from($state, $this->conf, !!$this->conf->contactdb());
         if (!$tok) {
             return MessageItem::error("<0>Authentication request not found or expired");
-        }
-
-        // set redirection information from token
-        $this->site_uri = $tok->data("site_uri") ?? $this->site_uri;
-        if (!str_ends_with($this->site_uri, "/")) {
-            $this->site_uri .= "/";
-        }
-        $redirect = $tok->data("redirect");
-        $this->success_redirect = $tok->data("success_redirect") ?? $redirect;
-        $this->failure_redirect = $tok->data("failure_redirect") ?? $redirect;
-
-        if (!$tok->is_active()) {
+        } else if (!$tok->is_active()) {
             return MessageItem::error("<0>Authentication request expired");
         } else if ($tok->timeUsed) {
             return MessageItem::error("<0>Authentication request reused");
@@ -206,6 +192,15 @@ class OAuth_Page {
                    || !$tok->data()) {
             return MessageItem::error("<0>Invalid authentication request ‘{$state}’, internal error");
         }
+
+        // set redirection information from token
+        $this->site_uri = $tok->data("site_uri") ?? $this->site_uri;
+        if (!str_ends_with($this->site_uri, "/")) {
+            $this->site_uri .= "/";
+        }
+        $redirect = $tok->data("redirect") /* XXX obsolete */;
+        $this->success_redirect = $tok->data("success_redirect") ?? $redirect;
+        $this->failure_redirect = $tok->data("failure_redirect") ?? $redirect;
 
         if (($nonce = $tok->data("nonce")) !== null) {
             $noncematch = isset($_COOKIE["hotcrp-oauth-nonce-{$nonce}"]);
@@ -477,13 +472,13 @@ class OAuth_Page {
         } else if ($qreq->qsid()) {
             $oap->resolve($oap->start());
         } else if ($qreq->setcookie) {
-            http_response_code(400);
+            Navigation::http_response_code(400);
             $user->conf->feedback_msg(MessageItem::error($user->conf->_i("session_failed_error")));
             $qreq->print_header("Authentication", "oauth", ["action_bar" => "", "body_class" => "body-error"]);
             $qreq->print_footer();
         } else {
             $qreq->open_session();
-            $user->conf->redirect_self($qreq, ["setcookie" => 1]);
+            $qreq->redirect_self(["setcookie" => 1]);
         }
     }
 }

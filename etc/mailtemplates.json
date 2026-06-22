@@ -645,7 +645,7 @@
 			"Dear {{NAME}},\n\n",
 			"You have been assigned new reviews for {{CONFNAME}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}}\n\n",
 			"* Your reviews: {{LINK(search, q=re:me)}}\n",
-			"* New assignments: {{NEWASSIGNMENTS}}\n",
+			"* New assignments: {{ASSIGNMENTS}}\n",
 			"* Site: {{LINK}}\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",

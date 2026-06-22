@@ -1,6 +1,6 @@
 <?php
 // pages/p_mail.php -- HotCRP mail tool
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Mail_Page {
     /** @var Conf */
@@ -118,11 +118,12 @@ class Mail_Page {
                 && $qreq->has_a("p")
                 && $qreq->get_a("p") !== $papersel) {
                 $papersel = $qreq->get_a("p");
-                $qreq->q = PaperSearch::encode_id_search($papersel);
+            } else {
+                unset($qreq["p"]);
             }
         } else {
             $qreq->q = "";
-            $papersel = null;
+            $search = $papersel = null;
         }
 
         // template
@@ -137,6 +138,7 @@ class Mail_Page {
         // set MailRecipients properties
         $this->recip->set_newrev_since($this->qreq->newrev_since);
         $this->recip->set_recipients($this->qreq->to);
+        $this->recip->set_search($search);
         $this->recip->set_paper_ids($papersel);
     }
 
@@ -159,7 +161,7 @@ class Mail_Page {
         $plist->set_table_id_class("foldpl", "fullw");
         $plist->set_view("sel", false, PaperList::VIEWORIGIN_MAX);
         if ($plist->is_empty()) {
-            $this->conf->warning_msg("<5>You have not requested any external reviews. " . Ht::link("Return home", $this->conf->hoturl("index")));
+            $this->conf->warning_msg("<5>You have not requested any external reviews. " . $this->conf->hotlink("Return home", "index"));
         } else {
             echo "<h2>Requested reviews</h2>\n\n";
             $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
@@ -168,7 +170,7 @@ class Mail_Page {
             if ($plist->has("need_review")) {
                 echo "Some of your requested external reviewers have not completed their reviews. To send them an email reminder, check the text below and then select “Prepare mail.” You’ll get a chance to review the emails and select specific reviewers to remind.";
             } else {
-                echo 'All of your requested external reviewers have completed their reviews. ', Ht::link("Return home", $this->conf->hoturl("index"));
+                echo 'All of your requested external reviewers have completed their reviews. ', $this->conf->hotlink("Return home", "index");
             }
             echo "</p></div>\n";
         }
@@ -275,8 +277,9 @@ class Mail_Page {
                 "<strong>Recent mails:</strong>\n";
             $i = 1;
             while (($row = $result->fetch_object())) {
+                $s = htmlspecialchars($row->subject) . " – <span class=\"dim\">" . htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)) . "</span>";
                 echo '<div class="mhdd"><div style="position:relative;overflow:hidden">',
-                    '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> <a class="q" href="', $this->conf->hoturl("mail", "mailid=" . $row->mailId), '">', htmlspecialchars($row->subject), ' &ndash; <span class="dim">', htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
+                    '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> ', $this->conf->hotlink($s, "mail", ["mailid" => $row->mailId], ["class" => "q"]), "</div>",
                     "<br></div></div>\n";
                 ++$i;
             }
@@ -291,7 +294,7 @@ class Mail_Page {
                 Ht::hidden("has_plimit", 1),
                 Ht::checkbox("plimit", 1, !!$this->qreq->plimit, ["id" => "plimit", "class" => "uich js-mail-recipients"]),
                 '</span>',
-                '<label for="plimit">Choose papers<span class="fx8">:</span></label>';
+                '<label for="plimit">Search</span><span class="fx8">:</span></label>';
         } else {
             echo '<div class="fx9">',
                 Ht::hidden("has_plimit", 1),
@@ -301,16 +304,16 @@ class Mail_Page {
         if ($this->qreq->recheck && $this->qreq->plimit) {
             $plist = new PaperList($this->qreq->t === "req" ? "reqrevs" : "reviewers",
                 new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q]));
-            foreach ($plist->search->message_list() as $mi) {
+            foreach ($plist->message_list() as $mi) {
                 $this->recip->append_item_at("q", $mi);
             }
             if ($plist->is_empty()) {
-                $this->recip->warning_at("q", "<0>No papers match that search");
+                $this->recip->warning_at("q", "<0>No {$this->conf->snouns[1]} match that search");
             }
         }
         echo '<div class="', $this->recip->control_class("q", "fx8 mt-1"), '"><div class="d-flex">';
         if (!$this->viewer->privChair) {
-            echo '<label for="q" class="mr-2">Papers:</label>';
+            echo '<label for="q" class="mr-2">', $this->conf->snouns[3], ':</label>';
         }
         echo Ht::entry("q", (string) $this->qreq->q, [
                 "placeholder" => "(All)", "spellcheck" => false,
@@ -372,7 +375,7 @@ class Mail_Page {
         $deftemplate = $templates[$this->recip->current_default_message()] ?? null;
 
         // form
-        echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
+        echo $this->conf->hotform("=mail", ["check" => 1, "monreq" => $this->qreq->monreq], [
                 "id" => "f-mail",
                 "data-default-messages" => json_encode_browser((object) $templates),
                 "class" => "ui-submit js-selector-summary"
@@ -452,7 +455,7 @@ class Mail_Page {
 
     static function go(Contact $user, Qrequest $qreq) {
         if (isset($qreq->cancel)) {
-            $user->conf->redirect_self($qreq, $qreq->subset_as_array("monreq", "to", "has_plimit", "plimit", "q", "t", "cc", "reply-to", "subject", "body", "template"));
+            $qreq->redirect_self($qreq->subset_as_array("monreq", "to", "has_plimit", "plimit", "q", "t", "cc", "reply-to", "subject", "body", "template"));
         }
         if (!$user->is_manager() && !$user->isPC) {
             $user->escape();

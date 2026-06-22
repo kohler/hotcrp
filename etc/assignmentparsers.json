@@ -188,6 +188,7 @@
         "description": "Remove tag"
     },
     {   "name": "notag", "alias": "cleartag"   },
+    {   "name": "deletetag", "alias": "cleartag"   },
     {
         "name": "nexttag", "parser_class": "Tag_AssignmentParser",
         "remove": false, "next": true,
@@ -215,6 +216,18 @@
         "description": "Rename tag"
     },
     {   "name": "renametag", "alias": "movetag"   },
+    {
+        "name": "checktag", "parser_class": "Tag_AssignmentParser",
+        "check": true,
+        "parameters": ["!tag:tag", "tag_value:float"], "group": "tag",
+        "description": "Check tag value"
+    },
+    {
+        "name": "checkedittags", "parser_class": "Tag_AssignmentParser",
+        "check": "edit",
+        "parameters": ["!tag:tag"], "group": "tag",
+        "description": "Check values of all editable tags"
+    },
     {
         "name": "pref", "parser_class": "Preference_AssignmentParser",
         "parameters": ["!user:user", "!preference#", "expertise=X|Y|Z"],

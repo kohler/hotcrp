@@ -2,6 +2,7 @@
 // t_permission.php -- HotCRP tests
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+#[RequireDb("fresh")]
 class Permission_Tester {
     /** @var Conf
      * @readonly */
@@ -390,15 +391,15 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"}}");
         self::check_rights_version($users);
         xassert_eqq($user_chair->dangerous_track_mask(), 0);
-        xassert_eqq($user_jon->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
+        xassert_eqq($user_jon->dangerous_track_mask() & Track::FM_VIEW, Track::FM_VIEW);
         xassert_eqq($user_marina->dangerous_track_mask(), 0);
         xassert_eqq($user_pfrancis->dangerous_track_mask(), 0);
 
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+blue\"}}");
         self::check_rights_version($users);
         xassert_eqq($user_chair->dangerous_track_mask(), 0);
-        xassert_eqq($user_jon->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
-        xassert_eqq($user_marina->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
+        xassert_eqq($user_jon->dangerous_track_mask() & Track::FM_VIEW, Track::FM_VIEW);
+        xassert_eqq($user_marina->dangerous_track_mask() & Track::FM_VIEW, Track::FM_VIEW);
         xassert_eqq($user_pfrancis->dangerous_track_mask(), 0);
 
         $this->conf->save_refresh_setting("tracks", null);
@@ -619,6 +620,7 @@ class Permission_Tester {
         xassert(!$this->conf->setting("has_colontag"));
         xassert_assign($user_chair, "paper,tag\n1,:poop:\n", true);
         xassert(!!$this->conf->setting("has_colontag"));
+        xassert_assign($user_chair, "paper,tag\n1,:poop:#clear\n", true);
 
         // NOT searches
         xassert_search($user_chair, "#fart", "1 8 2 3 6 5 4 7");
@@ -710,6 +712,34 @@ class Permission_Tester {
         xassert_search($this->u_chair, "cmt:marina", "18");
         xassert_search($this->u_chair, "cmt:marina>1", "18");
         xassert_search($this->u_chair, "cmt:#redcmt", "18");
+    }
+
+    function test_comment_search_hidden_identity() {
+        $this->conf->save_refresh_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        $this->conf->save_refresh_setting("viewrevid", Conf::VIEWREV_NEVER);
+        Contact::update_rights();
+
+        // estrin can view marina’s comment on paper 18, but not its identity
+        $paper18 = $this->u_estrin->checked_paper_by_id(18);
+        $crow = null;
+        foreach ($paper18->viewable_comment_skeletons($this->u_estrin, false) as $c) {
+            if ($c->contactId === $this->u_marina->contactId) {
+                $crow = $c;
+            }
+        }
+        xassert(!!$crow);
+        xassert(!$this->u_estrin->can_view_comment_identity($paper18, $crow));
+
+        xassert_search($this->u_estrin, "18 cmt:any", "18");
+        xassert_search($this->u_estrin, "cmt:marina", "");
+        xassert_search($this->u_chair, "cmt:marina", "18");
+
+        $this->conf->save_refresh_setting("viewrevid", 1);
+        Contact::update_rights();
+        xassert_search($this->u_estrin, "cmt:marina", "18");
+
+        $this->conf->save_refresh_setting("viewrev", null);
+        Contact::update_rights();
     }
 
     function test_comment_notification() {
@@ -1458,13 +1488,13 @@ class Permission_Tester {
 
         $pex = new PaperExport($this->u_chair);
         $rjson = $pex->review_json($paper2, $review2b);
-        ReviewForm::update_review_author_seen();
+        $this->conf->call_shutdown_function("ReviewAuthorSeenUpdate");
         $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!$review2b->reviewAuthorSeen);
 
         $pex = new PaperExport($user_author2);
         $rjson = $pex->review_json($paper2, $review2b);
-        ReviewForm::update_review_author_seen();
+        $this->conf->call_shutdown_function("ReviewAuthorSeenUpdate");
         $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!!$review2b->reviewAuthorSeen);
 
@@ -1523,7 +1553,7 @@ class Permission_Tester {
         xassert_eqq($paper16->sorted_viewable_tags($this->u_marina), " app#2 crap#3 vote#6");
         xassert_eqq($paper16->sorted_searchable_tags($this->u_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 app#2 crap#3 vote#6");
 
-        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_caches("pc");
         xassert(SettingValues::make_request($this->u_chair, [
             "has_tag_vote_approval" => 1, "tag_vote_approval" => "app app2"
         ])->execute());
@@ -1822,7 +1852,7 @@ class Permission_Tester {
 
     function test_search_submission_field_edit_condition() {
         $this->conf->save_refresh_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","exists_if":"calories>200"}]');
-        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->invalidate_caches("options");
         $this->conf->qe("insert into PaperOption (paperId,optionId,value) values (1,2,1),(2,2,1),(3,2,1),(4,2,1),(5,2,1)");
         xassert_search($this->u_chair, "has:fattening", "1 3 4");
     }

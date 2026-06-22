@@ -583,29 +583,6 @@ class ComponentSet {
         return $result;
     }
 
-    /** @param string $name
-     * @param null|string $reducer
-     * @return mixed
-     * @deprecated */
-    function call_members($name, $reducer = null) {
-        $result = $reducer === null ? [] : null;
-        foreach ($this->members($name) as $gj) {
-            if (isset($gj->function)) {
-                $v = $this->call_function($gj, $gj->function, $gj);
-            } else {
-                $v = $gj->value ?? null;
-            }
-            if ($reducer === null) {
-                $result[] = $v;
-            } else if ($reducer === "&&" ? !$v : $v) {
-                return $v;
-            } else {
-                $result = $v;
-            }
-        }
-        return $result;
-    }
-
     /** @param ?string $group
      * @return $this */
     function mark_separator($group = null) {

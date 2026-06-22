@@ -1,6 +1,6 @@
 <?php
 // pages/p_search.php -- HotCRP paper search page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Search_Page {
     /** @var Conf */
@@ -140,7 +140,7 @@ class Search_Page {
             $this->set_header(30, "<strong>Scores:</strong>");
             $sortitem = '<div class="mt-2">Sort by: &nbsp;'
                 . Ht::select("scoresort", ScoreInfo::score_sort_selector_options(), $pl->score_sort(), ["id" => "scoresort"])
-                . '<a class="help" href="' . $this->conf->hoturl("help", "t=scoresort") . '" target="_blank" rel="noopener" title="Learn more">?</a></div>';
+                . $this->conf->hotlink("?", "help", ["t" => "scoresort"], ["class" => "help", "target" => "_blank", "rel" => "noopener", "title" => "Learn more"]) . '</div>';
             $this->item(30, $sortitem);
         }
 
@@ -186,7 +186,7 @@ class Search_Page {
         echo '<div class="tld is-tla',
             $this->stab === "view" ? " active" : "",
             ' pb-2" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
-            Ht::form($this->conf->hoturl("search"), ["id" => "foldredisplay", "class" => "fn3 fold5c", "method" => "get"]);
+            $this->conf->hotform("search", null, ["id" => "foldredisplay", "class" => "form-search fn3 fold5c", "method" => "get"]);
         foreach (["q", "qa", "qo", "qx", "qt", "t", "sort"] as $x) {
             if (isset($qreq[$x]) && ($x !== "q" || !isset($qreq->qa)))
                 echo Ht::hidden($x, $qreq[$x]);
@@ -227,18 +227,16 @@ class Search_Page {
     /** @param Qrequest $qreq
      * @param list<string> $limits */
     private function print_list($pl_text, $qreq, $limits) {
-        $search = $this->pl->search;
-
-        if ($search->has_problem_at("warn_missing_repeatable")) {
-            $search->inform_at(null, "<5>" . Ht::link("Repeat search in all submissions you can view", $this->conf->hoturl("search", ["t" => "viewable", "q" => $search->q])));
+        if ($this->pl->has_problem_at("warn_missing_repeatable")) {
+            $this->pl->inform_at(null, "<5>" . $this->conf->hotlink("Repeat search in all submissions you can view", "search", ["t" => "viewable", "q" => $this->pl->search->q]));
         }
         if (!empty($this->user->hidden_papers)
             && $this->user->is_actas_user()) {
-            $search->warning_at(null, $this->conf->_("<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#{$n}"; }, array_keys($this->user->hidden_papers))));
+            $this->pl->warning_at(null, $this->conf->_("<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#{$n}"; }, array_keys($this->user->hidden_papers))));
         }
-        if ($search->has_message()) {
+        if ($this->pl->has_message()) {
             echo '<div class="msgs-wide">',
-                Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING)),
+                Ht::msg($this->pl->full_feedback_html(), min($this->pl->problem_status(), MessageSet::WARNING), "mx-auto"),
                 '</div>';
         }
         echo "\n";
@@ -307,7 +305,7 @@ class Search_Page {
             "body_class" => $pl_text === null ? "want-hash-focus" : null
         ]);
         echo Ht::unstash(), // need the JS right away
-            '<div id="f-search" class="tlcontainer mb-3 clearfix" data-lquery="',
+            '<div id="f-search" class="form-search-set tlcontainer mb-3 clearfix" data-lquery="',
             htmlspecialchars($search->default_limited_query()), '">';
 
         $limits = PaperSearch::viewable_limits($user, $search->limit());
@@ -326,7 +324,7 @@ class Search_Page {
         echo '<div class="tld is-tla',
             $this->stab === "default" ? " active" : "",
             '" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
-            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search", "role" => "search"]),
+            $this->conf->hotform("search", null, ["method" => "get", "class" => "form-search form-basic-search", "role" => "search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "size" => $search->limit_explicit() ? 48 : 40,
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
@@ -345,7 +343,7 @@ class Search_Page {
         echo '<div class="tld is-tla',
             $this->stab === "advanced" ? " active" : "",
             '" id="advanced" role="tabpanel" aria-labelledby="k-advanced-tab">',
-            Ht::form($this->conf->hoturl("search"), ["method" => "get", "role" => "search"]),
+            $this->conf->hotform("search", null, ["method" => "get", "role" => "search", "class" => "form-search"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="k-advanced-qt">Search</label><div class="entry">',
               Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "k-advanced-qt"]),
@@ -367,9 +365,9 @@ class Search_Page {
         echo '<div class="entryi medium"><label></label><div class="entry">',
               Ht::submit("Search"),
               '<div class="d-inline-block padlb" style="font-size:69%">',
-                Ht::link("Search help", $this->conf->hoturl("help", "t=search")),
+                $this->conf->hotlink("Search help", "help", ["t" => "search"]),
                 ' <span class="barsep">·</span> ',
-                Ht::link("Search keywords", $this->conf->hoturl("help", "t=keywords")),
+                $this->conf->hotlink("Search keywords", "help", ["t" => "keywords"]),
               '</div>',
             '</div></div>',
             '</div></form></div>';
@@ -410,19 +408,24 @@ class Search_Page {
 
     /** @return never */
     static private function not_allowed(Contact $user, Qrequest $qreq) {
-        http_response_code(403);
+        Navigation::http_response_code(403);
         $qreq->print_header("Search", "search");
         $ml = [MessageItem::error("<0>Account {} can’t search {submissions}", $user->email)];
 
-        $semails = Contact::session_emails($qreq);
-        $user->conf->prefetch_users_by_email($semails);
         $links = [];
-        foreach ($semails as $i => $email) {
-            if (strcasecmp($email, $user->email) !== 0
-                && ($u = $user->conf->user_by_email($email))
-                && PaperSearch::viewable_limits($u)) {
-                $links[] = Ht::link(htmlspecialchars($email),
-                    $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW));
+        if ($user->is_actas_user()) {
+            $links[] = Ht::link(htmlspecialchars($user->base_user()->email),
+                $user->conf->selfurl($qreq, ["actas" => null]));
+        } else {
+            $semails = Contact::session_emails($qreq);
+            $user->conf->prefetch_users_by_email($semails);
+            foreach ($semails as $i => $email) {
+                if (strcasecmp($email, $user->email) !== 0
+                    && ($u = $user->conf->user_by_email($email))
+                    && PaperSearch::viewable_limits($u)) {
+                    $links[] = Ht::link(htmlspecialchars($email),
+                        $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL));
+                }
             }
         }
         if ($links) {

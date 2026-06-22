@@ -8,18 +8,11 @@ for input to another API.
 
 # get /document
 
-> Fetch document
+> Retrieve document
 
-Fetch a document and return it in the response body. Specify the document to
-return either with the `doc` parameter, which names the document using a pattern
-like `testconf-paper1.pdf`, or the `p`, `dt`, and optionally `attachment`
-parameters, which define the submission ID, submission field, and attachment
-name.
-
-The `hash` and `docid` parameters select a specific version of a document.
-`hash` selects a document by hash, and `docid` by internal document ID.
-Responses to requests with `hash` or `docid` are usually cacheable. Only
-administrators and authors can select specific document versions.
+Retrieve a document and return it in the response body. Add `hash` or `docid`
+to retrieve a specific document version; such requests are usually cacheable,
+and only administrators and authors can make them.
 
 Successful requests (HTTP status code 200) return the requested document as the
 response, without any JSON wrapper. Find the document’s MIME type using the
@@ -32,15 +25,46 @@ This API understands conditional requests with HTTP headers `If-Match`,
 responses include `ETag` and `Last-Modified` HTTP headers. It also understands
 range requests.
 
+* badge featured
+* param ?doc document_name: Document name, e.g. `testconf-paper1.pdf`.
 
-# get /documenthistory
+    * oneof docspec doc
+* param ?p pid: Submission ID. Combine with `dt`, and optionally `file`, to
+  identify a document by submission field.
 
-> Fetch document history
+    * oneof docspec p
+* param ?dt document_type: Submission field holding the document.
 
-Fetch information about all versions of a document accessible to the requesting
-user. Use the `doc` parameter to specify a document by name, or `p` and `dt` to
-specify it by type.
+  * oneof docspec p
+* param ?file string: For fields that hold multiple documents, the name of the
+  desired file.
 
+  * oneof docspec p
+* param ?hash string: Document version selected by hash.
+* param ?docid document_id: Document version selected by internal document ID.
+
+
+# get /documentlist
+
+> List documents
+
+Retrieve information about documents and document versions accessible to the
+requesting user. A request with just the `p=PID` parameter lists all available
+documents currently associated with the submission. To request information about
+a specific submission field, add a `dt` or `doc` parameter. Setting `history=1`
+requests information about past document versions as well as current ones.
+
+* badge featured
+* param ?doc document_name
+
+   * oneof docspec doc
+* param ?p pid
+
+   * oneof docspec p
+* param ?dt
+
+   * oneof docspec p
+* param ?history boolean
 * response dt document_type
 * response document_history [document_history_entry]
 
@@ -50,36 +74,61 @@ specify it by type.
 > Check PDF format
 
 Run HotCRP’s PDF format checker on a specified document. A human-readable
-response is returned in `message_list`. The `problem_fields` response property
+response is returned in `message_list`. The `problem_fields` response field
 lists the names of any PDF checks that failed; examples include `"papersize"`,
 `"pagelimit"`, `"columns"`, `"textblock"`, `"bodyfontsize"`, `"bodylineheight"`,
-and `"wordlimit"`.
+and `"wordlimit"`. The `npages_detail` response field is provided only if the
+request’s `detail` parameter is truthy.
 
 * param ?doc document_name
+    * oneof docspec doc
 * param ?p
+    * oneof docspec p
 * param ?dt document_type
+    * oneof docspec p
+* param ?file string
+    * oneof docspec p
 * param ?docid document_id
-* param ?soft boolean
-* response docid document_id
+* param ?hash
+* param ?soft boolean: If true, reuse a cached format check when one is available instead of re-running the checks. Defaults to false (always re-run).
+
+    * default false
+* param ?detail boolean: If true, include the per-page-type `npages_detail` breakdown.
+* response docid document_id: ID of the checked document.
 * response npages nullable_int: Number of pages in PDF
 * response nwords nullable_int: Number of words in PDF
-* response problem_fields [string]
-* response has_error boolean
+* response problem_fields [string]: Names of the format checks that failed (e.g. `papersize`, `pagelimit`).
+* response has_error boolean: True if any check failed.
+* response ?npages_detail object: Number of pages in PDF per page type
+
+    * condition detail
 
 
-# get /archivelisting
+# get /archivecontents
 
-> Fetch contents of archive document
+> List contents of archive document
 
-Fetch the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. The
-contents are returned as a list of string filenames. The `consolidated=1`
-parameter requests an additional `consolidated_listing`, which returns a
+List the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. Returns
+the list of included filenames in the `archive_contents` field. The
+`summary=1` parameter requests an additional `archive_contents_summary`, which a
 preformatted string that uses `{}` notation to represent subdirectories; for
 instance, `subdir/{file1.txt, file2.txt}`.
 
-* param ?consolidated boolean: True requests a `consolidated_listing`
-* response listing [string]: List of archive elements
-* response consolidated_listing string: Parsed contents of archive
+* param ?doc document_name
+    * oneof docspec doc
+* param ?p pid
+    * oneof docspec p
+* param ?dt document_type
+    * oneof docspec p
+* param ?file string
+    * oneof docspec p
+* param ?docid
+* param ?hash
+* param ?summary boolean: True requests `archive_contents_summary`
+* response archive_contents [string]: List of archive elements
+* response archive_contents_summary string: Parsed archive listing
+
+    * condition summary
 
 
 # post /upload
@@ -99,7 +148,7 @@ The lifecycle of an upload is as follows.
    is known, and parameters defining its purpose (`dt`, `mimetype`, `filename`,
    and `temp`).
 2. The response to this request includes the upload token in its `token`
-   property. This is a string like `hcupwhvGDVmHNYyDKdqeqA`. All subsequent
+   field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`. All subsequent
    requests relating to the upload must include this token as a `token`
    parameter.
 3. Subsequent requests upload the contents of the file in chunks. The `blob`
@@ -115,28 +164,54 @@ response field represents the ranges of bytes received so far.
 The upload API is only available on sites that have enabled the document
 store.
 
+* badge featured
+* param ?p pid
 * param ?start boolean
-* param ?finish boolean
-* param ?cancel boolean
-* param ?token upload_token
-* param ?offset nonnegative_integer: Offset of `blob` in uploaded file
-* param ?length nonnegative_integer: Length of `blob` in bytes (must match
-  actual length of `blob`)
-* param blob
-* param ?size nonnegative_integer: Size of uploaded file in bytes
-* param ?dt document_type: (start only) Purpose of uploaded document;
+
+    Set to true to start a new upload.
+* param ?dt document_type: Purpose of uploaded document;
   typically corresponds to a submission field ID
-* param ?temp boolean: (start only) If true, the uploaded file is
+
+    * condition start
+* param ?temp boolean: If true, the uploaded file is
   expected to be temporary
-* param ?mimetype mimetype: (start only) Type of uploaded file
-* param ?filename string: (start only) Name of uploaded file
-* response token upload_token
+
+    * condition start
+* param ?mimetype mimetype: Type of uploaded file
+
+    * condition start
+* param ?filename string: Name of uploaded file
+
+    * condition start
+* param ?size nonnegative_integer: Size of uploaded file in bytes.
+
+    * condition start
+* param ?token upload_token
+
+    Token for the ongoing upload. Required unless `start=1`.
+* param blob
+
+    Chunk being uploaded.
+* param ?offset nonnegative_integer: Offset of `blob` in uploaded file.
+
+    * condition blob
+* param ?length nonnegative_integer: Length of `blob` in bytes (must match
+  actual length of `blob`).
+
+    * condition blob
+* param ?finish boolean
+
+    Set to true to complete the upload.
+* param ?cancel boolean
+
+    Set to true to cancel an ongoing upload.
+* response token upload_token: Token identifying this upload; include it as `token` in later requests.
 * response dt document_type
 * response filename string
 * response mimetype mimetype
 * response size nonnegative_integer
-* response ranges [offset_range]
-* response hash string
-* response crc32 string
-* response progress_value integer
-* response progress_max integer
+* response ranges [offset_range]: Byte ranges received so far.
+* response ?hash string: The completed file’s content hash; present once the upload is finished.
+* response ?crc32 string: The completed file’s CRC32 checksum; present once the upload is finished.
+* response ?progress_value integer: Bytes received so far, for progress display.
+* response ?progress_max integer: Total expected bytes, when known.

@@ -328,8 +328,30 @@ class UnicodeHelper {
      * @param int $len
      * @return string|false */
     static function utf8_prefix($str, $len) {
-        preg_match('/\A\pM*\X{0,' . $len . '}/u', $str, $m);
+        preg_match('/\A\pM*\X{0,' . $len . '}+/u', $str, $m);
         return isset($m[0]) ? $m[0] : false;
+    }
+
+    /** @param string $str
+     * @param int $len
+     * @param int $suffix_len
+     * @return string */
+    static function utf8_char_abbreviate($str, $len, $suffix_len = 0) {
+        preg_match('/\A(\pM*\X{0,' . max($len - 3, 0) . '}+)\X{0,3}+/u', $str, $m);
+        if (!isset($m[0])) {
+            return str_repeat(".", $len);
+        } else if (strlen($m[0]) === strlen($str)) {
+            return $str;
+        } else if ($len <= 3) {
+            return str_repeat(".", max($len, 0));
+        } else if ($suffix_len <= 0) {
+            return $m[1] . "...";
+        }
+        preg_match('/\A(\pM*\X{' . max($len - $suffix_len - 3, 0) . '}).*(\X{' . min($suffix_len, $len - 3) . '})\z/', $str, $m);
+        if (!isset($m[0])) {
+            return str_repeat(".", $len);
+        }
+        return $m[1] . "..." . $m[2];
     }
 
     /** @param string $str
@@ -340,9 +362,27 @@ class UnicodeHelper {
             && (preg_match('/\A\pM*\X{0,' . max($len - 1, 0) . '}(?!\pZ|\s)\X(?=\pZ|\s)/u', $str, $m)
                 || preg_match('/\A\pM*\X{1,' . max($len, 1) . '}(?:(?!\pZ|\s)\X)*/u', $str, $m))) {
             return $m[0];
-        } else {
+        }
+        return $str;
+    }
+
+    /** @param string $str
+     * @param int $len
+     * @return string */
+    static function utf8_word_abbreviate($str, $len) {
+        $pfx = self::utf8_word_prefix($str, $len);
+        if (strlen($pfx) === strlen($str)) {
             return $str;
         }
+        return "{$pfx}...";
+    }
+
+    /** @param string $str
+     * @param int $len
+     * @return string
+     * @deprecated */
+    static function utf8_abbreviate($str, $len) {
+        return self::utf8_word_abbreviate($str, $len);
     }
 
     /** @param string &$str
@@ -378,15 +418,50 @@ class UnicodeHelper {
         return [$line, $str];
     }
 
+    /** Like `utf8_line_break`, but a word longer than `$len` is broken at
+     * `$len` rather than overflowing the line.
+     * @param string &$str
+     * @param int $len
+     * @param bool $preserve_space
+     * @return string|false */
+    static function utf8_hard_line_break(&$str, $len, $preserve_space = false) {
+        if ($str === "") {
+            return false;
+        }
+        $line = self::utf8_prefix($str, $len);
+        if (($nl = strpos($line, "\n")) !== false) {
+            $line = substr($line, 0, $nl);
+        } else if (strlen($line) !== strlen($str)) {
+            if (preg_match('/\G(?!\pZ|\s)/u', $str, $m, 0, strlen($line))) {
+                // The cut falls inside a word (a non-space follows). Back up to
+                // the last break point in the line, dropping the partial word;
+                // with none (a single word wider than `$len`) the hard cut at
+                // `$len` stands.
+                $line = preg_replace('/(?:\pZ|\s)+(?:(?!\pZ|\s)\X)*\z/u', "", $line, 1);
+            } else {
+                // The cut falls at a word boundary; just drop trailing space.
+                $line = preg_replace('/(?:\pZ|\s)+\z/u', "", $line, 1);
+            }
+        }
+        $pos = strlen($line);
+        if (preg_match('/\G(?:\pZ|[\t\f\r])*\n?/u', $str, $m, 0, $pos)) {
+            $pos += strlen($m[0]);
+        }
+        if ($preserve_space && $pos !== strlen($line)) {
+            $ends_nl = $str[$pos - 1] === "\n" ? 1 : 0;
+            $line .= substr($str, strlen($line), $pos - strlen($line) - $ends_nl);
+        }
+        $str = substr($str, $pos);
+        return $line;
+    }
+
     /** @param string $str
      * @param int $len
-     * @return string */
-    static function utf8_abbreviate($str, $len) {
-        $pfx = self::utf8_word_prefix($str, $len);
-        if (strlen($pfx) < strlen($str)) {
-            return "{$pfx}...";
-        }
-        return $pfx;
+     * @param bool $preserve_space
+     * @return array{string|false,string} */
+    static function utf8_hard_line_break_parts($str, $len, $preserve_space = false) {
+        $line = self::utf8_hard_line_break($str, $len, $preserve_space);
+        return [$line, $str];
     }
 
     /** @param string $str

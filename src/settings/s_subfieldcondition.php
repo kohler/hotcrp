@@ -48,7 +48,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
         } else {
             echo "Custom search ‘", htmlspecialchars($osp->sfs->exists_if), "’";
             if (($jpath = $sv->si("sf/{$osp->ctr}/condition")->json_path())) {
-                echo MessageSet::feedback_html([MessageItem::marked_note("<5>See " . Ht::link("advanced settings", $sv->conf->hoturl("settings", ["group" => "json", "#" => "path=" . urlencode($jpath)])))]);
+                echo MessageSet::feedback_html([MessageItem::marked_note("<5>See " . $sv->conf->hotlink("advanced settings", "settings", ["group" => "json", "#" => "path=" . urlencode($jpath)]))]);
             }
         }
         echo Ht::hidden("has_sf/{$osp->ctr}/condition", 1);

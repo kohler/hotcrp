@@ -52,6 +52,8 @@ class CommentInfo {
     private $_commenter;
     /** @var ?bool */
     private $_recently_censored;
+    /** @var ?bool */
+    private $_recently_censorable;
 
     const CT_DRAFT = 0x01;
     const CT_BLIND = 0x02;
@@ -325,6 +327,14 @@ class CommentInfo {
     }
 
     /** @param Contact $viewer
+     * @return bool */
+    private function _mention_censorable($viewer) {
+        $this->_recently_censorable = !$viewer->is_my_comment($this->prow, $this)
+            && !$viewer->can_view_review_identity($this->prow, null);
+        return $this->_recently_censorable;
+    }
+
+    /** @param Contact $viewer
      * @param array{int,int,int,?bool} $mn
      * @param int $censor_until
      * @return bool */
@@ -333,7 +343,8 @@ class CommentInfo {
         if (!is_array($mn)
             || count($mn) < 4
             || !$mn[3]
-            || $mn[0] === $viewer->contactId) {
+            || $mn[0] === $viewer->contactId
+            || !($this->_recently_censorable ?? $this->_mention_censorable($viewer))) {
             return false;
         }
         // skip mentions beyond boundary
@@ -385,8 +396,7 @@ class CommentInfo {
             || !$viewer
             || !($mns = $this->data("mentions"))
             || !is_array($mns)
-            || $viewer->is_my_comment($this->prow, $this)
-            || $viewer->can_view_review_identity($this->prow, null)) {
+            || !$this->_mention_censorable($viewer)) {
             return $t;
         }
         $delta = 0;
@@ -399,6 +409,7 @@ class CommentInfo {
                 $this->_recently_censored = true;
             }
         }
+        $this->_recently_censorable = null;
         return $t;
     }
 
@@ -415,6 +426,7 @@ class CommentInfo {
                 $delta += strlen($r) - ($mn[2] - $mn[1]);
             }
         }
+        $this->_recently_censorable = null;
         return $result;
     }
 
@@ -875,11 +887,12 @@ class CommentInfo {
     /** @return string */
     function unparse_flow_entry(Contact $viewer) {
         // See also ReviewForm::reviewFlowEntry
-        $a = '<a href="' . $this->conf->hoturl("paper", "p={$this->paperId}#" . $this->unparse_html_id()) . '"';
+        $url = $this->conf->hoturl_raw("paper", ["p" => $this->paperId, "#" => $this->unparse_html_id()]);
+        $a = '<a href="' . Ht::escape_attr($url) . '"';
         $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . "</a></td><td class=\"pl_eventid pl_rowclick\">{$a} class=\"pnum\">#{$this->paperId}</a></td><td class=\"pl_eventdesc pl_rowclick\"><small>{$a} class=\"ptitle\">"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
+            . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($this->prow->title, 80))
             . "</a>";
         $idable = $viewer->can_view_comment_identity($this->prow, $this);
         if ($idable || $viewer->can_view_comment_time($this->prow, $this)) {
@@ -892,7 +905,7 @@ class CommentInfo {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $viewer->reviewer_html_for($this->contactId);
         }
         return $t . "</small><br>"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->content($viewer, 300), 300))
+            . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($this->content($viewer, 300), 300))
             . "</td></tr>";
     }
 
@@ -998,9 +1011,10 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $q = "";
         $qv = [];
         if ($text === false) {
-            if ($this->commentId) {
-                $q = "delete from PaperComment where paperId={$this->paperId} and commentId={$this->commentId}";
+            if (!$this->commentId) {
+                return false;
             }
+            $q = "delete from PaperComment where paperId={$this->paperId} and commentId={$this->commentId}";
             $docs = [];
         } else if (!$this->commentId) {
             $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];
@@ -1126,7 +1140,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
 
         // update automatic tags
         if (!($req["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->prow, "comment");
+            $this->conf->update_automatic_tags($this->prow, SearchTerm::ABOUT_COMMENTS);
         }
 
         // ordinal

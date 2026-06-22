@@ -21,9 +21,7 @@ class Login_Tester {
         $this->us1 = new UserStatus($conf->root_user());
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
         $this->cdb = $conf->contactdb();
-    }
 
-    function test_setup() {
         $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {
@@ -33,7 +31,7 @@ class Login_Tester {
 
     function test_login() {
         $email = "newuser@hotcrp.com";
-        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->invalidate_caches("users");
 
         $user = Contact::make($this->conf);
         $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("newaccount");
@@ -48,7 +46,7 @@ class Login_Tester {
         xassert(is_string($prep->reset_capability));
         xassert(str_starts_with($prep->reset_capability, "hcpw"));
 
-        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->invalidate_caches("users");
 
         $user = Contact::make_email($this->conf, $email);
         $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
@@ -56,7 +54,7 @@ class Login_Tester {
         xassert_eqq(Signin_Page::check_password_as_reset_code($user, $qreq),
                     $prep->reset_capability);
 
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
 
         $user = Contact::make_email($this->conf, $email);
         $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
@@ -75,7 +73,7 @@ class Login_Tester {
         xassert(user($email)->check_password("newuserpassword!"));
 
         if ($this->cdb) {
-            $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+            $this->conf->invalidate_caches("users");
             $this->conf->qe("delete from ContactInfo where email=?", $email);
 
             $user = Contact::make($this->conf);
@@ -98,6 +96,37 @@ class Login_Tester {
         }
     }
 
+    function test_reset_request_with_email() {
+        // Entering an *email* (not a reset code) in the `resetpassword` page's
+        // reset-code field triggers the forgot-password flow on a freshly
+        // constructed inner Qrequest. That inner Qrequest must inherit the
+        // outer request's navigation, otherwise the eventual redirect crashes
+        // in Qrequest::redirect() (`$this->_navigation->resolve()` on null).
+        $email = "chair@_.com";
+        $this->conf->invalidate_caches("users");
+
+        $user = Contact::make_email($this->conf, $email);
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
+        $qreq->set_req("resetcap", $email);
+        $this->conf->saved_messages_begin();
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        $result = null;
+        try {
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = $cs->callable("Signin_Page");
+            $signinp->reset_request($user, $qreq, $cs);
+        } catch (Redirection $redir) {
+            $result = $redir;
+        } finally {
+            Navigation::$test_mode = $old_test_mode;
+        }
+        // With the navigation set on the inner request, the forgot-password
+        // flow redirects back to the resetpassword page rather than crashing.
+        xassert(!!$result);
+        xassert_str_contains($result->url, "resetpassword");
+    }
+
     function test_login_placeholder() {
         $email = "scapegoat2@baa.com";
         Contact::make_keyed($this->conf, [
@@ -107,7 +136,7 @@ class Login_Tester {
         $user = $this->conf->user_by_email($email);
         xassert($user->is_unconfirmed());
 
-        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->invalidate_caches("users");
 
         // `newaccount` request
         $user = Contact::make($this->conf);
@@ -134,7 +163,7 @@ class Login_Tester {
             xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
         }
 
-        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->invalidate_caches("users");
 
         // `resetpassword` request with capability
         $user = Contact::make_email($this->conf, $email);
@@ -189,7 +218,7 @@ class Login_Tester {
     function test_login_first_user() {
         $email = "firstchair@hotcrp.com";
         $this->conf->save_setting("setupPhase", 1);
-        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->invalidate_caches("users");
 
         $user = Contact::make($this->conf);
         $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("newaccount");
@@ -203,7 +232,7 @@ class Login_Tester {
         xassert(is_string($prep->reset_capability));
         xassert(str_starts_with($prep->reset_capability, "hcpw"));
 
-        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->invalidate_caches("users");
 
         $user = Contact::make_email($this->conf, $email);
         $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
@@ -211,7 +240,7 @@ class Login_Tester {
         xassert_eqq(Signin_Page::check_password_as_reset_code($user, $qreq),
                     $prep->reset_capability);
 
-        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->invalidate_caches("users");
 
         $user = Contact::make_email($this->conf, $email);
         $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");

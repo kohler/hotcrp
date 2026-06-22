@@ -36,10 +36,10 @@ class Autoassign_Page {
     function print_header() {
         $this->qreq->print_header("Assignments", "autoassign", ["subtitle" => "Automatic"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
-            '<li class="papmode active"><a href="', $this->conf->hoturl("autoassign"), '">Automatic</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("manualassign"), '">Manual</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("conflictassign"), '">Conflicts</a></li>',
-            '<li class="papmode"><a href="', $this->conf->hoturl("bulkassign"), '">Bulk update</a></li>',
+            '<li class="papmode active">', $this->conf->hotlink("Automatic", "autoassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Manual", "manualassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Conflicts", "conflictassign"), '</li>',
+            '<li class="papmode">', $this->conf->hotlink("Bulk update", "bulkassign"), '</li>',
             '</ul></nav>';
     }
 
@@ -414,17 +414,17 @@ class Autoassign_Page {
 
         // open form
         $this->print_header();
-        echo Ht::form($conf->hoturl("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE]), [
+        echo $conf->hotform("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE], [
                 "id" => "autoassignform",
                 "class" => "need-diff-check ui-submit js-autoassign-prepare js-selector-summary"
             ]),
             '<div class="helpside"><div class="helpinside">
         Assignment methods:
-        <ul><li><a href="', $conf->hoturl("autoassign"), '" class="q"><strong>Automatic</strong></a></li>
-         <li><a href="', $conf->hoturl("manualassign"), '">Manual by PC member</a></li>
-         <li><a href="', $conf->hoturl("assign") . '">Manual by paper</a></li>
-         <li><a href="', $conf->hoturl("conflictassign"), '">Potential conflicts</a></li>
-         <li><a href="', $conf->hoturl("bulkassign"), '">Bulk update</a></li>
+        <ul><li>', $conf->hotlink("<strong>Automatic</strong>", "autoassign", null, ["class" => "q"]), '</li>
+         <li>', $conf->hotlink("Manual by PC member", "manualassign"), '</li>
+         <li>', $conf->hotlink("Manual by paper", "assign"), '</li>
+         <li>', $conf->hotlink("Potential conflicts", "conflictassign"), '</li>
+         <li>', $conf->hotlink("Bulk update", "bulkassign"), '</li>
         </ul>
         <hr>
         <p>Types of PC review:</p>
@@ -526,7 +526,7 @@ class Autoassign_Page {
     }
 
     function detach_request() {
-        header("Location: " . $this->redirect_uri());
+        Navigation::header("Location: " . $this->redirect_uri());
         $this->qreq->qsession()->commit();
     }
 
@@ -555,7 +555,7 @@ class Autoassign_Page {
             $argv[] = "-uenabled";
         }
 
-        if ($this->qreq->badpairs) {
+        if ($qreq->badpairs) {
             foreach ($this->qreq_badpairs() as $pair) {
                 $argv[] = "-X{$pair}";
             }
@@ -577,7 +577,7 @@ class Autoassign_Page {
             $argmap->$k1 = $k;
         }
 
-        $tok = Job_Capability::make($this->user, "Autoassign", ["-je", "-D"])
+        $tok = Job_Token::make($this->user, "Autoassign", ["-je", "-D"])
             ->set_input("assign_argv", $argv)
             ->set_input("argmap", $argmap)
             ->insert();
@@ -590,11 +590,11 @@ class Autoassign_Page {
         if ($s === "forked") {
             throw new Redirection($this->redirect_uri());
         } else if ($s === "detached") {
-            exit(0);
+            Navigation::complete();
         }
         $tok->load_data();
         if ($tok->data("exit_status") === 0) {
-            $this->conf->redirect_hoturl("autoassign", $this->qreq_parameters());
+            $qreq->redirect_hoturl("autoassign", $this->qreq_parameters());
         } else {
             $this->ms->append_list(self::token_message_list($tok));
             $tok->delete();
@@ -634,13 +634,13 @@ class Autoassign_Page {
 
     /** @return never */
     function run_try_job() {
-        $tok = Job_Capability::find($this->qreq->job, $this->conf);
+        $tok = Job_Token::find($this->qreq->job, $this->conf);
         if ($tok
             && $tok->is_batch_class("Autoassign")
             && $tok->is_active()) {
             $this->run_job($tok);
         }
-        http_response_code($tok ? 409 : 404);
+        Navigation::http_response_code($tok ? 409 : 404);
         $this->qreq->print_header("Assignments", "autoassign", [
             "subtitle" => "Automatic",
             "body_class" => "body-error"
@@ -650,13 +650,13 @@ class Autoassign_Page {
         } else {
             $m = "Expired or nonexistent autoassignment job.";
         }
-        $this->conf->error_msg("<5>{$m} <a href=\"" . $this->conf->selfurl($this->qreq, ["a" => $this->qreq->a]) . "\">Try again</a>");
+        $this->conf->error_msg("<5>{$m} " . $this->conf->selflink("Try again", $this->qreq, ["a" => $this->qreq->a]));
         $this->qreq->print_footer();
-        exit(0);
+        Navigation::complete();
     }
 
     /** @return never */
-    function run_job(Job_Capability $tok) {
+    function run_job(Job_Token $tok) {
         $qreq = $this->qreq;
         $this->jobid = $tok->salt;
 
@@ -668,7 +668,7 @@ class Autoassign_Page {
                 $this->handle_download_assignment($tok);
             } else if ($qreq->cancel) {
                 $this->jobid = null;
-                $this->conf->redirect_self($this->qreq, $this->qreq_parameters());
+                $this->qreq->redirect_self($this->qreq_parameters());
             } else if ($qreq->submit) {
                 $this->handle_execute($tok);
             }
@@ -720,7 +720,7 @@ class Autoassign_Page {
             Ht::submit("cancel", "Cancel"),
             '</div></form>';
         $qreq->print_footer();
-        exit(0);
+        Navigation::complete();
     }
 
     /** @return never */
@@ -732,7 +732,7 @@ class Autoassign_Page {
             echo '<h3 class="form-h">Preparing assignment</h3>',
                 Ht::fmt_feedback_msg($this->conf, $this->ms),
                 '<div class="aab aabig btnp">',
-                Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
+                $this->conf->selflink("Revise assignment", $this->qreq, $this->qreq_parameters(), ["class" => "btn btn-primary"]),
                 '</div>';
         } else {
             echo '<div id="propass" class="propass">',
@@ -745,7 +745,7 @@ class Autoassign_Page {
                 Ht::unstash_script("hotcrp.monitor_autoassignment(" . json_encode_browser($this->jobid) . ")");
         }
         $this->qreq->print_footer();
-        exit(0);
+        Navigation::complete();
     }
 
     /** @return never */
@@ -755,10 +755,10 @@ class Autoassign_Page {
         echo '<h3 class="form-h">Proposed assignment</h3>',
             Ht::fmt_feedback_msg($this->conf, $this->ms),
             '<div class="aab aabig btnp">',
-            Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
+            $this->conf->selflink("Revise assignment", $this->qreq, $this->qreq_parameters(), ["class" => "btn btn-primary"]),
             '</div>';
         $this->qreq->print_footer();
-        exit(0);
+        Navigation::complete();
     }
 
     /** @return never */
@@ -770,7 +770,7 @@ class Autoassign_Page {
         $csvg = $this->conf->make_csvg("assignments");
         $aset->make_acsv()->unparse_into($csvg);
         $csvg->sort(SORT_NATURAL)->emit();
-        exit(0);
+        Navigation::complete();
     }
 
     /** @return never */
@@ -783,7 +783,7 @@ class Autoassign_Page {
         $aset->execute();
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $this->jobid = null;
-        $this->conf->redirect_self($this->qreq, $this->qreq_parameters());
+        $this->qreq->redirect_self($this->qreq_parameters());
     }
 
     /** @return Assignment_PaperColumn */
@@ -798,7 +798,7 @@ class Autoassign_Page {
         if (strlen($apids) > 512) {
             $apids = substr($apids, 0, 509) . "...";
         }
-        echo Ht::form($this->conf->hoturl("=autoassign", $this->qreq_parameters(["assignpids" => $apids])),
+        echo $this->conf->hotform("=autoassign", $this->qreq_parameters(["assignpids" => $apids]),
             ["class" => "ui-submit js-selector-summary"]),
             Ht::hidden("saveassignment", 1);
 

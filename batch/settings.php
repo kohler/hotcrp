@@ -149,13 +149,17 @@ class Settings_Batch {
             $this->sv->execute();
         }
         $fb = $this->sv->decorated_feedback_text();
-        if ($fb === "" && !$this->dry_run) {
-            if (empty($this->sv->saved_keys())) {
+        if ($fb === "") {
+            $cl = [];
+            foreach ($this->sv->changed_top_si() as $si) {
+                $cl[] = $si->name;
+            }
+            if (empty($cl) && ($this->dry_run || empty($this->sv->saved_keys()))) {
                 $fb = "No changes\n";
             } else if ($this->dry_run) {
-                $fb = "No errors\n";
+                $fb = "Would change " . join(", ", $cl) . "\n";
             } else {
-                $fb = "Settings saved\n";
+                $fb = "Saved " . join(", ", $cl ? : $this->sv->saved_keys()) . "\n";
             }
         }
         fwrite(STDERR, $fb);

@@ -47,14 +47,7 @@ class PageCount_PaperColumn extends PaperColumn {
         } else {
             $this->doc = null;
         }
-        if (!$this->doc) {
-            return null;
-        } else if ($this->type === null) {
-            return $this->doc->npages($this->cf);
-        } else if (!$this->cf->check_document($this->doc)) {
-            return null;
-        }
-        return $this->cf->npages_of_type($this->type);
+        return $this->doc ? $this->doc->npages_of_type($this->type, $this->cf) : null;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
@@ -79,11 +72,12 @@ class PageCount_PaperColumn extends PaperColumn {
             return (string) $pn;
         } else if (!$this->doc || !$this->cf->need_recheck()) {
             return "";
-        } else if ($this->type) {
-            return "?";
         }
         $dt = $this->dtype($pl->user, $row);
         $dtx = $dt ? " data-dt=\"{$dt}\"" : "";
+        if ($this->type) {
+            $dtx .= " data-npages-detail=\"{$this->type}\"";
+        }
         return "<span class=\"need-format-check is-npages\"{$dtx}></span>";
     }
     function text(PaperList $pl, PaperInfo $row) {

@@ -1,4 +1,4 @@
-export VERSION=3.2.1
+export VERSION=3.3.1
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -9,11 +9,26 @@ if [ "$updatenum" != "$schemanum" ]; then
     exit 1
 fi
 
-# check that HOTCRP_VERSION is up to date -- unless first argument is -n
+# check that HOTCRP_VERSION is up to date (unless -n)
 versionnum=`grep 'HOTCRP_VERSION' src/init.php | head -n 1 | sed 's/.*= "//;s/".*//'`
 if [ "$versionnum" != "$VERSION" -a "$1" != "-n" ]; then
     echo "error: HOTCRP_VERSION in src/init.php ($versionnum)" 1>&2
     echo "error: differs from current version ($VERSION)" 1>&2
+    exit 1
+fi
+
+# check that `version` in package.json is up to date (unless -n)
+versionnum=`grep '^  "version": ' package.json | head -n 1 | sed 's/.*: "//;s/".*//'`
+if [ "$versionnum" != "$VERSION" -a "$1" != "-n" ]; then
+    echo "error: version in package.json ($versionnum)" 1>&2
+    echo "error: differs from current version ($VERSION)" 1>&2
+    exit 1
+fi
+
+# check that NEWS.md is up to date (unless -n)
+versionnum=`grep '^## Version '"$VERSION"' –' NEWS.md | head -n 1`
+if [ -z "$versionnum" -a "$1" != "-n" ]; then
+    echo "error: NEWS.md lacks information about $VERSION" 1>&2
     exit 1
 fi
 
@@ -105,6 +120,7 @@ batch/hotcrapi.php
 batch/killinactivedoc.php
 batch/paperjson.php
 batch/pcemails.php
+batch/render.php
 batch/reviewcsv.php
 batch/s3test.php
 batch/s3transfer.php
@@ -184,6 +200,7 @@ lib/getopt.php
 lib/gmpshim.php
 lib/hashanalysis.php
 lib/hclcolor.php
+lib/headerset.php
 lib/ht.php
 lib/icons.php
 lib/isovideomimetype.php
@@ -217,6 +234,7 @@ lib/s3result.php
 lib/scoreinfo.php
 lib/subprocess.php
 lib/tagger.php
+lib/toposort.php
 lib/text.php
 lib/uconvertershim.php
 lib/unicodehelper.php
@@ -286,6 +304,7 @@ src/autoassigners/aa_prefconflict.php
 src/autoassigners/aa_review.php
 src/backuppattern.php
 src/banal
+src/capabilities/cap_authorization.php
 src/capabilities/cap_authorview.php
 src/capabilities/cap_job.php
 src/capabilities/cap_manageemail.php
@@ -306,6 +325,7 @@ src/contactlist.php
 src/contactprimary.php
 src/contactsearch.php
 src/contactset.php
+src/custombanners.php
 src/databaseidrandomizer.php
 src/decisioninfo.php
 src/decisionset.php
@@ -322,6 +342,7 @@ src/filefilter.php
 src/formatspec.php
 src/formula.php
 src/formulacall.php
+src/formulaconfig.php
 src/formulagraph.php
 src/formulaparser.php
 src/formulas/f_author.php
@@ -440,6 +461,7 @@ src/pages/p_search.php
 src/pages/p_settings.php
 src/pages/p_signin.php
 src/pages/p_users.php
+src/pages/p_wellknown.php
 src/papercolumn.php
 src/papercolumns/pc_administrator.php
 src/papercolumns/pc_assignreview.php
@@ -447,6 +469,7 @@ src/papercolumns/pc_color.php
 src/papercolumns/pc_commenters.php
 src/papercolumns/pc_conflict.php
 src/papercolumns/pc_conflictmatch.php
+src/papercolumns/pc_decision.php
 src/papercolumns/pc_desirability.php
 src/papercolumns/pc_formula.php
 src/papercolumns/pc_formulagraph.php
@@ -480,6 +503,7 @@ src/papertable.php
 src/paperrank.php
 src/papervalue.php
 src/quicklinksrenderer.php
+src/rendercapture.php
 src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php

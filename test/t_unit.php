@@ -287,6 +287,215 @@ class Unit_Tester {
         xassert_eqq($csvr["Fungi"], "10");
     }
 
+    function test_csv_table_box() {
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "Short"]);
+        $t->add_row(["id" => 137, "title" => "A longer title"]);
+        // numeric `id` column auto-right-aligned, `title` left-aligned
+        xassert_eqq($t->unparse(),
+            "+-----+----------------+\n"
+            . "|  id | title          |\n"
+            . "+-----+----------------+\n"
+            . "|   1 | Short          |\n"
+            . "| 137 | A longer title |\n"
+            . "+-----+----------------+\n");
+    }
+
+    function test_csv_table_rule() {
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE | CsvGenerator::TABLE_ASCII);
+        $t->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "Short"]);
+        $t->add_row(["id" => 137, "title" => "A longer title"]);
+        // trailing whitespace on the last column is trimmed
+        xassert_eqq($t->unparse(),
+            " id  title\n"
+            . "---  --------------\n"
+            . "  1  Short\n"
+            . "137  A longer title\n");
+    }
+
+    function test_csv_table_unicode_width() {
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE | CsvGenerator::TABLE_ASCII);
+        xassert_eqq($t->table_width("abc"), 3);
+        xassert_eqq($t->table_width("café"), 4);
+        // a 5-wide accented value should pad the same as a 5-wide ASCII value
+        $t->add_row(["café", "x"]);
+        $t->add_row(["abcde", "y"]);
+        xassert_eqq($t->unparse(), "café   x\nabcde  y\n");
+        // truncate width counts the first line plus room for "..."
+        $tt = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_TRUNCATE);
+        xassert_eqq($tt->table_width("café"), 4);
+        xassert_eqq($tt->table_width("café\nlong"), 7);
+    }
+
+    function test_csv_table_align() {
+        // explicit alignment overrides the numeric auto-detection
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n", "v"]);
+        $t->set_cell_align("n", "l")->set_cell_align("v", "c");
+        $t->add_row(["n" => 1, "v" => "x"]);
+        $t->add_row(["n" => 200, "v" => "yyy"]);
+        xassert_eqq($t->unparse(),
+            "n     v\n"
+            . "---  ---\n"
+            . "1     x\n"
+            . "200  yyy\n");
+    }
+
+    function test_csv_table_center() {
+        // centering with odd padding puts the extra space on the right
+        // ("a" in width 4: 1 space left, 2 right); box style keeps both sides
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["c"]);
+        $t->set_cell_align("c", "c");
+        $t->add_row(["c" => "a"]);
+        $t->add_row(["c" => "wxyz"]);
+        xassert_eqq($t->unparse(),
+            "+------+\n"
+            . "|  c   |\n"
+            . "+------+\n"
+            . "|  a   |\n"
+            . "| wxyz |\n"
+            . "+------+\n");
+    }
+
+    function test_csv_table_wrap() {
+        // long word boundaries soft-wrap; the row grows to multiple lines
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_RULE
+            | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(18)->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "the quick brown fox jumps"]);
+        $t->add_row(["id" => 2, "title" => "short"]);
+        // budget 18 - 2 gutter = 16 content; id width 2, title shrinks to 14
+        xassert_eqq($t->unparse(),
+            "id  title\n"
+            . "--  --------------\n"
+            . " 1  the quick\n"
+            . "    brown fox\n"
+            . "    jumps\n"
+            . " 2  short\n");
+    }
+
+    function test_csv_table_wrap_box() {
+        // box style: continuation lines keep borders and pad the non-wrapped
+        // column blank; a short row stays single-line
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(22)->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "the quick brown fox"]);
+        $t->add_row(["id" => 2, "title" => "hi"]);
+        xassert_eqq($t->unparse(),
+            "+----+---------------+\n"
+            . "| id | title         |\n"
+            . "+----+---------------+\n"
+            . "|  1 | the quick     |\n"
+            . "|    | brown fox     |\n"
+            . "|  2 | hi            |\n"
+            . "+----+---------------+\n");
+    }
+
+    function test_csv_table_wrap_multicolumn() {
+        // when an earlier column wraps deeper than a later one, continuation
+        // lines render the later column blank (and emit no warnings)
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(20)->select(["title", "x"]);
+        $t->add_row(["title" => "the quick brown fox", "x" => "y"]);
+        xassert_eqq($t->unparse(),
+            "+--------------+---+\n"
+            . "| title        | x |\n"
+            . "+--------------+---+\n"
+            . "| the quick    | y |\n"
+            . "| brown fox    |   |\n"
+            . "+--------------+---+\n");
+    }
+
+    function test_csv_table_newline() {
+        // an interior newline splits a cell across lines...
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n", "v"]);
+        $t->add_row(["n" => "alpha\nbeta", "v" => "x"]);
+        $t->add_row(["n" => "g", "v" => "y"]);
+        xassert_eqq($t->unparse(),
+            "+-------+---+\n"
+            . "| n     | v |\n"
+            . "+-------+---+\n"
+            . "| alpha | x |\n"
+            . "| beta  |   |\n"
+            . "| g     | y |\n"
+            . "+-------+---+\n");
+
+        // ...a trailing newline is trimmed (not misread as a comment line)...
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n", "v"]);
+        $t->add_row(["n" => "a", "v" => "trailing\n"]);
+        $t->add_row(["n" => "b", "v" => "z"]);
+        xassert_eqq($t->unparse(),
+            "+---+----------+\n"
+            . "| n | v        |\n"
+            . "+---+----------+\n"
+            . "| a | trailing |\n"
+            . "| b | z        |\n"
+            . "+---+----------+\n");
+
+        // ...and CRLF normalizes to a split with no stray CR.
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["n"]);
+        $t->add_row(["n" => "one\r\ntwo"]);
+        xassert_eqq($t->unparse(),
+            "+-----+\n"
+            . "| n   |\n"
+            . "+-----+\n"
+            . "| one |\n"
+            . "| two |\n"
+            . "+-----+\n");
+    }
+
+    function test_csv_table_wrap_hardbreak() {
+        // a word longer than its column is hard-broken across lines rather
+        // than overflowing and breaking the box alignment
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->set_table_max_width(14)->select(["w"]);
+        $t->add_row(["w" => "abcdefghijklmnop"]);
+        xassert_eqq($t->unparse(),
+            "+------------+\n"
+            . "| w          |\n"
+            . "+------------+\n"
+            . "| abcdefghij |\n"
+            . "| klmnop     |\n"
+            . "+------------+\n");
+    }
+
+    function test_csv_table_truncate() {
+        // TABLE_TRUNCATE limits each cell to one line; a multi-line cell is
+        // clipped to its first line with "..." (column sized to fit the "...")
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII
+            | CsvGenerator::TABLE_TRUNCATE);
+        $t->select(["n", "v"]);
+        $t->add_row(["n" => "alpha\nbeta", "v" => "x"]);
+        $t->add_row(["n" => "g", "v" => "y"]);
+        xassert_eqq($t->unparse(),
+            "+----------+---+\n"
+            . "| n        | v |\n"
+            . "+----------+---+\n"
+            . "| alpha... | x |\n"
+            . "| g        | y |\n"
+            . "+----------+---+\n");
+
+        // with a max width, an over-wide cell is clipped to fit the column
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII
+            | CsvGenerator::TABLE_TRUNCATE);
+        $t->set_table_max_width(20)->select(["id", "title"]);
+        $t->add_row(["id" => 1, "title" => "the quick brown fox"]);
+        $t->add_row(["id" => 2, "title" => "hi"]);
+        xassert_eqq($t->unparse(),
+            "+----+-------------+\n"
+            . "| id | title       |\n"
+            . "+----+-------------+\n"
+            . "|  1 | the quic... |\n"
+            . "|  2 | hi          |\n"
+            . "+----+-------------+\n");
+    }
+
     function test_numrangejoin() {
         xassert_eqq(numrangejoin([1, 2, 3, 4, 6, 8]), "1–4, 6, and 8");
         xassert_eqq(numrangejoin(["#1", "#2", "#3", 4, "xx6", "xx7", 8]), "#1–3, 4, xx6–7, and 8");
@@ -853,6 +1062,15 @@ class Unit_Tester {
         xassert_eqq($x, "(b(c(d(e) ) ) )");
     }
 
+    function test_safe_parenthesize() {
+        xassert_eqq(SearchParser::safe_parenthesize(""), "(*)");
+        xassert_eqq(SearchParser::safe_parenthesize("("), "(())");
+        xassert_eqq(SearchParser::safe_parenthesize("(hi"), "((hi))");
+        xassert_eqq(SearchParser::safe_parenthesize("fart[barf"), "(fart[barf])");
+        xassert_eqq(SearchParser::safe_parenthesize("“\\"), "(“\\\\\")");
+        xassert_eqq(SearchParser::safe_parenthesize(") fooled you ("), "( fooled you ())");
+    }
+
     function test_unpack_comparison() {
         xassert_eqq(CountMatcher::unpack_comparison("x:2"), ["x", 2, 2.0]);
         xassert_eqq(CountMatcher::unpack_comparison("x:2."), ["x", 2, 2.0]);
@@ -904,6 +1122,19 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_word_prefix("\xCC\x90_ \xCC\x8E", 1), "\xCC\x90_");
     }
 
+    function test_utf8_char_abbreviate() {
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("acaca", 5), "acaca");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("acacaa", 5), "ac...");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("açacaa", 5), "aç...");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("açacaa", 7, 3), "açacaa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 7, 3), "a...caa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 6, 3), "...caa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 5, 3), "...aa");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 4, 3), "...a");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 3, 3), "...");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 2, 3), "..");
+    }
+
     function test_utf8_line_break() {
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("a aaaaaaabbb", 7), ["a", "aaaaaaabbb"]);
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 7), ["aaaaaaaa", "bbb"]);
@@ -917,6 +1148,21 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa   bbb", 9, true), ["aaaaaaaa   ", "bbb"]);
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 10, true), ["aaaaaaaa ", "bbb"]);
         xassert_eqq(UnicodeHelper::utf8_line_break_parts("a\naaaaaa bbb", 10), ["a", "aaaaaa bbb"]);
+    }
+
+    function test_utf8_hard_line_break() {
+        // breaks at word boundaries just like utf8_line_break...
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("a aaaaaaabbb", 7), ["a", "aaaaaaabbb"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("the quick brown", 9), ["the quick", "brown"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("abc def", 4), ["abc", "def"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("ab   cd", 4), ["ab", "cd"]);
+        // ...but a word longer than the width is broken instead of overflowing
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("aaaaaaaa bbb", 7), ["aaaaaaa", "a bbb"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("abcdefghijklmnop", 10), ["abcdefghij", "klmnop"]);
+        // whole string fits; newline cuts; preserve_space keeps the break space
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("the quick", 9), ["the quick", ""]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("a\nbcd", 10), ["a", "bcd"]);
+        xassert_eqq(UnicodeHelper::utf8_hard_line_break_parts("the quick brown", 9, true), ["the quick ", "brown"]);
     }
 
     function test_utf8_glyphlen() {
@@ -1101,19 +1347,48 @@ class Unit_Tester {
         xassert(!Contact::is_anonymous_email("example@anonymous"));
     }
 
-    function test_is_real_email() {
-        xassert(!Contact::is_real_email("anonymous"));
-        xassert(!Contact::is_real_email("anonymous1"));
-        xassert(!Contact::is_real_email("anonymous10"));
-        xassert(!Contact::is_real_email("anonymous9"));
-        xassert(!Contact::is_real_email("anonymous@example.com"));
-        xassert(!Contact::is_real_email("example@anonymous")); // not enough dots
-        xassert(Contact::is_real_email("example@anonymous.com"));
-        xassert(Contact::is_real_email("ass@butt.com"));
-        xassert(Contact::is_real_email("ass@fxample.edu"));
-        xassert(!Contact::is_real_email("ass@_.com"));
-        xassert(!Contact::is_real_email("ass@_.co.uk"));
-        xassert(Contact::is_real_email("ass@underscore.com"));
+    function test_is_plausible_email() {
+        xassert(!Contact::is_plausible_email("anonymous"));
+        xassert(!Contact::is_plausible_email("anonymous1"));
+        xassert(!Contact::is_plausible_email("anonymous10"));
+        xassert(!Contact::is_plausible_email("anonymous9"));
+        xassert(!Contact::is_plausible_email("anonymous@example.com"));
+        xassert(!Contact::is_plausible_email("example@anonymous")); // not enough dots
+        xassert(Contact::is_plausible_email("example@anonymous.com"));
+        xassert(Contact::is_plausible_email("ass@butt.com"));
+        xassert(Contact::is_plausible_email("ass@fxample.edu"));
+        xassert(!Contact::is_plausible_email("ass@_.com"));
+        xassert(!Contact::is_plausible_email("ass@_.co.uk"));
+        xassert(Contact::is_plausible_email("ass@underscore.com"));
+        xassert(!Contact::is_plausible_email("ass@foo.example"));
+        xassert(!Contact::is_plausible_email("ass@foo.f"));
+        xassert(!Contact::is_plausible_email("ass@foo.tld"));
+        xassert(!Contact::is_plausible_email("ass@foo.invalid"));
+        xassert(Contact::is_plausible_email("ass@invalid.foo"));
+        xassert(!Contact::is_plausible_email("ass@invalid.test"));
+        xassert(Contact::is_plausible_email("ass@invalid.test.tst"));
+    }
+
+    function test_is_example_email() {
+        xassert(!Contact::is_example_email("anonymous"));
+        xassert(!Contact::is_example_email("anonymous1"));
+        xassert(!Contact::is_example_email("anonymous10"));
+        xassert(!Contact::is_example_email("anonymous9"));
+        xassert(Contact::is_example_email("anonymous@example.com"));
+        xassert(!Contact::is_example_email("example@anonymous")); // not enough dots
+        xassert(!Contact::is_example_email("example@anonymous.com"));
+        xassert(!Contact::is_example_email("ass@butt.com"));
+        xassert(!Contact::is_example_email("ass@fxample.edu"));
+        xassert(Contact::is_example_email("ass@_.com"));
+        xassert(!Contact::is_example_email("ass@_.co.uk"));
+        xassert(!Contact::is_example_email("ass@underscore.com"));
+        xassert(Contact::is_example_email("ass@foo.example"));
+        xassert(!Contact::is_example_email("ass@foo.f"));
+        xassert(!Contact::is_example_email("ass@foo.tld"));
+        xassert(!Contact::is_example_email("ass@foo.invalid"));
+        xassert(!Contact::is_example_email("ass@invalid.foo"));
+        xassert(Contact::is_example_email("ass@invalid.test"));
+        xassert(!Contact::is_example_email("ass@invalid.test.tst"));
     }
 
     function test_valid_email() {
@@ -1447,6 +1722,14 @@ class Unit_Tester {
         xassert_eqq(friendly_boolean(""), false);
         xassert_eqq(friendly_boolean("0"), false);
         xassert_eqq(friendly_boolean("1"), true);
+        xassert_eqq(friendly_boolean("ON"), true);      // case-insensitive
+        xassert_eqq(friendly_boolean("No"), false);
+        xassert_eqq(friendly_boolean(" "), null);        // no longer trims
+        xassert_eqq(friendly_boolean(" 1 "), null);      // no longer trims
+        xassert_eqq(friendly_boolean("00"), null);
+        xassert_eqq(friendly_boolean("2"), null);
+        xassert_eqq(friendly_boolean(1), true);
+        xassert_eqq(friendly_boolean(0), false);
         xassert_eqq(friendly_boolean("!#($!"), null);
     }
 
@@ -1591,5 +1874,45 @@ class Unit_Tester {
         xassert($ha->partial());
         xassert($ha->complete());
         xassert_eqq($ha->algorithm(), "sha256");
+    }
+
+    function test_header_set() {
+        $hs = new HeaderSet;
+        xassert_eqq(count($hs), 0);
+        xassert(!$hs->has("Content-Length"));
+
+        $hs->set("Content-Length: 100");
+        xassert($hs->has("content-Length"));
+        xassert_eqq($hs->get("content-length"), "100");
+        xassert_eqq($hs->get_all("content-length"), ["100"]);
+        xassert_eqq($hs->get("x-content-length"), null);
+        xassert_eqq($hs->get_all("x-content-length"), []);
+        $l1 = iterator_to_array($hs);
+        xassert_eqq($l1, ["Content-Length: 100"]);
+        $l2 = iterator_to_array($hs->by_name());
+        xassert_eqq($l2, ["Content-Length" => "100"]);
+        xassert_eqq($hs->count(), 1);
+
+        $hs->set("content-length: 1000", false);
+        xassert_eqq($hs->get("content-length"), "100");
+        xassert_eqq($hs->get_all("content-length"), ["100", "1000"]);
+        $l1 = iterator_to_array($hs);
+        xassert_eqq($l1, ["Content-Length: 100", "content-length: 1000"]);
+        $l = [];
+        foreach ($hs->by_name() as $n => $v) {
+            $l[] = "{$n}/{$v}";
+        }
+        xassert_eqq($l, ["Content-Length/100", "content-length/1000"]);
+        xassert_eqq(count($hs), 2);
+
+        $hs->set("content-length: 10");
+        xassert_eqq($hs->get("content-length"), "10");
+        xassert_eqq($hs->get_all("content-length"), ["10"]);
+        xassert_eqq(count($hs), 1);
+    }
+
+    function finalize() {
+        $this->conf->set_opt("timezone", "America/New_York");
+        date_default_timezone_set("America/New_York");
     }
 }

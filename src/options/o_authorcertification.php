@@ -142,9 +142,12 @@ class AuthorCertification_EntryList implements IteratorAggregate {
         return null;
     }
 
-    /** @param Contact $u
+    /** @param ?Contact $u
      * @return ?AuthorCertification_Entry */
     function find_by_user($u) {
+        if (!$u) {
+            return null;
+        }
         $uid1 = $u->contactId;
         $uid2 = $u->primaryContactId ? : $u->contactId;
         foreach ($this->es as $e) {
@@ -424,18 +427,35 @@ class AuthorCertification_PaperOption extends PaperOption {
         return $has_author;
     }
 
-    private function author_change_error($auov, $base_auov, $entries, $ps) {
+    /** @param PaperValue $auov
+     * @param PaperValue $base_auov
+     * @param AuthorCertification_EntryList $entries
+     * @param PaperStatus $ps
+     * @param bool $prevent_add */
+    private function check_author_change($auov, $base_auov, $entries, $ps, $prevent_add) {
         $conf = $auov->prow->conf;
         $base_aulist = Authors_PaperOption::author_list($base_auov);
         $aulist = Authors_PaperOption::author_list($auov);
-        foreach (ACEntryList::make_author_list($conf, $aulist) as $e) {
-            if ($e->email !== ""
-                && !Author::find_by_email($e->email, $base_aulist)
-                && (!$e->user || !$entries->find_by_user($e->user))) {
-                $ps->append_item(MessageItem::estop_at("authors", $this->conf->_("<0>You can’t add {} to the author list at this time", $e->author->name(NAME_P | NAME_A))));
+        if ($prevent_add) {
+            foreach (ACEntryList::make_author_list($conf, $aulist) as $e) {
+                if ($e->email === ""
+                    || Author::find_by_email($e->email, $base_aulist)
+                    || $entries->find_by_user($e->user)) {
+                    continue;
+                }
+                $ps->append_item(MessageItem::estop_at("authors", $this->conf->_("<0>{} cannot be added to the author list at this time", $e->author->name(NAME_P | NAME_A))));
                 $ps->append_item(MessageItem::inform_at("authors", $this->conf->_("<0>{} hasn’t certified the {} field, and certification is required for submission. You can add authors by first converting this {submission} to a draft.", $e->email, $this->edit_title())));
                 $ps->append_item(MessageItem::error_at("authors:{$e->author->author_index}"));
             }
+        }
+        foreach (ACEntryList::make_author_list($conf, $base_aulist) as $e) {
+            if ($e->email === ""
+                || Author::find_by_email($e->email, $aulist)
+                || !$entries->find_by_user($e->user)) {
+                continue;
+            }
+            $ps->append_item(MessageItem::estop_at("authors", $this->conf->_("<0>Certified author {} cannot be removed from the author list", $e->author->name(NAME_P | NAME_A))));
+            $ps->append_item(MessageItem::inform_at("authors", $this->conf->_("<0>{} has certified the {} field. They must revoke that certification before being removed from the author list.", $e->email, $this->edit_title())));
         }
     }
 
@@ -444,14 +464,14 @@ class AuthorCertification_PaperOption extends PaperOption {
         $want_complete = self::entries_complete($ov->prow, $entries);
         $have_complete = self::is_complete($ov);
         // check for illegal change to authors
-        if (!$have_complete && $this->required > 0) {
-            $auov = $ov->prow->option(PaperOption::AUTHORSID);
-            $base_auov = $ov->prow->base_option(PaperOption::AUTHORSID);
-            if (!$auov->equals($base_auov)
+        $auov = $ov->prow->force_option(PaperOption::AUTHORSID);
+        $base_auov = $ov->prow->base_option(PaperOption::AUTHORSID);
+        if (!$auov->equals($base_auov)) {
+            $prevent_add = !$have_complete
+                && $this->required > 0
                 && self::is_complete($ov->prow->base_option($this->id))
-                && $ov->prow->want_submitted()) {
-                $this->author_change_error($auov, $base_auov, $entries, $ps);
-            }
+                && $ov->prow->want_submitted();
+            $this->check_author_change($auov, $base_auov, $entries, $ps, $prevent_add);
         }
         if ($want_complete === $have_complete) {
             return null;
@@ -603,50 +623,77 @@ class AuthorCertification_PaperOption extends PaperOption {
         return $this->resolve_parse($prow, $entries, $user, $msgs);
     }
 
+    /** @param Author|Contact $auth
+     * @param int &$n
+     * @return string */
+    private function web_edit_one(PaperTable $pt, $auth, ?ACEntry $oe,
+                                  ACEntryList $reqentries, &$n) {
+        $checked = $oe && $oe->value;
+        if (!self::user_can_change($pt->user, $pt->prow, $auth->email)) {
+            $name = $auth->name_h(NAME_E | NAME_A);
+            if ($checked) {
+                $class = $oe->author ? "success-mark" : "error-mark";
+            } else {
+                $class = "warning-mark";
+            }
+            return "<li class=\"odname\"><div class=\"checki\"><span class=\"checkc\"><span class=\"{$class}\">"
+                . Ht::checkbox("", 1, $checked, ["hidden" => true, "disabled" => true])
+                . "</span></span>{$name}</div></li>";
+        }
+        $reqe = $reqentries->find_by_email($auth->email);
+        $reqchecked = $reqe && $reqe->value;
+        $okey = $this->field_key();
+        ++$n;
+        return "<li class=\"odname\"><label class=\"checki\"><span class=\"checkc\">"
+            . Ht::checkbox("{$okey}:{$n}:value", 1, $reqchecked, [
+                "class" => "checkc", "data-default-checked" => $checked
+            ])
+            . "</span>" . $auth->name_h(NAME_E | NAME_A) . "</label>"
+            . Ht::hidden("{$okey}:{$n}:email", $auth->email)
+            . Ht::hidden("has_{$okey}:{$n}:value", 1)
+            . "</li>";
+    }
+
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $entries = self::entries($ov);
         $reqentries = self::entries($reqov);
         $okey = $this->field_key();
 
-        $ready = [[], []];
-        $n = 1;
+        $ready = [[], [], []];
+        $n = 0;
         foreach ($pt->prow->author_list() as $auth) {
             if (!$auth->email) {
                 continue;
             }
-            $oe = $entries->find_by_email($auth->email);
-            $oval = $oe && $oe->value;
-            if (!self::user_can_change($pt->user, $pt->prow, $auth->email)) {
-                $name = $auth->name_h(NAME_E | NAME_A);
-                $check = $oval ? "success-mark" : "warning-mark";
-                $ready[(int) $oval][] = "<li class=\"odname\"><div class=\"checki\"><span class=\"checkc\"><span class=\"{$check}\">"
-                    . Ht::checkbox("", 1, $oval, ["hidden" => true, "disabled" => true])
-                    . "</span></span>{$name}</div></li>";
+            if (($oe = $entries->find_by_email($auth->email))) {
+                $oe->author = $auth;
+            }
+            $ready[$oe && $oe->value ? 1 : 0][] =
+                $this->web_edit_one($pt, $auth, $oe, $reqentries, $n);
+        }
+        foreach ($entries as $oe) {
+            if ($oe->author || !$oe->value) {
                 continue;
             }
-            $reqe = $entries->find_by_email($auth->email);
-            $reqoval = $reqe && $reqe->value;
-            $ready[(int) $oval][] = "<li class=\"odname\"><label class=\"checki\"><span class=\"checkc\">"
-                . Ht::checkbox("{$okey}:{$n}:value", 1, $reqoval, [
-                    "class" => "checkc", "data-default-checked" => $oval
-                ])
-                . "</span>" . $auth->name_h(NAME_E | NAME_A) . "</label>"
-                . Ht::hidden("{$okey}:{$n}:email", $auth->email)
-                . Ht::hidden("has_{$okey}:{$n}:value", 1)
-                . "</li>";
-            ++$n;
+            $ready[2][] = $this->web_edit_one($pt, $oe->user, $oe, $reqentries, $n);
         }
 
         $pt->print_editable_option_papt($this, null, ["for" => false, "id" => $this->readable_formid()]);
         echo '<fieldset class="papev fieldset-covert" name="', $this->formid, '">';
         if (!empty($ready[1])) {
-            $mb = empty($ready[0]) ? " mb-0" : "";
+            $mb = empty($ready[0]) && empty($ready[2]) ? " mb-0" : "";
             echo "<ul class=\"x{$mb}\">", join("", $ready[1]), "</ul>";
         }
         if (!empty($ready[0])) {
-            echo '<h4 class="mb-0 font-italic">Incomplete</h4><ul class="x mb-0">', join("", $ready[0]), '</ul>';
+            $mb = empty($ready[2]) ? " mb-0" : "";
+            echo "<h4 class=\"mb-0 font-italic\">Incomplete</h4><ul class=\"x{$mb}\">", join("", $ready[0]), '</ul>';
         }
-        if (empty($ready[0]) && empty($ready[1])) {
+        if (!empty($ready[2])) {
+            echo "<h4 class=\"mb-0 font-italic\">Obsolete</h4>",
+                MessageSet::feedback_html([MessageItem::warning("<0>These author certifications are associated with authors who have been removed from the paper. Only administrators can remove these certifications.")]),
+                "<ul class=\"x mb-0\">", join("", $ready[2]), '</ul>';
+        }
+        if (empty($ready[0]) && empty($ready[1]) && empty($ready[2])) {
             echo '<h4 class="mb-0 font-italic">No authors yet</h4>',
                 Ht::checkbox("", 1, false, ["hidden" => true, "disabled" => true]);
         }
@@ -677,22 +724,36 @@ class AuthorCertification_PaperOption extends PaperOption {
             return;
         }
         $entries = self::entries($ov);
-        $ready = [[], []];
+        $ready = [[], [], []];
         foreach ($ov->prow->author_list() as $auth) {
             if (!$auth->email) {
                 continue;
             }
-            $oe = $entries->find_by_email($auth->email);
+            if (($oe = $entries->find_by_email($auth->email))) {
+                $oe->author = $auth;
+            }
             $oval = $oe && $oe->value;
             $ready[(int) $oval][] = '<li class="odname">' . $auth->name_h(NAME_E | NAME_A) . "</li>";
         }
+        foreach ($entries as $oe) {
+            if ($oe->author || !$oe->value) {
+                continue;
+            }
+            $ready[2][] = '<li class="odname">' . $oe->user->name_h(NAME_E | NAME_A) . "</li>";
+        }
         $t = "";
         if (!empty($ready[1])) {
-            $mb = empty($ready[0]) ? " mb-0" : "";
+            $mb = empty($ready[0]) && empty($ready[2]) ? " mb-0" : "";
             $t .= '<h4 class="mb-0 font-italic">Complete</h4><ul class="x' . $mb . '">' . join("", $ready[1]) . '</ul>';
         }
         if (!empty($ready[0])) {
-            $t .= '<h4 class="mb-0 font-italic">Incomplete</h4><ul class="x mb-0">' . join("", $ready[0]) . '</ul>';
+            $mb = empty($ready[2]) ? " mb-0" : "";
+            $t .= '<h4 class="mb-0 font-italic">Incomplete</h4><ul class="x' . $mb . '">' . join("", $ready[0]) . '</ul>';
+        }
+        if (!empty($ready[2])) {
+            $t .= '<h4 class="mb-0 font-italic">Obsolete</h4>'
+                . MessageSet::feedback_html([MessageItem::warning("<0>These author certifications are associated with authors who have been removed. Only administrators can remove these certifications.")])
+                . '<ul class="x mb-0">' . join("", $ready[2]) . '</ul>';
         }
         if ($t === "") {
             $t .= '<h4 class="mb-0 font-italic">No authors yet</h4>';

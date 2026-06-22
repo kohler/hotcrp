@@ -51,7 +51,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         $removepred = null;
         $dec = null;
         if (isset($req["decision"])) {
-            $dlist = $state->conf->decision_set()->matchexpr($req["decision"], true);
+            $dlist = $state->conf->decision_set()->match($req["decision"]);
             if (!$this->remove) {
                 if (count($dlist) === 1) {
                     $dec = $dlist[0];
@@ -104,6 +104,9 @@ class Decision_Assigner extends Assigner {
         $name_h = $dec->id === 0 ? "No decision" : $dec->name_as(5);
         return "<span class=\"pstat {$class}\">{$name_h}</span>";
     }
+    function about() {
+        return SearchTerm::ABOUT_SUB;
+    }
     function unparse_display(AssignmentSet $aset) {
         $t = [];
         if ($this->item->existed()) {
@@ -128,8 +131,17 @@ class Decision_Assigner extends Assigner {
         $locks["Paper"] = "write";
     }
     function execute(AssignmentSet $aset) {
+        $old = (int) $this->item->pre("_decision");
         $dec = $this->item->deleted() ? 0 : $this->item["_decision"];
-        $aset->stage_qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
+        $qf = "outcome=?";
+        $qv = [$dec];
+        if ($dec <= 0 && (int) $this->item->pre("_decision") > 0) {
+            // reset acceptance notification when leaving accept-class
+            $qf .= ", timeAcceptNotified=?";
+            $qv[] = 0;
+        }
+        $qv[] = $this->pid;
+        $aset->stage_qe_apply("update Paper set {$qf} where paperId=?", $qv);
         $aset->user->log_activity("Decision set: " . $aset->conf->decision_name($dec), $this->pid);
         if ($dec > 0 || $this->item->pre("_decision") > 0) {
             $aset->register_cleanup_function("paperacc", function ($aset, $vals) {

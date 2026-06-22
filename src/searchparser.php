@@ -1,6 +1,6 @@
 <?php
 // searchparser.php -- HotCRP helper class for splitting search strings
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class SearchParser {
     /** @var string */
@@ -192,7 +192,7 @@ class SearchParser {
     static function span_balanced_parens($str, $pos = 0, $endchars = null, $allow_empty = false) {
         $pstack = "";
         $plast = "";
-        $quote = 0;
+        $quote = false;
         $startpos = $allow_empty ? -1 : $pos;
         $len = strlen($str);
         $endsp = $endchars === null || strpos($endchars, " ") !== false;
@@ -217,7 +217,7 @@ class SearchParser {
                 if ($ch === "\\" && $pos + 1 < $len) {
                     ++$pos;
                 } else if ($ch === "\"") {
-                    $quote = 0;
+                    $quote = false;
                 }
             } else if ($ch === "(") {
                 $pstack .= $plast;
@@ -242,7 +242,7 @@ class SearchParser {
                     }
                 }
             } else if ($ch === "\"") {
-                $quote = 1;
+                $quote = true;
             }
             ++$pos;
         }
@@ -264,6 +264,78 @@ class SearchParser {
             }
         }
         return $w;
+    }
+
+    /** @param string $str
+     * @return string */
+    static function safe_parenthesize($str) {
+        $pstack = "";
+        $plast = "";
+        $quote = false;
+        $pos = $startpos = 0;
+        $len = strlen($str);
+        $out = "";
+        while ($pos < $len) {
+            $ch = $str[$pos];
+            // translate “” -> "
+            if ($ch === "\xE2"
+                && $pos + 2 < $len
+                && $str[$pos + 1] === "\x80"
+                && (ord($str[$pos + 2]) & 0xFE) === 0x9C) {
+                $ch = "\"";
+                $pos += 2;
+            }
+            if ($quote) {
+                if ($ch === "\\") {
+                    if ($pos + 1 < $len) {
+                        ++$pos;
+                    } else {
+                        $out .= substr($str, $startpos, $pos) . "\\";
+                        $startpos = $pos;
+                    }
+                } else if ($ch === "\"") {
+                    $quote = false;
+                }
+            } else if ($ch === "(") {
+                $pstack .= $plast;
+                $plast = ")";
+            } else if ($ch === "[") {
+                $pstack .= $plast;
+                $plast = "]";
+            } else if ($ch === "{") {
+                $pstack .= $plast;
+                $plast = "}";
+            } else if ($ch === ")" || $ch === "]" || $ch === "}") {
+                while ($plast !== "" && $plast !== $ch) {
+                    $out .= substr($str, $startpos, $pos) . $plast;
+                    $startpos = $pos;
+                    $plast = (string) substr($pstack, -1);
+                    $pstack = (string) substr($pstack, 0, -1);
+                }
+                if ($plast === $ch) {
+                    // include this character in output
+                } else {
+                    $out .= substr($str, $startpos, $pos);
+                    $startpos = $pos + 1;
+                }
+            } else if ($ch === "\"") {
+                $quote = true;
+            }
+            ++$pos;
+        }
+        $out .= substr($str, $startpos, $pos);
+        if ($quote) {
+            $out .= "\"";
+        }
+        while ($plast !== "") {
+            $out .= $plast;
+            $plast = (string) substr($pstack, -1);
+            $pstack = (string) substr($pstack, 0, -1);
+        }
+        if ($out === "") {
+            $out = "*";
+        }
+        return "({$out})";
     }
 
     /** @param ?SearchOperatorSet $opset

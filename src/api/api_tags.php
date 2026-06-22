@@ -41,12 +41,15 @@ class Tags_API {
         Dbl::free($result);
         foreach ($allotments as $tv) {
             $t = $tv[0];
-            $link = $user->conf->hoturl("search", ["q" => "editsort:-#~{$t->tag}"]);
+            if ($tv[1] == $t->allotment) {
+                continue;
+            }
+            $link = $user->conf->hotlink("#~{$t->tag}", "search", ["q" => "editsort:-#~{$t->tag}"]);
             if ($tv[1] < $t->allotment) {
                 $nleft = $t->allotment - $tv[1];
-                $tmr->message_list[] = MessageItem::marked_note("<5><a href=\"{$link}\">#~{$t->tag}</a>: " . plural($nleft, "vote") . " remaining");
-            } else if ($tv[1] > $t->allotment) {
-                $tmr->message_list[] = MessageItem::warning("<5><a href=\"{$link}\">#~{$t->tag}</a>: Too many votes");
+                $tmr->message_list[] = MessageItem::marked_note("<5>{$link}: " . plural($nleft, "vote") . " remaining");
+            } else {
+                $tmr->message_list[] = MessageItem::warning("<5>{$link}: Too many votes");
                 $tmr->message_list[] = MessageItem::inform("<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.");
             }
         }
@@ -97,17 +100,21 @@ class Tags_API {
 
         // save tags using assigner
         $x = ["paper,action,tag"];
+
+        if (isset($qreq->expected_tags)) {
+            $x[] = "{$prow->paperId},checktag," . CsvGenerator::quote($qreq->expected_tags);
+        }
         if (isset($qreq->tags)) {
             $x[] = "{$prow->paperId},tag,all#clear";
             foreach (Tagger::split($qreq->tags) as $t) {
                 $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
             }
         }
-        foreach (Tagger::split((string) $qreq->addtags) as $t) {
+        foreach (Tagger::split((string) ($qreq->add_tags ?? $qreq->addtags)) as $t) {
             $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
         }
-        foreach (Tagger::split((string) $qreq->deltags) as $t) {
-            $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t . "#clear");
+        foreach (Tagger::split((string) ($qreq->remove_tags ?? $qreq->deltags)) as $t) {
+            $x[] = "{$prow->paperId},cleartag," . CsvGenerator::quote($t);
         }
 
         $assigner = new AssignmentSet($user);

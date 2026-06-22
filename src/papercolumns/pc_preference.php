@@ -1,6 +1,6 @@
 <?php
 // pc_preference.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Preference_PaperColumn extends PaperColumn {
     /** @var bool */
@@ -122,7 +122,8 @@ class Preference_PaperColumn extends PaperColumn {
         $pf_exists = $pf->exists();
         $conflicted = $row->has_conflict($this->user);
         $editable = $this->editable
-            && ($this->all || $this->user->pc_track_assignable($row));
+            && ($this->all || $this->user->pc_track_assignable($row))
+            && $pl->user->can_edit_preference_for($row, $this->user);
 
         // compute HTML
         $t = "";
@@ -141,7 +142,7 @@ class Preference_PaperColumn extends PaperColumn {
                 $t .= " " . review_type_icon(-1);
             }
         } else if (!$conflicted || $pf_exists) {
-            $t = str_replace("-", "−" /* U+2212 */, $pf->unparse());
+            $t = $pf->unparse_fancy();
         } else if ($this->show_conflict) {
             $t = review_type_icon(-1);
         }
@@ -188,7 +189,7 @@ class Preference_PaperColumn extends PaperColumn {
             }
         }
         if (empty($rs)) {
-            PaperColumn::column_error($xtp, "<0>PC member ‘{$m[1]}’ not found");
+            PaperColumn::column_error_at($xtp, $name, "<0>PC member ‘{$m[1]}’ not found");
         }
         return $rs;
     }

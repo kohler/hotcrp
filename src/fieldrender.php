@@ -1,6 +1,6 @@
 <?php
 // fieldrender.php -- HotCRP helper class for rendering submission fields
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class FieldRender {
     /** @var ?Contact
@@ -24,9 +24,12 @@ class FieldRender {
     /** @var ?bool */
     public $value_long;
 
+    // output format: set exactly one
     const CFHTML = 0x1;
     const CFTEXT = 0x2;
+    const CFJSON = 0x4;
 
+    // output context: set at most one
     const CFPAGE = 0x10;
     const CFFORM = 0x20;
     const CFLIST = 0x40;
@@ -36,15 +39,24 @@ class FieldRender {
     const CFAPI = 0x400;
     const CFSORT = 0x800;
 
+    // modifiers
     const CFCSV = 0x1000;
     const CFROW = 0x2000;
     const CFCOLUMN = 0x4000;
     const CFVERBOSE = 0x8000;
 
+
+    /** @param int $context
+     * @return bool */
+    static function check_context($context) {
+        return ($context & 7) !== 0
+            && ($context & (($context & 7) - 1) & 7) === 0
+            && ($context & (($context & 0xFF0) - 1) & 0xFF0) === 0;
+    }
+
     /** @param int $context */
     function __construct($context, ?Contact $user = null) {
-        assert(($context & 3) !== 0 && ($context & 3) !== 3);
-        assert((($context & 0xFF0) & (($context & 0xFF0) - 1)) === 0);
+        assert(self::check_context($context));
         $this->context = $context;
         $this->user = $user;
     }
@@ -73,6 +85,7 @@ class FieldRender {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_context($context) {
+        assert(self::check_context($context));
         $this->context = $context;
         return $this;
     }
@@ -90,7 +103,20 @@ class FieldRender {
     /** @param int $context
      * @return bool */
     function want($context) {
+        assert(($context & ($context - 1)) === 0);
         return ($this->context & $context) === $context;
+    }
+
+    /** @param int $context
+     * @return bool */
+    function want_all($context) {
+        return ($this->context & $context) === $context;
+    }
+
+    /** @param int $context
+     * @return bool */
+    function want_any($context) {
+        return ($this->context & $context) !== 0;
     }
 
     /** @return bool */
@@ -164,36 +190,61 @@ class FieldRender {
         return $html;
     }
 
-    /** @param ?int $wl
-     * @param ?int $hwl */
-    function apply_wordlimit($wl = 0, $hwl = 0) {
-        if ($this->value === null || $this->value === "" || $this->value_format === 5) {
-            return;
-        }
-        $wl = $wl ?? 0;
-        $hwl = $hwl ?? 0;
+    /** @param string $text
+     * @param int $wl
+     * @param int $hwl
+     * @return array{string,string} */
+    static function split_wordlimit($text, $wl, $hwl) {
         if ($hwl > 0 && ($wl <= 0 || $wl > $hwl)) {
             $wl = $hwl;
         }
-        if ($wl <= 0 || ($wc = count_words($this->value)) <= $wl) {
-            return;
+        if ($wl <= 0 || ($wc = count_words($text)) <= $wl) {
+            return ["", $text];
         }
         if ($hwl > 0 && $wc > $hwl) {
-            list($prefix, $suffix) = count_words_split($this->value, $hwl);
-            $this->value = rtrim($prefix) . "… ✖";
+            list($prefix, ) = count_words_split($text, $hwl);
+            $text = rtrim($prefix) . "… ✖";
         }
         if ($wl > 0 && $wc > $wl && ($hwl <= 0 || $wl < $hwl)) {
-            list($prefix, $suffix) = count_words_split($this->value, $wl);
-            $formatclass = $this->value_format === 0 ? "format0" : "need-format";
-            $formatattr = $this->value_format === 0 ? "" : " data-format=\"{$this->value_format}\"";
-            $this->value = "<div class=\"has-overlong overlong-collapsed\"><div class=\"overlong-divider\"><div class=\"overlong-allowed {$formatclass}\"{$formatattr}>"
-                . ($this->value_format === 0 ? Ht::format0($prefix) : htmlspecialchars($prefix))
+            list($prefix, ) = count_words_split($text, $wl);
+            return [$prefix, $text];
+        }
+        return ["", $text];
+    }
+
+    /** @param string $ss
+     * @param int $sformat
+     * @param string $ls
+     * @param int $lformat
+     * @return string */
+    static function render_overlong($ss, $sformat, $ls, $lformat) {
+        $sclass = $sformat === 0 ? "format0" : "need-format";
+        $sattr = $sformat === 0 ? "" : " data-format=\"{$sformat}\"";
+        $lclass = $lformat === 0 ? "format0" : "need-format";
+        $lattr = $lformat === 0 ? "" : " data-format=\"{$lformat}\"";
+        return "<div class=\"has-overlong overlong-collapsed\"><div class=\"overlong-divider\"><div class=\"overlong-allowed {$sclass}\"{$sattr}>"
+                . ($sformat === 0 ? Ht::format0($ss) : htmlspecialchars($ss))
                 . "</div><div class=\"overlong-mark\"><div class=\"overlong-expander\">"
                 . Ht::button("Show more", ["class" => "ui js-overlong-expand", "aria-expanded" => "false"])
-                . "</div></div></div><div class=\"overlong-content {$formatclass}\"{$formatattr}>"
-                . ($this->value_format === 0 ? Ht::format0($this->value) : htmlspecialchars($this->value))
+                . "</div></div></div><div class=\"overlong-content {$lclass}\"{$lattr}>"
+                . ($lformat === 0 ? Ht::format0($ls) : htmlspecialchars($ls))
                 . "</div></div>";
+    }
+
+    /** @param ?int $wl
+     * @param ?int $hwl */
+    function apply_wordlimit($wl = 0, $hwl = 0) {
+        if ($this->value === null
+            || $this->value === ""
+            || $this->value_format === 5) {
+            return;
+        }
+        list($ss, $ls) = self::split_wordlimit($this->value, $wl ?? 0, $hwl ?? 0);
+        if ($ss !== "") {
+            $this->value = self::render_overlong($ss, $this->value_format, $ls, $this->value_format);
             $this->value_format = 5;
+        } else {
+            $this->value = $ls;
         }
     }
 }

@@ -418,6 +418,20 @@ class Si {
         return empty($this->name_parts) && !$this->internal;
     }
 
+    /** @return int */
+    function name_segment_count() {
+        return empty($this->name_parts) ? 1 : count($this->name_parts);
+    }
+
+    /** @param int $i
+     * @return ?string */
+    function name_segment($i) {
+        if (empty($this->name_parts)) {
+            return $i === 0 ? $this->name : null;
+        }
+        return $this->name_parts[$i] ?? null;
+    }
+
     /** @param string ...$parts
      * @return bool */
     function name_matches(...$parts) {
@@ -578,9 +592,8 @@ class Si {
             return $this->name;
         } else if ($this->name_parts === null) {
             return $this->hashid;
-        } else {
-            return $this->_expand_pattern($this->hashid, null);
         }
+        return $this->_expand_pattern($this->hashid, null);
     }
 
     /** @return array<string,string> */
@@ -594,7 +607,7 @@ class Si {
 
     /** @return string */
     function hoturl() {
-        return $this->conf->hoturl("settings", $this->hoturl_param());
+        return $this->conf->hoturl_raw("settings", $this->hoturl_param());
     }
 
     /** @param SettingValues $sv

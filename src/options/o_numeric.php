@@ -1,11 +1,41 @@
 <?php
 // o_numeric.php -- HotCRP helper class for whole-number options
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Numeric_PaperOption extends PaperOption {
+    /** @var ?int */
+    private $min_value;
+    /** @var ?int */
+    private $max_value;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args, "plrd");
+        if (isset($args->min_value) && $args->min_value !== "") {
+            $this->min_value = $args->min_value;
+        }
+        if (isset($args->max_value) && $args->max_value !== "") {
+            $this->max_value = $args->max_value;
+        }
     }
+
+    function jsonSerialize() {
+        $j = parent::jsonSerialize();
+        if ($this->min_value !== null) {
+            $j->min_value = $this->min_value;
+        }
+        if ($this->max_value !== null) {
+            $j->max_value = $this->max_value;
+        }
+        return $j;
+    }
+
+    function export_setting() {
+        $sfs = parent::export_setting();
+        $sfs->min_value = $this->min_value ?? "";
+        $sfs->max_value = $this->max_value ?? "";
+        return $sfs;
+    }
+
 
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
@@ -15,11 +45,21 @@ class Numeric_PaperOption extends PaperOption {
         return $ov->value;
     }
 
+    /** @return PaperValue */
+    private function check_ivalue(PaperInfo $prow, $iv) {
+        if ($this->min_value !== null && $iv < $this->min_value) {
+            return PaperValue::make_estop($prow, $this, $this->conf->_("<0>Number must be greater than or equal to {}", $this->min_value));
+        } else if ($this->max_value !== null && $iv > $this->max_value) {
+            return PaperValue::make_estop($prow, $this, $this->conf->_("<0>Number must be less than or equal to {}", $this->max_value));
+        }
+        return PaperValue::make($prow, $this, $iv);
+    }
+
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $v = trim((string) $qreq[$this->formid]);
         $iv = intval($v);
         if (is_numeric($v) && (float) $iv === floatval($v)) {
-            $ov = PaperValue::make($prow, $this, $iv);
+            return $this->check_ivalue($prow, $iv);
         } else if (preg_match('/\A(?:n\/?a|none|)\z/i', $v)) {
             $ov = PaperValue::make($prow, $this);
         } else {
@@ -30,7 +70,7 @@ class Numeric_PaperOption extends PaperOption {
     }
     function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if (is_int($j)) {
-            return PaperValue::make($prow, $this, $j);
+            return $this->check_ivalue($prow, $j);
         } else if ($j === null || $j === false) {
             return PaperValue::make($prow, $this);
         }
@@ -41,10 +81,10 @@ class Numeric_PaperOption extends PaperOption {
         $pt->print_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::entry($this->formid, $reqx, [
-                "id" => $this->readable_formid(), "size" => 8,
-                "size" => 8, "inputmode" => "numeric",
+                "id" => $this->readable_formid(), "type" => "number",
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
-                "data-default-value" => $ov->value ?? ""
+                "data-default-value" => $ov->value ?? "",
+                "min" => $this->min_value, "max" => $this->max_value
             ]),
             "</div></div>\n\n";
     }

@@ -2,6 +2,7 @@
 // t_paperapi.php -- HotCRP tests
 // Copyright (c) 2024-2025 Eddie Kohler; see LICENSE.
 
+#[RequireDb("fresh")]
 class PaperAPI_Tester {
     /** @var Conf
      * @readonly */
@@ -586,5 +587,128 @@ class PaperAPI_Tester {
         $qreq = TestQreq::get(["p" => 1, "dt" => 0, "docid" => $map["sha2-e8f3545b84aa20fa534d2d0c95f7dce446df8fc0df9af32dae5396d223c1b16f"]]);
         $dl = call_api_result("document", $u_marina, $qreq);
         xassert_eqq($dl->response_code(), 200);
+    }
+
+    function test_api_scope() {
+        $qreq = TestQreq::get(["p" => 1]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 1);
+
+        $qreq = TestQreq::get(["p" => 2]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 2);
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $this->u_estrin->set_scope("paper:read#1");
+
+        $qreq = TestQreq::get(["p" => 1]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 1);
+
+        $qreq = TestQreq::get(["p" => 2]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 401);
+        xassert_eqq($resp->get("paper"), null);
+        Scope_Tester::xassert_scope_error($resp, "submeta:read");
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        Scope_Tester::xassert_scope_error($resp, "submeta:read");
+
+        $this->u_estrin->set_scope("submeta:read document:read#2");
+
+        $qreq = TestQreq::get(["p" => 1]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 1);
+
+        $qreq = TestQreq::get(["p" => 2]);
+        $resp = call_api_result("paper", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert_eqq($resp->get("paper")->pid, 2);
+
+        $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 401);
+        Scope_Tester::xassert_scope_error($resp, "document:read");
+
+        $qreq = TestQreq::get(["p" => 2, "dt" => 0]);
+        $resp = call_api_result("document", $this->u_estrin, $qreq);
+        xassert_eqq($resp->response_code(), 200);
+        xassert($resp instanceof Downloader);
+
+        $this->u_estrin->set_scope();
+    }
+
+    // An API response’s real HTTP status is surfaced only for non-cross-site
+    // requests; otherwise it’s 200 + status_code to avoid an XS-Leak oracle.
+    // See JsonResult::emit and Qrequest::same_origin.
+    function test_emit_status_disclosure() {
+        $save_code = Navigation::$http_response_code;
+        // emit a 404 through $qreq, return [wire status, decoded body]
+        $emit = function ($qreq) {
+            Navigation::$http_response_code = 200;
+            ob_start();
+            JsonResult::make_error(404, "<0>Function not found")->emit($qreq);
+            return [Navigation::$http_response_code, json_decode(ob_get_clean())];
+        };
+
+        // cross-site no-cors element load: status veiled as 200 + status_code
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "cross-site");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 200);
+        xassert_eqq($body->ok, false);
+        xassert_eqq($body->status_code, 404);
+
+        // no Sec-Fetch-Site but a cross-origin Origin: inferred cross-site, veiled
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Origin", "https://evil.example");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 200);
+        xassert_eqq($body->status_code, 404);
+
+        // same-origin request: real 404 on the wire, no status_code veil
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "same-origin");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+        xassert_eqq($body->status_code ?? null, null);
+
+        // direct navigation (Sec-Fetch-Site: none): real 404
+        $qreq = TestQreq::get()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "none");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+
+        // no fetch-metadata and no Origin (non-browser client): treated same-origin
+        $qreq = TestQreq::get()->set_user($this->user);
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+
+        // authorized request (valid CSRF/bearer token) is surfaced even cross-site
+        $qreq = TestQreq::post()->set_user($this->user);
+        $qreq->set_header("Sec-Fetch-Site", "cross-site");
+        list($code, $body) = $emit($qreq);
+        xassert_eqq($code, 404);
+
+        Navigation::$http_response_code = $save_code;
     }
 }

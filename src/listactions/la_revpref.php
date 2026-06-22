@@ -128,7 +128,7 @@ class Revpref_ListAction extends ListAction {
         if ($aset->has_error()) {
             return;
         }
-        return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+        return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_REDIRECTABLE));
     }
 
     function run_uploadpref(Contact $user, Qrequest $qreq, SearchSelection $ssel,
@@ -136,7 +136,7 @@ class Revpref_ListAction extends ListAction {
         $reviewer_arg = $user->contactId === $reviewer->contactId ? null : $reviewer->email;
         $conf = $user->conf;
         if ($qreq->cancel && $qreq->page() !== "api") {
-            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_REDIRECTABLE));
         }
 
         if (($qf = $qreq->file("preffile"))) {
@@ -201,13 +201,13 @@ class Revpref_ListAction extends ListAction {
         }
         if ($execute || $aset->is_empty()) {
             $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
-            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_REDIRECTABLE));
         }
 
         $qreq->print_header("Review preferences", "revpref");
         $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE_IGNORE);
 
-        echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]),
+        echo $conf->hotform("=reviewprefs", ["reviewer" => $reviewer_arg],
             ["class" => "ui-submit js-selector-summary differs need-unload-protection"]),
             Ht::hidden("fn", "applyuploadpref");
         if ($aset->assignment_count() < 5000) {
@@ -228,6 +228,6 @@ class Revpref_ListAction extends ListAction {
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
         ], ["class" => "aab aabig"]), "</form>\n";
         $qreq->print_footer();
-        exit(0);
+        Navigation::complete();
     }
 }

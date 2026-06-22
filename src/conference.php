@@ -55,6 +55,8 @@ class Conf {
     const PB_HAS_AUTOMATIC_TAGS = 0x80;
     const PB_UPDATING_AUTOMATIC_TAGS = 0x100;
     const PB_HAS_COMPLEX_DECISION = 0x200;
+    const PB_HIDE_CONFLICT_SUB = 0x400;
+    const PB_EDIT_REVPREF = 0x800;
     /** @var ?SearchTerm
      * @readonly */
     public $_au_seerev;
@@ -149,8 +151,6 @@ class Conf {
     private $_cdb_user_cache;
     /** @var ?list<int|string> */
     private $_cdb_user_cache_missing;
-    /** @var ?list<int|string> */
-    private $_cdb_user_update_list;
     /** @var ?Contact */
     private $_root_user;
     /** @var ?Author */
@@ -180,6 +180,8 @@ class Conf {
     private $_format_info;
     /** @var ?DatabaseIDRandomizer */
     private $_id_randomizer;
+    /** @var ?array<string,object> */
+    private $_shutdown_functions;
 
     /** @var ?array<string,list<object>> */
     private $_xtbuild_map;
@@ -196,6 +198,8 @@ class Conf {
     private $_assignment_parsers;
     /** @var ?array<string,list<object>> */
     private $_api_map;
+    /** @var ?array<string,list<object>> */
+    private $_api_x_map;
     /** @var ?array<string,list<object>> */
     private $_paper_column_map;
     /** @var ?list<object> */
@@ -227,10 +231,6 @@ class Conf {
     /** @var ?ComponentSet */
     private $_page_components;
 
-    /** @var ?PaperInfo
-     * @deprecated */
-    public $paper; // current paper row
-
     /** @var Conf */
     static public $main;
     /** @var int */
@@ -241,11 +241,7 @@ class Conf {
     static public $blocked_time = 0.0;
     /** @var false|null|\mysqli */
     static private $_cdb = false;
-    /** @var ?list<Conf> */
-    static private $_conf_update_list;
 
-    /** @var bool */
-    static public $test_mode;
     /** @var bool */
     static public $no_invalidate_caches = false;
     /** @var int */
@@ -302,7 +298,12 @@ class Conf {
 
     /** @param null|int|float $t */
     static function set_current_time($t = null) {
-        $t = $t ?? microtime(true);
+        if ($t === null) {
+            $t = microtime(true);
+            if (self::$unow !== null) {
+                $t = max($t, self::$unow);
+            }
+        }
         self::$unow = $t;
         $old_now = Conf::$now;
         Conf::$now = (int) $t;
@@ -321,7 +322,7 @@ class Conf {
 
     /** @suppress PhanAccessReadOnlyProperty */
     function close() {
-        $this->save_cdb_user_updates();
+        $this->call_shutdown_functions();
         $this->dblink->close();
         $this->dblink = null;
     }
@@ -370,7 +371,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 321) {
+        if ($this->sversion < 324) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -393,6 +394,13 @@ class Conf {
         // GC old capabilities
         if (($this->settings["__capability_gc"] ?? 0) < Conf::$now - 86400) {
             $this->clean_tokens();
+        }
+
+        // GC mcache
+        if (($mcv = ($this->settings["__mcache"] ?? 0)) > 0
+            && $mcv < Conf::$now - 7200) {
+            $this->qe("delete from Settings where name='__mcache' and value=?", $mcv);
+            unset($this->settings["__mcache"], $this->settingTexts["__mcache"]);
         }
 
         // might need to redo automatic tags
@@ -434,6 +442,12 @@ class Conf {
         }
         if (strpos($this->settingTexts["outcome_map"] ?? "{", "{", 1) !== false) {
             $this->_permbits |= self::PB_HAS_COMPLEX_DECISION;
+        }
+        if (($this->settings["pc_confpdf"] ?? 0) > 1) {
+            $this->_permbits |= self::PB_HIDE_CONFLICT_SUB;
+        }
+        if (($this->settings["pref_noedit"] ?? 0) <= 0) {
+            $this->_permbits |= self::PB_EDIT_REVPREF;
         }
 
         // rounds
@@ -690,19 +704,18 @@ class Conf {
 
         // remove final slash from $Opt["paperSite"]
         $nav = Navigation::get();
-        if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] === "") {
-            $this->opt["paperSite"] = $nav->base_absolute();
+        if (($papersite = $this->opt["paperSite"] ?? "") === ""
+            && ($papersite = $nav->base_absolute() ?? "") === "") {
+            $papersite = $this->opt["defaultPaperSite"] ?? "";
         }
-        if ($this->opt["paperSite"] == "" && isset($this->opt["defaultPaperSite"])) {
-            $this->opt["paperSite"] = $this->opt["defaultPaperSite"];
+        while (str_ends_with($papersite, "/")) {
+            $papersite = substr($papersite, 0, -1);
         }
-        while (str_ends_with($this->opt["paperSite"], "/")) {
-            $this->opt["paperSite"] = substr($this->opt["paperSite"], 0, -1);
-        }
+        $this->opt["paperSite"] = $papersite;
 
         // asset URLs (general assets, scripts, jQuery)
         $baseurl = $nav->base_path_relative ?? "";
-        $this->_assets_url = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? $baseurl;
+        $this->_assets_url = $this->opt["assetsUrl"] ?? $baseurl;
         if ($this->_assets_url !== "" && !str_ends_with($this->_assets_url, "/")) {
             $this->_assets_url .= "/";
         }
@@ -767,11 +780,12 @@ class Conf {
         // other caches
         $sort_by_last = !!($this->opt["sortByLastName"] ?? false);
         if (!$this->sort_by_last != !$sort_by_last) {
-            $this->invalidate_caches(["pc" => true]);
+            $this->invalidate_caches("pc");
         }
         $this->sort_by_last = $sort_by_last;
 
         $this->_api_map = null;
+        $this->_api_x_map = null;
         $this->_file_filters = null;
         $this->_site_contact = null;
         $this->_date_format_initialized = false;
@@ -909,13 +923,6 @@ class Conf {
         return $change;
     }
 
-    /** @param object $action */
-    function append_conference_action($action) {
-        assert(!$this->_setting_lock);
-        $this->qe("insert into Settings (name, value, data) values ('confactions', 1, ?) ?U on duplicate key update data=concat(Settings.data,?U(data))",
-            "\x1e" /* RS */ . json_encode_db($action) . "\n");
-    }
-
 
     /** @param string $name
      * @return mixed */
@@ -950,6 +957,78 @@ class Conf {
             return 0;
         }
         return (int) substr($this->_site_locks, $p + strlen($name) + 2);
+    }
+
+    /** @param object $action */
+    function append_conference_action($action) {
+        assert(!$this->_setting_lock);
+        $this->qe("insert into Settings (name, value, data) values ('confactions', 1, ?) ?U on duplicate key update data=concat(Settings.data,?U(data))",
+            "\x1e" /* RS */ . json_encode_db($action) . "\n");
+    }
+
+
+    /** @return int */
+    function request_mcache() {
+        $v = $this->settings["__mcache"] ?? 0;
+        $d = $this->settingTexts["__mcache"] ?? null;
+        if ($v > 0 && $v < Conf::$now && $d) {
+            return $v;
+        } else if ($v < Conf::$now && !$d) {
+            // Effectively compare-exchange
+            if ($v === 0) {
+                $this->qe("insert into Settings set name='__mcache', value=?, data='1' on duplicate key update value=value", Conf::$now);
+            } else {
+                $this->qe("update Settings set value=?, data='1' where name='__mcache' and value=?", Conf::$now, $v);
+            }
+            // Don't actually need to know if we succeeded
+            $this->settings["__mcache"] = Conf::$now;
+            $this->settingTexts["__mcache"] = "1";
+        }
+        return 0;
+    }
+
+    function invalidate_mcache() {
+        if ($this->settings["__mcache"] ?? 0) {
+            $this->qe("update Settings set value=?, data=null where name='__mcache'", Conf::$now);
+            $this->settings["__mcache"] = Conf::$now;
+            $this->settingTexts["__mcache"] = null;
+        }
+    }
+
+
+    // shutdown functions
+
+    /** @template T
+     * @param class-string<T> $name
+     * @return T */
+    function register_shutdown_function($name) {
+        if ($this->_shutdown_functions === null) {
+            $this->_shutdown_functions = [];
+            register_shutdown_function([$this, "call_shutdown_functions"]);
+        }
+        $sf = $this->_shutdown_functions[$name] ?? null;
+        if ($sf === null) {
+            $sf = $this->_shutdown_functions[$name] = new $name($this);
+        }
+        return $sf;
+    }
+
+    /** @param class-string $name */
+    function call_shutdown_function($name) {
+        if (($sf = $this->_shutdown_functions[$name] ?? null)) {
+            unset($this->_shutdown_functions[$name]);
+            $sf($this);
+        }
+    }
+
+    function call_shutdown_functions() {
+        while (!empty($this->_shutdown_functions)) {
+            $shutdown_functions = $this->_shutdown_functions;
+            $this->_shutdown_functions = [];
+            foreach ($shutdown_functions as $sf) {
+                $sf($this);
+            }
+        }
     }
 
 
@@ -1152,13 +1231,11 @@ class Conf {
             || !($s = $this->opt["s3_secret"] ?? null)
             || !($b = $this->opt["s3_bucket"] ?? null)) {
             return null;
-        } else if ($this->_s3_client
-                   && $this->_s3_client->check_key_secret_bucket($k, $s, $b)) {
-            return $this->_s3_client;
         }
         return S3Client::make([
             "key" => $k, "secret" => $s, "bucket" => $b,
             "region" => $this->opt["s3_region"] ?? null,
+            "domain" => $this->opt["s3_domain"] ?? null,
             "setting_cache" => $this, "setting_cache_prefix" => "__s3"
         ]);
     }
@@ -1484,8 +1561,14 @@ class Conf {
         return null;
     }
 
-    /** @return list<Track> */
+    /** @return list<Track>
+     * @deprecated */
     function all_tracks() {
+        return $this->track_list();
+    }
+
+    /** @return list<Track> */
+    function track_list() {
         return $this->_tracks ?? [];
     }
 
@@ -1577,7 +1660,7 @@ class Conf {
     /** @param int $right
      * @return bool */
     function check_any_tracks(Contact $user, $right) {
-        if (($this->_track_sensitivity & (Track::BITS_VIEW | (1 << $right))) === 0) {
+        if (($this->_track_sensitivity & (Track::FM_VIEW | (1 << $right))) === 0) {
             return true;
         }
         foreach ($this->_tracks as $tr) {
@@ -1615,15 +1698,15 @@ class Conf {
     }
     /** @return bool */
     function check_track_view_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_VIEW) !== 0;
+        return ($this->_track_sensitivity & Track::FM_VIEW) !== 0;
     }
     /** @return bool */
     function check_track_review_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_REVIEW) !== 0;
+        return ($this->_track_sensitivity & Track::FM_REVIEW) !== 0;
     }
     /** @return bool */
     function check_track_admin_sensitivity() {
-        return ($this->_track_sensitivity & Track::BITS_ADMIN) !== 0;
+        return ($this->_track_sensitivity & Track::FM_ADMIN) !== 0;
     }
 
     /** @return bool */
@@ -1875,12 +1958,6 @@ class Conf {
         return $this->_resp_rounds;
     }
 
-    /** @return list<ResponseRound>
-     * @deprecated */
-    function response_rounds() {
-        return $this->response_round_list();
-    }
-
     /** @return list<ResponseRound> */
     private function _response_round_list() {
         $rrds = [];
@@ -2032,6 +2109,11 @@ class Conf {
         return $this->_oauth_providers;
     }
 
+    /** @return string */
+    function oauth_issuer() {
+        return $this->opt["oAuthIssuer"] ?? $this->opt["paperSite"];
+    }
+
 
     // root user, site contact
 
@@ -2107,6 +2189,11 @@ class Conf {
         }
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
             $f .= ", {$prefix}collaborators";
+            if ($this->sversion >= 323) {
+                $f .= ", {$prefix}collaboratorsOverflow";
+            } else {
+                $f .= ", null {$prefix}collaboratorsOverflow";
+            }
         }
         if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
             $f .= ", {$prefix}password";
@@ -2140,7 +2227,7 @@ class Conf {
         }
         $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}primaryContactId, {$prefix}cflags";
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
-            $f .= ", {$prefix}collaborators";
+            $f .= ", {$prefix}collaborators, {$prefix}collaboratorsOverflow";
         }
         if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
             $f .= ", {$prefix}password";
@@ -2808,9 +2895,7 @@ class Conf {
         if (!$cdb || (empty($ids) && empty($emails))) {
             return [];
         }
-        if ($this->_cdb_user_update_list !== null) {
-            $this->save_cdb_user_updates();
-        }
+        $this->call_shutdown_function("CdbUserUpdate");
         $q = "select ContactInfo.*, roles, " . Contact::ROLE_CDBMASK . " role_mask, activity_at";
         if (($confid = $this->opt("contactdbConfid") ?? 0) > 0) {
             $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
@@ -2957,93 +3042,7 @@ class Conf {
     /** @param Contact $user
      * @param 0|1|2|3 $type */
     function register_cdb_user_update($user, $type) {
-        if ($this->_cdb_user_update_list === null) {
-            if (self::$_conf_update_list === null) {
-                register_shutdown_function("Conf::perform_conf_updates");
-                self::$_conf_update_list = [];
-            }
-            self::$_conf_update_list[] = $this;
-            $this->_cdb_user_update_list = [];
-        }
-        if ($type === self::CDB_UPDATE_PROFILE) {
-            array_push($this->_cdb_user_update_list, $type, $user->contactDbId);
-        } else if ($type === self::CDB_UPDATE_ROLES) {
-            array_push($this->_cdb_user_update_list, $type, $user->contactId, $user->email);
-        } else {
-            array_push($this->_cdb_user_update_list, $type, $user->email);
-        }
-    }
-
-    static function perform_conf_updates() {
-        $culist = self::$_conf_update_list;
-        self::$_conf_update_list = [];
-        foreach ($culist as $conf) {
-            $conf->save_cdb_user_updates();
-        }
-    }
-
-    function save_cdb_user_updates() {
-        $ulist = $this->_cdb_user_update_list;
-        $this->_cdb_user_update_list = null;
-        while (($cuindex = array_search($this, self::$_conf_update_list ?? [], true)) !== false) {
-            array_splice(self::$_conf_update_list, $cuindex, 1);
-        }
-
-        $cdb = $this->contactdb();
-        $cdb_confid = $this->cdb_confid();
-        if (empty($ulist) || !$cdb || $cdb_confid < 0) {
-            return;
-        }
-
-        // prefetch users, prepare queries
-        $role_uids = $cu_uids = [];
-        $ph_emails = $confirm_emails = [];
-        for ($i = 0; $i !== count($ulist); ) {
-            if ($ulist[$i] === self::CDB_UPDATE_PROFILE) {
-                $cu_uids[] = $ulist[$i + 1];
-                $i += 2;
-            } else if ($ulist[$i] === self::CDB_UPDATE_ROLES) {
-                $role_uids[] = $ulist[$i + 1];
-                $this->prefetch_user_by_id($ulist[$i + 1]);
-                $this->prefetch_cdb_user_by_email($ulist[$i + 2]);
-                $i += 3;
-            } else if ($ulist[$i] === self::CDB_UPDATE_PLACEHOLDER) {
-                $ph_emails[] = $ulist[$i + 1];
-                $this->prefetch_cdb_user_by_email($ulist[$i + 1]);
-                $i += 2;
-            } else if ($ulist[$i] === self::CDB_UPDATE_CONFIRMED) {
-                $confirm_emails[] = $ulist[$i + 1];
-                $this->prefetch_cdb_user_by_email($ulist[$i + 1]);
-                $i += 2;
-            }
-        }
-
-        if (!empty($role_uids)) {
-            Contact::update_cdb_roles_list($this, $role_uids);
-        }
-
-        if (!empty($ph_emails)) {
-            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
-                where email?a and (cflags&?)!=0",
-                Contact::CF_PLACEHOLDER, $ph_emails, Contact::CF_PLACEHOLDER);
-        }
-
-        if (!empty($confirm_emails)) {
-            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
-                where email?a and (cflags&?)!=0",
-                Contact::CF_UNCONFIRMED, $confirm_emails, Contact::CF_UNCONFIRMED);
-        }
-
-        if (!empty($cu_uids)) {
-            Dbl::qe($cdb, "insert into ConferenceUpdates (confid, user_update_at)
-                select confid, ? from Roles where contactDbId?a and confid!=?
-                on duplicate key update user_update_at=greatest(user_update_at,?)",
-                Conf::$now, $cu_uids, $cdb_confid, Conf::$now);
-        }
-
-        if (!empty($role_uids) || !empty($ph_emails) || !empty($confirm_emails)) {
-            $this->_cdb_user_cache = null;
-        }
+        $this->register_shutdown_function("CdbUserUpdate")->add($user, $type);
     }
 
 
@@ -3142,10 +3141,14 @@ class Conf {
     }
 
     /** @param null|int|list<int>|PaperInfo $paper
-     * @param null|string|list<string> $types */
-    function update_automatic_tags($paper = null, $types = null) {
-        if (($this->_permbits & (self::PB_HAS_AUTOMATIC_TAGS | self::PB_UPDATING_AUTOMATIC_TAGS)) !== self::PB_HAS_AUTOMATIC_TAGS
+     * @param ?int $about */
+    function update_automatic_tags($paper = null, $about = null) {
+        if (($this->_permbits & self::PB_UPDATING_AUTOMATIC_TAGS)
             || $this->_setting_lock) {
+            return;
+        }
+        $this->invalidate_mcache();
+        if (!($this->_permbits & self::PB_HAS_AUTOMATIC_TAGS)) {
             return;
         }
         $csv = ["paper,tag,tag value"];
@@ -3186,15 +3189,16 @@ class Conf {
 
     /** @param list<string> $csv */
     function _update_automatic_tags_csv($csv) {
-        if (count($csv) > 1) {
-            $this->_permbits |= self::PB_UPDATING_AUTOMATIC_TAGS;
-            $aset = new AssignmentSet($this->root_user());
-            $aset->set_override_conflicts(true);
-            $aset->set_search_type("all");
-            $aset->parse($csv);
-            $aset->execute();
-            $this->_permbits &= ~self::PB_UPDATING_AUTOMATIC_TAGS;
+        if (count($csv) <= 1) {
+            return;
         }
+        $this->_permbits |= self::PB_UPDATING_AUTOMATIC_TAGS;
+        $aset = new AssignmentSet($this->root_user());
+        $aset->set_override_conflicts(true);
+        $aset->set_search_type("all");
+        $aset->parse($csv);
+        $aset->execute();
+        $this->_permbits &= ~self::PB_UPDATING_AUTOMATIC_TAGS;
     }
 
     /** @return bool */
@@ -3225,41 +3229,46 @@ class Conf {
         return false;
     }
 
-    /** @param array{all?:true,autosearch?:true,rf?:true,tags?:true,cdb?:true,pc?:true,users?:true,options?:true,linked_users?:true} $caches */
-    function invalidate_caches($caches) {
+    /** @param 'all'|'autosearch'|'rf'|'tags'|'cdb'|'users'|'cdb_users'|'pc'|'options'|'linked_users' ...$caches */
+    function invalidate_caches(...$caches) {
         if (self::$no_invalidate_caches) {
             return;
         }
-        $all = empty($caches) || isset($caches["all"]);
-        if ($all || isset($caches["pc"]) || isset($caches["users"])) {
+        if (count($caches) === 1 && is_array($caches[0])) { // XXX backward compat
+            $caches = array_keys($caches[0]);
+        }
+        $all = empty($caches) || in_array("all", $caches, true);
+        $users = $all || in_array("users", $caches, true);
+        $cdb = in_array("cdb", $caches, true);
+        if ($all || in_array("pc", $caches, true) || $users) {
             $this->_pc_set = null;
             $this->_pc_members_cache = $this->_pc_tags_cache = null;
             $this->_user_cache = $this->_user_email_cache = null;
         }
-        if ($all || isset($caches["users"]) || isset($caches["cdb"])) {
+        if ($all || $users || $cdb || in_array("cdb_users", $caches, true)) {
             $this->_cdb_user_cache = null;
         }
-        if (isset($caches["cdb"])) {
+        if ($cdb) {
             unset($this->opt["contactdbConfid"]);
             self::$_cdb = false;
         }
-        if ($all || isset($caches["users"]) || isset($caches["linked_users"])) {
+        if ($all || $users || in_array("linked_users", $caches, true)) {
             $this->_linked_user_cache = null;
         }
         // NB All setting-related caches cleared here should also be cleared
         // in refresh_settings().
-        if ($all || isset($caches["options"])) {
+        if ($all || in_array("options", $caches, true)) {
             $this->_paper_opts->invalidate_options();
             $this->_formatspec_cache = [];
             $this->_abbrev_matcher = null;
             $this->_topic_set = null;
         }
-        if ($all || isset($caches["rf"])) {
+        if ($all || in_array("rf", $caches, true)) {
             $this->_review_form = null;
             $this->_defined_rounds = null;
             $this->_abbrev_matcher = null;
         }
-        if ($all || isset($caches["tags"])) {
+        if ($all || in_array("tags", $caches, true)) {
             $this->_tag_map = null;
         }
         if ($all) {
@@ -3267,7 +3276,7 @@ class Conf {
             $this->_assignment_parsers = null;
             Contact::update_rights();
         }
-        if (isset($caches["autosearch"])) {
+        if (in_array("autosearch", $caches, true)) {
             $this->update_automatic_tags();
         }
     }
@@ -3537,9 +3546,8 @@ class Conf {
         }
         if ($format & 2) {
             return $d;
-        } else {
-            return $timestamp < $reference ? $d . " ago" : "in " . $d;
         }
+        return $timestamp < $reference ? $d . " ago" : "in " . $d;
     }
 
     /** @param string $s
@@ -3613,47 +3621,6 @@ class Conf {
         return $t > 0 && $time >= $t;
     }
 
-    /** @param ?int $lo
-     * @param int $hi
-     * @param ?int $grace
-     * @param ?int $time
-     * @return 0|1|2 */
-    function time_between($lo, $hi, $grace = null, $time = null) {
-        // see also ResponseRound::time_allowed
-        $time = $time ?? Conf::$now;
-        if ($lo !== null && ($lo <= 0 || $time < $lo)) {
-            return 0;
-        } else if ($hi <= 0 || $time <= $hi) {
-            return 1;
-        } else if ($grace !== null && $time <= $hi + $grace) {
-            return 2;
-        } else {
-            return 0;
-        }
-    }
-
-    /** @param string $lo
-     * @param string $hi
-     * @param ?string $grace
-     * @param ?int $time
-     * @return 0|1|2 */
-    function time_between_settings($lo, $hi, $grace = null, $time = null) {
-        // see also ResponseRound::time_allowed
-        $time = $time ?? Conf::$now;
-        $t0 = $this->settings[$lo] ?? null;
-        if (($t0 === null || $t0 <= 0 || $time < $t0) && $lo !== "") {
-            return 0;
-        }
-        $t1 = $this->settings[$hi] ?? null;
-        if ($t1 === null || $t1 <= 0 || $time <= $t1) {
-            return 1;
-        } else if ($grace && $time <= $t1 + ($this->settings[$grace] ?? 0)) {
-            return 2;
-        } else {
-            return 0;
-        }
-    }
-
 
     /** @return bool */
     function has_named_submission_rounds() {
@@ -3711,10 +3678,6 @@ class Conf {
         return $this->setting("final_open") > 0;
     }
     /** @return bool */
-    function time_edit_final_paper() {
-        return $this->time_between_settings("final_open", "final_done", "final_grace") > 0;
-    }
-    /** @return bool */
     function time_some_author_view_review() {
         return $this->any_response_open || $this->_au_seerev;
     }
@@ -3770,10 +3733,22 @@ class Conf {
     function time_review($round, $reviewType, $hard) {
         return !$this->missed_review_deadline($round, $reviewType, $hard);
     }
+
     /** @return bool */
     function timePCReviewPreferences() {
-        return $this->can_pc_view_some_incomplete()
-            || $this->has_any_submitted();
+        return ($this->_permbits & self::PB_EDIT_REVPREF) !== 0
+            && ($this->can_pc_view_some_incomplete()
+                || $this->has_any_submitted());
+    }
+
+    /** @return bool */
+    function allow_pc_edit_preference() {
+        return ($this->_permbits & self::PB_EDIT_REVPREF) !== 0;
+    }
+
+    /** @return bool */
+    function allow_conflicted_pc_view() {
+        return ($this->_permbits & self::PB_HIDE_CONFLICT_SUB) === 0;
     }
     /** @param bool $pdf
      * @return bool */
@@ -3876,7 +3851,7 @@ class Conf {
 
     /** @return bool */
     function has_any_manager() {
-        return ($this->_track_sensitivity & Track::BITS_ADMIN)
+        return ($this->_track_sensitivity & Track::FM_ADMIN) !== 0
             || !!($this->settings["papermanager"] ?? false);
     }
 
@@ -3926,10 +3901,18 @@ class Conf {
     const HOTURL_MAYBE_POST = 128;
 
     /** @param string $page
-     * @param null|string|array $params
+     * @param ?array $params
      * @param int $flags
      * @return string */
     function hoturl($page, $params = null, $flags = 0) {
+        if (($flags & self::HOTURL_RAW) === 0) {
+            error_log("Missing HOTURL_RAW at " . debug_string_backtrace());
+        }
+        if (is_string($params)) {
+            error_log("hoturl \$params is string at " . debug_string_backtrace());
+            parse_str($params, $xparams);
+            $params = $xparams;
+        }
         $qreq = Qrequest::$main_request;
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         if (str_starts_with($page, "=")) {
@@ -4026,12 +4009,12 @@ class Conf {
                     $param = $mm[1] . $mm[4];
                 }
             } else if (($is_paper_page
-                        && preg_match($are . 'p=(\d++|%\w++%|\{\{\w++\}\}|new)' . $zre, $param, $m))
+                        && preg_match($are . 'p=(\d++|%25\w++%25|%7B%7B\w++%7D%7D|new)' . $zre, $param, $m))
                        || ($page === "help"
                            && preg_match($are . 't=(\w++)' . $zre, $param, $m))
                        || (($page === "settings" || $page === "graph")
                            && preg_match($are . 'group=(\w++)' . $zre, $param, $m))) {
-                $tp = "/" . $m[2];
+                $tp = "/" . urldecode($m[2]);
                 $param = $m[1] . $m[3];
                 if ($param !== ""
                     && $page === "paper"
@@ -4132,27 +4115,28 @@ class Conf {
     }
 
     /** @param string $page
-     * @param null|string|array $param
+     * @param ?array $param
      * @param int $flags
      * @return string */
     function hoturl_raw($page, $param = null, $flags = 0) {
         return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
     }
 
-    /** @param string $page
-     * @param null|string|array $param
-     * @return string */
-    function hoturl_post($page, $param = null) {
-        return $this->hoturl($page, $param, self::HOTURL_POST);
-    }
-
-    /** @param string $html
+    /** @param int|float|string $html
      * @param string $page
-     * @param null|string|array $param
+     * @param ?array $param
      * @param ?array $js
      * @return string */
     function hotlink($html, $page, $param = null, $js = null) {
-        return Ht::link($html, $this->hoturl($page, $param), $js);
+        return Ht::link($html, $this->hoturl($page, $param, self::HOTURL_RAW), $js);
+    }
+
+    /** @param string $page
+     * @param ?array $param
+     * @param ?array $js
+     * @return string */
+    function hotform($page, $param = null, $js = null) {
+        return Ht::form($this->hoturl_raw($page, $param), $js, self::HOTURL_RAW);
     }
 
 
@@ -4176,9 +4160,6 @@ class Conf {
     private function qrequrl($qreq, $param, $flags) {
         if (($flags & self::HOTURL_REDIRECTABLE) !== 0
             && ($url = $this->qreq_redirect_url($qreq))) {
-            if (($flags & self::HOTURL_RAW) === 0) {
-                $url = htmlspecialchars($url);
-            }
             return $url;
         }
         $x = [];
@@ -4196,7 +4177,7 @@ class Conf {
         foreach ($param as $k => $v) {
             $x[$k] = $v;
         }
-        return $this->hoturl($qreq->page(), $x, $flags);
+        return $this->hoturl($qreq->page(), $x, $flags | self::HOTURL_RAW);
     }
 
     /** @param Qrequest $qreq
@@ -4204,10 +4185,25 @@ class Conf {
      * @param int $flags
      * @return string */
     function selfurl(Qrequest $qreq, $param = null, $flags = 0) {
-        if (!$qreq->page() || $qreq->page() === "api") {
+        if (($qreq->page() ?? "") === "" || $qreq->page() === "api") {
             error_log("selfurl for bad page: " . debug_string_backtrace());
         }
         return $this->qrequrl($qreq, $param ?? [], $flags);
+    }
+
+    /** @param string $html
+     * @param Qrequest $qreq
+     * @param ?array $param
+     * @param ?array $js
+     * @return string */
+    function selflink($html, Qrequest $qreq, $param = null, $js = null) {
+        return Ht::link($html, $this->qrequrl($qreq, $param ?? [], 0), $js);
+    }
+
+    /** @return $this */
+    function saved_messages_begin() {
+        $this->_save_msgs = $this->_save_msgs ?? [];
+        return $this;
     }
 
     /** @return int */
@@ -4232,28 +4228,31 @@ class Conf {
         return $st;
     }
 
-    /** @param ?string $url
-     * @param 301|302|303|307|308 $status
-     * @return never
-     * @throws Redirection */
-    function redirect($url = null, $status = 302) {
-        if (self::$test_mode) {
-            $nav = Navigation::get();
-            throw new Redirection($nav->resolve($url ?? $this->hoturl("index")), $status);
-        }
-        $qreq = Qrequest::$main_request;
+    /** @param Qrequest $qreq */
+    function saved_messages_commit($qreq) {
         if ($this->_save_msgs) {
             $qreq->open_session();
             $qreq->set_csession("msgs", $this->_save_msgs);
+            $this->_save_msgs = null;
         }
         $qreq->qsession()->commit();
-        Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl("index")), $status);
+    }
+
+    /** @param ?string $url
+     * @param 301|302|303|307|308 $status
+     * @return never
+     * @throws Redirection
+     * @deprecated */
+    function redirect($url = null, $status = 302) {
+        Qrequest::$main_request->redirect($url, $status);
     }
 
     /** @param string $page
-     * @param null|string|array $param
+     * @param ?array $param
      * @return never
-     * @throws Redirection */
+     * @throws Redirection
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function redirect_hoturl($page, $param = null) {
         $this->redirect($this->hoturl($page, $param, self::HOTURL_RAW));
     }
@@ -4261,9 +4260,11 @@ class Conf {
     /** @param Qrequest $qreq
      * @param ?array $param
      * @return never
-     * @throws Redirection */
+     * @throws Redirection
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function redirect_self(Qrequest $qreq, $param = null) {
-        $this->redirect($this->selfurl($qreq, $param, self::HOTURL_RAW));
+        $qreq->redirect_self($param);
     }
 
     /** @param Qrequest $qreq
@@ -4402,7 +4403,7 @@ class Conf {
             if ($this->submission_blindness() === self::BLIND_OPTIONAL) {
                 $cols[] = "Paper.blind";
             }
-            foreach (["title", "authorInformation", "shepherdContactId"] as $k) {
+            foreach (["title", "authorInformation", "shepherdContactId", "timeAcceptNotified"] as $k) {
                 if ($options[$k] ?? false)
                     $cols[] = "Paper.{$k}";
             }
@@ -4591,7 +4592,7 @@ class Conf {
         }
         if (isset($options["where"]) && $options["where"]) {
             assert(strpos($options["where"], "?") === false);
-            $where[] = $options["where"];
+            $where[] = "(" . $options["where"] . ")";
         }
 
         // use authored papers if already loaded
@@ -4687,16 +4688,16 @@ class Conf {
         assert(is_int($type) && is_string($text ?? ""));
         if (($text ?? "") === "") {
             // do nothing
-        } else if (PHP_SAPI === "cli") {
+        } else if (PHP_SAPI === "cli" && Navigation::$test_mode !== 2) {
             if ($type >= 2) {
                 fwrite(STDERR, "{$text}\n");
-            } else if ($type === 1 || !defined("HOTCRP_TESTHARNESS")) {
+            } else if ($type === 1 || Navigation::$test_mode <= 0) {
                 fwrite(STDOUT, "{$text}\n");
             }
         } else if ($conf && $conf->_save_msgs !== null) {
             $conf->_save_msgs[] = [$text, $type];
         } else {
-            $k = Ht::msg_class($type) . ($conf && $conf->_mx_auto ? " mx-auto" : "");
+            $k = Ht::msg_class($type, $conf && $conf->_mx_auto ? "mx-auto" : "");
             echo "<div class=\"{$k}\">{$text}</div>";
         }
     }
@@ -4704,6 +4705,11 @@ class Conf {
     /** @return bool */
     function mx_auto() {
         return $this->_mx_auto;
+    }
+
+    /** @param bool $mx_auto */
+    function set_mx_auto($mx_auto) {
+        $this->_mx_auto = $mx_auto;
     }
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls */
@@ -4756,10 +4762,14 @@ class Conf {
         $url = $x["href"];
         if ($url[0] !== "/"
             && (($url[0] !== "h" && $url[0] !== "H")
-                || (strtolower(substr($url, 0, 5)) !== "http:"
-                    && strtolower(substr($url, 0, 6)) !== "https:"))) {
+                || (substr_compare($url, "http:", 0, 5, true) !== 0
+                    && substr_compare($url, "https:", 0, 6, true) !== 0))) {
             if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
-                $url .= "?mtime={$mtime}";
+                if ($this->opt["assetsPathMtime"] ?? false) {
+                    $url = "@{$mtime}/{$url}";
+                } else {
+                    $url .= "?mtime={$mtime}";
+                }
             }
             $x["href"] = $this->_assets_url . $url;
         }
@@ -4770,16 +4780,23 @@ class Conf {
      * @return string */
     function make_script_file($url, $no_strict = false, $integrity = null) {
         if (str_starts_with($url, "scripts/")) {
-            $post = "";
-            if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
-                $post = "mtime={$mtime}";
-            }
+            $mtime = @filemtime(SiteLoader::find($url));
             if (($this->opt["strictJavascript"] ?? false) && !$no_strict) {
                 $url = $this->_script_assets_url . "cacheable.php/"
                     . str_replace("%2F", "/", urlencode($url))
-                    . "?strictjs=1" . ($post ? "&{$post}" : "");
+                    . "?strictjs=1";
+                if ($mtime !== false) {
+                    $url .= "&mtime={$mtime}";
+                }
             } else {
-                $url = $this->_script_assets_url . $url . ($post ? "?{$post}" : "");
+                if ($mtime !== false) {
+                    if ($this->opt["assetsPathMtime"] ?? false) {
+                        $url = "@{$mtime}/{$url}";
+                    } else {
+                        $url .= "?mtime={$mtime}";
+                    }
+                }
+                $url = $this->_script_assets_url . $url;
             }
             if ($this->_script_assets_site) {
                 return Ht::script_file($url, ["integrity" => $integrity]);
@@ -4820,35 +4837,38 @@ class Conf {
         return $csp;
     }
 
+    function emit_security_headers() {
+        $sts = $this->opt["httpStrictTransportSecurity"] ?? false;
+        if ($sts !== false && $sts !== "") {
+            Navigation::header("Strict-Transport-Security: " . $sts);
+        }
+    }
+
     /** @param Qrequest $qreq */
-    function prepare_security_headers($qreq) {
+    function emit_browser_security_headers($qreq) {
         $csp = $this->opt["httpContentSecurityPolicy"] ?? true;
         if ($csp === true) {
             // disallow frame embedding by default
-            header("Content-Security-Policy: frame-ancestors 'none'");
+            Navigation::header("Content-Security-Policy: frame-ancestors 'none'");
         } else if ($csp !== false && $csp !== "") {
-            header("Content-Security-Policy: " . self::process_content_security_policy($csp));
+            Navigation::header("Content-Security-Policy: " . self::process_content_security_policy($csp));
         }
         $csp = $this->opt["httpContentSecurityPolicyReportOnly"] ?? null;
         if (is_string($csp) && $csp !== "") {
-            header("Content-Security-Policy-Report-Only: " . self::process_content_security_policy($csp));
+            Navigation::header("Content-Security-Policy-Report-Only: " . self::process_content_security_policy($csp));
         }
         $coop = $this->opt["httpCrossOriginOpenerPolicy"] ?? "same-origin";
         if ($coop !== false && $coop !== "") {
-            header("Cross-Origin-Opener-Policy: " . $coop);
-        }
-        $sts = $this->opt["httpStrictTransportSecurity"] ?? $this->opt["strictTransportSecurity"] ?? false;
-        if ($sts !== false && $sts !== "") {
-            header("Strict-Transport-Security: " . $sts);
+            Navigation::header("Cross-Origin-Opener-Policy: " . $coop);
         }
         $re = $this->opt["httpReportingEndpoints"] ?? false;
         if ($re !== false && $re !== "") {
             $re = str_replace("\${siteurl}", $qreq->navigation()->site_absolute(), $re);
-            header("Reporting-Endpoints: " . $re);
+            Navigation::header("Reporting-Endpoints: " . $re);
         }
         $ctopt = $this->opt["httpXContentTypeOptions"] ?? "nosniff";
         if ($ctopt !== false && $ctopt !== "") {
-            header("X-Content-Type-Options: " . $ctopt);
+            Navigation::header("X-Content-Type-Options: " . $ctopt);
         }
     }
 
@@ -4914,6 +4934,7 @@ class Conf {
                     $favicon = $qreq->navigation()->siteurl() . $favicon;
                 }
             }
+            $favicon = htmlspecialchars($favicon);
             if (substr($favicon, -4) == ".png") {
                 echo "<link rel=\"icon\" type=\"image/png\" href=\"{$favicon}\">\n";
             } else if (substr($favicon, -4) == ".ico") {
@@ -4944,7 +4965,7 @@ class Conf {
 
         // jQuery
         $stash = Ht::unstash();
-        if (($jqurl = $this->opt["jqueryUrl"] ?? $this->opt["jqueryURL"] ?? null)) {
+        if (($jqurl = $this->opt["jqueryUrl"] ?? null)) {
             Ht::stash_html($this->make_script_file($jqurl, true) . "\n");
         } else {
             $jqueryVersion = $this->opt["jqueryVersion"] ?? "3.7.1";
@@ -5054,15 +5075,15 @@ class Conf {
     /** @param Contact $user
      * @param string $html
      * @param string $page
-     * @param null|string|array $args */
-    private function _print_profilemenu_link_if_enabled($user, $html, $page, $args = null) {
+     * @param ?array $param */
+    private function _print_profilemenu_link_if_enabled($user, $html, $page, $param = null) {
         $attr = ["role" => "menuitem", "class" => "qx"];
         if ($user->is_disabled()) {
             $attr["aria-disabled"] = "true";
             $attr["class"] .= " disabled";
             $t = Ht::button($html, $attr);
         } else {
-            $t = Ht::link($html, $this->hoturl($page, $args), $attr);
+            $t = $this->hotlink($html, $page, $param, $attr);
         }
         echo '<li role="none">', $t, '</li>';
     }
@@ -5071,7 +5092,7 @@ class Conf {
     function print_profilemenu_actas(Contact $user, Qrequest $qreq, $pagecs) {
         if ($user->is_actas_user()) {
             $pagecs->mark_separator("actas");
-            echo '<li role="none"><em>', Ht::link("Return to " . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</em></li>';
+            echo '<li role="none"><em>', $this->selflink("Return to " . htmlspecialchars($user->base_user()->email), $qreq, ["actas" => null], ["role" => "menuitem", "class" => "qx"]), '</em></li>';
             return;
         }
         if (!$user->privChair
@@ -5080,7 +5101,7 @@ class Conf {
             return;
         }
         $pagecs->mark_separator("actas");
-        echo '<li role="none"><em>', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email]), ["role" => "menuitem", "class" => "qx"]), '</em></li>';
+        echo '<li role="none"><em>', $this->selflink("Act as ". htmlspecialchars($actas_email), $qreq, ["actas" => $actas_email], ["role" => "menuitem", "class" => "qx"]), '</em></li>';
     }
 
     /** @param ComponentSet $pagecs */
@@ -5101,11 +5122,11 @@ class Conf {
                 }
             }
             $t = $user->has_email() ? "Add another account" : "Sign in";
-            echo '<li role="none">', Ht::link($t, $this->hoturl("signin", ["actas" => null]), ["role" => "menuitem", "class" => "qx"]), '</li>';
+            echo '<li role="none">', $this->hotlink($t, "signin", ["actas" => null], ["role" => "menuitem", "class" => "qx"]), '</li>';
         } else if ($itemid === "my_submissions") {
-            $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", "t=a");
+            $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", ["t" => "a"]);
         } else if ($itemid === "my_reviews") {
-            $this->_print_profilemenu_link_if_enabled($user, "Your reviews", "search", "t=r");
+            $this->_print_profilemenu_link_if_enabled($user, "Your reviews", "search", ["t" => "r"]);
         } else if ($itemid === "search") {
             $this->_print_profilemenu_link_if_enabled($user, "Search", "search");
         } else if ($itemid === "help") {
@@ -5121,7 +5142,7 @@ class Conf {
                 return;
             }
             echo '<li role="none">',
-                Ht::form($this->hoturl("=signout", ["cap" => null])),
+                $this->hotform("=signout", ["cap" => null]),
                 Ht::button("Sign out", ["type" => "submit", "class" => "qx", "role" => "menuitem"]),
                 '</form></li>';
         }
@@ -5175,18 +5196,24 @@ class Conf {
         return ini_get_bytes("upload_max_filesize");
     }
 
+    private function print_header_site_page() {
+        $sn = htmlspecialchars($this->short_name);
+        echo '<div id="h-site" class="header-site-page">',
+            $this->hotlink("<span class=\"header-site-name\">{$sn}</span>",
+                           "index", ["cap" => null], ["class" => "q"]),
+            '</div>';
+    }
+
     /** @param Qrequest $qreq
      * @param string|list<string> $title */
     private function print_body_header($qreq, $title, $id, $extra) {
         if ($id === "home" || ($extra["hide_title"] ?? false)) {
-            echo '<div id="h-site" class="header-site-home">',
-                '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
-                '">', htmlspecialchars($this->short_name), '</a></h1></div>';
+            $sn = htmlspecialchars($this->short_name);
+            echo '<div id="h-site" class="header-site-home"><h1>',
+                $this->hotlink($sn, "index", ["cap" => null], ["class" => "q"]),
+                '</h1></div>';
         } else {
-            echo '<div id="h-site" class="header-site-page">',
-                '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
-                '"><span class="header-site-name">', htmlspecialchars($this->short_name),
-                '</span></a></div>';
+            $this->print_header_site_page();
         }
 
         echo '<div id="h-right">';
@@ -5215,6 +5242,7 @@ class Conf {
     function print_body_entry($qreq, $title, $id, $extra = []) {
         $user = $qreq->user();
         $list = $qreq->active_list();
+        $need_unstash = false;
 
         $class = $extra["body_class"] ?? "";
         $body_elt_class = $list ? Ht::add_tokens($class, "has-hotlist") : $class;
@@ -5243,6 +5271,9 @@ class Conf {
         if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
             echo ' data-document-max-size="', ini_get_bytes(null, $x), '"';
         }
+        if (!isset($this->opt["docstore"])) {
+            echo ' data-blob-limit="0"';
+        }
         echo '><div id="p-page" class="',
             Ht::add_tokens($body_class, "need-banner-offset"),
             '"><header id="p-header"><hr class="c">';
@@ -5250,14 +5281,21 @@ class Conf {
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
-        // deadlines settings
-        $my_deadlines = null;
+        // deadlines settings, banners
         if ($user) {
-            $my_deadlines = $user->status_json($qreq->paper() ? [$qreq->paper()] : []);
+            $my_deadlines = $user->status_json([], $qreq->paper());
+            if (isset($this->settings["banners"])) {
+                $cb = new CustomBanners($this, $user, $qreq);
+                $my_deadlines->banners = $cb->active_json();
+                $my_deadlines->bannertoken = $cb->token();
+                $need_unstash = !empty($cb->active());
+            }
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
-        if (!($extra["hide_header"] ?? false)) {
+        if ($extra["hide_header"] ?? false) {
+            $this->print_header_site_page();
+        } else {
             $this->print_body_header($qreq, $title, $id, $extra);
         }
         $this->_header_printed = true;
@@ -5297,9 +5335,10 @@ class Conf {
         }
         echo ">\n";
 
-        // If browser owns tracker, send it the script immediately
-        if ($this->has_active_tracker()
-            && MeetingTracker::session_owns_tracker($this, $qreq)) {
+        // Maybe send browser the script immediately
+        if ($need_unstash
+            || ($this->has_active_tracker()
+                && MeetingTracker::session_owns_tracker($this, $qreq))) {
             echo Ht::unstash();
         }
 
@@ -5511,19 +5550,18 @@ class Conf {
     private static function log_clean_user($user, &$text) {
         if (!$user) {
             return 0;
-        } else if (!is_numeric($user)) {
-            if ($user->email
-                && !$user->contactId
-                && !$user->is_root_user()) {
-                $suffix = " <{$user->email}>";
-                if (!str_ends_with($text, $suffix)) {
-                    $text .= $suffix;
-                }
-            }
-            return $user->contactId;
-        } else {
+        } else if (is_numeric($user)) {
             return $user;
         }
+        if ($user->email
+            && !$user->contactId
+            && !$user->is_root_user()) {
+            $suffix = " <{$user->email}>";
+            if (!str_ends_with($text, $suffix)) {
+                $text .= $suffix;
+            }
+        }
+        return $user->contactId;
     }
 
     /** @param null|int|Contact $user
@@ -5783,7 +5821,7 @@ class Conf {
         if ($this->_search_keyword_base === null) {
             $this->make_search_keyword_map();
         }
-        $xtp = new XtParams($this, $user);
+        $xtp = (new XtParams($this, $user))->set_warn_deprecated(true);
         $uf = $xtp->search_name($this->_search_keyword_base, $keyword);
         $ufs = $xtp->search_factories($this->_search_keyword_factories, $keyword, $uf);
         return self::xt_resolve_require($ufs[0]);
@@ -5848,6 +5886,36 @@ class Conf {
 
     // API
 
+    /** @param ?string $error
+     * @param ?Qrequest $qreq
+     * @param mixed $scope
+     * @return string */
+    function www_authenticate_header($error, $qreq, $scope = null) {
+        $issuer = $this->oauth_issuer();
+        $rest = "";
+        if ($error) {
+            $rest .= ", error=\"{$error}\"";
+        }
+        if ($error === "insufficient_scope") {
+            if (is_int($scope)) {
+                $bx = TokenScope::unparse_missing_bits($scope);
+                $scope = $bx ? join(" ", $bx) : null;
+            }
+            if ($scope) {
+                $rest .= ", scope=\"{$scope}\"";
+            }
+        }
+        if ($this->opt("oAuthClients")) {
+            $qreq = $qreq ?? Qrequest::$main_request;
+            if ($qreq && $qreq->page() === "api") {
+                $nav = $qreq->navigation();
+                $bptrunc = substr($nav->base_path, 0, -1);
+                $rest .= ", resource_metadata=\"{$nav->server}/.well-known/oauth-protected-resource{$bptrunc}\"";
+            }
+        }
+        return "WWW-Authenticate: Bearer realm=\"{$issuer}\"{$rest}";
+    }
+
     /** @return array<string,list<object>> */
     function api_map() {
         if ($this->_api_map === null) {
@@ -5856,18 +5924,28 @@ class Conf {
         }
         return $this->_api_map;
     }
-    /** @return array<string,list<object>> */
-    function expanded_api_map() {
-        list($this->_api_map, $unused) =
-            $this->_xtbuild(["etc/apifunctions.json", "etc/apiexpansions.json"], "apiFunctions");
-        return $this->_api_map;
-    }
+    /** @return bool */
     function has_api($fn, ?Contact $user = null, $method = null) {
         return !!$this->api($fn, $user, $method);
     }
+    /** @param string $fn
+     * @param ?string $method
+     * @return ?object */
     function api($fn, ?Contact $user = null, $method = null) {
         $xtp = (new XtParams($this, $user))->set_require_key_for_method($method);
         $uf = $xtp->search_name($this->api_map(), $fn);
+        return self::xt_enabled($uf) ? $uf : null;
+    }
+    /** @param string $fn
+     * @param ?string $method
+     * @return ?object */
+    function api_expansion($fn, $method = null) {
+        if ($this->_api_x_map === null) {
+            list($this->_api_x_map, $unused) =
+                $this->_xtbuild(["etc/apiexpansions.json"], "apiExpansions");
+        }
+        $xtp = (new XtParams($this, null))->set_require_key_for_method($method);
+        $uf = $xtp->search_name($this->_api_x_map, $fn);
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @return JsonResult|Downloader|PageCompletion */
@@ -5877,28 +5955,24 @@ class Conf {
         // which checks $user->can_view_paper().
         $method = $qreq->method();
         $getlike = $method === "GET" || $method === "HEAD" || $method === "OPTIONS";
-        if (!$getlike
-            && !$qreq->valid_token()
-            && (!$uf || ($uf->check_token ?? null) !== false)) {
-            return JsonResult::make_error(403, "<0>Missing credentials");
-        }
-        if ($user->is_disabled()
-            && (!$uf || !($uf->allow_disabled ?? false))) {
-            return JsonResult::make_error(403, "<0>Disabled account");
+        if ((!$uf || ($uf->auth ?? null) !== false)
+            && ((!$getlike && !$qreq->valid_token())
+                || $user->is_empty()
+                || $user->is_disabled())) {
+            return JsonResult::make_error(401, "<0>Missing credentials")
+                ->set_header($this->www_authenticate_header("invalid_token", $qreq));
         }
         if (($scope = $user->scope())
-            && $scope->checks_method()) {
+            && $uf
+            && ($uf->scope ?? null) === false) {
             if ($getlike) {
-                $bit = TokenScope::S_METHOD_GET;
-            } else if ($method === "POST") {
-                $bit = TokenScope::S_METHOD_POST;
-            } else if ($method === "DELETE") {
-                $bit = TokenScope::S_METHOD_DELETE;
+                $bit = TokenScope::S_OTH_READ;
             } else {
-                $bit = 0;
+                $bit = TokenScope::S_OTH_WRITE;
             }
-            if (!$scope->allow($bit)) {
-                return JsonResult::make_error(403, "<0>Method not permitted by scope");
+            if (!$scope->allows($bit)) {
+                return JsonResult::make_error(401, "<0>Method not permitted by scope")
+                    ->set_header($this->www_authenticate_header("insufficient_scope", $qreq, $bit));
             }
         }
         if (!$uf) {
@@ -5933,7 +6007,13 @@ class Conf {
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
-            $status = isset($whynot["noPaper"]) ? 404 : 403;
+            if (isset($whynot["scope"])) {
+                $status = 401;
+            } else if (isset($whynot["noPaper"])) {
+                $status = 404;
+            } else {
+                $status = 403;
+            }
             array_push($result["message_list"], ...$whynot->message_list(null, 2));
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
@@ -5942,7 +6022,11 @@ class Conf {
             $status = 400;
             $result["message_list"][] = MessageItem::error_at("p", "<0>Parameter missing");
         }
-        return new JsonResult($status, $result);
+        $jr = new JsonResult($status, $result);
+        if ($status === 401) {
+            $jr->set_header($whynot->conf->www_authenticate_header("insufficient_scope", null, $whynot["scope"]));
+        }
+        return $jr;
     }
 
 

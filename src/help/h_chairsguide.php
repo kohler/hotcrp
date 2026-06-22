@@ -72,7 +72,7 @@ form also can include:</p>
   </ul></li>\n";
 
         } else if ($gj->itemid === 5) {
-            echo '<li><p>Take a look at a ', $hth->hotlink("submission page", "paper", "p=new"),
+            echo '<li><p>Take a look at a ', $hth->hotlink("submission page", "paper", ["p" => "new"]),
               ' to make sure it looks right.</p></li>', "\n";
 
         } else if ($gj->itemid === 6) {
@@ -99,7 +99,7 @@ form also can include:</p>
 
         } else if ($gj->itemid === 2) {
             echo "<li><p><strong>Check for formatting violations (optional).</strong> ",
-            $hth->hotlink("Search", "search", "q="), "
+            $hth->hotlink("Search", "search", ["q" => ""]), "
   &gt; Download &gt; Format check will download a summary report. Serious errors
   are also shown on paper pages (problematic PDFs are distinguished by an
   “X”).</p></li>\n";
@@ -237,7 +237,7 @@ administrator’s identity.</p>\n\n";
   "</strong> (optional).  Common
   discussion orders include sorted by overall ranking (high-to-low,
   low-to-high, or alternating), sorted by topic, and ",
-  $hth->hotlink("grouped by PC conflicts", "autoassign", "a=discorder"), ".
+  $hth->hotlink("grouped by PC conflicts", "autoassign", ["a" => "discorder"]), ".
   Explicit tag-based orders make it easier for the PC to follow along.</p></li>\n";
 
         } else if ($gj->itemid === 5) {
@@ -295,7 +295,7 @@ administrator’s identity.</p>\n\n";
         } else if ($gj->itemid === 4) {
             echo "<li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either ",
-  $hth->hotlink("paper by paper", "paper"), " or ", $hth->hotlink("automatically", "autoassign", "t=accepted"), ".</p></li>\n";
+  $hth->hotlink("paper by paper", "paper"), " or ", $hth->hotlink("automatically", "autoassign", ["t" => "accepted"]), ".</p></li>\n";
         }
     }
 

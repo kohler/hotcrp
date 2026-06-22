@@ -196,12 +196,12 @@ class BulkAssign_Page {
         if (strlen($apids) > 400) {
             $apids = "[many]";
         }
-        echo Ht::form($this->conf->hoturl("=bulkassign", [
+        echo $this->conf->hotform("=bulkassign", [
                 "saveassignment" => 1,
                 "assigntypes" => join(" ", $atypes),
                 "assignpids" => $apids,
                 "XDEBUG_TRIGGER" => $this->qreq->XDEBUG_TRIGGER
-            ]), ["class" => "ui-submit js-selector-summary"]),
+            ], ["class" => "ui-submit js-selector-summary"]),
             Ht::hidden("default_action", $defaults["action"] ?? "guess"),
             Ht::hidden("rev_round", $defaults["round"]);
         if (is_string($qf->content)) {
@@ -229,7 +229,7 @@ class BulkAssign_Page {
 
     function print_instructions() {
         echo "<section class=\"mt-7\">
-<h3><a class=\"ulh\" href=\"", $this->conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
+<h3>", $this->conf->hotlink("Instructions", "help", ["t" => "bulkassign"], ["class" => "ulh"]), "</h3>
 
 <p class=\"w-text\">Upload a CSV (comma-separated value) to prepare an
 assignment. The first line of the CSV is a header defining the meaning of each
@@ -250,7 +250,7 @@ secondary review for submission #2:</p>
 2,secondary,slugger@manny.com
 1,primary,slugger@manny.com</pre>
 
-<p class=\"w-text\"><a href=\"", $this->conf->hoturl("help", ["t" => "bulkassign"]), "\"><strong>Detailed instructions</strong></a></p>
+<p class=\"w-text\">", $this->conf->hotlink("<strong>Detailed instructions</strong>", "help", ["t" => "bulkassign"]), "</p>
 </section>\n";
     }
 
@@ -263,7 +263,7 @@ secondary review for submission #2:</p>
         if (isset($qreq->saveassignment)
             && isset($qreq->cancel)) {
             unset($qreq->saveassignment, $qreq->p, $qreq->pap);
-            $conf->redirect_self($qreq); // should not return
+            $qreq->redirect_self(); // should not return
             return;
         }
 
@@ -274,7 +274,7 @@ secondary review for submission #2:</p>
             && $qreq->assignment_size_estimate < 1000
             && $this->complete_assignment(null)) {
             unset($qreq->saveassignment, $qreq->p, $qreq->pap);
-            $conf->redirect_self($qreq);
+            $qreq->redirect_self();
             return;
         }
 
@@ -282,10 +282,10 @@ secondary review for submission #2:</p>
         // header
         $qreq->print_header("Assignments", "bulkassign", ["subtitle" => "Bulk update"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
-            '<li class="papmode"><a href="', $conf->hoturl("autoassign"), '">Automatic</a></li>',
-            '<li class="papmode"><a href="', $conf->hoturl("manualassign"), '">Manual</a></li>',
-            '<li class="papmode"><a href="', $conf->hoturl("conflictassign"), '">Conflicts</a></li>',
-            '<li class="papmode active"><a href="', $conf->hoturl("bulkassign"), '">Bulk update</a></li>',
+            '<li class="papmode">', $conf->hotlink("Automatic", "autoassign"), '</li>',
+            '<li class="papmode">', $conf->hotlink("Manual", "manualassign"), '</li>',
+            '<li class="papmode">', $conf->hotlink("Conflicts", "conflictassign"), '</li>',
+            '<li class="papmode active">', $conf->hotlink("Bulk update", "bulkassign"), '</li>',
             '</ul></nav>';
 
 
@@ -312,11 +312,11 @@ secondary review for submission #2:</p>
         // Help list
         echo '<div class="helpside"><div class="helpinside">
 Assignment methods:
-<ul><li><a href="', $conf->hoturl("autoassign"), '">Automatic</a></li>
- <li><a href="', $conf->hoturl("manualassign"), '">Manual by PC member</a></li>
- <li><a href="', $conf->hoturl("assign"), '">Manual by paper</a></li>
- <li><a href="', $conf->hoturl("conflictassign"), '">Potential conflicts</a></li>
- <li><a href="', $conf->hoturl("bulkassign"), '" class="q"><strong>Bulk update</strong></a></li>
+<ul><li>', $conf->hotlink("Automatic", "autoassign"), '</li>
+ <li>', $conf->hotlink("Manual by PC member", "manualassign"), '</li>
+ <li>', $conf->hotlink("Manual by paper", "assign"), '</li>
+ <li>', $conf->hotlink("Potential conflicts", "conflictassign"), '</li>
+ <li>', $conf->hotlink("<strong>Bulk update</strong>", "bulkassign", null, ["class" => "q"]), '</li>
 </ul>
 <hr>
 <p>Types of PC review:</p>
@@ -328,10 +328,10 @@ Assignment methods:
 
 
         // Form
-        echo Ht::form($conf->hoturl("=bulkassign", [
+        echo $conf->hotform("=bulkassign", [
             "upload" => 1,
             "XDEBUG_TRIGGER" => $qreq->XDEBUG_TRIGGER
-        ]));
+        ]);
 
         // Upload
         echo '<div class="f-i mt-3">',
@@ -379,7 +379,9 @@ Assignment methods:
 
         $null_mailer = new HotCRPMailer($conf, null, [
             "requester_contact" => $this->user,
-            "reason" => "", "width" => false
+            "sending_user" => $this->user,
+            "reason" => "",
+            "width" => false
         ]);
         if (($requestreview_template = $null_mailer->expand_template("requestreview"))) {
             echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);
@@ -399,7 +401,7 @@ Assignment methods:
         echo Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
             " &nbsp; <span class=\"hint\">You’ll be able to check the assignments before they are saved.</span>\n";
 
-        echo '<div class="mt-4"><a href="', $conf->hoturl("=search", ["fn" => "get", "getfn" => "pcassignments", "t" => "alladmin", "q" => "", "p" => "all"]), '">Download current PC review assignments</a></div>';
+        echo '<div class="mt-4">', $conf->hotlink("Download current PC review assignments", "=search", ["fn" => "get", "getfn" => "pcassignments", "t" => "alladmin", "q" => "", "p" => "all"]), '</div>';
 
         echo "</form>\n\n";
 
@@ -412,7 +414,7 @@ Assignment methods:
     static function go(Contact $user, Qrequest $qreq) {
         if ($user->is_manager()) {
             if ($qreq->valid_post()) {
-                header("X-Accel-Buffering: no"); // NGINX: do not buffer this output
+                Navigation::header("X-Accel-Buffering: no"); // NGINX: do not buffer this output
             }
             (new BulkAssign_Page($user, $qreq))->print();
         } else {

@@ -1,6 +1,6 @@
 <?php
 // settings/s_response.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Response_Setting {
     /** @var int */
@@ -106,21 +106,18 @@ class Response_SettingParser extends SettingParser {
         if ($si->name0 === "response/" && $si->name2 === "/name") {
             if (!ctype_digit($sv->vstr("response/{$si->name1}/id"))) {
                 return "(new response)";
-            } else {
-                return "unnamed";
             }
-        } else {
-            return null;
+            return "unnamed";
         }
+        return null;
     }
 
     function default_value(Si $si, SettingValues $sv) {
         if ($si->name0 === "response/" && $si->name2 === "/instructions") {
             $n = $sv->oldv("response/{$si->name1}/wordlimit");
             return $sv->conf->fmt()->default_translation("resp_instrux", new FmtArg("wordlimit", $n));
-        } else {
-            return null;
         }
+        return null;
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
@@ -212,10 +209,10 @@ class Response_SettingParser extends SettingParser {
 
     function print(SettingValues $sv) {
         // Authors' response
-        $sv->print_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
+        $sv->print_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="js-if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
         Icons::stash_defs("trash");
         echo Ht::unstash(), Ht::hidden("response_requires_active", 1),
-            '<div class="if-response-active',
+            '<div class="js-if-response-active',
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_response", 1);
 
@@ -321,20 +318,28 @@ class Response_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        if ($sv->has_interest("response")) {
-            foreach ($sv->conf->response_round_list() as $i => $rrd) {
-                $ctr = $i + 1;
-                if ($rrd->hard_wordlimit > 0
-                    && $rrd->wordlimit > $rrd->hard_wordlimit) {
-                    $sv->error_at("response/{$ctr}/wordlimit", "<0>Word limit cannot be larger than hard word limit");
-                    $sv->error_at("response/{$ctr}/hard_wordlimit", null);
+        if (!$sv->has_interest("response")) {
+            return;
+        }
+        foreach ($sv->conf->response_round_list() as $i => $rrd) {
+            $ctr = $i + 1;
+            if ($rrd->hard_wordlimit > 0
+                && $rrd->wordlimit > $rrd->hard_wordlimit) {
+                $sv->error_at("response/{$ctr}/wordlimit", "<0>Word limit cannot be larger than hard word limit");
+                $sv->error_at("response/{$ctr}/hard_wordlimit", null);
+            }
+            if ($rrd->condition !== null) {
+                $s = new PaperSearch($sv->conf->root_user(), $rrd->condition);
+                foreach ($s->message_list() as $mi) {
+                    $sv->append_item_at("response/{$ctr}/condition", $mi);
                 }
-                if ($rrd->condition !== null) {
-                    $s = new PaperSearch($sv->conf->root_user(), $rrd->condition);
-                    foreach ($s->message_list() as $mi) {
-                        $sv->append_item_at("response/{$ctr}/condition", $mi);
-                    }
-                }
+            }
+            if ($rrd->instructions !== null
+                && ($wlpos = stripos($rrd->instructions, "%wordlimit%")) !== false) {
+                $mi = $sv->warning_at("response/{$ctr}/instructions", "<5>The <code>%...%</code> template syntax is deprecated, use <code>{...}</code> instead");
+                $mi->context = $rrd->instructions;
+                $mi->pos1 = $wlpos;
+                $mi->pos2 = $wlpos + 11;
             }
         }
     }

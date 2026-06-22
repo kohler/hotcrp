@@ -8,9 +8,9 @@ class Help_Page {
         echo "<dl class=\"bsp\">\n";
         foreach ($hth->groups() as $ht) {
             if ($ht->name !== "list" && isset($ht->title)) {
-                echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">',
-                    $ht->title, '</a></strong></dt><dd>',
-                    Ftext::as(5, $ht->description ?? ""), "</dd>\n";
+                echo '<dt><strong>',
+                    $hth->conf->hotlink($ht->title, "help", ["t" => $ht->name]),
+                    '</strong></dt><dd>', Ftext::as(5, $ht->description ?? ""), "</dd>\n";
             }
         }
         echo "</dl>\n";
@@ -32,10 +32,10 @@ class Help_Page {
         if ($topic !== "list") {
             $want_topic = $help_topics->canonical_group($topic);
             if ($want_topic && $want_topic !== $topic) {
-                $conf->redirect_self($qreq, ["t" => $want_topic]);
+                $qreq->redirect_self(["t" => $want_topic]);
             } else if (!$want_topic) {
                 $topic = "list";
-                http_response_code(404);
+                Navigation::http_response_code(404);
                 $conf->error_msg("<0>Help topic ‘{$qreq->t}’ not found");
             }
         }
@@ -60,8 +60,8 @@ class Help_Page {
             if ($gj->name === $topic) {
                 echo "<li class=\"leftmenu-item{$klass} active\" aria-current=\"page\">", $title ?? "(Unlisted)", "</li>";
             } else if ($title && !($gj->unlisted ?? false)) {
-                echo "<li class=\"leftmenu-item{$klass} ui js-click-child\"><a href=\"",
-                    $conf->hoturl("help", "t={$gj->name}"), "\">", $title, "</a></li>";
+                echo "<li class=\"leftmenu-item{$klass} ui js-click-child\">",
+                    $conf->hotlink($title, "help", ["t" => $gj->name]), "</li>";
             } else {
                 continue;
             }

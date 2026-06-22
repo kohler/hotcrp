@@ -2,6 +2,7 @@
 // t_mincostmaxflow.php -- HotCRP tests
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+#[RequireDb(false)]
 class MinCostMaxFlow_Tester {
     /** @param MinCostMaxFlow $m
      * @return string */

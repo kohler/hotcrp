@@ -1,6 +1,6 @@
 <?php
 // apispec.php -- HotCRP script for generating OpenAPI specification
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -56,6 +56,8 @@ class APISpec_Batch {
     private $sort;
     /** @var array<string,int> */
     private $tag_order;
+    /** @var array<string,int> description item name => position in documentation */
+    private $doc_order = [];
 
     /** @var string */
     private $cur_path;
@@ -71,10 +73,37 @@ class APISpec_Batch {
     private $cur_fields;
     /** @var array<string,string> */
     private $cur_fieldd;
+    /** @var array<string,list<object>> */
+    private $cur_fieldbadges;
+    /** @var array<string,list<string>> */
+    private $cur_fieldconditions;
+    /** @var array<string,array{group:string,element:string}> field name =>
+     * mutually-exclusive group: `group` names the whole "one of" set, `element`
+     * the alternative within it that this field belongs to */
+    private $cur_fieldoneof;
+    /** @var array<string,string> field name => ad-hoc group label; consecutive
+     * fields sharing a label render together inside a box titled with it */
+    private $cur_fieldgroup;
+    /** @var array<string,mixed> field name => OpenAPI `default` value declared
+     * via `* default VALUE`. Keyed presence (not value truthiness) marks a
+     * default, so a literal `null` default is representable. */
+    private $cur_fielddefault;
     /** @var list<object> */
     private $cur_badge;
     /** @var list<string> */
     private $cur_fieldsch;
+    /** @var array<string,string> response_schema name => field it follows (its
+     * position among the response fields, for inlining in document order) */
+    private $cur_fieldsch_after;
+    /** @var list<string> field names in Markdown document order (authoritative
+     * for output ordering) */
+    private $cur_md_order;
+    /** @var list<string> request-body media types (`* body`) in document order */
+    private $cur_body_order;
+    /** @var array<string,string> request-body media type => raw type string */
+    private $cur_bodyschema;
+    /** @var array<string,string> request-body media type => description */
+    private $cur_bodyd;
 
     const PT_QUERY = 1;
     const PT_BODY = 2;
@@ -84,7 +113,7 @@ class APISpec_Batch {
         "Submissions", "Documents", "Search", "Tags", "Review preferences",
         "Assignments", "Submission administration",
         "Reviews", "Comments",
-        "Meeting tracker", "Users", "Profile",
+        "Meeting tracker", "Users", "Account",
         "Notifications", "Task management",
         "Site information", "Site administration", "Settings",
         "Session"
@@ -96,7 +125,7 @@ class APISpec_Batch {
         $this->xtp = new XtParams($this->conf, null);
         $this->base = isset($arg["x"]);
 
-        $this->api_map = $conf->expanded_api_map();
+        $this->api_map = $conf->api_map();
         $this->j = (object) [];
         $this->setj_paths = (object) [];
         $this->setj_tags = (object) [];
@@ -111,34 +140,35 @@ class APISpec_Batch {
             ->set_filename("devel/apidoc/openapi-base.json");
         $this->basej = $jparser->decode();
 
-        if (isset($arg["i"]) || $this->base) {
-            if (!isset($arg["i"])) {
-                $filename = "devel/apidoc/openapi-base.json";
-                $s = $base_str;
-            } else if ($arg["i"] === "-") {
-                $filename = "<stdin>";
-                $s = stream_get_contents(STDIN);
-            } else {
-                $filename = safe_filename($arg["i"]);
-                $s = file_get_contents_throw($filename);
-            }
-            if ($s !== false) {
-                $this->jparser = (new JsonParser($s))->set_filename($filename);
-                $this->j = $this->jparser->decode();
-            }
-            if ($s === false || !is_object($this->j)) {
-                $msg = $filename . ": Invalid input";
-                if ($this->j === null && $this->jparser->last_error()) {
-                    $msg .= ": " . $this->jparser->last_error_msg();
-                }
-                throw new CommandLineException($msg);
-            }
-            $this->batch = true;
+        // read input specification (default `openapi-base.json`, or `-i FILE`)
+        if (!isset($arg["i"])) {
+            $filename = "devel/apidoc/openapi-base.json";
+            $s = $base_str;
+        } else if ($arg["i"] === "-") {
+            $filename = "<stdin>";
+            $s = stream_get_contents(STDIN);
+        } else {
+            $filename = safe_filename($arg["i"]);
+            $s = file_get_contents_throw($filename);
         }
+        if ($s !== false) {
+            $this->jparser = (new JsonParser($s))->set_filename($filename);
+            $this->j = $this->jparser->decode();
+        }
+        if ($s === false || !is_object($this->j)) {
+            $msg = $filename . ": Invalid input";
+            if ($this->j === null && $this->jparser->last_error()) {
+                $msg .= ": " . $this->jparser->last_error_msg();
+            }
+            throw new CommandLineException($msg);
+        }
+        $this->batch = true;
+
+        // determine output (default stdout; `-x` writes `devel/openapi.json`)
         if (isset($arg["o"])) {
             $this->output_file = $arg["o"];
-        } else if (isset($arg["i"]) || $this->base) {
-            $this->output_file = $arg["i"] ?? "devel/openapi.json";
+        } else if ($this->base) {
+            $this->output_file = "devel/openapi.json";
         }
 
         $this->override_ref = isset($arg["override-ref"]);
@@ -218,6 +248,11 @@ class APISpec_Batch {
     function _add_description_item($xt) {
         if (isset($xt->name) && is_string($xt->name)) {
             $this->description_map[$xt->name][] = $xt;
+            // Record the order in which named items first appear in the
+            // documentation; used to order operations to match the docs.
+            if (!array_key_exists($xt->name, $this->doc_order)) {
+                $this->doc_order[$xt->name] = count($this->doc_order);
+            }
             return true;
         }
         return false;
@@ -242,17 +277,104 @@ class APISpec_Batch {
                 $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
                 $d = ltrim(substr($d, strlen($mx[0])));
             }
-            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param(?:eter)?(?:_schema)?|response(?:_schema)?|badge) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
+            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param(?:eter)?(?:_schema)?|response(?:_schema)?|badge|body) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
                 $d = cleannl(substr($d, 0, -strlen($mx[0])));
                 $x["fields"] = ltrim($mx[0]);
             }
             if ($d !== "") {
                 $x["description"] = $d;
+                self::check_heading_nesting($d, $x["name"], $x["landmark"]);
             }
             $xs[] = (object) $x;
             $lineno += 1 + substr_count($m[$i + 1], "\n");
         }
+        // Fold documentation sections into the leading (tag) heading. A
+        // documentation section is a non-operation `#` heading that follows the
+        // file's first heading (the tag) but precedes any operation. It is
+        // stored on the tag item as `sections` and rendered by the doc
+        // generator as a standalone subsection of the tag, separately listed in
+        // the menu and separately addressable — not as an operation of its own.
+        if (count($xs) > 1 && !self::is_operation_name($xs[0]->name)) {
+            $nsec = 0;
+            while ($nsec + 1 < count($xs)
+                   && !self::is_operation_name($xs[$nsec + 1]->name)) {
+                ++$nsec;
+            }
+            if ($nsec > 0) {
+                $xs[0]->sections = array_slice($xs, 1, $nsec);
+                array_splice($xs, 1, $nsec);
+            }
+        }
         return $xs;
+    }
+
+    /** True if a heading name denotes an API operation (e.g. `get /paper`)
+     * rather than a tag or a documentation section.
+     * @param string $name
+     * @return bool */
+    static private function is_operation_name($name) {
+        return (bool) preg_match('/\A(?:get|post|put|delete|patch|head|options)\s+\//i', $name);
+    }
+
+    /** Build the public `x-sections` list (name, summary, description) for a tag
+     * from its parsed documentation-section items.
+     * @param list<object> $sections
+     * @return list<object> */
+    static private function clean_sections($sections) {
+        $out = [];
+        foreach ($sections as $s) {
+            // A trailing `{#id}` annotation sets an explicit anchor id for the
+            // section (e.g. `# The submission object {#object-submission}`).
+            $name = $s->name;
+            $id = null;
+            if (preg_match('/\A(.*?)\s*\{#([^}\s]+)\}\z/', $name, $mm)) {
+                $name = rtrim($mm[1]);
+                $id = $mm[2];
+            }
+            $o = ["name" => $name];
+            if ($id !== null) {
+                $o["id"] = $id;
+            }
+            if (($s->summary ?? "") !== "") {
+                $o["summary"] = $s->summary;
+            }
+            if (($s->description ?? "") !== "") {
+                $o["description"] = $s->description;
+            }
+            $out[] = (object) $o;
+        }
+        return $out;
+    }
+
+    /** Warn about malformed heading nesting in a description: a first heading
+     * deeper than `##`, or a level skip (e.g. an `##` followed directly by
+     * `####`). Subsection headings should begin at `##` and step down one level
+     * at a time. The documentation renderer re-levels each description so its
+     * shallowest heading sits just beneath the tag/operation heading, preserving
+     * relative depth — so neither mistake breaks the output, but both make the
+     * source inconsistent (and a skip also yields a malformed outline).
+     * @param string $d
+     * @param string $name
+     * @param string $landmark */
+    static private function check_heading_nesting($d, $name, $landmark) {
+        // ignore `#` lines inside fenced code blocks
+        $d = preg_replace('/^```.*?^```/ms', "", $d);
+        if (!preg_match_all('/^(\#{2,6})[ \t]+(\S[^\n]*)/m', $d, $ms, PREG_SET_ORDER)) {
+            return;
+        }
+        $prev = 0;
+        foreach ($ms as $i => $mm) {
+            $lvl = strlen($mm[1]);
+            if ($i === 0 && $lvl > 2) {
+                fwrite(STDERR, "{$landmark}: first heading “" . simplify_whitespace($mm[2])
+                    . "” under “{$name}” is h{$lvl}; descriptions should start at h2 (##)\n");
+            }
+            if ($prev !== 0 && $lvl > $prev + 1) {
+                fwrite(STDERR, "{$landmark}: heading “" . simplify_whitespace($mm[2])
+                    . "” under “{$name}” skips from h{$prev} to h{$lvl}\n");
+            }
+            $prev = $lvl;
+        }
     }
 
     /** @param string $name
@@ -275,6 +397,10 @@ class APISpec_Batch {
             && ($this->override_description || ($xj->description ?? "") === "")) {
             $xj->description = $dj->description;
         }
+        if (isset($dj->sections)
+            && ($this->override_description || !isset($xj->{"x-sections"}))) {
+            $xj->{"x-sections"} = self::clean_sections($dj->sections);
+        }
     }
 
     /** @param string $name
@@ -286,14 +412,14 @@ class APISpec_Batch {
     }
 
 
-    const F_REQUIRED = 0x01;
-    const F_POST = 0x02;
-    const F_BODY = 0x04;
-    const F_FILE = 0x08;
-    const F_SUFFIX = 0x10;
+    const F_REQUIRED = 0x01;    // !
+    const F_POST = 0x02;        // +
+    const F_BODY = 0x04;        // =
+    const F_FILE = 0x08;        // @
+    const F_SUFFIX = 0x10;      // :
     const F_PATH = 0x20;
     const F_DEFAULT = 0x40;
-    const F_DEPRECATED = 0x80;
+    const F_DEPRECATED = 0x80;  // <
     const FM_NONGET = 0x0E;
 
     /** @param string $p
@@ -315,6 +441,10 @@ class APISpec_Batch {
                 $f |= self::F_SUFFIX;
             } else if ($p[$i] === "<") {
                 $f |= self::F_DEPRECATED;
+            } else if ($p[$i] === "*" && $i !== strlen($p) - 1) {
+                // location-flexible marker (as in the spec validator); strip it
+                // unless it is the standalone `*` catch-all field name
+                $f &= ~(self::F_REQUIRED | self::F_DEFAULT);
             } else {
                 break;
             }
@@ -334,12 +464,43 @@ class APISpec_Batch {
         }
     }
 
+    /** Reorder `cur_fieldf` to follow the Markdown document order (`* param` /
+     * `* response` line order). Fields documented in the Markdown come first, in
+     * that order; any field known only from apifunctions/apiexpansions keeps its
+     * relative order afterward. */
+    private function apply_md_field_order() {
+        if (empty($this->cur_md_order)) {
+            return;
+        }
+        $ordered = [];
+        foreach ($this->cur_md_order as $name) {
+            if (isset($this->cur_fieldf[$name])) {
+                $ordered[$name] = $this->cur_fieldf[$name];
+            }
+        }
+        foreach ($this->cur_fieldf as $name => $f) {
+            $ordered[$name] = $f;
+        }
+        $this->cur_fieldf = $ordered;
+    }
+
     /** @param string $fn */
     private function expand_paths($fn) {
         $methods = [];
         foreach (["get", "post", "delete"] as $lmethod) {
-            if (($uf = $this->conf->api($fn, null, strtoupper($lmethod)))
-                && ($uf->order ?? null) !== false) {
+            $umethod = strtoupper($lmethod);
+            if (!($uf = $this->conf->api($fn, null, $umethod))) {
+                continue;
+            }
+            if (($ufx = $this->conf->api_expansion($fn, $umethod))) {
+                $uf = clone $uf;
+                foreach (get_object_vars($ufx) as $k => $v) {
+                    if (!isset($uf->$k) || $k === "__source_order")
+                        $uf->$k = $v;
+                }
+            }
+            $order = $uf->order ?? ($uf->deprecated ?? false ? false : null);
+            if ($order !== false) {
                 $methods[$lmethod] = $uf;
             }
         }
@@ -349,7 +510,17 @@ class APISpec_Batch {
             $this->cur_fieldf = [];
             $this->cur_fields = [];
             $this->cur_fieldd = [];
+            $this->cur_fieldbadges = [];
+            $this->cur_fieldconditions = [];
+            $this->cur_fieldoneof = [];
+            $this->cur_fieldgroup = [];
+            $this->cur_fielddefault = [];
             $this->cur_fieldsch = [];
+            $this->cur_fieldsch_after = [];
+            $this->cur_md_order = [];
+            $this->cur_body_order = [];
+            $this->cur_bodyschema = [];
+            $this->cur_bodyd = [];
             $this->cur_badge = [];
             if ($uf->paper ?? false) {
                 $this->add_field("p", self::F_REQUIRED);
@@ -400,6 +571,14 @@ class APISpec_Batch {
                 } else {
                     $opj->operationId = "{$fn}-{$lmethod}";
                 }
+            }
+
+            // record this operation's position in the Markdown documentation, so
+            // a renderer can order operations by document order even when they
+            // span distinct paths (e.g. `post /paper` between `get`/`delete
+            // /{p}/paper`, which is the path `/{p}/paper`).
+            if (isset($this->doc_order["{$lmethod} {$path}"])) {
+                $opj->{"x-order"} = $this->doc_order["{$lmethod} {$path}"];
             }
 
             // apply tags, request, response
@@ -523,6 +702,22 @@ class APISpec_Batch {
         return (object) ["\$ref" => "#/components/parameters/{$pname}"];
     }
 
+    /** Return an inline (non-`$ref`) copy of common parameter `$name`, or null
+     * if there is no matching common parameter. Used when an endpoint must
+     * attach instance-specific data — such as a `* default` — to a parameter
+     * that would otherwise be referenced; the copy keeps the shared description
+     * and schema, including any merged documentation.
+     * @param string $name
+     * @param int $f
+     * @return ?object */
+    private function inline_common_param($name, $f) {
+        if ($this->reference_common_param($name, $f) === null) {
+            return null;
+        }
+        $pname = self::find_parameter($this->parameters, $name, $f);
+        return $pname ? json_decode(json_encode($this->parameters->$pname)) : null;
+    }
+
     /** @param object $x
      * @param ?string $component
      * @return ?object */
@@ -564,6 +759,23 @@ class APISpec_Batch {
             ];
         } else if (str_starts_with($info, "?")) {
             return $this->resolve_info(substr($info, 1) . "|null", $name);
+        } else if (str_starts_with($info, "=")) {
+            // Inline string enum: `=v1|v2|...` becomes {"type":"string","enum":[...]}.
+            // A `null` member (e.g. produced by a nullable `?=v1|v2`) is split off
+            // into a oneOf with the null type, matching other nullable types.
+            $enum = [];
+            $nullable = false;
+            foreach (explode("|", substr($info, 1)) as $v) {
+                if ($v === "null") {
+                    $nullable = true;
+                } else {
+                    $enum[] = $v;
+                }
+            }
+            $ej = (object) ["type" => "string", "enum" => $enum];
+            return $nullable
+                ? (object) ["oneOf" => [$ej, (object) ["type" => "null"]]]
+                : $ej;
         } else if (strpos($info, "|") !== false) {
             $res = (object) ["oneOf" => []];
             foreach (explode("|", $info) as $s) {
@@ -583,11 +795,20 @@ class APISpec_Batch {
         }
     }
 
+    /** Badge name produced by `* badge featured`. Marks the API calls most worth
+     * using by external integrators; the apidoc renderer displays it as a yellow
+     * star. `apply_badges()` sorts it before other badges. */
+    const FEATURED_BADGE = "Featured";
+
     private function resolve_badge($name) {
-        if ($name === "admin") {
-            return (object) [
-                "name" => "Admin only"
-            ];
+        if ($name === "siteadmin") {
+            return (object) ["name" => "Site admin only"];
+        } else if ($name === "admin") {
+            return (object) ["name" => "Admin only"];
+        } else if ($name === "trackmanager") {
+            return (object) ["name" => "Track manager only"];
+        } else if ($name === "featured") {
+            return (object) ["name" => "Featured"];
         }
         return null;
     }
@@ -597,7 +818,8 @@ class APISpec_Batch {
      * @param string $landmark */
     private function parse_description_fields($params, $response, $landmark) {
         $pos = 0;
-        while (preg_match('/\G\* (param(?:eter)?(?:_schema)?|response(?:_schema)?|badge)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+        $last_field = "";
+        while (preg_match('/\G\* (param(?:eter)?(?:_schema)?|response(?:_schema)?|badge|body)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)|\n)((?:(?:[ \t]*+\n)*+  [^\n]*+\n)*+)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
             $pos += strlen($m[0]);
             if ($m[1] === "badge") {
                 if (!$response) {
@@ -605,6 +827,26 @@ class APISpec_Batch {
                         $this->cur_badge[] = $b;
                     } else {
                         fwrite(STDERR, $this->cur_prefix() . "unknown badge `{$m[2]}`\n");
+                    }
+                }
+                continue;
+            }
+            if ($m[1] === "body") {
+                // `* body MEDIATYPE [TYPE]: description` declares a raw request
+                // body (e.g. `application/json` or `application/zip`). The media
+                // type keys its metadata (badges/conditions/oneof) just as a
+                // field name does, so it can join a `* oneof` set as a peer of
+                // form parameters.
+                if (!$response) {
+                    $mt = $m[2];
+                    if ($m[3] !== "") {
+                        $this->cur_bodyschema[$mt] = $m[3];
+                    }
+                    $this->cur_body_order[] = $mt;
+                    $this->cur_md_order[] = $mt;
+                    $bd = (str_starts_with($m[4], ":") ? substr($m[4], 1) : "") . $m[5];
+                    if (($d = $this->parse_field_body($mt, $bd)) !== "") {
+                        $this->cur_bodyd[$mt] = $d;
                     }
                 }
                 continue;
@@ -619,6 +861,9 @@ class APISpec_Batch {
                             $this->cur_fieldsch[] = "minimal_response";
                         }
                         $this->cur_fieldsch[] = $m[2];
+                        // remember which response field (in document order) this
+                        // schema follows, so its properties inline at that spot.
+                        $this->cur_fieldsch_after[$m[2]] = $last_field;
                     }
                 } else {
                     fwrite(STDERR, "{$landmark}: {$this->cur_prefix()}: unknown {$m[1]} `{$m[2]}`\n");
@@ -627,16 +872,164 @@ class APISpec_Batch {
             }
             list($name, $f) = self::parse_field_name($m[2]);
             $this->add_field($name, $f);
+            $last_field = $name;
+            $this->cur_md_order[] = $name;
             if ($m[3] !== "") {
                 $info = self::resolve_info($m[3], $name);
                 if (!self::is_empty_object($info)) {
                     $this->cur_fields[$name] = $info;
                 }
             }
-            if (str_starts_with($m[4], ":")
-                && ($d = trim(substr($m[4], 1))) !== "") {
+            $body = str_starts_with($m[4], ":") ? substr($m[4], 1) : "";
+            $body .= $m[5];
+            if (($d = $this->parse_field_body($name, $body)) !== "") {
                 $this->cur_fieldd[$name] = $d;
             }
+        }
+    }
+
+    /** Split a field body into a block-Markdown description and trailing badge
+     * metadata. The first line is the inline summary written after the `:`;
+     * continuation lines are de-indented a block at a time (blocks are
+     * separated by blank lines): each block is stripped of its own common
+     * leading indentation, capped at four spaces, so 2-, 3-, and 4-space
+     * list continuation all normalize to the left margin while indentation
+     * beyond four spaces survives as content (e.g. indented code). Relative
+     * indentation within a block (nested lists, multi-line code) is preserved.
+     *
+     * A trailing list of `* badge NAME` / `* condition TEXT` / `* oneof GROUP
+     * [ELEMENT]` / `* group LABEL` items standing in its own paragraph is then
+     * consumed as field-level metadata — `* badge` uses the same syntax as
+     * operation badges, `* condition TEXT` records a presence condition (e.g.
+     * `format=csv`) shown as a pill, `* oneof GROUP [ELEMENT]` marks the field
+     * as one alternative of a mutually-exclusive set (GROUP names the whole set
+     * and ELEMENT the alternative within it; fields sharing GROUP and ELEMENT
+     * belong to the same alternative; ELEMENT defaults to the field name), and
+     * `* group LABEL` puts the field in an ad-hoc group: consecutive fields
+     * sharing LABEL render together inside a box titled with it, and `* default
+     * VALUE` records the field's OpenAPI `default` (VALUE is parsed as JSON, so
+     * `* default true`, `* default 42`, `* default "rev"`, and `* default null`
+     * all work; a bare word that is not valid JSON is taken as a string). Items
+     * are recognized by position (a trailing list) and grammar; any other
+     * `*`-list is left untouched as Markdown. Returns the trimmed description.
+     * @param string $name
+     * @param string $body
+     * @return string */
+    private function parse_field_body($name, $body) {
+        $lines = explode("\n", $body);
+
+        // The summary sits right after the `:` and carries no block indentation.
+        $summary = ltrim((string) array_shift($lines), " ");
+
+        // De-indent the continuation one block at a time: each blank-separated
+        // block is stripped of its own common leading indentation, up to four
+        // spaces. This normalizes 2-/3-/4-space continuation independently per
+        // block while preserving relative indentation inside a block.
+        $out = $summary === "" ? [] : [$summary];
+        $n = count($lines);
+        for ($i = 0; $i !== $n; ) {
+            if (trim($lines[$i]) === "") {
+                $out[] = "";
+                ++$i;
+                continue;
+            }
+            $min = PHP_INT_MAX;
+            $j = $i;
+            while ($j !== $n && trim($lines[$j]) !== "") {
+                $w = strlen($lines[$j]) - strlen(ltrim($lines[$j], " "));
+                $min = $w < $min ? $w : $min;
+                ++$j;
+            }
+            $strip = $min < 4 ? $min : 4;
+            for (; $i !== $j; ++$i) {
+                $out[] = (string) substr($lines[$i], $strip);
+            }
+        }
+        $text = trim(implode("\n", $out));
+
+        // Consume a trailing list of `* badge`/`* condition` items standing in
+        // its own paragraph (preceded by a blank line or the start of the body).
+        if (preg_match('/(?:\A|\n\n)((?:\* (?:badge|condition|oneof|group|default)[ \t]++[^\n]++(?:\n|\z))++)\z/', $text, $mm)) {
+            foreach (explode("\n", trim($mm[1])) as $line) {
+                if (preg_match('/\A\* badge[ \t]++(\S++)/', $line, $bm)) {
+                    if (($b = $this->resolve_badge($bm[1]))) {
+                        $this->cur_fieldbadges[$name][] = $b;
+                    } else {
+                        fwrite(STDERR, $this->cur_prefix() . "unknown badge `{$bm[1]}` for field `{$name}`\n");
+                    }
+                } else if (preg_match('/\A\* condition[ \t]++(\S+?)[ \t]*+\z/', $line, $cm)) {
+                    // A condition tests an input parameter, either by value
+                    // (`format=csv`) or by presence (`search`).
+                    $this->cur_fieldconditions[$name][] = $cm[1];
+                } else if (preg_match('/\A\* oneof[ \t]++(\S++)(?:[ \t]++(\S++))?[ \t]*+\z/', $line, $om)) {
+                    // One alternative of a mutually-exclusive set; the element
+                    // (the alternative within the set) defaults to the field name.
+                    $this->cur_fieldoneof[$name] = [
+                        "group" => $om[1],
+                        "element" => $om[2] ?? $name
+                    ];
+                } else if (preg_match('/\A\* group[ \t]++(\S.*?)[ \t]*+\z/', $line, $gm)) {
+                    // Ad-hoc group: the (possibly multi-word) label both names
+                    // the box and keys it — consecutive fields with the same
+                    // label group together.
+                    $this->cur_fieldgroup[$name] = $gm[1];
+                } else if (preg_match('/\A\* default[ \t]++(\S.*?)[ \t]*+\z/', $line, $dm)) {
+                    // OpenAPI `default` for the field. The value is parsed as
+                    // JSON (`true`, `42`, `"rev"`, `null`, …); a bare word that
+                    // is not valid JSON is taken literally as a string.
+                    $this->cur_fielddefault[$name] = self::parse_default_value($dm[1]);
+                }
+            }
+            $text = rtrim(substr($text, 0, strlen($text) - strlen($mm[1])));
+        }
+        return $text;
+    }
+
+    /** Attach any `* badge`/`* condition`/`* oneof`/`* group` metadata collected
+     * for field `$name` to `$target` as `x-badges`/`x-conditions`/`x-oneof`/
+     * `x-group` extensions. OpenAPI 3.1 permits these alongside a `$ref` (as the
+     * description code already relies on).
+     * @param string $name
+     * @param object $target */
+    private function apply_field_metadata($name, $target) {
+        if (!empty($this->cur_fieldbadges[$name])) {
+            $target->{"x-badges"} = $this->cur_fieldbadges[$name];
+        }
+        if (!empty($this->cur_fieldconditions[$name])) {
+            $target->{"x-conditions"} = $this->cur_fieldconditions[$name];
+        }
+        if (!empty($this->cur_fieldoneof[$name])) {
+            $target->{"x-oneof"} = (object) $this->cur_fieldoneof[$name];
+        }
+        if (isset($this->cur_fieldgroup[$name])) {
+            $target->{"x-group"} = $this->cur_fieldgroup[$name];
+        }
+    }
+
+    /** Parse the VALUE of a `* default VALUE` line. The value is decoded as
+     * JSON, so booleans, numbers, strings, `null`, and JSON arrays/objects are
+     * all representable; a bare token that is not valid JSON (e.g. an unquoted
+     * `rev`) is returned verbatim as a string.
+     * @param string $s
+     * @return mixed */
+    static private function parse_default_value($s) {
+        $s = trim($s);
+        $v = json_decode($s);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $v;
+        }
+        return $s;
+    }
+
+    /** Set the OpenAPI `default` on schema object `$schema` if field `$name`
+     * declared one via `* default VALUE`. `default` is a JSON Schema keyword, so
+     * for query parameters it belongs on the parameter's `schema` and for
+     * body/response properties on the property schema itself.
+     * @param string $name
+     * @param object $schema */
+    private function apply_field_default($name, $schema) {
+        if (array_key_exists($name, $this->cur_fielddefault)) {
+            $schema->default = $this->cur_fielddefault[$name];
         }
     }
 
@@ -673,6 +1066,24 @@ class APISpec_Batch {
             $this->parse_field_info($uf->parameter_info);
         }
         $this->apply_badges($x);
+        $this->apply_md_field_order();
+
+        // Unified document order across query params, form body fields, and
+        // `* body` request bodies, so a renderer can interleave them (e.g. in a
+        // `* oneof` set). Markdown order comes first, then any field known only
+        // from apifunctions/apiexpansions.
+        $orderpos = [];
+        $o = 0;
+        foreach ($this->cur_md_order as $nm) {
+            if (!isset($orderpos[$nm])) {
+                $orderpos[$nm] = $o++;
+            }
+        }
+        foreach ($this->cur_fieldf as $nm => $f) {
+            if (!isset($orderpos[$nm])) {
+                $orderpos[$nm] = $o++;
+            }
+        }
 
         $params = $bprop = $breq = [];
         $query_plausible = isset($this->cur_fieldf["q"]);
@@ -683,12 +1094,16 @@ class APISpec_Batch {
                 || ($f & self::F_DEPRECATED) !== 0) {
                 continue;
             }
+            $idx = $orderpos[$name];
             if (($f & (self::F_BODY | self::F_FILE)) !== 0) {
                 $schema = $this->cur_fields[$name] ?? null;
                 $bprop[$name] = $this->resolve_info($schema, $name);
                 if (isset($this->cur_fieldd[$name]) && !isset($bprop[$name]->{"\$ref"})) {
                     $bprop[$name]->description = $this->cur_fieldd[$name];
                 }
+                $this->apply_field_metadata($name, $bprop[$name]);
+                $this->apply_field_default($name, $bprop[$name]);
+                $bprop[$name]->{"x-order"} = $idx;
                 if (($f & self::F_REQUIRED) !== 0) {
                     $breq[] = $name;
                 }
@@ -698,8 +1113,16 @@ class APISpec_Batch {
                 continue;
             }
             $pobj = null;
+            $has_default = array_key_exists($name, $this->cur_fielddefault);
             if (!isset($this->cur_fieldd[$name])) {
-                $pobj = $this->reference_common_param($name, $f);
+                // A `* default` is parameter-specific, so it cannot ride the
+                // shared `$ref` to a common parameter (different endpoints give
+                // the same parameter different defaults). Materialize an inline
+                // copy of the common parameter instead, keeping its description
+                // and schema; otherwise reference the shared component.
+                $pobj = $has_default
+                    ? $this->inline_common_param($name, $f)
+                    : $this->reference_common_param($name, $f);
             }
             if (!$pobj) {
                 $pobj = (object) [
@@ -712,27 +1135,67 @@ class APISpec_Batch {
                     $pobj->description = $this->cur_fieldd[$name];
                 }
             }
+            $this->apply_field_metadata($name, $pobj);
+            // `default` is a schema keyword; place it on the parameter's schema.
+            // OpenAPI 3.1 permits it as a sibling of the schema's `$ref`.
+            if ($has_default) {
+                $pobj->schema = $pobj->schema ?? (object) [];
+                $this->apply_field_default($name, $pobj->schema);
+            }
+            $pobj->{"x-order"} = $idx;
             $params[$name] = $pobj;
         }
         if (!empty($params) || isset($x->parameters)) {
             $this->apply_parameters($x, $params);
         }
-        if (!empty($bprop) || isset($x->requestBody)) {
+        if (!empty($bprop) || !empty($this->cur_body_order) || isset($x->requestBody)) {
             $rbj = $x->requestBody = $x->requestBody ?? (object) ["description" => ""];
             $cj = $rbj->content = $rbj->content ?? (object) [];
-            $bodyj = $cj->{"multipart/form-data"}
-                ?? $cj->{"application/x-www-form-urlencoded"}
-                ?? (object) [];
-            unset($cj->{"multipart/form-data"}, $cj->{"application/x-www-form-urlencoded"}, $cj->schema);
-            $formtype = $has_file ? "multipart/form-data" : "application/x-www-form-urlencoded";
-            $cj->{$formtype} = $bodyj;
-            $xbschema = $bodyj->schema = $bodyj->schema ?? (object) [];
-            $xbschema->type = "object";
-            $this->apply_body_parameters($xbschema, $bprop, $breq, $formtype);
+            if (!empty($bprop)) {
+                $bodyj = $cj->{"multipart/form-data"}
+                    ?? $cj->{"application/x-www-form-urlencoded"}
+                    ?? (object) [];
+                unset($cj->{"multipart/form-data"}, $cj->{"application/x-www-form-urlencoded"}, $cj->schema);
+                $formtype = $has_file ? "multipart/form-data" : "application/x-www-form-urlencoded";
+                $cj->{$formtype} = $bodyj;
+                $xbschema = $bodyj->schema = $bodyj->schema ?? (object) [];
+                $xbschema->type = "object";
+                $this->apply_body_parameters($xbschema, $bprop, $breq, $formtype);
+                // a `*` field means additional (unlisted) parameters are accepted
+                if (isset($this->cur_fieldf["*"])) {
+                    $xbschema->additionalProperties = true;
+                }
+            }
+            // raw request bodies declared with `* body` (e.g. application/json,
+            // application/zip). A media type with no explicit type defaults to a
+            // binary body. Its metadata (x-oneof/x-badges/x-conditions) lets it
+            // join a `* oneof` set alongside form/query parameters.
+            foreach ($this->cur_body_order as $mt) {
+                $bschema = isset($this->cur_bodyschema[$mt])
+                    ? $this->resolve_info($this->cur_bodyschema[$mt], $mt)
+                    : (object) ["type" => "string", "format" => "binary"];
+                $mobj = $cj->{$mt} = (object) ["schema" => $bschema];
+                if (isset($this->cur_bodyd[$mt])) {
+                    $mobj->{"x-description"} = $this->cur_bodyd[$mt];
+                }
+                $this->apply_field_metadata($mt, $mobj);
+                $mobj->{"x-order"} = $orderpos[$mt] ?? PHP_INT_MAX;
+            }
         }
     }
 
     private function apply_badges($x) {
+        // The featured star always sorts before other badges (stable partition).
+        $featured = $rest = [];
+        foreach ($this->cur_badge as $bj) {
+            if (($bj->name ?? null) === self::FEATURED_BADGE) {
+                $featured[] = $bj;
+            } else {
+                $rest[] = $bj;
+            }
+        }
+        $this->cur_badge = array_merge($featured, $rest);
+
         if ($this->override_tags) {
             if (empty($this->cur_badge)) {
                 unset($x->{"x-badges"});
@@ -783,6 +1246,29 @@ class APISpec_Batch {
             $xpj = $x->parameters[$i];
             if ($this->combine_fields($n, $npj, $xpj, $i)) {
                 $x->parameters[$i] = $npj;
+            } else {
+                // A kept `$ref` parameter has its identity from the component,
+                // but its generated `x-*` siblings (x-order, x-group,
+                // x-conditions, …) must still track the current documentation.
+                $this->sync_x_extensions($npj, $x->parameters[$i]);
+            }
+        }
+    }
+
+    /** Refresh the generated `x-*` extension siblings on `$xpj` to match `$npj`,
+     * adding new ones and dropping any that are no longer generated. Used when an
+     * existing parameter object is kept rather than replaced.
+     * @param object $npj
+     * @param object $xpj */
+    private function sync_x_extensions($npj, $xpj) {
+        foreach (array_keys(get_object_vars($xpj)) as $k) {
+            if (str_starts_with($k, "x-") && !isset($npj->$k)) {
+                unset($xpj->$k);
+            }
+        }
+        foreach (get_object_vars($npj) as $k => $v) {
+            if (str_starts_with($k, "x-")) {
+                $xpj->$k = $v;
             }
         }
     }
@@ -843,10 +1329,26 @@ class APISpec_Batch {
      * @param object $uf
      * @param ?object $dj */
     private function expand_response($x, $uf, $dj) {
+        // Endpoints that do not use HotCRP's JSON envelope declare a literal
+        // `response_content` map of responses instead of a list of JSON response
+        // fields. This covers raw bodies (such as `/document`) and special
+        // endpoints (such as the OAuth endpoints).
+        if (isset($uf->response_content)) {
+            $this->apply_raw_response($x, $uf);
+            return;
+        }
+
         $this->cur_fieldf = [];
         $this->cur_fields = [];
         $this->cur_fieldd = [];
+        $this->cur_fieldbadges = [];
+        $this->cur_fieldconditions = [];
+        $this->cur_fieldoneof = [];
+        $this->cur_fieldgroup = [];
+        $this->cur_fielddefault = [];
         $this->cur_fieldsch = [];
+        $this->cur_fieldsch_after = [];
+        $this->cur_md_order = [];
 
         $response = $uf->response ?? [];
         if (is_string($response)) {
@@ -862,6 +1364,7 @@ class APISpec_Batch {
         if (isset($uf->response_info)) {
             $this->parse_field_info($uf->response_info);
         }
+        $this->apply_md_field_order();
 
         $bprop = $breq = [];
         foreach ($this->cur_fieldf as $name => $f) {
@@ -877,6 +1380,47 @@ class APISpec_Batch {
         }
 
         $this->apply_response($x, $bprop, $breq);
+    }
+
+    /** Apply `$uf->response_content`, a literal map from HTTP status code (or
+     * `default`) to an OpenAPI Response Object, e.g.
+     * `{"200": {"description": ..., "content": {"*\/*": {"schema": ...}}}}`.
+     * The standard JSON error envelope is added as `default` unless the map
+     * supplies its own `default` (so OAuth-style endpoints can opt out with
+     * `{"default": {}}`).
+     * @param object $x
+     * @param object $uf */
+    private function apply_raw_response($x, $uf) {
+        $x->responses = $x->responses ?? (object) [];
+
+        foreach (get_object_vars($uf->response_content) as $code => $robj) {
+            $r = $x->responses->{$code} = $x->responses->{$code} ?? (object) [];
+            foreach (get_object_vars(self::deep_clone($robj)) as $k => $v) {
+                // do not clobber an existing description unless overriding
+                if ($k === "description"
+                    && !$this->override_response
+                    && ($r->description ?? "") !== "") {
+                    continue;
+                }
+                $r->{$k} = $v;
+            }
+            // OpenAPI requires every response to have a description
+            $r->description = $r->description ?? "";
+        }
+
+        // add the JSON error envelope as `default` unless the endpoint defined
+        // its own `default` response
+        if (!isset($uf->response_content->default)
+            && !isset($x->responses->default)) {
+            $x->responses->default = (object) [
+                "description" => "",
+                "content" => (object) [
+                    "application/json" => (object) [
+                        "schema" => $this->reference_common_schema("error_response")
+                    ]
+                ]
+            ];
+        }
     }
 
     private static function deep_clone($x) {
@@ -936,6 +1480,10 @@ class APISpec_Batch {
         foreach ($this->cur_fieldsch as $sch) {
             $ref = $this->reference_common_schema($sch);
             assert(isset($ref->{"\$ref"}));
+            if (isset($this->cur_fieldsch_after[$sch])) {
+                // transient hint consumed by inline_response_schemas()
+                $ref->{"x-after"} = $this->cur_fieldsch_after[$sch];
+            }
             $i = 0;
             while (isset($rsch[$i])
                    && isset($rsch[$i]->{"\$ref"})
@@ -968,6 +1516,11 @@ class APISpec_Batch {
             $rsch[] = $respb = (object) ["type" => "object"];
         }
 
+        // a `*` field means the response may include unlisted values
+        if (isset($this->cur_fieldf["*"])) {
+            $respb->additionalProperties = true;
+        }
+
         // required properties
         $this->apply_required($respb, $bprop, $breq, $knownreq);
 
@@ -991,6 +1544,8 @@ class APISpec_Batch {
                 && ($this->override_description || ($respprop->$k->description ?? "") === "")) {
                 $respprop->$k->description = $this->cur_fieldd[$k];
             }
+            $this->apply_field_metadata($k, $respprop->$k);
+            $this->apply_field_default($k, $respprop->$k);
         }
 
         // result
@@ -1084,6 +1639,27 @@ class APISpec_Batch {
         return null;
     }
 
+    /** Position of a path in the documentation, or PHP_INT_MAX if undocumented.
+     * Uses the earliest documentation appearance among the path's operations
+     * (e.g. `# get /session`) or the path itself (e.g. `# /session`). */
+    private function path_doc_order($pj) {
+        $best = PHP_INT_MAX;
+        $path = $pj->__path ?? null;
+        if ($path === null) {
+            return $best;
+        }
+        if (isset($this->doc_order[$path])) {
+            $best = $this->doc_order[$path];
+        }
+        foreach ($pj as $method => $oj) {
+            if (is_object($oj)
+                && isset($this->doc_order["{$method} {$path}"])) {
+                $best = min($best, $this->doc_order["{$method} {$path}"]);
+            }
+        }
+        return $best;
+    }
+
     function compare_paths($a, $b) {
         $atag = self::path_first_tag($a);
         $btag = self::path_first_tag($b);
@@ -1095,22 +1671,137 @@ class APISpec_Batch {
             $bto = $this->tag_order[$btag] ?? PHP_INT_MAX;
             return $ato <=> $bto ? : strcmp($atag, $btag);
         }
+        // Within a tag, follow documentation order when available, then fall
+        // back to the apifunctions.json `order`, then the path name.
+        $ado = $this->path_doc_order($a);
+        $bdo = $this->path_doc_order($b);
+        if ($ado !== $bdo) {
+            return $ado <=> $bdo;
+        }
         $an = substr($a->__path, strrpos($a->__path, "/") + 1);
         $bn = substr($b->__path, strrpos($b->__path, "/") + 1);
         $auf = $this->conf->api($an, null, null);
+        $aufx = $this->conf->api_expansion($an, null);
         $buf = $this->conf->api($bn, null, null);
+        $bufx = $this->conf->api_expansion($bn, null);
         if ($auf === null || $buf === null) {
             if ($auf !== null || $buf !== null) {
                 return $auf === null ? 1 : -1;
             }
         } else {
-            $ao = $auf->order ?? PHP_INT_MAX;
-            $bo = $buf->order ?? PHP_INT_MAX;
+            $ao = $auf->order ?? $aufx->order ?? PHP_INT_MAX;
+            $bo = $buf->order ?? $bufx->order ?? PHP_INT_MAX;
             if ($ao !== $bo) {
                 return $ao <=> $bo;
             }
         }
         return strcmp($an, $bn);
+    }
+
+
+    // INLINE response_schema
+
+    /** Inline `* response_schema` references in every 200 response: replace each
+     * `allOf` member that `$ref`s a common schema (other than `minimal_response`)
+     * with that schema's properties, appended to the response object. Generation
+     * already registered every schema, so no `$ref` can dangle; the now-unused
+     * common schema simply remains defined in `components`. */
+    private function inline_response_schemas() {
+        foreach ($this->paths as $pj) {
+            if (!is_object($pj)) {
+                continue;
+            }
+            foreach ($pj as $method => $opj) {
+                if ($method === "__path" || !is_object($opj)) {
+                    continue;
+                }
+                $schema = $opj->responses->{"200"}->content->{"application/json"}->schema ?? null;
+                if (is_object($schema) && is_array($schema->allOf ?? null)) {
+                    $this->inline_response_allof($schema);
+                }
+            }
+        }
+    }
+
+    /** @param object $schema */
+    private function inline_response_allof($schema) {
+        $kept = $inlines = [];
+        $target = null;
+        foreach ($schema->allOf as $member) {
+            $ref = is_object($member) ? ($member->{"\$ref"} ?? null) : null;
+            if (is_string($ref)
+                && preg_match('{\A#/components/schemas/(.+)\z}', $ref, $m)
+                && $m[1] !== "minimal_response"
+                && is_object($sch = $this->schemas->{$m[1]} ?? $this->basej->components->schemas->{$m[1]} ?? null)) {
+                $conds = $sch->{"x-conditions"} ?? null;
+                $props = [];
+                foreach (get_object_vars($sch->properties ?? (object) []) as $pn => $pdef) {
+                    $pd = is_object($pdef) ? self::deep_clone($pdef) : $pdef;
+                    if ($conds !== null && is_object($pd) && !isset($pd->{"x-conditions"})) {
+                        $pd->{"x-conditions"} = $conds;
+                    }
+                    $props[$pn] = $pd;
+                }
+                $inlines[] = [$props, $member->{"x-after"} ?? null, $sch->required ?? []];
+                continue; // drop this member; its properties are inlined below
+            }
+            if (is_object($member)) {
+                unset($member->{"x-after"});
+            }
+            $kept[] = $member;
+            if (is_object($member) && ($member->type ?? null) === "object") {
+                $target = $member;
+            }
+        }
+        if (empty($inlines)) {
+            return;
+        }
+        if ($target === null) {
+            $kept[] = $target = (object) ["type" => "object", "properties" => (object) []];
+        }
+        $props = (array) ($target->properties ?? (object) []);
+        $req = $target->required ?? [];
+        foreach ($inlines as [$sprops, $after, $sreq]) {
+            $props = self::insert_after($props, $sprops, $after);
+            foreach ($sreq as $rq) {
+                if (!in_array($rq, $req, true)) {
+                    $req[] = $rq;
+                }
+            }
+        }
+        $target->properties = (object) $props;
+        if (!empty($req)) {
+            $target->required = $req;
+        }
+        $schema->allOf = array_values($kept);
+    }
+
+    /** Insert ordered `$new` properties into ordered `$existing` immediately
+     * after key `$after` ("" means at the start; null or an unknown key means at
+     * the end). Keys already present in `$existing` are skipped.
+     * @param array<string,mixed> $existing
+     * @param array<string,mixed> $new
+     * @param ?string $after
+     * @return array<string,mixed> */
+    private static function insert_after($existing, $new, $after) {
+        $new = array_diff_key($new, $existing);
+        if (empty($new)) {
+            return $existing;
+        } else if ($after === "") {
+            return $new + $existing;
+        } else if ($after === null || !array_key_exists($after, $existing)) {
+            return $existing + $new;
+        }
+        $out = [];
+        foreach ($existing as $k => $v) {
+            $out[$k] = $v;
+            if ($k === $after) {
+                foreach ($new as $nk => $nv) {
+                    $out[$nk] = $nv;
+                }
+            }
+        }
+        return $out;
     }
 
 
@@ -1123,7 +1814,7 @@ class APISpec_Batch {
         $info = $mj->info = $mj->info ?? (object) [];
         if ($this->base) {
             $info->title = "HotCRP REST API";
-            $info->version = shell_exec("git log --format=\"format:%cs:%h\" -n1 devel/apidoc etc/apifunctions.json etc/apiexpansions.json batch/apispec.php");
+            $info->version = shell_exec("git log --format=\"format:%cs\" -n1 devel/apidoc etc/apifunctions.json etc/apiexpansions.json batch/apispec.php");
         } else {
             $info->title = $info->title ?? "HotCRP";
             $info->version = $info->version ?? "0.1";
@@ -1173,6 +1864,9 @@ class APISpec_Batch {
             }
         }
 
+        // resolve `* response_schema` references inline
+        $this->inline_response_schemas();
+
         // maybe sort
         if ($this->sort || !$this->batch) {
             $this->sort();
@@ -1200,16 +1894,25 @@ class APISpec_Batch {
         $ofile = $this->output_file ?? "-";
         if ($ofile === "-") {
             $out = STDOUT;
-        } else {
-            $out = @fopen(safe_filename("{$ofile}~"), "wb");
+            $tmpfile = null;
+        } else if (file_exists($ofile) && !is_file($ofile)) {
+            // non-regular target (/dev/null, FIFO, /dev/fd/N): write directly
+            $tmpfile = null;
+            $out = @fopen(safe_filename($ofile), "wb");
             if (!$out) {
-                throw error_get_last_as_exception("{$ofile}~: ");
+                throw error_get_last_as_exception("{$ofile}: ");
+            }
+        } else {
+            $tmpfile = "{$ofile}~";
+            $out = @fopen(safe_filename($tmpfile), "wb");
+            if (!$out) {
+                throw error_get_last_as_exception("{$tmpfile}: ");
             }
         }
         fwrite($out, json_encode($this->j, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n");
         if ($out !== STDOUT) {
             fclose($out);
-            if (!rename("{$ofile}~", $ofile)) {
+            if ($tmpfile !== null && !rename($tmpfile, $ofile)) {
                 throw error_get_last_as_exception("{$ofile}: ");
             }
         }
@@ -1224,7 +1927,7 @@ class APISpec_Batch {
             "help,h !",
             "x,base Produce the base API",
             "w,watch Watch for updates",
-            "i:,input: =FILE Modify existing specification in FILE",
+            "i:,input: =FILE Read specification from FILE instead of openapi-base.json",
             "no-merge Do not merge response schemas",
             "override-ref Overwrite conflicting \$refs in input",
             "override-param",
@@ -1275,13 +1978,13 @@ Usage: php batch/apispec.php")
             exit($apispec->run());
         }
 
-        // watch requires `-i` or `-o` with a named file
-        if (isset($arg["x"])
-            && !isset($arg["i"])
-            && !isset($arg["o"])) {
+        // watch requires a named output file (mirror output resolution above)
+        if (isset($arg["o"])) {
+            $file = $arg["o"];
+        } else if (isset($arg["x"])) {
             $file = "devel/openapi.json";
         } else {
-            $file = $arg["o"] ?? $arg["i"] ?? "-";
+            $file = "-";
         }
         if ($file === "-") {
             throw new CommandLineException("`-w` requires known output file");

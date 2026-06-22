@@ -1,6 +1,6 @@
 <?php
 // paperoption.php -- HotCRP helper class for paper options
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class PaperOption implements JsonSerializable {
     const TITLEID = -1000;
@@ -314,7 +314,7 @@ class PaperOption implements JsonSerializable {
         if (str_ends_with($s, "-")) {
             $s = substr($s, 0, -1);
         }
-        if (!preg_match('/\A(?:title|paper|submission|final|authors|blind|nonblind|contacts|abstract|topics|pc_conflicts|pcconf|collaborators|reviews|sclass|status.*|submit.*|fold.*|[a-z]?[a-z]?[-_].*|has[-_].*|)\z/', $s)) {
+        if (!preg_match('/\A(?:title|paper|submission|final|authors|blind|nonblind|contacts|abstract|topics|pc_conflicts|pcconf|collaborators|reviews|sclass|status.*|submit.*|fold.*|[a-z]?[a-z]?[-_0-9].*|has[-_].*|)\z/', $s)) {
             return $s;
         }
         return "sf-" . $s;
@@ -658,11 +658,11 @@ class PaperOption implements JsonSerializable {
     }
 
     /** @return bool */
-    function is_document() {
+    function has_document() {
         return false;
     }
     /** @return bool */
-    function has_document() {
+    function is_document() {
         return false;
     }
     /** @return bool */
@@ -693,6 +693,12 @@ class PaperOption implements JsonSerializable {
      * @param PaperValue $bv */
     function value_compare($av, $bv) {
         return 0;
+    }
+    /** @param PaperValue $av
+     * @param PaperValue $bv
+     * @param ViewOptionList $vol */
+    function value_compare_with_options($av, $bv, $vol) {
+        return $this->value_compare($av, $bv);
     }
     /** @param PaperValue $av
      * @param PaperValue $bv */
@@ -914,6 +920,9 @@ class PaperOption implements JsonSerializable {
             echo $fi->description_preview_html();
         }
         $class = Ht::add_tokens("w-text need-autogrow", $extra["class"] ?? null);
+        if (($extra["wordlimit"] ?? 0) > 0) {
+            $class .= " need-wordlimit";
+        }
         echo Ht::textarea($this->formid, $reqd, [
                 "id" => $this->readable_formid(),
                 "class" => $pt->control_class($this->formid, $class),
@@ -921,6 +930,7 @@ class PaperOption implements JsonSerializable {
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
                 "data-default-value" => $default_value,
+                "data-format" => $fi ? $fi->format : null,
                 "data-wordlimit" => ($extra["wordlimit"] ?? 0) > 0 ? $extra["wordlimit"] : null,
                 "data-hard-wordlimit" => ($extra["hard_wordlimit"] ?? 0) > 0 ? $extra["hard_wordlimit"] : null
             ]),
@@ -935,7 +945,8 @@ class PaperOption implements JsonSerializable {
      * @return string */
     function web_edit_html(PaperInfo $prow, Contact $user) {
         ob_start();
-        $pt = new PaperTable($user, new Qrequest("POST"), $prow);
+        $nqreq = (new Qrequest("POST"))->set_user($user);
+        $pt = new PaperTable($user, $nqreq, $prow);
         $ov = $prow->force_option($this);
         $this->value_check($ov, $user);
         foreach ($ov->message_list() as $mi) {
@@ -1009,6 +1020,10 @@ class PaperOption implements JsonSerializable {
     /** @return ?FormatSpec */
     function format_spec() {
         return null;
+    }
+    /** @return ValueFormat */
+    function value_format(Contact $user) {
+        return new SubmissionField_ValueFormat($user, $this);
     }
 
     /** @param string $q
@@ -1114,10 +1129,9 @@ class PaperOption implements JsonSerializable {
         $negate = ($sword->compar === "!=") !== ($vs[0] === 0);
         if ($vs === [-1] || $vs === [0]) {
             return (new OptionPresent_SearchTerm($srch->user, $this))->negate_if($negate);
-        } else {
-            $vs = array_slice($vs, $vs[0] === 0 ? 1 : 0);
-            return (new OptionValueIn_SearchTerm($srch->user, $this, $vs))->negate_if($negate);
         }
+        $vs = array_slice($vs, $vs[0] === 0 ? 1 : 0);
+        return (new OptionValueIn_SearchTerm($srch->user, $this, $vs))->negate_if($negate);
     }
 }
 
@@ -1126,7 +1140,7 @@ class Separator_PaperOption extends PaperOption {
         parent::__construct($conf, $args, "only-form");
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        echo '<div class="pf pfe pf-separator">';
+        echo '<div class="pf s-sf pf-separator">';
         if (($h = $pt->edit_title_html($this))) {
             echo '<h3 class="pfehead">', $h, '</h3>';
         }
@@ -1175,13 +1189,17 @@ class Checkbox_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($ov->value || $fr->verbose()) {
+        if (!$ov->value && !$fr->verbose()) {
+            return;
+        }
+        if ($fr->want(FieldRender::CFPAGE)) {
+            $th = $this->title_html();
+            $fr->title = "";
+            $fr->set_html(($ov->value ? "✓" : "✗") . " <span class=\"pavfn\">{$th}</span>");
+        } else if ($fr->want(FieldRender::CFFORM)) {
+            $fr->set_text($ov->value ? "Yes" : "No");
+        } else {
             $fr->set_bool(!!$ov->value);
-            if ($fr->want(FieldRender::CFPAGE)) {
-                $fr->title = "";
-                $th = $this->title_html();
-                $fr->set_html($fr->value_html() . " <span class=\"pavfn\">{$th}</span>");
-            }
         }
     }
 
@@ -1419,11 +1437,11 @@ class Document_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
 
-    function is_document() {
+    function has_document() {
         return true;
     }
 
-    function has_document() {
+    function is_document() {
         return true;
     }
 
@@ -1460,6 +1478,16 @@ class Document_PaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return (int) ($av && $this->value_present($av))
             <=> (int) ($bv && $this->value_present($bv));
+    }
+    function value_compare_with_options($av, $bv, $vol) {
+        if ($vol->get("format") === "time") {
+            $ad = $av ? $av->document(0) : null;
+            $bd = $bv ? $bv->document(0) : null;
+            $at = $ad ? $ad->timestamp : INF;
+            $bt = $bd ? $bd->timestamp : INF;
+            return $at <=> $bt;
+        }
+        return $this->value_compare($av, $bv);
     }
     function value_dids(PaperValue $ov) {
         if (($ov->value ?? 0) > 1) {
@@ -1661,56 +1689,57 @@ class Document_PaperOption extends PaperOption {
     }
 
     function view_option_schema() {
-        return ["type"];
+        return ["format=type|time,timestamp^"];
+    }
+    function sort_view_options() {
+        return ["format"];
     }
 
-    /** @param DocumentInfo $doc
-     * @param string $html
-     * @param int $dif
-     * @return string */
-    static function link_html($doc, $html, $dif) {
-        $t = $doc->link_html($html, $dif);
-        if ($doc->is_archive()) {
+    /** @return string */
+    static function render_document(FieldRender $fr, PaperOption $opt, DocumentInfo $d) {
+        $format = $fr->column ? $fr->column->view_option("format") : null;
+        $is_attachment = $opt->has_attachments();
+        if ($format === "type") {
+            $t = $d->mimetype;
+        } else if ($format === "time") {
+            $ts = $d->timeReferenced ?? $d->timestamp;
+            $t = $ts > 1 ? $d->conf->unparse_time($ts) : "";
+        } else if ($is_attachment) {
+            $t = $d->member_filename();
+        } else if ($fr->want(FieldRender::CFFORM)) {
+            $t = $d->filename ?? "";
+        } else if ($fr->want_any(FieldRender::CFVERBOSE | FieldRender::CFTEXT | FieldRender::CFROW)) {
+            $t = $d->export_filename();
+        } else {
+            $t = "";
+        }
+        if ($fr->want(FieldRender::CFTEXT)) {
+            return $t;
+        }
+        $t = htmlspecialchars($t);
+        if ($format !== null) {
+            return $t;
+        }
+        $dif = 0;
+        if ($fr->want(FieldRender::CFFORM)) {
+            // OK
+        } else if ($fr->want(FieldRender::CFPAGE)) {
+            if ($opt->display() !== PaperOption::DISP_TOP) {
+                $dif = DocumentInfo::L_SMALL;
+            } else if ($is_attachment) {
+                $t = '<span class="pavfn">' . $opt->title_html() . '</span>/' . $t;
+            }
+            if ($t === "") {
+                $t = '<span class="pavfn">' . $opt->title_html() . '</span>';
+            }
+        } else {
+            $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
+        }
+        $t = $d->link_html($t, $dif);
+        if ($d->is_archive()) {
             $t = '<span class="archive foldc"><button type="button" class="q ui js-expand-archive pr-1">' . expander(null, 0) . '</button>' . $t . '</span>';
         }
         return $t;
-    }
-
-    /** @param ?DocumentInfo $d */
-    static function render_document(FieldRender $fr, PaperOption $opt, $d) {
-        if (!$d) {
-            if ($fr->verbose()) {
-                $fr->set_text("None");
-            }
-            return;
-        }
-        if ($fr->want(FieldRender::CFFORM)) {
-            $fr->set_html($d->link_html(htmlspecialchars($d->filename ?? ""), 0));
-        } else if ($fr->want(FieldRender::CFPAGE)) {
-            $fr->title = "";
-            $fr->set_html(self::link_html(
-                $d, '<span class="pavfn">' . $opt->title_html() . '</span>',
-                $opt->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL
-            ));
-        } else {
-            $want_mimetype = $fr->column && $fr->column->view_option("type");
-            if ($want_mimetype) {
-                $t = $d->mimetype;
-            } else if (!$fr->want(FieldRender::CFLIST | FieldRender::CFCOLUMN)
-                       || $fr->verbose()) {
-                $t = $d->export_filename();
-            } else {
-                $t = "";
-            }
-            if ($fr->want(FieldRender::CFTEXT) || $want_mimetype) {
-                $fr->set_text($t);
-            } else {
-                $fr->set_html(self::link_html(
-                    $d, htmlspecialchars($t),
-                    DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE
-                ));
-            }
-        }
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
@@ -1718,11 +1747,26 @@ class Document_PaperOption extends PaperOption {
             if ($this->id === 0) {
                 $fr->table->render_submission($fr, $this);
             }
-        } else {
-            if ($fr->want(FieldRender::CFFORM)) {
-                $ov->document_set(true);
+            return;
+        }
+        if ($fr->want(FieldRender::CFFORM)) {
+            $ov->document_set(true);
+        }
+        $doc = $ov->document(0);
+        if (!$doc) {
+            if ($fr->verbose()) {
+                $fr->set_text("None");
             }
-            self::render_document($fr, $this, $ov->document(0));
+            return;
+        }
+        $t = Document_PaperOption::render_document($fr, $this, $doc);
+        if ($fr->want(FieldRender::CFTEXT)) {
+            $fr->set_text($t);
+        } else {
+            $fr->set_html($t);
+        }
+        if ($fr->want(FieldRender::CFPAGE)) {
+            $fr->title = "";
         }
     }
 
@@ -1771,23 +1815,57 @@ class Text_PaperOption extends PaperOption {
         $this->display_space = $args->display_space ?? $bspace;
         $this->wordlimit = $args->wordlimit ?? 0;
         $this->hard_wordlimit = $args->hard_wordlimit ?? 0;
+        if ($this->hard_wordlimit > 0
+            && ($this->wordlimit <= 0 || $this->wordlimit > $this->hard_wordlimit)) {
+            $this->wordlimit = $this->hard_wordlimit;
+        }
+    }
+
+    final function value_string(?PaperValue $ov) {
+        $s = $ov ? (string) $ov->data() : "";
+        if ($this->hard_wordlimit > 0 && strlen($s) > $this->hard_wordlimit) {
+            list($s, ) = count_words_split($s, $this->hard_wordlimit);
+        }
+        return $s;
     }
 
     function value_present(PaperValue $ov) {
         return (string) $ov->data() !== "";
     }
     function value_compare($av, $bv) {
-        $av = $av ? (string) $av->data() : "";
-        $bv = $bv ? (string) $bv->data() : "";
+        $av = $this->value_string($av);
+        $bv = $this->value_string($bv);
         if ($av === "" || $bv === "") {
             return ($av === "" ? 1 : 0) <=> ($bv === "" ? 1 : 0);
         }
         return $this->conf->collator()->compare($av, $bv);
     }
-
+    function value_check(PaperValue $ov, Contact $user) {
+        if (!$this->value_present($ov)
+            || $this->wordlimit <= 0
+            || strlen($ov->data()) <= $this->wordlimit) {
+            return;
+        }
+        $wc = count_words($ov->data());
+        if ($wc <= $this->wordlimit) {
+            return;
+        }
+        if ($this->hard_wordlimit !== $this->wordlimit) {
+            $ov->append_item(MessageItem::warning_note_at($this->field_key(), "<0>Entry too long; use at most " . plural($this->wordlimit, "word")));
+        }
+        if ($this->hard_wordlimit > 0 && $wc > $this->hard_wordlimit) {
+            $status = MessageSet::URGENT_NOTE;
+            if ($ov->prow->want_submitted()
+                && ($ov->prow->timeSubmitted <= 0
+                    || !$ov->equals($ov->prow->base_option($this->id)))) {
+                $status = MessageSet::ERROR;
+            }
+            $ov->append_item(new MessageItem($status, $this->field_key(), "<0>Entry cannot exceed " . plural($this->hard_wordlimit, "word")));
+        }
+    }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        $x = $ov->data();
-        return $x !== "" ? $x : null;
+        $s = $this->value_string($ov);
+        return $s === "" ? null : $s;
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {

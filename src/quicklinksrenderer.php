@@ -10,13 +10,13 @@ class QuicklinksRenderer {
             $result = $qreq->conf()->ql("select email from ContactInfo where contactId=?", $id);
             $row = $result->fetch_row();
             Dbl::free($result);
-            $paperText = htmlspecialchars($row ? $row[0] : $id);
+            $paperText = htmlspecialchars($row ? $row[0] : (string) $id);
             $urlrest["u"] = (string) $id;
         } else {
             $paperText = "#{$id}";
             $urlrest["p"] = $id;
         }
-        $url = $qreq->conf()->hoturl($baseUrl, $urlrest);
+        $url = Ht::escape_attr($qreq->conf()->hoturl_raw($baseUrl, $urlrest));
         $icon = Icons::ui_linkarrow($isprev ? 3 : 1);
         if ($isprev) {
             return "<a id=\"n-prev\" class=\"ulh pnum\" href=\"{$url}\">{$icon}{$paperText}</a>";
@@ -31,7 +31,7 @@ class QuicklinksRenderer {
             return "";
         }
         $tabindex = $qreq->page() === "search" ? -1 : null;
-        $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get", "role" => "search"]);
+        $x = $qreq->conf()->hotform($baseUrl ?? "paper", null, ["method" => "get", "role" => "search"]);
         if ($baseUrl === "profile") {
             $x .= Ht::entry("u", "", ["id" => "n-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off", "tabindex" => $tabindex]);
         } else {
@@ -74,7 +74,7 @@ class QuicklinksRenderer {
         // quicklinks
         $x = "";
         if (($list = $qreq->active_list())) {
-            $x .= '<div class="quicklink-item quicklinks"';
+            $x .= '<div id="n-quicklinks" class="quicklink-item"';
             if ($xmode || $goBase !== "paper") {
                 $x .= ' data-link-params="' . htmlspecialchars(json_encode_browser(["page" => $goBase] + $xmode)) . '"';
             }
