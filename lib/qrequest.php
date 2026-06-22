@@ -148,16 +148,20 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this->_method;
     }
     /** @return bool */
+    function is_getlike() {
+        return $this->_method === "GET" || $this->_method === "HEAD";
+    }
+    /** @return bool */
     function is_get() {
         return $this->_method === "GET";
     }
     /** @return bool */
-    function is_post() {
-        return $this->_method === "POST";
-    }
-    /** @return bool */
     function is_head() {
         return $this->_method === "HEAD";
+    }
+    /** @return bool */
+    function is_post() {
+        return $this->_method === "POST";
     }
 
     /** @return Conf */

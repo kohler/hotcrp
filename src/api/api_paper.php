@@ -685,7 +685,7 @@ class Paper_API extends MessageSet {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         try {
-            if ($qreq->is_get()) {
+            if ($qreq->is_getlike()) {
                 if ($mode === self::M_ONE) {
                     $jr = self::run_get_one($user, $qreq, $prow);
                 } else {

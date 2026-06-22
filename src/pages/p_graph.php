@@ -44,10 +44,10 @@ class Graph_Page {
             $gtype = $qreq->path_component(0);
         }
         $gj = $gx->get("graph/{$gtype}");
-        if ($gtype === "" && !empty($gtypes) && $qreq->is_get()) {
+        if ($gtype === "" && !empty($gtypes) && $qreq->is_getlike()) {
             $qreq->redirect_self(["group" => self::gj_group($gtypes[0])]);
             return false;
-        } else if ($gj && $gj->name !== "graph/{$gtype}" && $qreq->is_get()) {
+        } else if ($gj && $gj->name !== "graph/{$gtype}" && $qreq->is_getlike()) {
             $qreq->redirect_self(["group" => self::gj_group($gj)]);
             return false;
         }

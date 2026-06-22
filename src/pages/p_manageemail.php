@@ -400,7 +400,7 @@ class ManageEmail_Page {
         if ($this->curstep->name === "start") {
             // maybe there's a user in the query; check it
             if (isset($this->qreq->u)
-                && $this->qreq->is_get()
+                && $this->qreq->is_getlike()
                 && !$this->ms->has_message_at("u")) {
                 $u = $this->qreq->u;
                 if ($u === "other") {
@@ -659,7 +659,7 @@ class ManageEmail_Page {
         if ($this->curstep->name === "start") {
             // maybe there's a user in the query; check it
             if (($this->qreq->u ?? "") !== ""
-                && $this->qreq->is_get()
+                && $this->qreq->is_getlike()
                 && !$this->ms->has_message_at("u")) {
                 $this->parse_user("u", $this->qreq->u);
             }
@@ -900,7 +900,7 @@ class ManageEmail_Page {
         if ($this->curstep->name === "start") {
             // maybe there's a user in the query; check it
             if (($this->qreq->u ?? "") !== ""
-                && $this->qreq->is_get()
+                && $this->qreq->is_getlike()
                 && !$this->ms->has_message_at("u")) {
                 $this->parse_user("u", $this->qreq->u);
             }

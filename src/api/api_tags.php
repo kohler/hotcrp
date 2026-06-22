@@ -92,7 +92,7 @@ class Tags_API {
         if (($whyNot = $user->perm_view_paper($prow))) {
             return Conf::paper_error_json_result($whyNot);
         }
-        if ($qreq->is_get() || friendly_boolean($qreq->cancel)) {
+        if ($qreq->is_getlike() || friendly_boolean($qreq->cancel)) {
             $taginfo = self::tagmessages($user, $prow, null);
             $prow->add_tag_info_json($taginfo, $user);
             return new JsonResult($taginfo);

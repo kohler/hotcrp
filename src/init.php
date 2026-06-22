@@ -245,7 +245,7 @@ function initialize_user_redirect($qreq, $uindex, $nusers, $cookie) {
             $jr = JsonResult::make_error(400, "<0>Bad user specification");
         }
         $jr->complete();
-    } else if ($qreq->is_get() || $qreq->is_head()) {
+    } else if ($qreq->is_getlike()) {
         $page = $nav->base_absolute();
         if ($nusers > 0) {
             $page = "{$page}u/{$uindex}/";
