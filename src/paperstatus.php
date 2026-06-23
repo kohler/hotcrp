@@ -1376,7 +1376,7 @@ final class PaperStatus extends MessageSet {
         assert(is_object($pj));
 
         if (($pj->object ?? "paper") !== "paper") {
-            $this->error_at("object", $this->_("<0>JSON does not represent a {submission}"));
+            $this->error_at("object", "<0>Object type mismatch");
             return false;
         }
         $pid = $pj->pid ?? $pj->id ?? null;
@@ -1561,7 +1561,8 @@ final class PaperStatus extends MessageSet {
     function abort_save() {
         if (($this->_save_status & (self::SSF_SAVED | self::SSF_ABORTED)) === 0) {
             $this->_save_status |= self::SSF_ABORTED;
-            if (!$this->ignore_errors) {
+            // preparation may fail before `$this->prow` is set
+            if (!$this->ignore_errors && $this->prow) {
                 $this->prow->abort_prop();
                 $this->prow->remove_option_overrides();
             }
@@ -2197,7 +2198,8 @@ final class PaperStatus extends MessageSet {
     function saved_pid() {
         if (($this->_save_status & self::SSF_SAVED) !== 0) {
             return $this->paperId;
-        } else if ($this->prow->paperId !== 0
+        } else if ($this->prow
+                   && $this->prow->paperId !== 0
                    && (!$this->prow->is_new() || $this->user->privChair)) {
             return $this->prow->paperId;
         }

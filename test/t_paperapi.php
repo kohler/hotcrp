@@ -178,6 +178,15 @@ class PaperAPI_Tester {
         xassert_eqq($jr->ok, false);
     }
 
+    function test_object_type_mismatch() {
+        // a JSON whose `object` is not `paper` is rejected
+        $qreq = TestQreq::post_json(["object" => "comment", "title" => "Foo"]);
+        $jr = call_api_result("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->content["ok"], false);
+        xassert_eqq($jr->content["message_list"][0]->field, "object");
+        xassert_match($jr->content["message_list"][0]->message, '/Object type mismatch/');
+    }
+
     function test_decision() {
         $qreq = TestQreq::post_json(["decision" => "Rejected", "pid" => $this->npid]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
