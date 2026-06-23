@@ -9,10 +9,20 @@ class Comment_API extends MessageSet {
     private $user;
     /** @var PaperInfo */
     private $prow;
+
+    /** @var ?int */
+    private $qreq_cid;
+    /** @var ?ResponseRound */
+    private $qreq_rrd;
+
     /** @var int */
     private $status = 200;
     /** @var bool */
     private $ok = true;
+
+    // information about current request
+    /** @var ?ResponseRound */
+    private $rrd;
     /** @var string */
     private $uccmttype;
     /** @var string */
@@ -24,27 +34,77 @@ class Comment_API extends MessageSet {
 
     const RESPONSE_REPLACED = 492;
 
-    function __construct(Contact $user, PaperInfo $prow) {
+    function __construct(Contact $user, PaperInfo $prow, Qrequest $qreq) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->prow = $prow;
+
+        // analyze $qreq `c` and `response` parameters
+        $c = $qreq->c;
+        $response = $qreq->response;
+        if ($c === null || $c === "") {
+            if ($qreq->is_post() && !isset($response)) {
+                $this->qreq_cid = 0;
+            }
+        } else if ($c === "new") {
+            $this->qreq_cid = 0;
+        } else if (ctype_digit($c) && !str_starts_with($c, "0")) {
+            $this->qreq_cid = stoi($c);
+            if ($this->qreq_cid === null) {
+                JsonResult::make_not_found_error("c", "<0>Comment not found")->complete();
+            }
+        } else if (isset($c)) {
+            if ($c === "response") {
+                $response = "1";
+            } else if (str_ends_with($c, "response")) {
+                $response = substr($c, 0, -8);
+            } else if (str_starts_with($c, "response")) {
+                $response = substr($c, 8);
+            } else {
+                JsonResult::make_not_found_error("c", "<0>Comment not found")->complete();
+            }
+            if (isset($qreq->response)
+                && strcasecmp($response, (string) $qreq->response) !== 0) {
+                JsonResult::make_parameter_error("response", "<0>Parameter conflict with `c`")->complete();
+            }
+        }
+        if (isset($response) && $response !== "") {
+            $this->qreq_rrd = $this->conf->response_round($response);
+            if (!$this->qreq_rrd) {
+                JsonResult::make_not_found_error("response", "<0>Response not found")->complete();
+            }
+        }
     }
 
-    /** @return ?CommentInfo */
-    private function find_comment($query) {
-        $cmts = $this->prow->fetch_comments($query);
-        return $cmts[0] ?? null;
-    }
+    private function run_get_one(Qrequest $qreq) {
+        // a GET with no `c`/`response` behaves like `GET /comments`
+        // (backward compat)
+        if (!isset($qreq->c) && !isset($qreq->response)) {
+            return self::run_get_multi($this->user, $qreq, $this->prow);
+        }
 
-    /** @param int $round
-     * @return ?CommentInfo */
-    private function find_response_by_id($round) {
-        assert($round > 0);
-        return $this->find_comment("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0 and commentRound={$round}");
+        // find comment, check visibility and parameter conflict
+        $crow = $this->resolve_comment();
+        if (!$crow) {
+            return JsonResult::make_not_found_error(isset($qreq->c) ? "c" : "response", "<0>{$this->uccmttype} not found");
+        } else if (!$this->user->can_view_comment($this->prow, $crow, true)) {
+            if ($this->user->can_view_submitted_review($this->prow)) {
+                return JsonResult::make_error(403, "<0>You aren’t allowed to view that {$this->lccmttype}");
+            }
+            return JsonResult::make_error(404, "<0>{$this->uccmttype} not found");
+        } else if ($this->status === self::RESPONSE_REPLACED) {
+            return JsonResult::make_parameter_error("response", "<0>Parameter conflict with `c`");
+        }
+
+        // render and return
+        $jr = new JsonResult($this->status, ["ok" => $this->ok && $this->status <= 299]);
+        $no_content = friendly_boolean($qreq->content) === false;
+        $jr["comment"] = $crow->unparse_json($this->user, $no_content);
+        return $jr;
     }
 
     /** @return JsonResult */
-    static function run_get_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+    static private function run_get_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         $no_content = friendly_boolean($qreq->content) === false;
         if (isset($qreq->q)) {
             if (isset($qreq->p)) {
@@ -75,109 +135,124 @@ class Comment_API extends MessageSet {
         ]);
     }
 
-    /** @return MessageItem */
-    static private function save_success_message(CommentInfo $xcrow) {
-        $action = $xcrow->commentId ? "saved" : "deleted";
-        if (($rrd = $xcrow->response_round())) {
-            $cname = $rrd->unnamed ? "Response" : "{$rrd->name} response";
-            if ($xcrow->commentId && !($xcrow->commentType & CommentInfo::CT_DRAFT)) {
-                $action = "submitted";
+
+    /** @return ?CommentInfo */
+    private function find_comment($query) {
+        $cmts = $this->prow->fetch_comments($query);
+        return $cmts[0] ?? null;
+    }
+
+    /** @param int $round
+     * @return ?CommentInfo */
+    private function find_response_by_id($round) {
+        assert($round > 0);
+        return $this->find_comment("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0 and commentRound={$round}");
+    }
+
+    /** @return ?CommentInfo */
+    private function resolve_comment() {
+        $this->rrd = $this->qreq_rrd;
+        $this->status = 200;
+
+        // find comment
+        $crow = null;
+        if ($this->qreq_cid > 0) {
+            $crow = $this->find_comment("commentId={$this->qreq_cid}");
+        }
+        if (!$crow && $this->qreq_rrd) {
+            $crow = $this->find_response_by_id($this->qreq_rrd->id);
+        }
+
+        // if `new` or numeric ID provided, must match actual comment
+        // (which is always true unless `$this->qreq_rrd`)
+        if ($crow) {
+            assert($this->qreq_cid === $crow->commentId || $this->qreq_rrd);
+            $this->rrd = $crow->response_round();
+            if (($this->qreq_rrd && $this->rrd !== $this->qreq_rrd)
+                || ($this->qreq_cid !== null && $this->qreq_cid !== $crow->commentId)) {
+                $this->status = self::RESPONSE_REPLACED;
+            }
+        }
+
+        // set comment/response name
+        if ($this->rrd) {
+            if ($this->rrd->unnamed) {
+                $this->uccmttype = "Response";
+                $this->lccmttype = "response";
+            } else {
+                $this->uccmttype = $this->lccmttype = "{$this->rrd->name} response";
             }
         } else {
-            $cname = "Comment";
+            $this->uccmttype = "Comment";
+            $this->lccmttype = "comment";
         }
-        return MessageItem::success("<0>{$cname} {$action}");
+        return $crow;
+    }
+
+    /** @return MessageItem */
+    private function save_success_message(CommentInfo $xcrow) {
+        if (!$xcrow->commentId) {
+            $action = "deleted";
+        } else if ($this->rrd
+                   && ($xcrow->commentType & CommentInfo::CT_DRAFT) === 0) {
+            $action = "submitted";
+        } else {
+            $action = "saved";
+        }
+        return MessageItem::success("<0>{$this->uccmttype} {$action}");
     }
 
 
     /** @return JsonResult */
-    private function run_qreq(Qrequest $qreq) {
-        // a GET with no `c`/`response` behaves like `GET /comments`
-        // (backward compat)
-        if ($qreq->is_getlike()
-            && !isset($qreq->c)
-            && !isset($qreq->response)) {
-            return self::run_get_multi($this->user, $qreq, $this->prow);
-        }
-
-        // check parameters
-        if ($qreq->is_post()
-            && !isset($qreq->text)
+    private function run_post(Qrequest $qreq) {
+        // parse upload encoding (form, JSON body, ZIP, or upload capability)
+        if (!isset($qreq->text)
             && !friendly_boolean($qreq->delete)) {
+            // form POST must carry comment content
             return JsonResult::make_parameter_error("text");
         }
 
-        // check for all-comments request
-        $content = $qreq->is_post() || friendly_boolean($qreq->content ?? "1");
-
-        // analyze response parameter
-        $c = $qreq->c ?? "";
-        if ($c === "response") {
-            $rname = "1";
-        } else if (str_ends_with($c, "response")) {
-            $rname = substr($c, 0, -8);
-            $c = "response";
-        } else if (str_starts_with($c, "response")) {
-            $rname = substr($c, 8);
-            $c = "response";
-        } else {
-            $rname = $qreq->response;
-        }
-        if ($rname !== null) {
-            $rrd = $this->conf->response_round($rname);
-            if (!$rrd
-                || (($qreq->response ?? "") !== ""
-                    && (string) $qreq->response !== $rname)) {
-                return JsonResult::make_error(400, "<0>Invalid response request");
-            }
-            $rcrow = $this->find_response_by_id($rrd->id);
-        } else {
-            $rrd = null;
-            $rcrow = null;
-        }
-
-        // analyze `c` parameter
-        if ($c === "") {
-            $c = $rrd ? "response" : ($qreq->is_post() ? "new" : "");
-        }
-        $cn = null;
-        if ($c !== "new" && $c !== "response" && ($cn = stoi($c)) === null) {
-            return JsonResult::make_error(404, "<0>Comment not found");
-        }
+        // find comment
         $crow = null;
-        if ($rrd !== null) {
-            $crow = $rcrow;
-        } else if ($cn !== null) {
-            $crow = $this->find_comment("commentId={$cn}");
+        if ($this->qreq_cid > 0) {
+            $crow = $this->find_comment("commentId={$this->qreq_cid}");
         }
-        assert($c === "new" || $c === "response" || ctype_digit($c));
+        if (!$crow && $this->qreq_rrd) {
+            $crow = $this->find_response_by_id($this->qreq_rrd->id);
+        }
+
+        // if `new` or numeric ID provided, must match actual comment
+        // (which is always true unless `$this->qreq_rrd`)
+        $this->rrd = $this->qreq_rrd;
+        if ($crow) {
+            assert($this->qreq_cid === $crow->commentId || $this->qreq_rrd);
+            $this->rrd = $crow->response_round();
+            if (($this->qreq_rrd && $this->rrd !== $this->qreq_rrd)
+                || ($this->qreq_cid !== null && $this->qreq_cid !== $crow->commentId)) {
+                $this->status = self::RESPONSE_REPLACED;
+            }
+        }
 
         // comment/response name
-        if ($rrd !== null) {
-            $this->uccmttype = $rrd->unnamed ? "Response" : "{$rrd->name} response";
-            $this->lccmttype = $rrd->unnamed ? "response" : $this->uccmttype;
+        if ($this->rrd) {
+            if ($this->rrd->unnamed) {
+                $this->uccmttype = "Response";
+                $this->lccmttype = "response";
+            } else {
+                $this->uccmttype = $this->lccmttype = "{$this->rrd->name} response";
+            }
         } else {
             $this->uccmttype = "Comment";
             $this->lccmttype = "comment";
         }
 
-        // comment matching
-        // if GET, or numeric ID provided, comment must exist
-        if (!$crow
-            && ($cn !== null || !$qreq->is_post())) {
+        if (!$crow && $this->qreq_cid > 0) {
             return JsonResult::make_error(404, "<0>{$this->uccmttype} not found");
-        }
-        // if `new` or numeric ID provided, must match actual comment
-        // (which is always true unless `$rrd`)
-        assert(!$crow || $cn === $crow->commentId || $rrd);
-        if ($crow
-            && $cn !== $crow->commentId
-            && ($cn !== null || $c === "new")) {
-            $this->status = self::RESPONSE_REPLACED;
         }
 
         // check comment view permission
-        if ($crow && !$this->user->can_view_comment($this->prow, $crow, true)) {
+        if ($crow
+            && !$this->user->can_view_comment($this->prow, $crow, true)) {
             if ($this->user->can_view_submitted_review($this->prow)) {
                 return JsonResult::make_error(403, "<0>You aren’t allowed to view that {$this->lccmttype}");
             }
@@ -185,8 +260,9 @@ class Comment_API extends MessageSet {
         }
 
         // check post
-        if ($this->status === 200 && $this->ok && $qreq->is_post()) {
-            $crow = $this->run_post($qreq, $rrd, $crow);
+        if ($this->status === 200
+            && $this->ok) {
+            $crow = $this->do_run_post($qreq, $crow);
         }
 
         if ($this->status === self::RESPONSE_REPLACED) {
@@ -200,29 +276,33 @@ class Comment_API extends MessageSet {
             }
         }
         if ($crow && $crow->commentId > 0) {
-            $jr["comment"] = $crow->unparse_json($this->user, !$content);
+            $jr["comment"] = $crow->unparse_json($this->user);
         }
         return $jr;
     }
 
-    /** @param ?ResponseRound $rrd
-     * @param ?CommentInfo $crow
+    /** @return bool */
+    private function post_form_is_json($qreq) {
+        return false;
+    }
+
+    /** @param ?CommentInfo $crow
      * @return CommentInfo */
-    private function make_skeleton($rrd, $crow) {
+    private function make_skeleton($crow) {
         if ($crow) {
             return $crow;
-        } else if ($rrd !== null) {
-            return CommentInfo::make_response_template($rrd, $this->prow);
+        } else if ($this->rrd !== null) {
+            return CommentInfo::make_response_template($this->rrd, $this->prow);
         }
         return CommentInfo::make_new_template($this->user, $this->prow);
     }
 
-    /** @param ?ResponseRound $rrd
-     * @param ?CommentInfo $crow
+    /** @param ?CommentInfo $crow
      * @return ?CommentInfo */
-    private function run_post(Qrequest $qreq, $rrd, $crow) {
-        $xcrow = $this->make_skeleton($rrd, $crow);
+    private function do_run_post(Qrequest $qreq, $crow) {
+        $xcrow = $this->make_skeleton($crow);
         $response = $xcrow->is_response();
+        assert(!!$response === !!$this->rrd);
 
         // boolean parameters
         $qreq_delete = friendly_boolean($qreq->delete);
@@ -231,7 +311,7 @@ class Comment_API extends MessageSet {
         $req = [
             "visibility" => $qreq->visibility,
             "topic" => $qreq->topic,
-            "submit" => $response && !friendly_boolean($qreq->draft),
+            "submit" => $this->rrd && !friendly_boolean($qreq->draft),
             "blind" => friendly_boolean($qreq->blind)
         ];
 
@@ -240,7 +320,7 @@ class Comment_API extends MessageSet {
             $req["docs"] = [];
         } else {
             $req["text"] = rtrim(cleannl((string) $qreq->text));
-            if (!$response) {
+            if (!$this->rrd) {
                 $req["tags"] = $qreq->tags;
             }
 
@@ -322,7 +402,7 @@ class Comment_API extends MessageSet {
         }
 
         // save success messages
-        $this->append_item(self::save_success_message($xcrow));
+        $this->append_item($this->save_success_message($xcrow));
 
         $aunames = $mentions = [];
         $mentions_missing = $mentions_censored = false;
@@ -370,12 +450,12 @@ class Comment_API extends MessageSet {
         try {
             if ($qreq->is_getlike()) {
                 if ($mode === self::M_ONE) {
-                    $jr = (new Comment_API($user, $prow))->run_qreq($qreq);
+                    $jr = (new Comment_API($user, $prow, $qreq))->run_get_one($qreq);
                 } else {
                     $jr = self::run_get_multi($user, $qreq, $prow);
                 }
             } else {
-                $jr = (new Comment_API($user, $prow))->run_qreq($qreq);
+                $jr = (new Comment_API($user, $prow, $qreq))->run_post($qreq);
             }
         } catch (JsonResult $jrex) {
             $jr = $jrex;

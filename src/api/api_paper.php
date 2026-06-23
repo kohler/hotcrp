@@ -134,11 +134,10 @@ class Paper_API extends MessageSet {
         $ct_form = Mimetype::is_form($ct);
         if ($ct_form && !$this->post_form_is_json($qreq)) {
             // handle form-encoded data
-            if (($mode & self::M_ONE) !== 0) {
-                return $this->run_post_form_data($qreq, $prow);
-            } else {
+            if (($mode & self::M_ONE) === 0) {
                 return JsonResult::make_error(400, "<0>Unexpected content type");
             }
+            return $this->run_post_form_data($qreq, $prow);
         }
 
         // check for uploaded file

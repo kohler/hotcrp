@@ -97,7 +97,7 @@ class Comments_Tester {
         $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => "new", "text" => "Hi"], $paper1);
         xassert(!$j->ok);
         xassert_match($j->message_list[0]->message, '/concurrent/');
-        xassert($j->conflict === true);
+        xassert_eqq($j->conflict, true);
         xassert(is_object($j->comment));
         xassert_eqq($j->comment->text, "Hello");
 
@@ -431,6 +431,76 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    function test_response_c_mismatch() {
+        // `response=N` combined with `c=MMM` that names a *different* comment
+        // (here a plain comment, not the round-N response) is reported as a
+        // concurrent-edit conflict, makes no database change, and returns the
+        // named comment's current state.
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "review_open" => "1", "has_response" => "1", "response_active" => "1",
+            "response/1/id" => "1", "response/1/name" => "",
+            "response/1/open" => "@" . (Conf::$now - 1), "response/1/done" => "@" . (Conf::$now + 10000)
+        ]);
+        xassert($sv->execute());
+
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "MMM original", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $mmm = $j->comment->cid;
+
+        $j = call_api("=comment", $this->u_chair, ["response" => "1", "c" => (string) $mmm, "text" => "should not save"], $paper1);
+        xassert(!$j->ok);
+        xassert($j->conflict === true);
+        xassert_match($j->message_list[0]->message, '/edited concurrently/');
+        // the conflict returns the named comment, unchanged
+        xassert_eqq($j->comment->cid, $mmm);
+        xassert_eqq($j->comment->text, "MMM original");
+
+        // no database change: the comment is untouched and the attempted
+        // "should not save" text created nothing
+        $paper1->load_comments();
+        $cmt = $paper1->comment_by_id($mmm);
+        xassert(!!$cmt);
+        xassert_eqq($cmt->commentOverflow ?? $cmt->comment, "MMM original");
+        foreach ($paper1->all_comments() as $c) {
+            xassert_neqq($c->commentOverflow ?? $c->comment, "should not save");
+        }
+
+        MailChecker::clear();
+    }
+
+    function test_get_response_c_mismatch() {
+        // GET `c=NNN&response=1` where comment NNN is not the round-1 response
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "review_open" => "1", "has_response" => "1", "response_active" => "1",
+            "response/1/id" => "1", "response/1/name" => "",
+            "response/1/open" => "@" . (Conf::$now - 1), "response/1/done" => "@" . (Conf::$now + 10000)
+        ]);
+        xassert($sv->execute());
+
+        // a viewable plain comment: the selector mismatch is a 400
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Plain not a response", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+        $jr = call_api_result("comment", $this->u_chair, ["c" => (string) $cid, "response" => "1"], $paper1);
+        xassert_eqq($jr->status, 400);
+        xassert_eqq($jr->content["message_list"][0]->field, "response");
+
+        // a comment the caller can't see must NOT be disclosed by the mismatch:
+        // the permission check wins, so the caller gets not-found, never 400
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Eyes only mismatch", "visibility" => "admin"], $paper1);
+        xassert($j->ok);
+        $acid = $j->comment->cid;
+        $lixia = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($lixia->can_view_paper($paper1));
+        $jr = call_api_result("comment", $lixia, ["c" => (string) $acid, "response" => "1"], $paper1);
+        xassert(in_array($jr->status, [403, 404], true));
+        xassert_neqq($jr->status, 400);
+
+        MailChecker::clear();
+    }
+
     function test_comment_request_errors() {
         $paper1 = $this->conf->checked_paper_by_id(1);
 
@@ -438,9 +508,9 @@ class Comments_Tester {
         $jr = call_api_result("comment", $this->u_chair, ["c" => "99999999"], $paper1);
         xassert_eqq($jr->status, 404);
 
-        // unknown response round => 400
+        // unknown response round => 404
         $jr = call_api_result("comment", $this->u_chair, ["response" => "99"], $paper1);
-        xassert_eqq($jr->status, 400);
+        xassert_eqq($jr->status, 404);
 
         // a non-admin cannot view an admin-only comment
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Eyes only", "visibility" => "admin"], $paper1);
