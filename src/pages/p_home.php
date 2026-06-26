@@ -554,7 +554,8 @@ class Home_Page {
 
     private function print_new_submission(Contact $user, SubmissionRound $sr) {
         $conf = $user->conf;
-        if ($sr->register >= Conf::$now && $sr->register < $sr->submit) {
+        if ($sr->register > 0
+            && ($sr->update <= 0 || $sr->register < $sr->update)) {
             $dname = $conf->_5("<5>{sclass} registration deadline", new FmtArg("sclass", $sr->label, 0));
             $dtime = $conf->unparse_time_with_local_span($sr->register);
             $dltx = "<em class=\"deadline\">{$dname}: {$dtime}</em>";
@@ -616,22 +617,28 @@ class Home_Page {
             if ($sr->time_edit(false, true)) {
                 $d = $conf->unparse_time_with_local_span($sr->update);
                 $deadlines[] = "You have until {$d} to update {$sr->prefix}{$conf->snouns[1]}.";
+                $srf = 2;
             } else {
                 $d = $conf->unparse_time_with_local_span($sr->resubmit);
-                $deadlines[] = "You have until {$d} to update completed {$sr->prefix}{$conf->snouns[1]}.";
+                $deadlines[] = "You have until {$d} to revise {$sr->prefix}{$conf->snouns[1]}.";
             }
         } else if (($srf & 2) !== 0) {
-            $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to update {$sr->prefix}{$conf->snouns[1]} has passed.";
+            $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to revise {$sr->prefix}{$conf->snouns[1]} has passed.";
+            if (($srf & 1) !== 0 && !$sr->time_submit(true)) {
+                $srf = 2;
+            }
+        }
+        if (($srf & 1) !== 0
+            && $sr->time_edit(false, true)) {
+            $d = $conf->unparse_time_with_local_span($sr->update);
+            $deadlines[] = "You have until {$d} to complete {$sr->prefix}draft {$conf->snouns[1]}.";
+        } else if (($srf & 1) !== 0) {
             if ($sr->time_submit(true)) {
                 $d = $conf->unparse_time_with_local_span($sr->submit);
-                $deadlines[] = "You have until {$d} to mark {$sr->prefix}{$conf->snouns[1]} as completed.";
+                $deadlines[] = "You have until {$d} to mark {$sr->prefix}{$conf->snouns[1]} as ready for review.";
+            } else {
+                $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to complete {$sr->prefix}draft {$conf->snouns[1]} has passed.";
             }
-        } else if (($srf & 1) !== 0
-                   && $sr->time_edit(false, true)) {
-            $d = $conf->unparse_time_with_local_span($sr->update);
-            $deadlines[] = "You have until {$d} to complete {$sr->prefix}{$conf->snouns[1]}.";
-        } else if (($srf & 1) !== 0) {
-            $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to complete {$sr->prefix}{$conf->snouns[1]} has passed.";
         }
     }
 
@@ -644,9 +651,9 @@ class Home_Page {
             $sr = $prow->submission_round();
             $srinfo[$sr->tag] = $srinfo[$sr->tag] ?? 0;
             if ($prow->timeSubmitted > 0) {
-                $srinfo[$sr->tag] |= 1;
-            } else {
                 $srinfo[$sr->tag] |= 2;
+            } else {
+                $srinfo[$sr->tag] |= 1;
             }
             if ($prow->outcome > 0
                 && $prow->viewable_phase($user) === PaperInfo::PHASE_FINAL) {
