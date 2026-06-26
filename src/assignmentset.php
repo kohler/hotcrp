@@ -224,6 +224,8 @@ class AssignmentState extends MessageSet {
     private $placeholder_prow;
     /** @var bool */
     public $paper_exact_match = false;
+    /** @var bool */
+    public $user_explicit = false;
     /** @var list<MessageItem> */
     private $nonexact_msgs = [];
     /** @var bool */
@@ -1732,8 +1734,10 @@ class AssignmentSet {
     /** @return ?list<Contact> */
     private function expand_special_user($user, AssignmentParser $aparser, PaperInfo $prow, $req) {
         if ($user === "any") {
+            $this->astate->user_explicit = false;
             $us = $aparser->expand_any_user($prow, $req, $this->astate);
         } else if ($user === "missing") {
+            $this->astate->user_explicit = false;
             $us = $aparser->expand_missing_user($prow, $req, $this->astate);
             if ($us === null) {
                 $this->astate->error("<0>User required");
@@ -1849,22 +1853,30 @@ class AssignmentSet {
         }
 
         // expand “all” and “missing”
-        $pusers = $contacts;
-        if (!is_array($pusers)) {
-            $pusers = $this->expand_special_user($pusers, $aparser, $prow, $req);
-            if ($pusers === null) {
-                return -1;
-            }
+        $this->astate->user_explicit = true;
+        if (is_array($contacts)) {
+            $pusers = $contacts;
+        } else {
+            $pusers = $this->expand_special_user($contacts, $aparser, $prow, $req);
+        }
+        if ($pusers === null) {
+            return -1;
         }
 
         $ret = 0;
         foreach ($pusers as $contact) {
             $err = $aparser->allow_user($prow, $contact, $req, $this->astate);
             if ($err !== true) {
-                if (!$err && !$contact->contactId) {
-                    $this->astate->error("<0>User ‘none’ not allowed here");
-                    return -1;
-                } else if (!$err) {
+                if (!$this->astate->user_explicit
+                    && !$this->user->can_manage($prow)) {
+                    // skip error messages about user rights for `user any`
+                    continue;
+                }
+                if ($err) {
+                    // have error message
+                } else if (!$contact->contactId) {
+                    $err = new AssignmentError("<0>User ‘none’ not allowed here");
+                } else {
                     $uname = $contact->name(NAME_E);
                     $problem = $prow->has_conflict($contact) ? "has a conflict with" : "cannot be assigned to";
                     $err = new AssignmentError("<0>{$uname} {$problem} #{$prow->paperId}");
