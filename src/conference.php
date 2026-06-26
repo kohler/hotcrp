@@ -3791,9 +3791,8 @@ class Conf {
             return false;
         } else if ($rb !== self::BLIND_OPTIONAL) {
             return true;
-        } else {
-            return $rrow_blind !== false;
         }
+        return $rrow_blind !== false;
     }
     /** @return int */
     function review_blindness() {

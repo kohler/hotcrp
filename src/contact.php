@@ -6391,6 +6391,7 @@ class Contact implements JsonSerializable {
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
         $oldtype = $rrow ? $rrow->reviewType : 0;
+        $oldrflags = $rrow ? $rrow->rflags : 0;
         $type = max((int) $type, 0);
         assert($type >= 0 && $oldtype >= 0);
         $round = $extra["round_number"] ?? null;
@@ -6420,23 +6421,35 @@ class Contact implements JsonSerializable {
             return $this->assign_review($pid, $this->conf->user_by_id($reviewer->primaryContactId), $type, $extra);
         }
 
+        // update rflags
+        $rflags = ($oldrflags & ~ReviewInfo::RFM_TYPES) | ($type ? (1 << $type) : 0);
+        if ($type !== 0) {
+            $rflags |= ReviewInfo::RF_LIVE;
+            if ($type > REVIEW_PC) {
+                $rflags &= ~ReviewInfo::RF_SELF_ASSIGNED;
+            } else if ($oldtype === 0
+                       && ($extra["selfassign"] ?? false)) {
+                $rflags |= ReviewInfo::RF_SELF_ASSIGNED;
+            }
+            if ($oldtype === 0 && $this->conf->is_review_blind(null)) {
+                $rflags |= ReviewInfo::RF_BLIND;
+            }
+        }
+        $rflags_mask = ReviewInfo::RF_LIVE | ReviewInfo::RFM_TYPES | ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_BLIND;
+
         // change database
-        if ($type === $oldtype
+        if ($rflags === $oldrflags
             && ($type === 0 || $round === null || $round === $rrow->reviewRound)) {
             return $reviewId;
         } else if ($oldtype === 0) {
             $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
             assert($round !== null); // `null` should not happen
-            $reviewBlind = $this->conf->is_review_blind(null) ? 1 : 0;
-            $rflags = ReviewInfo::RF_LIVE | (1 << $type) | ($reviewBlind ? ReviewInfo::RF_BLIND : 0);
-            if ($extra["selfassign"] ?? false) {
-                $rflags |= ReviewInfo::RF_SELF_ASSIGNED;
-            }
             $fields = [
                 "paperId" => $pid, "contactId" => $reviewer->contactId,
                 "reviewType" => $type, "reviewRound" => $round,
                 "timeRequested" => $time, "requestedBy" => $new_requester_cid,
-                "reviewBlind" => $reviewBlind, "rflags" => $rflags,
+                "reviewBlind" => $rflags & ReviewInfo::RF_BLIND ? 1 : 0,
+                "rflags" => $rflags,
                 "reviewNeedsSubmit" => 1
             ];
             if ($extra["mark_notify"] ?? null) {
@@ -6451,22 +6464,20 @@ class Contact implements JsonSerializable {
             $rflags = 0;
             $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $pid, $reviewId);
         } else {
-            $xflags = ReviewInfo::RFM_TYPES;
             $qtail = "";
             if ($round !== null) {
                 $qtail .= ", reviewRound={$round}";
             }
-            if (($rrow->rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
+            if (($oldrflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
                 && $type > REVIEW_PC) {
-                $xflags |= ReviewInfo::RF_SELF_ASSIGNED;
                 $qtail .= ", timeRequested={$time}, requestedBy={$new_requester_cid}";
             }
-            if ($type !== REVIEW_SECONDARY && $oldtype === REVIEW_SECONDARY) {
+            if ($type !== REVIEW_SECONDARY
+                && $oldtype === REVIEW_SECONDARY) {
                 $rns = $rrow->reviewStatus < ReviewInfo::RS_APPROVED ? 1 : 0;
                 $qtail .= ", reviewNeedsSubmit={$rns}";
             }
-            $rflags = 1 << $type;
-            $result = $this->conf->qe_raw("update PaperReview set reviewType={$type}, rflags=(rflags&~{$xflags})|{$rflags}{$qtail} where paperId={$pid} and reviewId={$reviewId}");
+            $result = $this->conf->qe_raw("update PaperReview set reviewType={$type}, rflags=(rflags&~{$rflags_mask})|{$rflags}{$qtail} where paperId={$pid} and reviewId={$reviewId}");
         }
 
         if (Dbl::is_error($result)) {

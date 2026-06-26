@@ -324,7 +324,7 @@ class ReviewForm {
 
 Ready\n";
             if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
-                $blind = $rrow->reviewBlind ? "Anonymous" : "Open";
+                $blind = $rrow->is_blind() ? "Anonymous" : "Open";
                 $t[] = "\n==+== Review Anonymity
 ==-== {$this->conf->short_name} allows either anonymous or open review.
 ==-== Enter \"Open\" if you want to expose your name to authors:
@@ -521,7 +521,7 @@ Ready\n";
         } else if ($rrow->reviewId && $viewer->can_view_review_identity($prow, $rrow)) {
             $reviewer = $rrow->reviewer();
             $revname = $viewer->reviewer_html_for($reviewer);
-            if ($rrow->reviewBlind) {
+            if ($rrow->is_blind()) {
                 $revname = "[{$revname}]";
             }
             if (!Contact::is_anonymous_email($reviewer->email)) {
@@ -574,7 +574,7 @@ Ready\n";
 
         // blind?
         if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
-            $blind = !!($rvalues->req["blind"] ?? $rrow->reviewBlind);
+            $blind = !!($rvalues->req["blind"] ?? $rrow->is_blind());
             echo '<div class="rge"><h3 class="s-rf-head checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
                 '<span class="checkc">', Ht::checkbox("blind", 1, $blind), '</span>',

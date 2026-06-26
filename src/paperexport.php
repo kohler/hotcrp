@@ -264,7 +264,7 @@ class PaperExport {
         if ($rrow->is_subreview()) {
             $rj["subreview"] = true;
         }
-        if ($rrow->reviewBlind) {
+        if ($rrow->is_blind()) {
             $rj["blind"] = true;
         }
 

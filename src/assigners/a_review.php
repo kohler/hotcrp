@@ -223,7 +223,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev = $revmatch;
             $rev->_rtype = 0;
             $rev->_round = $rdata->newround;
-            $rev->_rflags = 0;
+            $rev->_rflags = ReviewInfo::RF_LIVE;
             $rev->_requested_by = $state->user->contactId;
         }
         if (!$rev->_rtype || $rdata->newtype > 0) {
@@ -320,7 +320,7 @@ class Review_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
-        $deleted = !$this->item->post("_rtype");
+        $deleted = !$this->rtype;
         $oldrflags = $this->item->pre_i("_rflags");
         $newrflags = $this->item->post_i("_rflags");
         if ($this->item->differs("_rtype")
@@ -329,7 +329,7 @@ class Review_Assigner extends Assigner {
                 $i = $this->icon_h(true);
                 $t .= $deleted ? " {$i}" : " <del>{$i}</del>";
             }
-            if ($this->item->post("_rtype")) {
+            if ($this->rtype) {
                 $t .= ' <ins>' . $this->icon_h(false) . '</ins>';
             }
         } else if (!$deleted) {
