@@ -943,6 +943,27 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         return $this->fix_type($ctype);
     }
 
+    /** @param int $ctype
+     * @param int $cmtid
+     * @return string */
+    private function logid($ctype, $cmtid) {
+        if (($ctype & self::CT_RESPONSE) !== 0) {
+            $s = "Response {$cmtid}";
+            $rrd = $this->response_round();
+            if (!$rrd->unnamed) {
+                $s .= " ({$rrd->name})";
+            }
+        } else {
+            $s = "Comment {$cmtid}";
+            if (($ctype & self::CT_TOPIC_PAPER) !== 0) {
+                $s .= " on submission thread";
+            } else if (($ctype & self::CT_TOPIC_DECISION) !== 0) {
+                $s .= " on decision thread";
+            }
+        }
+        return $s;
+    }
+
     /** @param array{docs?:list<DocumentInfo>,tags?:?string,no_autosearch?:bool} $req
      * @return bool */
     function save_comment($req, Contact $acting_user) {
@@ -958,9 +979,13 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             return false;
         }
 
+        $text = $req["text"] ?? null;
+        if ($text === false) {
+            return $this->delete_comment($req, $acting_user, $user);
+        }
+
         $ctype = $this->requested_type($req) & self::CT_DBMASK;
         $is_response = ($ctype & self::CT_RESPONSE) !== 0;
-        $response_name = $is_response ? $this->response_round()->name : null;
 
         // tags
         $expected_tags = $this->commentTags;
@@ -996,24 +1021,15 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $displayed = ($ctype & self::CT_DRAFT) === 0;
 
         // text, mentions
-        $text = $req["text"] ?? null;
         $desired_mentions = [];
-        if ($text !== false) {
-            $text = (string) $text;
-            $desired_mentions = self::parse_mentions($user, $this->prow, $text, $ctype);
-            $this->set_data("mentions", empty($desired_mentions) ? null : $desired_mentions);
-        }
+        $text = (string) $text;
+        $desired_mentions = self::parse_mentions($user, $this->prow, $text, $ctype);
+        $this->set_data("mentions", empty($desired_mentions) ? null : $desired_mentions);
 
         // query
         $q = "";
         $qv = [];
-        if ($text === false) {
-            if (!$this->commentId) {
-                return false;
-            }
-            $q = "delete from PaperComment where paperId={$this->paperId} and commentId={$this->commentId}";
-            $docs = [];
-        } else if (!$this->commentId) {
+        if (!$this->commentId) {
             $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];
             $qb = [$user->contactId, $this->paperId, $ctype, "?", "?", Conf::$now, 0];
             if (strlen($text) <= 32000) {
@@ -1089,49 +1105,33 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         // log
-        if ($is_response) {
-            $x = $response_name == "1" ? "" : " ({$response_name})";
-            $log = "Response {$cmtid}{$x}";
+        $log = $this->logid($ctype, $cmtid);
+        if (($ctype & self::CT_DRAFT) === 0
+            && (!$this->commentId || ($this->commentType & self::CT_DRAFT) !== 0)) {
+            $log .= " submitted";
         } else {
-            if (($ctype & self::CT_TOPIC_PAPER) !== 0) {
-                $x = " on submission thread";
-            } else if (($ctype & self::CT_TOPIC_DECISION) !== 0) {
-                $x = " on decision thread";
-            } else {
-                $x = "";
+            $log .= $this->commentId ? " edited" : " started";
+            if (($ctype & self::CT_DRAFT) !== 0) {
+                $log .= " draft";
             }
-            $log = "Comment {$cmtid}{$x}";
         }
-        if ($text === false) {
-            $log .= " deleted";
-        } else {
-            if (($ctype & self::CT_DRAFT) === 0
-                && (!$this->commentId || ($this->commentType & self::CT_DRAFT) !== 0)) {
-                $log .= " submitted";
-            } else {
-                $log .= $this->commentId ? " edited" : " started";
-                if (($ctype & self::CT_DRAFT) !== 0) {
-                    $log .= " draft";
-                }
-            }
-            $ch = [];
-            if ($this->commentId
-                && $text !== $this->raw_content()) {
-                $ch[] = "text";
-            }
-            if ($this->commentId
-                && ($ctype | self::CT_DRAFT) !== ($this->commentType | self::CT_DRAFT)) {
-                $ch[] = "visibility";
-            }
-            if ($ctags !== $expected_tags) {
-                $ch[] = "tags";
-            }
-            if ($docs_differ) {
-                $ch[] = "attachments";
-            }
-            if (!empty($ch)) {
-                $log .= ": " . join(", ", $ch);
-            }
+        $ch = [];
+        if ($this->commentId
+            && $text !== $this->raw_content()) {
+            $ch[] = "text";
+        }
+        if ($this->commentId
+            && ($ctype | self::CT_DRAFT) !== ($this->commentType | self::CT_DRAFT)) {
+            $ch[] = "visibility";
+        }
+        if ($ctags !== $expected_tags) {
+            $ch[] = "tags";
+        }
+        if ($docs_differ) {
+            $ch[] = "attachments";
+        }
+        if (!empty($ch)) {
+            $log .= ": " . join(", ", $ch);
         }
         $acting_user->log_activity_for($this->contactId ? : $user->contactId, $log, $this->paperId);
 
@@ -1141,21 +1141,19 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         // ordinal
-        if ($text !== false && $this->ordinal_missing($ctype)) {
+        if ($this->ordinal_missing($ctype)) {
             $this->save_ordinal($cmtid, $ctype);
         }
 
         // reload contents
-        if ($text !== false) {
-            $cobject = $this->conf->fetch_first_object("select * from PaperComment where paperId=? and commentId=?", $this->paperId, $cmtid);
-            if (!$cobject) {
-                return false;
-            }
-            foreach (get_object_vars($cobject) as $k => $v) {
-                $this->$k = $v;
-            }
-            $this->_incorporate($this->prow, $this->conf);
+        $cobject = $this->conf->fetch_first_object("select * from PaperComment where paperId=? and commentId=?", $this->paperId, $cmtid);
+        if (!$cobject) {
+            return false;
         }
+        foreach (get_object_vars($cobject) as $k => $v) {
+            $this->$k = $v;
+        }
+        $this->_incorporate($this->prow, $this->conf);
 
         // document links
         if ($docs_differ) {
@@ -1185,14 +1183,6 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             }
         }
 
-        // delete if appropriate
-        if ($text === false) {
-            $this->commentId = 0;
-            $this->comment = "";
-            $this->commentTags = $this->commentData = $this->_jdata = null;
-            return true;
-        }
-
         // notify mentions and followers
         if ($displayed
             && $this->commentId
@@ -1204,6 +1194,40 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             $this->notify($user);
         }
 
+        return true;
+    }
+
+    /** @return bool */
+    private function delete_comment($req, Contact $acting_user, Contact $user) {
+        if (!$this->commentId) {
+            return false;
+        }
+        $result = $this->conf->qe("delete from PaperComment where paperId=? and commentId=?", $this->paperId, $this->commentId);
+        if (Dbl::is_error($result)) {
+            return false;
+        }
+
+        // log
+        $acting_user->log_activity_for($this->contactId ? : $user->contactId,
+            $this->logid($this->commentType, $this->commentId) . " deleted",
+            $this->paperId);
+
+        // update automatic tags
+        if (!($req["no_autosearch"] ?? false)) {
+            $this->conf->update_automatic_tags($this->prow, SearchTerm::ABOUT_COMMENTS);
+        }
+
+        // document links
+        if ($this->has_attachments()) {
+            $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType=?", $this->paperId, $this->commentId, DTYPE_COMMENT);
+            $this->prow->mark_inactive_linked_documents();
+            $this->prow->invalidate_linked_documents();
+        }
+
+        // delete if appropriate
+        $this->commentId = 0;
+        $this->comment = "";
+        $this->commentTags = $this->commentData = $this->_jdata = null;
         return true;
     }
 

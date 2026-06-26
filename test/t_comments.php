@@ -431,6 +431,31 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // When a comment is deleted, the activity-log line should describe the
+    // comment's *stored* topic, independent of any (about-to-be-discarded)
+    // topic carried by the delete request.
+    function test_comment_delete_log_topic() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+
+        // create a plain comment on the submission thread (topic=paper)
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Topic log victim", "visibility" => "rev", "topic" => "paper"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->comment->topic, "paper");
+        $cid = (int) $j->comment->cid;
+
+        // delete it, but the request carries a *different* topic ("rev").
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "topic" => "rev", "delete" => 1], $paper1);
+        xassert($j->ok);
+
+        // the log reflects the stored topic ("on submission thread"),
+        // not the discarded request topic ("rev", which has no thread suffix)
+        $action = $this->conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+            $paper1->paperId, "Comment {$cid}%deleted");
+        xassert_eqq($action, "Comment {$cid} on submission thread deleted");
+
+        MailChecker::clear();
+    }
+
     function test_response_c_mismatch() {
         // `response=N` combined with `c=MMM` that names a *different* comment
         // (here a plain comment, not the round-N response) is reported as a
