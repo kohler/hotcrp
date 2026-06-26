@@ -1012,6 +1012,8 @@ class ReviewAssigner_Data {
     public $oldtype;
     /** @var ?int */
     public $newtype;
+    /** @var ?bool */
+    public $ghost;
     /** @var bool */
     public $creator = true;
     /** @var ?string */
@@ -1079,6 +1081,7 @@ class ReviewAssigner_Data {
             $rmatch = false;
         }
 
+        $this->ghost = friendly_boolean($req["ghost"] ?? null);
         if ($this->oldtype === null && $rtype > 0 && $rmatch) {
             $this->oldtype = $rtype;
         }

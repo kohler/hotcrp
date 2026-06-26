@@ -6424,7 +6424,12 @@ class Contact implements JsonSerializable {
         // update rflags
         $rflags = ($oldrflags & ~ReviewInfo::RFM_TYPES) | ($type ? (1 << $type) : 0);
         if ($type !== 0) {
-            $rflags |= ReviewInfo::RF_LIVE;
+            if (($extra["ghost"] ?? false)
+                && ($rflags & ReviewInfo::RFM_NONEMPTY) === 0) {
+                $rflags &= ~ReviewInfo::RF_LIVE;
+            } else {
+                $rflags |= ReviewInfo::RF_LIVE;
+            }
             if ($type > REVIEW_PC) {
                 $rflags &= ~ReviewInfo::RF_SELF_ASSIGNED;
             } else if ($oldtype === 0

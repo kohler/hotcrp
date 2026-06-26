@@ -223,7 +223,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev = $revmatch;
             $rev->_rtype = 0;
             $rev->_round = $rdata->newround;
-            $rev->_rflags = ReviewInfo::RF_LIVE;
+            $rev->_rflags = $rdata->ghost ? 0 : ReviewInfo::RF_LIVE;
             $rev->_requested_by = $state->user->contactId;
         }
         if (!$rev->_rtype || $rdata->newtype > 0) {
@@ -412,6 +412,10 @@ class Review_Assigner extends Assigner {
             $aset->register_cleanup_function("rev_token", function ($aset, $vals) {
                 $aset->conf->update_rev_tokens_setting(min($vals));
             }, $this->item->existed() ? 0 : 1);
+        }
+        if ($this->rtype
+            && ($this->item->post("_rflags") & ReviewInfo::RF_LIVE) === 0) {
+            $extra["ghost"] = true;
         }
         $reviewId = $aset->user->assign_review($this->pid, $this->contact, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId) {
