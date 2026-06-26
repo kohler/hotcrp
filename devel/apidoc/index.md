@@ -178,10 +178,10 @@ authority are badged **Site admin only**.
 
 A **submission administrator** has administrative authority over a particular
 submission or a subset of submissions. For example, a track manager has
-administrative authority over a track, and each submission can have an explicit
-manager assigned from the PC. For most submissions, a site administrator is also
-a submission administrator (there are exceptions involving track rights and
-conflicts), but a submission manager is not necessarily a site administrator.
-Endpoints that require administrative authority over specific submissions, but
-do not require broad site administration rights, are badged **Admin only** or
-**Track manager only**.
+administrative authority over a track, and each submission can have an
+explicit manager assigned from the PC. For most submissions, site
+administrators are also submission administrators (there are exceptions
+involving track rights and conflicts), but a submission manager is not
+necessarily a site administrator. Endpoints that require administrative
+authority over specific submissions, but do not require broad site
+administration rights, are badged **Admin only** or **Track manager only**.

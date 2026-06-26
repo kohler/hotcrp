@@ -54,34 +54,6 @@ The `c` parameter selects a comment on submission `p`. It may be:
 On [`POST /{p}/comment`](#post-comment), omitting `c` defaults to `new`.
 
 
-# get /comments
-
-> Retrieve multiple comments
-
-Retrieve every visible comment on the submissions matching a search.
-
-The search is specified in the `q` parameter (and other search parameters,
-such as `t`). All comments the caller may see, across all matching
-submissions, are returned as an array of [comment objects](#tag-comments) in
-the response field `comments`.
-
-As a shorthand for a single submission, supply its ID in `p` instead of `q`;
-this returns that submission’s visible comments. Supplying both `q` and `p` is
-an error.
-
-* param ?q search_string: The search expression.
-* param ?p pid: A single submission, as an alternative to `q`.
-* param ?t
-
-    * default viewable
-    * group Search modifiers
-* param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
-  from each returned comment, returning only metadata. Defaults to `true`.
-
-    * default true
-* response ?comments [comment]: The matching comment objects.
-
-
 # get /{p}/comment
 
 > Retrieve comment
@@ -160,6 +132,34 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * param ?=:attachment string: Structured attachment fields, `attachment:<n>` (see above).
 * param ?review_token string: Review token authorizing the edit, when acting through one.
 * response ?comment comment: The saved comment, absent on delete.
+
+
+# get /comments
+
+> Retrieve multiple comments
+
+Retrieve every visible comment on the submissions matching a search.
+
+The search is specified in the `q` parameter (and other search parameters,
+such as `t`). All comments the caller may see, across all matching
+submissions, are returned as an array of [comment objects](#tag-comments) in
+the response field `comments`.
+
+As a shorthand for a single submission, supply its ID in `p` instead of `q`;
+this returns that submission’s visible comments. Supplying both `q` and `p` is
+an error.
+
+* param ?q search_string: The search expression.
+* param ?p pid: A single submission, as an alternative to `q`.
+* param ?t
+
+    * default viewable
+    * group Search modifiers
+* param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
+  from each returned comment, returning only metadata. Defaults to `true`.
+
+    * default true
+* response ?comments [comment]: The matching comment objects.
 
 
 # get /mentioncompletion
