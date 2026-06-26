@@ -1342,7 +1342,9 @@ class PaperInfo {
     /** @param string $prop
      * @param mixed $v */
     function set_prop($prop, $v) {
-        $this->_old_prop = $this->_old_prop ?? [];
+        if ($this->_old_prop === null) {
+            $this->_old_prop = [];
+        }
         if (!array_key_exists($prop, $this->_old_prop)
             && $this->$prop !== $v) {
             $this->_old_prop[$prop] = $this->$prop;

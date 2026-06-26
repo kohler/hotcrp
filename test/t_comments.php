@@ -456,6 +456,155 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // Editing a comment's text *without* supplying a `tags` field should not
+    // affect its existing tags.
+    function test_comment_edit_preserves_tags() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Tagged body", "visibility" => "rev", "tags" => "hot"], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt && $cmt->has_tag("hot"));
+
+        // edit the text, supplying no `tags` field at all
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Tagged body edited", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt);
+        xassert($cmt->has_tag("hot"));
+
+        MailChecker::clear();
+    }
+
+    // Re-saving a comment with identical content should be a no-op: no new
+    // "edited" activity-log entry.
+    function test_comment_noop_edit() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Stable comment", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        $like = "Comment {$cid} edited%";
+        $before = $this->conf->fetch_ivalue("select count(*) from ActionLog where paperId=? and action like ?", $paper1->paperId, $like);
+
+        // re-save identical content
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Stable comment", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+
+        $after = $this->conf->fetch_ivalue("select count(*) from ActionLog where paperId=? and action like ?", $paper1->paperId, $like);
+        xassert_eqq($after, $before);
+
+        MailChecker::clear();
+    }
+
+    // Editing a comment to remove all mentions should clear its stored
+    // mention data.
+    function test_comment_edit_clears_mentions() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "@Christian Huitema Hello"], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt && !empty($cmt->data("mentions")));
+
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Hello"], $paper1);
+        xassert($j->ok);
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt);
+        xassert_eqq($cmt->data("mentions"), null);
+        MailChecker::clear();
+    }
+
+    // Adding/removing an attachment without otherwise changing the comment
+    // must still persist the attachment change.
+    function test_comment_attachment_only_edit() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $qreq = new Qrequest("POST", ["c" => "new", "text" => "Same text", "attachment:1" => "new"]);
+        $qreq->approve_token();
+        $qreq->set_file_content("attachment:1:file", "First", "text/plain");
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        $paper1->load_comments();
+        $cmt = $paper1->comment_by_id($cid);
+        xassert(!!$cmt && count($cmt->attachments()) === 1);
+
+        // add a second attachment, keeping text (and everything else) identical
+        $qreq = new Qrequest("POST", ["c" => (string) $cid, "text" => "Same text", "attachment:1" => "new"]);
+        $qreq->approve_token();
+        $qreq->set_file_content("attachment:1:file", "Second", "text/plain");
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper1);
+        xassert($j->ok);
+
+        $paper1->load_comments();
+        $cmt = $paper1->comment_by_id($cid);
+        xassert(!!$cmt);
+        $contents = [];
+        foreach ($cmt->attachments() as $doc) {
+            $contents[] = $doc->content();
+        }
+        xassert_eqq($contents, ["First", "Second"]);
+
+        MailChecker::clear();
+    }
+
+    // Re-submitting a response after reverting it to draft must re-notify,
+    // even inside the 3-hour notification window: the "was a draft, now
+    // submitted" test has to read the *stored* comment type, not the
+    // already-updated requested type.
+    function test_response_resubmit_notifies() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "review_open" => "1",
+            "has_response" => "1",
+            "response_active" => "1",
+            "response/1/id" => "1",
+            "response/1/name" => "",
+            "response/1/open" => "@" . (Conf::$now - 1),
+            "response/1/done" => "@" . (Conf::$now + 10000)
+        ]);
+        xassert($sv->execute());
+
+        // start from a clean slate: drop any existing response on this paper
+        foreach ($paper1->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0") as $c) {
+            call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $c->commentId, "delete" => 1], $paper1);
+        }
+        MailChecker::clear();
+
+        // submit a response -- notifies, so timeNotified === timeModified
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => "Resp body"], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt && $cmt->timeNotified === $cmt->timeModified);
+
+        // revert to draft -- not displayed, so timeNotified is left behind
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "text" => "Resp body", "draft" => 1], $paper1);
+        xassert($j->ok);
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt && $cmt->timeNotified !== $cmt->timeModified);
+
+        // re-submit within the 3-hour window -- must notify again
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "text" => "Resp body"], $paper1);
+        xassert($j->ok);
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt && $cmt->timeNotified === $cmt->timeModified);
+        xassert(!empty(MailChecker::$preps));
+
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "delete" => 1], $paper1);
+        xassert($j->ok);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => "1", "response_active" => "0", "response/1/id" => "1"
+        ]);
+        xassert($sv->execute());
+    }
+
     function test_response_c_mismatch() {
         // `response=N` combined with `c=MMM` that names a *different* comment
         // (here a plain comment, not the round-N response) is reported as a
