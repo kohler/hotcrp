@@ -1208,7 +1208,7 @@ class TestRunner {
         ],
         "test09" => [
             "fresh_db", "PaperAPI_Tester", "ReviewAPI_Tester",
-            "Scope_Tester"
+            "FollowAPI_Tester", "Scope_Tester"
         ],
         "default" => [
             "test01", "test02", "test03", "test04", "test05", "test06",
