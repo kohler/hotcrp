@@ -277,9 +277,10 @@ class Permission_Tester {
         // check comment identity
         xassert_eqq($this->conf->_au_seerev, null);
         xassert_eqq($this->conf->setting("rev_blind"), Conf::BLIND_ALWAYS);
-        $comment1 = new CommentInfo($paper1);
-        $c1ok = $comment1->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $user_mgbaker);
-        xassert($c1ok);
+        $j = call_api("=comment", $user_mgbaker, ["c" => "new", "text" => "test", "visibility" => "a", "blind" => 0], $paper1);
+        xassert($j->ok);
+        $cid1 = $j->comment->cid;
+        $comment1 = $paper1->fetch_comments("commentId={$cid1}")[0];
         $paper1->load_comments();
         xassert(!$user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
@@ -298,8 +299,9 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("rev_blind", Conf::BLIND_OPTIONAL);
         xassert($user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
-        $c1ok = $comment1->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $user_mgbaker);
-        xassert($c1ok);
+        $j = call_api("=comment", $user_mgbaker, ["c" => (string) $cid1, "text" => "test", "visibility" => "a", "blind" => 0], $paper1);
+        xassert($j->ok);
+        $comment1 = $paper1->fetch_comments("commentId={$cid1}")[0];
         xassert($user_van->can_view_comment_identity($paper1, $comment1));
         $this->conf->save_refresh_setting("rev_blind", null);
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
@@ -699,14 +701,12 @@ class Permission_Tester {
         xassert_search($this->u_chair, "has:comment", "1");
         xassert_search($this->u_chair, "has:response", "");
         xassert_search($this->u_chair, "has:author-comment", "1");
-        $comment2 = new CommentInfo($paper18);
-        $c2ok = $comment2->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $this->u_marina);
-        xassert($c2ok);
+        $j = call_api("=comment", $this->u_marina, ["c" => "new", "text" => "test", "visibility" => "a", "blind" => 0], $paper18);
+        xassert($j->ok);
         xassert_search($this->u_chair, "cmt:any", "1 18");
         xassert_search($this->u_chair, "cmt:any>1", "");
-        $comment3 = new CommentInfo($paper18);
-        $c3ok = $comment3->save_comment(["text" => "test", "visibility" => "a", "blind" => false, "tags" => "redcmt"], $this->u_marina);
-        xassert($c3ok);
+        $j = call_api("=comment", $this->u_marina, ["c" => "new", "text" => "test", "visibility" => "a", "blind" => 0, "tags" => "redcmt"], $paper18);
+        xassert($j->ok);
         xassert_search($this->u_chair, "cmt:any>1", "18");
         xassert_search($this->u_chair, "cmt:jon", "");
         xassert_search($this->u_chair, "cmt:marina", "18");
@@ -745,8 +745,9 @@ class Permission_Tester {
     function test_comment_notification() {
         $paper2 = $this->u_chair->checked_paper_by_id(2);
         xassert($paper2->has_reviewer($this->u_chair));
-        $comment4 = new CommentInfo($paper2);
-        $comment4->save_comment(["text" => "test", "visibility" => "p", "topic" => "paper", "blind" => false], $this->u_mgbaker);
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "test", "visibility" => "p", "topic" => "paper", "blind" => 0], $paper2);
+        xassert($j->ok);
         MailChecker::check_db("test01-comment2");
         xassert_search($this->u_chair, "has:comment", "1 2 18");
         xassert_search($this->u_chair, "has:response", "");
@@ -757,8 +758,8 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("cmt_revid", 1);
         Contact::update_rights();
 
-        $comment4x = new CommentInfo($paper2);
-        $comment4x->save_comment(["text" => "my identity should be hidden", "visibility" => "p", "topic" => "paper", "blind" => false], $this->u_mgbaker);
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "my identity should be hidden", "visibility" => "p", "topic" => "paper", "blind" => 0], $paper2);
+        xassert($j->ok);
         MailChecker::check_db("test01-comment2-noid");
 
         $this->conf->save_refresh_setting("viewrevid", 1);
@@ -768,14 +769,14 @@ class Permission_Tester {
         // turn off chair notification and insert comment
         $this->conf->qe("insert into PaperWatch (paperId, contactId, watch) values (2,?,?) ?U on duplicate key update watch=?U(watch)", $this->u_chair->contactId, Contact::WATCH_REVIEW_EXPLICIT);
         $paper2->load_watch();
-        $comment5 = new CommentInfo($paper2);
-        $comment5->save_comment(["text" => "second test", "visibility" => "p", "blind" => false], $this->u_mgbaker);
-        MailChecker::check0();
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "second test", "visibility" => "p", "blind" => 0], $paper2);
+        xassert($j->ok);
+        MailChecker::check_db("Permission_Tester::test_comment_notification-3");
 
         // explicit mention overrides no-notification
-        $comment6 = new CommentInfo($paper2);
-        $comment6->save_comment(["text" => "third test, @Jane Chair", "visibility" => "p", "blind" => false], $this->u_mgbaker);
-        MailChecker::check_db("test01-comment6");
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "third test, @Jane Chair", "visibility" => "p", "blind" => 0], $paper2);
+        xassert($j->ok);
+        MailChecker::check_db("Permission_Tester::test_comment_notification-4");
 
         // restore watch
         $this->conf->qe("delete from PaperWatch where paperId=2 and contactId=?", $this->u_chair->contactId);
@@ -838,36 +839,36 @@ class Permission_Tester {
         // Previous notifications did not include chair because chair's own
         // review was incomplete. Changing chair watch should change
         // notification
-        $comment7 = new CommentInfo($paper2);
-        $comment7->save_comment(["text" => "Do not notify chair", "visibility" => "r", "blind" => false], $this->u_mgbaker);
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "Do not notify chair", "visibility" => "r", "blind" => 0], $paper2);
+        xassert($j->ok);
         MailChecker::check_db("test01-comment7");
 
         $this->conf->qe("insert into PaperWatch (paperId, contactId, watch) values (?,?,?) ?U on duplicate key update watch=?U(watch)", $paper2->paperId, $this->u_chair->contactId, Contact::WATCH_REVIEW_EXPLICIT | Contact::WATCH_REVIEW);
         $paper2->load_watch();
-        $comment8 = new CommentInfo($paper2);
-        $comment8->save_comment(["text" => "Do notify chair", "visibility" => "r", "blind" => false], $this->u_mgbaker);
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "Do notify chair", "visibility" => "r", "blind" => 0], $paper2);
+        xassert($j->ok);
         MailChecker::check_db("test01-comment8");
 
         $this->conf->qe("delete from PaperWatch where paperId=? and contactId=?", $paper2->paperId, $this->u_chair->contactId);
         $paper2->load_watch();
         $this->u_chair->set_prop("defaultWatch", Contact::WATCH_REVIEW | Contact::WATCH_REVIEW_MANAGED);
         $this->u_chair->save_prop();
-        $comment9 = new CommentInfo($paper2);
-        $comment9->save_comment(["text" => "Do notify chair #2", "visibility" => "r", "blind" => false], $this->u_mgbaker);
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "Do notify chair #2", "visibility" => "r", "blind" => 0], $paper2);
+        xassert($j->ok);
         MailChecker::check_db("test01-comment9");
 
         $this->u_chair->set_prop("defaultWatch", Contact::WATCH_REVIEW);
         $this->u_chair->save_prop();
-        $comment10 = new CommentInfo($paper2);
-        $comment10->save_comment(["text" => "Do not notify chair #2", "visibility" => "r", "blind" => false], $this->u_mgbaker);
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "Do not notify chair #2", "visibility" => "r", "blind" => 0], $paper2);
+        xassert($j->ok);
         MailChecker::check_db("test01-comment10");
 
         $revreq = ["s01" => 5, "s02" => 4, "ready" => true];
         save_review(2, $this->u_chair, $revreq);
         MailChecker::check_db("test01-review2D");
 
-        $comment11 = new CommentInfo($paper2);
-        $comment11->save_comment(["text" => "Do notify chair #3", "visibility" => "r", "blind" => false], $this->u_mgbaker);
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "Do notify chair #3", "visibility" => "r", "blind" => 0], $paper2);
+        xassert($j->ok);
         MailChecker::check_db("test01-comment11");
     }
 
