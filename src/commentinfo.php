@@ -1020,10 +1020,12 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             $ts = [];
             foreach (preg_split('/\s++/', $req["tags"]) as $tt) {
                 if ($tt !== ""
-                    && ($tt = $tagger->check($tt))
-                    && !stri_ends_with($tt, "response")) {
+                    && ($tt = $tagger->check($tt))) {
                     list($tag, $value) = Tagger::unpack($tt);
-                    $ts[strtolower($tag)] = $tag . "#" . (float) $value;
+                    $ltag = strtolower($tag);
+                    if (!str_ends_with($ltag, "response")) {
+                        $ts[$ltag] = $tag . "#" . (float) $value;
+                    }
                 }
             }
             $ts = $this->conf->tags()->sort_array(array_values($ts));
