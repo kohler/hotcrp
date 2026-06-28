@@ -280,9 +280,11 @@ class CommentInfo {
 
     /** @param int $ctype
      * @return bool */
-    private function ordinal_missing($ctype) {
-        return self::commenttype_needs_ordinal($ctype)
-            && ($ctype >= self::CTVIS_AUTHOR ? $this->authorOrdinal : $this->ordinal) === 0;
+    private function ordinal_missing() {
+        return self::commenttype_needs_ordinal($this->commentType)
+            && ($this->commentType >= self::CTVIS_AUTHOR
+                ? $this->authorOrdinal === 0
+                : $this->ordinal === 0);
     }
 
     /** @return ?string */
@@ -892,15 +894,15 @@ class CommentInfo {
     }
 
 
-    private function save_ordinal($cmtid, $ctype) {
-        $okey = $ctype >= self::CTVIS_AUTHOR ? "authorOrdinal" : "ordinal";
-        $q = "update PaperComment, (select coalesce(max(PaperComment.{$okey}),0) maxOrdinal
+    private function save_ordinal() {
+        $okey = $this->commentType >= self::CTVIS_AUTHOR ? "authorOrdinal" : "ordinal";
+        $this->conf->qe("update PaperComment, (select coalesce(max(PaperComment.{$okey}),0) maxOrdinal
     from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId)
-    where Paper.paperId={$this->prow->paperId}
+    where Paper.paperId={$this->paperId}
     group by Paper.paperId) t
-set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
-        $this->conf->qe($q);
+set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this->commentId} and {$okey}=0");
+        $this->$okey = $this->conf->fetch_ivalue("select {$okey} from PaperComment where paperId={$this->paperId} and commentId={$this->commentId}");
     }
 
     /** @param array $req
@@ -928,21 +930,19 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         return $this->fix_type($ctype);
     }
 
-    /** @param int $ctype
-     * @param int $cmtid
-     * @return string */
-    private function logid($ctype, $cmtid) {
-        if (($ctype & self::CT_RESPONSE) !== 0) {
-            $s = "Response {$cmtid}";
+    /** @return string */
+    private function logid() {
+        if (($this->commentType & self::CT_RESPONSE) !== 0) {
+            $s = "Response {$this->commentId}";
             $rrd = $this->response_round();
             if (!$rrd->unnamed) {
                 $s .= " ({$rrd->name})";
             }
         } else {
-            $s = "Comment {$cmtid}";
-            if (($ctype & self::CT_TOPIC_PAPER) !== 0) {
+            $s = "Comment {$this->commentId}";
+            if (($this->commentType & self::CT_TOPIC_PAPER) !== 0) {
                 $s .= " on submission thread";
-            } else if (($ctype & self::CT_TOPIC_DECISION) !== 0) {
+            } else if (($this->commentType & self::CT_TOPIC_DECISION) !== 0) {
                 $s .= " on decision thread";
             }
         }
@@ -1075,7 +1075,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 $this->set_prop("timeNotified", Conf::$now);
             }
             // reset timeDisplayed if you change the comment type
-            if ((!$this->timeDisplayed || $this->ordinal_missing($ctype))
+            if ((!$this->timeDisplayed || $this->ordinal_missing())
                 && ($text !== "" || $docs)) {
                 $this->set_prop("timeDisplayed", Conf::$now);
             }
@@ -1092,7 +1092,8 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         $this->set_prop("timeModified", Conf::$now);
-        if (!$this->commentId) {
+        $inserting = !$this->commentId;
+        if ($inserting) {
             $q = "insert into PaperComment ("
                 . join(", ", array_keys($this->_old_prop))
                 . ") select "
@@ -1116,13 +1117,17 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             return false;
         }
 
-        $cmtid = $this->commentId ? : $result->insert_id;
-        if (!$cmtid) {
-            return false;
+        if ($inserting) {
+            $this->commentId = (int) $result->insert_id;
+        }
+
+        // ordinal
+        if ($this->ordinal_missing()) {
+            $this->save_ordinal();
         }
 
         // log
-        $log = $this->logid($ctype, $cmtid);
+        $log = $this->logid();
         if (($ctype & self::CT_DRAFT) === 0
             && (!$this->commentId || ($this->commentType & self::CT_DRAFT) !== 0)) {
             $log .= " submitted";
@@ -1158,21 +1163,6 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         if (!($req["no_autosearch"] ?? false)) {
             $this->conf->update_automatic_tags($this->prow, SearchTerm::ABOUT_COMMENTS);
         }
-
-        // ordinal
-        if ($this->ordinal_missing($ctype)) {
-            $this->save_ordinal($cmtid, $ctype);
-        }
-
-        // reload contents
-        $cobject = $this->conf->fetch_first_object("select * from PaperComment where paperId=? and commentId=?", $this->paperId, $cmtid);
-        if (!$cobject) {
-            return false;
-        }
-        foreach (get_object_vars($cobject) as $k => $v) {
-            $this->$k = $v;
-        }
-        $this->_incorporate($this->prow, $this->conf);
 
         // document links
         if ($docs_differ) {
@@ -1228,7 +1218,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
 
         // log
         $acting_user->log_activity_for($this->contactId ? : $user->contactId,
-            $this->logid($this->commentType, $this->commentId) . " deleted",
+            $this->logid() . " deleted",
             $this->paperId);
 
         // update automatic tags

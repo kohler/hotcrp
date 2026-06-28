@@ -815,6 +815,186 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // A visible (non-admin-only) comment is assigned a sequential ordinal on
+    // save; an admin-only comment gets none. This pins save_ordinal /
+    // ordinal_missing / commenttype_needs_ordinal, which the JSON `ordinal`
+    // field exposes.
+    function test_comment_ordinal_assignment() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "First visible", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        xassert(isset($j->comment->ordinal));
+        $o1 = (int) $j->comment->ordinal;
+        xassert($o1 > 0);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Second visible", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        xassert(isset($j->comment->ordinal));
+        $o2 = (int) $j->comment->ordinal;
+        xassert_eqq($o2, $o1 + 1);
+
+        // an admin-only comment is not assigned an ordinal
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Hidden", "visibility" => "admin"], $paper3);
+        xassert($j->ok);
+        xassert(!isset($j->comment->ordinal));
+
+        MailChecker::clear();
+    }
+
+    // The activity-log line names exactly the fields that changed. This pins
+    // the per-field change detection in save_comment (`$ch`), which a future
+    // change-list/history object must reproduce.
+    function test_comment_log_change_fields() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Change body", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        $last_change = function () use ($paper3, $cid) {
+            return $this->conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+                $paper3->paperId, "Comment {$cid} edited%");
+        };
+
+        // visibility-only edit logs ": visibility"
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Change body", "visibility" => "pc"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($last_change(), "Comment {$cid} edited: visibility");
+
+        // text-only edit logs ": text"
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Change body 2", "visibility" => "pc"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($last_change(), "Comment {$cid} edited: text");
+
+        // tags-only edit logs ": tags"
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Change body 2", "visibility" => "pc", "tags" => "hot"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($last_change(), "Comment {$cid} edited: tags");
+
+        MailChecker::clear();
+    }
+
+    // Saving and deleting a comment while acting through a review token: the
+    // comment is attributed to the (anonymous) review owner, and — because
+    // anonymous actors are suppressed from the activity log — neither the save
+    // nor the delete generates an ActionLog row. Pins the review_token branch
+    // in Comment_API::finish_post.
+    function test_review_token_acting_path() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // create a fresh anonymous review and grab *its* token
+        xassert_assign($this->u_chair, "paper,action,user\n3,review,new-anonymous");
+        $token = $this->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=3 and reviewToken!=0 order by reviewId desc limit 1");
+        xassert(!!$token);
+        $paper3->load_reviews();
+        $rrow = $paper3->review_by_token($token);
+        xassert(!!$rrow);
+        $anon = $this->conf->user_by_id($rrow->contactId);
+        xassert($anon->is_anonymous_user());
+
+        // count activity-log rows naming this specific comment, by paperId and
+        // the "Comment NNN " prefix (NNN = the commentId)
+        $cmt_log_count = function ($cid) use ($paper3) {
+            return $this->conf->fetch_ivalue("select count(*) from ActionLog where paperId=? and action like ?",
+                $paper3->paperId, "Comment {$cid} %");
+        };
+
+        // hold the token, then save a comment through it
+        $this->u_chair->change_review_token($token, true);
+        $enc = encode_token($token);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Via token", "visibility" => "rev", "review_token" => $enc], $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        // comment is owned by the anonymous review owner, not the token holder
+        $cmt = $paper3->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt);
+        xassert_eqq($cmt->contactId, $rrow->contactId);
+        xassert_neqq($cmt->contactId, $this->u_chair->contactId);
+
+        // anonymous actor => no log row naming this comment for the save
+        xassert_eqq($cmt_log_count($cid), 0);
+
+        // delete through the token; still no log row for this comment
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1, "review_token" => $enc], $paper3);
+        xassert($j->ok);
+        xassert(!$paper3->fetch_comments("commentId={$cid}"));
+        xassert_eqq($cmt_log_count($cid), 0);
+
+        $this->u_chair->change_review_token($token, false);
+        MailChecker::clear();
+    }
+
+    // Creating, editing, and deleting a comment while acting through a
+    // not-logged-in review-accept capability link. This is the
+    // $acting_user != $user path in CommentInfo::save_comment: the acting user
+    // has no contactId but carries the @ra capability, which resolves to the
+    // review owner. The comment is attributed to the resolved reviewer, and the
+    // activity log records the link actor (contactId 0, trueContactId -1 "via
+    // link") with that reviewer as destContactId.
+    function test_review_capability_acting_path() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $orig_rev_open = $this->conf->setting("rev_open");
+        $this->conf->save_refresh_setting("rev_open", 1);
+
+        // a real reviewer with a submitted review (so they may comment)
+        xassert_assign($this->u_chair, "paper,action,user\n3,review,external@_.com");
+        $reviewer = $this->conf->checked_user_by_email("external@_.com");
+        $tf = new ReviewValues($this->conf);
+        xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "S", "comaut" => "C"]));
+        xassert($tf->check_and_save($reviewer, $paper3));
+
+        // not-logged-in user holding the review-accept capability
+        $ucap = Contact::make($this->conf);
+        $ucap->set_capability("@ra{$paper3->paperId}", $reviewer->contactId);
+        xassert(!$ucap->contactId);
+        xassert(!$ucap->is_anonymous_user());
+
+        $latest_log = function ($cid) use ($paper3) {
+            return Dbl::fetch_first_object($this->conf->dblink,
+                "select contactId, destContactId, trueContactId, action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+                $paper3->paperId, "Comment {$cid} %");
+        };
+        // the link actor logs as contactId 0, dest = resolved reviewer, true -1
+        $check_actor = function ($row) use ($reviewer) {
+            xassert(!!$row);
+            xassert_eqq((int) $row->contactId, 0);                       // not logged in
+            xassert_eqq((int) $row->destContactId, $reviewer->contactId); // resolved review owner
+            xassert_eqq((int) $row->trueContactId, -1);                  // "via link"
+        };
+
+        // create a brand-new comment via the capability link
+        $j = call_api("=comment", $ucap, ["c" => "new", "text" => "Created via link", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        // attributed to the resolved reviewer, not the account-less link actor
+        $cmt = $paper3->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt);
+        xassert_eqq($cmt->contactId, $reviewer->contactId);
+        $row = $latest_log($cid);
+        $check_actor($row);
+        xassert(str_starts_with($row->action, "Comment {$cid} "));
+
+        // edit via the capability link
+        $j = call_api("=comment", $ucap, ["c" => (string) $cid, "text" => "Edited via link", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        $row = $latest_log($cid);
+        $check_actor($row);
+        xassert(str_starts_with($row->action, "Comment {$cid} edited"));
+
+        // delete via the capability link
+        $j = call_api("=comment", $ucap, ["c" => (string) $cid, "delete" => 1], $paper3);
+        xassert($j->ok);
+        xassert(!$paper3->fetch_comments("commentId={$cid}"));
+        $row = $latest_log($cid);
+        $check_actor($row);
+        xassert_eqq($row->action, "Comment {$cid} deleted");
+
+        $this->conf->save_refresh_setting("rev_open", $orig_rev_open);
+        MailChecker::clear();
+    }
+
     function test_comments_multi_permission() {
         // an admin-only comment is invisible to a non-admin via `comments`
         $paper1 = $this->conf->checked_paper_by_id(1);
