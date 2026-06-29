@@ -286,7 +286,7 @@ class UserActions extends MessageSet {
         $result = $this->conf->qe("select * from PaperComment where contactId=? and (commentType&?)=0",
             $user->contactId, CommentInfo::CT_RESPONSE);
         while (($crow = CommentInfo::fetch($result, $prows, $this->conf))) {
-            $crow->delete($this->viewer, ["no_autosearch" => true]);
+            $crow->delete($this->viewer);
         }
         Dbl::free($result);
 
