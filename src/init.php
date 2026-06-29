@@ -340,7 +340,7 @@ function initialize_user($qreq, $kwarg = null) {
     if ($qreq->post && $sn && isset($_COOKIE[$sn])) {
         $sid = $_COOKIE[$sn];
         $l = strlen($qreq->post);
-        if ($l >= 8 && $qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
+        if ($l >= 8 && hash_equals(substr($sid, strlen($sid) > 16 ? 8 : 0, $l), $qreq->post)) {
             $qreq->approve_token();
         }
     }

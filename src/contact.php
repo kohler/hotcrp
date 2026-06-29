@@ -2592,7 +2592,7 @@ class Contact implements JsonSerializable {
             || $pwhash === "*") {
             return false;
         } else if ($pwhash[0] !== " ") {
-            return $pwhash === $input;
+            return hash_equals($pwhash, $input);
         } else if ($pwhash[1] === "\$") {
             return password_verify($input, substr($pwhash, 2));
         }
