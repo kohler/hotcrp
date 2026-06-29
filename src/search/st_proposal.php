@@ -118,6 +118,9 @@ class Proposal_SearchTerm extends SearchTerm {
         }
         return $this->rqsm->test($n);
     }
+    function about() {
+        return self::ABOUT_REVIEW_SET;
+    }
     function debug_json() {
         return ["type" => $this->type, "count" => $this->rqsm->comparison()];
     }

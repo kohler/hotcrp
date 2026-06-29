@@ -44,6 +44,9 @@ class Decision_SearchTerm extends SearchTerm {
         $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
         return in_array($d, $this->decs, true);
     }
+    function about() {
+        return self::ABOUT_DECISION;
+    }
     function drag_assigners(Contact $user) {
         if (count($this->decs) !== 1 || !$user->can_set_some_decision()) {
             return null;

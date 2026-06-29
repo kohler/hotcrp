@@ -41,4 +41,7 @@ class CmtAfter_SearchTerm extends SearchTerm {
         }
         return $this->cm->test($n);
     }
+    function about() {
+        return self::ABOUT_COMMENTS;
+    }
 }

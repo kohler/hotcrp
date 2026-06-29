@@ -192,6 +192,13 @@ abstract class SearchTerm {
         return "true";
     }
 
+    /** @return string */
+    function precise_sqlexpr(SearchQueryInfo $sqi) {
+        // must *always* call `sqlexpr` so we add columns to $sqi
+        $sql = $this->sqlexpr($sqi);
+        return $this->is_sqlexpr_precise() ? $sql : "true";
+    }
+
     /** @param ?bool $b
      * @return null|False_SearchTerm|True_SearchTerm */
     static function make_constant($b) {
@@ -295,13 +302,14 @@ abstract class SearchTerm {
     // What class of information does this search concern? (bitmask)
     const ABOUT_SUB = 0x1;               // Submission information
     const ABOUT_TAGS = 0x2;              // About tags
-    const ABOUT_PAPER = 0x3;             // Submission information or tags
-    const ABOUT_REVIEW = 0x4;            // About a single review
-    const ABOUT_REVIEW_SET = 0x8;        // About reviews as a class
-    const ABOUT_REVIEWS = 0xC;           // Either ABOUT_REVIEW or ABOUT_REVIEW_SET
-    const ABOUT_COMMENTS = 0x10;         // About comments
-    const ABOUT_REACTIONS = 0x20;        // About reactions (e.g. review ratings)
-    const ABOUT_PREFS = 0x40;            // About review preferences
+    const ABOUT_DECISION = 0x4;          // About decision
+    const ABOUT_PAPER = 0x7;             // Submission information or tags
+    const ABOUT_REVIEW = 0x8;            // About a single review
+    const ABOUT_REVIEW_SET = 0x10;       // About reviews as a class
+    const ABOUT_REVIEWS = 0x18;          // Either ABOUT_REVIEW or ABOUT_REVIEW_SET
+    const ABOUT_COMMENTS = 0x20;         // About comments
+    const ABOUT_REACTIONS = 0x40;        // About reactions (e.g. review ratings)
+    const ABOUT_PREFS = 0x80;            // About review preferences
     const ABOUT_OTHER = 0x8000;          // About something else (prefs, comments)
     const ABOUT_ANY = 0xFFFF;            // Who knows what it's about
     const ABOUT_NO_SHORT_CIRCUIT = 0x10000;  // script_expression only
@@ -584,6 +592,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         }
         return "not coalesce({$ff},0)";
     }
+    // parent::precise_sqlexpr is correct
     function test(PaperInfo $row, $xinfo) {
         return !$this->child[0]->test($row, $xinfo);
     }
@@ -623,6 +632,13 @@ class And_SearchTerm extends Op_SearchTerm {
         $ff = [];
         foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
+        }
+        return self::andjoin_sqlexpr($ff);
+    }
+    function precise_sqlexpr(SearchQueryInfo $sqi) {
+        $ff = [];
+        foreach ($this->child as $subt) {
+            $ff[] = $subt->precise_sqlexpr($sqi);
         }
         return self::andjoin_sqlexpr($ff);
     }
@@ -733,6 +749,7 @@ class Or_SearchTerm extends Op_SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         return self::orjoin_sqlexpr(self::or_sqlexprs($this->child, $sqi), "false");
     }
+    // parent::precise_sqlexpr is correct
     function test(PaperInfo $row, $xinfo) {
         foreach ($this->child as $subt) {
             if ($subt->test($row, $xinfo))
@@ -782,6 +799,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
         }
         return self::orjoin_sqlexpr($ff, "false");
     }
+    // parent::precise_sqlexpr is correct
     function test(PaperInfo $row, $xinfo) {
         $x = false;
         foreach ($this->child as $subt) {
@@ -918,6 +936,7 @@ class Then_SearchTerm extends Op_SearchTerm {
         $sqi->set_context($ctx);
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
     }
+    // parent::precise_sqlexpr is correct
     function test(PaperInfo $row, $xinfo) {
         for ($i = 0; $i !== $this->nthen; ++$i) {
             if ($this->child[$i]->test($row, $xinfo)) {
@@ -1531,8 +1550,10 @@ class Limit_SearchTerm extends SearchTerm {
     function about() {
         if (in_array($this->limit, ["viewable", "reviewable", "ar", "r", "rout", "req"], true)) {
             return self::ABOUT_REVIEW_SET;
+        } else if (in_array($this->limit_class, ["accepted", "undecided", "dec"], true)) {
+            return self::ABOUT_SUB | self::ABOUT_DECISION;
         }
-        return self::ABOUT_PAPER;
+        return self::ABOUT_SUB;
     }
 }
 
