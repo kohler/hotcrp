@@ -312,6 +312,7 @@ src/capabilities/cap_reviewaccept.php
 src/cdbuserupdate.php
 src/checkformat.php
 src/commentinfo.php
+src/commentstatus.php
 src/componentset.php
 src/confactions.php
 src/conference.php

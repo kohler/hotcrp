@@ -843,8 +843,8 @@ class Comments_Tester {
     }
 
     // The activity-log line names exactly the fields that changed. This pins
-    // the per-field change detection in save_comment (`$ch`), which a future
-    // change-list/history object must reproduce.
+    // the per-field change detection in CommentInfo::save (`$ch`), which a
+    // future change-list/history object must reproduce.
     function test_comment_log_change_fields() {
         $paper3 = $this->conf->checked_paper_by_id(3);
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Change body", "visibility" => "rev"], $paper3);
@@ -927,9 +927,9 @@ class Comments_Tester {
 
     // Creating, editing, and deleting a comment while acting through a
     // not-logged-in review-accept capability link. This is the
-    // $acting_user != $user path in CommentInfo::save_comment: the acting user
-    // has no contactId but carries the @ra capability, which resolves to the
-    // review owner. The comment is attributed to the resolved reviewer, and the
+    // acting-user != commenter path: CommentStatus resolves the account-less
+    // acting user (who carries the @ra capability) to the review owner, the
+    // comment is attributed to that reviewer, and the
     // activity log records the link actor (contactId 0, trueContactId -1 "via
     // link") with that reviewer as destContactId.
     function test_review_capability_acting_path() {
@@ -992,6 +992,106 @@ class Comments_Tester {
         xassert_eqq($row->action, "Comment {$cid} deleted");
 
         $this->conf->save_refresh_setting("rev_open", $orig_rev_open);
+        MailChecker::clear();
+    }
+
+    // CommentStatus prepare → abort stages changes in memory but writes nothing
+    // and rolls the comment back (the dry-run primitive).
+    function test_commentstatus_abort() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Abort original", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $crow = $paper3->fetch_comments("commentId={$cid}")[0];
+        xassert_eqq($crow->raw_content(), "Abort original");
+
+        $cs = new CommentStatus($this->u_chair);
+        $req = ["visibility" => "rev", "topic" => "rev", "submit" => false,
+                "blind" => false, "text" => "Abort edited", "tags" => null, "docs" => []];
+        xassert($cs->prepare_save($crow, $req));
+        // staged in memory, not yet committed
+        xassert($crow->prop_changed());
+        xassert_eqq($crow->raw_content(), "Abort edited");
+
+        $cs->abort_save();
+        // rolled back in memory
+        xassert(!$crow->prop_changed());
+        xassert_eqq($crow->raw_content(), "Abort original");
+
+        // database untouched
+        $fresh = $paper3->fetch_comments("commentId={$cid}")[0];
+        xassert_eqq($fresh->raw_content(), "Abort original");
+
+        MailChecker::clear();
+    }
+
+    // A staged attachment change is visible through has_attachments()/
+    // attachments() before save (the comment reads as its unsaved version),
+    // and abort_prop() reverts it.
+    function test_set_attachments_reads_staged() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $qreq = new Qrequest("POST", ["c" => "new", "text" => "Doc holder", "attachment:1" => "new"]);
+        $qreq->approve_token();
+        $qreq->set_file_content("attachment:1:file", "Body", "text/plain");
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        $crow = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert($crow->has_attachments());
+        xassert_eqq(count($crow->attachments()), 1);
+        xassert(($crow->commentType & CommentInfo::CT_HASDOC) !== 0);
+
+        // stage removal of all attachments, without saving
+        $crow->set_attachments([]);
+        xassert($crow->docs_changed());
+        xassert(!$crow->has_attachments());        // reads the staged version
+        xassert_eqq(count($crow->attachments()), 0);
+        // set_attachments also clears the CT_HASDOC bit
+        xassert(($crow->commentType & CommentInfo::CT_HASDOC) === 0);
+
+        // abort reverts to the saved version
+        $crow->abort_prop();
+        xassert(!$crow->docs_changed());
+        xassert($crow->has_attachments());
+        xassert_eqq(count($crow->attachments()), 1);
+        xassert(($crow->commentType & CommentInfo::CT_HASDOC) !== 0);
+
+        MailChecker::clear();
+    }
+
+    // set_prop tracks net change only: a no-op set records nothing, and a
+    // property edited away from then back to its base value is not reported as
+    // a diff (so change lists / saves stay accurate).
+    function test_set_prop_net_change() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Net change", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $crow = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!$crow->prop_changed());
+
+        $base = $crow->commentType;
+
+        // setting to the current value is a no-op
+        $crow->set_prop("commentType", $base);
+        xassert(!$crow->prop_changed());
+        xassert(!$crow->prop_changed("commentType"));
+
+        // change, then change back to base => not dirty
+        $crow->set_prop("commentType", $base | CommentInfo::CT_DRAFT);
+        xassert($crow->prop_changed("commentType"));
+        xassert_eqq($crow->base_prop("commentType"), $base);
+        $crow->set_prop("commentType", $base);
+        xassert(!$crow->prop_changed("commentType"));
+        xassert(!$crow->prop_changed());
+        xassert_eqq($crow->commentType, $base);
+
+        // a genuine change is still tracked, with the original base recorded
+        $crow->set_prop("commentType", $base | CommentInfo::CT_DRAFT);
+        xassert($crow->prop_changed("commentType"));
+        xassert_eqq($crow->base_prop("commentType"), $base);
+
         MailChecker::clear();
     }
 

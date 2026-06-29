@@ -382,7 +382,11 @@ class Comment_API extends MessageSet {
         }
 
         // save
-        $ok = $xcrow->save_comment($req, $suser);
+        $cs = new CommentStatus($suser);
+        $ok = $cs->prepare_save($xcrow, $req) && $cs->execute_save();
+        if ($ok) {
+            $cs->notify_followers();
+        }
 
         // save errors; check for reentering same response
         if (!$ok) {
