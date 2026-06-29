@@ -1309,6 +1309,7 @@ final class PaperStatus extends MessageSet {
             }
             return true;
         }
+        // from here on, new paper
         $this->_save_status |= self::SSF_NEW;
         if ($prow->paperId === 0) {
             $this->prow->set_prop("paperId", $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID));
@@ -1317,9 +1318,6 @@ final class PaperStatus extends MessageSet {
             $this->_save_status |= self::SSF_PIDFAIL;
             return false;
         }
-        $this->prow->set_prop_force("title", "");
-        $this->prow->set_prop_force("abstract", "");
-        $this->prow->set_prop_force("authorInformation", "");
         foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
             $this->_tags_changed[] = $tv;
         }
@@ -1609,6 +1607,12 @@ final class PaperStatus extends MessageSet {
 
     /** @return array{list<string>,list<null|int|float|string>} */
     private function _sql_prop() {
+        if ($this->prow->is_new()) {
+            // ensure properties are set non-null
+            foreach (["title", "abstract", "authorInformation"] as $prop) {
+                $this->prow->_old_prop[$prop] = "";
+            }
+        }
         $qf = $qv = [];
         foreach ($this->prow->_old_prop as $prop => $v) {
             if ($prop === "topicIds" || $prop === "allConflictType") {

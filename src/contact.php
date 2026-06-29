@@ -231,7 +231,7 @@ class Contact implements JsonSerializable {
     private $_authored_papers;
 
     /** @var ?array */
-    private $_mod_undo;
+    private $_mod_undo; /* aka _old_prop */
 
     /** @var ?PaperContactInfo */
     private $_last_rights;

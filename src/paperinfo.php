@@ -1342,12 +1342,16 @@ class PaperInfo {
     /** @param string $prop
      * @param mixed $v */
     function set_prop($prop, $v) {
+        if ($this->$prop === $v) {
+            return;
+        }
         if ($this->_old_prop === null) {
             $this->_old_prop = [];
         }
-        if (!array_key_exists($prop, $this->_old_prop)
-            && $this->$prop !== $v) {
+        if (!array_key_exists($prop, $this->_old_prop)) {
             $this->_old_prop[$prop] = $this->$prop;
+        } else if ($this->_old_prop[$prop] === $v) {
+            unset($this->_old_prop[$prop]);
         }
         $this->$prop = $v;
         // clear caches, sometimes conservatively
@@ -1360,16 +1364,6 @@ class PaperInfo {
         } else if ($prop === "allConflictType") {
             $this->_ctype_list = $this->_potconf = null;
         }
-    }
-
-    /** @param string $prop
-     * @param mixed $v */
-    function set_prop_force($prop, $v) {
-        $this->_old_prop = $this->_old_prop ?? [];
-        if (!array_key_exists($prop, $this->_old_prop)) {
-            $this->_old_prop[$prop] = $this->$prop;
-        }
-        $this->set_prop($prop, $v);
     }
 
     /** @param string $prop

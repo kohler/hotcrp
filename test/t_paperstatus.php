@@ -511,6 +511,27 @@ class PaperStatus_Tester {
         xassert($newpaperx->timeSubmitted <= 0);
     }
 
+    function test_save_draft_new_paper_empty_title() {
+        // A brand-new draft may be saved without a title (a missing required
+        // field is only an "Entry required" problem that does not block a
+        // draft save). The new-paper save path must still supply a value for
+        // the `title` SQL column, otherwise it is left unset: with the bug the
+        // saved title comes back as null rather than the empty string.
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1]), null));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+        xassert($ps->execute_save());
+        xassert_paper_status_saved_nonrequired($ps);
+        xassert($ps->paperId > 0);
+
+        $newpaper = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        xassert(!!$newpaper);
+        xassert_eqq($newpaper->title, "");
+        xassert_eqq($newpaper->abstract, "This is an abstract");
+        xassert($newpaper->timeSubmitted <= 0);
+    }
+
     function test_save_draft_new_paper_no_conflicts() {
         $u_bark = Contact::make_email($this->conf, "bark@_.com")->store();
         $ps = new PaperStatus($u_bark);

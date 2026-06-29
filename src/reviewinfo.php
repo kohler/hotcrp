@@ -812,9 +812,14 @@ class ReviewInfo implements JsonSerializable {
     /** @param string $prop
      * @param null|int|string $v */
     function set_prop($prop, $v) {
+        if ($this->$prop === $v) {
+            return;
+        }
         $diff = $this->prop_diff();
         if (!array_key_exists($prop, $diff->_old_prop)) {
             $diff->_old_prop[$prop] = $this->$prop;
+        } else if ($diff->_old_prop[$prop] === $v) {
+            unset($diff->_old_prop[$prop]);
         }
         $this->$prop = $v;
     }
