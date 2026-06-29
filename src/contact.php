@@ -4769,21 +4769,25 @@ class Contact implements JsonSerializable {
     function can_view_some_review_identity() {
         if (($this->role_mask & self::ROLE_VIEW_SOME_REVIEW_ID) === 0) {
             $this->role_mask |= self::ROLE_VIEW_SOME_REVIEW_ID;
-            $tags = "";
-            if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
-                $tags = " {$t}#0 ";
-            }
-            if ($this->isPC) {
-                $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
-            } else {
-                $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
-            }
-            $prow = PaperInfo::make_permissive_reviewer($this, $rtype, $tags);
-            $overrides = $this->add_overrides(self::OVERRIDE_CONFLICT);
-            if ($this->can_view_review_identity($prow, null)) {
+            if ($this->is_manager()) {
                 $this->roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
+            } else {
+                $tags = "";
+                if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
+                    $tags = " {$t}#0 ";
+                }
+                if ($this->isPC) {
+                    $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
+                } else {
+                    $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
+                }
+                $prow = PaperInfo::make_permissive_reviewer($this, $rtype, $tags);
+                $overrides = $this->add_overrides(self::OVERRIDE_CONFLICT);
+                if ($this->can_view_review_identity($prow, null)) {
+                    $this->roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
+                }
+                $this->set_overrides($overrides);
             }
-            $this->set_overrides($overrides);
         }
         return ($this->roles & self::ROLE_VIEW_SOME_REVIEW_ID) !== 0;
     }

@@ -344,7 +344,13 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $where[] = "reviewType={$this->review_type}";
         }
         if ($this->has_contacts()) {
-            $cm = $this->contact_match_sql("contactId");
+            if ($user->can_view_some_review_identity()) {
+                $cm = $this->contact_match_sql("contactId");
+            } else if ($this->test_contact($user->contactId)) {
+                $cm = "contactId={$user->contactId}";
+            } else {
+                $cm = "false";
+            }
             if ($this->tokens) {
                 $cm = "({$cm} or reviewToken in (" . join(",", $this->tokens) . "))";
             }
