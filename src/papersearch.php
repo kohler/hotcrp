@@ -1094,9 +1094,24 @@ class PaperSearch extends MessageSet {
             $sqi->add_column("blind", "Paper.blind");
         }
 
-        $filter = SearchTerm::andjoin_sqlexpr([
-            $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
-        ]);
+        // Timing-channel mitigation: an imprecise search returns a SQL
+        // superset whose size can depend on information the user cannot see,
+        // leaking that information through query time. Once a user has issued
+        // too many imprecise searches, fall back to filtering only in PHP.
+        // Chairs are exempt: they can view the hidden data, so their searches
+        // leak nothing.
+        if ($this->user->privChair
+            || ($this->_limit_qe->is_sqlexpr_precise() && $qe->is_sqlexpr_precise())
+            || $this->user->contact_counter()->sensitive_search_account()
+            || $this->conf->opt("sensitiveSearchAccountOnly")) {
+            $filter = SearchTerm::andjoin_sqlexpr([
+                $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
+            ]);
+        } else {
+            $filter = SearchTerm::andjoin_sqlexpr([
+                $this->_limit_qe->precise_sqlexpr($sqi), $qe->precise_sqlexpr($sqi)
+            ]);
+        }
         //Conf::msg_debugt($filter);
         if ($filter === "false") {
             return Dbl_Result::make_empty();

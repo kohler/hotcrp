@@ -63,6 +63,10 @@ CREATE TABLE `ContactCounter` (
   `apiBaseMtime2` bigint NOT NULL DEFAULT 0,
   `apiRefreshWindow2` int DEFAULT NULL,
   `apiRefreshAmount2` int DEFAULT NULL,
+  `sensitiveSearchCount` bigint NOT NULL DEFAULT 0,
+  `sensitiveSearchFallbackCount` bigint NOT NULL DEFAULT 0,
+  `sensitiveSearchBase` bigint NOT NULL DEFAULT 0,
+  `sensitiveSearchBaseMtime` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -662,7 +666,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 325, null),   -- schema version
+  ('allowPaperOption', 326, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

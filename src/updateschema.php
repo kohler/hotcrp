@@ -3292,6 +3292,13 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update ContactCounter set apiRefreshWindow=NULLIF(apiRefreshWindow,0), apiRefreshAmount=NULLIF(apiRefreshAmount,0), apiRefreshWindow2=NULLIF(apiRefreshWindow2,0), apiRefreshAmount2=NULLIF(apiRefreshAmount2,0), apiBase=0, apiBaseMtime=0, apiBase2=0, apiBaseMtime2=0")) {
             $conf->update_schema_version(325);
         }
+        if ($conf->sversion === 325
+            && $conf->ql_ok("alter table ContactCounter add `sensitiveSearchCount` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactCounter add `sensitiveSearchFallbackCount` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactCounter add `sensitiveSearchBase` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactCounter add `sensitiveSearchBaseMtime` bigint NOT NULL DEFAULT 0")) {
+            $conf->update_schema_version(326);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

@@ -921,7 +921,7 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @return ?ContactCounter */
+    /** @return ContactCounter */
     function contact_counter() {
         if ($this->cdb_confid !== 0) {
             return $this->contact_counter_for(true, $this->contactDbId);
@@ -929,12 +929,16 @@ class Contact implements JsonSerializable {
         return $this->contact_counter_for(false, $this->contactId);
     }
 
-    /** @return ?ContactCounter */
+    /** @return ContactCounter */
     function contact_counter_for($is_cdb, $uid) {
         if (!$this->_ucounter) {
             $this->_ucounter = new ContactCounter($this->conf, $is_cdb, $uid);
         }
         return $this->_ucounter->find($is_cdb, $uid);
+    }
+
+    function invalidate_contact_counter() {
+        $this->_ucounter = null;
     }
 
     /** @return int */

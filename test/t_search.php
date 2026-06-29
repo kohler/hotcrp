@@ -296,4 +296,110 @@ class Search_Tester {
         xassert_eqq($tas[1]->heading, "ss:bar OR #baaar");
     }
 
+    function test_sensitive_search_rate_limit() {
+        $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($u->contactId > 0);
+        $this->conf->qe("delete from ContactCounter where contactId=?", $u->contactId);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", 2);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", 3600000);
+
+        // `sensitive_search_account()` updates the counter row directly in SQL
+        // and marks the in-memory object stale, so throughout this test we
+        // `invalidate_contact_counter()` before each search (to model a fresh
+        // per-request counter) and `->ensure()` afterward (to reload the
+        // persisted counts before asserting on them).
+
+        // `ti:the` is imprecise (SQL superset filtered in PHP); the budget
+        // permits 2 such searches, then degrades to leak-free precise SQL.
+        $u->invalidate_contact_counter();
+        $s1 = new PaperSearch($u, "ti:the");
+        $base = $s1->paper_ids();
+        $cc = $u->contact_counter()->ensure();
+        xassert_eqq($cc->sensitiveSearchCount, 1);   // accounted
+        xassert_eqq($cc->sensitiveSearchFallbackCount, 0);
+        xassert(count($base) > 0);
+
+        // Precise searches never consume the budget or degrade.
+        for ($i = 0; $i < 5; ++$i) {
+            $u->invalidate_contact_counter();
+            $sp = new PaperSearch($u, "status:submitted");
+            $sp->paper_ids();
+        }
+        $cc = $u->contact_counter()->ensure();
+        xassert_eqq($cc->sensitiveSearchCount, 1);   // unchanged by precise searches
+        xassert_eqq($cc->sensitiveSearchFallbackCount, 0);
+
+        // Go back to `ti:the`
+        $u->invalidate_contact_counter();
+        $s2 = new PaperSearch($u, "ti:the");
+        $s2->paper_ids();
+        $cc = $u->contact_counter()->ensure();
+        xassert_eqq($cc->sensitiveSearchCount, 2);
+        xassert_eqq($cc->sensitiveSearchFallbackCount, 0);
+
+        $u->invalidate_contact_counter();
+        $s3 = new PaperSearch($u, "ti:the");
+        $ids3 = $s3->paper_ids();
+        $cc = $u->contact_counter()->ensure();
+        xassert_eqq($cc->sensitiveSearchCount, 2);    // overbudget => fallback
+        xassert_eqq($cc->sensitiveSearchFallbackCount, 1);
+        xassert_eqq($ids3, $base);                   // results unchanged
+
+        // Chairs are exempt: their searches leak nothing, so they are never
+        // accounted even when imprecise.
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        xassert($chair->privChair);
+        $this->conf->qe("delete from ContactCounter where contactId=?", $chair->contactId);
+        for ($i = 0; $i < 5; ++$i) {
+            $chair->invalidate_contact_counter();
+            $sc = new PaperSearch($chair, "ti:the");
+            $sc->paper_ids();
+        }
+        $cc = $chair->contact_counter()->ensure();
+        xassert_eqq($cc->sensitiveSearchCount, 0);  // never accounted
+        xassert_eqq($cc->sensitiveSearchFallbackCount, 0);
+        $this->conf->qe("delete from ContactCounter where contactId=?", $chair->contactId);
+
+        $this->conf->qe("delete from ContactCounter where contactId=?", $u->contactId);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", null);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", null);
+    }
+
+    function test_sensitive_search_window_rollover() {
+        $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $this->conf->qe("delete from ContactCounter where contactId=?", $u->contactId);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", 2);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", 1000);   // 1-second window
+
+        // Drive accounting directly so we can control time and cross a window
+        // boundary; `invalidate_contact_counter()` models a fresh request.
+        $account = function () use ($u) {
+            $u->invalidate_contact_counter();
+            return $u->contact_counter()->sensitive_search_account();
+        };
+
+        $save = Conf::$unow;
+        Conf::set_current_time(1700000000.0);
+
+        xassert($account());                                // 1: accounted
+        xassert($account());                                // 2: accounted
+        xassert(!$account());                               // 3: over budget within the window
+        $cc = $u->contact_counter()->ensure();
+        xassert_eqq($cc->sensitiveSearchCount, 2);
+        xassert_eqq($cc->sensitiveSearchFallbackCount, 1);
+
+        // roll past the window end: the budget refreshes
+        Conf::set_current_time(1700000002.0);
+        xassert($account());
+        $cc = $u->contact_counter()->ensure();
+        xassert_eqq($cc->sensitiveSearchCount, 3);          // accounted again
+        xassert_eqq($cc->sensitiveSearchBase, 2);           // base advanced to the rollover count
+        xassert_eqq($cc->sensitiveSearchFallbackCount, 1);  // unchanged by the refresh
+
+        Conf::set_current_time($save);
+        $this->conf->qe("delete from ContactCounter where contactId=?", $u->contactId);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", null);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", null);
+    }
+
 }

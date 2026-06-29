@@ -13,7 +13,7 @@ class ContactCounter {
      * @readonly */
     public $contactId;
     /** @var bool - true if this counter has been loaded */
-    public $is_loaded = false;
+    public $is_loaded;
     /** @var int - total number of API requests made */
     public $apiCount;
     /** @var int - apiCount at window 1 start */
@@ -32,8 +32,21 @@ class ContactCounter {
     public $apiRefreshWindow2;
     /** @var int - refresh count of window 2; null = default (250 req) */
     public $apiRefreshAmount2;
+    /** @var int - total number of sensitive searches made */
+    public $sensitiveSearchCount;
+    /** @var int - total number of sensitive searches made via fallback */
+    public $sensitiveSearchFallbackCount;
+    /** @var int - sensitiveSearchCount at window start */
+    public $sensitiveSearchBase;
+    /** @var int - time in msec at window start */
+    public $sensitiveSearchBaseMtime;
     /** @var ?ContactCounter */
     private $_related;
+    /** @var ?bool */
+    private $_sensitive_search;
+
+    const DEFAULT_SSRW = 60000;
+    const DEFAULT_SSRA = 6;
 
     /** @param Conf $conf
      * @param bool $is_cdb
@@ -42,6 +55,16 @@ class ContactCounter {
         $this->conf = $conf;
         $this->is_cdb = $is_cdb;
         $this->contactId = $contactId;
+        if ($this->contactId <= 0) {
+            $this->apiCount = $this->apiBase = $this->apiBase2 = 0;
+            $this->apiBaseMtime = $this->apiBaseMtime2 = 0;
+            $this->apiRefreshWindow = $this->apiRefreshAmount = 0;
+            $this->apiRefreshWindow2 = $this->apiRefreshAmount2 = 0;
+            $this->_sensitive_search = false;
+            $this->is_loaded = true;
+        } else {
+            $this->is_loaded = false;
+        }
     }
 
     /** @param bool $is_cdb
@@ -91,19 +114,16 @@ class ContactCounter {
         } else {
             $this->apiRefreshAmount2 = $this->conf->opt("apiRefreshAmount2") ?? 250;
         }
+        $this->sensitiveSearchCount = (int) $x->sensitiveSearchCount;
+        $this->sensitiveSearchFallbackCount = (int) $x->sensitiveSearchFallbackCount;
+        $this->sensitiveSearchBase = (int) $x->sensitiveSearchBase;
+        $this->sensitiveSearchBaseMtime = (int) $x->sensitiveSearchBaseMtime;
     }
 
-    private function ensure() {
+    /** @return $this */
+    function ensure() {
         if ($this->is_loaded) {
-            return;
-        }
-        $this->is_loaded = true;
-        if ($this->contactId <= 0) {
-            $this->apiCount = $this->apiBase = $this->apiBase2 = 0;
-            $this->apiBaseMtime = $this->apiBaseMtime2 = 0;
-            $this->apiRefreshWindow = $this->apiRefreshAmount = 0;
-            $this->apiRefreshWindow2 = $this->apiRefreshAmount2 = 0;
-            return;
+            return $this;
         }
         $dblink = $this->dblink();
         while (true) {
@@ -112,13 +132,11 @@ class ContactCounter {
             Dbl::free($result);
             if ($row) {
                 $this->fetch_incorporate($row);
-                return;
+                return $this;
             }
             Dbl::qe_raw($dblink, "insert into ContactCounter set contactId={$this->contactId} on duplicate key update apiCount=apiCount");
         }
     }
-
-// UPDATE ContactCounter set apiCount=apiCount+1 where apiCount<apiBase+coalesce(apiRefreshAmount,?) and apiCount<apiBase2+coalese(apiRefreshAmount2,?)
 
     /** @return bool */
     function api_account() {
@@ -200,5 +218,44 @@ class ContactCounter {
             return JsonResult::make_error(403, "<0>API access disabled");
         }
         return JsonResult::make_error(429, "<0>Rate limit exceeded");
+    }
+
+    /** Account one sensitive (timing-channel-prone) search against this user's
+     * budget. Returns false if the user is over budget, in which case the
+     * caller should fall back to leak-free `precise_sqlexpr()`. All sensitive
+     * searches during the same request are treated the same.
+     * Do not require a loaded counter.
+     * @return bool */
+    function sensitive_search_account() {
+        if ($this->_sensitive_search !== null) {
+            return $this->_sensitive_search;
+        }
+        $defwindow = (int) ($this->conf->opt("sensitiveSearchRefreshWindow") ?? self::DEFAULT_SSRW);
+        $defamount = (int) ($this->conf->opt("sensitiveSearchRefreshAmount") ?? self::DEFAULT_SSRA);
+        if ($defamount <= 0) {
+            $this->_sensitive_search = false;
+        } else if ($defwindow <= 0) {
+            $this->_sensitive_search = true;
+        } else {
+            $nowms = (int) (Conf::$unow * 1000);
+            $neednewbase = "sensitiveSearchBaseMtime+{$defwindow}<={$nowms}";
+            $result = Dbl::qe($this->dblink(), "update ContactCounter
+                set sensitiveSearchBase=if({$neednewbase},sensitiveSearchCount,sensitiveSearchBase),
+                    sensitiveSearchBaseMtime=if({$neednewbase},{$nowms},sensitiveSearchBaseMtime),
+                    sensitiveSearchCount=sensitiveSearchCount+1
+                where contactId={$this->contactId}
+                    and ({$neednewbase} or sensitiveSearchCount<sensitiveSearchBase+{$defamount})");
+            $this->_sensitive_search = $result->affected_rows > 0;
+            if (!$this->_sensitive_search) {
+                $result = Dbl::qe($this->dblink(), "insert into ContactCounter
+                    set contactId={$this->contactId},
+                        sensitiveSearchBaseMtime={$nowms},
+                        sensitiveSearchCount=1
+                    on duplicate key update sensitiveSearchFallbackCount=sensitiveSearchFallbackCount+1");
+                $this->_sensitive_search = $result->affected_rows === 1;
+            }
+            $this->is_loaded = false;
+        }
+        return $this->_sensitive_search;
     }
 }
