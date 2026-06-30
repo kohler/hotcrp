@@ -25,7 +25,7 @@ class APICounter_Tester {
         $this->conf->set_opt("apiRefreshAmount", $a1);
         $this->conf->set_opt("apiRefreshWindow2", $w2);
         $this->conf->set_opt("apiRefreshAmount2", $a2);
-        return new ContactCounter($this->conf, false, $this->uid);
+        return $this->conf->fresh_user_by_id($this->uid)->contact_counter();
     }
 
     /** Render the rate-limit headers into a name=>value map.

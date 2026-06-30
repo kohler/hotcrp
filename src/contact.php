@@ -216,6 +216,8 @@ class Contact implements JsonSerializable {
     private $_activated = 0;
     /** @var ?TokenScope */
     private $_scope;
+    /** @var ?ContactCounter */
+    private $_ucounter;
     // $_admin_base_user: base authenticated user in case of actas
     /** @var ?Contact */
     private $_admin_base_user;
