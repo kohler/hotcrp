@@ -325,9 +325,12 @@ function initialize_user($qreq, $kwarg = null) {
             $user->set_scope($scope);
         }
         Contact::set_main_user($user);
-        $ucounter = ContactCounter::find_by_uid($conf, $token->is_cdb, $token->contactId);
-        $ucounter->api_refresh();
-        $ucounter->api_account(true);
+        $ucounter = $user->contact_counter_for($token->is_cdb, $token->contactId);
+        $allow = $ucounter->api_account();
+        $ucounter->api_ratelimit_headers();
+        if (!$allow) {
+            $ucounter->api_fail()->complete();
+        }
         $token->update_use(86400)->update(); // mark use once a day
         return $user->activate($qreq, true);
     }

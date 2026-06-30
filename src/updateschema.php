@@ -3280,6 +3280,18 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table Paper add `timeAcceptNotified` bigint NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(324);
         }
+        if ($conf->sversion === 324
+            && $conf->ql_ok("alter table ContactCounter change `apiLimit` `apiBase` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactCounter change `apiRefreshMtime` `apiBaseMtime` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactCounter change `apiRefreshWindow` `apiRefreshWindow` int DEFAULT NULL")
+            && $conf->ql_ok("alter table ContactCounter change `apiRefreshAmount` `apiRefreshAmount` int DEFAULT NULL")
+            && $conf->ql_ok("alter table ContactCounter change `apiLimit2` `apiBase2` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactCounter change `apiRefreshMtime2` `apiBaseMtime2` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactCounter change `apiRefreshWindow2` `apiRefreshWindow2` int DEFAULT NULL")
+            && $conf->ql_ok("alter table ContactCounter change `apiRefreshAmount2` `apiRefreshAmount2` int DEFAULT NULL")
+            && $conf->ql_ok("update ContactCounter set apiRefreshWindow=NULLIF(apiRefreshWindow,0), apiRefreshAmount=NULLIF(apiRefreshAmount,0), apiRefreshWindow2=NULLIF(apiRefreshWindow2,0), apiRefreshAmount2=NULLIF(apiRefreshAmount2,0), apiBase=0, apiBaseMtime=0, apiBase2=0, apiBaseMtime2=0")) {
+            $conf->update_schema_version(325);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

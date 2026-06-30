@@ -919,6 +919,22 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @return ?ContactCounter */
+    function contact_counter() {
+        if ($this->cdb_confid !== 0) {
+            return $this->contact_counter_for(true, $this->contactDbId);
+        }
+        return $this->contact_counter_for(false, $this->contactId);
+    }
+
+    /** @return ?ContactCounter */
+    function contact_counter_for($is_cdb, $uid) {
+        if (!$this->_ucounter) {
+            $this->_ucounter = new ContactCounter($this->conf, $is_cdb, $uid);
+        }
+        return $this->_ucounter->find($is_cdb, $uid);
+    }
+
     /** @return int */
     function overrides() {
         return $this->_overrides;
