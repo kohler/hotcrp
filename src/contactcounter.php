@@ -114,10 +114,13 @@ class ContactCounter {
         } else {
             $this->apiRefreshAmount2 = $this->conf->opt("apiRefreshAmount2") ?? 250;
         }
-        $this->sensitiveSearchCount = (int) $x->sensitiveSearchCount;
-        $this->sensitiveSearchFallbackCount = (int) $x->sensitiveSearchFallbackCount;
-        $this->sensitiveSearchBase = (int) $x->sensitiveSearchBase;
-        $this->sensitiveSearchBaseMtime = (int) $x->sensitiveSearchBaseMtime;
+        // CDB lacks these
+        if (isset($x->sensitiveSearchCount)) {
+            $this->sensitiveSearchCount = (int) $x->sensitiveSearchCount;
+            $this->sensitiveSearchFallbackCount = (int) $x->sensitiveSearchFallbackCount;
+            $this->sensitiveSearchBase = (int) $x->sensitiveSearchBase;
+            $this->sensitiveSearchBaseMtime = (int) $x->sensitiveSearchBaseMtime;
+        }
     }
 
     /** @return $this */
