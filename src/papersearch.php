@@ -1085,6 +1085,19 @@ class PaperSearch extends MessageSet {
         return SearchTerm::combine("and", $this->_limit_qe, $this->_qe);
     }
 
+    private function _log_sensitive_search() {
+        $line = CsvGenerator::quote_join([
+            Conf::$now,
+            $this->conf->dbname,
+            $this->user->contactId,
+            $this->user->email,
+            $this->limit(),
+            $this->q
+        ]);
+        $fn = SiteLoader::find("var/sensitivesearches.csv");
+        @file_put_contents($fn, "{$line}\n", FILE_APPEND);
+    }
+
     private function _prepare_result(SearchTerm $qe) {
         $sqi = new SearchQueryInfo($this);
         $sqi->add_column("paperId", "Paper.paperId");
@@ -1104,9 +1117,14 @@ class PaperSearch extends MessageSet {
         // too many imprecise searches, fall back to filtering only in PHP.
         // Chairs are exempt: they can view the hidden data, so their searches
         // leak nothing.
-        if ($this->user->privChair
+        $allow_imprecise = $this->user->privChair
             || ($this->_limit_qe->is_sqlexpr_precise() && $qe->is_sqlexpr_precise())
-            || $this->user->contact_counter()->sensitive_search_account()
+            || $this->user->contact_counter()->sensitive_search_account();
+        if (!$allow_imprecise
+            && $this->conf->opt("sensitiveSearchLog")) {
+            $this->_log_sensitive_search();
+        }
+        if ($allow_imprecise
             || $this->conf->opt("sensitiveSearchAccountOnly")) {
             $filter = SearchTerm::andjoin_sqlexpr([
                 $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
