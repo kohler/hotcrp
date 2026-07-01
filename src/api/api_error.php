@@ -93,18 +93,21 @@ class Error_API {
                 "body_content_type" => $qreq->body_content_type(),
                 "body_type" => gettype($j)
             ]);
-        } else if (empty($t)) {
+        }
+        $f = $user->conf->opt("cspReportFile");
+        if (empty($t) || !is_string($f)) {
             return JsonResult::make_ok();
         }
-        $f = $user->conf->opt("cspReportFile") ?? SiteLoader::find("var/cspreports.json-seq");
-        if (!file_exists($f)
+        $f = SiteLoader::resolve($f);
+        if ((!file_exists($f)
+             && @file_put_contents($f, "") === false)
             || !is_file($f)
             || !is_writable($f)) {
-            return JsonResult::make_error(503, "<0>Report cannot be saved");
+            return JsonResult::make_message_list(200, MessageItem::error("<0>Report ignored"));
         } else if (filesize($f) >= 3000000) {
-            return JsonResult::make_error(503, "<0>Report quota reached");
+            return JsonResult::make_message_list(200, MessageItem::error("<0>Report not saved, quota reached"));
         } else if (@file_put_contents($f, join("", $t), FILE_APPEND) === false) {
-            return JsonResult::make_error(500, "<0>Report not saved");
+            return JsonResult::make_message_list(200, MessageItem::error("<0>Report not saved"));
         }
         return JsonResult::make_ok();
     }
