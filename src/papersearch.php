@@ -367,6 +367,7 @@ class PaperSearch extends MessageSet {
         }
         $lword = SearchWord::make_simple($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
+        $this->_limit_qe->set_base();
         $this->_limit_override = $toverride ? 0 : -1;
     }
 
@@ -1047,7 +1048,8 @@ class PaperSearch extends MessageSet {
         if ($this->_qe === null) {
             $this->_has_qe = true;
             if ($this->query_is_re_me()) {
-                $this->_qe = new Limit_SearchTerm($this, "r", true);
+                $this->_qe = new Limit_SearchTerm($this, "r");
+                $this->_qe->set_implicit();
             } else if (($qe = $this->_search_expression($this->q))) {
                 $this->_qe = $qe;
             } else {

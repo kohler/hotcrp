@@ -27,8 +27,9 @@ class Decision_SearchTerm extends SearchTerm {
             $srch->lwarning($sword, "<0>Decision not found");
             return new Decision_SearchTerm($srch->user, [-10000000]);
         }
+        $lim = new Limit_SearchTerm($srch, "dec:" . SearchWord::quote($word));
+        $lim->set_implicit();
         $st = new Decision_SearchTerm($srch->user, $decs);
-        $lim = new Limit_SearchTerm($srch, "dec:" . SearchWord::quote($word), true);
         $st->set_float("xlimit", $lim);
         return $st;
     }

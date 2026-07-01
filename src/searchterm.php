@@ -105,6 +105,11 @@ abstract class SearchTerm {
         return $this->float[$k] ?? null;
     }
 
+    /** @param string $k */
+    final function clear_float($k) {
+        unset($this->float[$k]);
+    }
+
     /** @param int $pos1
      * @param int $pos2
      * @param ?SearchStringContext $context */
@@ -210,7 +215,8 @@ abstract class SearchTerm {
         return null;
     }
 
-    /** @return string */
+    /** @param list<string> $ff
+     * @return string */
     static function andjoin_sqlexpr($ff) {
         if (empty($ff) || in_array("false", $ff, true)) {
             return "false";
@@ -224,16 +230,22 @@ abstract class SearchTerm {
         return "(" . join(" and ", $ff) . ")";
     }
 
-    /** @param list<string> $q
+    /** @param list<string> $ff
      * @param 'false'|'true' $default
      * @return string */
-    static function orjoin_sqlexpr($q, $default) {
-        if (empty($q)) {
+    static function orjoin_sqlexpr($ff, $default) {
+        if (empty($ff)) {
             return $default;
-        } else if (in_array("true", $q, true)) {
+        } else if (in_array("true", $ff, true)) {
             return "true";
         }
-        return "(" . join(" or ", $q) . ")";
+        $ff = array_filter($ff, function ($f) { return $f !== "false"; });
+        if (empty($ff)) {
+            return "false";
+        } else if (count($ff) === 1) {
+            return join("", $ff);
+        }
+        return "(" . join(" or ", $ff) . ")";
     }
 
     /** @return bool */
@@ -1031,7 +1043,7 @@ class Limit_SearchTerm extends SearchTerm {
     public $named_limit;
     /** @var int
      * @readonly */
-    public $lflag;
+    public $lflag = 0;
     /** @var string */
     private $limit_class;
     /** @var ?list<int> */
@@ -1087,9 +1099,12 @@ class Limit_SearchTerm extends SearchTerm {
 
     const LFLAG_ACTIVE = 1;
     const LFLAG_SUBMITTED = 2;
-    const LFLAG_IMPLICIT = 4;
-    const LFLAG_ACCEPTED = 8;
-    const LFLAG_STDDEC = 16;
+    const LFLAG_ACCEPTED = 4;
+    const LFLAG_STDDEC = 8;
+    const LFLAG_AUTHOR = 16;
+    const LFLAGM_TYPE = 0x1F;
+    const LFLAG_IMPLICIT = 32;
+    const LFLAG_BASE = 64;
 
     /** @param string|SearchWord $limit */
     function __construct(PaperSearch $srch, $limit, $implicit = false) {
@@ -1097,11 +1112,7 @@ class Limit_SearchTerm extends SearchTerm {
         $this->user = $srch->user;
         $this->reviewer = $srch->reviewer_user();
         $this->set_limit($limit, $srch);
-        if ($implicit) {
-            $this->lflag |= self::LFLAG_IMPLICIT;
-        } else {
-            $this->set_float("xlimit", $this);
-        }
+        $this->set_float("xlimit", $this);
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -1119,6 +1130,19 @@ class Limit_SearchTerm extends SearchTerm {
             return [$limit, $limit];
         }
         return null;
+    }
+
+    /** @return $this */
+    function set_implicit() {
+        $this->lflag |= self::LFLAG_IMPLICIT;
+        $this->clear_float("xlimit");
+        return $this;
+    }
+
+    /** @return $this */
+    function set_base() {
+        $this->lflag |= self::LFLAG_BASE;
+        return $this;
     }
 
     /** @param string|SearchWord $limit
@@ -1182,31 +1206,32 @@ class Limit_SearchTerm extends SearchTerm {
         $this->limit = $this->limit_class = $limstr;
 
         // mark flags
+        $this->lflag &= ~self::LFLAGM_TYPE;
         if (str_starts_with($limstr, "dec:")) {
             $this->limit_class = "dec";
-            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED | self::LFLAG_STDDEC;
+            $this->lflag |= self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED | self::LFLAG_STDDEC;
             $decset = $this->user->conf->decision_set();
             $this->xlist = $decset->matchexpr(SearchWord::unquote(substr($limstr, 4)), true);
             foreach ($this->xlist as $dec) {
                 if ($decset->get($dec)->sign === -2) {
-                    $this->lflag = self::LFLAG_SUBMITTED;
+                    $this->lflag &= ~(self::LFLAG_ACCEPTED | self::LFLAG_STDDEC);
                 } else if ($dec <= 0) {
                     $this->lflag &= ~self::LFLAG_ACCEPTED;
                 }
             }
         } else if (in_array($limstr, ["a", "ar", "r", "req", "viewable",
                                       "reviewable", "all", "none"], true)) {
-            $this->lflag = 0;
+            $this->lflag |= 0;
         } else if ($limstr === "accepted") {
-            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
+            $this->lflag |= self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
         } else if ($limstr === "undecided") {
-            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
+            $this->lflag |= self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
         } else if (in_array($limstr, ["active", "unsub", "actadmin"], true)
                    || ($conf->can_pc_view_some_incomplete()
                        && !in_array($limstr, ["s", "accepted"], true))) {
-            $this->lflag = self::LFLAG_ACTIVE | self::LFLAG_STDDEC;
+            $this->lflag |= self::LFLAG_ACTIVE | self::LFLAG_STDDEC;
         } else {
-            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
+            $this->lflag |= self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
         }
     }
 
@@ -1372,17 +1397,49 @@ class Limit_SearchTerm extends SearchTerm {
             }
         }
 
-        $act_reviewer_sql = "error";
-        if (in_array($this->limit, ["ar", "r", "rout"], true)) {
+        // Author/reviewer restrictions
+        $need_ar = 0;
+        if ($this->limit === "a") {
+            $need_ar = 1;
+        } else if ($this->limit === "r") {
+            $need_ar = 2;
+        } else if ($this->limit === "ar") {
+            $need_ar = 3;
+        } else if (($this->lflag & self::LFLAG_BASE) !== 0
+                   && !$this->user->isPC
+                   && $this->limit !== "rout") {
+            // Users other than PC members cannot search all papers.
+            // Always apply their inherent restrictions to the base limit query.
+            $need_ar = 3;
+        }
+
+        $act_author_sql = $act_reviewer_sql = "false";
+        if ($need_ar & 1) {
+            $act_author_sql = $this->user->act_author_view_sql($sqi->conflict_table($this->user));
+        }
+        if (($need_ar & 2) || $this->limit === "rout") {
             $sqi->add_reviewer_columns();
             if ($sqi->required()) {
                 $act_reviewer_sql = $this->user->act_reviewer_sql("MyReviews");
                 if ($act_reviewer_sql !== "false") {
-                    $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
+                    $sqi->add_table("MyReviews", [$need_ar === 3 ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
                 }
             } else {
                 $act_reviewer_sql = $this->user->act_reviewer_sql("PaperReview");
             }
+        }
+        if ($need_ar !== 0) {
+            $arf = [$act_author_sql];
+            if ($act_reviewer_sql === "false") {
+                $arf[] = $act_reviewer_sql;
+            } else if (!$sqi->required()) {
+                $arf[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
+            } else if ($need_ar === 2) {
+                $arf[] = "true"; // `join` suffices
+            } else {
+                $arf[] = "MyReviews.reviewType is not null";
+            }
+            $ff[] = self::orjoin_sqlexpr($arf, "false");
         }
 
         switch ($this->limit_class) {
@@ -1395,26 +1452,9 @@ class Limit_SearchTerm extends SearchTerm {
             $sqi->add_reviewer_columns();
             break;
         case "a":
-            $ff[] = $this->user->act_author_view_sql($sqi->conflict_table($this->user));
-            break;
-        case "ar":
-            if ($act_reviewer_sql === "false") {
-                $r = "false";
-            } else if ($sqi->required()) {
-                $r = "MyReviews.reviewType is not null";
-            } else {
-                $r = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
-            }
-            $ff[] = "(" . $this->user->act_author_view_sql($sqi->conflict_table($this->user)) . " or {$r})";
-            break;
         case "r":
-            if ($act_reviewer_sql === "false") {
-                $ff[] = "false";
-            } else if ($sqi->required()) {
-                // the `join` with MyReviews suffices
-            } else {
-                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
-            }
+        case "ar":
+            assert($need_ar !== 0 && !empty($ff));
             break;
         case "rout":
             if ($act_reviewer_sql === "false") {

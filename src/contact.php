@@ -4107,11 +4107,12 @@ class Contact implements JsonSerializable {
         if ($rights->allow_author_view()) {
             return true;
         }
-        // reviewers can view papers; active reviewers can view PDFs submitted
-        // papers, including withdrawn + submitted papers
+        // reviewers can view papers; active reviewers can view PDFs for
+        // submitted (or withdrawn + submitted) papers
         if ($rights->review_status > 0
-            && (!$pdf || ($rights->review_status > PCI::CIRS_DECLINED
-                          && $prow->timeSubmitted != 0))) {
+            && (!$pdf
+                || ($rights->review_status > PCI::CIRS_DECLINED
+                    && $prow->timeSubmitted != 0))) {
             return true;
         }
         // PC can see papers and usually PDFs
