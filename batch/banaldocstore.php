@@ -27,7 +27,7 @@ class BanalDocstore_Batch {
         $matcher = new DocumentHashMatcher($arg["match"] ?? null);
         $matcher->set_extension(".pdf");
         $this->fparts = new DocumentFileTree($ds->full_pattern(), $matcher);
-        $this->cf = new CheckFormat($conf);
+        $this->cf = new CheckFormat($conf, CheckFormat::RUN_ALWAYS);
     }
 
     /** @return int */
