@@ -95,10 +95,10 @@ class Error_API {
             ]);
         }
         $f = $user->conf->opt("cspReportFile");
-        if (empty($t) || !is_string($f)) {
+        if (empty($t) || (!is_string($f) && $f !== true)) {
             return JsonResult::make_ok();
         }
-        $f = SiteLoader::resolve($f);
+        $f = SiteLoader::resolve($f === true ? "var/cspreports.jsonseq" : $f);
         if ((!file_exists($f)
              && @file_put_contents($f, "") === false)
             || !is_file($f)
