@@ -1069,6 +1069,7 @@ class Limit_SearchTerm extends SearchTerm {
         "alladmin" => "alladmin",
         "ar" => "ar",
         "author" => ["a", "author"],
+        "dec:none" => "undecided",
         "dec:yes" => "accepted",
         "editpref" => "reviewable",
         "lead" => "lead",
@@ -1126,7 +1127,7 @@ class Limit_SearchTerm extends SearchTerm {
         } else if (($rt = self::$reqtype_map[$limit] ?? null) !== null) {
             return is_string($rt) ? [$rt, $rt] : $rt;
         } else if (str_starts_with($limit, "dec:")
-                   && count($conf->decision_set()->matchexpr(SearchWord::unquote(substr($limit, 4)), true)) > 0) {
+                   && count($conf->decision_set()->match(SearchWord::unquote(substr($limit, 4)))) > 0) {
             return [$limit, $limit];
         }
         return null;

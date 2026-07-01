@@ -287,23 +287,25 @@ class PaperSearch extends MessageSet {
     /** @var ?list<SearchTerm> */
     private $_group_slice_terms;
 
-    static public $search_type_names = [
-        "a" => "Your submissions",
+    static private $search_type_descriptions = [
+        "a" => "Your {submissions}",
         "accepted" => "Accepted",
         "active" => "Active",
-        "admin" => "Submissions you administer",
+        "admin" => "{Submissions} you administer",
         "all" => "All",
-        "alladmin" => "Submissions you’re allowed to administer",
+        "alladmin" => "{Submissions} you’re allowed to administer",
+        "ar" => "Your {submissions} and reviews",
         "lead" => "Your discussion leads",
+        "none" => "None",
         "r" => "Your reviews",
-        "reviewable" => "Reviewable",
         "req" => "Your review requests",
+        "reviewable" => "Reviewable",
         "rout" => "Your incomplete reviews",
         "s" => "Submitted",
         "undecided" => "Undecided",
-        "viewable" => "Submissions you can view"
+        "unsub" => "Draft {submissions}",
+        "viewable" => "{Submissions} you can view"
     ];
-
 
     /** @param Qrequest $qreq
      * @return array<string,mixed> */
@@ -1626,7 +1628,11 @@ class PaperSearch extends MessageSet {
 
     /** @return string */
     static function limit_description(Conf $conf, $t, ...$args) {
-        return $conf->_c("search_type", $t, ...$args);
+        $text = self::$search_type_descriptions[$t] ?? null;
+        if ($text === null) {
+            $text = "Limit “{$t}”";
+        }
+        return $conf->_c("search_type", $text, ...$args);
     }
 
     /** @param ?string $reqtype
@@ -1672,11 +1678,17 @@ class PaperSearch extends MessageSet {
         if ($user->is_author() || $reqtype === "a") {
             $ts[] = "a";
         }
+        if ($reqtype === "ar") {
+            $ts[] = "ar";
+        }
         if ($user->can_view_some_incomplete()) {
             $ts[] = "active";
         }
         if ($user->privChair) {
             $ts[] = "all";
+        }
+        if (!in_array($reqtype, $ts, true)) {
+            $ts[] = $reqtype;
         }
         return $ts;
     }

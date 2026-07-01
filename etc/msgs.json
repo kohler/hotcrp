@@ -131,27 +131,12 @@
 
     {
         "context": "search_type", "m": [
-            ["a", "Your {submissions}"],
-            ["accepted", "Accepted"],
-            ["accepted", "Accepted {submissions}", ["{full}"]],
-            ["active", "Active"],
-            ["active", "Active {submissions}", ["{full}"]],
-            ["admin", "{Submissions} you administer"],
-            ["all", "All"],
-            ["all", "All {submissions}", ["{full}"]],
-            ["alladmin", "{Submissions} you’re allowed to administer"],
-            ["lead", "Your discussion leads"],
-            ["r", "Your reviews"],
-            ["reviewable", "Reviewable"],
-            ["reviewable", "Reviewable {submissions}", ["{full}"]],
-            ["req", "Your review requests"],
-            ["rout", "Your incomplete reviews"],
-            ["s", "Submitted"],
-            ["s", "Ready {submissions}", ["{full}"]],
-            ["undecided", "Undecided"],
-            ["undecided", "Undecided {submissions}", ["{full}"]],
-            ["unsub", "Draft {submissions}"],
-            ["viewable", "{Submissions} you can view"]
+            ["Accepted", "Accepted {submissions}", ["{full}"]],
+            ["Active", "Active {submissions}", ["{full}"]],
+            ["All", "All {submissions}", ["{full}"]],
+            ["Reviewable", "Reviewable {submissions}", ["{full}"]],
+            ["Submitted", "Ready {submissions}", ["{full}"]],
+            ["Undecided", "Undecided {submissions}", ["{full}"]]
         ]
     },
 
