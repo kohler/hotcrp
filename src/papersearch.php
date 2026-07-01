@@ -1118,7 +1118,7 @@ class PaperSearch extends MessageSet {
         // Chairs are exempt: they can view the hidden data, so their searches
         // leak nothing.
         $allow_imprecise = $this->user->privChair
-            || ($this->_limit_qe->is_sqlexpr_precise() && $qe->is_sqlexpr_precise())
+            || $qe->is_sqlexpr_precise()
             || $this->user->contact_counter()->sensitive_search_account();
         if (!$allow_imprecise
             && $this->conf->opt("sensitiveSearchLog")) {
@@ -1131,7 +1131,7 @@ class PaperSearch extends MessageSet {
             ]);
         } else {
             $filter = SearchTerm::andjoin_sqlexpr([
-                $this->_limit_qe->precise_sqlexpr($sqi), $qe->precise_sqlexpr($sqi)
+                $this->_limit_qe->sqlexpr($sqi), $qe->precise_sqlexpr($sqi)
             ]);
         }
         //Conf::msg_debugt($filter);

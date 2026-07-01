@@ -1467,7 +1467,9 @@ class Limit_SearchTerm extends SearchTerm {
             }
             break;
         case "accepted":
-            $ff[] = "Paper.outcome>0";
+            if ($this->user->can_view_all_decision()) {
+                $ff[] = "Paper.outcome>0";
+            }
             break;
         case "undecided":
             if ($this->user->can_view_all_decision()) {
