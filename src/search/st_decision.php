@@ -35,13 +35,14 @@ class Decision_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         if (!$this->user->can_view_some_decision()) {
             return in_array(0, $this->decs, true) ? "true" : "false";
+        } else if (in_array(0, $this->decs, true)
+                   && !$this->user->can_view_all_decision()) {
+            return "true";
         }
-        $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->decs)];
-        if (in_array(0, $this->decs, true)
-            && !$this->user->allow_admin_all()) {
-            $f[] = "Paper.outcome=0";
-        }
-        return "(" . join(" or ", $f) . ")";
+        return "Paper.outcome" . CountMatcher::sqlexpr_using($this->decs);
+    }
+    function is_sqlexpr_precise() {
+        return $this->user->can_view_all_decision();
     }
     function test(PaperInfo $row, $xinfo) {
         $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
