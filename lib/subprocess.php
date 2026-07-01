@@ -46,7 +46,11 @@ class Subprocess {
         return $this;
     }
 
-    /** @param callable(Subprocess) $f
+    /** Register a function called while the subprocess runs. Progress functions
+     * are invoked once per I/O loop iteration; this can be very frequently
+     * (callers should self-throttle using `Subprocess::$runtime`), but will
+     * be at least once every 5 seconds.
+     * @param callable(Subprocess) $f
      * @return $this */
     function add_progress_function($f) {
         $this->_progress_functions[] = $f;

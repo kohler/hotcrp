@@ -32,6 +32,12 @@ class CheckFormat extends MessageSet {
     private $last_spec;
     /** @var ?object */
     private $last_banal;
+    /** @var ?Conf */
+    private $banal_conf;
+    /** @var ?string */
+    private $banal_key;
+    /** @var ?int */
+    private $banal_key_expiry;
     /** @var ?string */
     public $banal_stdout;
     /** @var ?string */
@@ -64,6 +70,22 @@ class CheckFormat extends MessageSet {
         $this->fcheckers["default"] = new Default_FormatChecker;
     }
 
+    /** @return int */
+    private function banal_lock_expiry() {
+        $conf = $this->banal_conf ?? $this->conf;
+        return $conf->opt("banalLockExpiry") ?? 60;
+    }
+
+    function run_banal_progress($subp) {
+        $t = time();
+        if ($t >= $this->banal_key_expiry - 20) {
+            $expiry = $this->banal_lock_expiry();
+            $this->banal_conf->qe("update Settings set value=? where name=? and value=?",
+                $t + $expiry, $this->banal_key, $this->banal_key_expiry);
+            $this->banal_key_expiry = $t + $expiry;
+        }
+    }
+
     /** @param string $filename
      * @return ?object */
     function run_banal($filename) {
@@ -79,8 +101,11 @@ class CheckFormat extends MessageSet {
         }
         $command[] = $filename;
         $subp = (new Subprocess($command, SiteLoader::$root))
-            ->set_env($env)
-            ->run();
+            ->set_env($env);
+        if ($this->banal_key) {
+            $subp->add_progress_function([$this, "run_banal_progress"]);
+        }
+        $subp->run();
         $this->banal_status = $subp->status;
         $this->banal_stdout = $subp->stdout;
         $this->banal_stderr = $subp->stderr;
@@ -184,31 +209,50 @@ class CheckFormat extends MessageSet {
             return $this->complete_banal_json($bj, $flags & ~CheckFormat::RUN_ALLOWED);
         }
 
-        // constrain the number of concurrent banal executions to banalLimit
-        // (counter resets every 2 seconds)
-        $t = (int) (time() / 2);
-        $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
-        $limit = $doc->conf->opt("banalLimit") ?? 8;
-        if ($limit > 0) {
-            if ($n > $limit) {
-                $this->error_at("error", "<0>Server too busy to check paper formats");
-                $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
-                return $this->complete_banal_json($bj, $flags | CheckFormat::RUN_ABANDONED);
+        // restrict concurrent and duplicate runs with Settings rows
+        // Setting `__banal.PAPERID.DOCID` indicates a run is in progress for that document;
+        // the value is the expiry time.
+        $now = time();
+        $limit = $doc->conf->opt("banalLimit") ?? 12;
+        $nlive = 0;
+        $dead = [];
+        foreach ($doc->conf->settings as $name => $value) {
+            if (str_starts_with($name, "__banal.")) {
+                $value >= $now ? ++$nlive : ($dead[] = $name);
             }
-            $doc->conf->q("insert into Settings set name=?, value=?, data=? ?U on duplicate key update value=?U(value), data=?U(data)",
-                          "__banal_count", $n, (string) $t);
+        }
+        if (count($dead) >= 10) {
+            $doc->conf->qe("delete from Settings where name?a and value<?", $dead, $now);
+        }
+        if ($limit > 0 && $nlive >= $limit) {
+            $this->error_at("error", "<0>Server too busy to check paper formats");
+            $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
+            return $this->complete_banal_json($bj, $flags | CheckFormat::RUN_ABANDONED);
+        }
+
+        // claim this document's lease by compare-and-swap
+        $this->banal_conf = $doc->conf;
+        $this->banal_key = "__banal.{$doc->paperId}.{$doc->paperStorageId}";
+        $this->banal_key_expiry = $now + $this->banal_lock_expiry();
+        $result = $doc->conf->qe("insert into Settings set name=?, value=? ?U on duplicate key update value=if(value<?,?U(value),value)", $this->banal_key, $this->banal_key_expiry, $now);
+        if ($result->affected_rows === 0) {
+            $this->error_at("error", "<0>Concurrent format checker run in progress");
+            $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
+            $this->banal_key = null;
+            return $this->complete_banal_json($bj, $flags | CheckFormat::RUN_ABANDONED);
         }
 
         $flags |= CheckFormat::RUN_ATTEMPTED;
-        if (($xbj = self::validate_banal_json($this->run_banal($path)))) {
-            $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
-            $bj = $xbj;
-        } else {
-            $this->unprocessable_error($doc);
-        }
-
-        if ($limit > 0) {
-            $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data=?", (string) $t);
+        try {
+            if (($xbj = self::validate_banal_json($this->run_banal($path)))) {
+                $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
+                $bj = $xbj;
+            } else {
+                $this->unprocessable_error($doc);
+            }
+        } finally {
+            $doc->conf->qe("delete from Settings where name=? and value=?", $this->banal_key, $this->banal_key_expiry);
+            $this->banal_key = null;
         }
         return $this->complete_banal_json($bj, $flags);
     }
