@@ -21,6 +21,8 @@ class Subprocess {
     public $runtime = 0.0;
     /** @var bool */
     public $ok = false;
+    /** @var ?list<callable> */
+    private $_progress_functions;
 
 
     /** @param list<string> $command
@@ -41,6 +43,13 @@ class Subprocess {
      * @return $this */
     function set_env($env) {
         $this->env = $env;
+        return $this;
+    }
+
+    /** @param callable(Subprocess) $f
+     * @return $this */
+    function add_progress_function($f) {
+        $this->_progress_functions[] = $f;
         return $this;
     }
 
@@ -99,8 +108,17 @@ class Subprocess {
         }
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
+        $nloop = 0;
 
         while (!feof($pipes[1]) || !feof($pipes[2])) {
+            ++$nloop;
+            if ($nloop > 1 && !empty($this->_progress_functions)) {
+                $this->runtime = microtime(true) - $start_time;
+                foreach ($this->_progress_functions as $f) {
+                    $f($this);
+                }
+            }
+
             if ($stdinpos !== $stdinlen) {
                 $nw = fwrite($pipes[0], substr($this->stdin, $stdinpos));
                 if ($nw !== false) {
@@ -122,6 +140,7 @@ class Subprocess {
                 || $y === false) {
                 break;
             }
+
             $r = [$pipes[1], $pipes[2]];
             $w = $stdinpos === $stdinlen ? [] : [$pipes[0]];
             $e = [];
