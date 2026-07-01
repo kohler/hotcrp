@@ -1706,7 +1706,7 @@ class PaperSearch extends MessageSet {
         if ($user->privChair) {
             $ts[] = "all";
         }
-        if (!in_array($reqtype, $ts, true)) {
+        if ($reqtype && !in_array($reqtype, $ts, true)) {
             $ts[] = $reqtype;
         }
         return $ts;
