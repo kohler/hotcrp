@@ -402,4 +402,39 @@ class Search_Tester {
         $this->conf->set_opt("sensitiveSearchRefreshWindow", null);
     }
 
+    function test_decision_none_matches_invisible_decision() {
+        // When a user cannot see a paper's decision, that decision degrades to
+        // 0 ("no decision") for that user (see `Decision_SearchTerm::test()`),
+        // so the paper *should* match `dec:none`. This checks that the SQL
+        // prefilter agrees with the precise `test()` semantics.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+
+        // Non-conflicted reviewers may see decisions; conflicted ones may not.
+        $conf->save_refresh_setting("seedec", Conf::SEEDEC_NCREV);
+
+        // Give paper 3 a positive (accept) decision. mgbaker is a PC conflict
+        // on paper 3, so under SEEDEC_NCREV she cannot see that decision.
+        xassert_assign($chair, "paper,action,decision\n3,decision,accept\n");
+        $prow = $conf->checked_paper_by_id(3);
+        xassert_gt($prow->outcome, 0);
+        xassert(!$mgbaker->can_view_decision($prow));
+
+        // She reviews other, non-conflicted papers, so she *can* see some
+        // decisions and is not an all-powerful administrator. This is exactly
+        // the case that exercises the buggy branch of `sqlexpr()`.
+        xassert($mgbaker->can_view_some_decision());
+        xassert(!$mgbaker->allow_admin_all());
+
+        // The decision is invisible to her, so paper 3 degrades to "no
+        // decision" and must match `dec:none`.
+        $srch = new PaperSearch($mgbaker, "dec:none");
+        xassert_in_eqq(3, $srch->paper_ids());
+
+        // clean up
+        xassert_assign($chair, "paper,action,decision\n3,cleardecision,accept\n");
+        $conf->save_refresh_setting("seedec", null);
+    }
+
 }
