@@ -49,7 +49,7 @@ class CheckFormat extends MessageSet {
     /** @var int */
     private $run_flags = 0;
 
-    static private $banal_args;
+    static private $banal_zoomarg;
     /** @var int */
     static public $runcount = 0;
 
@@ -57,42 +57,15 @@ class CheckFormat extends MessageSet {
     function __construct(Conf $conf, $allow_run = null) {
         $this->allow_run = $allow_run ?? self::RUN_ALWAYS;
         $this->conf = $conf;
-        if (self::$banal_args === null) {
+        if (self::$banal_zoomarg === null) {
             $z = $this->conf->opt("banalZoom");
-            self::$banal_args = $z ? "-zoom={$z}" : "";
+            self::$banal_zoomarg = $z ? "-zoom={$z}" : "";
         }
         $this->fcheckers["default"] = new Default_FormatChecker;
     }
 
-    /** @param string $cmd
-     * @param string $dir
-     * @param array<string,string> $env
-     * @return array{int,string,string} */
-    static function run_command_safely($cmd, $dir, $env) {
-        $descriptors = [["file", "/dev/null", "r"], ["pipe", "wb"], ["pipe", "wb"]];
-        $pipes = null;
-        $proc = proc_open($cmd, $descriptors, $pipes, $dir, $env);
-        stream_set_blocking($pipes[1], false);
-        stream_set_blocking($pipes[2], false);
-        $stdout = $stderr = "";
-        while (!feof($pipes[1]) || !feof($pipes[2])) {
-            $x = fread($pipes[1], 32768);
-            $y = fread($pipes[2], 32768);
-            $stdout .= $x;
-            $stderr .= $y;
-            if ($x === false || $y === false) {
-                break;
-            }
-            $r = [$pipes[1], $pipes[2]];
-            $w = $e = [];
-            stream_select($r, $w, $e, 5);
-        }
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        $status = proc_close($proc);
-        return [$status, $stdout, $stderr];
-    }
-
+    /** @param string $filename
+     * @return ?object */
     function run_banal($filename) {
         $env = ["PATH" => getenv("PATH")];
         $pdftohtml = $this->conf->opt("pdftohtmlCommand")
@@ -100,19 +73,21 @@ class CheckFormat extends MessageSet {
         if ($pdftohtml) {
             $env["PHP_PDFTOHTML"] = $pdftohtml;
         }
-        $banal_run = "perl src/banal -json ";
-        if (self::$banal_args) {
-            $banal_run .= self::$banal_args . " ";
+        $command = ["perl", "src/banal", "-json"];
+        if (self::$banal_zoomarg) {
+            $command[] = self::$banal_zoomarg;
         }
-        $banal_run .= escapeshellarg($filename);
-        $tstart = microtime(true);
-        list($this->banal_status, $this->banal_stdout, $this->banal_stderr) =
-            self::run_command_safely($banal_run, SiteLoader::$root, $env);
+        $command[] = $filename;
+        $subp = (new Subprocess($command, SiteLoader::$root))
+            ->set_env($env)
+            ->run();
+        $this->banal_status = $subp->status;
+        $this->banal_stdout = $subp->stdout;
+        $this->banal_stderr = $subp->stderr;
         ++self::$runcount;
-        $banal_time = microtime(true) - $tstart;
-        Conf::$blocked_time += $banal_time;
+        Conf::$blocked_time += $subp->runtime;
         if (self::DEBUG && Conf::$blocked_time > 0.1) {
-            error_log(sprintf("%.6f: +%.6f %s", Conf::$blocked_time, $banal_time, $banal_run));
+            error_log(sprintf("%.6f: +%.6f %s", Conf::$blocked_time, $subp->runtime, join(" ", $command)));
         }
         return json_decode($this->banal_stdout);
     }
