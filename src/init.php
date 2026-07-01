@@ -56,14 +56,14 @@ const USER_SLICE = 1;
 global $Conf;
 
 require_once("siteloader.php");
-require_once(SiteLoader::find("lib/navigation.php"));
-require_once(SiteLoader::find("lib/polyfills.php"));
-require_once(SiteLoader::find("lib/base.php"));
-require_once(SiteLoader::find("lib/redirect.php"));
-require_once(SiteLoader::find("lib/dbl.php"));
-require_once(SiteLoader::find("src/helpers.php"));
-require_once(SiteLoader::find("src/conference.php"));
-require_once(SiteLoader::find("src/contact.php"));
+require_once(SiteLoader::resolve("lib/navigation.php"));
+require_once(SiteLoader::resolve("lib/polyfills.php"));
+require_once(SiteLoader::resolve("lib/base.php"));
+require_once(SiteLoader::resolve("lib/redirect.php"));
+require_once(SiteLoader::resolve("lib/dbl.php"));
+require_once(SiteLoader::resolve("src/helpers.php"));
+require_once(SiteLoader::resolve("src/conference.php"));
+require_once(SiteLoader::resolve("src/contact.php"));
 Conf::set_current_time();
 if (defined("HOTCRP_TESTHARNESS")) {
     Navigation::$test_mode = 1;

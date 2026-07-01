@@ -118,7 +118,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->u_estrin);
         $doc = DocumentInfo::make_uploaded_file($this->conf, QrequestFile::make_finfo([
                 "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
-                "tmp_name" => SiteLoader::find("etc/sample.pdf"),
+                "tmp_name" => SiteLoader::resolve("etc/sample.pdf"),
                 "type" => "application/pdf"
             ]))->set_document_type(DTYPE_SUBMISSION);
         xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
@@ -885,7 +885,7 @@ class PaperStatus_Tester {
 
     function test_save_new_authors() {
         $qreq = new Qrequest("POST", ["status:submit" => 1, "has_opt2" => "1", "opt2:1" => "new", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $qreq->set_file("opt2:1:file", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web($qreq, null));
@@ -930,7 +930,7 @@ class PaperStatus_Tester {
         $np = $this->conf->fetch_ivalue("select count(*) from Paper");
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert($ps->has_error_at("title"));
@@ -943,7 +943,7 @@ class PaperStatus_Tester {
         xassert_eqq($np, $np1);
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert($ps->has_error_at("title"));
@@ -953,7 +953,7 @@ class PaperStatus_Tester {
         xassert(ConfInvariants::test_document_inactive($this->conf));
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert($ps->has_error_at("abstract"));
@@ -968,7 +968,7 @@ class PaperStatus_Tester {
         $this->conf->invalidate_caches("options");
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert(!$ps->has_error_at("abstract"));
@@ -1702,7 +1702,7 @@ Phil Porras.");
 
     function test_banal() {
         $spects = $this->conf->setting("sub_banal") ?? Conf::$now - 10;
-        $spects = max($spects, @filemtime(SiteLoader::find("src/banal")));
+        $spects = max($spects, @filemtime(SiteLoader::resolve("src/banal")));
         $this->conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
         $this->conf->invalidate_caches("options");
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);

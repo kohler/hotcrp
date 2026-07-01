@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
-define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));
+define("HOTCRP_OPTIONS", SiteLoader::resolve("test/options.php"));
 define("HOTCRP_TESTHARNESS", true);
 ini_set("error_log", "");
 ini_set("log_errors", "0");
@@ -11,7 +11,7 @@ ini_set("display_errors", "stderr");
 ini_set("assert.exception", "1");
 error_reporting(E_ALL);
 
-require_once(SiteLoader::find("src/init.php"));
+require_once(SiteLoader::resolve("src/init.php"));
 initialize_conf();
 
 
@@ -232,7 +232,7 @@ class MailChecker {
     }
 }
 
-MailChecker::add_messagedb(file_get_contents(SiteLoader::find("test/emails.txt")), "test/emails.txt");
+MailChecker::add_messagedb(file_get_contents(SiteLoader::resolve("test/emails.txt")), "test/emails.txt");
 
 
 class ProfileTimer {
@@ -1351,7 +1351,7 @@ class TestRunner {
         MailChecker::clear();
 
         // Initialize from an empty database
-        self::reset_schema($conf->dblink, SiteLoader::find("src/schema.sql"), $rebuild);
+        self::reset_schema($conf->dblink, SiteLoader::resolve("src/schema.sql"), $rebuild);
         $timer->mark("schema");
 
         // No setup phase; initial review rounds
@@ -1362,7 +1362,7 @@ class TestRunner {
 
         // Contactdb.
         if (($cdb = $conf->contactdb())) {
-            self::reset_schema($cdb, SiteLoader::find("test/cdb-schema.sql"), $rebuild);
+            self::reset_schema($cdb, SiteLoader::resolve("test/cdb-schema.sql"), $rebuild);
             Dbl::qe($cdb, "insert into Conferences set confuid=?", $conf->dbname);
             Contact::$props["demoBirthday"] = Contact::PROP_CDB | Contact::PROP_NULL | Contact::PROP_INT | Contact::PROP_IMPORT;
         }
@@ -1378,7 +1378,7 @@ class TestRunner {
         $user_chair->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $user_chair);
 
         // Load data.
-        $json = json_decode(file_get_contents(SiteLoader::find("test/db.json")));
+        $json = json_decode(file_get_contents(SiteLoader::resolve("test/db.json")));
         if (!$json) {
             error_log("* test/testdb.json error: " . json_last_error_msg());
             exit(1);

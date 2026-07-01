@@ -89,12 +89,19 @@ class SiteLoader {
     }
 
     /** @param non-empty-string $suffix
-     * @return string */
-    static function find($suffix) {
+     * @return non-empty-string */
+    static function resolve($suffix) {
         if ($suffix[0] === "/") {
-            return self::$root . $suffix;
+            return $suffix;
         }
         return self::$root . "/" . $suffix;
+    }
+
+    /** @param non-empty-string $suffix
+     * @return non-empty-string
+     * @deprecated */
+    static function find($suffix) {
+        return self::resolve($suffix);
     }
 
     // Set up conference options

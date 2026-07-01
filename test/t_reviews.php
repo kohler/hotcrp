@@ -148,7 +148,7 @@ class Reviews_Tester {
     function test_offline_review_update() {
         $paper1 = $this->conf->checked_paper_by_id(1, $this->u_chair);
         fresh_review($paper1, $this->u_mgbaker);
-        $this->review1A = file_get_contents(SiteLoader::find("test/review1A.txt"));
+        $this->review1A = file_get_contents(SiteLoader::resolve("test/review1A.txt"));
 
         // correct update
         $tf = (new ReviewValues($this->conf))->set_text($this->review1A, "review1A.txt");
@@ -749,7 +749,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // offline review parsing for UTF-8 review questions
         self::add_questions_for_response($this->conf);
 
-        $review18A = file_get_contents(SiteLoader::find("test/review18A.txt"));
+        $review18A = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
         $tf = (new ReviewValues($conf))->set_text($review18A, "review18A.txt");
         xassert($tf->parse_text());
         xassert($tf->check_and_save($user_diot, null));
@@ -791,7 +791,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $rrow = fresh_review($paper18, $user_diot);
         xassert_eqq($rrow->fidval("t04"), "Whence the stuff I want to add for the authors’ response.\n");
 
-        $review18A4 = file_get_contents(SiteLoader::find("test/review18A-4.txt"));
+        $review18A4 = file_get_contents(SiteLoader::resolve("test/review18A-4.txt"));
         $tf = (new ReviewValues($conf))->set_text($review18A4, "review18A-4.txt");
         xassert($tf->parse_text());
         xassert($tf->check_and_save($user_diot, null));
@@ -1681,7 +1681,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($r16x->reviewTime, $rt);
 
         // test upload by correct user of incorrect form
-        $review1A = file_get_contents(SiteLoader::find("test/review1A.txt"));
+        $review1A = file_get_contents(SiteLoader::resolve("test/review1A.txt"));
         $rv = (new ReviewValues($this->conf))->set_text($review1A, "review1A.txt");
         xassert($rv->parse_text());
         xassert(!$rv->check_and_save($u_ext4, $p16));
@@ -1736,7 +1736,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($r16f->fidval("s01"), 4);
         xassert_eqq($r16f->fidval("s02"), 2);
 
-        $emptyform = file_get_contents(SiteLoader::find("test/review0.txt"));
+        $emptyform = file_get_contents(SiteLoader::resolve("test/review0.txt"));
         $s16 = str_replace("#0", "#16", $emptyform);
         $rv = (new ReviewValues($this->conf))->set_text($s16, "review16.txt");
         $rv->parse_text();

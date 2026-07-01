@@ -1094,7 +1094,8 @@ class PaperSearch extends MessageSet {
             $this->limit(),
             $this->q
         ]);
-        $fn = SiteLoader::find("var/sensitivesearches.csv");
+        $fn = $this->conf->opt("sensitiveSearchLog");
+        $fn = SiteLoader::resolve($fn === true ? "var/sensitivesearches.csv" : $fn);
         @file_put_contents($fn, "{$line}\n", FILE_APPEND);
     }
 

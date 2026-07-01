@@ -182,7 +182,7 @@ class CheckFormat extends MessageSet {
         // check whether to skip run (cached JSON exists, matches spec)
         if ($bj
             && ($bj->args ?? "") === (self::$banal_args ?? "")
-            && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
+            && $bj->at >= @filemtime(SiteLoader::resolve("src/banal"))
             && ($allow_run !== CheckFormat::RUN_ALWAYS
                 || $bj->at >= Conf::$now - 86400)
             && (!isset($bj->npages) /* i.e., banal JSON is not truncated */

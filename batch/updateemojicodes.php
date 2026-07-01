@@ -257,7 +257,7 @@ class UpdateEmojiCodes_Batch {
 
     /** @return int */
     function list_duplicate_codes() {
-        $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
+        $emoji = json_decode(file_get_contents(SiteLoader::resolve("scripts/emojicodes.json")));
         $codes = $dups = [];
         foreach ((array) $emoji->emoji as $code => $text) {
             if (!isset($codes[$text]))
@@ -302,7 +302,7 @@ class UpdateEmojiCodes_Batch {
 
     /** @return int */
     function list_common_emoji() {
-        $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
+        $emoji = json_decode(file_get_contents(SiteLoader::resolve("scripts/emojicodes.json")));
         $back = $this->emoji_to_code_set($emoji);
 
         $rankings = json_decode(stream_get_contents(STDIN));
@@ -345,7 +345,7 @@ class UpdateEmojiCodes_Batch {
 
     /** @return int */
     function list_terminators() {
-        $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
+        $emoji = json_decode(file_get_contents(SiteLoader::resolve("scripts/emojicodes.json")));
         $x = [];
         foreach ((array) $emoji->emoji as $text) {
             preg_match('/.\z/u', $text, $m);
@@ -373,7 +373,7 @@ class UpdateEmojiCodes_Batch {
      * @param string $nameslist
      * @return int */
     function list_absent($emojidata, $nameslist) {
-        $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
+        $emoji = json_decode(file_get_contents(SiteLoader::resolve("scripts/emojicodes.json")));
         $codes = [];
         foreach ((array) $emoji->emoji as $text) {
             $codes[$text] = true;

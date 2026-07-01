@@ -26,7 +26,7 @@ class FakeNames_Batch {
      * @return bool */
     function load($file = null) {
         if ($file === null) {
-            $file = SiteLoader::find("extra/fakenames.csv");
+            $file = SiteLoader::resolve("extra/fakenames.csv");
         }
         if (($s = file_get_contents($file)) === false) {
             return false;

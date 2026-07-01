@@ -84,7 +84,7 @@ class Error_API {
         }
         if (!$ok) {
             if (($body = $qreq->body())
-                && ($f = SiteLoader::find("var/cspreport-invalid.txt"))) {
+                && ($f = SiteLoader::resolve("var/cspreport-invalid.txt"))) {
                 @file_put_contents($f, $bct . "\n" . $body);
             }
             return new JsonResult(400, [

@@ -1339,7 +1339,7 @@ class Conf {
     /** @return array<string,string> */
     function emoji_code_map() {
         if ($this->_emoji_codes === null) {
-            $this->_emoji_codes = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
+            $this->_emoji_codes = json_decode(file_get_contents(SiteLoader::resolve("scripts/emojicodes.json")));
             $this->_emoji_codes->emoji = (array) $this->_emoji_codes->emoji;
             if (($olist = $this->opt("emojiCodes")))
                 expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
@@ -4763,7 +4763,7 @@ class Conf {
             && (($url[0] !== "h" && $url[0] !== "H")
                 || (substr_compare($url, "http:", 0, 5, true) !== 0
                     && substr_compare($url, "https:", 0, 6, true) !== 0))) {
-            if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
+            if (($mtime = @filemtime(SiteLoader::resolve($url))) !== false) {
                 if ($this->opt["assetsPathMtime"] ?? false) {
                     $url = "@{$mtime}/{$url}";
                 } else {
@@ -4779,7 +4779,7 @@ class Conf {
      * @return string */
     function make_script_file($url, $no_strict = false, $integrity = null) {
         if (str_starts_with($url, "scripts/")) {
-            $mtime = @filemtime(SiteLoader::find($url));
+            $mtime = @filemtime(SiteLoader::resolve($url));
             if (($this->opt["strictJavascript"] ?? false) && !$no_strict) {
                 $url = $this->_script_assets_url . "cacheable.php/"
                     . str_replace("%2F", "/", urlencode($url))
@@ -5355,7 +5355,7 @@ class Conf {
                 . "&base=" . urlencode($qreq->navigation()->siteurl())
                 . "&version=" . HOTCRP_VERSION;
             $v = HOTCRP_VERSION;
-            if (is_dir(SiteLoader::find(".git"))) {
+            if (is_dir(SiteLoader::resolve(".git"))) {
                 $args = [];
                 exec("export GIT_DIR=" . escapeshellarg(SiteLoader::$root) . "/.git; git rev-parse HEAD 2>/dev/null; git merge-base origin/master HEAD 2>/dev/null", $args);
                 if (count($args) >= 1) {
@@ -5374,7 +5374,7 @@ class Conf {
 
     static function git_status() {
         $args = [];
-        if (is_dir(SiteLoader::find(".git"))) {
+        if (is_dir(SiteLoader::resolve(".git"))) {
             exec("export GIT_DIR=" . escapeshellarg(SiteLoader::$root) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
         }
         return count($args) == 2 ? $args : null;
