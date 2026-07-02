@@ -13,29 +13,39 @@ class PageCount_PaperColumn extends PaperColumn {
     private $statistics;
     /** @var ?string */
     private $type;
+    /** @var ?int */
+    private $dt;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
         $this->statistics = new ScoreInfo;
     }
     function view_option_schema() {
-        return ["type=all|body|blank|cover|appendix|bib,refs,references|figure^"];
+        return ["type=all|body|blank|cover|appendix|bib,refs,references|figure^", "dt=paper,submission|final^"];
     }
     function prepare(PaperList $pl, $visible) {
         $type = $this->view_option("type") ?? "all";
         if ($type !== "all") {
             $this->type = $type;
         }
+        $dt = $this->view_option("dt");
+        if ($dt === "paper") {
+            $this->dt = DTYPE_SUBMISSION;
+        } else if ($dt === "final") {
+            $this->dt = DTYPE_FINAL;
+        }
         return true;
     }
     function sort_name() {
-        return $this->sort_name_with_options("type");
+        return $this->sort_name_with_options("type", "dt");
     }
     /** @return 0|-1 */
     private function dtype(Contact $user, PaperInfo $row) {
-        if ($row->finalPaperStorageId > 0
-            && $row->outcome > 0
-            && $user->can_view_decision($row)) {
+        if ($this->dt !== null) {
+            return $this->dt;
+        } else if ($row->finalPaperStorageId > 0
+                   && $row->outcome > 0
+                   && $user->can_view_decision($row)) {
             return DTYPE_FINAL;
         }
         return DTYPE_SUBMISSION;
