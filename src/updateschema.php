@@ -3299,6 +3299,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table ContactCounter add `sensitiveSearchBaseMtime` bigint NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(326);
         }
+        if ($conf->sversion === 326
+            && $conf->ql_ok("insert into Settings (name, value, data) select 'idpermuter_user', value, data from Settings where name='__id_permuter_key' on duplicate key update name='idpermuter_user'")
+            && $conf->ql_ok("insert into Settings (name, value, data) select 'idpermuter_assignment', value, data from Settings where name='__assignment_key' on duplicate key update name='idpermuter_assignment'")
+            && $conf->ql_ok("delete from Settings where name in ('__assignment_key', '__id_permuter_key', '__banal_count')")) {
+            $conf->update_schema_version(327);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

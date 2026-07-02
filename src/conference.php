@@ -371,7 +371,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 326) {
+        if ($this->sversion < 327) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -6180,10 +6180,8 @@ class Conf {
         }
         $this->ql("delete from Capability where timeExpires>0 and timeExpires<" . Conf::$now);
         $this->ql("delete from IDReservation where timestamp<" . (Conf::$now - 60));
-        // expired banal format-check leases (`__banal.PID.DOCID`), plus the
-        // retired `__banal_count` concurrency counter
+        // expired banal format-check leases (`__banal.PID.DOCID`)
         $this->ql("delete from Settings where name>='__banal.' and name<'__banal/' and value<" . Conf::$now);
-        $this->ql("delete from Settings where name='__banal_count'"); // XXX will be obsolete
         $this->ql("insert into Settings set name='__capability_gc', value=? on duplicate key update value=?", Conf::$now, Conf::$now);
         $this->settings["__capability_gc"] = Conf::$now;
     }
