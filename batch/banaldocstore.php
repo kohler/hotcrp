@@ -56,7 +56,7 @@ class BanalDocstore_Batch {
                 $a = ["filename" => $fm->fname] + (array) $bj;
                 unset($a["at"]);
             } else {
-                $a = ["filename" => $fm->fname, "error" => $this->cf->banal_stderr];
+                $a = ["filename" => $fm->fname, "error" => $this->cf->banal_run->stderr];
             }
             $c = json_encode($a, JSON_PRETTY_PRINT) . "\n";
             $c = preg_replace_callback('<\[([ ,\n\d]+)\]>', function ($m) {

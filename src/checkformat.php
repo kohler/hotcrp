@@ -38,12 +38,8 @@ class CheckFormat extends MessageSet {
     private $banal_key;
     /** @var ?int */
     private $banal_key_expiry;
-    /** @var ?string */
-    public $banal_stdout;
-    /** @var ?string */
-    public $banal_stderr;
-    /** @var ?int */
-    public $banal_status;
+    /** @var ?Subprocess */
+    public $banal_run;
     /** @var ?int */
     public $npages;
     /** @var ?int */
@@ -106,15 +102,13 @@ class CheckFormat extends MessageSet {
             $subp->add_progress_function([$this, "run_banal_progress"]);
         }
         $subp->run();
-        $this->banal_status = $subp->status;
-        $this->banal_stdout = $subp->stdout;
-        $this->banal_stderr = $subp->stderr;
+        $this->banal_run = $subp;
         ++self::$runcount;
         Conf::$blocked_time += $subp->runtime;
         if (self::DEBUG && Conf::$blocked_time > 0.1) {
             error_log(sprintf("%.6f: +%.6f %s", Conf::$blocked_time, $subp->runtime, join(" ", $command)));
         }
-        return json_decode($this->banal_stdout);
+        return json_decode($this->banal_run->stdout);
     }
 
     /** @param mixed $x
