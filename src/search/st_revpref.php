@@ -129,13 +129,12 @@ class Revpref_SearchTerm extends SearchTerm {
                 && $this->rpsm->preference_match->test(0)
                 && !$this->rpsm->expertise_match)) {
             return "true";
-        } else {
-            $where = ["paperId=Paper.paperId", $this->rpsm->contact_match_sql("contactId")];
-            if (($match = $this->rpsm->preference_expertise_match())) {
-                $where[] = $match;
-            }
-            return "coalesce((select count(*) from PaperReviewPreference where " . join(" and ", $where) . "),0)" . $this->rpsm->comparison();
         }
+        $where = ["paperId=Paper.paperId", $this->rpsm->contact_match_sql("contactId")];
+        if (($match = $this->rpsm->preference_expertise_match())) {
+            $where[] = $match;
+        }
+        return "coalesce((select count(*) from PaperReviewPreference where " . join(" and ", $where) . "),0)" . $this->rpsm->comparison();
     }
     function test(PaperInfo $row, $xinfo) {
         $can_view = $this->user->can_view_preference($row, $this->rpsm->safe_contacts);

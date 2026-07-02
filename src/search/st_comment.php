@@ -126,7 +126,7 @@ class Comment_SearchTerm extends SearchTerm {
         if ($this->commentRound !== null) {
             $where[] = "commentRound=" . $this->commentRound;
         }
-        if ($this->csm->has_contacts()) {
+        if ($this->csm->has_contacts() && $this->user->isPC) {
             $where[] = $this->csm->contact_match_sql("contactId");
         }
         if ($this->tags && !$this->tags->test_empty()) {

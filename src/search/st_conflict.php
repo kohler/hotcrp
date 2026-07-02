@@ -61,9 +61,8 @@ final class Conflict_SearchTerm extends SearchTerm {
         if ($snc === ">0" || $snc === "=0") {
             $n = $snc === "=0" ? "not exists" : "exists";
             return "{$n} (select * from PaperConflict where paperId=Paper.paperId and {$cidsql})";
-        } else {
-            return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$snc}";
         }
+        return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$snc}";
     }
     function is_sqlexpr_precise() {
         return $this->self;
