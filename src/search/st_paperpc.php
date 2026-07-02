@@ -36,11 +36,19 @@ class PaperPC_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->fieldname, "Paper.{$this->fieldname}");
+        // An unviewable field reads as 0
+        if (CountMatcher::compare_using(0, $this->match)) {
+            return "true";
+        }
+        $can_view = "can_view_{$this->kind}";
+        if (!$this->user->$can_view(null)) {
+            return "false";
+        }
         return "(Paper.{$this->fieldname}" . CountMatcher::sqlexpr_using($this->match) . ")";
     }
     function test(PaperInfo $row, $xinfo) {
         $can_view = "can_view_{$this->kind}";
-        return $this->user->$can_view($row)
-            && CountMatcher::compare_using($row->{$this->fieldname}, $this->match);
+        $field = $this->user->$can_view($row) ? $row->{$this->fieldname} : 0;
+        return CountMatcher::compare_using($field, $this->match);
     }
 }

@@ -4218,11 +4218,15 @@ class Contact implements JsonSerializable {
         if ($this->privChair) {
             return true;
         } else if (!$this->can_view_pc()) {
+            // NB is_manager() can always view PC
             return false;
+        } else if ($prow
+                   ? $prow->managerContactId === $this->contactXid
+                   : $this->is_manager()) {
+            return true;
         } else if (!$prow) {
-            return $this->is_manager()
-                || ($this->is_reviewer()
-                    && !$this->conf->opt("hideManager"));
+            return $this->is_reviewer()
+                && !$this->conf->opt("hideManager");
         }
         $rights = $this->rights($prow);
         return $rights->allow_admin()
@@ -4233,7 +4237,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_view_lead(?PaperInfo $prow) {
         if (!$prow) {
-            return $this->isPC;
+            return $this->is_reviewer();
         }
         $rights = $this->rights($prow);
         return $rights->is_admin()
@@ -4248,7 +4252,7 @@ class Contact implements JsonSerializable {
         // This is a mediocre choice, but people like to reuse the shepherd field
         // for other purposes, and I might hear complaints.
         if (!$prow) {
-            return $this->isPC
+            return $this->is_reviewer()
                 || (!$this->conf->setting("shepherd_hide")
                     && $this->can_view_some_decision());
         }

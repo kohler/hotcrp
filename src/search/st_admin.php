@@ -45,11 +45,14 @@ class Admin_SearchTerm extends SearchTerm {
         return new Admin_SearchTerm($srch->user, $match->users(), $flags);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->match === true) {
-            return "Paper.managerContactId!=0";
-        } else if ($this->match === false) {
+        if ($this->match === false) {
             // Non-viewable manager looks like no manager
             return $this->user->privChair ? "Paper.managerContactId=0" : "true";
+        } else if (!$this->user->can_view_manager(null)) {
+            // All managers non-viewable
+            return "false";
+        } else if ($this->match === true) {
+            return "Paper.managerContactId!=0";
         }
         $where = [];
         if ($this->flags & self::F_TRACKMGR) {
