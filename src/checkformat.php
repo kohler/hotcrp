@@ -226,7 +226,7 @@ class CheckFormat extends MessageSet {
         $this->banal_conf = $doc->conf;
         $this->banal_key = "__banal.{$doc->paperId}.{$doc->paperStorageId}";
         $this->banal_key_expiry = $now + $this->banal_lock_expiry();
-        $result = $doc->conf->qe("insert into Settings set name=?, value=? ?U on duplicate key update value=if(value<?,?U(value),value)", $this->banal_key, $this->banal_key_expiry, $now);
+        $result = $doc->conf->qe("insert into Settings set name=?, value=? ?U on duplicate key update value=if(Settings.value<?,?U(value),Settings.value)", $this->banal_key, $this->banal_key_expiry, $now);
         if ($result->affected_rows === 0) {
             $this->error_at("error", "<0>Concurrent format checker run in progress");
             $this->inform_at("error", "<0>This is a transient error; feel free to try again.");

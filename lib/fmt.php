@@ -754,7 +754,7 @@ class Fmt {
         }
         $cdb = $this->conf ? $this->conf->contactdb() : null;
         if ($cdb && !empty($this->_sources)) {
-            Dbl::qe($cdb, "insert into MessageSources (context, `in`, file, line, count, timestamp) values ?v ?U on duplicate key update file=?U(file), line=?U(line), count=count+1, timestamp=?U(timestamp)", $this->_sources);
+            Dbl::qe($cdb, "insert into MessageSources (context, `in`, file, line, count, timestamp) values ?v ?U on duplicate key update file=?U(file), line=?U(line), count=MessageSources.count+1, timestamp=?U(timestamp)", $this->_sources);
             $this->_sources = [];
         }
         if ($cdb && ($limit >= 1 || ($limit > 0 && mt_rand() < $limit * (mt_getrandmax() + 1)))) {
