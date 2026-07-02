@@ -347,9 +347,8 @@ class Checkboxes_ReviewFieldSearch extends ReviewFieldSearch {
             return null;
         } else if ($this->rf->main_storage) {
             return "({$this->rf->main_storage}&{$this->fvm})>0";
-        } else {
-            return "sfields is not null";
         }
+        return "sfields is not null";
     }
 
     function test_value($rrow, $fv) {
