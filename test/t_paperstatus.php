@@ -1784,6 +1784,88 @@ Phil Porras.");
         $this->conf->save_setting("sub_banal", $spects, "letter;2;;7.5x9in");
     }
 
+    // Two format-checker runs on the same document must not proceed at once:
+    // whoever claims the `__banal.PID.DOCID` lease runs `banal`, and the other
+    // is refused. We widen the window by pointing the checker at a `pdftohtml`
+    // wrapper that stalls for a few seconds (see test/slow-pdftohtml.sh), launch
+    // a real second process that grabs the lease, then confirm an in-process run
+    // on the same document is turned away.
+    function test_banal_concurrent_lease() {
+        $spects = max($this->conf->setting("sub_banal") ?? Conf::$now - 10,
+                      @filemtime(SiteLoader::resolve("src/banal")));
+        ++$spects;
+        $this->conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
+        $this->conf->invalidate_caches("options");
+
+        // give paper 3 a fresh submission so `banal` must actually run (no cache)
+        $ps = new PaperStatus($this->conf->root_user());
+        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+            if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
+                $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
+            }
+        });
+        $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content_file\":\"etc/sample.pdf\",\"type\":\"application/pdf\"}}"));
+        xassert_paper_status($ps);
+
+        $paper3 = $this->u_estrin->checked_paper_by_id(3);
+        $doc = $paper3->document(DTYPE_SUBMISSION);
+        $sid = $doc->paperStorageId;
+        $banal_key = "__banal.3.{$sid}";
+
+        // drop any cached banal result so both runs actually invoke `banal`
+        // (an earlier test may have checked this same document)
+        $doc->set_prop("banal", null);
+        $doc->save_prop();
+
+        // point the checker at a slow `pdftohtml`; the DB override is visible to
+        // the subprocess too
+        $slow = SiteLoader::resolve("test/slow-pdftohtml.sh");
+        $this->conf->save_setting("opt.pdftohtmlCommand", 1, $slow);
+        $this->conf->refresh_settings();
+        $this->conf->qe("delete from Settings where name=?", $banal_key);
+
+        // launch a background format check on the same document; it runs on its
+        // own until we drive it to completion below
+        $env = getenv();
+        $env["HOTCRP_TEST_PDFTOHTML_DELAY"] = "1";
+        $subp = (new Subprocess([
+            "php", "batch/checkformat.php",
+            "--config", SiteLoader::resolve("test/options.php"),
+            "-p", "3"
+        ], SiteLoader::$root))->set_env($env);
+        $subp->start();
+
+        // wait until that run has claimed the lease (it does so before running banal)
+        $claimed = false;
+        for ($i = 0; $i !== 100 && !$claimed; ++$i) {
+            usleep(50000);
+            $claimed = $this->conf->fetch_value("select value from Settings where name=?", $banal_key) !== null;
+        }
+        xassert($claimed);
+
+        // an in-process check on the same document must now be refused
+        $cf = new CheckFormat($this->conf, CheckFormat::RUN_ALWAYS);
+        $cf->check_document($doc);
+        xassert(!$cf->check_ok());
+        xassert(!$cf->run_attempted());
+        xassert_str_contains($cf->full_feedback_text(), "Concurrent format checker run in progress");
+
+        // the background run should have won the lease and completed
+        $bj = json_decode($subp->run()->stdout);
+        xassert($bj !== null);
+        if ($bj !== null) {
+            xassert($bj->ok);
+            xassert_eqq($bj->docid, $sid);
+        }
+
+        // the lease is released once the winning run finishes
+        xassert_eqq($this->conf->fetch_value("select value from Settings where name=?", $banal_key), null);
+
+        // restore configuration
+        $this->conf->save_setting("opt.pdftohtmlCommand", null);
+        $this->conf->refresh_settings();
+    }
+
     function test_option_name_parens() {
         $options = $this->conf->setting_json("options");
         xassert(!array_filter((array) $options, function ($o) { return $o->id === 3; }));

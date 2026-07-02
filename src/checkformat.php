@@ -86,9 +86,7 @@ class CheckFormat extends MessageSet {
      * @return ?object */
     function run_banal($filename) {
         $env = ["PATH" => getenv("PATH")];
-        $pdftohtml = $this->conf->opt("pdftohtmlCommand")
-            ?? $this->conf->opt("pdftohtml") /* XXX */;
-        if ($pdftohtml) {
+        if (($pdftohtml = $this->conf->opt("pdftohtmlCommand"))) {
             $env["PHP_PDFTOHTML"] = $pdftohtml;
         }
         $command = ["perl", "src/banal", "-json"];
