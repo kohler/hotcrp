@@ -763,7 +763,8 @@ class FormulaGraph extends MessageSet {
     private function _indexed() {
         return $this->fx->indexed()
             || $this->fy->indexed()
-            || ($this->fxorder && $this->fxorder->indexed());
+            || ($this->fxorder && $this->fxorder->indexed())
+            || ($this->_fx_combine && $this->fy->extractor_indexed());
     }
 
     /** @return int */
