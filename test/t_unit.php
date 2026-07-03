@@ -1790,6 +1790,28 @@ class Unit_Tester {
         $vos->define("display=row|col,column^");
         $vos->define("sort={$sort_schema}^");
         xassert_eqq($vos->validate("reverse", true), ["sort", "reverse"]);
+
+        // extensible enum: `$` accepts arbitrary values, but does not lift
+        $dt_schema = "final|paper,submission|\$";
+        xassert_eqq(ViewOptionType::parse_enum("final", $dt_schema), "final");
+        xassert_eqq(ViewOptionType::parse_enum("submission", $dt_schema), "paper");
+        xassert_eqq(ViewOptionType::parse_enum("thingie", $dt_schema), "thingie");
+        xassert_eqq(ViewOptionType::parse_enum("thingie", $dt_schema, true), null);
+        xassert_eqq(ViewOptionType::parse_enum("thingie", "final|paper"), null);
+
+        $vos = new ViewOptionSchema;
+        xassert_eqq($vos->define_check("dt=final|paper,submission|\$^"), true);
+        xassert_eqq($vos->validate("dt", "final"), ["dt", "final"]);
+        xassert_eqq($vos->validate("dt", "paper"), ["dt", "paper"]);
+        xassert_eqq($vos->validate("dt", "submission"), ["dt", "paper"]);
+        xassert_eqq($vos->validate("dt", "thingie"), ["dt", "thingie"]);
+        xassert_eqq($vos->validate("final", true), ["dt", "final"]);
+        xassert_eqq($vos->validate("submission", true), ["dt", "paper"]);
+        xassert_eqq($vos->validate("thingie", true), null);
+
+        $dtx = ViewOptionType::make("dt=final|paper,submission|\$^")->unparse_export();
+        xassert_eqq($dtx["enum"], ["final", "paper"]);
+        xassert_eqq($dtx["extensible"] ?? null, true);
     }
 
     function test_utf16_incomplete_suffix_length() {
