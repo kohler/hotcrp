@@ -10,14 +10,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: huitema@bellcore.com
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -36,14 +37,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: christophe.diot@sophia.inria.fr
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -62,14 +64,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: estrin@usc.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -90,14 +93,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: varghese@ccrc.wustl.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -116,14 +120,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: jj@cse.ucsc.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -142,14 +147,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: jon@cs.ucl.ac.uk
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -168,14 +174,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: lixia@cs.ucla.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -194,14 +201,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: marina@poema.ru
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -220,14 +228,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: mjh@isi.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -246,14 +255,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: mgbaker@cs.stanford.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -272,14 +282,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: pfrancis@ntt.jp
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -298,14 +309,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: peter.danzig@usc.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -324,14 +336,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: pdruschel@cs.rice.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -350,14 +363,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: rguerin@ibm.com
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -376,14 +390,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: floyd@ee.lbl.gov
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -402,14 +417,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: shenker@parc.xerox.com
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -430,14 +446,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: ojuelegba@gmail.com
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -456,14 +473,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: vera@bombay.com
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -484,14 +502,15 @@ You have been added to the program committee on the Test Conference I
 * Site: http://hotcrp.lcdf.org/test
 * Email: d.francis2@place.edu
 
-You will need a password to sign in. Use this link to set one up:
+You’ll need a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: Manage multiple accounts with different email addresses
-using Account settings > Manage email.
+Prefer a different email address? After signing in, transfer PC rights
+using Account settings → Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -1201,10 +1220,11 @@ create a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: You can redirect future review requests to a chosen
-email address using Account settings > Manage email.
+Prefer a different account? After signing in, transfer this review or
+redirect future review requests using Account settings → Manage email.
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
@@ -1916,10 +1936,11 @@ create a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: You can redirect future review requests to a chosen
-email address using Account settings > Manage email.
+Prefer a different account? After signing in, transfer this review or
+redirect future review requests using Account settings → Manage email.
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
@@ -1951,10 +1972,11 @@ create a password to sign in. Use this link to set one up:
 
 http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
-Should the link expire, obtain a new one using "Forgot my password".
+The link will expire after 3 days. Obtain a new one if needed via
+"Forgot my password" on the sign-in page.
 
-**NEW IN 2025**: You can redirect future review requests to a chosen
-email address using Account settings > Manage email.
+Prefer a different account? After signing in, transfer this review or
+redirect future review requests using Account settings → Manage email.
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 

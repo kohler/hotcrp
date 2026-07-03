@@ -7,7 +7,7 @@
 			"We received a request to create an account for {{EMAIL}} on the {{CONFNAME}} submission site. If you made this request, please use this link to set a password:\n\n",
 			"{{PASSWORDLINK}}\n\n",
 			"If you did not make this request, it’s safe to ignore this email.\n\n",
-			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -21,11 +21,10 @@
 			"A system administrator has activated your {{EMAIL}} account on the {{CONFNAME}} submission site.\n\n",
 			"{{LINK}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
-			"You will need a password to sign in. Use this link to set one up:\n\n",
+			"You’ll need a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
-			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n",
 			"{{ENDIF}}\n\n",
-			"Manage multiple accounts with different email addresses using Account settings > Manage email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -41,11 +40,11 @@
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
-			"You will need a password to sign in. Use this link to set one up:\n\n",
+			"You’ll need a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
-			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n",
 			"{{ENDIF}}\n\n",
-			"Manage multiple accounts with different email addresses using Account settings > Manage email.\n\n",
+			"Prefer a different email address? After signing in, link that account using Account settings → Manage email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -60,11 +59,11 @@
 			"* Site: {{LINK}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
-			"You will need a password to sign in. Use this link to set one up:\n\n",
+			"You’ll need a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
-			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n",
 			"{{ENDIF}}\n\n",
-			"Manage multiple accounts with different email addresses using Account settings > Manage email.\n\n",
+			"Prefer a different email address? After signing in, transfer PC rights using Account settings → Manage email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -79,9 +78,9 @@
 			"* Site: {{LINK}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
-			"You will need a password to sign in. Use this link to set one up:\n\n",
+			"You’ll need a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
-			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n",
 			"{{ENDIF}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
@@ -103,7 +102,7 @@
 			"If you have forgotten your password, you may use this link to set up a new one:\n",
 			"{{ENDIF}}\n\n",
 			"{{PASSWORDLINK}}\n\n",
-			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n",
 			"{{ENDIF}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
@@ -118,7 +117,7 @@
 			"We received a request to reset the password for your account on the {{CONFNAME}} submission site. If you made this request, please use this link to create a new password:\n\n",
 			"{{PASSWORDLINK}}\n\n",
 			"If you did not make this request, it's safe to ignore this email.\n\n",
-			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -339,9 +338,9 @@
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You haven't used the site as {{EMAIL}} before, so you may need to create a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
-			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
+			"The link will expire after 3 days. Obtain a new one if needed via \"Forgot my password\" on the sign-in page.\n",
 			"{{ENDIF}}\n\n",
-			"You can redirect future review requests to a specific email address with Account settings > Manage email.\n\n",
+			"Prefer a different account? After signing in, transfer this review or redirect future review requests using Account settings → Manage email.\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
