@@ -805,6 +805,9 @@
     "mit": {
         "alternate": ["massachusetts institute technology", "m i t"]
     },
+    "montreal": {
+        "weak": true
+    },
     "mpi": {
         "alternate": ["max planck institute"]
     },
