@@ -914,6 +914,9 @@
             {"word": "ut", "if": "university"}
         ]
     },
+    "tianjin": {
+        "sync": "nankai"
+    },
     "tsinghua": {
         "nameish": false
     },
