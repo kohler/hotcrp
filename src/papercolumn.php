@@ -45,13 +45,6 @@ class PaperColumn extends Column {
         }
     }
 
-    /** @param Contact|XtParams $ctx
-     * @param string|MessageItem|list<MessageItem> $message
-     * @deprecated */
-    static function column_error($ctx, $message) {
-        error_log(debug_string_backtrace());
-    }
-
 
     /** @param int $visible */
     function prepare(PaperList $pl, $visible) {

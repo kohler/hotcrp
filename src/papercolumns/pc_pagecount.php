@@ -13,15 +13,17 @@ class PageCount_PaperColumn extends PaperColumn {
     private $statistics;
     /** @var ?string */
     private $type;
-    /** @var ?int */
-    private $dt;
+    /** @var PaperOption */
+    private $opt;
+    /** @var ?PaperOption */
+    private $opt_final;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
         $this->statistics = new ScoreInfo;
     }
     function view_option_schema() {
-        return ["type=all|body|blank|cover|appendix|bib,refs,references|figure^", "dt=paper,submission|final^"];
+        return ["type=all|body|blank|cover|appendix|bib,refs,references|figure^", "dt=paper,submission|final|$^"];
     }
     function prepare(PaperList $pl, $visible) {
         $type = $this->view_option("type") ?? "all";
@@ -29,34 +31,36 @@ class PageCount_PaperColumn extends PaperColumn {
             $this->type = $type;
         }
         $dt = $this->view_option("dt");
-        if ($dt === "paper") {
-            $this->dt = DTYPE_SUBMISSION;
-        } else if ($dt === "final") {
-            $this->dt = DTYPE_FINAL;
+        if ($dt !== null) {
+            $this->opt = $pl->conf->options()->find($dt);
+            if (!$this->opt || !$this->opt->is_document()) {
+                $pl->column_error_at($this->name, "<0>Document ‘{$dt}’ not found");
+                return false;
+            }
+        } else {
+            $this->opt = $pl->conf->option_by_id(DTYPE_SUBMISSION);
+            $this->opt_final = $pl->conf->option_by_id(DTYPE_FINAL);
         }
         return true;
     }
     function sort_name() {
         return $this->sort_name_with_options("type", "dt");
     }
-    /** @return 0|-1 */
-    private function dtype(Contact $user, PaperInfo $row) {
-        if ($this->dt !== null) {
-            return $this->dt;
-        } else if ($row->finalPaperStorageId > 0
-                   && $row->outcome > 0
-                   && $user->can_view_decision($row)) {
-            return DTYPE_FINAL;
+    /** @return ?PaperOption */
+    private function dopt(Contact $user, PaperInfo $row) {
+        if ($this->opt_final
+            && $row->finalPaperStorageId > 0
+            && $user->can_view_option($row, $this->opt_final)) {
+            return $this->opt_final;
+        } else if ($user->can_view_option($row, $this->opt)) {
+            return $this->opt;
         }
-        return DTYPE_SUBMISSION;
+        return null;
     }
     /** @return ?int */
     private function page_count(Contact $user, PaperInfo $row) {
-        if ($user->can_view_pdf($row)) {
-            $this->doc = $row->document($this->dtype($user, $row));
-        } else {
-            $this->doc = null;
-        }
+        $dopt = $this->dopt($user, $row);
+        $this->doc = $dopt ? $row->document($dopt->id) : null;
         return $this->doc ? $this->doc->npages_of_type($this->type, $this->cf) : null;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
@@ -83,8 +87,10 @@ class PageCount_PaperColumn extends PaperColumn {
         } else if (!$this->doc || !$this->cf->need_recheck()) {
             return "";
         }
-        $dt = $this->dtype($pl->user, $row);
-        $dtx = $dt ? " data-dt=\"{$dt}\"" : "";
+        $dtx = "";
+        if ($this->doc->documentType) {
+            $dtx .= " data-dt=\"{$this->doc->documentType}\"";
+        }
         if ($this->type) {
             $dtx .= " data-npages-detail=\"{$this->type}\"";
         }
