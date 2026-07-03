@@ -204,6 +204,20 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $pc = explode("/", $this->_path);
         return $decoded ? urldecode($pc[$n]) : $pc[$n];
     }
+    /** @return int */
+    function path_component_index() {
+        return $this->_path_component_index;
+    }
+    /** @param int $n
+     * @return $this */
+    function consume_path_components($n) {
+        if ($this->_path_component_count === null) {
+            $this->path_component(0); // compute _path_component_count
+        }
+        $this->_path_component_index = max(0, $this->_path_component_index + $n);
+        return $this;
+    }
+
     /** @return ?PaperInfo */
     function paper() {
         return $this->_requested_paper;

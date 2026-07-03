@@ -136,7 +136,7 @@ class Scope_Tester {
         if (is_int($scope)) {
             $scope = join(" ", TokenScope::unparse_missing_bits($scope));
         }
-        xassert_eqq($resp->response_code(), 401);
+        xassert_eqq($resp->response_code(), 403);
         $header = $resp->header("WWW-Authenticate") ?? "";
         xassert_str_contains($header, "error=\"insufficient_scope\"");
         xassert_str_contains($header, "scope=\"{$scope}\"");

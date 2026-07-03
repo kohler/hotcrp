@@ -6006,13 +6006,7 @@ class Conf {
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
-            if (isset($whynot["scope"])) {
-                $status = 401;
-            } else if (isset($whynot["noPaper"])) {
-                $status = 404;
-            } else {
-                $status = 403;
-            }
+            $status = $whynot->response_code();
             array_push($result["message_list"], ...$whynot->message_list(null, 2));
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
@@ -6022,7 +6016,7 @@ class Conf {
             $result["message_list"][] = MessageItem::error_at("p", "<0>Parameter missing");
         }
         $jr = new JsonResult($status, $result);
-        if ($status === 401) {
+        if ($whynot && isset($whynot["scope"])) {
             $jr->set_header($whynot->conf->www_authenticate_header("insufficient_scope", null, $whynot["scope"]));
         }
         return $jr;

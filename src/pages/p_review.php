@@ -39,10 +39,11 @@ class Review_Page {
         PaperTable::print_header($this->pt, $this->qreq, $is_error);
     }
 
-    /** @param ?FailureReason $perm */
-    function error_exit($perm = null) {
-        Navigation::http_response_code($this->user->is_signed_in() ? 403 : 401);
-        if ($perm && (!$perm->secondary || $this->conf->saved_messages_status() < 2)) {
+    /** @return never
+     * @throws PageCompletion */
+    function error_exit(FailureReason $perm) {
+        Navigation::http_response_code($perm->response_code($this->user));
+        if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
             $perm->set("expand", true);
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
             $this->conf->feedback_msg($perm->message_list());
@@ -70,6 +71,10 @@ class Review_Page {
             throw $redir;
         } catch (FailureReason $perm) {
             $this->error_exit($perm);
+        }
+        // check for garbage in path
+        if ((string) $this->qreq->path_component(0) !== "") {
+            $this->error_exit(new FailureReason($this->conf, ["invalidPath" => $this->qreq->path_component(0)]));
         }
     }
 

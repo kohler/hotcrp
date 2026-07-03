@@ -1953,6 +1953,31 @@ Phil Porras.");
         $pr = PaperRequest::make($qreq, false);
         xassert($pr instanceof FailureReason);
         xassert($pr["missingId"]);
+
+        // unparseable id in path => 404, not silent fall-through
+        $qreq = TestQreq::get_page("paper/abc")->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof FailureReason);
+        xassert_eqq($pr["invalidId"], "paper");
+        xassert_eqq($pr->response_code(), 404);
+
+        $qreq = TestQreq::get_page("paper/10r0")->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof FailureReason);
+        xassert_eqq($pr->response_code(), 404);
+
+        // path conflicts with `p` parameter => 404, not a redirect to `p`
+        $qreq = TestQreq::get_page("paper/3", ["p" => "4"])->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof FailureReason);
+        xassert_eqq($pr["conflictingId"], "paper");
+        xassert_eqq($pr->response_code(), 404);
+        xassert_str_contains(MessageSet::feedback_text($pr->message_list()), "‘3’ and ‘4’");
+
+        // agreeing path and `p` are fine
+        $qreq = TestQreq::get_page("paper/3", ["p" => "3"])->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof PaperRequest);
     }
 
     function test_conditional_fields() {

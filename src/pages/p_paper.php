@@ -38,15 +38,22 @@ class Paper_Page {
         PaperTable::print_header($pt, $this->qreq, $error);
     }
 
-    /** @param ?FailureReason $perm */
-    function error_exit($perm = null) {
-        Navigation::http_response_code($this->user->is_signed_in() ? 403 : 401);
-        // 401 spec requires WWW-Authenticate, but many sites omit it
-        if ($perm && (!$perm->secondary || $this->conf->saved_messages_status() < 2)) {
+    /** @return never
+     * @throws PageCompletion */
+    function error_exit(FailureReason $perm) {
+        Navigation::http_response_code($perm->response_code($this->user));
+        if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
             $perm->set("expand", true);
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
             $this->conf->feedback_msg($perm->message_list());
         }
+        $this->print_exit();
+    }
+
+    /** Render the terminal page and stop.
+     * @return never
+     * @throws PageCompletion */
+    function print_exit() {
         $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
         $this->qreq->print_footer();
@@ -63,6 +70,16 @@ class Paper_Page {
             throw $redir;
         } catch (FailureReason $perm) {
             $this->error_exit($perm);
+        }
+        // check path suffix for `/main` or `/edit`
+        if ($this->qreq->path_component_index() === 1
+            && ($pc = (string) $this->qreq->path_component(0)) !== ""
+            && in_array($pc, ["main", "edit", "p", "r", "rea"], true)) {
+            $this->qreq->m = $pc;
+            $this->qreq->consume_path_components(1);
+        }
+        if ((string) $this->qreq->path_component(0) !== "") {
+            $this->error_exit(new FailureReason($this->conf, ["invalidPath" => $this->qreq->path_component(0)]));
         }
     }
 
@@ -131,7 +148,7 @@ class Paper_Page {
             if ($this->prow->delete_from_database($this->user)) {
                 $this->conf->success_msg("<0>{$this->conf->snouns[2]} #{$this->prow->paperId} deleted");
             }
-            $this->error_exit();
+            $this->print_exit();
         }
     }
 
@@ -403,9 +420,7 @@ class Paper_Page {
     }
 
     static function go(Contact $user, Qrequest $qreq) {
-        if (!isset($qreq->m) && ($pc = $qreq->path_component(1))) {
-            $qreq->m = $pc;
-        } else if (!isset($qreq->m) && isset($qreq->mode)) {
+        if (!isset($qreq->m) && isset($qreq->mode)) {
             $qreq->m = $qreq->mode;
         }
 

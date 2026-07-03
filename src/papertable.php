@@ -168,10 +168,10 @@ class PaperTable {
         $t = '<div id="h-page" class="header-page-submission"><h1 id="h-title" class="paptitle';
 
         if (!$paperTable) {
-            if (($pid = $qreq->paperId) && ctype_digit($pid)) {
-                $title = "#{$pid}";
+            if (($pid = (string) $qreq->paperId) !== "" && ctype_digit($pid)) {
+                $title = "<span class=\"pnum pnum-sp\">#{$pid}</span> Not found";
             } else {
-                $title = $conf->_c5("paper_edit", "<0>Submission");
+                $title = $conf->_c5("paper_edit", "<0>{Submission} not found");
             }
             $t .= '">' . $title;
         } else if (!$prow->paperId) {

@@ -628,7 +628,7 @@ class PaperAPI_Tester {
 
         $qreq = TestQreq::get(["p" => 2]);
         $resp = call_api_result("paper", $this->u_estrin, $qreq);
-        xassert_eqq($resp->response_code(), 401);
+        xassert_eqq($resp->response_code(), 403);
         xassert_eqq($resp->get("paper"), null);
         Scope_Tester::xassert_scope_error($resp, "submeta:read");
 
@@ -655,7 +655,7 @@ class PaperAPI_Tester {
 
         $qreq = TestQreq::get(["p" => 1, "dt" => 0]);
         $resp = call_api_result("document", $this->u_estrin, $qreq);
-        xassert_eqq($resp->response_code(), 401);
+        xassert_eqq($resp->response_code(), 403);
         Scope_Tester::xassert_scope_error($resp, "document:read");
 
         $qreq = TestQreq::get(["p" => 2, "dt" => 0]);

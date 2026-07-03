@@ -48,42 +48,49 @@ class PaperRequest {
             $qreq->commentId = $qreq->c;
         }
         // read paperId, reviewId from path
-        if (($pc = $qreq->path_component(0)) !== null && $pc !== "") {
-            if (preg_match('/\A(\d+|new\z)(|[A-Z]+|r[1-9]\d*|rnew)\z/', $pc, $m)) {
-                $qreq->paperId = $qreq->paperId ?? $m[1];
-                if ($qreq->paperId !== $m[1]) {
-                    throw new Redirection($conf->selfurl($qreq), 307);
-                }
-                if ($m[2] === "") {
-                    // OK
-                } else if (!$review) {
-                    throw new Redirection($conf->selfurl($qreq), 307);
-                } else {
-                    $qreq->reviewId = $qreq->reviewId ?? $pc;
-                    if ($qreq->reviewId !== $pc) {
-                        throw new Redirection($conf->selfurl($qreq), 307);
-                    }
+        if (($pc = (string) $qreq->path_component(0)) !== "") {
+            if (!preg_match('/\A(\d++|new\z)(|[A-Z]++|r[1-9]\d*+|rnew)\z/', $pc, $m)) {
+                // path component is not a valid paper/review reference
+                $qreq->paperId = $pc; // prefer path version for error printing
+                throw new FailureReason($conf, ["invalidId" => "paper", "paperId" => $pc]);
+            }
+            $old_paperId = $qreq->paperId;
+            $qreq->paperId = $m[1];
+            if ($old_paperId !== null && $old_paperId !== $m[1]) {
+                throw new FailureReason($conf, ["conflictingId" => "paper", "paperId" => $m[1], "otherId" => $old_paperId]);
+            }
+            if ($m[2] === "") {
+                // OK
+            } else if (!$review) {
+                throw new Redirection($conf->selfurl($qreq), 307);
+            } else {
+                $qreq->reviewId = $qreq->reviewId ?? $pc;
+                if ($qreq->reviewId !== $pc) {
+                    throw new FailureReason($conf, ["conflictingId" => "review", "reviewId" => $pc, "otherId" => $qreq->reviewId]);
                 }
             }
-        }
-        // read paperId from reviewId
-        if (!isset($qreq->paperId)
-            && isset($qreq->reviewId)
-            && preg_match('/\A(\d+)(?:[A-Z]+|r[1-9]\d*|rnew)\z/', $qreq->reviewId, $m)) {
-            $qreq->paperId = $m[1];
+            $qreq->consume_path_components(1);
         }
         // clear query
         if (isset($qreq->paperId) || isset($qreq->reviewId)) {
             unset($qreq->q);
         }
-        // check format
+        // check format, read reviewId into paperId
         if (isset($qreq->paperId)
             && !ctype_digit($qreq->paperId)
             && $qreq->paperId !== "new") {
             throw new FailureReason($conf, ["invalidId" => "paper", "paperId" => $qreq->paperId]);
-        } else if (isset($qreq->reviewId)
-                   && !preg_match('/\A\d+(?:|[A-Z]+|r[1-9]\d*|rnew)\z/', $qreq->reviewId)) {
-            throw new FailureReason($conf, ["invalidId" => "review", "reviewId" => $qreq->reviewId]);
+        }
+        if (isset($qreq->reviewId)) {
+            if (!preg_match('/\A(\d++)(|[A-Z]++|r[1-9]\d*+|rnew)\z/', $qreq->reviewId, $m)) {
+                throw new FailureReason($conf, ["invalidId" => "review", "reviewId" => $qreq->reviewId]);
+            } else if ($m[2] !== "") {
+                if (!isset($qreq->paperId)) {
+                    $qreq->paperId = $m[1];
+                } else if ($qreq->paperId !== $m[1]) {
+                    throw new FailureReason($conf, ["conflictingId" => "paper", "paperId" => $qreq->paperId, "otherId" => $m[1]]);
+                }
+            }
         }
     }
 

@@ -80,6 +80,28 @@ class FailureReason extends Exception
         return $this;
     }
 
+    /** Return the HTTP status code appropriate for this failure.
+     *
+     * Returns 404 when the failure means a named resource does not exist or
+     * the request did not name a valid resource. Otherwise returns 403, or
+     * 401 when $user is given and not signed in (the client should
+     * authenticate).
+     * @param ?Contact $user
+     * @return int */
+    function response_code(?Contact $user = null) {
+        if (isset($this->_a["invalidId"])
+            || isset($this->_a["conflictingId"])
+            || isset($this->_a["invalidPath"])
+            || ($this->_a["noPaper"] ?? false)
+            || isset($this->_a["documentNotFound"])
+            || ($this->_a["reviewNonexistent"] ?? false)) {
+            return 404;
+        } else if ($user && !$user->is_signed_in()) {
+            return 401;
+        }
+        return 403;
+    }
+
     /** @param array<string,mixed> $a
      * @return $this */
     function merge($a) {
@@ -211,6 +233,18 @@ class FailureReason extends Exception
             $id = $this->_a["missingId"];
             $idname = $id === "paper" ? "{submission}" : $id;
             $ms[] = $this->conf->_("<0>Missing {$idname} ID");
+        }
+        if (isset($this->_a["conflictingId"])) {
+            $id = $this->_a["conflictingId"];
+            $idname = $id === "paper" ? "{submission}" : $id;
+            if (isset($this->_a["{$id}Id"]) && isset($this->_a["otherId"])) {
+                $ms[] = $this->conf->_("<0>This address contains conflicting {$idname} IDs ‘{}’ and ‘{}’", $this->_a["{$id}Id"], $this->_a["otherId"]);
+            } else {
+                $ms[] = $this->conf->_("<0>Conflicting {$idname} IDs");
+            }
+        }
+        if (isset($this->_a["invalidPath"])) {
+            $ms[] = $this->conf->_("<0>No such page ‘{}’", $this->_a["invalidPath"]);
         }
         if ($this->_a["invalidSclass"] ?? false) {
             $ms[] = $this->conf->_("<0>{Submission} class ‘{}’ not found", $this->_a["sclass"]);
