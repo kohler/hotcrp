@@ -142,7 +142,7 @@ class TrackerConfig_API {
 
             $hide_conflicts = null;
             if ($qreq["tr/{$i}/hideconflicts"] || $qreq["has_tr/{$i}/hideconflicts"]) {
-                $hide_conflicts = !!$qreq["tr/{$i}/hideconflicts"];
+                $hide_conflicts = friendly_boolean($qreq["tr/{$i}/hideconflicts"]) ?? false;
             }
 
             $xlist = $permissionizer = null;
@@ -162,7 +162,7 @@ class TrackerConfig_API {
                 $position = array_search((int) $p, $xlist->ids);
             }
 
-            $stop = $qreq->stopall || !!$qreq["tr/{$i}/stop"];
+            $stop = $qreq->stopall || (friendly_boolean($qreq["tr/{$i}/stop"]) ?? false);
 
             // Save tracker
             if ($trackerid === "new") {

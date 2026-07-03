@@ -504,7 +504,7 @@ class Profile_Page {
         }
         if ($this->qreq->t
             && $this->qreq->t !== $this->topic
-            && $this->qreq->is_get()) {
+            && $this->qreq->is_getlike()) {
             $this->qreq->t = $this->topic === "main" ? null : $this->topic;
             $this->qreq->redirect_self();
         }

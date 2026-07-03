@@ -45,7 +45,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         } else if ($lword === "none" || $lword === "no") {
             return new PaperPDF_SearchTerm($srch, $dtype, false);
         }
-        $cf = new CheckFormat($srch->conf);
+        $cf = new CheckFormat($srch->conf, CheckFormat::RUN_NEVER);
         $errf = $cf->known_fields($dtype ?? DTYPE_SUBMISSION);
         if ($dtype === null && empty($errf)) {
             $errf = $cf->known_fields(DTYPE_FINAL);

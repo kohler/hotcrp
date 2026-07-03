@@ -67,13 +67,12 @@ class Follow_AssignmentParser extends AssignmentParser {
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);
-        if (!$fs[0]) {
-            $m = $state->query(new Follow_Assignable($prow->paperId, null));
-            $cids = array_map(function ($x) { return $x->cid; }, $m);
-            return $state->users_by_id($cids);
-        } else {
+        if ($fs[0]) {
             return null;
         }
+        $m = $state->query(new Follow_Assignable($prow->paperId, null));
+        $cids = array_map(function ($x) { return $x->cid; }, $m);
+        return $state->users_by_id($cids);
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->contactId > 0 ? [$state->reviewer] : null;

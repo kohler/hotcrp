@@ -56,14 +56,14 @@ const USER_SLICE = 1;
 global $Conf;
 
 require_once("siteloader.php");
-require_once(SiteLoader::find("lib/navigation.php"));
-require_once(SiteLoader::find("lib/polyfills.php"));
-require_once(SiteLoader::find("lib/base.php"));
-require_once(SiteLoader::find("lib/redirect.php"));
-require_once(SiteLoader::find("lib/dbl.php"));
-require_once(SiteLoader::find("src/helpers.php"));
-require_once(SiteLoader::find("src/conference.php"));
-require_once(SiteLoader::find("src/contact.php"));
+require_once(SiteLoader::resolve("lib/navigation.php"));
+require_once(SiteLoader::resolve("lib/polyfills.php"));
+require_once(SiteLoader::resolve("lib/base.php"));
+require_once(SiteLoader::resolve("lib/redirect.php"));
+require_once(SiteLoader::resolve("lib/dbl.php"));
+require_once(SiteLoader::resolve("src/helpers.php"));
+require_once(SiteLoader::resolve("src/conference.php"));
+require_once(SiteLoader::resolve("src/contact.php"));
 Conf::set_current_time();
 if (defined("HOTCRP_TESTHARNESS")) {
     Navigation::$test_mode = 1;
@@ -245,7 +245,7 @@ function initialize_user_redirect($qreq, $uindex, $nusers, $cookie) {
             $jr = JsonResult::make_error(400, "<0>Bad user specification");
         }
         $jr->complete();
-    } else if ($qreq->is_get() || $qreq->is_head()) {
+    } else if ($qreq->is_getlike()) {
         $page = $nav->base_absolute();
         if ($nusers > 0) {
             $page = "{$page}u/{$uindex}/";
@@ -325,9 +325,12 @@ function initialize_user($qreq, $kwarg = null) {
             $user->set_scope($scope);
         }
         Contact::set_main_user($user);
-        $ucounter = ContactCounter::find_by_uid($conf, $token->is_cdb, $token->contactId);
-        $ucounter->api_refresh();
-        $ucounter->api_account(true);
+        $ucounter = $user->contact_counter_for($token->is_cdb, $token->contactId);
+        $allow = $ucounter->api_account();
+        $ucounter->api_ratelimit_headers();
+        if (!$allow) {
+            $ucounter->api_fail()->complete();
+        }
         $token->update_use(86400)->update(); // mark use once a day
         return $user->activate($qreq, true);
     }
@@ -340,7 +343,7 @@ function initialize_user($qreq, $kwarg = null) {
     if ($qreq->post && $sn && isset($_COOKIE[$sn])) {
         $sid = $_COOKIE[$sn];
         $l = strlen($qreq->post);
-        if ($l >= 8 && $qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
+        if ($l >= 8 && hash_equals(substr($sid, strlen($sid) > 16 ? 8 : 0, $l), $qreq->post)) {
             $qreq->approve_token();
         }
     }

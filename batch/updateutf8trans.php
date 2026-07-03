@@ -246,7 +246,7 @@ class UpdateUTF8Trans_Batch {
         ksort($this->trans[2], SORT_STRING);
         ksort($this->trans[3], SORT_STRING);
 
-        $unicode_helper = file_get_contents(SiteLoader::find("lib/unicodehelper.php"));
+        $unicode_helper = file_get_contents(SiteLoader::resolve("lib/unicodehelper.php"));
         fwrite(STDOUT, substr($unicode_helper, 0, strpos($unicode_helper, "const ")));
 
         $m = $n = "";

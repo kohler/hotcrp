@@ -55,7 +55,7 @@ class StableIDPermutation {
      * @return StableIDPermutation */
     static function make_user($u) {
         $u->ensure_account_here();
-        $pk = self::conf_key($u->conf, "__id_permuter_key");
+        $pk = self::conf_key($u->conf, "idpermuter_user");
         return new StableIDPermutation("U" . $pk . pack("P", $u->contactId));
     }
 
@@ -63,7 +63,7 @@ class StableIDPermutation {
      * @return StableIDPermutation */
     static function make_assignment($u) {
         $u->ensure_account_here();
-        $pk = $u->data("assignment_key") ?? self::conf_key($u->conf, "__assignment_key");
+        $pk = $u->data("assignment_key") ?? self::conf_key($u->conf, "idpermuter_assignment");
         return new StableIDPermutation("U" . $pk . pack("P", $u->contactId));
     }
 

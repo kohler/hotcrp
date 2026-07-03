@@ -38,7 +38,7 @@ class ReviewAPI_Tester {
         $this->u_diot = $conf->checked_user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
 
         Reviews_Tester::add_questions_for_response($this->conf);
-        $review18A = file_get_contents(SiteLoader::find("test/review18A.txt"));
+        $review18A = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
         $tf = (new ReviewValues($conf))->set_text($review18A, "review18A.txt");
         xassert($tf->parse_text());
         xassert($tf->check_and_save($this->u_diot, null));

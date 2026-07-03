@@ -106,7 +106,7 @@ class Review_SearchTerm extends SearchTerm {
         }
         if ($contacts !== null && $contacts !== "") {
             $rsm->set_contacts($srch->matching_uids($contacts, null, $rsm->only_pc()));
-            if (strcasecmp($contacts, "me") == 0) {
+            if (strcasecmp($contacts, "me") === 0) {
                 $rsm->apply_tokens($srch->user->review_tokens());
             }
         }

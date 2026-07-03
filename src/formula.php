@@ -1440,7 +1440,7 @@ class FormulaCompiler {
             $name = $name[0] === "$" ? $name : '$' . $name;
         }
         if (!isset($this->gvar[$name])) {
-            $this->gstmt[] = "$name = $expr;";
+            $this->gstmt[] = "{$name} = {$expr};";
             $this->gvar[$name] = $name;
         }
         return $name;
@@ -1795,6 +1795,8 @@ final class Formula implements JsonSerializable {
     private $_indexed = false;
     /** @var int */
     private $_index_type = 0;
+    /** @var bool */
+    private $_extractor_indexed = false;
     /** @var array<string,VarDef_Fexpr> */
     private $_params = [];
     /** @var int */
@@ -2344,6 +2346,10 @@ final class Formula implements JsonSerializable {
             . "}";
         $this->_f_combiner = eval("return {$combiner_str};\n");
         $this->_supports_combiner = true;
+        $this->_extractor_indexed = $state->term_compiler->indexed;
+        if (self::DEBUG) {
+            self::debug_report($extractor_str . "\n" . $combiner_str);
+        }
         return true;
     }
 
@@ -2439,6 +2445,12 @@ final class Formula implements JsonSerializable {
     /** @return int */
     function index_type() {
         return $this->_index_type;
+    }
+
+    /** @return bool */
+    function extractor_indexed() {
+        assert($this->_supports_combiner);
+        return $this->_extractor_indexed;
     }
 
     #[\ReturnTypeWillChange]

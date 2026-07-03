@@ -279,7 +279,7 @@ class MailRecipients extends MessageSet {
 
     /** @return string */
     function current_fold_classes(Qrequest $qreq) {
-        return "fold8" . (!!$qreq->plimit ? "o" : "c")
+        return "fold8" . (friendly_boolean($qreq->plimit) ? "o" : "c")
             . " fold9" . ($this->rect->flags & self::F_NOPAPERS ? "c" : "o")
             . " fold10" . ($this->rect->flags & self::F_REV_SINCE ? "o" : "c");
     }

@@ -27,7 +27,7 @@ class BanalDocstore_Batch {
         $matcher = new DocumentHashMatcher($arg["match"] ?? null);
         $matcher->set_extension(".pdf");
         $this->fparts = new DocumentFileTree($ds->full_pattern(), $matcher);
-        $this->cf = new CheckFormat($conf);
+        $this->cf = new CheckFormat($conf, CheckFormat::RUN_ALWAYS);
     }
 
     /** @return int */
@@ -56,7 +56,7 @@ class BanalDocstore_Batch {
                 $a = ["filename" => $fm->fname] + (array) $bj;
                 unset($a["at"]);
             } else {
-                $a = ["filename" => $fm->fname, "error" => $this->cf->banal_stderr];
+                $a = ["filename" => $fm->fname, "error" => $this->cf->banal_run->stderr];
             }
             $c = json_encode($a, JSON_PRETTY_PRINT) . "\n";
             $c = preg_replace_callback('<\[([ ,\n\d]+)\]>', function ($m) {

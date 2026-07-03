@@ -300,6 +300,13 @@
     "response_info": {"comment": "comment"}
   },
   {
+    "name": "comments", "get": true,
+    "tags": ["Comments"],
+    "parameters": "?q ?t ?p ?warn_missing ?content",
+    "response": "comments",
+    "response_info": {"comments": "[comment]"}
+  },
+  {
     "name": "mentioncompletion", "get": true,
     "tags": ["Comments"],
     "parameters": "?p",

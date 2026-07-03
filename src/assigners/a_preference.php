@@ -68,11 +68,10 @@ class Preference_AssignmentParser extends AssignmentParser {
     function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
         if (!$user->contactId) {
             return false;
+        } else if ($state->user->can_edit_preference_for($prow, $user)) {
+            return true;
         }
-        if (!$state->user->can_edit_preference_for($prow, $user)) {
-            return new AssignmentError(self::cannot_edit_preference_message($state->user, $prow, $user));
-        }
-        return true;
+        return new AssignmentError(self::cannot_edit_preference_message($state->user, $prow, $user));
     }
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;

@@ -47,10 +47,9 @@ using bearer tokens obtained using Account settings > Developer.
 
 ## Parameter types
 
-**Boolean** parameters accept `1` or `true` for true and `0` or `false` for
-false; the values `on`/`yes` and `off`/`no` are also accepted. Any other value
-is treated as if the parameter were absent. For example, `dry_run=1` and
-`dry_run=true` are equivalent.
+**Boolean** parameters accept `1` or `true` for true and `0` or `false` or the
+empty string for false; the values `on`/`yes` and `off`/`no` are also
+accepted. For example, `dry_run=1` and `dry_run=true` are equivalent.
 
 **Integer** and **number** parameters are written in decimal, such as `p=10`.
 **String** parameters are sent literally; an enumerated parameter is a string
@@ -179,10 +178,10 @@ authority are badged **Site admin only**.
 
 A **submission administrator** has administrative authority over a particular
 submission or a subset of submissions. For example, a track manager has
-administrative authority over a track, and each submission can have an explicit
-manager assigned from the PC. For most submissions, a site administrator is also
-a submission administrator (there are exceptions involving track rights and
-conflicts), but a submission manager is not necessarily a site administrator.
-Endpoints that require administrative authority over specific submissions, but
-do not require broad site administration rights, are badged **Admin only** or
-**Track manager only**.
+administrative authority over a track, and each submission can have an
+explicit manager assigned from the PC. For most submissions, site
+administrators are also submission administrators (there are exceptions
+involving track rights and conflicts), but a submission manager is not
+necessarily a site administrator. Endpoints that require administrative
+authority over specific submissions, but do not require broad site
+administration rights, are badged **Admin only** or **Track manager only**.

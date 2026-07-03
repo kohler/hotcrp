@@ -27,22 +27,30 @@ class Decision_SearchTerm extends SearchTerm {
             $srch->lwarning($sword, "<0>Decision not found");
             return new Decision_SearchTerm($srch->user, [-10000000]);
         }
+        $lim = new Limit_SearchTerm($srch, "dec:" . SearchWord::quote($word));
+        $lim->set_implicit();
         $st = new Decision_SearchTerm($srch->user, $decs);
-        $lim = new Limit_SearchTerm($srch, "dec:" . SearchWord::quote($word), true);
         $st->set_float("xlimit", $lim);
         return $st;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->decs)];
-        if (in_array(0, $this->decs, true)
-            && !$this->user->allow_admin_all()) {
-            $f[] = "Paper.outcome=0";
+        if (!$this->user->can_view_some_decision()) {
+            return in_array(0, $this->decs, true) ? "true" : "false";
+        } else if (in_array(0, $this->decs, true)
+                   && !$this->user->can_view_all_decision()) {
+            return "true";
         }
-        return "(" . join(" or ", $f) . ")";
+        return "Paper.outcome" . CountMatcher::sqlexpr_using($this->decs);
+    }
+    function is_sqlexpr_precise() {
+        return $this->user->can_view_all_decision();
     }
     function test(PaperInfo $row, $xinfo) {
         $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
         return in_array($d, $this->decs, true);
+    }
+    function about() {
+        return self::ABOUT_DECISION;
     }
     function drag_assigners(Contact $user) {
         if (count($this->decs) !== 1 || !$user->can_set_some_decision()) {

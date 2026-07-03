@@ -31,7 +31,7 @@ class PaperRequest {
 
     /** @return bool */
     static function simple_qreq(Qrequest $qreq) {
-        return ($qreq->is_get() || $qreq->is_head())
+        return $qreq->is_getlike()
             && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "t", "q", "r", "reviewId", "cap", "actas", "accept", "decline"]);
     }
 

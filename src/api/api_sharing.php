@@ -5,10 +5,10 @@
 class Sharing_API extends MessageSet {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$prow->has_author($user)
-            && ($qreq->is_get() ? !$user->is_admin($prow) : !$user->can_manage($prow))) {
+            && ($qreq->is_getlike() ? !$user->is_admin($prow) : !$user->can_manage($prow))) {
             return JsonResult::make_permission_error();
         }
-        if (!$qreq->is_get()) {
+        if (!$qreq->is_getlike()) {
             if ($qreq->method() === "DELETE") {
                 $share = false;
             } else if (!isset($qreq->share)) {

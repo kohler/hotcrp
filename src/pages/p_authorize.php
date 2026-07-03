@@ -526,7 +526,7 @@ class Authorize_Page {
         }
 
         if (!($client = $this->find_client($clids[0]))
-            || ($client->client_secret ?? "") !== $clsecrets[0]) {
+            || !hash_equals($client->client_secret ?? "", $clsecrets[0])) {
             $this->conf->www_authenticate_header("invalid_client", $this->qreq);
             return $this->oauthtoken_error("invalid_client");
         }

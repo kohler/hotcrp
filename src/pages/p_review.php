@@ -135,7 +135,8 @@ class Review_Page {
         $rv = (new ReviewValues($this->conf))
             ->set_text($this->qreq->file_content("file"), $this->qreq->file_filename("file"));
         $match = $other = false;
-        while ($rv->set_req_override(!!$this->qreq->override)->parse_text()) {
+        $override = friendly_boolean($this->qreq->override) ?? false;
+        while ($rv->set_req_override($override)->parse_text()) {
             if ($rv->req_pid() === $this->prow->paperId) {
                 $match = true;
                 if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {

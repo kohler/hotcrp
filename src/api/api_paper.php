@@ -55,13 +55,13 @@ class Paper_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    static function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+    static private function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!isset($qreq->p)) {
-            JsonResult::make_missing_error("p")->complete();
+            return JsonResult::make_missing_error("p");
         }
         $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
         if (!$prow || $fr) {
-            Conf::paper_error_json_result($fr)->complete();
+            return Conf::paper_error_json_result($fr);
         }
         $pj = (new PaperExport($user))->paper_json($prow);
         assert(!!$pj);
@@ -85,7 +85,7 @@ class Paper_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    static function run_get_multi(Contact $user, Qrequest $qreq) {
+    static private function run_get_multi(Contact $user, Qrequest $qreq) {
         if (!isset($qreq->q)) {
             return JsonResult::make_missing_error("q");
         }
@@ -134,11 +134,10 @@ class Paper_API extends MessageSet {
         $ct_form = Mimetype::is_form($ct);
         if ($ct_form && !$this->post_form_is_json($qreq)) {
             // handle form-encoded data
-            if (($mode & self::M_ONE) !== 0) {
-                return $this->run_post_form_data($qreq, $prow);
-            } else {
+            if (($mode & self::M_ONE) === 0) {
                 return JsonResult::make_error(400, "<0>Unexpected content type");
             }
+            return $this->run_post_form_data($qreq, $prow);
         }
 
         // check for uploaded file
@@ -283,7 +282,7 @@ class Paper_API extends MessageSet {
         $ps = $this->paper_status();
         $ok = $ps->prepare_save_paper_web($qreq, $prow);
         $this->execute_save($ok, $ps);
-        return $this->make_result();
+        return $this->post_result();
     }
 
     /** @return JsonResult */
@@ -299,7 +298,7 @@ class Paper_API extends MessageSet {
         } else {
             $this->execute_fail();
         }
-        return $this->make_result();
+        return $this->post_result();
     }
 
     /** @param array $jps
@@ -315,7 +314,7 @@ class Paper_API extends MessageSet {
                 $this->execute_fail();
             }
         }
-        return $this->make_result();
+        return $this->post_result();
     }
 
     /** @param object $jp
@@ -334,7 +333,7 @@ class Paper_API extends MessageSet {
             $this->execute_save($ok, $ps);
             ++$i;
         }
-        return $this->make_result();
+        return $this->post_result();
     }
 
 
@@ -402,8 +401,9 @@ class Paper_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    private function make_result() {
-        $ok = empty($this->valid) || array_find($this->valid, function ($x) { return !!$x; });
+    private function post_result() {
+        $ok = empty($this->valid)
+            || array_find($this->valid, function ($x) { return !!$x; });
         $jr = new JsonResult([
             "ok" => $ok,
             "message_list" => $this->message_list()
@@ -674,7 +674,7 @@ class Paper_API extends MessageSet {
             }
             $this->valid[] = $prow->delete_from_database($this->user);
         }
-        return $this->make_result();
+        return $this->post_result();
     }
 
 
@@ -685,7 +685,7 @@ class Paper_API extends MessageSet {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         try {
-            if ($qreq->is_get()) {
+            if ($qreq->is_getlike()) {
                 if ($mode === self::M_ONE) {
                     $jr = self::run_get_one($user, $qreq, $prow);
                 } else {

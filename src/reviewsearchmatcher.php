@@ -344,14 +344,24 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $where[] = "reviewType={$this->review_type}";
         }
         if ($this->has_contacts()) {
-            $cm = $this->contact_match_sql("contactId");
+            if ($user->can_view_some_review_identity()) {
+                $cm = $this->contact_match_sql("contactId");
+            } else if ($this->test_contact($user->contactId)) {
+                $cm = "contactId={$user->contactId}";
+            } else {
+                $cm = "false";
+            }
             if ($this->tokens) {
                 $cm = "({$cm} or reviewToken in (" . join(",", $this->tokens) . "))";
             }
             $where[] = $cm;
         }
-        if ($this->rfsrch && ($qx = $this->rfsrch->sqlexpr())) {
-            $where[] = $qx;
+        if ($this->rfsrch) {
+            if ($this->rfsrch->rf->view_score <= $user->permissive_view_score_bound()) {
+                $where[] = "false";
+            } else if (($qx = $this->rfsrch->sqlexpr())) {
+                $where[] = $qx;
+            }
         }
         if ($this->rate_bits > 0) {
             $where[] = "exists (select * from ReviewRating where paperId={$table_name}.paperId and reviewId={$table_name}.reviewId)";
@@ -364,9 +374,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         if (empty($where)) {
             return null;
-        } else {
-            return join(" and ", $where);
         }
+        return SearchTerm::andjoin_sqlexpr($where);
     }
     function prepare_reviews(PaperInfo $prow) {
         if ($this->wordcountexpr) {

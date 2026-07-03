@@ -743,8 +743,7 @@ final class PaperList extends MessageSet {
         }
 
         assert($this->_sortcol_fixed < 2);
-        // Do not use ensure_columns_by_name(), because of sort options
-        // might differ.
+        // Do not use ensure_columns_by_name(); sort options might differ
         $fs = $this->conf->paper_columns($svc->keyword, $this->xtp);
         if (count($fs) === 1) {
             $col = PaperColumn::make($this->conf, $fs[0])->add_view_options($svc->view_options);
@@ -1329,11 +1328,6 @@ final class PaperList extends MessageSet {
             }
         }
         $this->append_list($ml);
-    }
-
-    /** @deprecated */
-    function column_error($message) {
-        error_log(debug_string_backtrace());
     }
 
     /** @param string $name

@@ -110,7 +110,7 @@ class Mimetype {
         }
         if (!self::$mime_types_loaded && $type !== 1) {
             self::$mime_types_loaded = true;
-            $t = (string) @file_get_contents(SiteLoader::find("lib/mime.types"));
+            $t = (string) @file_get_contents(SiteLoader::resolve("lib/mime.types"));
             $t = preg_replace('/[ \t]+/', " ", $t);
             foreach (explode("\n", $t) as $l) {
                 $a = explode(" ", trim($l));

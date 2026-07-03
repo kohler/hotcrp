@@ -736,7 +736,32 @@ concerns.
 
 - Testconf I Submissions
 http://hotcrp.lcdf.org/test
-******** test01-comment6
+******** Permission_Tester::test_comment_notification-3
+To: Jon Crowcroft <jon@cs.ucl.ac.uk>, Peter Druschel <pdruschel@cs.rice.edu>
+Subject: [Testconf I] Comment for #2 "Small Forwarding Tables for Fast
+ Routing..."
+
+Comment @{{}} by Mary Baker <mgbaker@cs.stanford.edu>
+---------------------------------------------------------------------------
+second test
+
+
+\***************************************************************************
+
+
+You’re following comments for Test Conference I (Testconf I) submission
+#2. For the most up-to-date comments, or to unsubscribe from email
+notification, see the submission site.
+
+* Title: Small Forwarding Tables for Fast Routing Lookups
+* Site: http://hotcrp.lcdf.org/test/paper/2
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+http://hotcrp.lcdf.org/test
+******** Permission_Tester::test_comment_notification-4
 To: Jane Chair <chair@_.com>
 Subject: [Testconf I] Mentioned for #2 "Small Forwarding Tables for Fast
  Routing..."
@@ -752,6 +777,31 @@ third test, @Jane Chair
 You were mentioned in this comment for Test Conference I (Testconf I)
 submission #2. For the most up-to-date comments, see the submission
 site.
+
+* Title: Small Forwarding Tables for Fast Routing Lookups
+* Site: http://hotcrp.lcdf.org/test/paper/2
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+http://hotcrp.lcdf.org/test
+******** Permission_Tester::test_comment_notification-4
+To: Jon Crowcroft <jon@cs.ucl.ac.uk>, Peter Druschel <pdruschel@cs.rice.edu>
+Subject: [Testconf I] Comment for #2 "Small Forwarding Tables for Fast
+ Routing..."
+
+Comment @{{}} by Mary Baker <mgbaker@cs.stanford.edu>
+---------------------------------------------------------------------------
+third test, @Jane Chair
+
+
+\***************************************************************************
+
+
+You’re following comments for Test Conference I (Testconf I) submission
+#2. For the most up-to-date comments, or to unsubscribe from email
+notification, see the submission site.
 
 * Title: Small Forwarding Tables for Fast Routing Lookups
 * Site: http://hotcrp.lcdf.org/test/paper/2

@@ -287,23 +287,25 @@ class PaperSearch extends MessageSet {
     /** @var ?list<SearchTerm> */
     private $_group_slice_terms;
 
-    static public $search_type_names = [
-        "a" => "Your submissions",
+    static private $search_type_descriptions = [
+        "a" => "Your {submissions}",
         "accepted" => "Accepted",
         "active" => "Active",
-        "admin" => "Submissions you administer",
+        "admin" => "{Submissions} you administer",
         "all" => "All",
-        "alladmin" => "Submissions you’re allowed to administer",
+        "alladmin" => "{Submissions} you’re allowed to administer",
+        "ar" => "Your {submissions} and reviews",
         "lead" => "Your discussion leads",
+        "none" => "None",
         "r" => "Your reviews",
-        "reviewable" => "Reviewable",
         "req" => "Your review requests",
+        "reviewable" => "Reviewable",
         "rout" => "Your incomplete reviews",
         "s" => "Submitted",
         "undecided" => "Undecided",
-        "viewable" => "Submissions you can view"
+        "unsub" => "Draft {submissions}",
+        "viewable" => "{Submissions} you can view"
     ];
-
 
     /** @param Qrequest $qreq
      * @return array<string,mixed> */
@@ -367,6 +369,7 @@ class PaperSearch extends MessageSet {
         }
         $lword = SearchWord::make_simple($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
+        $this->_limit_qe->set_base();
         $this->_limit_override = $toverride ? 0 : -1;
     }
 
@@ -1047,7 +1050,8 @@ class PaperSearch extends MessageSet {
         if ($this->_qe === null) {
             $this->_has_qe = true;
             if ($this->query_is_re_me()) {
-                $this->_qe = new Limit_SearchTerm($this, "r", true);
+                $this->_qe = new Limit_SearchTerm($this, "r");
+                $this->_qe->set_implicit();
             } else if (($qe = $this->_search_expression($this->q))) {
                 $this->_qe = $qe;
             } else {
@@ -1081,6 +1085,20 @@ class PaperSearch extends MessageSet {
         return SearchTerm::combine("and", $this->_limit_qe, $this->_qe);
     }
 
+    private function _log_sensitive_search() {
+        $line = CsvGenerator::quote_join([
+            Conf::$now,
+            $this->conf->dbname,
+            $this->user->contactId,
+            $this->user->email,
+            $this->limit(),
+            $this->q
+        ]);
+        $fn = $this->conf->opt("sensitiveSearchLog");
+        $fn = SiteLoader::resolve($fn === true ? "var/sensitivesearches.csv" : $fn);
+        @file_put_contents($fn, "{$line}\n", FILE_APPEND);
+    }
+
     private function _prepare_result(SearchTerm $qe) {
         $sqi = new SearchQueryInfo($this);
         $sqi->add_column("paperId", "Paper.paperId");
@@ -1094,9 +1112,29 @@ class PaperSearch extends MessageSet {
             $sqi->add_column("blind", "Paper.blind");
         }
 
-        $filter = SearchTerm::andjoin_sqlexpr([
-            $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
-        ]);
+        // Timing-channel mitigation: an imprecise search returns a SQL
+        // superset whose size can depend on information the user cannot see,
+        // leaking that information through query time. Once a user has issued
+        // too many imprecise searches, fall back to filtering only in PHP.
+        // Chairs are exempt: they can view the hidden data, so their searches
+        // leak nothing.
+        $allow_imprecise = $this->user->privChair
+            || $qe->is_sqlexpr_precise()
+            || $this->user->contact_counter()->sensitive_search_account();
+        if (!$allow_imprecise
+            && $this->conf->opt("sensitiveSearchLog")) {
+            $this->_log_sensitive_search();
+        }
+        if ($allow_imprecise
+            || $this->conf->opt("sensitiveSearchAccountOnly")) {
+            $filter = SearchTerm::andjoin_sqlexpr([
+                $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
+            ]);
+        } else {
+            $filter = SearchTerm::andjoin_sqlexpr([
+                $this->_limit_qe->sqlexpr($sqi), $qe->precise_sqlexpr($sqi)
+            ]);
+        }
         //Conf::msg_debugt($filter);
         if ($filter === "false") {
             return Dbl_Result::make_empty();
@@ -1609,7 +1647,11 @@ class PaperSearch extends MessageSet {
 
     /** @return string */
     static function limit_description(Conf $conf, $t, ...$args) {
-        return $conf->_c("search_type", $t, ...$args);
+        $text = self::$search_type_descriptions[$t] ?? null;
+        if ($text === null) {
+            $text = "Limit “{$t}”";
+        }
+        return $conf->_c("search_type", $text, ...$args);
     }
 
     /** @param ?string $reqtype
@@ -1655,11 +1697,17 @@ class PaperSearch extends MessageSet {
         if ($user->is_author() || $reqtype === "a") {
             $ts[] = "a";
         }
+        if ($reqtype === "ar") {
+            $ts[] = "ar";
+        }
         if ($user->can_view_some_incomplete()) {
             $ts[] = "active";
         }
         if ($user->privChair) {
             $ts[] = "all";
+        }
+        if ($reqtype && !in_array($reqtype, $ts, true)) {
+            $ts[] = $reqtype;
         }
         return $ts;
     }

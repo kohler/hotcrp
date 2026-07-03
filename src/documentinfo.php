@@ -1927,7 +1927,7 @@ class DocumentInfo implements JsonSerializable {
             // prevent recursive computation of npages
             $this->npages = -1000000;
 
-            $cfx = $cf ?? new CheckFormat($this->conf);
+            $cfx = $cf ?? new CheckFormat($this->conf, CheckFormat::RUN_ALWAYS);
             $cfx->check_document($this);
 
             // if default format checker fails, it will not succeed later;
@@ -1957,7 +1957,7 @@ class DocumentInfo implements JsonSerializable {
         if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
         } else {
-            $cf = $cf ?? new CheckFormat($this->conf);
+            $cf = $cf ?? new CheckFormat($this->conf, CheckFormat::RUN_ALWAYS);
             $cf->check_document($this);
             return $cf->nwords;
         }

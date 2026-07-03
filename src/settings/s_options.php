@@ -421,10 +421,10 @@ class Options_SettingParser extends SettingParser {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Read-only (not editable)"));
         } else if (strcasecmp($this->sfs->editable_if, "phase:review") === 0) {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable in the review phase"));
-        } else if (strcasecmp($this->sfs->editable_if, "phase:final") !== 0) {
+        } else if (strcasecmp($this->sfs->editable_if, "phase:final") === 0) {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable in the final-version phase"));
         } else {
-            $this->pt->append_item(MessageItem::warning_note_at("<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’"));
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’"));
         }
         foreach ($sv->message_list_at_prefix("sf/{$ctr}/") as $mi) {
             $this->pt->append_item(new MessageItem($mi->status > 0 ? MessageSet::WARNING_NOTE : $mi->status, $io->formid, $mi->message));

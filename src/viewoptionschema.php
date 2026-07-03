@@ -13,14 +13,6 @@ class ViewOptionSchema implements IteratorAggregate {
         }
     }
 
-    /** @param mixed $value
-     * @param string $enum
-     * @return ?string
-     * @deprecated */
-    static function validate_enum($value, $enum) {
-        return ViewOptionType::parse_enum($value, $enum);
-    }
-
     /** @param string|object $x
      * @return bool */
     function define_check($x) {
@@ -85,7 +77,7 @@ class ViewOptionSchema implements IteratorAggregate {
         foreach ($this->a as $aname => $schema) {
             if ($schema->enum
                 && $schema->lifted
-                && ($xvalue = $schema->parse($name))) {
+                && ($xvalue = ViewOptionType::parse_enum($name, $schema->enum, true))) {
                 $lifted = $lifted ?? [$aname, $xvalue];
                 ++$nlifted;
             } else if ($schema->type === "string"

@@ -106,9 +106,9 @@ class Banal_SettingParser extends SettingParser {
 
     /** @param SettingValues $sv */
     static private function check_banal($sv) {
-        $cf = new CheckFormat($sv->conf);
+        $cf = new CheckFormat($sv->conf, CheckFormat::RUN_ALWAYS);
         $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodylineheight"];
-        $doc = DocumentInfo::make_content_file($sv->conf, SiteLoader::find("etc/sample.pdf"), "application/pdf");
+        $doc = DocumentInfo::make_content_file($sv->conf, SiteLoader::resolve("etc/sample.pdf"), "application/pdf");
         $cf->check_document($doc, "letter;2;;6.5inx9in;12;14");
         $s1 = self::cf_status($cf);
         $e1 = join(",", array_intersect($cf->problem_fields(), $interesting_keys)) ? : "none";
@@ -119,12 +119,12 @@ class Banal_SettingParser extends SettingParser {
         $want_e2 = join(",", $interesting_keys);
         if ($s1 !== "ok" || $e1 !== "none" || $s2 !== "error" || $e2 !== $want_e2) {
             $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected ok none error $want_e2)</td></tr>"
-                . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars((string) $cf->banal_status) . "</td></tr>";
-            if (trim($cf->banal_stdout)) {
-                $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";
+                . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars((string) $cf->banal_run->status) . "</td></tr>";
+            if (trim($cf->banal_run->stdout)) {
+                $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_run->stdout) . "</pre></td></tr>";
             }
-            if (trim($cf->banal_stderr)) {
-                $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
+            if (trim($cf->banal_run->stderr)) {
+                $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_run->stderr) . "</pre></td></tr>";
             }
             $errors .= "<tr><td>Check:&nbsp;</td><td>" . $cf->full_feedback_html() . "</td></tr>";
             $sv->warning_at(null, "<5>Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldupbutton(0, "Checker output") . $errors . "</table></div></div>");

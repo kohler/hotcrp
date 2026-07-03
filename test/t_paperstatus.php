@@ -118,7 +118,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->u_estrin);
         $doc = DocumentInfo::make_uploaded_file($this->conf, QrequestFile::make_finfo([
                 "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
-                "tmp_name" => SiteLoader::find("etc/sample.pdf"),
+                "tmp_name" => SiteLoader::resolve("etc/sample.pdf"),
                 "type" => "application/pdf"
             ]))->set_document_type(DTYPE_SUBMISSION);
         xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
@@ -511,6 +511,27 @@ class PaperStatus_Tester {
         xassert($newpaperx->timeSubmitted <= 0);
     }
 
+    function test_save_draft_new_paper_empty_title() {
+        // A brand-new draft may be saved without a title (a missing required
+        // field is only an "Entry required" problem that does not block a
+        // draft save). The new-paper save path must still supply a value for
+        // the `title` SQL column, otherwise it is left unset: with the bug the
+        // saved title comes back as null rather than the empty string.
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1]), null));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+        xassert($ps->execute_save());
+        xassert_paper_status_saved_nonrequired($ps);
+        xassert($ps->paperId > 0);
+
+        $newpaper = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        xassert(!!$newpaper);
+        xassert_eqq($newpaper->title, "");
+        xassert_eqq($newpaper->abstract, "This is an abstract");
+        xassert($newpaper->timeSubmitted <= 0);
+    }
+
     function test_save_draft_new_paper_no_conflicts() {
         $u_bark = Contact::make_email($this->conf, "bark@_.com")->store();
         $ps = new PaperStatus($u_bark);
@@ -864,7 +885,7 @@ class PaperStatus_Tester {
 
     function test_save_new_authors() {
         $qreq = new Qrequest("POST", ["status:submit" => 1, "has_opt2" => "1", "opt2:1" => "new", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $qreq->set_file("opt2:1:file", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web($qreq, null));
@@ -909,7 +930,7 @@ class PaperStatus_Tester {
         $np = $this->conf->fetch_ivalue("select count(*) from Paper");
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert($ps->has_error_at("title"));
@@ -922,7 +943,7 @@ class PaperStatus_Tester {
         xassert_eqq($np, $np1);
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert($ps->has_error_at("title"));
@@ -932,7 +953,7 @@ class PaperStatus_Tester {
         xassert(ConfInvariants::test_document_inactive($this->conf));
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert($ps->has_error_at("abstract"));
@@ -947,7 +968,7 @@ class PaperStatus_Tester {
         $this->conf->invalidate_caches("options");
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "has_submission" => "1"]);
-        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+        $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
         $ps->prepare_save_paper_web($qreq, null);
         xassert(!$ps->has_error_at("abstract"));
@@ -1681,7 +1702,7 @@ Phil Porras.");
 
     function test_banal() {
         $spects = $this->conf->setting("sub_banal") ?? Conf::$now - 10;
-        $spects = max($spects, @filemtime(SiteLoader::find("src/banal")));
+        $spects = max($spects, @filemtime(SiteLoader::resolve("src/banal")));
         $this->conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
         $this->conf->invalidate_caches("options");
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
@@ -1761,6 +1782,88 @@ Phil Porras.");
 
         ++$spects;
         $this->conf->save_setting("sub_banal", $spects, "letter;2;;7.5x9in");
+    }
+
+    // Two format-checker runs on the same document must not proceed at once:
+    // whoever claims the `__banal.PID.DOCID` lease runs `banal`, and the other
+    // is refused. We widen the window by pointing the checker at a `pdftohtml`
+    // wrapper that stalls for a few seconds (see test/slow-pdftohtml.sh), launch
+    // a real second process that grabs the lease, then confirm an in-process run
+    // on the same document is turned away.
+    function test_banal_concurrent_lease() {
+        $spects = max($this->conf->setting("sub_banal") ?? Conf::$now - 10,
+                      @filemtime(SiteLoader::resolve("src/banal")));
+        ++$spects;
+        $this->conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
+        $this->conf->invalidate_caches("options");
+
+        // give paper 3 a fresh submission so `banal` must actually run (no cache)
+        $ps = new PaperStatus($this->conf->root_user());
+        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+            if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
+                $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
+            }
+        });
+        $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content_file\":\"etc/sample.pdf\",\"type\":\"application/pdf\"}}"));
+        xassert_paper_status($ps);
+
+        $paper3 = $this->u_estrin->checked_paper_by_id(3);
+        $doc = $paper3->document(DTYPE_SUBMISSION);
+        $sid = $doc->paperStorageId;
+        $banal_key = "__banal.3.{$sid}";
+
+        // drop any cached banal result so both runs actually invoke `banal`
+        // (an earlier test may have checked this same document)
+        $doc->set_prop("banal", null);
+        $doc->save_prop();
+
+        // point the checker at a slow `pdftohtml`; the DB override is visible to
+        // the subprocess too
+        $slow = SiteLoader::resolve("test/slow-pdftohtml.sh");
+        $this->conf->save_setting("opt.pdftohtmlCommand", 1, $slow);
+        $this->conf->refresh_settings();
+        $this->conf->qe("delete from Settings where name=?", $banal_key);
+
+        // launch a background format check on the same document; it runs on its
+        // own until we drive it to completion below
+        $env = getenv();
+        $env["HOTCRP_TEST_PDFTOHTML_DELAY"] = "1";
+        $subp = (new Subprocess([
+            "php", "batch/checkformat.php",
+            "--config", SiteLoader::resolve("test/options.php"),
+            "-p", "3"
+        ], SiteLoader::$root))->set_env($env);
+        $subp->start();
+
+        // wait until that run has claimed the lease (it does so before running banal)
+        $claimed = false;
+        for ($i = 0; $i !== 100 && !$claimed; ++$i) {
+            usleep(50000);
+            $claimed = $this->conf->fetch_value("select value from Settings where name=?", $banal_key) !== null;
+        }
+        xassert($claimed);
+
+        // an in-process check on the same document must now be refused
+        $cf = new CheckFormat($this->conf, CheckFormat::RUN_ALWAYS);
+        $cf->check_document($doc);
+        xassert(!$cf->check_ok());
+        xassert(!$cf->run_attempted());
+        xassert_str_contains($cf->full_feedback_text(), "Concurrent format checker run in progress");
+
+        // the background run should have won the lease and completed
+        $bj = json_decode($subp->run()->stdout);
+        xassert($bj !== null);
+        if ($bj !== null) {
+            xassert($bj->ok);
+            xassert_eqq($bj->docid, $sid);
+        }
+
+        // the lease is released once the winning run finishes
+        xassert_eqq($this->conf->fetch_value("select value from Settings where name=?", $banal_key), null);
+
+        // restore configuration
+        $this->conf->save_setting("opt.pdftohtmlCommand", null);
+        $this->conf->refresh_settings();
     }
 
     function test_option_name_parens() {

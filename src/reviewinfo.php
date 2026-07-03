@@ -431,6 +431,11 @@ class ReviewInfo implements JsonSerializable {
 
 
     /** @return bool */
+    function is_blind() {
+        return $this->conf->is_review_blind(($this->rflags & ReviewInfo::RF_BLIND) !== 0);
+    }
+
+    /** @return bool */
     function is_ghost() {
         $m = $this->conf->time_review_open() ? self::RF_LIVE : self::RFM_NONEMPTY;
         return ($this->rflags & $m) === 0;
@@ -807,9 +812,14 @@ class ReviewInfo implements JsonSerializable {
     /** @param string $prop
      * @param null|int|string $v */
     function set_prop($prop, $v) {
+        if ($this->$prop === $v) {
+            return;
+        }
         $diff = $this->prop_diff();
         if (!array_key_exists($prop, $diff->_old_prop)) {
             $diff->_old_prop[$prop] = $this->$prop;
+        } else if ($diff->_old_prop[$prop] === $v) {
+            unset($diff->_old_prop[$prop]);
         }
         $this->$prop = $v;
     }

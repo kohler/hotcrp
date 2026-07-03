@@ -138,6 +138,8 @@ class Tag_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->tsm->test_empty()) {
             return "true";
+        } else if (!$this->tsm->user->can_view_tags()) {
+            return "false";
         }
         $sql = $this->tsm->sqlexpr("PaperTag");
         return self::SQLEXPR_PREFIX . ($sql ? " and {$sql}" : "") . ')';
@@ -150,19 +152,18 @@ class Tag_SearchTerm extends SearchTerm {
     static function combine_sqlexpr($ff) {
         if (count($ff) === 1) {
             return $ff[0];
-        } else {
-            $x = [];
-            foreach ($ff as $f) {
-                if ($f === "true" || !str_starts_with($f, self::SQLEXPR_PREFIX)) {
-                    return "true";
-                } else if ($f === self::SQLEXPR_PREFIX . ")") {
-                    return $f;
-                } else {
-                    $x[] = substr($f, strlen(self::SQLEXPR_PREFIX) + 5, -1);
-                }
-            }
-            return self::SQLEXPR_PREFIX . " and (" . join(" or ", $x) . "))";
         }
+        $x = [];
+        foreach ($ff as $f) {
+            if ($f === "true" || !str_starts_with($f, self::SQLEXPR_PREFIX)) {
+                return "true";
+            } else if ($f === self::SQLEXPR_PREFIX . ")") {
+                return $f;
+            } else {
+                $x[] = substr($f, strlen(self::SQLEXPR_PREFIX) + 5, -1);
+            }
+        }
+        return self::SQLEXPR_PREFIX . " and (" . join(" or ", $x) . "))";
     }
     function test(PaperInfo $row, $xinfo) {
         return $this->tsm->test($row->searchable_tags($this->tsm->user));
@@ -203,9 +204,8 @@ class Tag_SearchTerm extends SearchTerm {
     function debug_json() {
         if (($t = $this->tsm->single_tag())) {
             return ["type" => $this->type, "tag" => $t];
-        } else {
-            return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
         }
+        return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
     }
     function drag_assigners(Contact $user) {
         $t = $this->tsm->single_tag();
