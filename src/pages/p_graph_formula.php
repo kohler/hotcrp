@@ -146,7 +146,8 @@ class Graph_Formula_Page {
         $datasets = FormulaGraph::parse_datasets($qreq);
 
         // create graph
-        if ($qreq->x && ($qreq->gtype || $qreq->y)) {
+        if (trim((string) $qreq->x) !== ""
+            && ($qreq->gtype || trim((string) $qreq->y) !== "")) {
             $fg = new FormulaGraph($this->user, $qreq->gtype, $qreq->x, $qreq->y);
             if ($qreq->xorder) {
                 $fg->set_xorder($qreq->xorder);
