@@ -262,9 +262,9 @@ class Mailer {
     }
 
     function kw_passwordlink($args, $isbool, $uf) {
-        if (!$this->recipient) {
-            return $this->conf->login_type() ? false : null;
-        } else if ($this->censor === self::CENSOR_ALL) {
+        if ($this->conf->login_type()) {
+            return false;
+        } else if (!$this->recipient || $this->censor === self::CENSOR_ALL) {
             return null;
         }
         $this->sensitive = true;
