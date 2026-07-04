@@ -1,51 +1,71 @@
 <?php
 // settingparser.php -- HotCRP conference settings parsing interface
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
+// A SettingParser implements custom logic for a setting or group of
+// settings; `Si::$parser_class` names the relevant subclass.
+// See `devel/manual/settings.md`.
 class SettingParser {
-    /** @return ?list */
+    /** Return allowed values when `$si` has `"values": "auto"`.
+     * @return ?list */
     function values(Si $si, SettingValues $sv) {
         return null;
     }
 
-    /** @return ?list */
+    /** Return allowed JSON values when `$si` has `"json_values": "auto"`.
+     * @return ?list */
     function json_values(Si $si, SettingValues $sv) {
         return null;
     }
 
-    /** @return ?string */
+    /** Return the placeholder when `$si` has `"placeholder": "auto"`.
+     * @return ?string */
     function placeholder(Si $si, SettingValues $sv) {
         return "auto";
     }
 
-    /** @return ?string */
+    /** Return the default value when `$si` has `"default_value": "auto"`.
+     * @return ?string */
     function default_value(Si $si, SettingValues $sv) {
         return null;
     }
 
-    /** @return void */
+    /** Compute the old value of `$si` and store it with
+     * `$sv->set_oldv`. Required for `object` settings.
+     * @return void */
     function set_oldv(Si $si, SettingValues $sv) {
     }
 
-    /** @return void */
+    /** Populate object-list setting `$si` by calling `$sv->append_oblist`.
+     * @return void */
     function prepare_oblist(Si $si, SettingValues $sv) {
     }
 
-    /** @return ?list<Si> */
+    /** Return the members of `object` setting `$si` for JSON export
+     * (`null` means use the members defined in `settinginfo.json`).
+     * @return ?list<Si> */
     function member_list(Si $si, SettingValues $sv) {
         return null;
     }
 
-    /** @return bool */
+    /** Parse this request’s value for `$si` and record changes with
+     * `$sv->save` and friends. Return `true` if the request was handled;
+     * `false` falls through to default parsing.
+     * @return bool */
     function apply_req(Si $si, SettingValues $sv) {
         return false;
     }
 
-    /** @return void */
+    /** Check pending values after all parsing; scheduled by
+     * `$sv->request_validate($si)`. Runs with pending values visible
+     * through `$sv->conf`.
+     * @return void */
     function validate(Si $si, SettingValues $sv) {
     }
 
-    /** @return void */
+    /** Apply database side effects during the locked save; scheduled by
+     * `$sv->request_store_value($si)`.
+     * @return void */
     function store_value(Si $si, SettingValues $sv) {
     }
 

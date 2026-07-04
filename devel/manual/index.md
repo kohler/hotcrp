@@ -9,6 +9,7 @@ configuring features inaccessible through the public settings UI.
 * [**Components**](./components.md): How HotCRP configuration JSON files work
 * [**Message formatting and translation**](./fmt.md)
 * [**Page configuration**](./pages.md)
+* [**Settings**](./settings.md): How conference settings are defined, parsed, and saved
 * [**Document store**](./docstore.md)
 
 ## Specific pages

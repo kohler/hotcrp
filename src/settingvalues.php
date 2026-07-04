@@ -2,6 +2,9 @@
 // settingvalues.php -- HotCRP conference settings manager
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
+// A SettingValues manages one settings request: it holds current ("old")
+// and requested ("new") values, parses and validates changes, and saves
+// them. See `devel/manual/settings.md`.
 class SettingValues extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -98,7 +101,8 @@ class SettingValues extends MessageSet {
         $this->_icollator->setAttribute(Collator::STRENGTH, Collator::SECONDARY);
     }
 
-    /** @param Qrequest|array<string,string|int|float> $qreq */
+    /** Create a SettingValues containing the settings requests in `$qreq`.
+     * @param Qrequest|array<string,string|int|float> $qreq */
     static function make_request(Contact $user, $qreq) {
         return (new SettingValues($user))->add_request($qreq);
     }
@@ -199,7 +203,8 @@ class SettingValues extends MessageSet {
         return $this;
     }
 
-    /** @param string $jstr
+    /** Add settings requests from a JSON-format settings string.
+     * @param string $jstr
      * @param ?string $filename
      * @return $this */
     function add_json_string($jstr, $filename = null) {
@@ -353,6 +358,8 @@ class SettingValues extends MessageSet {
         return $this->cs()->get($g);
     }
 
+    /** Run `__crosscheck` components, which add warnings to `$this` concerning
+     * suspicious saved settings. Called on initial display. */
     function crosscheck() {
         foreach ($this->cs()->members("__crosscheck", "crosscheck_function") as $gj) {
             $this->cs()->call_function($gj, $gj->crosscheck_function, $gj);
@@ -559,7 +566,8 @@ class SettingValues extends MessageSet {
                 || !$this->_si_exclude->evaluate_simple([$si, "expr_matches"]));
     }
 
-    /** @param string|Si $id
+    /** Test whether the owning user may edit setting `$id`.
+     * @param string|Si $id
      * @return bool */
     function editable($id) {
         $si = is_string($id) ? $this->conf->si($id) : $id;
@@ -570,7 +578,10 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string|Si $id
+    /** Return the old (current/saved) value of setting `$id`.
+     * This is an int or string for primitive settings and an object for
+     * `object` settings.
+     * @param string|Si $id
      * @return mixed */
     function oldv($id) {
         $si = is_string($id) ? $this->si($id) : $id;
@@ -602,7 +613,9 @@ class SettingValues extends MessageSet {
         return $val;
     }
 
-    /** @param string|Si $id
+    /** Set the old value of setting `$id`. (Typically called from
+     * a SettingParser’s `set_oldv` or `prepare_oblist` hook.)
+     * @param string|Si $id
      * @param mixed $value */
     function set_oldv($id, $value) {
         $n = is_string($id) ? $id : $id->name;
@@ -644,7 +657,8 @@ class SettingValues extends MessageSet {
         return array_key_exists($name, $this->req);
     }
 
-    /** @param string $name
+    /** Return the request string for setting `$name`, if any.
+     * @param string $name
      * @return ?string */
     function reqstr($name) {
         return $this->req[$name] ?? null;
@@ -657,7 +671,10 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string|Si $id
+    /** Return the display string for setting `$id`: the request string
+     * if this request has one, otherwise the unparsed old value.
+     * Form controls should render `vstr`.
+     * @param string|Si $id
      * @return string */
     function vstr($id) {
         if ($this->_use_req) {
@@ -671,7 +688,10 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string|Si $id
+    /** Return the value of setting `$id` after this request: the pending
+     * parsed value if the request changes the setting, otherwise the
+     * old value.
+     * @param string|Si $id
      * @return mixed */
     function newv($id) {
         // XXX Beware: This function is inconsistent about whether it parses `$id`.
@@ -850,7 +870,10 @@ class SettingValues extends MessageSet {
         }
     }
 
-    /** @param string $pfx
+    /** Populate object-list setting `$pfx` with objects `$obs`, matching
+     * request slots to objects by `id` (and by `$namekey` if given).
+     * Typically called from a SettingParser’s `prepare_oblist` hook.
+     * @param string $pfx
      * @param iterable<object> $obs
      * @param ?non-empty-string $namekey */
     function append_oblist($pfx, $obs, $namekey = null) {
@@ -971,7 +994,9 @@ class SettingValues extends MessageSet {
         $this->_oblist_ctrmap[$pfx] = $ctrmap;
     }
 
-    /** @param string $pfx
+    /** Return the slot counters for object-list setting `$pfx`, so that
+     * its members are named `$pfx/CTR/MEMBER`.
+     * @param string $pfx
      * @return list<int> */
     function oblist_keys($pfx) {
         $this->ensure_oblist($pfx);
@@ -1176,7 +1201,9 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string|Si $id
+    /** Test whether setting `$id` belongs to the page being processed
+     * (or has been changed by this request).
+     * @param string|Si $id
      * @return bool */
     function has_interest($id) {
         if (!$this->canonical_page || $this->all_interest) {
@@ -1237,7 +1264,9 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string|Si $id
+    /** Set the value of setting `$id` to `$value`. The value is collected
+     * in memory; the database is not modified until `execute`.
+     * @param string|Si $id
      * @return void */
     function save($id, $value) {
         // check that storage is allowed
@@ -1313,7 +1342,8 @@ class SettingValues extends MessageSet {
         }
     }
 
-    /** @param string|Si $id
+    /** Like `save`, but do nothing if `$value` equals the old value.
+     * @param string|Si $id
      * @return bool */
     function update($id, $value) {
         if ($value !== $this->oldv($id)) {
@@ -1334,7 +1364,9 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @return SettingValuesConf */
+    /** Return a Conf-like accessor for settings and options that reflects
+     * pending values collected by `save`.
+     * @return SettingValuesConf */
     function make_svconf() {
         return new SettingValuesConf($this);
     }
@@ -1385,7 +1417,9 @@ class SettingValues extends MessageSet {
         }
     }
 
-    /** @return $this */
+    /** Parse and validate all requested settings, collecting pending
+     * values and error messages. Does not modify the database.
+     * @return $this */
     function parse() {
         assert($this->_req_parse_state === 0);
         assert($this->_use_req);
@@ -1474,7 +1508,10 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @return bool */
+    /** Apply the settings request: parse if needed, then, if there were
+     * no errors, save all changed settings to the database and run
+     * `store_value` hooks and cleanup functions.
+     * @return bool */
     function execute() {
         assert($this->_req_parse_state !== 1 && $this->_req_parse_state !== 4);
         if ($this->_req_parse_state === 0) {
@@ -1627,7 +1664,9 @@ class SettingValues extends MessageSet {
         $this->_no_diffs[$siname] = false;
     }
 
-    /** @param string ...$caches */
+    /** Schedule invalidation of named conference caches (e.g. `"tags"`,
+     * `"autosearch"`) after a successful save.
+     * @param string ...$caches */
     function mark_invalidate_caches(...$caches) {
         if (count($caches) === 1 && is_array($caches[0])) { // XXX backward compat
             $caches = array_keys($caches[0]);
@@ -1638,35 +1677,43 @@ class SettingValues extends MessageSet {
         }
     }
 
-    /** @param Si $si */
+    /** Schedule `$si`’s parser’s `validate` hook to run after parsing,
+     * with pending values visible through `$conf`.
+     * @param Si $si */
     function request_validate($si) {
         if (!in_array($si, $this->_validate_si, true)) {
             $this->_validate_si[] = $si;
         }
     }
 
-    /** @param string ...$tables */
+    /** Lock `$tables` for reading during the save in `execute`.
+     * @param string ...$tables */
     function request_read_lock(...$tables) {
         foreach ($tables as $t) {
             $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 1);
         }
     }
 
-    /** @param string ...$tables */
+    /** Lock `$tables` for writing during the save in `execute`.
+     * @param string ...$tables */
     function request_write_lock(...$tables) {
         foreach ($tables as $t) {
             $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 2);
         }
     }
 
-    /** @param Si $si */
+    /** Schedule `$si`’s parser’s `store_value` hook to run during the
+     * locked save in `execute`.
+     * @param Si $si */
     function request_store_value($si) {
         if (!in_array($si, $this->_store_value_si, true)) {
             $this->_store_value_si[] = $si;
         }
     }
 
-    /** @param ?string $name
+    /** Register a function to run after a successful save. If `$name` is
+     * not null, at most one cleanup function per `$name` is registered.
+     * @param ?string $name
      * @param callable() $func */
     function register_cleanup_function($name, $func) {
         if ($name !== null) {
