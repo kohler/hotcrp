@@ -829,7 +829,8 @@
     {
         "name": "review_default_round", "storage": "rev_roundtag",
         "title": "Default round for new reviews",
-        "type": "tag", "required": false, "parser_class": "Review_SettingParser",
+        "type": "tag", "required": false, "default_value": "unnamed",
+        "parser_class": "Review_SettingParser",
         "parse_order": 1,
         "tags": "review"
     },

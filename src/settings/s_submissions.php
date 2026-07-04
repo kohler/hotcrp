@@ -61,14 +61,14 @@ class Submissions_SettingParser extends SettingParser {
             if ($v !== null) {
                 $sv->save("submission_done", $v);
                 $sv->save("submission_update", $v);
-                $sv->check_date_before("submission_registration", "submission_done", true);
+                $sv->check_date_before("submission_registration", "submission_done");
             }
             return true;
         } else if ($si->name === "submission_resubmission") {
             $v = $sv->base_parse_req($si);
             if ($v !== null) {
                 $sv->save("submission_resubmission", $v);
-                $sv->check_date_before("submission_done", "submission_resubmission", false);
+                $sv->check_date_before("submission_done", "submission_resubmission");
             }
             return true;
         }

@@ -269,7 +269,7 @@ class Response_SettingParser extends SettingParser {
             $rs = $sv->newv("response/{$ctr}");
             '@phan-var-force Response_Setting $rs';
             if (!$rs->deleted) {
-                $sv->check_date_before("response/{$ctr}/open", "response/{$ctr}/done", false);
+                $sv->check_date_before("response/{$ctr}/open", "response/{$ctr}/done");
                 array_splice($rss, $rs->name === "" ? 0 : count($rss), 0, [$rs]);
             } else if ($rs->id !== null) {
                 $this->round_delete[] = $rs->id;

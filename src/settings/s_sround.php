@@ -166,11 +166,11 @@ class Sround_SettingParser extends SettingParser {
             $pfx = "submission/{$ctr}";
             if ($sv->oldv("{$pfx}/registration") !== $sv->newv("{$pfx}/registration")
                 || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
-                $sv->check_date_before("{$pfx}/registration", "{$pfx}/done", false);
+                $sv->check_date_before("{$pfx}/registration", "{$pfx}/done");
             }
             if ($sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")
                 || $sv->oldv("{$pfx}/resubmission") !== $sv->newv("{$pfx}/resubmission")) {
-                $sv->check_date_before("{$pfx}/done", "{$pfx}/resubmission", false);
+                $sv->check_date_before("{$pfx}/done", "{$pfx}/resubmission");
             }
             $srs[] = $sv->newv($pfx);
         }
