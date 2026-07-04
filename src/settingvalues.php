@@ -914,10 +914,11 @@ class SettingValues extends MessageSet {
                 && !array_key_exists($id, $matches)) {
                 $matches[$id] = $ctr;
             } else if ($namekey !== null
-                       && ($name = $this->reqstr("{$pfx}/{$ctr}/{$namekey}")) !== null
-                       && ($lname = strtolower($name)) !== ""
-                       && !array_key_exists($lname, $name_matches)) {
-                $name_matches[$lname] = $ctr;
+                       && ($name = $this->reqstr("{$pfx}/{$ctr}/{$namekey}")) !== null) {
+                $lname = strtolower($name);
+                if (!array_key_exists($lname, $name_matches)) {
+                    $name_matches[$lname] = $ctr;
+                }
             }
         }
 
@@ -939,8 +940,10 @@ class SettingValues extends MessageSet {
         if (!empty($name_matches) && !empty($next_obs)) {
             $next_obs2 = [];
             foreach ($next_obs as $i => $ob) {
-                if (($name = $ob->$namekey ?? "") !== ""
-                    && ($obctr = $name_matches[strtolower($name)] ?? null) !== null) {
+                $name = $ob->$namekey ?? null;
+                $lname = $name !== null ? strtolower($name) : null;
+                if ($lname !== null
+                    && ($obctr = $name_matches[$lname] ?? null) !== null) {
                     $this->set_req("{$pfx}/{$obctr}/id", (string) $ob->id);
                     $this->set_oldv("{$pfx}/{$obctr}/id", $ob->id);
                     $this->set_oldv("{$pfx}/{$obctr}", $ob);
