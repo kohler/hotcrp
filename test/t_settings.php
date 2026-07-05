@@ -2122,6 +2122,147 @@ class Settings_Tester {
         xassert_assign($this->u_chair, "paper,tag\n1-10,dodanga#clear\n");
     }
 
+    /** @param string $name
+     * @param string $key
+     * @return array<string,object> */
+    private function all_jsonv_by($name, $key) {
+        $filter = (new SearchParser($name))->parse_expression(SearchOperatorSet::simple_operators());
+        $sv = (new SettingValues($this->u_chair))->set_si_filter($filter);
+        $m = [];
+        foreach ($sv->all_jsonv()->$name ?? [] as $ob) {
+            $m[$ob->$key] = $ob;
+        }
+        return $m;
+    }
+
+    function test_badge_anchor() {
+        // key-anchored object lists export the key value as `id`
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"style":"black","tags":"winner"}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["black"]->id, "black");
+        xassert_eqq($badges["black"]->tags, "winner");
+
+        // the anchor makes renames expressible: move black’s tags to pink
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"black","style":"pink"}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["pink"]->tags, "winner");
+        xassert_eqq($badges["black"]->tags ?? "", "");
+
+        // an unmatched anchor is a matching hint, not an error: entries
+        // can be created with their ids intact (e.g. reimporting an
+        // export after the entry was removed)
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"yellow","style":"yellow","tags":"star"}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["yellow"]->tags, "star");
+
+        // but an entry without a style is an error
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"nonexistent","tags":"x"}]}');
+        $sv->parse();
+        xassert($sv->has_error());
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"pink","tags":""},{"id":"yellow","tags":""}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["pink"]->tags ?? "", "");
+        xassert_eqq($badges["yellow"]->tags ?? "", "");
+    }
+
+    function test_automatic_tag_anchor() {
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"tag":"Hotpaper","search":"ti:hot"}]}');
+        xassert($sv->execute());
+        // the anchor is the lowercased stored tag
+        $ats = $this->all_jsonv_by("automatic_tag", "tag");
+        xassert_eqq($ats["Hotpaper"]->id, "hotpaper");
+        xassert_eqq($ats["Hotpaper"]->search, "ti:hot");
+
+        // renaming via the anchor preserves other members
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"hotpaper","tag":"Warmpaper"}]}');
+        xassert($sv->execute());
+        $ats = $this->all_jsonv_by("automatic_tag", "tag");
+        xassert(!isset($ats["Hotpaper"]));
+        xassert_eqq($ats["Warmpaper"]->search, "ti:hot");
+
+        // an entry with an anchor but no tag is an error
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"nonexistent","search":"ti:x"}]}');
+        $sv->parse();
+        xassert($sv->has_error());
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"warmpaper","delete":true}]}');
+        xassert($sv->execute());
+        xassert(!array_key_exists("Warmpaper", $this->all_jsonv_by("automatic_tag", "tag")));
+    }
+
+    function test_automatic_tag_delete() {
+        // creating an automatic tag applies it to matching papers
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"tag":"AutoDel","search":"1 2"}]}');
+        xassert($sv->execute());
+        xassert_search($this->u_chair, "#AutoDel", "1 2");
+
+        // a false-valued delete request does not delete
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_automatic_tag" => 1,
+            "automatic_tag/1/id" => "autodel",
+            "automatic_tag/1/delete" => "no"
+        ]);
+        xassert($sv->execute());
+        xassert(array_key_exists("AutoDel", $this->all_jsonv_by("automatic_tag", "tag")));
+        xassert_search($this->u_chair, "#AutoDel", "1 2");
+
+        // deleting in settings removes the tag from papers
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_automatic_tag" => 1,
+            "automatic_tag/1/id" => "autodel",
+            "automatic_tag/1/delete" => "1"
+        ]);
+        xassert($sv->execute());
+        xassert(!array_key_exists("AutoDel", $this->all_jsonv_by("automatic_tag", "tag")));
+        xassert_search($this->u_chair, "#AutoDel", "");
+    }
+
+    function test_track_anchor() {
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"tag":"redtrack","perm":{"view":"+red"}}]}');
+        xassert($sv->execute());
+        $tracks = $this->all_jsonv_by("track", "tag");
+        xassert_eqq($tracks["redtrack"]->id, "redtrack");
+        xassert_eqq($tracks["redtrack"]->perm->view, "+red");
+
+        // renaming via the anchor preserves permissions
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"id":"redtrack","tag":"bluetrack"}]}');
+        xassert($sv->execute());
+        $tracks = $this->all_jsonv_by("track", "tag");
+        xassert(!isset($tracks["redtrack"]));
+        xassert_eqq($tracks["bluetrack"]->perm->view, "+red");
+
+        // an entry with an anchor but no tag is an error
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"id":"greentrack","perm":{"view":"+green"}}]}');
+        $sv->parse();
+        xassert($sv->has_error());
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"id":"bluetrack","delete":true}]}');
+        xassert($sv->execute());
+        xassert(!array_key_exists("bluetrack", $this->all_jsonv_by("track", "tag")));
+    }
+
     // Undo the settings this tester changes to avoid polluting later tests
     function finalize() {
         $this->conf->save_refresh_setting("outcome_map", null);

@@ -1174,7 +1174,10 @@
         "title": "Tag style", "title_pattern": "‘${sv tag_style/$/style}’",
         "parser_class": "TagStyle_SettingParser"
     },
-    {   "name_pattern": "tag_style/$/id", "internal": true   },
+    {
+        "name_pattern": "tag_style/$/id", "type": "string",
+        "internal": true, "json": true, "id_member": true
+    },
     {
         "name_pattern": "tag_style/$/style",
         "title": "/Style", "type": "simplestring", "required": true,
@@ -1199,7 +1202,10 @@
         "parser_class": "TagStyle_SettingParser",
         "tags": "tags"
     },
-    {   "name_pattern": "badge/$/id", "internal": true   },
+    {
+        "name_pattern": "badge/$/id", "type": "string",
+        "internal": true, "json": true, "id_member": true
+    },
     {
         "name_pattern": "badge/$/style",
         "title": "/Style", "type": "simplestring", "required": true,
@@ -1265,7 +1271,10 @@
         "title_pattern": "Automatic tag ‘#${sv automatic_tag/$/tag}’",
         "parser_class": "AutomaticTag_SettingParser"
     },
-    {   "name_pattern": "automatic_tag/$/id", "internal": true   },
+    {
+        "name_pattern": "automatic_tag/$/id", "type": "string",
+        "internal": true, "json": true, "id_member": true
+    },
     {
         "name_pattern": "automatic_tag/$/tag", "storage": "member.tag",
         "title": "Automatic tag name",
@@ -1342,7 +1351,10 @@
         "title_pattern": "${sv track/$/title}",
         "parser_class": "Track_SettingParser"
     },
-    {   "name_pattern": "track/$/id", "internal": true, "type": "string"   },
+    {
+        "name_pattern": "track/$/id", "type": "string",
+        "internal": true, "json": true, "id_member": true
+    },
     {
         "name_pattern": "track/$/tag",
         "title": "Track tag",
