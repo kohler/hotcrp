@@ -56,9 +56,8 @@ class Review_SettingParser extends SettingParser {
         if ($si->name0 === "review/" && $si->name2 === "/name") {
             $idv = $sv->vstr("review/{$si->name1}/id");
             return ctype_digit($idv) && $idv !== "0" ? "unnamed" : "(new round)";
-        } else {
-            return null;
         }
+        return null;
     }
 
     function set_oldv(Si $si, SettingValues $sv) {

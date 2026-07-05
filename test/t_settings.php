@@ -2263,6 +2263,227 @@ class Settings_Tester {
         xassert(!array_key_exists("bluetrack", $this->all_jsonv_by("track", "tag")));
     }
 
+    function test_format_checker() {
+        $old_sub_banal = $this->conf->setting("sub_banal");
+        $old_sub_banal_data = $this->conf->setting_data("sub_banal");
+
+        // activate the submission format checker
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":true,"papersize":"letter","pagelimit":"9"}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9");
+
+        // member parse errors are positioned at the member, and an
+        // erroneous component prevents the whole save, including
+        // valid components in the same request
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true,"papersize":"a4","pagelimit":"bogus"}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/pagelimit"));
+        xassert_str_contains($sv->full_feedback_text(), "whole number greater than 0");
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9");
+
+        // margin specifications convert to text blocks, using the
+        // papersize from the same request
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":true,"papersize":"letter","textblock":"1in margins"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9;;6.5in x 9in");
+
+        // margins require a papersize
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":true,"papersize":"any","textblock":"1in margins"}]}');
+        $sv->parse();
+        xassert($sv->has_error_at("format/1/textblock"));
+        xassert($sv->has_error_at("format/1/papersize"));
+
+        // UI deactivation ignores the other member requests, which the
+        // form posts even though they are hidden
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_format" => 1,
+            "format/1/id" => "submission",
+            "format/1/only_if_active" => "1",
+            "format/1/active" => "",
+            "format/1/pagelimit" => "bogus"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9;;6.5in x 9in");
+
+        // reactivation restores the stored specification
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9;;6.5in x 9in");
+
+        // an active checker with no constraints warns
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_format" => 1,
+            "format/1/id" => "submission",
+            "format/1/active" => "1",
+            "format/1/papersize" => "any",
+            "format/1/pagelimit" => "N/A",
+            "format/1/textblock" => ""
+        ]);
+        xassert($sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "does nothing unless");
+        xassert_eqq($this->conf->setting_data("sub_banal"), null);
+
+        // without `only_if_active`, an inactive save applies the other
+        // components; the stored specification lies dormant
+        // (`unlimitedref` also depends on `pagelimit` applying first)
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"paper","active":false,"papersize":"letter","pagelimit":"17","unlimitedref":true}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;17;;;;;1");
+
+        // reactivation brings the dormant specification to life
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;17;;;;;1");
+
+        // erroneous components fail inactive saves too
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":false,"pagelimit":"bogus"}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/pagelimit"));
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;17;;;;;1");
+
+        // doctypes are resolved by option search
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"quextrix","active":false}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/doctype"));
+        xassert_str_contains($sv->full_feedback_text(), "Unknown document type");
+
+        // format checking only applies to submission and final documents
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"title","active":false}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/doctype"));
+        xassert_str_contains($sv->full_feedback_text(), "not supported");
+
+        // numeric subsettings export as numbers when they are numbers;
+        // ranges and unset values stay strings
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"papersize":"letter","pagelimit":9,"columns":2,"bodyfontsize":10.5,"wordlimit":"200-300"}]}');
+        xassert($sv->execute());
+        $fmt = (new SettingValues($this->u_chair))->all_jsonv()->format[0];
+        xassert_eqq($fmt->doctype, "submission");
+        xassert_eqq($fmt->pagelimit, 9);
+        xassert_eqq($fmt->columns, 2);
+        xassert_eqq($fmt->bodyfontsize, 10.5);
+        xassert_eqq($fmt->wordlimit, "200-300");
+        xassert_eqq($fmt->papersize, "letter");
+        xassert_eqq($fmt->bodylineheight, "any");
+
+        // string and numeric imports are equivalent, as are the
+        // spellings of “unset”
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"pagelimit":"9","columns":"2","bodyfontsize":"10.5","bodylineheight":"any","textblock":""}]}');
+        $sv->parse();
+        xassert_eqq($sv->changed_top_si(), []);
+
+        // null clears a subsetting
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"bodyfontsize":null}]}');
+        xassert($sv->execute());
+        $fmt = (new SettingValues($this->u_chair))->all_jsonv()->format[0];
+        xassert_eqq($fmt->bodyfontsize, "any");
+        xassert_eqq($fmt->pagelimit, 9);
+
+        $this->conf->save_refresh_setting("sub_banal", $old_sub_banal, $old_sub_banal_data);
+    }
+
+    function test_format_checker_opt_spec() {
+        $old_sub_banal = $this->conf->setting("sub_banal");
+        $old_sub_banal_data = $this->conf->setting_data("sub_banal");
+
+        // an option spec can request checking beyond the settings
+        $this->conf->set_opt("sub_banal", "letter;30;{\"checkers\":[\"TestChecker\"]}");
+        $this->conf->invalidate_caches("options");
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert_eqq($fspec->pagelimit, [0, 30]);
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        // disabling the format checker stores -1, which suppresses the
+        // option spec’s banal constraints but preserves its checkers
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":false}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), -1);
+        $this->conf->invalidate_caches("options");
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert($fspec->is_banal_empty());
+        xassert_eqq($fspec->pagelimit, null);
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        // reenabling merges the stored spec over the option spec
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true,"pagelimit":"25"}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        $this->conf->invalidate_caches("options");
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert_eqq($fspec->pagelimit, [0, 25]);
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        // without banal constraints in the option spec, disabling stores 0
+        $this->conf->set_opt("sub_banal", "{\"checkers\":[\"TestChecker\"]}");
+        $this->conf->invalidate_caches("options");
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":false}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), 0);
+        $this->conf->invalidate_caches("options");
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert($fspec->is_banal_empty());
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        $this->conf->set_opt("sub_banal", null);
+        $this->conf->save_refresh_setting("sub_banal", $old_sub_banal, $old_sub_banal_data);
+        $this->conf->invalidate_caches("options");
+    }
+
+    function test_explicit_placeholder() {
+        $sv = new SettingValues($this->u_chair);
+
+        // numeric-ish placeholders explicitly represent the empty value:
+        // exported for empty values, emptied on import
+        $si = $this->conf->si("sf/1/min_value");
+        xassert_eqq($si->jsonv_reqstr("none", $sv), "");
+        xassert_eqq($si->jsonv_reqstr(3.5, $sv), "3.5");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "none");
+
+        // ...including `prefer_numeric` strings
+        $si = $this->conf->si("format/1/pagelimit");
+        xassert_eqq($si->jsonv_reqstr("any", $sv), "");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "any");
+
+        // other string placeholders are hints; literal values survive
+        $si = $this->conf->si("automatic_tag/1/search");
+        xassert_eqq($si->jsonv_reqstr("Search", $sv), "Search");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "");
+        $si = $this->conf->si("decision/1/name");
+        xassert_eqq($si->jsonv_reqstr("Decision name", $sv), "Decision name");
+
+        // placeholder text on other string settings is not special on
+        // either side; bad values fail at parse time
+        $si = $this->conf->si("conference_url");
+        xassert_eqq($si->jsonv_reqstr("N/A", $sv), "N/A");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "");
+        $sv2 = SettingValues::make_request($this->u_chair, [
+            "conference_url" => "N/A"
+        ]);
+        xassert(!$sv2->execute());
+        xassert_str_contains($sv2->full_feedback_text(), "Valid web address");
+    }
+
     // Undo the settings this tester changes to avoid polluting later tests
     function finalize() {
         $this->conf->save_refresh_setting("outcome_map", null);

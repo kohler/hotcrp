@@ -121,6 +121,7 @@ match request objects to existing objects by `id` (and sometimes by name).
 | `title`, `title_pattern` | Human-readable title, used in error messages and labels |
 | `required`      | Whether an empty value is an error |
 | `size`, `placeholder`, `autogrow`, `spellcheck` | Form control rendering hints (`placeholder` may be `"auto"`) |
+| `explicit_placeholder` | If true, empty values become `placeholder` on JSON export, and `placeholder` values become empty on JSON/form import. Defaults by type: true for `int`, `nonnegint`, `float`, and `prefer_numeric` strings (e.g. `"none"`, `"any"`), false otherwise |
 | `parser_class`  | Name of a `SettingParser` subclass with custom logic |
 | `parse_order`   | Numeric order in which requests are parsed (default 0; ties broken by source order) |
 | `internal`      | True for settings not directly user-editable; skipped by parsing and (by default) by the JSON API |
@@ -151,7 +152,10 @@ strings and JSON values are parsed and unparsed. The primitive types:
 | `tag`, `taglist`, `tagselect` | tag names (subtypes select variants, e.g. `allow_wildcard`) |
 
 Some types use `subtype` for variants; for example, `"type": "string",
-"subtype": "search"` marks a string containing a search query.
+"subtype": "search"` marks a string containing a search query, and
+`"subtype": "prefer_numeric"` marks a string, such as a page limit, that
+is usually a number (the JSON API accepts and generates numeric values
+for it).
 
 Two meta-types define structured settings, `object` and `oblist`. An `object`
 type is a group of member settings, represented as an object in JSON and as a

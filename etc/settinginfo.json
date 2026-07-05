@@ -1048,8 +1048,11 @@
         "parser_class": "Banal_SettingParser"
     },
     {
-        "name_pattern": "format/$/id", "type": "int"
+        "name_pattern": "format/$/doctype",
+        "title": "/Document type",
+        "type": "simplestring", "id_member": true
     },
+    {   "name_pattern": "format/$/id", "alias_pattern": "format/$/doctype"   },
     {
         "name_pattern": "format/$/active",
         "title": "Format checker",
@@ -1058,47 +1061,56 @@
     {
         "name_pattern": "format/$/bodyfontsize",
         "title": "PDF format checker minimum body font size",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "subtype": "prefer_numeric", "size": 5, "placeholder": "any",
+        "parser_class": "Banal_SettingParser"
     },
     {
         "name_pattern": "format/$/bodylineheight",
         "title": "PDF format checker minimum body line height",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "subtype": "prefer_numeric", "size": 5, "placeholder": "any",
+        "parser_class": "Banal_SettingParser"
     },
     {
         "name_pattern": "format/$/columns",
         "title": "PDF format checker column count",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "subtype": "prefer_numeric", "size": 5, "placeholder": "any",
+        "parser_class": "Banal_SettingParser"
     },
     {
         "name_pattern": "format/$/pagelimit",
         "title": "PDF format checker page limit",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "subtype": "prefer_numeric", "size": 5, "placeholder": "any",
+        "parser_class": "Banal_SettingParser"
     },
     {
         "name_pattern": "format/$/papersize",
         "title": "PDF format checker paper size",
-        "type": "string", "size": 18, "placeholder": "any"
+        "type": "string", "size": 18, "placeholder": "any",
+        "parser_class": "Banal_SettingParser"
     },
     {
         "name_pattern": "format/$/textblock",
         "title": "PDF format checker text block size",
-        "type": "string", "size": 18, "placeholder": "any"
+        "type": "string", "size": 18, "placeholder": "any",
+        "parser_class": "Banal_SettingParser", "parse_order": 1
     },
     {
         "name_pattern": "format/$/unlimitedref",
         "title": "PDF format checker unlimited references",
-        "type": "checkbox"
+        "type": "checkbox",
+        "parser_class": "Banal_SettingParser", "parse_order": 1
     },
     {
         "name_pattern": "format/$/appendix",
         "title": "Allow appendix sections",
-        "type": "checkbox"
+        "type": "checkbox",
+        "parser_class": "Banal_SettingParser"
     },
     {
         "name_pattern": "format/$/wordlimit",
         "title": "PDF format checker word limit",
-        "type": "string", "size": 8, "placeholder": "any"
+        "type": "string", "subtype": "prefer_numeric", "size": 8, "placeholder": "any",
+        "parser_class": "Banal_SettingParser"
     },
 
     {
