@@ -24,6 +24,8 @@ deadlines.
 * param ?reset boolean
 * param ?filter string: Search expression defining settings to include
 * param ?exclude string: Search expression defining settings to exclude
+* param ?download boolean: If true, download the settings object (without `ok`
+  wrapper)
 * response settings object
 * badge siteadmin
 

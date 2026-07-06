@@ -1438,6 +1438,19 @@ class Settings_Tester {
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
 
+        // `download` returns the bare settings object with a filename
+        $x = call_api("settings", $this->u_chair, ["download" => 1]);
+        xassert(is_object($x));
+        xassert(!isset($x->ok));
+        xassert_eqq($x->review_blind, "blind");
+        $x = call_api("settings", $this->u_chair, ["download" => 1, "exclude" => "#decision"]);
+        xassert(!isset($x->decision));
+        xassert_eqq($x->review_blind, "blind");
+        $jr = call_api_result("settings", $this->u_chair, ["download" => 1]);
+        $cd = $jr->header("Content-Disposition");
+        xassert_str_contains($cd, "attachment");
+        xassert_str_contains($cd, $this->conf->download_prefix . "settings.json");
+
         $x = call_api("=settings", $this->u_chair, ["settings" => "{}"]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
