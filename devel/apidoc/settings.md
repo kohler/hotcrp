@@ -16,8 +16,8 @@ through the settings UI, or transfer settings to another site.
 
 The `filter` and `exclude` parameters can filter the returned settings to a
 subset. For example, when exporting one site’s settings for use by another, you
-might set `exclude` to `#id OR #deadline`; this excludes settings relevant to a
-conference’s identity (`conference_name`, `site_contact_email`, etc.) or
+might set `exclude` to `#identity OR #deadline`; this excludes settings relevant
+to a conference’s identity (`conference_name`, `site_contact_email`, etc.) or
 deadlines.
 
 * badge featured

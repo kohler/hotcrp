@@ -113,7 +113,7 @@ class Settings_Batch {
     /** @param bool $new
      * @return string */
     function output(SettingValues $sv, $new) {
-        return json_encode($sv->all_jsonv(["new" => $new]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        return $sv->all_json_string(["new" => $new]);
     }
 
     /** @return int */
@@ -164,8 +164,6 @@ class Settings_Batch {
         }
         fwrite(STDERR, $fb);
         if ($this->diff) {
-            $dmp = new dmp\diff_match_patch;
-            $dmp->Line_Histogram = true;
             if ($this->dry_run) {
                 $this->sv->set_si_filter(null)->set_si_exclude(null);
                 assert($this->output($this->sv, false) === $old_jsonstr);
@@ -173,8 +171,7 @@ class Settings_Batch {
             } else {
                 $new_jsonstr = $this->output($this->make_sv(), false);
             }
-            $diff = $dmp->line_diff($old_jsonstr, $new_jsonstr);
-            fwrite(STDOUT, $dmp->line_diff_toUnified($diff));
+            fwrite(STDOUT, SettingValues::json_unified_diff($old_jsonstr, $new_jsonstr));
         }
         return $this->sv->has_error() ? 1 : 0;
     }

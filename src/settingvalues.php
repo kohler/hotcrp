@@ -829,7 +829,15 @@ class SettingValues extends MessageSet {
         return $si->base_unparse_jsonv($this->choosev($si, $new), $this);
     }
 
-    /** @param array{new?:bool,reset?:?bool} $args
+    /** Export all JSON-visible settings as an object, in the format
+     * accepted by `add_json_string`. With `"new" => true`, export pending
+     * (parsed but unsaved) values.
+     *
+     * Object-list ids are conference-specific; exclude them with
+     * `set_si_exclude` and the `id` filter token to produce an export
+     * that can be imported into another conference, where objects will
+     * match by name.
+     * @param array{new?:bool,reset?:?bool} $args
      * @return object */
     function all_jsonv($args = []) {
         $new = $args["new"] ?? false;
@@ -847,6 +855,23 @@ class SettingValues extends MessageSet {
             }
         }
         return (object) $j;
+    }
+
+    /** Export all JSON-visible settings as a pretty-printed JSON string.
+     * @param array{new?:bool,reset?:?bool} $args
+     * @return string */
+    function all_json_string($args = []) {
+        return json_encode($this->all_jsonv($args), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    }
+
+    /** @param string $old_jsonstr
+     * @param string $new_jsonstr
+     * @return string */
+    static function json_unified_diff($old_jsonstr, $new_jsonstr) {
+        $dmp = new dmp\diff_match_patch;
+        $dmp->Line_Histogram = true;
+        $diff = $dmp->line_diff($old_jsonstr, $new_jsonstr);
+        return $dmp->line_diff_toUnified($diff);
     }
 
 
@@ -1762,6 +1787,110 @@ class SettingValues extends MessageSet {
     /** @return list<string> */
     function saved_keys() {
         return array_keys($this->_diffs);
+    }
+
+    /** Describe parsed changes as human-readable text, one line per
+     * changed top-level setting. Call after `parse()`. Object-list
+     * elements are paired by id, so the `id` members must not be
+     * excluded by `set_si_exclude`.
+     * @return list<string> */
+    function change_descriptions() {
+        $dl = [];
+        foreach ($this->changed_top_si() as $si) {
+            $dl[] = $this->change_description($si);
+        }
+        return $dl;
+    }
+
+    /** @param Si $si
+     * @return string */
+    private function change_description($si) {
+        $title = $si->title($this);
+        if ($si->type === "oblist") {
+            $old = $this->json_choosev($si, false) ?? [];
+            $new = $this->json_choosev($si, true) ?? [];
+            return "{$title}: " . self::oblist_change_description($old, $new);
+        }
+        if ($si->type === "object") {
+            return "{$title}: changed";
+        }
+        $oldv = self::json_value_description($this->json_choosev($si, false));
+        $newv = self::json_value_description($this->json_choosev($si, true));
+        return "{$title}: {$oldv} → {$newv}";
+    }
+
+    /** @param mixed $v
+     * @return string */
+    static private function json_value_description($v) {
+        if ($v === null) {
+            return "default";
+        }
+        $s = json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return UnicodeHelper::utf8_word_abbreviate($s, 48);
+    }
+
+    /** @param object $ob
+     * @return string */
+    static private function oblist_element_label($ob) {
+        foreach (["name", "tag", "style"] as $k) {
+            if (($ob->$k ?? "") !== "")
+                return $ob->$k;
+        }
+        if (($ob->id ?? "") !== "") {
+            return "#{$ob->id}";
+        }
+        return "(unnamed)";
+    }
+
+    /** @param list<string> $labels
+     * @return string */
+    static private function oblist_label_list($labels) {
+        if (count($labels) > 5) {
+            $labels = array_slice($labels, 0, 5);
+            $labels[] = "…";
+        }
+        return join(", ", $labels);
+    }
+
+    /** @param list<object> $old
+     * @param list<object> $new
+     * @return string */
+    static private function oblist_change_description($old, $new) {
+        $oldmap = [];
+        foreach ($old as $ob) {
+            if (($ob->id ?? null) !== null) {
+                $oldmap[(string) $ob->id] = $ob;
+            }
+        }
+        $added = $changed = $deleted = [];
+        $newids = [];
+        foreach ($new as $ob) {
+            $id = $ob->id ?? null;
+            if ($id === null || !isset($oldmap[(string) $id])) {
+                $added[] = self::oblist_element_label($ob);
+            } else {
+                $newids[(string) $id] = true;
+                if (json_encode($ob) !== json_encode($oldmap[(string) $id])) {
+                    $changed[] = self::oblist_element_label($ob);
+                }
+            }
+        }
+        foreach ($oldmap as $id => $ob) {
+            if (!isset($newids[$id])) {
+                $deleted[] = self::oblist_element_label($ob);
+            }
+        }
+        $parts = [];
+        if (!empty($added)) {
+            $parts[] = count($added) . " added (" . self::oblist_label_list($added) . ")";
+        }
+        if (!empty($changed)) {
+            $parts[] = count($changed) . " changed (" . self::oblist_label_list($changed) . ")";
+        }
+        if (!empty($deleted)) {
+            $parts[] = count($deleted) . " deleted (" . self::oblist_label_list($deleted) . ")";
+        }
+        return empty($parts) ? "reordered" : join("; ", $parts);
     }
 
 

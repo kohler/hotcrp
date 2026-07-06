@@ -1594,6 +1594,372 @@ class Settings_Tester {
         }
     }
 
+    /** @param string $s
+     * @return ?SearchExpr */
+    static function make_si_filter($s) {
+        return (new SearchParser($s))->parse_expression(SearchOperatorSet::simple_operators());
+    }
+
+    function test_json_export_filter() {
+        // tag filter
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("#decision"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->decision));
+        xassert(isset($j->decision_visibility_author));
+        xassert(!isset($j->review_blind));
+        xassert(!isset($j->sf));
+        xassert(!isset($j->conference_abbreviation));
+
+        // a filtered export imports as a no-op
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string(json_encode($j));
+        $sv->parse();
+        xassert_eqq($sv->changed_top_si(), []);
+        xassert_eqq($sv->message_list(), []);
+
+        // name glob filter
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("review_visibility_*"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->review_visibility_author));
+        xassert(!isset($j->review_blind));
+        xassert(!isset($j->decision));
+
+        // OR combination
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("#decision OR review_blind"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->decision));
+        xassert(isset($j->review_blind));
+        xassert(!isset($j->review_visibility_author));
+
+        // exclude
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("#decision"));
+        $j = $sv->all_jsonv();
+        xassert(!isset($j->decision));
+        xassert(!isset($j->decision_visibility_author));
+        xassert(isset($j->review_blind));
+
+        // filter and exclude combine
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("#decision"))
+            ->set_si_exclude(self::make_si_filter("decision_visibility_*"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->decision));
+        xassert(!isset($j->decision_visibility_author));
+
+        // tag exclusion applies to oblist members via member_tags
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("review"))
+            ->set_si_exclude(self::make_si_filter("#deadline"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->review));
+        xassert(count($j->review) > 0);
+        foreach ($j->review as $round) {
+            xassert(isset($round->name));
+            xassert(!isset($round->soft));
+            xassert(!isset($round->done));
+        }
+    }
+
+    function test_json_import_filter() {
+        // importing with a filter silently skips non-matching settings
+        xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true)
+            ->set_si_filter(self::make_si_filter("#decision"));
+        $sv->add_json_string('{"review_blind":"open","decision_visibility_reviewer":true}');
+        $sv->parse();
+        $cl = [];
+        foreach ($sv->changed_top_si() as $si) {
+            $cl[] = $si->name;
+        }
+        xassert_eqq($cl, ["decision_visibility_reviewer"]);
+        xassert_eqq($sv->message_list(), []);
+    }
+
+    function test_json_foreign_import_decisions() {
+        // Importing an export from another conference: ids are stripped
+        // (they are conference-specific), so objects match by name.
+        $this->conf->save_refresh_setting("outcome_map", null);
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
+
+        // id-less additive merge appends new decisions
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision":[{"name":"Desk rejected","category":"reject"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-2":"Desk rejected","-1":"Rejected"}');
+
+        // id-less names match existing decisions; no duplicates created
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision":[{"name":"Accepted","category":"accept"},{"name":"Desk rejected","category":"reject"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-2":"Desk rejected","-1":"Rejected"}');
+
+        // reset prunes decisions the import does not mention,
+        // and name matches preserve existing ids
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision_reset":true,"decision":[{"name":"Accepted","category":"accept"},{"name":"Rejected","category":"reject"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
+        xassert_eqq($this->conf->setting("outcome_map"), null);
+    }
+
+    function test_json_foreign_import_rf() {
+        // an id-less review field import creates a new field when no
+        // name matches
+        $nrf = count((new SettingValues($this->u_chair))->all_jsonv()->rf);
+        xassert_eqq($this->conf->find_review_field("Adopted Field"), null);
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"rf":[{"name":"Adopted Field","type":"text"}]}');
+        xassert($sv->execute());
+        $rf = $this->conf->find_review_field("Adopted Field");
+        xassert_eqq($rf->name, "Adopted Field");
+        $short_id = $rf->short_id;
+        xassert_eqq(count((new SettingValues($this->u_chair))->all_jsonv()->rf), $nrf + 1);
+
+        // a second id-less import matches the field by name and updates
+        // it in place
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"rf":[{"name":"Adopted Field","description":"From another conference"}]}');
+        xassert($sv->execute());
+        $rf = $this->conf->find_review_field("Adopted Field");
+        xassert_eqq($rf->short_id, $short_id);
+        xassert_eqq($rf->description, "From another conference");
+        xassert_eqq(count((new SettingValues($this->u_chair))->all_jsonv()->rf), $nrf + 1);
+
+        // id-less delete also matches by name
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"rf":[{"name":"Adopted Field","delete":true}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->find_review_field("Adopted Field"), null);
+        xassert_eqq(count((new SettingValues($this->u_chair))->all_jsonv()->rf), $nrf);
+    }
+
+    function test_json_unified_diff() {
+        $old = "{\n    \"a\": 1,\n    \"b\": 2,\n    \"c\": 3\n}\n";
+        xassert_eqq(SettingValues::json_unified_diff($old, $old), "");
+        $new = "{\n    \"a\": 1,\n    \"b\": 4,\n    \"c\": 3\n}\n";
+        $diff = SettingValues::json_unified_diff($old, $new);
+        xassert_str_contains($diff, "-    \"b\": 2,\n");
+        xassert_str_contains($diff, "+    \"b\": 4,\n");
+        xassert(!str_contains($diff, "\"a\": 2"));
+    }
+
+    function test_json_export_exclude_id() {
+        // default export includes conference-specific ids
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert(isset($j->decision[0]->id));
+        xassert(isset($j->rf[0]->id));
+
+        // the `id` filter token excludes `id` members at all levels
+        $j = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv();
+        xassert(!isset($j->decision[0]->id));
+        xassert(isset($j->decision[0]->name));
+        $rf0 = $j->rf[0];
+        xassert(!isset($rf0->id));
+        xassert_eqq($rf0->name, "Overall merit");
+        xassert(!isset($rf0->values[0]->id));
+        xassert(isset($rf0->values[0]->name));
+        foreach ($j->review as $round) {
+            xassert(!isset($round->id));
+        }
+
+        // id members with semantic meaning have other names and remain
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"style":"black","tags":"winner"}]}');
+        xassert($sv->execute());
+        $j = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv();
+        $styles = [];
+        foreach ($j->badge as $b) {
+            $styles[] = $b->style;
+        }
+        xassert_in_eqq("black", $styles);
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"style":"black","delete":true}]}');
+        xassert($sv->execute());
+    }
+
+    function test_id_member_convention() {
+        // The `id` filter token matches members literally named `id`.
+        // Excluding it must strip exactly the conference-specific ids:
+        // internal id members are named `id`; id members with semantic
+        // meaning (e.g. track/$/tag, badge/$/style) have other names;
+        // and any other member named `id` is also conference-specific
+        xassert_gt($this->check_id_members(""), 8);
+    }
+
+    /** @param string $pfx
+     * @return int */
+    private function check_id_members($pfx) {
+        $si_set = $this->conf->si_set();
+        $members = $pfx === "" ? $si_set->top_list() : $si_set->member_list($pfx);
+        $nid = 0;
+        foreach ($members as $msi) {
+            if ($msi->id_member) {
+                ++$nid;
+                xassert_eqq($msi->name2 === "/id", $msi->internal);
+            } else if ($msi->name2 === "/id") {
+                xassert($msi->internal);
+            }
+            if ($msi->type === "oblist") {
+                $nid += $this->check_id_members("{$msi->name}/1");
+            }
+        }
+        return $nid;
+    }
+
+    function test_json_noids_roundtrip() {
+        // an id-less export reimports as a no-op: name matching realigns
+        // every object list, including entries with empty names (unnamed
+        // review round, default response)
+        $j1 = json_encode((new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv());
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string($j1);
+        $sv->parse();
+        xassert_eqq($sv->message_list(), []);
+        xassert_eqq($sv->changed_top_si(), []);
+        xassert_eqq($sv->change_descriptions(), []);
+
+        // same with reset semantics
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"reset":true,' . substr($j1, 1));
+        $sv->parse();
+        xassert_eqq($sv->message_list(), []);
+        xassert_eqq($sv->changed_top_si(), []);
+        xassert_eqq($sv->change_descriptions(), []);
+    }
+
+    function test_json_format() {
+        // unconfigured format specs are not exported
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert_eqq($j->format ?? [], []);
+
+        // configured specs export keyed by the semantic `doctype`
+        // member; there are no conference-specific ids
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"pagelimit":"12"}]}');
+        xassert($sv->execute());
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert_eqq(count($j->format), 1);
+        xassert_eqq($j->format[0]->doctype, "submission");
+        xassert(!isset($j->format[0]->id));
+
+        // doctype is semantic, so the `id` filter token spares it
+        $j = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv();
+        xassert_eqq($j->format[0]->doctype, "submission");
+
+        // `id` is accepted as an alias for `doctype`
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","pagelimit":12}]}');
+        $sv->parse();
+        xassert_eqq($sv->message_list(), []);
+        xassert_eqq($sv->changed_top_si(), []);
+
+        $this->conf->save_refresh_setting("sub_banal", null);
+    }
+
+    function test_json_review_default_round() {
+        // the canonical JSON form of the unnamed default round is "unnamed"
+        $orig = (new SettingValues($this->u_chair))->all_jsonv()->review_default_round;
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"review_default_round":"unnamed"}');
+        xassert($sv->execute());
+        xassert_eqq((new SettingValues($this->u_chair))->all_jsonv()->review_default_round, "unnamed");
+        // canonical storage form is unset
+        xassert_eqq($this->conf->fetch_value("select data from Settings where name='rev_roundtag'"), null);
+
+        // "" is a synonym; importing either form is a no-op whose pending
+        // value unparses canonically
+        foreach (['{"review_default_round":""}', '{"review_default_round":"unnamed"}'] as $jstr) {
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string($jstr);
+            $sv->parse();
+            xassert_eqq($sv->changed_top_si(), []);
+            xassert_eqq($sv->all_jsonv(["new" => true])->review_default_round, "unnamed");
+        }
+
+        // restore
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string(json_encode(["review_default_round" => $orig]));
+        xassert($sv->execute());
+    }
+
+    function test_json_submission_registration_inferred() {
+        $old_reg = $this->conf->setting("sub_reg");
+        $old_sub = $this->conf->setting("sub_sub");
+        $old_update = $this->conf->setting("sub_update");
+
+        // saving a submission deadline does not materialize an unset
+        // registration deadline; SubmissionRound infers it
+        $this->conf->save_refresh_setting("sub_reg", null);
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"submission_done":"2029-06-01 12:00:00 UTC"}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_reg"), null);
+        $sr = $this->conf->unnamed_submission_round();
+        xassert($sr->inferred_register);
+        xassert_eqq($sr->register, $this->conf->setting("sub_sub"));
+
+        // the export reimports as a no-op
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert_eqq($j->submission_registration, "");
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string(json_encode([
+            "submission_registration" => $j->submission_registration,
+            "submission_done" => $j->submission_done
+        ]));
+        $sv->parse();
+        xassert_eqq($sv->changed_top_si(), []);
+
+        // registration deadlines must still precede submission deadlines
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"submission_registration":"2029-07-01 12:00:00 UTC","submission_done":"2029-06-01 12:00:00 UTC"}');
+        $sv->parse();
+        xassert($sv->has_error());
+
+        $this->conf->save_setting("sub_reg", $old_reg);
+        $this->conf->save_setting("sub_sub", $old_sub);
+        $this->conf->save_refresh_setting("sub_update", $old_update);
+    }
+
+    function test_json_change_descriptions() {
+        $this->conf->save_refresh_setting("outcome_map", null);
+
+        // dry run: scalar change and oblist addition
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"review_blind":"open","decision":[{"name":"Desk rejected","category":"reject"}]}');
+        $sv->parse();
+        $s = join("\n", $sv->change_descriptions());
+        xassert_str_contains($s, "Decision types: 1 added (Desk rejected)");
+        xassert_str_contains($s, "Review anonymity: \"blind\" → \"open\"");
+
+        // oblist change and deletion
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision_reset":true,"decision":[{"name":"Accepted!","id":1,"category":"accept"}]}');
+        $sv->parse();
+        $s = join("\n", $sv->change_descriptions());
+        xassert_str_contains($s, "1 changed (Accepted!)");
+        xassert_str_contains($s, "1 deleted (Rejected)");
+
+        // no changes, no descriptions
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"review_blind":"blind"}');
+        $sv->parse();
+        xassert_eqq($sv->change_descriptions(), []);
+    }
+
     function test_new_fixed_id() {
         $oids = array_keys($this->conf->options()->universal());
         sort($oids);
