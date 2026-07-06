@@ -1,0 +1,89 @@
+[
+	{
+		"name": "test01",
+		"members": [
+            "fresh_db", "Permission_Tester", "Tags_Tester", "Tracks_Tester",
+            "Banners_Tester", "Session_Tester"
+        ]
+    },
+    {
+        "name": "test02",
+        "members": [
+            "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",
+            "AuthorMatch_Tester", "Ht_Tester", "Fmt_Tester",
+            "Getopt_Tester", "CleanHTML_Tester", "Abbreviation_Tester",
+            "DocumentBasics_Tester", "FixCollaborators_Tester",
+            "Mention_Tester", "Search_Tester", "Settings_Tester",
+            "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester"
+        ]
+    },
+    {
+        "name": "test03",
+        "members": [
+            "MinCostMaxFlow_Tester"
+        ]
+    },
+    {
+        "name": "test04",
+        "members": [
+            "Cdb_Tester"
+        ]
+    },
+    {
+        "name": "test05",
+        "members": [
+            "fresh_db", "PaperStatus_Tester", "AuthorCertification_Tester",
+            "Login_Tester", "UserStatus_Tester",
+            "(", "no_cdb", "Login_Tester", "UserStatus_Tester", ")"
+        ]
+    },
+    {
+        "name": "test06",
+        "members": [
+            "fresh_db", "Reviews_Tester", "Comments_Tester", "UserAPI_Tester",
+            "UploadAPI_Tester", "Mailer_Tester", "Events_Tester",
+            "Autoassign_Tester", "fresh_db", "Formulas_Tester"
+        ]
+    },
+    {
+    	"name": "test07",
+    	"members": [
+            "DiffMatchPatch_Tester"
+        ]
+    },
+    {
+        "name": "test08",
+        "members": [
+            "(", "no_cdb", "fresh_db", "Permission_Tester", "Unit_Tester",
+            "XtCheck_Tester", "Abbreviation_Tester",
+            "DocumentBasics_Tester", "Mention_Tester",
+            "Invariants_Tester", "Search_Tester", "Settings_Tester",
+            "Invariants_Tester", "UpdateSchema_Tester",
+            "Invariants_Tester", "Batch_Tester",
+            "PaperStatus_Tester", "Login_Tester",
+            "fresh_db", "Reviews_Tester", "Comments_Tester",
+            "UserAPI_Tester", ")"
+        ]
+    },
+    {
+        "name": "test09",
+        "members": [
+            "fresh_db", "PaperAPI_Tester", "ReviewAPI_Tester",
+            "FollowAPI_Tester", "Scope_Tester", "APICounter_Tester"
+        ]
+    },
+    {
+    	"name": "default",
+    	"members": [
+            "test01", "test02", "test03", "test04", "test05", "test06",
+            "test07", "(", "if_all", "test08", ")", "test09"
+        ]
+    },
+    {
+        "name": "all",
+        "members": [
+            "test01", "test02", "test03", "test04", "test05", "test06",
+            "test07", "test08", "test09"
+        ]
+    }
+]
