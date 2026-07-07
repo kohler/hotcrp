@@ -1708,7 +1708,7 @@ Phil Porras.");
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
 
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
             if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
                 $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
             }
@@ -1799,7 +1799,7 @@ Phil Porras.");
 
         // give paper 3 a fresh submission so `banal` must actually run (no cache)
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
             if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
                 $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
             }

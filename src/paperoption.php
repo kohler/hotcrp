@@ -1519,7 +1519,7 @@ class Document_PaperOption extends PaperOption {
     function value_store(PaperValue $ov, PaperStatus $ps) {
         if ($ov->value === PaperValue::NEWDOC_VALUE) {
             if (($fup = $ov->anno("document"))
-                && ($doc = $ps->upload_document($fup, $this))) {
+                && ($doc = $ps->upload_document($fup, $this->id))) {
                 $ov->set_value_data([$doc->paperStorageId], [null]);
             } else {
                 $ov->estop(null);

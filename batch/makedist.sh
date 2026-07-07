@@ -332,6 +332,7 @@ src/decisioninfo.php
 src/decisionset.php
 src/docstore.php
 src/documentfiletree.php
+src/documentimporter.php
 src/documentinfo.php
 src/documentinfoset.php
 src/documenthashmatcher.php

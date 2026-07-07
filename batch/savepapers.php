@@ -178,14 +178,15 @@ class SavePapers_Batch {
         return $this->ziparchive->getFromName($this->_ziparchive_json);
     }
 
-    function on_document_import($docj, PaperOption $o) {
+    /** @param DocumentImporter $importer */
+    function on_document_import($docj, $dt, $importer) {
         if (!is_string($docj->content_file ?? null)
             || $docj instanceof DocumentInfo) {
             return;
         }
         if ($this->ziparchive) {
             $fname = $this->document_directory . $docj->content_file;
-            return Paper_API::apply_zip_content_file($docj, $fname, $this->ziparchive, $o, $this->ps);
+            return Paper_API::apply_zip_content_file($docj, $fname, $this->ziparchive, $importer);
         } else if ($this->document_directory) {
             $docj->content_file = $this->document_directory . $docj->content_file;
         }

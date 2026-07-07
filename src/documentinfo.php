@@ -1087,9 +1087,13 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    const SAVEF_SKIP_VERIFY = 1;
-    const SAVEF_SKIP_CONTENT = 2;
-    const SAVEF_DELAY_PROP = 4;
+    const SAVEF_SKIP_VERIFY = 1;          // do not verify content hash
+    const SAVEF_SKIP_CONTENT = 2;         // do not store content
+    const SAVEF_DELAY_PROP = 4;           // do not save skeleton
+    // These properties are defined for convenience in caller code:
+    const SAVEF_ANY_CONTENT_FILE = 8;     // allow any content_file
+    const SAVEF_IGNORE_CONTENT_FILE = 16; // ignore content_file
+    const SAVEF_ALLOW_HASH_WITHOUT_CONTENT = 32; // allow finding document by hash
 
     /** @param int $savef
      * @return bool */

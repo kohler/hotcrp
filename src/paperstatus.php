@@ -14,12 +14,6 @@ final class PaperStatus extends MessageSet {
     /** @var bool */
     private $disable_users = false;
     /** @var bool */
-    private $any_content_file = false;
-    /** @var bool */
-    private $ignore_content_file = false;
-    /** @var bool */
-    private $allow_hash_without_content = false;
-    /** @var bool */
     private $notify = true;
     /** @var bool */
     private $notify_authors = true;
@@ -30,7 +24,7 @@ final class PaperStatus extends MessageSet {
     /** @var bool */
     private $json_fields;
     /** @var int */
-    private $doc_savef = 0;
+    private $doc_savef = DocumentInfo::SAVEF_DELAY_PROP;
     /** @var list<callable> */
     private $_on_document_import = [];
 
@@ -89,7 +83,9 @@ final class PaperStatus extends MessageSet {
     function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->allow_hash_without_content = $user->privChair;
+        if ($user->privChair) {
+            $this->doc_savef |= DocumentInfo::SAVEF_ALLOW_HASH_WITHOUT_CONTENT;
+        }
         $this->set_ignore_duplicates(true);
     }
 
@@ -135,18 +131,24 @@ final class PaperStatus extends MessageSet {
         return $this;
     }
 
-    /** @param bool $x
+    /** @param int $f
+     * @param bool $x
      * @return $this */
-    function set_any_content_file($x) {
-        $this->any_content_file = $x;
+    private function set_doc_savef($f, $x) {
+        $this->doc_savef = ($this->doc_savef & ~$f) | ($x ? $f : 0);
         return $this;
     }
 
     /** @param bool $x
      * @return $this */
+    function set_any_content_file($x) {
+        return $this->set_doc_savef(DocumentInfo::SAVEF_ANY_CONTENT_FILE, $x);
+    }
+
+    /** @param bool $x
+     * @return $this */
     function set_ignore_content_file($x) {
-        $this->ignore_content_file = $x;
-        return $this;
+        return $this->set_doc_savef(DocumentInfo::SAVEF_IGNORE_CONTENT_FILE, $x);
     }
 
     /** @param ?bool $x
@@ -159,23 +161,13 @@ final class PaperStatus extends MessageSet {
     /** @param bool $x
      * @return $this */
     function set_skip_document_verify($x) {
-        if ($x) {
-            $this->doc_savef |= DocumentInfo::SAVEF_SKIP_VERIFY;
-        } else {
-            $this->doc_savef &= ~DocumentInfo::SAVEF_SKIP_VERIFY;
-        }
-        return $this;
+        return $this->set_doc_savef(DocumentInfo::SAVEF_SKIP_VERIFY, $x);
     }
 
     /** @param bool $x
      * @return $this */
     function set_skip_document_content($x) {
-        if ($x) {
-            $this->doc_savef |= DocumentInfo::SAVEF_SKIP_CONTENT;
-        } else {
-            $this->doc_savef &= ~DocumentInfo::SAVEF_SKIP_CONTENT;
-        }
-        return $this;
+        return $this->set_doc_savef(DocumentInfo::SAVEF_SKIP_CONTENT, $x);
     }
 
     /** @param callable(object,PaperOption,PaperStatus):(?bool) $cb
@@ -197,21 +189,27 @@ final class PaperStatus extends MessageSet {
     }
 
 
-    /** @param PaperOption $o
+    /** @param int|PaperOption $o
      * @return string */
     function option_key($o) {
-        return $this->json_fields ? $o->json_key() : $o->field_key();
+        $opt = $o instanceof PaperOption ? $o : $this->conf->option_by_id($o);
+        if ($opt) {
+            return $this->json_fields ? $opt->json_key() : $opt->field_key();
+        }
+        return $o === DTYPE_COMMENT ? "comment" : "opt{$o}";
     }
 
-    /** @param ?string $msg
+    /** @param int|PaperOption $o
+     * @param ?string $msg
      * @return MessageItem */
-    function error_at_option(PaperOption $o, $msg) {
+    function error_at_option($o, $msg) {
         return $this->error_at($this->option_key($o), $msg);
     }
 
-    /** @param ?string $msg
+    /** @param int|PaperOption $o
+     * @param ?string $msg
      * @return MessageItem */
-    function warning_at_option(PaperOption $o, $msg) {
+    function warning_at_option($o, $msg) {
         return $this->warning_at($this->option_key($o), $msg);
     }
 
@@ -264,290 +262,18 @@ final class PaperStatus extends MessageSet {
     }
 
 
-    /** @return ?DocumentInfo */
-    function upload_document($docj, PaperOption $o) {
-        // $docj can be a DocumentInfo or a JSON.
-        // If it is a JSON, its format is set by document_to_json.
-        if (is_array($docj) && count($docj) === 1 && isset($docj[0])) {
-            $docj = $docj[0];
-        }
-        if (!is_object($docj)) {
-            $this->syntax_error_at($o->field_key());
-            return null;
-        } else if (($docj->error ?? false) || ($docj->error_html ?? false)) {
-            $this->error_at_option($o, "<5>" . ($docj->error_html ?? "Upload error"));
-            return null;
-        }
-        assert(!isset($docj->filter));
-
-        // check content_file
-        if (!($docj instanceof DocumentInfo)
-            && isset($docj->content_file)
-            && $docj->content_file !== false) {
-            if ($this->ignore_content_file) {
-                $docj->content_file = null;
-            } else if (($problem = $this->check_content_file_first($docj->content_file))) {
-                $this->error_at_option($o, $problem);
-                return null;
-            }
-        }
-
-        // check on_document_import
-        foreach ($this->_on_document_import as $cb) {
-            if (call_user_func($cb, $docj, $o, $this) === false)
-                return null;
-        }
-
-        // validate JSON
-        if ($docj instanceof DocumentInfo) {
-            $doc = $docj;
-        } else if (!($doc = $this->_upload_json_document($docj, $o))) {
-            return null;
-        }
-
-        // save
-        if ($doc->paperStorageId === 0
-            && ($doc->has_error() || !$doc->save($this->doc_savef))) {
-            foreach ($doc->message_list() as $mi) {
-                $mi = $this->append_item($mi->with_field($this->option_key($o)));
-                $mi->landmark = $doc->error_filename();
-            }
-            return null;
-        }
-
-        $this->_docs[] = $doc;
-        assert($doc->paperId === $this->prow->paperId || $doc->paperId === 0 || $doc->paperId === -1);
-        $doc->release_redundant_content();
-        return $doc;
-    }
-
-    /** @param mixed $content_file
-     * @return ?string */
-    private function check_content_file_first($content_file) {
-        if (!is_string($content_file)) {
-            return "<0>Invalid `content_file`";
-        } else if (!$this->any_content_file
-                   && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $content_file)) {
-            return "<0>`content_file` filename violates locality constraints";
-        }
-        return null;
-    }
-
-    /** @param object $docj
+    /** @param int|PaperOption $dt
      * @return ?DocumentInfo */
-    private function _upload_json_document($docj, PaperOption $o) {
-        // extract mimetype
-        $mimetype = null;
-        if (isset($docj->mimetype) && is_string($docj->mimetype)) {
-            $mimetype = $docj->mimetype;
+    function upload_document($docj, $dt) {
+        if ($dt instanceof PaperOption) {
+            $dt = $dt->id;
         }
-
-        // extract content
-        $content = $content_file = null;
-        if (isset($docj->content) && is_string($docj->content)) {
-            $content = $docj->content;
-        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
-            $content = base64_decode($docj->content_base64);
-        } else if ($this->ignore_content_file) {
-            /* no content */
-        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            if (is_readable($docj->content_file)) {
-                $content_file = $docj->content_file;
-            } else {
-                $this->error_at_option($o, "<0>Could not access `content_file`");
-            }
-        } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
-            if (!($content_file = $this->_upload_content_stream($docj->content_file, $mimetype, $o))) {
-                $this->warning_at_option($o, "<0>Could not copy `content_file` to a temporary file");
-            }
+        $di = new DocumentImporter($this->prow, $dt, $this->doc_savef, $this, $this->option_key($dt));
+        $di->set_on_import($this->_on_document_import);
+        if (($doc = $di->upload_document($docj))) {
+            $this->_docs[] = $doc;
         }
-
-        // extract filename
-        $filename = null;
-        if (isset($docj->filename)) {
-            if (is_string($docj->filename)) {
-                $filename = $docj->filename;
-            }
-        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            if (($slash = strrpos($docj->content_file, "/")) > 0) {
-                $filename = substr($docj->content_file, $slash + 1);
-            } else if (preg_match('/\A[A-Za-z]+:.*+\\\\(.*)\z/', $docj->content_file, $m)) {
-                $filename = $m[1];
-            } else {
-                $filename = $docj->content_file;
-            }
-        }
-        $safe_filename = DocumentInfo::sanitize_filename($filename);
-
-        // extract requested hash
-        $ha = $want_algorithm = null;
-        if (isset($docj->hash) && is_string($docj->hash)) {
-            $ha = new HashAnalysis($docj->hash);
-        } else if (isset($docj->sha1) && is_string($docj->sha1)) {
-            $ha = new HashAnalysis($docj->sha1);
-            $want_algorithm = "sha1";
-        }
-        if ($ha && (!$ha->complete() || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
-            $this->warning_at_option($o, "<0>Invalid `hash` ignored");
-            $ha = null;
-        }
-
-        // compute content hash
-        $content_ha = HashAnalysis::make_algorithm($this->conf, $ha ? $ha->algorithm() : null);
-        if (($this->doc_savef & DocumentInfo::SAVEF_SKIP_VERIFY) !== 0) {
-            // do not compute content hash
-        } else if ($content !== null) {
-            $content_ha->set_hash($content);
-        } else if ($content_file !== null) {
-            $content_ha->set_hash_file($content_file);
-        }
-
-        // compare content hash with user-provided hash; error if different
-        if ($ha
-            && $content_ha->complete()
-            && $ha->binary() !== $content_ha->binary()) {
-            $this->error_at_option($o, "<0>Document corrupt (its content did not match the provided hash)");
-            return null;
-        }
-
-        // also check CRC32 if provided
-        $crc32 = null;
-        if (isset($docj->crc32) && is_string($docj->crc32)) {
-            if (strlen($docj->crc32) === 8 && ctype_xdigit($docj->crc32)) {
-                $crc32 = hex2bin($docj->crc32);
-            } else if (strlen($docj->crc32) === 4 && $docj->crc32 !== "\0\0\0\0") {
-                $crc32 = $docj->crc32;
-            } else {
-                $this->warning_at_option($o, "<0>Invalid `crc32` ignored");
-            }
-        }
-        if ($crc32 !== null) {
-            $content_crc32 = false;
-            if (($this->doc_savef & DocumentInfo::SAVEF_SKIP_VERIFY) !== 0) {
-                // do not compute content hash
-            } else if ($content !== null) {
-                $content_crc32 = hash("crc32b", $content, true);
-            } else if ($content_file !== null) {
-                $content_crc32 = hash_file("crc32b", $content_file, true);
-            }
-            if ($content_crc32 !== false
-                && $crc32 !== $content_crc32) {
-                $this->error_at_option($o, "<0>Document corrupt (its content did not match the provided checksum)");
-                return null;
-            }
-        }
-
-        // choose a hash
-        if ($ha) {
-            $hash = $ha->binary();
-        } else if ($content_ha->complete()) {
-            $hash = $content_ha->binary();
-        } else {
-            $hash = null;
-        }
-
-        // check for existing document
-        $docid = -1;
-        if (isset($docj->docid)
-            && is_int($docj->docid)
-            && $docj->docid > 0) {
-            $docid = $docj->docid;
-        }
-        if (!$this->prow->is_new()
-            && ($docid > 0 || $hash !== null)) {
-            $qf = ["paperId=?", "documentType=?", "filterType is null"];
-            $qv = [$this->prow->paperId, $o->id];
-            if ($docid > 0) {
-                $qf[] = "paperStorageId=?";
-                $qv[] = $docj->docid;
-            }
-            if ($hash !== null) {
-                $qf[] = "sha1=?";
-                $qv[] = $hash;
-            }
-            if ($mimetype !== null) {
-                $qf[] = "mimetype=?";
-                $qv[] = $mimetype;
-            }
-            if ($safe_filename !== null) {
-                $qf[] = "filename=?";
-                $qv[] = $safe_filename;
-            }
-            $result = $this->conf->qe_apply("select " . $this->conf->document_query_fields() . " from PaperStorage where " . join(" and ", $qf), $qv);
-            $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
-            Dbl::free($result);
-            if ($edoc) {
-                if (($docj->inactive ?? null) === true) {
-                    $edoc->set_prefer_inactive();
-                }
-                return $edoc;
-            }
-        }
-
-        // content required from here on; fail if it's not available
-        if ($content === null
-            && $content_file === null
-            && (!$this->allow_hash_without_content
-                || $hash === null
-                || $mimetype === null)) {
-            $this->error_at_option($o, "<0>Ignored attempt to upload document without any content");
-            return null;
-        }
-
-        // make new document
-        $doc = DocumentInfo::make($this->conf)
-            ->set_paper($this->prow)
-            ->set_document_type($o->id);
-        if ($mimetype !== null) {
-            $doc->set_mimetype($mimetype);
-        }
-        if (isset($docj->timestamp) && is_int($docj->timestamp)) {
-            $doc->set_timestamp($docj->timestamp);
-        }
-        if ($safe_filename !== null) {
-            $doc->set_filename($safe_filename);
-        }
-        if ($content !== null) {
-            $doc->set_simple_content($content);
-        } else if ($content_file !== null) {
-            $doc->set_simple_content_file($content_file);
-        }
-        if ($hash !== null) {
-            $doc->set_hash($hash);
-        }
-        if ($crc32 !== null) {
-            $doc->set_crc32($crc32);
-        }
-        if (isset($docj->size)
-            && is_int($docj->size)
-            && ($this->doc_savef & DocumentInfo::SAVEF_SKIP_CONTENT) !== 0) {
-            $doc->set_size($docj->size);
-        }
-        if (($docj->inactive ?? null) === true) {
-            $doc->set_prefer_inactive();
-        }
-
-        // analyze content, complain if not available
-        if ($doc->content_available() || $doc->ensure_content()) {
-            $doc->analyze_content();
-        } else {
-            $doc->error("<0>Document has no content");
-        }
-
         return $doc;
-    }
-
-    /** @return ?string */
-    private function _upload_content_stream($f, $mimetype, PaperOption $o) {
-        $content_file = null;
-        $template = "upf-%s" . Mimetype::extension($mimetype);
-        if (($finfo = Filer::create_tempfile($this->conf->docstore_tempdir(), $template))) {
-            $ok = stream_copy_to_stream($f, $finfo[1]) !== false;
-            fclose($finfo[1]);
-            $content_file = $ok ? $finfo[0] : null;
-        }
-        fclose($f);
-        return $content_file;
     }
 
 
@@ -1298,7 +1024,6 @@ final class PaperStatus extends MessageSet {
         $this->_documents_changed = false;
         $this->_noncontacts_changed = $prow->is_new();
         $this->_docs = $this->_tags_changed = [];
-        $this->doc_savef |= DocumentInfo::SAVEF_DELAY_PROP;
         $this->_save_status = 0;
         if ($this->user->can_manage($this->prow)) {
             $this->_save_status |= self::SSF_ADMIN_UPDATE;

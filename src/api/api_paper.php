@@ -609,12 +609,13 @@ class Paper_API extends MessageSet {
 
     /** @param object $docj
      * @param string $filename
+     * @param DocumentImporter $importer
      * @return bool */
     static function apply_zip_content_file($docj, $filename, ZipArchive $zip,
-                                           PaperOption $o, PaperStatus $pstatus) {
+                                           $importer) {
         $stat = $zip->statName($filename);
         if (!$stat) {
-            $pstatus->error_at_option($o, "<0>{$filename}: File not found");
+            $importer->error("<0>{$filename}: File not found");
             return false;
         }
         // use resources to store large files
@@ -628,7 +629,7 @@ class Paper_API extends MessageSet {
             $content = $zip->getFromIndex($stat["index"]);
         }
         if ($content === false) {
-            $pstatus->error_at_option($o, "<0>{$filename}: File not found");
+            $importer->error("<0>{$filename}: File not found");
             return false;
         }
         if (is_string($content)) {
@@ -670,14 +671,14 @@ class Paper_API extends MessageSet {
         }
     }
 
-    function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
+    function on_document_import($docj, $dt, $importer) {
         if ($docj instanceof DocumentInfo
             || !isset($docj->content_file)) {
             return;
         }
         if (is_string($docj->content_file)) {
             if ($this->ziparchive) {
-                return self::apply_zip_content_file($docj, $this->ziparchive_docdir . $docj->content_file, $this->ziparchive, $o, $pstatus);
+                return self::apply_zip_content_file($docj, $this->ziparchive_docdir . $docj->content_file, $this->ziparchive, $importer);
             } else if ($this->attachment_qreq
                        && ($qf = $this->attachment_qreq->file($docj->content_file))) {
                 return self::apply_qrequest_file($docj, $qf);

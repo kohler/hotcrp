@@ -888,7 +888,7 @@ class Formulas_Tester {
 
         // Give paper 1 a 50-page submission PDF and cache its page count.
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
             if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
                 $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
             }
