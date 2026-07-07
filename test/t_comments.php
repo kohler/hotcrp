@@ -1047,6 +1047,219 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // A comment can be uploaded as an `application/json` request body carrying a
+    // comment object (the `unparse_json` round-trip shape).
+    function test_comment_json_upload() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // create via JSON body
+        $qreq = TestQreq::post_json(["text" => "JSON body", "visibility" => "rev", "topic" => "paper"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "JSON body");
+        xassert_eqq($j->comment->visibility, "rev");
+        xassert_eqq($j->comment->topic, "paper");
+        $cid = (int) $j->comment->cid;
+
+        // edit via JSON, addressing the comment by `cid`
+        $qreq = TestQreq::post_json(["cid" => $cid, "text" => "JSON edited", "visibility" => "pc"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->cid, $cid);
+        xassert_eqq($j->comment->text, "JSON edited");
+        xassert_eqq($j->comment->visibility, "pc");
+        xassert_eqq($j->change_list, ["text", "visibility"]);
+
+        // a one-element array names one comment
+        $qreq = TestQreq::post_json([["cid" => $cid, "text" => "JSON array", "visibility" => "pc"]]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "JSON array");
+
+        // a multi-element array is rejected (bulk upload is TBD)
+        $qreq = TestQreq::post_json([["text" => "a"], ["text" => "b"]]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+
+        // a wrong `object` type is rejected, keyed to the `object` field
+        $qreq = TestQreq::post_json(["object" => "paper", "text" => "nope"]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+        xassert_eqq($jr->content["message_list"][0]->field, "object");
+        // `object: "comment"` is explicitly accepted
+        $qreq = TestQreq::post_json(["object" => "comment", "text" => "yep", "visibility" => "rev", "topic" => "paper"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "yep");
+
+        // a `pid` that disagrees with the request's paper is rejected
+        $qreq = TestQreq::post_json(["cid" => $cid, "pid" => 4, "text" => "wrong paper"]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+        xassert_eqq($jr->content["message_list"][0]->field, "pid");
+        // a matching `pid` is fine (and `id` is ignored, not a target)
+        $qreq = TestQreq::post_json(["cid" => $cid, "pid" => 3, "id" => 99999, "text" => "right paper"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->cid, $cid);
+        xassert_eqq($j->comment->text, "right paper");
+
+        // a `cid` that disagrees with a request-set `c` is a conflict
+        $qreq = TestQreq::post_json(["cid" => $cid, "text" => "mismatch"]);
+        $qreq->c = (string) ($cid + 1);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+        xassert_eqq($jr->content["message_list"][0]->field, "cid");
+        // a `cid` that agrees with `c` is fine
+        $qreq = TestQreq::post_json(["cid" => $cid, "text" => "agrees"]);
+        $qreq->c = (string) $cid;
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->cid, $cid);
+        xassert_eqq($j->comment->text, "agrees");
+
+        // round-trip: GET the comment JSON and re-POST it unchanged
+        $j = call_api("comment", $this->u_chair, ["c" => (string) $cid], $paper3);
+        xassert($j->ok);
+        $qreq = TestQreq::post_json($j->comment);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->cid, $cid);
+        xassert_eqq($j->comment->text, "agrees");
+        xassert_eqq($j->change_list, []);
+
+        // delete via JSON
+        $qreq = TestQreq::post_json(["cid" => $cid, "delete" => true]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->change_list, ["delete"]);
+        xassert(!$paper3->fetch_comments("commentId={$cid}"));
+
+        MailChecker::clear();
+    }
+
+    // JSON `docs`: inline `content_base64`/`content` uploads, `docid` retains,
+    // and an omitted `docs` key keeps the existing attachments.
+    function test_comment_json_attachment() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        $qreq = TestQreq::post_json(["text" => "attach", "visibility" => "rev",
+            "docs" => [["filename" => "inline.txt", "mimetype" => "text/plain",
+                        "content_base64" => base64_encode("INLINE")]]]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $docid = $j->comment->docs[0]->docid;
+        xassert(is_int($docid));
+
+        $paper3->load_comments();
+        $dset = $paper3->comment_by_id($cid)->attachments();
+        xassert_eqq(count($dset), 1);
+        xassert_eqq($dset->document_by_index(0)->content(), "INLINE");
+        xassert_eqq($dset->document_by_index(0)->filename, "inline.txt");
+
+        // omitting `docs` retains the existing attachment
+        $qreq = TestQreq::post_json(["cid" => $cid, "text" => "attach 2", "visibility" => "rev"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $paper3->load_comments();
+        xassert_eqq(count($paper3->comment_by_id($cid)->attachments()), 1);
+
+        // an explicit list retains by `docid` and adds a new inline doc
+        $qreq = TestQreq::post_json(["cid" => $cid, "text" => "attach 2", "visibility" => "rev",
+            "docs" => [["docid" => $docid], ["filename" => "b.txt", "content" => "BBB"]]]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $paper3->load_comments();
+        $contents = [];
+        foreach ($paper3->comment_by_id($cid)->attachments() as $doc) {
+            $contents[] = $doc->content();
+        }
+        xassert_eqq($contents, ["INLINE", "BBB"]);
+
+        MailChecker::clear();
+    }
+
+    // The comment object can be supplied in a `json` form field; a `content_file`
+    // in `docs` then references an uploaded file field.
+    function test_comment_json_form_field() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        $obj = ["text" => "form-json comment", "visibility" => "rev",
+                "docs" => [["content_file" => "fig"]]];
+        $qreq = new Qrequest("POST", ["json" => json_encode($obj)]);
+        $qreq->approve_token();
+        $qreq->set_file_content("fig", "FIGDATA", "fig.txt", "text/plain");
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "form-json comment");
+        $cid = (int) $j->comment->cid;
+
+        $paper3->load_comments();
+        $dset = $paper3->comment_by_id($cid)->attachments();
+        xassert_eqq(count($dset), 1);
+        xassert_eqq($dset->document_by_index(0)->content(), "FIGDATA");
+        xassert_eqq($dset->document_by_index(0)->filename, "fig.txt");
+
+        MailChecker::clear();
+    }
+
+    // A ZIP upload: `data.json` holds the comment object, and a `content_file`
+    // in `docs` references another file in the archive.
+    function test_comment_zip_upload() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $qreq = TestQreq::post_zip([
+            "data.json" => ["text" => "zip comment", "visibility" => "rev",
+                            "docs" => [["content_file" => "fig.txt"]]],
+            "fig.txt" => "ZIPDATA"
+        ]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "zip comment");
+        $cid = (int) $j->comment->cid;
+
+        $paper3->load_comments();
+        $dset = $paper3->comment_by_id($cid)->attachments();
+        xassert_eqq(count($dset), 1);
+        xassert_eqq($dset->document_by_index(0)->content(), "ZIPDATA");
+        xassert_eqq($dset->document_by_index(0)->filename, "fig.txt");
+
+        MailChecker::clear();
+    }
+
+    // An `upload` capability pointing at a previously-uploaded JSON file.
+    function test_comment_upload_capability() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $old_docstore = $this->conf->opt("docstore");
+        $tmpdir = tempdir();
+        $this->conf->set_opt("docstore", "{$tmpdir}%h%x");
+        $this->conf->refresh_settings();
+        xassert(!!$this->conf->docstore());
+
+        // upload a JSON comment object as a file, in one shot
+        $json = json_encode(["text" => "capability comment", "visibility" => "rev"]);
+        $qreq = (new Qrequest("POST", [
+                "start" => 1, "temp" => 1, "size" => strlen($json),
+                "filename" => "c.json", "mimetype" => "application/json",
+                "offset" => 0, "finish" => 1
+            ]))->approve_token()->set_file_content("blob", $json);
+        $j = call_api("=upload", $this->u_chair, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $token = $j->token;
+        xassert(is_string($token));
+
+        // POST /comment referencing the uploaded JSON via `upload`
+        $qreq = new Qrequest("POST", ["upload" => $token]);
+        $qreq->approve_token();
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "capability comment");
+
+        $this->conf->set_opt("docstore", $old_docstore);
+        $this->conf->refresh_settings();
+        MailChecker::clear();
+    }
+
     // Saving and deleting a comment while acting through a review token: the
     // comment is attributed to the (anonymous) review owner, and — because
     // anonymous actors are suppressed from the activity log — neither the save

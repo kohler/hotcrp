@@ -91,6 +91,32 @@ modified, and the saved [comment object](#tag-comments) is returned in
 Saving with `text` empty and no attachments is refused for a new comment, but
 deletes an existing one (it is treated as `delete=1`).
 
+## JSON upload
+
+Instead of form parameters, the comment may be supplied as a JSON **comment
+object**—the same shape returned in the `comment` response field. It may be sent
+four ways, matching [`POST /paper`](#post-paper):
+
+* as an `application/json` request body;
+* in a `json` form field (which lets file attachments ride along in the same
+  request);
+* as an `application/zip` archive whose `data.json` (or `*-data.json`) member is
+  the object and whose other members are referenced attachments; or
+* via an [upload token](#post-upload) in the `upload` field, pointing at a
+  previously-uploaded JSON or ZIP file.
+
+The object’s `cid` (or `response`) selects the target comment; its `text`,
+`visibility`, `topic`, `tags`, `blind`, `draft`, and `delete` fields carry the
+update. (A one-element array holding a single object is also accepted.) The
+`dry_run` and `if_unmodified_since` controls are still read from the query
+string.
+
+Attachments are given as a `docs` array, each entry either retaining an existing
+attachment by `docid` or uploading a new one: inline via `content` (raw text) or
+`content_base64`, or by `content_file`, which names a file in the ZIP archive or
+an uploaded file field in a `json` form request. An omitted `docs` key keeps the
+comment’s current attachments.
+
 ## Concurrency
 
 An edit conflict returns `"ok": false`, `"valid": false`, and `"conflict": true`,
@@ -119,6 +145,10 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 `attachment:3`, and so forth). To delete an existing attachment, supply its
 `docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
 
+* body application/json comment: A comment object supplied as a raw JSON body (see [JSON upload](#tag-comments)).
+* body application/zip: A ZIP archive whose `data.json` is a comment object (see [JSON upload](#tag-comments)).
+* param ?=json string: A comment object supplied in the `json` form field (see [JSON upload](#tag-comments)).
+* param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP comment file.
 * param ?c string: The comment to create, modify, or delete. Defaults to `new`.
 
     * default new

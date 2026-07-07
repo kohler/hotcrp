@@ -607,7 +607,9 @@ class Paper_API extends MessageSet {
         }
     }
 
-    /** @param object $docj
+    /** Resolve `$filename` within `$zip` into `$docj`'s content. Returns an error
+     * ftext, or null on success.
+     * @param object $docj
      * @param string $filename
      * @param DocumentImporter $importer
      * @return bool */
@@ -671,20 +673,34 @@ class Paper_API extends MessageSet {
         }
     }
 
-    function on_document_import($docj, $dt, $importer) {
+    /** Resolve a `docs` entry's `content_file` reference against a ZIP archive or
+     * an uploaded form file. Shared body of the `DocumentImporter` on-import
+     * callback used by both `/paper` and `/comment`.
+     * @param object $docj
+     * @param DocumentImporter $importer
+     * @param ?ZipArchive $ziparchive
+     * @param ?string $ziparchive_docdir
+     * @param ?Qrequest $attachment_qreq
+     * @return ?bool */
+    static function apply_content_file($docj, $importer, $ziparchive, $ziparchive_docdir, $attachment_qreq) {
         if ($docj instanceof DocumentInfo
             || !isset($docj->content_file)) {
-            return;
+            return null;
         }
         if (is_string($docj->content_file)) {
-            if ($this->ziparchive) {
-                return self::apply_zip_content_file($docj, $this->ziparchive_docdir . $docj->content_file, $this->ziparchive, $importer);
-            } else if ($this->attachment_qreq
-                       && ($qf = $this->attachment_qreq->file($docj->content_file))) {
+            if ($ziparchive) {
+                return self::apply_zip_content_file($docj, $ziparchive_docdir . $docj->content_file, $ziparchive, $importer);
+            } else if ($attachment_qreq
+                       && ($qf = $attachment_qreq->file($docj->content_file))) {
                 return self::apply_qrequest_file($docj, $qf);
             }
         }
         unset($docj->content_file);
+        return null;
+    }
+
+    function on_document_import($docj, $dt, $importer) {
+        return self::apply_content_file($docj, $importer, $this->ziparchive, $this->ziparchive_docdir, $this->attachment_qreq);
     }
 
 

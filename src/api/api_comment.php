@@ -25,6 +25,14 @@ class Comment_API extends MessageSet {
     private $valid = false;
     /** @var ?int */
     private $if_unmodified_since;
+    /** @var ?object */
+    private $jbody;
+    /** @var ?ZipArchive */
+    private $ziparchive;
+    /** @var ?string */
+    private $ziparchive_docdir;
+    /** @var ?Qrequest */
+    private $attachment_qreq;
     /** @var ?list<string> */
     private $change_list;
 
@@ -42,12 +50,15 @@ class Comment_API extends MessageSet {
 
     const RESPONSE_REPLACED = 492;
 
-    function __construct(Contact $user, PaperInfo $prow, Qrequest $qreq) {
+    function __construct(Contact $user, PaperInfo $prow) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->prow = $prow;
+    }
 
-        // analyze $qreq `c` and `response` parameters
+    /** Resolve `$qreq`'s `c` and `response` parameters into `$qreq_cid`/
+     * `$qreq_rrd`. Completes with an error on a malformed selector. */
+    private function parse_target(Qrequest $qreq) {
         $c = $qreq->c;
         $response = $qreq->response;
         if ($c === null || $c === "") {
@@ -90,6 +101,7 @@ class Comment_API extends MessageSet {
         if (!isset($qreq->c) && !isset($qreq->response)) {
             return self::run_get_multi($this->user, $qreq, $this->prow);
         }
+        $this->parse_target($qreq);
 
         // find comment, check visibility and parameter conflict
         $crow = $this->resolve_comment();
@@ -211,12 +223,111 @@ class Comment_API extends MessageSet {
     }
 
 
+    /** Decode a single comment object from a JSON body, `json` form field, ZIP
+     * archive, or upload capability. Returns null for a plain form request; sets
+     * up `$ziparchive`/`$attachment_qreq` for attachment import; completes with
+     * an error on a malformed upload. Mirrors `Paper_API::run_post`'s dispatch.
+     * @return ?object */
+    private function parse_upload(Qrequest $qreq) {
+        $ct = $qreq->body_content_type();
+        $ct_form = $ct === null || Mimetype::is_form($ct);
+
+        // an uploaded file supplied by capability
+        if ($ct_form && isset($qreq->upload)) {
+            $updoc = DocumentInfo::make_capability($this->conf, $qreq->upload);
+            if (!$updoc) {
+                JsonResult::make_missing_error("upload", "<0>Upload not found")->complete();
+            }
+            $ct = $updoc->mimetype;
+            $ct_form = false;
+        } else {
+            $updoc = null;
+        }
+
+        // a plain form request carries no JSON object
+        if ($ct_form && !isset($qreq->json)) {
+            return null;
+        }
+
+        if ($ct === "application/json") {
+            $jsonstr = $updoc ? $updoc->content() : $qreq->body();
+        } else if ($ct === "application/zip") {
+            $this->ziparchive = new ZipArchive;
+            $cf = $updoc ? $updoc->content_file() : $qreq->body_file(".zip");
+            if (!$cf) {
+                JsonResult::make_error(500, "<0>Uploaded content unreadable")->complete();
+            }
+            $ec = $this->ziparchive->open($cf);
+            if ($ec !== true) {
+                JsonResult::make_error(400, "<0>ZIP error " . json_encode($ec))->complete();
+            }
+            list($this->ziparchive_docdir, $jsonname) = Paper_API::analyze_zip_contents($this->ziparchive);
+            if (!$jsonname) {
+                JsonResult::make_error(400, "<0>ZIP `data.json` not found")->complete();
+            }
+            $jsonstr = $this->ziparchive->getFromName($jsonname);
+        } else if ($ct_form) {
+            // a `json` form field; uploaded files satisfy `content_file` references
+            $jsonstr = $qreq->json;
+            $this->attachment_qreq = $qreq;
+        } else {
+            JsonResult::make_error(400, "<0>Unexpected content type")->complete();
+            return null; // unreachable; complete() throws
+        }
+
+        $jp = Json::try_decode((string) $jsonstr);
+        if (is_array($jp) && count($jp) === 1 && is_object($jp[0])) {
+            // a one-element array names a single comment (bulk upload is TBD)
+            $jp = $jp[0];
+        }
+        if (!is_object($jp)) {
+            if ($jp === null) {
+                JsonResult::make_error(400, "<0>Invalid JSON (" . Json::last_error_msg() . ")")->complete();
+            }
+            JsonResult::make_error(400, is_array($jp) ? "<0>Expected one comment" : "<0>Expected object")->complete();
+        }
+        if (($jp->object ?? "comment") !== "comment") {
+            JsonResult::make_message_list(400, MessageItem::error_at("object", "<0>Object type mismatch"))->complete();
+        }
+        return $jp;
+    }
+
+    /** Map a decoded comment object's target (`cid`/`response`) onto `$qreq`, so
+     * the shared `c`/`response` resolution applies to it. A `pid`, if present,
+     * must match the request's paper; a `cid`, if present, must not conflict
+     * with a request-set `c`. (Comments use `cid`, not `id`, so `id` is ignored.)
+     * @param object $jp */
+    private function apply_json_target(Qrequest $qreq, $jp) {
+        if (isset($jp->pid) && (int) $jp->pid !== $this->prow->paperId) {
+            JsonResult::make_parameter_error("pid", "<0>Submission ID does not match")->complete();
+        }
+        if (isset($jp->cid)) {
+            $cid = (string) $jp->cid;
+            if (isset($qreq->c) && $qreq->c !== "" && $qreq->c !== $cid) {
+                JsonResult::make_parameter_error("cid", "<0>Comment ID does not match `c`")->complete();
+            }
+            $qreq->c = $cid;
+        } else if (isset($jp->response)
+                   && !isset($qreq->c)
+                   && !isset($qreq->response)) {
+            $qreq->response = (string) $jp->response;
+        }
+    }
+
     /** @return JsonResult */
     private function run_post(Qrequest $qreq) {
-        // parse upload encoding (form, JSON body, ZIP, or upload capability)
-        if (!isset($qreq->text)
+        // parse the upload encoding; a JSON object maps its target onto `$qreq`
+        // so the shared `c`/`response` resolution runs unchanged
+        $this->jbody = $this->parse_upload($qreq);
+        if ($this->jbody !== null) {
+            $this->apply_json_target($qreq, $this->jbody);
+        }
+        $this->parse_target($qreq);
+
+        if ($this->jbody === null
+            && !isset($qreq->text)
             && !friendly_boolean($qreq->delete)) {
-            // form POST must carry comment content
+            // a form POST must carry comment content
             return JsonResult::make_parameter_error("text");
         }
         $this->dry_run = friendly_boolean($qreq->dry_run) === true;
@@ -326,11 +437,6 @@ class Comment_API extends MessageSet {
         return $jr;
     }
 
-    /** @return bool */
-    private function post_form_is_json($qreq) {
-        return false;
-    }
-
     /** @param ?CommentInfo $crow
      * @return CommentInfo */
     private function make_skeleton($crow) {
@@ -346,45 +452,130 @@ class Comment_API extends MessageSet {
      * @return ?CommentInfo */
     private function do_run_post(Qrequest $qreq, $crow) {
         $xcrow = $this->make_skeleton($crow);
-        $response = $xcrow->is_response();
-        assert(!!$response === !!$this->rrd);
+        assert($xcrow->is_response() === ($this->rrd !== null));
 
-        // boolean parameters
-        $qreq_delete = friendly_boolean($qreq->delete);
+        if ($this->jbody !== null) {
+            $req = $this->req_from_json($this->jbody, $crow);
+            $review_token = $this->jbody->review_token ?? $qreq->review_token;
+        } else {
+            $req = $this->req_from_qreq($qreq, $crow);
+            $review_token = $qreq->review_token;
+        }
+        if ($req === null) {
+            return null;
+        }
 
-        // request skeleton
+        return $this->finish_post($xcrow, $req, $review_token);
+    }
+
+    /** @param ?CommentInfo $crow
+     * @return ?array<string,mixed> */
+    private function req_from_qreq(Qrequest $qreq, $crow) {
         $req = [
             "visibility" => $qreq->visibility,
             "topic" => $qreq->topic,
             "submit" => $this->rrd && !friendly_boolean($qreq->draft),
             "blind" => friendly_boolean($qreq->blind)
         ];
-
         if (friendly_boolean($qreq->delete)) {
             $req["text"] = false;
             $req["docs"] = [];
-        } else {
-            $req["text"] = rtrim(cleannl((string) $qreq->text));
-            if (!$this->rrd) {
-                $req["tags"] = $qreq->tags;
-            }
-
-            // attachments in request
-            $req["docs"] = Attachments_PaperOption::parse_qreq_prefix(
-                $this->prow, $qreq, "attachment", DTYPE_COMMENT,
-                $crow ? $crow->attachments()->as_list() : [],
-                $this
-            );
-            foreach ($req["docs"] as $doc) {
-                if ($doc->paperStorageId === 0 && !$doc->save()) {
-                    $this->status = 400;
-                    $this->error_at(null, "<0>Error uploading attachment");
-                    return null;
-                }
-            }
+            return $req;
         }
 
-        return $this->finish_post($xcrow, $req, $qreq->review_token);
+        $req["text"] = rtrim(cleannl((string) $qreq->text));
+        if (!$this->rrd) {
+            $req["tags"] = $qreq->tags;
+        }
+
+        // attachments in request
+        $descriptors = Attachments_PaperOption::parse_qreq_prefix(
+            $this->prow, $qreq, "attachment", DTYPE_COMMENT,
+            $crow ? $crow->attachments()->as_list() : [],
+            $this
+        );
+        if (($docs = $this->import_docs($descriptors)) === null) {
+            return null;
+        }
+        $req["docs"] = $docs;
+        return $req;
+    }
+
+    /** @param object $jp
+     * @param ?CommentInfo $crow
+     * @return ?array<string,mixed> */
+    private function req_from_json($jp, $crow) {
+        $req = [
+            "visibility" => $jp->visibility ?? null,
+            "topic" => $jp->topic ?? null,
+            "submit" => $this->rrd && !friendly_boolean($jp->draft ?? null),
+            "blind" => friendly_boolean($jp->blind ?? null)
+        ];
+        if (friendly_boolean($jp->delete ?? null)) {
+            $req["text"] = false;
+            $req["docs"] = [];
+            return $req;
+        }
+
+        $req["text"] = isset($jp->text) ? rtrim(cleannl((string) $jp->text)) : "";
+        if (!$this->rrd && isset($jp->tags)) {
+            $req["tags"] = is_array($jp->tags) ? join(" ", $jp->tags) : $jp->tags;
+        }
+
+        // attachments in request
+        $docs = $this->import_docs_json($jp, $crow);
+        if ($docs === null) {
+            return null;
+        }
+        $req["docs"] = $docs;
+        return $req;
+    }
+
+    /** Interpret a JSON `docs` value: a missing or `null` key retains the
+     * comment's existing attachments, `false` clears them, and an explicit list
+     * is authoritative (`docid` retains an existing attachment;
+     * `content`/`content_base64`/`content_file` uploads a new one).
+     * @param object $jp
+     * @param ?CommentInfo $crow
+     * @return ?list<DocumentInfo> */
+    private function import_docs_json($jp, $crow) {
+        if (!isset($jp->docs)) {
+            // absent or null: keep the existing attachments
+            return $crow ? $crow->attachments()->as_list() : [];
+        } else if ($jp->docs === false) {
+            return [];
+        }
+        return $this->import_docs(is_array($jp->docs) ? $jp->docs : [$jp->docs]);
+    }
+
+    /** Run document descriptors—form `DocumentInfo`s from `parse_qreq_prefix`, or
+     * JSON `docs` objects—through a `DocumentImporter`, which builds/retains and
+     * stores each and reports errors at the `docs` field.
+     * @param list<int|object> $descriptors
+     * @return ?list<DocumentInfo> */
+    private function import_docs($descriptors) {
+        $di = (new DocumentImporter($this->prow, DTYPE_COMMENT, 0, $this, "docs"))
+            ->on_import([$this, "on_document_import"]);
+        $docs = [];
+        foreach ($descriptors as $dj) {
+            if (($doc = $di->upload_document($dj))) {
+                $docs[] = $doc;
+            } else {
+                $this->status = 400;
+                return null;
+            }
+        }
+        return $docs;
+    }
+
+    /** A `DocumentImporter` on-import callback resolving a comment attachment's
+     * `content_file` reference against the ZIP archive or the `json`-form upload.
+     * @param object $docj
+     * @param int $dt
+     * @param DocumentImporter $importer
+     * @return ?bool */
+    function on_document_import($docj, $dt, $importer) {
+        return Paper_API::apply_content_file($docj, $importer, $this->ziparchive, $this->ziparchive_docdir, $this->attachment_qreq);
     }
 
     /** Shared save path for the form and JSON variants.
@@ -520,12 +711,12 @@ class Comment_API extends MessageSet {
         try {
             if ($qreq->is_getlike()) {
                 if ($mode === self::M_ONE) {
-                    $jr = (new Comment_API($user, $prow, $qreq))->run_get_one($qreq);
+                    $jr = (new Comment_API($user, $prow))->run_get_one($qreq);
                 } else {
                     $jr = self::run_get_multi($user, $qreq, $prow);
                 }
             } else {
-                $jr = (new Comment_API($user, $prow, $qreq))->run_post($qreq);
+                $jr = (new Comment_API($user, $prow))->run_post($qreq);
             }
         } catch (JsonResult $jrex) {
             $jr = $jrex;
