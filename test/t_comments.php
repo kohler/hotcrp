@@ -98,6 +98,7 @@ class Comments_Tester {
         xassert(!$j->ok);
         xassert_match($j->message_list[0]->message, '/concurrent/');
         xassert_eqq($j->conflict, true);
+        xassert_eqq($j->valid, false);
         xassert(is_object($j->comment));
         xassert_eqq($j->comment->text, "Hello");
 
@@ -870,6 +871,178 @@ class Comments_Tester {
         $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Change body 2", "visibility" => "pc", "tags" => "hot"], $paper3);
         xassert($j->ok);
         xassert_eqq($last_change(), "Comment {$cid} edited: tags");
+
+        MailChecker::clear();
+    }
+
+    // The API response reports `change_list`, the same per-field diff that the
+    // activity log names, computed by CommentStatus.
+    function test_comment_change_list() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // a new comment is a creation, not a set of field changes: no text or
+        // visibility in the change list, and the initial log names no fields
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "CL body", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        xassert(isset($j->change_list));
+        xassert_eqq($j->change_list, []);
+        $cid = (int) $j->comment->cid;
+        $create_log = $this->conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+            $paper3->paperId, "Comment {$cid} %");
+        xassert(!!$create_log);
+        xassert(strpos($create_log, ":") === false);
+
+        // visibility-only edit
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "CL body", "visibility" => "pc"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->change_list, ["visibility"]);
+
+        // text-only edit
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "CL body 2", "visibility" => "pc"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->change_list, ["text"]);
+
+        // tags-only edit
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "CL body 2", "visibility" => "pc", "tags" => "hot"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->change_list, ["tags"]);
+
+        // an unchanged re-save reports no changes
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "CL body 2", "visibility" => "pc", "tags" => "hot"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->change_list, []);
+
+        // delete
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["delete"]);
+
+        MailChecker::clear();
+    }
+
+    // `valid` is true only when a modification is actually committed; failed
+    // saves report `"valid": false`.
+    function test_comment_valid() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // a successful save is valid and committed
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Valid body", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        $cid = (int) $j->comment->cid;
+
+        // refusing to save an empty new comment is not valid
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => ""], $paper3);
+        xassert(!$j->ok);
+        xassert_eqq($j->valid, false);
+
+        // an unchanged re-save is still valid (it committed the requested state)
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Valid body", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, []);
+
+        // GET responses carry no `valid` field
+        $j = call_api("comment", $this->u_chair, ["c" => (string) $cid], $paper3);
+        xassert($j->ok);
+        xassert(!isset($j->valid));
+
+        MailChecker::clear();
+    }
+
+    // `dry_run` validates a modification and reports `valid`/`change_list`
+    // without committing anything or returning a `comment` object.
+    function test_comment_dry_run() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // dry-run create: valid, but nothing is saved
+        $before = $this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=?", $paper3->paperId);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Dry body", "visibility" => "rev", "dry_run" => 1], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, []);
+        xassert(!isset($j->comment));
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=?", $paper3->paperId), $before);
+
+        // a real comment to edit/delete
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Real body", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        // dry-run edit: reports the change but does not apply it
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Real body", "visibility" => "pc", "dry_run" => 1], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["visibility"]);
+        xassert(!isset($j->comment));
+        // the stored comment keeps its original visibility
+        $cmt = $paper3->fetch_comments("commentId={$cid}")[0];
+        xassert_eqq($cmt->unparse_json($this->u_chair)->visibility, "rev");
+
+        // dry-run delete: reports `["delete"]` but the comment remains
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1, "dry_run" => 1], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["delete"]);
+        xassert(!isset($j->comment));
+        xassert(!!$paper3->fetch_comments("commentId={$cid}"));
+
+        // a real delete afterward still works (state was left clean)
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["delete"]);
+        xassert(!$paper3->fetch_comments("commentId={$cid}"));
+
+        // a dry-run of an invalid (empty) comment is not valid
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "", "dry_run" => 1], $paper3);
+        xassert(!$j->ok);
+        xassert_eqq($j->valid, false);
+
+        MailChecker::clear();
+    }
+
+    // `if_unmodified_since` guards an edit against a concurrent change. A stale
+    // (or `0`) precondition rejects the edit as a `conflict`, keyed to the
+    // `if_unmodified_since` field, and returns the server's current version.
+    function test_comment_if_unmodified_since() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "IUS body", "visibility" => "rev"], $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $mod = $j->comment->modified_at;
+        xassert(is_int($mod));
+
+        // a stale precondition rejects the edit as a conflict
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "IUS changed", "visibility" => "rev", "if_unmodified_since" => $mod - 1], $paper3);
+        xassert(!$j->ok);
+        xassert_eqq($j->conflict, true);
+        xassert_eqq($j->valid, false);
+        $keyed = false;
+        foreach ($j->message_list as $mi) {
+            $keyed = $keyed || ($mi->field ?? null) === "if_unmodified_since";
+        }
+        xassert($keyed);
+        // the comment was not changed; the response carries the server version
+        xassert_eqq($j->comment->text, "IUS body");
+        xassert_eqq(($paper3->fetch_comments("commentId={$cid}"))[0]->content(), "IUS body");
+
+        // `if_unmodified_since=0` also rejects editing an existing comment
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "IUS zero", "visibility" => "rev", "if_unmodified_since" => 0], $paper3);
+        xassert(!$j->ok);
+        xassert_eqq($j->conflict, true);
+
+        // a current precondition allows the edit
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "IUS ok", "visibility" => "rev", "if_unmodified_since" => $mod], $paper3);
+        xassert($j->ok);
+        xassert(!isset($j->conflict));
+        xassert_eqq($j->comment->text, "IUS ok");
 
         MailChecker::clear();
     }

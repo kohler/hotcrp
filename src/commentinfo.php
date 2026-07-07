@@ -1065,10 +1065,11 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
     }
 
     /** Persist this comment's registered property and attachment changes to the
-     * database, assign its ordinal, and write the activity log. Does not check
-     * permissions, recompute automatic tags, or send notifications.
+     * database and assign its ordinal. Does not write the activity log (that is
+     * CommentStatus's job, which owns the change list), check permissions,
+     * recompute automatic tags, or send notifications.
      * @return bool */
-    function save(Contact $acting_user) {
+    function save() {
         $docs_differ = $this->docs_changed();
         if (empty($this->_old_prop) && !$docs_differ) {
             return true;
@@ -1109,40 +1110,6 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
         if ($this->ordinal_missing()) {
             $this->save_ordinal();
         }
-
-        // log
-        $ctype = $this->commentType;
-        $log = $this->logid();
-        if (($ctype & self::CT_DRAFT) === 0
-            && (!$this->commentId || ($this->commentType & self::CT_DRAFT) !== 0)) {
-            $log .= " submitted";
-        } else {
-            $log .= $this->commentId ? " edited" : " started";
-            if (($ctype & self::CT_DRAFT) !== 0) {
-                $log .= " draft";
-            }
-        }
-        $ch = [];
-        if ($this->commentId
-            && (array_key_exists("comment", $this->_old_prop)
-                || array_key_exists("commentOverflow", $this->_old_prop))) {
-            $ch[] = "text";
-        }
-        if ($this->commentId
-            && array_key_exists("commentType", $this->_old_prop)
-            && ($this->commentType | self::CT_DRAFT) !== ($this->_old_prop["commentType"] | self::CT_DRAFT)) {
-            $ch[] = "visibility";
-        }
-        if (array_key_exists("commentTags", $this->_old_prop)) {
-            $ch[] = "tags";
-        }
-        if ($docs_differ) {
-            $ch[] = "attachments";
-        }
-        if (!empty($ch)) {
-            $log .= ": " . join(", ", $ch);
-        }
-        $acting_user->log_activity_for($this->contactId ? : $acting_user->contactId, $log, $this->paperId);
 
         // document links
         if ($docs_differ) {

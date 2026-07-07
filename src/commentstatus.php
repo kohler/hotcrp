@@ -31,6 +31,8 @@ class CommentStatus extends MessageSet {
     private $_no_autosearch = false;
     /** @var list<MentionPhrase> */
     private $_desired_mentions = [];
+    /** @var array<string,true> */
+    private $_diffs = [];
 
     const SSF_PREPARED = 1;
     const SSF_SAVED = 2;
@@ -118,7 +120,11 @@ class CommentStatus extends MessageSet {
         if ($text === false) {
             $this->_status |= self::SSF_DELETE;
             // deleting a nonexistent comment is a hard no-op
-            return $crow->commentId !== 0;
+            if ($crow->commentId === 0) {
+                return false;
+            }
+            $this->_diffs = ["delete" => true];
+            return true;
         }
 
         $old_ctype = $crow->base_prop("commentType");
@@ -194,7 +200,41 @@ class CommentStatus extends MessageSet {
         }
 
         $this->_has_change = $crow->prop_changed() || $crow->docs_changed();
+        $this->_compute_diffs();
         return true;
+    }
+
+    /** Compute the change list from the staged (but not yet committed) property
+     * diff, so `change_list()` is available before `save()` — e.g. for a
+     * dry run. `commit_prop`/`abort_prop` would clobber these prop diffs, which
+     * is why they are captured here into CommentStatus. */
+    private function _compute_diffs() {
+        $crow = $this->crow;
+        // text and visibility are per-field diffs of an existing comment; a
+        // newly created comment is not a set of changes, so they are omitted
+        $editing = $crow->commentId !== 0;
+        $diffs = [];
+        if ($editing
+            && ($crow->prop_changed("comment") || $crow->prop_changed("commentOverflow"))) {
+            $diffs["text"] = true;
+        }
+        if ($editing
+            && $crow->prop_changed("commentType")
+            && (($crow->commentType ^ $crow->base_prop("commentType")) & CommentInfo::CTM_TOPIC_NONREVIEW) !== 0) {
+            $diffs["thread"] = true;
+        }
+        if ($editing
+            && $crow->prop_changed("commentType")
+            && (($crow->commentType ^ $crow->base_prop("commentType")) & CommentInfo::CTM_VIS) !== 0) {
+            $diffs["visibility"] = true;
+        }
+        if ($crow->prop_changed("commentTags")) {
+            $diffs["tags"] = true;
+        }
+        if ($crow->docs_changed()) {
+            $diffs["attachments"] = true;
+        }
+        $this->_diffs = $diffs;
     }
 
 
@@ -210,28 +250,60 @@ class CommentStatus extends MessageSet {
 
     /** @return bool */
     private function _commit() {
-        // CommentInfo::save persists the row, ordinal, attachments, and log;
-        // the orchestrator owns automatic-tag recompute (and notifications).
-        $ok = $this->crow->save($this->user);
-        if ($ok) {
-            if ($this->_has_change && !$this->_no_autosearch) {
+        // CommentInfo::save persists the row, ordinal, and attachments; the
+        // orchestrator owns the change list, activity log, automatic-tag
+        // recompute, and notifications.
+        if (!$this->crow->save()) {
+            return false;
+        }
+        if ($this->_has_change) {
+            // record the change list and log while the property diff is still
+            // live — commit_prop() clears it below
+            $this->_log_save();
+            if (!$this->_no_autosearch) {
                 $this->conf->update_automatic_tags($this->crow->prow, SearchTerm::ABOUT_COMMENTS);
             }
-            // mark clean now that the staged changes are persisted; notify_followers
-            // reads only live properties, so it is unaffected
-            $this->crow->commit_prop();
         }
-        return $ok;
+        // mark clean now that the staged changes are persisted
+        $this->crow->commit_prop();
+        return true;
+    }
+
+    /** Write the save activity log, naming the change list captured at prepare
+     * time. Runs after CommentInfo::save so `commentId`/ordinal are assigned. */
+    private function _log_save() {
+        $crow = $this->crow;
+        $ctype = $crow->commentType;
+        $log = $crow->logid();
+        if (($ctype & CommentInfo::CT_DRAFT) === 0
+            && (!$crow->commentId || ($ctype & CommentInfo::CT_DRAFT) !== 0)) {
+            $log .= " submitted";
+        } else {
+            $log .= $crow->commentId ? " edited" : " started";
+            if (($ctype & CommentInfo::CT_DRAFT) !== 0) {
+                $log .= " draft";
+            }
+        }
+        if (!empty($this->_diffs)) {
+            $log .= ": " . join(", ", array_keys($this->_diffs));
+        }
+        $this->user->log_activity_for($crow->contactId ? : $this->user->contactId, $log, $crow->paperId);
     }
 
     /** @return bool */
     private function _commit_delete() {
         $ok = $this->crow->delete($this->user);
-        if ($ok
-            && !$this->_no_autosearch) {
+        if ($ok && !$this->_no_autosearch) {
             $this->conf->update_automatic_tags($this->crow->prow, SearchTerm::ABOUT_COMMENTS);
         }
         return $ok;
+    }
+
+    /** The fields changed by the committed save (or `["delete"]`). Meaningful
+     * only after execute_save.
+     * @return list<string> */
+    function change_list() {
+        return array_keys($this->_diffs);
     }
 
     /** Discard staged changes without writing them. */

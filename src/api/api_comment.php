@@ -18,7 +18,15 @@ class Comment_API extends MessageSet {
     /** @var int */
     private $status = 200;
     /** @var bool */
+    private $dry_run = false;
+    /** @var bool */
     private $ok = true;
+    /** @var bool */
+    private $valid = false;
+    /** @var ?int */
+    private $if_unmodified_since;
+    /** @var ?list<string> */
+    private $change_list;
 
     // information about current request
     /** @var ?ResponseRound */
@@ -211,6 +219,14 @@ class Comment_API extends MessageSet {
             // form POST must carry comment content
             return JsonResult::make_parameter_error("text");
         }
+        $this->dry_run = friendly_boolean($qreq->dry_run) === true;
+        if (isset($qreq->if_unmodified_since)) {
+            $ius = Paper_API::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
+            if ($ius === false) {
+                return JsonResult::make_parameter_error("if_unmodified_since");
+            }
+            $this->if_unmodified_since = $ius;
+        }
 
         // find comment
         $crow = null;
@@ -259,24 +275,53 @@ class Comment_API extends MessageSet {
             return JsonResult::make_error(404, "<0>{$this->uccmttype} not found");
         }
 
+        // optimistic-concurrency precondition on an existing comment
+        if ($this->status === 200
+            && $crow
+            && $this->if_unmodified_since !== null
+            && $this->if_unmodified_since < $crow->timeModified) {
+            $this->status = self::RESPONSE_REPLACED;
+            $this->error_at("if_unmodified_since", "<5><strong>Edit conflict</strong>: The {$this->lccmttype} has changed");
+        }
+
         // check post
         if ($this->status === 200
             && $this->ok) {
             $crow = $this->do_run_post($qreq, $crow);
         }
 
-        if ($this->status === self::RESPONSE_REPLACED) {
-            // report response replacement error
-            $jr = JsonResult::make_error(200, "<0>{$this->uccmttype} was edited concurrently");
-            $jr["conflict"] = true;
-        } else {
-            $jr = new JsonResult($this->status, ["ok" => $this->ok && $this->status <= 299]);
-            if ($this->has_message()) {
-                $jr["message_list"] = $this->message_list();
-            }
+        return $this->post_result($crow);
+    }
+
+    /** Assemble the response for one processed comment. Component order mirrors
+     * `Paper_API::post_result`: `ok`, `message_list`, `dry_run`, `valid`,
+     * `change_list`, `conflict`, `comment`. (A future multi-comment upload would
+     * collect these per comment into a `status_list`, as `/papers` does.)
+     * @param ?CommentInfo $crow
+     * @return JsonResult */
+    private function post_result($crow) {
+        // an edit conflict: a concurrent edit or a failed `if_unmodified_since`
+        $conflict = $this->status === self::RESPONSE_REPLACED;
+        if ($conflict && !$this->has_message()) {
+            $this->error_at(null, "<0>{$this->uccmttype} was edited concurrently");
         }
-        if ($crow && $crow->commentId > 0) {
-            $jr["comment"] = $crow->unparse_json($this->user);
+
+        $jr = new JsonResult($conflict ? 200 : $this->status, [
+            "ok" => !$conflict && $this->ok && $this->status <= 299,
+            "message_list" => $this->message_list()
+        ]);
+        if ($this->dry_run) {
+            $jr->content["dry_run"] = true;
+        }
+        $jr->content["valid"] = $this->valid;
+        if ($this->change_list !== null) {
+            $jr->content["change_list"] = $this->change_list;
+        }
+        if ($conflict) {
+            $jr->content["conflict"] = true;
+        }
+        if (!$this->dry_run && $crow && $crow->commentId > 0) {
+            $jr->content["comment"] = $crow->unparse_json($this->user);
         }
         return $jr;
     }
@@ -381,9 +426,27 @@ class Comment_API extends MessageSet {
             $suser = $this->conf->user_by_id($rrow->contactId);
         }
 
-        // save
+        // save (or, for a dry run, validate the change without committing)
         $cs = new CommentStatus($suser);
-        $ok = $cs->prepare_save($xcrow, $req) && $cs->execute_save();
+        $prepared = $cs->prepare_save($xcrow, $req);
+        if ($prepared) {
+            // change_list reflects what the request attempted to change, and is
+            // available before commit (so a dry run can report it)
+            $this->change_list = $cs->change_list();
+        }
+
+        if ($this->dry_run) {
+            $cs->abort_save();
+            $this->valid = $prepared;
+            if (!$prepared) {
+                $this->status = 400;
+                $this->error_at(null, "<0>Error saving comment");
+                return null;
+            }
+            return $xcrow;
+        }
+
+        $ok = $prepared && $cs->execute_save();
         if ($ok) {
             $cs->notify_followers();
         }
@@ -404,6 +467,9 @@ class Comment_API extends MessageSet {
                 return null;
             }
         }
+
+        // a valid modification was committed
+        $this->valid = true;
 
         // save success messages
         $this->append_item($this->save_success_message($xcrow));

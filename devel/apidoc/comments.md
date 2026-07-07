@@ -93,10 +93,15 @@ deletes an existing one (it is treated as `delete=1`).
 
 ## Concurrency
 
-Editing a response can collide with a concurrent edit. When that happens the
-response has `"ok": false` and a `"conflict": true` field, and the `comment`
-field holds the server’s current version of the response so the client can
-reconcile.
+An edit conflict returns `"ok": false`, `"valid": false`, and `"conflict": true`,
+with the `comment` field holding the server’s current version so the client can
+reconcile. Conflicts arise two ways:
+
+* Editing a response can collide with a concurrent edit automatically.
+* Any comment edit can be guarded explicitly with `if_unmodified_since`: pass the
+  comment’s last-known `modified_at`, and the edit is rejected—with a message
+  keyed to `if_unmodified_since`—if the comment has changed since. Pass
+  `if_unmodified_since=0` to require that the comment not already exist.
 
 ## Attachments
 
@@ -131,7 +136,24 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * param ?blind boolean: Whether the comment is anonymous, where the configuration allows a choice.
 * param ?=:attachment string: Structured attachment fields, `attachment:<n>` (see above).
 * param ?review_token string: Review token authorizing the edit, when acting through one.
-* response ?comment comment: The saved comment, absent on delete.
+* param ?if_unmodified_since string: Reject the edit if the comment has been modified since this time (a Unix timestamp, matching the comment’s `modified_at`, or `0`). See [Concurrency](#tag-comments).
+* param ?dry_run boolean: True checks input for errors, but does not save changes.
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?+valid boolean: True if and only if the modification was valid.
+
+    For a non-dry-run request, `"valid": true` also means the change was committed
+    to the database.
+
+* response ?+change_list [string]: Names of the fields the request attempted to
+  change (`text`, `visibility`, `tags`, and/or `attachments`), or `["delete"]`
+  for a delete.
+
+    Creating a comment reports an empty list, since a new comment is not a set of
+    field changes. `change_list` reflects what the request *attempted* to change,
+    so successful, failed, and dry-run requests can all return a nonempty list.
+
+* response ?conflict boolean: True when the edit was rejected by a concurrency check (see [Concurrency](#tag-comments)).
+* response ?comment comment: The saved comment, absent on delete or `dry_run`.
 
 
 # get /comments
