@@ -19,6 +19,8 @@ class Paper_API extends MessageSet {
     private $disable_users = false;
     /** @var bool */
     private $dry_run = false;
+    /** @var ?int */
+    private $if_unmodified_since;
     /** @var bool */
     private $single = false;
     /** @var ?ZipArchive */
@@ -34,6 +36,8 @@ class Paper_API extends MessageSet {
     private $papers = [];
     /** @var list<bool> */
     private $valid = [];
+    /** @var list<bool> */
+    private $conflicts = [];
     /** @var list<null|int|'new'> */
     private $pids = [];
     /** @var int */
@@ -128,6 +132,15 @@ class Paper_API extends MessageSet {
 
         // set parameters
         $this->set_post_param($qreq);
+
+        // parse single-paper precondition
+        if (isset($qreq->if_unmodified_since)) {
+            $ius = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
+            if ($ius === false) {
+                return JsonResult::make_parameter_error("if_unmodified_since");
+            }
+            $this->if_unmodified_since = $ius;
+        }
 
         // check Content-Type
         $ct = $qreq->body_content_type();
@@ -239,6 +252,35 @@ class Paper_API extends MessageSet {
         }
     }
 
+    /** Parse an `if_unmodified_since` value (a Unix timestamp or a parsable
+     * time string; `0` is valid) into a timestamp.
+     * @param int|string $v
+     * @return int|false false on a malformed value */
+    static function parse_if_unmodified_since($v, Conf $conf) {
+        if (is_int($v)) {
+            $t = $v;
+        } else if (ctype_digit($v)) {
+            $t = intval($v);
+        } else {
+            $t = $conf->parse_time($v, Conf::$now);
+        }
+        return $t === false || $t < 0 ? false : $t;
+    }
+
+    /** Fold the flat `if_unmodified_since` parameter into a paper's
+     * `status.if_unmodified_since`, so PaperStatus performs the check. It is a
+     * per-paper backup: an explicit value in the paper's own JSON wins. Applied
+     * to every paper of a single, multi, or match request.
+     * @param object $jp */
+    private function apply_if_unmodified_since($jp) {
+        if ($this->if_unmodified_since !== null) {
+            $jp->status = $jp->status ?? (object) [];
+            if (is_object($jp->status) && !isset($jp->status->if_unmodified_since)) {
+                $jp->status->if_unmodified_since = $this->if_unmodified_since;
+            }
+        }
+    }
+
 
     /** @return bool */
     private function post_form_is_json(Qrequest $qreq) {
@@ -279,6 +321,10 @@ class Paper_API extends MessageSet {
         }
 
         $this->single = true;
+        if ($this->if_unmodified_since !== null
+            && $qreq["status:if_unmodified_since"] === null) {
+            $qreq->set("status:if_unmodified_since", (string) $this->if_unmodified_since);
+        }
         $ps = $this->paper_status();
         $ok = $ps->prepare_save_paper_web($qreq, $prow);
         $this->execute_save($ok, $ps);
@@ -292,6 +338,7 @@ class Paper_API extends MessageSet {
             $parg = intval($parg);
         }
         if ($this->set_json_landmark(0, $jp, $parg)) {
+            $this->apply_if_unmodified_since($jp);
             $ps = $this->paper_status();
             $ok = $ps->prepare_save_paper_json($jp, $prow);
             $this->execute_save($ok, $ps);
@@ -307,6 +354,7 @@ class Paper_API extends MessageSet {
         $this->single = false;
         foreach ($jps as $i => $jp) {
             if ($this->set_json_landmark($i, $jp, null)) {
+                $this->apply_if_unmodified_since($jp);
                 $ps = $this->paper_status();
                 $ok = $ps->prepare_save_paper_json($jp);
                 $this->execute_save($ok, $ps);
@@ -324,6 +372,7 @@ class Paper_API extends MessageSet {
             return JsonResult::make_error(400, "<0>Unexpected `pid`");
         }
         $this->single = false;
+        $this->apply_if_unmodified_since($jp);
         list($srch, $prows) = self::make_search($this->user, $qreq);
         $i = 0;
         foreach ($prows as $prow) {
@@ -379,6 +428,7 @@ class Paper_API extends MessageSet {
         }
         $this->pids[] = $ps->saved_pid() ?? "new";
         $this->valid[] = $ok;
+        $this->conflicts[] = $ps->has_error_at("status:if_unmodified_since");
     }
 
     /** @param PaperStatus $ps */
@@ -398,6 +448,7 @@ class Paper_API extends MessageSet {
         $this->papers[] = null;
         $this->pids[] = null;
         $this->valid[] = false;
+        $this->conflicts[] = false;
     }
 
     /** @return JsonResult */
@@ -414,6 +465,9 @@ class Paper_API extends MessageSet {
         if ($this->single) {
             $jr->content["valid"] = $this->valid[0];
             $jr->content["change_list"] = $this->change_lists[0];
+            if ($this->conflicts[0]) {
+                $jr->content["conflict"] = true;
+            }
             if ($this->pids[0] !== null) {
                 $jr->content["pid"] = $this->pids[0];
             }
@@ -427,6 +481,9 @@ class Paper_API extends MessageSet {
                     "valid" => $this->valid[$i],
                     "change_list" => $this->change_lists[$i]
                 ];
+                if ($this->conflicts[$i]) {
+                    $u["conflict"] = true;
+                }
                 if ($this->pids[$i] !== null) {
                     $u["pid"] = $this->pids[$i];
                 }
@@ -641,14 +698,8 @@ class Paper_API extends MessageSet {
 
         $if_unmodified_since = null;
         if (isset($qreq->if_unmodified_since)) {
-            if (is_int($qreq->if_unmodified_since)) {
-                $if_unmodified_since = $qreq->if_unmodified_since;
-            } else if (ctype_digit($qreq->if_unmodified_since)) {
-                $if_unmodified_since = intval($qreq->if_unmodified_since);
-            } else {
-                $if_unmodified_since = $this->conf->parse_time($qreq->if_unmodified_since, Conf::$now);
-            }
-            if ($if_unmodified_since === false || $if_unmodified_since < 0) {
+            $if_unmodified_since = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
+            if ($if_unmodified_since === false) {
                 return JsonResult::make_parameter_error("if_unmodified_since");
             }
         }
@@ -657,10 +708,12 @@ class Paper_API extends MessageSet {
             return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete {$this->conf->snouns[1]}");
         }
 
+        $conflict = $if_unmodified_since !== null
+            && $if_unmodified_since < $prow->timeModified;
         $this->change_lists[] = ["delete"];
         $this->pids[] = $prow->paperId;
-        if ($if_unmodified_since !== null
-            && $if_unmodified_since < $prow->timeModified) {
+        $this->conflicts[] = $conflict;
+        if ($conflict) {
             $this->error_at("if_unmodified_since", $this->conf->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
             $this->valid[] = false;
         } else if ($this->dry_run) {

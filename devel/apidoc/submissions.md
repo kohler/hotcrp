@@ -116,6 +116,11 @@ existing submission, set the submission JSON’s `status`.`if_unmodified_since` 
 
     * oneof body
 * param dry_run boolean: True checks input for errors, but does not save changes
+* param ?if_unmodified_since string: Reject the modification if the submission has
+  been modified since this time (a Unix timestamp, or `0`). This is a per-paper
+  backup for the submission JSON’s `status.if_unmodified_since`; an explicit value
+  in a submission’s JSON takes precedence. In a multi-submission request it
+  applies to every submission that does not set its own value.
 * param disable_users boolean: True disables any newly-created users.
 
     When an administrator creates submissions on behalf of other people, HotCRP
@@ -152,6 +157,8 @@ existing submission, set the submission JSON’s `status`.`if_unmodified_since` 
     *attempted* to change, so successful, failed, and dry-run requests can all
     return a nonempty list.
 
+* response ?conflict boolean: True when the modification was rejected by an
+  `if_unmodified_since` edit-conflict check.
 * response ?paper paper: The modified submission object.
 
     * condition valid
@@ -180,6 +187,8 @@ Delete the submission specified by `p`, a submission ID.
 * response ?dry_run boolean: True for `dry_run` requests
 * response valid boolean: True if the delete request was valid
 * response change_list [string]: Always `["delete"]`.
+* response ?conflict boolean: True when the delete was rejected by the
+  `if_unmodified_since` edit-conflict check.
 * badge featured
 * badge admin
 
@@ -297,7 +306,8 @@ applied to all papers returned by the `q` search query.
 * response ?+status_list [update_status]: Per-submission results, one entry per input object.
 
     For array input, `status_list` has the same length and order as the input:
-    entry *i* reports the `valid` flag, `change_list`, and `pid` of update *i*.
+    entry *i* reports the `valid` flag, `change_list`, `pid`, and (for an
+    edit-conflict rejection) `conflict` of update *i*.
 
 * badge featured
 * badge siteadmin

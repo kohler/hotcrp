@@ -1011,6 +1011,10 @@
                     },
                     "dry_run": {
                         "type": "boolean"
+                    },
+                    "conflict": {
+                        "type": "boolean",
+                        "description": "True when this update was rejected by an if_unmodified_since edit-conflict check"
                     }
                 }
             },

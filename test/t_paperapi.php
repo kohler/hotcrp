@@ -241,6 +241,86 @@ class PaperAPI_Tester {
         $qreq = TestQreq::post_json(["pid" => 201, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->valid, false);
+        xassert_eqq($jr->conflict, true);
+    }
+
+    // The flat `if_unmodified_since` parameter is an alias for the JSON
+    // `status.if_unmodified_since` field, and edit conflicts report `conflict`.
+    function test_if_unmodified_since_param() {
+        $qreq = TestQreq::post_json(["pid" => 202, "title" => "IUS", "abstract" => "A", "authors" => [["name" => "Ann Ug", "email" => "ann@_.com"]]]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        $mod = (int) $this->conf->fetch_ivalue("select timeModified from Paper where paperId=202");
+        xassert($mod > 0);
+
+        // a stale flat precondition is an edit conflict
+        $qreq = TestQreq::post_json(["pid" => 202, "title" => "IUS 2"], ["if_unmodified_since" => $mod - 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->valid, false);
+        xassert_eqq($jr->conflict, true);
+
+        // `if_unmodified_since=0` also conflicts on an existing submission
+        $qreq = TestQreq::post_json(["pid" => 202, "title" => "IUS 3"], ["if_unmodified_since" => 0]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->conflict, true);
+
+        // the flat parameter works for a form-encoded POST too
+        $qreq = TestQreq::post(["p" => 202, "title" => "IUS form", "if_unmodified_since" => $mod - 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->conflict, true);
+
+        // a current precondition allows the edit
+        $qreq = TestQreq::post_json(["pid" => 202, "title" => "IUS 4"], ["if_unmodified_since" => $mod]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert(!isset($jr->conflict));
+    }
+
+    // For a multi-submission request the flat `if_unmodified_since` is a
+    // per-paper backup, overridable by each paper's `status.if_unmodified_since`.
+    // Conflicts are reported per item in `status_list` (absent or true); there
+    // is no top-level aggregate.
+    function test_if_unmodified_since_multi() {
+        $qreq = TestQreq::post_json([
+            ["pid" => 210, "title" => "M1", "abstract" => "A", "authors" => [["name" => "Al Fa", "email" => "alfa@_.com"]]],
+            ["pid" => 211, "title" => "M2", "abstract" => "A", "authors" => [["name" => "Be Ta", "email" => "beta@_.com"]]]
+        ]);
+        $jr = call_api("=papers", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert(!isset($jr->conflict));
+        xassert_eqq($jr->status_list[0]->valid, true);
+        xassert(!isset($jr->status_list[0]->conflict));
+        xassert_eqq($jr->status_list[1]->valid, true);
+        $mod210 = (int) $this->conf->fetch_ivalue("select timeModified from Paper where paperId=210");
+        xassert($mod210 > 0);
+
+        // flat `if_unmodified_since=0` conflicts every paper as a per-paper backup
+        $qreq = TestQreq::post_json([
+            ["pid" => 210, "title" => "M1x"],
+            ["pid" => 211, "title" => "M2x"]
+        ], ["if_unmodified_since" => 0]);
+        $jr = call_api("=papers", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert(!isset($jr->conflict));
+        xassert_eqq($jr->status_list[0]->valid, false);
+        xassert_eqq($jr->status_list[0]->conflict, true);
+        xassert_eqq($jr->status_list[1]->valid, false);
+        xassert_eqq($jr->status_list[1]->conflict, true);
+
+        // a per-paper `status.if_unmodified_since` overrides the flat backup
+        $qreq = TestQreq::post_json([
+            ["pid" => 210, "title" => "M1y", "status" => ["if_unmodified_since" => $mod210]],
+            ["pid" => 211, "title" => "M2y"]
+        ], ["if_unmodified_since" => 0]);
+        $jr = call_api("=papers", $this->u_chair, $qreq);
+        xassert_eqq($jr->status_list[0]->valid, true);
+        xassert(!isset($jr->status_list[0]->conflict));
+        xassert_eqq($jr->status_list[1]->valid, false);
+        xassert_eqq($jr->status_list[1]->conflict, true);
     }
 
     function test_get_sort() {
