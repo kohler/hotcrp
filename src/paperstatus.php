@@ -13,10 +13,12 @@ final class PaperStatus extends MessageSet {
     private $ignore_errors = false;
     /** @var bool */
     private $disable_users = false;
-    /** @var bool */
-    private $notify = true;
-    /** @var bool */
-    private $notify_authors = true;
+    /** @var bool
+     * @readonly */
+    public $notify = true;
+    /** @var bool
+     * @readonly */
+    public $notify_authors = true;
     /** @var ?string */
     private $notify_reason;
     /** @var ?bool */
@@ -111,14 +113,16 @@ final class PaperStatus extends MessageSet {
     }
 
     /** @param bool $x
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_notify($x) {
         $this->notify = $x;
         return $this;
     }
 
     /** @param bool $x
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_notify_authors($x) {
         $this->notify_authors = $x;
         return $this;
@@ -1662,6 +1666,14 @@ final class PaperStatus extends MessageSet {
         $this->prow = null;
         $this->_docs = null;
         return true;
+    }
+
+    /** Return true if this status's user administers the submission being saved,
+     * as resolved by `prepare_save_*`. Meaningful after preparation and until
+     * `execute_save()` completes; false when no paper has been resolved.
+     * @return bool */
+    function can_user_manage() {
+        return $this->prow && $this->user->can_manage($this->prow);
     }
 
     /** @return PaperInfo */

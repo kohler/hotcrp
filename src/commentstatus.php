@@ -2,19 +2,17 @@
 // commentstatus.php -- HotCRP helper for saving comments
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
-class CommentStatus extends MessageSet {
+final class CommentStatus extends MessageSet {
     /** @var Conf
      * @readonly */
     public $conf;
     /** @var Contact
      * @readonly */
-    public $user;          // acting user (may lack a contactId)
+    private $viewer;        // acting/viewing user (may lack a contactId)
     /** @var ?Contact */
-    public $suser;         // resolved commenter (via review-accept capability)
+    private $user;          // resolved commenter (via review-accept capability)
     /** @var bool */
     private $notify = true;
-    /** @var bool */
-    private $notify_authors = true;
     /** @var ?string */
     private $notify_reason;
     /** @var ?CommentInfo */
@@ -39,22 +37,15 @@ class CommentStatus extends MessageSet {
     const SSF_ABORTED = 4;
     const SSF_DELETE = 8;
 
-    function __construct(Contact $user) {
-        $this->conf = $user->conf;
-        $this->user = $user;
+    function __construct(Contact $viewer) {
+        $this->conf = $viewer->conf;
+        $this->viewer = $viewer;
     }
 
     /** @param bool $x
      * @return $this */
     function set_notify($x) {
         $this->notify = $x;
-        return $this;
-    }
-
-    /** @param bool $x
-     * @return $this */
-    function set_notify_authors($x) {
-        $this->notify_authors = $x;
         return $this;
     }
 
@@ -80,6 +71,15 @@ class CommentStatus extends MessageSet {
         return $this->crow;
     }
 
+    /** Return true if this status's user administers the comment's submission.
+     * Meaningful once `prepare_save()` has staged a comment.
+     * @return bool */
+    function can_user_manage() {
+        return $this->crow
+            && $this->crow->prow
+            && $this->viewer->can_manage($this->crow->prow);
+    }
+
 
     /** Stage the changes implied by `$req` onto `$crow`. No database writes.
      * @param array{text?:string|false,docs?:list<DocumentInfo>,tags?:?string,no_autosearch?:bool} $req
@@ -88,16 +88,16 @@ class CommentStatus extends MessageSet {
         assert(($this->_status & self::SSF_PREPARED) === 0);
         $this->crow = $crow;
 
-        // resolve acting user to the commenter (e.g. via review-accept link)
-        $suser = $this->user;
-        if (!$suser->contactId) {
-            $suser = $this->user->reviewer_capability_user($crow->paperId);
+        // resolve the acting user to the commenter (e.g. via review-accept link)
+        $user = $this->viewer;
+        if (!$user->contactId) {
+            $user = $this->viewer->reviewer_capability_user($crow->paperId);
         }
-        if (!$suser || !$suser->contactId) {
+        if (!$user || !$user->contactId) {
             error_log("Comment::save({$crow->paperId}): no such user");
             return false;
         }
-        $this->suser = $suser;
+        $this->user = $user;
 
         if (!$this->_stage($req)) {
             return false;
@@ -110,7 +110,7 @@ class CommentStatus extends MessageSet {
      * @return bool */
     private function _stage($req) {
         $crow = $this->crow;
-        $user = $this->suser;
+        $user = $this->user;
         assert($crow->paperId > 0 && (!$crow->prow || $crow->prow->paperId === $crow->paperId));
         $crow->notifications = [];
         $this->_no_autosearch = $req["no_autosearch"] ?? false;
@@ -287,12 +287,12 @@ class CommentStatus extends MessageSet {
         if (!empty($this->_diffs)) {
             $log .= ": " . join(", ", array_keys($this->_diffs));
         }
-        $this->user->log_activity_for($crow->contactId ? : $this->user->contactId, $log, $crow->paperId);
+        $this->viewer->log_activity_for($crow->contactId ? : $this->viewer->contactId, $log, $crow->paperId);
     }
 
     /** @return bool */
     private function _commit_delete() {
-        $ok = $this->crow->delete($this->user);
+        $ok = $this->crow->delete($this->viewer);
         if ($ok && !$this->_no_autosearch) {
             $this->conf->update_automatic_tags($this->crow->prow, SearchTerm::ABOUT_COMMENTS);
         }
@@ -326,7 +326,7 @@ class CommentStatus extends MessageSet {
             return;
         }
         $crow = $this->crow;
-        $user = $this->suser;
+        $user = $this->user;
         if ($this->_displayed
             && $crow->commentId
             && !empty($this->_desired_mentions)) {

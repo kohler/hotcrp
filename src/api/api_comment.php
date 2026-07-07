@@ -20,6 +20,8 @@ class Comment_API extends MessageSet {
     /** @var bool */
     private $dry_run = false;
     /** @var bool */
+    private $notify = true;
+    /** @var bool */
     private $ok = true;
     /** @var bool */
     private $valid = false;
@@ -330,7 +332,8 @@ class Comment_API extends MessageSet {
             // a form POST must carry comment content
             return JsonResult::make_parameter_error("text");
         }
-        $this->dry_run = friendly_boolean($qreq->dry_run) === true;
+        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
+        $this->notify = friendly_boolean($qreq->notify) !== false;
         if (isset($qreq->if_unmodified_since)) {
             $ius = Paper_API::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
             if ($ius === false) {
@@ -620,6 +623,9 @@ class Comment_API extends MessageSet {
         // save (or, for a dry run, validate the change without committing)
         $cs = new CommentStatus($suser);
         $prepared = $cs->prepare_save($xcrow, $req);
+        // a suppression request is honored only for an administrator of the
+        // comment's submission
+        $cs->set_notify($this->notify || !$cs->can_user_manage());
         if ($prepared) {
             // change_list reflects what the request attempted to change, and is
             // available before commit (so a dry run can report it)

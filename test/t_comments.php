@@ -1497,4 +1497,36 @@ class Comments_Tester {
 
         MailChecker::clear();
     }
+
+    function test_comment_notify_off() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);
+
+        // baseline: a chair's mention comment notifies (mentionee + follower)
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "@Christian Huitema notify baseline"], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        xassert_gt(count(MailChecker::$preps), 0);
+
+        // a chair's `notify=off` suppresses all notifications for the edit
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "@Christian Huitema notify off", "notify" => "off"], $paper1);
+        xassert($j->ok);
+        MailChecker::check0();
+
+        // ... but a truthy/absent `notify` still notifies
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "@Christian Huitema notify on again"], $paper1);
+        xassert($j->ok);
+        xassert_gt(count(MailChecker::$preps), 0);
+
+        // `notify=off` is chair-only: a non-chair reviewer's request still notifies
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "@Christian Huitema reviewer notify off", "notify" => "off"], $paper1);
+        xassert($j->ok);
+        xassert_gt(count(MailChecker::$preps), 0);
+
+        MailChecker::clear();
+    }
 }

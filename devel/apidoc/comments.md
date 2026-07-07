@@ -168,6 +168,10 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * param ?review_token string: Review token authorizing the edit, when acting through one.
 * param ?if_unmodified_since string: Reject the edit if the comment has been modified since this time (a Unix timestamp, matching the comment’s `modified_at`, or `0`). See [Concurrency](#tag-comments).
 * param ?dry_run boolean: True checks input for errors, but does not save changes.
+* param ?notify boolean: False disables all email notifications for the change (mention and follower notifications). Ignored unless the caller administers the submission.
+
+    * default true
+    * badge admin
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?+valid boolean: True if and only if the modification was valid.
 

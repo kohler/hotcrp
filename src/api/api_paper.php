@@ -235,17 +235,15 @@ class Paper_API extends MessageSet {
             if (friendly_boolean($qreq->disable_users)) {
                 $this->disable_users = true;
             }
-            if (friendly_boolean($qreq->notify) === false) {
-                $this->notify = false;
-            }
             if (friendly_boolean($qreq->add_topics)) {
                 $this->conf->topic_set()->set_auto_add(true);
                 $this->conf->options()->refresh_topics();
             }
         }
-        if (friendly_boolean($qreq->notify_authors) === false) {
-            $this->notify_authors = false;
-        }
+        // these record requests to suppress notifications; whether they are
+        // honored is decided per paper (execute_save())
+        $this->notify = friendly_boolean($qreq->notify) !== false;
+        $this->notify_authors = friendly_boolean($qreq->notify_authors) !== false;
         $this->reason = $qreq->reason ?? "";
         if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun /* XXX */)) {
             $this->dry_run = true;
@@ -390,8 +388,6 @@ class Paper_API extends MessageSet {
     private function paper_status() {
         return (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
-            ->set_notify($this->notify)
-            ->set_notify_authors($this->notify_authors)
             ->set_notify_reason($this->reason)
             ->set_any_content_file(true)
             ->on_document_import([$this, "on_document_import"]);
@@ -399,6 +395,14 @@ class Paper_API extends MessageSet {
 
     /** @param PaperStatus $ps */
     private function execute_save($ok, $ps) {
+        // A `notify`/`notify_authors` suppression request is honored only for a
+        // user who administers the paper. The paper is fully resolved only once
+        // prepare has run (its id may arrive in the JSON body, not `p`), so
+        // apply the flags here. Management covers new papers too: a site chair
+        // manages any paper, an ordinary author manages none.
+        $manage = $ps->can_user_manage();
+        $ps->set_notify($this->notify || !$manage)
+            ->set_notify_authors($this->notify_authors || !$manage);
         if ($ok && !$this->dry_run) {
             $ok = $ps->execute_save();
         } else {
@@ -434,11 +438,7 @@ class Paper_API extends MessageSet {
     /** @param PaperStatus $ps */
     private function execute_change($ps) {
         $ps->log_save_activity("via API");
-        if ($this->notify) {
-            if (!$this->notify_authors
-                && !$this->user->allow_manage($ps->saved_prow())) {
-                $ps->set_notify_authors(true);
-            }
+        if ($ps->notify) {
             $ps->notify_followers();
         }
     }

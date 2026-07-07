@@ -800,4 +800,54 @@ class PaperAPI_Tester {
 
         Navigation::$http_response_code = $save_code;
     }
+
+    // `notify=off` is honored for submission administrators (not only site
+    // chairs), decided per paper via can_manage()
+    function test_paper_notify_off() {
+        // create a submitted paper with two real (enabled) contact authors
+        $qreq = TestQreq::post_json([
+            "pid" => "new", "title" => "Notify Test Paper",
+            "abstract" => "First abstract",
+            "authors" => [
+                ["name" => "Puneet Sharma", "email" => $this->u_puneet->email],
+                ["name" => "Mikael Degermark", "email" => $this->u_micke->email]
+            ],
+            "submission" => ["content" => "%PDF-2"],
+            "status" => "submitted"
+        ], ["p" => "new"]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert($jr->ok);
+        $pid = $jr->paper->pid;
+
+        // make estrin (PC, not a site chair) the paper's administrator
+        xassert_assign($this->u_chair, "action,paper,user\nadministrator,{$pid},{$this->u_estrin->email}\n");
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert(!$this->u_estrin->privChair);
+        xassert($this->u_estrin->can_manage($prow));
+
+        // baseline: an administrator's edit notifies the contact authors
+        MailChecker::clear();
+        $qreq = TestQreq::post_json(["pid" => $pid, "abstract" => "Second abstract"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert($jr->ok);
+        xassert_gt(count(MailChecker::$preps), 0);
+
+        // a non-chair submission administrator may suppress with notify=off
+        MailChecker::clear();
+        $qreq = TestQreq::post_json(["pid" => $pid, "abstract" => "Third abstract"], ["notify" => "off"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert($jr->ok);
+        MailChecker::check0();
+
+        // ... but an ordinary edit still notifies
+        MailChecker::clear();
+        $qreq = TestQreq::post_json(["pid" => $pid, "abstract" => "Fourth abstract"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert($jr->ok);
+        xassert_gt(count(MailChecker::$preps), 0);
+
+        // clean up the administrator assignment
+        xassert_assign($this->u_chair, "action,paper,user\nadministrator,{$pid},none\n");
+        MailChecker::clear();
+    }
 }
