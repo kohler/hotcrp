@@ -187,6 +187,7 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
     so successful, failed, and dry-run requests can all return a nonempty list.
 
 * response ?conflict boolean: True when the edit was rejected by a concurrency check (see [Concurrency](#tag-comments)).
+* response ?cid cid: The affected comment’s ID: the new ID for a created comment, or the existing ID for an edit. Absent when deleting, or on a dry-run creation.
 * response ?comment comment: The saved comment, absent on delete or `dry_run`.
 
 
@@ -216,6 +217,60 @@ an error.
 
     * default true
 * response ?comments [comment]: The matching comment objects.
+
+
+# post /comments
+
+> Create, modify, or delete multiple comments
+
+Create, modify, or delete comments on multiple submissions in one request.
+
+Unlike [`POST /{p}/comment`](#post-comment), this endpoint is not scoped to a
+single submission: each comment object carries its own `pid`, so a batch may span
+submissions. There is no site-chair restriction—each comment is authorized
+independently, exactly as for `POST /{p}/comment`.
+
+## Modify comments independently
+
+The request body is an *array* of [comment objects](#tag-comments) (the same
+shape accepted by `POST /{p}/comment`), supplied as an `application/json` body, a
+`json` form field, an `application/zip` archive whose `data.json` holds the
+array, or an [upload token](#post-upload). A ZIP or `json`-form request may carry
+attachment files shared across items: each object’s `docs[].content_file`
+resolves against the one archive.
+
+Each object identifies its submission with `pid` and its target comment with
+`cid` (or `response`, or neither to create a new comment), plus the `text`,
+`visibility`, `topic`, `tags`, `delete`, … fields carrying the update. A
+per-object `if_unmodified_since` guards that item’s edit (the query-string
+`if_unmodified_since` is a batch-wide default).
+
+Processing is **best-effort**: valid items are saved and invalid ones are
+reported without aborting the batch. The per-item results are returned in the
+`status_list` field, and the saved comments in `comments`—both the same length
+and order as the input. Messages in `message_list` carry a `landmark` field set
+to the integer index of the item they concern.
+
+* body application/json [comment]: An array of comment objects sent as a raw JSON body.
+
+    * oneof body
+* body application/zip: A ZIP archive whose `data.json` is an array of comment objects (and any files it references).
+
+    * oneof body
+* param ?=json string: Comment objects supplied in the `json` form field.
+
+    * oneof body
+* param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
+
+    * oneof body
+* param ?dry_run boolean: True checks input for errors, but does not save changes.
+* param ?notify boolean: False disables notifications; honored per item only when the caller administers that submission.
+
+    * default true
+* param ?if_unmodified_since string: A batch-wide default precondition, overridable by a comment object’s own `if_unmodified_since`.
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?+status_list [comment_update_status]: Per-comment results, one entry per input object (same length and order as the input). Entry *i* reports `valid`, `change_list`, `pid`, and `cid`, plus `conflict` for an edit-conflict rejection.
+* response ?comments [comment]: The saved comments, one per input object (`null` for a failed item); omitted entirely for `dry_run`.
 
 
 # get /mentioncompletion

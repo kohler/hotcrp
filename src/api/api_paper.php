@@ -186,35 +186,6 @@ class Paper_API extends MessageSet {
         }
     }
 
-    /** Parse an `if_unmodified_since` value (a Unix timestamp or a parsable
-     * time string; `0` is valid) into a timestamp.
-     * @param int|string $v
-     * @return int|false false on a malformed value */
-    static function parse_if_unmodified_since($v, Conf $conf) {
-        if (is_int($v)) {
-            $t = $v;
-        } else if (ctype_digit($v)) {
-            $t = intval($v);
-        } else {
-            $t = $conf->parse_time($v, Conf::$now);
-        }
-        return $t === false || $t < 0 ? false : $t;
-    }
-
-    /** Fold the flat `if_unmodified_since` parameter into a paper's
-     * `status.if_unmodified_since`, so PaperStatus performs the check. It is a
-     * per-paper backup: an explicit value in the paper's own JSON wins. Applied
-     * to every paper of a single, multi, or match request.
-     * @param object $jp */
-    private function apply_if_unmodified_since($jp) {
-        if ($this->if_unmodified_since !== null
-            && !isset($jp->if_unmodified_since)
-            && (!is_object($jp->status ?? null) || !isset($jp->status->if_unmodified_since))) {
-            $jp->if_unmodified_since = $this->if_unmodified_since;
-        }
-    }
-
-
     /** @return bool */
     private function post_form_is_json(Qrequest $qreq) {
         if (!isset($qreq->json) && !isset($qreq->upload)) {
@@ -319,6 +290,35 @@ class Paper_API extends MessageSet {
             ++$i;
         }
         return $this->post_result();
+    }
+
+
+    /** Parse an `if_unmodified_since` value (a Unix timestamp or a parsable
+     * time string; `0` is valid) into a timestamp.
+     * @param int|string $v
+     * @return int|false false on a malformed value */
+    static function parse_if_unmodified_since($v, Conf $conf) {
+        if (is_int($v)) {
+            $t = $v;
+        } else if (ctype_digit($v)) {
+            $t = intval($v);
+        } else {
+            $t = $conf->parse_time($v, Conf::$now);
+        }
+        return $t === false || $t < 0 ? false : $t;
+    }
+
+    /** Fold the flat `if_unmodified_since` parameter into a paper's
+     * `status.if_unmodified_since`, so PaperStatus performs the check. It is a
+     * per-paper backup: an explicit value in the paper's own JSON wins. Applied
+     * to every paper of a single, multi, or match request.
+     * @param object $jp */
+    private function apply_if_unmodified_since($jp) {
+        if ($this->if_unmodified_since !== null
+            && !isset($jp->if_unmodified_since)
+            && (!is_object($jp->status ?? null) || !isset($jp->status->if_unmodified_since))) {
+            $jp->if_unmodified_since = $this->if_unmodified_since;
+        }
     }
 
 

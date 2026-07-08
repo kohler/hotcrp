@@ -1015,6 +1015,35 @@
                     }
                 }
             },
+            "comment_update_status": {
+                "type": "object",
+                "description": "Status of a comment update operation",
+                "required": ["valid", "change_list"],
+                "properties": {
+                    "valid": {
+                        "type": "boolean"
+                    },
+                    "change_list": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "pid": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "cid": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "The affected comment’s ID, when one was resolved"
+                    },
+                    "conflict": {
+                        "type": "boolean",
+                        "description": "True when this update was rejected by an if_unmodified_since edit-conflict check"
+                    }
+                }
+            },
             "named_search": {
                 "type": "object",
                 "description": "A named (saved) search. Returned by `/namedsearch`; PC members only.",

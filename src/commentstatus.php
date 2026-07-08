@@ -221,7 +221,7 @@ final class CommentStatus extends MessageSet {
         if ($editing
             && $crow->prop_changed("commentType")
             && (($crow->commentType ^ $crow->base_prop("commentType")) & CommentInfo::CTM_TOPIC_NONREVIEW) !== 0) {
-            $diffs["thread"] = true;
+            $diffs["topic"] = true;
         }
         if ($editing
             && $crow->prop_changed("commentType")

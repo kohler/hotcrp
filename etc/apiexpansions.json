@@ -296,7 +296,7 @@
     "name": "comment", "post": true,
     "tags": ["Comments"],
     "parameters": "c ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete",
-    "response": "?comment ?conflict",
+    "response": "?conflict ?cid ?comment",
     "response_info": {"comment": "comment"}
   },
   {
@@ -305,6 +305,10 @@
     "parameters": "?q ?t ?p ?warn_missing ?content",
     "response": "comments",
     "response_info": {"comments": "[comment]"}
+  },
+  {
+    "name": "comments", "post": true,
+    "tags": ["Comments"]
   },
   {
     "name": "mentioncompletion", "get": true,

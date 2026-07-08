@@ -659,7 +659,7 @@ class Comments_Tester {
         xassert($j->ok);
         $cid = $j->comment->cid;
         $jr = call_api_result("comment", $this->u_chair, ["c" => (string) $cid, "response" => "1"], $paper1);
-        xassert_eqq($jr->status, 400);
+        xassert_eqq($jr->status, 404);
         xassert_eqq($jr->content["message_list"][0]->field, "response");
 
         // a comment the caller can't see must NOT be disclosed by the mismatch:
@@ -695,6 +695,27 @@ class Comments_Tester {
         xassert($lixia->can_view_paper($paper1));
         $jr = call_api_result("comment", $lixia, ["c" => (string) $acid], $paper1);
         xassert(in_array($jr->status, [403, 404], true));
+
+        MailChecker::clear();
+    }
+
+    // A form POST whose target or content fails to resolve must return a proper
+    // error result, not crash. `run_post_form_data` records a failed status via
+    // `execute_fail()` so `post_result` has an entry to serialize.
+    function test_comment_form_post_bad_request() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+
+        // a `c` naming a nonexistent comment => 404, not a crash
+        $jr = call_api_result("=comment", $this->u_chair, ["c" => "99999999", "text" => "hi"], $paper1);
+        xassert_eqq($jr->status, 404);
+        xassert(!$jr->content["ok"]);
+        xassert_neqq($jr->content["message_list"] ?? null, null);
+
+        // a form POST that carries no content => parameter error at `text`
+        $jr = call_api_result("=comment", $this->u_chair, ["c" => "new"], $paper1);
+        xassert_eqq($jr->status, 400);
+        xassert(!$jr->content["ok"]);
+        xassert_eqq($jr->content["message_list"][0]->field, "text");
 
         MailChecker::clear();
     }
@@ -1182,6 +1203,55 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // Security: a JSON `docid` may retain only the *same comment's* attachments.
+    // A docid belonging to another comment on the paper is not honored — this is
+    // what stops a caller from pulling an attachment out of a comment they can't
+    // view. (docids are enumerable; the scope is enforced per comment.)
+    function test_comment_json_attachment_docid_scope() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // comment A owns an attachment
+        $qreq = TestQreq::post_json(["text" => "A", "visibility" => "admin",
+            "docs" => [["filename" => "secret.txt", "content" => "SECRET"]]]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $cidA = (int) $j->comment->cid;
+        $didA = $j->comment->docs[0]->docid;
+        xassert(is_int($didA));
+
+        // comment B starts with no attachments
+        $qreq = TestQreq::post_json(["text" => "B", "visibility" => "admin"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $cidB = (int) $j->comment->cid;
+
+        // editing B with A's docid is rejected; nothing is moved
+        $qreq = TestQreq::post_json(["cid" => $cidB, "text" => "B", "visibility" => "admin",
+            "docs" => [["docid" => $didA]]]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+        $paper3->load_comments();
+        xassert_eqq(count($paper3->comment_by_id($cidB)->attachments()), 0);
+        xassert_eqq(count($paper3->comment_by_id($cidA)->attachments()), 1);
+
+        // but B may retain its *own* attachment by docid
+        $qreq = TestQreq::post_json(["cid" => $cidB, "text" => "B", "visibility" => "admin",
+            "docs" => [["filename" => "b.txt", "content" => "BEE"]]]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $didB = $j->comment->docs[0]->docid;
+        $qreq = TestQreq::post_json(["cid" => $cidB, "text" => "B2", "visibility" => "admin",
+            "docs" => [["docid" => $didB]]]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $paper3->load_comments();
+        $bset = $paper3->comment_by_id($cidB)->attachments();
+        xassert_eqq(count($bset), 1);
+        xassert_eqq($bset->document_by_index(0)->content(), "BEE");
+
+        MailChecker::clear();
+    }
+
     // The comment object can be supplied in a `json` form field; a `content_file`
     // in `docs` then references an uploaded file field.
     function test_comment_json_form_field() {
@@ -1225,6 +1295,45 @@ class Comments_Tester {
         xassert_eqq(count($dset), 1);
         xassert_eqq($dset->document_by_index(0)->content(), "ZIPDATA");
         xassert_eqq($dset->document_by_index(0)->filename, "fig.txt");
+
+        MailChecker::clear();
+    }
+
+    // A `docs` entry whose `content_file` names a file absent from the ZIP is a
+    // per-document error, folded into the item's messages (not a thrown
+    // JsonCompletion that aborts the request).
+    function test_comment_zip_missing_entry() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $qreq = TestQreq::post_zip([
+            "data.json" => ["text" => "zip missing-entry probe", "visibility" => "rev",
+                            "docs" => [["content_file" => "missing.txt"]]],
+            "fig.txt" => "ZIPDATA"
+        ]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+        xassert(!$jr->content["ok"]);
+        xassert_match($jr->content["message_list"][0]->message, '/missing\.txt.*not found/i');
+        // nothing was saved
+        $paper3->load_comments();
+        xassert(!$paper3->fetch_comments("comment like '%zip missing-entry probe%'"));
+
+        MailChecker::clear();
+    }
+
+    // A `docs` entry whose declared `hash` disagrees with its content is a
+    // per-document error, folded into the item's messages.
+    function test_comment_json_hash_mismatch() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $qreq = TestQreq::post_json(["text" => "hash mismatch probe", "visibility" => "rev",
+            "docs" => [["filename" => "x.txt", "mimetype" => "text/plain",
+                        "content" => "GOODDATA", "hash" => str_repeat("0", 64)]]]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+        xassert(!$jr->content["ok"]);
+        xassert_match($jr->content["message_list"][0]->message, '/did not match the provided hash/i');
+        // nothing was saved
+        $paper3->load_comments();
+        xassert(!$paper3->fetch_comments("comment like '%hash mismatch probe%'"));
 
         MailChecker::clear();
     }
@@ -1308,6 +1417,53 @@ class Comments_Tester {
         xassert($j->ok);
         xassert(!$paper3->fetch_comments("commentId={$cid}"));
         xassert_eqq($cmt_log_count($cid), 0);
+
+        $this->u_chair->change_review_token($token, false);
+        MailChecker::clear();
+    }
+
+    // The review-token acting path through a JSON-body request. Pins the two
+    // `review_token` sources unique to `run_post_single_json`: the token carried
+    // *inside* the comment object (read by `req_from_json`), and the token on the
+    // query string (the `$qreq->review_token` fallback). Both must attribute the
+    // comment to the anonymous review owner, exactly as the form path does.
+    function test_review_token_json_path() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // fresh anonymous review + its token
+        xassert_assign($this->u_chair, "paper,action,user\n3,review,new-anonymous");
+        $token = $this->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=3 and reviewToken!=0 order by reviewId desc limit 1");
+        xassert(!!$token);
+        $paper3->load_reviews();
+        $rrow = $paper3->review_by_token($token);
+        xassert(!!$rrow);
+        $enc = encode_token($token);
+
+        $this->u_chair->change_review_token($token, true);
+
+        // (1) token inside the JSON object
+        $qreq = TestQreq::post_json(["text" => "JSON via in-object token",
+            "visibility" => "rev", "review_token" => $enc]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $cid1 = (int) $j->comment->cid;
+        $cmt1 = $paper3->fetch_comments("commentId={$cid1}")[0];
+        xassert(!!$cmt1);
+        xassert_eqq($cmt1->contactId, $rrow->contactId);
+        xassert_neqq($cmt1->contactId, $this->u_chair->contactId);
+
+        // (2) token on the query string; the object omits it, so the
+        // `$qreq->review_token` fallback supplies it
+        $qreq = TestQreq::post_json(["text" => "JSON via query-string token",
+            "visibility" => "rev"], ["review_token" => $enc]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $cid2 = (int) $j->comment->cid;
+        xassert_neqq($cid2, $cid1);
+        $cmt2 = $paper3->fetch_comments("commentId={$cid2}")[0];
+        xassert(!!$cmt2);
+        xassert_eqq($cmt2->contactId, $rrow->contactId);
+        xassert_neqq($cmt2->contactId, $this->u_chair->contactId);
 
         $this->u_chair->change_review_token($token, false);
         MailChecker::clear();
@@ -1528,6 +1684,221 @@ class Comments_Tester {
         $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "@Christian Huitema reviewer notify off", "notify" => "off"], $paper1);
         xassert($j->ok);
         xassert_gt(count(MailChecker::$preps), 0);
+
+        MailChecker::clear();
+    }
+
+    // POST /comments: a cross-paper batch, best-effort per item.
+    function test_comments_multi_post() {
+        // two new comments on different papers, in one request
+        $qreq = TestQreq::post_json([
+            ["pid" => 1, "text" => "multi A", "visibility" => "admin"],
+            ["pid" => 3, "text" => "multi B", "visibility" => "admin"]
+        ], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);
+        xassert_eqq(count($j->status_list), 2);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, true);
+        xassert_eqq($j->status_list[0]->pid, 1);
+        xassert_eqq($j->status_list[1]->pid, 3);
+        xassert_eqq($j->comments[0]->text, "multi A");
+        xassert_eqq($j->comments[1]->text, "multi B");
+        xassert_eqq($j->comments[0]->pid, 1);
+        xassert_eqq($j->comments[1]->pid, 3);
+        // each item carries its own cid
+        xassert_neqq($j->status_list[0]->cid, null);
+        xassert_eqq($j->status_list[0]->cid, $j->comments[0]->cid);
+
+        MailChecker::clear();
+    }
+
+    // best-effort: a bad item is reported in `status_list` (landmarked) without
+    // aborting the batch.
+    function test_comments_multi_post_errors() {
+        // seed a comment on paper 3 to get a real cid
+        $qreq = TestQreq::post_json([["pid" => 3, "text" => "seed", "visibility" => "admin"]], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);
+        $cid3 = $j->comments[0]->cid;
+
+        $qreq = TestQreq::post_json([
+            ["pid" => 1, "text" => "ok item", "visibility" => "admin"],   // valid
+            ["pid" => 3, "text" => "", "visibility" => "admin"],          // empty → refused
+            ["pid" => 1, "object" => "review", "text" => "x"],            // wrong object type
+            ["pid" => 1, "cid" => $cid3, "text" => "y"]                   // cid belongs to paper 3
+        ], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);   // item 0 succeeded
+        xassert_eqq(count($j->status_list), 4);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, false);
+        xassert_eqq($j->status_list[2]->valid, false);
+        xassert_eqq($j->status_list[3]->valid, false);
+        xassert_neqq($j->comments[0], null);
+        xassert_eqq($j->comments[1], null);
+        xassert_eqq($j->comments[2], null);
+        // a target-resolution failure (item 2: wrong object type; item 3: a cid
+        // that names another paper's comment) is recorded via `execute_fail` — no
+        // save is attempted, so its status entry carries no `pid`. Contrast item
+        // 1, an empty-text *save* refusal, which did resolve its paper.
+        xassert_eqq($j->status_list[1]->pid, 3);
+        xassert(!isset($j->status_list[2]->pid));
+        xassert(!isset($j->status_list[3]->pid));
+        // failure messages are landmarked to their item index
+        $lm = [];
+        foreach ($j->message_list as $mi) {
+            if (($mi->status ?? 0) >= 2 && isset($mi->landmark)) {
+                $lm[$mi->landmark] = true;
+            }
+        }
+        xassert(isset($lm[1]) && isset($lm[2]) && isset($lm[3]));
+
+        MailChecker::clear();
+    }
+
+    // `dry_run` validates every item but commits nothing and omits `comments`.
+    function test_comments_multi_post_dry_run() {
+        $b1 = $this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=1");
+        $b3 = $this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=3");
+        $qreq = TestQreq::post_json([
+            ["pid" => 1, "text" => "dry A", "visibility" => "admin"],
+            ["pid" => 3, "text" => "dry B", "visibility" => "admin"]
+        ], ["notify" => "off", "dry_run" => 1]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run, true);
+        xassert(!isset($j->comments));
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, true);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=1"), $b1);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=3"), $b3);
+
+        MailChecker::clear();
+    }
+
+    // a per-item `if_unmodified_since` guards each edit independently.
+    function test_comments_multi_post_ius() {
+        $qreq = TestQreq::post_json([["pid" => 3, "text" => "ius seed", "visibility" => "admin"]], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        $cid = $j->comments[0]->cid;
+        $mod = $j->comments[0]->modified_at;
+
+        // item 0 edits the seed with a stale precondition (conflict); item 1 is new
+        $qreq = TestQreq::post_json([
+            ["pid" => 3, "cid" => $cid, "text" => "ius stale", "visibility" => "admin", "if_unmodified_since" => $mod - 1],
+            ["pid" => 1, "text" => "ius fresh", "visibility" => "admin"]
+        ], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);   // item 1 valid
+        xassert_eqq($j->status_list[0]->valid, false);
+        xassert_eqq($j->status_list[0]->conflict, true);
+        xassert_eqq($j->status_list[0]->change_list, ["text"]);   // attempted diff
+        xassert_eqq($j->status_list[1]->valid, true);
+        // the seed comment was not modified
+        xassert_eqq(($this->conf->checked_paper_by_id(3)->fetch_comments("commentId={$cid}"))[0]->content(), "ius seed");
+
+        MailChecker::clear();
+    }
+
+    // one shared ZIP archive serves attachments referenced across items.
+    function test_comments_multi_post_zip() {
+        $qreq = TestQreq::post_zip([
+            "data.json" => [
+                ["pid" => 1, "text" => "zip A", "visibility" => "admin", "docs" => [["content_file" => "a.txt"]]],
+                ["pid" => 3, "text" => "zip B", "visibility" => "admin", "docs" => [["content_file" => "a.txt"]]]
+            ],
+            "a.txt" => "shared attachment"
+        ], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, true);
+        xassert_eqq(count($j->comments[0]->docs), 1);
+        xassert_eqq(count($j->comments[1]->docs), 1);
+        // both items resolved the same shared file
+        $cid0 = $j->comments[0]->cid;
+        $att = ($this->conf->checked_paper_by_id(1)->fetch_comments("commentId={$cid0}"))[0]->attachments()->as_list();
+        xassert_eqq($att[0]->content(), "shared attachment");
+
+        MailChecker::clear();
+    }
+
+    // best-effort: a document error (a `content_file` missing from the shared
+    // ZIP) is that item's failure, folded into its messages without aborting the
+    // batch — the valid item still commits.
+    function test_comments_multi_post_zip_missing_entry() {
+        $qreq = TestQreq::post_zip([
+            "data.json" => [
+                ["pid" => 1, "text" => "zip good", "visibility" => "admin", "docs" => [["content_file" => "a.txt"]]],
+                ["pid" => 3, "text" => "zip bad", "visibility" => "admin", "docs" => [["content_file" => "missing.txt"]]]
+            ],
+            "a.txt" => "shared attachment"
+        ], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);   // item 0 succeeded
+        xassert_eqq(count($j->status_list), 2);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, false);
+        xassert_neqq($j->comments[0], null);
+        xassert_eqq($j->comments[1], null);
+        // the failure message is landmarked to item 1
+        $lm = [];
+        foreach ($j->message_list as $mi) {
+            if (($mi->status ?? 0) >= 2 && isset($mi->landmark)) {
+                $lm[$mi->landmark] = $mi->message;
+            }
+        }
+        xassert(isset($lm[1]));
+        xassert_match($lm[1], '/missing\.txt.*not found/i');
+
+        MailChecker::clear();
+    }
+
+    // best-effort: a document hash mismatch is that item's failure, folded into
+    // its messages without aborting the batch.
+    function test_comments_multi_post_hash_mismatch() {
+        $qreq = TestQreq::post_json([
+            ["pid" => 1, "text" => "hash good", "visibility" => "admin",
+             "docs" => [["filename" => "ok.txt", "content" => "OKDATA"]]],
+            ["pid" => 3, "text" => "hash bad", "visibility" => "admin",
+             "docs" => [["filename" => "bad.txt", "content" => "BADDATA", "hash" => str_repeat("0", 64)]]]
+        ], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);   // item 0 succeeded
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, false);
+        xassert_neqq($j->comments[0], null);
+        xassert_eqq($j->comments[1], null);
+        // the failure message is landmarked to item 1
+        $lm = [];
+        foreach ($j->message_list as $mi) {
+            if (($mi->status ?? 0) >= 2 && isset($mi->landmark)) {
+                $lm[$mi->landmark] = $mi->message;
+            }
+        }
+        xassert(isset($lm[1]));
+        xassert_match($lm[1], '/did not match the provided hash/i');
+
+        MailChecker::clear();
+    }
+
+    // no site-chair gate: a reviewer (non-chair) may batch comments; an
+    // unresolvable paper is that item's failure, not the batch's.
+    function test_comments_multi_post_permission() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);
+
+        $qreq = TestQreq::post_json([
+            ["pid" => 1, "text" => "reviewer here", "visibility" => "admin"],
+            ["pid" => 99999, "text" => "no such paper", "visibility" => "admin"]
+        ], ["notify" => "off"]);
+        $j = call_api("=comments", $this->u_mgbaker, $qreq);
+        xassert($j->ok);   // the resolvable item succeeded (no chair gate)
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, false);
+        xassert_neqq($j->comments[0], null);
+        xassert_eqq($j->comments[1], null);
 
         MailChecker::clear();
     }

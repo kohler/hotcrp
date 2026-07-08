@@ -12,6 +12,8 @@ final class DocumentImporter {
     /** @var int
      * @readonly */
     public $dt;
+    /** @var ?list<int> */
+    private $allowed_docids;
     /** @var int */
     private $doc_savef;
     /** @var list<callable> */
@@ -43,6 +45,14 @@ final class DocumentImporter {
      * @return $this */
     function set_on_import($on_imports) {
         $this->_on_import = $on_imports;
+        return $this;
+    }
+
+    /** Restrict documents locatable by `docid`; null (default) allows any.
+     * @param ?list<int> $ids
+     * @return $this */
+    function set_allowed_docids($ids) {
+        $this->allowed_docids = $ids;
         return $this;
     }
 
@@ -244,11 +254,16 @@ final class DocumentImporter {
             $hash = null;
         }
 
-        // check for existing document
+        // check for existing document. A caller-supplied allowlist bounds which
+        // docids may be retained (docids are enumerable, so e.g. a comment may
+        // retain only its own attachments; hash is a possession capability and
+        // stays unscoped).
         $docid = -1;
         if (isset($docj->docid)
             && is_int($docj->docid)
-            && $docj->docid > 0) {
+            && $docj->docid > 0
+            && ($this->allowed_docids === null
+                || in_array($docj->docid, $this->allowed_docids, true))) {
             $docid = $docj->docid;
         }
         if (!$this->prow->is_new()

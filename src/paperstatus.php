@@ -1299,7 +1299,7 @@ final class PaperStatus extends MessageSet {
         // don't save if transaction required
         if (isset($pj->status->if_unmodified_since)
             && $pj->status->if_unmodified_since < $this->prow->timeModified) {
-            $this->estop_at("if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
+            $this->estop_at("if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: The {submission} was edited concurrently"));
             $this->estop_at("status:if_unmodified_since");
         }
 

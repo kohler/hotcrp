@@ -5417,8 +5417,9 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         if (!$rights->scope_allows(TS::S_CMT_READ)) {
             return false;
-        } else if ($this->is_my_comment($prow, $crow)
-                   || $rights->is_admin()) {
+        }
+        if ($this->is_my_comment($prow, $crow)
+            || $rights->is_admin()) {
             return true;
         }
         if ($rights->act_author_view()
