@@ -2,41 +2,97 @@
 // api_comment.php -- HotCRP comment API call
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
+class Comment_API_Status implements JsonSerializable {
+    /** @var bool */
+    public $valid;
+    /** @var list<string> */
+    public $change_list;
+    /** @var bool */
+    public $conflict;
+    /** @var ?int */
+    public $pid;
+    /** @var ?int */
+    public $cid;
+
+    /** @param bool $valid
+     * @param list<string> $change_list
+     * @param bool $conflict
+     * @param ?int $pid
+     * @param ?int $cid */
+    function __construct($valid = false, $change_list = [], $conflict = false,
+                         $pid = null, $cid = null) {
+        $this->valid = $valid;
+        $this->change_list = $change_list;
+        $this->conflict = $conflict;
+        $this->pid = $pid;
+        $this->cid = $cid;
+    }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $u = ["valid" => $this->valid, "change_list" => $this->change_list];
+        if ($this->conflict) {
+            $u["conflict"] = $this->conflict;
+        }
+        if ($this->pid !== null) {
+            $u["pid"] = $this->pid;
+        }
+        if ($this->cid !== null) {
+            $u["cid"] = $this->cid;
+        }
+        return $u;
+    }
+}
+
 class Comment_API extends MessageSet {
     /** @var Conf */
     private $conf;
     /** @var Contact */
     private $user;
-    /** @var PaperInfo */
-    private $prow;
 
-    /** @var ?int */
-    private $qreq_cid;
-    /** @var ?ResponseRound */
-    private $qreq_rrd;
-
-    /** @var int */
-    private $status = 200;
+    // request-global configuration
     /** @var bool */
     private $dry_run = false;
     /** @var bool */
     private $notify = true;
+    /** @var ?int */
+    private $if_unmodified_since;
+    /** @var bool */
+    private $single = false;
+    /** @var DocumentLocator */
+    private $docloc;
+
+    // per-item accumulators (mirror Paper_API)
+    /** @var list<Comment_API_Status> */
+    private $status_list = [];
+    /** @var list<?object> */
+    private $comments = [];
+    /** @var int */
+    private $ncomments = 0;
+    /** @var ?int */
+    private $landmark;
+
+    // current-item working state (reset per item)
+    /** @var PaperInfo */
+    private $prow;
+    /** @var ?object */
+    private $jbody;
+    /** @var ?int */
+    private $qreq_cid;
+    /** @var ?ResponseRound */
+    private $qreq_rrd;
+    /** @var ?ResponseRound */
+    private $rrd;
+    /** @var int */
+    private $status = 200;
     /** @var bool */
     private $ok = true;
     /** @var bool */
-    private $valid = false;
-    /** @var ?int */
-    private $if_unmodified_since;
-    /** @var ?object */
-    private $jbody;
-    /** @var DocumentLocator */
-    private $docloc;
+    private $stale = false;
+    /** @var bool */
+    private $ivalid = false;
     /** @var ?list<string> */
     private $change_list;
-
-    // information about current request
-    /** @var ?ResponseRound */
-    private $rrd;
     /** @var string */
     private $uccmttype;
     /** @var string */
@@ -45,10 +101,9 @@ class Comment_API extends MessageSet {
 
     const RESPONSE_REPLACED = 492;
 
-    function __construct(Contact $user, PaperInfo $prow) {
+    function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->prow = $prow;
     }
 
     /** Resolve `$qreq`'s `c` and `response` parameters into `$qreq_cid`/
@@ -90,7 +145,8 @@ class Comment_API extends MessageSet {
         }
     }
 
-    private function run_get_one(Qrequest $qreq) {
+    private function run_get_one(Qrequest $qreq, ?PaperInfo $prow) {
+        $this->prow = $prow;
         // a GET with no `c`/`response` behaves like `GET /comments`
         // (backward compat)
         if (!isset($qreq->c) && !isset($qreq->response)) {
@@ -274,11 +330,36 @@ class Comment_API extends MessageSet {
         }
     }
 
-    /** @return JsonResult */
-    private function run_post(Qrequest $qreq) {
-        // parse the upload encoding; a JSON object maps its target onto `$qreq`
-        // so the shared `c`/`response` resolution runs unchanged
+    private function set_post_param(Qrequest $qreq) {
+        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
+        $this->notify = friendly_boolean($qreq->notify) !== false;
+    }
+
+    /** @param 1|2 $mode
+     * @return JsonResult */
+    private function run_post(Qrequest $qreq, ?PaperInfo $prow, $mode) {
+        $this->set_post_param($qreq);
+        if (isset($qreq->if_unmodified_since)) {
+            $ius = Paper_API::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
+            if ($ius === false) {
+                return JsonResult::make_parameter_error("if_unmodified_since");
+            }
+            $this->if_unmodified_since = $ius;
+        }
+        // decode the upload encoding (single object, or null for a plain form)
         $this->jbody = $this->parse_upload($qreq);
+        // Phase A: single-comment endpoint only
+        $this->single = true;
+        return $this->run_post_one($qreq, $prow);
+    }
+
+    /** Resolve and save one comment on `$prow`; snapshot the outcome into the
+     * accumulators and return the assembled result.
+     * @return JsonResult */
+    private function run_post_one(Qrequest $qreq, ?PaperInfo $prow) {
+        $this->prow = $prow;
+        // a JSON object maps its target onto `$qreq` so the shared `c`/`response`
+        // resolution runs unchanged
         if ($this->jbody !== null) {
             $this->apply_json_target($qreq, $this->jbody);
         }
@@ -289,15 +370,6 @@ class Comment_API extends MessageSet {
             && !friendly_boolean($qreq->delete)) {
             // a form POST must carry comment content
             return JsonResult::make_parameter_error("text");
-        }
-        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
-        $this->notify = friendly_boolean($qreq->notify) !== false;
-        if (isset($qreq->if_unmodified_since)) {
-            $ius = Paper_API::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
-            if ($ius === false) {
-                return JsonResult::make_parameter_error("if_unmodified_since");
-            }
-            $this->if_unmodified_since = $ius;
         }
 
         // find comment
@@ -352,28 +424,75 @@ class Comment_API extends MessageSet {
             && $crow
             && $this->if_unmodified_since !== null
             && $this->if_unmodified_since < $crow->timeModified) {
-            $this->status = self::RESPONSE_REPLACED;
-            $this->error_at("if_unmodified_since", "<5><strong>Edit conflict</strong>: The {$this->lccmttype} has changed");
+            $this->stale = true;
         }
 
-        // check post
+        // process the request. A stale edit still runs so its attempted
+        // `change_list` is computed, but `finish_post` aborts rather than
+        // committing (leaving `$crow` at the server's current version).
         if ($this->status === 200
             && $this->ok) {
             $crow = $this->do_run_post($qreq, $crow);
         }
 
-        return $this->post_result($crow);
+        // report the conflict unless a more fundamental error intervened
+        if ($this->stale && $this->ok) {
+            $this->status = self::RESPONSE_REPLACED;
+            $this->error_at("if_unmodified_since", "<5><strong>Edit conflict</strong>: The {$this->lccmttype} has changed");
+        }
+
+        $this->execute_save($crow);
+        return $this->post_result();
     }
 
-    /** Assemble the response for one processed comment. Component order mirrors
-     * `Paper_API::post_result`: `ok`, `message_list`, `dry_run`, `valid`,
-     * `change_list`, `conflict`, `comment`. (A future multi-comment upload would
-     * collect these per comment into a `status_list`, as `/papers` does.)
-     * @param ?CommentInfo $crow
+    /** Record the outcome of the current item into the per-item accumulators.
+     * @param ?CommentInfo $crow */
+    private function execute_save($crow) {
+        $this->landmark_messages();
+        $cid = $crow && $crow->commentId > 0 ? $crow->commentId : null;
+        if ($cid !== null && !$this->dry_run) {
+            $this->comments[] = $crow->unparse_json($this->user);
+            ++$this->ncomments;
+        } else {
+            $this->comments[] = null;
+        }
+        $this->status_list[] = new Comment_API_Status(
+            $this->ivalid, $this->change_list ?? [],
+            $this->status === self::RESPONSE_REPLACED,
+            $this->prow->paperId, $cid
+        );
+    }
+
+    /** Record a per-item resolution failure (no save attempted). */
+    private function execute_fail() {
+        $this->landmark_messages();
+        $this->comments[] = null;
+        $this->status_list[] = new Comment_API_Status;
+    }
+
+    /** Landmark this item's freshly-added messages by index (multi only). */
+    private function landmark_messages() {
+        if ($this->single || $this->landmark === null) {
+            return;
+        }
+        foreach ($this->message_list() as $mi) {
+            if ($mi->landmark === null) {
+                $mi->landmark = $this->landmark;
+            }
+        }
+    }
+
+    /** Assemble the response. Single mirrors the historical shape
+     * (`ok`,`message_list`,`dry_run`,`valid`,`change_list`,`conflict`,`comment`);
+     * multi emits a `status_list` + `comments`, as `Paper_API::post_result`.
      * @return JsonResult */
-    private function post_result($crow) {
+    private function post_result() {
+        if (!$this->single) {
+            return $this->post_result_multi();
+        }
         // an edit conflict: a concurrent edit or a failed `if_unmodified_since`
-        $conflict = $this->status === self::RESPONSE_REPLACED;
+        $st = $this->status_list[0];
+        $conflict = $st->conflict;
         if ($conflict && !$this->has_message()) {
             $this->error_at(null, "<0>{$this->uccmttype} was edited concurrently");
         }
@@ -385,15 +504,32 @@ class Comment_API extends MessageSet {
         if ($this->dry_run) {
             $jr->content["dry_run"] = true;
         }
-        $jr->content["valid"] = $this->valid;
-        if ($this->change_list !== null) {
-            $jr->content["change_list"] = $this->change_list;
-        }
+        // single `/comment` already knows its paper, so omit `pid`/`cid`
+        $jr->content["valid"] = $st->valid;
+        $jr->content["change_list"] = $st->change_list;
         if ($conflict) {
             $jr->content["conflict"] = true;
         }
-        if (!$this->dry_run && $crow && $crow->commentId > 0) {
-            $jr->content["comment"] = $crow->unparse_json($this->user);
+        if ($this->ncomments > 0) {
+            $jr->content["comment"] = $this->comments[0];
+        }
+        return $jr;
+    }
+
+    /** @return JsonResult */
+    private function post_result_multi() {
+        $ok = empty($this->status_list)
+            || array_find($this->status_list, function ($x) { return !!$x->valid; });
+        $jr = new JsonResult([
+            "ok" => $ok,
+            "message_list" => $this->message_list()
+        ]);
+        if ($this->dry_run) {
+            $jr->content["dry_run"] = true;
+        }
+        $jr->content["status_list"] = $this->status_list;
+        if (!$this->dry_run) {
+            $jr->content["comments"] = $this->comments;
         }
         return $jr;
     }
@@ -576,13 +712,21 @@ class Comment_API extends MessageSet {
         $cs->set_notify($this->notify || !$cs->can_user_manage());
         if ($prepared) {
             // change_list reflects what the request attempted to change, and is
-            // available before commit (so a dry run can report it)
+            // available before commit (so a dry run or a conflict can report it)
             $this->change_list = $cs->change_list();
+        }
+
+        if ($this->stale) {
+            // an edit conflict: report the attempted diff, but do not commit;
+            // `abort_save` reverts the in-memory changes so the response shows
+            // the server's current version
+            $cs->abort_save();
+            return $xcrow;
         }
 
         if ($this->dry_run) {
             $cs->abort_save();
-            $this->valid = $prepared;
+            $this->ivalid = $prepared;
             if (!$prepared) {
                 $this->status = 400;
                 $this->error_at(null, "<0>Error saving comment");
@@ -614,7 +758,7 @@ class Comment_API extends MessageSet {
         }
 
         // a valid modification was committed
-        $this->valid = true;
+        $this->ivalid = true;
 
         // save success messages
         $this->append_item($this->save_success_message($xcrow));
@@ -665,12 +809,12 @@ class Comment_API extends MessageSet {
         try {
             if ($qreq->is_getlike()) {
                 if ($mode === DocumentLocator::M_ONE) {
-                    $jr = (new Comment_API($user, $prow))->run_get_one($qreq);
+                    $jr = (new Comment_API($user))->run_get_one($qreq, $prow);
                 } else {
                     $jr = self::run_get_multi($user, $qreq, $prow);
                 }
             } else {
-                $jr = (new Comment_API($user, $prow))->run_post($qreq);
+                $jr = (new Comment_API($user))->run_post($qreq, $prow, $mode);
             }
         } catch (JsonResult $jrex) {
             $jr = $jrex;

@@ -1024,6 +1024,8 @@ class Comments_Tester {
         xassert(!$j->ok);
         xassert_eqq($j->conflict, true);
         xassert_eqq($j->valid, false);
+        // the conflict still reports the diff the edit *would* have made
+        xassert_eqq($j->change_list, ["text"]);
         $keyed = false;
         foreach ($j->message_list as $mi) {
             $keyed = $keyed || ($mi->field ?? null) === "if_unmodified_since";
