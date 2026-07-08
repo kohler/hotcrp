@@ -100,7 +100,7 @@ such as `decision`, that have other endpoints as well.
 Site administrators can choose specific IDs for new submissions by setting `p`
 (or JSON `pid`) to the chosen ID. Such a request will either modify an existing
 submission or create a new submission with that ID. To avoid overwriting an
-existing submission, set the submission JSON’s `status`.`if_unmodified_since` to
+existing submission, set the submission JSON’s `if_unmodified_since` to
 `0`.
 
 * body application/json paper: A submission object sent as a raw JSON body.
@@ -117,10 +117,8 @@ existing submission, set the submission JSON’s `status`.`if_unmodified_since` 
     * oneof body
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param ?if_unmodified_since string: Reject the modification if the submission has
-  been modified since this time (a Unix timestamp, or `0`). This is a per-paper
-  backup for the submission JSON’s `status.if_unmodified_since`; an explicit value
-  in a submission’s JSON takes precedence. In a multi-submission request it
-  applies to every submission that does not set its own value.
+  been modified since this time (a Unix timestamp, or `0`). If set, a submission
+  JSON’s `if_unmodified_since` takes precedence over this parameter.
 * param disable_users boolean: True disables any newly-created users.
 
     When an administrator creates submissions on behalf of other people, HotCRP

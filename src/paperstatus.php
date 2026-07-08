@@ -2,6 +2,19 @@
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
+final class PaperStatus_StatusInfo {
+    public $submitted;
+    public $draft;
+    public $withdrawn;
+    public $final_submitted;
+    public $submitted_at;
+    public $withdrawn_at;
+    public $final_submitted_at;
+    public $modified_at;
+    public $if_unmodified_since;
+    public $withdraw_reason;
+}
+
 final class PaperStatus extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -281,30 +294,48 @@ final class PaperStatus extends MessageSet {
     }
 
 
+    /** @param object $istatusj
+     * @param object $ipj
+     * @param string $k
+     * @return array{string,mixed} */
+    private function _normalize_status_extract($istatusj, $ipj, $k) {
+        $isjv = $istatusj->$k ?? null;
+        $ipjv = $ipj->$k ?? null;
+        if ($isjv !== null && $ipjv !== null && $isjv !== $ipjv) {
+            $this->syntax_error_at("status:{$k}");
+            $this->error_at($k);
+        } else if ($ipjv !== null) {
+            return [$k, $ipjv];
+        } else if ($isjv !== null) {
+            return ["status:{$k}", $isjv];
+        }
+        return [$k, null];
+    }
+
     private function _normalize($ipj) {
         // Errors prevent saving
         $xpj = (object) [];
 
         // Status
-        $xstatus = (object) [];
+        $xstatus = new PaperStatus_StatusInfo;
         if (isset($ipj->status) && is_object($ipj->status)) {
             $istatusstr = null;
-            $istatus = $ipj->status;
+            $istatusj = $ipj->status;
         } else {
             if (isset($ipj->status) && is_string($ipj->status)) {
                 $istatusstr = $ipj->status;
             } else {
                 $istatusstr = null;
             }
-            $istatus = $ipj;
+            $istatusj = (object) [];
         }
         foreach (["submitted", "draft", "withdrawn", "final_submitted"] as $k) {
-            $v = $istatus->$k ?? null;
-            if ($v !== null && !is_bool($v)) {
-                $this->syntax_error_at("status:{$k}");
-                $v = null;
+            list($sk, $v) = $this->_normalize_status_extract($istatusj, $ipj, $k);
+            if (is_bool($v)) {
+                $xstatus->$k = $v;
+            } else if ($v !== null) {
+                $this->syntax_error_at($sk);
             }
-            $xstatus->$k = $v;
         }
         if ($xstatus->submitted !== null || $xstatus->draft !== null) {
             $xstatus->draft = $xstatus->draft ?? !$xstatus->submitted;
@@ -312,33 +343,36 @@ final class PaperStatus extends MessageSet {
         }
         foreach (["submitted_at", "withdrawn_at", "final_submitted_at",
                   "modified_at", "if_unmodified_since"] as $k) {
-            $v = $istatus->$k ?? null;
-            if (is_numeric($v)) {
+            list($sk, $v) = $this->_normalize_status_extract($istatusj, $ipj, $k);
+            if ($v === null) {
+                continue;
+            } else if (is_numeric($v)) {
                 $v = (float) $v;
                 if ($v < 0) {
-                    $this->error_at("status:{$k}", "<0>Negative date");
-                    $v = null;
+                    $this->error_at($sk, "<0>Negative date");
+                    continue;
                 }
             } else if (is_string($v)) {
                 $v = $this->conf->parse_time($v, Conf::$now);
                 if ($v === false || $v < 0) {
-                    $this->error_at("status:{$k}", "<0>Parse error in date");
-                    $v = null;
+                    $this->error_at($sk, "<0>Parse error in date");
+                    continue;
                 } else {
                     $v = (float) $v;
                 }
             } else if ($v === false) {
                 $v = 0.0;
-            } else if ($v !== null) {
-                $this->syntax_error_at("status:{$k}");
+            } else {
+                $this->syntax_error_at($sk);
+                continue;
             }
             $xstatus->$k = $v;
         }
-        $v = $istatus->withdraw_reason ?? null;
+        list($sk, $v) = $this->_normalize_status_extract($istatusj, $ipj, "withdraw_reason");
         if (is_string($v)) {
             $xstatus->withdraw_reason = $v;
         } else if ($v !== null) {
-            $this->syntax_error_at("status:withdraw_reason");
+            $this->syntax_error_at($sk);
         }
         if (in_array($istatusstr, ["submitted", "accepted", "accept", "deskrejected", "desk_reject", "deskreject", "rejected", "reject"], true)) {
             $xstatus->submitted = $xstatus->submitted ?? true;
@@ -445,7 +479,7 @@ final class PaperStatus extends MessageSet {
         foreach ((array) $ipj as $k => $v) {
             if (isset($xpj->$k)
                 || isset($ikeys[$k])
-                || isset($xstatus->$k)
+                || property_exists($xstatus, $k)
                 || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class"], true)
                 || $k[0] === "_"
                 || $k[0] === "\$") {
@@ -687,7 +721,7 @@ final class PaperStatus extends MessageSet {
                 }
                 $this->prow->set_prop("timeWithdrawn", $withdrawn_at > 0 ? $withdrawn_at : Conf::$now);
             }
-            if (isset($pj->status->withdrawn_reason)) {
+            if (isset($pj->status->withdraw_reason)) {
                 $this->prow->set_prop("withdrawReason", UnicodeHelper::utf8_truncate_invalid(substr($pj->status->withdraw_reason, 0, 1024)));
             }
         }
@@ -1078,7 +1112,10 @@ final class PaperStatus extends MessageSet {
             $pjs->submitted = false;
             $pjs->draft = true;
         }
-        if (($s = $qreq["status:if_unmodified_since"]) !== null) {
+        if (($s = $qreq["if_unmodified_since"] ?? null) !== null) {
+            $s = is_string($s) && ctype_digit($s) ? intval($s) : $s;
+            $pj->if_unmodified_since = $s;
+        } else if (($s = $qreq["status:if_unmodified_since"]) !== null) {
             $s = is_string($s) && ctype_digit($s) ? intval($s) : $s;
             $pjs->if_unmodified_since = $s;
         }
@@ -1262,7 +1299,8 @@ final class PaperStatus extends MessageSet {
         // don't save if transaction required
         if (isset($pj->status->if_unmodified_since)
             && $pj->status->if_unmodified_since < $this->prow->timeModified) {
-            $this->estop_at("status:if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
+            $this->estop_at("if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
+            $this->estop_at("status:if_unmodified_since");
         }
 
         // don't save if not allowed

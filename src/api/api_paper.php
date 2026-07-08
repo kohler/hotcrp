@@ -44,7 +44,7 @@ class Paper_API extends MessageSet {
     /** @var bool */
     private $notify_authors = true;
     /** @var ?string */
-    private $reason;
+    private $notify_reason;
     /** @var bool */
     private $disable_users = false;
     /** @var bool */
@@ -150,15 +150,6 @@ class Paper_API extends MessageSet {
         $this->set_post_param($qreq);
         $this->docloc = new DocumentLocator;
 
-        // parse single-paper precondition
-        if (isset($qreq->if_unmodified_since)) {
-            $ius = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
-            if ($ius === false) {
-                return JsonResult::make_parameter_error("if_unmodified_since");
-            }
-            $this->if_unmodified_since = $ius;
-        }
-
         // check Content-Type
         if (Mimetype::is_form($qreq->body_content_type())
             && !$this->post_form_is_json($qreq)) {
@@ -195,9 +186,17 @@ class Paper_API extends MessageSet {
         // honored is decided per paper (execute_save())
         $this->notify = friendly_boolean($qreq->notify) !== false;
         $this->notify_authors = friendly_boolean($qreq->notify_authors) !== false;
-        $this->reason = $qreq->reason ?? "";
+        $this->notify_reason = $qreq->reason ?? "";
         if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun /* XXX */)) {
             $this->dry_run = true;
+        }
+        // parse single-paper precondition
+        if (isset($qreq->if_unmodified_since)) {
+            $t = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
+            if ($t === false) {
+                JsonResult::make_parameter_error("if_unmodified_since")->complete();
+            }
+            $this->if_unmodified_since = $t;
         }
     }
 
@@ -222,11 +221,10 @@ class Paper_API extends MessageSet {
      * to every paper of a single, multi, or match request.
      * @param object $jp */
     private function apply_if_unmodified_since($jp) {
-        if ($this->if_unmodified_since !== null) {
-            $jp->status = $jp->status ?? (object) [];
-            if (is_object($jp->status) && !isset($jp->status->if_unmodified_since)) {
-                $jp->status->if_unmodified_since = $this->if_unmodified_since;
-            }
+        if ($this->if_unmodified_since !== null
+            && !isset($jp->if_unmodified_since)
+            && (!is_object($jp->status ?? null) || !isset($jp->status->if_unmodified_since))) {
+            $jp->if_unmodified_since = $this->if_unmodified_since;
         }
     }
 
@@ -271,8 +269,9 @@ class Paper_API extends MessageSet {
 
         $this->single = true;
         if ($this->if_unmodified_since !== null
+            && $qreq["if_unmodified_since"] === null
             && $qreq["status:if_unmodified_since"] === null) {
-            $qreq->set("status:if_unmodified_since", (string) $this->if_unmodified_since);
+            $qreq->set("if_unmodified_since", (string) $this->if_unmodified_since);
         }
         $ps = $this->paper_status();
         $ok = $ps->prepare_save_paper_web($qreq, $prow);
@@ -339,7 +338,7 @@ class Paper_API extends MessageSet {
     private function paper_status() {
         return (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
-            ->set_notify_reason($this->reason)
+            ->set_notify_reason($this->notify_reason)
             ->set_any_content_file(true)
             ->on_document_import([$this->docloc, "on_document_import"]);
     }
@@ -382,7 +381,7 @@ class Paper_API extends MessageSet {
         }
         $this->status_list[] = new Paper_API_Status(
             $ok, $ps->changed_keys(true),
-            $ps->has_error_at("status:if_unmodified_since"),
+            $ps->has_error_at("if_unmodified_since"),
             $ps->saved_pid() ?? "new"
         );
     }
@@ -493,20 +492,12 @@ class Paper_API extends MessageSet {
         $this->set_post_param($qreq);
         $this->single = true;
 
-        $if_unmodified_since = null;
-        if (isset($qreq->if_unmodified_since)) {
-            $if_unmodified_since = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
-            if ($if_unmodified_since === false) {
-                return JsonResult::make_parameter_error("if_unmodified_since");
-            }
-        }
-
         if (!$this->user->can_manage($prow)) {
             return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete {$this->conf->snouns[1]}");
         }
 
-        $conflict = $if_unmodified_since !== null
-            && $if_unmodified_since < $prow->timeModified;
+        $conflict = $this->if_unmodified_since !== null
+            && $this->if_unmodified_since < $prow->timeModified;
         if ($conflict) {
             $this->error_at("if_unmodified_since", $this->conf->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
             $valid = false;
@@ -515,7 +506,7 @@ class Paper_API extends MessageSet {
         } else {
             if ($this->notify && $this->notify_authors) {
                 HotCRPMailer::send_contacts("@deletepaper", $prow, [
-                    "reason" => (string) $this->reason,
+                    "reason" => (string) $this->notify_reason,
                     "confirm_message_for" => $this->user
                 ]);
             }

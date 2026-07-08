@@ -233,7 +233,7 @@ class PaperAPI_Tester {
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->change_list[0], "pid");
 
-        $qreq = TestQreq::post_json(["pid" => 201, "title" => "Fart Again", "abstract" => "Extra Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
+        $qreq = TestQreq::post_json(["pid" => 201, "title" => "Fart Again", "abstract" => "Extra Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "if_unmodified_since" => 0]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->change_list[0], "pid");
@@ -246,7 +246,8 @@ class PaperAPI_Tester {
     }
 
     // The flat `if_unmodified_since` parameter is an alias for the JSON
-    // `status.if_unmodified_since` field, and edit conflicts report `conflict`.
+    // `if_unmodified_since/status.if_unmodified_since` field, and edit
+    // conflicts report `conflict`.
     function test_if_unmodified_since_param() {
         $qreq = TestQreq::post_json(["pid" => 202, "title" => "IUS", "abstract" => "A", "authors" => [["name" => "Ann Ug", "email" => "ann@_.com"]]]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
@@ -311,9 +312,9 @@ class PaperAPI_Tester {
         xassert_eqq($jr->status_list[1]->valid, false);
         xassert_eqq($jr->status_list[1]->conflict, true);
 
-        // a per-paper `status.if_unmodified_since` overrides the flat backup
+        // a per-paper `if_unmodified_since` overrides the flat backup
         $qreq = TestQreq::post_json([
-            ["pid" => 210, "title" => "M1y", "status" => ["if_unmodified_since" => $mod210]],
+            ["pid" => 210, "title" => "M1y", "if_unmodified_since" => $mod210],
             ["pid" => 211, "title" => "M2y"]
         ], ["if_unmodified_since" => 0]);
         $jr = call_api("=papers", $this->u_chair, $qreq);
