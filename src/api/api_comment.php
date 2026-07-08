@@ -816,8 +816,8 @@ class Comment_API extends MessageSet {
             } else {
                 $jr = (new Comment_API($user))->run_post($qreq, $prow, $mode);
             }
-        } catch (JsonResult $jrex) {
-            $jr = $jrex;
+        } catch (JsonCompletion $jc) {
+            $jr = $jc->result;
         }
         $user->set_overrides($old_overrides);
         if (($jr->content["message_list"] ?? null) === []) {

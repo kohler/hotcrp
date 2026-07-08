@@ -54,7 +54,7 @@ class CommentInfo {
     private $_recently_censored;
     /** @var ?bool */
     private $_recently_censorable;
-    /** @var ?array{string,mixed} */
+    /** @var ?array<string,mixed> */
     public $_old_prop;
     /** @var ?DocumentInfoSet cached attachment set; holds the staged documents
      * when an attachment change is registered, else the saved documents */
@@ -283,8 +283,7 @@ class CommentInfo {
             && ($ctype & self::CTM_VIS) !== self::CTVIS_ADMINONLY;
     }
 
-    /** @param int $ctype
-     * @return bool */
+    /** @return bool */
     function ordinal_missing() {
         return self::commenttype_needs_ordinal($this->commentType)
             && ($this->commentType >= self::CTVIS_AUTHOR

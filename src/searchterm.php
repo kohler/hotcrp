@@ -1133,14 +1133,16 @@ class Limit_SearchTerm extends SearchTerm {
         return null;
     }
 
-    /** @return $this */
+    /** @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_implicit() {
         $this->lflag |= self::LFLAG_IMPLICIT;
         $this->clear_float("xlimit");
         return $this;
     }
 
-    /** @return $this */
+    /** @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_base() {
         $this->lflag |= self::LFLAG_BASE;
         return $this;

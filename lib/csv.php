@@ -1116,7 +1116,8 @@ class CsvGenerator {
      * looks numeric, otherwise left.
      * @param int|string $key
      * @param 'l'|'r'|'c'|1|2|3 $align
-     * @return $this */
+     * @return $this
+     * @suppress PhanParamSuspiciousOrder */
     function set_cell_align($key, $align) {
         if (($col = $this->column($key)) === null) {
             assert(false);

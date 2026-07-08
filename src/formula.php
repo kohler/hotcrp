@@ -2278,7 +2278,7 @@ final class Formula implements JsonSerializable {
     function prepare_indexer($index_types = null) {
         $index_types = $index_types ?? $this->index_type();
         if ($index_types === 0) {
-            $this->_f_indexer = function () { return [null]; };
+            $this->_f_indexer = function ($prow, $user, $formula) { return [null]; };
             return $this;
         }
         $state = new FormulaCompiler($this);

@@ -146,8 +146,8 @@ class Review_API extends MessageSet {
             } else {
                 $jr = JsonResult::make_not_found_error();
             }
-        } catch (JsonResult $jrx) {
-            $jr = $jrx;
+        } catch (JsonCompletion $jc) {
+            $jr = $jc->result;
         }
         $user->set_overrides($old_overrides);
         if (($jr->content["message_list"] ?? null) === []) {

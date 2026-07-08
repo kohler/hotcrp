@@ -1320,6 +1320,7 @@ class TagMap {
     }
 
 
+    /** @suppress PhanAccessReadOnlyProperty */
     private function merge_settings(Conf $conf) {
         assert(empty($this->storage) && empty($this->setting_storage) && empty($this->patterns));
         if ($conf->pc_can_view_conflicted_tags()) {

@@ -499,7 +499,8 @@ class AssignmentState extends MessageSet {
         return $this->placeholder_prow;
     }
 
-    /** @return Contact */
+    /** @param int $cid
+     * @return Contact */
     function user_by_id($cid) {
         return $this->cmap->user_by_id($cid);
     }
@@ -1431,7 +1432,7 @@ class AssignmentSet {
         // check for `userid`/`uid`
         if (($req["uid"] ?? "") !== "") {
             if (ctype_digit($req["uid"])
-                && ($u = $this->astate->user_by_id($req["uid"]))) {
+                && ($u = $this->astate->user_by_id(intval($req["uid"])))) {
                 return [$u];
             } else {
                 $this->error("<0>User ID ‘" . $req["uid"] . "’ not found");
