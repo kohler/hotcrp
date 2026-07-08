@@ -336,6 +336,7 @@ src/documentimporter.php
 src/documentinfo.php
 src/documentinfoset.php
 src/documenthashmatcher.php
+src/documentlocator.php
 src/documentrequest.php
 src/failurereason.php
 src/fieldchangeset.php

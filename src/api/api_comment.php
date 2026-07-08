@@ -29,12 +29,8 @@ class Comment_API extends MessageSet {
     private $if_unmodified_since;
     /** @var ?object */
     private $jbody;
-    /** @var ?ZipArchive */
-    private $ziparchive;
-    /** @var ?string */
-    private $ziparchive_docdir;
-    /** @var ?Qrequest */
-    private $attachment_qreq;
+    /** @var DocumentLocator */
+    private $docloc;
     /** @var ?list<string> */
     private $change_list;
 
@@ -46,9 +42,6 @@ class Comment_API extends MessageSet {
     /** @var string */
     private $lccmttype;
 
-
-    const M_ONE = 1;
-    const M_MULTI = 2;
 
     const RESPONSE_REPLACED = 492;
 
@@ -226,13 +219,14 @@ class Comment_API extends MessageSet {
 
 
     /** Decode a single comment object from a JSON body, `json` form field, ZIP
-     * archive, or upload capability. Returns null for a plain form request; sets
-     * up `$ziparchive`/`$attachment_qreq` for attachment import; completes with
-     * an error on a malformed upload. Mirrors `Paper_API::run_post`'s dispatch.
+     * archive, or upload capability. Returns null for a plain form request; the
+     * `DocumentLocator` retains any archive/upload context for later attachment
+     * import; completes with an error on a malformed upload.
      * @return ?object */
     private function parse_upload(Qrequest $qreq) {
         $ct = $qreq->body_content_type();
         $ct_form = $ct === null || Mimetype::is_form($ct);
+        $this->docloc = new DocumentLocator;
 
         // an uploaded file supplied by capability
         if ($ct_form && isset($qreq->upload)) {
@@ -251,43 +245,7 @@ class Comment_API extends MessageSet {
             return null;
         }
 
-        if ($ct === "application/json") {
-            $jsonstr = $updoc ? $updoc->content() : $qreq->body();
-        } else if ($ct === "application/zip") {
-            $this->ziparchive = new ZipArchive;
-            $cf = $updoc ? $updoc->content_file() : $qreq->body_file(".zip");
-            if (!$cf) {
-                JsonResult::make_error(500, "<0>Uploaded content unreadable")->complete();
-            }
-            $ec = $this->ziparchive->open($cf);
-            if ($ec !== true) {
-                JsonResult::make_error(400, "<0>ZIP error " . json_encode($ec))->complete();
-            }
-            list($this->ziparchive_docdir, $jsonname) = Paper_API::analyze_zip_contents($this->ziparchive);
-            if (!$jsonname) {
-                JsonResult::make_error(400, "<0>ZIP `data.json` not found")->complete();
-            }
-            $jsonstr = $this->ziparchive->getFromName($jsonname);
-        } else if ($ct_form) {
-            // a `json` form field; uploaded files satisfy `content_file` references
-            $jsonstr = $qreq->json;
-            $this->attachment_qreq = $qreq;
-        } else {
-            JsonResult::make_error(400, "<0>Unexpected content type")->complete();
-            return null; // unreachable; complete() throws
-        }
-
-        $jp = Json::try_decode((string) $jsonstr);
-        if (is_array($jp) && count($jp) === 1 && is_object($jp[0])) {
-            // a one-element array names a single comment (bulk upload is TBD)
-            $jp = $jp[0];
-        }
-        if (!is_object($jp)) {
-            if ($jp === null) {
-                JsonResult::make_error(400, "<0>Invalid JSON (" . Json::last_error_msg() . ")")->complete();
-            }
-            JsonResult::make_error(400, is_array($jp) ? "<0>Expected one comment" : "<0>Expected object")->complete();
-        }
+        list($jp, $mode) = $this->docloc->parse_json_request($qreq, DocumentLocator::M_ONE);
         if (($jp->object ?? "comment") !== "comment") {
             JsonResult::make_message_list(400, MessageItem::error_at("object", "<0>Object type mismatch"))->complete();
         }
@@ -558,7 +516,7 @@ class Comment_API extends MessageSet {
      * @return ?list<DocumentInfo> */
     private function import_docs($descriptors) {
         $di = (new DocumentImporter($this->prow, DTYPE_COMMENT, 0, $this, "docs"))
-            ->on_import([$this, "on_document_import"]);
+            ->on_import([$this->docloc, "on_document_import"]);
         $docs = [];
         foreach ($descriptors as $dj) {
             if (($doc = $di->upload_document($dj))) {
@@ -569,16 +527,6 @@ class Comment_API extends MessageSet {
             }
         }
         return $docs;
-    }
-
-    /** A `DocumentImporter` on-import callback resolving a comment attachment's
-     * `content_file` reference against the ZIP archive or the `json`-form upload.
-     * @param object $docj
-     * @param int $dt
-     * @param DocumentImporter $importer
-     * @return ?bool */
-    function on_document_import($docj, $dt, $importer) {
-        return Paper_API::apply_content_file($docj, $importer, $this->ziparchive, $this->ziparchive_docdir, $this->attachment_qreq);
     }
 
     /** Shared save path for the form and JSON variants.
@@ -716,7 +664,7 @@ class Comment_API extends MessageSet {
         }
         try {
             if ($qreq->is_getlike()) {
-                if ($mode === self::M_ONE) {
+                if ($mode === DocumentLocator::M_ONE) {
                     $jr = (new Comment_API($user, $prow))->run_get_one($qreq);
                 } else {
                     $jr = self::run_get_multi($user, $qreq, $prow);
@@ -736,11 +684,11 @@ class Comment_API extends MessageSet {
 
     /** @return JsonResult */
     static function run_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        return self::run($user, $qreq, $prow, self::M_ONE);
+        return self::run($user, $qreq, $prow, DocumentLocator::M_ONE);
     }
 
     /** @return JsonResult */
     static function run_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        return self::run($user, $qreq, $prow, self::M_MULTI);
+        return self::run($user, $qreq, $prow, DocumentLocator::M_MULTI);
     }
 }

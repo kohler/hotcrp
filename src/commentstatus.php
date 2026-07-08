@@ -17,9 +17,9 @@ final class CommentStatus extends MessageSet {
     private $notify_reason;
     /** @var ?CommentInfo */
     private $crow;
+
     /** @var int */
     private $_status = 0;
-
     // transient orchestration state carried from prepare_save to execute_save
     /** @var bool */
     private $_has_change = false;
