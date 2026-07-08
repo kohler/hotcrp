@@ -241,22 +241,18 @@ request formats are similar to that of `POST /{p}/paper`: it can accept a
 JSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and
 form-encoded requests can also include attached files.
 
-## Modify submissions independently
-
 The JSON provided for `/papers` should be an *array* of JSON objects; each
-object is applied independently. The per-submission results are returned in the
-`status_list` response field (described below).
+object is applied independently. The per-submission results are returned in
+the `status_list` response field (described below). The response
+`message_list` contains all messages relating to the save; each message’s
+`landmark` field is set to the integer index of the relevant submission in the
+input array.
 
-The response `message_list` contains messages relating to all modified
-submissions. To filter out the messages for a single submission, use the
-messages’ `landmark` fields. `landmark` is set to the integer index of the
-relevant submission in the input JSON.
+## Modify matching submissions
 
-## Modify all matching submissions
-
-Alternately, you can provide a `q` search query parameter and a *single* JSON
-modification object lacking the `pid` field. The JSON modification will be
-applied to all papers returned by the `q` search query.
+Alternatively, you can provide a `q` search query parameter and a *single*
+JSON modification object lacking the `pid` field. The JSON modification will
+be applied to all papers returned by the `q` search query.
 
 
 * body application/json [paper]: An array of submission objects sent as a raw JSON body.

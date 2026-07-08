@@ -545,17 +545,33 @@ class PaperAPI_Tester {
         xassert_eqq($jr->message_list[0]->field, "status:submitted");
     }
 
+    function test_get() {
+        $qreq = TestQreq::get(["p" => 3]);
+        $jr = call_api("paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->paper->object, "paper");
+        xassert_eqq($jr->paper->pid, 3);
+    }
+
     function test_get_fail() {
-        $qreq = TestQreq::get(["p" => 100101]);
+        // unknown pid
+        $qreq = TestQreq::get(["p" => 1093]);
         $jr = call_api("paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_str_contains($jr->message_list[0]->message, "does not exist");
 
+        // absent `p`
         $qreq = TestQreq::get();
         $jr = call_api("paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "p");
         xassert_eqq($jr->message_list[0]->message, "<0>Parameter missing");
+
+        // broken `p`
+        $qreq = TestQreq::get(["p" => "xxx"]);
+        $jr = call_api("paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains($jr->message_list[0]->message, "Invalid");
     }
 
     function test_document() {

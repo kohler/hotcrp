@@ -4662,7 +4662,7 @@ class Conf {
     function set_paper_request(Qrequest $qreq, Contact $user) {
         $qreq->set_paper(null);
         $prow = null;
-        if ($qreq->p) {
+        if ((string) $qreq->p !== "") {
             $pid = stoi($qreq->p) ?? 0;
             if ($pid > 0 && $pid <= PaperInfo::PID_MAX) {
                 $prow = $this->paper_by_id($pid, $user);

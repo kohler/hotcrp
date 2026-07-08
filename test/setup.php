@@ -1008,7 +1008,7 @@ function call_api_result($fn, $user, $qreq, $prow = null) {
     $qreq->set_user($user);
     if ($prow) {
         $qreq->set_paper($prow);
-    } else if ($qreq->p && ctype_digit((string) $qreq->p)) {
+    } else if ((string) $qreq->p !== "") {
         $user->conf->set_paper_request($qreq, $user);
     }
     Qrequest::set_main_request($qreq);

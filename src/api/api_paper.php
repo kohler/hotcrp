@@ -40,6 +40,8 @@ class Paper_API extends MessageSet {
      * @readonly */
     public $user;
     /** @var bool */
+    private $dry_run = false;
+    /** @var bool */
     private $notify = true;
     /** @var bool */
     private $notify_authors = true;
@@ -47,8 +49,6 @@ class Paper_API extends MessageSet {
     private $notify_reason;
     /** @var bool */
     private $disable_users = false;
-    /** @var bool */
-    private $dry_run = false;
     /** @var ?int */
     private $if_unmodified_since;
     /** @var bool */
@@ -75,14 +75,7 @@ class Paper_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    static private function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if (!isset($qreq->p)) {
-            return JsonResult::make_missing_error("p");
-        }
-        $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
-        if (!$prow || $fr) {
-            return Conf::paper_error_json_result($fr);
-        }
+    static private function run_get_one(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $pj = (new PaperExport($user))->paper_json($prow);
         assert(!!$pj);
         return new JsonResult(["ok" => true, "paper" => $pj]);
@@ -141,11 +134,6 @@ class Paper_API extends MessageSet {
             }
         }
 
-        // check `q` parameter
-        if ($mode === DocumentLocator::M_MULTI && !isset($qreq->q)) {
-            return JsonResult::make_missing_error("q");
-        }
-
         // set parameters
         $this->set_post_param($qreq);
         $this->docloc = new DocumentLocator;
@@ -173,6 +161,7 @@ class Paper_API extends MessageSet {
     }
 
     private function set_post_param(Qrequest $qreq) {
+        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
         if ($this->user->privChair) {
             if (friendly_boolean($qreq->disable_users)) {
                 $this->disable_users = true;
@@ -187,9 +176,6 @@ class Paper_API extends MessageSet {
         $this->notify = friendly_boolean($qreq->notify) !== false;
         $this->notify_authors = friendly_boolean($qreq->notify_authors) !== false;
         $this->notify_reason = $qreq->reason ?? "";
-        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun /* XXX */)) {
-            $this->dry_run = true;
-        }
         // parse single-paper precondition
         if (isset($qreq->if_unmodified_since)) {
             $t = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
@@ -318,6 +304,8 @@ class Paper_API extends MessageSet {
     private function run_post_match_json(Qrequest $qreq, $jp) {
         if (isset($jp->pid) || isset($jp->id)) {
             return JsonResult::make_error(400, "<0>Unexpected `pid`");
+        } else if (!isset($qreq->q)) {
+            return JsonResult::make_missing_error("q");
         }
         $this->single = false;
         $this->apply_if_unmodified_since($jp);

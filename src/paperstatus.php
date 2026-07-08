@@ -1144,7 +1144,7 @@ final class PaperStatus extends MessageSet {
             return false;
         }
         $pid = $pj->pid ?? $pj->id ?? null;
-        $pidkey = isset($pj->pid) && isset($pj->id) ? "id" : "pid";
+        $pidkey = isset($pj->id) && !isset($pj->pid) ? "id" : "pid";
         if ($pid === null && $prow) {
             $pid = $prow->paperId;
         } else if ($pid === "new" || (is_int($pid) && $pid <= 0)) {
