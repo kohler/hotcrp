@@ -293,7 +293,7 @@ class PaperAPI_Tester {
         xassert_eqq($jr->ok, true);
         xassert(!isset($jr->conflict));
         xassert_eqq($jr->status_list[0]->valid, true);
-        xassert(!isset($jr->status_list[0]->conflict));
+        xassert_eqq($jr->status_list[0]->conflict ?? false, false);
         xassert_eqq($jr->status_list[1]->valid, true);
         $mod210 = (int) $this->conf->fetch_ivalue("select timeModified from Paper where paperId=210");
         xassert($mod210 > 0);
@@ -318,7 +318,7 @@ class PaperAPI_Tester {
         ], ["if_unmodified_since" => 0]);
         $jr = call_api("=papers", $this->u_chair, $qreq);
         xassert_eqq($jr->status_list[0]->valid, true);
-        xassert(!isset($jr->status_list[0]->conflict));
+        xassert_eqq($jr->status_list[0]->conflict ?? false, false);
         xassert_eqq($jr->status_list[1]->valid, false);
         xassert_eqq($jr->status_list[1]->conflict, true);
     }

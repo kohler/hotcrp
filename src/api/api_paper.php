@@ -2,6 +2,36 @@
 // api_paper.php -- HotCRP paper API call
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
+class Paper_API_Status implements JsonSerializable {
+    /** @var bool */
+    public $valid;
+    /** @var list<string> */
+    public $change_list;
+    /** @var bool */
+    public $conflict;
+    /** @var null|int|'new' */
+    public $pid;
+
+    function __construct($valid = false, $change_list = [], $conflict = false, $pid = null) {
+        $this->valid = $valid;
+        $this->change_list = $change_list;
+        $this->conflict = $conflict;
+        $this->pid = $pid;
+    }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $u = ["valid" => $this->valid, "change_list" => $this->change_list];
+        if ($this->conflict) {
+            $u["conflict"] = $this->conflict;
+        }
+        if ($this->pid !== null) {
+            $u["pid"] = $this->pid;
+        }
+        return $u;
+    }
+}
+
 class Paper_API extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -26,16 +56,10 @@ class Paper_API extends MessageSet {
     /** @var DocumentLocator */
     private $docloc;
 
-    /** @var list<list<string>> */
-    private $change_lists = [];
+    /** @var list<Paper_API_Status> */
+    private $status_list = [];
     /** @var list<object> */
     private $papers = [];
-    /** @var list<bool> */
-    private $valid = [];
-    /** @var list<bool> */
-    private $conflicts = [];
-    /** @var list<null|int|'new'> */
-    private $pids = [];
     /** @var int */
     private $npapers = 0;
     /** @var null|int|string */
@@ -346,20 +370,21 @@ class Paper_API extends MessageSet {
             }
             $this->append_item($mi);
         }
-        $this->change_lists[] = $ps->changed_keys(true);
         if ($ok && !$this->dry_run) {
             if ($ps->has_change()) {
                 $this->execute_change($ps);
             }
-            $pj = (new PaperExport($this->user))->paper_json($ps->saved_prow());
-            $this->papers[] = $pj;
+            $this->papers[] = (new PaperExport($this->user))
+                ->paper_json($ps->saved_prow());
             ++$this->npapers;
         } else {
             $this->papers[] = null;
         }
-        $this->pids[] = $ps->saved_pid() ?? "new";
-        $this->valid[] = $ok;
-        $this->conflicts[] = $ps->has_error_at("status:if_unmodified_since");
+        $this->status_list[] = new Paper_API_Status(
+            $ok, $ps->changed_keys(true),
+            $ps->has_error_at("status:if_unmodified_since"),
+            $ps->saved_pid() ?? "new"
+        );
     }
 
     /** @param PaperStatus $ps */
@@ -371,17 +396,14 @@ class Paper_API extends MessageSet {
     }
 
     private function execute_fail() {
-        $this->change_lists[] = null;
+        $this->status_list[] = new Paper_API_Status;
         $this->papers[] = null;
-        $this->pids[] = null;
-        $this->valid[] = false;
-        $this->conflicts[] = false;
     }
 
     /** @return JsonResult */
     private function post_result() {
-        $ok = empty($this->valid)
-            || array_find($this->valid, function ($x) { return !!$x; });
+        $ok = empty($this->status_list)
+            || array_find($this->status_list, function ($x) { return !!$x->valid; });
         $jr = new JsonResult([
             "ok" => $ok,
             "message_list" => $this->message_list()
@@ -390,36 +412,14 @@ class Paper_API extends MessageSet {
             $jr->content["dry_run"] = true;
         }
         if ($this->single) {
-            $jr->content["valid"] = $this->valid[0];
-            $jr->content["change_list"] = $this->change_lists[0];
-            if ($this->conflicts[0]) {
-                $jr->content["conflict"] = true;
-            }
-            if ($this->pids[0] !== null) {
-                $jr->content["pid"] = $this->pids[0];
+            foreach ($this->status_list[0]->jsonSerialize() as $k => $v) {
+                $jr->content[$k] = $v;
             }
             if ($this->npapers > 0) {
                 $jr->content["paper"] = $this->papers[0];
             }
         } else {
-            $ul = [];
-            for ($i = 0; $i !== count($this->valid); ++$i) {
-                $u = [
-                    "valid" => $this->valid[$i],
-                    "change_list" => $this->change_lists[$i]
-                ];
-                if ($this->conflicts[$i]) {
-                    $u["conflict"] = true;
-                }
-                if ($this->pids[$i] !== null) {
-                    $u["pid"] = $this->pids[$i];
-                }
-                if ($this->dry_run) {
-                    $u["dry_run"] = true;
-                }
-                $ul[] = (object) $u;
-            }
-            $jr->content["status_list"] = $ul;
+            $jr->content["status_list"] = $this->status_list;
             if (!$this->dry_run) {
                 $jr->content["papers"] = $this->papers;
             }
@@ -507,14 +507,11 @@ class Paper_API extends MessageSet {
 
         $conflict = $if_unmodified_since !== null
             && $if_unmodified_since < $prow->timeModified;
-        $this->change_lists[] = ["delete"];
-        $this->pids[] = $prow->paperId;
-        $this->conflicts[] = $conflict;
         if ($conflict) {
             $this->error_at("if_unmodified_since", $this->conf->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
-            $this->valid[] = false;
+            $valid = false;
         } else if ($this->dry_run) {
-            $this->valid[] = true;
+            $valid = true;
         } else {
             if ($this->notify && $this->notify_authors) {
                 HotCRPMailer::send_contacts("@deletepaper", $prow, [
@@ -522,8 +519,10 @@ class Paper_API extends MessageSet {
                     "confirm_message_for" => $this->user
                 ]);
             }
-            $this->valid[] = $prow->delete_from_database($this->user);
+            $valid = $prow->delete_from_database($this->user);
         }
+        $this->status_list[] = new Paper_API_Status($valid, ["delete"], $conflict, $prow->paperId);
+        $this->papers[] = null;
         return $this->post_result();
     }
 
