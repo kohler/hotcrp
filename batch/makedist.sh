@@ -104,6 +104,7 @@ batch/backupdb.php
 batch/checkinvariants.php
 batch/cli/cli_assign.php
 batch/cli/cli_autoassign.php
+batch/cli/cli_comment.php
 batch/cli/cli_document.php
 batch/cli/cli_job.php
 batch/cli/cli_paper.php
