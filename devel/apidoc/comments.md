@@ -71,6 +71,7 @@ may not see it, an error is returned.
 
     * default true
 * response ?comment comment: The requested comment.
+* badge featured
 
 
 # post /{p}/comment
@@ -189,6 +190,7 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * response ?conflict boolean: True when the edit was rejected by a concurrency check (see [Concurrency](#tag-comments)).
 * response ?cid cid: The affected comment’s ID: the new ID for a created comment, or the existing ID for an edit. Absent when deleting, or on a dry-run creation.
 * response ?comment comment: The saved comment, absent on delete or `dry_run`.
+* badge featured
 
 
 # get /comments
@@ -217,6 +219,7 @@ an error.
 
     * default true
 * response ?comments [comment]: The matching comment objects.
+* badge featured
 
 
 # post /comments
@@ -271,6 +274,7 @@ to the integer index of the item they concern.
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?+status_list [comment_update_status]: Per-comment results, one entry per input object (same length and order as the input). Entry *i* reports `valid`, `change_list`, `pid`, and `cid`, plus `conflict` for an edit-conflict rejection.
 * response ?comments [comment]: The saved comments, one per input object (`null` for a failed item); omitted entirely for `dry_run`.
+* badge featured
 
 
 # get /mentioncompletion
