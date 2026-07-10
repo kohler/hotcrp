@@ -73,7 +73,7 @@ jobs:
 
     - name: Install poppler
       run: |
-        sudo apt-get update
+        sudo apt-get update --allow-releaseinfo-change
         sudo apt-get --fix-missing install poppler-utils
 
     - name: Run tests
