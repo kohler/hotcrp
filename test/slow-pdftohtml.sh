@@ -4,7 +4,21 @@
 # format check holds the banal lease long enough to be observed. Set
 # HOTCRP_TEST_PDFTOHTML_DELAY to the number of seconds to sleep before running.
 
-if [ -n "$HOTCRP_TEST_PDFTOHTML_DELAY" ]; then
+if test -n "$HOTCRP_TEST_PDFTOHTML_DELAY"; then
     sleep "$HOTCRP_TEST_PDFTOHTML_DELAY"
 fi
-exec pdftohtml "$@"
+
+for cand in /opt/homebrew/bin/pdftohtml /usr/local/bin/pdftohtml \
+            /usr/bin/pdftohtml /opt/local/bin/pdftohtml; do
+    if [ -x "$cand" ]; then
+        exec "$cand" "$@"
+    fi
+done
+
+real=`command -v pdftohtml 2>/dev/null`
+if [ -n "$real" ]; then
+    exec "$real" "$@"
+fi
+
+echo "slow-pdftohtml.sh: cannot find pdftohtml" >&2
+exit 127
