@@ -208,7 +208,7 @@ class MailRecipients extends MessageSet {
             $row = $this->conf->fetch_first_row("select
                 exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and {$pidw}),
                 exists (select * from PaperReview where reviewType>0 and reviewType<" . REVIEW_PC . "  and {$pidw}),
-                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and reviewSubmitted is null and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and {$pidw}),
+                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and coalesce(reviewSubmitted,0)<=0 and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and {$pidw}),
                 exists (select * from Paper where timeSubmitted>0 and leadContactId!=0 and {$pidw}),
                 exists (select * from Paper where timeSubmitted>0 and shepherdContactId!=0 and {$pidw})");
             list($any_pcrev, $any_extrev, $any_newpcrev, $any_lead, $any_shepherd) = $row;
@@ -530,16 +530,16 @@ class MailRecipients extends MessageSet {
         // withdrawn papers + incomplete reviews generally uninteresting
         if (($rf & self::FM_REV_SPECIFIC) === 0
             && $prow->timeSubmitted <= 0
-            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            && $rrow->reviewSubmitted <= 0) {
             return false;
         }
         // check completeness
         if (($rf & self::F_REV_COMPLETE)
-            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            && $rrow->reviewSubmitted <= 0) {
             return false;
         }
         if (($rf & self::F_REV_INCOMPLETE)
-            && (($rrow->reviewSubmitted ?? 0) > 0
+            && ($rrow->reviewSubmitted > 0
                 || $rrow->reviewNeedsSubmit == 0
                 || $prow->timeSubmitted <= 0)) {
             return false;
@@ -632,7 +632,7 @@ class MailRecipients extends MessageSet {
             if ($rf & self::F_REV_COMPLETE) {
                 $where[] = "PaperReview.reviewSubmitted>0";
             } else if ($rf & self::F_REV_INCOMPLETE) {
-                $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0 and Paper.timeSubmitted>0";
+                $where[] = "coalesce(PaperReview.reviewSubmitted,0)<=0 and PaperReview.reviewNeedsSubmit!=0 and Paper.timeSubmitted>0";
             } else {
                 $where[] = "(PaperReview.rflags&" . ReviewInfo::RF_LIVE . ")!=0";
             }

@@ -3162,7 +3162,7 @@ class Contact implements JsonSerializable {
                         }
                     }
                 } else if ($this->is_requester()
-                           && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->contactId})")) {
+                           && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and coalesce(reviewSubmitted,0)<=0 and timeApprovalRequested>0 and requestedBy={$this->contactId})")) {
                     $this->_has_approvable = 2;
                 }
             } else if ($this->is_manager()) {
@@ -6474,11 +6474,14 @@ class Contact implements JsonSerializable {
         }
         $rflags_mask = ReviewInfo::RF_LIVE | ReviewInfo::RFM_TYPES | ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_BLIND;
 
-        // change database
+        // return if unchanged
         if ($rflags === $oldrflags
             && ($type === 0 || $round === null || $round === $rrow->reviewRound)) {
             return $reviewId;
-        } else if ($oldtype === 0) {
+        }
+
+        // create or modify review
+        if ($oldtype === 0) {
             $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
             assert($round !== null); // `null` should not happen
             $fields = [
@@ -6487,7 +6490,7 @@ class Contact implements JsonSerializable {
                 "timeRequested" => $time, "requestedBy" => $new_requester_cid,
                 "reviewBlind" => $rflags & ReviewInfo::RF_BLIND ? 1 : 0,
                 "rflags" => $rflags,
-                "reviewNeedsSubmit" => 1
+                "reviewSubmitted" => 0, "reviewNeedsSubmit" => 1
             ];
             if ($extra["mark_notify"] ?? null) {
                 $fields["timeRequestNotified"] = $time;

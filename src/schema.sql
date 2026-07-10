@@ -385,7 +385,7 @@ CREATE TABLE `PaperReview` (
   `reviewBlind` tinyint NOT NULL,
   `reviewTime` bigint NOT NULL DEFAULT 0,
   `reviewModified` bigint NOT NULL DEFAULT 0,
-  `reviewSubmitted` bigint DEFAULT NULL,
+  `reviewSubmitted` bigint NOT NULL DEFAULT 0,
   `reviewAuthorSeen` bigint NOT NULL DEFAULT 0,
   `timeDisplayed` bigint NOT NULL DEFAULT 0,
   `timeApprovalRequested` bigint NOT NULL DEFAULT 0,
@@ -666,7 +666,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 327, null),   -- schema version
+  ('allowPaperOption', 328, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

@@ -371,7 +371,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 327) {
+        if ($this->sversion < 328) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -3091,7 +3091,7 @@ class Conf {
      * @return null|-1|0|1 */
     function compute_secondary_review_needs_submit($pid, $cid) {
         $secondary = REVIEW_SECONDARY;
-        $row = Dbl::fetch_first_row($this->qe("select sum(reviewType={$secondary} and contactId={$cid} and reviewSubmitted is null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid} and reviewSubmitted is not null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
+        $row = Dbl::fetch_first_row($this->qe("select sum(reviewType={$secondary} and contactId={$cid} and coalesce(reviewSubmitted,0)<=0), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid} and coalesce(reviewSubmitted,0)>0), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
         if (!$row || !$row[0]) {
             return null;
         } else if ($row[1]) {

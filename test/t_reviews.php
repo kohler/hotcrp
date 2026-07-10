@@ -1238,7 +1238,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::check_db("t_review-external2-accept17");
         $rrow = $paper17->fresh_review_by_user($user_external2);
         xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
-        xassert_eqq($rrow->reviewSubmitted, null);
+        xassert_eqq($rrow->reviewSubmitted, 0);
         xassert_eqq($rrow->reviewModified, 1);
         xassert_eqq($rrow->timeRequestNotified, Conf::$now);
         xassert_eqq($rrow->view_score(), VIEWSCORE_EMPTY);
@@ -1441,7 +1441,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             $rflags |= ReviewInfo::RF_SUBMITTED;
         }
         $rrow->conf->qe("update PaperReview set reviewSubmitted=?, reviewModified=?, timeApprovalRequested=?, reviewNeedsSubmit=?, rflags=?{$f} where paperId=? and reviewId=?",
-            $status >= ReviewInfo::RS_COMPLETED ? Conf::$now : null,
+            $status >= ReviewInfo::RS_COMPLETED ? Conf::$now : 0,
             $status >= ReviewInfo::RS_DRAFTED ? Conf::$now
                 : ($status >= ReviewInfo::RS_ACKNOWLEDGED ? 1 : 0),
             $rrow->reviewType === REVIEW_EXTERNAL && $rrow->conf->ext_subreviews > 1
@@ -1488,7 +1488,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $p16->load_reviews(true);
         $r16x = $p16->review_by_user($u_ext4);
         xassert(!!$r16x);
-        xassert_eqq($r16x->reviewSubmitted, null);
+        xassert_eqq($r16x->reviewSubmitted, 0);
         xassert_eqq($r16x->reviewModified, 0);
         xassert_eqq($r16x->timeApprovalRequested, 0);
         xassert_eqq($r16x->reviewNeedsSubmit, 1);
@@ -1770,7 +1770,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $rv->check_and_save($this->u_chair, $p16, $r16f);
 
         $r16f = $p16->fresh_review_by_user($this->u_floyd);
-        xassert_eqq($r16f->reviewSubmitted, null);
+        xassert_eqq($r16f->reviewSubmitted, 0);
     }
 
     function test_bulk_unsubmit() {
@@ -1782,7 +1782,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_assign($this->u_chair, "paper,action,user\n16,unsubmitreview,floyd");
 
         $r16f = $p16->fresh_review_by_user($this->u_floyd);
-        xassert_eqq($r16f->reviewSubmitted, null);
+        xassert_eqq($r16f->reviewSubmitted, 0);
     }
 
     function test_set_allow_review_requests() {

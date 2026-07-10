@@ -949,12 +949,12 @@ class ReviewValues extends MessageSet {
             $rflags &= ~(ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED);
         }
         if ($newstatus >= ReviewInfo::RS_COMPLETED
-            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            && $rrow->reviewSubmitted <= 0) {
             $rrow->set_prop("reviewSubmitted", $now);
             $rflags |= ReviewInfo::RF_SUBMITTED;
         } else if ($newstatus < ReviewInfo::RS_COMPLETED
-                   && ($rrow->reviewSubmitted ?? 0) > 0) {
-            $rrow->set_prop("reviewSubmitted", null);
+                   && $rrow->reviewSubmitted > 0) {
+            $rrow->set_prop("reviewSubmitted", 0);
             $rflags &= ~ReviewInfo::RF_SUBMITTED;
         }
         if ($newstatus >= ReviewInfo::RS_APPROVED) {

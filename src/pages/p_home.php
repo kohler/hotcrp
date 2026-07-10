@@ -278,7 +278,7 @@ class Home_Page {
                 $q .= ", " . $rf->main_storage;
                 $scores[] = [];
             }
-            $q = "{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)";
+            $q = "{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (coalesce(reviewSubmitted,0)>0 or timeSubmitted>0)";
             if (!empty($user->hidden_papers)) {
                 $q .= "and paperId not in (" . join(",", array_keys($user->hidden_papers)) . ")";
             }
@@ -316,7 +316,7 @@ class Home_Page {
                 $q .= ", group_concat(coalesce({$rf->main_storage},'')) {$rf->short_id}Scores";
                 $scores[] = [];
             }
-            $result = Dbl::qe_raw("{$q} from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
+            $result = Dbl::qe_raw("{$q} from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and coalesce(PaperReview.reviewSubmitted,0)>0)
                 where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0 group by ContactInfo.contactId");
             while (($row = $result->fetch_row())) {
                 ++$npc;

@@ -34,7 +34,7 @@ class ReviewInfo implements JsonSerializable {
     public $reviewTime;
     /** @var int */
     public $reviewModified;
-    /** @var ?int */
+    /** @var int */
     public $reviewSubmitted;
     /** @var int */
     public $reviewAuthorSeen;
@@ -258,7 +258,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->reviewBlind = null;
         $rrow->reviewTime = 0;
         $rrow->reviewModified = 0;
-        $rrow->reviewSubmitted = null;
+        $rrow->reviewSubmitted = 0;
         $rrow->reviewAuthorSeen = 0;
         $rrow->timeDisplayed = 0;
         $rrow->timeApprovalRequested = 0;
@@ -305,9 +305,7 @@ class ReviewInfo implements JsonSerializable {
         $this->reviewBlind = (int) $this->reviewBlind;
         $this->reviewTime = (int) $this->reviewTime;
         $this->reviewModified = (int) $this->reviewModified;
-        if ($this->reviewSubmitted !== null) {
-            $this->reviewSubmitted = (int) $this->reviewSubmitted;
-        }
+        $this->reviewSubmitted = (int) $this->reviewSubmitted;
         $this->reviewAuthorSeen = (int) $this->reviewAuthorSeen;
         $this->timeDisplayed = (int) $this->timeDisplayed;
         $this->timeApprovalRequested = (int) $this->timeApprovalRequested;
@@ -875,40 +873,42 @@ class ReviewInfo implements JsonSerializable {
     /** @param ?callable(?string,string|int|null...):void $stager
      * @return -2|-1|0|1|2 */
     function save_prop($stager = null) {
+        $inserting = $this->base_prop("reviewId") <= 0;
+
         // do not save if no changes
-        if ($this->reviewId > 0 && !$this->prop_changed()) {
+        if (!$inserting && !$this->prop_changed()) {
             return self::SAVE_PROP_EMPTY;
         }
 
         // update reviewTime, set required fields
         $diff = $this->prop_diff();
-        assert(!isset($diff->_old_prop["reviewTime"]));
         $this->_seal_fstorage();
-        if ($this->reviewId <= 0) {
-            foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound", "reviewBlind", "rflags"] as $k) {
+        if ($inserting) {
+            foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound", "reviewBlind", "rflags", "reviewSubmitted"] as $k) {
                 if (!array_key_exists($k, $diff->_old_prop)) {
                     $diff->_old_prop[$k] = $this->$k;
                 }
             }
-            $this->set_prop("reviewTime", mt_rand(2000, 1000000));
-        } else {
-            $this->set_prop("reviewTime", $this->reviewTime + mt_rand(1, 10000));
+        }
+        if (!isset($diff->_old_prop["reviewTime"])) {
+            $rt = $inserting ? mt_rand(2000, 1000000) : $this->reviewTime + mt_rand(1, 10000);
+            $this->set_prop("reviewTime", $rt);
         }
 
         // construct query
-        $qf = $qv = [];
+        $qp = [];
         foreach ($diff->_old_prop as $prop => $v) {
-            $qf[] = "{$prop}=?";
-            $qv[] = $this->$prop;
+            $qp[$prop] = $this->$prop;
         }
         //error_log("PaperReview {$this->paperId}/{$this->reviewId} " . json_encode($diff->_old_prop));
         $xstager = $stager ?? [$this->conf, "qe"];
-        if ($this->reviewId <= 0) {
-            $result = $xstager("insert into PaperReview set " . join(", ", $qf), ...$qv);
+        if ($inserting) {
+            $result = $xstager("insert into PaperReview (" . join(",", array_keys($qp)) . ") values ?v", [array_values($qp)]);
         } else {
+            $qv = array_values($qp);
             array_push($qv, $this->paperId, $this->reviewId, $this->base_prop("reviewTime"));
-            $result = $xstager("update PaperReview set " . join(", ", $qf)
-                . " where paperId=? and reviewId=? and reviewTime=?", ...$qv);
+            $result = $xstager("update PaperReview set " . join("=?, ", array_keys($qp))
+                . "=? where paperId=? and reviewId=? and reviewTime=?", ...$qv);
         }
         if ($stager) {
             $this->reviewStatus = $this->compute_review_status();

@@ -94,7 +94,7 @@ class AdminHome_Page {
         if (($conf->setting("pcrev_assigntime") ?? 0) > ($conf->setting("pcrev_informtime") ?? 0)
             && $conf->time_review_open()) {
             $assigntime = $conf->setting("pcrev_assigntime");
-            $result = $conf->fetch_ivalue("select exists(select * from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and (rflags&" . ReviewInfo::RF_LIVE . ")!=0) from dual");
+            $result = $conf->fetch_ivalue("select exists(select * from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and coalesce(reviewSubmitted,0)<=0 and (rflags&" . ReviewInfo::RF_LIVE . ")!=0) from dual");
             if ($result) {
                 $ml[] = MessageItem::marked_note("<5>PC review assignments have changed.&nbsp; " . $conf->hotlink("Send review assignment notifications", "mail", ["template" => "newpcrev"]) . " <span class=\"barsep\">·</span> " . $conf->hotlink("Clear this message", "=index", ["clearnewpcrev" => $assigntime]));
             } else {
