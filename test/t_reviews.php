@@ -856,6 +856,110 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->check_and_save($this->u_mgbaker, $paper17));
     }
 
+    function test_reassign_preserves_review_history() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        $paper17 = $conf->checked_paper_by_id(17);
+
+        // give the review some content history
+        save_review($paper17, $this->u_mgbaker, ["ovemer" => 4], null, ["quiet" => true]);
+        save_review($paper17, $this->u_mgbaker, ["ovemer" => 2], null, ["quiet" => true]);
+
+        $rrow = fresh_review($paper17, $this->u_mgbaker);
+        $rid = $rrow->reviewId;
+        $orig_type = $rrow->reviewType;
+        $orig_time = $rrow->reviewTime;
+        $nhist = $conf->fetch_ivalue("select count(*) from PaperReviewHistory where paperId=17 and reviewId=?", $rid);
+        xassert($nhist > 0);
+        xassert_eqq($orig_time, $conf->fetch_ivalue("select max(reviewNextTime) from PaperReviewHistory where paperId=17 and reviewId=?", $rid));
+
+        // changing the review type goes through assign_review's UPDATE path, but
+        // must not bump reviewTime or record history, so the content-history
+        // chain stays navigable
+        $newtype = $orig_type === REVIEW_PC ? REVIEW_PRIMARY : REVIEW_PC;
+        $this->u_chair->assign_review(17, $this->u_mgbaker, $newtype);
+        $rrow2 = fresh_review($paper17, $this->u_mgbaker);
+        xassert_eqq($rrow2->reviewType, $newtype);
+        xassert_eqq($rrow2->reviewTime, $orig_time);
+        xassert_eqq($conf->fetch_ivalue("select count(*) from PaperReviewHistory where paperId=17 and reviewId=?", $rid), $nhist);
+        $earlier = $rrow2->version_at($rrow2->reviewModified - 1);
+        xassert(!!$earlier);
+
+        // restore the original assignment
+        $this->u_chair->assign_review(17, $this->u_mgbaker, $orig_type);
+        $rrow3 = fresh_review($paper17, $this->u_mgbaker);
+        xassert_eqq($rrow3->reviewType, $orig_type);
+        xassert_eqq($rrow3->reviewTime, $orig_time);
+    }
+
+    function test_delete_delegate_updates_secondary_delegation() {
+        $conf = $this->conf;
+        $paper3 = $conf->checked_paper_by_id(3);
+        xassert(!$paper3->review_by_user($this->u_floyd));
+
+        // chair assigns floyd a secondary review; floyd must submit it
+        $this->u_chair->assign_review(3, $this->u_floyd, REVIEW_SECONDARY);
+        $sec = fresh_review($paper3, $this->u_floyd);
+        xassert_eqq($sec->reviewType, REVIEW_SECONDARY);
+        xassert_eqq($sec->reviewNeedsSubmit, 1);
+
+        // floyd delegates by requesting an external review; the secondary is now
+        // covered by the delegate and needn't be submitted
+        $ext_user = Contact::make_keyed($conf, ["email" => "delegate3@_.com", "name" => "Del Egate"])->store();
+        $this->u_floyd->assign_review(3, $ext_user, REVIEW_EXTERNAL);
+        $ext = fresh_review($paper3, $ext_user);
+        xassert_eqq($ext->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($ext->requestedBy, $this->u_floyd->contactId);
+        $sec = fresh_review($paper3, $this->u_floyd);
+        xassert_eqq($sec->reviewNeedsSubmit, -1);
+
+        // deleting the delegate review must recompute the delegator's status:
+        // with no delegate left, the secondary needs submitting again
+        $this->u_chair->assign_review(3, $ext_user, 0);
+        xassert(!$paper3->fresh_review_by_id($ext->reviewId));
+        $sec = fresh_review($paper3, $this->u_floyd);
+        xassert_eqq($sec->reviewNeedsSubmit, 1);
+
+        // clean up: remove the secondary review
+        $this->u_chair->assign_review(3, $this->u_floyd, 0);
+        xassert(!fresh_review($paper3, $this->u_floyd));
+    }
+
+    function test_assign_review_random_id() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("random_pids", 1);
+
+        // assigning reviews now routes through save_prop's DatabaseIDRandomizer
+        // path; each review must still be created correctly, and at least one
+        // gets a non-sequential (random) reviewId
+        $prev_max = $conf->fetch_ivalue("select max(reviewId) from PaperReview");
+        $created = [];
+        $random = false;
+        for ($i = 0; $i !== 20 && !$random; ++$i) {
+            $u = Contact::make_keyed($conf, ["email" => "randrev{$i}@_.com", "name" => "Rand Rev {$i}"])->store();
+            $rid = $this->u_chair->assign_review(15, $u, REVIEW_EXTERNAL);
+            xassert($rid > 0);
+            $rrow = $conf->checked_paper_by_id(15)->fresh_review_by_id($rid);
+            xassert(!!$rrow);
+            if ($rrow) {
+                xassert_eqq($rrow->contactId, $u->contactId);
+                xassert_eqq($rrow->reviewType, REVIEW_EXTERNAL);
+            }
+            $created[] = [$u, $rid];
+            $random = $random || $rid !== $prev_max + 1;
+            $prev_max = max($prev_max, $rid);
+        }
+        xassert($random);
+
+        // clean up
+        foreach ($created as [$u, $rid]) {
+            $this->u_chair->assign_review(15, $u, 0);
+        }
+        $conf->save_refresh_setting("random_pids", null);
+        $conf->id_randomizer()->cleanup();
+    }
+
     function test_review_visibility() {
         $conf = $this->conf;
         $paper17 = $conf->checked_paper_by_id(17);
@@ -1355,6 +1459,12 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($rrow2->fidval("t01"), "Second reconstructable summary\n");
         xassert_eqq($rrow2->reviewStatus, ReviewInfo::RS_DRAFTED);
 
+        // columns not carried by history fall back to their defaults
+        xassert_eqq($rrow2->reviewToken, 0);
+        xassert_eqq($rrow2->reviewSubmitted, 0);
+        xassert_eqq($rrow2->reviewOrdinal, 0);
+        xassert_eqq($rrow2->reviewNeedsSubmit, 1);
+
         // the reconstructed row re-attaches to the existing history chain: its
         // reviewTime matches the latest recorded transition, and no new history
         // row was written
@@ -1364,6 +1474,67 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // clean up: remove the reconstructed review and its history
         $rrow2->delete($this->u_chair);
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper18->paperId, $rid);
+    }
+
+    function test_accept_after_decline_reconstructs_empty_review() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // request a new external reviewer, but never draft a review
+        $paper19 = $conf->checked_paper_by_id(19);
+        $xqreq = new Qrequest("POST", ["email" => "reconstructor2@_.com", "name" => "Emmy Ty", "affiliation" => "Void Institute"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper19);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $reviewer = $conf->checked_user_by_email("reconstructor2@_.com");
+        $paper19 = $conf->checked_paper_by_id(19);
+        $rrow = $paper19->review_by_user($reviewer);
+        xassert(!!$rrow);
+        $rid = $rrow->reviewId;
+        $rround = $rrow->reviewRound;
+
+        // reviewer declines the undrafted review
+        $xqreq = new Qrequest("POST", ["r" => $rid, "reason" => "No thanks"]);
+        $result = RequestReview_API::declinereview($reviewer, $xqreq, $paper19);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $paper19 = $conf->checked_paper_by_id(19);
+        xassert(!$paper19->fresh_review_by_id($rid));
+        xassert(!!$paper19->review_refusal_by_id($rid));
+
+        // the reviewer changes their mind and accepts
+        $xqreq = new Qrequest("POST", ["r" => $rid]);
+        $result = RequestReview_API::acceptreview($reviewer, $xqreq, $paper19);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        // the review is restored with no field content, acknowledged, and with
+        // sensible default column values
+        $paper19 = $conf->checked_paper_by_id(19);
+        xassert(!$paper19->review_refusal_by_id($rid));
+        $rrow2 = $paper19->fresh_review_by_id($rid);
+        xassert(!!$rrow2);
+        xassert_eqq($rrow2->reviewId, $rid);
+        xassert_eqq($rrow2->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($rrow2->reviewRound, $rround);
+        xassert_neqq($rrow2->rflags & ReviewInfo::RF_LIVE, 0);
+        xassert_eqq($rrow2->fidval("s01"), null);
+        xassert_eqq($rrow2->fidval("t01"), null);
+        xassert_eqq($rrow2->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
+        xassert_eqq($rrow2->reviewToken, 0);
+        xassert_eqq($rrow2->reviewSubmitted, 0);
+        xassert_eqq($rrow2->reviewOrdinal, 0);
+
+        // clean up
+        $rrow2->delete($this->u_chair);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper19->paperId, $rid);
     }
 
     function test_review_proposal() {
