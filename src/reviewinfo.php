@@ -840,6 +840,10 @@ class ReviewInfo implements JsonSerializable {
                     $diff->_old_prop[$k] = $this->$k;
                 }
             }
+            // ensure non-null values are recorded in the diff
+            if ($this->finfoval($f) !== null) {
+                $diff->mark_field($f);
+            }
         }
     }
 
