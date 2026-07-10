@@ -351,8 +351,7 @@ class RequestReview_API {
         }
 
         if (!$rrow) {
-            $rxrow = ReviewInfo::make_reconstruct_refusal($refrow);
-            $rxrow->insert_full();
+            ReviewInfo::reconstruct_refusal($refrow);
             $prow->conf->qe("delete from PaperReviewRefused where refusedReviewId=?",
                 $refrow->refusedReviewId);
             $rrow = $prow->fresh_review_by_id($r);

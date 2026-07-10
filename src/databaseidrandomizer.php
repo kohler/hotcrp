@@ -16,7 +16,7 @@ class DatabaseIDRandomizer {
     const PAPERID = 0;
     const REVIEWID = 1;
     static private $tinfo = [
-        ["Paper", "paperId"], ["PaperReview", "reviewId"]
+        ["Paper", "paperId", 3], ["PaperReview", "reviewId", 5]
     ];
 
     function __construct(Conf $conf) {
@@ -25,10 +25,17 @@ class DatabaseIDRandomizer {
     }
 
     /** @param 0|1 $type
-     * @param int $factor
+     * @return bool */
+    function want_random_ids($type) {
+        return !!$this->conf->setting("random_pids");
+    }
+
+    /** @param 0|1 $type
+     * @param ?int $factor
      * @return int */
-    function available_id($type, $factor = 3) {
-        list($table, $id_col) = self::$tinfo[$type];
+    function available_id($type, $factor = null) {
+        list($table, $id_col, $default_factor) = self::$tinfo[$type];
+        $factor = $factor ?? $default_factor;
         while (empty($this->ids[$type])) {
             // choose a batch of IDs
             $this->batch = min(100, $this->batch * 2);
@@ -56,11 +63,12 @@ class DatabaseIDRandomizer {
 
     /** @param 0|1 $type
      * @param array<string,mixed> $fields
-     * @param int $factor
-     * @return int */
-    function insert($type, $fields, $factor = 3) {
-        list($table, $id_col) = self::$tinfo[$type];
-        $random = $this->conf->setting("random_pids");
+     * @param ?int $factor
+     * @return Dbl_Result */
+    function insert($type, $fields, $factor = null) {
+        list($table, $id_col, $default_factor) = self::$tinfo[$type];
+        $factor = $factor ?? $default_factor;
+        $random = $this->want_random_ids($type);
         $id = $fields[$id_col] ?? null;
         while (true) {
             if ($id === null && $random) {
@@ -73,19 +81,22 @@ class DatabaseIDRandomizer {
                 $fields[$id_col] = $id;
                 $result = $this->conf->qe("insert into {$table} (" . join(",", array_keys($fields)) . ") values ?v on duplicate key update {$id_col}={$id_col}", [array_values($fields)]);
             }
-            $id = $result->affected_rows > 0 ? $result->insert_id : null;
-            $result->close();
-            if ($id !== null) {
-                return $id;
+            if ($result->affected_rows > 0) {
+                if (!$result->insert_id) {
+                    $result->insert_id = $id;
+                }
+                return $result;
             }
+            $result->close();
         }
     }
 
     /** @param 0|1 $type
-     * @param int $factor
+     * @param ?int $factor
      * @return int */
-    function reserve($type, $factor = 3) {
-        list($table, $id_col) = self::$tinfo[$type];
+    function reserve($type, $factor = null) {
+        list($table, $id_col, $default_factor) = self::$tinfo[$type];
+        $factor = $factor ?? $default_factor;
         $random = $this->conf->setting("random_pids");
         while (true) {
             if ($random) {

@@ -6419,11 +6419,12 @@ class Contact implements JsonSerializable {
     function assign_review($pid, $reviewer, $type, $extra = []) {
         assert($reviewer->contactId > 0);
         $result = $this->conf->qe("select * from PaperReview where paperId=? and contactId=?", $pid, $reviewer->contactId);
-        $rrow = ReviewInfo::fetch($result, null, $this->conf);
+        $rrow = ReviewInfo::fetch($result, null, $this->conf)
+            ?? ReviewInfo::make_db_default($this->conf);
         Dbl::free($result);
-        $reviewId = $rrow ? $rrow->reviewId : 0;
-        $oldtype = $rrow ? $rrow->reviewType : 0;
-        $oldrflags = $rrow ? $rrow->rflags : 0;
+        $reviewId = $rrow->reviewId ?? 0;
+        $oldtype = $rrow->reviewType ?? 0;
+        $oldrflags = $rrow->rflags ?? 0;
         $type = max((int) $type, 0);
         assert($type >= 0 && $oldtype >= 0);
         $round = $extra["round_number"] ?? null;
@@ -6480,92 +6481,82 @@ class Contact implements JsonSerializable {
             return $reviewId;
         }
 
+        // delete review uses separate path
+        if ($type === 0) {
+            return $this->_assign_review_delete($reviewer, $rrow, $extra);
+        }
+
         // create or modify review
         if ($oldtype === 0) {
             $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
             assert($round !== null); // `null` should not happen
-            $fields = [
-                "paperId" => $pid, "contactId" => $reviewer->contactId,
-                "reviewType" => $type, "reviewRound" => $round,
-                "timeRequested" => $time, "requestedBy" => $new_requester_cid,
-                "reviewBlind" => $rflags & ReviewInfo::RF_BLIND ? 1 : 0,
-                "rflags" => $rflags,
-                "reviewSubmitted" => 0, "reviewNeedsSubmit" => 1
-            ];
+            $rrow->set_prop("paperId", $pid);
+            $rrow->set_prop("contactId", $reviewer->contactId);
+            $rrow->set_prop("reviewType", $type);
+            $rrow->set_prop("reviewRound", $round);
+            $rrow->set_prop("timeRequested", $time);
+            $rrow->set_prop("requestedBy", $new_requester_cid);
+            $rrow->set_prop("reviewBlind", ($rflags & ReviewInfo::RF_BLIND) !== 0 ? 1 : 0);
+            $rrow->set_prop("rflags", $rflags);
+            $rrow->set_prop("reviewNeedsSubmit", 1);
             if ($extra["mark_notify"] ?? null) {
-                $fields["timeRequestNotified"] = $time;
+                $rrow->set_prop("timeRequestNotified", $time);
             }
             if ($extra["token"] ?? null) {
-                $fields["reviewToken"] = $this->unassigned_review_token();
+                $rrow->set_prop("reviewToken", $this->unassigned_review_token());
             }
-            $reviewId = $this->conf->id_randomizer()->insert(DatabaseIDRandomizer::REVIEWID, $fields, 5);
-            $result = Dbl_Result::make_empty();
-        } else if ($type === 0) {
-            $rflags = 0;
-            $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $pid, $reviewId);
         } else {
-            $qtail = "";
+            $rrow->set_prop("reviewType", $type);
+            $rrow->set_prop("rflags", ($oldrflags & ~$rflags_mask) | $rflags);
             if ($round !== null) {
-                $qtail .= ", reviewRound={$round}";
+                $rrow->set_prop("reviewRound", $round);
             }
             if (($oldrflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
                 && $type > REVIEW_PC) {
-                $qtail .= ", timeRequested={$time}, requestedBy={$new_requester_cid}";
+                $rrow->set_prop("timeRequested", $time);
+                $rrow->set_prop("requestedBy", $new_requester_cid);
             }
             if ($type !== REVIEW_SECONDARY
                 && $oldtype === REVIEW_SECONDARY) {
-                $rns = $rrow->reviewStatus < ReviewInfo::RS_APPROVED ? 1 : 0;
-                $qtail .= ", reviewNeedsSubmit={$rns}";
+                $rrow->set_prop("reviewNeedsSubmit", $rrow->reviewStatus < ReviewInfo::RS_APPROVED ? 1 : 0);
             }
-            $result = $this->conf->qe_raw("update PaperReview set reviewType={$type}, rflags=(rflags&~{$rflags_mask})|{$rflags}{$qtail} where paperId={$pid} and reviewId={$reviewId}");
         }
 
-        if (Dbl::is_error($result)) {
+        if ($rrow->save_prop(null, ReviewInfo::SAVEF_NO_HISTORY | ReviewInfo::SAVEF_COMPARE_EXCHANGE_RFLAGS) < 0) {
             return false;
         }
 
-        if ($type > 0 && $oldtype === 0) {
+        if ($oldtype === 0) {
             $verb = ($rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0 ? "self-assigned" : "assigned";
-            $msg = "Review {$reviewId} {$verb}: " . $this->review_explanation($type, $round);
-        } else if ($type === 0) {
-            $msg = "Review {$reviewId} removed";
-            $reviewId = 0;
+            $msg = "Review {$rrow->reviewId} {$verb}: " . $this->review_explanation($type, $round);
         } else {
-            $msg = "Review {$reviewId} changed: " . $this->review_explanation($oldtype, $rrow->reviewRound) . " to " . $this->review_explanation($type, $round);
+            $msg = "Review {$rrow->reviewId} changed: " . $this->review_explanation($oldtype, $rrow->reviewRound) . " to " . $this->review_explanation($type, $round);
         }
-        $this->conf->log_for($this, $reviewer->contactId, $msg, $pid);
+        $this->conf->log_for($this, $reviewer->contactId, $msg, $rrow->paperId);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
-        if ($type > 0 && $oldtype === 0) {
+        if ($oldtype === 0) {
             $reviewer->activate_placeholder(false, $this);
-            $this->conf->ql("delete from PaperReviewRefused where paperId=? and contactId=?", $pid, $reviewer->contactId);
+            $this->conf->ql("delete from PaperReviewRefused where paperId=? and contactId=?", $rrow->paperId, $reviewer->contactId);
             if (($req_email = $extra["requested_email"] ?? null)) {
-                $this->conf->qe("delete from ReviewRequest where paperId=? and email=?", $pid, $req_email);
+                $this->conf->qe("delete from ReviewRequest where paperId=? and email=?", $rrow->paperId, $req_email);
             }
             if ($type < REVIEW_SECONDARY) {
-                $this->conf->update_review_delegation($pid, $new_requester_cid, 1);
+                $this->conf->update_review_delegation($rrow->paperId, $new_requester_cid, 1);
             } else if ($type === REVIEW_SECONDARY) {
                 // We must update delegation even on a newly inserted review
                 // because maybe this reviewer requested reviews before being
                 // assigned. (e.g. a previous secondary review got deleted)
-                $this->conf->update_review_delegation($pid, $reviewer->contactId, -2);
+                $this->conf->update_review_delegation($rrow->paperId, $reviewer->contactId, -2);
             }
             if ($type >= REVIEW_PC
                 && ($this->conf->setting("pcrev_assigntime") ?? 0) < Conf::$now) {
                 $this->conf->save_setting("pcrev_assigntime", Conf::$now);
             }
-        } else if ($type === 0) {
-            if ($oldtype < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
-                $this->conf->update_review_delegation($pid, $rrow->requestedBy, -1);
-            }
-            // Mark rev_tokens setting for future update by update_rev_tokens_setting
-            if ($rrow->reviewToken !== 0) {
-                $this->conf->settings["rev_tokens"] = -1;
-            }
         } else if ($type === REVIEW_SECONDARY
                    && $oldtype !== REVIEW_SECONDARY
                    && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
-            $this->conf->update_review_delegation($pid, $reviewer->contactId, 0);
+            $this->conf->update_review_delegation($rrow->paperId, $reviewer->contactId, 0);
         }
         if ($type === REVIEW_META || $oldtype === REVIEW_META) {
             $this->conf->update_metareviews_setting($type === REVIEW_META ? 1 : -1);
@@ -6573,14 +6564,41 @@ class Contact implements JsonSerializable {
 
         self::update_rights();
         if (!($extra["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($pid, SearchTerm::ABOUT_REVIEWS);
+            $this->conf->update_automatic_tags($rrow->paperId, SearchTerm::ABOUT_REVIEWS);
         }
-        if (($type > 0) !== ($oldtype > 0)) {
+        if ($oldtype === 0) {
             $reviewer->update_cdb_roles();
         }
-        return $reviewId;
+        return $rrow->reviewId;
     }
 
+    private function _assign_review_delete(Contact $reviewer, ReviewInfo $rrow, $extra) {
+        $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $rrow->paperId, $rrow->reviewId);
+        if (Dbl::is_error($result)) {
+            return false;
+        }
+
+        $this->conf->log_for($this, $reviewer->contactId, "Review {$rrow->reviewId} removed", $rrow->paperId);
+
+        // a delegator may need to redelegate
+        if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
+            $this->conf->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
+        }
+        // Mark rev_tokens setting for future update by update_rev_tokens_setting
+        if ($rrow->reviewToken !== 0) {
+            $this->conf->settings["rev_tokens"] = -1;
+        }
+        if ($rrow->reviewType === REVIEW_META) {
+            $this->conf->update_metareviews_setting(-1);
+        }
+
+        self::update_rights();
+        if (!($extra["no_autosearch"] ?? false)) {
+            $this->conf->update_automatic_tags($rrow->paperId, SearchTerm::ABOUT_REVIEWS);
+        }
+        $reviewer->update_cdb_roles();
+        return 0;
+    }
 
     /** @return array */
     #[\ReturnTypeWillChange]
