@@ -1278,6 +1278,94 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::check_db("t_review-external2-submit17");
     }
 
+    function test_accept_after_decline_reconstructs_review() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // request a new external reviewer
+        $paper18 = $conf->checked_paper_by_id(18);
+        $xqreq = new Qrequest("POST", ["email" => "reconstructor@_.com", "name" => "Rea Construct", "affiliation" => "Rebuild University"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper18);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $reviewer = $conf->checked_user_by_email("reconstructor@_.com");
+        $paper18 = $conf->checked_paper_by_id(18);
+        $rrow = $paper18->review_by_user($reviewer);
+        xassert(!!$rrow);
+        $rid = $rrow->reviewId;
+        xassert_eqq($rrow->reviewType, REVIEW_EXTERNAL);
+        $rround = $rrow->reviewRound;
+
+        // reviewer drafts the review in two steps, building history
+        save_review($paper18, $reviewer, ["ovemer" => 2, "revexp" => 1, "papsum" => "First reconstructable summary\n"]);
+        MailChecker::clear();
+
+        save_review($paper18, $reviewer, ["ovemer" => 3, "revexp" => 2, "papsum" => "Second reconstructable summary\n"]);
+        MailChecker::clear();
+        $rrow_v2 = fresh_review($paper18, $reviewer);
+        xassert_eqq($rrow_v2->fidval("s01"), 3);
+        xassert_eqq($rrow_v2->fidval("t01"), "Second reconstructable summary\n");
+
+        // reviewer declines: the review is snapshotted to history and removed.
+        // Reload the paper first so decline sees the current review (as a real
+        // request would), rather than a stale optimistic-concurrency reviewTime.
+        $paper18 = $conf->checked_paper_by_id(18);
+        $xqreq = new Qrequest("POST", ["r" => $rid, "reason" => "Too busy this cycle"]);
+        $result = RequestReview_API::declinereview($reviewer, $xqreq, $paper18);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $paper18 = $conf->checked_paper_by_id(18);
+        xassert(!$paper18->fresh_review_by_id($rid));
+        $refrow = $paper18->review_refusal_by_id($rid);
+        xassert(!!$refrow);
+        xassert_eqq($refrow->refusedReviewId, $rid);
+
+        // accepting reconstructs the review from history, without adding to it
+        $nhist = $conf->fetch_ivalue("select count(*) from PaperReviewHistory where paperId=? and reviewId=?", $paper18->paperId, $rid);
+        $max_next = $conf->fetch_ivalue("select max(reviewNextTime) from PaperReviewHistory where paperId=? and reviewId=?", $paper18->paperId, $rid);
+
+        // chair accepts on the reviewer's behalf
+        $xqreq = new Qrequest("POST", ["r" => $rid]);
+        $result = RequestReview_API::acceptreview($this->u_chair, $xqreq, $paper18);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        // the refusal is gone and the review is restored
+        $paper18 = $conf->checked_paper_by_id(18);
+        xassert(!$paper18->review_refusal_by_id($rid));
+        $rrow2 = $paper18->fresh_review_by_id($rid);
+        xassert(!!$rrow2);
+        xassert_eqq($rrow2->reviewId, $rid);
+        xassert_eqq($rrow2->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($rrow2->reviewRound, $rround);
+        xassert_eqq($rrow2->requestedBy, $this->u_chair->contactId);
+        xassert_neqq($rrow2->rflags & ReviewInfo::RF_LIVE, 0);
+
+        // reconstruction restores the reviewer's last saved content: the decline
+        // writes a full snapshot of the live review into history before deleting it
+        xassert_eqq($rrow2->fidval("s01"), 3);
+        xassert_eqq($rrow2->fidval("s02"), 2);
+        xassert_eqq($rrow2->fidval("t01"), "Second reconstructable summary\n");
+        xassert_eqq($rrow2->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        // the reconstructed row re-attaches to the existing history chain: its
+        // reviewTime matches the latest recorded transition, and no new history
+        // row was written
+        xassert_eqq($rrow2->reviewTime, $max_next);
+        xassert_eqq($conf->fetch_ivalue("select count(*) from PaperReviewHistory where paperId=? and reviewId=?", $paper18->paperId, $rid), $nhist);
+
+        // clean up: remove the reconstructed review and its history
+        $rrow2->delete($this->u_chair);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper18->paperId, $rid);
+    }
+
     function test_review_proposal() {
         xassert_search($this->u_chair, "has:proposal", "");
         xassert_search($this->u_lixia, "has:proposal", "");
