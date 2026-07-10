@@ -3162,7 +3162,7 @@ class Contact implements JsonSerializable {
                         }
                     }
                 } else if ($this->is_requester()
-                           && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and coalesce(reviewSubmitted,0)<=0 and timeApprovalRequested>0 and requestedBy={$this->contactId})")) {
+                           && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted<=0 and timeApprovalRequested>0 and requestedBy={$this->contactId})")) {
                     $this->_has_approvable = 2;
                 }
             } else if ($this->is_manager()) {

@@ -208,7 +208,7 @@ class MailRecipients extends MessageSet {
             $row = $this->conf->fetch_first_row("select
                 exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and {$pidw}),
                 exists (select * from PaperReview where reviewType>0 and reviewType<" . REVIEW_PC . "  and {$pidw}),
-                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and coalesce(reviewSubmitted,0)<=0 and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and {$pidw}),
+                exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and reviewSubmitted<=0 and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and {$pidw}),
                 exists (select * from Paper where timeSubmitted>0 and leadContactId!=0 and {$pidw}),
                 exists (select * from Paper where timeSubmitted>0 and shepherdContactId!=0 and {$pidw})");
             list($any_pcrev, $any_extrev, $any_newpcrev, $any_lead, $any_shepherd) = $row;
@@ -632,7 +632,7 @@ class MailRecipients extends MessageSet {
             if ($rf & self::F_REV_COMPLETE) {
                 $where[] = "PaperReview.reviewSubmitted>0";
             } else if ($rf & self::F_REV_INCOMPLETE) {
-                $where[] = "coalesce(PaperReview.reviewSubmitted,0)<=0 and PaperReview.reviewNeedsSubmit!=0 and Paper.timeSubmitted>0";
+                $where[] = "PaperReview.reviewSubmitted<=0 and PaperReview.reviewNeedsSubmit!=0 and Paper.timeSubmitted>0";
             } else {
                 $where[] = "(PaperReview.rflags&" . ReviewInfo::RF_LIVE . ")!=0";
             }

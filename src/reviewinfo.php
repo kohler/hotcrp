@@ -375,7 +375,7 @@ class ReviewInfo implements JsonSerializable {
      * @param ?list<ReviewField> $scores
      * @return string */
     static function review_signature_sql(Conf $conf, $scores = null) {
-        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore, ' ', r.rflags";
+        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', r.reviewSubmitted, ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore, ' ', r.rflags";
         foreach ($scores ?? [] as $f) {
             if ($f->order && $f->main_storage)
                 $t .= ", ' {$f->order}=', {$f->main_storage}";
@@ -870,7 +870,7 @@ class ReviewInfo implements JsonSerializable {
     const SAVE_PROP_CONFLICT = -1;
     const SAVE_PROP_ERROR = -2;
 
-    /** @param ?callable(?string,string|int|null...):void $stager
+    /** @param ?callable(?string,string|int|float|null|list...):void $stager
      * @return -2|-1|0|1|2 */
     function save_prop($stager = null) {
         $inserting = $this->base_prop("reviewId") <= 0;

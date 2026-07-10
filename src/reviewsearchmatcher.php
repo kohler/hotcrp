@@ -323,12 +323,12 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         $where = [];
         $swhere = [];
         if (($this->status & self::SUBMITTED) !== 0) {
-            $swhere[] = "coalesce(reviewSubmitted,0)>0";
+            $swhere[] = "reviewSubmitted>0";
         } else if (($this->status & self::COMPLETE) !== 0) {
-            $swhere[] = "coalesce(reviewSubmitted,0)>0 or timeApprovalRequested<0";
+            $swhere[] = "reviewSubmitted>0 or timeApprovalRequested<0";
         }
         if (($this->status & self::PENDINGAPPROVAL) !== 0) {
-            $swhere[] = "(coalesce(reviewSubmitted,0)<=0 and timeApprovalRequested>0)";
+            $swhere[] = "(reviewSubmitted<=0 and timeApprovalRequested>0)";
         }
         if (($this->status & self::NOTACKNOWLEDGED) !== 0) {
             $swhere[] = "reviewModified<1";

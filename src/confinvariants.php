@@ -260,13 +260,13 @@ class ConfInvariants {
         if ($rtype === REVIEW_SECONDARY) {
             return "select r.paperId, r.reviewId, r.contactId, r.reviewNeedsSubmit
                 from PaperReview r
-                left join (select paperId, requestedBy, count(reviewId) ct, sum(coalesce(reviewSubmitted,0)>0) cs
+                left join (select paperId, requestedBy, count(reviewId) ct, sum(reviewSubmitted>0) cs
                        from PaperReview
                        where reviewType>0 and reviewType<" . REVIEW_SECONDARY . "
                        group by paperId, requestedBy) q
                     on (q.paperId=r.paperId and q.requestedBy=r.contactId)
                 where r.reviewType=" . REVIEW_SECONDARY . "
-                and coalesce(reviewSubmitted,0)<=0
+                and reviewSubmitted<=0
                 and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit";
         }
         return "select r.paperId, r.reviewId, r.contactId, r.reviewNeedsSubmit
@@ -284,7 +284,7 @@ class ConfInvariants {
         }
 
         // reviewType is defined correctly
-        $any = $this->invariantq("select paperId, reviewId from PaperReview where reviewType<0 and (reviewNeedsSubmit!=0 or coalesce(reviewSubmitted,0)>0) limit 1");
+        $any = $this->invariantq("select paperId, reviewId from PaperReview where reviewType<0 and (reviewNeedsSubmit!=0 or reviewSubmitted>0) limit 1");
         if ($any) {
             $this->invariant_error("negative_reviewType", "bad nonexistent review #{0}/{1}");
         }
@@ -322,15 +322,15 @@ class ConfInvariants {
         }
 
         // submitted and ordinaled reviews are displayed
-        $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (coalesce(reviewSubmitted,0)>0 or reviewOrdinal>0) limit 1");
+        $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted>0 or reviewOrdinal>0) limit 1");
         if ($any) {
             $this->invariant_error("review_timeDisplayed", "submitted/ordinal review #{0}/{1} has no timeDisplayed");
         }
 
         // rflags is defined correctly
         $skipf = ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_CONTENT_EDITED | ReviewInfo::RF_AUSEEN | ReviewInfo::RF_AUSEEN_PREVIOUS | ReviewInfo::RF_AUSEEN_LIVE;
-        $any = $this->invariantq("select paperId, reviewId, rflags, concat(reviewType, ':', reviewModified, ':', timeApprovalRequested, ':', coalesce(reviewSubmitted,0), ':', reviewBlind) from PaperReview r
-            where (rflags&~?)!=(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(coalesce(reviewSubmitted,0)>0,4096,0)|if(reviewBlind!=0,65536,0)|if(reviewModified>0 or timeApprovalRequested!=0,1,rflags&1)
+        $any = $this->invariantq("select paperId, reviewId, rflags, concat(reviewType, ':', reviewModified, ':', timeApprovalRequested, ':', reviewSubmitted, ':', reviewBlind) from PaperReview r
+            where (rflags&~?)!=(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(reviewSubmitted>0,4096,0)|if(reviewBlind!=0,65536,0)|if(reviewModified>0 or timeApprovalRequested!=0,1,rflags&1)
             limit 1", $skipf);
         if ($any) {
             $this->invariant_error("rflags", "bad rflags for review #{0}/{1} [{2:x} v {3}]");

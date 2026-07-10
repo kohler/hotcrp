@@ -522,7 +522,7 @@ class RequestReview_API {
             return JsonResult::make_permission_error("email", "<0>That account is not enabled here");
         }
 
-        $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and coalesce(reviewSubmitted,0)<=0 and timeApprovalRequested<=0",
+        $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and reviewSubmitted<=0 and timeApprovalRequested<=0",
             $destu->contactId, $prow->paperId, $rrow->reviewId, $rrow->contactId);
         $oldu = $user->conf->user_by_id($rrow->contactId, USER_SLICE);
         $user->log_activity_for($destu->contactId, "Review {$rrow->reviewId} reassigned from " . ($oldu ? $oldu->email : "<user {$rrow->contactId}>"), $prow);
