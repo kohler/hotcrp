@@ -26,8 +26,10 @@ jobs:
 
     - name: Prepare the application
       run: |
-        sudo lib/createdb.sh -u root -proot -c test/options.php --batch
-        sudo lib/createdb.sh -u root -proot -c test/cdb-options.php --no-dbuser --batch
+        DBHOST_FLAG=
+        [ -S /var/run/mysqld/mysqld.sock ] || DBHOST_FLAG="--host=127.0.0.1"
+        sudo lib/createdb.sh -u root -proot $DBHOST_FLAG -c test/options.php --batch
+        sudo lib/createdb.sh -u root -proot $DBHOST_FLAG -c test/cdb-options.php --no-dbuser --batch
 
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
@@ -62,8 +64,10 @@ jobs:
 
     - name: Prepare the application
       run: |
-        sudo lib/createdb.sh -u root -proot -c test/options.php --batch
-        sudo lib/createdb.sh -u root -proot -c test/cdb-options.php --no-dbuser --batch
+        DBHOST_FLAG=
+        [ -S /var/run/mysqld/mysqld.sock ] || DBHOST_FLAG="--host=127.0.0.1"
+        sudo lib/createdb.sh -u root -proot $DBHOST_FLAG -c test/options.php --batch
+        sudo lib/createdb.sh -u root -proot $DBHOST_FLAG -c test/cdb-options.php --no-dbuser --batch
 
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
