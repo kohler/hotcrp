@@ -80,7 +80,10 @@ jobs:
         sudo lib/createdb.sh -u root -proot $DBHOST_FLAG -c test/options.php --batch --verbose
         sudo lib/createdb.sh -u root -proot $DBHOST_FLAG -c test/cdb-options.php --no-dbuser --no-schema --batch --verbose
         if [ ! -S /var/run/mysqld/mysqld.sock ]; then
-          { printf '<?php\n$Opt["dbHost"] = "127.0.0.1";\n'; sed 's/@localhost\b/@127.0.0.1/' test/options.php | grep 'contactdbDsn'; } > test/localoptions.php
+          # No Unix socket: write localoptions.php to use TCP (127.0.0.1)
+          # for both the main DB and the contactdbDsn
+          printf '<?php\n$Opt["dbHost"] = "127.0.0.1";\n' > test/localoptions.php
+          sed 's/@localhost\b/@127.0.0.1/' test/options.php | grep 'contactdbDsn' >> test/localoptions.php
         fi
 
     - name: Set up PHP
