@@ -26,8 +26,8 @@ jobs:
 
     - name: Prepare the application
       run: |
-        sudo lib/createdb.sh -u root -proot -c test/options.php --batch
-        sudo lib/createdb.sh -u root -proot -c test/cdb-options.php --no-dbuser --batch
+        sudo lib/createdb.sh -u root -proot -c test/options.php --batch --replace
+        sudo lib/createdb.sh -u root -proot -c test/cdb-options.php --no-dbuser --batch --replace
 
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
@@ -62,8 +62,8 @@ jobs:
 
     - name: Prepare the application
       run: |
-        sudo lib/createdb.sh -u root -proot -c test/options.php --batch
-        sudo lib/createdb.sh -u root -proot -c test/cdb-options.php --no-dbuser --batch
+        sudo lib/createdb.sh -u root -proot -c test/options.php --batch --replace
+        sudo lib/createdb.sh -u root -proot -c test/cdb-options.php --no-dbuser --batch --replace
 
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
