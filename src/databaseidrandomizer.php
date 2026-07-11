@@ -2,84 +2,103 @@
 // databaseidrandomizer.php -- HotCRP class to randomize database IDs
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-class DatabaseIDRandomizer {
+class DatabaseIDRandomizer_Type {
     /** @var Conf
      * @readonly */
     private $conf;
-    /** @var array<int,list<int>> */
-    private $ids = [];
+    /** @var 0|1|2
+     * @readonly */
+    private $type;
+    /** @var string
+     * @readonly */
+    public $table;
+    /** @var string
+     * @readonly */
+    public $id_column;
+    /** @var null|int|float
+     * @readonly */
+    public $default_factor;
+    /** @var ?int
+     * @readonly */
+    public $max;
+    /** @var bool */
+    public $random;
     /** @var int */
-    private $batch = 10;
-    /** @var array<int,list<int>> */
+    public $batch;
+    /** @var list<int> */
+    private $ids = [];
+    /** @var list<int> */
     private $reservations = [];
 
-    const PAPERID = 0;
-    const REVIEWID = 1;
-    static private $tinfo = [
-        ["Paper", "paperId", 3], ["PaperReview", "reviewId", 5]
-    ];
-
-    function __construct(Conf $conf) {
+    /** @param 0|1|2 $type */
+    function __construct(Conf $conf, $type) {
         $this->conf = $conf;
+        $this->type = $type;
+        if ($type === DatabaseIDRandomizer::PAPERID) {
+            $this->table = "Paper";
+            $this->id_column = "paperId";
+            $this->default_factor = 3;
+        } else if ($type === DatabaseIDRandomizer::REVIEWID) {
+            $this->table = "PaperReview";
+            $this->id_column = "reviewId";
+            $this->default_factor = 5;
+        } else {
+            $this->table = "PaperReview";
+            $this->id_column = "reviewToken";
+            $this->max = 2000000000;
+            $this->random = true;
+        }
+        $this->batch = 10;
+        $this->refresh_settings();
         register_shutdown_function([$this, "cleanup"]);
     }
 
-    /** @param 0|1 $type
-     * @return bool */
-    function want_random_ids($type) {
-        return !!$this->conf->setting("random_pids");
-    }
-
-    /** @param 0|1 $type
-     * @param ?int $factor
+    /** @param ?int $factor
      * @return int */
-    function available_id($type, $factor = null) {
-        list($table, $id_col, $default_factor) = self::$tinfo[$type];
-        $factor = $factor ?? $default_factor;
-        while (empty($this->ids[$type])) {
+    function available_id($factor = null) {
+        $factor = $factor ?? $this->default_factor;
+        while (empty($this->ids)) {
             // choose a batch of IDs
             $this->batch = min(100, $this->batch * 2);
-            $n = max(100, $factor * $this->conf->fetch_ivalue("select count(*) from {$table}"));
-            $ids = [];
-            while (count($ids) < $this->batch) {
-                $ids[] = mt_rand(1, $n);
+            if ($this->max !== null) {
+                $n = $this->max;
+            } else {
+                $n = max(100, $factor * $this->conf->fetch_ivalue("select count(*) from {$this->table}"));
             }
-            $sorted_ids = $ids = array_values(array_unique($ids));
+            while (count($this->ids) < $this->batch) {
+                $this->ids[] = mt_rand(1, $n);
+            }
+            $this->ids = array_values(array_unique($this->ids));
 
             // remove IDs that already exist
+            $sorted_ids = $this->ids;
             sort($sorted_ids);
-            $result = $this->conf->qe("select {$id_col} from {$table} where {$id_col}?a union select id from IDReservation where type=? and id?a", $sorted_ids, $type, $sorted_ids);
+            $result = $this->conf->qe("select {$this->id_column} from {$this->table} where {$this->id_column}?a union select id from IDReservation where type=? and id?a", $sorted_ids, $this->type, $sorted_ids);
             while (($row = $result->fetch_row())) {
-                if (($p = array_search((int) $row[0], $ids, true)) !== false) {
-                    array_splice($ids, $p, 1);
+                if (($p = array_search((int) $row[0], $this->ids, true)) !== false) {
+                    array_splice($this->ids, $p, 1);
                 }
             }
             $result->close();
-
-            $this->ids[$type] = $ids;
         }
-        return array_pop($this->ids[$type]);
+        return array_pop($this->ids);
     }
 
-    /** @param 0|1 $type
-     * @param array<string,mixed> $fields
+    /** @param array<string,mixed> $fields
      * @param ?int $factor
      * @return Dbl_Result */
-    function insert($type, $fields, $factor = null) {
-        list($table, $id_col, $default_factor) = self::$tinfo[$type];
-        $factor = $factor ?? $default_factor;
-        $random = $this->want_random_ids($type);
-        $id = $fields[$id_col] ?? null;
+    function insert($fields, $factor = null) {
+        $id = $fields[$this->id_column] ?? null;
         while (true) {
-            if ($id === null && $random) {
-                $id = $this->available_id($type, $factor);
+            if ($id === null && $this->random) {
+                $id = $this->available_id($factor);
             }
             if ($id === null) {
-                unset($fields[$id_col]);
-                $result = $this->conf->qe("insert into {$table} (" . join(",", array_keys($fields)) . ") values ?v", [array_values($fields)]);
+                unset($fields[$this->id_column]);
+                $result = $this->conf->qe("insert into {$this->table} (" . join(",", array_keys($fields)) . ") values ?v", [array_values($fields)]);
             } else {
-                $fields[$id_col] = $id;
-                $result = $this->conf->qe("insert into {$table} (" . join(",", array_keys($fields)) . ") values ?v on duplicate key update {$id_col}={$id_col}", [array_values($fields)]);
+                $fields[$this->id_column] = $id;
+                $result = $this->conf->qe("insert into {$this->table} (" . join(",", array_keys($fields)) . ") values ?v on duplicate key update {$this->id_column}={$this->id_column}", [array_values($fields)]);
             }
             if ($result->affected_rows > 0) {
                 if (!$result->insert_id) {
@@ -91,27 +110,23 @@ class DatabaseIDRandomizer {
         }
     }
 
-    /** @param 0|1 $type
-     * @param ?int $factor
+    /** @param ?int $factor
      * @return int */
-    function reserve($type, $factor = null) {
-        list($table, $id_col, $default_factor) = self::$tinfo[$type];
-        $factor = $factor ?? $default_factor;
-        $random = $this->conf->setting("random_pids");
+    function reserve($factor = null) {
         while (true) {
-            if ($random) {
-                $wantid = $this->available_id($type, $factor);
+            if ($this->random) {
+                $wantid = $this->available_id($factor);
                 $result = $this->conf->qe("insert into IDReservation set type=?, id=?, timestamp=? on duplicate key update id=id",
-                    $type, $wantid, Conf::$now);
+                    $this->type, $wantid, Conf::$now);
                 $id = $result->affected_rows > 0 ? $wantid : null;
                 $result->close();
             } else {
                 $mresult = Dbl::multi_qe($this->conf->dblink,
                     "insert into IDReservation (type,id,timestamp)
-                    select ?, greatest((select coalesce(max({$id_col}),0) from {$table}), coalesce(max(id),0))+1, ?
+                    select ?, greatest((select coalesce(max({$this->id_column}),0) from {$this->table}), coalesce(max(id),0))+1, ?
                     from IDReservation where type=?;
                     select id from IDReservation where uid=last_insert_id()",
-                    $type, Conf::$now, $type);
+                    $this->type, Conf::$now, $this->type);
                 $id = null;
                 if (($result = $mresult->next())) {
                     $ok = $result->affected_rows > 0;
@@ -125,16 +140,89 @@ class DatabaseIDRandomizer {
                 }
             }
             if ($id !== null) {
-                $this->reservations[$type][] = $id;
+                $this->reservations[] = $id;
                 return $id;
             }
         }
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
+    function refresh_settings() {
+        if ($this->type === DatabaseIDRandomizer::PAPERID
+            || $this->type === DatabaseIDRandomizer::REVIEWID) {
+            $this->random = !!$this->conf->setting("random_pids");
+        }
+    }
+
     function cleanup() {
-        foreach ($this->reservations as $type => $ids) {
-            $this->conf->qe("delete from IDReservation where type=? and id?a", $type, $ids);
+        if (!empty($this->reservations)) {
+            $this->conf->qe("delete from IDReservation where type=? and id?a", $this->type, $this->reservations);
         }
         $this->reservations = [];
+    }
+}
+
+class DatabaseIDRandomizer {
+    /** @var Conf
+     * @readonly */
+    private $conf;
+    /** @var array<int,DatabaseIDRandomizer_Type> */
+    private $tinfo = [];
+
+    const PAPERID = 0;
+    const REVIEWID = 1;
+    const REVIEWTOKEN = 2;
+
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
+
+    /** @param 0|1|2 $type
+     * @return DatabaseIDRandomizer_Type */
+    private function type($type) {
+        if (!isset($this->tinfo[$type])) {
+            $this->tinfo[$type] = new DatabaseIDRandomizer_Type($this->conf, $type);
+        }
+        return $this->tinfo[$type];
+    }
+
+    /** @param 0|1|2 $type
+     * @return bool */
+    function want_random_ids($type) {
+        return $this->type($type)->random;
+    }
+
+    /** @param 0|1|2 $type
+     * @param ?int $factor
+     * @return int */
+    function available_id($type, $factor = null) {
+        return $this->type($type)->available_id($factor);
+    }
+
+    /** @param 0|1|2 $type
+     * @param array<string,mixed> $fields
+     * @param ?int $factor
+     * @return Dbl_Result */
+    function insert($type, $fields, $factor = null) {
+        return $this->type($type)->insert($fields, $factor);
+    }
+
+    /** @param 0|1|2 $type
+     * @param ?int $factor
+     * @return int */
+    function reserve($type, $factor = null) {
+        return $this->type($type)->reserve($factor);
+    }
+
+    function refresh_settings() {
+        foreach ($this->tinfo as $type) {
+            $type->refresh_settings();
+        }
+    }
+
+    function cleanup() {
+        foreach ($this->tinfo as $type) {
+            $type->cleanup();
+        }
     }
 }

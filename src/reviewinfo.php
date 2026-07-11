@@ -929,9 +929,8 @@ class ReviewInfo implements JsonSerializable {
         $xstager = $stager ?? [$this->conf, "qe"];
         if ($inserting) {
             if (!isset($qp["reviewId"])
-                && ($randomizer = $this->conf->id_randomizer())
-                && $randomizer->want_random_ids(DatabaseIDRandomizer::REVIEWID)) {
-                $result = $randomizer->insert(DatabaseIDRandomizer::REVIEWID, $qp);
+                && $this->conf->setting("random_pids")) {
+                $result = $this->conf->id_randomizer()->insert(DatabaseIDRandomizer::REVIEWID, $qp);
                 $stager = null;
             } else {
                 $result = $xstager("insert into PaperReview (" . join(",", array_keys($qp)) . ") values ?v", [array_values($qp)]);

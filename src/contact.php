@@ -6392,16 +6392,6 @@ class Contact implements JsonSerializable {
     }
 
 
-    /** @return int */
-    private function unassigned_review_token() {
-        while (true) {
-            $token = mt_rand(1, 2000000000);
-            if (!$this->conf->fetch_ivalue("select reviewId from PaperReview where reviewToken={$token}")) {
-                return $token;
-            }
-        }
-    }
-
     /** @param int $pid
      * @param Contact $reviewer
      * @param int $type
@@ -6494,7 +6484,7 @@ class Contact implements JsonSerializable {
                 $rrow->set_prop("timeRequestNotified", $time);
             }
             if ($extra["token"] ?? null) {
-                $rrow->set_prop("reviewToken", $this->unassigned_review_token());
+                $rrow->set_prop("reviewToken", $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::REVIEWTOKEN));
             }
         } else {
             $rrow->set_prop("reviewType", $type);
