@@ -1597,6 +1597,183 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper19->paperId, $rid);
     }
 
+    // Pin the observable decline (`declinereview`) contract and its inverse,
+    // undecline (`acceptreview`), independent of how a refused review is stored
+    // internally: declining removes the live review, records a refusal carrying
+    // the original review type/round/requester/reason, and logs the event as a
+    // decline; undeclining restores the review with its drafted content intact.
+    function test_decline_and_undecline_review() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // chair requests a fresh external reviewer on paper 20
+        $paper20 = $conf->checked_paper_by_id(20);
+        $xqreq = new Qrequest("POST", ["email" => "decliner@_.com", "name" => "Dee Kline", "affiliation" => "Refusal University"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper20);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $reviewer = $conf->checked_user_by_email("decliner@_.com");
+        $paper20 = $conf->checked_paper_by_id(20);
+        $rrow = $paper20->review_by_user($reviewer);
+        xassert(!!$rrow);
+        $rid = $rrow->reviewId;
+        $rround = $rrow->reviewRound;
+        $requester = $rrow->requestedBy;
+        xassert_eqq($rrow->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($requester, $this->u_chair->contactId);
+
+        // reviewer drafts content so the decline must snapshot it for recovery
+        save_review($paper20, $reviewer, ["ovemer" => 2, "revexp" => 1, "papsum" => "Draft before declining\n"]);
+        MailChecker::clear();
+
+        // reviewer declines with a reason
+        $paper20 = $conf->checked_paper_by_id(20);
+        $xqreq = new Qrequest("POST", ["r" => $rid, "reason" => "Conflict of interest surfaced"]);
+        $result = RequestReview_API::declinereview($reviewer, $xqreq, $paper20);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        // the live review is gone
+        $paper20 = $conf->checked_paper_by_id(20);
+        xassert(!$paper20->fresh_review_by_id($rid));
+
+        // a refusal row records the original assignment
+        $refrow = $paper20->review_refusal_by_id($rid);
+        xassert(!!$refrow);
+        xassert_eqq($refrow->refusedReviewId, $rid);
+        xassert_eqq($refrow->refusedReviewType, REVIEW_EXTERNAL);
+        xassert_eqq($refrow->reviewRound, $rround);
+        xassert_eqq($refrow->contactId, $reviewer->contactId);
+        xassert_eqq($refrow->requestedBy, $requester);
+        xassert_eqq($refrow->refusedBy, $reviewer->contactId);
+        xassert_eqq($refrow->reason, "Conflict of interest surfaced");
+
+        // ...and the decline is logged as a decline
+        $action = $conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+            $paper20->paperId, "Review {$rid} %");
+        xassert_eqq($action, "Review {$rid} declined");
+
+        // undecline: accepting restores the review with its content intact
+        $xqreq = new Qrequest("POST", ["r" => $rid]);
+        $result = RequestReview_API::acceptreview($reviewer, $xqreq, $paper20);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $paper20 = $conf->checked_paper_by_id(20);
+        xassert(!$paper20->review_refusal_by_id($rid));
+        $rrow2 = $paper20->fresh_review_by_id($rid);
+        xassert(!!$rrow2);
+        xassert_eqq($rrow2->reviewId, $rid);
+        xassert_eqq($rrow2->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($rrow2->reviewRound, $rround);
+        xassert_neqq($rrow2->rflags & ReviewInfo::RF_LIVE, 0);
+        xassert_eqq($rrow2->fidval("s01"), 2);
+        xassert_eqq($rrow2->fidval("t01"), "Draft before declining\n");
+        xassert_eqq($rrow2->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        // clean up
+        $rrow2->delete($this->u_chair, ["no_rights" => true]);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper20->paperId, $rid);
+    }
+
+    // Pin the observable retract (`retractreview`) contract, which the manual
+    // `delete from PaperReview` at api_requestreview.php could route through
+    // `ReviewInfo::delete()`. Retracting an undrafted requested review removes
+    // it, logs the event as a retraction, leaves no refusal (unlike decline),
+    // and updates delegation; retracting a proposal removes its ReviewRequest.
+    function test_retract_review() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // --- retract a delegated external review ---
+        $paper21 = $conf->checked_paper_by_id(21);
+        xassert(!$paper21->review_by_user($this->u_floyd));
+
+        // chair assigns floyd a secondary review; floyd must submit it
+        $this->u_chair->assign_review(21, $this->u_floyd, REVIEW_SECONDARY);
+        $sec = fresh_review($paper21, $this->u_floyd);
+        xassert_eqq($sec->reviewNeedsSubmit, 1);
+
+        // floyd delegates by requesting an external reviewer (undrafted)
+        $ext_user = Contact::make_keyed($conf, ["email" => "retractee@_.com", "name" => "Ret Ractee"])->store();
+        $this->u_floyd->assign_review(21, $ext_user, REVIEW_EXTERNAL);
+        $ext = fresh_review($paper21, $ext_user);
+        xassert_eqq($ext->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($ext->requestedBy, $this->u_floyd->contactId);
+        $erid = $ext->reviewId;
+        // the secondary is now covered by the delegate
+        $sec = fresh_review($paper21, $this->u_floyd);
+        xassert_eqq($sec->reviewNeedsSubmit, -1);
+
+        // retract the external review (chair can manage)
+        $paper21 = $conf->checked_paper_by_id(21);
+        $xqreq = new Qrequest("POST", ["email" => "retractee@_.com"]);
+        $result = RequestReview_API::retractreview($this->u_chair, $xqreq, $paper21);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        xassert_eqq($result->content["action"], "retract");
+        xassert_eqq($result->content["notified"], true);
+        MailChecker::clear();
+
+        // the review is gone, logged as retracted, and left no refusal
+        $paper21 = $conf->checked_paper_by_id(21);
+        xassert(!$paper21->fresh_review_by_id($erid));
+        xassert(!$paper21->review_refusal_by_id($erid));
+        $action = $conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+            $paper21->paperId, "Review {$erid} %");
+        xassert_eqq($action, "Review {$erid} retracted");
+
+        // with the delegate gone, the secondary needs submitting again
+        $sec = fresh_review($paper21, $this->u_floyd);
+        xassert_eqq($sec->reviewNeedsSubmit, 1);
+
+        // clean up the secondary
+        $this->u_chair->assign_review(21, $this->u_floyd, 0);
+        xassert(!fresh_review($paper21, $this->u_floyd));
+
+        // --- retract a review proposal (ReviewRequest) ---
+        $conf->save_refresh_setting("extrev_chairreq", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // a PC reviewer proposes an external reviewer -> a ReviewRequest, no review
+        $paper17 = $conf->checked_paper_by_id(17);
+        $xqreq = new Qrequest("POST", ["email" => "proposee@_.com", "name" => "Pro Posee", "affiliation" => "Proposal Inc"]);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        xassert_eqq($result->content["action"], "propose");
+        MailChecker::clear();
+        xassert_eqq($conf->fetch_ivalue("select count(*) from ReviewRequest where paperId=? and email=?", 17, "proposee@_.com"), 1);
+
+        // retract the proposal (lixia is the requester)
+        $xqreq = new Qrequest("POST", ["email" => "proposee@_.com"]);
+        $result = RequestReview_API::retractreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        xassert_eqq($result->content["action"], "retract");
+        xassert_eqq($result->content["notified"], false);
+        MailChecker::clear();
+
+        // the ReviewRequest is gone and the retraction is logged as such
+        xassert_eqq($conf->fetch_ivalue("select count(*) from ReviewRequest where paperId=? and email=?", 17, "proposee@_.com"), 0);
+        $action = $conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+            17, "Review proposal retracted for %");
+        xassert_eqq($action, "Review proposal retracted for proposee@_.com");
+
+        // restore settings so later tests see defaults
+        $conf->save_refresh_setting("extrev_chairreq", null);
+        Contact::update_rights();
+    }
+
     function test_review_proposal() {
         xassert_search($this->u_chair, "has:proposal", "");
         xassert_search($this->u_lixia, "has:proposal", "");
