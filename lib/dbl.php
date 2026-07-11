@@ -163,10 +163,8 @@ class Dbl_ConnectionParams {
     }
 
     function apply_defaults() {
-        if ($this->port === null) {
-            $this->port = $this->socket ? (int) ini_get("mysqli.default_port") : 0;
-        }
         $this->host = $this->host ?? ini_get("mysqli.default_host");
+        $this->port = $this->port ?? (int) ini_get("mysqli.default_port");
         $this->user = $this->user ?? ini_get("mysqli.default_user");
         $this->password = $this->password ?? ini_get("mysqli.default_pw");
     }
@@ -326,6 +324,7 @@ class Dbl {
             }
         }
         $cp->apply_defaults();
+        error_log(json_encode(get_object_vars($cp)));
         return $cp;
     }
 

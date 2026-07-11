@@ -1271,10 +1271,15 @@ class TestRunner {
             }
         }
 
-        if ($rebuild
-            || !preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)[,\)]/mi', $s, $m)
-            || Dbl::fetch_ivalue($dblink, "select value from Settings where name=?", $m[1]) !== intval($m[2])) {
-            $rebuild = true;
+        if (!$rebuild) {
+            $ok = preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)[,\)]/mi', $s, $m);
+            $result = $ok ? Dbl::qx($dblink, "select value from Settings where name=?", $m[1]) : null;
+            if (!$result
+                || $dblink->errno !== 0
+                || !($row = $result->fetch_row())
+                || (int) $row[0] !== intval($m[2])) {
+                $rebuild = true;
+            }
         }
 
         if ($rebuild) {
