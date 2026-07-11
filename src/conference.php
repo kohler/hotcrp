@@ -3104,7 +3104,9 @@ class Conf {
      * @param int $cid
      * @param 2|1|0|-1|-2 $direction */
     function update_review_delegation($pid, $cid, $direction) {
-        if ($direction === 2) {
+        if ($cid <= 0) {
+            // do nothing
+        } else if ($direction === 2) {
             $this->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=?", $pid, $cid);
         } else if ($direction === 1) {
             $this->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewNeedsSubmit=1", $pid, $cid);

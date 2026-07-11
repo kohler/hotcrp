@@ -926,6 +926,66 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!fresh_review($paper3, $this->u_floyd));
     }
 
+    // The activity-log messages emitted by `Contact::assign_review()` are a
+    // stable, user-visible format. Pin them for new assignments, self
+    // assignments, review-type changes, and named rounds.
+    function test_assign_review_log_message() {
+        $conf = $this->conf;
+        $r1 = $conf->round_number("R1");
+        xassert($r1 > 0);
+        // return the most recent log line for a given review
+        $last_log = function ($pid, $rid) use ($conf) {
+            return $conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+                $pid, "Review {$rid} %");
+        };
+
+        // new external assignment in a named round
+        $ext1 = Contact::make_keyed($conf, ["email" => "logext1@_.com", "name" => "Log Ext One"])->store();
+        $rid1 = $this->u_chair->assign_review(26, $ext1, REVIEW_EXTERNAL, ["round_number" => $r1]);
+        xassert($rid1 > 0);
+        xassert_eqq($last_log(26, $rid1), "Review {$rid1} assigned: external, round R1");
+
+        // new external assignment in the unnamed round -> no round suffix
+        $ext2 = Contact::make_keyed($conf, ["email" => "logext2@_.com", "name" => "Log Ext Two"])->store();
+        $rid2 = $this->u_chair->assign_review(26, $ext2, REVIEW_EXTERNAL, ["round_number" => 0]);
+        xassert($rid2 > 0);
+        xassert_eqq($last_log(26, $rid2), "Review {$rid2} assigned: external");
+
+        // PC self-assignment (unnamed round)
+        $rid3 = $this->u_mgbaker->assign_review(27, $this->u_mgbaker, REVIEW_PC,
+            ["selfassign" => true, "round_number" => 0]);
+        xassert($rid3 > 0);
+        xassert_eqq($last_log(27, $rid3), "Review {$rid3} self-assigned: PC");
+
+        // changing a review's type (unnamed round) reports old and new type
+        $this->u_chair->assign_review(27, $this->u_mgbaker, REVIEW_PRIMARY);
+        xassert_eqq($last_log(27, $rid3), "Review {$rid3} changed: PC to primary");
+
+        // changing a review's type within a named round keeps the round on both
+        // sides when the round is passed along with the retype
+        $rid4 = $this->u_chair->assign_review(28, $this->u_mgbaker, REVIEW_PRIMARY,
+            ["round_number" => $r1]);
+        xassert($rid4 > 0);
+        xassert_eqq($last_log(28, $rid4), "Review {$rid4} assigned: primary, round R1");
+        $this->u_chair->assign_review(28, $this->u_mgbaker, REVIEW_SECONDARY,
+            ["round_number" => $r1]);
+        xassert_eqq($last_log(28, $rid4), "Review {$rid4} changed: primary, round R1 to secondary, round R1");
+
+        // changing only the round reports the old round on the "from" side and
+        // the new round on the "to" side
+        $r2 = $conf->round_number("R2");
+        $this->u_chair->assign_review(28, $this->u_mgbaker, REVIEW_SECONDARY,
+            ["round_number" => $r2]);
+        xassert_eqq($last_log(28, $rid4), "Review {$rid4} changed: secondary, round R1 to secondary, round R2");
+
+        // clean up so later tests see papers 26-28 unreviewed
+        $this->u_chair->assign_review(26, $ext1, 0);
+        $this->u_chair->assign_review(26, $ext2, 0);
+        $this->u_chair->assign_review(27, $this->u_mgbaker, 0);
+        $this->u_chair->assign_review(28, $this->u_mgbaker, 0);
+        xassert(ConfInvariants::test_all($conf));
+    }
+
     function test_assign_review_random_id() {
         $conf = $this->conf;
         $conf->save_refresh_setting("random_pids", 1);
@@ -1472,7 +1532,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($conf->fetch_ivalue("select count(*) from PaperReviewHistory where paperId=? and reviewId=?", $paper18->paperId, $rid), $nhist);
 
         // clean up: remove the reconstructed review and its history
-        $rrow2->delete($this->u_chair);
+        $rrow2->delete($this->u_chair, ["no_rights" => true]);
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper18->paperId, $rid);
     }
 
@@ -1533,7 +1593,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($rrow2->reviewOrdinal, 0);
 
         // clean up
-        $rrow2->delete($this->u_chair);
+        $rrow2->delete($this->u_chair, ["no_rights" => true]);
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper19->paperId, $rid);
     }
 

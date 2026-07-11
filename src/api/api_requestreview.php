@@ -438,6 +438,7 @@ class RequestReview_API {
             $rrow->set_prop("reviewType", REVIEW_REFUSAL);
             $rrow->snapshot_fval_prop();
             $rrow->save_prop();
+            $rrow->commit_prop();
             $prow->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrid);
 

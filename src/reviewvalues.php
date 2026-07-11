@@ -1083,9 +1083,10 @@ class ReviewValues extends MessageSet {
         }
 
         if ($result < 0) {
-            if ($result === ReviewInfo::SAVE_PROP_CONFLICT) {
+            if ($result === ReviewInfo::SAVERET_CONFLICT) {
                 $this->rvmsg(self::ERROR, null, "<0>Review was edited concurrently, please try again");
             }
+            $rrow->abort_prop();
             return false;
         }
 
@@ -1181,6 +1182,7 @@ class ReviewValues extends MessageSet {
             $this->author_notified[] = $what;
         }
 
+        $rrow->commit_prop();
         return true;
     }
 
