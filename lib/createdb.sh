@@ -3,6 +3,7 @@
 ## Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
+set -f   # disable filename globbing
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./
 else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 . ${LIBDIR}dbhelper.sh
@@ -50,8 +51,8 @@ set_dbuserpass () {
 }
 
 add_granthost () {
-    if expr "$1" : '[-a-zA-Z0-9.*][-a-zA-Z0-9.*]*$' >/dev/null; then
-        granthosts="$granthosts $1"
+    if expr "x$1" : 'x[-a-zA-Z0-9.%_/:][-a-zA-Z0-9.%_/:]*$' >/dev/null; then
+        granthosts="$1$granthosts "
     else
         echo "Expected --grant-host=HOSTNAME" 1>&2
         usage
@@ -394,7 +395,15 @@ if [ "$createdb" = y ]; then
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 fi
 
-allhosts="localhost 127.0.0.1 localhost.localdomain$granthosts"
+allhosts="${granthosts}localhost 127.0.0.1 ::1"
+
+# Also include `localhost.localdomain` (for backward compatibility), but
+# only if `skip_name_resolve` is off
+skip_name_resolve=`echo 'select @@global.skip_name_resolve;' | \
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS -N 2>/dev/null`
+if [ "x$skip_name_resolve" != x1 ]; then
+    allhosts="$allhosts localhost.localdomain"
+fi
 
 if [ "$createuser" = y ]; then
     $qecho "Creating $DBUSER user and password..."

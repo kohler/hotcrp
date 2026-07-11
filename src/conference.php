@@ -485,6 +485,11 @@ class Conf {
         // time settings
         $this->refresh_time_settings();
 
+        // randomizer
+        if ($this->_id_randomizer) {
+            $this->_id_randomizer->refresh_settings();
+        }
+
         // parse searches last (parse may depend on other settings)
         $au_seerev = $this->settings["au_seerev"] ?? 0;
         if ($au_seerev === self::AUSEEREV_SEARCH) {
