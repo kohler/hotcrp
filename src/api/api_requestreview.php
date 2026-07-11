@@ -351,17 +351,9 @@ class RequestReview_API {
         }
 
         if (!$rrow) {
-            ReviewInfo::reconstruct_refusal($refrow);
+            $rrow = ReviewInfo::reconstruct_refusal($user, $refrow);
             $prow->conf->qe("delete from PaperReviewRefused where refusedReviewId=?",
                 $refrow->refusedReviewId);
-            $rrow = $prow->fresh_review_by_id($r);
-            if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
-                $prow->conf->update_review_delegation($prow->paperId, $rrow->requestedBy, 1);
-            }
-            if ($rrow->reviewToken) {
-                $prow->conf->update_rev_tokens_setting(1);
-            }
-            $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
         }
 
         if ($rrow->reviewStatus < ReviewInfo::RS_ACKNOWLEDGED) {
@@ -435,22 +427,10 @@ class RequestReview_API {
                 $reason);
 
             // record snapshot of review, then delete review
-            $rrow->set_prop("reviewType", REVIEW_REFUSAL);
             $rrow->snapshot_fval_prop();
             $rrow->save_prop();
             $rrow->commit_prop();
-            $prow->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
-                $prow->paperId, $rrid);
-
-            if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
-                $prow->conf->update_review_delegation($prow->paperId, $rrow->requestedBy, -1);
-            }
-            if ($rrow->reviewToken) {
-                $prow->conf->update_rev_tokens_setting(-1);
-            }
-            $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
-            $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} declined", $prow);
-            $user->update_cdb_roles();
+            $rrow->delete($user, ["action" => "declined"]);
 
             // send mail to requesters
             // XXX delay this mail by a couple minutes
@@ -580,20 +560,13 @@ class RequestReview_API {
 
         // commit retraction to database
         foreach ($rrows as $rrow) {
-            $user->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
-                $prow->paperId, $rrow->reviewId);
-            $user->conf->update_review_delegation($prow->paperId, $rrow->requestedBy, -1);
-            if ($rrow->reviewToken) {
-                $user->conf->update_rev_tokens_setting(0);
-            }
-            $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId retracted", $prow);
+            $rrow->delete($user, ["action" => "retracted", "no_autosearch" => true]);
         }
         foreach ($requests as $req) {
             $user->conf->qe("delete from ReviewRequest where paperId=? and email=?",
                 $prow->paperId, $req->email);
-            $user->log_activity("Review proposal retracted for $req->email", $prow);
+            $user->log_activity("Review proposal retracted for {$req->email}", $prow);
         }
-
         $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
 
         // send mail to reviewer

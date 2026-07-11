@@ -1677,6 +1677,11 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($rrow2->fidval("t01"), "Draft before declining\n");
         xassert_eqq($rrow2->reviewStatus, ReviewInfo::RS_DRAFTED);
 
+        // ...and the undecline is logged as such
+        $action = $conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+            $paper20->paperId, "Review {$rid} %");
+        xassert_str_starts_with($action, "Review {$rid} undeclined");
+
         // clean up
         $rrow2->delete($this->u_chair, ["no_rights" => true]);
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper20->paperId, $rid);

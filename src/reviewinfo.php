@@ -999,7 +999,7 @@ class ReviewInfo implements JsonSerializable {
         $type = $this->reviewType;
         $oldtype = $this->base_prop("reviewType");
         if ($oldtype === 0) {
-            $verb = ($this->rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0 ? "self-assigned" : "assigned";
+            $verb = $extra["action"] ?? (($this->rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0 ? "self-assigned" : "assigned");
             $msg = "Review {$this->reviewId} {$verb}: " . $this->review_explanation($this->reviewType, $this->reviewRound);
         } else {
             $msg = "Review {$this->reviewId} changed: " . $this->review_explanation($this->base_prop("reviewType"), $this->base_prop("reviewRound")) . " to " . $this->review_explanation($this->reviewType, $this->reviewRound);
@@ -1343,7 +1343,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @param ReviewRefusalInfo $refrow
      * @return ReviewInfo */
-    static function reconstruct_refusal($refrow) {
+    static function reconstruct_refusal(Contact $actor, $refrow) {
         $rrow = self::make_db_default($refrow->conf);
         $diff = $rrow->prop_diff();
         foreach (self::$db_fields as $prop) {
@@ -1382,7 +1382,7 @@ class ReviewInfo implements JsonSerializable {
         // insert the reconstructed review, preserving its reviewId and
         // reviewTime, without recording a new history entry
         $rrow->save_prop(null, self::SAVEF_NO_HISTORY);
-        $rrow->commit_prop();
+        $rrow->commit_prop_assignment($actor, ["action" => "undeclined"]);
         return $rrow;
     }
 
@@ -1396,7 +1396,7 @@ class ReviewInfo implements JsonSerializable {
         if (!$result->affected_rows) {
             return false;
         }
-        $action = $this->reviewStatus >= ReviewInfo::RS_DRAFTED ? "deleted" : "unassigned";
+        $action = $opts["action"] ?? ($this->reviewStatus >= ReviewInfo::RS_DRAFTED ? "deleted" : "unassigned");
         $actor->log_activity_for($this->contactId, "Review {$this->reviewId} {$action}", $this->paperId);
         $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?",
             $this->paperId, $this->reviewId);
