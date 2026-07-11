@@ -324,7 +324,6 @@ class Dbl {
             }
         }
         $cp->apply_defaults();
-        error_log(json_encode(get_object_vars($cp)));
         return $cp;
     }
 
