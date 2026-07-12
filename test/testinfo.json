@@ -69,7 +69,8 @@
         "name": "test09",
         "members": [
             "fresh_db", "PaperAPI_Tester", "ReviewAPI_Tester",
-            "FollowAPI_Tester", "Scope_Tester", "APICounter_Tester"
+            "FollowAPI_Tester", "Scope_Tester", "APICounter_Tester",
+            "SubmissionRound_Tester"
         ]
     },
     {
