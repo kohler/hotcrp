@@ -391,7 +391,7 @@ class ReviewValues extends MessageSet {
         foreach ($j as $k => $v) {
             if ($k === "object") {
                 if (($v ?? "review") !== "review") {
-                    $this->rvmsg(self::ERROR, "object", "<0>JSON does not represent a review");
+                    $this->rvmsg(self::ERROR, $k, "<0>JSON does not represent a review");
                     return false;
                 }
             } else if ($k === "round") {
@@ -441,6 +441,13 @@ class ReviewValues extends MessageSet {
             } else if ($k === "if_vtag_match") {
                 if (is_int($v)) {
                     $this->req["if_vtag_match"] = $v;
+                }
+            } else if ($k === "if_unmodified_since") {
+                if (is_int($v) || is_float($v)) {
+                    $this->req["if_unmodified_since"] = $v;
+                } else if (($t = $this->conf->parse_time($v, Conf::$now)) !== false
+                           && $t >= 0) {
+                    $this->req["if_unmodified_since"] = $t;
                 }
             } else if (($f = $this->conf->find_review_field($k))) {
                 if (!isset($this->req[$f->short_id])) {
@@ -530,9 +537,9 @@ class ReviewValues extends MessageSet {
                 }
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
-            } else if ($k === "if_vtag_match") {
-                if (ctype_digit($v) && ($iv = stoi($v)) !== null) {
-                    $this->req[$k] = $iv;
+            } else if ($k === "if_vtag_match" || $k === "if_unmodified_since") {
+                if (ctype_digit($v) && ($t = stoi($v)) !== null) {
+                    $this->req[$k] = $t;
                 }
             } else if (str_starts_with($k, "has_")) {
                 $hasreqs[] = substr($k, 4);
@@ -559,12 +566,17 @@ class ReviewValues extends MessageSet {
     /** @param ReviewInfo $rrow
      * @return bool */
     function check_vtag(ReviewInfo $rrow) {
-        if (!isset($this->req["if_vtag_match"])
-            || $this->req["if_vtag_match"] === $rrow->reviewTime) {
+        if (isset($this->req["if_vtag_match"])
+            && $this->req["if_vtag_match"] !== $rrow->reviewTime) {
+            $pk = "if_vtag_match";
+        } else if (isset($this->req["if_unmodified_since"])
+                   && $this->req["if_unmodified_since"] < $rrow->reviewModified) {
+            $pk = "if_unmodified_since";
+        } else {
             return true;
         }
-        $this->rvmsg(self::ERROR, "if_vtag_match", "<5><strong>Edit conflict</strong>: The review changed since you last loaded this page");
-        $this->rvmsg(self::INFORM, "if_vtag_match", "<0>Your changes were not saved, but you can check the form and save again.");
+        $this->rvmsg(self::ERROR, $pk, "<5><strong>Edit conflict</strong>: The review was edited concurrently");
+        $this->rvmsg(self::INFORM, $pk, "<0>Your changes were not saved, but you can check the form and save again.");
         return false;
     }
 

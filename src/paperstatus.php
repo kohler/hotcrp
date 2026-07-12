@@ -349,13 +349,13 @@ final class PaperStatus extends MessageSet {
             } else if (is_numeric($v)) {
                 $v = (float) $v;
                 if ($v < 0) {
-                    $this->error_at($sk, "<0>Negative date");
+                    $this->error_at($sk, "<0>Invalid date");
                     continue;
                 }
             } else if (is_string($v)) {
                 $v = $this->conf->parse_time($v, Conf::$now);
                 if ($v === false || $v < 0) {
-                    $this->error_at($sk, "<0>Parse error in date");
+                    $this->error_at($sk, "<0>Invalid date");
                     continue;
                 } else {
                     $v = (float) $v;
