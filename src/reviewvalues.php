@@ -632,30 +632,26 @@ class ReviewValues extends MessageSet {
         }
 
         // maybe create review
-        $new_rrid = false;
         if (!$rrow) {
             $round = isset($this->req["round"]) ? (int) $this->conf->round_number($this->req["round"]) : null;
             if (($whynot = $user->perm_create_review($prow, $reviewer, $round))) {
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
             }
-            $new_rrid = $user->assign_review($prow->paperId, $reviewer, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, [
+            $rrow = $user->assign_review_prop($prow->paperId, $reviewer, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, [
                 "selfassign" => $reviewer === $user, "round_number" => $round
             ]);
-            if (!$new_rrid) {
+            if (!$rrow || $rrow->reviewType <= 0) {
                 $this->rvmsg(self::ERROR, null, "<0>Internal error while creating review");
                 return false;
             }
-            $rrow = $prow->fresh_review_by_id($new_rrid);
+            $rrow->set_prow($prow);
         }
 
         // actually check review and save
-        $ok = $this->_apply_req($user, $prow, $rrow, $new_rrid);
+        $ok = $this->_apply_req($user, $prow, $rrow);
         if (!$ok) {
             $rrow->abort_prop();
-            if ($new_rrid) {
-                $user->assign_review($prow->paperId, $reviewer, 0);
-            }
         }
         return $ok;
     }
@@ -1118,11 +1114,6 @@ class ReviewValues extends MessageSet {
         }
         assert($new_rrow->reviewStatus === $newstatus);
 
-        // log updates -- but not if review token is used
-        if (!$usedReviewToken && $diffinfo->is_viewable()) {
-            $user->log_activity_for($rrow->contactId, $this->_log_message($rrow, $oldstatus, $newstatus, $diffinfo), $prow);
-        }
-
         // if external, forgive the requester from finishing their review
         if ($rrow->reviewType < REVIEW_SECONDARY
             && $newstatus !== $oldstatus
@@ -1194,7 +1185,18 @@ class ReviewValues extends MessageSet {
             $this->author_notified[] = $what;
         }
 
-        $rrow->commit_prop();
+        // log assignment or commit property
+        if ($rrow->base_prop("reviewId") <= 0) {
+            $rrow->commit_prop_assignment($user, ["no_autosearch" => true, "no_rights" => true]);
+        } else {
+            $rrow->commit_prop();
+        }
+
+        // log updates -- but not if review token is used
+        if (!$usedReviewToken && $diffinfo->is_viewable()) {
+            $user->log_activity_for($rrow->contactId, $this->_log_message($rrow, $oldstatus, $newstatus, $diffinfo), $prow);
+        }
+
         return true;
     }
 

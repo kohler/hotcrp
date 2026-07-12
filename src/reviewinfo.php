@@ -983,6 +983,7 @@ class ReviewInfo implements JsonSerializable {
             $r = self::SAVERET_CONFLICT;
         } else {
             if ($result->insert_id) {
+                $diff->_old_prop["reviewId"] = $diff->_old_prop["reviewId"] ?? $this->reviewId;
                 $this->reviewId = $result->insert_id;
             }
             $this->reviewStatus = $this->compute_review_status();
@@ -1101,19 +1102,20 @@ class ReviewInfo implements JsonSerializable {
         if (($type === REVIEW_META) !== ($oldtype === REVIEW_META)) {
             $this->conf->update_metareviews_setting($type === REVIEW_META ? 1 : -1);
         }
-
-        Contact::update_rights();
-        if (!($extra["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_REVIEWS);
+        if (!($extra["no_rights"] ?? false)) {
+            Contact::update_rights();
         }
         if ($oldtype === 0) {
             $this->reviewer()->update_cdb_roles();
         }
+        if (!($extra["no_autosearch"] ?? false)) {
+            $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_REVIEWS);
+        }
         $this->commit_prop();
     }
 
-    private function _commit_prop_delete_assignment(Contact $actor, $opts) {
-        $action = $opts["action"] ?? ($this->reviewStatus >= ReviewInfo::RS_DRAFTED ? "deleted" : "unassigned");
+    private function _commit_prop_delete_assignment(Contact $actor, $extra) {
+        $action = $extra["action"] ?? ($this->reviewStatus >= ReviewInfo::RS_DRAFTED ? "deleted" : "unassigned");
         $actor->log_activity_for($this->contactId, "Review {$this->reviewId} {$action}", $this->paperId);
         $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?",
             $this->paperId, $this->reviewId);
@@ -1129,26 +1131,26 @@ class ReviewInfo implements JsonSerializable {
         if ($oldtype < REVIEW_SECONDARY && $this->requestedBy > 0) {
             $this->conf->update_review_delegation($this->paperId, $this->requestedBy, -1);
         }
-        // run autosearch
-        if (!($opts["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_REVIEWS);
-        }
         // update rights
-        if (!($opts["no_rights"] ?? false)) {
+        if (!($extra["no_rights"] ?? false)) {
             Contact::update_rights();
             $this->reviewer()->update_cdb_roles();
+        }
+        // run autosearch
+        if (!($extra["no_autosearch"] ?? false)) {
+            $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_REVIEWS);
         }
         $this->commit_prop();
         $this->reviewId = 0;
     }
 
     /** @return bool */
-    function delete(Contact $actor, $opts = []) {
+    function delete(Contact $actor, $extra = []) {
         if ($this->reviewId <= 0
             || $this->_save_prop_delete(null, self::SAVEF_NO_CHECK_HISTORY) <= 0) {
             return false;
         }
-        $this->_commit_prop_delete_assignment($actor, $opts);
+        $this->_commit_prop_delete_assignment($actor, $extra);
         return true;
     }
 

@@ -6425,7 +6425,7 @@ class Contact implements JsonSerializable {
         if ($type === REVIEW_EXTERNAL
             && $oldtype === 0
             && $reviewer->primaryContactId > 0) {
-            return $this->assign_review($pid, $this->conf->user_by_id($reviewer->primaryContactId), $type, $extra);
+            return $this->assign_review_prop($pid, $this->conf->user_by_id($reviewer->primaryContactId), $type, $extra);
         }
 
         // update rflags

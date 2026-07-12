@@ -1927,6 +1927,54 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($prow->contact_info($this->u_lixia)->self_assigned());
     }
 
+    // A self-assigning save builds the review in memory and only writes it if
+    // the whole save succeeds. If the save is rejected before it commits (here,
+    // a stale version tag), no review row is created and nothing is logged --
+    // the old flow inserted the review, logged "self-assigned", then deleted it
+    // and logged "unassigned", leaving spurious log entries and a burned id.
+    function test_self_assign_failed_save_leaves_nothing() {
+        $conf = $this->conf;
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        $prow = $conf->checked_paper_by_id(29);
+        xassert(!$prow->review_by_user($this->u_lixia));
+        $nrev = $conf->fetch_ivalue("select count(*) from PaperReview where paperId=29");
+        $nlog = $conf->fetch_ivalue("select count(*) from ActionLog where paperId=29");
+
+        // stale version tag on a brand-new review => the save fails after the
+        // review is built in memory but before it is written
+        $r = save_review(29, $this->u_lixia,
+            ["ovemer" => "2", "revexp" => "2", "if_vtag_match" => "1"],
+            null, ["quiet" => true]);
+        xassert(!$r);
+
+        $prow = $conf->checked_paper_by_id(29);
+        xassert(!$prow->fresh_review_by_user($this->u_lixia));
+        xassert_eqq($conf->fetch_ivalue("select count(*) from PaperReview where paperId=29"), $nrev);
+        // no assignment/unassignment was logged for the review that never was
+        xassert_eqq($conf->fetch_ivalue("select count(*) from ActionLog where paperId=29"), $nlog);
+
+        // positive control: a valid self-assign creates exactly one review and
+        // logs the self-assignment
+        $r = save_review(29, $this->u_lixia, ["ovemer" => "2", "revexp" => "2"]);
+        xassert(!!$r);
+        xassert_eqq($r->reviewType, REVIEW_PC);
+        xassert_neqq($r->rflags & ReviewInfo::RF_SELF_ASSIGNED, 0);
+        xassert_eqq($conf->fetch_ivalue("select count(*) from PaperReview where paperId=29"), $nrev + 1);
+        $selflog = $conf->fetch_value("select action from ActionLog where paperId=29 and action like ? order by logId desc limit 1",
+            "Review {$r->reviewId} self-assigned%");
+        xassert_eqq($selflog, "Review {$r->reviewId} self-assigned: PC");
+
+        // clean up
+        $conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $r->reviewId);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $prow->paperId, $r->reviewId);
+        $prow->invalidate_reviews();
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
     function test_rflags_type() {
         for ($i = 0; $i <= REVIEW_META; ++$i) {
             xassert_eqq(ReviewInfo::rflags_type(1 << $i), $i);
