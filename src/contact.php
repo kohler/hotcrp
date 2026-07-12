@@ -6403,7 +6403,7 @@ class Contact implements JsonSerializable {
             ?? ReviewInfo::make_db_default($this->conf);
         Dbl::free($result);
         $oldtype = $rrow->reviewType;
-        $oldrflags = $rrow->rflags ?? 0;
+        $oldrflags = $rrow->rflags;
         $type = max((int) $type, 0);
         assert($type >= 0 && $oldtype >= 0);
         $round = $extra["round_number"] ?? null;
@@ -6447,7 +6447,6 @@ class Contact implements JsonSerializable {
                 $rflags |= ReviewInfo::RF_BLIND;
             }
         }
-        $rflags_mask = ReviewInfo::RF_LIVE | ReviewInfo::RFM_TYPES | ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_BLIND;
 
         // return if unchanged
         if ($rflags === $oldrflags
@@ -6463,8 +6462,6 @@ class Contact implements JsonSerializable {
             return $rrow;
         }
 
-        $time = Conf::$now;
-
         // create or modify review
         if ($oldtype === 0) {
             $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
@@ -6475,14 +6472,14 @@ class Contact implements JsonSerializable {
             $rrow->set_prop("rflags", $rflags);
             $rrow->set_prop("reviewNeedsSubmit", 1);
             if ($extra["mark_notify"] ?? null) {
-                $rrow->set_prop("timeRequestNotified", $time);
+                $rrow->set_prop("timeRequestNotified", Conf::$now);
             }
             if ($extra["token"] ?? null) {
                 $rrow->set_prop("reviewToken", $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::REVIEWTOKEN));
             }
         } else {
             $rrow->set_prop("reviewType", $type);
-            $rrow->set_prop("rflags", ($oldrflags & ~$rflags_mask) | $rflags);
+            $rrow->set_prop("rflags", ($oldrflags & ~ReviewInfo::RFM_ASSIGN) | $rflags);
             if ($type !== REVIEW_SECONDARY
                 && $oldtype === REVIEW_SECONDARY) {
                 $rrow->set_prop("reviewNeedsSubmit", $rrow->reviewStatus < ReviewInfo::RS_APPROVED ? 1 : 0);
@@ -6495,7 +6492,7 @@ class Contact implements JsonSerializable {
         if ($oldtype === 0
             || (($oldrflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
                 && $type > REVIEW_PC)) {
-            $rrow->set_prop("timeRequested", $time);
+            $rrow->set_prop("timeRequested", Conf::$now);
             $new_requester_cid = $this->contactId;
             if (($new_requester = $extra["requester_contact"] ?? null)) {
                 $new_requester_cid = $new_requester->contactId;
@@ -6513,7 +6510,7 @@ class Contact implements JsonSerializable {
     function assign_review($pid, $reviewer, $type, $extra = []) {
         for ($n = 0; $n !== 3; ++$n) {
             $rrow = $this->assign_review_prop($pid, $reviewer, $type, $extra);
-            $sp = $rrow->save_prop(null, ReviewInfo::SAVEF_NO_HISTORY | ReviewInfo::SAVEF_CHECK_RFLAGS);
+            $sp = $rrow->save_prop(null, ReviewInfo::SAVEF_CHECK_RFLAGS);
             if ($sp >= 0) {
                 $rrow->commit_prop_assignment($this, $extra);
                 return $rrow->reviewId;

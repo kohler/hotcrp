@@ -122,6 +122,13 @@ class ReviewInfo implements JsonSerializable {
         "s10", "s11", "tfields", "sfields"
     ];
 
+    /** @var array<string,true> */
+    static private $historyless_fields = [
+        "reviewType" => true, "rflags" => true, "reviewNeedsSubmit" => true,
+        "reviewBlind" => true, "reviewRound" => true, "timeRequested" => true,
+        "requestedBy" => true
+    ];
+
 
     const VIEWSCORE_RECOMPUTE = -100;
 
@@ -147,6 +154,7 @@ class ReviewInfo implements JsonSerializable {
     const RF_AUSEEN = 0x80000;
     const RF_AUSEEN_PREVIOUS = 0x100000;
     const RF_AUSEEN_LIVE = 0x200000;
+    const RFM_ASSIGN = 0x300FF; /* RF_LIVE | RFM_TYPES | RF_SELF_ASSIGNED | RF_BLIND */
 
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
@@ -880,6 +888,18 @@ class ReviewInfo implements JsonSerializable {
         return $this->_diff && !$this->_diff->is_empty();
     }
 
+    /** @return bool */
+    private function _prop_diff_no_history() {
+        if ((($this->rflags ^ $this->base_prop("rflags")) & ~self::RFM_ASSIGN) !== 0) {
+            return false;
+        }
+        foreach ($this->prop_diff()->_old_prop as $prop => $v) {
+            if (!isset(self::$historyless_fields[$prop]))
+                return false;
+        }
+        return true;
+    }
+
     // save_prop behavior flags
     const SAVEF_NO_HISTORY = 1;
     const SAVEF_CHECK_RFLAGS = 2;
@@ -899,15 +919,22 @@ class ReviewInfo implements JsonSerializable {
         $inserting = $this->base_prop("reviewId") <= 0;
 
         // do not save if no changes; maybe delete
-        if ($inserting ? $this->reviewType === 0 : !$this->prop_changed()) {
-            return self::SAVERET_EMPTY;
-        } else if ($this->reviewType === 0) {
+        if ($this->reviewType === 0) {
             return $this->_save_prop_delete($stager, $flags);
+        } else if (!$this->prop_changed()) {
+            return self::SAVERET_EMPTY;
         }
 
         // update reviewTime, set required fields
         $diff = $this->prop_diff();
         $this->_seal_fstorage();
+
+        if (!$inserting
+            && ($flags & self::SAVEF_NO_HISTORY) === 0
+            && $this->_prop_diff_no_history()) {
+            $flags |= self::SAVEF_NO_HISTORY;
+        }
+
         if (($flags & self::SAVEF_NO_HISTORY) === 0) {
             assert(!isset($diff->_old_prop["reviewTime"]));
             $rt = $inserting ? mt_rand(2000, 1000000) : $this->reviewTime + mt_rand(1, 10000);
@@ -962,15 +989,21 @@ class ReviewInfo implements JsonSerializable {
             $r = self::SAVERET_OK;
         }
         $result && $result->close();
-        if ($r >= 0 && ($flags & self::SAVEF_NO_HISTORY) === 0) {
+        if ($r >= 0
+            && !$inserting
+            && ($flags & self::SAVEF_NO_HISTORY) === 0) {
             $diff->save_history($stager);
         }
         return $r;
     }
 
     private function _save_prop_delete($stager, $flags) {
+        $reviewId = $this->base_prop("reviewId");
+        if ($reviewId <= 0) {
+            return self::SAVERET_EMPTY;
+        }
         $q = "delete from PaperReview where paperId=? and reviewId=?";
-        $qv = [$this->base_prop("paperId"), $this->base_prop("reviewId")];
+        $qv = [$this->base_prop("paperId"), $reviewId];
         if (($flags & self::SAVEF_NO_CHECK_HISTORY) === 0) {
             $q .= " and reviewTime=?";
             $qv[] = $this->reviewTime;

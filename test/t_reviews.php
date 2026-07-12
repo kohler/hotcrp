@@ -1936,6 +1936,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq(ReviewInfo::RF_LIVE, 1);
         xassert_eqq(ReviewInfo::RFM_NONDRAFT, ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED);
         xassert_eqq(ReviewInfo::RFM_NONEMPTY, ReviewInfo::RF_ACKNOWLEDGED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED);
+        xassert_eqq(ReviewInfo::RFM_ASSIGN, ReviewInfo::RF_LIVE | ReviewInfo::RFM_TYPES | ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_BLIND);
     }
 
     function test_ensure_full_reviews_preserves_prop_changes() {

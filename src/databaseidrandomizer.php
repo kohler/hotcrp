@@ -73,7 +73,13 @@ class DatabaseIDRandomizer_Type {
             // remove IDs that already exist
             $sorted_ids = $this->ids;
             sort($sorted_ids);
-            $result = $this->conf->qe("select {$this->id_column} from {$this->table} where {$this->id_column}?a union select id from IDReservation where type=? and id?a", $sorted_ids, $this->type, $sorted_ids);
+            $q = "select {$this->id_column} from {$this->table} where {$this->id_column}?a union select id from IDReservation where type=? and id?a";
+            $qv = [$sorted_ids, $this->type, $sorted_ids];
+            if ($this->type === DatabaseIDRandomizer::REVIEWID) {
+                $q .= " union select reviewId from PaperReviewHistory where reviewId?a";
+                $qv[] = $sorted_ids;
+            }
+            $result = $this->conf->qe($q, ...$qv);
             while (($row = $result->fetch_row())) {
                 if (($p = array_search((int) $row[0], $this->ids, true)) !== false) {
                     array_splice($this->ids, $p, 1);
