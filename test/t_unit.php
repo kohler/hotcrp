@@ -502,7 +502,7 @@ class Unit_Tester {
     }
 
     function test_php_behavior() {
-        xassert(PHP_MAJOR_VERSION >= 7);
+        xassert(PHP_VERSION_ID >= 80100);
         xassert_eqq(substr("", 0, 1), ""); // UGH
         xassert(!ctype_digit(""));
         xassert_eqq(!!preg_match('/\A\pZ\z/u', ' '), true);

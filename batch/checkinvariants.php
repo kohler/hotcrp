@@ -79,10 +79,8 @@ class CheckInvariants_Batch {
 
     /** @return int */
     private function method_level(ReflectionMethod $m) {
-        if (PHP_MAJOR_VERSION >= 8) {
-            foreach ($m->getAttributes("ConfInvariantLevel") ?? [] as $attr) {
-                return $attr->newInstance()->level;
-            }
+        foreach ($m->getAttributes("ConfInvariantLevel") ?? [] as $attr) {
+            return $attr->newInstance()->level;
         }
         return 0;
     }

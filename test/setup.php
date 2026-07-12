@@ -415,7 +415,7 @@ class Xassert {
             if (preg_match('/\A[Xx]?assert|\AMailChecker::check|::x?assert/s', $fname)) {
                 continue;
             }
-            if (PHP_MAJOR_VERSION >= 8 && !str_contains($fname, "{closure")) {
+            if (!str_contains($fname, "{closure")) {
                 if (isset($tr["class"])) {
                     $refl = new ReflectionMethod($tr["class"], $tr["function"]);
                 } else {
@@ -1490,9 +1490,6 @@ class TestRunner {
     }
 
     private function check_test_attributes($class) {
-        if (PHP_MAJOR_VERSION < 8) {
-            return true;
-        }
         $require_db = $require_cdb = null;
         foreach ($class->getAttributes("RequireDb") ?? [] as $attr) {
             $x = $attr->newInstance();

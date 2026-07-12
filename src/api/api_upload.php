@@ -181,16 +181,10 @@ class Upload_API {
             "s3_uploadid" => false,
             "s3_lock" => null,
             "status" => 0,
-            "hashctx" => null,
-            "crc32ctx" => null,
+            "hashctx" => base64_encode(serialize(hash_init($this->conf->content_hash_algorithm()))),
+            "crc32ctx" => base64_encode(serialize(hash_init("crc32b"))),
             "hashpos" => 0
         ];
-        if (PHP_VERSION_ID >= 80000) {
-            $hashctx = hash_init($this->conf->content_hash_algorithm());
-            $crc32ctx = hash_init("crc32b");
-            $data["hashctx"] = base64_encode(serialize($hashctx));
-            $data["crc32ctx"] = base64_encode(serialize($crc32ctx));
-        }
         $this->_cap->assign_data($data);
         if ($this->assign_token()) {
             $qreq->token = $this->_cap->salt;
@@ -281,8 +275,7 @@ class Upload_API {
             $this->modify_capd(function ($d) use ($offset, $nbytes) {
                 $d->ranges = Upload_API::add_range($d->ranges, $offset, $offset + $nbytes);
                 if ($this->_hashctx
-                    && $d->hashpos === $offset
-                    && PHP_VERSION_ID >= 80000) {
+                    && $d->hashpos === $offset) {
                     $d->hashctx = base64_encode(serialize($this->_hashctx));
                     $d->crc32ctx = base64_encode(serialize($this->_crc32ctx));
                     $d->hashpos = $this->_hashpos;

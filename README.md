@@ -35,14 +35,14 @@ software:
 
 * Nginx, https://nginx.org/ \
   (Or [Apache](https://httpd.apache.org), or another web server that works with PHP)
-* PHP version 7.3 or higher, http://php.net/
+* PHP version 8.1 or higher, http://php.net/
   - Including MySQL support, php-fpm, and php-intl
 * MariaDB, https://mariadb.org/
 * Poppler’s version of pdftohtml, https://poppler.freedesktop.org/ (only
   required for format checking)
 
-You may need to install additional packages, such as php84, php84-fpm,
-php84-intl, php84-mysqlnd, zip, poppler-utils, and sendmail or postfix.
+You may need to install additional packages, such as php85, php85-fpm,
+php85-intl, php85-mysqlnd, zip, poppler-utils, and sendmail or postfix.
 
 
 Installation

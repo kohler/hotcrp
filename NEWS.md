@@ -1,6 +1,11 @@
 HotCRP NEWS
 ===========
 
+## Version 3.4
+
+* Bump minimum PHP version to 8.1.
+
+
 ## Version 3.3.1 – 14.Jun.2026
 
 * Bug fix: Correct crash in forgot-password redirection

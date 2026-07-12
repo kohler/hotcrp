@@ -80,9 +80,6 @@ class DiffMatchPatch_Tester {
 
     static private function find_method($class, $method) {
         $m = new \ReflectionMethod($class, $method);
-        if (PHP_VERSION_ID < 80100) {
-            $m->setAccessible(true);
-        }
         return $m;
     }
 

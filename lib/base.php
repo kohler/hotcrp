@@ -500,18 +500,9 @@ function is_base64url_string($text) {
 
 // JSON encoding helpers
 
-if (defined("JSON_UNESCAPED_LINE_TERMINATORS")) {
-    // JSON_UNESCAPED_UNICODE is only safe to send to the browser if
-    // JSON_UNESCAPED_LINE_TERMINATORS is defined.
-    /** @return string */
-    function json_encode_browser($x, $flags = 0) {
-        return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
-    }
-} else {
-    /** @return string */
-    function json_encode_browser($x, $flags = 0) {
-        return json_encode($x, $flags);
-    }
+/** @return string */
+function json_encode_browser($x, $flags = 0) {
+    return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
 }
 
 /** @return string */
@@ -783,16 +774,8 @@ function file_get_contents_throw($filename) {
 
 // setcookie helper
 
-if (PHP_VERSION_ID >= 70300) {
-    function hotcrp_setcookie($name, $value = "", $options = []) {
-        return setcookie($name, $value, $options);
-    }
-} else {
-    function hotcrp_setcookie($name, $value = "", $options = []) {
-        return setcookie($name, $value, $options["expires"] ?? 0,
-                         $options["path"] ?? "", $options["domain"] ?? "",
-                         $options["secure"] ?? false, $options["httponly"] ?? false);
-    }
+function hotcrp_setcookie($name, $value = "", $options = []) {
+    return setcookie($name, $value, $options);
 }
 
 

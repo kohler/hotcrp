@@ -23,8 +23,8 @@ class AdminHome_Page {
     static function print(Contact $user) {
         $conf = $user->conf;
         $ml = [];
-        if (PHP_VERSION_ID <= 70300) {
-            $ml[] = MessageItem::error("<0>HotCRP requires PHP version 7.3 or higher. You are running PHP version " . phpversion());
+        if (PHP_VERSION_ID < 80100) {
+            $ml[] = MessageItem::error("<0>HotCRP requires PHP version 8.1 or higher. You are running PHP version " . phpversion());
         }
         $max_file_size = ini_get_bytes("upload_max_filesize");
         if (!$conf->opt("dbNoPapers")) {
@@ -55,7 +55,7 @@ class AdminHome_Page {
             $ml[] = MessageItem::warning_note("<5>PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars(ini_get("session.gc_maxlifetime")) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . ($conf->opt("sessionLifetime") ?? 86400) . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect");
         }
         if (!function_exists("imagecreate") && $conf->setting("__gd_required")) {
-            $ml[] = MessageItem::urgent_note("<5>This PHP installation lacks support for the GD library, so HotCRP can’t generate backup score charts for old browsers. Some of your users require this backup. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php" . PHP_MAJOR_VERSION . "-gd</code> package");
+            $ml[] = MessageItem::urgent_note("<5>This PHP installation lacks support for the GD library, so HotCRP can’t generate backup score charts for old browsers. Some of your users require this backup");
         }
         // Conference names
         if ($conf->opt("shortNameDefaulted")) {

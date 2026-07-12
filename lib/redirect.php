@@ -67,13 +67,7 @@ function set_session_name(Conf $conf) {
     if ($samesite && ($secure || $samesite !== "None")) {
         $params["samesite"] = $samesite;
     }
-    if (PHP_VERSION_ID >= 70300) {
-        session_set_cookie_params($params);
-    } else {
-        session_set_cookie_params($params["lifetime"], $params["path"],
-                                  $params["domain"], $params["secure"],
-                                  $params["httponly"]);
-    }
+    session_set_cookie_params($params);
 }
 
 function unlink_session() {
