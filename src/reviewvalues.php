@@ -735,7 +735,7 @@ class ReviewValues extends MessageSet {
     }
 
     /** @return bool */
-    private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow, $new_rrid) {
+    private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
         assert($prow->paperId === $this->req["paperId"] && $rrow->paperId === $prow->paperId);
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
         $approvable = $user->can_approve_review($prow, $rrow);

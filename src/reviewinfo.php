@@ -107,8 +107,6 @@ class ReviewInfo implements JsonSerializable {
     private $_reviewer;
     /** @var ?ReviewDiffInfo */
     private $_diff;
-    /** @var ?array<string,mixed> */
-    private $_old_prop;
 
 
     /** @var list<string> */
@@ -278,7 +276,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->timeApprovalRequested = 0;
         $rrow->reviewNeedsSubmit = 1;
         $rrow->reviewViewScore = -3;
-        $rrow->rflags = null;
+        $rrow->rflags = 0;
         $rrow->timeRequested = 0;
         $rrow->timeRequestNotified = 0;
         $rrow->reviewAuthorModified = null;
@@ -884,7 +882,8 @@ class ReviewInfo implements JsonSerializable {
 
     // save_prop behavior flags
     const SAVEF_NO_HISTORY = 1;
-    const SAVEF_COMPARE_EXCHANGE_RFLAGS = 2;
+    const SAVEF_CHECK_RFLAGS = 2;
+    const SAVEF_NO_CHECK_HISTORY = 4;
 
     // save_prop return values; >= 0 means success
     const SAVERET_STAGED = 2;
@@ -899,21 +898,16 @@ class ReviewInfo implements JsonSerializable {
     function save_prop($stager = null, $flags = 0) {
         $inserting = $this->base_prop("reviewId") <= 0;
 
-        // do not save if no changes
-        if (!$inserting && !$this->prop_changed()) {
+        // do not save if no changes; maybe delete
+        if ($inserting ? $this->reviewType === 0 : !$this->prop_changed()) {
             return self::SAVERET_EMPTY;
+        } else if ($this->reviewType === 0) {
+            return $this->_save_prop_delete($stager, $flags);
         }
 
         // update reviewTime, set required fields
         $diff = $this->prop_diff();
         $this->_seal_fstorage();
-        if ($inserting) {
-            foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound", "reviewBlind", "rflags", "reviewSubmitted"] as $k) {
-                if (!array_key_exists($k, $diff->_old_prop)) {
-                    $diff->_old_prop[$k] = $this->$k;
-                }
-            }
-        }
         if (($flags & self::SAVEF_NO_HISTORY) === 0) {
             assert(!isset($diff->_old_prop["reviewTime"]));
             $rt = $inserting ? mt_rand(2000, 1000000) : $this->reviewTime + mt_rand(1, 10000);
@@ -924,6 +918,13 @@ class ReviewInfo implements JsonSerializable {
         $qp = [];
         foreach ($diff->_old_prop as $prop => $v) {
             $qp[$prop] = $this->$prop;
+        }
+        if ($inserting) {
+            foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound", "reviewBlind", "rflags", "reviewSubmitted"] as $k) {
+                if (!array_key_exists($k, $qp)) {
+                    $qp[$k] = $this->$k;
+                }
+            }
         }
         //error_log("PaperReview {$this->paperId}/{$this->reviewId} " . json_encode($diff->_old_prop));
         $xstager = $stager ?? [$this->conf, "qe"];
@@ -940,7 +941,7 @@ class ReviewInfo implements JsonSerializable {
                 . "=? where paperId=? and reviewId=? and reviewTime=?";
             $qv = array_values($qp);
             array_push($qv, $this->paperId, $this->reviewId, $this->base_prop("reviewTime"));
-            if (($flags & self::SAVEF_COMPARE_EXCHANGE_RFLAGS) !== 0) {
+            if (($flags & self::SAVEF_CHECK_RFLAGS) !== 0) {
                 $q .= " and rflags=?";
                 $qv[] = $this->base_prop("rflags");
             }
@@ -964,6 +965,32 @@ class ReviewInfo implements JsonSerializable {
         if ($r >= 0 && ($flags & self::SAVEF_NO_HISTORY) === 0) {
             $diff->save_history($stager);
         }
+        return $r;
+    }
+
+    private function _save_prop_delete($stager, $flags) {
+        $q = "delete from PaperReview where paperId=? and reviewId=?";
+        $qv = [$this->base_prop("paperId"), $this->base_prop("reviewId")];
+        if (($flags & self::SAVEF_NO_CHECK_HISTORY) === 0) {
+            $q .= " and reviewTime=?";
+            $qv[] = $this->reviewTime;
+        }
+        if (($flags & self::SAVEF_CHECK_RFLAGS) !== 0) {
+            $q .= " and rflags=?";
+            $qv[] = $this->base_prop("rflags");
+        }
+        $xstager = $stager ?? [$this->conf, "qe"];
+        $result = $xstager($q, ...$qv);
+        if ($stager) {
+            $r = self::SAVERET_STAGED;
+        } else if ($result->is_error()) {
+            $r = self::SAVERET_ERROR;
+        } else if ($result->affected_rows === 0) {
+            $r = self::SAVERET_CONFLICT;
+        } else {
+            $r = self::SAVERET_OK;
+        }
+        $result && $result->close();
         return $r;
     }
 
@@ -995,15 +1022,24 @@ class ReviewInfo implements JsonSerializable {
     }
 
     function commit_prop_assignment(Contact $actor, $extra = []) {
+        if (!$this->prop_changed()) {
+            return;
+        }
+
         $type = $this->reviewType;
         $oldtype = $this->base_prop("reviewType");
+        if ($type === 0) {
+            $this->_commit_prop_delete_assignment($actor, $extra);
+            return;
+        }
+
         if ($oldtype === 0) {
             $verb = $extra["action"] ?? (($this->rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0 ? "self-assigned" : "assigned");
             $msg = "Review {$this->reviewId} {$verb}: " . $this->review_explanation($this->reviewType, $this->reviewRound);
         } else {
             $msg = "Review {$this->reviewId} changed: " . $this->review_explanation($this->base_prop("reviewType"), $this->base_prop("reviewRound")) . " to " . $this->review_explanation($this->reviewType, $this->reviewRound);
         }
-        $this->conf->log_for($actor, $this->contactId, $msg, $this->paperId);
+        $actor->log_activity_for($this->contactId, $msg, $this->paperId);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($oldtype === 0) {
@@ -1041,6 +1077,46 @@ class ReviewInfo implements JsonSerializable {
             $this->reviewer()->update_cdb_roles();
         }
         $this->commit_prop();
+    }
+
+    private function _commit_prop_delete_assignment(Contact $actor, $opts) {
+        $action = $opts["action"] ?? ($this->reviewStatus >= ReviewInfo::RS_DRAFTED ? "deleted" : "unassigned");
+        $actor->log_activity_for($this->contactId, "Review {$this->reviewId} {$action}", $this->paperId);
+        $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?",
+            $this->paperId, $this->reviewId);
+        // update global settings
+        if ($this->reviewToken !== 0) {
+            $this->conf->update_rev_tokens_setting(-1);
+        }
+        $oldtype = $this->base_prop("reviewType");
+        if ($oldtype === REVIEW_META) {
+            $this->conf->update_metareviews_setting(-1);
+        }
+        // perhaps a delegator needs to redelegate
+        if ($oldtype < REVIEW_SECONDARY && $this->requestedBy > 0) {
+            $this->conf->update_review_delegation($this->paperId, $this->requestedBy, -1);
+        }
+        // run autosearch
+        if (!($opts["no_autosearch"] ?? false)) {
+            $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_REVIEWS);
+        }
+        // update rights
+        if (!($opts["no_rights"] ?? false)) {
+            Contact::update_rights();
+            $this->reviewer()->update_cdb_roles();
+        }
+        $this->commit_prop();
+        $this->reviewId = 0;
+    }
+
+    /** @return bool */
+    function delete(Contact $actor, $opts = []) {
+        if ($this->reviewId <= 0
+            || $this->_save_prop_delete(null, self::SAVEF_NO_CHECK_HISTORY) <= 0) {
+            return false;
+        }
+        $this->_commit_prop_delete_assignment($actor, $opts);
+        return true;
     }
 
 
@@ -1383,43 +1459,6 @@ class ReviewInfo implements JsonSerializable {
         $rrow->save_prop(null, self::SAVEF_NO_HISTORY);
         $rrow->commit_prop_assignment($actor, ["action" => "undeclined"]);
         return $rrow;
-    }
-
-    /** @return bool */
-    function delete(Contact $actor, $opts = []) {
-        if ($this->reviewId <= 0) {
-            return false;
-        }
-        $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
-            $this->paperId, $this->reviewId);
-        if (!$result->affected_rows) {
-            return false;
-        }
-        $action = $opts["action"] ?? ($this->reviewStatus >= ReviewInfo::RS_DRAFTED ? "deleted" : "unassigned");
-        $actor->log_activity_for($this->contactId, "Review {$this->reviewId} {$action}", $this->paperId);
-        $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?",
-            $this->paperId, $this->reviewId);
-        // update global settings
-        if ($this->reviewToken !== 0) {
-            $this->conf->update_rev_tokens_setting(-1);
-        }
-        if ($this->reviewType === REVIEW_META) {
-            $this->conf->update_metareviews_setting(-1);
-        }
-        // perhaps a delegator needs to redelegate
-        if ($this->reviewType < REVIEW_SECONDARY && $this->requestedBy > 0) {
-            $this->conf->update_review_delegation($this->paperId, $this->requestedBy, -1);
-        }
-        // run autosearch
-        if (!($opts["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_REVIEWS);
-        }
-        // update rights
-        if (!($opts["no_rights"] ?? false)) {
-            Contact::update_rights();
-            $this->reviewer()->update_cdb_roles();
-        }
-        return true;
     }
 
     /** @param ReviewInfo $a

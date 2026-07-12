@@ -1779,6 +1779,46 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    // Re-applying an identical assignment must be a no-op: no ActionLog entry
+    // and no redundant side effects. (`assign_review` returns the existing id
+    // without committing when `save_prop` reports no change.)
+    function test_assign_review_noop_is_silent() {
+        $conf = $this->conf;
+        $conf->qe("delete from PaperReview where paperId=24 and contactId=?", $this->u_mgbaker->contactId);
+        $rid = $this->u_chair->assign_review(24, $this->u_mgbaker, REVIEW_PRIMARY);
+        xassert($rid > 0);
+        $n1 = $conf->fetch_ivalue("select count(*) from ActionLog where paperId=24 and action like ?", "Review {$rid} %");
+
+        // identical re-assignment changes nothing and must not log
+        $rid2 = $this->u_chair->assign_review(24, $this->u_mgbaker, REVIEW_PRIMARY);
+        xassert_eqq($rid2, $rid);
+        $n2 = $conf->fetch_ivalue("select count(*) from ActionLog where paperId=24 and action like ?", "Review {$rid} %");
+        xassert_eqq($n2, $n1);
+
+        // clean up
+        $this->u_chair->assign_review(24, $this->u_mgbaker, 0);
+        xassert(!fresh_review($conf->checked_paper_by_id(24), $this->u_mgbaker));
+    }
+
+    // Deleting the last metareview must recompute the `metareviews` setting.
+    // (The delete path must read the original review type, not the type after
+    // `assign_review` zeroes it.)
+    function test_delete_meta_review_updates_setting() {
+        $conf = $this->conf;
+        $conf->qe("delete from PaperReview where paperId=25 and contactId=?", $this->u_mgbaker->contactId);
+        $conf->update_metareviews_setting(-1);
+        xassert_eqq($conf->setting("metareviews") ?? 0, 0);
+
+        $rid = $this->u_chair->assign_review(25, $this->u_mgbaker, REVIEW_META);
+        xassert($rid > 0);
+        xassert_eqq($conf->setting("metareviews"), 1);
+
+        // deleting the only metareview must clear the setting again
+        $this->u_chair->assign_review(25, $this->u_mgbaker, 0);
+        xassert(!fresh_review($conf->checked_paper_by_id(25), $this->u_mgbaker));
+        xassert_eqq($conf->setting("metareviews") ?? 0, 0);
+    }
+
     function test_review_proposal() {
         xassert_search($this->u_chair, "has:proposal", "");
         xassert_search($this->u_lixia, "has:proposal", "");

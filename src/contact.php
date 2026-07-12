@@ -6395,24 +6395,18 @@ class Contact implements JsonSerializable {
     /** @param int $pid
      * @param Contact $reviewer
      * @param int $type
-     * @return int|false */
-    function assign_review($pid, $reviewer, $type, $extra = []) {
+     * @return ReviewInfo */
+    function assign_review_prop($pid, $reviewer, $type, $extra = []) {
         assert($reviewer->contactId > 0);
         $result = $this->conf->qe("select * from PaperReview where paperId=? and contactId=?", $pid, $reviewer->contactId);
         $rrow = ReviewInfo::fetch($result, null, $this->conf)
             ?? ReviewInfo::make_db_default($this->conf);
         Dbl::free($result);
-        $reviewId = $rrow->reviewId ?? 0;
-        $oldtype = $rrow->reviewType ?? 0;
+        $oldtype = $rrow->reviewType;
         $oldrflags = $rrow->rflags ?? 0;
         $type = max((int) $type, 0);
         assert($type >= 0 && $oldtype >= 0);
         $round = $extra["round_number"] ?? null;
-        $new_requester_cid = $this->contactId;
-        if (($new_requester = $extra["requester_contact"] ?? null)) {
-            $new_requester_cid = $new_requester->contactId;
-        }
-        $time = Conf::$now;
 
         // can't delete a review that's in progress
         if ($type === 0
@@ -6458,14 +6452,18 @@ class Contact implements JsonSerializable {
         // return if unchanged
         if ($rflags === $oldrflags
             && ($type === 0 || $round === null || $round === $rrow->reviewRound)) {
-            return $reviewId;
+            return $rrow;
         }
 
         // delete review uses separate path
         if ($type === 0) {
             $rrow->set_reviewer($reviewer);
-            return $rrow->delete($this, $extra) ? 0 : false;
+            $rrow->set_prop("reviewType", 0);
+            $rrow->set_prop("rflags", $rflags);
+            return $rrow;
         }
+
+        $time = Conf::$now;
 
         // create or modify review
         if ($oldtype === 0) {
@@ -6474,10 +6472,6 @@ class Contact implements JsonSerializable {
             $rrow->set_prop("paperId", $pid);
             $rrow->set_prop("contactId", $reviewer->contactId);
             $rrow->set_prop("reviewType", $type);
-            $rrow->set_prop("reviewRound", $round);
-            $rrow->set_prop("timeRequested", $time);
-            $rrow->set_prop("requestedBy", $new_requester_cid);
-            $rrow->set_prop("reviewBlind", ($rflags & ReviewInfo::RF_BLIND) !== 0 ? 1 : 0);
             $rrow->set_prop("rflags", $rflags);
             $rrow->set_prop("reviewNeedsSubmit", 1);
             if ($extra["mark_notify"] ?? null) {
@@ -6489,26 +6483,45 @@ class Contact implements JsonSerializable {
         } else {
             $rrow->set_prop("reviewType", $type);
             $rrow->set_prop("rflags", ($oldrflags & ~$rflags_mask) | $rflags);
-            if ($round !== null) {
-                $rrow->set_prop("reviewRound", $round);
-            }
-            if (($oldrflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
-                && $type > REVIEW_PC) {
-                $rrow->set_prop("timeRequested", $time);
-                $rrow->set_prop("requestedBy", $new_requester_cid);
-            }
             if ($type !== REVIEW_SECONDARY
                 && $oldtype === REVIEW_SECONDARY) {
                 $rrow->set_prop("reviewNeedsSubmit", $rrow->reviewStatus < ReviewInfo::RS_APPROVED ? 1 : 0);
             }
         }
-        $rrow->set_reviewer($reviewer);
-
-        if ($rrow->save_prop(null, ReviewInfo::SAVEF_NO_HISTORY | ReviewInfo::SAVEF_COMPARE_EXCHANGE_RFLAGS) < 0) {
-            return false;
+        $rrow->set_prop("reviewBlind", ($rrow->rflags & ReviewInfo::RF_BLIND) !== 0 ? 1 : 0);
+        if ($round !== null) {
+            $rrow->set_prop("reviewRound", $round);
         }
-        $rrow->commit_prop_assignment($this, $extra);
-        return $rrow->reviewId;
+        if ($oldtype === 0
+            || (($oldrflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
+                && $type > REVIEW_PC)) {
+            $rrow->set_prop("timeRequested", $time);
+            $new_requester_cid = $this->contactId;
+            if (($new_requester = $extra["requester_contact"] ?? null)) {
+                $new_requester_cid = $new_requester->contactId;
+            }
+            $rrow->set_prop("requestedBy", $new_requester_cid);
+        }
+        $rrow->set_reviewer($reviewer);
+        return $rrow;
+    }
+
+    /** @param int $pid
+     * @param Contact $reviewer
+     * @param int $type
+     * @return int|false */
+    function assign_review($pid, $reviewer, $type, $extra = []) {
+        for ($n = 0; $n !== 3; ++$n) {
+            $rrow = $this->assign_review_prop($pid, $reviewer, $type, $extra);
+            $sp = $rrow->save_prop(null, ReviewInfo::SAVEF_NO_HISTORY | ReviewInfo::SAVEF_CHECK_RFLAGS);
+            if ($sp >= 0) {
+                $rrow->commit_prop_assignment($this, $extra);
+                return $rrow->reviewId;
+            } else if ($sp !== ReviewInfo::SAVERET_CONFLICT) {
+                break;
+            }
+        }
+        return false;
     }
 
     /** @return array */
