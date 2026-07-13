@@ -1382,12 +1382,15 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $paper17->load_reviews(true);
 
         // check for review accept capability
-        $rrow = $paper17->review_by_user($user_external2);
+        $rrow = $paper17->fresh_review_by_user($user_external2);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_EMPTY);
+        xassert_eqq($rrow->timeRequestNotified, Conf::$now);
         $tok = ReviewAccept_Capability::make($rrow, false);
         xassert(!!$tok);
         xassert(str_starts_with($tok->salt, "hcra"));
 
         // check that review accept capability works
+        Conf::advance_current_time();
         $emptyuser = Contact::make($this->conf);
         assert(!$emptyuser->can_view_paper($paper17));
         $emptyuser->apply_capability_text($tok->salt); // had an infinite loop here
