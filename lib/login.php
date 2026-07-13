@@ -218,7 +218,7 @@ class LoginHelper {
             $where = $login_bounce[1];
         } else {
             $qreq->set_csession("freshlogin", true);
-            $where = $user->conf->hoturl_raw("index");
+            $where = $user->conf->hoturl("index");
         }
         $qreq->redirect($where);
     }
@@ -373,7 +373,7 @@ class LoginHelper {
                 && $conf->allow_user_self_register()
                 && $email !== ""
                 && !($info["deleted"] ?? false)) {
-                $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
+                $args[] = new FmtArg("newaccount", $conf->hoturl("newaccount", ["email" => $email]));
             }
         } else if ($info["unset"] ?? false) {
             $e = "<0>User {email} has not set a password";
@@ -400,9 +400,9 @@ class LoginHelper {
 
         if ($email !== "") {
             $args[] = new FmtArg("email", $email, 0);
-            $args[] = new FmtArg("signin", $conf->hoturl_raw("signin", ["email" => $email]), 0);
+            $args[] = new FmtArg("signin", $conf->hoturl("signin", ["email" => $email]), 0);
             if ($info["can_reset"] ?? false) {
-                $args[] = new FmtArg("forgotpassword", $conf->hoturl_raw("forgotpassword", ["email" => $email]), 0);
+                $args[] = new FmtArg("forgotpassword", $conf->hoturl("forgotpassword", ["email" => $email]), 0);
             }
         }
         if ($problem) {

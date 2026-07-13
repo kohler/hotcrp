@@ -1969,7 +1969,7 @@ class Contact implements JsonSerializable {
         if (!$qreq->valid_post()) {
             Multiconference::fail($qreq, 401, new FailureReason($this->conf, [
                 "signin" => $qreq->page(),
-                "signinUrl" => $this->conf->hoturl_raw("signin", ["redirect" => $url])
+                "signinUrl" => $this->conf->hoturl("signin", ["redirect" => $url])
             ]));
         }
 

@@ -183,18 +183,13 @@ class Ht {
 
     /** @param string|array<string,mixed> $action
      * @param array<string,mixed> $extra
-     * @param int $flags
      * @return string */
-    static function form($action, $extra = [], $flags = 0) {
+    static function form($action, $extra = []) {
         if (is_array($action)) {
-            $flags = $extra;
             $extra = $action;
             $action = $extra["action"] ?? "";
         } else {
             $action = $action ?? "";
-        }
-        if (($flags & Conf::HOTURL_RAW) === 0) {
-            $action = htmlspecialchars_decode($action);
         }
 
         // GET method requires special handling: extract params from URL

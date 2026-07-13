@@ -227,7 +227,7 @@ class Assign_Page {
     private function print_reqrev_main($rrow, $namex, $time) {
         $rname = $rrow->status_title(true) . " (" . $rrow->status_description() . ")";
         if ($this->user->can_view_review($this->prow, $rrow)) {
-            $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId], Conf::HOTURL_RAW));
+            $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId]));
         }
         echo $rname, ': ', $namex,
             '</div><div class="f-d"><ul class="x mb-0">';
@@ -339,7 +339,7 @@ class Assign_Page {
                 && $this->user->privChair
                 && $this->user->allow_admin($this->prow)) {
                 $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
-                    $this->prow->reviewurl(["actas" => $rrowid->email], Conf::HOTURL_RAW));
+                    $this->prow->reviewurl(["actas" => $rrowid->email]));
             }
         } else {
             $name = Text::nameo_h($rrowid, NAME_P);

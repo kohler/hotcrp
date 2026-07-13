@@ -522,7 +522,7 @@ class Autoassign_Page {
 
     function redirect_uri() {
         $nav = $this->qreq->navigation();
-        return $nav->resolve($this->conf->hoturl_raw("autoassign", $this->qreq_parameters()));
+        return $nav->resolve($this->conf->hoturl("autoassign", $this->qreq_parameters()));
     }
 
     function detach_request() {
@@ -682,7 +682,7 @@ class Autoassign_Page {
             sort($ipid);
             $q = PaperSearch::encode_id_search($ipid);
             $this->ms->warning_at(null, "<0>This assignment is incomplete!");
-            $this->ms->inform_at(null, $this->conf->_("<5><a href=\"{url}\">{Submissions} {pids:numlist#}</a> got fewer assignments than you requested.", new FmtArg("url", $this->conf->hoturl_raw("search", ["q" => $q]), 0), new FmtArg("pids", $ipid)));
+            $this->ms->inform_at(null, $this->conf->_("<5><a href=\"{url}\">{Submissions} {pids:numlist#}</a> got fewer assignments than you requested.", new FmtArg("url", $this->conf->hoturl("search", ["q" => $q]), 0), new FmtArg("pids", $ipid)));
             if (strpos($this->qreq->a, "review") !== false) {
                 $reasons = ["conflicts", "preexisting assignments", "previously declined assignments"];
                 if ($qreq->badpairs) {

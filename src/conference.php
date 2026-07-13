@@ -3896,7 +3896,7 @@ class Conf {
         }
     }
 
-    const HOTURL_RAW = 1;
+    const HOTURL_RAW = 0;     // backward compatibility
     const HOTURL_POST = 2;
     const HOTURL_ABSOLUTE = 4;
     const HOTURL_SITEREL = 8;
@@ -3911,16 +3911,13 @@ class Conf {
      * @param int $flags
      * @return string */
     function hoturl($page, $params = null, $flags = 0) {
-        if (($flags & self::HOTURL_RAW) === 0) {
-            error_log("Missing HOTURL_RAW at " . debug_string_backtrace());
-        }
         if (is_string($params)) {
             error_log("hoturl \$params is string at " . debug_string_backtrace());
             parse_str($params, $xparams);
             $params = $xparams;
         }
         $qreq = Qrequest::$main_request;
-        $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
+        $amp = "&";
         if (str_starts_with($page, "=")) {
             if ($page[1] === "?") {
                 $flags |= self::HOTURL_MAYBE_POST;
@@ -3949,10 +3946,6 @@ class Conf {
                     continue;
                 }
                 if ($k === "#") {
-                    if (($flags & self::HOTURL_RAW) === 0
-                        && strcspn($v, "&<\"'") !== strlen($v)) {
-                        $v = htmlspecialchars($v);
-                    }
                     $fragment = "#{$v}";
                 } else {
                     $param .= "{$sep}{$k}=" . urlencode($v);
@@ -4123,9 +4116,10 @@ class Conf {
     /** @param string $page
      * @param ?array $param
      * @param int $flags
-     * @return string */
+     * @return string
+     * @deprecated */
     function hoturl_raw($page, $param = null, $flags = 0) {
-        return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
+        return $this->hoturl($page, $param, $flags);
     }
 
     /** @param int|float|string $html
@@ -4134,7 +4128,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function hotlink($html, $page, $param = null, $js = null) {
-        return Ht::link($html, $this->hoturl($page, $param, self::HOTURL_RAW), $js);
+        return Ht::link($html, $this->hoturl($page, $param), $js);
     }
 
     /** @param string $page
@@ -4142,7 +4136,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function hotform($page, $param = null, $js = null) {
-        return Ht::form($this->hoturl_raw($page, $param), $js, self::HOTURL_RAW);
+        return Ht::form($this->hoturl($page, $param), $js);
     }
 
 
@@ -4183,7 +4177,7 @@ class Conf {
         foreach ($param as $k => $v) {
             $x[$k] = $v;
         }
-        return $this->hoturl($qreq->page(), $x, $flags | self::HOTURL_RAW);
+        return $this->hoturl($qreq->page(), $x, $flags);
     }
 
     /** @param Qrequest $qreq
@@ -4260,7 +4254,7 @@ class Conf {
      * @deprecated
      * @suppress PhanDeprecatedFunction */
     function redirect_hoturl($page, $param = null) {
-        $this->redirect($this->hoturl($page, $param, self::HOTURL_RAW));
+        $this->redirect($this->hoturl($page, $param));
     }
 
     /** @param Qrequest $qreq

@@ -161,7 +161,7 @@ class Paper_Page {
             $this->ps->inform_at("status:if_unmodified_since",
                 $this->conf->_("<5>Your changes were not saved because the {submission} has changed since you last loaded this page. Unsaved changes to {:list} are highlighted. Check them and save again, or <a href=\"{url}\" class=\"uic js-ignore-unload-protection\">discard your edits</a>.",
                     PaperTable::field_title_links($fields, "edit_title"),
-                    new FmtArg("url", $this->prow->hoturl(["m" => "edit"], Conf::HOTURL_RAW), 0)));
+                    new FmtArg("url", $this->prow->hoturl(["m" => "edit"]), 0)));
         }
     }
 
@@ -336,7 +336,7 @@ class Paper_Page {
             $m = $this->conf->_("<0>You’re accessing this {submission} using a special link for reviewer {reviewer}",
                 new FmtArg("reviewer", $u->email, 0),
                 new FmtArg("self", $this->user->email, 0),
-                new FmtArg("signinurl", $this->conf->hoturl_raw("signin", ["email" => $u->email, "cap" => null])));
+                new FmtArg("signinurl", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
             $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
         }
     }

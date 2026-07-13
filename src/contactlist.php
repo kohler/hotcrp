@@ -1436,7 +1436,7 @@ class ContactList {
                 }
             }
             $l = (new SessionList("u/{$listlink}", $ids, $listtitle))
-                ->set_urlbase($this->conf->hoturl_raw("users", ["t" => $listlink], Conf::HOTURL_SITEREL));
+                ->set_urlbase($this->conf->hoturl("users", ["t" => $listlink], Conf::HOTURL_SITEREL));
             echo " has-hotlist\" data-hotlist=\"", htmlspecialchars($l->info_string());
         }
         echo "\">";

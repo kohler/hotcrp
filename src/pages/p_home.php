@@ -347,7 +347,7 @@ class Home_Page {
             }
             echo $conf->_("You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
                 new FmtArg("n", $this->_r_num_submitted), new FmtArg("na", $this->_r_num_needs_submit),
-                new FmtArg("url", $conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0),
+                new FmtArg("url", $conf->hoturl("search", ["q" => "", "t" => "r"]), 0),
                 new FmtArg("scores", $score_texts)),
                 "<br>\n";
         }
@@ -584,7 +584,7 @@ class Home_Page {
     /** @param int $srf */
     private function submission_round_deadlines(&$deadlines, SubmissionRound $sr, $srf) {
         $conf = $this->conf;
-        $dlurl = Ht::escape_attr($conf->hoturl_raw("deadlines"));
+        $dlurl = Ht::escape_attr($conf->hoturl("deadlines"));
         if (($srf & 4) !== 0
             && $sr->final_open
             && ($dl = $sr->final_deadline_for_display()) > 0) {

@@ -194,7 +194,7 @@ class Multiconference {
         $mis[0] = $mis[0] ?? MessageItem::error("<0>Internal error");
         if ($link && $mis[0]->status >= 2 && $qreq->page() !== "index") {
             if (!is_string($link)) {
-                $link = Conf::$main->hoturl_raw("index");
+                $link = Conf::$main->hoturl("index");
             }
             $mis[] = MessageItem::plain("<5><a href=\"" . htmlspecialchars($link) . "\">" . htmlspecialchars(Conf::$main->short_name) . " main site</a>");
         }
@@ -215,7 +215,7 @@ class Multiconference {
         } else if ($user->is_empty()) {
             $e = "signin_required";
             $t = "";
-            $args[] = new FmtArg("url", $user->conf->hoturl_raw("signin"), 0);
+            $args[] = new FmtArg("url", $user->conf->hoturl("signin"), 0);
             $args[] = new FmtArg("expand", true);
         } else {
             $e = "account_disabled";

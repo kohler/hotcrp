@@ -1021,7 +1021,7 @@ class PaperSearch extends MessageSet {
             $args = [$pid];
             if ($this->_warn_missing > 1) {
                 $sm = "<5><a href=\"{url}\">{Submission} #{}</a>";
-                $args[] = new FmtArg("url", $this->conf->hoturl_raw("paper", ["p" => $pid]));
+                $args[] = new FmtArg("url", $this->conf->hoturl("paper", ["p" => $pid]));
             } else {
                 $sm = "<0>{Submission} #{}";
             }
@@ -1511,7 +1511,7 @@ class PaperSearch extends MessageSet {
             $xargs["reviewer"] = $this->_reviewer_user->email;
         }
         $xargs = array_merge($xargs, $this->_urlbase_args ?? [], $args);
-        return $this->conf->hoturl_raw($basepage, $xargs, Conf::HOTURL_SITEREL);
+        return $this->conf->hoturl($basepage, $xargs, Conf::HOTURL_SITEREL);
     }
 
     /** @return string */

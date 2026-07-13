@@ -165,7 +165,7 @@ class AuthenticationChecker {
         if (!$authi) {
             return false;
         }
-        $url = $this->conf->hoturl_raw("oauth", [
+        $url = $this->conf->hoturl("oauth", [
             "reauth" => 1, "max_age" => $this->max_age, "redirect" => $this->redirect()
         ], Conf::HOTURL_SITEREL);
         if (($uindex = Contact::session_index_by_email($this->qreq, $this->user->email)) >= 0) {

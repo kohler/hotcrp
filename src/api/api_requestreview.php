@@ -337,7 +337,7 @@ class RequestReview_API {
         if ($r === null) {
             return JsonResult::make_parameter_error("r");
         }
-        $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
+        $review_site_relative = $prow->conf->hoturl("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
 
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
@@ -387,7 +387,7 @@ class RequestReview_API {
         if ($r === null) {
             return JsonResult::make_parameter_error("r");
         }
-        $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
+        $review_site_relative = $prow->conf->hoturl("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
 
         $reason = trim($qreq->reason ?? "");
         if ($reason === "" || $reason === "Optional explanation") {
@@ -447,7 +447,7 @@ class RequestReview_API {
             // denied access
             if ($user->contactXid === $rrow->contactId
                 && ($tok = ReviewAccept_Capability::make($rrow, true))) {
-                $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => $tok->salt], Conf::HOTURL_SITEREL);
+                $review_site_relative = $prow->conf->hoturl("review", ["p" => $prow->paperId, "r" => $r, "cap" => $tok->salt], Conf::HOTURL_SITEREL);
             }
         } else if (isset($qreq->reason)) {
             $prow->conf->qe("update PaperReviewRefused set reason=? where paperId=? and refusedReviewId=?", $reason, $prow->paperId, $rrid);
@@ -472,7 +472,7 @@ class RequestReview_API {
         if ($r === null) {
             return JsonResult::make_parameter_error("r");
         }
-        $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
+        $review_site_relative = $prow->conf->hoturl("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
 
         $rrow = $prow->review_by_id($r);
         if (!$rrow) {

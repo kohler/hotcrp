@@ -121,8 +121,8 @@ class Buzzer_Page {
         if ($kiosk_keys) {
             $no_discussion .= '<p>To start a discussion, ' . $conf->hotlink("search", "search") . ' for a list, go to a paper in that list, and use the “&#9759;” button.</p>';
             $buzzer_status["kiosk_urls"] = [
-                $conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[0]], Conf::HOTURL_ABSOLUTE),
-                $conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[1]], Conf::HOTURL_ABSOLUTE)
+                $conf->hoturl("buzzer", ["__PATH__" => $kiosk_keys[0]], Conf::HOTURL_ABSOLUTE),
+                $conf->hoturl("buzzer", ["__PATH__" => $kiosk_keys[1]], Conf::HOTURL_ABSOLUTE)
             ];
         } else if ($kiosk) {
             $buzzer_status["is_kiosk"] = true;

@@ -70,7 +70,7 @@ class Document_API {
         if ($active) {
             $dj["active"] = true;
         }
-        $dj["link"] = $doc->url(null, DocumentInfo::DOCURL_INCLUDE_DOCID | Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
+        $dj["link"] = $doc->url(null, DocumentInfo::DOCURL_INCLUDE_DOCID | Conf::HOTURL_ABSOLUTE);
         return (object) $dj;
     }
 

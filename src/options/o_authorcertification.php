@@ -346,7 +346,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         return $this->conf->_("<5>Each author may certify up to {max_submissions} {submissions}. To certify this {submission}, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).",
             new FmtArg("action", $action, 0),
             new FmtArg("max_submissions", $this->max_submissions, 0),
-            new FmtArg("url", $this->conf->hoturl_raw("search", ["t" => "act", "q" => $this->search_keyword() . ":" . $email]), 0));
+            new FmtArg("url", $this->conf->hoturl("search", ["t" => "act", "q" => $this->search_keyword() . ":" . $email]), 0));
     }
 
     private function _value_check_max_submissions(PaperValue $ov) {

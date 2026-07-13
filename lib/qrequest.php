@@ -894,7 +894,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @throws Redirection */
     function redirect($url = null, $status = 302) {
         $this->_conf->saved_messages_commit($this);
-        Navigation::redirect_absolute($this->_navigation->resolve($url ?? $this->_conf->hoturl_raw("index")), $status);
+        Navigation::redirect_absolute($this->_navigation->resolve($url ?? $this->_conf->hoturl("index")), $status);
     }
 
     /** @param string $page
@@ -902,7 +902,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return never
      * @throws Redirection */
     function redirect_hoturl($page, $param = null) {
-        $this->redirect($this->_conf->hoturl($page, $param, Conf::HOTURL_RAW));
+        $this->redirect($this->_conf->hoturl($page, $param));
     }
 
     /** @param ?array $param

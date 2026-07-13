@@ -279,7 +279,7 @@ class FailureReason extends Exception
             $ms[] = $this->conf->_("<0>Document ‘{}’ not found", $this->_a["documentNotFound"]);
         }
         if (isset($this->_a["signin"])) {
-            $url = $this->_a["signinUrl"] ?? $this->conf->hoturl_raw("signin");
+            $url = $this->_a["signinUrl"] ?? $this->conf->hoturl("signin");
             $ms[] = $this->conf->_i("signin_required",
                 new FmtArg("action", $this->_a["signin"]),
                 new FmtArg("url", $url, 0),
@@ -351,7 +351,7 @@ class FailureReason extends Exception
                     new FmtArg("time", $time),
                     new FmtArg("pid", $paperId),
                     new FmtArg("deadline", $dl),
-                    new FmtArg("deadlineurl", $this->conf->hoturl_raw("deadlines"), 0),
+                    new FmtArg("deadlineurl", $this->conf->hoturl("deadlines"), 0),
                     ...$args);
         }
         if ($this->_a["override"] ?? false) {
@@ -450,10 +450,10 @@ class FailureReason extends Exception
                 $mx[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1]), 0));
             }
             if ($this->_a["listViewable"] ?? false) {
-                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => ""]), 0));
+                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => ""]), 0));
             }
             if ($this->_a["reviewsOutstanding"] ?? false) {
-                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0));
+                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => "", "t" => "r"]), 0));
             }
             if (count($mx) > 1) {
                 $mxl = [];

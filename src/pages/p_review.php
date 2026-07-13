@@ -115,7 +115,7 @@ class Review_Page {
     }
 
     function handle_cancel() {
-        $this->qreq->redirect($this->prow->hoturl([], Conf::HOTURL_RAW));
+        $this->qreq->redirect($this->prow->hoturl([]));
     }
 
     function handle_update() {
@@ -316,13 +316,13 @@ class Review_Page {
                 $mx = "You’re accessing this review using a special link for reviewer {$hemail}. (You are signed in as " . htmlspecialchars($this->user->email) . ".)";
                 if ($this->rrow->reviewStatus <= ReviewInfo::RS_DRAFTED) {
                     $m = "<5><p class=\"mb-0\">{$mx} If you wish, you can reassign the linked review to one your current accounts.</p>"
-                        . Ht::form("", ["class" => "has-fold foldo"], Conf::HOTURL_RAW)
+                        . Ht::form("", ["class" => "has-fold foldo"])
                         . '<div class="aab mt-2 fx">';
                     foreach ($this->user->session_emails($this->qreq) as $e) {
                         if ($e === "") {
                             continue;
                         }
-                        $url = $this->conf->hoturl_raw("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "email" => $e]);
+                        $url = $this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "email" => $e]);
                         $m .= '<div class="aabut">'
                             . Ht::submit("Reassign to " . htmlspecialchars($e), [
                                 "formaction" => $url, "class" => "ui js-acceptish-review"

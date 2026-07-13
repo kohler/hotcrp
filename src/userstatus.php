@@ -1049,7 +1049,7 @@ class UserStatus extends MessageSet {
                    && !($cj->user_override ?? false)) {
             $this->error_at("email", "<0>Account {$cj->email} has been deleted");
             if ($this->viewer->privChair) {
-                $this->inform_at("email", "<5>You can recreate the account using <a href=\"{bulkupdate}\">Bulk update</a>. Set the ‘user_override’ column to ‘yes’.", new FmtArg("bulkupdate", $this->conf->hoturl_raw("profile", ["u" => "bulk"]), 0));
+                $this->inform_at("email", "<5>You can recreate the account using <a href=\"{bulkupdate}\">Bulk update</a>. Set the ‘user_override’ column to ‘yes’.", new FmtArg("bulkupdate", $this->conf->hoturl("profile", ["u" => "bulk"]), 0));
             }
             return false;
         }

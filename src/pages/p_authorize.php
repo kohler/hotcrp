@@ -271,7 +271,7 @@ class Authorize_Page {
 
     private function signin_url() {
         $nav = $this->qreq->navigation();
-        return $this->conf->hoturl_raw("signin", ["redirect" => "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt)]);
+        return $this->conf->hoturl("signin", ["redirect" => "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt)]);
     }
 
     function print_form() {

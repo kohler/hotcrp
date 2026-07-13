@@ -130,7 +130,7 @@ class PaperRequest {
             if (preg_match('/\A\s*\#?(\d+)\s*\z/', $q, $m)) {
                 throw new Redirection($conf->selfurl($qreq, ["q" => null, "p" => $m[1]]));
             } else if ($q === "" || $q === "(All)") {
-                throw new Redirection($conf->hoturl_raw("search", ["q" => "", "t" => $qreq->t]));
+                throw new Redirection($conf->hoturl("search", ["q" => "", "t" => $qreq->t]));
             } else {
                 $search = new PaperSearch($user, ["q" => $q, "t" => $qreq->t]);
                 $ps = $search->paper_ids();
@@ -140,7 +140,7 @@ class PaperRequest {
                     $list->set_cookie($qreq);
                     throw new Redirection($conf->selfurl($qreq, ["q" => null, "p" => $ps[0]]));
                 } else {
-                    throw new Redirection($conf->hoturl_raw("search", ["q" => $q, "t" => $qreq->t]));
+                    throw new Redirection($conf->hoturl("search", ["q" => $q, "t" => $qreq->t]));
                 }
             }
         }
@@ -161,7 +161,7 @@ class PaperRequest {
         $conf = $qreq->conf();
         return new FailureReason($conf, [
             "signin" => $pid ? "paper" : "paper:start",
-            "signinUrl" => $conf->hoturl_raw("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL)]),
+            "signinUrl" => $conf->hoturl("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL)]),
             "secondary" => true
         ]);
     }

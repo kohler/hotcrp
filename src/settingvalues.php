@@ -1937,7 +1937,7 @@ class SettingValues extends MessageSet {
         if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
             $url = "#" . $gj->hashid;
         } else {
-            $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null], Conf::HOTURL_RAW);
+            $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
         }
         return Ht::link($html, $url, $js);
     }

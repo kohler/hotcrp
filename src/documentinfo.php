@@ -1650,7 +1650,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?int $hoturl_flags
      * @return string */
     function url($filters = null, $hoturl_flags = null) {
-        $hoturl_flags = $hoturl_flags ?? Conf::HOTURL_RAW;
+        $hoturl_flags = $hoturl_flags ?? 0;
         if ($this->mimetype) {
             $f = ["file" => $this->export_filename($filters ?? $this->filters_applied)];
         } else {
@@ -1677,7 +1677,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?list<FileFilter> $filters
      * @return string */
     function link_html($html = "", $flags = 0, $filters = null) {
-        $p = htmlspecialchars($this->url($filters, Conf::HOTURL_RAW));
+        $p = htmlspecialchars($this->url($filters));
         $suffix = $info = "";
         $title = null;
         $small = ($flags & self::L_SMALL) != 0;
@@ -2071,7 +2071,7 @@ class DocumentInfo implements JsonSerializable {
         if ($this->has_hash()) {
             $x["hash"] = $this->text_hash();
         }
-        $x["siteurl"] = $this->url(null, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
+        $x["siteurl"] = $this->url(null, Conf::HOTURL_SITEREL);
         return (object) $x;
     }
 
