@@ -16,6 +16,46 @@ class Unit_Tester {
         xassert_in_eqq(NAN, [NAN]);
     }
 
+    function test_hoturl_php_suffix() {
+        // hoturl() must insert `php_suffix` before any slash in the page name,
+        // so that slash-containing pages like `api/declinereview` resolve to
+        // `api.php/declinereview` (page `api`, path `/declinereview`) rather
+        // than the unroutable `api/declinereview.php`.
+        $nav = Qrequest::$main_request ? Qrequest::$main_request->navigation() : Navigation::get();
+        $saved = $nav->php_suffix;
+        $flags = Conf::HOTURL_SITEREL | Conf::HOTURL_NO_DEFAULTS;
+        try {
+            $nav->php_suffix = "";
+            xassert_eqq($this->conf->hoturl("api/declinereview", ["p" => 1, "r" => 2], $flags),
+                        "api/declinereview?p=1&r=2");
+            xassert_eqq($this->conf->hoturl("api/job", ["job" => "x"], $flags),
+                        "api/job?job=x");
+            xassert_eqq($this->conf->hoturl("paper", ["p" => 1], $flags),
+                        "paper/1");
+
+            $nav->php_suffix = ".php";
+            xassert_eqq($this->conf->hoturl("api/declinereview", ["p" => 1, "r" => 2], $flags),
+                        "api.php/declinereview?p=1&r=2");
+            xassert_eqq($this->conf->hoturl("api/acceptreview", ["p" => 3, "r" => 4], $flags),
+                        "api.php/acceptreview?p=3&r=4");
+            xassert_eqq($this->conf->hoturl("api/claimreview", ["p" => 5], $flags),
+                        "api.php/claimreview?p=5");
+            xassert_eqq($this->conf->hoturl("api/job", ["job" => "x"], $flags),
+                        "api.php/job?job=x");
+            // a normal single-segment page still gets the suffix
+            xassert_eqq($this->conf->hoturl("paper", ["p" => 1], $flags),
+                        "paper.php/1");
+            // the fn-parameter form routes as /pid/fn under the `api` page
+            xassert_eqq($this->conf->hoturl("api", ["fn" => "declinereview", "p" => 1], $flags),
+                        "api.php/1/declinereview");
+            // an already-suffixed first segment is not double-suffixed
+            xassert_eqq($this->conf->hoturl("api.php/job", ["job" => "x"], $flags),
+                        "api.php/job?job=x");
+        } finally {
+            $nav->php_suffix = $saved;
+        }
+    }
+
     function test_dbl_format_query() {
         xassert_eqq(Dbl::format_query("Hello"), "Hello");
         xassert_eqq(Dbl::format_query("Hello??"), "Hello?");
