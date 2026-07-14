@@ -24,6 +24,9 @@ help () {
     echo "      --host=HOST         Specify database host."
     echo "      --grant-host=HOST   HOST is granted DB access privilege (in addition"
     echo '                          to `localhost`).'
+    echo "      --no-default-grant-hosts"
+    echo '                          Do not grant DB access to `localhost`; only'
+    echo '                          `--grant-host` hosts are granted access.'
     echo "      --no-dbuser         Do not create database user."
     echo "      --no-schema         Do not load initial schema."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
@@ -73,6 +76,7 @@ minimal_options=
 mycreatedb_args=" --defaults-group-suffix=_hotcrp_createdb"
 has_host=false
 granthosts=""
+default_granthosts=true
 needpassword=false
 force=false
 batch=false
@@ -140,6 +144,8 @@ while [ $# -gt 0 ]; do
         add_granthost "`echo "$1" | sed 's/^[^=]*=//'`";;
     --grant-host)
         add_granthost "$2"; shift;;
+    --no-default-grant-hosts|--no-default-grant|--no-default-grant-host)
+        default_granthosts=false;;
     -*)
         FLAGS="$FLAGS '$1'";;
     *)
@@ -220,13 +226,18 @@ if ! $batch; then
         echo "Creating the database and database user for your conference."
     fi
     if test -z "$granthosts"; then
-        echo "* Access for the database user is allowed only from the local host."
-        if test "$has_host" = true; then
-            echo
-            echo "* Since you are running MySQL on a remote host, it will likely"
-            echo "* cause problems that HotCRP is restricting the database user"
-            echo "* to localhost access only. Add \`--grant-host=HOST\` arguments"
-            echo "* to also allow access from other hosts."
+        if ! $default_granthosts; then
+            echo "* No hosts will be granted database access, since you supplied"
+            echo "* \`--no-default-grant-hosts\` but no \`--grant-host=HOST\` arguments."
+        else
+            echo "* Access for the database user is allowed only from the local host."
+            if test "$has_host" = true; then
+                echo
+                echo "* Since you are running MySQL on a remote host, it will likely"
+                echo "* cause problems that HotCRP is restricting the database user"
+                echo "* to localhost access only. Add \`--grant-host=HOST\` arguments"
+                echo "* to also allow access from other hosts."
+            fi
         fi
     fi
     echo
@@ -404,14 +415,17 @@ if [ "$createdb" = y ]; then
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 fi
 
-allhosts="${granthosts}localhost 127.0.0.1 ::1"
+allhosts="$granthosts"
+if $default_granthosts; then
+    allhosts="${allhosts}localhost 127.0.0.1 ::1"
 
-# Also include `localhost.localdomain` (for backward compatibility), but
-# only if `skip_name_resolve` is off
-skip_name_resolve=`echo 'select @@global.skip_name_resolve;' | \
-    eval $MYSQL $mycreatedb_args $myargs $FLAGS -N 2>/dev/null`
-if [ "x$skip_name_resolve" != x1 ]; then
-    allhosts="$allhosts localhost.localdomain"
+    # Also include `localhost.localdomain` (for backward compatibility), but
+    # only if `skip_name_resolve` is off
+    skip_name_resolve=`echo 'select @@global.skip_name_resolve;' | \
+        eval $MYSQL $mycreatedb_args $myargs $FLAGS -N 2>/dev/null`
+    if [ "x$skip_name_resolve" != x1 ]; then
+        allhosts="$allhosts localhost.localdomain"
+    fi
 fi
 
 if [ "$createuser" = y ]; then
