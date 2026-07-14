@@ -2494,4 +2494,27 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
     function test_invariants_last() {
         xassert(ConfInvariants::test_all($this->conf));
     }
+
+    /** Undo reviews this class added to submission #18 (e.g. the requested
+     * external reviewers from `test_request_reviewer_primary`), so a later test
+     * class run in the same process — such as ReviewAPI — sees the three seeded
+     * assignments rather than leftover state. */
+    function finalize() {
+        $prow = $this->conf->paper_by_id(18);
+        if (!$prow) {
+            return;
+        }
+        $prow->ensure_full_reviews();
+        $seeded = ["christophe.diot@sophia.inria.fr", "estrin@usc.edu", "pdruschel@cs.rice.edu"];
+        $extra = [];
+        foreach ($prow->all_reviews() as $rrow) {
+            $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
+            if (!$reviewer || !in_array(strtolower($reviewer->email), $seeded, true)) {
+                $extra[] = $rrow;
+            }
+        }
+        foreach ($extra as $rrow) {
+            $rrow->delete($this->u_chair);
+        }
+    }
 }
