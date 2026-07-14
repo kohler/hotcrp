@@ -151,9 +151,9 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
 
 * response ?+change_list [string]: Names of the fields the request attempted to modify.
 
-    New submissions list `pid` first. `change_list` reflects what the request
-    *attempted* to change, so successful, failed, and dry-run requests can all
-    return a nonempty list.
+    `change_list` reflects what the request *attempted* to change, so
+    successful, failed, and dry-run requests can all return a nonempty list. If
+    the submission is new, the `change_list` will begin with `"new"`.
 
 * response ?conflict boolean: True when the modification was rejected by an
   `if_unmodified_since` edit-conflict check.

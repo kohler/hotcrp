@@ -105,7 +105,7 @@ class AuthorCertification_Tester {
             "{$this->c2key}:1:value" => 1,
             "status:submit" => 1
         ])->set_user($this->u_sally), $this->paper()));
-        xassert_array_eqq($ps->changed_keys(), ["aucert_1", "aucert_2"], true);
+        xassert_array_eqq($ps->change_list(), ["aucert_1", "aucert_2"], true);
         xassert($ps->execute_save());
 
         $prow = $this->paper();

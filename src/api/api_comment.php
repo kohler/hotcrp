@@ -316,13 +316,13 @@ class Comment_API extends MessageSet {
     private function resolve_item_paper($jp) {
         $pid = $jp->pid ?? $this->qreq_pid;
         if (!is_int($pid) || $pid <= 0 || $pid > PaperInfo::PID_MAX) {
-            $this->error_at("pid", "<0>Submission ID required");
+            $this->error_at("pid", $this->conf->_("<0>{Submission} ID required"));
             return false;
         }
         // a per-item `pid` may only confirm a URL-level `p`, never override it
         // (the single path pins the paper via the URL)
         if ($this->qreq_pid !== null && $pid !== $this->qreq_pid) {
-            $this->error_at("pid", "<0>Submission ID does not match");
+            $this->error_at("pid", $this->conf->_("<0>{Submission} ID does not match"));
             return false;
         }
         // reuse the paper already in hand when it matches
@@ -686,9 +686,7 @@ class Comment_API extends MessageSet {
         // comment's submission
         $cs->set_notify($this->notify || !$cs->can_user_manage());
         if ($prepared) {
-            // change_list reflects what the request attempted to change, and is
-            // available before commit (so a dry run or a conflict can report it)
-            $this->change_list = $cs->change_list();
+            $this->change_list = $cs->change_list(true);
         }
 
         if ($this->stale) {

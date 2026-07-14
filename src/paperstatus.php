@@ -554,10 +554,10 @@ final class PaperStatus extends MessageSet {
 
     /** @param bool $full
      * @return list<string> */
-    function changed_keys($full = false) {
+    function change_list($full = false) {
         $s = [];
         if ($full && ($this->_save_status & (self::SSF_NEW | self::SSF_PIDFAIL)) === self::SSF_NEW) {
-            $s[] = "pid";
+            $s[] = "new";
         }
         foreach ($this->_fdiffs ?? [] as $field) {
             $s[] = $field->json_key();
@@ -566,6 +566,13 @@ final class PaperStatus extends MessageSet {
             $s[] = $field;
         }
         return $s;
+    }
+
+    /** @param bool $full
+     * @return list<string>
+     * @deprecated */
+    function changed_keys($full = false) {
+        return $this->change_list($full);
     }
 
     /** @return list<PaperOption> */
@@ -1756,7 +1763,7 @@ final class PaperStatus extends MessageSet {
             $logtext .= " " . trim($via);
         }
         if (!empty($this->_fdiffs) || !empty($this->_xdiffs)) {
-            $logtext .= ": " . join(", ", $this->changed_keys());
+            $logtext .= ": " . join(", ", $this->change_list());
         }
         $this->user->log_activity($logtext, $this->paperId);
     }

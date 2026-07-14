@@ -29,13 +29,12 @@ final class CommentStatus extends MessageSet {
     private $_no_autosearch = false;
     /** @var list<MentionPhrase> */
     private $_desired_mentions = [];
-    /** @var array<string,true> */
-    private $_diffs = [];
 
     const SSF_PREPARED = 1;
     const SSF_SAVED = 2;
     const SSF_ABORTED = 4;
     const SSF_DELETE = 8;
+    const SSF_CREATE = 16;
 
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
@@ -123,8 +122,12 @@ final class CommentStatus extends MessageSet {
             if ($crow->commentId === 0) {
                 return false;
             }
-            $this->_diffs = ["delete" => true];
             return true;
+        }
+
+        // a comment with no id yet is a fresh creation, not a set of edits
+        if ($crow->commentId === 0) {
+            $this->_status |= self::SSF_CREATE;
         }
 
         $old_ctype = $crow->base_prop("commentType");
@@ -200,41 +203,7 @@ final class CommentStatus extends MessageSet {
         }
 
         $this->_has_change = $crow->prop_changed() || $crow->docs_changed();
-        $this->_compute_diffs();
         return true;
-    }
-
-    /** Compute the change list from the staged (but not yet committed) property
-     * diff, so `change_list()` is available before `save()` — e.g. for a
-     * dry run. `commit_prop`/`abort_prop` would clobber these prop diffs, which
-     * is why they are captured here into CommentStatus. */
-    private function _compute_diffs() {
-        $crow = $this->crow;
-        // text and visibility are per-field diffs of an existing comment; a
-        // newly created comment is not a set of changes, so they are omitted
-        $editing = $crow->commentId !== 0;
-        $diffs = [];
-        if ($editing
-            && ($crow->prop_changed("comment") || $crow->prop_changed("commentOverflow"))) {
-            $diffs["text"] = true;
-        }
-        if ($editing
-            && $crow->prop_changed("commentType")
-            && (($crow->commentType ^ $crow->base_prop("commentType")) & CommentInfo::CTM_TOPIC_NONREVIEW) !== 0) {
-            $diffs["topic"] = true;
-        }
-        if ($editing
-            && $crow->prop_changed("commentType")
-            && (($crow->commentType ^ $crow->base_prop("commentType")) & CommentInfo::CTM_VIS) !== 0) {
-            $diffs["visibility"] = true;
-        }
-        if ($crow->prop_changed("commentTags")) {
-            $diffs["tags"] = true;
-        }
-        if ($crow->docs_changed()) {
-            $diffs["attachments"] = true;
-        }
-        $this->_diffs = $diffs;
     }
 
 
@@ -284,8 +253,9 @@ final class CommentStatus extends MessageSet {
                 $log .= " draft";
             }
         }
-        if (!empty($this->_diffs)) {
-            $log .= ": " . join(", ", array_keys($this->_diffs));
+        $cl = $this->change_list(false);
+        if (!empty($cl)) {
+            $log .= ": " . join(", ", $cl);
         }
         $this->viewer->log_activity_for($crow->contactId ? : $this->viewer->contactId, $log, $crow->paperId);
     }
@@ -299,11 +269,55 @@ final class CommentStatus extends MessageSet {
         return $ok;
     }
 
-    /** The fields changed by the committed save (or `["delete"]`). Meaningful
-     * only after execute_save.
+    /** The fields established by this save (or `["delete"]`). Computed from the
+     * live property diff, so it is meaningful from prepare_save until the save
+     * is committed or aborted.
+     *
+     * A newly created comment is a creation, not a set of field changes. In
+     * `$full` mode (the API view) it leads with `new` and reports its text and
+     * `$full` mode (the API view) it leads with `new` and reports its text,
+     * non-default topic, and visibility as appropriate; the non-full view (the
+     * activity log) omits `new` and, for a fresh comment, its text, topic, and
+     * visibility.
+     * @param bool $full
      * @return list<string> */
-    function change_list() {
-        return array_keys($this->_diffs);
+    function change_list($full = false) {
+        if ($this->is_delete()) {
+            return ["delete"];
+        }
+        $crow = $this->crow;
+        $creating = ($this->_status & self::SSF_CREATE) !== 0;
+        $s = [];
+        if ($full && $creating) {
+            $s[] = "new";
+        }
+        // text: changed on an edit; present on a fresh comment (full only)
+        if ($creating
+            ? ($full && ($crow->comment !== "" || (string) $crow->commentOverflow !== ""))
+            : ($crow->prop_changed("comment") || $crow->prop_changed("commentOverflow"))) {
+            $s[] = "text";
+        }
+        // topic: changed on an edit; a fresh comment lists a non-default topic
+        // (any non-review-thread bit) in full mode
+        if ($creating
+            ? ($full && ($crow->commentType & CommentInfo::CTM_TOPIC_NONREVIEW) !== 0)
+            : ($crow->prop_changed("commentType")
+               && (($crow->commentType ^ $crow->base_prop("commentType")) & CommentInfo::CTM_TOPIC_NONREVIEW) !== 0)) {
+            $s[] = "topic";
+        }
+        // visibility: changed on an edit; always present on a fresh comment (full only)
+        if ($creating
+            ? $full
+            : ((($crow->commentType ^ $crow->base_prop("commentType")) & CommentInfo::CTM_VIS) !== 0)) {
+            $s[] = "visibility";
+        }
+        if ($crow->prop_changed("commentTags")) {
+            $s[] = "tags";
+        }
+        if ($crow->docs_changed()) {
+            $s[] = "attachments";
+        }
+        return $s;
     }
 
     /** Discard staged changes without writing them. */

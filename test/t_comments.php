@@ -901,18 +901,30 @@ class Comments_Tester {
     function test_comment_change_list() {
         $paper3 = $this->conf->checked_paper_by_id(3);
 
-        // a new comment is a creation, not a set of field changes: no text or
-        // visibility in the change list, and the initial log names no fields
+        // a new comment is a creation: the API change list leads with `new`
+        // (the new comment id) and then reports the fresh comment's text and
+        // visibility, but the initial log still names no fields (a creation is
+        // not a set of logged field changes)
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "CL body", "visibility" => "rev"], $paper3);
         xassert($j->ok);
         xassert_eqq($j->valid, true);
         xassert(isset($j->change_list));
-        xassert_eqq($j->change_list, []);
+        xassert_eqq($j->change_list, ["new", "text", "visibility"]);
         $cid = (int) $j->comment->cid;
         $create_log = $this->conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
             $paper3->paperId, "Comment {$cid} %");
         xassert(!!$create_log);
         xassert(strpos($create_log, ":") === false);
+
+        // a creation that also carries tags leads with `new`, then its fields
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "CL tagged", "visibility" => "rev", "tags" => "hot"], $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->change_list, ["new", "text", "visibility", "tags"]);
+        // ...but the log names only the non-creation fields (no new/text/visibility)
+        $tcid = (int) $j->comment->cid;
+        $tagged_log = $this->conf->fetch_value("select action from ActionLog where paperId=? and action like ? order by logId desc limit 1",
+            $paper3->paperId, "Comment {$tcid} %");
+        xassert_str_ends_with($tagged_log, ": tags");
 
         // visibility-only edit
         $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "CL body", "visibility" => "pc"], $paper3);
@@ -978,13 +990,13 @@ class Comments_Tester {
     function test_comment_dry_run() {
         $paper3 = $this->conf->checked_paper_by_id(3);
 
-        // dry-run create: valid, but nothing is saved
+        // dry-run create: valid, reports the prospective creation, saves nothing
         $before = $this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=?", $paper3->paperId);
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Dry body", "visibility" => "rev", "dry_run" => 1], $paper3);
         xassert($j->ok);
         xassert_eqq($j->dry_run, true);
         xassert_eqq($j->valid, true);
-        xassert_eqq($j->change_list, []);
+        xassert_eqq($j->change_list, ["new", "text", "visibility"]);
         xassert(!isset($j->comment));
         xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=?", $paper3->paperId), $before);
 

@@ -197,7 +197,7 @@ class Paper_Page {
         if ($whynot
             && !$is_new
             && !$is_final
-            && !count(array_diff($this->ps->changed_keys(), ["contacts", "status"]))) {
+            && !count(array_diff($this->ps->change_list(), ["contacts", "status"]))) {
             $whynot = $this->user->perm_finalize_paper($this->prow);
         }
         if ($whynot) {

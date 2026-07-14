@@ -231,12 +231,12 @@ class PaperAPI_Tester {
         $qreq = TestQreq::post_json(["pid" => 200, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]]]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
-        xassert_eqq($jr->change_list[0], "pid");
+        xassert_eqq($jr->change_list[0], "new");
 
         $qreq = TestQreq::post_json(["pid" => 201, "title" => "Fart Again", "abstract" => "Extra Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "if_unmodified_since" => 0]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
-        xassert_eqq($jr->change_list[0], "pid");
+        xassert_eqq($jr->change_list[0], "new");
 
         $qreq = TestQreq::post_json(["pid" => 201, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
         $jr = call_api("=paper", $this->u_chair, $qreq);

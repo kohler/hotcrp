@@ -797,7 +797,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->check_and_save($user_diot, null));
 
         $rrow = fresh_review($paper18, $user_diot);
-        xassert(str_ends_with($rrow->fidval("t01"), "\n==+== Want to make sure this works\n"));
+        xassert_str_ends_with($rrow->fidval("t01"), "\n==+== Want to make sure this works\n");
         xassert_eqq($rrow->fidval("t04"), "Whitherto the stuff I want to add for the authors’ response.\n");
     }
 

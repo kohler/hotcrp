@@ -368,7 +368,7 @@ class Paper_API extends MessageSet {
             $this->papers[] = null;
         }
         $this->status_list[] = new Paper_API_Status(
-            $ok, $ps->changed_keys(true),
+            $ok, $ps->change_list(true),
             $ps->has_error_at("if_unmodified_since"),
             $ps->saved_pid() ?? "new"
         );

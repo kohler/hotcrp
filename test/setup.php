@@ -694,6 +694,19 @@ function xassert_str_starts_with($haystack, $needle) {
 /** @param string $haystack
  * @param string $needle
  * @return bool */
+function xassert_str_ends_with($haystack, $needle) {
+    $ok = str_ends_with($haystack, $needle);
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        Xassert::fail_with("expected `{$haystack}` to end with `{$needle}`");
+    }
+    return $ok;
+}
+
+/** @param string $haystack
+ * @param string $needle
+ * @return bool */
 function xassert_str_contains($haystack, $needle) {
     $ok = strpos($haystack, $needle) !== false;
     if ($ok) {
