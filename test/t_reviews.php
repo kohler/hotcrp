@@ -1978,6 +1978,53 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    // `ReviewValues::change_list(true)` leads with `new` when this save creates
+    // the review (the marker is consistent across the paper, review, and comment
+    // APIs); the plain list never does, and an edit of an existing review never
+    // does.
+    function test_review_change_list_new() {
+        $conf = $this->conf;
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        $prow = $conf->checked_paper_by_id(29);
+        xassert(!$prow->review_by_user($this->u_lixia));
+
+        // creating a review: `new` leads the full list, is absent from the plain
+        // list, and is the only difference between them
+        $rv = new ReviewValues($conf);
+        xassert($rv->parse_json(["ovemer" => 2, "revexp" => 2]));
+        xassert($rv->prepare_save($this->u_lixia, $prow, null));
+        $full = $rv->change_list(true);
+        $plain = $rv->change_list(false);
+        xassert_eqq($full[0] ?? null, "new");
+        xassert(count($full) > 1);
+        xassert(!in_array("new", $plain, true));
+        xassert_eqq(array_slice($full, 1), $plain);
+        xassert($rv->execute_save());
+
+        $prow = $conf->checked_paper_by_id(29);
+        $rrow = $prow->fresh_review_by_user($this->u_lixia);
+        xassert(!!$rrow);
+
+        // editing an existing review never reports `new`, even in full mode
+        $rv = new ReviewValues($conf);
+        xassert($rv->parse_json(["ovemer" => 4]));
+        xassert($rv->prepare_save($this->u_lixia, $prow, $rrow));
+        $editfull = $rv->change_list(true);
+        xassert(count($editfull) > 0);
+        xassert(!in_array("new", $editfull, true));
+        $rv->abort_save();
+
+        // clean up
+        $conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $rrow->reviewId);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $prow->paperId, $rrow->reviewId);
+        $prow->invalidate_reviews();
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
     function test_rflags_type() {
         for ($i = 0; $i <= REVIEW_META; ++$i) {
             xassert_eqq(ReviewInfo::rflags_type(1 << $i), $i);

@@ -17,16 +17,33 @@ class ReviewValues extends MessageSet {
     /** @var bool */
     private $autosearch = true;
 
+    // current request
     /** @var array<string,mixed> */
     public $req;
     /** @var ?bool */
     public $req_json;
-
     /** @var ?int */
     public $reviewId;
     /** @var ?string */
     public $review_ordinal_id;
 
+    // state staged by prepare_save for current request
+    /** @var int */
+    private $_save_status = 0;
+    /** @var ?ReviewInfo */
+    private $stage_rrow;
+    /** @var ?Contact */
+    private $stage_user;
+    /** @var int */
+    private $stage_oldstatus;
+    /** @var int */
+    private $stage_newstatus;
+
+    // `_save_status` bits
+    const SSF_PREPARED = 1;  // prepare_save staged a save awaiting execute/abort
+    const SSF_LOCKED = 2;    // _apply_req is holding PaperReview/History write locks
+
+    // textual review form
     /** @var ?string */
     private $text;
     /** @var ?int */
@@ -44,6 +61,8 @@ class ReviewValues extends MessageSet {
 
     /** @var 0|1|2|3 */
     private $finished = 0;
+
+    // summary information about all reviews parsed in this file
     /** @var ?list<string> */
     private $submitted;
     /** @var ?list<string> */
@@ -567,10 +586,10 @@ class ReviewValues extends MessageSet {
      * @return bool */
     function check_vtag(ReviewInfo $rrow) {
         if (isset($this->req["if_vtag_match"])
-            && $this->req["if_vtag_match"] !== $rrow->reviewTime) {
+            && $this->req["if_vtag_match"] !== $rrow->base_prop("reviewTime")) {
             $pk = "if_vtag_match";
         } else if (isset($this->req["if_unmodified_since"])
-                   && $this->req["if_unmodified_since"] < $rrow->reviewModified) {
+                   && $this->req["if_unmodified_since"] < $rrow->base_prop("reviewModified")) {
             $pk = "if_unmodified_since";
         } else {
             return true;
@@ -582,8 +601,30 @@ class ReviewValues extends MessageSet {
 
     /** @return bool */
     function check_and_save(Contact $user, ?PaperInfo $prow, ?ReviewInfo $rrow = null) {
+        if (!$this->prepare_save($user, $prow, $rrow)) {
+            $this->abort_save();
+            return false;
+        }
+        if (!$this->execute_save()) {
+            $this->abort_save();
+            return false;
+        }
+        return true;
+    }
+
+    /** Resolve the target review and stage the request onto it without
+     * committing. A review that does not yet exist is staged onto an unsaved
+     * assignable review (`assign_review_prop`) — no database row is created
+     * here — so a `prepare_save` not followed by `execute_save` (i.e. a dry run)
+     * never touches the database. On success the staged changes are available
+     * via `change_list()`; a following `execute_save()` commits them, or
+     * `abort_save()` reverts them.
+     * @return bool true if the request staged cleanly */
+    function prepare_save(Contact $user, ?PaperInfo $prow, ?ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
         $this->reviewId = $this->review_ordinal_id = null;
+        $this->_save_status = 0;
+        $this->stage_rrow = $this->stage_user = null;
 
         // look up paper
         if (!$prow) {
@@ -631,7 +672,8 @@ class ReviewValues extends MessageSet {
             }
         }
 
-        // maybe create review
+        // a review that does not yet exist is staged onto an unsaved assignable
+        // review; the real database row is created later, by `execute_save`
         if (!$rrow) {
             $round = isset($this->req["round"]) ? (int) $this->conf->round_number($this->req["round"]) : null;
             if (($whynot = $user->perm_create_review($prow, $reviewer, $round))) {
@@ -645,15 +687,73 @@ class ReviewValues extends MessageSet {
                 $this->rvmsg(self::ERROR, null, "<0>Internal error while creating review");
                 return false;
             }
+        }
+
+        // ensure the target review knows its paper, so the commit half (and
+        // callers) can recover it from the review alone
+        if (!$rrow->prow) {
             $rrow->set_prow($prow);
         }
 
-        // actually check review and save
-        $ok = $this->_apply_req($user, $prow, $rrow);
-        if (!$ok) {
-            $rrow->abort_prop();
+        // stage the request (validation + property staging)
+        if (!$this->_apply_req($user, $prow, $rrow)) {
+            return false;
         }
-        return $ok;
+        $this->_save_status |= self::SSF_PREPARED;
+        return true;
+    }
+
+    /** Commit a review staged by `prepare_save` (creating its database row if
+     * necessary). Resets the prepared state.
+     * @return bool */
+    function execute_save() {
+        assert(($this->_save_status & self::SSF_PREPARED) !== 0);
+        $this->_save_status &= ~self::SSF_PREPARED;
+        return $this->_commit_req();
+    }
+
+    /** Revert the changes staged by `prepare_save` without committing. A
+     * would-be-new review was never inserted (creation happens in
+     * `execute_save`), so there is nothing to delete; but tables locked by
+     * `_apply_req` for ordinal assignment must be released. */
+    function abort_save() {
+        if (($this->_save_status & self::SSF_LOCKED) !== 0) {
+            $this->conf->qe_raw("unlock tables");
+        }
+        if ($this->stage_rrow) {
+            $this->stage_rrow->abort_prop();
+        }
+        $this->_save_status &= ~(self::SSF_PREPARED | self::SSF_LOCKED);
+    }
+
+    /** The list of changes staged by the last `prepare_save`, derived from the
+     * review's diff. Must be read before `execute_save`/`abort_save`, which
+     * clear the diff (so a dry run or a conflict can report it, but afterwards
+     * it is empty).
+     *
+     * In `$full` mode, an object created by this save leads with `new`
+     * (consistent across the paper, review, and comment APIs).
+     * @param bool $full
+     * @return list<string> */
+    function change_list($full = false) {
+        if (!$this->stage_rrow) {
+            return [];
+        }
+        $diffinfo = $this->stage_rrow->prop_diff();
+        $cl = [];
+        if ($full && $this->stage_rrow->base_prop("reviewId") <= 0) {
+            $cl[] = "new";
+        }
+        if ($this->stage_oldstatus !== $this->stage_newstatus) {
+            $cl[] = "status";
+        }
+        if (array_key_exists("reviewBlind", $diffinfo->_old_prop)) {
+            $cl[] = "blind";
+        }
+        foreach ($diffinfo->fields() as $f) {
+            $cl[] = $f->short_id;
+        }
+        return $cl;
     }
 
     /** @param ReviewField $f
@@ -763,11 +863,6 @@ class ReviewValues extends MessageSet {
         // reviewer must match if provided
         if (isset($this->req["reviewerEmail"])
             && !$this->_check_reviewer($rrow, $this->req["reviewerEmail"])) {
-            return false;
-        }
-
-        // version tag must match if provided
-        if (!$this->check_vtag($rrow)) {
             return false;
         }
 
@@ -1053,9 +1148,28 @@ class ReviewValues extends MessageSet {
             $rflags &= ~ReviewInfo::RF_AUSEEN_LIVE;
         }
 
-        // potentially assign review ordinal (requires table locking since
-        // mySQL is stupid)
-        $locked = $newordinal = false;
+        // capture the minimal commit state now, before the version-tag check, so
+        // a conflict can still report the attempted change list (the list is
+        // derived on demand from the staged diff, and unrecoverable once a commit
+        // or abort clears it)
+        $this->stage_rrow = $rrow;
+        $this->stage_user = $user;
+        $this->stage_oldstatus = $oldstatus;
+        $this->stage_newstatus = $newstatus;
+
+        // version tag / if_unmodified_since precondition. Checked here, after the
+        // request is fully staged but before any database write (the ordinal lock
+        // below is the first), so a conflict reports the attempted diff without
+        // committing; abort_save then reverts the staged changes.
+        if (!$this->check_vtag($rrow)) {
+            return false;
+        }
+
+        // potentially assign a review ordinal and display time (requires table
+        // locking since MySQL is stupid). The tables stay locked past the end of
+        // staging: execute_save saves under the lock and releases it, while a
+        // dry run's abort_save releases it without saving.
+        $newordinal = false;
         if ((!$rrow->reviewId
              && $newsubmit
              && $diffinfo->view_score() >= VIEWSCORE_AUTHORDEC)
@@ -1069,7 +1183,7 @@ class ReviewValues extends MessageSet {
                 return false;
             }
             Dbl::free($result);
-            $locked = true;
+            $this->_save_status |= self::SSF_LOCKED;
             $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
             $rrow->set_prop("reviewOrdinal", (int) $max_ordinal + 1);
             $newordinal = true;
@@ -1078,16 +1192,37 @@ class ReviewValues extends MessageSet {
             || (($newsubmit
                  || ($newstatus >= ReviewInfo::RS_APPROVED && $oldstatus < ReviewInfo::RS_APPROVED))
                 && !$rrow->timeDisplayed)) {
-            $rrow->set_prop("timeDisplayed", $now);
+            $rrow->set_prop("timeDisplayed", Conf::$now);
         }
 
-        // actually affect database
+        // finalize the staged rflags (the last staged property; `_commit_req`
+        // only writes what was staged here)
         $rrow->set_prop("rflags", $rflags);
+        return true;
+    }
+
+    /** Commit the review staged by the staging half of `_apply_req`, using the
+     * captured `stage_*` state.
+     * @return bool */
+    private function _commit_req() {
+        $rrow = $this->stage_rrow;
+        $prow = $rrow->prow;
+        $user = $this->stage_user;
+        $diffinfo = $rrow->prop_diff();
+        $oldstatus = $this->stage_oldstatus;
+        $newstatus = $this->stage_newstatus;
+        $newsubmit = $newstatus >= ReviewInfo::RS_COMPLETED
+            && $oldstatus < ReviewInfo::RS_COMPLETED;
+        $usedReviewToken = $user->active_review_token_for($prow, $rrow);
+
+        // actually affect database (all properties, including any review
+        // ordinal, were staged by `_apply_req`)
         $result = $rrow->save_prop();
 
-        // unlock tables even if problem
-        if ($locked) {
+        // release the tables `_apply_req` locked for ordinal assignment, if any
+        if (($this->_save_status & self::SSF_LOCKED) !== 0) {
             $this->conf->qe_raw("unlock tables");
+            $this->_save_status &= ~self::SSF_LOCKED;
         }
 
         if ($result < 0) {
