@@ -107,6 +107,32 @@ class PaperAPI_Tester {
         xassert_eqq($jr->paper->object, "paper");
     }
 
+    function test_update_paper_json_param_no_body() {
+        // `json` supplied as a bare parameter with no request body: the null
+        // content type must not crash `is_form()`, and the JSON still defines
+        // the modification (previously `json` required a form content type)
+        $qreq = (new Qrequest("POST", [
+            "json" => json_encode(["pid" => 1, "title" => "Scalable Timers, No-Body Edition"])
+        ]))->approve_token();
+        xassert_eqq($qreq->body_content_type(), null);
+        $jr = call_api("paper", $this->u_puneet, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->paper->object, "paper");
+        xassert_eqq($jr->paper->title, "Scalable Timers, No-Body Edition");
+    }
+
+    function test_post_json_and_upload_conflict() {
+        // `json` and `upload` are alternative payload selectors; supplying both
+        // is an error (the upload token need not even resolve)
+        $qreq = TestQreq::post([
+            "json" => json_encode(["pid" => 1, "title" => "Should Not Apply"]),
+            "upload" => "hct_nonexistent"
+        ]);
+        $jr = call_api("=paper", $this->u_puneet, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains($jr->message_list[0]->message, "at most one of `json` and `upload`");
+    }
+
     function test_update_attack_paper_pleb() {
         $prow = $this->conf->checked_paper_by_id(2);
         xassert_eqq($this->u_puneet->can_view_paper($prow), false);

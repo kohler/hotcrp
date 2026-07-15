@@ -558,6 +558,90 @@
                 ],
                 "description": "Review ID"
             },
+            "review": {
+                "type": "object",
+                "required": [
+                    "object",
+                    "pid",
+                    "rid"
+                ],
+                "properties": {
+                    "object": {
+                        "enum": [
+                            "review"
+                        ]
+                    },
+                    "pid": {
+                        "$ref": "#/components/schemas/pid"
+                    },
+                    "rid": {
+                        "$ref": "#/components/schemas/rid"
+                    },
+                    "rtype": {
+                        "type": "integer",
+                        "description": "Review type: 1 external, 2 PC, 3 secondary, 4 primary, 5 metareview"
+                    },
+                    "round": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "empty",
+                            "acknowledged",
+                            "draft",
+                            "delivered",
+                            "approved",
+                            "complete"
+                        ]
+                    },
+                    "version": {
+                        "type": "integer"
+                    },
+                    "ordinal": {
+                        "type": "string"
+                    },
+                    "draft": {
+                        "type": "boolean"
+                    },
+                    "blind": {
+                        "type": "boolean"
+                    },
+                    "subreview": {
+                        "type": "boolean"
+                    },
+                    "ghost": {
+                        "type": "boolean"
+                    },
+                    "reviewer": {
+                        "type": "string"
+                    },
+                    "reviewer_email": {
+                        "$ref": "#/components/schemas/email"
+                    },
+                    "editable": {
+                        "type": "boolean"
+                    },
+                    "format": {
+                        "type": "integer"
+                    },
+                    "hidden_fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "review_token": {
+                        "type": "string"
+                    },
+                    "modified_at": {
+                        "type": "integer"
+                    },
+                    "modified_at_text": {
+                        "type": "string"
+                    }
+                }
+            },
             "cid": {
                 "oneOf": [
                     {
@@ -1041,6 +1125,33 @@
                     "conflict": {
                         "type": "boolean",
                         "description": "True when this update was rejected by an if_unmodified_since edit-conflict check"
+                    }
+                }
+            },
+            "review_update_status": {
+                "type": "object",
+                "description": "Status of a review update operation",
+                "required": ["valid", "change_list"],
+                "properties": {
+                    "valid": {
+                        "type": "boolean"
+                    },
+                    "change_list": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "pid": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "rid": {
+                        "$ref": "#/components/schemas/rid"
+                    },
+                    "conflict": {
+                        "type": "boolean",
+                        "description": "True when this update was rejected by an edit-conflict check"
                     }
                 }
             },

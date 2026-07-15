@@ -54,10 +54,14 @@ The `r` parameter selects a review on submission `p`. The read endpoints
 [`reviewrating`](#get-reviewrating)) accept either a numeric review ID (`4`) or a
 display ordinal (`A`). The lifecycle endpoints ([`acceptreview`](#post-acceptreview),
 [`declinereview`](#post-declinereview), [`claimreview`](#post-claimreview))
-require a numeric review ID.
+require a numeric review ID. The upload endpoint ([`review` POST](#post-review))
+also accepts `new` (require a freshly-created review) or an empty `r` (the
+caller’s own review, created if necessary).
 
 To retrieve many reviews at once, use [`reviews`](#get-reviews), which selects
-reviews by submission search rather than by ID.
+reviews by submission search rather than by ID. To create or modify many reviews
+at once—including from an offline review form spanning several submissions—use
+[`reviews` POST](#post-reviews).
 
 
 # get /{p}/review
@@ -71,7 +75,101 @@ not see it, a `403`.
 
 * param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
 * param ?forceShow
-* response review object: The requested [review object](#tag-reviews).
+* response review review: The requested [review object](#tag-reviews).
+
+
+# post /review
+
+> Create or modify a review
+
+Create or modify one review of submission `p`. The review being edited is
+selected by `r`:
+
+* a numeric review ID (`4`) or display ordinal (`A`) names an existing review;
+* `new` requires that a *new* review be created (the request fails if the
+  reviewer already has a review);
+* an empty or absent `r` addresses the caller’s own review, creating it if
+  necessary.
+
+The modification is specified in JSON in any of these forms:
+
+1. In a JSON-formatted request parameter named `json`.
+2. As a JSON request body (content-type `application/json`).
+3. As an offline review form in plain text—either the whole request body (with
+   content-type `text/plain`) or a `file` upload in a form POST. The text is
+   parsed exactly as an offline form uploaded from the review page; only its
+   sections for submission `p` are applied (any other sections are ignored).
+4. As a previously-uploaded JSON or text file, named by an
+   [upload token](#post-upload) in the `upload` parameter.
+
+In the JSON forms the modification is a [review object](#tag-reviews). Absent
+fields are left unchanged; fields keyed by their UID set review-form content.
+Set `submitted` (or `ready`) to `true` to submit the review, or `draft` to
+`true` to save it without submitting. Submission administrators assigning a
+review on someone’s behalf may name the reviewer with `email` (plus
+`given_name`/`family_name`/`affiliation` for a new account).
+
+The `p` request parameter is optional for the JSON and text forms: if it is
+unset, HotCRP uses the `pid` from the supplied data. If both `p` and a body
+`pid` are present they must match; likewise `r` and a body `rid`.
+
+The API also supports form upload using the parameter conventions of the HotCRP
+web application. These conventions are subject to change, and third-party
+applications should prefer JSON.
+
+To test a modification without saving, supply a `dry_run=1` parameter. This will
+test the input but make no changes to the database.
+
+* param ?p pid: Submission to review. Optional when the JSON or text data
+  supplies a `pid`; if both are present they must match.
+* param ?r rid: Review to create or modify: `new`, a numeric review ID, a
+  display ordinal, or empty for the caller’s own review.
+* body application/json review: A [review object](#tag-reviews) sent as a raw JSON body.
+
+    * oneof body
+* body text/plain string: An offline review form, parsed as if uploaded from the review page.
+
+    * oneof body
+* param ?=json string: A review object supplied in a `json` request parameter.
+
+    * oneof body
+* param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or text file.
+
+    * oneof body
+* param ?dry_run boolean: True checks input for errors, but does not save changes.
+* param ?override boolean: Administrators only: bypass deadline and other soft checks.
+* param ?if_vtag_match integer: Reject the modification unless the review’s
+  current version tag equals this value. `0` matches only a review that does not
+  yet exist, so `r=new` implies `if_vtag_match=0`.
+* param ?if_unmodified_since string: Reject the modification if the review has
+  been modified since this time (a Unix timestamp, or `0`).
+* param ?notify boolean: False disables email notifications.
+
+    * default true
+    * badge admin
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?+valid boolean: True if and only if the modification was valid.
+
+    For a non-dry-run request, `"valid": true` also means the database changes
+    were committed.
+
+* response ?+change_list [string]: Names of the review fields the request
+  attempted to modify.
+
+    `change_list` reflects what the request *attempted* to change, so
+    successful, failed, and dry-run requests can all return a nonempty list. If
+    the review is new, the `change_list` begins with `"new"`.
+
+* response ?conflict boolean: True when the modification was rejected by an
+  `if_vtag_match` or `if_unmodified_since` edit-conflict check.
+* response ?rid rid: Numeric ID of the modified or newly created review.
+
+    * condition valid
+    * condition !dry_run
+* response ?review review: The modified [review object](#tag-reviews).
+
+    * condition valid
+    * condition !dry_run
 
 
 # get /reviews
@@ -99,7 +197,75 @@ which submissions are searched). Supply at most one of them:
 * param ?u email: Return only reviews written by this user. Mutually exclusive with `rq`.
 * param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
 * param ?forceShow
-* response reviews [object]: Matching [review objects](#tag-reviews).
+* response reviews [review]: Matching [review objects](#tag-reviews).
+
+
+# post /reviews
+
+> Create or modify multiple reviews
+
+Create or modify many reviews in one request. Unlike [`review`
+POST](#post-review), this endpoint is not tied to a single submission: each
+review names its own submission, and the batch may span any number of
+submissions. The modification may be supplied as:
+
+1. A JSON array of [review objects](#tag-reviews) (as a raw `application/json`
+   body, in the `json` form field, or via an [upload token](#post-upload)). Each
+   object names its submission with `pid` and, optionally, its review with `rid`
+   (`"rid": "new"` requires a freshly-created review). An object may also carry
+   its own `if_vtag_match` or `if_unmodified_since` precondition to guard that
+   item’s edit (see [`review` POST](#post-review)).
+2. An offline review form in plain text (a `text/plain` body, a `file` upload,
+   or an [upload token](#post-upload)) containing one or more `==+== Paper`
+   sections. Every section is applied to the submission it names; there is no
+   single-submission restriction.
+
+Each review is processed independently and best-effort: one item’s failure does
+not roll back the others. The response reports one entry per input review, in
+order, in `status_list`; the parallel `reviews` array holds the resulting
+[review object](#tag-reviews) for each committed item (and `null` for items that
+were invalid or skipped). A `dry_run=1` request validates every item but commits
+nothing.
+
+The `if_vtag_match` and `if_unmodified_since` request parameters set batch-wide
+default preconditions, applied to every item that does not specify its own. In
+particular, `if_vtag_match=0` requires that every saved review be newly created.
+
+* body application/json [review]: An array of [review objects](#tag-reviews),
+  each naming its submission with `pid`.
+
+    * oneof body
+* body text/plain string: An offline review form with one or more submission sections.
+
+    * oneof body
+* param ?=json string: The review array supplied in a `json` request parameter.
+
+    * oneof body
+* param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or text file.
+
+    * oneof body
+* param ?dry_run boolean: True checks every item for errors, but does not save changes.
+* param ?override boolean: Administrators only: bypass deadline and other soft checks.
+* param ?if_vtag_match integer: Batch-wide default version-tag precondition,
+  overridable by a review object’s own `if_vtag_match`. `if_vtag_match=0`
+  requires that every saved review be newly created.
+* param ?if_unmodified_since string: Batch-wide default edit-conflict precondition
+  (a Unix timestamp, or `0`), overridable by a review object’s own
+  `if_unmodified_since`.
+* param ?notify boolean: False disables email notifications.
+
+    * default true
+    * badge admin
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?+status_list [review_update_status]: Per-review results, one entry per
+  input object (same length and order as the input). Entry *i* reports `valid`,
+  `change_list` (beginning with `"new"` for a created review), the submission’s
+  `pid`, the review’s `rid` (when saved), and `conflict` for an edit-conflict
+  rejection.
+* response ?reviews [review]: One entry per input review, in order: the resulting
+  [review object](#tag-reviews), or `null` for items that were not saved.
+
+    * condition !dry_run
 
 
 # get /{p}/reviewhistory

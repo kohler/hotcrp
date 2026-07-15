@@ -74,37 +74,52 @@ may not see it, an error is returned.
 * badge featured
 
 
+# get /comments
+
+> Retrieve multiple comments
+
+Retrieve every visible comment on the submissions matching a search.
+
+The search is specified in the `q` parameter (and other search parameters,
+such as `t`). All comments the caller may see, across all matching
+submissions, are returned as an array of [comment objects](#tag-comments) in
+the response field `comments`.
+
+As a shorthand for a single submission, supply its ID in `p` instead of `q`;
+this returns that submission’s visible comments. Supplying both `q` and `p` is
+an error.
+
+* param ?q search_string: The search expression.
+* param ?p pid: A single submission, as an alternative to `q`.
+* param ?t
+
+    * default viewable
+    * group Search modifiers
+* param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
+  from each returned comment, returning only metadata. Defaults to `true`.
+
+    * default true
+* response ?comments [comment]: The matching comment objects.
+* badge featured
+
+
 # post /{p}/comment
 
-> Create, modify, or delete comment
+> Create or modify comment
 
-Create, modify, or delete a comment on submission `p`. Select the comment with
-`c` (see [Identifying a comment](#tag-comments)): a numeric comment ID modifies
-or deletes an existing comment, `new` creates an ordinary comment, and
+Create or modify a comment on submission `p`. Select the comment with `c` (see
+[Identifying a comment](#tag-comments)): a numeric comment ID modifies or
+deletes an existing comment, `new` creates an ordinary comment, and
 `response`/`R2response` creates or updates a response.
 
-A request must either supply `text` (the new comment body) or set `delete=1`;
-otherwise it is rejected. When `delete=1`, the comment is removed and the
-response carries no `comment` field. Otherwise the comment is created or
-modified, and the saved [comment object](#tag-comments) is returned in
-`comment`.
+The modification is specified in JSON in any of these forms:
 
-Saving with `text` empty and no attachments is refused for a new comment, but
-deletes an existing one (it is treated as `delete=1`).
-
-## JSON upload
-
-Instead of form parameters, the comment may be supplied as a JSON **comment
-object**—the same shape returned in the `comment` response field. It may be sent
-four ways, matching [`POST /paper`](#post-paper):
-
-* as an `application/json` request body;
-* in a `json` form field (which lets file attachments ride along in the same
-  request);
-* as an `application/zip` archive whose `data.json` (or `*-data.json`) member is
-  the object and whose other members are referenced attachments; or
-* via an [upload token](#post-upload) in the `upload` field, pointing at a
-  previously-uploaded JSON or ZIP file.
+* In a `json` request parameter;
+* As an `application/json` request body;
+* As an `application/zip` archive whose `data.json` (or `*-data.json`) member is
+  the object—other members may be referenced as attachments;
+* Or via an [upload token](#post-upload) in the `upload` request parameter,
+  pointing at a previously-uploaded JSON or ZIP file.
 
 The object’s `cid` (or `response`) selects the target comment; its `text`,
 `visibility`, `topic`, `tags`, `blind`, `draft`, and `delete` fields carry the
@@ -117,6 +132,18 @@ attachment by `docid` or uploading a new one: inline via `content` (raw text) or
 `content_base64`, or by `content_file`, which names a file in the ZIP archive or
 an uploaded file field in a `json` form request. An omitted `docs` key keeps the
 comment’s current attachments.
+
+The API also supports form upload using the parameter conventions of the HotCRP
+web application (such as a `text` parameter for the comment body). These
+conventions are subject to change, and third-party applications should prefer
+JSON.
+
+Saving with `text` empty and no attachments is refused for a new comment, but
+deletes an existing one (it is treated as `delete=1`).
+
+To test a modification without saving, supply a `dry_run=1` parameter. This will
+test the uploaded JSON but make no changes to the database.
+
 
 ## Concurrency
 
@@ -147,9 +174,17 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 `docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
 
 * body application/json comment: A comment object supplied as a raw JSON body (see [JSON upload](#tag-comments)).
+
+    * oneof body
 * body application/zip: A ZIP archive whose `data.json` is a comment object (see [JSON upload](#tag-comments)).
-* param ?=json string: A comment object supplied in the `json` form field (see [JSON upload](#tag-comments)).
+
+    * oneof body
+* param ?=json string: A comment object supplied in a `json` request parameter.
+
+    * oneof body
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP comment file.
+
+    * oneof body
 * param ?c string: The comment to create, modify, or delete. Defaults to `new`.
 
     * default new
@@ -176,8 +211,8 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?+valid boolean: True if and only if the modification was valid.
 
-    For a non-dry-run request, `"valid": true` also means the change was committed
-    to the database.
+    For a non-dry-run request, `"valid": true` also means the database changes
+    were committed.
 
 * response ?+change_list [string]: Names of the fields the request attempted to
   change (`text`, `visibility`, `tags`, and/or `attachments`), or `["delete"]`
@@ -190,35 +225,6 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * response ?conflict boolean: True when the edit was rejected by a concurrency check (see [Concurrency](#tag-comments)).
 * response ?cid cid: The affected comment’s ID: the new ID for a created comment, or the existing ID for an edit. Absent when deleting, or on a dry-run creation.
 * response ?comment comment: The saved comment, absent on delete or `dry_run`.
-* badge featured
-
-
-# get /comments
-
-> Retrieve multiple comments
-
-Retrieve every visible comment on the submissions matching a search.
-
-The search is specified in the `q` parameter (and other search parameters,
-such as `t`). All comments the caller may see, across all matching
-submissions, are returned as an array of [comment objects](#tag-comments) in
-the response field `comments`.
-
-As a shorthand for a single submission, supply its ID in `p` instead of `q`;
-this returns that submission’s visible comments. Supplying both `q` and `p` is
-an error.
-
-* param ?q search_string: The search expression.
-* param ?p pid: A single submission, as an alternative to `q`.
-* param ?t
-
-    * default viewable
-    * group Search modifiers
-* param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
-  from each returned comment, returning only metadata. Defaults to `true`.
-
-    * default true
-* response ?comments [comment]: The matching comment objects.
 * badge featured
 
 
@@ -236,10 +242,10 @@ independently, exactly as for `POST /{p}/comment`.
 ## Modify comments independently
 
 The request body is an *array* of [comment objects](#tag-comments) (the same
-shape accepted by `POST /{p}/comment`), supplied as an `application/json` body, a
-`json` form field, an `application/zip` archive whose `data.json` holds the
-array, or an [upload token](#post-upload). A ZIP or `json`-form request may carry
-attachment files shared across items: each object’s `docs[].content_file`
+shape accepted by `POST /{p}/comment`), supplied as an `application/json` body,
+a `json` request parameter, an `application/zip` archive whose `data.json` holds
+the array, or an [upload token](#post-upload). A ZIP or `json`-form request may
+carry attachment files shared across items: each object’s `docs[].content_file`
 resolves against the one archive.
 
 Each object identifies its submission with `pid` and its target comment with
@@ -260,7 +266,7 @@ to the integer index of the item they concern.
 * body application/zip: A ZIP archive whose `data.json` is an array of comment objects (and any files it references).
 
     * oneof body
-* param ?=json string: Comment objects supplied in the `json` form field.
+* param ?=json string: Comment objects supplied in a `json` request parameter.
 
     * oneof body
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.

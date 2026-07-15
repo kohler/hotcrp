@@ -1173,6 +1173,19 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    function test_comment_json_and_upload_conflict() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        // `json` and `upload` are alternative payload selectors; supplying both
+        // is an error (the upload token need not even resolve)
+        $qreq = TestQreq::post([
+            "json" => json_encode(["text" => "nope", "visibility" => "rev", "topic" => "paper"]),
+            "upload" => "hct_nonexistent"
+        ]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->status, 400);
+        xassert_str_contains($jr->content["message_list"][0]->message, "at most one of `json` and `upload`");
+    }
+
     // JSON `docs`: inline `content_base64`/`content` uploads, `docid` retains,
     // and an omitted `docs` key keeps the existing attachments.
     function test_comment_json_attachment() {

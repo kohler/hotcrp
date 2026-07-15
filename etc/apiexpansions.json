@@ -241,7 +241,7 @@
     "tags": ["Reviews"]
   },
   {
-    "name": "reviews", "get": true,
+    "name": "reviews", "get": true, "post": true,
     "tags": ["Reviews"]
   },
   {

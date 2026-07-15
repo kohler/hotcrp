@@ -37,6 +37,10 @@ class DocumentLocator {
 
     /** @return array{object|list<object>,1|2|4} */
     function parse_json_request(Qrequest $qreq, $mode) {
+        if (isset($qreq->json) && isset($qreq->upload)) {
+            JsonResult::make_parameter_error("json", "<0>Supply at most one of `json` and `upload`")->complete();
+        }
+
         // check for uploaded file
         if (($updoc = $this->uploaded_document($qreq))) {
             $ct = $updoc->mimetype;
@@ -48,8 +52,13 @@ class DocumentLocator {
             $ct_form = $ct === null || Mimetype::is_form($ct);
         }
 
-        // from here on, expect JSON
-        if ($ct === "application/json") {
+        // read the JSON payload
+        if (!$updoc && (isset($qreq->json) || $ct_form)) {
+            // an explicit `json` parameter overrides the request body; a form
+            // body with no `json` field falls here too (decode fails below)
+            $jsonstr = $qreq->json;
+            $this->attachment_qreq = $qreq;
+        } else if ($ct === "application/json") {
             $jsonstr = $updoc ? $updoc->content() : $qreq->body();
         } else if ($ct === "application/zip") {
             $this->ziparchive = new ZipArchive;
@@ -66,9 +75,6 @@ class DocumentLocator {
                 JsonResult::make_error(400, "<0>ZIP `data.json` not found")->complete();
             }
             $jsonstr = $this->ziparchive->getFromName($jsonname);
-        } else if ($ct_form) {
-            $jsonstr = $qreq->json;
-            $this->attachment_qreq = $qreq;
         } else {
             JsonResult::make_error(400, "<0>Unexpected content type")->complete();
             $jsonstr = ""; // unreachable - shut up Phan

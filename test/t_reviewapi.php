@@ -286,6 +286,42 @@ class ReviewAPI_Tester {
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
 
+    function test_post_json_param_over_body() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        // a `json` parameter is honored regardless of the request body's content
+        // type: here it overrides a text/plain body that would otherwise be
+        // parsed as an offline review form (and, being garbage, would fail)
+        $qreq = TestQreq::post(["json" => json_encode(["object" => "review", "OveMer" => 1])])
+            ->set_body("this is not a review form", "text/plain; charset=utf-8");
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["s01"]);
+        xassert_eqq($j->review->OveMer, 1);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 1);
+        // restore
+        call_api("review", $this->u_diot, TestQreq::post_json(["object" => "review", "OveMer" => 2]), $prow);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_json_and_upload_conflict() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        // `json` and `upload` are alternative payload selectors; supplying both
+        // is an error (the upload token need not even resolve)
+        $qreq = TestQreq::post([
+            "json" => json_encode(["object" => "review", "OveMer" => 1]),
+            "upload" => "hct_nonexistent"
+        ]);
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_str_contains($j->message_list[0]->message, "at most one of `json` and `upload`");
+        // review unchanged
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
     function test_post_text_upload_capability() {
         $prow = $this->conf->checked_paper_by_id(18);
         $old_docstore = $this->conf->opt("docstore");

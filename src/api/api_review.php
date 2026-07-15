@@ -224,34 +224,38 @@ class Review_API extends MessageSet {
         $this->qreq_r = isset($qreq->r) ? (string) $qreq->r : null;
 
         // an `upload` token resolves to a document whose mimetype selects the
-        // format; otherwise the request body's content type does
+        // format; otherwise the request body's content type does. An explicit
+        // `json` parameter (like `upload`) is an inline JSON payload obeyed
+        // regardless of the body, so it skips the text/form body paths.
         $docloc = new DocumentLocator;
         $updoc = $docloc->uploaded_document($qreq);
         $bct = $updoc ? $updoc->mimetype : ($qreq->body_content_type() ?? Mimetype::FORM_DATA_TYPE);
 
-        // a text/plain body is a raw uploaded offline review form
-        if ($bct === Mimetype::TXT_TYPE) {
-            if ($one && !$prow) {
-                return JsonResult::make_missing_error("p");
+        if (!isset($qreq->json)) {
+            // a text/plain body — or a text `upload` token — is a raw offline
+            // review form
+            if ($bct === Mimetype::TXT_TYPE) {
+                if ($one && !$prow) {
+                    return JsonResult::make_missing_error("p");
+                }
+                $content = $updoc ? (string) $updoc->content() : (string) $qreq->body();
+                return $this->run_post_text($qreq, $prow, $content,
+                    $updoc ? $updoc->filename : null);
             }
-            $content = $updoc ? (string) $updoc->content() : (string) $qreq->body();
-            return $this->run_post_text($qreq, $prow, $content,
-                $updoc ? $updoc->filename : null);
-        }
 
-        // form-encoded content is a single review on the URL's paper (or, with a
-        // `file` upload, offline review text)
-        if (!$updoc
-            && Mimetype::is_form($bct)
-            && !isset($qreq->json)
-            && !isset($qreq->upload)) {
-            if (!$one) {
-                return JsonResult::make_error(400, "<0>Unexpected content type");
+            // form-encoded content is a single review on the URL's paper (or,
+            // with a `file` upload, offline review text)
+            if (!$updoc
+                && Mimetype::is_form($bct)
+                && !isset($qreq->upload)) {
+                if (!$one) {
+                    return JsonResult::make_error(400, "<0>Unexpected content type");
+                }
+                if (!$prow) {
+                    return JsonResult::make_missing_error("p");
+                }
+                return $this->run_post_form_data($qreq, $prow);
             }
-            if (!$prow) {
-                return JsonResult::make_missing_error("p");
-            }
-            return $this->run_post_form_data($qreq, $prow);
         }
 
         // a JSON object is one review; a JSON array is a batch (reviews have no

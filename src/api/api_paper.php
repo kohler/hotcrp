@@ -139,7 +139,7 @@ class Paper_API extends MessageSet {
         $this->docloc = new DocumentLocator;
 
         // check Content-Type
-        if (Mimetype::is_form($qreq->body_content_type())
+        if (Mimetype::is_form($qreq->body_content_type() ?? Mimetype::FORM_DATA_TYPE)
             && !$this->post_form_is_json($qreq)) {
             // handle form-encoded data
             if (($mode & DocumentLocator::M_ONE) === 0) {

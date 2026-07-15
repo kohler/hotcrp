@@ -38,30 +38,31 @@ Create or modify a submission specified by `p`, a submission ID.
 Setting `p=new` will create a new submission; the response will contain the
 chosen submission ID.
 
-The modification may be specified:
+The modification is specified in JSON in any of these forms:
 
-1. As a JSON request body (when the request body has content-type
+1. In a JSON-formatted request parameter named `json`.
+2. As a JSON request body (when the request body has content-type
    `application/json`).
-2. As a ZIP archive (when the request body has content-type
+3. As a ZIP archive (when the request body has content-type
    `application/zip`). The archive must contain a file named `data.json`; it
    may contain other files too.
-3. As a JSON-formatted request parameter named `json` (when the request body
-   has content-type `application/x-www-form-urlencoded` or
-   `multipart/form-data`).
-4. As a previously-uploaded JSON or ZIP file, represented by an [upload token](#post-upload) in
-   the `upload` parameter.
+4. As a previously-uploaded JSON or ZIP file, represented by an [upload
+   token](#post-upload) in the `upload` parameter.
 
-In all of these, the modification is defined by a JSON submission object. The
-fields of this object define the modifications applied to the submission.
-The object need not specify all submission fields; absent fields
-remain unchanged.
+The JSON object is a submission object whose fields define the modifications
+applied to the submission. The object need not specify all submission fields;
+absent fields remain unchanged.
 
 The `p` request parameter is optional. If it is unset, HotCRP uses the `pid`
 from the supplied JSON. If both the `p` parameter and the JSON `pid` field
 are present, then they must match.
 
-To test a modification, supply a `dry_run=1` parameter. This will test the
-uploaded JSON but make no changes to the database.
+The API also supports form upload using the parameter conventions of the HotCRP
+web application. These conventions are subject to change, and third-party
+applications should prefer JSON.
+
+To test a modification without saving, supply a `dry_run=1` parameter. This will
+test the uploaded JSON but make no changes to the database.
 
 
 ## ZIP and form uploads
@@ -109,7 +110,7 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
 * body application/zip: A ZIP archive containing `data.json` (and any files it references).
 
     * oneof body
-* param ?=json string: A submission object supplied in the `json` form field.
+* param ?=json string: A submission object supplied in a `json` request parameter.
 
     * oneof body
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
@@ -261,7 +262,7 @@ be applied to all papers returned by the `q` search query.
 * body application/zip: A ZIP archive containing `data.json` (and any files it references).
 
     * oneof body
-* param ?=json string: Submission objects supplied in the `json` form field.
+* param ?=json string: Submission objects supplied in a `json` request parameter.
 
     * oneof body
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
@@ -274,7 +275,7 @@ be applied to all papers returned by the `q` search query.
 * param add_topics boolean: True automatically adds topics from input papers
 
     * badge siteadmin
-* param notify boolean: False does not notify contacts of changes
+* param notify boolean: False disables all email notifications
 
     * default true
     * badge siteadmin
