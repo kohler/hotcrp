@@ -2327,7 +2327,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!$rv->check_and_save($u_ext4, $p16));
         $r16x = $p16->fresh_review_by_user($u_ext4);
         xassert_eqq($r16x->reviewTime, $rt);
-        xassert_str_contains($rv->full_feedback_text(), "Submission mismatch");
+        xassert_str_contains($rv->full_feedback_text(), "Submission ID does not match");
     }
 
     function test_rv_self_assignment() {

@@ -195,9 +195,8 @@ function convert_to_utf8($str) {
         return $str;
     } else if ($has_bom) {
         return UnicodeHelper::utf8_replace_invalid($str);
-    } else {
-        return UnicodeHelper::to_utf8("Windows-1252", $str);
     }
+    return UnicodeHelper::to_utf8("Windows-1252", $str);
 }
 
 /** @param string $str

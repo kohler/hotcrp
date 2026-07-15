@@ -24,20 +24,28 @@ class DocumentLocator {
         return $json;
     }
 
+    /** An `upload` capability names the request payload document, and is obeyed
+     * whenever present (e.g. a `?upload=` query parameter), regardless of the
+     * request body's content type; the body is used only when `upload` is absent.
+     * @return ?DocumentInfo */
+    function uploaded_document(Qrequest $qreq) {
+        if (!isset($qreq->upload)) {
+            return null;
+        }
+        return DocumentInfo::make_capability($qreq->conf(), $qreq->upload);
+    }
+
     /** @return array{object|list<object>,1|2|4} */
     function parse_json_request(Qrequest $qreq, $mode) {
         // check for uploaded file
-        $ct = $qreq->body_content_type();
-        $ct_form = $ct === null /* only in tests */ || Mimetype::is_form($ct);
-        if ($ct_form && isset($qreq->upload)) {
-            $updoc = DocumentInfo::make_capability($qreq->conf(), $qreq->upload);
-            if (!$updoc) {
-                JsonResult::make_missing_error("upload", "<0>Upload not found")->complete();
-            }
+        if (($updoc = $this->uploaded_document($qreq))) {
             $ct = $updoc->mimetype;
             $ct_form = false;
+        } else if (isset($qreq->upload)) {
+            JsonResult::make_missing_error("upload", "<0>Upload not found")->complete();
         } else {
-            $updoc = null;
+            $ct = $qreq->body_content_type();
+            $ct_form = $ct === null || Mimetype::is_form($ct);
         }
 
         // from here on, expect JSON

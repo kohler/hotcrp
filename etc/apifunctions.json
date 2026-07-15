@@ -50,6 +50,7 @@
     {   "name": "reauth", "post": true, "function": "Session_API::reauth"   },
     {   "name": "requestreview", "post": true, "paper": true, "function": "RequestReview_API::requestreview"   },
     {   "name": "review", "get": true, "paper": true, "function": "Review_API::run_one"   },
+    {   "name": "review", "post": true, "function": "Review_API::run_one"   },
     {   "name": "reviews", "get": true, "function": "Review_API::run_multi"   },
     {   "name": "reviewhistory", "get": true, "paper": true, "function": "ReviewMeta_API::reviewhistory"   },
     {   "name": "reviewfieldlibrary", "get": true, "allow_if": "chair", "function": "Settings_API::reviewfieldlibrary"   },

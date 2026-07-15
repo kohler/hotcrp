@@ -21,6 +21,52 @@ single review upload
 - u may be set
 - round may be set */
 
+class Review_API_Status implements JsonSerializable {
+    /** @var int */
+    public $message_count;
+    /** @var bool */
+    public $valid;
+    /** @var list<string> */
+    public $change_list;
+    /** @var bool */
+    public $conflict;
+    /** @var ?int */
+    public $pid;
+    /** @var ?string */
+    public $rid;
+
+    /** @param int $message_count
+     * @param bool $valid
+     * @param list<string> $change_list
+     * @param bool $conflict
+     * @param ?int $pid
+     * @param ?string $rid */
+    function __construct($message_count, $valid = false, $change_list = [],
+                         $conflict = false, $pid = null, $rid = null) {
+        $this->message_count = $message_count;
+        $this->valid = $valid;
+        $this->change_list = $change_list;
+        $this->conflict = $conflict;
+        $this->pid = $pid;
+        $this->rid = $rid;
+    }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $u = ["valid" => $this->valid, "change_list" => $this->change_list];
+        if ($this->conflict) {
+            $u["conflict"] = $this->conflict;
+        }
+        if ($this->pid !== null) {
+            $u["pid"] = $this->pid;
+        }
+        if ($this->rid !== null) {
+            $u["rid"] = $this->rid;
+        }
+        return $u;
+    }
+}
+
 class Review_API extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -29,10 +75,36 @@ class Review_API extends MessageSet {
      * @readonly */
     public $user;
 
+    // request-global configuration
+    /** @var bool */
+    private $dry_run = false;
+    /** @var bool */
+    private $notify = true;
+    /** @var bool */
+    private $single = false;
+    /** @var ?string */
+    private $qreq_r;
 
-    const M_ONE = 1;
-    const M_MULTI = 2;
-    const M_MATCH = 4;
+    // per-item accumulators (mirror Comment_API/Paper_API)
+    /** @var list<Review_API_Status> */
+    private $status_list = [];
+    /** @var list<?object> */
+    private $reviews = [];
+    /** @var int */
+    private $nreviews = 0;
+
+    // current-item working state (reset per item)
+    /** @var PaperInfo */
+    private $prow;
+    /** @var int */
+    private $status = 200;
+    /** @var bool */
+    private $stale = false;
+    /** @var bool */
+    private $ivalid = false;
+    /** @var ?list<string> */
+    private $change_list;
+
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -130,6 +202,337 @@ class Review_API extends MessageSet {
         ]);
     }
 
+
+    /** @param 1|2|4 $mode
+     * @return JsonResult */
+    private function run_post(Qrequest $qreq, ?PaperInfo $prow, $mode) {
+        // POST /review addresses one review; the paper comes from the URL `p` or,
+        // for a JSON body, from the object's `pid` (this endpoint is not
+        // `paper:true`, so an absent `p` is not rejected up front)
+        if (($mode & DocumentLocator::M_ONE) === 0) {
+            return JsonResult::make_error(400, "<0>Batch review upload is not supported");
+        }
+        // an explicit but unresolvable `p` is a hard error
+        if (!$prow && isset($qreq->p)) {
+            return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
+        }
+
+        $this->set_post_param($qreq);
+        $this->qreq_r = isset($qreq->r) ? (string) $qreq->r : null;
+
+        // an `upload` token resolves to a document whose mimetype selects the
+        // format; otherwise the request body's content type does
+        $docloc = new DocumentLocator;
+        $updoc = $docloc->uploaded_document($qreq);
+        $bct = $updoc ? $updoc->mimetype : ($qreq->body_content_type() ?? Mimetype::FORM_DATA_TYPE);
+
+        // a text/plain body is a raw uploaded offline review form
+        if ($bct === Mimetype::TXT_TYPE) {
+            if (!$prow) {
+                return JsonResult::make_missing_error("p");
+            }
+            $content = $updoc ? (string) $updoc->content() : (string) $qreq->body();
+            return $this->run_post_text($qreq, $prow, $content,
+                $updoc ? $updoc->filename : null);
+        }
+
+        // form-encoded content is a single review on the URL's paper (or, with a
+        // `file` upload, offline review text)
+        if (!$updoc
+            && Mimetype::is_form($bct)
+            && !isset($qreq->json)
+            && !isset($qreq->upload)) {
+            if (!$prow) {
+                return JsonResult::make_missing_error("p");
+            }
+            return $this->run_post_form_data($qreq, $prow);
+        }
+
+        list($jp, $mode) = (new DocumentLocator)->parse_json_request($qreq, DocumentLocator::M_ONE);
+        return $this->run_post_single_json($prow, $jp);
+    }
+
+    private function set_post_param(Qrequest $qreq) {
+        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
+        $this->notify = friendly_boolean($qreq->notify) !== false;
+    }
+
+    /** @return ReviewValues */
+    private function make_rv() {
+        return new ReviewValues($this->conf);
+    }
+
+    /** Save one review from a plain form POST on `$prow`, or — when the form
+     * carries an uploaded review-form file — from that offline text.
+     * @return JsonResult */
+    private function run_post_form_data(Qrequest $qreq, PaperInfo $prow) {
+        $this->prow = $prow;
+        if ($qreq->has_file("file")) {
+            return $this->run_post_text($qreq, $prow,
+                $qreq->file_content("file"), $qreq->file_filename("file"));
+        }
+        $this->single = true;
+        $this->reset_item();
+        $rv = $this->make_rv();
+        $rv->parse_qreq($qreq);
+        $this->save_item($rv, $this->qreq_r);
+        return $this->post_result();
+    }
+
+    /** Save reviews from an uploaded offline review form. `parse_text` may yield
+     * several reviews (one per `==+== Paper` section); those for `$prow` are
+     * saved and any for other submissions are ignored, mirroring the offline
+     * upload page. The reviewer is taken from each form, so `prepare_save`'s
+     * permission checks still gate who may be edited.
+     * @param string $content
+     * @param ?string $filename
+     * @return JsonResult */
+    private function run_post_text(Qrequest $qreq, PaperInfo $prow, $content, $filename) {
+        $rv = (new ReviewValues($this->conf))->set_text(convert_to_utf8($content), $filename);
+        $override = friendly_boolean($qreq->override) ?? false;
+        $nmatch = $nother = 0;
+        while ($rv->set_req_override($override)->parse_text()) {
+            if ($rv->req_pid() === $prow->paperId) {
+                ++$nmatch;
+                $this->reset_item();
+                $this->execute_save($rv, null);
+            } else {
+                // ignore reviews for other submissions, dropping their messages
+                ++$nother;
+                $rv->clear_messages();
+            }
+            $rv->clear_req();
+        }
+        // merge any trailing parse messages (e.g. a garbage warning)
+        foreach ($rv->message_list() as $mi) {
+            $this->append_item($mi);
+        }
+        // a single matching review reads as a single result; several do not
+        $this->single = $nmatch <= 1;
+        if ($nmatch === 0) {
+            // record a failure item so the result reports `ok:false`
+            if ($nother === 0) {
+                $this->error_at(null, "<0>Uploaded file had no valid review forms");
+            } else {
+                $this->error_at(null, $this->conf->_("<0>Uploaded form was not for this {submission}"));
+            }
+            $this->execute_fail();
+        } else if ($nother > 0) {
+            $this->warning_at(null, $this->conf->_("<0>Reviews for other {submissions} ignored"));
+        }
+        return $this->post_result();
+    }
+
+    /** Save one review from a single JSON object. The object may carry its own
+     * `pid`/`rid`; `parse_json` feeds them into the request, and `prepare_save`
+     * resolves the paper (from the URL `$prow` or that `pid`) and the review
+     * (reconciling a body `rid` against the review the URL's `r` selects,
+     * reporting a mismatch).
+     * @param ?PaperInfo $prow
+     * @param object $jp
+     * @return JsonResult */
+    private function run_post_single_json(?PaperInfo $prow, $jp) {
+        $this->prow = $prow;
+        $this->single = true;
+        $this->reset_item();
+        if (!is_object($jp)) {
+            $this->error_at(null, "<0>Expected object");
+            $this->execute_fail();
+            return $this->post_result();
+        }
+        $rv = $this->make_rv();
+        $rv->parse_json($jp);
+        // the URL `r` selects the target review; a body `rid` (now in the
+        // request) is reconciled against it by prepare_save
+        list($ok, $rrow) = $this->post_target($this->qreq_r);
+        if (!$ok) {
+            $this->execute_fail();
+        } else {
+            $this->apply_require_new($rv, $jp->rid ?? $this->qreq_r);
+            $this->execute_save($rv, $rrow);
+        }
+        return $this->post_result();
+    }
+
+
+    /** Reset the current-item working state before processing an item. */
+    private function reset_item() {
+        $this->status = 200;
+        $this->stale = false;
+        $this->ivalid = false;
+        $this->change_list = null;
+    }
+
+    /** Resolve the item's target review from `$r` (empty/`0` means the acting
+     * reviewer's review, creating it if needed; `new` additionally requires that
+     * no such review exists yet; otherwise a review ordinal or ID on
+     * `$this->prow`), then save it.
+     * @param ReviewValues $rv
+     * @param ?string $r */
+    private function save_item($rv, $r) {
+        list($ok, $rrow) = $this->post_target($r);
+        if (!$ok) {
+            $this->execute_fail();
+            return;
+        }
+        $this->apply_require_new($rv, $r);
+        $this->execute_save($rv, $rrow);
+    }
+
+    /** A locator of `new` requires that the review not already exist. Enforce it
+     * through the version-tag precondition: a saved review always has a nonzero
+     * reviewTime, so `if_vtag_match=0` conflicts iff one already exists. An
+     * explicit precondition on the request wins.
+     * @param ReviewValues $rv
+     * @param mixed $r */
+    private function apply_require_new($rv, $r) {
+        if ((string) $r === "new"
+            && !isset($rv->req["if_vtag_match"])
+            && !isset($rv->req["if_unmodified_since"])) {
+            $rv->req["if_vtag_match"] = 0;
+        }
+    }
+
+    /** Resolve `$r` into the review to save on `$this->prow`.
+     * @param ?string $r
+     * @return array{bool,?ReviewInfo} */
+    private function post_target($r) {
+        $r = (string) $r;
+        if ($r === "" || $r === "new" || $r === "0") {
+            // the acting reviewer's review (ReviewValues finds or creates it)
+            return [true, null];
+        }
+        if (!$this->prow) {
+            // a specific review can only be addressed with a URL paper
+            $this->error_at("r", "<0>{Submission} required");
+            return [false, null];
+        }
+        $rloc = $this->prow->parse_ordinal_id($r);
+        if ($rloc === false || $rloc === 0) {
+            $this->status = 404;
+            $this->error_at("r", "<0>Review not found");
+            return [false, null];
+        }
+        $rrow = $rloc < 0
+            ? $this->prow->review_by_ordinal(-$rloc)
+            : $this->prow->review_by_id($rloc);
+        if (!$rrow) {
+            $this->status = 404;
+            $this->error_at("r", "<0>Review not found");
+            return [false, null];
+        }
+        return [true, $rrow];
+    }
+
+    /** Save the review described by `$rv` onto `$rrow` (an existing review, or
+     * null to find/create the reviewer's review), then snapshot the per-item
+     * outcome into the accumulators. Mirrors `Comment_API::execute_save`.
+     * @param ReviewValues $rv
+     * @param ?ReviewInfo $rrow */
+    private function execute_save($rv, $rrow) {
+        // a notify suppression request is honored only for an administrator of
+        // the paper (unknown until prepare_save when the paper came from `pid`)
+        $manager = $this->prow && $this->user->can_manage_reviews($this->prow);
+        $rv->set_notify($this->notify || !$manager);
+
+        // stage the request; a conflict or validation error leaves it unprepared.
+        // A conflict still stages the attempted change, so read change_list
+        // unconditionally (it is empty when nothing was staged). prepare_save
+        // resolves the paper (from `$this->prow` or the request's `paperId`) and
+        // reports a missing/mismatched/forbidden paper.
+        $prepared = $rv->prepare_save($this->user, $this->prow, $rrow);
+        $this->stale = $rv->has_problem_at("if_vtag_match")
+            || $rv->has_problem_at("if_unmodified_since");
+        $this->change_list = $rv->change_list(true);
+
+        if ($prepared && !$this->dry_run) {
+            // commit
+            $this->ivalid = $rv->execute_save();
+        } else {
+            // dry run, conflict, or validation failure: revert without saving
+            $rv->abort_save();
+            $this->ivalid = $prepared && $this->dry_run;
+        }
+
+        // merge the engine's messages into the response, then clear them so a
+        // shared parser (multi-review text upload) starts each review fresh
+        foreach ($rv->message_list() as $mi) {
+            $this->append_item($mi);
+        }
+        $rv->clear_messages();
+
+        $prow = $this->prow ?? $rv->saved_prow();
+        $rid = null;
+        if ($this->ivalid && !$this->dry_run && $rv->reviewId && $prow) {
+            $rid = $rv->review_ordinal_id;
+            $rrow2 = $prow->fresh_review_by_id($rv->reviewId);
+            $this->reviews[] = (new PaperExport($this->user))->review_json($prow, $rrow2);
+            ++$this->nreviews;
+        } else {
+            $this->reviews[] = null;
+        }
+        $this->status_list[] = new Review_API_Status(
+            $this->message_count(),
+            $this->ivalid, $this->change_list ?? [],
+            $this->stale, $prow ? $prow->paperId : null, $rid
+        );
+    }
+
+    /** Record a per-item resolution failure (no save attempted). */
+    private function execute_fail() {
+        $this->status_list[] = new Review_API_Status($this->message_count());
+        $this->reviews[] = null;
+    }
+
+    /** Assemble the response; in single, most Review_API_Status fields are raised
+     * to the top level (along with `ok` and `message_list`).
+     * @return JsonResult */
+    private function post_result() {
+        // apply landmarks to messages
+        $sli = 0;
+        foreach ($this->message_list() as $i => $mi) {
+            while ($sli < count($this->status_list)
+                   && $this->status_list[$sli]->message_count <= $i) {
+                ++$sli;
+            }
+            if ($sli < count($this->status_list) && $mi->landmark === null) {
+                $mi->landmark = $sli;
+            }
+        }
+        // generate result
+        $ok = empty($this->status_list)
+            || array_find($this->status_list, function ($x) { return !!$x->valid; });
+        $status = $this->single ? $this->status : 200;
+        if ($this->single && $status === 200 && $this->has_error()) {
+            $status = 400;
+        }
+        $jr = new JsonResult($status, [
+            "ok" => $ok,
+            "message_list" => $this->message_list()
+        ]);
+        if ($this->dry_run) {
+            $jr->content["dry_run"] = true;
+        }
+        if ($this->single) {
+            // omit `pid`: the URL pins the paper
+            foreach ($this->status_list[0]->jsonSerialize() as $k => $v) {
+                if ($k !== "pid") {
+                    $jr->content[$k] = $v;
+                }
+            }
+            if ($this->nreviews > 0) {
+                $jr->content["review"] = $this->reviews[0];
+            }
+        } else {
+            $jr->content["status_list"] = $this->status_list;
+            if (!$this->dry_run) {
+                $jr->content["reviews"] = $this->reviews;
+            }
+        }
+        return $jr;
+    }
+
+
     /** @return JsonResult */
     static private function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow, $mode) {
         $old_overrides = $user->overrides();
@@ -138,13 +541,13 @@ class Review_API extends MessageSet {
         }
         try {
             if ($qreq->is_getlike()) {
-                if ($mode === self::M_ONE) {
+                if ($mode === DocumentLocator::M_ONE) {
                     $jr = self::run_get_one($user, $qreq, $prow);
                 } else {
                     $jr = self::run_get_multi($user, $qreq, $prow);
                 }
             } else {
-                $jr = JsonResult::make_not_found_error();
+                $jr = (new Review_API($user))->run_post($qreq, $prow, $mode);
             }
         } catch (JsonCompletion $jc) {
             $jr = $jc->result;
@@ -158,12 +561,12 @@ class Review_API extends MessageSet {
 
     /** @return JsonResult */
     static function run_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        return self::run($user, $qreq, $prow, self::M_ONE);
+        return self::run($user, $qreq, $prow, DocumentLocator::M_ONE);
     }
 
     /** @return JsonResult */
     static function run_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        return self::run($user, $qreq, $prow, self::M_MULTI | self::M_MATCH);
+        return self::run($user, $qreq, $prow, DocumentLocator::M_MULTI);
     }
 
 

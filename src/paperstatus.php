@@ -1161,7 +1161,7 @@ final class PaperStatus extends MessageSet {
             $this->syntax_error_at($pidkey);
             return false;
         } else if ($prow && $pid !== $prow->paperId) {
-            $this->error_at($pidkey, "<0>{Submission} ID does not match");
+            $this->error_at($pidkey, $this->_("<0>{Submission} ID does not match"));
             return false;
         }
 

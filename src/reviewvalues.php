@@ -413,6 +413,14 @@ class ReviewValues extends MessageSet {
                     $this->rvmsg(self::ERROR, $k, "<0>JSON does not represent a review");
                     return false;
                 }
+            } else if ($k === "pid") {
+                if (is_int($v) && $v > 0) {
+                    $this->req["paperId"] = $v;
+                }
+            } else if ($k === "rid") {
+                if (is_int($v) || is_string($v)) {
+                    $this->req["rid"] = $v;
+                }
             } else if ($k === "round") {
                 if ($v === null || is_string($v)) {
                     $this->req["round"] = $v;
@@ -585,6 +593,8 @@ class ReviewValues extends MessageSet {
     /** @param ReviewInfo $rrow
      * @return bool */
     function check_vtag(ReviewInfo $rrow) {
+        // compare against the pre-save values: this may run after staging has
+        // advanced reviewModified (so a conflict still reports the attempted diff)
         if (isset($this->req["if_vtag_match"])
             && $this->req["if_vtag_match"] !== $rrow->base_prop("reviewTime")) {
             $pk = "if_vtag_match";
@@ -641,9 +651,33 @@ class ReviewValues extends MessageSet {
         }
         $this->req["paperId"] = $this->req_pid() ?? $prow->paperId;
         if ($this->req["paperId"] !== $prow->paperId) {
-            $this->rvmsg(self::ERROR, "paperId", $this->conf->_("<0>{Submission} mismatch: expected #{}, form is for #{}", $prow->paperId, $this->req["paperId"]));
-            $this->rvmsg(self::INFORM, "paperId", $this->conf->_("<0>It looks like you tried to upload a form intended for a different {submission}."));
+            $this->rvmsg(self::ERROR, "paperId", $this->conf->_("<0>{Submission} ID does not match"));
+            $this->rvmsg(self::INFORM, "paperId", $this->conf->_("<0>It looks like you tried to upload a form intended for a different {submission} (expected #{}, form is for #{}).", $prow->paperId, $this->req["paperId"]));
             return false;
+        }
+
+        // resolve an explicit review locator (`rid`): a specific ordinal/ID
+        // selects the review (or confirms a passed one — a disagreement is a
+        // mismatch), while `new`/empty leaves the reviewer's review to be found
+        // or created below
+        if (isset($this->req["rid"])) {
+            $rloc = $prow->parse_ordinal_id($this->req["rid"]);
+            if ($rloc === false) {
+                $this->rvmsg(self::ERROR, "rid", "<0>Review not found");
+                return false;
+            } else if ($rloc !== 0) {
+                $ridrow = $rloc < 0
+                    ? $prow->review_by_ordinal(-$rloc)
+                    : $prow->review_by_id($rloc);
+                if (!$ridrow) {
+                    $this->rvmsg(self::ERROR, "rid", "<0>Review not found");
+                    return false;
+                } else if ($rrow && $rrow->reviewId !== $ridrow->reviewId) {
+                    $this->rvmsg(self::ERROR, "rid", "<0>Review ID does not match");
+                    return false;
+                }
+                $rrow = $rrow ?? $ridrow;
+            }
         }
 
         // look up reviewer
@@ -724,6 +758,13 @@ class ReviewValues extends MessageSet {
             $this->stage_rrow->abort_prop();
         }
         $this->_save_status &= ~(self::SSF_PREPARED | self::SSF_LOCKED);
+    }
+
+    /** The paper resolved by the last `prepare_save` (from the passed paper or
+     * the request's `paperId`), or null if it did not resolve.
+     * @return ?PaperInfo */
+    function saved_prow() {
+        return $this->stage_rrow ? $this->stage_rrow->prow : null;
     }
 
     /** The list of changes staged by the last `prepare_save`, derived from the
