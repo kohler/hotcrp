@@ -237,7 +237,7 @@
     "response": "value pref ?prefexp ?topic_score"
   },
   {
-    "name": "review", "get": true, "post": true, "merge": true,
+    "name": "review", "get": true, "post": true, "delete": true, "merge": true,
     "tags": ["Reviews"]
   },
   {
@@ -298,6 +298,10 @@
     "parameters": "c ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete",
     "response": "?conflict ?cid ?comment",
     "response_info": {"comment": "comment"}
+  },
+  {
+    "name": "comment", "delete": true,
+    "tags": ["Comments"]
   },
   {
     "name": "comments", "get": true,

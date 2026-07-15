@@ -511,6 +511,46 @@ class ReviewAPI_Tester {
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
 
+    function test_delete_review() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $var = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+        // chair creates a fresh review for a PC member (so the delete disturbs no
+        // seeded review)
+        $qreq = TestQreq::post_json(["object" => "review", "email" => $var->email,
+            "OveMer" => 2, "ready" => true], ["r" => "new"]);
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        $prow->load_reviews(true);
+        $rrow = $prow->review_by_user($var);
+        xassert(!!$rrow);
+        $rid = (string) $rrow->reviewId;
+
+        // a non-administrator cannot delete a review
+        $jr = call_api_result("review", $this->u_diot, TestQreq::delete(["p" => 18, "r" => $rid]), $prow);
+        xassert_eqq($jr->status, 403);
+
+        // dry-run delete reports the change without performing it
+        $j = call_api("review", $this->u_chair, TestQreq::delete(["p" => 18, "r" => $rid, "dry_run" => 1]), $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["delete"]);
+        $prow->load_reviews(true);
+        xassert(!!$prow->review_by_user($var));
+
+        // real delete
+        $j = call_api("review", $this->u_chair, TestQreq::delete(["p" => 18, "r" => $rid]), $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["delete"]);
+        $prow->load_reviews(true);
+        xassert(!$prow->review_by_user($var));
+
+        // deleting again → not found
+        $jr = call_api_result("review", $this->u_chair, TestQreq::delete(["p" => 18, "r" => $rid]), $prow);
+        xassert_eqq($jr->status, 404);
+    }
+
     function test_fetch() {
         $qreq = TestQreq::get(["p" => 18, "r" => $this->r18a_id]);
         $jr = call_api("review", $this->u_diot, $qreq);

@@ -427,10 +427,7 @@ class RequestReview_API {
                 $reason);
 
             // record snapshot of review, then delete review
-            $rrow->snapshot_fval_prop();
-            $rrow->save_prop();
-            $rrow->commit_prop();
-            $rrow->delete($user, ["action" => "declined"]);
+            $rrow->delete($user, ["action" => "declined", "snapshot" => true]);
 
             // send mail to requesters
             // XXX delay this mail by a couple minutes

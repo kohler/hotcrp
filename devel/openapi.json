@@ -23,7 +23,7 @@
                 "summary": "Retrieve submission",
                 "description": "Retrieve a submission object specified by `p`, a submission ID. The submission\nobject is returned in the `paper` response field. Error messages—for\ninstance, about permission errors or nonexistent submissions—are returned in\n`message_list`.\n",
                 "operationId": "paper",
-                "x-order": 83,
+                "x-order": 85,
                 "tags": [
                     "Submissions"
                 ],
@@ -84,7 +84,7 @@
                 "summary": "Delete submission",
                 "description": "Delete the submission specified by `p`, a submission ID.\n",
                 "operationId": "paper-delete",
-                "x-order": 85,
+                "x-order": 87,
                 "tags": [
                     "Submissions"
                 ],
@@ -224,7 +224,7 @@
                 "summary": "Create or modify submission",
                 "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification is specified in JSON in any of these forms:\n\n1. In a JSON-formatted request parameter named `json`.\n2. As a JSON request body (when the request body has content-type\n   `application/json`).\n3. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n4. As a previously-uploaded JSON or ZIP file, represented by an [upload\n   token](#post-upload) in the `upload` parameter.\n\nThe JSON object is a submission object whose fields define the modifications\napplied to the submission. The object need not specify all submission fields;\nabsent fields remain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` field\nare present, then they must match.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application. These conventions are subject to change, and third-party\napplications should prefer JSON.\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This will\ntest the uploaded JSON but make no changes to the database.\n\n\n## ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n\n## Administrator use\n\nSubmission administrators can use this endpoint to set some submission fields,\nsuch as `decision`, that have other endpoints as well.\n\nSite administrators can choose specific IDs for new submissions by setting `p`\n(or JSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `if_unmodified_since` to\n`0`.\n",
                 "operationId": "paper-post",
-                "x-order": 84,
+                "x-order": 86,
                 "tags": [
                     "Submissions"
                 ],
@@ -465,7 +465,7 @@
                 "summary": "Retrieve multiple submissions",
                 "description": "Retrieve submission objects matching a search.\n\nThe search is specified in the `q` parameter (and other search parameters,\nsuch as `t` and `qt`). All matching visible submissions are returned, as an\narray of submission objects, in the response field `papers`.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like “Submission #1010 does not exist” or “You aren’t\nallowed to view submission #1010”, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
                 "operationId": "papers",
-                "x-order": 86,
+                "x-order": 88,
                 "tags": [
                     "Submissions"
                 ],
@@ -577,7 +577,7 @@
                 "summary": "Create or modify multiple submissions",
                 "description": "Create or modify multiple submissions.\n\nThis administrator-only endpoint modifies multiple submissions at once. Its\nrequest formats are similar to that of `POST /{p}/paper`: it can accept a\nJSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and\nform-encoded requests can also include attached files.\n\nThe JSON provided for `/papers` should be an *array* of JSON objects; each\nobject is applied independently. The per-submission results are returned in\nthe `status_list` response field (described below). The response\n`message_list` contains all messages relating to the save; each message’s\n`landmark` field is set to the integer index of the relevant submission in the\ninput array.\n\n## Modify matching submissions\n\nAlternatively, you can provide a `q` search query parameter and a *single*\nJSON modification object lacking the `pid` field. The JSON modification will\nbe applied to all papers returned by the `q` search query.\n\n",
                 "operationId": "papers-post",
-                "x-order": 87,
+                "x-order": 89,
                 "tags": [
                     "Submissions"
                 ],
@@ -826,7 +826,7 @@
                 "summary": "Compute potential PC conflicts",
                 "description": "Return the program-committee members who potentially conflict with a\nsubmission—either because they are an author of it, or because their name,\naffiliation, or collaborators overlap with the submission’s. Authors use this\nwhile preparing a submission to see who is conflicted; administrators use it to\naudit declared conflicts. It is available to a submission’s authors and to\nadministrators, and only when the submission’s PC-conflicts field is present and\nvisible to the caller.\n\nIdentify the submission with `p`, or pass `p=new` (with an optional `sclass`) to\nanalyze a not-yet-created submission.\n\nBy default conflicts are computed from the submission’s saved authors and\ncollaborators. To preview conflicts for *unsaved* data—as the submission form\ndoes while an author edits—supply prospective values instead, in one of two\nways:\n\n* a `json` object with `authors` and/or `collaborators` members; or\n* submission-form fields: `collaborators` text, and author entries as\n  `authors:<n>:<field>` together with `has_authors=1`.\n\nEach entry in `potential_conflicts` carries the conflicting PC member’s `uid` and\n`email` and a `type`: `author` when they author the submission, or\n`potentialconflict` for a name/affiliation/collaborator match. A\n`potentialconflict` entry also includes a `description` (plain-text explanation)\nand a `tooltip` (HTML).\n",
                 "operationId": "potentialconflicts",
-                "x-order": 88,
+                "x-order": 90,
                 "tags": [
                     "Submissions"
                 ],
@@ -956,7 +956,7 @@
                 "summary": "Retrieve share link",
                 "description": "Retrieve the share link for a submission. This link can be accessed by users not\nsigned in to HotCRP; it grants view-only access to the submission and its\ndocuments. Only authors and submission administrators can fetch the share link.\n",
                 "operationId": "share",
-                "x-order": 89,
+                "x-order": 91,
                 "tags": [
                     "Submissions"
                 ],
@@ -1018,7 +1018,7 @@
                 "summary": "Create, modify, or remove share link",
                 "description": "Change the share link for a submission. The `share` parameter determines\nwhether a link should be created; it must be one of:\n\n`no`\n: Delete the current share link, if any.\n\n`yes`\n: Update a share link or create one if necessary. The expiration time of a\n  current share link may be extended if `expires_in` requests it.\n\n`reset`\n: Reset the expiration time of an existing share link, if one exists.\n\n`new`\n: Delete any existing share link and create a new one.\n\nOnly authors and submission administrators can modify a share link.\n",
                 "operationId": "share-post",
-                "x-order": 90,
+                "x-order": 92,
                 "tags": [
                     "Submissions"
                 ],
@@ -1102,7 +1102,7 @@
                 "summary": "Remove share link",
                 "description": "Delete the share link for a submission, if any has been created.\n",
                 "operationId": "share-delete",
-                "x-order": 91,
+                "x-order": 93,
                 "tags": [
                     "Submissions"
                 ],
@@ -1170,7 +1170,7 @@
                 "summary": "Retrieve document",
                 "description": "Retrieve a document and return it in the response body. Add `hash` or `docid`\nto retrieve a specific document version; such requests are usually cacheable,\nand only administrators and authors can make them.\n\nSuccessful requests (HTTP status code 200) return the requested document as the\nresponse, without any JSON wrapper. Find the document’s MIME type using the\nresponse’s `Content-Type` header. Unsuccessful requests (HTTP status code 300 or\nhigher) usually return a JSON object with `ok` set to `false` and a\n`message_list` describing the error.\n\nThis API understands conditional requests with HTTP headers `If-Match`,\n`If-None-Match`, `If-Modified-Since`, and `If-Unmodified-Since`, and many\nresponses include `ETag` and `Last-Modified` HTTP headers. It also understands\nrange requests.\n",
                 "operationId": "document",
-                "x-order": 15,
+                "x-order": 16,
                 "tags": [
                     "Documents"
                 ],
@@ -1287,7 +1287,7 @@
                 "summary": "List documents",
                 "description": "Retrieve information about documents and document versions accessible to the\nrequesting user. A request with just the `p=PID` parameter lists all available\ndocuments currently associated with the submission. To request information about\na specific submission field, add a `dt` or `doc` parameter. Setting `history=1`\nrequests information about past document versions as well as current ones.\n",
                 "operationId": "documentlist",
-                "x-order": 16,
+                "x-order": 17,
                 "tags": [
                     "Documents"
                 ],
@@ -1382,7 +1382,7 @@
                 "summary": "Check PDF format",
                 "description": "Run HotCRP’s PDF format checker on a specified document. A human-readable\nresponse is returned in `message_list`. The `problem_fields` response field\nlists the names of any PDF checks that failed; examples include `\"papersize\"`,\n`\"pagelimit\"`, `\"columns\"`, `\"textblock\"`, `\"bodyfontsize\"`, `\"bodylineheight\"`,\nand `\"wordlimit\"`. The `npages_detail` response field is provided only if the\nrequest’s `detail` parameter is truthy.\n",
                 "operationId": "formatcheck",
-                "x-order": 17,
+                "x-order": 18,
                 "tags": [
                     "Documents"
                 ],
@@ -1524,7 +1524,7 @@
                 "summary": "List contents of archive document",
                 "description": "List the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. Returns\nthe list of included filenames in the `archive_contents` field. The\n`summary=1` parameter requests an additional `archive_contents_summary`, which a\npreformatted string that uses `{}` notation to represent subdirectories; for\ninstance, `subdir/{file1.txt, file2.txt}`.\n",
                 "operationId": "archivecontents",
-                "x-order": 18,
+                "x-order": 19,
                 "tags": [
                     "Documents"
                 ],
@@ -1635,7 +1635,7 @@
                 "summary": "Upload file",
                 "description": "Upload large files for later use.\n\nServers limit how much data they will accept in a single request. The upload API\ncan upload large files using multiple requests. When an upload is complete,\nlater API requests can refer to that file using an *upload token*.\n\nThe lifecycle of an upload is as follows.\n\n1. A request with `start=1` begins a new upload. This request should also\n   include a `size` parameter to define the size of the uploaded file, if that\n   is known, and parameters defining its purpose (`dt`, `mimetype`, `filename`,\n   and `temp`).\n2. The response to this request includes the upload token in its `token`\n   field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`. All subsequent\n   requests relating to the upload must include this token as a `token`\n   parameter.\n3. Subsequent requests upload the contents of the file in chunks. The `blob`\n   parameter (which can be an attached file) contains the chunk itself, and the\n   `offset` parameter defines the offset of chunk relative to the file.\n4. A request with `finish=1` completes the upload. The server seals the upload\n   and responds with the file’s content hash. A `finish=1` request will fail\n   unless all expected chunks have been received.\n\n`start=1` and `finish=1` requests can also include a chunk. The `ranges`\nresponse field represents the ranges of bytes received so far.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n",
                 "operationId": "upload",
-                "x-order": 19,
+                "x-order": 20,
                 "tags": [
                     "Documents"
                 ],
@@ -1870,7 +1870,7 @@
                 "summary": "Retrieve search results",
                 "description": "Return IDs, and optionally other display fields, of submissions that match a\nsearch. The matching submission IDs are returned in the `ids` response field,\nordered according to the search.\n\n## Display fields\n\nThe `f` and `format` parameters retrieve display fields for each submission in\nthe search result.\n\n`f` defines the display fields to return. An example is `title authors[full]`,\nwhich requests two fields: `title`, and `authors` with the `full` view option.\nThe `/displayfields` API lists available display fields. `format` is either\n`csv` or `html`, and requests CSV or HTML format for the response data.\n\nThe response will contain two fields, `fields` and `papers`. `fields` is an array\nof objects defining the emitted display fields. Typically, each entry in\n`fields` corresponds to a member of `f`, but some field requests can expand into\nmultiple display fields. `papers` is an array of objects defining the exported\nfields for each matching submission. Each `papers` entry has a `pid` field\nwith the submission ID, and one field for each entry in `fields`. The\n`papers` entries are in the same order as `ids`. In some cases, the response\nwill have a `statistics` field defining overall statistics for some of the\nrequested fields.\n\nThis response might be returned for the search `10-12` with `format=csv` and\n`f=title`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nThe `html` format is unlikely to be useful outside the HotCRP web application.\nThe returned HTML uses elements, tag structures, and class names suitable for\nHotCRP’s internal use, and may change at any time. Furthermore, in some cases\n(such as `f=allpref`), the returned data is compressed into a field-specific\nformat that the HotCRP web application expands.\n\n## Search annotations\n\nThe `groups` response field is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other fields, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nThis response might be returned for the search `10-12 THEN 5-8`:\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n",
                 "operationId": "search",
-                "x-order": 42,
+                "x-order": 44,
                 "tags": [
                     "Search"
                 ],
@@ -2065,7 +2065,7 @@
                 "summary": "List display fields",
                 "description": "Return a list of all supported display fields. Display fields can be requested\nin the web UI (search for `show:FIELDNAME`) or in the API (supply `f=FIELDNAME`\nto the `/search` endpoint).\n",
                 "operationId": "displayfields",
-                "x-order": 43,
+                "x-order": 45,
                 "tags": [
                     "Search"
                 ],
@@ -2116,7 +2116,7 @@
                 "summary": "Perform search action",
                 "description": "Perform the search action specified by the `action` parameter on the papers\ndefined by the `q` and `t` search parameters.\n\nThe `action` parameter names a search action. The `/searchactions` API lists\navailable actions. Other parameters may be provided; the `/searchactions`\nresponse mentions relevant parameters for each action.\n\nSearch action responses do not follow HotCRP’s normal API conventions, in that\nsuccessful responses may not be JSON objects. For instance, the `get/paper`\naction typically returns a ZIP file containing submission PDFs, the `get/csv`\naction returns a CSV-formatted text file, and the `get/json` request returns a\nJSON array, rather than a JSON object. Applications wanting predictable JSON\nresponses should use other API endpoints. Nevertheless, `/searchaction` can be\nmore convenient than other more standardized APIs.\n",
                 "operationId": "searchaction",
-                "x-order": 44,
+                "x-order": 46,
                 "tags": [
                     "Search"
                 ],
@@ -2225,7 +2225,7 @@
                 "summary": "Perform search action",
                 "description": "Perform the search action specified by the `action` parameter on the papers\ndefined by the `q` and `t` search parameters.\n\nThe request format for POST requests is the same as for GET requests.\n",
                 "operationId": "searchaction-post",
-                "x-order": 45,
+                "x-order": 47,
                 "tags": [
                     "Search"
                 ],
@@ -2336,7 +2336,7 @@
                 "summary": "List search actions",
                 "description": "Return a list of search actions accessible via HotCRP’s API.\n\nSearch actions perform actions on a set of papers specified via search. In the\nHotCRP web application, search actions are shown underneath the search list;\nexamples include “Download > Review forms (zip)” and “Tag > Add to order”. The\n`/searchactions` API endpoint retrieves the search actions that the current user\ncan access programmatically via the `/searchaction` API.\n",
                 "operationId": "searchactions",
-                "x-order": 46,
+                "x-order": 48,
                 "tags": [
                     "Search"
                 ],
@@ -2393,7 +2393,7 @@
                 "summary": "Retrieve display options",
                 "description": "Return the **view options** for a report: the fields a result is displayed\nwith and how it is sorted. View options are expressed as a HotCRP view string\nof `show:`, `hide:`, and `sort:` terms. `report` selects which display these\noptions govern: `pl` is the default `search` page, and `pf` is the\n`reviewprefs` page.\n\nThe response gives the view from several angles: `display_current` is what the\ncaller currently sees (the site default plus any of their own session\nadjustments), `display_default` is the site default, and `display_difference`\nexpresses the caller’s view as a difference from HotCRP’s built-in default.\n",
                 "operationId": "viewoptions",
-                "x-order": 47,
+                "x-order": 49,
                 "tags": [
                     "Search"
                 ],
@@ -2491,7 +2491,7 @@
                 "summary": "Set default display options",
                 "description": "Save the site default view options for a report. Chair only. Supply the new view\nstring in `display`; the response reports the resulting options exactly as\n[`viewoptions` GET](#get-viewoptions) does.\n",
                 "operationId": "viewoptions-post",
-                "x-order": 48,
+                "x-order": 50,
                 "tags": [
                     "Search"
                 ],
@@ -2616,7 +2616,7 @@
                 "summary": "Retrieve search completions",
                 "description": "Return suggested search keywords for the search box, in `searchcompletion`.\nWithout arguments the full suggestion set is returned; `category` limits it to a\nsingle class—for example `sf` (submission fields), `has`, `ss` (saved\nsearches), `dec` (decisions), or `round` (review rounds). Most entries are\ncompletion strings; a few are grouped objects that bundle several related\nsuggestions.\n",
                 "operationId": "searchcompletion",
-                "x-order": 49,
+                "x-order": 51,
                 "tags": [
                     "Search"
                 ],
@@ -2687,7 +2687,7 @@
                 "summary": "Retrieve formula graph data",
                 "description": "Return the data behind a **formula graph** (HotCRP’s “Graphs” feature)—for\ninstance a scatter plot of one formula against another over a set of\nsubmissions. `x` (required) and `y` are formula expressions for the axes, and\n`gtype` selects the graph type (such as `scatter`). The submissions to plot come\nfrom a search: supply `q` (and optionally `t`). Several series can be overlaid by\nnumbering the searches `q1`, `q2`, … with optional labels `s1`, `s2`, ….\n\nThe response carries the graph in HotCRP’s internal plotting format—the axis\ndescriptions (`x`, `y`), a `data_format` code, and the `data` points—intended\nfor the HotCRP graphing UI rather than for general consumption.\n",
                 "operationId": "graphdata",
-                "x-order": 50,
+                "x-order": 52,
                 "tags": [
                     "Search"
                 ],
@@ -2827,7 +2827,7 @@
                 "summary": "Retrieve a submission’s tags",
                 "description": "Return the tags visible to the caller on submission `p`, as a\n[tag object](#tag-tags).\n",
                 "operationId": "tags",
-                "x-order": 93,
+                "x-order": 95,
                 "tags": [
                     "Tags"
                 ],
@@ -2913,7 +2913,7 @@
                 "summary": "Change a submission’s tags",
                 "description": "Modify the tags on submission `p` and return the updated [tag object](#tag-tags).\n\nTwo modes of change are available, and may be combined:\n\n* **Replace**—`tags` sets the submission’s complete tag list, removing any\n  tags not listed (subject to permissions).\n* **Incremental**—`add_tags` adds tags and `remove_tags` removes them, leaving\n  other tags untouched.\n\nTo make a change conditional, set `expected_tags` to the tag list you believe is\ncurrent; if the submission’s tags differ, the request fails without changing\nanything (optimistic concurrency control). As with other modifying endpoints,\nsupplying `search` re-runs that search after the change so a client can refresh\na list in one round trip.\n",
                 "operationId": "tags-post",
-                "x-order": 94,
+                "x-order": 96,
                 "tags": [
                     "Tags"
                 ],
@@ -3055,7 +3055,7 @@
                 "summary": "Change tags on several submissions",
                 "description": "Apply tags to many submissions in one request. `tagassignment` is a\nwhitespace/comma-separated stream of submission IDs and tags: each number sets\nthe “current” submission, and each following tag (until the next number) is\nassigned to it. For example, `1 discuss 2 discuss reject` tags submission 1 with\n`discuss` and submission 2 with `discuss` and `reject`.\n\nThe response’s `p` array carries refreshed [tag objects](#tag-tags) for the\naffected submissions. Supplying `search` adds that search’s results to the\nresponse as well.\n",
                 "operationId": "assigntags",
-                "x-order": 95,
+                "x-order": 97,
                 "tags": [
                     "Tags"
                 ],
@@ -3154,7 +3154,7 @@
                 "summary": "List all visible tags",
                 "description": "Return every tag name the caller can see, for tag completion and similar uses.\nThis endpoint is available to PC members only; the result is the set of tag\nnames across all viewable submissions, not the tags of any one submission.\n\n`readonly_tagmap` and `sitewide_tagmap`, when present, are objects whose keys are\nthe (lowercased) tags that are read-only or site-wide, respectively.\n",
                 "operationId": "alltags",
-                "x-order": 96,
+                "x-order": 98,
                 "tags": [
                     "Tags"
                 ],
@@ -3211,7 +3211,7 @@
                 "summary": "Retrieve tag annotations",
                 "description": "Return the **annotations** of a tag. Annotations divide an ordered (ranking or\nvotes) tag into labeled groups—for example, section headings in a discussion\norder. `editable` reports whether the caller may change them.\n",
                 "operationId": "taganno",
-                "x-order": 97,
+                "x-order": 99,
                 "tags": [
                     "Tags"
                 ],
@@ -3310,7 +3310,7 @@
                 "summary": "Change tag annotations",
                 "description": "Replace the annotations of a tag. Supply the desired changes in `anno`, a JSON\narray of [`tag_annotation`](#tag-tags) objects (a single object is also\naccepted). Each entry is matched to an existing annotation by its `annoid`:\n\n* To **modify** an annotation, give its existing integer `annoid` along with the\n  fields to change (`legend`, `tagval`, and/or the session-scheduling fields\n  `session_title`, `time`, `location`, `session_chair`; pass `none` for a session\n  field to clear it).\n* To **create** an annotation, use an `annoid` string beginning with `n` (for\n  example `n1`); the server assigns the real ID.\n* To **delete** an annotation, give its `annoid` and `\"delete\": true`.\n\nOnly the fields you supply are changed; omitted fields are left as they were.\nRequires permission to administer the tag. Returns the updated annotations, as\nfor [`taganno` GET](#get-taganno).\n",
                 "operationId": "taganno-post",
-                "x-order": 98,
+                "x-order": 100,
                 "tags": [
                     "Tags"
                 ],
@@ -3434,7 +3434,7 @@
                 "summary": "Retrieve tag edit messages",
                 "description": "Return advisory messages about the caller’s tags on submission `p`, in the\nstandard `message_list`. These are the warnings HotCRP shows around voting\ntags—for instance, how many votes remain in an allotment, or that an allotment\nhas been exceeded. The response carries the submission’s `pid`; the messages\nthemselves are in `message_list`.\n",
                 "operationId": "tagmessages",
-                "x-order": 99,
+                "x-order": 101,
                 "tags": [
                     "Tags"
                 ],
@@ -3489,7 +3489,7 @@
                 "summary": "Retrieve vote analysis",
                 "description": "Return a human-readable summary of who voted for submission `p` using a voting\ntag. `vote_report` is an HTML fragment listing the voters (with vote counts, for\nallotment votes); it is empty when there are no votes. Requires permission to\nsee per-user values of the tag.\n",
                 "operationId": "votereport",
-                "x-order": 100,
+                "x-order": 102,
                 "tags": [
                     "Tags"
                 ],
@@ -3554,7 +3554,7 @@
                 "summary": "Retrieve a review preference",
                 "description": "Return a PC member’s review preference for submission `p`—by default the\ncaller’s own, or another PC member’s when `u` is given (administrators only).\n\n`pref` is the numeric preference and `value` is its text form (number plus any\nexpertise letter); `value` is an empty string when no preference is set.\n`prefexp` gives the expertise indicator on its own when one is set, and\n`topic_score` reports how well the submission’s topics match the PC member’s\ntopic interests (present only when the conference uses topics).\n",
                 "operationId": "revpref",
-                "x-order": 39,
+                "x-order": 41,
                 "tags": [
                     "Review preferences"
                 ],
@@ -3640,7 +3640,7 @@
                 "summary": "Set a review preference",
                 "description": "Set a PC member’s review preference for submission `p`, then return it as\n[`revpref` GET](#get-revpref) does. By default the change applies to the caller;\nadministrators may set another PC member’s preference with `u`.\n\nSupply the new preference in `pref`, in text form: a signed integer, optionally\nfollowed by an expertise letter (`X`, `Y`, or `Z`)—for example `10`, `-5`, or\n`20X`. An empty value clears the preference.\n",
                 "operationId": "revpref-post",
-                "x-order": 40,
+                "x-order": 42,
                 "tags": [
                     "Review preferences"
                 ],
@@ -4345,7 +4345,7 @@
                 "summary": "Retrieve submission decision",
                 "description": "Return the decision recorded for submission `p`. `decision` is the decision’s\nnumeric ID: `0` means no decision, a positive ID is an accept-class decision,\nand a negative ID is a non-accept decision (reject-class or indeterminate).\n`decision_html` is its configured name as HTML. `editable` is present when the\ncaller may change the decision.\n",
                 "operationId": "decision",
-                "x-order": 73,
+                "x-order": 75,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4407,7 +4407,7 @@
                 "summary": "Change submission decision",
                 "description": "Set the decision for submission `p`. Supply `decision` as either a decision ID or\na decision name. The caller’s conflicts are overridden. The response reports the\nnew decision as [`decision` GET](#get-decision) does.\n",
                 "operationId": "decision-post",
-                "x-order": 74,
+                "x-order": 76,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4499,7 +4499,7 @@
                 "summary": "Retrieve submission discussion lead",
                 "description": "Return the discussion lead of submission `p`. `lead` is the lead’s email, or\n`none` if unset; `lead_html` is their name as HTML (`None` when unset);\n`color_classes` carries any style classes implied by the lead’s user tags.\n",
                 "operationId": "lead",
-                "x-order": 75,
+                "x-order": 77,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4561,7 +4561,7 @@
                 "summary": "Change submission discussion lead",
                 "description": "Set the discussion lead of submission `p`. Supply `lead` as a PC member’s email,\nor `none` to clear it. The response reports the new lead as\n[`lead` GET](#get-lead) does.\n",
                 "operationId": "lead-post",
-                "x-order": 76,
+                "x-order": 78,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4650,7 +4650,7 @@
                 "summary": "Retrieve submission administrator",
                 "description": "Return the explicit administrator of submission `p`, if any. `manager` is their\nemail, or `none` if unset; `manager_html` is their name as HTML (`None` when\nunset); `color_classes` carries any style classes implied by the manager’s user\ntags.\n",
                 "operationId": "manager",
-                "x-order": 77,
+                "x-order": 79,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4712,7 +4712,7 @@
                 "summary": "Change submission administrator",
                 "description": "Set an explicit administrator for submission `p`. Supply `manager` as a PC\nmember’s email, or `none` to clear it. The response reports the new manager as\n[`manager` GET](#get-manager) does.\n",
                 "operationId": "manager-post",
-                "x-order": 78,
+                "x-order": 80,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4801,7 +4801,7 @@
                 "summary": "Retrieve submission shepherd",
                 "description": "Return the shepherd of submission `p`. `shepherd` is their email, or `none` if\nunset; `shepherd_html` is their name as HTML (`None` when unset); `color_classes`\ncarries any style classes implied by the shepherd’s user tags.\n",
                 "operationId": "shepherd",
-                "x-order": 79,
+                "x-order": 81,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4863,7 +4863,7 @@
                 "summary": "Change submission shepherd",
                 "description": "Set the shepherd of submission `p`. Supply `shepherd` as a PC member’s email, or\n`none` to clear it. The response reports the new shepherd as\n[`shepherd` GET](#get-shepherd) does.\n",
                 "operationId": "shepherd-post",
-                "x-order": 80,
+                "x-order": 82,
                 "tags": [
                     "Submission administration"
                 ],
@@ -4952,7 +4952,7 @@
                 "summary": "Change a review’s round",
                 "description": "Move one review of submission `p` into a different review round. Restricted to\nsubmission administrators. Identify the review with `r` and the\ndestination round by name in `round`.\n",
                 "operationId": "reviewround",
-                "x-order": 81,
+                "x-order": 83,
                 "tags": [
                     "Submission administration"
                 ],
@@ -5027,9 +5027,14 @@
                 "summary": "Retrieve one review",
                 "description": "Return a single review of submission `p`, selected by `r`. The review is\nreturned in the `review` field as a [review object](#tag-reviews). If the\nreview does not exist the response is a `404`; if it exists but the caller may\nnot see it, a `403`.\n",
                 "operationId": "review",
-                "x-order": 25,
+                "x-order": 26,
                 "tags": [
                     "Reviews"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Featured"
+                    }
                 ],
                 "parameters": [
                     {
@@ -5089,6 +5094,129 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "summary": "Delete a review",
+                "description": "Delete the review on submission `p` selected by `r` (a numeric review ID or a\ndisplay ordinal; an empty `r` addresses the caller’s own review). Only\nadministrators may delete reviews.\n\nTo test without deleting, supply `dry_run=1`. The edit-conflict preconditions\n`if_vtag_match` and `if_unmodified_since` behave as for [`POST /review`](#post-review).\n",
+                "operationId": "review-delete",
+                "x-order": 28,
+                "tags": [
+                    "Reviews"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Featured"
+                    },
+                    {
+                        "name": "Admin only"
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "r",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/rid"
+                        },
+                        "description": "Review to delete: a numeric review ID or display ordinal, or\nempty for the caller’s own review.",
+                        "x-order": 0
+                    },
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks the request but does not delete.",
+                        "x-order": 1
+                    },
+                    {
+                        "name": "if_vtag_match",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Reject the delete unless the review’s current\nversion tag equals this value.",
+                        "x-order": 2
+                    },
+                    {
+                        "name": "if_unmodified_since",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Reject the delete if the review has been\nmodified since this time (a Unix timestamp, or `0`).",
+                        "x-order": 3
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 4
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 5
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for `dry_run` requests."
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the delete was valid; for a non-dry-run request, it was also committed."
+                                        },
+                                        "change_list": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Always `[\"delete\"]`."
+                                        },
+                                        "conflict": {
+                                            "type": "boolean",
+                                            "description": "True when the delete was rejected by an\n`if_vtag_match` or `if_unmodified_since` edit-conflict check."
+                                        },
+                                        "rid": {
+                                            "$ref": "#/components/schemas/rid",
+                                            "description": "The deleted review’s ID."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/review": {
@@ -5096,9 +5224,14 @@
                 "summary": "Create or modify a review",
                 "description": "Create or modify one review of submission `p`. The review being edited is\nselected by `r`:\n\n* a numeric review ID (`4`) or display ordinal (`A`) names an existing review;\n* `new` requires that a *new* review be created (the request fails if the\n  reviewer already has a review);\n* an empty or absent `r` addresses the caller’s own review, creating it if\n  necessary.\n\nThe modification is specified in JSON in any of these forms:\n\n1. In a JSON-formatted request parameter named `json`.\n2. As a JSON request body (content-type `application/json`).\n3. As an offline review form in plain text—either the whole request body (with\n   content-type `text/plain`) or a `file` upload in a form POST. The text is\n   parsed exactly as an offline form uploaded from the review page; only its\n   sections for submission `p` are applied (any other sections are ignored).\n4. As a previously-uploaded JSON or text file, named by an\n   [upload token](#post-upload) in the `upload` parameter.\n\nIn the JSON forms the modification is a [review object](#tag-reviews). Absent\nfields are left unchanged; fields keyed by their UID set review-form content.\nSet `submitted` (or `ready`) to `true` to submit the review, or `draft` to\n`true` to save it without submitting. Submission administrators assigning a\nreview on someone’s behalf may name the reviewer with `email` (plus\n`given_name`/`family_name`/`affiliation` for a new account).\n\nThe `p` request parameter is optional for the JSON and text forms: if it is\nunset, HotCRP uses the `pid` from the supplied data. If both `p` and a body\n`pid` are present they must match; likewise `r` and a body `rid`.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application. These conventions are subject to change, and third-party\napplications should prefer JSON.\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This will\ntest the input but make no changes to the database.\n",
                 "operationId": "review-post",
-                "x-order": 26,
+                "x-order": 27,
                 "tags": [
                     "Reviews"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Featured"
+                    }
                 ],
                 "parameters": [
                     {
@@ -5310,9 +5443,14 @@
                 "summary": "Retrieve multiple reviews",
                 "description": "Return every review the caller can see on a set of submissions, in the `reviews`\narray. Select the submissions either with a search (`q`, optionally narrowed by\n`t`) or with a single submission `p`; supply exactly one of the two. Search\ndiagnostics, if any, are reported in `message_list`.\n\nThe optional `rq` and `u` parameters filter *which* reviews are returned (not\nwhich submissions are searched). Supply at most one of them:\n\n* `u` returns only reviews written by the user with that email.\n* `rq` is a review search expression (the same syntax as a `re:` search),\n  evaluated with `reviewer` as its viewpoint, and returns only matching reviews.\n",
                 "operationId": "reviews",
-                "x-order": 27,
+                "x-order": 29,
                 "tags": [
                     "Reviews"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Featured"
+                    }
                 ],
                 "parameters": [
                     {
@@ -5427,9 +5565,14 @@
                 "summary": "Create or modify multiple reviews",
                 "description": "Create or modify many reviews in one request. Unlike [`review`\nPOST](#post-review), this endpoint is not tied to a single submission: each\nreview names its own submission, and the batch may span any number of\nsubmissions. The modification may be supplied as:\n\n1. A JSON array of [review objects](#tag-reviews) (as a raw `application/json`\n   body, in the `json` form field, or via an [upload token](#post-upload)). Each\n   object names its submission with `pid` and, optionally, its review with `rid`\n   (`\"rid\": \"new\"` requires a freshly-created review). An object may also carry\n   its own `if_vtag_match` or `if_unmodified_since` precondition to guard that\n   item’s edit (see [`review` POST](#post-review)).\n2. An offline review form in plain text (a `text/plain` body, a `file` upload,\n   or an [upload token](#post-upload)) containing one or more `==+== Paper`\n   sections. Every section is applied to the submission it names; there is no\n   single-submission restriction.\n\nEach review is processed independently and best-effort: one item’s failure does\nnot roll back the others. The response reports one entry per input review, in\norder, in `status_list`; the parallel `reviews` array holds the resulting\n[review object](#tag-reviews) for each committed item (and `null` for items that\nwere invalid or skipped). A `dry_run=1` request validates every item but commits\nnothing.\n\nThe `if_vtag_match` and `if_unmodified_since` request parameters set batch-wide\ndefault preconditions, applied to every item that does not specify its own. In\nparticular, `if_vtag_match=0` requires that every saved review be newly created.\n",
                 "operationId": "reviews-post",
-                "x-order": 28,
+                "x-order": 30,
                 "tags": [
                     "Reviews"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Featured"
+                    }
                 ],
                 "parameters": [
                     {
@@ -5610,7 +5753,7 @@
                 "summary": "Retrieve a review’s edit history",
                 "description": "Return the successive versions of one review, newest first, in the `versions`\narray. Only the review’s own reviewer or a submission administrator may read its\nhistory.\n\nEach entry is either a full [review object](#tag-reviews) (`object: \"review\"`)\nor, for an incremental edit, a **review delta** (`object: \"review_delta\"`) that\nrecords only the fields that changed in that version. Set `expand=1` to receive\nevery version as a full review object instead of a delta.\n",
                 "operationId": "reviewhistory",
-                "x-order": 29,
+                "x-order": 31,
                 "tags": [
                     "Reviews"
                 ],
@@ -5698,7 +5841,7 @@
                 "summary": "Retrieve review ratings",
                 "description": "Return the ratings recorded for a review. Ratings let readers flag a review as\nhelpful or as having problems.\n\n`ratings` is the aggregate of all raters’ flags and is present only when the\ncaller may view ratings. `user_rating` is the caller’s own rating and is present\nonly when the caller is allowed to rate this review. Each value is a rating (see\n[`reviewrating` POST](#post-reviewrating) for the vocabulary): the string `none`,\na single flag, or an array of flags.\n",
                 "operationId": "reviewrating",
-                "x-order": 30,
+                "x-order": 32,
                 "tags": [
                     "Reviews"
                 ],
@@ -5784,7 +5927,7 @@
                 "summary": "Set a review rating",
                 "description": "Record the caller’s rating of a review in `user_rating`, then return the updated\nratings as for [`reviewrating` GET](#get-reviewrating).\n\nA rating is a space-separated list of flags, the string `none` to clear the\ncaller’s rating, or the equivalent integer bitmask. The flags are `good`,\n`needswork`, `short`, `vague`, `narrow`, `disrespectful`, and `wrong`.\nAdministrators may pass `clearall` to remove *every* rating on the review.\n",
                 "operationId": "reviewrating-post",
-                "x-order": 31,
+                "x-order": 33,
                 "tags": [
                     "Reviews"
                 ],
@@ -5892,7 +6035,7 @@
                 "summary": "Request an external review",
                 "description": "Ask a person identified by `email` to review submission `p`. Depending on\nconference policy and the caller’s role, this either assigns the review\ndirectly, files a **proposal** for an administrator to approve, or (for\nadministrators requesting an anonymous reviewer) mints a review token. The\n`action` field reports which happened, and `message_list` carries the\nhuman-readable outcome.\n\nIf the person has no account yet, supply their name (`given_name` and\n`family_name`, or a combined `name`) and `affiliation` so an account can be\ncreated. Administrators can set `override=1` to bypass conflict and\nprior-refusal checks that would otherwise block or downgrade the request to a\nproposal.\n",
                 "operationId": "requestreview",
-                "x-order": 32,
+                "x-order": 34,
                 "tags": [
                     "Reviews"
                 ],
@@ -6018,7 +6161,7 @@
                 "summary": "Accept a review assignment",
                 "description": "Accept the review-assignment invitation identified by `r` on submission `p`.\nThis acknowledges the assignment (advancing it out of the `empty` state) and, if\nthe review had previously been declined, reinstates it. The response’s\n`review_site_relative` is a site-relative URL for the review page.\n",
                 "operationId": "acceptreview",
-                "x-order": 33,
+                "x-order": 35,
                 "tags": [
                     "Reviews"
                 ],
@@ -6091,7 +6234,7 @@
                 "summary": "Decline a review assignment",
                 "description": "Decline the review identified by `r` on submission `p`, optionally recording a\n`reason`. A review that has already been submitted cannot be declined, nor can a\nprimary or secondary review. The response’s `review_site_relative` is a\nsite-relative URL for the review page.\n",
                 "operationId": "declinereview",
-                "x-order": 34,
+                "x-order": 36,
                 "tags": [
                     "Reviews"
                 ],
@@ -6185,7 +6328,7 @@
                 "summary": "Reassign a review to another of your accounts",
                 "description": "Move the unsubmitted review `r` on submission `p` from its current reviewer to\nthe account identified by `email`. This is used to consolidate a review onto a\ndifferent account **you are currently signed in to** in the same session;\nreassigning to an account you are not signed into is refused, as is reassigning a\nreview that has already been submitted. The returned `review_site_relative` URL\npoints at the review under the destination account (with a `u/<index>/` prefix\nwhen that account differs from the current one).\n",
                 "operationId": "claimreview",
-                "x-order": 35,
+                "x-order": 37,
                 "tags": [
                     "Reviews"
                 ],
@@ -6268,7 +6411,7 @@
                 "summary": "List active review tokens",
                 "description": "Return the review tokens currently active in the caller’s session, in the\n`token` array (encoded form). Review tokens grant the ability to edit specific\nanonymous reviews.\n",
                 "operationId": "reviewtoken",
-                "x-order": 36,
+                "x-order": 38,
                 "tags": [
                     "Reviews"
                 ],
@@ -6318,7 +6461,7 @@
                 "summary": "Activate or clear review tokens",
                 "description": "Set the review tokens active in the caller’s session and return the resulting\nlist as for [`reviewtoken` GET](#get-reviewtoken). Pass `token` as one or more\ntokens (whitespace/comma separated, or a JSON array of strings); each valid\ntoken is activated. Submitting with no usable tokens clears the active tokens.\n\nFor security, the session is locked out after five failed token attempts until\nthe user signs out. Per-token results are reported in `message_list`.\n",
                 "operationId": "reviewtoken-post",
-                "x-order": 37,
+                "x-order": 39,
                 "tags": [
                     "Reviews"
                 ],
@@ -6470,7 +6613,7 @@
                 "summary": "Create or modify comment",
                 "description": "Create or modify a comment on submission `p`. Select the comment with `c` (see\n[Identifying a comment](#tag-comments)): a numeric comment ID modifies or\ndeletes an existing comment, `new` creates an ordinary comment, and\n`response`/`R2response` creates or updates a response.\n\nThe modification is specified in JSON in any of these forms:\n\n* In a `json` request parameter;\n* As an `application/json` request body;\n* As an `application/zip` archive whose `data.json` (or `*-data.json`) member is\n  the object—other members may be referenced as attachments;\n* Or via an [upload token](#post-upload) in the `upload` request parameter,\n  pointing at a previously-uploaded JSON or ZIP file.\n\nThe object’s `cid` (or `response`) selects the target comment; its `text`,\n`visibility`, `topic`, `tags`, `blind`, `draft`, and `delete` fields carry the\nupdate. (A one-element array holding a single object is also accepted.) The\n`dry_run` and `if_unmodified_since` controls are still read from the query\nstring.\n\nAttachments are given as a `docs` array, each entry either retaining an existing\nattachment by `docid` or uploading a new one: inline via `content` (raw text) or\n`content_base64`, or by `content_file`, which names a file in the ZIP archive or\nan uploaded file field in a `json` form request. An omitted `docs` key keeps the\ncomment’s current attachments.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application (such as a `text` parameter for the comment body). These\nconventions are subject to change, and third-party applications should prefer\nJSON.\n\nSaving with `text` empty and no attachments is refused for a new comment, but\ndeletes an existing one (it is treated as `delete=1`).\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This will\ntest the uploaded JSON but make no changes to the database.\n\n\n## Concurrency\n\nAn edit conflict returns `\"ok\": false`, `\"valid\": false`, and `\"conflict\": true`,\nwith the `comment` field holding the server’s current version so the client can\nreconcile. Conflicts arise two ways:\n\n* Editing a response can collide with a concurrent edit automatically.\n* Any comment edit can be guarded explicitly with `if_unmodified_since`: pass the\n  comment’s last-known `modified_at`, and the edit is rejected—with a message\n  keyed to `if_unmodified_since`—if the comment has changed since. Pass\n  `if_unmodified_since=0` to require that the comment not already exist.\n\n## Attachments\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#post-upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#post-upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
                 "operationId": "comment-post",
-                "x-order": 11,
+                "x-order": 10,
                 "tags": [
                     "Comments"
                 ],
@@ -6705,6 +6848,134 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "summary": "Delete comment",
+                "description": "Delete the comment on submission `p` selected by `c` (a numeric comment ID or a\nresponse selector; see [Identifying a comment](#tag-comments)). `c` must name an\nexisting comment. This is equivalent to [`POST /{p}/comment`](#post-comment) with\n`delete=1`, and is subject to the same permission and [concurrency](#tag-comments)\nrules.\n",
+                "operationId": "comment-delete",
+                "x-order": 11,
+                "tags": [
+                    "Comments"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Featured"
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "c",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The comment to delete (a numeric comment ID or a response selector).",
+                        "x-order": 0
+                    },
+                    {
+                        "name": "response",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Response-round name, when selecting a named response.",
+                        "x-order": 1
+                    },
+                    {
+                        "name": "if_unmodified_since",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Reject the delete if the comment has been\nmodified since this time (a Unix timestamp, matching the comment’s\n`modified_at`, or `0`).",
+                        "x-order": 2
+                    },
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks the request but does not delete.",
+                        "x-order": 3
+                    },
+                    {
+                        "name": "notify",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "description": "False disables email notifications. Ignored unless the caller administers the submission.",
+                        "x-badges": [
+                            {
+                                "name": "Admin only"
+                            }
+                        ],
+                        "x-order": 4
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path",
+                        "x-order": 5
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for `dry_run` requests."
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the delete was valid; for a non-dry-run request, it was also committed."
+                                        },
+                                        "change_list": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Always `[\"delete\"]`."
+                                        },
+                                        "conflict": {
+                                            "type": "boolean",
+                                            "description": "True when the delete was rejected by a concurrency check (see [Concurrency](#tag-comments))."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/comments": {
@@ -6712,7 +6983,7 @@
                 "summary": "Retrieve multiple comments",
                 "description": "Retrieve every visible comment on the submissions matching a search.\n\nThe search is specified in the `q` parameter (and other search parameters,\nsuch as `t`). All comments the caller may see, across all matching\nsubmissions, are returned as an array of [comment objects](#tag-comments) in\nthe response field `comments`.\n\nAs a shorthand for a single submission, supply its ID in `p` instead of `q`;\nthis returns that submission’s visible comments. Supplying both `q` and `p` is\nan error.\n",
                 "operationId": "comments",
-                "x-order": 10,
+                "x-order": 12,
                 "tags": [
                     "Comments"
                 ],
@@ -6815,10 +7086,10 @@
                 }
             },
             "post": {
-                "summary": "Create, modify, or delete multiple comments",
+                "summary": "Create or modify multiple comments",
                 "description": "Create, modify, or delete comments on multiple submissions in one request.\n\nUnlike [`POST /{p}/comment`](#post-comment), this endpoint is not scoped to a\nsingle submission: each comment object carries its own `pid`, so a batch may span\nsubmissions. There is no site-chair restriction—each comment is authorized\nindependently, exactly as for `POST /{p}/comment`.\n\n## Modify comments independently\n\nThe request body is an *array* of [comment objects](#tag-comments) (the same\nshape accepted by `POST /{p}/comment`), supplied as an `application/json` body,\na `json` request parameter, an `application/zip` archive whose `data.json` holds\nthe array, or an [upload token](#post-upload). A ZIP or `json`-form request may\ncarry attachment files shared across items: each object’s `docs[].content_file`\nresolves against the one archive.\n\nEach object identifies its submission with `pid` and its target comment with\n`cid` (or `response`, or neither to create a new comment), plus the `text`,\n`visibility`, `topic`, `tags`, `delete`, … fields carrying the update. A\nper-object `if_unmodified_since` guards that item’s edit (the query-string\n`if_unmodified_since` is a batch-wide default).\n\nProcessing is **best-effort**: valid items are saved and invalid ones are\nreported without aborting the batch. The per-item results are returned in the\n`status_list` field, and the saved comments in `comments`—both the same length\nand order as the input. Messages in `message_list` carry a `landmark` field set\nto the integer index of the item they concern.\n",
                 "operationId": "comments-post",
-                "x-order": 12,
+                "x-order": 13,
                 "tags": [
                     "Comments"
                 ],
@@ -6979,7 +7250,7 @@
                 "summary": "List mention completions",
                 "description": "Return the people the caller may **@-mention** in a comment, in the format used\nby HotCRP’s autocompleter. The comment editor calls this when the user types `@`\nto populate the mention dropdown.\n\nPass the submission in `p`; the candidate set—authors, reviewers, and PC\nmembers—depends on that submission and on what the caller is allowed to see. The\nlist also reflects comment-mention visibility, so it never reveals a participant\nthe caller could not otherwise discover.\n\nEach entry in `mentioncompletion` is one candidate, given as an autocompleter\nitem. The candidate’s display name appears in either `s` or `sm1` (exactly one is\npresent): `s` is offered immediately, while `sm1` is offered only once the user\nhas typed at least one character. PC members use `sm1`, so the entire committee\nis not listed unprompted; authors and other direct participants use `s`.\n",
                 "operationId": "mentioncompletion",
-                "x-order": 13,
+                "x-order": 14,
                 "tags": [
                     "Comments"
                 ],
@@ -7043,7 +7314,7 @@
                 "summary": "Poll meeting tracker status",
                 "description": "Return a lightweight snapshot of the meeting tracker for change detection. This\nendpoint requires no authentication, so the poller (and read-only kiosk\ndisplays) can call it without a session.\n",
                 "operationId": "trackerstatus",
-                "x-order": 104,
+                "x-order": 106,
                 "tags": [
                     "Meeting tracker"
                 ],
@@ -7097,7 +7368,7 @@
                 "summary": "Control the meeting tracker",
                 "description": "Start, stop, or advance a tracker. Restricted to track managers. On success the\nresponse reports the updated tracker status (above).\n\nThe `track` parameter is the command:\n\n* `stop`—stop all trackers (chairs only).\n* `<trackerid> <position>`—point the tracker `<trackerid>` (or `new` to start\n  one) at a list position.\n* `<trackerid> stop`—stop that one tracker.\n\nThe list the tracker walks is supplied in `hotlist-info` (an encoded submission\nlist, the same form produced elsewhere in the UI). `p` and `tracker_start_at`\noptionally pin a specific submission and start time.\n",
                 "operationId": "track",
-                "x-order": 105,
+                "x-order": 107,
                 "tags": [
                     "Meeting tracker"
                 ],
@@ -7225,7 +7496,7 @@
                 "summary": "Configure meeting trackers",
                 "description": "Create, modify, or stop trackers and set their display options (name, logo,\nvisibility, conflict hiding). Restricted to track managers. On success the\nresponse reports the updated tracker status (above), plus\n`new_trackerid` for any tracker newly created.\n\nTrackers are configured as a numbered list of structured parameters\n`tr/<n>/<field>`, one group per tracker. The fields are:\n\n* `id`—the tracker’s ID, or `new` to create one.\n* `name`, `logo`—display label and logo.\n* `visibility`, `visibility_type`—who may see the tracker (the whole PC, or a\n  specific PC tag).\n* `hideconflicts`—whether to hide conflicted submissions (paired with a\n  `has_tr/<n>/hideconflicts` presence marker).\n* `listinfo`—the encoded submission list the tracker walks.\n* `p`—the submission to position at.\n* `stop`—stop this tracker.\n\nSet `stopall` to stop every tracker at once. (A legacy flat parameter form,\n`tr<n>-<field>`, is also accepted and translated.)\n",
                 "operationId": "trackerconfig",
-                "x-order": 106,
+                "x-order": 108,
                 "tags": [
                     "Meeting tracker"
                 ],
@@ -7335,7 +7606,7 @@
                 "summary": "Look up a user by email",
                 "description": "Look up a single user by `email`. The lookup is prefix-oriented, which makes it\nsuitable for type-ahead completion: it returns the account whose email is the\nclosest match at or after the query, and `match` reports whether that email is an\n*exact* match for `email` (rather than merely the next account alphabetically).\n\nWhen no account is found, the response is `{\"ok\": true, \"match\": false}` with no\nprofile fields. When one is found, its `email`, `given_name`, `family_name`, and\n`affiliation` are returned (plus `country` and `orcid` when set). Visibility\nstill applies—a caller who may only see PC members will only match PC members.\n\nGive `email` as a full or nearly-complete address; very short, non-email queries\nreturn no match. Supplying a submission `p` together with `potential_conflict=1`\nadds a `potential_conflict` description when the looked-up user has a possible\nconflict with that submission and the caller may see its authors.\n",
                 "operationId": "user",
-                "x-order": 108,
+                "x-order": 110,
                 "tags": [
                     "Users"
                 ],
@@ -7468,7 +7739,7 @@
                 "summary": "List the program committee",
                 "description": "Return the program committee roster in `pc`, plus related metadata. Each `pc`\nentry describes one PC member; the detail included (such as email) depends on the\ncaller’s permissions. `sort` is `last` when the roster is ordered by last name,\nand `tags` lists the user tags the caller may see.\n\nWhen the request is made in the context of a submission the caller administers,\n`p` carries per-submission information keyed by submission ID—notably which PC\nmembers are `assignable` as reviewers.\n\nSet `ui=1` to receive the richer representation HotCRP’s own interface uses.\n",
                 "operationId": "pc",
-                "x-order": 109,
+                "x-order": 111,
                 "tags": [
                     "Users"
                 ],
@@ -7549,7 +7820,7 @@
                 "summary": "Retrieve account status",
                 "description": "Return the status of a user account: its `email`, whether it is `disabled`, and\nwhether it is a `placeholder` (a stub account created on someone’s behalf—for\nexample a requested reviewer who has not yet signed in—that is not yet a fully\nactivated account).\n\nName the account in `email`; `me` or the caller’s own email selects the caller.\nPC members may query other accounts by email; non-PC callers may query only their\nown.\n",
                 "operationId": "account",
-                "x-order": 110,
+                "x-order": 112,
                 "tags": [
                     "Users"
                 ],
@@ -7618,7 +7889,7 @@
                 "summary": "Modify an account",
                 "description": "Perform an administrative action on the account named by `email`. Chairs only.\nExactly one action applies per request:\n\n* `disable=1`—disable the account, blocking sign-in. (You cannot disable your\n  own account.)\n* `enable=1`—re-enable a disabled account.\n* `sendinfo=1`—email the account’s sign-in information to its owner.\n\nThe response reports the account’s resulting status, as for\n[`account` GET](#get-account).\n",
                 "operationId": "account-post",
-                "x-order": 111,
+                "x-order": 113,
                 "tags": [
                     "Users"
                 ],
@@ -7873,7 +8144,7 @@
                 "summary": "Retrieve recent activity",
                 "description": "Return a page of recent reviewing activity visible to the caller—newly\nsubmitted reviews and comments—most recent first. Available to reviewers.\n\nResults are paged in blocks of up to 10 events. Each request returns events\nstrictly before the `from` timestamp (a UNIX time, defaulting to now). To fetch\nthe next, older page, pass the response’s `to` value as the next request’s\n`from`; the `more` flag indicates whether further events exist before `to`.\n\nEach entry in `rows` is a pre-rendered HTML activity item used by HotCRP’s feed\nUI. As with other HTML the API returns, its markup and class names are internal\nto HotCRP and may change; applications needing structured data should read\nreviews and comments through their own endpoints.\n",
                 "operationId": "events",
-                "x-order": 21,
+                "x-order": 22,
                 "tags": [
                     "Notifications"
                 ],
@@ -7952,7 +8223,7 @@
                 "summary": "Set submission follow status",
                 "description": "Set whether a user **follows** submission `p`. A follower is emailed when reviews\nor comments are added to the submission. By default the setting applies to the\ncaller; administrators may change another user’s setting with `u`.\n",
                 "operationId": "follow",
-                "x-order": 22,
+                "x-order": 23,
                 "tags": [
                     "Notifications"
                 ],
@@ -8037,7 +8308,7 @@
                 "summary": "Monitor job",
                 "description": "The `/job` endpoint monitors the progress of long-running jobs and can return\ntheir output upon completion. Jobs represent HotCRP tasks that take too long for\na single API request; requests such as `/autoassign` may start a job and return\nits unique identifier.\n\nThe `status` response field is `\"wait\"` before the job starts, `\"run\"` while\nit is running, `\"done\"` after completion, and `\"failed\"` when it is known to\nhave failed. The `update_at` field gives the UNIX timestamp of the most\nrecent job update; if it’s far in the past but `status` is still `\"run\"`, the\njob has likely crashed. Specific jobs may return other response fields, such\nas a `progress` string that describes the current phase of job execution.\n\nSome jobs produce output when they complete. When `status` is `\"done\"` and\noutput is present, the response’s `output_mimetype` and `output_size` fields\ndescribe this output. To fetch the output itself, supply an `output` parameter.\nIf `output=string`, the `output` field contains the output as a string. If\n`output=json`, the `output` field contains the output as parsed JSON. If\n`output=body`, then the output is returned as the response body with the proper\nContent-Type header. `/job?output=body` understands range requests.\n\nA `/job` response uses HTTP response status code 202 Accepted for in-progress\njobs, and 200 OK for completed or failed jobs. However, if a job’s output is\nincompatible with the requested format (`output=string` but the output is not\nUTF-8 encoded, `output=json` but the output is not JSON, or `output=body` but\nthe job failed), then the response uses status code 409 Conflict.\n",
                 "operationId": "job",
-                "x-order": 102,
+                "x-order": 104,
                 "tags": [
                     "Task management"
                 ],
@@ -8150,7 +8421,7 @@
                 "summary": "Retrieve site settings",
                 "description": "This endpoint returns a JSON object defining all site settings. The result can\nbe used to examine settings offline, change settings otherwise unavailable\nthrough the settings UI, or transfer settings to another site.\n\nThe `filter` and `exclude` parameters can filter the returned settings to a\nsubset. For example, when exporting one site’s settings for use by another, you\nmight set `exclude` to `#identity OR #deadline`; this excludes settings relevant\nto a conference’s identity (`conference_name`, `site_contact_email`, etc.) or\ndeadlines.\n",
                 "operationId": "settings",
-                "x-order": 62,
+                "x-order": 64,
                 "tags": [
                     "Settings"
                 ],
@@ -8245,7 +8516,7 @@
                 "summary": "Modify site settings",
                 "description": "This endpoint modifies site settings according to a JSON object. This object may\ndefine a full complement of settings or a subset. It may be provided as a\nrequest body with type `application/json`, or as a body parameter with name\n`settings`.\n\nThe `filter` and `exclude` parameters can filter the modifications that are\napplied; for example, uploading a settings object with `filter` set to `#rf`\nwill only change settings relevant to the review form.\n\nFor more information on JSON settings, see [Help > Advanced settings](https://help.hotcrp.com/help/jsonsettings).\n",
                 "operationId": "settings-post",
-                "x-order": 63,
+                "x-order": 65,
                 "tags": [
                     "Settings"
                 ],
@@ -8387,7 +8658,7 @@
                 "summary": "Describe site settings",
                 "description": "Return machine-readable descriptions of the site’s settings. The result is a\nschema for the JSON objects accepted and returned by [`/settings`](#post-settings):\nuse it to discover the available setting names, learn each setting’s type, and\npresent settings in a user interface.\n\nEach entry in `setting_descriptions` describes one top-level setting. The set\nmirrors the settings the caller is allowed to view.\n",
                 "operationId": "settingdescriptions",
-                "x-order": 64,
+                "x-order": 66,
                 "tags": [
                     "Settings"
                 ],
@@ -8444,7 +8715,7 @@
                 "summary": "List sample submission fields",
                 "description": "Return a library of ready-made **submission fields** that an administrator can\nadd to the site. HotCRP’s settings UI uses this to offer sample fields (for\nexample, “Supplemental material” or a “Subject area” selector) and to enumerate\nthe submission-field types this installation supports. Chair only.\n",
                 "operationId": "submissionfieldlibrary",
-                "x-order": 65,
+                "x-order": 67,
                 "tags": [
                     "Settings"
                 ],
@@ -8509,7 +8780,7 @@
                 "summary": "List sample review fields",
                 "description": "Return a library of ready-made **review fields**, the review-form counterpart of\n[`/submissionfieldlibrary`](#get-submissionfieldlibrary). `samples` holds sample\nreview-field configurations and `types` enumerates the review-field types this\ninstallation supports. Chair only.\n",
                 "operationId": "reviewfieldlibrary",
-                "x-order": 66,
+                "x-order": 68,
                 "tags": [
                     "Settings"
                 ],
@@ -8574,7 +8845,7 @@
                 "summary": "Expand a mail template",
                 "description": "Render a mail template—or arbitrary mail text—using HotCRP’s keyword\nsubstitution, returning the resulting subject and body. The web application’s\nmail composer uses this to preview templates before sending. Available to PC\nmembers and administrators.\n\nThere are three ways to call it:\n\n1. Supply a `template` name to expand a stored mail template. The response\n   contains the expanded `subject` and `body`, plus, when the template defines\n   them, a default recipient set (`recipients`, `recipient_description`) and a\n   default search collection (`t`).\n2. Supply `template=all` to expand every template the caller may use; the\n   results are returned in the `templates` array.\n3. Supply literal `text`, `subject`, and/or `body` strings to expand arbitrary\n   content instead of a stored template. Each supplied field is returned\n   expanded.\n\nKeyword substitution can be personalized. Identify a recipient with `email` (and\noptionally `given_name`, `family_name`, and `affiliation`), a submission with\n`p`, and one of its reviews with `r`; `reason` fills the `%REASON%` keyword and\n`width` sets the line-wrapping width.\n",
                 "operationId": "mailtext",
-                "x-order": 67,
+                "x-order": 69,
                 "tags": [
                     "Settings"
                 ],
@@ -8778,7 +9049,7 @@
                 "summary": "List named searches",
                 "description": "Return the **named (saved) searches** available to the caller, in the `searches`\narray. PC members only. Each entry has a `name` and its search string `q`, and\nmay also carry a `display` hint, a `description`, and `editable` (whether the\ncaller may change it). Per-search diagnostics, if any, appear in `message_list`.\n",
                 "operationId": "namedsearch",
-                "x-order": 68,
+                "x-order": 70,
                 "tags": [
                     "Settings"
                 ],
@@ -8828,7 +9099,7 @@
                 "summary": "Save named searches",
                 "description": "Create, rename, retarget, or delete named searches. Changes are supplied as a\nnumbered list of structured parameters `named_search/<n>/<field>`, one group per\nsearch; the fields are `id` (the existing search’s name, or `new` to create\none), `name`, `search` (the search string), `highlight`, `description`, and\n`delete`. On success the updated list is returned exactly as [`namedsearch`\nGET](#get-namedsearch) returns it.\n",
                 "operationId": "namedsearch-post",
-                "x-order": 69,
+                "x-order": 71,
                 "tags": [
                     "Settings"
                 ],
@@ -8897,7 +9168,7 @@
                 "summary": "List named formulas",
                 "description": "Return the conference’s **named formulas** in `formulas`. A named formula gives a\nreusable name to a [formula](#get-search) expression, so it can be referenced\nfrom searches, scoring, and graphs. Each entry has a `name`, its `expression`,\nand an `id`; `editable` marks formulas the caller may change, and a per-formula\n`message_list` reports any problems evaluating the expression.\n",
                 "operationId": "namedformula",
-                "x-order": 70,
+                "x-order": 72,
                 "tags": [
                     "Settings"
                 ],
@@ -8947,7 +9218,7 @@
                 "summary": "Save named formulas",
                 "description": "Create, edit, or delete named formulas. Available to PC members. Changes are supplied as a\nnumbered list of structured parameters `formula/<n>/<field>`, one group per\nformula; the fields are `id` (the existing formula’s ID, or `new`), `name`,\n`expression`, and `delete`. On success the updated list is returned as\n[`namedformula` GET](#get-namedformula) returns it.\n",
                 "operationId": "namedformula-post",
-                "x-order": 71,
+                "x-order": 73,
                 "tags": [
                     "Settings"
                 ],
@@ -9016,7 +9287,7 @@
                 "summary": "Identify the current user",
                 "description": "Report which user the request authenticates as. This is the simplest way to\nconfirm that a set of credentials (a session cookie or an `Authorization:\nbearer` token) is valid and to learn whom it identifies.\n\nThe response includes the user’s `email`, `given_name`, `family_name`, and\n`affiliation`. When the user holds any conference roles, a `roles` array lists\nthem, drawn from:\n\n* `chair`—a conference chair\n* `pc`—a program committee member; this is also present for chairs\n* `sysadmin`—a system administrator\n* `manager`—an administrator of some submissions who is not a full chair\n* `author`—an author or contact of at least one submission\n* `reviewer`—assigned at least one review\n",
                 "operationId": "whoami",
-                "x-order": 52,
+                "x-order": 54,
                 "tags": [
                     "Session"
                 ],
@@ -9092,7 +9363,7 @@
                 "summary": "Retrieve session information and CSRF token",
                 "description": "Open a session (setting a session cookie if necessary) and return information\nabout the current client, including the CSRF token needed to authorize\ncookie-authenticated `POST` requests.\n\nThis endpoint may be called by unauthenticated clients, and—unlike most of the\nAPI—it permits cross-origin (CORS) requests. To avoid leaking sensitive data to\nother origins, a cross-origin or cross-site request receives **only `{\"ok\":\ntrue}`**, with no `sessioninfo`. The full response is returned only for\nsame-origin requests (as determined by the `Sec-Fetch-Site` request header, or\nby the absence of an `Origin` header on clients that do not send\n`Sec-Fetch-Site`).\n\nThe returned `sessioninfo.postvalue` is the CSRF token; see [CSRF tokens and\n`post`](#tag-session) above. The `email` and `uid` fields are present only\nwhen a user is signed in.\n",
                 "operationId": "session",
-                "x-order": 53,
+                "x-order": 55,
                 "tags": [
                     "Session"
                 ],
@@ -9139,7 +9410,7 @@
                 "summary": "Update session UI preferences",
                 "description": "Update a small set of per-user, per-session UI preferences and return the same\nsession information as [`GET /session`](#get-session). This endpoint\nbacks the HotCRP Javascript client’s “remember my view” behavior; the\npreferences it manages are cosmetic (folding state, which columns are shown in\npaper and user lists, score-sort order) and have no effect on submissions,\nreviews, or permissions. Unlike `GET /session`, it requires an authenticated,\nsame-origin request with a valid `post` CSRF token.\n\nThe preferences to change are encoded in the `v` parameter as a\nwhitespace-separated list of assignments. Each assignment has the form\n`name[.key][=value]`:\n\n* `name` selects the preference. Recognized names include `foldpaper`,\n  `foldpscollab`, `foldhomeactivity` (folding toggles), `pldisplay`,\n  `pfdisplay`, `uldisplay` (which columns/fields are shown in the paper list,\n  paper form, and user list), and `scoresort` / `ulscoresort` (score sort\n  order).\n* `.key` is an optional sub-selector. For the `*display` preferences it names\n  the column or field being shown or hidden; for `foldpaper` it names an\n  individual foldable region.\n* `=value` is an optional integer. `0` (or an omitted value) means “unfold” or\n  “show”; a nonzero value means “fold” or “hide”.\n\nFor example, `v=pldisplay.authors=0 foldhomeactivity=1` reveals the authors\ncolumn in the paper list and folds the home-page activity region.\n\nParsing is best-effort: every recognized assignment is applied, and any\ncomponent that is not understood is silently ignored. A successful request\nreturns `ok` of `true` whether or not every component was recognized.\n",
                 "operationId": "session-post",
-                "x-order": 54,
+                "x-order": 56,
                 "tags": [
                     "Session"
                 ],
@@ -9200,7 +9471,7 @@
                 "summary": "Reconfirm the signed-in user’s identity",
                 "description": "Reconfirm the credentials of the already-signed-in user. HotCRP requires\nreauthentication before especially sensitive actions (for example, changing\naccount email or managing security settings); a successful call records a\nrecent-authentication marker in the session so those actions can proceed.\n\nSupply the user’s `password`. On success the response has `ok` of `true`; if the\npassword is wrong, the response is an error (`ok` is `false`) whose\n`message_list` describes the problem.\n\nThe `reason` parameter is a short tag describing why reauthentication is being\nrequested (HotCRP uses values such as `manageemail`); it can influence how long\nthe resulting confirmation remains valid. `confirm=1` requests an explicit\nsuccess message in `message_list` on success. The `email` and `totpcode`\nparameters support alternate verification flows (such as time-based one-time\npasswords) where those are configured.\n",
                 "operationId": "reauth",
-                "x-order": 55,
+                "x-order": 57,
                 "tags": [
                     "Session"
                 ],
@@ -9287,7 +9558,7 @@
                 "summary": "Stash messages for later display",
                 "description": "Store a list of user-facing messages on the server, keyed by a short\nidentifier, so they can be displayed after a navigation or redirect. This\nsupports the common pattern where a `POST` handler wants to show a confirmation\nafter redirecting the browser to a new page: the handler stashes the messages,\nthen includes the returned identifier in the redirect URL, and the destination\npage retrieves and shows them.\n\nThe `message_list` parameter is a **JSON-encoded string** representing an array\nof message objects. Each object has an integer `status` and a string `message`.\n`status` ranges from -5 to 3 (see the [`message`\nschema](#tag-submissions)); common values are `0` (plain), `1` (warning), `2`\n(error), and `-3` (success). For example:\n\n```\nmessage_list=[{\"status\":2,\"message\":\"<0>Submission failed\"},{\"status\":-3,\"message\":\"<0>Draft saved\"}]\n```\n\nMessage text must carry a HotCRP format sigil. Only plain-text (`<0>`),\nMarkdown (`<1>`), and sanitized HTML (`<5>`) formats are accepted; entries in\nother formats, or with out-of-range `status`, are silently dropped. An empty\n`message` is allowed and produces a status-only entry.\n\nThe response `smsg` field is the identifier under which the messages were\nstashed; pass it to the page that should display them. If no usable messages\nwere supplied, `smsg` is `false`. To append to an existing stash, supply its\nidentifier in the `smsg` request parameter (a 10–64 character alphanumeric\nstring); otherwise the server generates a fresh identifier.\n",
                 "operationId": "stashmessages",
-                "x-order": 56,
+                "x-order": 58,
                 "tags": [
                     "Session"
                 ],
@@ -9368,7 +9639,7 @@
                 "summary": "OAuth 2.0 dynamic client registration endpoint",
                 "description": "Register a new OAuth client and obtain its credentials, following [RFC\n7591](https://datatracker.ietf.org/doc/html/rfc7591) (OAuth 2.0 Dynamic Client\nRegistration). Like [`POST /oauthtoken`](#post-oauthtoken), this is\na standards-based endpoint used when HotCRP acts as an OAuth/OpenID Connect\nidentity provider; it does not use HotCRP’s usual `{\"ok\": ...}` response\nenvelope. It is available only when the conference enables OAuth clients and\ndynamic registration; otherwise it returns `404`.\n\nThe request body is a JSON object (content type `application/json`). The only\nrequired member is `redirect_uris`, a non-empty array of redirect URI strings;\nevery URI is validated. Optional members include `client_name` (a\nhuman-readable name) and `scope` (a space-separated scope string). Registration\nsucceeds only when the request matches a dynamic-client template configured for\nthe conference (in particular, the requested `redirect_uris` must be permitted\nby that template).\n\nOn success the response has HTTP status `201` and a JSON body describing the\nnewly registered client: `client_id`, `client_secret`,\n`client_id_issued_at`, `client_secret_expires_at` (Unix timestamps),\nthe accepted `redirect_uris`, the supported `grant_types`\n(`authorization_code` and `refresh_token`), and the\n`token_endpoint_auth_method` (`client_secret_basic`). Use the returned\n`client_id` and `client_secret` with [`POST\n/oauthtoken`](#post-oauthtoken). On failure the response has a\n`4xx` status and a body of the form `{\"error\": \"invalid_request\"}` (other\nvalues include `invalid_redirect_uri` and `invalid_client_metadata`).\n\n\n",
                 "operationId": "oauthregister",
-                "x-order": 57,
+                "x-order": 59,
                 "tags": [
                     "Session"
                 ],
@@ -9384,7 +9655,7 @@
                 "summary": "OAuth 2.0 / OpenID Connect token endpoint",
                 "description": "Exchange an authorization grant for tokens, following [RFC\n6749](https://datatracker.ietf.org/doc/html/rfc6749). This is a standards-based\nOAuth/OpenID Connect token endpoint used when HotCRP acts as an identity\nprovider for a registered client application; it is not a general HotCRP API\ncall and does not use HotCRP’s usual `{\"ok\": ...}` response envelope.\n\nThe request is form-encoded. Send `grant_type=authorization_code` with the\n`code` returned from the authorization step (plus `redirect_uri` and, for\n[PKCE](https://datatracker.ietf.org/doc/html/rfc7636) clients, `code_verifier`), or\n`grant_type=refresh_token` with a `refresh_token`. The client authenticates\neither with HTTP Basic authentication (`Authorization: Basic`) or by sending\n`client_id` and `client_secret` as body parameters. An optional `scope`\nparameter narrows the requested scopes.\n\nOn success the response is a standard OAuth token object containing\n`access_token`, `token_type` (`Bearer`), `expires_in`, `refresh_token`,\n`scope`, and—when the `openid` scope was granted—an `id_token` JWT. On failure\nthe response carries an HTTP `4xx` status and a body of the form `{\"error\":\n\"invalid_grant\"}` (other values include `invalid_request`, `invalid_client`,\n`invalid_scope`, and `unsupported_grant_type`).\n",
                 "operationId": "oauthtoken",
-                "x-order": 58,
+                "x-order": 60,
                 "tags": [
                     "Session"
                 ],
@@ -9452,7 +9723,7 @@
                 "summary": "Report a client-side Javascript error",
                 "description": "Record a Javascript error encountered by the HotCRP front-end in the server\nerror log. This is a diagnostic endpoint used by HotCRP’s own client code; it\nmay be called by unauthenticated clients. It always returns `{\"ok\": true}`,\neven when the report is ignored.\n\nReports are filtered: errors that appear to originate in browser extensions, or\nthat come from known crawlers, are accepted but not logged.\n",
                 "operationId": "jserror",
-                "x-order": 59,
+                "x-order": 61,
                 "tags": [
                     "Session"
                 ],
@@ -9541,7 +9812,7 @@
                 "summary": "Report a Content Security Policy violation",
                 "description": "Receive a [Content Security\nPolicy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP) violation\nreport and append it to the server’s CSP report log. This endpoint is the\ntarget of a `report-to`/`report-uri` directive; it is called directly by the\nbrowser, may be unauthenticated, and is not intended for manual use.\n\nThe request body is JSON sent with content type `application/reports+json`,\n`application/csp-report`, or `application/json`; it may be a single report\nobject or an array of them. Reports attributed to browser extensions are\ndiscarded. A well-formed request returns `{\"ok\": true}`. A malformed body\nreturns a `400` error; if the report cannot be persisted (the log is missing,\nunwritable, or over quota) the response is a `5xx` error.\n",
                 "operationId": "cspreport",
-                "x-order": 60,
+                "x-order": 62,
                 "tags": [
                     "Session"
                 ],

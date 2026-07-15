@@ -267,6 +267,61 @@ class Review_API extends MessageSet {
         return $this->run_post_multi_json($jp);
     }
 
+    /** `DELETE /review` removes the review on `$prow` selected by `r` (an empty
+     * `r` means the caller's own review). Only administrators may delete reviews;
+     * `dry_run`, `if_vtag_match`, and `if_unmodified_since` behave as for `POST`.
+     * @return JsonResult */
+    private function run_delete(Qrequest $qreq, ?PaperInfo $prow) {
+        if (!$prow) {
+            return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
+        }
+        $this->set_post_param($qreq);
+        $this->prow = $prow;
+        $this->single = true;
+        $this->reset_item();
+
+        // only administrators may delete reviews
+        if (!$this->user->can_manage_reviews($prow)) {
+            return JsonResult::make_permission_error(null, "<0>Only administrators can delete reviews");
+        }
+
+        // resolve the target review; empty/`0` addresses the caller's own review
+        list($ok, $rrow) = $this->post_target(isset($qreq->r) ? (string) $qreq->r : "");
+        if ($ok && !$rrow) {
+            $rrow = $prow->review_by_user($this->user);
+            if (!$rrow) {
+                $this->status = 404;
+                $this->error_at("r", "<0>Review not found");
+                $ok = false;
+            }
+        }
+        if (!$ok) {
+            $this->execute_fail();
+            return $this->post_result();
+        }
+
+        // concurrency preconditions (as for POST)
+        $vtag_conflict = $this->if_vtag_match !== null
+            && $this->if_vtag_match !== $rrow->reviewTime;
+        $ius_conflict = $this->if_unmodified_since !== null
+            && $this->if_unmodified_since < $rrow->reviewModified;
+        $conflict = $vtag_conflict || $ius_conflict;
+        if ($conflict) {
+            $this->error_at($vtag_conflict ? "if_vtag_match" : "if_unmodified_since",
+                $this->conf->_("<5><strong>Edit conflict</strong>: The review was edited concurrently"));
+            $valid = false;
+        } else if ($this->dry_run) {
+            $valid = true;
+        } else {
+            $valid = $rrow->delete($this->user, ["no_rights" => true, "snapshot" => true]);
+        }
+
+        $this->status_list[] = new Review_API_Status($this->message_count(),
+            $valid, ["delete"], $conflict, $prow->paperId, $rrow->unparse_ordinal_id());
+        $this->reviews[] = null;
+        return $this->post_result();
+    }
+
     private function set_post_param(Qrequest $qreq) {
         $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
         $this->notify = friendly_boolean($qreq->notify) !== false;
@@ -624,6 +679,8 @@ class Review_API extends MessageSet {
                 } else {
                     $jr = self::run_get_multi($user, $qreq, $prow);
                 }
+            } else if ($qreq->method() === "DELETE") {
+                $jr = (new Review_API($user))->run_delete($qreq, $prow);
             } else {
                 $jr = (new Review_API($user))->run_post($qreq, $prow, $mode);
             }

@@ -1186,6 +1186,37 @@ class Comments_Tester {
         xassert_str_contains($jr->content["message_list"][0]->message, "at most one of `json` and `upload`");
     }
 
+    function test_comment_delete_method() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        // create a comment, then remove it with an HTTP DELETE
+        $qreq = TestQreq::post_json(["text" => "delete me", "visibility" => "rev", "topic" => "paper"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+
+        // dry-run delete reports the change without removing the comment
+        $j = call_api("comment", $this->u_chair, TestQreq::delete(["p" => 3, "c" => (string) $cid, "dry_run" => 1]), $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq($j->change_list, ["delete"]);
+        xassert(!!$paper3->fetch_comments("commentId={$cid}"));
+
+        // real delete
+        $j = call_api("comment", $this->u_chair, TestQreq::delete(["p" => 3, "c" => (string) $cid]), $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["delete"]);
+        xassert(!$paper3->fetch_comments("commentId={$cid}"));
+
+        // deleting again → not found
+        $jr = call_api_result("comment", $this->u_chair, TestQreq::delete(["p" => 3, "c" => (string) $cid]), $paper3);
+        xassert_eqq($jr->status, 404);
+
+        // a DELETE with no `c` names no comment and does not create one
+        $jr = call_api_result("comment", $this->u_chair, TestQreq::delete(["p" => 3]), $paper3);
+        xassert_eqq($jr->status, 404);
+    }
+
     // JSON `docs`: inline `content_base64`/`content` uploads, `docid` retains,
     // and an omitted `docs` key keeps the existing attachments.
     function test_comment_json_attachment() {

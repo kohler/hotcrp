@@ -1146,6 +1146,13 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return bool */
     function delete(Contact $actor, $extra = []) {
+        if ($extra["snapshot"] ?? false) {
+            $this->snapshot_fval_prop();
+            if (!$this->save_prop()) {
+                return false;
+            }
+            $this->commit_prop();
+        }
         if ($this->reviewId <= 0
             || $this->_save_prop_delete(null, self::SAVEF_NO_CHECK_HISTORY) <= 0) {
             return false;

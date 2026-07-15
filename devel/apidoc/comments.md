@@ -74,35 +74,6 @@ may not see it, an error is returned.
 * badge featured
 
 
-# get /comments
-
-> Retrieve multiple comments
-
-Retrieve every visible comment on the submissions matching a search.
-
-The search is specified in the `q` parameter (and other search parameters,
-such as `t`). All comments the caller may see, across all matching
-submissions, are returned as an array of [comment objects](#tag-comments) in
-the response field `comments`.
-
-As a shorthand for a single submission, supply its ID in `p` instead of `q`;
-this returns that submission’s visible comments. Supplying both `q` and `p` is
-an error.
-
-* param ?q search_string: The search expression.
-* param ?p pid: A single submission, as an alternative to `q`.
-* param ?t
-
-    * default viewable
-    * group Search modifiers
-* param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
-  from each returned comment, returning only metadata. Defaults to `true`.
-
-    * default true
-* response ?comments [comment]: The matching comment objects.
-* badge featured
-
-
 # post /{p}/comment
 
 > Create or modify comment
@@ -228,9 +199,66 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * badge featured
 
 
+# delete /{p}/comment
+
+> Delete comment
+
+Delete the comment on submission `p` selected by `c` (a numeric comment ID or a
+response selector; see [Identifying a comment](#tag-comments)). `c` must name an
+existing comment. This is equivalent to [`POST /{p}/comment`](#post-comment) with
+`delete=1`, and is subject to the same permission and [concurrency](#tag-comments)
+rules.
+
+* param c string: The comment to delete (a numeric comment ID or a response selector).
+* param ?response string: Response-round name, when selecting a named response.
+* param ?if_unmodified_since string: Reject the delete if the comment has been
+  modified since this time (a Unix timestamp, matching the comment’s
+  `modified_at`, or `0`).
+* param ?dry_run boolean: True checks the request but does not delete.
+* param ?notify boolean: False disables email notifications. Ignored unless the caller administers the submission.
+
+    * default true
+    * badge admin
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?+valid boolean: True if the delete was valid; for a non-dry-run request, it was also committed.
+* response ?+change_list [string]: Always `["delete"]`.
+* response ?conflict boolean: True when the delete was rejected by a concurrency check (see [Concurrency](#tag-comments)).
+* badge featured
+* badge featured
+
+
+# get /comments
+
+> Retrieve multiple comments
+
+Retrieve every visible comment on the submissions matching a search.
+
+The search is specified in the `q` parameter (and other search parameters,
+such as `t`). All comments the caller may see, across all matching
+submissions, are returned as an array of [comment objects](#tag-comments) in
+the response field `comments`.
+
+As a shorthand for a single submission, supply its ID in `p` instead of `q`;
+this returns that submission’s visible comments. Supplying both `q` and `p` is
+an error.
+
+* param ?q search_string: The search expression.
+* param ?p pid: A single submission, as an alternative to `q`.
+* param ?t
+
+    * default viewable
+    * group Search modifiers
+* param ?content boolean: Set to `false` to omit comment content (`text`, `docs`)
+  from each returned comment, returning only metadata. Defaults to `true`.
+
+    * default true
+* response ?comments [comment]: The matching comment objects.
+* badge featured
+
+
 # post /comments
 
-> Create, modify, or delete multiple comments
+> Create or modify multiple comments
 
 Create, modify, or delete comments on multiple submissions in one request.
 

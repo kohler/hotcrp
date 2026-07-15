@@ -76,6 +76,7 @@ not see it, a `403`.
 * param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
 * param ?forceShow
 * response review review: The requested [review object](#tag-reviews).
+* badge featured
 
 
 # post /review
@@ -170,6 +171,36 @@ test the input but make no changes to the database.
 
     * condition valid
     * condition !dry_run
+* badge featured
+
+
+# delete /{p}/review
+
+> Delete a review
+
+Delete the review on submission `p` selected by `r` (a numeric review ID or a
+display ordinal; an empty `r` addresses the caller’s own review). Only
+administrators may delete reviews.
+
+To test without deleting, supply `dry_run=1`. The edit-conflict preconditions
+`if_vtag_match` and `if_unmodified_since` behave as for [`POST /review`](#post-review).
+
+* param ?r rid: Review to delete: a numeric review ID or display ordinal, or
+  empty for the caller’s own review.
+* param ?dry_run boolean: True checks the request but does not delete.
+* param ?if_vtag_match integer: Reject the delete unless the review’s current
+  version tag equals this value.
+* param ?if_unmodified_since string: Reject the delete if the review has been
+  modified since this time (a Unix timestamp, or `0`).
+* param ?forceShow
+* response ?dry_run boolean: True for `dry_run` requests.
+* response ?+valid boolean: True if the delete was valid; for a non-dry-run request, it was also committed.
+* response ?+change_list [string]: Always `["delete"]`.
+* response ?conflict boolean: True when the delete was rejected by an
+  `if_vtag_match` or `if_unmodified_since` edit-conflict check.
+* response ?rid rid: The deleted review’s ID.
+* badge admin
+* badge featured
 
 
 # get /reviews
@@ -198,6 +229,7 @@ which submissions are searched). Supply at most one of them:
 * param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
 * param ?forceShow
 * response reviews [review]: Matching [review objects](#tag-reviews).
+* badge featured
 
 
 # post /reviews
@@ -266,6 +298,7 @@ particular, `if_vtag_match=0` requires that every saved review be newly created.
   [review object](#tag-reviews), or `null` for items that were not saved.
 
     * condition !dry_run
+* badge featured
 
 
 # get /{p}/reviewhistory

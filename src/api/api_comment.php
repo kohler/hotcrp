@@ -245,6 +245,30 @@ class Comment_API extends MessageSet {
         }
     }
 
+    /** `DELETE /{p}/comment` removes the comment on `$prow` selected by `c`,
+     * reusing the save path with a forced `delete`. The `c` parameter must name
+     * an existing comment. @return JsonResult */
+    private function run_delete(Qrequest $qreq, PaperInfo $prow) {
+        $this->prow = $prow;
+        $this->single = true;
+        $this->set_post_param($qreq);
+        $this->reset_item();
+        $crow = $this->post_target(null);
+        if ($crow && $crow->commentId <= 0) {
+            // `c` must name an existing comment, not create a new one
+            $this->status = 404;
+            $this->error_at("c", "<0>{$this->uccmttype} not found");
+            $crow = null;
+        }
+        if ($crow) {
+            $qreq->delete = "1";
+            $this->execute_save($this->req_from_qreq($qreq), $crow);
+        } else {
+            $this->execute_fail();
+        }
+        return $this->post_result();
+    }
+
     /** Save one comment from a plain form POST on `$prow`.
      * @return JsonResult */
     private function run_post_form_data(Qrequest $qreq, PaperInfo $prow) {
@@ -848,6 +872,8 @@ class Comment_API extends MessageSet {
                 } else {
                     $jr = $capi->run_get_multi($qreq, $prow);
                 }
+            } else if ($qreq->method() === "DELETE") {
+                $jr = $capi->run_delete($qreq, $prow);
             } else {
                 $jr = $capi->run_post($qreq, $prow, $mode);
             }

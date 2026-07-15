@@ -248,7 +248,7 @@ class Review_Page {
         } else if (!$this->user->can_manage_reviews($this->prow)) {
             return;
         }
-        if ($this->rrow->delete($this->user, ["no_rights" => true])) {
+        if ($this->rrow->delete($this->user, ["no_rights" => true, "snapshot" => true])) {
             $this->conf->success_msg("<0>Review deleted");
         }
         $this->qreq->redirect_self(["r" => null, "reviewId" => null]);
