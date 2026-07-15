@@ -82,6 +82,10 @@ class Review_API extends MessageSet {
     private $notify = true;
     /** @var bool */
     private $single = false;
+    /** @var ?int */
+    private $if_vtag_match;
+    /** @var ?int */
+    private $if_unmodified_since;
     /** @var ?string */
     private $qreq_r;
 
@@ -203,19 +207,18 @@ class Review_API extends MessageSet {
     }
 
 
-    /** @param 1|2|4 $mode
+    /** `POST /review` (M_ONE) addresses one review; `POST /reviews` (M_MULTI) is
+     * a cross-paper batch. The paper comes from the URL `p` or, for JSON/text,
+     * from the body (these endpoints are not `paper:true`, so an absent `p` is
+     * not rejected up front).
+     * @param 1|2|4 $mode
      * @return JsonResult */
     private function run_post(Qrequest $qreq, ?PaperInfo $prow, $mode) {
-        // POST /review addresses one review; the paper comes from the URL `p` or,
-        // for a JSON body, from the object's `pid` (this endpoint is not
-        // `paper:true`, so an absent `p` is not rejected up front)
-        if (($mode & DocumentLocator::M_ONE) === 0) {
-            return JsonResult::make_error(400, "<0>Batch review upload is not supported");
-        }
         // an explicit but unresolvable `p` is a hard error
         if (!$prow && isset($qreq->p)) {
             return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
         }
+        $one = ($mode & DocumentLocator::M_ONE) !== 0;
 
         $this->set_post_param($qreq);
         $this->qreq_r = isset($qreq->r) ? (string) $qreq->r : null;
@@ -228,7 +231,7 @@ class Review_API extends MessageSet {
 
         // a text/plain body is a raw uploaded offline review form
         if ($bct === Mimetype::TXT_TYPE) {
-            if (!$prow) {
+            if ($one && !$prow) {
                 return JsonResult::make_missing_error("p");
             }
             $content = $updoc ? (string) $updoc->content() : (string) $qreq->body();
@@ -242,19 +245,42 @@ class Review_API extends MessageSet {
             && Mimetype::is_form($bct)
             && !isset($qreq->json)
             && !isset($qreq->upload)) {
+            if (!$one) {
+                return JsonResult::make_error(400, "<0>Unexpected content type");
+            }
             if (!$prow) {
                 return JsonResult::make_missing_error("p");
             }
             return $this->run_post_form_data($qreq, $prow);
         }
 
-        list($jp, $mode) = (new DocumentLocator)->parse_json_request($qreq, DocumentLocator::M_ONE);
-        return $this->run_post_single_json($prow, $jp);
+        // a JSON object is one review; a JSON array is a batch (reviews have no
+        // search-match mode)
+        list($jp, $jmode) = $docloc->parse_json_request($qreq, $mode & ~DocumentLocator::M_MATCH);
+        if ($jmode === DocumentLocator::M_ONE) {
+            return $this->run_post_single_json($prow, $jp);
+        }
+        return $this->run_post_multi_json($jp);
     }
 
     private function set_post_param(Qrequest $qreq) {
         $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
         $this->notify = friendly_boolean($qreq->notify) !== false;
+        // batch-wide (and JSON single) concurrency preconditions; a review
+        // object’s own `if_vtag_match`/`if_unmodified_since` overrides these per
+        // item, as does a `new` locator (which forces `if_vtag_match=0`)
+        if (isset($qreq->if_vtag_match)) {
+            if (($v = stoi($qreq->if_vtag_match)) === null) {
+                JsonResult::make_parameter_error("if_vtag_match")->complete();
+            }
+            $this->if_vtag_match = $v;
+        }
+        if (isset($qreq->if_unmodified_since)) {
+            if (($t = Paper_API::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf)) === false) {
+                JsonResult::make_parameter_error("if_unmodified_since")->complete();
+            }
+            $this->if_unmodified_since = $t;
+        }
     }
 
     /** @return ReviewValues */
@@ -280,21 +306,25 @@ class Review_API extends MessageSet {
     }
 
     /** Save reviews from an uploaded offline review form. `parse_text` may yield
-     * several reviews (one per `==+== Paper` section); those for `$prow` are
-     * saved and any for other submissions are ignored, mirroring the offline
-     * upload page. The reviewer is taken from each form, so `prepare_save`'s
-     * permission checks still gate who may be edited.
+     * several reviews (one per `==+== Paper` section). With a `$prow` (single
+     * endpoint) only its reviews are saved and the rest are ignored; with no
+     * `$prow` (batch endpoint) every review is saved on the paper it names. The
+     * reviewer is taken from each form, so `prepare_save`'s permission checks
+     * still gate who may be edited.
+     * @param ?PaperInfo $prow
      * @param string $content
      * @param ?string $filename
      * @return JsonResult */
-    private function run_post_text(Qrequest $qreq, PaperInfo $prow, $content, $filename) {
+    private function run_post_text(Qrequest $qreq, ?PaperInfo $prow, $content, $filename) {
+        $this->prow = $prow;
         $rv = (new ReviewValues($this->conf))->set_text(convert_to_utf8($content), $filename);
         $override = friendly_boolean($qreq->override) ?? false;
         $nmatch = $nother = 0;
         while ($rv->set_req_override($override)->parse_text()) {
-            if ($rv->req_pid() === $prow->paperId) {
+            if ($prow === null || $rv->req_pid() === $prow->paperId) {
                 ++$nmatch;
                 $this->reset_item();
+                $this->apply_precondition($rv, null);
                 $this->execute_save($rv, null);
             } else {
                 // ignore reviews for other submissions, dropping their messages
@@ -307,18 +337,41 @@ class Review_API extends MessageSet {
         foreach ($rv->message_list() as $mi) {
             $this->append_item($mi);
         }
-        // a single matching review reads as a single result; several do not
-        $this->single = $nmatch <= 1;
+        // the single endpoint collapses to one item; the batch endpoint uses the
+        // list shape
+        $this->single = $prow !== null && $nmatch <= 1;
         if ($nmatch === 0) {
             // record a failure item so the result reports `ok:false`
-            if ($nother === 0) {
-                $this->error_at(null, "<0>Uploaded file had no valid review forms");
-            } else {
+            if ($prow !== null && $nother > 0) {
                 $this->error_at(null, $this->conf->_("<0>Uploaded form was not for this {submission}"));
+            } else {
+                $this->error_at(null, "<0>Uploaded file had no valid review forms");
             }
             $this->execute_fail();
-        } else if ($nother > 0) {
+        } else if ($prow !== null && $nother > 0) {
             $this->warning_at(null, $this->conf->_("<0>Reviews for other {submissions} ignored"));
+        }
+        return $this->post_result();
+    }
+
+    /** Save a batch of review objects, best-effort per item; each item names its
+     * own paper (`pid`) and review (`rid`), resolved by `prepare_save`.
+     * @param list<mixed> $jps
+     * @return JsonResult */
+    private function run_post_multi_json($jps) {
+        $this->single = false;
+        foreach ($jps as $jp) {
+            $this->prow = null;
+            $this->reset_item();
+            if (!is_object($jp)) {
+                $this->error_at(null, "<0>Expected object");
+                $this->execute_fail();
+                continue;
+            }
+            $rv = $this->make_rv();
+            $rv->parse_json($jp);
+            $this->apply_precondition($rv, $jp->rid ?? null);
+            $this->execute_save($rv, null);
         }
         return $this->post_result();
     }
@@ -348,7 +401,7 @@ class Review_API extends MessageSet {
         if (!$ok) {
             $this->execute_fail();
         } else {
-            $this->apply_require_new($rv, $jp->rid ?? $this->qreq_r);
+            $this->apply_precondition($rv, $jp->rid ?? $this->qreq_r);
             $this->execute_save($rv, $rrow);
         }
         return $this->post_result();
@@ -375,8 +428,29 @@ class Review_API extends MessageSet {
             $this->execute_fail();
             return;
         }
-        $this->apply_require_new($rv, $r);
+        $this->apply_precondition($rv, $r);
         $this->execute_save($rv, $rrow);
+    }
+
+    /** Resolve the item's concurrency precondition. The request's own
+     * `if_vtag_match`/`if_unmodified_since` win; otherwise a `new` locator forces
+     * `if_vtag_match=0`; otherwise the batch-wide default (from the request's
+     * `if_vtag_match`/`if_unmodified_since` parameters), if any, applies.
+     * @param ReviewValues $rv
+     * @param mixed $r */
+    private function apply_precondition($rv, $r) {
+        $this->apply_require_new($rv, $r);
+        // apply the batch-wide default only if the item set no precondition of
+        // its own (and `new` did not force `if_vtag_match=0` above)
+        if (!isset($rv->req["if_vtag_match"])
+            && !isset($rv->req["if_unmodified_since"])) {
+            if ($this->if_vtag_match !== null) {
+                $rv->req["if_vtag_match"] = $this->if_vtag_match;
+            }
+            if ($this->if_unmodified_since !== null) {
+                $rv->req["if_unmodified_since"] = $this->if_unmodified_since;
+            }
+        }
     }
 
     /** A locator of `new` requires that the review not already exist. Enforce it

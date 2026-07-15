@@ -286,6 +286,45 @@ class ReviewAPI_Tester {
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
 
+    function test_post_text_upload_capability() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $old_docstore = $this->conf->opt("docstore");
+        $tmpdir = tempdir();
+        $this->conf->set_opt("docstore", "{$tmpdir}%h%x");
+        $this->conf->refresh_settings();
+        xassert(!!$this->conf->docstore());
+
+        // upload the offline review form as a text/plain file
+        $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
+        $modified = str_replace("2. Weak reject", "3. Weak accept", $text);
+        $qreq = (new Qrequest("POST", [
+                "start" => 1, "temp" => 1, "size" => strlen($modified),
+                "filename" => "review.txt", "mimetype" => "text/plain",
+                "offset" => 0, "finish" => 1
+            ]))->approve_token()->set_file_content("blob", $modified);
+        $j = call_api("=upload", $this->u_diot, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $token = $j->token;
+        xassert(is_string($token));
+
+        // POST /review referencing the uploaded text form via `upload`. The
+        // body carries a non-form content type, which the `upload` overrides.
+        $qreq = (new Qrequest("POST", ["p" => 18, "upload" => $token]))
+            ->approve_token()->set_body("ignored body", "application/json");
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->review->OveMer, 3);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
+        // restore
+        call_api("=review", $this->u_diot, ["r" => "0", "OveMer" => "2", "ready" => "1"], $prow);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+
+        $this->conf->set_opt("docstore", $old_docstore);
+        $this->conf->refresh_settings();
+    }
+
     function test_post_text_wrong_paper() {
         $prow = $this->conf->checked_paper_by_id(18);
         $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
@@ -315,6 +354,125 @@ class ReviewAPI_Tester {
         $prow->load_reviews(true);
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
         xassert_eqq($prow->review_by_user($this->u_estrin)->reviewTime, $etime0);
+    }
+
+    function test_post_multi_json() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $drow = $prow->review_by_user($this->u_diot);
+        // a dry-run batch: one valid edit (chair editing diot's review) and one
+        // item naming a nonexistent paper
+        $qreq = TestQreq::post_json([
+            (object) ["object" => "review", "pid" => 18, "rid" => $drow->reviewId, "OveMer" => 3],
+            (object) ["object" => "review", "pid" => 99999, "OveMer" => 1]
+        ], ["dry_run" => 1]);
+        $j = call_api("reviews", $this->u_chair, $qreq);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run, true);
+        xassert(!isset($j->review));
+        xassert_eqq(count($j->status_list), 2);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[0]->change_list, ["s01"]);
+        xassert_eqq($j->status_list[0]->pid, 18);
+        xassert_eqq($j->status_list[1]->valid, false);
+        // dry run: diot's review is unchanged
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_multi_json_commit() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        // a committed batch of one item (diot editing his own review)
+        $qreq = TestQreq::post_json([
+            (object) ["object" => "review", "pid" => 18, "OveMer" => 3]
+        ]);
+        $j = call_api("reviews", $this->u_diot, $qreq);
+        xassert_eqq($j->ok, true);
+        xassert(!isset($j->single));
+        xassert_eqq(count($j->status_list), 1);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq(count($j->reviews), 1);
+        xassert_eqq($j->reviews[0]->OveMer, 3);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
+        // restore
+        call_api("reviews", $this->u_diot, TestQreq::post_json([(object) ["object" => "review", "pid" => 18, "OveMer" => 2]]));
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_text_multi() {
+        // an offline review file uploaded to /reviews resolves each review's own
+        // paper (no URL `p`); dry-run so nothing persists
+        $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
+        $modified = str_replace("2. Weak reject", "3. Weak accept", $text);
+        $qreq = TestQreq::post(["dry_run" => 1])->set_body($modified, "text/plain; charset=utf-8");
+        $j = call_api("reviews", $this->u_diot, $qreq);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq(count($j->status_list), 1);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[0]->pid, 18);
+        xassert(in_array("s01", $j->status_list[0]->change_list, true));
+        $prow = $this->conf->checked_paper_by_id(18);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_batch_if_unmodified_since() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $drow = $prow->checked_review_by_user($this->u_diot);
+        // a batch-wide `if_unmodified_since` guards every item; a stale value
+        // conflicts
+        $qreq = TestQreq::post_json([
+            (object) ["object" => "review", "pid" => 18, "rid" => $drow->reviewId, "OveMer" => 3]
+        ], ["if_unmodified_since" => (string) ($drow->reviewModified - 100)]);
+        $j = call_api("reviews", $this->u_chair, $qreq);
+        xassert_eqq($j->ok, false);
+        xassert_eqq($j->status_list[0]->valid, false);
+        xassert_eqq($j->status_list[0]->conflict, true);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+
+        // a review object overrides the batch default with its own precondition
+        $qreq = TestQreq::post_json([
+            (object) ["object" => "review", "pid" => 18, "rid" => $drow->reviewId,
+                      "OveMer" => 3, "if_unmodified_since" => $drow->reviewModified]
+        ], ["if_unmodified_since" => (string) ($drow->reviewModified - 100), "dry_run" => 1]);
+        $j = call_api("reviews", $this->u_chair, $qreq);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[0]->conflict ?? false, false);
+    }
+
+    function test_post_batch_if_vtag_match_new() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $drow = $prow->checked_review_by_user($this->u_diot);
+        // a batch-wide `if_vtag_match=0` requires every review be new; diot’s
+        // review already exists, so the item conflicts
+        $qreq = TestQreq::post_json([
+            (object) ["object" => "review", "pid" => 18, "rid" => $drow->reviewId, "OveMer" => 3]
+        ], ["if_vtag_match" => "0"]);
+        $j = call_api("reviews", $this->u_chair, $qreq);
+        xassert_eqq($j->ok, false);
+        xassert_eqq($j->status_list[0]->valid, false);
+        xassert_eqq($j->status_list[0]->conflict, true);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_single_json_if_unmodified_since() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $drow = $prow->checked_review_by_user($this->u_diot);
+        // a JSON single POST honors the query `if_unmodified_since` (previously
+        // read only for form-encoded submissions)
+        $qreq = TestQreq::post_json(["object" => "review", "OveMer" => 3],
+            ["if_unmodified_since" => (string) ($drow->reviewModified - 100)]);
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_eqq($j->conflict, true);
+        xassert_eqq($j->valid, false);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
 
     function test_fetch() {
