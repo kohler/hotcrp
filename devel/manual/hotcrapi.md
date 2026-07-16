@@ -159,6 +159,39 @@ To delete a comment, run `php batch/hotcrapi.php comment delete PID -c COMMENT`.
 Error messages and warnings are written to standard error.
 
 
+## `review`
+
+The `review` subcommand can fetch, modify, or delete reviews on a site. Its shape
+mirrors `comment`.
+
+To fetch the reviews on a single submission, run `php batch/hotcrapi.php review
+PID`, where `PID` is the relevant submission ID; an array of JSON reviews is
+written to standard output. Add `-r REVIEW` to fetch one review, where `REVIEW`
+is a review ID or a display ordinal such as `A`; its JSON representation is
+written to standard output.
+
+To fetch reviews across multiple submissions, run `php batch/hotcrapi.php review
+-q SEARCH`, where `SEARCH` is a submission search query.
+
+To modify a single review, run `php batch/hotcrapi.php review save PID < FILE`.
+The modification is specified as a JSON review object, or as a plain-text offline
+review form; `FILE` can contain either. Add `-r REVIEW` to target an existing
+review (`-r new` requires a fresh review; otherwise, with no `-r`, your own
+review is created or updated).
+
+To modify several reviews at once, supply a JSON *array* of review objects, or an
+offline form covering several submissions, and omit `PID`; each object identifies
+its own submission with `pid`, so a batch may span submissions.
+
+The saved reviews are written to standard output, and results are reported one
+review per line.
+
+To delete a review, run `php batch/hotcrapi.php review delete PID -r REVIEW`. Only
+administrators may delete reviews.
+
+Error messages and warnings are written to standard error.
+
+
 ## `assign`
 
 The `assign` subcommand performs assignments. Given a bulk-assignment

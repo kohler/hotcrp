@@ -731,6 +731,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         Document_CLIBatch::register($hcli);
         Search_CLIBatch::register($hcli);
         Comment_CLIBatch::register($hcli);
+        Review_CLIBatch::register($hcli);
         Assign_CLIBatch::register($hcli);
         Autoassign_CLIBatch::register($hcli);
         Settings_CLIBatch::register($hcli);

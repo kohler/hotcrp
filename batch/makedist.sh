@@ -109,6 +109,7 @@ batch/cli/cli_document.php
 batch/cli/cli_job.php
 batch/cli/cli_paper.php
 batch/cli/cli_parameterhelp.php
+batch/cli/cli_review.php
 batch/cli/cli_search.php
 batch/cli/cli_settings.php
 batch/cli/cli_test.php
