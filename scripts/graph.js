@@ -714,25 +714,27 @@ function time_axisinfo() {
         const d = new Date(value * 1000);
         if (d.getHours() || d.getMinutes()) {
             return strftime("%Y-%m-%dT%R", d);
-        } else {
-            return strftime("%Y-%m-%d", d);
         }
+        return strftime("%Y-%m-%d", d);
     }
     return {
         make_axis: function (side, args, scale) {
             const ax = basic_make_axis.call(this, side, args, scale),
-                domain = scale.domain();
+                domain = scale.domain(),
+                range = scale.range(),
+                // "2026-01-10" is ~70px wide; budget that per label so ticks don't overlap
+                count = Math.max(2, Math.floor(Math.abs(range[1] - range[0]) / 72));
             if (domain[0] < 1000000000 || domain[1] < 1000000000) {
                 const ddomain = [domain[0] / 86400, domain[1] / 86400],
-                    nscale = d3.scaleLinear().domain(ddomain).range(scale.range());
-                ax.tickValues(nscale.ticks().map(function (value) {
+                    nscale = d3.scaleLinear().domain(ddomain).range(range);
+                ax.tickValues(nscale.ticks(count).map(function (value) {
                     return value * 86400;
                 }));
                 this.tickLength = Math.ceil(Math.log10(domain[1]));
             } else {
                 const ddomain = [new Date(domain[0] * 1000), new Date(domain[1] * 1000)],
-                    nscale = d3.scaleTime().domain(ddomain).range(scale.range());
-                ax.tickValues(nscale.ticks().map(function (value) {
+                    nscale = d3.scaleTime().domain(ddomain).range(range);
+                ax.tickValues(nscale.ticks(count).map(function (value) {
                     return value.getTime() / 1000;
                 }));
                 this.tickLength = 10;
@@ -1967,9 +1969,8 @@ function get_max_tick_width(axis) {
         if (this.getBoundingClientRect) {
             const r = this.getBoundingClientRect();
             return r.right - r.left;
-        } else {
-            return $(this).width();
         }
+        return $(this).width();
     }));
 }
 
@@ -1978,9 +1979,8 @@ function get_sample_tick_height(axis) {
         if (this.getBoundingClientRect) {
             const r = this.getBoundingClientRect();
             return r.bottom - r.top;
-        } else {
-            return $(this).height();
         }
+        return $(this).height();
     }), 0.5);
 }
 
