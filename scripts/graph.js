@@ -722,7 +722,7 @@ function time_axisinfo() {
         let count = undefined;
         while (true) {
             const ticks = nscale.ticks(count);
-            if (ticks.length <= maxticks) {
+            if (ticks.length <= maxticks || count === 1) {
                 return ticks;
             }
             count = (count || maxticks) - 1;
