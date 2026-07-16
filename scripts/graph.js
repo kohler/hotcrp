@@ -717,24 +717,34 @@ function time_axisinfo() {
         }
         return strftime("%Y-%m-%d", d);
     }
+    function fit_ticks(nscale, is_duration, range) {
+        const maxticks = Math.max(2, Math.floor(Math.abs(range[1] - range[0]) / (is_duration ? 24 : 72)));
+        let count = undefined;
+        while (true) {
+            const ticks = nscale.ticks(count);
+            if (ticks.length <= maxticks) {
+                return ticks;
+            }
+            count = (count || maxticks) - 1;
+        }
+    }
     return {
         make_axis: function (side, args, scale) {
             const ax = basic_make_axis.call(this, side, args, scale),
                 domain = scale.domain(),
-                range = scale.range(),
-                // "2026-01-10" is ~70px wide; budget that per label so ticks don't overlap
-                count = Math.max(2, Math.floor(Math.abs(range[1] - range[0]) / 72));
-            if (domain[0] < 1000000000 || domain[1] < 1000000000) {
+                is_duration = Math.min(domain[0], domain[1]) < 1000000000,
+                range = scale.range();
+            if (is_duration) {
                 const ddomain = [domain[0] / 86400, domain[1] / 86400],
                     nscale = d3.scaleLinear().domain(ddomain).range(range);
-                ax.tickValues(nscale.ticks(count).map(function (value) {
+                ax.tickValues(fit_ticks(nscale, is_duration, range).map(function (value) {
                     return value * 86400;
                 }));
                 this.tickLength = Math.ceil(Math.log10(domain[1]));
             } else {
                 const ddomain = [new Date(domain[0] * 1000), new Date(domain[1] * 1000)],
                     nscale = d3.scaleTime().domain(ddomain).range(range);
-                ax.tickValues(nscale.ticks(count).map(function (value) {
+                ax.tickValues(fit_ticks(nscale, is_duration, range).map(function (value) {
                     return value.getTime() / 1000;
                 }));
                 this.tickLength = 10;
