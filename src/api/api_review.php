@@ -138,8 +138,7 @@ class Review_API extends MessageSet {
         $fr = $user->perm_view_review($prow, $rrow);
         if (!$rrow || $fr) {
             $fr = $fr ?? $prow->failure_reason(["reviewNonexistent" => true]);
-            $status = isset($fr["reviewNonexistent"]) ? 404 : 403;
-            return new JsonResult($status, [
+            return new JsonResult($fr->response_code(), [
                 "ok" => false, "message_list" => $fr->message_list(null, 2)
             ]);
         }
@@ -552,6 +551,13 @@ class Review_API extends MessageSet {
         if (!$rrow) {
             $this->status = 404;
             $this->error_at("r", "<0>Review not found");
+            return [false, null];
+        }
+        // an unviewable review the caller may not know exists reads as
+        // `reviewNonexistent` (404), so this never leaks its existence
+        if (($fr = $this->user->perm_view_review($this->prow, $rrow))) {
+            $this->status = $fr->response_code();
+            $fr->append_to($this, "r", MessageSet::ERROR);
             return [false, null];
         }
         return [true, $rrow];

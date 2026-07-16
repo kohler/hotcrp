@@ -209,21 +209,52 @@ class ReviewAPI_Tester {
         $erow = $prow->review_by_user($this->u_estrin);
         xassert(!!$erow);
         $etime = $erow->reviewTime;
-        // diot is a PC reviewer, not an administrator: he may not edit estrin's
-        // review, whether addressed by review ID through the URL `r`...
+        // diot is a PC reviewer, not an administrator, and may not edit estrin's
+        // review. diot can see estrin is assigned, so the error names a specific
+        // reason (the review is not yet visible) rather than hiding its
+        // existence — whether addressed by review ID through the URL `r`...
         $j = call_api("=review", $this->u_diot, ["r" => (string) $erow->reviewId, "OveMer" => "1", "ready" => "1"], $prow);
         xassert_eqq($j->ok, false);
         xassert_eqq($j->valid, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "permission"));
+        xassert(str_contains(json_encode($j->message_list ?? []), "not yet ready"));
         // ...or by `rid` in a JSON body (which prepare_save resolves)
         $qreq = TestQreq::post_json(["object" => "review", "rid" => $erow->reviewId, "OveMer" => 1]);
         $j = call_api("review", $this->u_diot, $qreq, $prow);
         xassert_eqq($j->ok, false);
         xassert_eqq($j->valid, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "permission"));
+        xassert(str_contains(json_encode($j->message_list ?? []), "not yet ready"));
         // estrin's review is untouched
         $prow->load_reviews(true);
         xassert_eqq($prow->review_by_user($this->u_estrin)->reviewTime, $etime);
+    }
+
+    function test_review_hidden_from_author() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $rrow = $prow->checked_review_by_user($this->u_diot); // diot's submitted review 18A
+        // an author of #18 can view the submission but cannot see its review
+        // assignments (reviews are not released to authors here)
+        $author = $this->conf->checked_user_by_email("cheshire@cs.stanford.edu");
+        xassert($author->can_view_paper($prow));
+        xassert(!$author->can_view_review_assignment($prow, $rrow));
+        // so the review's existence is hidden as a 404 “not found”,
+        // indistinguishable from a nonexistent review id...
+        $jr = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => (string) $rrow->reviewId]));
+        xassert_eqq($jr->status, 404);
+        xassert(str_contains(json_encode($jr->content["message_list"] ?? []), "not found"));
+        $jr = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => "99999"]));
+        xassert_eqq($jr->status, 404);
+        xassert(str_contains(json_encode($jr->content["message_list"] ?? []), "not found"));
+        // ...on POST too (attempting to edit it by `r`)
+        $jr = call_api_result("=review", $author, ["r" => (string) $rrow->reviewId, "OveMer" => "1", "ready" => "1"], $prow);
+        xassert_eqq($jr->status, 404);
+        xassert(str_contains(json_encode($jr->content["message_list"] ?? []), "not found"));
+        // an administrator can still fetch the review
+        $j = call_api("review", $this->u_chair, TestQreq::get(["p" => 18, "r" => (string) $rrow->reviewId]));
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->review->object, "review");
+        // diot's review is untouched
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
 
     function test_post_review_id_from_other_paper() {

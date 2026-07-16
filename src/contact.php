@@ -4699,6 +4699,11 @@ class Contact implements JsonSerializable {
         if ($this->can_view_review($prow, $rrow, $viewscore)) {
             return null;
         }
+        if (!$this->can_view_review_assignment($prow, $rrow)) {
+            // the caller may not even learn this review exists: report it as
+            // nonexistent rather than leaking its existence via a specific reason
+            return $prow->failure_reason(["reviewNonexistent" => true]);
+        }
         $rrowSubmitted = !$rrow || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();

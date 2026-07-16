@@ -675,6 +675,11 @@ class ReviewValues extends MessageSet {
                 } else if ($rrow && $rrow->reviewId !== $ridrow->reviewId) {
                     $this->rvmsg(self::ERROR, "rid", "<0>Review ID does not match");
                     return false;
+                } else if (($fr = $user->perm_view_review($prow, $ridrow))) {
+                    // an unviewable review the caller may not know exists reads
+                    // as `reviewNonexistent` (mirrors the URL `r` path)
+                    $fr->append_to($this, "rid", self::ERROR);
+                    return false;
                 }
                 $rrow = $rrow ?? $ridrow;
             }
