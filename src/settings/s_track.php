@@ -174,7 +174,7 @@ class Track_SettingParser extends SettingParser {
         if ($si->name === "track") {
             $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("tracks");
             $m = [];
-            foreach ($sv->conf->track_tags() as $tag) {
+            foreach ($sv->conf->tags()->sort_array($sv->conf->track_tags()) as $tag) {
                 $m[] = new Track_Setting($sv->conf->track($tag),
                                          $this->settings_json->{$tag} ?? null);
             }
