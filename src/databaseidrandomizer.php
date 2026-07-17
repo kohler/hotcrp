@@ -95,8 +95,10 @@ class DatabaseIDRandomizer_Type {
      * @return Dbl_Result */
     function insert($fields, $factor = null) {
         $id = $fields[$this->id_column] ?? null;
+        $id_random = $id === null && $this->random;
+        $retries = 0;
         while (true) {
-            if ($id === null && $this->random) {
+            if ($id_random) {
                 $id = $this->available_id($factor);
             }
             if ($id === null) {
@@ -106,13 +108,17 @@ class DatabaseIDRandomizer_Type {
                 $fields[$this->id_column] = $id;
                 $result = $this->conf->qe("insert into {$this->table} (" . join(",", array_keys($fields)) . ") values ?v on duplicate key update {$this->id_column}={$this->id_column}", [array_values($fields)]);
             }
-            if ($result->affected_rows > 0) {
-                if (!$result->insert_id) {
-                    $result->insert_id = $id;
-                }
-                return $result;
+            if (!$result->is_error()
+                && $result->affected_rows === 0
+                && $id_random
+                && $retries < 12) {
+                ++$retries;
+                continue;
             }
-            $result->close();
+            if ($result->affected_rows > 0 && !$result->insert_id) {
+                $result->insert_id = $id;
+            }
+            return $result;
         }
     }
 

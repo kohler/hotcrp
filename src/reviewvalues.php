@@ -1260,7 +1260,6 @@ class ReviewValues extends MessageSet {
         $newstatus = $this->stage_newstatus;
         $newsubmit = $newstatus >= ReviewInfo::RS_COMPLETED
             && $oldstatus < ReviewInfo::RS_COMPLETED;
-        $usedReviewToken = $user->active_review_token_for($prow, $rrow);
 
         // actually affect database (all properties, including any review
         // ordinal, were staged by `_apply_req`)
@@ -1375,7 +1374,8 @@ class ReviewValues extends MessageSet {
         }
 
         // log updates -- but not if review token is used
-        if (!$usedReviewToken && $diffinfo->is_viewable()) {
+        if ($diffinfo->is_viewable()
+            && !$user->active_review_token_for($prow, $rrow)) {
             $user->log_activity_for($rrow->contactId, $this->_log_message($rrow, $oldstatus, $newstatus, $diffinfo), $prow);
         }
 
