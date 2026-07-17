@@ -955,7 +955,7 @@ class ReviewValues extends MessageSet {
             $fdiff = $fval !== $old_fval
                 && (!is_string($fval) || $fval !== cleannl($old_fval ?? ""));
             if ($fdiff || !$rrow->reviewId) {
-                $rrow->set_fval_prop($f, $fval, $fdiff);
+                $rrow->set_fval_prop($f, $fval);
             }
             if ($exists) {
                 $any_fdiff = $any_fdiff || $fdiff;

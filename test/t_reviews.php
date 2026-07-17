@@ -702,8 +702,8 @@ class Reviews_Tester {
         xassert($tf->check_and_save($user_diot, $paper18));
 
         $rrow18d = fresh_review($paper18, $user_diot);
-        $rrow18d->set_fval_prop($conf->find_review_field("ovemer"), 3, true);
-        $rrow18d->set_fval_prop($conf->find_review_field("papsum"), "There definitely is a summary in this position.", true);
+        $rrow18d->set_fval_prop($conf->find_review_field("ovemer"), 3);
+        $rrow18d->set_fval_prop($conf->find_review_field("papsum"), "There definitely is a summary in this position.");
         $rd = $rrow18d->prop_diff();
         xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch(0)),
                     '{"s01":2,"t01":"No summary\\n"}');
@@ -737,7 +737,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $rrow18d2 = clone $rrow18d;
 
         $gettysburg2 = str_replace("by the people", "near the people", $gettysburg);
-        $rrow18d->set_fval_prop($conf->find_review_field("papsum"), $gettysburg2, true);
+        $rrow18d->set_fval_prop($conf->find_review_field("papsum"), $gettysburg2);
         $rd = $rrow18d->prop_diff();
 
         xassert_eqq($rrow18d2->fidval("t01"), $gettysburg);

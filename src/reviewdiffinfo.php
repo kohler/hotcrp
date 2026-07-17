@@ -149,7 +149,7 @@ class ReviewDiffInfo {
             }
         }
         foreach ($this->_fields as $i => $f) {
-            $rrow->set_fval_prop($f, $this->rrow->finfoval($f), true);
+            $rrow->set_fval_prop($f, $this->rrow->finfoval($f));
         }
     }
 

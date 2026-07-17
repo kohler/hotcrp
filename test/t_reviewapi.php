@@ -582,6 +582,44 @@ class ReviewAPI_Tester {
         xassert_eqq($jr->status, 404);
     }
 
+    /** @param int $cid
+     * @return array<string,?string> */
+    private function paper18_review_row($cid) {
+        $obj = Dbl::fetch_first_object($this->conf->dblink,
+            "select * from PaperReview where paperId=18 and contactId=?", $cid);
+        return $obj ? (array) $obj : [];
+    }
+
+    function test_create_empty_review_matches_assignment() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $var = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+        $cid = $var->contactId;
+        xassert(!$prow->review_by_user($var));
+
+        // a manager creates an empty (draft) review for a PC member via
+        // POST /review with `r=new` and no field values
+        $qreq = TestQreq::post_json(["object" => "review", "email" => $var->email], ["r" => "new"]);
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        $rev_row = $this->paper18_review_row($cid);
+        xassert_eqq($rev_row["reviewType"], (string) REVIEW_PC);
+        $this->conf->qe("delete from PaperReview where paperId=18 and contactId=?", $cid);
+
+        // creating the same review via POST /assign (optional PC review) leaves
+        // identical database state, save for the unique reviewId and the random
+        // reviewTime version tag
+        $qreq = TestQreq::post(["assignments" => "paper,action,email\n18,pcreview,{$var->email}"]);
+        $j = call_api("assign", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        $assign_row = $this->paper18_review_row($cid);
+        xassert_eqq($assign_row["reviewType"], (string) REVIEW_PC);
+        $this->conf->qe("delete from PaperReview where paperId=18 and contactId=?", $cid);
+
+        unset($rev_row["reviewId"], $rev_row["reviewTime"]);
+        unset($assign_row["reviewId"], $assign_row["reviewTime"]);
+        xassert_eqq($rev_row, $assign_row);
+    }
+
     function test_fetch() {
         $qreq = TestQreq::get(["p" => 18, "r" => $this->r18a_id]);
         $jr = call_api("review", $this->u_diot, $qreq);

@@ -292,17 +292,17 @@ class ReviewInfo implements JsonSerializable {
         $rrow->reviewAuthorNotified = 0;
         $rrow->reviewEditVersion = 0;
         $rrow->reviewWordCount = null;
-        $rrow->s01 = 0;
-        $rrow->s02 = 0;
-        $rrow->s03 = 0;
-        $rrow->s04 = 0;
-        $rrow->s05 = 0;
-        $rrow->s06 = 0;
-        $rrow->s07 = 0;
-        $rrow->s08 = 0;
-        $rrow->s09 = 0;
-        $rrow->s10 = 0;
-        $rrow->s11 = 0;
+        $rrow->s01 = "0";
+        $rrow->s02 = "0";
+        $rrow->s03 = "0";
+        $rrow->s04 = "0";
+        $rrow->s05 = "0";
+        $rrow->s06 = "0";
+        $rrow->s07 = "0";
+        $rrow->s08 = "0";
+        $rrow->s09 = "0";
+        $rrow->s10 = "0";
+        $rrow->s11 = "0";
         $rrow->tfields = null;
         $rrow->sfields = null;
         $rrow->reviewStatus = self::RS_EMPTY;
@@ -789,9 +789,8 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @param ReviewField $f
-     * @param null|int|string $v
-     * @param bool $diff */
-    function set_fval_prop($f, $v, $diff) {
+     * @param null|int|string $v */
+    function set_fval_prop($f, $v) {
         $diff = $this->prop_diff();
         $changed = false;
         if ($f->main_storage) {
