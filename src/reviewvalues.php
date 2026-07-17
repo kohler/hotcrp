@@ -1224,7 +1224,8 @@ class ReviewValues extends MessageSet {
                 && ($newsubmit || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)
                 && ($diffinfo->view_score() >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
-            $result = $this->conf->qe_raw("lock tables PaperReview write, PaperReviewHistory write");
+            $result = $this->conf->qe_raw("lock tables PaperReview write, PaperReviewHistory write"
+                . ($rrow->reviewId ? "" : ", IDReservation write"));
             if (Dbl::is_error($result)) {
                 return false;
             }
