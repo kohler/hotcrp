@@ -590,34 +590,111 @@ class ReviewAPI_Tester {
         return $obj ? (array) $obj : [];
     }
 
-    function test_create_empty_review_matches_assignment() {
-        $prow = $this->conf->checked_paper_by_id(18);
-        $var = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+    /** An administrator creates an empty review of `$review_type` for `$var` on
+     * paper 18 via POST /review, then the same review via POST /assign, and the
+     * database rows must be identical (save for the unique reviewId and random
+     * reviewTime version tag).
+     * @param string $review_type
+     * @param string $assign_action
+     * @param int $expected_type */
+    private function check_create_matches_assignment(PaperInfo $prow, Contact $var, $review_type, $assign_action, $expected_type) {
         $cid = $var->contactId;
-        xassert(!$prow->review_by_user($var));
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=18 and contactId=?", $cid), 0);
 
-        // a manager creates an empty (draft) review for a PC member via
-        // POST /review with `r=new` and no field values
-        $qreq = TestQreq::post_json(["object" => "review", "email" => $var->email], ["r" => "new"]);
+        // via POST /review with `r=new` and an explicit `review_type`
+        $qreq = TestQreq::post_json(["object" => "review", "email" => $var->email,
+            "review_type" => $review_type], ["r" => "new"]);
         $j = call_api("review", $this->u_chair, $qreq, $prow);
         xassert_eqq($j->ok, true);
         $rev_row = $this->paper18_review_row($cid);
-        xassert_eqq($rev_row["reviewType"], (string) REVIEW_PC);
+        xassert_eqq($rev_row["reviewType"] ?? null, (string) $expected_type);
         $this->conf->qe("delete from PaperReview where paperId=18 and contactId=?", $cid);
 
-        // creating the same review via POST /assign (optional PC review) leaves
-        // identical database state, save for the unique reviewId and the random
-        // reviewTime version tag
-        $qreq = TestQreq::post(["assignments" => "paper,action,email\n18,pcreview,{$var->email}"]);
+        // via POST /assign
+        $qreq = TestQreq::post(["assignments" => "paper,action,email\n18,{$assign_action},{$var->email}"]);
         $j = call_api("assign", $this->u_chair, $qreq, $prow);
         xassert_eqq($j->ok, true);
         $assign_row = $this->paper18_review_row($cid);
-        xassert_eqq($assign_row["reviewType"], (string) REVIEW_PC);
+        xassert_eqq($assign_row["reviewType"] ?? null, (string) $expected_type);
         $this->conf->qe("delete from PaperReview where paperId=18 and contactId=?", $cid);
 
         unset($rev_row["reviewId"], $rev_row["reviewTime"]);
         unset($assign_row["reviewId"], $assign_row["reviewTime"]);
         xassert_eqq($rev_row, $assign_row);
+    }
+
+    function test_create_empty_review_matches_assignment() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $var = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+        xassert(!$prow->review_by_user($var));
+
+        // POST /review and POST /assign create identical reviews of each type
+        $this->check_create_matches_assignment($prow, $var, "pc", "pcreview", REVIEW_PC);
+        $this->check_create_matches_assignment($prow, $var, "primary", "primaryreview", REVIEW_PRIMARY);
+        $this->check_create_matches_assignment($prow, $var, "secondary", "secondaryreview", REVIEW_SECONDARY);
+        $this->check_create_matches_assignment($prow, $var, "meta", "metareview", REVIEW_META);
+    }
+
+    function test_create_review_type_permissions() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $var = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+        $cid = $var->contactId;
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=18 and contactId=?", $cid), 0);
+
+        // a non-administrator (PC member) cannot set a non-default review type
+        $qreq = TestQreq::post_json(["object" => "review", "review_type" => "primary"], ["r" => "new"]);
+        $j = call_api("review", $this->u_estrin, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_str_contains(json_encode($j->message_list ?? []), "administrator can set the review type");
+
+        // an administrator cannot assign a PC review to a non-PC reviewer
+        $author = $this->conf->checked_user_by_email("cheshire@cs.stanford.edu");
+        xassert(!$author->is_pc_member());
+        $qreq = TestQreq::post_json(["object" => "review", "email" => $author->email,
+            "review_type" => "primary"], ["r" => "new"]);
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_str_contains(json_encode($j->message_list ?? []), "not a PC member");
+
+        // an unknown review type is rejected
+        $qreq = TestQreq::post_json(["object" => "review", "email" => $var->email,
+            "review_type" => "bogus"], ["r" => "new"]);
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_str_contains(json_encode($j->message_list ?? []), "Invalid review type");
+
+        // nothing was created
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=18 and contactId=?", $cid), 0);
+    }
+
+    function test_create_review_type_nonadmin_default() {
+        // enable PC self-assignment
+        $this->conf->save_setting("pcrev_any", 1);
+        $this->conf->refresh_settings();
+        $prow = $this->conf->checked_paper_by_id(18);
+        $var = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // PC member
+        $cid = $var->contactId;
+        xassert($var->isPC);
+        xassert(!$var->can_manage_reviews($prow));
+        xassert(!$prow->review_by_user($var));
+
+        // a non-administrator PC member may self-assign a review of their default
+        // (optional PC) type
+        $qreq = TestQreq::post_json(["object" => "review", "review_type" => "pc"], ["r" => "new"]);
+        $j = call_api("review", $var, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($this->paper18_review_row($cid)["reviewType"] ?? null, (string) REVIEW_PC);
+        $this->conf->qe("delete from PaperReview where paperId=18 and contactId=?", $cid);
+
+        // but not a primary review
+        $qreq = TestQreq::post_json(["object" => "review", "review_type" => "primary"], ["r" => "new"]);
+        $j = call_api("review", $var, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_str_contains(json_encode($j->message_list ?? []), "administrator can set the review type");
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=18 and contactId=?", $cid), 0);
+
+        $this->conf->save_setting("pcrev_any", null);
+        $this->conf->refresh_settings();
     }
 
     function test_fetch() {

@@ -110,6 +110,14 @@ Set `submitted` (or `ready`) to `true` to submit the review, or `draft` to
 review on someone’s behalf may name the reviewer with `email` (plus
 `given_name`/`family_name`/`affiliation` for a new account).
 
+A newly created review may be given a type with `review_type` (`primary`,
+`secondary`, `metareview`, `pc`, or `external`). A review defaults to an optional
+PC review, or external for a non-PC reviewer; requesting a type *other* than that
+default requires administrator privilege, and PC review types require a PC
+reviewer. `review_type` cannot change the type of an existing review. Creating a
+review of a specific type this way is equivalent to a
+[review assignment](#post-assign).
+
 The `p` request parameter is optional for the JSON and text forms: if it is
 unset, HotCRP uses the `pid` from the supplied data. If both `p` and a body
 `pid` are present they must match; likewise `r` and a body `rid`.

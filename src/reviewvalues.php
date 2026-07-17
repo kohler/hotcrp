@@ -461,6 +461,10 @@ class ReviewValues extends MessageSet {
                 if (is_string($v)) {
                     $this->req["reviewerLast"] = simplify_whitespace($v);
                 }
+            } else if ($k === "review_type" || $k === "reviewType") {
+                if (is_int($v) || is_string($v)) {
+                    $this->req["reviewType"] = $v;
+                }
             } else if ($k === "edit_version") {
                 if (is_int($v)) {
                     $this->req["edit_version"] = $v;
@@ -562,6 +566,8 @@ class ReviewValues extends MessageSet {
                 if (($pid = stoi($v) ?? -1) > 0) {
                     $this->req["paperId"] = $pid;
                 }
+            } else if ($k === "review_type" || $k === "reviewType") {
+                $this->req["reviewType"] = $v;
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
             } else if ($k === "if_vtag_match" || $k === "if_unmodified_since") {
@@ -588,6 +594,20 @@ class ReviewValues extends MessageSet {
     private function reviewer_error($msg) {
         $msg = $msg ?? $this->conf->_("<0>Can’t edit a review for {}", $this->req["reviewerEmail"]);
         $this->rvmsg(self::ERROR, "reviewerEmail", $msg);
+    }
+
+    /** Resolve the requested `review_type`, if any.
+     * @return int|false|null  null if none requested, false if invalid */
+    private function requested_review_type() {
+        if (!isset($this->req["reviewType"])) {
+            return null;
+        }
+        $v = $this->req["reviewType"];
+        if (is_int($v)) {
+            return $v >= REVIEW_EXTERNAL && $v <= REVIEW_META ? $v : false;
+        }
+        $rt = ReviewInfo::parse_type($v, true);
+        return is_int($rt) && $rt >= REVIEW_EXTERNAL ? $rt : false;
     }
 
     /** @param ReviewInfo $rrow
@@ -700,6 +720,27 @@ class ReviewValues extends MessageSet {
             }
         }
 
+        // resolve a requested review type. Anyone may request the type the
+        // reviewer would receive by default; only an administrator may request a
+        // different type (e.g. primary/secondary/meta)
+        $reqtype = $this->requested_review_type();
+        if ($reqtype !== null) {
+            $deftype = $rrow ? $rrow->reviewType : ($reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
+            if ($reqtype === false) {
+                $this->rvmsg(self::ERROR, "reviewType", "<0>Invalid review type");
+                return false;
+            } else if ($reqtype === $deftype) {
+                // the reviewer's default type — always allowed
+            } else if (!$user->can_manage_reviews($prow)) {
+                $this->rvmsg(self::ERROR, "reviewType", "<0>Only an administrator can set the review type");
+                return false;
+            } else if ($reqtype >= REVIEW_PC && !$reviewer->is_pc_member()) {
+                $uname = $reviewer->name(NAME_E);
+                $this->rvmsg(self::ERROR, "reviewType", "<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
+                return false;
+            }
+        }
+
         // look up review
         if (!$rrow) {
             $rrow = $prow->fresh_review_by_user($reviewer);
@@ -719,13 +760,19 @@ class ReviewValues extends MessageSet {
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
             }
-            $rrow = $user->assign_review_prop($prow->paperId, $reviewer, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, [
+            $rtype = $reqtype ?? ($reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
+            $rrow = $user->assign_review_prop($prow->paperId, $reviewer, $rtype, [
                 "selfassign" => $reviewer === $user, "round_number" => $round
             ]);
             if (!$rrow || $rrow->reviewType <= 0) {
                 $this->rvmsg(self::ERROR, null, "<0>Internal error while creating review");
                 return false;
             }
+        } else if ($reqtype !== null && $reqtype !== $rrow->reviewType) {
+            // `review_type` may pick the type of a new review, but not change an
+            // existing one; use the assignment API for that
+            $this->rvmsg(self::ERROR, "reviewType", "<0>Can’t change the type of an existing review through this API");
+            return false;
         }
 
         // ensure the target review knows its paper, so the commit half (and
