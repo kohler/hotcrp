@@ -164,7 +164,7 @@ class DatabaseIDRandomizer_Type {
         if (!empty($this->reservations)) {
             $this->conf->qe("delete from IDReservation where type=? and id?a", $this->type, $this->reservations);
         }
-        $this->reservations = [];
+        $this->reservations = $this->ids = [];
     }
 }
 

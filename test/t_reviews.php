@@ -2368,6 +2368,52 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($r16f->fidval("s02"), 2);
     }
 
+    function test_rv_self_assignment_random_id() {
+        $conf = $this->conf;
+        $p16 = $conf->checked_paper_by_id(16);
+        $u_rguerin = $conf->checked_user_by_email("rguerin@ibm.com");
+        xassert(!$p16->fresh_review_by_user($u_rguerin));
+
+        // a self-assigned review's row is created by `execute_save`, i.e. inside
+        // the PaperReview/PaperReviewHistory lock that `_apply_req` takes to
+        // assign the review ordinal. With `random_pids`, that insert routes
+        // through DatabaseIDRandomizer, which consults `IDReservation` -- a
+        // table the lock does not name, so MySQL refuses the query.
+        $conf->save_refresh_setting("pcrev_any", 1);
+        $conf->save_refresh_setting("random_pids", 1);
+
+        // cool the randomizer, as in a fresh request: `available_id` only
+        // queries `IDReservation` when its candidate-ID cache is cold, and an
+        // earlier test may have left that cache warm
+        $conf->id_randomizer()->cleanup();
+
+        $nerrors = Dbl::$nerrors;
+        $r16g = save_review($p16, $u_rguerin, [
+            "ovemer" => 3, "revexp" => 1, "papsum" => "Summary",
+            "comaut" => "For the authors", "ready" => true
+        ]);
+        xassert_eqq(Dbl::$nerrors, $nerrors);
+
+        // the review is still created, submitted, and given an ordinal
+        xassert(!!$r16g);
+        if ($r16g) {
+            xassert_eqq($r16g->fidval("s01"), 3);
+            xassert($r16g->reviewStatus >= ReviewInfo::RS_COMPLETED);
+            xassert_gt($r16g->reviewOrdinal, 0);
+        }
+
+        // clean up
+        if ($r16g) {
+            $conf->qe("delete from PaperReview where paperId=? and reviewId=?",
+                $r16g->paperId, $r16g->reviewId);
+            $p16->invalidate_reviews();
+            Contact::update_rights();
+        }
+        $conf->save_refresh_setting("random_pids", null);
+        $conf->save_refresh_setting("pcrev_any", null);
+        $conf->id_randomizer()->cleanup();
+    }
+
     function test_empty_review_form() {
         $p16 = $this->conf->checked_paper_by_id(16);
         $r16f = save_review($p16, $this->u_floyd, ["ready" => true]);
