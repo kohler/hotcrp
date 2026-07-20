@@ -856,6 +856,27 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->check_and_save($this->u_mgbaker, $paper17));
     }
 
+    function test_load_reviews_reapplies_pending_score_diff() {
+        // `load_reviews` must re-apply an uncommitted prop diff that touches a
+        // `main_storage` score field without tripping over private properties.
+        $conf = $this->conf;
+        $paper17 = $conf->checked_paper_by_id(17, $this->u_mgbaker);
+        $rrow = $paper17->review_by_user($this->u_mgbaker);
+        xassert(!!$rrow);
+        $s01 = $rrow->fidval("s01");
+
+        // create a pending, uncommitted change to a score field
+        $rrow->set_fval_prop($conf->find_review_field("ovemer"), $s01 + 1);
+        xassert($rrow->prop_changed());
+
+        // reloading the paper's reviews re-applies the pending change
+        $paper17->load_reviews(true);
+        $rrow2 = $paper17->review_by_user($this->u_mgbaker);
+        xassert(!!$rrow2);
+        xassert_eqq($rrow2->fidval("s01"), $s01 + 1);
+        xassert($rrow2->prop_changed());
+    }
+
     function test_reassign_preserves_review_history() {
         $conf = $this->conf;
         $conf->save_refresh_setting("rev_open", 1);
