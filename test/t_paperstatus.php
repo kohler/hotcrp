@@ -823,6 +823,8 @@ class PaperStatus_Tester {
         $p = $this->conf->checked_paper_by_id($pid);
         xassert_eqq($p->conflict_type($this->u_sally), CONFLICT_CONTACTAUTHOR);
         xassert_gt($p->timeWithdrawn, 0);
+        // the paper's status did not change, so the save must not report one
+        xassert(!$ps->has_change_at("status"));
         return $p;
     }
 
@@ -867,6 +869,149 @@ class PaperStatus_Tester {
 
         $p = $this->add_contact_to_withdrawn_paper($pid);
         xassert_eqq($p->timeSubmitted, 0);
+    }
+
+    /** @param int $pid */
+    private function reject_field_edit_on_withdrawn_paper($pid) {
+        $p = $this->conf->checked_paper_by_id($pid);
+        $submitted = $p->timeSubmitted;
+        $withdrawn = $p->timeWithdrawn;
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["id" => $pid, "abstract" => "Edited while withdrawn"]));
+        xassert_str_contains($ps->full_feedback_text(), "has been withdrawn");
+
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($p->abstract(), "This is an abstract");
+        xassert_eqq($p->timeSubmitted, $submitted);
+        xassert_eqq($p->timeWithdrawn, $withdrawn);
+    }
+
+    function test_withdrawn_field_edit() {
+        // a withdrawn paper does not accept field edits, whether or not it
+        // had been submitted; contact edits still work
+        $prow = $this->make_author_paper("Withdrawn field edit, was submitted");
+        $pid = $prow->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        $this->reject_field_edit_on_withdrawn_paper($pid);
+        $this->add_contact_to_withdrawn_paper($pid);
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Withdrawn field edit, never submitted",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        $this->reject_field_edit_on_withdrawn_paper($pid);
+        $this->add_contact_to_withdrawn_paper($pid);
+    }
+
+    function test_revive_denied_rejects_whole_save() {
+        // a never-submitted paper, then withdrawn
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Revive denied save",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+
+        // close the submission deadline so the author cannot revive
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now - 1000);
+        xassert(!$this->u_estrin->can_revive_paper($this->conf->checked_paper_by_id($pid)));
+
+        // a revive the author may not perform is an ESTOP: even on its own,
+        // with nothing else to change, the save reports failure (a lesser error
+        // would let this no-op save succeed silently)
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => false]]));
+        xassert($ps->has_error());
+        xassert_gt($this->conf->checked_paper_by_id($pid)->timeWithdrawn, 0);
+
+        // and a field change bundled with the denied revive is not applied
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) [
+            "id" => $pid,
+            "status" => (object) ["withdrawn" => false],
+            "abstract" => "Changed by denied revive"
+        ]));
+
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_gt($p->timeWithdrawn, 0);
+        xassert_eqq($p->abstract(), "This is an abstract");
+
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+    }
+
+    function test_resubmission_deadline() {
+        // a submitted paper and a draft, both created before any deadline passes
+        $submitted = $this->make_author_paper("Resubmission window, submitted");
+        $spid = $submitted->paperId;
+        xassert_gt($submitted->timeSubmitted, 0);
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Resubmission window, draft",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $dpid = $ps->paperId;
+        xassert_eqq($this->conf->checked_paper_by_id($dpid)->timeSubmitted, 0);
+
+        // submission deadline past, resubmission deadline still open
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $old_sub_resub = $this->conf->setting("sub_resub");
+        $this->conf->save_setting("sub_sub", Conf::$now - 1000);
+        $this->conf->save_refresh_setting("sub_resub", Conf::$now + 1000);
+        $sr = $this->conf->unnamed_submission_round();
+        xassert(!$sr->time_submit(true));
+        xassert($sr->time_edit(true, true));    // submitted papers editable
+        xassert(!$sr->time_edit(false, true));  // drafts are not
+
+        // the author may revise the submitted paper...
+        xassert($this->u_estrin->can_edit_paper($this->conf->checked_paper_by_id($spid)));
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["id" => $spid, "abstract" => "Revised in the resubmission window"]));
+        xassert_eqq($this->conf->checked_paper_by_id($spid)->abstract(), "Revised in the resubmission window");
+        // ...but may not unsubmit it back to a draft
+        xassert(!$this->u_estrin->can_unsubmit_paper($this->conf->checked_paper_by_id($spid)));
+
+        // the draft cannot be edited or finalized past the submission deadline
+        xassert(!$this->u_estrin->can_edit_paper($this->conf->checked_paper_by_id($dpid)));
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["id" => $dpid, "abstract" => "Too late for the draft"]));
+        xassert_eqq($this->conf->checked_paper_by_id($dpid)->abstract(), "This is an abstract");
+
+        // with no resubmission deadline set, it is inferred equal to the
+        // submission deadline: submitted papers are frozen too
+        $this->conf->save_refresh_setting("sub_resub", null);
+        $sr = $this->conf->unnamed_submission_round();
+        xassert($sr->inferred_resubmit);
+        xassert_eqq($sr->resubmit, $sr->submit);
+        xassert(!$sr->time_edit(true, true));
+        xassert(!$this->u_estrin->can_edit_paper($this->conf->checked_paper_by_id($spid)));
+
+        $this->conf->save_setting("sub_resub", $old_sub_resub);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
     }
 
     function test_save_options() {
