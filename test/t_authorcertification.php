@@ -298,6 +298,77 @@ class AuthorCertification_Tester {
         xassert_le($prow->timeWithdrawn, 0);
     }
 
+    /** @param Contact $user
+     * @param string $title
+     * @return int */
+    private function new_certified_paper($user, $title) {
+        $ps = new PaperStatus($user);
+        xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
+            "title" => $title,
+            "abstract" => "The Berkeley Public Library is an excellent library.",
+            "has_authors" => "1",
+            "authors:1:name" => $user->name(),
+            "authors:1:email" => $user->email,
+            "has_submission" => 1,
+            "has_{$this->c1key}" => "1",
+            "{$this->c1key}:1:email" => $user->email,
+            "{$this->c1key}:1:value" => "1",
+            "has_{$this->c2key}" => "1",
+            "{$this->c2key}:1:email" => $user->email,
+            "{$this->c2key}:1:value" => "1"
+        ])->set_file_content("submission:file", "%PDF-Monticello", null, "application/pdf")
+          ->set_user($user), null));
+        xassert($ps->execute_save());
+        return $ps->paperId;
+    }
+
+    function test_withdraw_resets_certifications_via_paperstatus() {
+        $u_ronald = Contact::make_email($this->conf, "rlrivest@mit.edu")->ensure_account_here();
+        $pid = $this->new_certified_paper($u_ronald, "Ronald’s certified paper");
+
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_in_eqq($u_ronald->contactId, $prow->option($this->cert1)->value_list());
+        xassert_in_eqq($u_ronald->contactId, $prow->option($this->cert2)->value_list());
+
+        // withdrawing through PaperStatus clears the certifications
+        $ps = new PaperStatus($u_ronald);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_gt($prow->timeWithdrawn, 0);
+        xassert_eqq($prow->force_option($this->cert1)->value_count(), 0);
+        xassert_eqq($prow->force_option($this->cert2)->value_count(), 0);
+    }
+
+    function test_max_submissions_revive() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $this->cert1->id,
+            "sf/1/max_submissions" => 1
+        ]);
+        xassert($sv->execute());
+        $this->cert1 = $this->conf->options()->option_by_id($this->cert1->id);
+
+        $u_estelle = Contact::make_email($this->conf, "estelle@ee.lbl.gov")->ensure_account_here();
+
+        // Estelle certifies and submits one paper, then withdraws it
+        $pid1 = $this->new_certified_paper($u_estelle, "Estelle’s first paper");
+        xassert_assign($u_estelle, "action,paper\nsubmit,{$pid1}");
+        xassert_gt($this->conf->checked_paper_by_id($pid1)->timeSubmitted, 0);
+        xassert_assign($u_estelle, "action,paper\nwithdraw,{$pid1}");
+
+        // the withdrawal frees up her certification limit for a second paper
+        $pid2 = $this->new_certified_paper($u_estelle, "Estelle’s second paper");
+        xassert_assign($u_estelle, "action,paper\nsubmit,{$pid2}");
+        xassert_gt($this->conf->checked_paper_by_id($pid2)->timeSubmitted, 0);
+
+        // reviving the first must not push her over the limit
+        xassert_assign($u_estelle, "action,paper\nrevive,{$pid1}");
+        $prow1 = $this->conf->checked_paper_by_id($pid1);
+        xassert_le($prow1->timeWithdrawn, 0);
+        xassert_le($prow1->timeSubmitted, 0);
+    }
+
     function finalize() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
