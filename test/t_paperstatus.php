@@ -847,6 +847,62 @@ class PaperStatus_Tester {
         xassert(ConfInvariants::test_summary_settings($this->conf));
     }
 
+    /** @param int $pid */
+    private function add_contact_to_withdrawn_paper($pid) {
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) [
+            "id" => $pid,
+            "contacts" => [(object) ["email" => "estrin@usc.edu"], (object) ["email" => "floyd@ee.lbl.gov"]]
+        ]));
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($p->conflict_type($this->u_sally), CONFLICT_CONTACTAUTHOR);
+        xassert_gt($p->timeWithdrawn, 0);
+        return $p;
+    }
+
+    function test_withdrawn_contact_save() {
+        // a withdrawn paper that had been submitted accepts contact changes,
+        // and remembers that it was submitted
+        $prow = $this->make_author_paper("Withdrawn contact save, was submitted");
+        $pid = $prow->paperId;
+        xassert_gt($prow->timeSubmitted, 0);
+        $submitted_at = $prow->timeSubmitted;
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeSubmitted, -$submitted_at);
+
+        $p = $this->add_contact_to_withdrawn_paper($pid);
+        xassert_eqq($p->timeSubmitted, -$submitted_at);
+
+        // reviving restores the submitted state
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => false]]));
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeSubmitted, $submitted_at);
+    }
+
+    function test_withdrawn_draft_contact_save() {
+        // same, for a withdrawn paper that was never submitted
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Withdrawn contact save, never submitted",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeSubmitted, 0);
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+
+        $p = $this->add_contact_to_withdrawn_paper($pid);
+        xassert_eqq($p->timeSubmitted, 0);
+    }
+
     function test_save_options() {
         $this->newpaper1 = $this->newpaper1->reload();
         xassert($this->newpaper1->timeSubmitted > 0);
