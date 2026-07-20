@@ -137,7 +137,6 @@ class Permission_Tester {
         ConfInvariants::test_all($this->conf);
 
         $this->conf->save_setting("sub_open", 1);
-        $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);
         $this->conf->save_setting("rev_open", 1);
         $this->conf->refresh_settings();
@@ -207,7 +206,6 @@ class Permission_Tester {
         xassert_eq($this->conf->setting("paperacc") ?? 0, 0);
 
         // change submission date
-        $this->conf->save_setting("sub_update", Conf::$now - 5);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
         $paper1 = $user_chair->checked_paper_by_id(1);
         xassert($user_chair->can_edit_paper($paper1));
@@ -1116,7 +1114,6 @@ class Permission_Tester {
 
         // reopen submissions: author can update conflicts
         $user_sclin = $this->conf->checked_user_by_email("sclin@leland.stanford.edu");
-        $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now + 10);
         xassert($user_sclin->can_edit_paper($paper3));
 
@@ -1201,7 +1198,6 @@ class Permission_Tester {
         $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 2);
 
-        $this->conf->save_setting("sub_update", Conf::$now - 5);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
         xassert_assign_fail($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
@@ -2003,7 +1999,6 @@ class Permission_Tester {
 
     function test_reset_deadlines() {
         $this->conf->save_setting("sub_reg", Conf::$now + 10);
-        $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);
     }
 

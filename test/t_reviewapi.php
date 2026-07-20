@@ -28,7 +28,6 @@ class ReviewAPI_Tester {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $conf->save_setting("sub_open", 1);
-        $conf->save_setting("sub_update", Conf::$now + 100);
         $conf->save_setting("sub_sub", Conf::$now + 100);
         $conf->save_setting("rev_open", 1);
         $conf->save_setting("viewrev", null);

@@ -1166,7 +1166,7 @@ class Limit_SearchTerm extends SearchTerm {
         if ($limstr === "default") {
             if ($this->user->privChair
                 && ($this->user->is_root_user()
-                    || $conf->unnamed_submission_round()->time_update(true))) {
+                    || $conf->unnamed_submission_round()->time_submit(true))) {
                 $limstr = "all";
             } else if ($this->user->isPC) {
                 if ($this->user->can_view_some_incomplete()

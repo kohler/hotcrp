@@ -33,7 +33,6 @@ class SubmissionRound_Tester {
         // open submissions, main deadline in the future
         $conf->save_setting("sub_open", 1);
         $conf->save_setting("sub_reg", Conf::$now + 8000);
-        $conf->save_setting("sub_update", Conf::$now + 10000);
         $conf->save_setting("sub_sub", Conf::$now + 10000);
         $conf->refresh_settings();
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
@@ -188,7 +187,7 @@ class SubmissionRound_Tester {
         // both deadlines are in the future: registration and submission open
         xassert($sr->time_register(false));
         xassert($sr->time_submit(false));
-        xassert($sr->time_update(false));
+        xassert($sr->time_edit(false, false));
 
         // move the round's submission deadline into the past via settings
         $sv = SettingValues::make_request($this->u_chair, [

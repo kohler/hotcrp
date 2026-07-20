@@ -3915,7 +3915,7 @@ class Contact implements JsonSerializable {
             $whyNot["deadline"] = "sub_reg";
         } else if (!$sr->time_edit($prow->timeSubmitted > 0, true)) {
             if ($prow->timeSubmitted <= 0 || $sr->submit === $sr->resubmit) {
-                $whyNot["deadline"] = "sub_update";
+                $whyNot["deadline"] = "sub_sub";
             } else {
                 $whyNot["deadline"] = "sub_resub";
             }
@@ -6144,14 +6144,9 @@ class Contact implements JsonSerializable {
         }
         $sub_graces = [];
         if ($sr->register > 0
-            && ($sr->update <= 0 || $sr->register < $sr->update)) {
+            && ($sr->submit <= 0 || $sr->register < $sr->submit)) {
             $dl->sub->reg = $sr->register;
             $sub_graces[] = "reg";
-        }
-        if ($sr->update > 0
-            && $sr->update != $sr->submit) {
-            $dl->sub->update = $sr->update;
-            $sub_graces[] = "update";
         }
         if ($sr->open > 0
             && $sr->open <= Conf::$now
@@ -6368,7 +6363,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function has_reportable_deadline() {
         foreach ($this->relevant_submission_rounds() as $sr) {
-            if ($sr->register > 0 || $sr->update > 0 || $sr->submit > 0)
+            if ($sr->register > 0 || $sr->submit > 0)
                 return true;
         }
         return !empty($this->reportable_response_rounds(true))

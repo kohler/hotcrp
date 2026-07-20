@@ -1866,7 +1866,7 @@ final class PaperStatus extends MessageSet {
         if (($this->_save_status & self::SSF_SUBMIT) !== 0) {
             $n[] = $this->conf->_("<0>The {submission} is ready for review.");
             if (!$sr->freeze) {
-                $n[] = $this->time_note($sr->update,
+                $n[] = $this->time_note($sr->submit,
                     "<5>You have until {} to make further changes.",
                     "");
             }
@@ -1882,11 +1882,11 @@ final class PaperStatus extends MessageSet {
             $first = $this->conf->_("<5>This {submission} is marked as not ready for review.");
             $n[] = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
         }
-        $n[] = $this->time_note($sr->update,
+        $n[] = $this->time_note($sr->submit,
             "<5>You have until {} to make further changes.",
             "<5>The deadline for updating {submissions} was {}.");
         $n[] = $this->time_note($sr->submit,
-            "<5>{Submissions} incomplete as of {} will not be considered.",
+            "<5>{Submissions} incomplete as of {} will not be evaluated.",
             "");
         return MessageItem::urgent_note(Ftext::join_nonempty(" ", $n));
     }

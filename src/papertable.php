@@ -837,12 +837,13 @@ class PaperTable {
     private function print_editable_complete() {
         echo Ht::hidden("status:phase", $this->allow_edit_final ? "final" : "review"),
             Ht::hidden("status:if_unmodified_since", $this->prow->timeModified);
+        if ($this->prow->timeWithdrawn > 0) {
+            return;
+        }
         if ($this->allow_edit_final
             || ($this->prow->timeSubmitted > 0
                 && !$this->user->can_unsubmit_paper($this->prow))) {
             echo Ht::hidden("status:submit", 1);
-            return;
-        } else if ($this->prow->timeWithdrawn > 0) {
             return;
         }
 
@@ -859,12 +860,12 @@ class PaperTable {
             }
             $complete = "complete";
         } else {
-            if (Conf::$now <= $sr->update
+            if (Conf::$now <= $sr->submit
                 && $ready_open
                 && !$checked) {
                 $label_class = "is-error";
             }
-            if (Conf::$now <= $sr->update
+            if (Conf::$now <= $sr->submit
                 && !$ready_open) {
                 $label_hidden = true;
             }
@@ -884,32 +885,36 @@ class PaperTable {
             $this->conf->_5("<5>The {submission} is {$complete}"),
             '</strong></label>';
 
-        // script.js depends on the HTML here
-        $updatem = $submitm = $requiredm = $freezem = "";
-        if (Conf::$now <= $sr->update) {
-            $dlhtml = $this->conf->unparse_time_with_local_span($sr->update);
-            $updatem = $this->conf->_c("paper_edit", "<5>You can update this {submission} until {:expandedtime}.", $sr->update);
+        // script.js depends on the HTML here.
+        // First message: Required fields are missing.
+        if ($autoready !== 0
+            && $this->edit_mode > 1
+            && ($t = $this->conf->_c("paper_edit", "<5>You must fill out all required fields to mark the {submission} as {$complete}."))) {
+            echo '<p class="feedback ',
+                (Conf::$now <= $sr->submit ? "is-urgent-note" : "is-note"),
+                ' if-unready-required"',
+                $ready_open ? ' hidden' : '',
+                '>', Ftext::as(5, $t), '</p>';
         }
-        if (Conf::$now <= $sr->submit) {
-            $submitm = $this->conf->_c("paper_edit", "<5>{Submissions} marked {$complete} as of {:expandedtime} will be evaluated.", $sr->submit, $sr->update);
-        }
+        // Second message: You can update this draft submission.
+        $updatem = $submitm = $freezem = "";
         if ($sr->freeze) {
             $freezem = $this->conf->_c("paper_edit", "<5>Completed {submissions} are frozen and cannot be changed further.");
         }
-        if ($autoready !== 0
-            && $this->edit_mode > 1) {
-            $requiredm = $this->conf->_c("paper_edit", "<5>You must fill out all required fields to mark the {submission} as {$complete}.");
-            if ($requiredm) {
-                echo '<p class="feedback ',
-                    ($submitm ? "is-urgent-note" : "is-note"),
-                    ' if-unready-required"',
-                    $ready_open ? ' hidden' : '',
-                    '>', Ftext::as(5, $requiredm), '</p>';
-            }
-        }
-        if ($submitm) {
+        if (Conf::$now <= $sr->submit) {
+            $updatem = $this->conf->_c("paper_edit", "<5>You can update this {submission} until {:expandedtime}.", $sr->submit);
+            $submitm = $this->conf->_c("paper_edit", $sr->freeze ? "<0>Only completed {submissions} will be evaluated." : "<0>Only {submissions} marked ready for review will be evaluated.");
             echo '<p class="feedback is-urgent-note if-unready">',
                 Ftext::as(5, Ftext::join_nonempty(" ", [$updatem, $submitm, $freezem])), '</p>';
+        }
+        // Third message: You can update this *complete* submission.
+        if (Conf::$now <= $sr->resubmit
+            && $this->prow->timeSubmitted > 0
+            && $sr->submit !== $sr->resubmit) {
+            $updatem = $this->conf->_c("paper_edit", "<5>You can update this {submission} until {:expandedtime}.", $sr->resubmit);
+        }
+        if ($this->prow->timeSubmitted > 0) { // DB version is submitted, so simplify messages
+            $submitm = $freezem = "";
         }
         if ($updatem || $freezem) {
             echo '<p class="feedback is-note if-ready"',
@@ -1987,9 +1992,9 @@ class PaperTable {
         if ($this->admin || $sr->time_register(true)) {
             $mt = [
                 $this->conf->_("<5>Enter information about your {submission}."),
-                $this->conf->_("<5>{Submissions} must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->update))
+                $this->conf->_("<5>{Submissions} must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->submit))
             ];
-            if ($sr->register > 0 && ($sr->update <= 0 || $sr->register < $sr->update)) {
+            if ($sr->register > 0 && ($sr->submit <= 0 || $sr->register < $sr->submit)) {
                 $popt = $this->conf->option_by_id(DTYPE_SUBMISSION);
                 if ($popt->test_exists($this->prow)
                     && $popt->required !== PaperOption::REQ_REGISTER) {
@@ -2017,7 +2022,7 @@ class PaperTable {
             if ($is_author
                 || $this->prow->author_user()->can_revive_paper($this->prow)) {
                 $sr = $this->prow->submission_round();
-                $this->_main_message(1, "<5>This {$this->conf->snouns[0]} has been withdrawn, but can still be revived." . $this->deadline_is($sr->update));
+                $this->_main_message(1, "<5>This {$this->conf->snouns[0]} has been withdrawn, but can still be revived." . $this->deadline_is($sr->submit));
             } else {
                 $this->_main_message(1, "<5>This {$this->conf->snouns[0]} has been withdrawn. As an administrator, you can revive it.");
             }
@@ -2039,7 +2044,7 @@ class PaperTable {
             if (!$missing) {
                 $this->_main_message(MessageSet::URGENT_NOTE, "<5><strong>" . $this->conf->_5("<5>This {submission} is marked as not ready for review.") . "</strong>");
             }
-            $this->_main_message(MessageSet::URGENT_NOTE, $this->conf->_c("paper_edit", "<0>Incomplete {submissions} will not be evaluated.", new FmtArg("deadline", $sr->update)));
+            $this->_main_message(MessageSet::URGENT_NOTE, $this->conf->_c("paper_edit", "<0>Incomplete {submissions} will not be evaluated.", new FmtArg("deadline", $sr->submit)));
             return;
         }
 
@@ -2065,10 +2070,10 @@ class PaperTable {
     /** @param DecisionInfo $viewable_decision
      * @param bool $is_author */
     private function _edit_message_submitted($viewable_decision, $is_author) {
+        $sr = $this->prow->submission_round();
         if ($this->conf->allow_final_versions()
             && $viewable_decision->sign > 0) {
             if ($this->user->can_edit_paper($this->prow)) {
-                $sr = $this->prow->submission_round();
                 if (($t = $this->conf->_i("finalsubmit", new FmtArg("deadline", $this->deadline_is($sr->final_soft))))) {
                     $this->_main_message(MessageSet::SUCCESS, "<5>" . $t);
                 }
@@ -2078,11 +2083,11 @@ class PaperTable {
         } else if ($this->user->can_edit_paper($this->prow)) {
             if ($this->mode === "edit"
                 && (!$this->edit_status || !$this->edit_status->has_error())) {
-                if ($is_author) {
-                    $sr = $this->prow->submission_round();
-                    $this->_main_message(MessageSet::SUCCESS, "<5>This {$this->conf->snouns[0]} is ready for review. You do not need to take further action, but you can still make changes if you wish." . $this->deadline_is($sr->update, "submission deadline"));
-                } else {
+                if (!$is_author) {
                     $this->_main_message(MessageSet::SUCCESS, "<5>This {$this->conf->snouns[0]} is ready for review.");
+                } else {
+                    $dl = $this->deadline_is($sr->resubmit, $sr->resubmit > $sr->submit ? "resubmission deadline" : "submission deadline");
+                    $this->_main_message(MessageSet::SUCCESS, "<5>This {$this->conf->snouns[0]} is ready for review. You do not need to take further action, but you can still make changes if you wish.{$dl}");
                 }
             }
         } else if ($this->mode === "edit") {

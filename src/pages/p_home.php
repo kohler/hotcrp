@@ -555,7 +555,7 @@ class Home_Page {
     private function print_new_submission(Contact $user, SubmissionRound $sr) {
         $conf = $user->conf;
         if ($sr->register > 0
-            && ($sr->update <= 0 || $sr->register < $sr->update)) {
+            && ($sr->submit <= 0 || $sr->register < $sr->submit)) {
             $dname = $conf->_5("<5>{sclass} registration deadline", new FmtArg("sclass", $sr->label, 0));
             $dtime = $conf->unparse_time_with_local_span($sr->register);
             $dltx = "<em class=\"deadline\">{$dname}: {$dtime}</em>";
@@ -615,7 +615,7 @@ class Home_Page {
         if (($srf & 2) !== 0
             && $sr->time_edit(true, true)) {
             if ($sr->time_edit(false, true)) {
-                $d = $conf->unparse_time_with_local_span($sr->update);
+                $d = $conf->unparse_time_with_local_span($sr->submit);
                 $deadlines[] = "You have until {$d} to update {$sr->prefix}{$conf->snouns[1]}.";
                 $srf = 2;
             } else {
@@ -630,7 +630,7 @@ class Home_Page {
         }
         if (($srf & 1) !== 0
             && $sr->time_edit(false, true)) {
-            $d = $conf->unparse_time_with_local_span($sr->update);
+            $d = $conf->unparse_time_with_local_span($sr->submit);
             $deadlines[] = "You have until {$d} to complete {$sr->prefix}draft {$conf->snouns[1]}.";
         } else if (($srf & 1) !== 0) {
             if ($sr->time_submit(true)) {

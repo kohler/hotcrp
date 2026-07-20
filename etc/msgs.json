@@ -40,8 +40,6 @@
 
     ["<5>{sclass} registration deadline", "<5>Registration deadline", ["!{sclass}"]],
     ["<5>You can register new {sclass} {submissions} until this deadline.", "<5>You can register new {submissions} until this deadline.", ["!{sclass}"]],
-    ["<5>{sclass} update deadline", "<5>Update deadline", ["!{sclass}"]],
-    ["<5>You can update {sclass} {submissions} and upload new versions until this deadline.", "<5>You can update {submissions} and upload new versions until this deadline.", ["!{sclass}"]],
     ["<5>{sclass} submission deadline", "<5>Submission deadline", ["!{sclass}"]],
     ["<5>{sclass} deadline", "<5>Deadline", ["!{sclass}"]],
     ["<5>{sclass} {submissions} must be completed by this deadline to be reviewed.", "<5>{Submissions} must be completed by this deadline to be reviewed.", ["!{sclass}"]],
@@ -120,7 +118,6 @@
     ["paper_edit", "<0>Edit {sclass} {submission}", "<0>Edit draft {sclass} {submission}", ["{draft}"]],
     ["paper_edit", "<0>Edit {sclass} {submission}", "<0>Edit draft {submission}", ["{sclass}=", "{draft}"]],
     ["paper_edit", "<0>Incomplete {submissions} will not be evaluated.", "<0>{Submissions} incomplete as of {deadline:time} will not be evaluated.", ["{deadline}>0"]],
-    ["paper_edit", "<5>{Submissions} marked ready for review as of {:expandedtime} will be evaluated.", "<5>Only {submissions} marked ready for review will be evaluated.", ["{0}={1}"]],
     ["paper_edit", "<5>Please check {:list} for potential issues.", "<5>Please check the potential issues highlighted below.", ["!#{0}"]],
     ["<5>This {submission} is not ready for review. Required fields {:list} are incomplete.", "<5>This {submission} is not ready for review. Required field {:list} is incomplete.", ["#{0}=1"]],
 
@@ -216,8 +213,6 @@
         "context": "deadline_error", "in": "<0>Deadline passed", "m": [
             ["<0>The deadline for registering {sclass_prefix}{submissions} has passed. The deadline was {time:time}.", ["{deadline}^=sub_reg"]],
             ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {sclass_prefix}{submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{expand}"]],
-            ["<0>The {sclass_prefix}{submission} update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
-            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{expand}"]],
             ["<0>The {sclass_prefix}resubmission deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_resub"]],
             ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}resubmission deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_resub", "{expand}"]],
             ["<0>The {sclass_prefix}{submission} deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],

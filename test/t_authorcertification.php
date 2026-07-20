@@ -30,7 +30,6 @@ class AuthorCertification_Tester {
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $conf->save_setting("sub_open", 1);
-        $conf->save_setting("sub_update", Conf::$now + 100);
         $conf->save_setting("sub_sub", Conf::$now + 100);
         $conf->refresh_settings();
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");

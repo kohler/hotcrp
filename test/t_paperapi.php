@@ -49,12 +49,11 @@ class PaperAPI_Tester {
     }
 
     function set_submission_deadline($t) {
-        $a = $this->conf->save_setting("sub_update", $t);
-        $b = $this->conf->save_setting("sub_sub", $t);
-        if ($a || $b) {
+        $a = $this->conf->save_setting("sub_sub", $t);
+        if ($a) {
             $this->conf->refresh_settings();
         }
-        return $a || $b;
+        return $a;
     }
 
     function test_save_submit_new_paper() {

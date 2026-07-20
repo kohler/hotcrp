@@ -188,8 +188,6 @@ class FailureReason extends Exception
             ?? $this->conf->unnamed_submission_round();
         if ($dn === "sub_reg") {
             $end = $sr->register;
-        } else if ($dn === "sub_update") {
-            $end = $sr->update;
         } else if ($dn === "sub_resub") {
             $end = $sr->resubmit;
         } else {

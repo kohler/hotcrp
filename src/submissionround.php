@@ -18,8 +18,6 @@ class SubmissionRound {
     /** @var bool */
     public $inferred_register = false;
     /** @var int */
-    public $update = 0;
-    /** @var int */
     public $submit = 0;
     /** @var int */
     public $resubmit = 0;
@@ -49,7 +47,6 @@ class SubmissionRound {
         $sr->open = $conf->setting("sub_open") ?? 0;
         $sr->register = $conf->setting("sub_reg") ?? 0;
         $sr->submit = $conf->setting("sub_sub") ?? 0;
-        $sr->update = $conf->setting("sub_update") ?? $sr->submit;
         $sr->resubmit = $conf->setting("sub_resub") ?? 0;
         $sr->grace = $conf->setting("sub_grace") ?? 0;
         $sr->freeze = $conf->setting("sub_freeze") > 0;
@@ -70,7 +67,6 @@ class SubmissionRound {
         $sr->open = $j->open ?? $main_sr->open;
         $sr->register = $j->register ?? 0;
         $sr->submit = $j->submit ?? 0;
-        $sr->update = $j->update ?? $sr->submit;
         $sr->resubmit = $j->resubmit ?? 0;
         $sr->grace = $j->grace ?? $main_sr->grace;
         $sr->freeze = $j->freeze ?? $main_sr->freeze;
@@ -84,12 +80,12 @@ class SubmissionRound {
 
     /** @param Conf $conf */
     private function initialize($conf) {
-        if ($this->register <= 0 && $this->update > 0) {
-            $this->register = $this->update;
+        if ($this->register <= 0 && $this->submit > 0) {
+            $this->register = $this->submit;
             $this->inferred_register = true;
         }
-        if ($this->resubmit <= 0 && $this->update > 0) {
-            $this->resubmit = $this->update;
+        if ($this->resubmit <= 0 && $this->submit > 0) {
+            $this->resubmit = $this->submit;
             $this->inferred_resubmit = true;
         }
         if ($this->submit + $this->grace >= Conf::$now) {
@@ -113,15 +109,6 @@ class SubmissionRound {
                 || $this->register + ($with_grace ? $this->grace : 0) >= Conf::$now);
     }
 
-    /** @param bool $with_grace
-     * @return bool */
-    function time_update($with_grace) {
-        return $this->open > 0
-            && $this->open <= Conf::$now
-            && (($this->update <= 0 && $this->resubmit <= 0)
-                || $this->update + ($with_grace ? $this->grace : 0) >= Conf::$now);
-    }
-
     /** @param bool $submitted
      * @param bool $with_grace
      * @return bool */
@@ -129,7 +116,7 @@ class SubmissionRound {
         if ($submitted && $this->freeze) {
             return false;
         }
-        $t = $submitted ? $this->resubmit : $this->update;
+        $t = $submitted ? $this->resubmit : $this->submit;
         return $this->open > 0
             && $this->open <= Conf::$now
             && (($t <= 0 && $this->resubmit <= 0)
@@ -177,8 +164,7 @@ class SubmissionRound {
     function closest_deadline_after($boundary) {
         $t = $this->open >= $boundary ? $this->open : PHP_INT_MAX;
         if ($this->open > 0) {
-            foreach ([$this->register, $this->update, $this->submit,
-                      $this->resubmit] as $tt) {
+            foreach ([$this->register, $this->submit, $this->resubmit] as $tt) {
                 if ($tt >= $boundary) {
                     $t = min($t, $tt);
                 } else if ($tt + $this->grace >= $boundary) {

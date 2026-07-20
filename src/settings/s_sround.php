@@ -13,7 +13,6 @@ class Sround_Setting {
     /** @var int */
     public $open;
     public $register;
-    // XXX update
     public $submit;
     public $resubmit;
     public $grace;
@@ -44,7 +43,6 @@ class Sround_Setting {
         if ($this->register > 0) {
             $j["register"] = $this->register;
         }
-        // XXX update
         if ($this->submit > 0) {
             $j["submit"] = $this->submit;
         }

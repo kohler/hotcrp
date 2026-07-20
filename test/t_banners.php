@@ -316,10 +316,10 @@ class Banners_Tester {
         $dl2 = Conf::$now + 200;
         $old_sub_open = $this->conf->setting("sub_open");
         $old_sub_sub = $this->conf->setting("sub_sub");
-        $old_sub_update = $this->conf->setting("sub_update");
+        $old_sub_reg = $this->conf->setting("sub_reg");
         $this->conf->save_refresh_setting("sub_open", Conf::$now - 1000);
-        $this->conf->save_refresh_setting("sub_sub", $dl1);
-        $this->conf->save_refresh_setting("sub_update", $dl2);
+        $this->conf->save_refresh_setting("sub_reg", $dl1);
+        $this->conf->save_refresh_setting("sub_sub", $dl2);
 
         $this->set_banners(json_encode([
             (object) [
@@ -376,7 +376,7 @@ class Banners_Tester {
         // Restore
         $this->conf->save_refresh_setting("sub_open", $old_sub_open);
         $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
-        $this->conf->save_refresh_setting("sub_update", $old_sub_update);
+        $this->conf->save_refresh_setting("sub_reg", $old_sub_reg);
     }
 
     function test_submission_deadline_crossing() {

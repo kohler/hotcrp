@@ -1912,7 +1912,6 @@ class Settings_Tester {
     function test_json_submission_registration_inferred() {
         $old_reg = $this->conf->setting("sub_reg");
         $old_sub = $this->conf->setting("sub_sub");
-        $old_update = $this->conf->setting("sub_update");
 
         // saving a submission deadline does not materialize an unset
         // registration deadline; SubmissionRound infers it
@@ -1943,8 +1942,7 @@ class Settings_Tester {
         xassert($sv->has_error());
 
         $this->conf->save_setting("sub_reg", $old_reg);
-        $this->conf->save_setting("sub_sub", $old_sub);
-        $this->conf->save_refresh_setting("sub_update", $old_update);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub);
     }
 
     function test_json_change_descriptions() {

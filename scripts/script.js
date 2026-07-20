@@ -3658,8 +3658,6 @@ function display_main(is_initial) {
     if (dl.sub && dl.sub.open) {
         if (checkdl(now, +dl.sub.reg, dl.sub.reg_ingrace))
             dlname = "Registration";
-        else if (checkdl(now, +dl.sub.update, dl.sub.update_ingrace))
-            dlname = "Update";
         else if (checkdl(now, +dl.sub.sub, dl.sub.sub_ingrace))
             dlname = "Submission";
     }
@@ -13746,7 +13744,7 @@ handle_ui.on("submit.js-submit-paper", function (evt) {
         && sub.type === "checkbox"
         && !sub.checked
         && this.hasAttribute("data-submitted")) {
-        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.")) {
+        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be evaluated.")) {
             evt.preventDefault();
             return;
         }
