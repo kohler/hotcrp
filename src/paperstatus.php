@@ -613,10 +613,9 @@ final class PaperStatus extends MessageSet {
     }
 
     private function _prepare_revive($pj) {
-        if ($this->prow->timeWithdrawn <= 0 || $pj->status->withdrawn) {
-            // do nothing
-        } else if (($whynot = $this->user->perm_revive_paper($this->prow))) {
-            $whynot->append_to($this, "status:withdrawn", 2);
+        if (($whynot = $this->user->perm_revive_paper($this->prow))) {
+            $whynot->append_to($this, "status:withdrawn", MessageSet::ESTOP);
+            $pj->status->withdrawn = true;
         } else {
             $this->prow->set_prop("timeWithdrawn", 0);
             if ($this->prow->timeSubmitted === -PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
@@ -624,6 +623,27 @@ final class PaperStatus extends MessageSet {
             } else if ($this->prow->timeSubmitted < 0) {
                 $this->prow->set_prop("timeSubmitted", -$this->prow->timeSubmitted);
             }
+        }
+    }
+
+    private function _prepare_withdraw($pj) {
+        if ($this->prow->base_prop("timeWithdrawn") <= 0) {
+            $withdrawn_at = 0;
+            if (isset($pj->status->withdrawn_at)
+                && $this->user->privChair) {
+                $withdrawn_at = $pj->status->withdrawn_at;
+            }
+            $this->prow->set_prop("timeWithdrawn", $withdrawn_at > 0 ? $withdrawn_at : Conf::$now);
+        }
+        if (isset($pj->status->withdraw_reason)) {
+            $this->prow->set_prop("withdrawReason", UnicodeHelper::utf8_truncate_invalid(substr($pj->status->withdraw_reason, 0, 1024)));
+        }
+        if ($this->prow->base_prop("timeSubmitted") > 0) {
+            $this->prow->set_prop("timeSubmitted", -$this->prow->base_prop("timeSubmitted"));
+        } else if (isset($pj->status->submitted_at)
+                   && $this->user->privChair
+                   && $pj->status->submitted_at > 0) {
+            $this->prow->set_prop("timeSubmitted", -$pj->status->submitted_at);
         }
     }
 
@@ -651,105 +671,83 @@ final class PaperStatus extends MessageSet {
     }
 
     private function _prepare_status($pj) {
-        $old_withdrawn = $this->prow->base_prop("timeWithdrawn") > 0;
-        $old_submitted = $this->prow->base_prop("timeSubmitted") > 0;
-        $old_submitted_at = abs($this->prow->base_prop("timeSubmitted"));
-        if ($old_submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
-            $old_submitted_at = Conf::$now;
+        // check edit permission if there have been changes
+        if ($this->_noncontacts_changed
+            && ($whynot = $this->user->perm_edit_paper($this->prow))) {
+            $field = $pj->status->withdrawn ? "status:withdrawn" : "status:submitted";
+            $whynot->append_to($this, $field, MessageSet::ESTOP);
         }
 
         // check withdraw status
         $pj_withdrawn = $this->prow->timeWithdrawn > 0;
-        if (!$old_withdrawn && $pj->status->withdrawn) {
+        if ($pj->status->withdrawn
+            && !$pj_withdrawn
+            && $this->prow->base_prop("timeWithdrawn") <= 0) {
             if (($whynot = $this->user->perm_withdraw_paper($this->prow))) {
                 $whynot->append_to($this, "status:withdrawn", 2);
             } else {
                 $pj_withdrawn = true;
             }
         }
-
+        if ($pj_withdrawn) {
+            $this->_prepare_withdraw($pj);
+            return;
+        }
 
         // check and change submitted status
-        $pj_submitted = $pj_withdrawn
-            ? $old_submitted_at > 0
-            : $pj->status->submitted && (!$this->has_error() || $old_submitted);
+        $old_submitted = $this->prow->base_prop("timeSubmitted") > 0;
+        $pj_submitted = $pj->status->submitted
+            && (!$this->has_error() || $old_submitted);
 
         if ($pj_submitted) {
             $pj_submitted = $this->_check_submit_required();
         }
 
-        if ($pj_submitted !== $old_submitted
-            || $this->_noncontacts_changed) {
-            $whynot = $this->user->perm_edit_paper($this->prow);
-            if ($whynot
-                && $pj_submitted
-                && !$this->_noncontacts_changed) {
-                $whynot = $this->user->perm_finalize_paper($this->prow);
-            }
-            if (!$whynot
-                && $old_submitted
-                && !$pj_submitted) {
-                $whynot = $this->user->perm_unsubmit_paper($this->prow);
-            }
-            if ($whynot) {
-                $whynot->append_to($this, "status:submitted", 3);
+        if ($pj_submitted !== $old_submitted) {
+            $method = $pj_submitted ? "perm_finalize_paper" : "perm_unsubmit_paper";
+            if (($whynot = $this->user->$method($this->prow))) {
+                $whynot->append_to($this, "status:submitted", MessageSet::ESTOP);
                 $pj_submitted = $old_submitted;
             }
         }
 
-        if ($pj_submitted) {
-            $submitted_at = $old_submitted_at;
-            if (!$old_submitted
-                && isset($pj->status->submitted_at)
-                && $this->user->privChair) {
-                $submitted_at = $pj->status->submitted_at;
-            }
-            if ($submitted_at <= 0
-                || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
-                $submitted_at = Conf::$now;
-            }
-        } else {
-            $submitted_at = 0;
-        }
-        if ($pj_withdrawn) {
-            $submitted_at = -$submitted_at;
+        if (!$pj_submitted) {
+            $this->prow->set_prop("timeSubmitted", 0);
+            return;
         }
 
+        $submitted_at = abs($this->prow->base_prop("timeSubmitted"));
+        if (!$old_submitted
+            && isset($pj->status->submitted_at)
+            && $this->user->privChair) {
+            $submitted_at = $pj->status->submitted_at;
+        }
+        if ($submitted_at <= 0
+            || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
+            $submitted_at = Conf::$now;
+        }
         $this->prow->set_prop("timeSubmitted", $submitted_at);
 
 
-        // set withdrawn status
-        if ($pj_withdrawn) {
-            if (!$old_withdrawn) {
-                $withdrawn_at = 0;
-                if (isset($pj->status->withdrawn_at)
-                    && $this->user->privChair) {
-                    $withdrawn_at = $pj->status->withdrawn_at;
-                }
-                $this->prow->set_prop("timeWithdrawn", $withdrawn_at > 0 ? $withdrawn_at : Conf::$now);
-            }
-            if (isset($pj->status->withdraw_reason)) {
-                $this->prow->set_prop("withdrawReason", UnicodeHelper::utf8_truncate_invalid(substr($pj->status->withdraw_reason, 0, 1024)));
-            }
-        }
-
-
-        // mark whether submitted, mark diff
-        $this->_paper_submitted = $pj_submitted && !$pj_withdrawn;
-        if ($pj_withdrawn !== $old_withdrawn
-            || $pj_submitted !== $old_submitted) {
-            $this->status_change_at("status");
-        }
-
-
         // track last author modification before review
-        if ($pj_submitted
-            && (($this->prow->timeSubmittedReviewable === 0
-                 && !$old_submitted)
-                || (($this->prow->user_prop_changed() || !empty($this->_fdiffs))
-                    && ($this->_save_status & self::SSF_ADMIN_UPDATE) === 0
-                    && empty($this->prow->all_reviews())))) {
+        if (($this->prow->timeSubmittedReviewable === 0
+             && !$old_submitted)
+            || (($this->prow->user_prop_changed() || !empty($this->_fdiffs))
+                && ($this->_save_status & self::SSF_ADMIN_UPDATE) === 0
+                && empty($this->prow->all_reviews()))) {
             $this->prow->set_prop("timeSubmittedReviewable", Conf::$now);
+        }
+    }
+
+    private function _prepare_status_change() {
+        $old_withdrawn = $this->prow->base_prop("timeWithdrawn") > 0;
+        $new_withdrawn = $this->prow->timeWithdrawn > 0;
+        $old_submitted = $this->prow->base_prop("timeSubmitted") > 0;
+        $new_submitted = $this->prow->timeSubmitted > 0;
+        $this->_paper_submitted = !$new_withdrawn && $new_submitted;
+        if ($old_withdrawn !== $new_withdrawn
+            || $old_submitted !== $new_submitted) {
+            $this->status_change_at("status");
         }
     }
 
@@ -1243,7 +1241,9 @@ final class PaperStatus extends MessageSet {
         }
 
         // potentially revive, mark updating status
-        $this->_prepare_revive($pj);
+        if ($this->prow->timeWithdrawn > 0 && !$pj->status->withdrawn) {
+            $this->_prepare_revive($pj);
+        }
         $this->prow->set_updating($pj->status->submitted && !$pj->status->withdrawn);
 
         // check fields
@@ -1290,6 +1290,7 @@ final class PaperStatus extends MessageSet {
 
         // prepare non-fields for saving
         $this->_prepare_status($pj);
+        $this->_prepare_status_change();
         $this->_prepare_decision($pj);
         $this->_prepare_final_status($pj);
         $this->prow->clear_updating();
