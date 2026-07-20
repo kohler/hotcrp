@@ -2614,6 +2614,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
      * class run in the same process — such as ReviewAPI — sees the three seeded
      * assignments rather than leftover state. */
     function finalize() {
+        // `au_seerev` is left enabled by the author-review-visibility test
+        $this->conf->save_refresh_setting("au_seerev", null);
         $prow = $this->conf->paper_by_id(18);
         if (!$prow) {
             return;

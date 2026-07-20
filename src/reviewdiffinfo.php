@@ -145,7 +145,7 @@ class ReviewDiffInfo {
         assert($rrow->reviewId === $this->rrow->reviewId);
         foreach ($this->_old_prop as $name => $value) {
             if ($name !== "sfields" && $name !== "tfields") {
-                $rrow->set_prop($name, $this->rrow->{$name});
+                $rrow->set_prop($name, $this->rrow->prop($name));
             }
         }
         foreach ($this->_fields as $i => $f) {
@@ -159,7 +159,7 @@ class ReviewDiffInfo {
         if (array_key_exists($prop, $this->_old_prop)) {
             return $this->_old_prop[$prop];
         }
-        return $this->rrow->$prop;
+        return $this->rrow->prop($prop);
     }
 
     /** @param ?callable(?string,string|int|null...):void $stager */
