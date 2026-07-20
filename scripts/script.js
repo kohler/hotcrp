@@ -13262,15 +13262,23 @@ handle_ui.on("js-update-potential-conflicts", function () {
 
 handle_ui.on("js-withdraw", function () {
     const f = this.form, $pu = $popup({near: this, action: f});
-    $pu.append($e("p", null, "Are you sure you want to withdraw this " + siteinfo.snouns[0] + " from consideration and/or publication?" + (this.hasAttribute("data-revivable") ? "" : " Only administrators can undo this step.")),
-        $e("textarea", {name: "reason", rows: 3, cols: 40, placeholder: "Optional explanation", spellcheck: "true", class: "w-99 need-autogrow"}));
+    $pu.append($e("p", null, "Are you sure you want to withdraw this " + siteinfo.snouns[0] + " from evaluation and/or publication?" + (this.hasAttribute("data-revivable") ? "" : " Only administrators can undo this step.")));
+    if (this.hasAttribute("data-clear-fields")) {
+        $pu.append($e("p", null, "Withdrawal will reset " + this.getAttribute("data-clear-fields") + " as a side effect."));
+    }
+    $pu.append($e("textarea", {name: "reason", rows: 3, cols: 40, placeholder: "Optional explanation", spellcheck: "true", class: "w-99 need-autogrow"}));
     if (!this.hasAttribute("data-withdrawable")) {
         $pu.append($e("label", "checki", $e("span", "checkc", $e("input", {type: "checkbox", name: "override", value: 1})), "Override deadlines"));
     }
     $pu.append_actions($e("button", {type: "submit", name: "withdraw", value: 1, class: "btn-danger"}, "Withdraw"), "Cancel");
-    $pu.show();
     transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
     $pu.on("submit", function () { addClass(f, "submitting"); });
+    if (this.hasAttribute("data-submitted")
+        || this.hasAttribute("data-clear-fields")) {
+        $pu.show();
+    } else {
+        $pu.form().elements.withdraw.click();
+    }
 });
 
 handle_ui.on("js-delete-paper", function () {

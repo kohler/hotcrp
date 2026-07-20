@@ -333,11 +333,18 @@ class AuthorCertification_Tester {
         // withdrawing through PaperStatus clears the certifications
         $ps = new PaperStatus($u_ronald);
         xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        $ps->log_save_activity();
 
         $prow = $this->conf->checked_paper_by_id($pid);
         xassert_gt($prow->timeWithdrawn, 0);
         xassert_eqq($prow->force_option($this->cert1)->value_count(), 0);
         xassert_eqq($prow->force_option($this->cert2)->value_count(), 0);
+
+        // the withdrawal is logged, and the silently-reset certifications are
+        // not named in its change list
+        $action = $this->conf->fetch_value("select action from ActionLog where paperId=? order by logId desc limit 1", $pid);
+        xassert_str_contains($action, "withdrawn");
+        xassert_not_str_contains($action, "aucert");
     }
 
     function test_max_submissions_revive() {

@@ -2238,12 +2238,8 @@ class PaperTable {
         }
 
         // withdraw button
-        if (!$this->prow->paperId
-            || !$this->user->can_withdraw_paper($this->prow, true)) {
-            $b = null;
-        } else if ($this->prow->timeSubmitted <= 0) {
-            $b = Ht::submit("withdraw", "Withdraw", ["class" => "uic js-mark-submit"]);
-        } else {
+        if ($this->prow->paperId
+            && $this->user->can_withdraw_paper($this->prow, true)) {
             $args = ["class" => "ui js-withdraw"];
             if ($this->user->can_withdraw_paper($this->prow, !$this->admin)) {
                 $args["data-withdrawable"] = "true";
@@ -2252,9 +2248,20 @@ class PaperTable {
                 || $this->prow->submission_round()->time_submit(true)) {
                 $args["data-revivable"] = "true";
             }
+            if ($this->prow->timeSubmitted > 0) {
+                $args["data-submitted"] = "true";
+            }
+            $clearf = [];
+            foreach ($this->prow->form_fields() as $o) {
+                if ($o->reset_on_withdraw()
+                    && $o->test_exists($this->prow)
+                    && $this->prow->option($o))
+                    $clearf[] = $o->edit_title($this->prow);
+            }
+            if (!empty($clearf)) {
+                $args["data-clear-fields"] = commajoin($clearf);
+            }
             $b = Ht::button("Withdraw", $args);
-        }
-        if ($b) {
             if ($this->admin
                 && !$this->prow->author_user()->can_withdraw_paper($this->prow)) {
                 $b = [$b, "(admin only)"];

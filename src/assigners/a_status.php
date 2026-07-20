@@ -253,8 +253,16 @@ class Status_Assigner extends Assigner {
                 $aset->conf->update_paperacc_setting(min($vals));
             }, 0);
         }
-        if ($withdrawn > 0 && $old_withdrawn <= 0 && ($this->item["_notify"] ?? true)) {
-            $aset->register_cleanup_function("withdraw {$this->pid}", [$this, "notify_for_withdraw"]);
+        if ($withdrawn > 0 && $old_withdrawn <= 0) {
+            if ($this->item["_notify"] ?? true) {
+                $aset->register_cleanup_function("withdraw {$this->pid}", [$this, "notify_for_withdraw"]);
+            }
+            foreach ($aset->conf->options() as $opt) {
+                if ($opt->reset_on_withdraw()) {
+                    $aset->register_cleanup_function("reset_options_on_withdraw", [$this, "reset_options_on_withdraw"], $this->pid);
+                    break;
+                }
+            }
         }
     }
 
@@ -302,5 +310,14 @@ class Status_Assigner extends Assigner {
         }
 
         HotCRPMailer::send_combined_preparations($preps);
+    }
+
+    function reset_options_on_withdraw(AssignmentSet $aset, $pids) {
+        $oids = [];
+        foreach ($aset->conf->options() as $opt) {
+            if ($opt->reset_on_withdraw())
+                $oids[] = $opt->id;
+        }
+        $aset->conf->qe("delete from PaperOption where paperId?a and optionId?a", $pids, $oids);
     }
 }

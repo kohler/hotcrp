@@ -57,6 +57,8 @@ final class PaperStatus extends MessageSet {
     private $_unknown_fields;
     /** @var list<PaperOption> */
     private $_fdiffs;
+    /** @var list<PaperOption> */
+    private $_reset_fields;
     /** @var list<string> */
     private $_xdiffs;
     /** @var ?list<PaperOption> */
@@ -94,6 +96,7 @@ final class PaperStatus extends MessageSet {
     const SSF_FINALSUBMIT = 128;
     const SSF_ADMIN_UPDATE = 256;
     const SSF_PIDFAIL = 512;
+    const SSF_WITHDRAWN = 1024;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -634,6 +637,20 @@ final class PaperStatus extends MessageSet {
                 $withdrawn_at = $pj->status->withdrawn_at;
             }
             $this->prow->set_prop("timeWithdrawn", $withdrawn_at > 0 ? $withdrawn_at : Conf::$now);
+            // clear options that reset on withdraw (e.g. author cert)
+            foreach ($this->prow->form_fields() as $opt) {
+                if (!$opt->reset_on_withdraw()
+                    || $this->prow->force_option($opt)->value_count() === 0) {
+                    continue;
+                }
+                $this->prow->override_option(PaperValue::make($this->prow, $opt));
+                if (($pos = array_search($opt, $this->_fdiffs, true)) !== false) {
+                    array_splice($this->_fdiffs, $pos, 1);
+                }
+                if (!in_array($opt, $this->_reset_fields, true)) {
+                    $this->_reset_fields[] = $opt;
+                }
+            }
         }
         if (isset($pj->status->withdraw_reason)) {
             $this->prow->set_prop("withdrawReason", UnicodeHelper::utf8_truncate_invalid(substr($pj->status->withdraw_reason, 0, 1024)));
@@ -1053,7 +1070,7 @@ final class PaperStatus extends MessageSet {
         parent::clear();
         $this->prow = $prow;
         $this->paperId = $this->saved_prow = $this->title = null;
-        $this->_fdiffs = $this->_xdiffs = [];
+        $this->_fdiffs = $this->_reset_fields = $this->_xdiffs = [];
         $this->_submitted_problem_fields = null;
         if ($this->prow->timeSubmitted > 0) {
             $this->_prepare_submitted_problem_fields();
@@ -1458,11 +1475,6 @@ final class PaperStatus extends MessageSet {
     }
 
     private function _execute_options() {
-        $x = [];
-        foreach ($this->_fdiffs as $opt) {
-            $x[] = $opt->field_key();
-        }
-
         $del = $ins = [];
         foreach ($this->_fdiffs as $opt) {
             if ($opt->id <= 0) {
@@ -1478,6 +1490,9 @@ final class PaperStatus extends MessageSet {
                 }
                 $ins[] = $qv0;
             }
+        }
+        foreach ($this->_reset_fields as $opt) {
+            $del[] = $opt->id;
         }
         if (!empty($del) && !$this->prow->is_new()) {
             $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $this->paperId, $del);
@@ -1680,6 +1695,10 @@ final class PaperStatus extends MessageSet {
         if ($this->prow->timeFinalSubmitted > 0) {
             $this->_save_status |= self::SSF_FINALSUBMIT;
         }
+        if ($this->prow->timeWithdrawn > 0
+            && $this->prow->base_prop("timeWithdrawn") <= 0) {
+            $this->_save_status |= self::SSF_WITHDRAWN;
+        }
 
         // correct ADMIN_UPDATE for new papers: if administrator created the
         // paper and is not an author or contact, it's an admin update
@@ -1744,8 +1763,11 @@ final class PaperStatus extends MessageSet {
         if (($this->_save_status & self::SSF_NEWSUBMIT) !== 0) {
             $actions[] = "submitted";
         } else if (($this->_save_status & self::SSF_NEW) === 0
-                   && (!empty($this->_fdiffs) || !empty($this->_xdiffs))) {
+                   && !empty($this->_fdiffs)) {
             $actions[] = "edited";
+        }
+        if (($this->_save_status & self::SSF_WITHDRAWN) !== 0) {
+            $actions[] = "withdrawn";
         }
         if (empty($actions)) {
             $actions[] = "saved";

@@ -677,6 +677,10 @@ class PaperOption implements JsonSerializable {
     function has_attachments() {
         return false;
     }
+    /** @return bool */
+    function reset_on_withdraw() {
+        return false;
+    }
 
     function value_force(PaperValue $ov) {
     }

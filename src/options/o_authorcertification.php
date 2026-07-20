@@ -239,6 +239,10 @@ class AuthorCertification_PaperOption extends PaperOption {
         }
     }
 
+    function reset_on_withdraw() {
+        return true;
+    }
+
     /** @param PaperValue $ov
      * @return bool */
     static function is_complete($ov) {
