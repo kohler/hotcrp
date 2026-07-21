@@ -35,9 +35,9 @@ class Comments_Tester {
         if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             return;
         }
-        $tf = new ReviewValues($this->conf);
+        $tf = new ReviewValues($this->u_mgbaker);
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
-        xassert($tf->check_and_save($this->u_mgbaker, $paper1));
+        xassert($tf->check_and_save($paper1));
     }
 
     function test_responses() {
@@ -145,9 +145,9 @@ class Comments_Tester {
         // ensure a PC member has a submitted review
         $paper = $this->conf->checked_paper_by_id(4);
         $reviewer = $this->conf->user_by_email("estrin@usc.edu");
-        $tf = new ReviewValues($this->conf);
+        $tf = new ReviewValues($reviewer);
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
-        xassert($tf->check_and_save($reviewer, $paper));
+        xassert($tf->check_and_save($paper));
 
         // PC author submit a draft response
         MailChecker::clear();
@@ -190,9 +190,9 @@ class Comments_Tester {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $this->ensure_paper1_review($paper1);
         $reviewer = $this->conf->user_by_email("lixia@cs.ucla.edu");
-        $tf = new ReviewValues($this->conf);
+        $tf = new ReviewValues($reviewer);
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Flanges", "comaut" => "On the Wilbur Cross Parkway, December 15, 2024"]));
-        xassert($tf->check_and_save($reviewer, $paper1));
+        xassert($tf->check_and_save($paper1));
         MailChecker::clear();
 
         $this->conf->save_setting("viewrev", Conf::VIEWREV_UNLESSINCOMPLETE);
@@ -1540,9 +1540,9 @@ class Comments_Tester {
         // a real reviewer with a submitted review (so they may comment)
         xassert_assign($this->u_chair, "paper,action,user\n3,review,external@_.com");
         $reviewer = $this->conf->checked_user_by_email("external@_.com");
-        $tf = new ReviewValues($this->conf);
+        $tf = new ReviewValues($reviewer);
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "S", "comaut" => "C"]));
-        xassert($tf->check_and_save($reviewer, $paper3));
+        xassert($tf->check_and_save($paper3));
 
         // not-logged-in user holding the review-accept capability
         $ucap = Contact::make($this->conf);

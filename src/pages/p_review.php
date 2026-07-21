@@ -119,9 +119,9 @@ class Review_Page {
     }
 
     function handle_update() {
-        $rv = new ReviewValues($this->conf);
+        $rv = new ReviewValues($this->user);
         if ($rv->parse_qreq($this->qreq)
-            && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+            && $rv->check_and_save($this->prow, $this->rrow)) {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
         }
         $rv->report();
@@ -137,14 +137,14 @@ class Review_Page {
             $this->conf->error_msg("<0>File upload required");
             return;
         }
-        $rv = (new ReviewValues($this->conf))
+        $rv = (new ReviewValues($this->user))
             ->set_text($this->qreq->file_content("file"), $this->qreq->file_filename("file"));
         $match = $other = false;
         $override = friendly_boolean($this->qreq->override) ?? false;
         while ($rv->set_req_override($override)->parse_text()) {
             if ($rv->req_pid() === $this->prow->paperId) {
                 $match = true;
-                if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+                if ($rv->check_and_save($this->prow, $this->rrow)) {
                     $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
                 }
             } else {
@@ -218,7 +218,7 @@ class Review_Page {
             return;
         }
 
-        $rv = new ReviewValues($this->conf);
+        $rv = new ReviewValues($this->user);
         $my_rrow = $this->prow->review_by_user($this->user);
         $want_rid = $this->rrow->unparse_ordinal_id();
         if ($rv->parse_qreq($this->qreq)
@@ -227,13 +227,13 @@ class Review_Page {
             // Be careful about if_vtag_match, since vtag corresponds to
             // *subreview*, not $my_rrow
             $rv->clear_req_vtag();
-            if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
+            if ($rv->check_and_save($this->prow, $my_rrow)) {
                 $want_rid = $rv->review_ordinal_id;
                 if (!$rv->has_problem_at("ready")) {
                     // approve the source review
-                    $rvx = new ReviewValues($this->conf);
+                    $rvx = new ReviewValues($this->user);
                     $rvx->set_req_approval("approved");
-                    $rvx->check_and_save($this->user, $this->prow, $this->rrow);
+                    $rvx->check_and_save($this->prow, $this->rrow);
                 }
             }
         }
@@ -260,9 +260,9 @@ class Review_Page {
             || !$this->user->can_manage_reviews($this->prow)) {
             return;
         }
-        $rv = new ReviewValues($this->conf);
+        $rv = new ReviewValues($this->user);
         $rv->set_can_unsubmit(true)->set_req_ready(false);
-        if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+        if ($rv->check_and_save($this->prow, $this->rrow)) {
             $this->conf->success_msg("<0>Review unsubmitted");
         }
         $this->qreq->redirect_self();
@@ -348,7 +348,7 @@ class Review_Page {
         if ($this->rv) {
             $pt->set_review_values($this->rv);
         } else if ($this->qreq->has_annex("after_login")) {
-            $rv = new ReviewValues($this->conf);
+            $rv = new ReviewValues($this->user);
             $rv->parse_qreq($this->qreq);
             $pt->set_review_values($rv);
         }

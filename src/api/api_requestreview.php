@@ -357,8 +357,8 @@ class RequestReview_API {
         }
 
         if ($rrow->reviewStatus < ReviewInfo::RS_ACKNOWLEDGED) {
-            $rv = (new ReviewValues($rrow->conf))->set_req_ready(false);
-            $rv->check_and_save($user, $prow, $rrow);
+            $rv = (new ReviewValues($user))->set_req_ready(false);
+            $rv->check_and_save($prow, $rrow);
         }
 
         return new JsonResult([

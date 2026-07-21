@@ -9,6 +9,9 @@ class ReviewValues extends MessageSet {
     /** @var ReviewForm
      * @readonly */
     public $rf;
+    /** @var Contact
+     * @readonly */
+    public $user;
 
     /** @var bool */
     private $notify = true;
@@ -86,15 +89,10 @@ class ReviewValues extends MessageSet {
     /** @var ?list<string> */
     private $blank;
 
-    /** @param ReviewForm|Conf $rf */
-    function __construct($rf) {
-        if ($rf instanceof ReviewForm) {
-            $this->conf = $rf->conf;
-            $this->rf = $rf;
-        } else {
-            $this->conf = $rf;
-            $this->rf = $this->conf->review_form();
-        }
+    function __construct(Contact $user) {
+        $this->conf = $user->conf;
+        $this->rf = $this->conf->review_form();
+        $this->user = $user;
         $this->clear_req();
     }
 
@@ -128,13 +126,6 @@ class ReviewValues extends MessageSet {
         $this->filename = $filename;
         $this->lineno = 0;
         return $this;
-    }
-
-    /** @param ReviewForm|Conf $rf
-     * @return ReviewValues
-     * @deprecated */
-    static function make_text($rf, $text, $filename = null) {
-        return (new ReviewValues($rf))->set_text($text, $filename);
     }
 
     /** @return $this */
@@ -269,12 +260,12 @@ class ReviewValues extends MessageSet {
                         $this->first_lineno = $this->field_lineno["paperId"] = $this->lineno;
                     }
                 } else if (preg_match('/\A==\+== Reviewer:\s*(.*?)\s*\z/', $line, $match)
-                           && ($user = Text::split_name($match[1], true))
-                           && $user[2]) {
+                           && ($un = Text::split_name($match[1], true))
+                           && $un[2]) {
                     $this->field_lineno["reviewerEmail"] = $this->lineno;
-                    $this->req["reviewerFirst"] = $user[0];
-                    $this->req["reviewerLast"] = $user[1];
-                    $this->req["reviewerEmail"] = $user[2];
+                    $this->req["reviewerFirst"] = $un[0];
+                    $this->req["reviewerLast"] = $un[1];
+                    $this->req["reviewerEmail"] = $un[2];
                 } else if (preg_match('/\A==\+== (?:Paper|Submission) (Number|\#)\s*\z/i', $line)) {
                     if ($nfields > 0) {
                         break;
@@ -507,7 +498,9 @@ class ReviewValues extends MessageSet {
         "r" => self::QREQ_IGNORE, "m" => self::QREQ_IGNORE,
         "post" => self::QREQ_IGNORE, "vtag" => self::QREQ_IGNORE,
         "forceShow" => self::QREQ_IGNORE, "default" => self::QREQ_IGNORE,
-        "deletereview" => self::QREQ_IGNORE,
+        "deletereview" => self::QREQ_IGNORE, "actas" => self::QREQ_IGNORE,
+        "u" => self::QREQ_IGNORE, "t" => self::QREQ_IGNORE,
+        "reviewer" => self::QREQ_IGNORE,
 
         "update" => self::QREQ_UPDATE, "savedraft" => self::QREQ_UNREADY,
         "submitreview" => self::QREQ_READY, "unsubmitreview" => self::QREQ_UNREADY,
@@ -630,8 +623,8 @@ class ReviewValues extends MessageSet {
     }
 
     /** @return bool */
-    function check_and_save(Contact $user, ?PaperInfo $prow, ?ReviewInfo $rrow = null) {
-        if (!$this->prepare_save($user, $prow, $rrow)) {
+    function check_and_save(?PaperInfo $prow, ?ReviewInfo $rrow = null) {
+        if (!$this->prepare_save($prow, $rrow)) {
             $this->abort_save();
             return false;
         }
@@ -650,8 +643,9 @@ class ReviewValues extends MessageSet {
      * via `change_list()`; a following `execute_save()` commits them, or
      * `abort_save()` reverts them.
      * @return bool true if the request staged cleanly */
-    function prepare_save(Contact $user, ?PaperInfo $prow, ?ReviewInfo $rrow = null) {
+    function prepare_save(?PaperInfo $prow, ?ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
+        $user = $this->user;
         $this->reviewId = $this->review_ordinal_id = null;
         $this->_save_status = 0;
         $this->stage_rrow = $this->stage_user = null;
@@ -782,7 +776,7 @@ class ReviewValues extends MessageSet {
         }
 
         // stage the request (validation + property staging)
-        if (!$this->_apply_req($user, $prow, $rrow)) {
+        if (!$this->_apply_req($prow, $rrow)) {
             return false;
         }
         $this->_save_status |= self::SSF_PREPARED;
@@ -885,15 +879,15 @@ class ReviewValues extends MessageSet {
         return false;
     }
 
-    /** @param Contact $user
-     * @param PaperInfo $prow
+    /** @param PaperInfo $prow
      * @param ReviewInfo $rrow
      * @param int $view_score
      * @param bool $allow_new_submit
      * @param bool $approvable
      * @return int */
-    private function _compute_new_status($user, $prow, $rrow, $view_score,
+    private function _compute_new_status($prow, $rrow, $view_score,
                                          $allow_new_submit, $approvable) {
+        $user = $this->user;
         $oldstatus = $rrow->reviewStatus;
         $olddelivered = $oldstatus >= ReviewInfo::RS_DELIVERED;
         $nonempty = $view_score > VIEWSCORE_EMPTY;
@@ -936,8 +930,9 @@ class ReviewValues extends MessageSet {
     }
 
     /** @return bool */
-    private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
+    private function _apply_req(PaperInfo $prow, ReviewInfo $rrow) {
         assert($prow->paperId === $this->req["paperId"] && $rrow->paperId === $prow->paperId);
+        $user = $this->user;
         // set `stage_rrow` before staging any property, so that an error
         // return from any point below leaves a state `abort_save` can revert
         $this->stage_rrow = $rrow;
@@ -1113,7 +1108,7 @@ class ReviewValues extends MessageSet {
         }
 
         // new status #2
-        $newstatus2 = $this->_compute_new_status($user, $prow, $rrow, $view_score, $allow_new_submit, $approvable);
+        $newstatus2 = $this->_compute_new_status($prow, $rrow, $view_score, $allow_new_submit, $approvable);
         if ($newstatus !== $newstatus2) {
             error_log("{$this->conf->dbname}: #{$prow->paperId}/{$rrow->reviewId}: old status computation {$newstatus} ≠ new status computation {$newstatus2}");
             error_log("{$this->conf->dbname}: " . json_encode(["view_score" => $view_score, "allow_new_submit" => $allow_new_submit, "approvable" => $approvable, "old_status" => $rrow->reviewStatus, "mtime" => $rrow->reviewModified, "ready" => $this->req["ready"] ?? null]));
@@ -1381,7 +1376,7 @@ class ReviewValues extends MessageSet {
             $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
         }
         if ($this->notify) {
-            $this->_notify($prow, $rrow, $diffinfo, $newstatus, $oldstatus, $reviewer, $user);
+            $this->_notify($prow, $rrow, $diffinfo, $newstatus, $oldstatus, $reviewer);
         }
 
         // record what happened
@@ -1439,7 +1434,7 @@ class ReviewValues extends MessageSet {
     private function _notify(PaperInfo $prow, ReviewInfo $rrow,
                              ReviewDiffInfo $diffinfo,
                              $newstatus, $oldstatus,
-                             Contact $reviewer, Contact $user) {
+                             Contact $reviewer) {
         assert($this->notify);
         $info = [
             "prow" => $prow,
@@ -1464,7 +1459,7 @@ class ReviewValues extends MessageSet {
             } else if ($newstatus === ReviewInfo::RS_DELIVERED
                        && $oldstatus < ReviewInfo::RS_DELIVERED) {
                 $tmpl = "@reviewapprovalrequest";
-            } else if ($rrow->requestedBy === $user->contactId) {
+            } else if ($rrow->requestedBy === $this->user->contactId) {
                 $tmpl = "@reviewpreapprovaledit";
             } else {
                 $tmpl = "@reviewapprovalupdate";
@@ -1476,9 +1471,9 @@ class ReviewValues extends MessageSet {
                    && $oldstatus < ReviewInfo::RS_ACKNOWLEDGED) {
             if ($rrow->requestedBy > 0
                 && $rrow->requestedBy !== $rrow->contactId
-                && $rrow->requestedBy !== $user->contactId
+                && $rrow->requestedBy !== $this->user->contactId
                 && $rrow->reviewType <= REVIEW_PC
-                && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
+                && ($requser = $this->conf->user_by_id($rrow->requestedBy))) {
                 HotCRPMailer::send_to($requser, "@acceptreviewrequest", [
                     "prow" => $prow, "reviewer_contact" => $reviewer
                 ]);
@@ -1492,7 +1487,7 @@ class ReviewValues extends MessageSet {
         foreach ($prow->review_followers(0) as $minic) {
             assert(($minic->overrides() & Contact::OVERRIDE_CONFLICT) === 0);
             // skip same user, dormant user, cannot view review
-            if ($minic->contactId === $user->contactId
+            if ($minic->contactId === $this->user->contactId
                 || $minic->is_dormant()
                 || !$minic->can_view_review($prow, $rrow, $diff_view_score)) {
                 continue;

@@ -446,7 +446,7 @@ class Review_API extends MessageSet {
 
     /** @return ReviewValues */
     private function make_rv() {
-        return new ReviewValues($this->conf);
+        return new ReviewValues($this->user);
     }
 
     /** Save one review from a plain form POST on `$prow`, or — when the form
@@ -478,7 +478,7 @@ class Review_API extends MessageSet {
      * @return JsonResult */
     private function run_post_text(Qrequest $qreq, ?PaperInfo $prow, $content, $filename) {
         $this->prow = $prow;
-        $rv = (new ReviewValues($this->conf))->set_text(convert_to_utf8($content), $filename);
+        $rv = $this->make_rv()->set_text(convert_to_utf8($content), $filename);
         $override = friendly_boolean($qreq->override) ?? false;
         $nmatch = $nother = 0;
         while ($rv->set_req_override($override)->parse_text()) {
@@ -682,7 +682,7 @@ class Review_API extends MessageSet {
         // unconditionally (it is empty when nothing was staged). prepare_save
         // resolves the paper (from `$this->prow` or the request's `paperId`) and
         // reports a missing/mismatched/forbidden paper.
-        $prepared = $rv->prepare_save($this->user, $this->prow, $rrow);
+        $prepared = $rv->prepare_save($this->prow, $rrow);
         $this->stale = $rv->has_problem_at("if_vtag_match")
             || $rv->has_problem_at("if_unmodified_since");
         $this->change_list = $rv->change_list(true);

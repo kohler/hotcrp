@@ -38,9 +38,9 @@ class ReviewAPI_Tester {
 
         Reviews_Tester::add_questions_for_response($this->conf);
         $review18A = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
-        $tf = (new ReviewValues($conf))->set_text($review18A, "review18A.txt");
+        $tf = (new ReviewValues($this->u_diot))->set_text($review18A, "review18A.txt");
         xassert($tf->parse_text());
-        xassert($tf->check_and_save($this->u_diot, null));
+        xassert($tf->check_and_save(null));
         xassert_eqq($tf->summary_status(), MessageSet::SUCCESS);
         $rrow = $conf->checked_paper_by_id(18)->checked_review_by_user($this->u_diot);
         $this->r18a_id = $rrow->reviewId;

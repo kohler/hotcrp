@@ -1091,11 +1091,10 @@ function save_review($prow, $user, $revreq, $rrow = null, $args = []) {
     if (is_int($prow)) {
         $prow = $user->conf->checked_paper_by_id($prow, $user);
     }
-    $rf = Conf::$main->review_form();
-    $tf = new ReviewValues($rf);
+    $tf = new ReviewValues($user);
     $tf->parse_qreq(new Qrequest("POST", $revreq));
     $rrowx = $rrow ?? $prow->fresh_review_by_user($user);
-    $tf->check_and_save($user, $prow, $rrowx);
+    $tf->check_and_save($prow, $rrowx);
     if (!($args["quiet"] ?? false)) {
         foreach ($tf->problem_list() as $mx) {
             Xassert::will_print();

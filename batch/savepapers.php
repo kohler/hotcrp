@@ -71,7 +71,7 @@ class SavePapers_Batch {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->user->set_overrides(Contact::OVERRIDE_CONFLICT);
-        $this->tf = (new ReviewValues($conf))->set_notify(false);
+        $this->tf = (new ReviewValues($this->user))->set_notify(false);
     }
 
     /** @return $this */
@@ -284,7 +284,7 @@ class SavePapers_Batch {
                         "affiliation" => $this->tf->req["reviewerAffiliation"] ?? null,
                         "disablement" => $this->disable_users ? Contact::CF_UDISABLED : 0
                     ])->store();
-                    $this->tf->check_and_save($this->user, $prow, null);
+                    $this->tf->check_and_save($prow, null);
                 }
                 $this->tf->clear_req();
             }
