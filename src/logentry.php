@@ -1,6 +1,6 @@
 <?php
 // logentry.php -- HotCRP action log entries and generator
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class LogEntry {
     /** @var int */
@@ -77,7 +77,7 @@ class LogEntryGenerator {
     private $delta = 0;
     /** @var list<LogEntry> */
     private $rows = [];
-    /** @var ?LogEntryFilter */
+    /** @var null|LogEntryFilter|callable */
     private $filter;
     /** @var list<LogEntry> */
     private $signpost_rows;
@@ -119,7 +119,7 @@ class LogEntryGenerator {
         $this->consolidate_row = null;
     }
 
-    /** @param ?LogEntryFilter $filter
+    /** @param null|LogEntryFilter|callable $filter
      * @return $this */
     function set_filter($filter) {
         $this->filter = $filter;
@@ -289,6 +289,7 @@ class LogEntryGenerator {
      * @param int $last
      * @param bool $expand */
     function load_row_range($first, $last, $expand = false) {
+        // $first and $last are indexes (ordinals) suitable for pagination
         // constrain [$first, $last) to existing rows, exit if satisfied
         $last = min($last, $this->nrows);
         $first = min($first, $last);
@@ -300,7 +301,7 @@ class LogEntryGenerator {
             return;
         }
         if ($expand && $last - $first < 2000) {
-            $last = min($first + 2000, $this->nrows);
+            $last = $first + min($this->nrows - $first, 2000);
         }
 
         // remove unneeded rows
@@ -337,7 +338,7 @@ class LogEntryGenerator {
                 $limit_logid = $br->logId;
             } else {
                 $ordinal = 0;
-                $limit_logid = 0;
+                $limit_logid = null;
             }
         }
 
@@ -348,7 +349,7 @@ class LogEntryGenerator {
                    && $this->consolidate_row)) {
             // construct query
             $q = $qbase;
-            if ($limit_logid !== null && $ordinal !== 0) {
+            if ($limit_logid !== null) {
                 $q .= " and logId<{$limit_logid}";
             }
             $q .= " order by logId desc";

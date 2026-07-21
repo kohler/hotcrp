@@ -386,7 +386,6 @@ class Log_Page {
     function print_page($leg, $page) {
         $conf = $this->conf;
         $this->qreq->print_header("Log", "actionlog");
-        file_put_contents("/tmp/x.txt", "");
 
         $leg->load_row_range($leg->page_index($page),
                              $leg->page_index($page + $this->nlinks + 1) + 1);

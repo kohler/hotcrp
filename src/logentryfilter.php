@@ -57,8 +57,7 @@ class LogEntryFilter {
             return false;
         } else if ($row->contactId === $this->user->contactId) {
             return true;
-        } else {
-            return $this->test_pidset($row, $this->pidset, $this->want, $this->includes);
         }
+        return $this->test_pidset($row, $this->pidset, $this->want, $this->includes);
     }
 }
