@@ -339,7 +339,10 @@ class SessionList {
         if ($this->urlbase === null) {
             return null;
         }
-        $args = $user->hoturl_defaults();
+        $args = [];
+        foreach ($user->hoturl_defaults() as $k => $v) {
+            $args[$k] = urlencode($v);
+        }
         $url = $this->urlbase;
         if (preg_match('/\Ap\/[^\/]*\/([^\/]*)(?:|\/([^\/]*))\z/', $this->listid, $m)) {
             if ($m[1] !== "" || str_starts_with($url, "search")) {

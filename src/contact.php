@@ -842,7 +842,7 @@ class Contact implements JsonSerializable {
                 $qreq->set_gsession("last_actas", $actasuser->email);
                 $actasuser->_activated |= 2;
                 $actasuser->_admin_base_user = $this;
-                $actasuser->_hoturl_defaults["actas"] = urlencode($actasuser->email);
+                $actasuser->_hoturl_defaults["actas"] = $actasuser->email;
                 return $actasuser->activate($qreq, true, $userindex);
             }
         }
@@ -1918,7 +1918,7 @@ class Contact implements JsonSerializable {
     /** @param string $text
      * @param bool $add */
     function set_default_cap_param($text, $add) {
-        $cap = urldecode($this->_hoturl_defaults["cap"] ?? "");
+        $cap = $this->_hoturl_defaults["cap"] ?? "";
         $a = array_diff(explode(" ", $cap), [$text, ""]);
         if ($add) {
             $a[] = $text;
@@ -1926,7 +1926,7 @@ class Contact implements JsonSerializable {
         if (empty($a)) {
             unset($this->_hoturl_defaults["cap"]);
         } else {
-            $this->_hoturl_defaults["cap"] = urlencode(join(" ", $a));
+            $this->_hoturl_defaults["cap"] = join(" ", $a);
         }
     }
 

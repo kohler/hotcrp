@@ -4999,10 +4999,7 @@ class Conf {
                 $userinfo["session_users"] = $susers;
             }
             if (($defaults = $user->hoturl_defaults())) {
-                $siteinfo["defaults"] = [];
-                foreach ($defaults as $k => $v) {
-                    $siteinfo["defaults"][$k] = urldecode($v);
-                }
+                $siteinfo["defaults"] = $defaults;
             }
         }
         $siteinfo["user"] = $userinfo;
