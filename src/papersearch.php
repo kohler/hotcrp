@@ -239,7 +239,8 @@ class PaperSearch extends MessageSet {
      * @readonly */
     private $_qt;
     /** @var ?Contact
-     * @readonly */
+     * @readonly
+     * Null unless the requested reviewer differs from `$user`. */
     private $_reviewer_user;
 
     /** @var ?SearchTerm */
@@ -350,7 +351,7 @@ class PaperSearch extends MessageSet {
             } else if (is_object($reviewer) && ($reviewer instanceof Contact)) {
                 $ruser = $reviewer;
             }
-            if ($ruser && $ruser !== $this->user) {
+            if ($ruser && $ruser->contactXid !== $this->user->contactXid) {
                 assert($ruser->contactId > 0);
                 $this->_reviewer_user = $ruser;
             }
@@ -448,7 +449,7 @@ class PaperSearch extends MessageSet {
     }
     /** @return bool */
     function query_is_re_me() {
-        return $this->q === "re:me" && $this->user === $this->reviewer_user();
+        return $this->q === "re:me" && $this->_reviewer_user === null;
     }
 
 
@@ -1487,8 +1488,7 @@ class PaperSearch extends MessageSet {
         if ($this->_qt !== "n") {
             $x .= "&qt={$this->_qt}";
         }
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
+        if ($this->_reviewer_user) {
             $x .= "&reviewer=" . urlencode($this->_reviewer_user->email);
         }
         return $x;
@@ -1506,8 +1506,7 @@ class PaperSearch extends MessageSet {
         if ($this->_qt !== "n") {
             $xargs["qt"] = $this->_qt;
         }
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactId !== $this->user->contactXid) {
+        if ($this->_reviewer_user) {
             $xargs["reviewer"] = $this->_reviewer_user->email;
         }
         $xargs = array_merge($xargs, $this->_urlbase_args ?? [], $args);
@@ -1578,8 +1577,7 @@ class PaperSearch extends MessageSet {
         if ($this->_qt !== "n") {
             $rest[] = "qt={$this->_qt}";
         }
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
+        if ($this->_reviewer_user) {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         }
         $sort = $args["sort"] ?? $this->_req_sort ?? "";

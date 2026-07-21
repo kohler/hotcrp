@@ -1050,7 +1050,9 @@ class Limit_SearchTerm extends SearchTerm {
     private $xlist;
     /** @var Contact */
     private $user;
-    /** @var Contact */
+    /** Only the `reviewable` limit selects papers relative to this reviewer;
+     * every other limit selects relative to `$user`.
+     * @var Contact */
     private $reviewer;
 
     /* NB all named_limits must equal themselves when urlencoded */
@@ -1103,9 +1105,10 @@ class Limit_SearchTerm extends SearchTerm {
     const LFLAG_ACCEPTED = 4;
     const LFLAG_STDDEC = 8;
     const LFLAG_AUTHOR = 16;
-    const LFLAGM_TYPE = 0x1F;
-    const LFLAG_IMPLICIT = 32;
-    const LFLAG_BASE = 64;
+    const LFLAG_REVIEWER = 32;
+    const LFLAGM_TYPE = 0x3F;
+    const LFLAG_IMPLICIT = 64;
+    const LFLAG_BASE = 128;
 
     /** @param string|SearchWord $limit */
     function __construct(PaperSearch $srch, $limit, $implicit = false) {
@@ -1203,14 +1206,18 @@ class Limit_SearchTerm extends SearchTerm {
         // optimize SQL for some limits
         if ($limstr === "viewable" && $this->user->can_view_all()) {
             $limstr = "all";
-        } else if ($limstr === "reviewable" && !$this->reviewer->isPC) {
-            $limstr = "r";
         }
         $this->limit = $this->limit_class = $limstr;
 
         // mark flags
         $this->lflag &= ~self::LFLAGM_TYPE;
-        if (str_starts_with($limstr, "dec:")) {
+        if (in_array($limstr, ["a", "ar", "r", "req", "viewable", "all", "none"], true)) {
+            // no additional flags
+        } else if ($limstr === "reviewable") {
+            if ($this->user->contactXid !== $this->reviewer->contactXid) {
+                $this->lflag |= self::LFLAG_REVIEWER;
+            }
+        } else if (str_starts_with($limstr, "dec:")) {
             $this->limit_class = "dec";
             $this->lflag |= self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED | self::LFLAG_STDDEC;
             $decset = $this->user->conf->decision_set();
@@ -1222,9 +1229,6 @@ class Limit_SearchTerm extends SearchTerm {
                     $this->lflag &= ~self::LFLAG_ACCEPTED;
                 }
             }
-        } else if (in_array($limstr, ["a", "ar", "r", "req", "viewable",
-                                      "reviewable", "all", "none"], true)) {
-            $this->lflag |= 0;
         } else if ($limstr === "accepted") {
             $this->lflag |= self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
         } else if ($limstr === "undecided") {
@@ -1300,11 +1304,8 @@ class Limit_SearchTerm extends SearchTerm {
             assert($act || $fin);
             return $this->user->can_view_all_incomplete();
         case "reviewable":
-            if ($this->reviewer->isPC) {
-                return false;
-            }
-            $options["myReviews"] = true;
-            return true;
+            // `reviewable` is relative to `$reviewer`
+            return false;
         case "a":
             $options["author"] = true;
             // If complex author SQL, always do search the long way
@@ -1404,44 +1405,38 @@ class Limit_SearchTerm extends SearchTerm {
         $need_ar = 0;
         if ($this->limit === "a") {
             $need_ar = 1;
-        } else if ($this->limit === "r") {
+        } else if ($this->limit === "r" || $this->limit === "rout") {
             $need_ar = 2;
         } else if ($this->limit === "ar") {
             $need_ar = 3;
         } else if (($this->lflag & self::LFLAG_BASE) !== 0
-                   && !$this->user->isPC
-                   && $this->limit !== "rout") {
+                   && !$this->user->isPC) {
             // Users other than PC members cannot search all papers.
             // Always apply their inherent restrictions to the base limit query.
             $need_ar = 3;
         }
 
-        $act_author_sql = $act_reviewer_sql = "false";
+        $arf = [];
         if ($need_ar & 1) {
-            $act_author_sql = $this->user->act_author_view_sql($sqi->conflict_table($this->user));
+            $arf[] = $this->user->act_author_view_sql($sqi->conflict_table($this->user));
         }
-        if (($need_ar & 2) || $this->limit === "rout") {
+        if ($need_ar & 2) {
             $sqi->add_reviewer_columns();
-            if ($sqi->required()) {
-                $act_reviewer_sql = $this->user->act_reviewer_sql("MyReviews");
-                if ($act_reviewer_sql !== "false") {
-                    $sqi->add_table("MyReviews", [$need_ar === 3 ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
-                }
+            $rtable = $sqi->required() ? "MyReviews" : "PaperReview";
+            $q = $this->user->act_reviewer_sql($rtable);
+            if ($q !== "false" && $this->limit === "rout") {
+                $q .= " and reviewNeedsSubmit!=0";
+            }
+            if ($q === "false") {
+                $arf[] = "false";
+            } else if (!$sqi->required()) {
+                $arf[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$q})";
             } else {
-                $act_reviewer_sql = $this->user->act_reviewer_sql("PaperReview");
+                $sqi->add_table("MyReviews", [$need_ar === 3 ? "left join" : "join", "PaperReview", $q]);
+                $arf[] = ($need_ar === 3 ? "MyReviews.reviewType is not null" : "true");
             }
         }
-        if ($need_ar !== 0) {
-            $arf = [$act_author_sql];
-            if ($act_reviewer_sql === "false") {
-                $arf[] = $act_reviewer_sql;
-            } else if (!$sqi->required()) {
-                $arf[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
-            } else if ($need_ar === 2) {
-                $arf[] = "true"; // `join` suffices
-            } else {
-                $arf[] = "MyReviews.reviewType is not null";
-            }
+        if (!empty($arf)) {
             $ff[] = self::orjoin_sqlexpr($arf, "false");
         }
 
@@ -1453,20 +1448,18 @@ class Limit_SearchTerm extends SearchTerm {
             break;
         case "reviewable":
             $sqi->add_reviewer_columns();
+            if (!$this->reviewer->isPC
+                && (($this->lflag & self::LFLAG_REVIEWER) === 0
+                    || $this->user->is_manager())) {
+                $reviewable_sql = $this->reviewer->act_reviewer_sql("PaperReview");
+                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$reviewable_sql})";
+            }
             break;
         case "a":
         case "r":
         case "ar":
-            assert($need_ar !== 0 && !empty($ff));
-            break;
         case "rout":
-            if ($act_reviewer_sql === "false") {
-                $ff[] = "false";
-            } else if ($sqi->required()) {
-                $ff[] = "MyReviews.reviewNeedsSubmit!=0";
-            } else {
-                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql} and reviewNeedsSubmit!=0)";
-            }
+            assert($need_ar !== 0 && !empty($ff));
             break;
         case "accepted":
             if ($this->user->can_view_all_decision()) {
@@ -1526,9 +1519,14 @@ class Limit_SearchTerm extends SearchTerm {
 
     function test(PaperInfo $row, $xinfo) {
         $user = $this->user;
-        if ((($this->lflag & self::LFLAG_SUBMITTED) !== 0 && $row->timeSubmitted <= 0)
-            || (($this->lflag & self::LFLAG_ACTIVE) !== 0 && $row->timeWithdrawn > 0)
-            || (($this->lflag & self::LFLAG_STDDEC) !== 0 && $row->outcome_sign === -2)) {
+        if ((($this->lflag & self::LFLAG_SUBMITTED) !== 0
+             && $row->timeSubmitted <= 0)
+            || (($this->lflag & self::LFLAG_ACTIVE) !== 0
+                && $row->timeWithdrawn > 0)
+            || (($this->lflag & self::LFLAG_STDDEC) !== 0
+                && $row->outcome_sign === -2)
+            || (($this->lflag & self::LFLAG_REVIEWER) !== 0
+                && !$this->user->allow_admin($row))) {
             return false;
         }
         switch ($this->limit_class) {
@@ -1551,9 +1549,7 @@ class Limit_SearchTerm extends SearchTerm {
             }
             return false;
         case "reviewable":
-            if ($this->reviewer !== $user && !$user->allow_admin($row)) {
-                return false;
-            } else if ($row->has_active_reviewer($this->reviewer)) {
+            if ($row->has_active_reviewer($this->reviewer)) {
                 return true;
             }
             return $this->reviewer->pc_track_assignable($row)

@@ -437,4 +437,104 @@ class Search_Tester {
         $conf->save_refresh_setting("seedec", null);
     }
 
+    function test_reviewer_aliases_to_search_user() {
+        // A `reviewer` naming the search user is canonicalized away, even when
+        // it arrives as a distinct Contact object for that same user (as from
+        // `Conf::user_by_email`). Otherwise the search would treat the user as
+        // a foreign reviewer and apply the administrator restrictions below.
+        $conf = $this->conf;
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $mgbaker2 = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($mgbaker !== $mgbaker2);
+        xassert_eqq($mgbaker->contactXid, $mgbaker2->contactXid);
+
+        foreach ([$mgbaker2, $mgbaker->email, strtoupper($mgbaker->email)] as $reviewer) {
+            $srch = new PaperSearch($mgbaker, ["q" => "", "t" => "reviewable", "reviewer" => $reviewer]);
+            xassert_eqq($srch->reviewer_user(), $mgbaker);
+            xassert_not_str_contains($srch->encoded_query_params(), "reviewer=");
+            xassert_not_str_contains($srch->url_site_relative_raw(), "reviewer=");
+        }
+
+        // `reviewable` for oneself is not narrowed to administered papers
+        $self = new PaperSearch($mgbaker, ["q" => "", "t" => "reviewable"]);
+        $aliased = new PaperSearch($mgbaker, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker2]);
+        xassert(!$mgbaker->allow_admin_all());
+        xassert_neqq($self->paper_ids(), []);
+        xassert_eqq($aliased->paper_ids(), $self->paper_ids());
+
+        // `re:me` stays `re:me`
+        xassert((new PaperSearch($mgbaker, ["q" => "re:me", "reviewer" => $mgbaker2]))->query_is_re_me());
+
+        // a genuinely different reviewer is still honored
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $srch = new PaperSearch($chair, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker->email]);
+        xassert_eqq($srch->reviewer_user()->contactId, $mgbaker->contactId);
+        xassert_str_contains($srch->encoded_query_params(), "reviewer=" . urlencode($mgbaker->email));
+        xassert(!$srch->query_is_re_me());
+    }
+
+    function test_nonpc_limits_restricted_to_own_papers() {
+        // Non-PC users cannot search all papers: `Limit_SearchTerm::sqlexpr()`
+        // ANDs an author-or-reviewer restriction into every base limit
+        // (`need_ar === 3`, a left join on `MyReviews`). A bug in that join
+        // silently emptied every base-limit search for authors.
+        $van = $this->conf->checked_user_by_email("van@ee.lbl.gov");
+        xassert(!$van->isPC);
+        xassert($van->is_author());
+        foreach (["a", "ar", "s", "active", "all", "viewable"] as $t) {
+            xassert_search($van, ["t" => $t, "q" => ""], "1");
+        }
+    }
+
+    function test_reviewable_limit_requires_administrator() {
+        // `reviewable` is the one limit relative to `reviewer_user()`; naming
+        // another user requires administrator rights over each paper.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($chair->is_manager());
+        xassert(!$lixia->is_manager());
+        xassert($lixia->can_view_pc());
+
+        // one's own reviewable set needs no administrator rights
+        xassert_eqq(count((new PaperSearch($lixia, ["q" => "", "t" => "reviewable"]))->paper_ids()), 30);
+
+        // an administrator sees another user's reviewable set, and it differs
+        // from their own
+        $chair_mg = (new PaperSearch($chair, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker->email]))->paper_ids();
+        xassert_eqq(count($chair_mg), 28);
+        xassert_neqq($chair_mg, (new PaperSearch($chair, ["q" => "", "t" => "reviewable"]))->paper_ids());
+
+        // a non-administrator gets nothing, though `reviewer` is accepted
+        $srch = new PaperSearch($lixia, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker->email]);
+        xassert_eqq($srch->reviewer_user()->contactId, $mgbaker->contactId);
+        xassert_eqq($srch->paper_ids(), []);
+    }
+
+    function test_limit_evaluators_agree() {
+        // `Limit_SearchTerm` is evaluated two ways: `sqlexpr()` + `test()`,
+        // which `PaperSearch::paper_ids()` uses, and `simple_search()`, which
+        // hands query options straight to PaperList and skips both. Whenever
+        // `simple_search()` claims a limit, the two must agree.
+        $conf = $this->conf;
+        $emails = ["chair@_.com", "mgbaker@cs.stanford.edu", "lixia@cs.ucla.edu",
+                   "van@ee.lbl.gov"];
+        $limits = ["a", "ar", "r", "rout", "req", "lead", "s", "active", "all",
+                   "viewable", "reviewable", "accepted", "undecided", "unsub",
+                   "admin", "alladmin", "actadmin"];
+        foreach ($emails as $email) {
+            $u = $conf->checked_user_by_email($email);
+            foreach ($limits as $t) {
+                $q = ["q" => "", "t" => $t];
+                $via_sql = (new PaperSearch($u, $q))->paper_ids();
+                $via_list = array_keys(search_json($u, $q, "id", true));
+                sort($via_sql);
+                sort($via_list);
+                xassert_eqq("{$email} t={$t}: " . join(" ", $via_list),
+                            "{$email} t={$t}: " . join(" ", $via_sql));
+            }
+        }
+    }
+
 }

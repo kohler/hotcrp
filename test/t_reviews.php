@@ -2153,6 +2153,17 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_search($this->u_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13 19");
         xassert_search($this->u_mgbaker, "(internet OR datagram) 13 19", "13 19");
 
+        // `r` and `rout` must differ by review completion, not just by
+        // submission status: a completed review stays in "your reviews"
+        // and leaves "your incomplete reviews". Check both evaluators --
+        // `xassert_search` builds a PaperList, which takes the
+        // `simple_search()` shortcut and never runs `sqlexpr()`.
+        save_review(13, $this->u_mgbaker, ["s01" => 4, "s02" => 1, "ready" => true]);
+        xassert_search($this->u_mgbaker, ["t" => "r", "q" => ""], "1 13 17 19");
+        xassert_search($this->u_mgbaker, ["t" => "rout", "q" => ""], "19");
+        xassert_int_list_eqq((new PaperSearch($this->u_mgbaker, ["t" => "r", "q" => ""]))->paper_ids(), "1 13 17 19");
+        xassert_int_list_eqq((new PaperSearch($this->u_mgbaker, ["t" => "rout", "q" => ""]))->paper_ids(), "19");
+
         // author review visibility
         $paper17 = $this->conf->checked_paper_by_id(17);
         $rrow17m = fresh_review($paper17, $this->u_mgbaker);
