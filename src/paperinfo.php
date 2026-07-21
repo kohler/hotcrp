@@ -2882,6 +2882,8 @@ class PaperInfo {
     function parse_ordinal_id($oid) {
         if (is_int($oid)) {
             return $oid;
+        } else if ($oid === null || $oid === false) {
+            return false;
         } else if ($oid === "") {
             return 0;
         } else if (ctype_digit($oid)) {
@@ -2981,12 +2983,12 @@ class PaperInfo {
     /** @param string $oid
      * @return ?ReviewInfo */
     function review_by_ordinal_id($oid) {
-        if (($n = $this->parse_ordinal_id($oid)) === false || $n === 0) {
+        if (($rloc = $this->parse_ordinal_id($oid)) === false || $rloc === 0) {
             return null;
-        } else if ($n < 0) {
-            return $this->review_by_ordinal(-$n);
+        } else if ($rloc < 0) {
+            return $this->review_by_ordinal(-$rloc);
         }
-        return $this->review_by_id($n);
+        return $this->review_by_id($rloc);
     }
 
     /** @param int|Contact $u

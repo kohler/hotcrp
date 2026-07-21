@@ -263,17 +263,17 @@ class PaperRequest {
             return null;
         }
         // check for viewable review
-        $rrow = $this->prow->review_by_ordinal_id($qreq->reviewId);
+        $rloc = $this->prow->parse_ordinal_id($qreq->reviewId);
+        $rrow = $this->prow->review_by_ordinal_id($rloc);
         if ($rrow) {
-            $whynot = $user->perm_view_review($this->prow, $rrow);
-            if (!$whynot) {
-                return $rrow;
+            if (($whynot = $user->perm_view_review($this->prow, $rrow))) {
+                throw $user->perm_view_review($this->prow, null) ?? $whynot;
             }
-            throw $user->perm_view_review($this->prow, null) ?? $whynot;
+            return $rrow;
         }
         // numbered review that corresponds to our refusal is a special case
-        if (ctype_digit($qreq->reviewId)
-            && ($refrow = $this->prow->review_refusal_by_id(intval($qreq->reviewId)))
+        if ($rloc > 0
+            && ($refrow = $this->prow->review_refusal_by_id($rloc))
             && ($refrow->contactId === $user->contactId
                 || (($capu = $user->reviewer_capability_user($this->prow))
                     && $refrow->contactId === $capu->contactId))) {

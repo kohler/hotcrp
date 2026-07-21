@@ -1771,6 +1771,86 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper19->paperId, $rid);
     }
 
+    // An anonymous user holding a review-accept capability can decline a
+    // review, and can later use the same capability to accept it after all.
+    function test_capability_decline_then_accept() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // request a new external reviewer
+        $paper22 = $conf->checked_paper_by_id(22);
+        $xqreq = new Qrequest("POST", ["email" => "capdecliner@_.com", "name" => "Cap Decliner", "affiliation" => "Token University"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper22);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $reviewer = $conf->checked_user_by_email("capdecliner@_.com");
+        $paper22 = $conf->checked_paper_by_id(22);
+        $rrow = $paper22->review_by_user($reviewer);
+        xassert(!!$rrow);
+        $rid = $rrow->reviewId;
+        $tok = ReviewAccept_Capability::make($rrow, true);
+        xassert(!!$tok);
+
+        // an anonymous capability user declines the review
+        $capuser = Contact::make($conf);
+        $capuser->apply_capability_text($tok->salt);
+        xassert_eqq($capuser->reviewer_capability($paper22->paperId), $reviewer->contactId);
+        $xqreq = new Qrequest("POST", ["r" => $rid, "reason" => "Cannot review this cycle"]);
+        $result = RequestReview_API::declinereview($capuser, $xqreq, $paper22);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $paper22 = $conf->checked_paper_by_id(22);
+        xassert(!$paper22->fresh_review_by_id($rid));
+        xassert(!!$paper22->review_refusal_by_id($rid));
+
+        // the capability token survives the decline
+        $tok2 = ReviewAccept_Capability::find_by_review_id($conf, $rid);
+        xassert(!!$tok2);
+        xassert($tok2->is_active());
+
+        // a fresh anonymous session with the same capability accepts after all
+        Conf::advance_current_time();
+        $capuser2 = Contact::make($conf);
+        $capuser2->apply_capability_text($tok2->salt);
+        $xqreq = new Qrequest("POST", ["r" => $rid]);
+        $result = RequestReview_API::acceptreview($capuser2, $xqreq, $paper22);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        // the refusal is gone and the review is acknowledged
+        $paper22 = $conf->checked_paper_by_id(22);
+        xassert(!$paper22->review_refusal_by_id($rid));
+        $rrow2 = $paper22->fresh_review_by_id($rid);
+        xassert(!!$rrow2);
+        xassert_eqq($rrow2->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($rrow2->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
+
+        // an invalidated token is still found, but `make` with $create
+        // replaces it with a fresh active token rather than returning it
+        $conf->qe("update Capability set timeInvalid=? where salt>=? and salt<?",
+            Conf::$now - 10, "hcra{$rid}@", "hcra{$rid}~");
+        $xtok = ReviewAccept_Capability::find_by_review_id($conf, $rid);
+        xassert(!!$xtok);
+        xassert(!$xtok->is_active());
+        $tok3 = ReviewAccept_Capability::make($rrow2, true);
+        xassert(!!$tok3);
+        xassert($tok3->is_active());
+        xassert_neqq($tok3->salt, $tok2->salt);
+        // and the fresh active token is now the one found
+        xassert_eqq(ReviewAccept_Capability::find_by_review_id($conf, $rid)->salt, $tok3->salt);
+
+        // clean up
+        $rrow2->delete($this->u_chair, ["no_rights" => true]);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper22->paperId, $rid);
+    }
+
     // Pin the observable decline (`declinereview`) contract and its inverse,
     // undecline (`acceptreview`), independent of how a refused review is stored
     // internally: declining removes the live review, records a refusal carrying

@@ -3,26 +3,35 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ReviewAccept_Capability {
-    /** @param ReviewInfo $rrow
-     * @param bool $create
+    /** @param Conf $conf
+     * @param int $rrowid
      * @return ?TokenInfo */
-    static function make($rrow, $create) {
-        if ($rrow->reviewId <= 0) {
+    static function find_by_review_id($conf, $rrowid) {
+        if ($rrowid <= 0) {
             return null;
         }
-
-        $result = $rrow->conf->qe("select * from Capability where salt>=? and salt<?",
-            "hcra{$rrow->reviewId}@", "hcra{$rrow->reviewId}~");
+        $result = $conf->qe("select * from Capability where salt>=? and salt<?",
+            "hcra{$rrowid}@", "hcra{$rrowid}~");
         $tok = null;
-        while (($xtok = TokenInfo::fetch($result, $rrow->conf, false, "TokenInfo"))) {
+        while (($xtok = TokenInfo::fetch($result, $conf, false, "TokenInfo"))) {
             if ($xtok->capabilityType === TokenInfo::REVIEWACCEPT
-                && $xtok->reviewId === $rrow->reviewId
+                && $xtok->reviewId === $rrowid
                 && (!$tok || $xtok->is_active()))
                 $tok = $xtok;
         }
         Dbl::free($result);
+        return $tok && $tok->stored() ? $tok : null;
+    }
 
-        if (!$tok && $create) {
+    /** @param ReviewInfo $rrow
+     * @param bool $create
+     * @return ?TokenInfo */
+    static function make($rrow, $create = false) {
+        $tok = self::find_by_review_id($rrow->conf, $rrow->reviewId);
+        if ($tok && !$tok->is_active()) {
+            $tok = null;
+        }
+        if (!$tok && $create && $rrow->reviewId > 0) {
             $tok = (new TokenInfo($rrow->conf, TokenInfo::REVIEWACCEPT))
                 ->set_review($rrow)
                 ->set_user_id($rrow->contactId)
@@ -31,7 +40,6 @@ class ReviewAccept_Capability {
                 ->set_token_pattern("hcra{$rrow->reviewId}[16]")
                 ->insert();
         }
-
         return $tok && $tok->stored() ? $tok : null;
     }
 
