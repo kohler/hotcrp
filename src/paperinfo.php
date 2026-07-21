@@ -2878,7 +2878,8 @@ class PaperInfo {
         $this->ensure_reviewer_names_set($row_set);
     }
 
-    /** @return int|false */
+    /** @param string|int|false|null $oid
+     * @return int|false */
     function parse_ordinal_id($oid) {
         if (is_int($oid)) {
             return $oid;
@@ -2980,7 +2981,7 @@ class PaperInfo {
         return null;
     }
 
-    /** @param string $oid
+    /** @param string|int|false|null $oid
      * @return ?ReviewInfo */
     function review_by_ordinal_id($oid) {
         if (($rloc = $this->parse_ordinal_id($oid)) === false || $rloc === 0) {

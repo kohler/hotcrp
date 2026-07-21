@@ -185,7 +185,7 @@ class Mailer {
             }
         }
         parse_str($a[1], $param);
-        return $m->conf->hoturl($a[0], $param, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
+        return $m->conf->hoturl($a[0], $param, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS | Conf::HOTURL_PLACEHOLDERS);
     }
 
     static function kw_php($args, $isbool, $m) {

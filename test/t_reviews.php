@@ -1851,6 +1851,33 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper22->paperId, $rid);
     }
 
+    // Bulk assignment with notification expands mail keywords, including
+    // {{REVIEWACCEPTOR}}, in the notification body
+    function test_bulk_assign_request_notify() {
+        $conf = $this->conf;
+        MailChecker::clear();
+        $null_mailer = new HotCRPMailer($conf, null, [
+            "requester_contact" => $this->u_chair,
+            "sending_user" => $this->u_chair,
+            "reason" => "",
+            "width" => false
+        ]);
+        $tmpl = $null_mailer->expand_template("requestreview");
+        xassert(!!$tmpl);
+        xassert_str_contains($tmpl["body"], "cap={{REVIEWACCEPTOR}}");
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("paper,action,email,name\n23,review,bulknotify@_.com,Bulk Notify\n", "", [
+            "extrev_notify" => ["subject" => $tmpl["subject"], "body" => $tmpl["body"]]
+        ]);
+        xassert($aset->execute());
+        xassert_eqq(count(MailChecker::$preps), 1);
+        foreach (MailChecker::$preps as $prep) {
+            xassert(!str_contains($prep->body, "{{"));
+            xassert_str_contains($prep->body, "cap=hcra");
+        }
+        MailChecker::clear();
+    }
+
     // Pin the observable decline (`declinereview`) contract and its inverse,
     // undecline (`acceptreview`), independent of how a refused review is stored
     // internally: declining removes the live review, records a refusal carrying

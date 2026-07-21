@@ -1209,7 +1209,7 @@ Zhang <lixia@cs.ucla.edu> has asked you to review Testconf I submission
 
 * Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
   the MBone
-* Site: http://hotcrp.lcdf.org/test/review/17?cap={{}}
+* Site: http://hotcrp.lcdf.org/test/review/17?cap=hcra{{}}
 
 Once you have viewed the submission and decided whether you are willing
 to review it, please accept or decline this review request at the
@@ -1925,7 +1925,7 @@ Zhang <lixia@cs.ucla.edu> has asked you to review Testconf I submission
 
 * Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
   the MBone
-* Site: http://hotcrp.lcdf.org/test/review/17?cap={{}}
+* Site: http://hotcrp.lcdf.org/test/review/17?cap=hcra{{}}
 
 Once you have viewed the submission and decided whether you are willing
 to review it, please accept or decline this review request at the
@@ -1961,7 +1961,7 @@ Zhang <lixia@cs.ucla.edu> has asked you to review Testconf I submission
 
 * Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
   the MBone
-* Site: http://hotcrp.lcdf.org/test/review/17?cap={{}}
+* Site: http://hotcrp.lcdf.org/test/review/17?cap=hcra{{}}
 
 Once you have viewed the submission and decided whether you are willing
 to review it, please accept or decline this review request at the

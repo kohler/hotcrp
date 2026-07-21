@@ -3896,15 +3896,16 @@ class Conf {
         }
     }
 
-    const HOTURL_RAW = 0;     // backward compatibility
-    const HOTURL_POST = 2;
-    const HOTURL_ABSOLUTE = 4;
-    const HOTURL_SITEREL = 8;
+    const HOTURL_RAW = 0;              // XXX backward compatibility
+    const HOTURL_POST = 2;             // include `post=` CSRF token
+    const HOTURL_ABSOLUTE = 4;         // generate absolute URL
+    const HOTURL_SITEREL = 8;          // generate site-relative URL (no `../../`)
     const HOTURL_SITE_RELATIVE = 8;
-    const HOTURL_SERVERREL = 16;
-    const HOTURL_NO_DEFAULTS = 32;
-    const HOTURL_REDIRECTABLE = 64;
-    const HOTURL_MAYBE_POST = 128;
+    const HOTURL_SERVERREL = 16;       // generate server-relative URL (start with sitepath)
+    const HOTURL_NO_DEFAULTS = 32;     // do not include user default params
+    const HOTURL_REDIRECTABLE = 64;    // in qrequrl, use `redirect` parameter if safe
+    const HOTURL_MAYBE_POST = 128;     // include `post=` CSRF token if exists
+    const HOTURL_PLACEHOLDERS = 256;   // do not encode `{{PLACEHOLDER}}` strings (for mail templates)
 
     /** @param string $page
      * @param ?array $params
@@ -3975,7 +3976,9 @@ class Conf {
                 if (isset($pm["p"])
                     && (is_int($pm["p"])
                         || ctype_digit($pm["p"])
-                        || preg_match('/\A(?:%\w++%|\{\{\w++\}\}|new)\z/', $pm["p"]))) {
+                        || $pm["p"] === "new"
+                        || (($flags & self::HOTURL_PLACEHOLDERS) !== 0
+                            && preg_match('/\A(?:%\w++%|\{\{\w++\}\})\z/', $pm["p"])))) {
                     $pid = (string) $pm["p"];
                     $tp = "/" . $pid;
                     unset($pm["p"]);
@@ -4055,7 +4058,14 @@ class Conf {
         }
         $t .= $tp;
         if (!empty($pm)) {
-            $t .= "?" . http_build_query($pm);
+            $qt = http_build_query($pm);
+            if (($flags & self::HOTURL_PLACEHOLDERS) !== 0) {
+                $qt = preg_replace_callback('/=(?:%7B%7B\w++%7D%7D|%25\w++%25)(?=&|\z)/',
+                    function ($m) {
+                        return urldecode($m[0]);
+                    }, $qt);
+            }
+            $t .= "?" . $qt;
         }
         if ($fragment !== "") {
             $t .= $fragment;

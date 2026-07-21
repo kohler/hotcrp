@@ -56,6 +56,40 @@ class Unit_Tester {
         }
     }
 
+    function test_hoturl_mail_template_placeholders() {
+        // mail templates contain URLs like
+        // `{{LINK(review, p={{PID}}&cap={{REVIEWACCEPTOR}})}}`, which may be
+        // partially expanded (e.g. for the bulk-assignment notification
+        // preview). With HOTURL_PLACEHOLDERS, unexpanded keywords survive
+        // hoturl unencoded so a later expansion pass can find them.
+        $nav = Qrequest::$main_request ? Qrequest::$main_request->navigation() : Navigation::get();
+        $saved = $nav->php_suffix;
+        $flags = Conf::HOTURL_SITEREL | Conf::HOTURL_NO_DEFAULTS | Conf::HOTURL_PLACEHOLDERS;
+        try {
+            $nav->php_suffix = "";
+            xassert_eqq($this->conf->hoturl("review", ["p" => "{{PID}}", "cap" => "{{REVIEWACCEPTOR}}"], $flags),
+                        "review/{{PID}}?cap={{REVIEWACCEPTOR}}");
+            // old-style %WORD% keywords also survive
+            xassert_eqq($this->conf->hoturl("review", ["p" => "%NUMBER%", "cap" => "%REVIEWACCEPTOR%"], $flags),
+                        "review/%NUMBER%?cap=%REVIEWACCEPTOR%");
+            // partial or non-keyword brace/percent text is still urlencoded
+            xassert_eqq($this->conf->hoturl("search", ["q" => "a b{{c}"], $flags),
+                        "search?q=a+b%7B%7Bc%7D");
+            xassert_eqq($this->conf->hoturl("search", ["q" => "50%{{off}} %sale%!"], $flags),
+                        "search?q=50%25%7B%7Boff%7D%7D+%25sale%25%21");
+            xassert_eqq($this->conf->hoturl("review", ["p" => 1, "cap" => "hcraxyzzy"], $flags),
+                        "review/1?cap=hcraxyzzy");
+            // without the flag, keywords are urlencoded like anything else
+            $strict = Conf::HOTURL_SITEREL | Conf::HOTURL_NO_DEFAULTS;
+            xassert_eqq($this->conf->hoturl("review", ["p" => "{{PID}}", "cap" => "{{REVIEWACCEPTOR}}"], $strict),
+                        "review?p=%7B%7BPID%7D%7D&cap=%7B%7BREVIEWACCEPTOR%7D%7D");
+            xassert_eqq($this->conf->hoturl("paper", ["p" => "new"], $strict),
+                        "paper/new");
+        } finally {
+            $nav->php_suffix = $saved;
+        }
+    }
+
     function test_dbl_format_query() {
         xassert_eqq(Dbl::format_query("Hello"), "Hello");
         xassert_eqq(Dbl::format_query("Hello??"), "Hello?");
