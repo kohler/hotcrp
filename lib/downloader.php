@@ -422,6 +422,11 @@ class Downloader {
         return $this->_response_code;
     }
 
+    /** @return string */
+    private function ensure_range_boundary() {
+        $this->_boundary = $this->_boundary ?? "hcmpb-" . base64_encode(random_bytes(32));
+    }
+
     /** @param ?int $index
      * @param ?array{int,int} $range
      * @return string */
@@ -469,7 +474,7 @@ class Downloader {
             yield "Content-Type" => $this->mimetype;
             yield "Content-Range" => "bytes {$ra}-{$rb}/{$this->content_length}";
         } else {
-            $this->_boundary = $this->_boundary ?? "hcmpb-" . base64_encode(random_bytes(32));
+            $this->ensure_range_boundary();
             yield "Content-Type" => "multipart/byteranges; boundary={$this->_boundary}";
         }
         if ($this->_filename !== null
@@ -530,6 +535,7 @@ class Downloader {
         } else if (count($this->range) === 1) {
             yield $this->range[0];
         } else {
+            $this->ensure_range_boundary();
             foreach ($this->range as $i => $r) {
                 if ($outf) {
                     fwrite($outf, $this->_range_separator($i, $r));
@@ -540,6 +546,14 @@ class Downloader {
                 fwrite($outf, $this->_range_separator(count($this->range), null));
             }
         }
+    }
+
+    /** Return the download's body as a string, honoring any requested ranges.
+     * @return string */
+    function content_string() {
+        ob_start();
+        $this->emit_ranges();
+        return ob_get_clean();
     }
 
     /** @return int */
@@ -559,6 +573,11 @@ class Downloader {
         while (@ob_end_flush()) {
             // do nothing
         }
+        $this->emit_ranges();
+        return $this->_response_code;
+    }
+
+    private function emit_ranges() {
         $out = fopen("php://output", "wb");
         foreach ($this->output_ranges($out) as $r) {
             if ($this->_content_function !== null) {
@@ -569,7 +588,7 @@ class Downloader {
                 self::print_subrange($out, $r[0], $r[1], 0, $this->_content);
             }
         }
-        return $this->_response_code;
+        fclose($out);
     }
 
 

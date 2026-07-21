@@ -14,6 +14,21 @@ Submission endpoints always return complete submission objects. To select
 specific fields of submissions, or to return computed fields, use the
 `/search` or `/searchaction` endpoints.
 
+## Downloads
+
+`download=1` returns the response as a file, and drops HotCRP’s JSON envelope
+in favor of the bare payload that the matching `POST` accepts—so a client can
+download a submission, edit it, and upload it again:
+
+* [`paper`](#get-paper) with `download=1` returns one submission object, ready
+  to `POST` to [`paper`](#post-paper).
+* [`papers`](#get-papers) with `download=1` returns a bare array of submission
+  objects, ready to `POST` to [`papers`](#post-papers).
+
+The parameter means the same thing on the [review](#tag-reviews) endpoints.
+Because a bare payload has no `message_list`, `download=1` discards search
+diagnostics; errors still arrive in the usual envelope.
+
 
 # get /{p}/paper
 
@@ -25,7 +40,11 @@ instance, about permission errors or nonexistent submissions—are returned in
 `message_list`.
 
 * param ?forceShow
+* param ?download boolean: True returns the bare submission object as a file
+  (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?paper paper: The requested submission object.
+
+    * condition !download
 * badge featured
 
 
@@ -227,7 +246,11 @@ listed in a query, supply a `warn_missing=1` parameter.
 
     * group Search modifiers
 * param warn_missing boolean: Get warnings for missing submissions
+* param ?download boolean: True returns a bare array of submission objects as a
+  file (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?papers [paper]: The matching submission objects.
+
+    * condition !download
 * badge featured
 
 

@@ -63,6 +63,52 @@ reviews by submission search rather than by ID. To create or modify many reviews
 at once—including from an offline review form spanning several submissions—use
 [`reviews` POST](#post-reviews).
 
+## Response formats
+
+The read endpoints [`review`](#get-review) and [`reviews`](#get-reviews) return
+JSON review objects by default, but a `format` parameter can request a plain-text
+rendering instead:
+
+* `json` (the default) returns review objects in HotCRP’s usual JSON envelope.
+* `text` returns the reviews as text, in the format produced by the “Reviews”
+  download on a submission list.
+* `form` returns the reviews as **offline review forms**, the same format
+  produced by the “Review forms” download—and accepted back by
+  [`review` POST](#post-review) and [`reviews` POST](#post-reviews). Fetching a
+  form requires only permission to view the review; whether the form can be
+  uploaded again is decided when it is uploaded.
+
+[`reviews`](#get-reviews) additionally accepts `textzip` and `formzip`, which
+return the same renderings packaged as a ZIP archive with one file per review,
+named for the review’s ordinal ID (for instance `review18A.txt`).
+
+A non-`json` format returns the rendering as the raw response body, without any
+JSON wrapper: `text/plain` for `text` and `form`, `application/zip` for the ZIP
+formats. Errors are still reported as JSON objects with `ok` set to `false`, so
+check the response’s `Content-Type` or status code. An empty selection yields an
+empty download, just as `format=json` yields an empty `reviews` array.
+
+## Downloads
+
+The `download` parameter controls *delivery* rather than rendering, and works
+the same way on [`paper`](#get-paper) and [`papers`](#get-papers) as it does
+here. `download=1` returns the response as a file, and drops HotCRP’s JSON
+envelope in favor of the bare payload that the matching `POST` accepts—so a
+client can download an object, edit it, and upload it again:
+
+* `GET /review` with `download=1` returns one [review object](#tag-reviews),
+  ready to `POST` to [`review`](#post-review).
+* `GET /reviews` with `download=1` returns a bare array of review objects,
+  ready to `POST` to [`reviews`](#post-reviews).
+
+The non-`json` formats are already bare files, so they are attachments by
+default; `download=0` requests them inline instead, which is useful for reading
+a review in a browser tab. Conversely `format=json` is enveloped and inline by
+default.
+
+Because a bare payload has no `message_list`, `download=1` discards search
+diagnostics. Errors still arrive in the usual envelope.
+
 
 # get /{p}/review
 
@@ -73,9 +119,24 @@ returned in the `review` field as a [review object](#tag-reviews). If the
 review does not exist the response is a `404`; if it exists but the caller may
 not see it, a `403`.
 
+* param p pid
 * param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
+* param ?format =json|text|form
+
+    How to render the review (see [Response formats](#tag-reviews)). `json` (the
+    default) returns a review object; `text` returns the review as text and
+    `form` as an offline review form, each as a `text/plain` body.
+
+    * default json
+* param ?download boolean: True delivers the response as a file. With
+  `format=json` this also drops the response envelope, returning the bare
+  review object (see [Downloads](#tag-reviews)); the other formats are files
+  already, so `download=0` makes them inline instead.
 * param ?forceShow
 * response review review: The requested [review object](#tag-reviews).
+
+    * condition format=json
+    * condition !download
 * badge featured
 
 
@@ -220,7 +281,7 @@ array. Select the submissions either with a search (`q`, optionally narrowed by
 `t`) or with a single submission `p`; supply exactly one of the two. Search
 diagnostics, if any, are reported in `message_list`.
 
-The optional `rq` and `u` parameters filter *which* reviews are returned (not
+The optional `rq` and `u` parameters filter which *reviews* are returned (not
 which submissions are searched). Supply at most one of them:
 
 * `u` returns only reviews written by the user with that email.
@@ -231,12 +292,34 @@ which submissions are searched). Supply at most one of them:
 * param ?t search_scope: Scope of search; defaults to the submissions the caller can view.
 
     * default viewable
+    * group Search modifiers
+* param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
+
+    * group Search modifiers
 * param ?p pid: Return reviews of this single submission instead of running a search.
 * param ?rq string: Review search expression limiting which reviews are returned.
+
+    * oneof review_query
 * param ?u email: Return only reviews written by this user. Mutually exclusive with `rq`.
-* param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
+
+    * oneof review_query
+* param ?format =json|text|form|textzip|formzip
+
+    How to render the matching reviews (see [Response formats](#tag-reviews)).
+    `json` (the default) returns review objects; `text` and `form` return one
+    `text/plain` body holding every review; `textzip` and `formzip` return an
+    `application/zip` archive with one file per review.
+
+    * default json
+* param ?download boolean: True delivers the response as a file. With
+  `format=json` this also drops the response envelope, returning a bare array
+  of review objects (see [Downloads](#tag-reviews)); the other formats are
+  files already, so `download=0` makes them inline instead.
 * param ?forceShow
 * response reviews [review]: Matching [review objects](#tag-reviews).
+
+    * condition format=json
+    * condition !download
 * badge featured
 
 

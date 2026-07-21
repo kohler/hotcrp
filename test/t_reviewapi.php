@@ -243,6 +243,18 @@ class ReviewAPI_Tester {
         $jr = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => "99999"]));
         xassert_eqq($jr->status, 404);
         xassert(str_contains(json_encode($jr->content["message_list"] ?? []), "not found"));
+        // ...for every `format`, which cannot bypass the permission check
+        foreach (["text", "form"] as $fmt) {
+            $jr = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => (string) $rrow->reviewId, "format" => $fmt]));
+            xassert($jr instanceof JsonResult);
+            xassert_eqq($jr->status, 404);
+        }
+        // a multiple-review download gives the author nothing
+        foreach (["text", "textzip"] as $fmt) {
+            $dl = call_api_result("reviews", $author, TestQreq::get(["p" => 18, "format" => $fmt]));
+            xassert($dl instanceof Downloader);
+            xassert_not_str_contains($dl->content_string(), "Weak reject");
+        }
         // ...on POST too (attempting to edit it by `r`)
         $jr = call_api_result("=review", $author, ["r" => (string) $rrow->reviewId, "OveMer" => "1", "ready" => "1"], $prow);
         xassert_eqq($jr->status, 404);
@@ -739,5 +751,250 @@ class ReviewAPI_Tester {
         xassert_eqq(count($jr->reviews), 1);
         xassert_eqq($jr->reviews[0]->pid, 18);
         xassert_eqq($jr->reviews[0]->reviewer_email, $this->u_diot->email);
+    }
+
+    function test_fetch_format_text() {
+        $qreq = TestQreq::get(["p" => 18, "r" => "18A", "format" => "text"]);
+        $dl = call_api_result("review", $this->u_diot, $qreq);
+        xassert($dl instanceof Downloader);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("Content-Type"), "text/plain; charset=utf-8");
+        xassert_str_contains($dl->header("Content-Disposition"), "review18A.txt");
+        $text = $dl->content_string();
+        xassert_str_contains($text, "Review #18A");
+        xassert_str_contains($text, "Paper: #18");
+        xassert_str_contains($text, "No comments");
+    }
+
+    function test_fetch_format_form() {
+        $qreq = TestQreq::get(["p" => 18, "r" => "18A", "format" => "form"]);
+        $dl = call_api_result("review", $this->u_diot, $qreq);
+        xassert($dl instanceof Downloader);
+        $text = $dl->content_string();
+        xassert_str_contains($text, "==+== Begin Review #18A");
+        xassert_str_contains($text, "==+== Paper #18");
+        // the form round-trips: POST it back and the review is unchanged
+        $prow = $this->conf->checked_paper_by_id(18);
+        $qreq = TestQreq::post(["p" => 18])
+            ->set_file_content("file", $text, "review18A.txt", "text/plain");
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, []);
+    }
+
+    function test_fetch_format_bad() {
+        $qreq = TestQreq::get(["p" => 18, "r" => "18A", "format" => "xml"]);
+        $jr = call_api_result("review", $this->u_diot, $qreq);
+        xassert_eqq($jr->status, 400);
+        // ZIP formats are available only on the multiple-review endpoint
+        $qreq = TestQreq::get(["p" => 18, "r" => "18A", "format" => "textzip"]);
+        $jr = call_api_result("review", $this->u_diot, $qreq);
+        xassert_eqq($jr->status, 400);
+    }
+
+    function test_multi_fetch_format_text() {
+        $qreq = TestQreq::get(["p" => 18, "format" => "text"]);
+        $dl = call_api_result("reviews", $this->u_chair, $qreq);
+        xassert($dl instanceof Downloader);
+        xassert_str_contains($dl->header("Content-Disposition"), "reviews.txt");
+        $text = $dl->content_string();
+        // paper 18 has three viewable reviews, each with its own title block
+        xassert_eqq(substr_count($text, "* Paper: #18 "), 3);
+
+        // the search path must render whole reviews, not just their scores
+        $qreq = TestQreq::get(["q" => "consistent overhead", "rq" => "re:complete", "format" => "text"]);
+        $dl = call_api_result("reviews", $this->u_chair, $qreq);
+        xassert($dl instanceof Downloader);
+        $text = $dl->content_string();
+        xassert_str_contains($text, "Review #18A");
+        xassert_str_contains($text, "No comments");
+        xassert_str_contains($text, "Four score and seven years ago");
+
+        // one matching review yields a single-review filename
+        $qreq = TestQreq::get(["p" => 18, "u" => $this->u_diot->email, "format" => "text"]);
+        $dl = call_api_result("reviews", $this->u_chair, $qreq);
+        xassert($dl instanceof Downloader);
+        xassert_str_contains($dl->header("Content-Disposition"), "review18A.txt");
+        xassert_str_contains($dl->content_string(), "Review #18A");
+    }
+
+    function test_multi_fetch_format_zip() {
+        $qreq = TestQreq::get(["p" => 18, "format" => "textzip"]);
+        $dl = call_api_result("reviews", $this->u_chair, $qreq);
+        xassert($dl instanceof Downloader);
+        xassert_eqq($dl->header("Content-Type"), "application/zip");
+        xassert_str_contains($dl->header("Content-Disposition"), "reviews.zip");
+        $zc = self::zip_contents($dl->content_string());
+        xassert_eqq(count($zc), 3);
+        $pfx = $this->conf->download_prefix;
+        xassert_in_eqq("{$pfx}review18A.txt", array_keys($zc));
+        xassert_str_contains($zc["{$pfx}review18A.txt"], "Review #18A");
+        xassert_str_contains($zc["{$pfx}review18A.txt"], "No comments");
+
+        // `formzip` packages offline forms instead
+        $qreq = TestQreq::get(["p" => 18, "u" => $this->u_diot->email, "format" => "formzip"]);
+        $dl = call_api_result("reviews", $this->u_chair, $qreq);
+        xassert($dl instanceof Downloader);
+        $zc = self::zip_contents($dl->content_string());
+        xassert_eqq(array_keys($zc), ["{$pfx}review18A.txt"]);
+        xassert_str_contains($zc["{$pfx}review18A.txt"], "==+== Begin Review #18A");
+    }
+
+    function test_fetch_download_json() {
+        // `download=1` trades the response envelope for the bare payload that
+        // `POST /review` accepts
+        $jr = call_api_result("review", $this->u_diot,
+            TestQreq::get(["p" => 18, "r" => "18A", "download" => 1]));
+        xassert($jr instanceof JsonResult);
+        xassert($jr->minimal);
+        xassert_str_contains($jr->header("Content-Disposition"),
+            $this->conf->download_prefix . "review18A.json");
+        $j = (object) $jr->content;
+        xassert_eqq($j->object, "review");
+        xassert_eqq($j->pid, 18);
+        xassert_eqq($j->OveMer, 2);
+        xassert(!isset($j->ok));
+
+        // and it round-trips: uploading it again changes nothing
+        $prow = $this->conf->checked_paper_by_id(18);
+        $j2 = call_api("review", $this->u_diot, TestQreq::post_json($j), $prow);
+        xassert_eqq($j2->ok, true);
+        xassert_eqq($j2->valid, true);
+        xassert_eqq($j2->change_list, []);
+    }
+
+    function test_multi_fetch_download_json() {
+        // `/reviews` downloads the bare array `POST /reviews` accepts
+        $jr = call_api_result("reviews", $this->u_chair,
+            TestQreq::get(["p" => 18, "download" => 1]));
+        xassert($jr instanceof JsonResult);
+        xassert($jr->minimal);
+        xassert_str_contains($jr->header("Content-Disposition"), "reviews.json");
+        $a = $jr->content;
+        xassert(is_list($a));
+        xassert_eqq(count($a), 3);
+        xassert_eqq($a[0]->object, "review");
+    }
+
+    function test_download_inline() {
+        // `download=0` makes a text rendering inline rather than an attachment
+        $dl = call_api_result("review", $this->u_diot,
+            TestQreq::get(["p" => 18, "r" => "18A", "format" => "text", "download" => 0]));
+        xassert($dl instanceof Downloader);
+        xassert_str_contains($dl->header("Content-Disposition"), "inline; filename=");
+        xassert_str_contains($dl->content_string(), "Review #18A");
+        // the default is an attachment
+        $dl = call_api_result("review", $this->u_diot,
+            TestQreq::get(["p" => 18, "r" => "18A", "format" => "text"]));
+        xassert_str_contains($dl->header("Content-Disposition"), "attachment; filename=");
+    }
+
+    // A non-JSON `format` must not expose review fields the caller cannot see:
+    // the text renderings apply the same view-score bound as the JSON one.
+    function test_format_field_visibility() {
+        $conf = $this->conf;
+        // add a field only the review's own reviewer and administrators may see
+        $sv = SettingValues::make_request($conf->root_user(), [
+            "has_rf" => 1,
+            "rf/1/id" => "t09",
+            "rf/1/name" => "Reviewer notes",
+            "rf/1/visibility" => "admin",
+            "rf/1/order" => 20
+        ]);
+        xassert($sv->execute());
+        $f = $conf->review_field("t09");
+        xassert(!!$f);
+        xassert_eqq($f->view_score, VIEWSCORE_REVIEWERONLY);
+        $uid = $f->uid();
+
+        // diot records a value in it
+        $prow = $conf->checked_paper_by_id(18);
+        $j = call_api("review", $this->u_diot,
+            TestQreq::post_json(["object" => "review", $uid => "SEKRIT"]), $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->review->$uid, "SEKRIT\n");
+
+        // let PC members read one another's reviews, then find one who is not
+        // the reviewer: they must not see the reviewer-only field
+        $conf->save_refresh_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        $prow = $conf->checked_paper_by_id(18);
+        $rrow = $prow->checked_review_by_user($this->u_diot);
+        $u_other = null;
+        foreach ($conf->pc_members() as $u) {
+            if ($u->contactId !== $this->u_diot->contactId
+                && !$u->privChair
+                && $u->can_view_review($prow, $rrow)) {
+                $u_other = $u;
+                break;
+            }
+        }
+        xassert(!!$u_other);
+
+        // hide reviewer identities from the PC: a name is subject to the same
+        // kind of bound as a field
+        $conf->save_refresh_setting("viewrevid", Conf::VIEWREV_NEVER);
+        xassert($this->u_chair->can_view_review_identity($prow, $rrow));
+        xassert(!$u_other->can_view_review_identity($prow, $rrow));
+
+        foreach (["text", "form"] as $fmt) {
+            // the reviewer and administrators see the field
+            foreach ([$this->u_diot, $this->u_chair] as $u) {
+                $dl = call_api_result("review", $u, TestQreq::get(["p" => 18, "r" => "18A", "format" => $fmt]));
+                xassert($dl instanceof Downloader);
+                $t = $dl->content_string();
+                xassert_str_contains($t, "SEKRIT");
+                xassert_str_contains($t, "Diot");
+            }
+            // ...but another PC member gets the review without it, and without
+            // the reviewer's name
+            $dl = call_api_result("review", $u_other, TestQreq::get(["p" => 18, "r" => "18A", "format" => $fmt]));
+            xassert($dl instanceof Downloader);
+            $t = $dl->content_string();
+            xassert_str_contains($t, "18A");
+            xassert_not_str_contains($t, "SEKRIT");
+            xassert_not_str_contains($t, "Reviewer notes");
+            xassert_not_str_contains($t, "Diot");
+        }
+
+        // the same bound applies to the multiple-review and ZIP renderings
+        $dl = call_api_result("reviews", $u_other, TestQreq::get(["p" => 18, "format" => "text"]));
+        xassert_not_str_contains($dl->content_string(), "SEKRIT");
+        $dl = call_api_result("reviews", $u_other, TestQreq::get(["p" => 18, "format" => "formzip"]));
+        xassert_not_str_contains(join("", self::zip_contents($dl->content_string())), "SEKRIT");
+        $dl = call_api_result("reviews", $this->u_chair, TestQreq::get(["p" => 18, "format" => "textzip"]));
+        xassert_str_contains(join("", self::zip_contents($dl->content_string())), "SEKRIT");
+
+        // and matches what `format=json` reports
+        $jr = call_api("review", $u_other, TestQreq::get(["p" => 18, "r" => "18A"]));
+        xassert_eqq($jr->ok, true);
+        xassert(!isset($jr->review->$uid));
+
+        // restore the review form and review visibility
+        $sv = SettingValues::make_request($conf->root_user(), [
+            "has_rf" => 1,
+            "rf/1/id" => "t09",
+            "rf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+        xassert(!$conf->review_field("t09"));
+        $conf->save_refresh_setting("viewrev", null);
+        $conf->save_refresh_setting("viewrevid", null);
+    }
+
+    /** @param string $zipdata
+     * @return array<string,string> */
+    static private function zip_contents($zipdata) {
+        $fn = tempnam("/tmp", "hctz");
+        file_put_contents($fn, $zipdata);
+        $zip = new ZipArchive;
+        xassert_eqq($zip->open($fn), true);
+        $zc = [];
+        for ($i = 0; $i !== $zip->numFiles; ++$i) {
+            $zc[$zip->getNameIndex($i)] = $zip->getFromIndex($i);
+        }
+        $zip->close();
+        unlink($fn);
+        return $zc;
     }
 }

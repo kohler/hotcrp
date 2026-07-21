@@ -116,12 +116,19 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
     /** @param int $status
-     * @param array<string,mixed> $content
+     * @param object|array<string,mixed>|list $content
      * @return JsonResult */
     static function make_minimal($status, $content) {
         $jr = new JsonResult(null);
         $jr->status = $status;
-        $jr->content = $content;
+        if (is_array($content)) {
+            $jr->content = $content;
+        } else if ($content instanceof JsonSerializable) {
+            $jr->content = (array) $content->jsonSerialize();
+        } else {
+            assert(!($content instanceof JsonResult));
+            $jr->content = (array) $content;
+        }
         $jr->minimal = true;
         return $jr;
     }

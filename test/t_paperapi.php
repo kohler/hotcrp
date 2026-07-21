@@ -349,6 +349,30 @@ class PaperAPI_Tester {
         xassert_eqq($jr->status_list[1]->conflict, true);
     }
 
+    function test_get_download_json() {
+        // `download=1` trades the response envelope for the bare payload that
+        // `POST /paper` accepts
+        $jr = call_api_result("paper", $this->u_chair, TestQreq::get(["p" => 1, "download" => 1]));
+        xassert($jr instanceof JsonResult);
+        xassert($jr->minimal);
+        xassert_str_contains($jr->header("Content-Disposition"),
+            $this->conf->download_prefix . "paper1.json");
+        $pj = (object) $jr->content;
+        xassert_eqq($pj->object, "paper");
+        xassert_eqq($pj->pid, 1);
+        xassert(!isset($pj->ok));
+
+        // `/papers` downloads the bare array `POST /papers` accepts
+        $jr = call_api_result("papers", $this->u_chair, TestQreq::get(["q" => "1-3", "download" => 1]));
+        xassert($jr instanceof JsonResult);
+        xassert($jr->minimal);
+        xassert_str_contains($jr->header("Content-Disposition"),
+            $this->conf->download_prefix . "papers.json");
+        xassert(is_list($jr->content));
+        xassert_eqq(count($jr->content), 3);
+        xassert_eqq($jr->content[0]->object, "paper");
+    }
+
     function test_get_sort() {
         $jr = call_api("papers", $this->u_chair, ["q" => "1-5 sort:title"]);
         xassert_eqq($jr->ok, true);

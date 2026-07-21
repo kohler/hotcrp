@@ -115,7 +115,26 @@ class Review_API extends MessageSet {
         $this->user = $user;
     }
 
-    /** @return JsonResult */
+    /** Parse the `format` request parameter, which selects how a GET renders
+     * its reviews: `json` (the default), `text` (reviews as they appear in a
+     * review download), or `form` (offline review forms, which `POST /review`
+     * accepts back). The multiple-review endpoint also offers `textzip` and
+     * `formzip`, which return one file per review in a ZIP archive.
+     * @param bool $multi
+     * @return array{'json'|'text'|'form',bool} */
+    static private function parse_get_format(Qrequest $qreq, $multi) {
+        $enum = $multi ? "json|text|form|textzip|formzip" : "json|text|form";
+        $fmt = ViewOptionType::parse_enum($qreq->format ?? "json", $enum, true);
+        if ($fmt === null) {
+            JsonResult::make_parameter_error("format")->complete();
+        }
+        if (str_ends_with($fmt, "zip")) {
+            return [substr($fmt, 0, -3), true];
+        }
+        return [$fmt, false];
+    }
+
+    /** @return JsonResult|Downloader */
     static function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!isset($qreq->p)) {
             return JsonResult::make_missing_error("p");
@@ -126,6 +145,8 @@ class Review_API extends MessageSet {
         if (!$prow || $fr) {
             return Conf::paper_error_json_result($fr);
         }
+        // the single endpoint has no ZIP formats, so the container is never set
+        list($fmt, ) = self::parse_get_format($qreq, false);
 
         $rloc = $prow->parse_ordinal_id($qreq->r);
         if ($rloc === false || $rloc === 0) {
@@ -143,12 +164,20 @@ class Review_API extends MessageSet {
             ]);
         }
 
+        if ($fmt !== "json") {
+            return self::run_get_download($user, $qreq, [$rrow], $fmt, false);
+        }
+
         $rj = (new PaperExport($user))->review_json($prow, $rrow);
         assert(!!$rj);
+        if (friendly_boolean($qreq->download)) {
+            return APIHelpers::make_json_download($user->conf, $rj,
+                "review" . $rrow->unparse_ordinal_id());
+        }
         return new JsonResult(["ok" => true, "review" => $rj]);
     }
 
-    /** @return JsonResult */
+    /** @return JsonResult|Downloader */
     static function run_get_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         $ml = [];
         if (!isset($qreq->q)) {
@@ -169,6 +198,7 @@ class Review_API extends MessageSet {
         if (isset($qreq->rq) && isset($qreq->u)) {
             JsonResult::make_parameter_error("rq", "<0>Supply at most one of `rq` and `u`")->complete();
         }
+        list($fmt, $zip) = self::parse_get_format($qreq, true);
 
         $rst = null;
         if (isset($qreq->u)) {
@@ -189,20 +219,93 @@ class Review_API extends MessageSet {
             $rst = $srch->main_term();
         }
 
-        $pex = new PaperExport($user);
-        $rjs = [];
-        foreach ($prows as $prow) {
-            foreach ($prow->viewable_reviews_as_display($user) as $rrow) {
-                if (!$rst || $rst->test($prow, $rrow))
-                    $rjs[] = $pex->review_json($prow, $rrow);
+        $rrows = [];
+        foreach ($prows as $xprow) {
+            foreach ($xprow->viewable_reviews_as_display($user) as $rrow) {
+                if (!$rst || $rst->test($xprow, $rrow))
+                    $rrows[] = $rrow;
             }
         }
 
+        if ($fmt !== "json") {
+            return self::run_get_download($user, $qreq, $rrows, $fmt, $zip);
+        }
+
+        $pex = new PaperExport($user);
+        $rjs = [];
+        foreach ($rrows as $rrow) {
+            $rjs[] = $pex->review_json($rrow->prow, $rrow);
+        }
+        if (friendly_boolean($qreq->download)) {
+            return APIHelpers::make_json_download($user->conf, $rjs, "reviews");
+        }
         return new JsonResult([
             "ok" => true,
             "message_list" => $ml,
             "reviews" => $rjs
         ]);
+    }
+
+    /** Render `$rrows` as a text download rather than JSON.
+     *
+     * `text` renders each review as it appears in a review download; `form`
+     * renders each as an offline review form (which `POST /review` accepts
+     * back). Without `$zip` the reviews are concatenated into one text file;
+     * with it, each review becomes its own file, named for its ordinal ID, in
+     * a ZIP archive. An empty selection yields an empty download, matching
+     * `format=json`’s empty `reviews` array. These renderings are attachments
+     * unless `download=0` asks for an inline response.
+     * @param list<ReviewInfo> $rrows
+     * @param 'text'|'form' $fmt
+     * @param bool $zip
+     * @return JsonResult|Downloader */
+    static private function run_get_download(Contact $user, Qrequest $qreq, $rrows, $fmt, $zip) {
+        $conf = $user->conf;
+        $rf = $conf->review_form();
+        $isform = $fmt === "form";
+        $attachment = friendly_boolean($qreq->download) !== false;
+
+        if ($zip) {
+            $dset = new DocumentInfoSet($conf->download_prefix . "reviews.zip");
+            foreach ($rrows as $rrow) {
+                $t = $isform
+                    ? $rf->text_form_header(false) . $rf->text_form($rrow->prow, $rrow, $user) . "\n"
+                    : $rf->unparse_text($rrow->prow, $rrow, $user);
+                $fn = $conf->download_prefix . "review" . $rrow->unparse_ordinal_id() . ".txt";
+                if (($doc = $dset->add_string_as($t, $fn))
+                    && ($time = $rrow->mtime($user)) > 0) {
+                    $doc->set_timestamp($time);
+                }
+            }
+            $dopt = (new Downloader)->parse_qreq($qreq);
+            $dopt->set_attachment($attachment);
+            if (!$dset->prepare_download($dopt)) {
+                return JsonResult::make_message_list(400, $dset->message_list());
+            }
+            return $dopt;
+        }
+
+        $t = [];
+        if ($isform) {
+            $t[] = $rf->text_form_header(count($rrows) > 1);
+        }
+        foreach ($rrows as $i => $rrow) {
+            if ($isform) {
+                $t[] = $rf->text_form($rrow->prow, $rrow, $user) . "\n";
+            } else {
+                if ($i !== 0) {
+                    $t[] = "\n\n\n" . str_repeat("* ", 37) . "*\n\n\n\n";
+                }
+                $t[] = $rf->unparse_text($rrow->prow, $rrow, $user);
+            }
+        }
+
+        $base = count($rrows) === 1
+            ? "review" . $rrows[0]->unparse_ordinal_id()
+            : "reviews";
+        return $conf->make_text_downloader($base)
+            ->set_attachment($attachment)
+            ->set_content(join("", $t));
     }
 
 
@@ -672,7 +775,7 @@ class Review_API extends MessageSet {
     }
 
 
-    /** @return JsonResult */
+    /** @return JsonResult|Downloader */
     static private function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow, $mode) {
         $old_overrides = $user->overrides();
         if (friendly_boolean($qreq->forceShow) !== false) {
@@ -694,18 +797,19 @@ class Review_API extends MessageSet {
             $jr = $jc->result;
         }
         $user->set_overrides($old_overrides);
-        if (($jr->content["message_list"] ?? null) === []) {
+        if ($jr instanceof JsonResult
+            && ($jr->content["message_list"] ?? null) === []) {
             unset($jr->content["message_list"]);
         }
         return $jr;
     }
 
-    /** @return JsonResult */
+    /** @return JsonResult|Downloader */
     static function run_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         return self::run($user, $qreq, $prow, DocumentLocator::M_ONE);
     }
 
-    /** @return JsonResult */
+    /** @return JsonResult|Downloader */
     static function run_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         return self::run($user, $qreq, $prow, DocumentLocator::M_MULTI);
     }

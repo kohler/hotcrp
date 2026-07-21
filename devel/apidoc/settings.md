@@ -160,13 +160,17 @@ optionally `given_name`, `family_name`, and `affiliation`), a submission with
     * group Literal content
 * response ?subject string: Expanded subject line.
 * response ?body string: Expanded mail body.
-* response ?text string: Expanded `text`, when `text` was supplied.
-* response ?templates [object]: Present for `template=all`; one entry per
-  template, each with `name`, `title`, expanded `subject` and `body`, and any
-  default `recipients`, `recipient_description`, and `t`.
 * response ?recipients string: Default recipient set for the expanded template.
 * response ?recipient_description string: Human-readable description of `recipients`.
 * response ?t string: Default search collection associated with the template.
+* response ?text string: Expanded `text`, when `text` was supplied.
+
+    * condition text
+* response ?templates [object]: Present for `template=all`; one entry per
+  template, each with `name`, `title`, expanded `subject` and `body`, and
+  optional `recipients`, `recipient_description`, and `t`.
+
+    * condition template=all
 
 
 # get /namedsearch

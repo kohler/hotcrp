@@ -78,6 +78,9 @@ class Paper_API extends MessageSet {
     static private function run_get_one(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $pj = (new PaperExport($user))->paper_json($prow);
         assert(!!$pj);
+        if (friendly_boolean($qreq->download)) {
+            return APIHelpers::make_json_download($user->conf, $pj, "paper{$prow->paperId}");
+        }
         return new JsonResult(["ok" => true, "paper" => $pj]);
     }
 
@@ -111,6 +114,9 @@ class Paper_API extends MessageSet {
                 $pjs[] = $pj;
         }
 
+        if (friendly_boolean($qreq->download)) {
+            return APIHelpers::make_json_download($user->conf, $pjs, "papers");
+        }
         return new JsonResult([
             "ok" => true,
             "message_list" => $srch->message_list_with_default_field("q"),
