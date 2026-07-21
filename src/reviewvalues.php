@@ -938,6 +938,9 @@ class ReviewValues extends MessageSet {
     /** @return bool */
     private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
         assert($prow->paperId === $this->req["paperId"] && $rrow->paperId === $prow->paperId);
+        // set `stage_rrow` before staging any property, so that an error
+        // return from any point below leaves a state `abort_save` can revert
+        $this->stage_rrow = $rrow;
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
         $approvable = $user->can_approve_review($prow, $rrow);
 
@@ -976,6 +979,7 @@ class ReviewValues extends MessageSet {
         $view_score = VIEWSCORE_EMPTY;
         $any_fval = $any_fdiff = false;
         $allow_new_submit = true;
+        $want_ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
         $fmissing = [];
         $wc = 0;
 
@@ -1022,8 +1026,10 @@ class ReviewValues extends MessageSet {
         }
 
         // check editing allowed
+        // (clickthrough not required to accept review or change status)
         if ($any_fdiff || !$approvable) {
-            if (($whynot = $user->perm_edit_review($prow, $rrow, Contact::EDIT_REVIEW_SUBMIT))) {
+            $erflags = $any_fdiff || $want_ready ? Contact::EDIT_REVIEW_SUBMIT : 0;
+            if (($whynot = $user->perm_edit_review($prow, $rrow, $erflags))) {
                 $this->clear_messages_since($before_msgcount);
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
@@ -1055,7 +1061,6 @@ class ReviewValues extends MessageSet {
 
         // warn about missing fields
         if ($fmissing) {
-            $want_ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
             $status = $want_ready ? self::ERROR : self::WARNING;
             foreach ($fmissing as $f) {
                 $this->rvmsg($status, $f->short_id, $this->conf->_("<0>{}: Entry required", $f->name));
@@ -1083,7 +1088,7 @@ class ReviewValues extends MessageSet {
             } else {
                 $newstatus = $oldstatus;
             }
-        } else if (!($this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED)
+        } else if (!$want_ready
                    || ($oldstatus < ReviewInfo::RS_DELIVERED && !$allow_new_submit)) {
             // unready nonempty review is at least drafted
             if ($this->can_unsubmit
