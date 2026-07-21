@@ -877,6 +877,154 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($rrow2->prop_changed());
     }
 
+    function test_failed_save_aborts_staged_props() {
+        // A save that fails after review fields have been staged must revert
+        // the staged changes. `Review_Page::handle_update` reloads the paper's
+        // reviews after a failed save (`reload_prow`), and `load_reviews`
+        // re-applies any uncommitted diff it finds; leftover staged props
+        // would resurface there (and once crashed on private score columns).
+        $conf = $this->conf;
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        // establish a known score while reviewing is open
+        save_review(17, $this->u_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => false], null, ["quiet" => true]);
+
+        $paper17 = $conf->checked_paper_by_id(17, $this->u_mgbaker);
+        $paper17->ensure_full_reviews();
+        $rrow = $paper17->review_by_user($this->u_mgbaker);
+        xassert(!!$rrow);
+        xassert(!$rrow->prop_changed());
+        $s01 = $rrow->fidval("s01");
+        xassert_eqq($s01, 2);
+
+        // close the reviewing deadline so the save fails after staging.
+        // NB `refresh_round_settings` derives in-memory `extrev_*` deadlines
+        // from `pcrev_*` ones, so save and restore all four names
+        $dls = [];
+        foreach (["pcrev", "extrev"] as $pfx) {
+            foreach (["soft", "hard"] as $kind) {
+                $dln = $pfx . "_" . $kind . ($rrow->reviewRound ? "_{$rrow->reviewRound}" : "");
+                $dls[$dln] = $conf->setting($dln);
+            }
+        }
+        $sdl = $conf->review_deadline_name($rrow->reviewRound, $rrow->reviewType, false);
+        $hdl = $conf->review_deadline_name($rrow->reviewRound, $rrow->reviewType, true);
+        $conf->save_refresh_setting($sdl, Conf::$now - 100);
+        $conf->save_refresh_setting($hdl, Conf::$now - 100);
+        xassert(!$conf->time_review($rrow->reviewRound, $rrow->reviewType, true));
+
+        // review page equivalent: save a changed score onto the paper's rrow
+        $tf = new ReviewValues($conf);
+        $tf->parse_qreq(new Qrequest("POST", ["ovemer" => $s01 + 1, "ready" => false]));
+        xassert(!$tf->check_and_save($this->u_mgbaker, $paper17, $rrow));
+        xassert($tf->has_error());
+
+        // the failed save must not leave uncommitted props behind
+        xassert_eqq($rrow->fidval("s01"), $s01);
+        xassert(!$rrow->prop_changed());
+
+        // review page reload: reloaded reviews are clean and match the database
+        $paper17->load_reviews(true);
+        $rrow2 = $paper17->review_by_user($this->u_mgbaker);
+        xassert(!!$rrow2);
+        xassert_eqq($rrow2->fidval("s01"), $s01);
+        xassert(!$rrow2->prop_changed());
+
+        foreach ($dls as $dln => $dlv) {
+            $conf->save_refresh_setting($dln, $dlv);
+        }
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
+    function test_review_acceptance_via_review_page() {
+        // The review-request email links to the review page (with a review
+        // acceptance capability); saving the review form there is how many
+        // requested reviewers accept. Exercise that flow like the page does:
+        // `check_and_save` on the paper's own rrow, then `load_reviews(true)`.
+        $conf = $this->conf;
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        ++MailChecker::$disabled;
+
+        $ext = Contact::make_keyed($conf, ["email" => "pageacceptor@_.com", "name" => "Page Acceptor"])->store();
+        xassert(!!$ext);
+        $rrid = $this->u_chair->assign_review(30, $ext, REVIEW_EXTERNAL);
+        xassert(is_int($rrid) && $rrid > 0);
+
+        $prow = $conf->checked_paper_by_id(30);
+        $rrow = $prow->review_by_user($ext);
+        xassert(!!$rrow);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_EMPTY);
+
+        // the emailed link signs in a capability-only user
+        $tok = ReviewAccept_Capability::make($rrow, true);
+        xassert(!!$tok);
+        $capu = Contact::make($conf);
+        $capu->apply_capability_text($tok->salt);
+        xassert_eqq($capu->reviewer_capability($prow), $ext->contactId);
+
+        // saving the form with no entries accepts the request
+        $tf = new ReviewValues($conf);
+        $tf->parse_qreq(new Qrequest("POST", ["ready" => false]));
+        xassert($tf->check_and_save($capu, $prow, $rrow));
+        xassert(!$tf->has_error());
+        xassert(!$rrow->prop_changed());
+        $prow->load_reviews(true);
+        $rrow = $prow->review_by_user($ext);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
+
+        // now the external reviewing deadline passes (`refresh_round_settings`
+        // derives in-memory `extrev_*` deadlines from `pcrev_*` ones, so save
+        // and restore all four names)
+        $dls = [];
+        foreach (["pcrev", "extrev"] as $pfx) {
+            foreach (["soft", "hard"] as $kind) {
+                $dln = $pfx . "_" . $kind . ($rrow->reviewRound ? "_{$rrow->reviewRound}" : "");
+                $dls[$dln] = $conf->setting($dln);
+            }
+        }
+        $sdl = $conf->review_deadline_name($rrow->reviewRound, $rrow->reviewType, false);
+        $hdl = $conf->review_deadline_name($rrow->reviewRound, $rrow->reviewType, true);
+        $conf->save_refresh_setting($sdl, Conf::$now - 100);
+        $conf->save_refresh_setting($hdl, Conf::$now - 100);
+
+        // `api/acceptreview` deliberately still works after the deadline...
+        $xqreq = new Qrequest("POST", ["r" => (string) $rrow->reviewId]);
+        $result = RequestReview_API::acceptreview($capu, $xqreq, $prow);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+
+        // ...but a review form save, entered scores and all, is rejected;
+        // the rejection must leave the in-memory reviews clean, because the
+        // page reloads them to print the response (this is the acceptance
+        // scenario that crashed in production)
+        $tf = new ReviewValues($conf);
+        $tf->parse_qreq(new Qrequest("POST", ["ovemer" => 2, "revexp" => 2, "ready" => false]));
+        $rrow = $prow->review_by_user($ext);
+        xassert(!$tf->check_and_save($capu, $prow, $rrow));
+        xassert($tf->has_error());
+        xassert(!$rrow->prop_changed());
+        $prow->load_reviews(true);
+        $rrow = $prow->review_by_user($ext);
+        xassert_eqq($rrow->fidval("s01"), null);
+        xassert(!$rrow->prop_changed());
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
+
+        // clean up
+        --MailChecker::$disabled;
+        foreach ($dls as $dln => $dlv) {
+            $conf->save_refresh_setting($dln, $dlv);
+        }
+        $this->u_chair->assign_review(30, $ext, 0);
+        xassert(!$prow->fresh_review_by_user($ext));
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
     function test_reassign_preserves_review_history() {
         $conf = $this->conf;
         $conf->save_refresh_setting("rev_open", 1);
@@ -1418,7 +1566,13 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert(!!$emptyuser->can_view_paper($paper17));
         xassert_eqq($emptyuser->reviewer_capability_user(17)->contactId, $user_external2->contactId);
 
-        // confirm review
+        // enable clickthrough
+        assert($emptyuser->can_clickthrough("review", $paper17));
+        $this->conf->set_opt("clickthrough_review", 1);
+        $this->conf->fmt()->define_override("clickthrough_review", "fart");
+        assert(!$emptyuser->can_clickthrough("review", $paper17));
+
+        // confirm review; this does not require clickthrough
         $xqreq = new Qrequest("POST", ["r" => $rrow->reviewId]);
         $result = RequestReview_API::acceptreview($emptyuser, $xqreq, $paper17);
         xassert($result instanceof JsonResult);
@@ -1432,10 +1586,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($rrow->view_score(), VIEWSCORE_EMPTY);
 
         // check clickthrough
-        assert($emptyuser->can_clickthrough("review", $paper17));
-        $this->conf->set_opt("clickthrough_review", 1);
-        $this->conf->fmt()->define_override("clickthrough_review", "fart");
-        assert(!$emptyuser->can_clickthrough("review", $paper17));
         assert(!$user_external2->can_clickthrough("review", $paper17));
         xassert_eqq($user_external2->reviewer_capability_user(17), null);
         $user_external2->apply_capability_text($tok->salt);
