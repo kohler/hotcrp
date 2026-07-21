@@ -1691,6 +1691,44 @@ class TestRunner {
         return $ok;
     }
 
+    /** @return ?resource */
+    static private function handle_dblockfiles() {
+        global $Opt;
+        if (!isset($Opt["dbLockfiles"])) {
+            return null;
+        }
+        $lf = SiteLoader::expand_includes(null, $Opt["dbLockfiles"]);
+
+        $first = true;
+        foreach ([true, false] as $require_lock) {
+            $lfx = $lf;
+            while (!empty($lfx)) {
+                // always try first database first
+                if ($first) {
+                    $i = 0;
+                    $first = false;
+                } else {
+                    $i = mt_rand(0, count($lfx) - 1);
+                }
+                $strm = @fopen($lfx[$i], "rb");
+                if ($strm !== false
+                    && (!$require_lock || flock($strm, LOCK_EX | LOCK_NB))) {
+                    if (!$require_lock) {
+                        fwrite(STDERR, "* All test databases are in use; sharing {$lfx[$i]}\n");
+                    }
+                    include $lfx[$i];
+                    return $strm;
+                }
+                if ($strm !== false) {
+                    fclose($strm);
+                }
+                array_splice($lfx, $i, 1);
+            }
+        }
+
+        throw new CommandLineException("Cannot read \$Opt[\"dbLockfiles\"]");
+    }
+
     /** @param 'no_cdb'|'reset_db'|'fresh_db'|class-string ...$tests */
     static function run(...$tests) {
         global $Opt;
@@ -1716,7 +1754,17 @@ class TestRunner {
              ->parse($argv);
         }
 
-        $conf = initialize_conf($arg["config"] ?? SiteLoader::resolve("test/options.php"));
+        $Opt["__no_main"] = true;
+        initialize_conf($arg["config"] ?? SiteLoader::resolve("test/options.php"));
+
+        // choose a random unlocked test database if multiple are available;
+        // $lockfile holds that database's lock until the process exits
+        $lockfile = self::handle_dblockfiles();
+
+        // connect to database
+        unset($Opt["__no_main"]);
+        $conf = initialize_conf();
+
         self::$original_opt = $Opt;
         Navigation::set(NavigationState::make_base("https://hotcrp-test.invalid/"));
 
