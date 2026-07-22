@@ -8,10 +8,11 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function requestreview($user, $qreq, $prow) {
+        $conf = $user->conf;
         $round = null;
         if ((string) $qreq->round !== ""
-            && ($rname = $user->conf->sanitize_round_name($qreq->round)) !== false) {
-            $round = (int) $user->conf->round_number($rname);
+            && ($rname = $conf->sanitize_round_name($qreq->round)) !== false) {
+            $round = (int) $conf->round_number($rname);
         }
 
         if (($whyNot = $user->perm_request_review($prow, $round, true))) {
@@ -27,7 +28,7 @@ class RequestReview_API {
         if ($email === "" || $email === "newanonymous") {
             return self::requestreview_anonymous($user, $qreq, $prow);
         }
-        $reviewer = $user->conf->user_by_email($email);
+        $reviewer = $conf->user_by_email($email);
         if (!$reviewer && !validate_email($email)) {
             return JsonResult::make_parameter_error("email", "<0>Invalid email address");
         }
@@ -36,32 +37,52 @@ class RequestReview_API {
         $pemail = $email;
         $cdb_reviewer = null;
         if ($reviewer && $reviewer->should_use_primary("extrev")) {
-            $reviewer = $user->conf->user_by_id($reviewer->primaryContactId);
+            $reviewer = $conf->user_by_id($reviewer->primaryContactId);
             $pemail = $reviewer->email;
         } else if (!$reviewer) {
-            $cdb_reviewer = $user->conf->cdb_user_by_email($email);
+            $cdb_reviewer = $conf->cdb_user_by_email($email);
             if ($cdb_reviewer && $cdb_reviewer->should_use_primary("extrev")) {
-                $cdb_reviewer = $user->conf->cdb_user_by_id($cdb_reviewer->primaryContactId);
+                $cdb_reviewer = $conf->cdb_user_by_id($cdb_reviewer->primaryContactId);
                 $pemail = $cdb_reviewer->email;
-                $reviewer = $user->conf->user_by_email($pemail);
+                $reviewer = $conf->user_by_email($pemail);
             }
         }
-        $ml = [];
-        if ($email !== $pemail) {
-            $ml[] = MessageItem::warning_note_at("email", "<0>Redirecting review request to {$email}’s primary account, {$pemail}");
+
+        $ml = $mlx = [];
+        $msgemail = $email;
+        $can_manage = $user->can_manage_reviews($prow);
+        $msgadmin = $user->allow_manage_reviews($prow) || $user->privChair;
+        if ($msgadmin && strcasecmp($msgemail, $pemail) !== 0) {
+            $msgemail = $pemail;
+            $mlx[] = MessageItem::inform_at("email", "<0>{$pemail} is {$email}’s primary account");
         }
 
         // - check for existing review
-        if ($reviewer && $prow->review_by_user($reviewer)) {
-            $ml[] = MessageItem::error_at("email", "<0>{$pemail} is already a reviewer");
-            return JsonResult::make_message_list($ml);
+        if ($reviewer && ($rrows = $prow->reviews_by_user($reviewer))) {
+            $visible = false;
+            foreach ($rrows as $rrow) {
+                if ($user->can_view_review_identity($prow, $rrow)) {
+                    $visible = true;
+                    break;
+                }
+            }
+            if ($msgadmin || $visible) {
+                $ml[] = MessageItem::error_at("email", $conf->_("<0>{$msgemail} is already reviewing this {submission}"));
+            } else {
+                self::request_generic_error($ml, $conf, $msgemail);
+            }
+            return self::request_finish_deny($user, $prow, $msgemail, $ml, $mlx);
         }
 
         // - check for existing request
         $request = self::request_by_paper_email($prow, $pemail);
         if ($request && !$user->allow_manage_reviews($prow)) {
-            $ml[] = MessageItem::error_at("email", "<0>{$pemail} is already a requested reviewer");
-            return JsonResult::make_message_list($ml);
+            if ($msgadmin || $user->can_view_review_identity($prow, null)) {
+                $ml[] = MessageItem::error_at("email", "<0>{$msgemail} is already a requested reviewer");
+            } else {
+                self::request_generic_error($ml, $conf, $msgemail);
+            }
+            return self::request_finish_deny($user, $prow, $msgemail, $ml, $mlx);
         } else if ($request) {
             self::update_qreq_from_request($qreq, $request);
         }
@@ -73,31 +94,48 @@ class RequestReview_API {
             $refusal = ($prow->review_refusals_by_email($pemail))[0] ?? null;
         }
         if ($refusal
-            && (!$user->can_manage_reviews($prow) || !friendly_boolean($qreq->override))) {
-            if ($reviewer
-                && ($refusal->refusedBy == $reviewer->contactId
-                    || ($refusal->refusedBy === null && $refusal->reason !== "request denied by chair"))) {
-                $ml[] = MessageItem::error_at("email", "<5>" . $reviewer->name_h(NAME_P) . " has declined to review this submission");
+            && (!$can_manage || !friendly_boolean($qreq->override))) {
+            if ($msgadmin || $user->can_view_review_identity($prow, null)) {
+                if ($reviewer
+                    && ($refusal->refusedBy == $reviewer->contactId
+                        || ($refusal->refusedBy === null
+                            && $refusal->reason !== "request denied by chair"))) {
+                    $ml[] = MessageItem::error_at("email", "<5>{$msgemail} has declined to review this submission");
+                } else {
+                    $ml[] = MessageItem::error_at("email", "<0>An administrator denied a previous request for {$msgemail} to review this submission");
+                }
+                if ($refusal->reason !== ""
+                    && $refusal->reason !== "request denied by chair"
+                    && ($refusal->requestedBy === $user->contactId || $msgadmin)) {
+                    $ml[] = MessageItem::inform_at("email", "<0>They offered this reason: “{$refusal->reason}”");
+                }
             } else {
-                $ml[] = MessageItem::error_at("email", "<0>An administrator denied a previous request for {$pemail} to review this submission");
-            }
-            if ($refusal->reason !== "" && $refusal->reason !== "request denied by chair") {
-                $ml[] = MessageItem::inform_at("email", "<5>They offered this reason: “" . htmlspecialchars($refusal->reason) . "”");
+                self::request_generic_error($ml, $conf, $msgemail);
             }
             if ($user->allow_manage_reviews($prow)) {
                 $ml[] = MessageItem::error_at("override", "");
             }
-            return JsonResult::make_message_list($ml);
+            return self::request_finish_deny($user, $prow, $msgemail, $ml, $mlx);
         }
 
         // - check for conflict
         if ($reviewer && $prow->has_conflict($reviewer)) {
-            $ml[] = MessageItem::error_at("email", "<0>{$pemail} cannot be asked to review this submission");
-            return JsonResult::make_message_list($ml);
+            if ($msgadmin || $user->can_view_conflicts($prow)) {
+                $ml[] = MessageItem::error_at("email", $conf->_("<0>{$msgemail} has a conflict with this {submission}"));
+            } else {
+                self::request_generic_error($ml, $conf, $msgemail);
+            }
+            return self::request_finish_deny($user, $prow, $msgemail, $ml, $mlx);
+        }
+
+        // If we get to this point, the request will be attempted, so the
+        // requester may learn about primary email differences.
+        if (empty($mlx) && strcasecmp($email, $pemail) !== 0) {
+            $mlx[] = MessageItem::inform_at("email", "<0>{$pemail} is {$email}’s primary account");
         }
 
         // construct reviewer contact (maybe not saved)
-        $xreviewer = $reviewer ?? $user->conf->cdb_user_by_email($pemail);
+        $xreviewer = $reviewer ?? $conf->cdb_user_by_email($pemail);
         if (!$xreviewer) {
             $name_args = Author::make_keyed([
                 "firstName" => $qreq->given_name ?? $qreq->firstName,
@@ -106,13 +144,12 @@ class RequestReview_API {
                 "affiliation" => $qreq->affiliation,
                 "email" => $pemail
             ]);
-            $xreviewer = Contact::make_keyed($user->conf, $name_args->unparse_nea_json());
+            $xreviewer = Contact::make_keyed($conf, $name_args->unparse_nea_json());
         }
 
         // load requester, reason
-        $can_manage = $user->can_manage_reviews($prow);
         if ($request && $can_manage) {
-            $requester = $user->conf->user_by_id($request->requestedBy, USER_SLICE) ?? $user;
+            $requester = $conf->user_by_id($request->requestedBy, USER_SLICE) ?? $user;
         } else {
             $requester = $user;
         }
@@ -125,40 +162,41 @@ class RequestReview_API {
             && !$reviewer->pc_track_assignable($prow);
 
         // check whether to make a proposal
-        $extrev_chairreq = $user->conf->setting("extrev_chairreq");
+        $extrev_chairreq = $conf->setting("extrev_chairreq");
         if ($can_manage
             ? ($potconflist || $notrack) && !friendly_boolean($qreq->override)
             : $extrev_chairreq === 1
               || ($extrev_chairreq === 2 && ($potconflist || $notrack))) {
-            $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
+            $conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $pemail, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
             if ($can_manage) {
                 if ($potconflist) {
-                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
+                    $ml[] = MessageItem::warning_note_at("email", $conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
                     $ml[] = MessageItem::inform_at("email", "<5>" . $potconflist->tooltip_html($prow));
                 } else {
-                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
+                    $ml[] = MessageItem::warning_note_at("email", $conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
                 }
             } else if ($extrev_chairreq === 2) {
                 if ($potconflist || !$user->can_view_pc()) {
-                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
+                    $ml[] = MessageItem::warning_note_at("email", $conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
                     if ($potconflist && $user->can_view_authors($prow)) {
                         $ml[] = MessageItem::inform_at("email", "<5>" . $potconflist->tooltip_html($prow));
                     }
                 } else {
-                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
+                    $ml[] = MessageItem::warning_note_at("email", $conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
                 }
             } else {
                 $ml[] = MessageItem::warning_note_at("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E));
                 $ml[] = MessageItem::inform_at("email", "<0>An administrator must approve this proposal for it to take effect.");
             }
             $user->log_activity("Review proposal added for {$pemail}", $prow);
-            $prow->conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
+            $conf->update_automatic_tags($prow, SearchTerm::ABOUT_REVIEWS);
             HotCRPMailer::send_administrators("@proposereview", $prow,
                                               ["requester_contact" => $requester,
                                                "reviewer_contact" => $xreviewer,
                                                "reason" => $reason]);
+            array_push($ml, ...$mlx);
             return new JsonResult(["ok" => true, "action" => "propose", "message_list" => $ml]);
         }
 
@@ -171,6 +209,7 @@ class RequestReview_API {
             return JsonResult::make_message_list(400, $ml);
         } else if ($reviewer->is_disabled()) {
             $ml[] = MessageItem::error_at("email", "<0>Review assignment error: The account for " . $reviewer->name(NAME_E) . " is disabled");
+            array_push($ml, ...$mlx);
             return JsonResult::make_message_list(403, $ml);
         }
 
@@ -188,7 +227,20 @@ class RequestReview_API {
         ]);
 
         $ml[] = MessageItem::success_at("email", "<0>Requested a review from " . $reviewer->name(NAME_E));
+        array_push($ml, ...$mlx);
         return new JsonResult(["ok" => true, "action" => "request", "message_list" => $ml]);
+    }
+
+    static private function request_generic_error(&$ml, Conf $conf, $email) {
+        $ml[] = MessageItem::error_at("email", $conf->_("<0>{$email} cannot be asked to review this {submission}"));
+        $ml[] = MessageItem::inform_at("email", $conf->_("<0>They may be conflicted, they may have been asked already, or an administrator may have denied the request."));
+    }
+
+    /** @return JsonResult */
+    static private function request_finish_deny(Contact $user, PaperInfo $prow, $msgemail, $ml, $mlx) {
+        $user->log_activity("Review proposal denied for {$msgemail}", $prow);
+        array_push($ml, ...$mlx);
+        return JsonResult::make_message_list($ml);
     }
 
     /** @return ReviewRequestInfo */
