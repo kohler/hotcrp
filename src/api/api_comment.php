@@ -161,7 +161,7 @@ class Comment_API extends MessageSet {
                 if ($this->stale
                     && $this->user->can_view_submitted_review($prow)) {
                     return JsonResult::make_not_found_error($k, "<0>The response has changed");
-                } else if ($crow) {
+                } else if ($crow && $this->user->can_manage($prow)) {
                     return JsonResult::make_permission_error($k, "<0>You aren’t allowed to view that response");
                 }
                 return JsonResult::make_not_found_error($k, "<0>Response not found");
