@@ -303,6 +303,62 @@ class Tags_Tester {
         $this->conf->qe("delete from PaperTagAnno where tag in ('t','tt','tu')");
     }
 
+    // Order annotations carry chair-authored prose (legends) and scheduling
+    // metadata (session title, time, location, session chair). `GET /taganno`
+    // must not hand them to a caller who cannot view the tag they annotate.
+
+    /** Install one annotation on $tag and return the API response as JSON text.
+     * @param string $tag
+     * @return string */
+    private function taganno_probe($tag, Contact $user) {
+        $this->conf->qe("delete from PaperTagAnno where tag=?", $tag);
+        $this->conf->qe("insert into PaperTagAnno (tag,annoId,tagIndex,heading,infoJson) values (?,1,10,?,?)",
+            $tag, "SECRET LEGEND", "{\"session_chair\":\"SECRET CHAIR\"}");
+        $this->conf->tags()->ensure($tag)->invalidate_order_anno();
+        $jr = call_api_result("taganno", $user, TestQreq::get(["tag" => $tag]));
+        return json_encode($jr->content);
+    }
+
+    function test_taganno_api_hides_tags_from_nonpc() {
+        // van authors #1 but is not on the PC, so no tag is visible to him
+        $u_author = $this->conf->checked_user_by_email("van@ee.lbl.gov");
+        xassert(!$u_author->isPC);
+        xassert(!$u_author->can_view_tags(null));
+        xassert(!$u_author->can_view_tag_somewhere("discuss"));
+        $t = $this->taganno_probe("discuss", $u_author);
+        xassert_not_str_contains($t, "SECRET LEGEND");
+        xassert_not_str_contains($t, "SECRET CHAIR");
+        $this->conf->qe("delete from PaperTagAnno where tag='discuss'");
+    }
+
+    function test_taganno_api_hides_hidden_tags_from_pc() {
+        $this->conf->save_setting("tag_hidden", 1, "secretorder");
+        Contact::update_rights();
+        $this->conf->invalidate_caches(["tags" => true]);
+        // varghese is a plain PC member: an admin-only tag is not his to read
+        xassert(!$this->u_varghese->can_view_hidden_tags());
+        xassert(!$this->u_varghese->can_view_tag_somewhere("secretorder"));
+        $t = $this->taganno_probe("secretorder", $this->u_varghese);
+        xassert_not_str_contains($t, "SECRET LEGEND");
+        xassert_not_str_contains($t, "SECRET CHAIR");
+        // ...while an administrator still sees them, so a fix must not overreach
+        $t = $this->taganno_probe("secretorder", $this->u_chair);
+        xassert_str_contains($t, "SECRET LEGEND");
+        $this->conf->qe("delete from PaperTagAnno where tag='secretorder'");
+        $this->conf->save_setting("tag_hidden", null);
+        Contact::update_rights();
+        $this->conf->invalidate_caches(["tags" => true]);
+    }
+
+    function test_taganno_api_set_stays_gated() {
+        // the write path is already gated; keep it that way
+        $u_author = $this->conf->checked_user_by_email("van@ee.lbl.gov");
+        $jr = call_api_result("=taganno", $u_author,
+            ["tag" => "discuss", "anno" => json_encode([["annoid" => "new", "legend" => "X"]])]);
+        xassert_eqq($jr->status, 403);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperTagAnno where tag='discuss'"), 0);
+    }
+
     function test_next() {
         $root = $this->conf->root_user();
         $p4 = $this->conf->checked_paper_by_id(4);
