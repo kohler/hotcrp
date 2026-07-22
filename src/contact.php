@@ -5786,26 +5786,58 @@ class Contact implements JsonSerializable {
                 || $this->conf->tags()->has(TagInfo::TF_PUBLIC_PERUSER));
     }
 
-    /** @return bool */
-    function can_edit_some_tag(?PaperInfo $prow = null) {
+    /** @param ?PaperInfo $prow
+     * @return int */
+    function tag_edit_flags(?PaperInfo $prow) {
         if (!$this->isPC) {
-            return false;
-        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+            return 0;
+        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS) !== 0
                    || $this->_root_user) {
-            return true;
+            return TagInfo::TFM_PERM_EDIT | TagInfo::TFM_EDIT_RESTRICT;
         } else if (!$prow) {
-            return $this->scope_allows_some(TS::S_TAG_WRITE);
+            if (!$this->scope_allows_some(TS::S_TAG_WRITE)) {
+                return 0;
+            }
+            $fl = $this->tag_perm_flags(null) & TagInfo::TFM_PERM_EDIT;
+            if (!$this->scope_allows_some(TS::S_TAG_ADMIN)) {
+                return $fl & (TagInfo::TF_PC | TagInfo::TF_HIDDEN);
+            } else if ($this->privChair) {
+                $fl |= TagInfo::TFM_READONLY;
+            } else if ($this->is_manager()) {
+                $fl |= TagInfo::TF_READONLY;
+            }
+            return $fl;
         }
         $rights = $this->rights($prow);
         if (!$rights->scope_allows(TS::S_TAG_WRITE)) {
-            return false;
+            return 0;
         }
-        return ($rights->allow_pc()
-                && ($rights->can_manage_tags()
-                    || $this->conf->time_pc_view($prow, false)))
-            || ($this->privChair
-                && $rights->scope_allows(TS::S_TAG_ADMIN)
-                && $this->conf->tags()->has(TagInfo::TFM_ADMIN_PUBLIC));
+        $fl = $this->tag_perm_flags($prow) & TagInfo::TFM_PERM_EDIT;
+        if (!$rights->scope_allows(TS::S_TAG_ADMIN)) {
+            // capabilities derived from adminship require S_TAG_ADMIN
+            $fl &= TagInfo::TF_PC | TagInfo::TF_HIDDEN;
+        } else if ($this->privChair) {
+            $fl |= TagInfo::TFM_READONLY;
+            if (!$rights->is_admin()) {
+                $fl &= ~TagInfo::TF_OTHER_PRIVATE;
+            }
+        } else if ($rights->is_admin()) {
+            $fl |= TagInfo::TF_READONLY;
+        } else {
+            $fl &= ~TagInfo::TF_OTHER_PRIVATE;
+        }
+        if (($fl & TagInfo::TFM_ADMIN_PUBLIC) === 0
+            && !$this->conf->time_pc_view($prow, false)) {
+            $fl = 0;
+        }
+        return $fl;
+    }
+
+    /** @return bool */
+    function can_edit_some_tag(?PaperInfo $prow = null) {
+        return ($this->tag_edit_flags($prow)
+                & $this->conf->tags()->flags
+                & TagInfo::TFM_PERM_EDIT) !== 0;
     }
 
     /** @return ?FailureReason */
@@ -5836,52 +5868,25 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_edit_most_tags(?PaperInfo $prow = null) {
-        if (!$this->isPC) {
-            return false;
-        } else if (!$prow) {
-            return $this->scope_allows_some(TS::S_TAG_WRITE);
-        }
-        $rights = $this->rights($prow);
-        return $rights->allow_pc()
-            && $rights->scope_allows(TS::S_TAG_WRITE)
-            && ($rights->can_manage_tags()
-                || $this->conf->time_pc_view($prow, false));
+        return ($this->tag_edit_flags($prow) & TagInfo::TF_PC) !== 0;
     }
 
     /** @param string $tag
      * @return bool */
     function can_edit_tag_somewhere($tag) {
         assert(!!$tag);
-        if (!$this->isPC) {
-            return false;
-        } else if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-                   || $this->_root_user) {
-            return true;
-        } else if (!$this->scope_allows_some(TS::S_TAG_WRITE)) {
-            return false;
-        }
-        $tagmap = $this->conf->tags();
-        $tag = Tagger::tv_tag($tag);
-        $twiddle = strpos($tag, "~");
-        if ($twiddle !== false) {
-            if ($twiddle > 0) {
-                return substr($tag, 0, $twiddle) == $this->contactId
-                    || $this->is_manager();
-            }
-            return $tag[1] !== "~"
-                || ($this->privChair && !$tagmap->is_automatic($tag));
-        }
-        $t = $tagmap->find($tag);
-        return !$t
-            || (!$t->is(TagInfo::TF_AUTOMATIC)
-                && (!$t->is(TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_CHAIR_READONLY) || $this->privChair)
-                && (!$t->is(TagInfo::TF_HIDDEN | TagInfo::TF_READONLY) || $this->is_manager()));
+        $ufl = $this->tag_edit_flags(null);
+        $tfl = $this->conf->tags()->edit_flags($tag, $this->contactId, 0);
+        return ($tfl & $ufl & TagInfo::TFM_PERM_EDIT) !== 0
+            && ($tfl & ~$ufl & TagInfo::TFM_EDIT_RESTRICT) === 0;
     }
 
     /** @param string $tag
+     * @param null|int|float $index
      * @return bool */
-    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
-        assert(!!$tag);
+    private function __can_edit_tag1(PaperInfo $prow, $tag, $index) {
+        // earlier implementation of can_edit_tag; used to cross-check
+        // __can_edit_tag2, with which it should agree at full scope
         if (!$this->isPC) {
             return false;
         } else if ($this->_root_user
@@ -5919,7 +5924,7 @@ class Contact implements JsonSerializable {
                 $ufl |= TagInfo::TF_READONLY;
             }
         }
-        if ($rights->can_manage_tags()) {
+        if ($rights->is_admin() && $rights->scope_allows(TS::S_TAG_ADMIN)) {
             $ufl |= TagInfo::TF_READONLY | TagInfo::TF_OTHER_PRIVATE;
         } else {
             $ufl &= ~TagInfo::TF_OTHER_PRIVATE;
@@ -5930,6 +5935,39 @@ class Contact implements JsonSerializable {
         }
         return ($ufl & TagInfo::TFM_ADMIN_PUBLIC)
             || $this->conf->time_pc_view($prow, false);
+    }
+
+    /** @param string $tag
+     * @param null|int|float $index
+     * @return bool */
+    private function __can_edit_tag2(PaperInfo $prow, $tag, $index) {
+        $ufl = $this->tag_edit_flags($prow);
+        $tfl = $this->conf->tags()->edit_flags($tag, $this->contactId, $index);
+        return ($tfl & $ufl & TagInfo::TFM_PERM_EDIT) !== 0
+            && ($tfl & ~$ufl & TagInfo::TFM_EDIT_RESTRICT) === 0;
+    }
+
+    /** @param string $tag
+     * @param null|int|float $index
+     * @param bool $v2 */
+    private function __edit_tag_complain(PaperInfo $prow, $tag, $index, $v2) {
+        $ts = sprintf("tag %s#%s [%x]", $tag, $index ?? "none", $this->conf->tags()->edit_flags($tag, $this->contactId, $index));
+        $ps = sprintf("paper %d [%x S%x]", $prow->paperId, $this->tag_edit_flags($prow), $this->rights($prow)->scope_bits & 0xFFFF);
+        error_log(caller_landmark() . " tag edit alignment error: expected " . json_encode(!$v2)
+            . ", user {$this->contactId}, {$ts}, {$ps}");
+        assert(false);
+    }
+
+    /** @param string $tag
+     * @return bool */
+    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
+        assert(!!$tag);
+        $v2 = $this->__can_edit_tag2($prow, $tag, $index);
+        if ($this->rights($prow)->scope_bits === ~0
+            && $this->__can_edit_tag1($prow, $tag, $index) !== $v2) {
+            $this->__edit_tag_complain($prow, $tag, $index, $v2);
+        }
+        return $v2;
     }
 
     /** @param string $tag
@@ -5950,30 +5988,32 @@ class Contact implements JsonSerializable {
             if ($rights->allow_admin()) {
                 $whyNot["forceShow"] = true;
             }
-        } else if (!$this->conf->time_pc_view($prow, false)) {
+        } else if (!$this->conf->time_pc_view($prow, false)
+                   && ($this->tag_edit_flags($prow) & TagInfo::TFM_ADMIN_PUBLIC) === 0) {
             if ($prow->timeWithdrawn > 0) {
                 $whyNot["withdrawn"] = true;
             } else {
                 $whyNot["notSubmitted"] = true;
             }
         } else {
-            $tag = Tagger::tv_tag($tag);
+            $tfl = $this->conf->tags()->edit_flags($tag, $this->contactId, $index);
             $twiddle = strpos($tag, "~");
-            if ($twiddle === 0 && $tag[1] === "~") {
-                $whyNot["chairTag"] = true;
-            } else if ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId) {
-                $whyNot["otherTwiddleTag"] = true;
-            } else if ($twiddle !== false) {
-                $whyNot["voteTagNegative"] = true;
-            } else {
+            if (($tfl & TagInfo::TF_AUTOMATIC) !== 0) {
                 $t = $this->conf->tags()->find($tag);
                 if ($t && $t->is(TagInfo::TFM_VOTES)) {
                     $whyNot["voteTag"] = true;
-                } else if ($t && $t->is(TagInfo::TF_AUTOMATIC)) {
-                    $whyNot["autosearchTag"] = true;
                 } else {
-                    $whyNot["chairTag"] = true;
+                    $whyNot["autosearchTag"] = true;
                 }
+            } else if (($tfl & TagInfo::TF_ALLOTMENT) !== 0) {
+                $whyNot["voteTagNegative"] = true;
+            } else if (($this->privChair || $rights->allow_admin())
+                       && !$rights->scope_allows(TS::S_TAG_ADMIN)) {
+                $whyNot["scope"] = TS::S_TAG_ADMIN;
+            } else if ($twiddle > 0 && intval($tag) !== $this->contactId) {
+                $whyNot["otherTwiddleTag"] = true;
+            } else {
+                $whyNot["chairTag"] = true;
             }
         }
         return $whyNot;
@@ -5982,19 +6022,12 @@ class Contact implements JsonSerializable {
     /** @param string $tag
      * @return bool */
     function can_edit_tag_anno($tag) {
-        if (!$this->scope_allows_some(TS::S_TAG_ADMIN)) {
-            return false;
-        } else if ($this->privChair) {
-            return true;
-        }
-        $twiddle = strpos($tag, "~");
-        $t = $this->conf->tags()->find($tag);
-        // XXXXXXX
-        return $this->isPC
-            && (!$t || !$t->is(TagInfo::TF_CHAIR_READONLY | TagInfo::TF_READONLY | TagInfo::TF_HIDDEN))
-            && ($twiddle === false
-                || ($twiddle === 0 && $tag[1] !== "~")
-                || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId));
+        $ufl = $this->tag_edit_flags(null);
+        $tfl = $this->conf->tags()->edit_flags($tag, $this->contactId, 0);
+        // automatic values do not prevent editing annotations
+        return ($tfl & $ufl & TagInfo::TFM_PERM_EDIT) !== 0
+            && ($tfl & ~$ufl & TagInfo::TFM_EDIT_RESTRICT & ~TagInfo::TF_AUTOMATIC) === 0
+            && $this->scope_allows(TS::S_TAG_ADMIN);
     }
 
 

@@ -71,6 +71,10 @@ class TagInfo {
     const TFM_PERM_ADMIN = 0x3E0;     // permissions for track administrators
     const TFM_PERM_NEG = 0x28;        // bits that restrict permissions relative to TF_PC
     const TFM_PERM_POS = 0x1D0;       // bits that grant permissions (not including OTHER_PRIVATE)
+    const TFM_PERM_EDIT = 0x2F8;      // permission bits that grant edit rights
+    const TFM_EDIT_RESTRICT = 0xAE00; // bits that block editing unless the editor
+                                      // holds the same bit as a capability
+                                      // (OTHER_PRIVATE, TFM_READONLY, ALLOTMENT, AUTOMATIC)
 
     /** @deprecated */
     const TF_SITEWIDE = 0x40;
@@ -895,6 +899,31 @@ class TagMap {
             return TagInfo::TF_PC | TagInfo::TF_OTHER_PRIVATE;
         }
         return TagInfo::TF_OTHER_PRIVATE;
+    }
+
+    /** @param string $tag
+     * @param int $cid
+     * @param null|int|float $index
+     * @return int */
+    function edit_flags($tag, $cid, $index = 0) {
+        $fl = $this->perm_flags($tag, $cid);
+        if (($fl & TagInfo::TFM_PRIVATE) !== 0) {
+            // private tags inherit vote restrictions from their base tags,
+            // but not automatic or readonly restrictions
+            $tw = strpos($tag, "~");
+            $ti = $this->find_having(substr($tag, $tw + 1), ~TagInfo::TFM_PERM & ~TagInfo::TF_AUTOMATIC);
+            if ($ti) {
+                $fl |= $ti->flags & ~TagInfo::TFM_PERM & ~TagInfo::TF_AUTOMATIC;
+            }
+            $fl &= ~TagInfo::TFM_READONLY;
+        } else if (($ti = $this->find_having($tag, ~TagInfo::TFM_PERM))) {
+            $fl |= $ti->flags & ~TagInfo::TFM_PERM;
+        }
+        if ($index === null || $index >= 0) {
+            // the allotment restriction only forbids negative values
+            $fl &= ~TagInfo::TF_ALLOTMENT;
+        }
+        return $fl;
     }
 
     /** @param string $tag

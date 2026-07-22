@@ -276,12 +276,6 @@ final class PaperContactInfo {
             && ($this->scope_bits & TS::S_REV_ADMIN) !== 0;
     }
 
-    /** @return bool */
-    function can_manage_tags() {
-        return ($this->ciflags & self::CIF_IS_ADMIN) !== 0
-            && ($this->scope_bits & TS::S_TAG_ADMIN) !== 0;
-    }
-
     /** @return bool
      * @deprecated */
     function allow_administer() {
