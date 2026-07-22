@@ -752,10 +752,12 @@ class TagMap {
      * @param int $flags
      * @return ?TagInfo */
     function find_having($tag, $flags) {
-        return ($this->flags & $flags) !== 0
-            && ($ti = $this->find(Tagger::tv_tag($tag)))
-            && ($ti->flags & $flags) !== 0
-            ? $ti : null;
+        if (($this->flags & $flags) !== 0
+            && ($ti = $this->find($tag))
+            && ($ti->flags & $flags) !== 0) {
+            return $ti;
+        }
+        return null;
     }
 
     /** @param string $tag
@@ -958,17 +960,6 @@ class TagMap {
      * @return bool */
     function is_approval($tag) {
         return !!$this->find_having($tag, TagInfo::TF_APPROVAL);
-    }
-    /** @param string $tag
-     * @return string|false */
-    function votish_base($tag) {
-        if (($this->flags & TagInfo::TFM_VOTES) === 0
-            || ($twiddle = strpos($tag, "~")) === false) {
-            return false;
-        }
-        $tbase = substr(Tagger::tv_tag($tag), $twiddle + 1);
-        $t = $this->find($tbase);
-        return $t && ($t->flags & TagInfo::TFM_VOTES) !== 0 ? $tbase : false;
     }
     /** @param string $tag
      * @return bool */
