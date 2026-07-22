@@ -1958,4 +1958,122 @@ class Comments_Tester {
 
         MailChecker::clear();
     }
+
+    // ---- existence oracles on GET/POST /comment -------------------------
+    //
+    // A caller who may not view a comment shouldn’t be able to tell that it
+    // exists, unless they can manage the corresponding paper.
+
+    /** Install a draft response (author-visible only) on $pid and return its id.
+     * @param int $pid
+     * @return int */
+    private function add_draft_response($pid) {
+        $this->conf->qe("delete from PaperComment where paperId=? and (commentType&?)!=0",
+            $pid, CommentInfo::CT_RESPONSE);
+        $this->conf->qe("insert into PaperComment set paperId=?, contactId=?, timeModified=?, comment=?, commentType=?, commentRound=1, replyTo=0",
+            $pid, $this->u_chair->contactId, Conf::$now, "draft response text",
+            CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT | CommentInfo::CT_BYAUTHOR | CommentInfo::CTVIS_AUTHOR);
+        $this->conf->invalidate_caches([]);
+        return (int) $this->conf->fetch_ivalue("select commentId from PaperComment where paperId=? and (commentType&?)!=0",
+            $pid, CommentInfo::CT_RESPONSE);
+    }
+
+    /** Install an administrators-only comment on $pid and return its id.
+     * @param int $pid
+     * @return int */
+    private function add_hidden_comment($pid) {
+        $this->conf->qe("insert into PaperComment set paperId=?, contactId=?, timeModified=?, comment=?, commentType=?, commentRound=0, replyTo=0",
+            $pid, $this->u_chair->contactId, Conf::$now, "administrators only",
+            CommentInfo::CTVIS_ADMINONLY | CommentInfo::CT_BYADMINISTRATOR);
+        $cid = (int) $this->conf->dblink->insert_id;
+        $this->conf->invalidate_caches([]);
+        return $cid;
+    }
+
+    /** @param array<string,mixed> $args
+     * @return string */
+    private function cmt_observable($fn, Contact $user, $args, PaperInfo $prow) {
+        $jr = call_api_result($fn, $user, $args, $prow);
+        $t = [];
+        foreach ($jr->content["message_list"] ?? [] as $mi) {
+            if (is_object($mi) && ($mi->message ?? "") !== "") {
+                $t[] = $mi->message;
+            }
+        }
+        return ($jr->status ?? 200) . " " . join(" ~ ", $t);
+    }
+
+    function test_comment_api_get_hides_response_existence() {
+        $conf = $this->conf;
+        $u = $this->u_mgbaker;
+        $p2 = $conf->checked_paper_by_id(2);
+        $p3 = $conf->checked_paper_by_id(3);
+        xassert($u->can_view_paper($p2) && $u->can_view_paper($p3));
+        xassert(!$u->can_manage($p2) && !$u->can_manage($p3));
+
+        // #2 has a draft response the prober may not read; #3 has none
+        $this->add_draft_response(2);
+        $conf->qe("delete from PaperComment where paperId=3 and (commentType&?)!=0",
+            CommentInfo::CT_RESPONSE);
+        $conf->invalidate_caches([]);
+        $p2 = $conf->checked_paper_by_id(2);
+        $p3 = $conf->checked_paper_by_id(3);
+        // the chair can read it; the prober cannot
+        xassert_str_contains($this->cmt_observable("comment", $this->u_chair, ["response" => "1"], $p2), "200 ");
+
+        $exists = $this->cmt_observable("comment", $u, ["response" => "1"], $p2);
+        $absent = $this->cmt_observable("comment", $u, ["response" => "1"], $p3);
+        xassert_not_str_contains($exists, "200 ");
+        $conf->qe("delete from PaperComment where paperId=2 and (commentType&?)!=0",
+            CommentInfo::CT_RESPONSE);
+        $conf->invalidate_caches([]);
+        xassert_eqq($exists, $absent);
+    }
+
+    function test_comment_api_get_hides_comment_existence() {
+        // the plain-comment branch already collapses both cases for a
+        // non-administrator; this pins that it stays that way
+        $conf = $this->conf;
+        $u = $this->u_mgbaker;
+        $p2 = $conf->checked_paper_by_id(2);
+        xassert(!$u->can_manage($p2));
+        $cid = $this->add_hidden_comment(2);
+        $p2 = $conf->checked_paper_by_id(2);
+
+        $exists = $this->cmt_observable("comment", $u, ["c" => (string) $cid], $p2);
+        $absent = $this->cmt_observable("comment", $u, ["c" => "99999"], $p2);
+        $conf->qe("delete from PaperComment where commentId=?", $cid);
+        $conf->invalidate_caches([]);
+        xassert_eqq($exists, $absent);
+        xassert_str_contains($exists, "404");
+    }
+
+    function test_comment_api_post_hides_comment_existence() {
+        // `post_target` guards the disclosing 403 with can_manage()
+        $conf = $this->conf;
+        $u = $this->u_mgbaker;
+        $p2 = $conf->checked_paper_by_id(2);
+        $cid = $this->add_hidden_comment(2);
+        $p2 = $conf->checked_paper_by_id(2);
+
+        $exists = $this->cmt_observable("=comment", $u, ["c" => (string) $cid, "text" => "x"], $p2);
+        $absent = $this->cmt_observable("=comment", $u, ["c" => "99999", "text" => "x"], $p2);
+        $conf->qe("delete from PaperComment where commentId=?", $cid);
+        $conf->invalidate_caches([]);
+        xassert_eqq($exists, $absent);
+    }
+
+    function test_comment_api_manager_still_distinguishes() {
+        // an administrator legitimately learns which it was
+        $conf = $this->conf;
+        $p2 = $conf->checked_paper_by_id(2);
+        $cid = $this->add_hidden_comment(2);
+        $p2 = $conf->checked_paper_by_id(2);
+        $exists = $this->cmt_observable("comment", $this->u_chair, ["c" => (string) $cid], $p2);
+        $absent = $this->cmt_observable("comment", $this->u_chair, ["c" => "99999"], $p2);
+        $conf->qe("delete from PaperComment where commentId=?", $cid);
+        $conf->invalidate_caches([]);
+        xassert_neqq($exists, $absent);
+        xassert_str_contains($exists, "200 ");
+    }
 }
