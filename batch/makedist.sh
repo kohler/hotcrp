@@ -537,7 +537,6 @@ src/search/st_conflict.php
 src/search/st_decision.php
 src/search/st_documentcount.php
 src/search/st_documentname.php
-src/search/st_editfinal.php
 src/search/st_emoji.php
 src/search/st_formula.php
 src/search/st_namedsearch.php

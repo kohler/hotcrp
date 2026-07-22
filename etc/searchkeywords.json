@@ -162,10 +162,6 @@
     },
     {   "name": "decision", "alias": "dec"   },
     {
-        "name": "editfinal", "deprecated": true,
-        "parse_function": "EditFinal_SearchTerm::parse", "has": "yes"
-    },
-    {
         "name": "perm",
         "parse_function": "Perm_SearchTerm::parse"
     },
