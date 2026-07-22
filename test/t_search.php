@@ -537,4 +537,56 @@ class Search_Tester {
         }
     }
 
+    function test_pref_search_hides_individual_preferences() {
+        // `can_view_preference($prow, false)` reserves an individual's review
+        // preferences to administrators; only the PC-wide aggregate is open to
+        // ordinary PC members (see h_keywords.php: "Administrators can search
+        // preferences by name; PC members can only search preferences for the
+        // PC as a whole"). `Revpref_SearchTerm::parse()` relaxes the gate to
+        // the aggregate form whenever `matching_special_uids()` resolves the
+        // word without error — but `chair`, `admin`, and a user tag can each
+        // resolve to a *single named person*, so that relaxation must not be
+        // reachable for them.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert(!$lixia->is_manager());
+        $p1 = $conf->checked_paper_by_id(1);
+        xassert(!$lixia->can_view_preference($p1, false));
+
+        $conf->qe("delete from PaperReviewPreference where contactId=?", $chair->contactId);
+        $conf->qe("insert into PaperReviewPreference (paperId,contactId,preference) values (2,?,5), (4,?,-3)",
+            $chair->contactId, $chair->contactId);
+        // a *user* tag borne by exactly one PC member resolves the same way
+        $old_tags = $chair->contactTags;
+        $conf->qe("update ContactInfo set contactTags=? where contactId=?",
+            " chairtag#0", $chair->contactId);
+        $conf->invalidate_caches(["pc" => true]);
+        xassert($conf->pc_tag_exists("chairtag"));
+        xassert($lixia->can_view_user_tag("chairtag"));
+
+        // the sanctioned spelling is denied...
+        xassert_search_all($lixia, "pref:{$chair->email}>0", "");
+        xassert_search_all($lixia, "pref:\"{$chair->email}\">0", "");
+        // ...so these must be denied too: each names the same one person
+        xassert_search_all($lixia, "pref:chair>0", "");
+        xassert_search_all($lixia, "pref:chair<0", "");
+        xassert_search_all($lixia, "pref:admin>0", "");
+        xassert_search_all($lixia, "pref:#chairtag>0", "");
+
+        // an administrator may still search preferences by name
+        xassert_search_all($chair, "pref:{$chair->email}>0", "2");
+        xassert_search_all($chair, "pref:chair<0", "4");
+        // and the PC-wide aggregate remains open to ordinary PC members.
+        // Other testers leave preferences behind, so check membership rather
+        // than pinning the whole result.
+        $agg = (new PaperSearch($lixia, ["q" => "pref:pc>0", "t" => "all"]))->paper_ids();
+        xassert(in_array(2, $agg, true));
+
+        $conf->qe("delete from PaperReviewPreference where contactId=?", $chair->contactId);
+        $conf->qe("update ContactInfo set contactTags=? where contactId=?",
+            $old_tags, $chair->contactId);
+        $conf->invalidate_caches(["pc" => true]);
+    }
+
 }
