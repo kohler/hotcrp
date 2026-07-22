@@ -390,10 +390,6 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
     }
     function test_review(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
-        if ($this->review_type
-            && $this->review_type !== $rrow->reviewType) {
-            return false;
-        }
         if ($this->status !== 0) {
             if ((($this->status & self::COMPLETE) !== 0
                  && $rrow->reviewStatus < ReviewInfo::RS_APPROVED)
@@ -417,10 +413,14 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
         }
-        if ($this->round_list !== null
-            && !in_array($rrow->reviewRound, $this->round_list, true)) {
-            // XXX can_view_review_round?
-            return false;
+        if ($this->review_type || $this->round_list !== null) {
+            if (($this->review_type
+                 && $this->review_type !== $rrow->reviewType)
+                || ($this->round_list !== null
+                    && !in_array($rrow->reviewRound, $this->round_list, true))
+                || !$user->can_view_review_meta($prow, $rrow)) {
+                return false;
+            }
         }
         if ($this->rfsrch || $this->wordcountexpr || $this->rate_bits !== null
             ? !$user->can_view_review($prow, $rrow)

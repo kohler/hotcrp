@@ -93,6 +93,12 @@ class Downloader {
         return $this;
     }
 
+    /** @return $this */
+    function disable_time_predicates() {
+        $this->if_unmodified_since = $this->if_modified_since = null;
+        return $this;
+    }
+
     /** @param ?string $range */
     private function _parse_range($range) {
         if ($range === null

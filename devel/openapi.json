@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2026-07-17",
+        "version": "2026-07-21",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\nParameters may be provided in the query string or (for non-GET requests) the\nrequest body. In most cases, the request body should have Content-Type\n`application/x-www-form-urlencoded` or `multipart/form-data`; exceptions are\ndocumented.\n\nResponses are formatted as JSON. Every response has an `ok` field, which is\n`true` if the request passed initial validation and `false` otherwise. Typically\n`\"ok\": false` indicates a serious error, such as a missing or malformatted\nparameter or a permission problem. `\"ok\": true` does not necessarily mean that\nthe request fully succeeded. Messages about the request, if any, are expressed\nin a [`message_list` field](#overview-message-lists); a successful response may\nstill carry errors and warnings there.\n\nOperations marked with a yellow star (<span class=\"featured-star\nfeatured-star-op\" title=\"Featured\" aria-label=\"Featured\">★</span>) are\n**featured**: the parts of the API most useful to external integrations, which\nwe aim to keep stable and well documented. When several endpoints can accomplish\na task, the featured one is usually the best choice. Other API endpoints may be\nunstable or may be intended to serve HotCRP’s own web client.\n\nExternal applications should [authenticate](#authentication) to HotCRP’s API\nusing bearer tokens obtained using Account settings > Developer.\n\n\n## Parameter types\n\n**Boolean** parameters accept `1` or `true` for true and `0` or `false` or the\nempty string for false; the values `on`/`yes` and `off`/`no` are also\naccepted. For example, `dry_run=1` and `dry_run=true` are equivalent.\n\n**Integer** and **number** parameters are written in decimal, such as `p=10`.\n**String** parameters are sent literally; an enumerated parameter is a string\nrestricted to a fixed set of values.\n\nMore complex inputs use other encodings. Some requests group parameters into\nlogical objects using structured keys, such as `named_search/1/q`; others define\nan object using JSON, supplied either as the request body or as a JSON-valued\nparameter such as `json`. Use `multipart/form-data` encoding for requests that\ninclude uploaded files; since servers limit upload size, you may need the upload\nAPI to send a large file before processing it with another call.\n\n\n## Common parameters\n\n**`p`**: The `p` parameter defines a submission ID. It can appear either in the\nquery string or immediately following `api/` in the query path:\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a positive\ndecimal integer, but some API calls accept `p=new` when defining a new\nsubmission.\n\n**`forceShow`**: HotCRP site administrators and track managers can administer\nsubmissions with which they are conflicted. For instance, when viewing a\nconflicted submission in the web UI, they see the conflicted view, but selecting\n“Override conflict” shows them a full administrator view. Conflict overriding\ncan affect many aspects of site behavior, including search order, visible tags,\nand whether modifications are accepted. The `forceShow` boolean API parameter\ndetermines whether conflicts should be overridden when that is possible. It\ndefaults to `true`, so administrators override their conflicts by default; pass\n`forceShow=false` to respect conflicts instead.\n\n**`actas`**: HotCRP site administrators can assume other users’ identities,\nallowing them to check how the site appears to users with less authority.\nThe `actas` parameter implements this in the API. Site administrators can set\n`actas` to an email address or numeric user ID; the API call will execute with\nthe named user’s privileges.\n\n**`:method:`**: The `:method:` parameter overrides the request’s HTTP method.\nSetting `:method:=GET` on a `POST` request makes HotCRP process it with `GET`\nsemantics. The parameter must appear in the URL query string, not the request\nbody, and `GET` is its only meaningful value. Use this for read requests whose\nparameters are too large to fit within a URL’s length limit: send the parameters\nin a `POST` body while still getting `GET` behavior.\n\n**`q` and search modifiers**: Many endpoints act on a set of submissions chosen\nby a search rather than by a single `p`. These share a family of search\nparameters: `q` (the search expression), `t` (the search scope—the collection of\nsubmissions to search), and the modifiers `qt`, `sort`, `scoresort`, and\n`reviewer`. They mean the same thing everywhere they appear—for example in\n[`/papers`](#get-papers), [`/reviews`](#get-reviews), and\n[`/assign`](#post-assign). See [Search](#tag-search) for the search-string\nsyntax and the full meaning of each parameter.\n\n\n## Message lists\n\nThe **`message_list`** response field holds an array of diagnostics about a\nrequest, such as why it failed, which field was invalid, or a note about what\nchanged. It can appear on successful or unsuccessful responses and may be empty.\nThe messages appear in display order.\n\nEach entry is a **message object** whose only required field is `status`, an\ninteger that classifies the message:\n\n- `2` or `3`—an **error**; the request was rejected or could not be fully\n  processed. (`3` marks an especially serious error.)\n- `1`—a **warning**.\n- `0`—a **plain** informational message.\n- `-3`—a **success** message.\n- `-5`—an **informational note** about the preceding non-informational message\n  (rendered indented).\n- other **negative** values—notes that are not full errors, but that should be\n  rendered with highlights.\n\nA message object may also have these fields:\n\n- `message`—the human-readable text, as a **formatted-text string**: a leading\n  format sigil gives the encoding, with `<0>` for plain text, `<1>` for\n  Markdown, and `<5>` for HTML. For example, `\"<0>Entry required\"` is the plain\n  text “Entry required”. The field may be absent or empty, since a message\n  object can carry only a field status.\n- `field`—when present, names the request parameter or submission field the\n  message is about (such as `title` or `abstract`), letting a client attach the\n  diagnostic to the corresponding input or highlight that input.\n- `pos1`, `pos2`, `context`—locate the message within the text it concerns. A\n  message carries **either** `pos1` and `pos2` (byte offsets of a span in the\n  UTF-8-encoded value of `field`) **or** a `context` array `[\"…excerpt…\", pos1,\n  pos2]` that bundles an excerpt of that text with the span’s byte offsets into\n  the excerpt. These let the web client underline the exact problem text.\n\nFor example, an unsuccessful submission update might return:\n\n```json\n{\n    \"ok\": false,\n    \"message_list\": [\n        {\n            \"status\": 2,\n            \"field\": \"abstract\",\n            \"message\": \"<0>Entry required to complete submission\"\n        },\n        {\n            \"status\": 1,\n            \"field\": \"other_topics\",\n            \"message\": \"<0>Please avoid superlatives\",\n            \"context\": [\"Extremely interesting ideas\", 0, 9]\n        },\n        {\n            \"status\": 2,\n            \"message\": \"<0>Submission not saved\"\n        }\n    ]\n}\n```\n\n\n## User rights\n\nTwo terms describe administrative authority in this documentation, and they are\nnot interchangeable.\n\nA **site administrator** has site-wide authority over the whole conference.\nChairs and sysadmins are site administrators; they can act on every submission,\nthe review process, and conference settings. Endpoints restricted to this\nauthority are badged **Site admin only**.\n\nA **submission administrator** has administrative authority over a particular\nsubmission or a subset of submissions. For example, a track manager has\nadministrative authority over a track, and each submission can have an\nexplicit manager assigned from the PC. For most submissions, site\nadministrators are also submission administrators (there are exceptions\ninvolving track rights and conflicts), but a submission manager is not\nnecessarily a site administrator. Endpoints that require administrative\nauthority over specific submissions, but do not require broad site\nadministration rights, are badged **Admin only** or **Track manager only**.\n"
     },
@@ -5278,7 +5278,7 @@
         "/review": {
             "post": {
                 "summary": "Create or modify a review",
-                "description": "Create or modify one review of submission `p`. The review being edited is\nselected by `r`:\n\n* a numeric review ID (`4`) or display ordinal (`A`) names an existing review;\n* `new` requires that a *new* review be created (the request fails if the\n  reviewer already has a review);\n* an empty or absent `r` addresses the caller’s own review, creating it if\n  necessary.\n\nThe modification is specified in JSON in any of these forms:\n\n1. In a JSON-formatted request parameter named `json`.\n2. As a JSON request body (content-type `application/json`).\n3. As an offline review form in plain text—either the whole request body (with\n   content-type `text/plain`) or a `file` upload in a form POST. The text is\n   parsed exactly as an offline form uploaded from the review page; only its\n   sections for submission `p` are applied (any other sections are ignored).\n4. As a previously-uploaded JSON or text file, named by an\n   [upload token](#post-upload) in the `upload` parameter.\n\nIn the JSON forms the modification is a [review object](#tag-reviews). Absent\nfields are left unchanged; fields keyed by their UID set review-form content.\nSet `submitted` (or `ready`) to `true` to submit the review, or `draft` to\n`true` to save it without submitting. Submission administrators assigning a\nreview on someone’s behalf may name the reviewer with `email` (plus\n`given_name`/`family_name`/`affiliation` for a new account).\n\nA newly created review may be given a type with `review_type` (`primary`,\n`secondary`, `metareview`, `pc`, or `external`). A review defaults to an optional\nPC review, or external for a non-PC reviewer; requesting a type *other* than that\ndefault requires administrator privilege, and PC review types require a PC\nreviewer. `review_type` cannot change the type of an existing review. Creating a\nreview of a specific type this way is equivalent to a\n[review assignment](#post-assign).\n\nThe `p` request parameter is optional for the JSON and text forms: if it is\nunset, HotCRP uses the `pid` from the supplied data. If both `p` and a body\n`pid` are present they must match; likewise `r` and a body `rid`.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application. These conventions are subject to change, and third-party\napplications should prefer JSON.\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This will\ntest the input but make no changes to the database.\n",
+                "description": "Create or modify one review of submission `p`. The review being edited is\nselected by `r`:\n\n* a numeric review ID (`4`) or display ordinal (`A`) names an existing review;\n* `new` requires that a *new* review be created (the request fails if the\n  reviewer already has a review);\n* an empty or absent `r` addresses the caller’s own review, creating it if\n  necessary.\n\nThe modification is specified in JSON in any of these forms:\n\n1. In a JSON-formatted request parameter named `json`.\n2. As a JSON request body (content-type `application/json`).\n3. As an offline review form in plain text—either the whole request body (with\n   content-type `text/plain`) or a `file` upload in a form POST. The text is\n   parsed exactly as an offline form uploaded from the review page; only its\n   sections for submission `p` are applied (any other sections are ignored).\n4. As a previously-uploaded JSON or text file, named by an\n   [upload token](#post-upload) in the `upload` parameter.\n\nIn the JSON forms the modification is a [review object](#tag-reviews). Absent\nfields are left unchanged; fields keyed by their UID set review-form content.\nSet `submitted` (or `ready`) to `true` to submit the review, or `draft` to\n`true` to save it without submitting. Submission administrators assigning a\nreview on someone’s behalf may name the reviewer with `email` (plus\n`given_name`/`family_name`/`affiliation` for a new account), or, for data that\ndoes not name one, with the `u` request parameter.\n\nA newly created review may be given a type with `review_type` (`primary`,\n`secondary`, `metareview`, `pc`, or `external`). A review defaults to an optional\nPC review, or external for a non-PC reviewer; requesting a type *other* than that\ndefault requires administrator privilege, and PC review types require a PC\nreviewer. `review_type` cannot change the type of an existing review. Creating a\nreview of a specific type this way is equivalent to a\n[review assignment](#post-assign).\n\nThe `p` request parameter is optional for the JSON and text forms: if it is\nunset, HotCRP uses the `pid` from the supplied data. If both `p` and a body\n`pid` are present they must match; likewise `r` and a body `rid`.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application. These conventions are subject to change, and third-party\napplications should prefer JSON.\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This will\ntest the input but make no changes to the database.\n",
                 "operationId": "review-post",
                 "x-order": 27,
                 "tags": [
@@ -5311,6 +5311,41 @@
                         "x-order": 1
                     },
                     {
+                        "name": "u",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/email"
+                        },
+                        "description": "Reviewer whose review to create or modify; defaults to the\ncaller. Naming another user requires administrator privilege, and must agree\nwith any reviewer named by `r` or by the data.",
+                        "x-order": 2
+                    },
+                    {
+                        "name": "create_users",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False refuses to create an account for a reviewer\nwho does not have one. Defaults to true, except for offline review forms.",
+                        "x-order": 3
+                    },
+                    {
+                        "name": "disable_users",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True disables any newly-created users.",
+                        "x-badges": [
+                            {
+                                "name": "Admin only"
+                            }
+                        ],
+                        "x-order": 4
+                    },
+                    {
                         "name": "upload",
                         "in": "query",
                         "required": false,
@@ -5322,7 +5357,7 @@
                             "group": "body",
                             "element": "upload"
                         },
-                        "x-order": 5
+                        "x-order": 8
                     },
                     {
                         "name": "dry_run",
@@ -5332,7 +5367,7 @@
                             "type": "boolean"
                         },
                         "description": "True checks input for errors, but does not save changes.",
-                        "x-order": 6
+                        "x-order": 9
                     },
                     {
                         "name": "override",
@@ -5342,7 +5377,7 @@
                             "type": "boolean"
                         },
                         "description": "Administrators only: bypass deadline and other soft checks.",
-                        "x-order": 7
+                        "x-order": 10
                     },
                     {
                         "name": "if_vtag_match",
@@ -5352,7 +5387,7 @@
                             "type": "integer"
                         },
                         "description": "Reject the modification unless the review’s\ncurrent version tag equals this value. `0` matches only a review that does not\nyet exist, so `r=new` implies `if_vtag_match=0`.",
-                        "x-order": 8
+                        "x-order": 11
                     },
                     {
                         "name": "if_unmodified_since",
@@ -5362,7 +5397,7 @@
                             "type": "string"
                         },
                         "description": "Reject the modification if the review has\nbeen modified since this time (a Unix timestamp, or `0`).",
-                        "x-order": 9
+                        "x-order": 12
                     },
                     {
                         "name": "notify",
@@ -5378,7 +5413,7 @@
                                 "name": "Admin only"
                             }
                         ],
-                        "x-order": 10
+                        "x-order": 13
                     }
                 ],
                 "requestBody": {
@@ -5395,7 +5430,7 @@
                                             "group": "body",
                                             "element": "json"
                                         },
-                                        "x-order": 4
+                                        "x-order": 7
                                     }
                                 }
                             }
@@ -5409,7 +5444,7 @@
                                 "group": "body",
                                 "element": "application/json"
                             },
-                            "x-order": 2
+                            "x-order": 5
                         },
                         "text/plain": {
                             "schema": {
@@ -5420,7 +5455,7 @@
                                 "group": "body",
                                 "element": "text/plain"
                             },
-                            "x-order": 3
+                            "x-order": 6
                         }
                     }
                 },
@@ -5497,7 +5532,7 @@
         "/reviews": {
             "get": {
                 "summary": "Retrieve multiple reviews",
-                "description": "Return every review the caller can see on a set of submissions, in the `reviews`\narray. Select the submissions either with a search (`q`, optionally narrowed by\n`t`) or with a single submission `p`; supply exactly one of the two. Search\ndiagnostics, if any, are reported in `message_list`.\n\nThe optional `rq` and `u` parameters filter which *reviews* are returned (not\nwhich submissions are searched). Supply at most one of them:\n\n* `u` returns only reviews written by the user with that email.\n* `rq` is a review search expression (the same syntax as a `re:` search),\n  evaluated with `reviewer` as its viewpoint, and returns only matching reviews.\n",
+                "description": "Return every review the caller can see on a set of submissions, in the `reviews`\narray. Select the submissions either with a search (`q`, optionally narrowed by\n`t`) or with a single submission `p`; supply exactly one of the two. Search\ndiagnostics, if any, are reported in `message_list`.\n\nThe optional `rq` and `u` parameters filter which *reviews* are returned (not\nwhich submissions are searched). Supply at most one of them:\n\n* `u` returns only reviews written by the user with that email.\n* `rq` is a review search expression (the same syntax as a `re:` search), and\n  returns only matching reviews.\n\n`reviewer` is a *search* parameter, like `q` and `t`: it sets the perspective the\nsubmission search uses. It does not restrict which reviews are returned.\n",
                 "operationId": "reviews",
                 "x-order": 29,
                 "tags": [
@@ -5538,7 +5573,7 @@
                         "schema": {
                             "$ref": "#/components/schemas/search_reviewer"
                         },
-                        "description": "Reviewer viewpoint used to evaluate `rq`.",
+                        "description": "Reviewer whose perspective the submission search uses.",
                         "x-group": "Search modifiers",
                         "x-order": 2
                     },
@@ -5573,7 +5608,7 @@
                         "schema": {
                             "$ref": "#/components/schemas/email"
                         },
-                        "description": "Return only reviews written by this user. Mutually exclusive with `rq`.",
+                        "description": "Return only reviews written by this user.",
                         "x-oneof": {
                             "group": "review_query",
                             "element": "u"
@@ -11699,7 +11734,7 @@
         },
         {
             "name": "Reviews",
-            "description": "These endpoints read reviews, manage review ratings and history, and drive the\nexternal-review request lifecycle (request, accept, decline, reassign).\n\n## Review objects\n\nA review is returned as a JSON **review object** with an `object` field equal\nto `\"review\"`. Every review object has a stable numeric `rid` (review ID) and\nthe `pid` of the submission it belongs to. Beyond that core, a review object\nmixes three kinds of information, each gated by the caller’s permissions:\n\n* **Metadata**—`rtype` (review type, see below), `round` (review round name,\n  if rounds are configured), `status` (lifecycle state, see below), `version`\n  (a counter that increases on every edit), and `ordinal` (a display label like\n  `A`, `B`, … assigned once the review becomes visible to authors/PC). Drafts\n  have no `ordinal` and carry `\"draft\": true`. Booleans `blind`, `subreview`,\n  and `ghost` may also appear.\n* **Reviewer identity**—`reviewer` (display name) and `reviewer_email`, present\n  only when the caller may see who wrote the review. On anonymous reviews these\n  are omitted even when the review itself is visible.\n* **Content**—the review-form field values. Each configured review field is\n  keyed by its **field UID** (an uppercase identifier such as `S01` or\n  `overAllMerit`’s UID), so field values never collide with the core fields\n  above. Score fields render as their symbolic value, text fields as strings.\n  Fields the caller may not see are omitted; their UIDs may be listed in\n  `hidden_fields`.\n\nDepending on the request, a review object can also include `editable`,\n`my_review`, `my_request`, `review_token`, `modified_at`/`modified_at_text`,\n`ratings`/`user_rating`, a review-specific `message_list`, and a `format`\n(the default text format for rendering field values).\n\n### Review types\n\n`rtype` is an integer: `1` external, `2` PC, `3` secondary, `4` primary, `5`\nmetareview. It is reported only to callers who may view review metadata.\n\n### Review status\n\n`status` names the review’s position in its lifecycle:\n\n* `empty`—assigned but not started\n* `acknowledged`—the reviewer has accepted the assignment but not entered content\n* `draft`—content saved but not submitted\n* `delivered`—submitted (for subreviews, awaiting approval)\n* `approved`—a subreview approved by its primary reviewer\n* `complete`—finished and counted\n\n## Identifying a review\n\nThe `r` parameter selects a review on submission `p`. The read endpoints\n([`review`](#get-review), [`reviewhistory`](#get-reviewhistory),\n[`reviewrating`](#get-reviewrating)) accept either a numeric review ID (`4`) or a\ndisplay ordinal (`A`). The lifecycle endpoints ([`acceptreview`](#post-acceptreview),\n[`declinereview`](#post-declinereview), [`claimreview`](#post-claimreview))\nrequire a numeric review ID. The upload endpoint ([`review` POST](#post-review))\nalso accepts `new` (require a freshly-created review) or an empty `r` (the\ncaller’s own review, created if necessary).\n\nTo retrieve many reviews at once, use [`reviews`](#get-reviews), which selects\nreviews by submission search rather than by ID. To create or modify many reviews\nat once—including from an offline review form spanning several submissions—use\n[`reviews` POST](#post-reviews).\n\n## Response formats\n\nThe read endpoints [`review`](#get-review) and [`reviews`](#get-reviews) return\nJSON review objects by default, but a `format` parameter can request a plain-text\nrendering instead:\n\n* `json` (the default) returns review objects in HotCRP’s usual JSON envelope.\n* `text` returns the reviews as text, in the format produced by the “Reviews”\n  download on a submission list.\n* `form` returns the reviews as **offline review forms**, the same format\n  produced by the “Review forms” download—and accepted back by\n  [`review` POST](#post-review) and [`reviews` POST](#post-reviews). Fetching a\n  form requires only permission to view the review; whether the form can be\n  uploaded again is decided when it is uploaded.\n\n[`reviews`](#get-reviews) additionally accepts `textzip` and `formzip`, which\nreturn the same renderings packaged as a ZIP archive with one file per review,\nnamed for the review’s ordinal ID (for instance `review18A.txt`).\n\nA non-`json` format returns the rendering as the raw response body, without any\nJSON wrapper: `text/plain` for `text` and `form`, `application/zip` for the ZIP\nformats. Errors are still reported as JSON objects with `ok` set to `false`, so\ncheck the response’s `Content-Type` or status code. An empty selection yields an\nempty download, just as `format=json` yields an empty `reviews` array.\n\n## Downloads\n\nThe `download` parameter controls *delivery* rather than rendering, and works\nthe same way on [`paper`](#get-paper) and [`papers`](#get-papers) as it does\nhere. `download=1` returns the response as a file, and drops HotCRP’s JSON\nenvelope in favor of the bare payload that the matching `POST` accepts—so a\nclient can download an object, edit it, and upload it again:\n\n* `GET /review` with `download=1` returns one [review object](#tag-reviews),\n  ready to `POST` to [`review`](#post-review).\n* `GET /reviews` with `download=1` returns a bare array of review objects,\n  ready to `POST` to [`reviews`](#post-reviews).\n\nThe non-`json` formats are already bare files, so they are attachments by\ndefault; `download=0` requests them inline instead, which is useful for reading\na review in a browser tab. Conversely `format=json` is enveloped and inline by\ndefault.\n\nBecause a bare payload has no `message_list`, `download=1` discards search\ndiagnostics. Errors still arrive in the usual envelope.\n\n\n"
+            "description": "These endpoints read reviews, manage review ratings and history, and drive the\nexternal-review request lifecycle (request, accept, decline, reassign).\n\n## Review objects\n\nA review is returned as a JSON **review object** with an `object` field equal\nto `\"review\"`. Every review object has a stable numeric `rid` (review ID) and\nthe `pid` of the submission it belongs to. Beyond that core, a review object\nmixes three kinds of information, each gated by the caller’s permissions:\n\n* **Metadata**—`rtype` (review type, see below), `round` (review round name,\n  if rounds are configured), `status` (lifecycle state, see below), `version`\n  (a counter that increases on every edit), and `ordinal` (a display label like\n  `A`, `B`, … assigned once the review becomes visible to authors/PC). Drafts\n  have no `ordinal` and carry `\"draft\": true`. Booleans `blind`, `subreview`,\n  and `ghost` may also appear.\n* **Reviewer identity**—`reviewer` (display name) and `reviewer_email`, present\n  only when the caller may see who wrote the review. On anonymous reviews these\n  are omitted even when the review itself is visible.\n* **Content**—the review-form field values. Each configured review field is\n  keyed by its **field UID** (an uppercase identifier such as `S01` or\n  `overAllMerit`’s UID), so field values never collide with the core fields\n  above. Score fields render as their symbolic value, text fields as strings.\n  Fields the caller may not see are omitted; their UIDs may be listed in\n  `hidden_fields`.\n\nDepending on the request, a review object can also include `editable`,\n`my_review`, `my_request`, `review_token`, `modified_at`/`modified_at_text`,\n`ratings`/`user_rating`, a review-specific `message_list`, and a `format`\n(the default text format for rendering field values).\n\n### Review types\n\n`rtype` is an integer: `1` external, `2` PC, `3` secondary, `4` primary, `5`\nmetareview. It is reported only to callers who may view review metadata.\n\n### Review status\n\n`status` names the review’s position in its lifecycle:\n\n* `empty`—assigned but not started\n* `acknowledged`—the reviewer has accepted the assignment but not entered content\n* `draft`—content saved but not submitted\n* `delivered`—submitted (for subreviews, awaiting approval)\n* `approved`—a subreview approved by its primary reviewer\n* `complete`—finished and counted\n\n## Identifying a review\n\nThe `r` parameter selects a review on submission `p`. The read endpoints\n([`review`](#get-review), [`reviewhistory`](#get-reviewhistory),\n[`reviewrating`](#get-reviewrating)) accept either a numeric review ID (`4`) or a\ndisplay ordinal (`A`). The lifecycle endpoints ([`acceptreview`](#post-acceptreview),\n[`declinereview`](#post-declinereview), [`claimreview`](#post-claimreview))\nrequire a numeric review ID. The upload endpoint ([`review` POST](#post-review))\nalso accepts `new` (require a freshly-created review) or an empty `r` (the\ncaller’s own review, created if necessary).\n\nTo retrieve many reviews at once, use [`reviews`](#get-reviews), which selects\nreviews by submission search rather than by ID. To create or modify many reviews\nat once—including from an offline review form spanning several submissions—use\n[`reviews` POST](#post-reviews).\n\n## Response formats\n\nThe read endpoints [`review`](#get-review) and [`reviews`](#get-reviews) return\nJSON review objects by default, but a `format` parameter can request a plain-text\nrendering instead:\n\n* `json` (the default) returns review objects in HotCRP’s usual JSON envelope.\n* `text` returns the reviews as text, in the format produced by the “Reviews”\n  download on a submission list.\n* `form` returns the reviews as **offline review forms**, the same format\n  produced by the “Review forms” download—and accepted back by\n  [`review` POST](#post-review) and [`reviews` POST](#post-reviews). Fetching a\n  form requires only permission to view the review; whether the form can be\n  uploaded again is decided when it is uploaded.\n\n[`reviews`](#get-reviews) additionally accepts `textzip` and `formzip`, which\nreturn the same renderings packaged as a ZIP archive with one file per review,\nnamed for the review’s ordinal ID (for instance `review18A.txt`).\n\nA non-`json` format returns the rendering as the raw response body, without any\nJSON wrapper: `text/plain` for `text` and `form`, `application/zip` for the ZIP\nformats. Errors are still reported as JSON objects with `ok` set to `false`, so\ncheck the response’s `Content-Type` or status code. An empty selection yields an\nempty download, just as `format=json` yields an empty `reviews` array.\n\nA rendering has no `message_list`, so the search diagnostics `format=json` would\nreport are carried into the download instead: `text` prefixes them, `form`\nincludes them as `==-==` comment lines, and the ZIP formats collect them in a\n`README-warnings.txt` member.\n\nRenderings are conditionally requestable through `ETag` and `If-None-Match`.\nDate-based conditions are ignored, since a rendering depends on more than the\nreviews’ modification times.\n\n## Downloads\n\nThe `download` parameter controls *delivery* rather than rendering, and works\nthe same way on [`paper`](#get-paper) and [`papers`](#get-papers) as it does\nhere. `download=1` returns the response as a file, and drops HotCRP’s JSON\nenvelope in favor of the bare payload that the matching `POST` accepts—so a\nclient can download an object, edit it, and upload it again:\n\n* `GET /review` with `download=1` returns one [review object](#tag-reviews),\n  ready to `POST` to [`review`](#post-review).\n* `GET /reviews` with `download=1` returns a bare array of review objects,\n  ready to `POST` to [`reviews`](#post-reviews).\n\nThe non-`json` formats are already bare files, so they are attachments by\ndefault; `download=0` requests them inline instead, which is useful for reading\na review in a browser tab. Conversely `format=json` is enveloped and inline by\ndefault.\n\nBecause a bare payload has no `message_list`, `download=1` discards search\ndiagnostics. Errors still arrive in the usual envelope.\n\n\n"
         },
         {
             "name": "Comments",

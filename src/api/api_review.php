@@ -2,8 +2,7 @@
 // api_review.php -- HotCRP review API calls
 // Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
-/*preference for api/review
-
+/*
 single review download
 - p must be set
 - r must be set
@@ -18,7 +17,7 @@ multiple review download
 single review upload
 - p must be set
 - r must be set (might be `new`)
-- u may be set
+- u may be set (the reviewer, unless the data names one)
 - round may be set */
 
 class Review_API_Status implements JsonSerializable {
@@ -88,6 +87,14 @@ class Review_API extends MessageSet {
     private $if_unmodified_since;
     /** @var ?string */
     private $qreq_r;
+    /** @var ?bool */
+    private $create_users;
+    /** @var bool */
+    private $disable_users = false;
+    /** @var ?Contact */
+    private $qreq_reviewer;
+    /** @var bool */
+    private $qreq_reviewer_none = false;
 
     // per-item accumulators (mirror Comment_API/Paper_API)
     /** @var list<Review_API_Status> */
@@ -135,7 +142,8 @@ class Review_API extends MessageSet {
     }
 
     /** @return JsonResult|Downloader */
-    static function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+    private function run_get_one(Qrequest $qreq, ?PaperInfo $prow) {
+        $user = $this->user;
         if (!isset($qreq->p)) {
             return JsonResult::make_missing_error("p");
         } else if (!isset($qreq->r)) {
@@ -165,21 +173,21 @@ class Review_API extends MessageSet {
         }
 
         if ($fmt !== "json") {
-            return self::run_get_download($user, $qreq, [$rrow], $fmt, false);
+            return $this->run_get_download($qreq, [$rrow], $fmt, false);
         }
 
         $rj = (new PaperExport($user))->review_json($prow, $rrow);
         assert(!!$rj);
         if (friendly_boolean($qreq->download)) {
-            return APIHelpers::make_json_download($user->conf, $rj,
+            return APIHelpers::make_json_download($this->conf, $rj,
                 "review" . $rrow->unparse_ordinal_id());
         }
         return new JsonResult(["ok" => true, "review" => $rj]);
     }
 
     /** @return JsonResult|Downloader */
-    static function run_get_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        $ml = [];
+    private function run_get_multi(Qrequest $qreq, ?PaperInfo $prow) {
+        $user = $this->user;
         if (!isset($qreq->q)) {
             if (!isset($qreq->p)) {
                 JsonResult::make_missing_error("q")->complete();
@@ -192,7 +200,7 @@ class Review_API extends MessageSet {
             $prows = PaperInfoSet::make_singleton($prow);
         } else {
             list($srch, $prows) = Paper_API::make_search($user, $qreq);
-            $ml = $srch->message_list_with_default_field("q");
+            $this->append_list($srch->message_list_with_default_field("q"));
         }
 
         if (isset($qreq->rq) && isset($qreq->u)) {
@@ -202,21 +210,20 @@ class Review_API extends MessageSet {
 
         $rst = null;
         if (isset($qreq->u)) {
-            if (($u = $user->conf->user_by_email($qreq->u))) {
+            if (($u = $this->conf->user_by_email($qreq->u))) {
                 $rsm = new ReviewSearchMatcher;
                 $rsm->add_contact($u->contactId);
                 $rst = new Review_SearchTerm($user, $rsm);
             } else {
                 $rst = new False_SearchTerm;
+                if ($user->is_manager()) {
+                    $this->warning_at("u", "<0>No such user");
+                }
             }
         } else if (isset($qreq->rq)) {
-            $query = [
-                "q" => $qreq->rq,
-                "reviewer" => $qreq->reviewer ?? null
-            ];
-            $srch = new PaperSearch($user, $query);
-            array_push($ml, ...$srch->message_list_with_default_field("rq"));
-            $rst = $srch->main_term();
+            $srch = new PaperSearch($user, ["q" => $qreq->rq]);
+            $rst = $srch->main_term(); // generates the messages collected next
+            $this->append_list($srch->message_list_with_default_field("rq"));
         }
 
         $rrows = [];
@@ -228,7 +235,7 @@ class Review_API extends MessageSet {
         }
 
         if ($fmt !== "json") {
-            return self::run_get_download($user, $qreq, $rrows, $fmt, $zip);
+            return $this->run_get_download($qreq, $rrows, $fmt, $zip);
         }
 
         $pex = new PaperExport($user);
@@ -237,11 +244,11 @@ class Review_API extends MessageSet {
             $rjs[] = $pex->review_json($rrow->prow, $rrow);
         }
         if (friendly_boolean($qreq->download)) {
-            return APIHelpers::make_json_download($user->conf, $rjs, "reviews");
+            return APIHelpers::make_json_download($this->conf, $rjs, "reviews");
         }
         return new JsonResult([
             "ok" => true,
-            "message_list" => $ml,
+            "message_list" => $this->message_list(),
             "reviews" => $rjs
         ]);
     }
@@ -252,15 +259,16 @@ class Review_API extends MessageSet {
      * renders each as an offline review form (which `POST /review` accepts
      * back). Without `$zip` the reviews are concatenated into one text file;
      * with it, each review becomes its own file, named for its ordinal ID, in
-     * a ZIP archive. An empty selection yields an empty download, matching
-     * `format=json`’s empty `reviews` array. These renderings are attachments
-     * unless `download=0` asks for an inline response.
+     * a ZIP archive. An empty selection yields an empty download. These
+     * renderings are attachments unless `download=0` asks for an inline response.
      * @param list<ReviewInfo> $rrows
      * @param 'text'|'form' $fmt
      * @param bool $zip
      * @return JsonResult|Downloader */
-    static private function run_get_download(Contact $user, Qrequest $qreq, $rrows, $fmt, $zip) {
-        $conf = $user->conf;
+    private function run_get_download(Qrequest $qreq, $rrows, $fmt, $zip) {
+        $conf = $this->conf;
+        $user = $this->user;
+        $ml = $this->message_list();
         $rf = $conf->review_form();
         $isform = $fmt === "form";
         $attachment = friendly_boolean($qreq->download) !== false;
@@ -277,8 +285,12 @@ class Review_API extends MessageSet {
                     $doc->set_timestamp($time);
                 }
             }
-            $dopt = (new Downloader)->parse_qreq($qreq);
-            $dopt->set_attachment($attachment);
+            foreach ($ml as $mi) {
+                $dset->message_set()->append_item($mi);
+            }
+            $dopt = (new Downloader)->parse_qreq($qreq)
+                ->disable_time_predicates()
+                ->set_attachment($attachment);
             if (!$dset->prepare_download($dopt)) {
                 return JsonResult::make_message_list(400, $dset->message_list());
             }
@@ -288,6 +300,16 @@ class Review_API extends MessageSet {
         $t = [];
         if ($isform) {
             $t[] = $rf->text_form_header(count($rrows) > 1);
+            foreach ($ml as $mi) {
+                if ($mi->message !== "") {
+                    $t[] = prefix_word_wrap("==-== ", $mi->message_as(0), "==-== ");
+                }
+            }
+            if (!empty($ml)) {
+                $t[] = "\n";
+            }
+        } else if (!empty($ml)) {
+            $t[] = MessageSet::feedback_text($ml) . "\n";
         }
         foreach ($rrows as $i => $rrow) {
             if ($isform) {
@@ -303,9 +325,16 @@ class Review_API extends MessageSet {
         $base = count($rrows) === 1
             ? "review" . $rrows[0]->unparse_ordinal_id()
             : "reviews";
-        return $conf->make_text_downloader($base)
+        // Validate by content ETag; the rendering also depends on the
+        // selection, on what this caller may see, and on the review form, so no
+        // modification time bounds it. It is rendered on every request anyway.
+        $text = join("", $t);
+        $dopt = $conf->make_text_downloader($base)
+            ->parse_qreq($qreq)
             ->set_attachment($attachment)
-            ->set_content(join("", $t));
+            ->set_content($text)
+            ->set_etag("\"content.sha2-" . hash("sha256", $text) . "\"");
+        return $dopt;
     }
 
 
@@ -324,6 +353,19 @@ class Review_API extends MessageSet {
 
         $this->set_post_param($qreq);
         $this->qreq_r = isset($qreq->r) ? (string) $qreq->r : null;
+        if (isset($qreq->u)) {
+            if ($qreq->u === "" || strcasecmp($qreq->u, "none") === 0) {
+                $this->qreq_reviewer_none = true;
+            } else {
+                $this->qreq_reviewer = $this->conf->user_by_email($qreq->u);
+                if (!$this->qreq_reviewer) {
+                    if (!validate_email($qreq->u)) {
+                        return JsonResult::make_parameter_error("u");
+                    }
+                    $this->qreq_reviewer = Contact::make_email($this->conf, $qreq->u);
+                }
+            }
+        }
 
         // an `upload` token resolves to a document whose mimetype selects the
         // format; otherwise the request body's content type does. An explicit
@@ -427,6 +469,10 @@ class Review_API extends MessageSet {
     private function set_post_param(Qrequest $qreq) {
         $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
         $this->notify = friendly_boolean($qreq->notify) !== false;
+        $this->create_users = friendly_boolean($qreq->create_users);
+        if ($this->user->privChair && friendly_boolean($qreq->disable_users)) {
+            $this->disable_users = true;
+        }
         // batch-wide (and JSON single) concurrency preconditions; a review
         // object’s own `if_vtag_match`/`if_unmodified_since` overrides these per
         // item, as does a `new` locator (which forces `if_vtag_match=0`)
@@ -444,9 +490,19 @@ class Review_API extends MessageSet {
         }
     }
 
-    /** @return ReviewValues */
-    private function make_rv() {
-        return new ReviewValues($this->user);
+    /** Naming an unknown reviewer creates their account, as an assignment does;
+     * `create_users=0` refuses instead. An offline form defaults the other way:
+     * its `==+== Reviewer` line is inherited from a downloaded form rather than
+     * written for this request, so an unknown address there is more likely a
+     * mistake than an intent.
+     * @param bool $deliberate_reviewer
+     * @return ReviewValues */
+    private function make_rv($deliberate_reviewer = true) {
+        return (new ReviewValues($this->user))
+            ->set_reviewer($this->qreq_reviewer)
+            ->set_require_reviewer($this->qreq_reviewer_none)
+            ->set_create_users($this->create_users ?? $deliberate_reviewer)
+            ->set_disable_users($this->disable_users);
     }
 
     /** Save one review from a plain form POST on `$prow`, or — when the form
@@ -478,7 +534,7 @@ class Review_API extends MessageSet {
      * @return JsonResult */
     private function run_post_text(Qrequest $qreq, ?PaperInfo $prow, $content, $filename) {
         $this->prow = $prow;
-        $rv = $this->make_rv()->set_text(convert_to_utf8($content), $filename);
+        $rv = $this->make_rv(false)->set_text(convert_to_utf8($content), $filename);
         $override = friendly_boolean($qreq->override) ?? false;
         $nmatch = $nother = 0;
         while ($rv->set_req_override($override)->parse_text()) {
@@ -782,16 +838,17 @@ class Review_API extends MessageSet {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         try {
+            $rapi = new Review_API($user);
             if ($qreq->is_getlike()) {
                 if ($mode === DocumentLocator::M_ONE) {
-                    $jr = self::run_get_one($user, $qreq, $prow);
+                    $jr = $rapi->run_get_one($qreq, $prow);
                 } else {
-                    $jr = self::run_get_multi($user, $qreq, $prow);
+                    $jr = $rapi->run_get_multi($qreq, $prow);
                 }
             } else if ($qreq->method() === "DELETE") {
-                $jr = (new Review_API($user))->run_delete($qreq, $prow);
+                $jr = $rapi->run_delete($qreq, $prow);
             } else {
-                $jr = (new Review_API($user))->run_post($qreq, $prow, $mode);
+                $jr = $rapi->run_post($qreq, $prow, $mode);
             }
         } catch (JsonCompletion $jc) {
             $jr = $jc->result;

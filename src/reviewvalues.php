@@ -16,9 +16,17 @@ class ReviewValues extends MessageSet {
     /** @var bool */
     private $notify = true;
     /** @var bool */
+    private $create_users = false;
+    /** @var bool */
+    private $disable_users = false;
+    /** @var bool */
     private $can_unsubmit = false;
     /** @var bool */
     private $autosearch = true;
+    /** @var ?Contact */
+    private $reviewer;
+    /** @var bool */
+    private $require_reviewer = false;
 
     // current request
     /** @var array<string,mixed> */
@@ -105,6 +113,20 @@ class ReviewValues extends MessageSet {
 
     /** @param bool $x
      * @return $this */
+    function set_create_users($x) {
+        $this->create_users = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_disable_users($x) {
+        $this->disable_users = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
     function set_can_unsubmit($x) {
         $this->can_unsubmit = $x;
         return $this;
@@ -114,6 +136,25 @@ class ReviewValues extends MessageSet {
      * @return $this */
     function set_autosearch($x) {
         $this->autosearch = $x;
+        return $this;
+    }
+
+    /** Set the reviewer for requests that do not name one. A request that names
+     * a reviewer of its own (a JSON `reviewer_email`, a form’s `==+== Reviewer`
+     * section) overrides this; a request that resolves to an existing review by
+     * someone else conflicts with it.
+     * @param ?Contact $u
+     * @return $this */
+    function set_reviewer($u) {
+        $this->reviewer = $u;
+        return $this;
+    }
+
+    /** If true, require each form to explicitly list its reviewer.
+     * @param bool $x
+     * @return $this */
+    function set_require_reviewer($x) {
+        $this->require_reviewer = $x;
         return $this;
     }
 
@@ -700,18 +741,41 @@ class ReviewValues extends MessageSet {
         }
 
         // look up reviewer
-        $reviewer = $user;
-        if ($rrow) {
-            if ($rrow->contactId !== $user->contactId) {
-                $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
-            }
+        if (!$rrow
+            && ($this->req["reviewerEmail"] ?? "") === ""
+            && $this->require_reviewer) {
+            $this->reviewer_error("<0>Reviewer missing");
+            return false;
+        }
+
+        $reviewer = $this->reviewer ?? $this->user;
+        if ($rrow
+            && $rrow->contactId !== $user->contactId) {
+            $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
         } else if (isset($this->req["reviewerEmail"])
-                   && strcasecmp($this->req["reviewerEmail"], $user->email) !== 0) {
-            // XXX create reviewer?
-            if (!($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
-                $this->reviewer_error($user->privChair ? $this->conf->_("<0>User {} not found", $this->req["reviewerEmail"]) : null);
+                   && strcasecmp($this->req["reviewerEmail"], $reviewer->email) !== 0
+                   && !($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
+            if (!validate_email($this->req["reviewerEmail"])) {
+                $this->rvmsg(self::ERROR, "reviewerEmail", "<0>Invalid email");
                 return false;
             }
+            $reviewer = Contact::make_keyed($this->conf, [
+                "email" => $this->req["reviewerEmail"],
+                "firstName" => $this->req["reviewerFirst"] ?? "",
+                "lastName" => $this->req["reviewerLast"] ?? ""
+            ]);
+        }
+
+        // an unknown reviewer is created only where the caller allows it. With
+        // an existing `$rrow` no account is needed: `_apply_req` checks the
+        // requested reviewer against the review instead.
+        if (!$rrow && !$reviewer->has_account_here() && !$this->create_users) {
+            if ($user->privChair) {
+                $this->reviewer_error($this->conf->_("<0>User {} not found", $reviewer->email));
+            } else {
+                $this->reviewer_error($this->conf->_("<0>Can’t edit a review for {}", $reviewer->email));
+            }
+            return false;
         }
 
         // resolve a requested review type. Anyone may request the type the
@@ -719,16 +783,15 @@ class ReviewValues extends MessageSet {
         // different type (e.g. primary/secondary/meta)
         $reqtype = $this->requested_review_type();
         if ($reqtype !== null) {
-            $deftype = $rrow ? $rrow->reviewType : ($reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
             if ($reqtype === false) {
                 $this->rvmsg(self::ERROR, "reviewType", "<0>Invalid review type");
                 return false;
-            } else if ($reqtype === $deftype) {
+            } else if ($rrow ? $reqtype === $rrow->reviewType : $reqtype === REVIEW_PC || $reqtype === REVIEW_EXTERNAL) {
                 // the reviewer's default type — always allowed
             } else if (!$user->can_manage_reviews($prow)) {
                 $this->rvmsg(self::ERROR, "reviewType", "<0>Only an administrator can set the review type");
                 return false;
-            } else if ($reqtype >= REVIEW_PC && !$reviewer->is_pc_member()) {
+            } else if ($reqtype > REVIEW_PC && !$reviewer->is_pc_member()) {
                 $uname = $reviewer->name(NAME_E);
                 $this->rvmsg(self::ERROR, "reviewType", "<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
                 return false;
@@ -737,9 +800,18 @@ class ReviewValues extends MessageSet {
 
         // look up review
         if (!$rrow) {
+            // Refuse before the lookup when the caller named someone else and
+            // may not administer reviews: otherwise the refusal would differ
+            // depending on whether that user reviews this submission, which
+            // reveals reviewer identities. Either way the request is refused.
+            if ($reviewer->contactId !== $user->contactId
+                && !$user->can_manage_reviews($prow)) {
+                $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
+                return false;
+            }
             $rrow = $prow->fresh_review_by_user($reviewer);
         }
-        if (!$rrow && $user->review_tokens()) {
+        if (!$rrow && $user === $reviewer && $user->review_tokens()) {
             $prow->ensure_full_reviews();
             if (($xrrows = $prow->reviews_by_user(-1, $user->review_tokens()))) {
                 $rrow = $xrrows[0];
@@ -754,7 +826,17 @@ class ReviewValues extends MessageSet {
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
             }
-            $rtype = $reqtype ?? ($reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
+            if (($reqtype ?? 0) > REVIEW_PC) {
+                $rtype = $reqtype;
+            } else {
+                $rtype = $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
+            }
+            if (!$reviewer->has_account_here()) {
+                if ($this->disable_users) {
+                    $reviewer->cflags |= Contact::CF_UDISABLED;
+                }
+                $reviewer->store(0, $this->user);
+            }
             $rrow = $user->assign_review_prop($prow->paperId, $reviewer, $rtype, [
                 "selfassign" => $reviewer === $user, "round_number" => $round
             ]);
@@ -869,9 +951,18 @@ class ReviewValues extends MessageSet {
         if ($reqname !== "" && strcasecmp($reqname, $revname) === 0) {
             return true;
         }
+        // allow primaryContactId relationship
+        $requser = $this->conf->user_by_email($reqemail, USER_SLICE);
+        if ($requser
+            && ($requser->primaryContactId === $reviewer->contactId
+                || $requser->contactId === $reviewer->primaryContactId)) {
+            return true;
+        }
         // otherwise complain
+        $revfull = Text::nameo($reviewer, NAME_EB);
+        $reqfull = Text::name($reqfirst, $reqlast, $reqemail, NAME_EB);
         $this->rvmsg(self::ERROR, "reviewerEmail",
-            $this->conf->_("<0>Reviewer conflict: review is for {}, but uploaded form is for {}", Text::nameo($reviewer, NAME_EB), Text::name($reqfirst, $reqlast, $reqemail, NAME_EB)));
+            $this->conf->_("<0>Reviewer conflict: review is for {}, but request names {}", $revfull, $reqfull));
         if ($this->text !== null) {
             $this->rvmsg(self::INFORM, "reviewerEmail",
                 $this->conf->_("<5>To upload the form anyway, remove its ‘<code class=\"nw\">==+== Reviewer</code>’ section."));
@@ -951,22 +1042,12 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        // reviewer must match if provided
-        if (isset($this->req["reviewerEmail"])
-            && !$this->_check_reviewer($rrow, $this->req["reviewerEmail"])) {
+        // reviewers must match if provided
+        if ((isset($this->req["reviewerEmail"])
+             && !$this->_check_reviewer($rrow, $this->req["reviewerEmail"]))
+            || ($this->reviewer
+                && !$this->_check_reviewer($rrow, $this->reviewer->email))) {
             return false;
-        }
-
-        // correct review type if necessary
-        // XXX this seems weird; if usedReviewToken, then review row user
-        // is never PC...
-        if ($rrow->reviewId
-            && $rrow->reviewType === REVIEW_EXTERNAL
-            && $user->contactId === $rrow->contactId
-            && $user->isPC
-            && !$usedReviewToken) {
-            $rrow->set_prop("reviewType", REVIEW_PC);
-            $rflags = ($rflags & ~ReviewInfo::RFM_TYPES) | (1 << REVIEW_PC);
         }
 
         // process review fields

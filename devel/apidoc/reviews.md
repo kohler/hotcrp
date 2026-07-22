@@ -88,6 +88,15 @@ formats. Errors are still reported as JSON objects with `ok` set to `false`, so
 check the response’s `Content-Type` or status code. An empty selection yields an
 empty download, just as `format=json` yields an empty `reviews` array.
 
+A rendering has no `message_list`, so the search diagnostics `format=json` would
+report are carried into the download instead: `text` prefixes them, `form`
+includes them as `==-==` comment lines, and the ZIP formats collect them in a
+`README-warnings.txt` member.
+
+Renderings are conditionally requestable through `ETag` and `If-None-Match`.
+Date-based conditions are ignored, since a rendering depends on more than the
+reviews’ modification times.
+
 ## Downloads
 
 The `download` parameter controls *delivery* rather than rendering, and works
@@ -169,7 +178,8 @@ fields are left unchanged; fields keyed by their UID set review-form content.
 Set `submitted` (or `ready`) to `true` to submit the review, or `draft` to
 `true` to save it without submitting. Submission administrators assigning a
 review on someone’s behalf may name the reviewer with `email` (plus
-`given_name`/`family_name`/`affiliation` for a new account).
+`given_name`/`family_name`/`affiliation` for a new account), or, for data that
+does not name one, with the `u` request parameter.
 
 A newly created review may be given a type with `review_type` (`primary`,
 `secondary`, `metareview`, `pc`, or `external`). A review defaults to an optional
@@ -194,6 +204,14 @@ test the input but make no changes to the database.
   supplies a `pid`; if both are present they must match.
 * param ?r rid: Review to create or modify: `new`, a numeric review ID, a
   display ordinal, or empty for the caller’s own review.
+* param ?u email: Reviewer whose review to create or modify; defaults to the
+  caller. Naming another user requires administrator privilege, and must agree
+  with any reviewer named by `r` or by the data.
+* param ?create_users boolean: False refuses to create an account for a reviewer
+  who does not have one. Defaults to true, except for offline review forms.
+* param ?disable_users boolean: True disables any newly-created users.
+
+    * badge admin
 * body application/json review: A [review object](#tag-reviews) sent as a raw JSON body.
 
     * oneof body
@@ -285,22 +303,25 @@ The optional `rq` and `u` parameters filter which *reviews* are returned (not
 which submissions are searched). Supply at most one of them:
 
 * `u` returns only reviews written by the user with that email.
-* `rq` is a review search expression (the same syntax as a `re:` search),
-  evaluated with `reviewer` as its viewpoint, and returns only matching reviews.
+* `rq` is a review search expression (the same syntax as a `re:` search), and
+  returns only matching reviews.
+
+`reviewer` is a *search* parameter, like `q` and `t`: it sets the perspective the
+submission search uses. It does not restrict which reviews are returned.
 
 * param ?q search_string: Search selecting submissions whose reviews to return. Required unless `p` is given.
 * param ?t search_scope: Scope of search; defaults to the submissions the caller can view.
 
     * default viewable
     * group Search modifiers
-* param ?reviewer search_reviewer: Reviewer viewpoint used to evaluate `rq`.
+* param ?reviewer search_reviewer: Reviewer whose perspective the submission search uses.
 
     * group Search modifiers
 * param ?p pid: Return reviews of this single submission instead of running a search.
 * param ?rq string: Review search expression limiting which reviews are returned.
 
     * oneof review_query
-* param ?u email: Return only reviews written by this user. Mutually exclusive with `rq`.
+* param ?u email: Return only reviews written by this user.
 
     * oneof review_query
 * param ?format =json|text|form|textzip|formzip

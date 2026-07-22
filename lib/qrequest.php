@@ -245,9 +245,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     /** @param string $k
-     * @param ?string $v */
+     * @param ?string $v
+     * @return $this */
     function set_header($k, $v) {
         $this->_headers["HTTP_" . strtoupper(str_replace("-", "_", $k))] = $v;
+        return $this;
     }
 
     /** True if this request was not initiated by a cross-site context.
