@@ -337,10 +337,5 @@
         "name": "has",
         "parse_function": "PaperSearch::parse_has",
         "priority": 100
-    },
-    {
-        "name": "searchcontrol",
-        "parse_function": "PaperSearch::parse_searchcontrol",
-        "priority": 100
     }
 ]

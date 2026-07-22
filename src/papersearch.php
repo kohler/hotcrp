@@ -619,19 +619,6 @@ class PaperSearch extends MessageSet {
         return new False_SearchTerm;
     }
 
-    /** @return SearchTerm */
-    static function parse_searchcontrol($word, SearchWord $sword, PaperSearch $srch) {
-        if (strcasecmp($word, "expand_automatic") === 0) {
-            if ($srch->expand_automatic === 0) {
-                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-                $srch->expand_automatic = 1;
-            }
-            return new True_SearchTerm;
-        }
-        $srch->lwarning($sword, "<0>Unknown search control option ‘{$word}’");
-        return new True_SearchTerm;
-    }
-
     /** @param string $body
      * @param SearchWord $sword
      * @return ?SearchTerm */
