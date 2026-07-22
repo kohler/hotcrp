@@ -71,24 +71,23 @@ class TagSearchMatcher {
             } else {
                 $cids = ContactSearch::make_pc($c, $this->user)->user_ids();
             }
-            if (empty($cids)) {
-                $this->_errors[] = "<0>#{$tag} matches no users";
+            if (!$this->user->can_view_some_peruser_tag()) {
+                if (in_array($this->user->contactId, $cids, true)) {
+                    $cids = [$this->user->contactId];
+                } else {
+                    $this->_errors[] = "<0>You can’t search other users’ twiddle tags";
+                    return false;
+                }
+            } else if (empty($cids)) {
+                $this->_errors[] = "<0>No PC members match ‘{$c}’";
                 return false;
             }
-            if ($this->user->can_view_some_peruser_tag()) {
-                $xcids = $cids;
-            } else if (in_array($this->user->contactId, $cids, true)) {
-                $xcids = [$this->user->contactId];
-            } else {
-                $this->_errors[] = "<0>You can’t search other users’ twiddle tags";
-                return false;
-            }
-            if (count($xcids) > 1 && !$allow_star_any) {
+            if (count($cids) > 1 && !$allow_star_any) {
                 $this->_errors[] = "<0>Wildcard searches like #{$tag} aren’t allowed here";
                 return false;
             }
-            if (count($xcids) === 1 || $this->_avoid_regex) {
-                foreach ($xcids as $xcid) {
+            if (count($cids) === 1 || $this->_avoid_regex) {
+                foreach ($cids as $xcid) {
                     $this->add_tag($xcid . $checktag);
                 }
             } else if ($c === "*") {
@@ -96,7 +95,7 @@ class TagSearchMatcher {
                 $this->add_tag_regex(" \\d+{$ct}#", "[0-9]+" . str_replace("\\S*", ".*", $ct));
             } else {
                 $ct = str_replace("\\*", "\\S*", preg_quote($checktag));
-                $cidt = join("|", $xcids);
+                $cidt = join("|", $cids);
                 $this->add_tag_regex(" (?:{$cidt}){$ct}#", "({$cidt})" . str_replace("\\S*", ".*", $ct));
             }
         } else {
