@@ -77,7 +77,7 @@ class Admin_SearchTerm extends SearchTerm {
         }
         foreach ($this->match as $u) {
             if ($this->flags & self::F_ALLOW
-                ? $u->can_manage($row)
+                ? $u->allow_admin($row)
                 : $u->is_primary_administrator($row))
                 return true;
         }

@@ -14,27 +14,33 @@ class Perm_SearchTerm extends SearchTerm {
         $this->perm = $perm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        if (strcasecmp($word, "author-edit") === 0
-            || strcasecmp($word, "author-write") === 0) {
-            return new Perm_SearchTerm($srch->user, "author-write");
-        } else if (strcasecmp($word, "author-edit-final") === 0
-                   || strcasecmp($word, "author-write-final") === 0) {
-            return new Perm_SearchTerm($srch->user, "author-write-final");
+        $word = str_replace("-", "_", $word);
+        if (strcasecmp($word, "author_edit") === 0
+            || strcasecmp($word, "author_write") === 0) {
+            return new Perm_SearchTerm($srch->user, "author_write");
+        } else if (strcasecmp($word, "author_edit_final") === 0
+                   || strcasecmp($word, "author_write_final") === 0) {
+            return new Perm_SearchTerm($srch->user, "author_write_final");
         }
         $srch->lwarning($sword, "<0>Permission not found");
         return new False_SearchTerm;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->perm === "author-write-final") {
+        if (!$this->user->is_admin()) {
+            return "false";
+        } else if ($this->perm === "author_write_final") {
             return "(Paper.timeWithdrawn<=0 and Paper.outcome>0)";
-        } else {
-            return "(Paper.timeWithdrawn<=0)";
         }
+        return "(Paper.timeWithdrawn<=0)";
     }
     function test(PaperInfo $row, $xinfo) {
-        if ($this->perm === "author-write") {
+        if (!$this->user->allow_admin($row)) {
+            // Only administrators can use `perm:`, since it can expose
+            // information about the underlying paper
+            return false;
+        } else if ($this->perm === "author_write") {
             return $row->author_edit_state() !== 0;
-        } else if ($this->perm === "author-write-final") {
+        } else if ($this->perm === "author_write_final") {
             return $row->author_edit_state() === 2
                 && $this->user->can_view_decision($row);
         }
