@@ -613,13 +613,14 @@ class AuthorCertification_PaperOption extends PaperOption {
                 $msgs[] = MessageItem::error_at($this->formid, "<0>Invalid author email ‘{$x}’");
                 continue;
             }
+            // provenance information (admin/at/by) requires admin privilege
             $e = ACEntry::make_email_by(
-                $ej->email, $ej->value ?? true, $ej->admin ?? $admin, $user
+                $ej->email, $ej->value ?? true, $admin && ($ej->admin ?? true), $user
             );
-            if (isset($ej->at) && is_int($ej->at)) {
+            if ($admin && isset($ej->at) && is_int($ej->at)) {
                 $e->at = $ej->at;
             }
-            if (isset($ej->by) && is_int($ej->by)) {
+            if ($admin && isset($ej->by) && is_int($ej->by)) {
                 $e->by = $ej->by;
             }
             $entries->append($e);

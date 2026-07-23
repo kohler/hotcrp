@@ -93,6 +93,57 @@ class AuthorCertification_Tester {
         return $this->conf->checked_paper_by_id($this->pid);
     }
 
+    /** @return ?object */
+    private function cert_data($cert, $cid) {
+        $row = $this->conf->fetch_first_row("select data from PaperOption where paperId=? and optionId=? and value=?", $this->pid, $cert->id, $cid);
+        return $row ? json_decode($row[0]) : null;
+    }
+
+    function test_json_provenance_not_forgeable_by_author() {
+        // A non-manager author saving via the JSON path must not forge the
+        // provenance (admin/by/at) of their certification: the web path forces
+        // admin=can_manage, by=viewer, at=now, and the JSON path must match.
+        // Only a manager may set provenance explicitly (e.g. when importing).
+        $prow = $this->paper();
+        xassert(!$this->u_carole->can_manage($prow));
+        $jk = $this->cert1->json_key();
+        $cid = $this->u_carole->contactId;
+
+        // carole (author) forges admin=true, by=<sally>, at=1 for her own entry
+        $entry = (object) ["email" => "cleita@berkeley.ca", "value" => true,
+                           "admin" => true, "by" => $this->u_sally->contactId, "at" => 1];
+        $pj = (object) ["object" => "paper", "pid" => $this->pid,
+                        $jk => (object) ["entries" => [$entry]]];
+        xassert((new PaperStatus($this->u_carole))->save_paper_json($pj));
+
+        // the forged provenance must NOT persist; server values are used instead
+        $d = $this->cert_data($this->cert1, $cid);
+        xassert(!!$d);
+        xassert_eqq($d->admin ?? false, false);          // not admin-issued
+        xassert_eqq($d->by ?? $cid, $cid);               // attributed to self
+        xassert_neqq($d->at ?? null, 1);                 // not the forged timestamp
+        xassert_ge($d->at ?? 0, Conf::$now - 5);         // server-set ~now
+
+        // decertify carole (provenance is fixed at certification time, so an
+        // explicit-provenance re-save needs a fresh entry)
+        $entry->value = false;
+        xassert((new PaperStatus($this->u_chair))->save_paper_json($pj));
+
+        // a manager MAY set provenance explicitly on a fresh certification
+        $entry->value = true;
+        $entry->at = 555;
+        xassert((new PaperStatus($this->u_chair))->save_paper_json($pj));
+        $d = $this->cert_data($this->cert1, $cid);
+        xassert_eqq($d->at ?? null, 555);
+        xassert_eqq($d->admin ?? false, true);
+
+        // restore: decertify carole so later tests see a clean paper
+        $entry->value = false;
+        xassert((new PaperStatus($this->u_chair))->save_paper_json($pj));
+        $ov = $this->paper()->option($this->cert1);
+        xassert(!$ov || !in_array($cid, $ov->value_list(), true));
+    }
+
     function test_author_certify() {
         $ps = new PaperStatus($this->u_sally);
         xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
