@@ -982,6 +982,67 @@ class ReviewAPI_Tester {
         $conf->save_refresh_setting("viewrevid", null);
     }
 
+    // A reviewer must not write a field they cannot see. The render path hides
+    // an admin-only ("secret", VIEWSCORE_ADMINONLY) field from the reviewer, so
+    // the save path must ignore a crafted value for it too.
+    function test_reviewer_cannot_write_admin_only_field() {
+        $conf = $this->conf;
+        $save = [
+            "rev_open" => $conf->setting("rev_open"),
+            "pcrev_soft" => $conf->setting("pcrev_soft"),
+            "pcrev_hard" => $conf->setting("pcrev_hard")
+        ];
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->save_refresh_setting("pcrev_soft", Conf::$now + 86400);
+        $conf->save_refresh_setting("pcrev_hard", Conf::$now + 86400);
+
+        // The settings UI no longer offers "secret", so create the field as
+        // "admin" and patch the stored form to admin-only, as a legacy install
+        // would have it.
+        $sv = SettingValues::make_request($conf->root_user(), [
+            "has_rf" => 1, "rf/1/id" => "t10", "rf/1/name" => "Secret flag",
+            "rf/1/visibility" => "admin", "rf/1/order" => 21
+        ]);
+        xassert($sv->execute());
+        $rfj = json_decode($conf->setting_data("review_form"), true);
+        foreach ($rfj as &$e) {
+            if (($e["id"] ?? "") === "t10") {
+                $e["visibility"] = "secret";
+            }
+        }
+        unset($e);
+        $conf->save_setting("review_form", 1, json_encode($rfj));
+        $conf->refresh_settings();
+        $f = $conf->review_field("t10");
+        xassert_eqq($f->view_score, VIEWSCORE_ADMINONLY);
+        $uid = $f->uid();
+
+        $prow = $conf->checked_paper_by_id(18);
+        xassert(!$this->u_diot->allow_admin($prow));
+
+        // a crafted request from the (non-admin) reviewer must not write it
+        call_api("review", $this->u_diot,
+            TestQreq::post_json(["object" => "review", $uid => "HACKED"]), $prow);
+        xassert_eqq($conf->checked_paper_by_id(18)->checked_review_by_user($this->u_diot)->fval($f), null);
+
+        // but an administrator still can
+        $rid = $prow->checked_review_by_user($this->u_diot)->unparse_ordinal_id();
+        $qreq = TestQreq::post_json(["object" => "review", $uid => "ADMINSET"]);
+        $qreq->r = $rid;
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($conf->checked_paper_by_id(18)->checked_review_by_user($this->u_diot)->fval($f), "ADMINSET\n");
+
+        // cleanup: delete the field and restore review-open state
+        $sv = SettingValues::make_request($conf->root_user(), [
+            "has_rf" => 1, "rf/1/id" => "t10", "rf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+        foreach ($save as $k => $v) {
+            $conf->save_refresh_setting($k, $v);
+        }
+    }
+
     // A download carries the messages `format=json` would return, as
     // `GetReviewBase_ListAction::finish` does for a list action.
     function test_download_message_list() {

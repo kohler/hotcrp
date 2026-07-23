@@ -1059,12 +1059,17 @@ class ReviewValues extends MessageSet {
         $want_ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
         $fmissing = [];
         $wc = 0;
+        // the user can only edit the fields they can view
+        $view_score_bound = $user->view_score_bound($prow, $rrow);
 
         foreach ($this->rf->all_fields() as $f) {
             $exists = $f->test_exists($rrow);
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if (!$exists && $old_fval === null) {
                 continue;
+            }
+            if ($f->view_score <= $view_score_bound) {
+                $fval = $old_fval;
             }
             if ($fval === false) {
                 $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_word_abbreviate(trim($this->req[$f->short_id]), 100)));
