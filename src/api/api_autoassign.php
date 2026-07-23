@@ -58,12 +58,13 @@ class Autoassign_API {
     }
 
     static function autoassign(Contact $user, Qrequest $qreq) {
-        if (!isset($qreq->autoassigner)) {
+        if (!$user->is_manager()) {
+            return JsonResult::make_permission_error();
+        } else if (!isset($qreq->autoassigner)) {
             return JsonResult::make_missing_error("autoassigner");
         } else if (!($aa = $user->conf->autoassigner($qreq->autoassigner))) {
             return JsonResult::make_not_found_error("autoassigner");
-        }
-        if (!isset($qreq->q)) {
+        } else if (!isset($qreq->q)) {
             return JsonResult::make_missing_error("q");
         }
 
@@ -141,6 +142,9 @@ class Autoassign_API {
     }
 
     static function autoassigners(Contact $user, Qrequest $qreq) {
+        if (!$user->is_manager()) {
+            return JsonResult::make_permission_error();
+        }
         $conf = $user->conf;
         $exs = [];
         $xtp = (new XtParams($conf, $user))->set_warn_deprecated(false);
