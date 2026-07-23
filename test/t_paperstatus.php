@@ -1993,13 +1993,11 @@ Phil Porras.");
 
         // launch a background format check on the same document; it runs on its
         // own until we drive it to completion below
-        $env = getenv();
-        $env["HOTCRP_TEST_PDFTOHTML_DELAY"] = "3";
         $subp = (new Subprocess([
             "php", "batch/checkformat.php",
             "--config", SiteLoader::resolve("test/options.php"),
             "-p", "3"
-        ], SiteLoader::$root))->set_env($env);
+        ], SiteLoader::$root));
         $subp->start();
 
         // wait until that run has claimed the lease (it does so before running banal)
