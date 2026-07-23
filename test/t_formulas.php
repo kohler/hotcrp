@@ -79,6 +79,14 @@ class Formulas_Tester {
         return $f;
     }
 
+    /** @param string $expr
+     * @return Formula */
+    private function formula_as(Contact $user, $expr) {
+        $f = Formula::make($user, $expr);
+        xassert($f && $f->ok());
+        return $f->prepare();
+    }
+
     /** @param array<string,string> $exprs
      * @return array{bool,array<string,Formula>} */
     private function formula_set($exprs) {
@@ -1024,5 +1032,58 @@ class Formulas_Tester {
         xassert_eqq($f_calories->eval($paper1c, null), 350); // OptionValue_Fexpr
         xassert_eqq($f_weight->eval($paper1c, null), 72.5);  // RealNumberOption_Fexpr
         xassert_eqq($f_vegan->eval($paper1c, null), true);   // OptionPresent_Fexpr
+    }
+
+    function test_review_meta_hidden_from_pc_author() {
+        // A PC member who authors a paper may read that paper's submitted
+        // reviews (au_seerev), but a review's *type* and *round* are metadata
+        // gated by can_view_review_meta — false for a conflicted PC-author. So
+        // `revtype`/`reround` must not let them recover it, even though the
+        // formulas compile (they are is_reviewer() globally).
+        $conf = $this->conf;
+        $mjh = $this->u_mjh;        // PC, contact-author of paper 17
+        $lixia = $this->u_lixia;    // PC reviewer on paper 17 (round 1)
+        $p17 = $conf->checked_paper_by_id(17);
+        xassert($mjh->isPC && $mjh->is_reviewer());
+        xassert_ge($p17->conflict_type($mjh), CONFLICT_AUTHOR);
+
+        $old_ausr = $conf->setting("au_seerev");
+        $conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
+
+        // submit lixia's review with author-visible content (Overall merit +
+        // Comments for authors), so the author can see the review itself
+        $text = "==+== Paper #17\n\n==+== Review Readiness\nReady\n\n"
+            . "==+== A. Overall merit\n4\n\n==+== B. Reviewer expertise\n2\n\n"
+            . "==+== D. Comments for authors\nGood work.\n";
+        $tf = (new ReviewValues($lixia))->set_text($text, "r17.txt");
+        xassert($tf->parse_text());
+        xassert($tf->check_and_save(null));
+
+        $p17 = $conf->checked_paper_by_id(17);
+        $rrow = $p17->fresh_review_by_user($lixia);
+        xassert_gt($rrow->reviewType, 0);
+
+        // precondition — the author CAN see the review content but NOT its
+        // metadata, so a null formula result means "gated," not "invisible"
+        xassert($mjh->can_view_review($p17, $rrow));
+        xassert(!$mjh->can_view_review_meta($p17, $rrow));
+
+        // the leak: neither type nor round may be recovered
+        xassert_eqq($this->formula_as($mjh, "max(revtype)")->eval($p17, null), null);
+        xassert_eqq($this->formula_as($mjh, "max(reround)")->eval($p17, null), null);
+        xassert_eqq($this->formula_as($mjh, "count(revtype>0)")->eval($p17, null), 0);
+
+        // ...while an administrator, who may view review metadata, sees them —
+        // proving the data is present and only the gate hides it
+        $maxtype = $maxround = 0;
+        foreach ($p17->viewable_reviews_as_display($this->u_chair) as $rr) {
+            $maxtype = max($maxtype, $rr->reviewType);
+            $maxround = max($maxround, $rr->reviewRound);
+        }
+        xassert_gt($maxtype, 0);
+        xassert_eqq($this->formula_as($this->u_chair, "max(revtype)")->eval($p17, null), $maxtype);
+        xassert_eqq($this->formula_as($this->u_chair, "max(reround)")->eval($p17, null), $maxround);
+
+        $conf->save_refresh_setting("au_seerev", $old_ausr);
     }
 }
