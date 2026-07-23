@@ -1246,7 +1246,12 @@ final class PaperStatus extends MessageSet {
     private function _normalize_and_check($pj) {
         assert(($this->_save_status & self::SSF_PREPARED) === 0);
         $pid = $this->prow->is_new() ? "new" : $this->prow->paperId;
-        if (($perm = $this->user->perm_view_paper($this->prow, false, $pid))) {
+        $perm = $this->user->perm_view_paper($this->prow, false, $pid);
+        if (!$perm && !$this->user->allow_edit_paper($this->prow)) {
+            $perm = $this->user->perm_edit_paper($this->prow);
+            assert(!!$perm);
+        }
+        if ($perm) {
             $perm->append_to($this, null, MessageSet::ESTOP);
             return false;
         }
