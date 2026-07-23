@@ -376,6 +376,11 @@ class LogEntryGenerator {
                 $this->need_users[$row->contactId] = true;
                 $this->need_users[$destuid] = true;
 
+                // skip filtered rows (before consolidation)
+                if ($this->filter && !call_user_func($this->filter, $row)) {
+                    continue;
+                }
+
                 // consolidate mail rows
                 if ($this->consolidate_row
                     && $this->consolidate_row->action === $row->action) {
@@ -383,16 +388,8 @@ class LogEntryGenerator {
                     if ($row->paperId) {
                         $this->consolidate_row->paperIdArray[] = $row->paperId;
                     }
+                    // update the signpost if necessary
                     $this->consolidate_row->logId = $row->logId;
-                    if ($ordinal % 1000 === 0) {
-                        $row->ordinal = $ordinal - 1;
-                        $this->add_signpost_row($row);
-                    }
-                    continue;
-                }
-
-                // skip filtered rows
-                if ($this->filter && !call_user_func($this->filter, $row)) {
                     continue;
                 }
 

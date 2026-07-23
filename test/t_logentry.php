@@ -182,6 +182,100 @@ class LogEntry_Tester {
         xassert_eqq($this->counted, 125);
     }
 
+    // A consolidated "Sent mail" row must not expose recipients or papers from
+    // a bulk send that fall outside the viewer's administration: each merged
+    // row is filtered, not just the first.
+    function test_consolidated_mail_respects_filter() {
+        $conf = $this->conf;
+        $viewer = $conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // not the sender
+        xassert_eqq($viewer->hidden_papers, null);
+
+        $conf->qe("delete from ActionLog");
+        $conf->qe("alter table ActionLog AUTO_INCREMENT = 1");
+        $conf->pause_log();
+        // one bulk send spanning paper 5 (not managed) then paper 4 (managed);
+        // the managed row has the higher logId, so it anchors the consolidation
+        // and the unmanaged row would merge into it if unfiltered
+        $conf->log_for($this->u_chair, $this->u_estrin, "Sent mail #999", 5);
+        $conf->log_for($this->u_chair, $this->u_floyd, "Sent mail #999", 4);
+        $conf->resume_log();
+
+        // the viewer administers only paper 4
+        $leg = (new LogEntryGenerator($conf, 200))
+            ->set_filter(new LogEntryFilter($viewer, [4 => true], true, null));
+        $rows = $leg->page_rows(1);
+        xassert_eqq(count($rows), 1);
+        $pids = $leg->paper_ids($rows[0]);
+        $recips = array_map(function ($u) { return $u ? $u->email : "?"; },
+            $leg->users_for($rows[0], "destContactId"));
+        // paper 4 and its recipient are visible; paper 5 and estrin are not
+        xassert(in_array(4, $pids, true));
+        xassert(!in_array(5, $pids, true));
+        xassert(in_array($this->u_floyd->email, $recips, true));
+        xassert(!in_array($this->u_estrin->email, $recips, true));
+
+        $conf->qe("delete from ActionLog");
+        $conf->qe("alter table ActionLog AUTO_INCREMENT = 1");
+    }
+
+    // A bulk "Sent mail" send is many DB rows (one per recipient) that the
+    // generator consolidates into a single display entry. When such a group
+    // sits on a page boundary, the pagination signpost's logId must track the
+    // group's LOWEST logId; otherwise resuming across the boundary re-shows the
+    // whole send on the next page. The signpost holds a reference to the
+    // consolidate_row object, so the `consolidate_row->logId` update is what
+    // keeps this correct — this test guards that invariant.
+    function test_consolidated_mail_pagination_no_duplicate() {
+        $conf = $this->conf;
+        $chair = $this->u_chair->contactId;
+        $dests = [];
+        foreach (["floyd@ee.lbl.gov", "estrin@usc.edu", "varghese@ccrc.wustl.edu",
+                  "marina@poema.ru", "mgbaker@cs.stanford.edu"] as $e) {
+            $dests[] = $conf->checked_user_by_email($e)->contactId;
+        }
+
+        $conf->qe("delete from ActionLog");
+        $conf->qe("alter table ActionLog AUTO_INCREMENT = 1");
+        $now = 1000000000;
+        $qv = [];
+        // tail entries: lowest logIds -> display positions 1000..2099
+        for ($i = 0; $i < 1100; ++$i) {
+            $qv[] = [null, $chair, null, null, null, $now, "Entry tail {$i}"];
+        }
+        // a 5-recipient "Sent mail #999" send -> one display entry at position 999,
+        // straddling the ordinal-1000 signpost boundary
+        foreach ($dests as $k => $d) {
+            $qv[] = [null, $chair, $d, null, $k + 2, $now, "Sent mail #999"];
+        }
+        // head entries: highest logIds -> display positions 0..998
+        for ($i = 0; $i < 999; ++$i) {
+            $qv[] = [null, $chair, null, null, null, $now, "Entry head {$i}"];
+        }
+        $conf->qe("insert into ActionLog (ipaddr,contactId,destContactId,trueContactId,paperId,timestamp,action) values ?v", $qv);
+
+        $leg = new LogEntryGenerator($conf, 50);
+        $leg->page_rows(42);      // far page: builds the signpost at ordinal 999
+        // resuming just past the boundary must NOT re-show the send
+        $mail21 = [];
+        foreach ($leg->page_rows(21) as $r) {
+            if (str_starts_with($leg->cleaned_action($r), "Sent mail")) {
+                $mail21[] = $r->ordinal;
+            }
+        }
+        xassert_eqq($mail21, []);
+        // it appears exactly once, at its real position, with all 5 recipients
+        $mail20 = [];
+        foreach ($leg->page_rows(20) as $r) {
+            if (str_starts_with($leg->cleaned_action($r), "Sent mail")) {
+                $mail20[] = [$r->ordinal, count($leg->users_for($r, "destContactId"))];
+            }
+        }
+        xassert_eqq($mail20, [[999, 5]]);
+
+        $conf->qe("delete from ActionLog");
+        $conf->qe("alter table ActionLog AUTO_INCREMENT = 1");
+    }
+
     function finalize() {
         $this->conf->qe("delete from ActionLog");
         $this->conf->qe("alter table ActionLog AUTO_INCREMENT = 1");
