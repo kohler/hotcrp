@@ -78,15 +78,14 @@ class Deadlines_Page {
             $dlbyround = [];
             $last_dlbyround = null;
             foreach ($conf->defined_rounds() as $i => $round_name) {
-                $isuf = $i ? "_{$i}" : "";
-                $es = +$conf->setting("extrev_soft{$isuf}");
-                $eh = +$conf->setting("extrev_hard{$isuf}");
+                $es = $conf->review_deadline($i, REVIEW_EXTERNAL, false);
+                $eh = $conf->review_deadline($i, REVIEW_EXTERNAL, true);
                 $ps = $ph = -1;
 
                 $thisdl = [];
                 if ($this->user->isPC) {
-                    $ps = +$conf->setting("pcrev_soft{$isuf}");
-                    $ph = +$conf->setting("pcrev_hard{$isuf}");
+                    $ps = $conf->review_deadline($i, REVIEW_PC, false);
+                    $ph = $conf->review_deadline($i, REVIEW_PC, true);
                     if ($ph && ($ph < Conf::$now || $ps < Conf::$now)) {
                         $thisdl[] = "PH{$ph}";
                     } else if ($ps) {

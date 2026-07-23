@@ -635,8 +635,9 @@ class Permission_Tester {
         xassert_search($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
         xassert_search($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
-        // restore chair tag setting
+        // restore chair tag settings
         $this->conf->save_refresh_setting("tag_chair", 1, "accept pcpaper reject");
+        $this->conf->save_refresh_setting("tag_hidden", null);
     }
 
     function test_review_rounds() {

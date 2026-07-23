@@ -169,16 +169,20 @@ class FailureReason extends Exception
             || str_starts_with($dn, "extrev_")
             || str_starts_with($dn, "pcrev_")) {
             $odn = "rev_open";
+            $start = $this->conf->setting("rev_open") ?? -1;
         } else {
             $odn = null;
+            $start = 1;
         }
-        $start = $odn !== null ? $this->conf->setting($odn) ?? -1 : 1;
 
         if ($dn === "extrev_chairreq") {
             $dn = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
         }
-        $end = $this->conf->setting($dn) ?? -1;
-        return [$odn, $start, $dn, $end, []];
+        $end = $this->conf->setting($dn);
+        if ($end === null && str_starts_with($dn, "extrev_")) {
+            $end = $this->conf->setting("pcrev_" . substr($dn, 7));
+        }
+        return [$odn, $start, $dn, $end ?? -1, []];
     }
 
     /** @return array{string,int,string,int,list<FmtArg>} */

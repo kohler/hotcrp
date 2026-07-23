@@ -510,7 +510,7 @@ class ReviewInfo implements JsonSerializable {
     /** @param bool $hard
      * @return ?int */
     function deadline($hard = false) {
-        return $this->conf->setting($this->deadline_name($hard));
+        return $this->conf->review_deadline($this->reviewRound, $this->reviewType, $hard);
     }
 
     /** @return int */

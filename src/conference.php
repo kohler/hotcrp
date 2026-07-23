@@ -594,19 +594,6 @@ class Conf {
             }
             $this->_round_settings["max"] = (object) $max_rs;
         }
-
-        // review times
-        foreach ($this->rounds as $i => $rname) {
-            $suf = $i ? "_{$i}" : "";
-            if (!isset($this->settings["extrev_soft{$suf}"])
-                && isset($this->settings["pcrev_soft{$suf}"])) {
-                $this->settings["extrev_soft{$suf}"] = $this->settings["pcrev_soft{$suf}"];
-            }
-            if (!isset($this->settings["extrev_hard{$suf}"])
-                && isset($this->settings["pcrev_hard{$suf}"])) {
-                $this->settings["extrev_hard{$suf}"] = $this->settings["pcrev_hard{$suf}"];
-            }
-        }
     }
 
     /** @suppress PhanTypeArraySuspicious */
@@ -3721,17 +3708,25 @@ class Conf {
     /** @param ?int $round
      * @param bool|int $reviewType
      * @param bool $hard
-     * @return string|false */
+     * @return int */
+    function review_deadline($round, $reviewType, $hard) {
+        $dn = $this->review_deadline_name($round, $reviewType, $hard);
+        $dv = $this->settings[$dn] ?? null;
+        if ($dv === null && str_starts_with($dn, "extrev_")) {
+            $dv = $this->settings["pcrev_" . substr($dn, 7)] ?? null;
+        }
+        return $dv ?? 0;
+    }
+    /** @param ?int $round
+     * @param bool|int $reviewType
+     * @param bool $hard
+     * @return bool */
     function missed_review_deadline($round, $reviewType, $hard) {
         if (!$this->time_review_open()) {
-            return "rev_open";
+            return true;
         }
-        $dn = $this->review_deadline_name($round, $reviewType, $hard);
-        $dv = $this->settings[$dn] ?? 0;
-        if ($dv > 0 && $dv < Conf::$now) {
-            return $dn;
-        }
-        return false;
+        $dv = $this->review_deadline($round, $reviewType, $hard);
+        return $dv > 0 && $dv < Conf::$now;
     }
     /** @param ?int $round
      * @param bool|int $reviewType

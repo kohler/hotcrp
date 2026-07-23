@@ -304,10 +304,18 @@ class HotCRPMailer extends Mailer {
         } else if ($uf->is_review) {
             $args = $this->guess_reviewdeadline();
         }
+        if ($args) {
+            $t = $this->conf->setting($args);
+            if ($t === null && str_starts_with($args, "extrev_")) {
+                $t = $this->conf->setting("pcrev_" . substr($args, 7));
+            }
+            $t = $t ?? 0;
+        } else {
+            $t = 0;
+        }
         if ($isbool) {
-            return $args && $this->conf->setting($args) > 0;
+            return $t > 0;
         } else if ($args) {
-            $t = $this->conf->setting($args) ?? 0;
             return $this->conf->unparse_time_long($t);
         }
         return null;

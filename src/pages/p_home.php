@@ -246,11 +246,10 @@ class Home_Page {
         return $this->_rfs;
     }
 
-    /** @param string $setting
+    /** @param ?int $t
      * @return ?string */
-    private function setting_time_span($setting) {
-        $t = $this->conf->setting($setting) ?? 0;
-        return $t > 0 ? $this->conf->unparse_time_with_local_span($t) : null;
+    private function time_span($t) {
+        return ($t ?? 0) > 0 ? $this->conf->unparse_time_with_local_span($t) : null;
     }
 
     function print_reviews(Contact $user, Qrequest $qreq, ComponentSet $gx) {
@@ -378,24 +377,24 @@ class Home_Page {
                     $rname .= " ";
                 }
                 if ($conf->time_review($round, $user->isPC, false)) {
-                    $dn = $conf->review_deadline_name($round, $user->isPC, false);
-                    if ($conf->setting($dn) <= 0) {
-                        $dn = $conf->review_deadline_name($round, $user->isPC, true);
+                    $dt = $conf->review_deadline($round, $user->isPC, false);
+                    if ($dt <= 0) {
+                        $dt = $conf->review_deadline($round, $user->isPC, true);
                     }
-                    if (($d = $this->setting_time_span($dn))) {
+                    if (($d = $this->time_span($dt))) {
                         echo ' <em class="deadline">Please submit your ', $rname, ($this->_r_num_needs_submit == 1 ? "review" : "reviews"), " by {$d}.</em><br>\n";
                     }
                 } else if ($conf->time_review($round, $user->isPC, true)) {
-                    $dn = $conf->review_deadline_name($round, $user->isPC, false);
-                    $d = $this->setting_time_span($dn);
+                    $dt = $conf->review_deadline($round, $user->isPC, false);
+                    $d = $this->time_span($dt);
                     echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $d, ".</em><br>\n";
                 } else {
                     echo ' <em class="deadline"><strong class="overdue">The ', $conf->hotlink("deadline", "deadlines"), ' for submitting ', $rname, "reviews has passed.</strong></em><br>\n";
                 }
             }
         } else if ($user->isPC && $user->can_review_any()) {
-            $dn = $conf->review_deadline_name(null, $user->isPC, false);
-            if (($d = $this->setting_time_span($dn))) {
+            $dt = $conf->review_deadline(null, $user->isPC, false);
+            if (($d = $this->time_span($dt))) {
                 echo " <em class=\"deadline\">The review deadline is {$d}.</em><br>\n";
             }
         }
