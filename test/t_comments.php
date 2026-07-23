@@ -2076,4 +2076,21 @@ class Comments_Tester {
         xassert_neqq($exists, $absent);
         xassert_str_contains($exists, "200 ");
     }
+
+    function test_comment_attachment_not_persisted_when_rejected() {
+        // The permission check must run before attachments are imported/stored,
+        // so a comment the user may not post persists no document.
+        $conf = $this->conf;
+        $u = $this->u_mgbaker; // reviewer, not an author of paper 1
+        $p1 = $conf->checked_paper_by_id(1);
+        xassert(!$p1->has_author($u));
+        $before = (int) $conf->fetch_ivalue("select count(*) from PaperStorage");
+        // a non-author cannot post a response; the attachment must not be stored
+        $qreq = new Qrequest("POST", ["response" => "1", "text" => "hi", "attachment:1" => "new"]);
+        $qreq->approve_token();
+        $qreq->set_file_content("attachment:1:file", "reject-attach-probe-content", "text/plain");
+        $jr = call_api_result("=comment", $u, $qreq, $p1);
+        xassert(!($jr->content["ok"] ?? false));
+        xassert_eqq((int) $conf->fetch_ivalue("select count(*) from PaperStorage"), $before);
+    }
 }

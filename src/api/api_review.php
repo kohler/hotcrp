@@ -362,7 +362,7 @@ class Review_API extends MessageSet {
                     if (!validate_email($qreq->u)) {
                         return JsonResult::make_parameter_error("u");
                     }
-                    $this->qreq_reviewer = Contact::make_email($this->conf, $qreq->u);
+                    $this->qreq_reviewer = Contact::make_placeholder($this->conf, $qreq->u);
                 }
             }
         }

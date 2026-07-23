@@ -362,4 +362,51 @@ class RequestReviewAPI_Tester {
             xassert_eqq($hit, $miss);
         }
     }
+
+    // When a review is actually created for a brand-new reviewer, the reviewer's
+    // account must be a real, non-placeholder user — ReviewInfo activates the
+    // placeholder on review creation (reviewinfo.php ~1079). These guard that
+    // invariant, so a future change making account *creation* produce
+    // placeholders (harmless for a dry_run) still yields real users once a
+    // review materializes.
+
+    function test_requestreview_creates_nonplaceholder_reviewer() {
+        $conf = $this->conf;
+        $email = "newrev-req-probe@example.edu";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches(["users" => true]);
+        $prow = $conf->checked_paper_by_id($this->pid);
+        // chair + extrev_chairreq=0 + unconflicted new email => direct assignment
+        call_api_result("=requestreview", $this->u_chair,
+            ["email" => $email, "given_name" => "New", "family_name" => "Reviewer"], $prow);
+        $conf->invalidate_caches(["users" => true]);
+        $u = $conf->fresh_user_by_email($email);
+        xassert(!!$u);
+        $conf->checked_paper_by_id($this->pid)->load_reviews(true);
+        xassert(!!$conf->checked_paper_by_id($this->pid)->review_by_user($u)); // a review was created
+        xassert(!$u->is_placeholder());
+        if ($u) {
+            $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u->contactId);
+            $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
+            $conf->invalidate_caches(["users" => true]);
+        }
+    }
+
+    function test_assign_review_creates_nonplaceholder_reviewer() {
+        $conf = $this->conf;
+        $email = "newrev-assign-probe@example.edu";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches(["users" => true]);
+        $reviewer = Contact::make_keyed($conf, ["email" => $email, "name" => "Assign Ee"])
+            ->store(0, $this->u_chair);
+        $rid = $this->u_chair->assign_review($this->pid, $reviewer, REVIEW_EXTERNAL);
+        xassert($rid > 0);
+        $conf->invalidate_caches(["users" => true]);
+        $u = $conf->fresh_user_by_email($email);
+        xassert(!!$u);
+        xassert(!$u->is_placeholder());
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u->contactId);
+        $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
+        $conf->invalidate_caches(["users" => true]);
+    }
 }

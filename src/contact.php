@@ -334,9 +334,10 @@ class Contact implements JsonSerializable {
         return self::make_email_cflags($conf, $email, self::CF_UNCONFIRMED);
     }
 
-    /** @return Contact */
-    static function make_placeholder(Conf $conf) {
-        return self::make_email_cflags($conf, "", self::CF_PLACEHOLDER | self::CF_UNCONFIRMED);
+    /** @param ?string $email
+     * @return Contact */
+    static function make_placeholder(Conf $conf, $email = null) {
+        return self::make_email_cflags($conf, $email, self::CF_PLACEHOLDER | self::CF_UNCONFIRMED);
     }
 
     /** @param int $contactId

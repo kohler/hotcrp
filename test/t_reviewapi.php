@@ -1345,4 +1345,26 @@ class ReviewAPI_Tester {
         unlink($fn);
         return $zc;
     }
+
+    function test_dry_run_creates_no_real_user() {
+        // A dry_run review save naming a brand-new reviewer must not leave a
+        // real (non-placeholder) account behind. Placeholder accounts are inert
+        // — never exposed as different from an absent user — so creating one is
+        // harmless; a CF_UNCONFIRMED account is a genuine, persistent side
+        // effect of a request advertised as side-effect-free.
+        $conf = $this->conf;
+        $email = "dryrun-newrev-probe@example.edu";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches(["users" => true]);
+        $prow = $conf->checked_paper_by_id(18);
+        $j = call_api("=review", $this->u_chair,
+            ["u" => $email, "OveMer" => "2", "ready" => "0", "dry_run" => "1"], $prow);
+        xassert_eqq($j->dry_run, true);
+        $conf->invalidate_caches(["users" => true]);
+        $u = $conf->fresh_user_by_email($email);
+        // either nothing was created, or it is an inert placeholder
+        xassert(!$u || $u->is_placeholder());
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches(["users" => true]);
+    }
 }

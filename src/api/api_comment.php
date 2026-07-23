@@ -666,7 +666,15 @@ class Comment_API extends MessageSet {
     private function save_comment($req, $xcrow) {
         assert($xcrow->is_response() === ($this->rrd !== null));
 
-        // import attachments (target comment now known)
+        // check permission
+        $newctype = $xcrow->requested_type($req);
+        $whynot = $this->user->perm_edit_comment($this->prow, $xcrow, $newctype);
+        if ($whynot) {
+            $whynot->set("expand", true)->append_to($this, null, 2);
+            return null;
+        }
+
+        // import attachments
         if ($req["text"] !== false
             && ($req["docs"] = $this->import_docs($req, $xcrow)) === null) {
             return null;
@@ -683,14 +691,6 @@ class Comment_API extends MessageSet {
         }
         if ($req["text"] === false && !$xcrow->commentId) {
             // deleting a nonexistent comment is a no-op
-            return null;
-        }
-
-        // check permission, other errors
-        $newctype = $xcrow->requested_type($req);
-        $whynot = $this->user->perm_edit_comment($this->prow, $xcrow, $newctype);
-        if ($whynot) {
-            $whynot->set("expand", true)->append_to($this, null, 2);
             return null;
         }
 

@@ -762,7 +762,8 @@ class ReviewValues extends MessageSet {
             $reviewer = Contact::make_keyed($this->conf, [
                 "email" => $this->req["reviewerEmail"],
                 "firstName" => $this->req["reviewerFirst"] ?? "",
-                "lastName" => $this->req["reviewerLast"] ?? ""
+                "lastName" => $this->req["reviewerLast"] ?? "",
+                "disablement" => Contact::CF_PLACEHOLDER
             ]);
         }
 
