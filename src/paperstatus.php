@@ -1134,12 +1134,10 @@ final class PaperStatus extends MessageSet {
             $pjs->submitted = false;
             $pjs->draft = true;
         }
-        if (($s = $qreq["if_unmodified_since"] ?? null) !== null) {
-            $s = is_string($s) && ctype_digit($s) ? intval($s) : $s;
-            $pjs->if_unmodified_since = $s;
-        } else if (($s = $qreq["status:if_unmodified_since"]) !== null) {
-            $s = is_string($s) && ctype_digit($s) ? intval($s) : $s;
-            $pjs->if_unmodified_since = $s;
+        $ius = $qreq["if_unmodified_since"] ?? $qreq["status:if_unmodified_since"];
+        if ($ius !== null) {
+            $ius = is_string($ius) && ctype_digit($ius) ? intval($ius) : $ius;
+            $pjs->if_unmodified_since = $ius;
         }
 
         // Fields
