@@ -1147,7 +1147,10 @@ final class PaperStatus extends MessageSet {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
                 && (!$o->is_final() || $phase === "final")
                 && ($o->id === PaperOption::CONTACTSID || $phase !== "contacts")) {
-                // XXX test_editable
+                // Do not test_editable yet; we test_editable in check_field.
+                // This is an arguable semantics decision -- one could say that
+                // a field should be editable only if the *previous version*
+                // of the paper allowed the edit.
                 $pj->{$o->json_key()} = $o->parse_qreq($this->prow, $qreq);
             }
         }
