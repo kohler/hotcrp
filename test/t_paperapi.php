@@ -916,4 +916,42 @@ class PaperAPI_Tester {
         xassert_assign($this->u_chair, "action,paper,user\nadministrator,{$pid},none\n");
         MailChecker::clear();
     }
+
+    function test_contacts_no_privilege_escalation() {
+        // Regression: a non-author, non-manager user must not be able to make
+        // themselves a contact-author of someone else's paper via POST /api/paper.
+        // A contacts-only (or even no-op) save skipped the edit-permission gate
+        // and `_check_contacts_last` auto-added the saving user as a contact-
+        // author — granting paper edit and author-view of reviews on a paper
+        // they don't own, even past the submission deadline.
+        $conf = $this->conf;
+        $pid = 2;
+        $attacker = $this->u_estrin; // PC, not author/contact/manager of paper 2
+        $prow = $conf->checked_paper_by_id($pid);
+        xassert($attacker->isPC);
+        xassert(!$attacker->can_manage($prow));
+        xassert(!$prow->has_author($attacker));
+        xassert(!$attacker->can_edit_paper($prow));
+        xassert_eqq($prow->conflict_type($attacker) & CONFLICT_CONTACTAUTHOR, 0);
+        // a legitimate contact exists and must survive
+        xassert(($prow->conflict_type($this->u_micke) & CONFLICT_CONTACTAUTHOR) !== 0);
+
+        // (a) a no-op save must not escalate the saver to contact-author
+        call_api_result("=paper", $attacker, TestQreq::post_json(["pid" => $pid], ["p" => $pid]));
+        $conf->invalidate_caches([]);
+        $prow = $conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->conflict_type($attacker) & CONFLICT_CONTACTAUTHOR, 0);
+        xassert(!$attacker->can_edit_paper($prow));
+
+        // (b) explicitly naming self as a contact must also be refused
+        call_api_result("=paper", $attacker,
+            TestQreq::post_json(["pid" => $pid, "contacts" => [$attacker->email => true]], ["p" => $pid]));
+        $conf->invalidate_caches([]);
+        $prow = $conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->conflict_type($attacker) & CONFLICT_CONTACTAUTHOR, 0);
+        xassert(!$attacker->can_edit_paper($prow));
+
+        // (c) the legitimate contact must be untouched by the unauthorized saves
+        xassert(($prow->conflict_type($this->u_micke) & CONFLICT_CONTACTAUTHOR) !== 0);
+    }
 }
