@@ -1,7 +1,7 @@
 [
-	{
-		"name": "test01",
-		"members": [
+    {
+        "name": "test01",
+        "members": [
             "fresh_db", "Permission_Tester", "Tags_Tester", "Tracks_Tester",
             "Banners_Tester", "Session_Tester"
         ]
@@ -47,8 +47,8 @@
         ]
     },
     {
-    	"name": "test07",
-    	"members": [
+        "name": "test07",
+        "members": [
             "DiffMatchPatch_Tester"
         ]
     },
@@ -75,8 +75,8 @@
         ]
     },
     {
-    	"name": "default",
-    	"members": [
+        "name": "default",
+        "members": [
             "test01", "test02", "test03", "test04", "test05", "test06",
             "test07", "(", "if_all", "test08", ")", "test09"
         ]
