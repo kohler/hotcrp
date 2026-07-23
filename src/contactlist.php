@@ -49,15 +49,16 @@ class ContactList {
     private $has_flags = 0;
     /** @var Tagger */
     private $tagger;
+    /** @var string */
     private $limit;
+    /** @var ?list<int> */
+    private $_user_filter;
     public $have_folds = [];
     private $qopt = [];
     /** @var array<int,Column> */
     private $_columns = [];
     /** @var array<int,string> */
     private $_fold_names = [];
-    /** @var PaperInfoSet */
-    private $_rowset;
     /** @var array<int,list<int>> */
     private $_au_data;
     /** @var array<int,bool> */
@@ -138,6 +139,14 @@ class ContactList {
         if ($this->qreq->selectall) {
             $this->_select_all = true;
         }
+    }
+
+    /** @param ?list<int> $uids
+     * @return $this */
+    function set_user_filter($uids) {
+        assert($this->limit === null);
+        $this->_user_filter = $uids;
+        return $this;
     }
 
     /** @param string $name
@@ -545,9 +554,8 @@ class ContactList {
         }
         if ($this->reverseSort) {
             return array_reverse($rows);
-        } else {
-            return $rows;
         }
+        return $rows;
     }
 
     /** @param int $fieldId
@@ -576,15 +584,13 @@ class ContactList {
         case self::FIELD_REVIEWS:
             if ($this->limit === "extsub") {
                 return "Completed reviews";
-            } else {
-                return '<span class="hastitle" title="“1/2” means 1 complete review out of 2 assigned reviews">Reviews</span>';
             }
+            return '<span class="hastitle" title="“1/2” means 1 complete review out of 2 assigned reviews">Reviews</span>';
         case self::FIELD_INCOMPLETE_REVIEWS:
             if ($this->limit === "extrev-not-accepted") {
                 return "Outstanding review requests";
-            } else {
-                return "Incomplete reviews";
             }
+            return "Incomplete reviews";
         case self::FIELD_LEADS:
             return "Leads";
         case self::FIELD_SHEPHERDS:
@@ -600,10 +606,9 @@ class ContactList {
                 return "Rejected submissions";
             } else if ($this->limit === "auuns") {
                 return "Incomplete submissions";
-            } else {
-                assert($this->limit === "au" || $this->limit === "all");
-                return "Submissions";
             }
+            assert($this->limit === "au" || $this->limit === "all");
+            return "Submissions";
         case self::FIELD_REVIEW_PAPERS:
             return "Assigned submissions";
         case self::FIELD_TAGS:
@@ -1060,10 +1065,73 @@ class ContactList {
         return $cols;
     }
 
-    /** @return list<Column> */
-    private function list_columns($listname) {
-        $this->limit = $listname;
+    /** @param string $listname
+     * @return bool */
+    static function can_view_list(Contact $viewer, $listname) {
+        if (str_starts_with($listname, "#")) {
+            return $viewer->can_view_pc()
+                && strlen($listname) > 1
+                && $viewer->can_view_user_tag(substr($listname, 1));
+        }
         switch ($listname) {
+        case "pc":
+            return $viewer->can_view_pc();
+        case "admin":
+        case "pcadmin":
+        case "pcadminx":
+            return $viewer->isPC && $viewer->can_view_pc();
+        case "re":
+        case "ext":
+        case "extsub":
+        case "extrev-not-accepted":
+            return $viewer->is_manager()
+                || ($viewer->isPC
+                    && $viewer->conf->setting("viewrev") > 0);
+        case "req":
+            return $viewer->isPC;
+        case "au":
+            return $viewer->is_manager()
+                || ($viewer->isPC
+                    && $viewer->conf->submission_blindness() !== Conf::BLIND_ALWAYS);
+        case "auacc":
+            return $viewer->is_manager()
+                || ($viewer->isPC
+                    && $viewer->can_view_some_decision()
+                    && $viewer->can_view_some_authors());
+        case "aurej":
+            return $viewer->is_manager()
+                || ($viewer->isPC
+                    && $viewer->can_view_some_decision()
+                    && $viewer->conf->submission_blindness() !== Conf::BLIND_ALWAYS);
+        case "auuns":
+            return $viewer->is_manager();
+        case "all":
+            return $viewer->privChair;
+        default:
+            return false;
+        }
+    }
+
+    /** @return list<Column> */
+    private function resolve_list_columns($listname) {
+        if (!self::can_view_list($this->user, $listname)) {
+            return [];
+        }
+        $this->qopt = [];
+        if (isset($this->_user_filter)) {
+            $this->qopt["where"][] = "contactId" . sql_in_int_list($this->_user_filter);
+        }
+        if (str_starts_with($listname, "#")) {
+            if (strcasecmp($listname, "#pc") === 0) {
+                $listname = "pc";
+            } else {
+                $x = sqlq(Dbl::escape_like(substr($listname, 1)));
+                $this->qopt["where"][] = "(contactTags like " . Dbl::utf8ci("'% {$x}#%'") . ")";
+                $listname = $this->user->isPC ? "pcadmin" : "pc";
+            }
+        }
+        $this->limit = $listname;
+        switch ($this->limit) {
         case "pc":
         case "admin":
         case "pcadmin":
@@ -1143,14 +1211,12 @@ class ContactList {
             . "</tfoot>\n";
     }
 
+    /** @return list<Contact> */
     function _rows() {
         // Collect paper data first
         $this->collect_paper_data();
 
-        $mainwhere = [];
-        if (isset($this->qopt["where"])) {
-            $mainwhere[] = $this->qopt["where"];
-        }
+        $mainwhere = $this->qopt["where"] ?? [];
         if ($this->limit == "pc") {
             $mainwhere[] = "roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
         } else if ($this->limit == "admin") {
@@ -1182,7 +1248,6 @@ class ContactList {
         }
         if (isset($this->qopt["preferences"]) && $this->user->isPC) {
             $this->_pref_data = [];
-            $uids = [];
             if ($this->user->can_view_pc()) {
                 foreach ($rows as $row) {
                     $this->_pref_data[$row->contactId] = 0;
@@ -1213,19 +1278,10 @@ class ContactList {
     }
 
     function print_table_html($listname, $url, $listtitle = "", $foldsession = null) {
-        // PC tags
-        $listquery = $listname;
-        $this->qopt = [];
-        if (str_starts_with($listname, "#")) {
-            $x = sqlq(Dbl::escape_like(substr($listname, 1)));
-            $this->qopt["where"] = "(contactTags like " . Dbl::utf8ci("'% {$x}#%'") . ")";
-            $listquery = "pcadmin";
-        }
-
-        // get paper list
-        $columns = $this->list_columns($listquery);
+        // resolve columns
+        $columns = $this->resolve_list_columns($listname);
         if (empty($columns)) {
-            echo Ht::feedback_msg(MessageItem::error("<0>User set ‘{$listquery}’ not found"));
+            echo Ht::feedback_msg(MessageItem::error("<0>User set ‘{$listname}’ not found"));
             return;
         }
 
@@ -1285,7 +1341,7 @@ class ContactList {
 
         $anyData = [];
         $bodyrows = [];
-        $extrainfo = $hascolors = false;
+        $hascolors = false;
         $ids = [];
         foreach ($srows as $row) {
             if (($this->limit == "resub" || $this->limit == "extsub")
@@ -1460,23 +1516,14 @@ class ContactList {
         return ob_get_clean();
     }
 
-    function rows($listname) {
-        // PC tags
-        $this->qopt = [];
-        if (str_starts_with($listname, "#")) {
-            $x = sqlq(Dbl::escape_like(substr($listname, 1)));
-            $this->qopt["where"] = "(contactTags like " . Dbl::utf8ci("'% {$x}#%'") . ")";
-            $listname = "pc";
+    /** @return list<Contact> */
+    function sorted_users($listname) {
+        if (!$this->resolve_list_columns($listname)) {
+            return [];
         }
-
-        // get paper list
-        if (!$this->list_columns($listname)) {
-            $this->conf->error_msg("<0>User list ‘{$listname}’ not found");
-            return null;
-        }
-
-        // run query
-        return $this->_rows();
+        $users = $this->_rows();
+        usort($users, $this->conf->user_comparator());
+        return $users;
     }
 
     /** @param string $field

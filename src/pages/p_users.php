@@ -10,8 +10,8 @@ class Users_Page {
     /** @var Qrequest */
     public $qreq;
     /** @var array<string,string|array{label:string}> */
-    public $limits;
-    /** @var list<int> */
+    public $limits = [];
+    /** @var ?list<int> */
     private $papersel;
 
     function __construct(Contact $viewer, Qrequest $qreq) {
@@ -21,70 +21,52 @@ class Users_Page {
         }
         $this->viewer = $viewer;
         $this->qreq = $qreq;
-        $this->papersel = SearchSelection::make($qreq)->selection();
-
-        $this->limits = [];
-        if ($viewer->can_view_pc()) {
-            $this->limits["pc"] = "Program committee";
+        if (isset($qreq->pap) && $qreq->pap !== "all") {
+            $this->papersel = SearchSelection::make($qreq, null, "pap")->selection();
         }
+
+        $this->add_limit("pc", "Program committee");
         foreach ($this->conf->viewable_user_tags($viewer) as $t) {
             if ($t !== "pc")
-                $this->limits["#{$t}"] = ["optgroup" => "PC tags", "label" => "#{$t} program committee"];
+                $this->add_limit("#{$t}", ["optgroup" => "PC tags", "label" => "#{$t} program committee"]);
         }
-        if ($viewer->isPC
-            && $viewer->can_view_pc()) {
-            $this->limits["admin"] = "System administrators";
-            $this->limits["pcadmin"] = ["label" => "PC and system administrators", "exclude" => true];
-        }
-        if ($viewer->is_manager()
-            || ($viewer->isPC && $this->conf->setting("viewrev") > 0)) {
-            $this->limits["re"] = "All reviewers";
-            $this->limits["ext"] = "External reviewers";
-            $this->limits["extsub"] = "External reviewers who completed a review";
-            $this->limits["extrev-not-accepted"] = "External reviewers with outstanding requests";
-        }
-        if ($viewer->isPC) {
-            $this->limits["req"] = ["label" => "External reviewers you requested", "exclude" => !$viewer->is_requester()];
-        }
-        if ($viewer->is_manager()
-            || ($viewer->isPC
-                && $this->conf->submission_blindness() !== Conf::BLIND_ALWAYS)) {
-            $this->limits["au"] = "Contact authors of submitted papers";
-        }
-        if ($viewer->is_manager()
-            || ($viewer->isPC
-                && $viewer->can_view_some_decision()
-                && $viewer->can_view_some_authors())) {
-            $this->limits["auacc"] = ["label" => "Contact authors of accepted papers", "exclude" => !$this->conf->has_any_accepted()];
-        }
-        if ($viewer->is_manager()
-            || ($viewer->isPC
-                && $viewer->can_view_some_decision()
-                && $this->conf->submission_blindness() !== Conf::BLIND_ALWAYS)) {
-            $this->limits["aurej"] = "Contact authors of rejected papers";
-        }
-        if ($viewer->is_manager()) {
-            $this->limits["auuns"] = "Contact authors of non-submitted papers";
-        }
-        if ($viewer->privChair) {
-            $this->limits["all"] = "Active users";
+        $this->add_limit("admin", "System administrators");
+        $this->add_limit("pcadmin", ["label" => "PC and system administrators", "exclude" => true]);
+        $this->add_limit("re", "All reviewers");
+        $this->add_limit("ext", "External reviewers");
+        $this->add_limit("extsub", "External reviewers who completed a review");
+        $this->add_limit("extrev-not-accepted", "External reviewers with outstanding requests");
+        $this->add_limit("req", ["label" => "External reviewers you requested", "exclude" => !$viewer->is_requester()]);
+        $this->add_limit("au", "Contact authors of submitted papers");
+        $this->add_limit("auacc", ["label" => "Contact authors of accepted papers", "exclude" => !$this->conf->has_any_accepted()]);
+        $this->add_limit("aurej", "Contact authors of rejected papers");
+        $this->add_limit("auuns", "Contact authors of non-submitted papers");
+        $this->add_limit("all", "Active users");
+    }
+
+    /** @param string $name
+     * @param string|array $value */
+    private function add_limit($name, $value) {
+        if (ContactList::can_view_list($this->viewer, $name)) {
+            $this->limits[$name] = $value;
         }
     }
 
 
+    /** @return list<Contact> */
+    function selected_users() {
+        // `papersel` is a raw client-supplied selection, so it must not bypass
+        // the listing's visibility filter
+        return (new ContactList($this->viewer, false, $this->qreq))
+            ->set_user_filter($this->papersel)
+            ->sorted_users($this->qreq->t);
+    }
+
     /** @return bool */
     private function handle_nameemail() {
-        $result = $this->conf->qe("select * from ContactInfo where contactId?a", $this->papersel);
-        $users = [];
-        while (($user = Contact::fetch($result, $this->conf))) {
-            $users[] = $user;
-        }
-        Dbl::free($result);
-        usort($users, $this->conf->user_comparator());
-
         $texts = [];
         $has_country = $has_orcid = false;
-        foreach ($users as $u) {
+        foreach ($this->selected_users() as $u) {
             $texts[] = $line = [
                 "given_name" => $u->firstName,
                 "family_name" => $u->lastName,
@@ -107,16 +89,9 @@ class Users_Page {
         return true;
     }
 
-
     /** @return bool */
     private function handle_pcinfo() {
-        $result = $this->conf->qe("select * from ContactInfo where contactId?a", $this->papersel);
-        $users = [];
-        while (($user = Contact::fetch($result, $this->conf))) {
-            $users[] = $user;
-        }
-        Dbl::free($result);
-        usort($users, $this->conf->user_comparator());
+        $users = $this->selected_users();
         Contact::load_topic_interests($users);
 
         // NB This format is expected to be parsed by profile.php's bulk upload.
@@ -214,7 +189,6 @@ class Users_Page {
             ->append($people)->emit();
         return true;
     }
-
 
     /** @return bool */
     private function handle_modify() {
@@ -376,14 +350,12 @@ class Users_Page {
         $qreq = $this->qreq;
         if ($qreq->fn === "get"
             && $qreq->getfn === "nameemail") {
-            return !empty($this->papersel)
-                && $this->viewer->isPC
+            return $this->viewer->isPC
                 && $this->handle_nameemail();
         }
         if ($qreq->fn === "get"
             && $qreq->getfn === "pcinfo") {
-            return !empty($this->papersel)
-                && $this->viewer->privChair
+            return $this->viewer->privChair
                 && $this->handle_pcinfo();
         }
         if ($qreq->fn === "modify") {
