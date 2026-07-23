@@ -1136,7 +1136,7 @@ final class PaperStatus extends MessageSet {
         }
         if (($s = $qreq["if_unmodified_since"] ?? null) !== null) {
             $s = is_string($s) && ctype_digit($s) ? intval($s) : $s;
-            $pj->if_unmodified_since = $s;
+            $pjs->if_unmodified_since = $s;
         } else if (($s = $qreq["status:if_unmodified_since"]) !== null) {
             $s = is_string($s) && ctype_digit($s) ? intval($s) : $s;
             $pjs->if_unmodified_since = $s;
