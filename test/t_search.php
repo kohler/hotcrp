@@ -296,6 +296,37 @@ class Search_Tester {
         xassert_eqq($tas[1]->heading, "ss:bar OR #baaar");
     }
 
+    function test_namedsearch_evaluates_in_caller_context() {
+        // A shared saved search executes in the CALLING user's context, not the
+        // owner's: a personal `~tag` in the definition resolves to the caller's
+        // own tag, so no saving-user state leaks into another user's results
+        // (only the definition text is shared). Invariant, not policy.
+        $before = $this->conf->setting_data("named_searches");
+        $a = $this->conf->checked_user_by_email("marina@poema.ru");
+        $b = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($a->isPC && $b->isPC && $a->contactId !== $b->contactId);
+
+        xassert_assign($a, "paper,tag\n1,~sscx\n");
+        xassert_assign($b, "paper,tag\n2,~sscx\n");
+        $this->conf->invalidate_caches(["tags" => true]);
+        // `a` saves a global search whose body is the personal tag "#~sscx"
+        $this->conf->save_setting("named_searches", 1,
+            json_encode([(object) ["name" => "sscx", "q" => "#~sscx", "owner" => $a->contactId]]));
+        $this->conf->load_settings();
+
+        xassert_search($a, "ss:sscx", "1");   // a's own ~sscx (paper 1)
+        xassert_search($b, "ss:sscx", "2");   // b's own ~sscx (paper 2), NOT paper 1
+
+        if ($before === null) {
+            $this->conf->save_setting("named_searches", null);
+        } else {
+            $this->conf->save_setting("named_searches", 1, $before);
+        }
+        $this->conf->load_settings();
+        $this->conf->qe("delete from PaperTag where tag like '%~sscx'");
+        $this->conf->invalidate_caches(["tags" => true]);
+    }
+
     function test_sensitive_search_rate_limit() {
         $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
         xassert($u->contactId > 0);
