@@ -182,6 +182,37 @@ class SubmissionRound_Tester {
         xassert_search($this->u_estrin, "#R2", $r2);
     }
 
+    function test_pc_cannot_change_sclass_tag() {
+        // a submission-class tag determines a paper's submission round,
+        // so a PC member must not be able to add or remove it
+        $p_main = $this->conf->checked_paper_by_id($this->pid_main);
+        $p_other = $this->conf->checked_paper_by_id($this->pid_other);
+        xassert(!$this->u_mgbaker->can_edit_tag($p_main, "R2", null, 0));
+        xassert(!$this->u_mgbaker->can_edit_tag($p_other, "R2", 0, null));
+        xassert(!$this->u_mgbaker->can_edit_tag_somewhere("R2"));
+
+        // ...not by assignment, either
+        xassert_assign_fail($this->u_mgbaker, "paper,action,tag\n{$this->pid_main},tag,R2\n");
+        xassert_assign_fail($this->u_mgbaker, "paper,action,tag\n{$this->pid_other},tag,-R2\n");
+
+        // the papers' submission rounds are unchanged
+        $p_main = $this->conf->checked_paper_by_id($this->pid_main);
+        xassert(!$p_main->has_tag("R2"));
+        xassert($p_main->submission_round()->unnamed);
+        $p_other = $this->conf->checked_paper_by_id($this->pid_other);
+        xassert($p_other->has_tag("R2"));
+        xassert_eqq($p_other->submission_round()->tag, "R2");
+
+        // the chair can change the submission class
+        xassert($this->u_chair->can_edit_tag($p_main, "R2", null, 0));
+        xassert_assign($this->u_chair, "paper,action,tag\n{$this->pid_main},tag,R2\n");
+        $p_main = $this->conf->checked_paper_by_id($this->pid_main);
+        xassert_eqq($p_main->submission_round()->tag, "R2");
+        xassert_assign($this->u_chair, "paper,action,tag\n{$this->pid_main},tag,-R2\n");
+        $p_main = $this->conf->checked_paper_by_id($this->pid_main);
+        xassert($p_main->submission_round()->unnamed);
+    }
+
     function test_round_deadline_behavior() {
         $sr = $this->conf->submission_round_by_tag("R2");
         // both deadlines are in the future: registration and submission open

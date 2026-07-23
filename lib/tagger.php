@@ -1354,7 +1354,7 @@ class TagMap {
         if ($conf->has_named_submission_rounds()) {
             foreach ($conf->submission_round_list() as $sr) {
                 if ($sr->tag !== "") {
-                    $this->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_PC_PUBLIC);
+                    $this->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_PC_PUBLIC | TagInfo::TF_READONLY);
                 }
             }
         }
