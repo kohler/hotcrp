@@ -62,7 +62,8 @@ class Revpref_ListAction extends ListAction {
         ];
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
-            if ($not_me && !$user->allow_admin($prow)) {
+            // own preferences require view access, others' require administration
+            if ($not_me ? !$user->allow_admin($prow) : !$user->can_view_paper($prow)) {
                 continue;
             }
             $item = ["paper" => $prow->paperId, "title" => $prow->title];

@@ -1026,6 +1026,35 @@ class Permission_Tester {
         xassert_search($this->u_chair, "re:external@_.com", "2 3");
     }
 
+    function test_revpref_get_respects_paper_visibility() {
+        // Exporting one's own review preferences must not leak the content of
+        // papers the exporter cannot view
+        $user = $this->u_marina;
+        xassert($user->isPC);
+        xassert(!$user->is_manager());
+
+        $p3 = $this->conf->checked_paper_by_id(3);
+        $title3 = $p3->title;
+        $sub3 = $p3->timeSubmitted;
+        // withdraw paper 3 -> a non-manager PC member can no longer view it
+        $this->conf->qe("update Paper set timeWithdrawn=?, timeSubmitted=? where paperId=3", 100, -100);
+        $this->conf->invalidate_caches(["paper" => true]);
+        xassert(!$user->can_view_paper($this->conf->checked_paper_by_id(3)));
+
+        $la = new Revpref_ListAction($this->conf, (object) ["name" => "get/revprefx"]);
+        $ssel = new SearchSelection([1, 3]);
+        $qreq = TestQreq::get(["reviewer" => $user->email]);
+        $csv = $la->run_get($user, $qreq, $ssel, $user, true)->unparse();
+        // paper 1 is present, but the hidden paper 3's title must not leak
+        xassert_str_contains($csv, "Scalable Timers");
+        xassert(!str_contains($csv, $title3));
+        xassert(!preg_match('/^3,/m', $csv));
+
+        // restore paper 3
+        $this->conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=? where paperId=3", $sub3);
+        $this->conf->invalidate_caches(["paper" => true]);
+    }
+
     function test_assign_administrator() {
         xassert_search($this->u_chair, "has:admin", "");
         xassert_search($this->u_chair, "conflict:me", "");
