@@ -1072,7 +1072,7 @@ final class PaperStatus extends MessageSet {
         $this->paperId = $this->saved_prow = $this->title = null;
         $this->_fdiffs = $this->_reset_fields = $this->_xdiffs = [];
         $this->_submitted_problem_fields = null;
-        if ($this->prow->timeSubmitted > 0) {
+        if ($prow->timeSubmitted > 0) {
             $this->_prepare_submitted_problem_fields();
         }
         $this->_unknown_fields = $this->_resave_fields = null;
@@ -1089,7 +1089,7 @@ final class PaperStatus extends MessageSet {
             $this->_save_status |= self::SSF_ADMIN_UPDATE;
         }
         if (!$prow->is_new()) {
-            if ($this->user->edit_paper_state($this->prow) === 2) {
+            if ($this->user->edit_paper_state($prow) === 2) {
                 $this->_save_status |= self::SSF_FINAL_PHASE;
             }
             return true;

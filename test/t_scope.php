@@ -25,6 +25,18 @@ class Scope_Tester {
         $this->p2 = $conf->checked_paper_by_id(2);
     }
 
+    function test_oidc_scope_grants_no_api_access() {
+        // An OIDC/identity-only scope must confer NO API access (fail closed),
+        // not collapse to null (== unrestricted, full access).
+        $u = clone $this->u_chair;
+        $u->set_scope("profile");
+        xassert(!$u->scope_allows(TokenScope::S_SUB_WRITE));
+        xassert(!$u->scope_allows(TokenScope::S_TAG_ADMIN));
+        // empty scope is still full access (intended)
+        $u->set_scope();
+        xassert($u->scope_allows(TokenScope::S_SUB_WRITE));
+    }
+
     function test_view_scopes() {
         xassert_search($this->u_chair, "1-18", "1-18");
         xassert_search($this->u_chair, "re:3", "1-18");
