@@ -1356,8 +1356,8 @@ class FormulaCompiler {
     /** @var Tagger
      * @readonly */
     public $tagger;
-    /** @var array<string,string> */
-    private $gvar;
+    /** @var array<string,true> */
+    private $defined;
     /** @var list<string> */
     private $g0stmt;
     /** @var list<string> */
@@ -1409,7 +1409,7 @@ class FormulaCompiler {
     }
 
     function clear() {
-        $this->gvar = $this->g0stmt = $this->gstmt = $this->lstmt = [];
+        $this->defined = $this->g0stmt = $this->gstmt = $this->lstmt = [];
         $this->index_type = Fexpr::IDX_NONE;
         $this->indexed = false;
         $this->_lprefix = 0;
@@ -1422,12 +1422,19 @@ class FormulaCompiler {
 
     /** @param string $gvar
      * @return bool */
-    function check_gvar($gvar) {
-        if ($this->gvar[$gvar] ?? false) {
+    function ensure_defined($gvar) {
+        if ($this->defined[$gvar] ?? false) {
             return false;
         }
-        $this->gvar[$gvar] = $gvar;
+        $this->defined[$gvar] = true;
         return true;
+    }
+
+    /** @param string $gvar
+     * @return bool
+     * @deprecated */
+    function check_gvar($gvar) {
+        return $this->ensure_defined($gvar);
     }
 
     /** @param string $name
@@ -1439,16 +1446,16 @@ class FormulaCompiler {
         } else {
             $name = $name[0] === "$" ? $name : '$' . $name;
         }
-        if (!isset($this->gvar[$name])) {
+        if (!isset($this->defined[$name])) {
+            $this->defined[$name] = true;
             $this->gstmt[] = "{$name} = {$expr};";
-            $this->gvar[$name] = $name;
         }
         return $name;
     }
 
     /** @return string */
     function _add_pc() {
-        if ($this->check_gvar('$pc')) {
+        if ($this->ensure_defined('$pc')) {
             $this->gstmt[] = "\$pc = \$formula->conf->pc_members();";
         }
         return '$pc';
@@ -1456,7 +1463,7 @@ class FormulaCompiler {
 
     /** @return string */
     function _add_vreviews() {
-        if ($this->check_gvar('$vreviews')) {
+        if ($this->ensure_defined('$vreviews')) {
             $this->queryOptions["reviewSignatures"] = true;
             $this->gstmt[] = "\$vreviews = " . $this->_prow() . "->viewable_reviews_as_display(\$user);";
         }
@@ -1470,7 +1477,7 @@ class FormulaCompiler {
             $this->_lflags |= self::LFLAG_PREFERENCES;
             return "\$preferences_{$this->_lprefix}";
         }
-        if ($this->check_gvar('$preferences')) {
+        if ($this->ensure_defined('$preferences')) {
             $prow = $this->_prow();
             $this->gstmt[] = "\$preferences = \$user->can_view_preference({$prow}) ? {$prow}->preferences() : [];";
         }
@@ -1479,7 +1486,7 @@ class FormulaCompiler {
 
     /** @return string */
     function _add_conflict_types() {
-        if ($this->check_gvar('$conflict_types')) {
+        if ($this->ensure_defined('$conflict_types')) {
             $this->queryOptions["allConflictType"] = true;
             $prow = $this->_prow();
             $this->gstmt[] = "\$conflict_types = \$user->can_view_conflicts({$prow}) ? {$prow}->conflict_types() : [];";
@@ -1489,7 +1496,7 @@ class FormulaCompiler {
 
     /** @return string */
     function _add_tags() {
-        if ($this->check_gvar('$tags')) {
+        if ($this->ensure_defined('$tags')) {
             $this->queryOptions["tags"] = true;
             $this->gstmt[] = "\$tags = " . $this->_prow() . "->searchable_tags(\$user);";
         }
@@ -1498,7 +1505,7 @@ class FormulaCompiler {
 
     /** @return string */
     function _add_pc_set_private_tag() {
-        if ($this->check_gvar('$tag_pc')) {
+        if ($this->ensure_defined('$tag_pc')) {
             $tags = $this->_add_tags();
             $pc = $this->_add_pc();
             $this->gstmt[] = "\$tag_pc = [];";
@@ -1516,7 +1523,7 @@ class FormulaCompiler {
     /** @return string */
     function _add_option_value(PaperOption $o) {
         $n = '$ov_' . ($o->id < 0 ? "m" . -$o->id : $o->id);
-        if ($this->check_gvar($n)) {
+        if ($this->ensure_defined($n)) {
             $this->queryOptions["options"] = true;
             $this->gstmt[] = "{$n} = " . $this->_prow() . "->option({$o->id});";
             $this->gstmt[] = "if ({$n} && !\$user->can_view_option(" . $this->_prow() . ", {$n}->option)) {";
@@ -1533,7 +1540,7 @@ class FormulaCompiler {
 
     /** @return string */
     function _add_decision() {
-        if ($this->check_gvar('$decision')) {
+        if ($this->ensure_defined('$decision')) {
             $prow = $this->_prow();
             $this->gstmt[] = "\$decision = \$user->can_view_decision({$prow}) ? {$prow}->outcome : 0;";
         }
@@ -1542,7 +1549,7 @@ class FormulaCompiler {
 
     /** @return string */
     function _add_primary_document() {
-        if ($this->check_gvar('$primary_document')) {
+        if ($this->ensure_defined('$primary_document')) {
             $prow = $this->_prow();
             $this->gstmt[] = "\$primary_document = {$prow}->viewable_primary_document(\$user);";
         }
@@ -1594,6 +1601,22 @@ class FormulaCompiler {
         return "\$rrow_{$this->_lprefix}";
     }
 
+    /** @return string */
+    function _rrow_meta_viewable() {
+        $rrow = $this->_rrow();
+        $mv = "{$rrow}_meta_viewable";
+        if ($this->ensure_defined($mv)) {
+            $expr = "{$rrow} && \$user->can_view_review_meta(\$prow, {$rrow})";
+            if ($this->index_type === Fexpr::IDX_NONE
+                || $this->index_type === Fexpr::IDX_MY) {
+                $this->define_gvar($mv, $expr);
+            } else {
+                $this->lstmt[] = "{$mv} = {$expr};";
+            }
+        }
+        return $mv;
+    }
+
     /** @param bool $submitted
      * @return string */
     function _rrow_view_score_bound($submitted) {
@@ -1618,14 +1641,14 @@ class FormulaCompiler {
         if (!in_array($f, $this->queryOptions["scores"] ?? [], true)) {
             $this->queryOptions["scores"][] = $f;
         }
-        if ($this->check_gvar('$ensure_score_' . $f->short_id)) {
+        if ($this->ensure_defined('$ensure_score_' . $f->short_id)) {
             $this->g0stmt[] = $this->_prow() . '->ensure_review_field_order(' . $f->order . ');';
         }
     }
 
     function _ensure_review_word_counts() {
         $this->queryOptions["reviewWordCounts"] = true;
-        if ($this->check_gvar('$ensure_reviewWordCounts')) {
+        if ($this->ensure_defined('$ensure_reviewWordCounts')) {
             $this->g0stmt[] = $this->_prow() . '->ensure_review_word_counts();';
         }
     }

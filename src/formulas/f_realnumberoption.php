@@ -18,7 +18,7 @@ class RealNumberOption_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $id = $this->option->id;
         $oval = "\$optvalue" . ($id < 0 ? "m" . -$id : $id);
-        if ($state->check_gvar($oval)) {
+        if ($state->ensure_defined($oval)) {
             $ovv = $state->_add_option_value($this->option);
             $fv = "floatval({$ovv}->data())";
             if ($this->option->precision) {
