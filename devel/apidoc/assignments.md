@@ -303,4 +303,5 @@ the parameters each one accepts. Use this to discover valid `autoassigner` value
 and `param` settings for [`/autoassign`](#post-autoassign).
 
 * badge featured
+* badge admin
 * response autoassigners [autoassignment_action]: Available autoassignment algorithms
