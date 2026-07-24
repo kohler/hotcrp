@@ -228,9 +228,9 @@ returned directly instead, in the same shape as a completed `/job` response.
 * badge featured
 * param autoassigner string: Name of the autoassignment algorithm to run, as listed by [`/autoassigners`](#get-autoassigners).
 * param q search_string: Search selecting the submissions to assign.
-* param t
+* param ?t search_scope
 
-    * default s
+    * default alladmin
 * param ?dry_run boolean: If true, compute and validate the assignment and report errors, but do not perform it. The computed assignment is still returned as `output`.
 * param ?minimal_dry_run boolean: Like `dry_run`, but skips extra validation passes. For example, an ordinary dry run reports potential conflicts created by the assignment; a minimal dry run does not.
 * param ?u [string]: PC members to consider for assignment; defaults to all PC members. Each value is a user search string—a user ID (`1`), an email (`kohler@g.harvard.edu`), or a tag (`#heavy`)—and may be prefixed with `-` to remove the matching users from the set.

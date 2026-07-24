@@ -1485,12 +1485,13 @@ class Limit_SearchTerm extends SearchTerm {
             break;
         case "alladmin":
         case "actadmin":
-            if ($this->user->privChair
-                || ($mttl = $this->user->managed_track_tags()) === null) {
+            if ($this->user->privChair) {
                 break;
             }
             $fx = ["Paper.managerContactId={$this->user->contactXid}"];
-            if (!empty($mttl)) {
+            if (($mttl = $this->user->managed_track_tags()) === null) {
+                // do nothing
+            } else if (!empty($mttl)) {
                 $tsm = (new TagSearchMatcher($this->user))->add_tag_list($mttl);
                 $fx[] = $tsm->exists_sqlexpr("Paper");
             }

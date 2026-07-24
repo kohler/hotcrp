@@ -68,7 +68,7 @@ class Autoassign_API {
             return JsonResult::make_missing_error("q");
         }
 
-        $qreq->t = $qreq->t ?? "s";
+        $qreq->t = $qreq->t ?? "alladmin";
         // Ouch! Must supply `=` signs because these arguments might be empty
         $argv = ["-q={$qreq->q}", "-t={$qreq->t}", "-a={$aa->name}"];
 

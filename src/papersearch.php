@@ -1724,16 +1724,14 @@ class PaperSearch extends MessageSet {
 
     /** @return list<string> */
     static function viewable_manager_limits(Contact $user) {
-        if ($user->privChair) {
-            if ($user->conf->has_any_manager()) {
-                $ts = ["alladmin", "admin", "s"];
-            } else {
-                $ts = ["s"];
-            }
-            array_push($ts, "accepted", "undecided", "all");
-        } else {
-            $ts = ["admin"];
+        if (!$user->privChair) {
+            return ["alladmin", "admin"];
         }
+        $ts = [];
+        if ($user->conf->has_any_manager()) {
+            array_push($ts, "alladmin", "admin");
+        }
+        array_push($ts, "s", "accepted", "undecided", "all");
         return $ts;
     }
 

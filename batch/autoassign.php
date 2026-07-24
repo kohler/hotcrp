@@ -72,11 +72,6 @@ class Autoassign_Batch {
         } else {
             $this->user = $conf->root_user();
         }
-        if ($this->conf->can_pc_view_some_incomplete()) {
-            $this->t = "active";
-        } else {
-            $this->t = "s";
-        }
         $this->pcc = array_keys($this->conf->pc_members());
         if ($this->_jtok) {
             try {
@@ -166,8 +161,16 @@ class Autoassign_Batch {
         $this->q = $arg["q"] ?? $this->q;
         if (isset($arg["all"])) {
             $this->t = "all";
+        } else if (isset($arg["type"])) {
+            $this->t = $arg["type"];
+        } else if (isset($this->t)) {
+            // do nothing
         } else {
-            $this->t = $arg["type"] ?? "s";
+            $this->t = "alladmin";
+        }
+        if (!$this->user->privChair
+            && !in_array($this->t, ["admin", "alladmin", "actadmin"], true)) {
+            $this->report([MessageItem::error_at("t", "<0>Invalid search scope for autoassignment `{$this->t}`")], 3);
         }
         $pcc = $this->pcc;
         if (!empty($arg["u"])) {
@@ -265,7 +268,7 @@ class Autoassign_Batch {
         $ml = $srch->message_list();
         $pids = $srch->paper_ids();
         if (empty($pids)) {
-            $ml[] = MessageItem::warning("<0>No papers match that search");
+            $ml[] = MessageItem::warning($this->conf->_("<0>No {submissions} match that search"));
             $this->report($ml, 1);
         } else if (empty($this->pcc)) {
             $ml[] = MessageItem::error("<0>No users match those requirements");
@@ -444,8 +447,8 @@ class Autoassign_Batch {
             "minimal-dry-run,unsorted-dry-run,D !",
             "autoassigner:,a: =AUTOASSIGNER !",
             "q:,search: =QUERY Use papers matching QUERY [all]",
-            "type:,t: =SCOPE Scope of search [s]",
-            "all Include all papers (default is submitted papers)",
+            "type:,t: =SCOPE Scope of search [alladmin]",
+            "all Include all papers (like `-t all`)",
             "u[],user[] =USER Include users matching USER (`-u -USER` excludes)",
             "disjoint[],X[] =USER1,USER2 Don’t coassign users",
             "count:,c: {n} =N Set `count` parameter to N",

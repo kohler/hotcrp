@@ -52,6 +52,8 @@ class Autoassign_Page {
             && $this->conf->can_pc_view_some_incomplete()) {
             $qreq->t = "all";
         }
+        // Since autoassignment can expose information about preferences,
+        // users can only search within manager limits
         $limits = PaperSearch::viewable_manager_limits($this->user);
         if (!isset($qreq->t) || !in_array($qreq->t, $limits, true)) {
             $qreq->t = $limits[0];
