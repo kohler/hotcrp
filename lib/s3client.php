@@ -428,7 +428,7 @@ class S3Client {
      * @return S3Result<?string> */
     function start_ls($prefix, $args = []) {
         $suffix = "?list-type=2&prefix=" . urlencode($prefix);
-        foreach (["max-keys", "start-after", "continuation-token"] as $k) {
+        foreach (["max-keys", "start-after", "continuation-token", "delimiter"] as $k) {
             if (isset($args[$k]))
                 $suffix .= "&{$k}=" . urlencode($args[$k]);
         }
@@ -574,22 +574,26 @@ class S3Client {
     }
 
     /** @param string $prefix
-     * @param array{max-keys?:int|string,start-after?:int|string,continuation-token?:string} $args
+     * @param array{max-keys?:int|string,start-after?:int|string,continuation-token?:string,delimiter?:string} $args
      * @return ?string */
     function ls($prefix, $args = []) {
         return $this->start_ls($prefix, $args)->finish();
     }
 
     /** @param string $prefix
-     * @param array{start-after?:int|string,max-keys?:int,continuation-token?:void} $args
+     * @param array{start-after?:int|string,max-keys?:int,continuation-token?:void,delimiter?:string} $args
      * @return Generator<SimpleXMLElement> */
     function ls_all($prefix, $args = []) {
         $max_keys = $args["max-keys"] ?? -1;
         $xml = null;
-        $xmlpos = 0;
+        $xml_contents = $xml_common_prefixes = $xmlpos = 0;
         while ($max_keys !== 0) {
-            if ($xml && $xmlpos < count($xml->Contents ?? [])) {
-                yield $xml->Contents[$xmlpos];
+            if ($xmlpos < $xml_common_prefixes) {
+                if ($xmlpos < $xml_contents) {
+                    yield $xml->Contents[$xmlpos];
+                } else {
+                    yield $xml->CommonPrefixes[$xmlpos - $xml_contents];
+                }
                 ++$xmlpos;
                 $max_keys = max($max_keys - 1, -1);
                 continue;
@@ -597,11 +601,13 @@ class S3Client {
             if ($xml && !isset($args["continuation-token"])) {
                 break;
             }
-            $args["max-keys"] = $max_keys < 0 ? 600 : min(600, $max_keys);
+            $args["max-keys"] = $max_keys < 0 ? 800 : min(800, $max_keys);
             $content = $this->ls($prefix, $args);
             $xml = new SimpleXMLElement($content);
             $xmlpos = 0;
-            if (empty($xml->Contents)
+            $xml_contents = count($xml->Contents ?? []);
+            $xml_common_prefixes = $xml_contents + count($xml->CommonPrefixes ?? []);
+            if ($xml_common_prefixes === 0
                 && (!isset($xml->KeyCount) || (string) $xml->KeyCount !== "0")) {
                 throw new Exception("Bad response from S3 List Objects");
             }
@@ -615,12 +621,14 @@ class S3Client {
     }
 
     /** @param string $prefix
-     * @param array{start-after?:int|string,max-keys?:int,continuation-token?:void} $args
+     * @param array{start-after?:int|string,max-keys?:int,continuation-token?:void,delimiter?:string} $args
      * @return Generator<string> */
     function ls_all_keys($prefix, $args = []) {
         foreach ($this->ls_all($prefix, $args) as $content) {
             if (isset($content->Key)) {
                 yield (string) $content->Key;
+            } else if (isset($content->Prefix)) {
+                yield (string) $content->Prefix;
             }
         }
     }
