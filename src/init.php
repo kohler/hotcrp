@@ -305,8 +305,7 @@ function initialize_user($qreq, $kwarg = null) {
                 $token = TokenInfo::find_from($salt, $conf, true);
             } else if (str_starts_with($salt, "hct_")) {
                 $token = TokenInfo::find_from($salt, $conf, false)
-                    ?? /* XXX backward compat */ TokenInfo::find_from("hcT_" . substr($salt, 4), $conf, true)
-                    ?? /* XXX backward compat 2 */ TokenInfo::find_from($salt, $conf, true);
+                    ?? /* XXX backward compat */ TokenInfo::find_from("hcT_" . substr($salt, 4), $conf, true);
             }
         }
         if ($token
