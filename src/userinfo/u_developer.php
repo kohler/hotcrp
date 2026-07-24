@@ -262,13 +262,13 @@ class Developer_UserInfo {
 
         $note = simplify_whitespace($us->qreq["bearer_token/new/note"] ?? "");
         if ($note !== "") {
-            $token->assign_data(["note" => $note]);
+            $token->change_data("note", $note);
         }
 
         $scope = simplify_whitespace($us->qreq["bearer_token/new/scope"] ?? "");
         if ($scope !== ""
             && preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)++\z/', $scope)) {
-            $token->assign_data(["scope" => $scope]);
+            $token->change_data("scope", $scope);
         }
     }
 
