@@ -533,7 +533,7 @@ class Autoassign_Page {
     function start_job() {
         // prepare arguments for batch autoassigner
         $qreq = $this->qreq;
-        $argv = ["-q" . $this->asel->unparse_search(), "-t" . $qreq->t];
+        $argv = ["-q=" . $this->asel->unparse_search(), "-t=" . $qreq->t];
 
         if ($qreq->pctyp === "sel") {
             $pcsel = [];
@@ -550,14 +550,14 @@ class Autoassign_Page {
             } else {
                 $pcsel = array_keys($this->conf->pc_members());
             }
-            $argv[] = "-u" . join(",", $pcsel);
+            $argv[] = "-u=" . join(",", $pcsel);
         } else if ($qreq->pctyp === "enabled") {
             $argv[] = "-uenabled";
         }
 
         if ($qreq->badpairs) {
             foreach ($this->qreq_badpairs() as $pair) {
-                $argv[] = "-X{$pair}";
+                $argv[] = "-X={$pair}";
             }
         }
 

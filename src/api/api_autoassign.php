@@ -68,14 +68,16 @@ class Autoassign_API {
             return JsonResult::make_missing_error("q");
         }
 
-        $argv = ["-q{$qreq->q}", "-t" . ($qreq->t ?? "s"), "-a{$aa->name}"];
+        $qreq->t = $qreq->t ?? "s";
+        // Ouch! Must supply `=` signs because these arguments might be empty
+        $argv = ["-q={$qreq->q}", "-t={$qreq->t}", "-a={$aa->name}"];
 
         $us = self::parse_param($qreq, "u", false);
         if ($us === null) {
             return JsonResult::make_parameter_error("u");
         }
         foreach ($us as $u) {
-            $argv[] = "-u{$u}";
+            $argv[] = "-u={$u}";
         }
 
         $disjoints = self::parse_param($qreq, "disjoint", false);
@@ -83,7 +85,7 @@ class Autoassign_API {
             return JsonResult::make_parameter_error("disjoint");
         }
         foreach ($disjoints as $dj) {
-            $argv[] = "-X{$dj}";
+            $argv[] = "-X={$dj}";
         }
 
         $params = self::parse_param($qreq, "param", true);
