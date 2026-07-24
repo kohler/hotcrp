@@ -483,10 +483,10 @@ class Authorize_Page {
     static function parse_expires_in($s, $default) {
         if ($s === "never") {
             return -1;
-        } else if (is_string($s) && preg_match('/\A(\d++\.?\d*+|\.\d++)d\z/', $s, $m)) {
-            return (int) (floatval($m[1]) * 86400);
         } else if (is_int($s)) {
             return $s;
+        } else if (is_string($s) && ($v = SettingParser::parse_duration($s)) !== null) {
+            return (int) round($v);
         }
         return $default;
     }

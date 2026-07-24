@@ -1051,6 +1051,9 @@ class Unit_Tester {
         xassert_eqq(SettingParser::parse_duration("1h15m"), 60 * 75.0);
         xassert_eqq(SettingParser::parse_duration("1h15mo"), null);
         xassert_eqq(SettingParser::parse_duration("15"), 15.0);
+        xassert_eqq(SettingParser::parse_duration("never"), -1.0);
+        xassert_eqq(SettingParser::parse_duration("none"), 0.0);
+        xassert_eqq(SettingParser::parse_duration(""), null);
     }
 
     function test_parse_preference() {

@@ -73,6 +73,22 @@ class Getopt_Tester {
         $arg = self::getopt_parse((new Getopt)->long("a:: =FOO", "b:: =BAR"),
             ["fart", "-a", "-bc"]);
         xassert_eqq(json_encode($arg), '{"a":false,"b":"c","_":[]}');
+
+        $arg = self::getopt_parse((new Getopt)->long("a:", "b", "c", "d"),
+            ["fart", "-a", "-bc", "-bd"]);
+        xassert_eqq(json_encode($arg), '{"a":"-bc","b":false,"d":false,"_":[]}');
+
+        $arg = self::getopt_parse((new Getopt)->long("a:", "b", "c", "d"),
+            ["fart", "-a=", "-bc", "-bd"]);
+        xassert_eqq(json_encode($arg), '{"a":"","b":false,"c":false,"d":false,"_":[]}');
+
+        $arg = self::getopt_parse((new Getopt)->long("a:", "b", "c", "d"),
+            ["fart", "-a=", "-b=c", "-bd"]);
+        xassert_eqq(json_encode($arg), '"`-b` takes no argument"');
+
+        $arg = self::getopt_parse((new Getopt)->long("a:", "b", "c"),
+            ["fart", "-a=", "-bc", "-bd"]);
+        xassert_eqq(json_encode($arg), '"Unknown option `-d`"');
     }
 
     function test_getopt_count() {

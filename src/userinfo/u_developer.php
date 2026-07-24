@@ -252,12 +252,11 @@ class Developer_UserInfo {
         }
 
         $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
-        if ($exp === "never") {
-            $expiry = -1;
+        if (($ndays = stonum($exp)) !== null) {
+            $expiry = (int) ($ndays * 86400);
         } else {
-            $expiry = (int) ((stonum($exp) ?? 30) * 86400);
+            $expiry = (int) round(SettingParser::parse_duration($exp) ?? 30 * 86400);
         }
-
         $token = Authorization_Token::prepare_bearer($tuser, $expiry);
         $this->_new_token = $token;
 
@@ -270,14 +269,6 @@ class Developer_UserInfo {
         if ($scope !== ""
             && preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)++\z/', $scope)) {
             $token->assign_data(["scope" => $scope]);
-        }
-
-        $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
-        if ($exp === "never") {
-            $token->set_invalid_at(0)->set_expires_at(0);
-        } else {
-            $expiry = (ctype_digit($exp) ? intval($exp) : 30) * 86400;
-            $token->set_invalid_in($expiry)->set_expires_in($expiry + 604800);
         }
     }
 

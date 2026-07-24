@@ -26,7 +26,8 @@ class Authorization_Token {
     static function prepare_bearer($user, $expires_in) {
         $tok = new TokenInfo($user->conf, TokenInfo::BEARER);
         self::set_user_token_pattern($tok, $user, "hct_[30]", "hcT_[30]");
-        self::set_expires_in($tok, $expires_in, 86400);
+        $delta = $expires_in >= 604800 ? 604800 : 86400;
+        self::set_expires_in($tok, $expires_in, $delta);
         return $tok;
     }
     /** @param Contact $user
