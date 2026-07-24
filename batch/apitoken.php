@@ -154,8 +154,14 @@ class APIToken_Batch {
         $qf = ["capabilityType=?"];
         $qv = [TokenInfo::BEARER];
         if (isset($this->token)) {
+            // bearer tokens look like `hct_...` (local) or `hcT_...` (cdb);
+            // supply the prefix if the user left it off
+            $t = $this->token;
+            if (!str_starts_with($t, "hct_") && !str_starts_with($t, "hcT_")) {
+                $t = ($is_cdb ? "hcT_" : "hct_") . $t;
+            }
             $qf[] = "salt like ?";
-            $qv[] = Dbl::escape_like($this->token) . "%";
+            $qv[] = Dbl::escape_like($t) . "%";
         }
         if ($uid !== null) {
             $qf[] = "contactId=?";
