@@ -1,6 +1,6 @@
 <?php
 // s3client.php -- helper class for S3 access papers
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class S3Client {
     const EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -90,6 +90,18 @@ class S3Client {
     function set_fixed_time($t) {
         $this->fixed_time = $t;
         return $this;
+    }
+
+    /** @param class-string<S3Result> $result_class
+     * @return $this */
+    function set_result_class($result_class) {
+        $this->result_class = $result_class;
+        return $this;
+    }
+
+    /** @return string */
+    function bucket() {
+        return $this->s3_bucket;
     }
 
     /** @param int $time

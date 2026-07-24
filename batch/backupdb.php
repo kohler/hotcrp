@@ -356,6 +356,9 @@ class BackupDB_Batch {
             $arg[$ak] = $Opt[$optk];
         }
         $this->_s3_client = new S3Client($arg);
+        if (function_exists("curl_init")) {
+            $this->_s3_client->set_result_class("CurlS3Result");
+        }
         $this->_s3_pattern = $arg["pattern"];
         return $this->_s3_client;
     }

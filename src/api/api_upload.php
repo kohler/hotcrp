@@ -576,8 +576,8 @@ class Upload_API {
         if (!$this->no_s3 && !$this->_capd->temp) {
             $s3c = $this->conf->s3_client();
         }
-        if ($s3c) {
-            //$s3c->result_class = "CurlS3Result";
+        if ($s3c && function_exists("curl_init")) {
+            $s3c->set_result_class("CurlS3Result");
         }
         while ($seg0 < $this->_capd->ranges[1]
                && min($seg1, $this->_capd->size ?? $seg1) <= $this->_capd->ranges[1]) {
