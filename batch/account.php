@@ -33,7 +33,8 @@ class Account_Batch {
         if (!isset($this->email)) {
             throw new CommandLineException("User required");
         }
-        $u = $this->conf->user_by_email($this->email);
+        $u = $this->conf->user_by_email($this->email)
+            ?? $this->conf->cdb_user_by_email($this->email);
         if (!$u) {
             throw new CommandLineException("User not found");
         }
