@@ -7725,6 +7725,8 @@ function cmt_visibility_change() {
         } else {
             form.elements.bsubmit.textContent = "Save";
         }
+        toggleClass(form.elements.bsubmit, "btn-highlight", vis.value === "au" && !!would_auvis);
+        toggleClass(form.elements.bsubmit, "btn-primary", vis.value !== "au" || !would_auvis);
         if (form.elements.blind) {
             toggleClass(form.elements.blind.closest(".checki"), "hidden", vis.value !== "au");
         }
