@@ -76,20 +76,25 @@ class PaperRequest {
             unset($qreq->q);
         }
         // check format, read reviewId into paperId
-        if (isset($qreq->paperId)
-            && !ctype_digit($qreq->paperId)
-            && $qreq->paperId !== "new") {
-            throw new FailureReason($conf, ["invalidId" => "paper", "paperId" => $qreq->paperId]);
+        if (isset($qreq->paperId)) {
+            if (is_int($qreq->paperId)) { // in tests
+                $qreq->paperId = (string) $qreq->paperId;
+            } else if (!ctype_digit($qreq->paperId)
+                       && $qreq->paperId !== "new") {
+                throw new FailureReason($conf, ["invalidId" => "paper", "paperId" => $qreq->paperId]);
+            }
         }
         if (isset($qreq->reviewId)) {
-            if (!preg_match('/\A(\d++)(|[A-Z]++|r[1-9]\d*+|rnew)\z/', $qreq->reviewId, $m)) {
+            if (is_int($qreq->reviewId)) { // in tests
+                $qreq->reviewId = (string) $qreq->reviewId;
+            } else if (!preg_match('/\A(\d++)(|[A-Z]++|r[1-9]\d*+|rnew)\z/', $qreq->reviewId, $m)) {
                 throw new FailureReason($conf, ["invalidId" => "review", "reviewId" => $qreq->reviewId]);
-            } else if ($m[2] !== "") {
-                if (!isset($qreq->paperId)) {
-                    $qreq->paperId = $m[1];
-                } else if ($qreq->paperId !== $m[1]) {
-                    throw new FailureReason($conf, ["conflictingId" => "paper", "paperId" => $qreq->paperId, "otherId" => $m[1]]);
-                }
+            } else if ($m[2] === "") {
+                // no paperId provided
+            } else if (!isset($qreq->paperId)) {
+                $qreq->paperId = $m[1];
+            } else if ($qreq->paperId !== $m[1]) {
+                throw new FailureReason($conf, ["conflictingId" => "paper", "paperId" => $qreq->paperId, "otherId" => $m[1]]);
             }
         }
     }
