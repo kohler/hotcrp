@@ -174,10 +174,9 @@ class Paper_Page {
             && $this->qreq["status:phase"] === "final";
         $this->useRequest = true;
 
+        // prepare save and check permissions
         $this->ps = new PaperStatus($this->user);
-        $prepared = $this->ps->prepare_save_paper_web($this->qreq, $this->prow);
-
-        if (!$prepared) {
+        if (!$this->ps->prepare_save_paper_web($this->qreq, $this->prow)) {
             if ($is_new && $this->qreq->has_files()) {
                 // XXX save uploaded files
                 $this->ps->prepend_item(MessageItem::error("<5><strong>Your uploaded files were ignored.</strong>"));
@@ -188,22 +187,6 @@ class Paper_Page {
                 $this->ps->prepend_item(MessageItem::error("<5><strong>Changes not saved.</strong> Please correct these issues and try again."));
             }
             $conf->feedback_msg($this->ps->decorated_message_list());
-            return;
-        }
-
-        // check deadlines
-        // NB PaperStatus also checks deadlines now; this is likely redundant.
-        $whynot = $this->user->perm_edit_paper($this->prow);
-        if ($whynot
-            && !$is_new
-            && !$is_final
-            && !count(array_diff($this->ps->change_list(), ["contacts", "status"]))) {
-            $whynot = $this->user->perm_finalize_paper($this->prow);
-        }
-        if ($whynot) {
-            $conf->feedback_msg($whynot->set("expand", true)->message_list());
-            $this->useRequest = !$is_new; // XXX used to have more complex logic
-            $this->ps->abort_save();
             return;
         }
 
