@@ -2484,7 +2484,7 @@ class PaperTable {
             }
             $reqov = $ov;
             if ($this->useRequest
-                && $this->qreq["has_{$o->formid}"]
+                && ($this->qreq["has_{$o->formid}"] || isset($this->qreq[$o->formid]))
                 && ($xov = $o->parse_qreq($this->prow, $this->qreq))) {
                 $reqov = $xov;
             }
