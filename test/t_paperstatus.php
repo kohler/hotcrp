@@ -2454,6 +2454,167 @@ Phil Porras.");
         xassert(!$this->conf->fresh_user_by_email($bad_email));
     }
 
+    function test_freeze_create_and_submit() {
+        $this->conf->save_refresh_setting("sub_freeze", 1);
+        xassert($this->conf->unnamed_submission_round()->freeze);
+
+        // The underlying model (PaperStatus) accepts a new paper that is created
+        // and submitted in a single step, via both the web and JSON paths.
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json(json_decode('{
+            "id": "new", "title": "Frozen JSON create-and-submit",
+            "abstract": "Abstract.\n",
+            "authors": [{"name": "Ethan Iverson", "email": "iverson@_.com"}],
+            "submission": {"content": "%PDF-2.0\n", "type": "application/pdf"},
+            "status": {"submitted": true}
+        }')));
+        xassert_paper_status($ps);
+        xassert($ps->paperId > 0);
+        $newpaper = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        xassert($newpaper->timeSubmitted > 0);
+
+        // The paper-edit page must accept the same one-step create-and-submit.
+        MailChecker::clear();
+        $qreq = TestQreq::post([
+            "update" => 1, "status:submit" => 1, "has_status:submit" => 1,
+            "title" => "Frozen web create-and-submit", "abstract" => "Abstract\r\n",
+            "has_authors" => "1", "authors:1:name" => "Ethan Iverson",
+            "authors:1:email" => "iverson@_.com", "has_submission" => 1
+        ])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
+        $pp = new Paper_Page($this->u_estrin, $qreq);
+        $pp->prow = PaperInfo::make_new($this->u_estrin, "");
+        $qreq->set_paper($pp->prow);
+        // On success `handle_update` redirects (throws Redirection); the bug
+        // instead aborts the save and returns without redirecting.
+        $redirected = false;
+        try {
+            $pp->handle_update();
+        } catch (Redirection $redir) {
+            $redirected = true;
+        }
+        xassert($redirected);
+        xassert($pp->ps->paperId > 0);
+        $newpaper = $this->u_estrin->checked_paper_by_id($pp->ps->paperId);
+        xassert($newpaper->timeSubmitted > 0);
+        MailChecker::clear();
+
+        $this->conf->save_refresh_setting("sub_freeze", null);
+    }
+
+    function test_post_deadline_update_render() {
+        $t0 = Conf::$now;
+        $this->conf->save_refresh_setting("sub_freeze", null);
+        $this->conf->save_refresh_setting("sub_open", 1);
+        $this->conf->save_refresh_setting("sub_sub", $t0 + 1000);
+
+        // create a draft paper while the deadline is open
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json(json_decode('{
+            "id": "new", "title": "Original title", "abstract": "Original abstract.\n",
+            "authors": [{"name": "Deborah Estrin", "email": "estrin@usc.edu"}],
+            "submission": {"content": "%PDF-2.0\n", "type": "application/pdf"},
+            "status": {"draft": true}
+        }')));
+        $pid = $ps->paperId;
+        xassert($pid > 0);
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->conflict_type($this->u_estrin) & CONFLICT_AUTHOR, CONFLICT_AUTHOR);
+
+        // advance time past the submission deadline
+        Conf::advance_current_time($t0 + 2000);
+        xassert(!$this->conf->unnamed_submission_round()->time_edit(false, true));
+        $mtime = $this->conf->checked_paper_by_id($pid)->timeModified;
+        xassert($mtime > 0 && $mtime < Conf::$now);
+
+        // author attempts to change the title after the deadline
+        MailChecker::clear();
+        $qreq = TestQreq::post_page("paper", [
+            "update" => 1, "p" => $pid, "m" => "edit", "has_authors" => 1,
+            "title" => "Sneaky post-deadline title", "abstract" => "Original abstract.\r\n",
+            "authors:1:name" => "Deborah Estrin", "authors:1:email" => "estrin@usc.edu"
+        ])->set_user($this->u_estrin);
+        // test_mode 2 routes feedback messages into the page (as in Render_Batch)
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        $rc = RenderCapture::make($qreq);
+        Navigation::$test_mode = $old_test_mode;
+        $html = Render_Batch::normalize($rc->content);
+        MailChecker::clear();
+
+        // (1) the rejected save did not modify the paper
+        xassert_eqq($this->u_estrin->checked_paper_by_id($pid)->timeModified, $mtime);
+
+        // (2) the page shows an error message blaming the deadline
+        xassert_match($html, '/class="[^"]*is-error[^"]*">[^<]*deadline/i');
+
+        // (3) post-deadline, the request is discarded: the fields show the stored
+        // value, not the attempted one. (useRequest redisplay is exercised
+        // separately, where editing is still possible.)
+        xassert_str_contains($html, "Original title");
+        xassert_not_str_contains($html, "Sneaky post-deadline title");
+
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 100);
+    }
+
+    function test_rejected_field_redisplays_request() {
+        // a whole-number submission field
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1, "sf/1/name" => "Difficulty", "sf/1/id" => "new",
+            "sf/1/order" => 100, "sf/1/type" => "numeric"
+        ]);
+        xassert($sv->execute());
+        $opt = $this->conf->options()->find("Difficulty");
+        xassert(!!$opt);
+        $fid = "opt{$opt->id}";
+
+        // deadline open so the paper is editable
+        $this->conf->save_refresh_setting("sub_open", 1);
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 1000);
+
+        // create a draft with a valid Difficulty
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
+            "title" => "Rejected-field original", "abstract" => "Original abstract.\r\n",
+            "has_authors" => 1, "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_{$fid}" => 1, $fid => "5"
+        ]), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        xassert($pid > 0);
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->option($opt->id)->value, 5);
+
+        // author submits a new title AND an invalid (non-numeric) Difficulty
+        MailChecker::clear();
+        $qreq = TestQreq::post_page("paper", [
+            "update" => 1, "p" => $pid, "m" => "edit",
+            "title" => "Rejected-field attempted title",
+            "abstract" => "Original abstract.\r\n",
+            "has_authors" => 1, "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_{$fid}" => 1, $fid => "not a number"
+        ])->set_user($this->u_estrin);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        $rc = RenderCapture::make($qreq);
+        Navigation::$test_mode = $old_test_mode;
+        $html = Render_Batch::normalize($rc->content);
+        MailChecker::clear();
+
+        // the field rejection blocked the save: nothing was stored
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->title, "Rejected-field original");
+        xassert_eqq($prow->option($opt->id)->value, 5);
+
+        // the page shows the field-level rejection
+        xassert_str_contains($html, "Whole number required");
+
+        // useRequest redisplay: the form shows the attempted values, not the
+        // stored ones, with the stored value retained as the change baseline
+        xassert_match($html, '/name="' . $fid . '"[^>]*\bvalue="not a number"/');
+        xassert_match($html, '/name="' . $fid . '"[^>]*\bdata-default-value="5"/');
+        xassert_str_contains($html, "Rejected-field attempted title");
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
