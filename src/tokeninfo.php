@@ -371,6 +371,17 @@ class TokenInfo {
     }
 
 
+    /** Return the time at which this token stops being active, or 0 if it
+     * never does. `timeInvalid` is normally the earlier time; `timeExpires`
+     * is when the token’s row is removed.
+     * @return int */
+    final function inactive_at() {
+        if ($this->timeInvalid > 0 && $this->timeExpires > 0) {
+            return min($this->timeInvalid, $this->timeExpires);
+        }
+        return $this->timeInvalid > 0 ? $this->timeInvalid : $this->timeExpires;
+    }
+
     /** @param ?int $capabilityType
      * @return bool */
     final function is_active($capabilityType = null) {

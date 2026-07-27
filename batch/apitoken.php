@@ -189,12 +189,7 @@ class APIToken_Batch {
             $f[] = "global";
         }
         $f[] = "created " . $this->conf->unparse_time_point($tok->timeCreated);
-        $expiry = 0;
-        foreach ([$tok->timeInvalid, $tok->timeExpires] as $t) {
-            if ($t > 0 && ($expiry === 0 || $t < $expiry)) {
-                $expiry = $t;
-            }
-        }
+        $expiry = $tok->inactive_at();
         if ($expiry <= 0) {
             $f[] = "never expires";
         } else if ($expiry <= Conf::$now) {
