@@ -448,9 +448,9 @@ class HotCRPMailer extends Mailer {
         if (!$tag) {
             return null;
         }
-        if ($this->sending_user
-            && !$this->sending_user->privChair
-            && !$this->sending_user->can_view_tag($this->row, $tag)) {
+        if ($this->permsender
+            && !$this->permsender->privChair
+            && !$this->permsender->can_view_tag($this->row, $tag)) {
             if ($isbool) {
                 return false;
             }
