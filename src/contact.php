@@ -2826,7 +2826,8 @@ class Contact implements JsonSerializable {
 
     /** @return HotCRPMailPreparation */
     function prepare_mail($template, $rest = []) {
-        return (new HotCRPMailer($this->conf, $this, $rest))->prepare($template, $rest);
+        return (new HotCRPMailer($this->conf->root_user(), $this, $rest))
+            ->prepare($template, $rest);
     }
 
 

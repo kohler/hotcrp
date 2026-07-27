@@ -27,7 +27,7 @@ class CleanSettings_Batch {
         if (!str_ends_with($mb, "\n")) {
             $mb .= "\n";
         }
-        $null_mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
+        $null_mailer = new HotCRPMailer($this->conf->root_user(), null, ["width" => 0]);
         $xmb = $null_mailer->expand($mb, "body");
         $dmp = new dmp\diff_match_patch;
         $diffs = [];

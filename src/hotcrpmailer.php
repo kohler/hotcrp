@@ -47,7 +47,7 @@ class HotCRPMailer extends Mailer {
     /** @var array<string,Contact|Author> */
     protected $contacts = [];
     /** @var ?Contact */
-    protected $permuser;
+    protected $permreceiver;
     /** @var ?MailRecipients */
     protected $recip_set;
 
@@ -73,8 +73,8 @@ class HotCRPMailer extends Mailer {
 
     /** @param ?Contact $recipient
      * @param array{prow?:PaperInfo,rrow?:ReviewInfo,requester_contact?:Contact,reviewer_contact?:Contact} $rest */
-    function __construct(Conf $conf, $recipient = null, $rest = []) {
-        parent::__construct($conf);
+    function __construct(Contact $permsender, $recipient = null, $rest = []) {
+        parent::__construct($permsender);
         $this->reset($recipient, $rest);
         if (isset($rest["combination_type"])) {
             $this->combination_type = $rest["combination_type"];
@@ -99,9 +99,9 @@ class HotCRPMailer extends Mailer {
         $this->rrow_unsubmitted = !!($rest["rrow_unsubmitted"] ?? false);
         $this->no_send = !!($rest["no_send"] ?? false);
         if (($rest["author_permission"] ?? false) && $this->row) {
-            $this->permuser = $this->row->author_user();
+            $this->permreceiver = $this->row->author_user();
         } else {
-            $this->permuser = $this->recipient;
+            $this->permreceiver = $this->recipient;
         }
         $this->_unexpanded_paper_keyword = null;
         // Infer reviewer contact from rrow/comment_row
@@ -134,7 +134,7 @@ class HotCRPMailer extends Mailer {
         if ($this->row
             && $this->rrow
             && $this->rrow->is_blind()
-            && !$this->permuser->can_view_review_identity($this->row, $this->rrow)) {
+            && !$this->permreceiver->can_view_review_identity($this->row, $this->rrow)) {
             if ($isbool) {
                 return false;
             } else if ($this->context == self::CONTEXT_EMAIL) {
@@ -152,9 +152,9 @@ class HotCRPMailer extends Mailer {
     }
 
     private function get_reviews() {
-        $old_overrides = $this->permuser->overrides();
+        $old_overrides = $this->permreceiver->overrides();
         if ($this->conf->_au_seerev === null) { /* assume sender wanted to override */
-            $this->permuser->add_overrides(Contact::OVERRIDE_AU_SEEREV);
+            $this->permreceiver->add_overrides(Contact::OVERRIDE_AU_SEEREV);
         }
         assert(($old_overrides & contact::OVERRIDE_CONFLICT) === 0);
 
@@ -170,7 +170,7 @@ class HotCRPMailer extends Mailer {
         foreach ($rrows as $rrow) {
             if (($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
                  || ($rrow === $this->rrow && $this->rrow_unsubmitted))
-                && $this->permuser->can_view_review($this->row, $rrow)) {
+                && $this->permreceiver->can_view_review($this->row, $rrow)) {
                 if ($text !== "") {
                     $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
                 }
@@ -178,18 +178,18 @@ class HotCRPMailer extends Mailer {
                 if ($this->no_send) {
                     $flags |= ReviewForm::UNPARSE_NO_AUTHOR_SEEN;
                 }
-                $text .= $rf->unparse_text($this->row, $rrow, $this->permuser, $flags);
+                $text .= $rf->unparse_text($this->row, $rrow, $this->permreceiver, $flags);
             }
         }
 
-        $this->permuser->set_overrides($old_overrides);
+        $this->permreceiver->set_overrides($old_overrides);
         return $text;
     }
 
     private function get_comments($tag) {
-        $old_overrides = $this->permuser->overrides();
+        $old_overrides = $this->permreceiver->overrides();
         if ($this->conf->_au_seerev === null) { /* assume sender wanted to override */
-            $this->permuser->add_overrides(Contact::OVERRIDE_AU_SEEREV);
+            $this->permreceiver->add_overrides(Contact::OVERRIDE_AU_SEEREV);
         }
         assert(($old_overrides & Contact::OVERRIDE_CONFLICT) === 0);
 
@@ -201,7 +201,7 @@ class HotCRPMailer extends Mailer {
 
         $crows = array_filter($crows, function ($crow) use ($tag) {
             return (!$tag || $crow->has_tag($tag))
-                && $this->permuser->can_view_comment($this->row, $crow);
+                && $this->permreceiver->can_view_comment($this->row, $crow);
         });
 
         $flags = ReviewForm::UNPARSE_NO_TITLE | ReviewForm::UNPARSE_TRUNCATE;
@@ -216,10 +216,10 @@ class HotCRPMailer extends Mailer {
             if ($text !== "") {
                 $text .= "\n";
             }
-            $text .= $crow->unparse_text($this->permuser, $flags);
+            $text .= $crow->unparse_text($this->permreceiver, $flags);
         }
 
-        $this->permuser->set_overrides($old_overrides);
+        $this->permreceiver->set_overrides($old_overrides);
         return $text;
     }
 
@@ -394,9 +394,9 @@ class HotCRPMailer extends Mailer {
         return $this->row->paperId;
     }
     function kw_authors($args, $isbool) {
-        if (!$this->permuser->is_root_user()
-            && !$this->permuser->can_view_authors($this->row)
-            && !$this->permuser->act_author_view($this->row)) {
+        if (!$this->permreceiver->is_root_user()
+            && !$this->permreceiver->can_view_authors($this->row)
+            && !$this->permreceiver->act_author_view($this->row)) {
             return $isbool ? false : "Hidden for anonymous review";
         }
         $t = [];
@@ -497,11 +497,11 @@ class HotCRPMailer extends Mailer {
         return !!$uf->option && $uf->option->published(FieldRender::CFMAIL);
     }
     function kw_paperfield($args, $isbool, $uf) {
-        if (!$this->permuser->can_view_option($this->row, $uf->option)
+        if (!$this->permreceiver->can_view_option($this->row, $uf->option)
             || !($ov = $this->row->option($uf->option))) {
             return $isbool ? false : "";
         }
-        $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permuser);
+        $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permreceiver);
         $uf->option->render($fr, $ov);
         if ($isbool) {
             return ($fr->value ?? "") !== "";
@@ -598,7 +598,7 @@ class HotCRPMailer extends Mailer {
             return null;
         }
         $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
-        $mailer = new HotCRPMailer($recipient->conf, $recipient, $rest);
+        $mailer = new HotCRPMailer($recipient->conf->root_user(), $recipient, $rest);
         $answer = $mailer->prepare($template, $rest);
         $recipient->set_overrides($old_overrides);
         return $answer;

@@ -105,7 +105,7 @@ class MailSender {
 
     /** @return HotCRPMailer */
     static function null_mailer(Contact $user) {
-        return new HotCRPMailer($user->conf, null, ["requester_contact" => $user, "width" => false]);
+        return new HotCRPMailer($user, null, ["requester_contact" => $user, "width" => 0]);
     }
 
     /** @param string $template
@@ -534,7 +534,6 @@ class MailSender {
         $is_authors = $this->recip->is_authors();
         $rest = [
             "requester_contact" => $this->user,
-            "sending_user" => $this->user,
             "cc" => $this->qreq->cc,
             "reply-to" => $this->qreq["reply-to"],
             "no_error_quit" => true,
@@ -542,7 +541,7 @@ class MailSender {
         ];
 
         // test whether this mail is paper-sensitive
-        $mailer = new HotCRPMailer($this->conf, $this->user, $rest);
+        $mailer = new HotCRPMailer($this->user, $this->user, $rest);
         $prep = $mailer->prepare($template, $rest);
         $paper_sensitive = preg_match('/(?:\{\{|%)[A-Z0-9]+[(}]/', $prep->subject . $prep->body);
 
@@ -565,7 +564,7 @@ class MailSender {
         }
         $need_censored_prep = !$this->user->privChair || $this->conf->opt("chairHidePasswords");
 
-        $mailer = new HotCRPMailer($this->conf);
+        $mailer = new HotCRPMailer($this->user);
         $mailer->set_recip_set($this->recip);
         $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
         $fake_prep = new HotCRPMailPreparation($this->conf, null);

@@ -6,9 +6,13 @@ class Unit_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
+    /** @var Contact
+     * @readonly */
+    public $u_root;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        $this->u_root = $conf->root_user();
     }
 
     function test_xassert_nan() {
@@ -1510,7 +1514,7 @@ class Unit_Tester {
     }
 
     function test_mailer_expand_percent() {
-        $mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
+        $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0]);
         xassert_eqq($mailer->expand("%CONFNAME%//%CONFLONGNAME%//%CONFSHORTNAME%"),
             "Test Conference I (Testconf I)//Test Conference I//Testconf I\n");
         xassert_eqq($mailer->expand("%SITECONTACT%//%ADMINEMAIL%"),
@@ -1544,7 +1548,7 @@ class Unit_Tester {
     }
 
     function test_mailer_expand_brace() {
-        $mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
+        $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0]);
         xassert_eqq($mailer->expand("{{CONFNAME}}//{{CONFLONGNAME}}//{{CONFSHORTNAME}}"),
             "Test Conference I (Testconf I)//Test Conference I//Testconf I\n");
         xassert_eqq($mailer->expand("{{SITECONTACT}}//{{ADMINEMAIL}}"),
@@ -1584,13 +1588,13 @@ class Unit_Tester {
     }
 
     function test_mailer_expand_halfbrace() {
-        $mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
+        $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0]);
         xassert_eqq($mailer->expand("{{CONFNAME%//%CONFLONGNAME}}"),
             "{{CONFNAME%//%CONFLONGNAME}}\n");
     }
 
     function test_mailer_expand_merge_space() {
-        $mailer = new HotCRPMailer($this->conf, null, ["width" => false, "reason" => ""]);
+        $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0, "reason" => ""]);
         xassert_eqq($mailer->expand("Hello\n\n{{OPT(REASON)}}\n\nGoodbye\n"),
             "Hello\n\nGoodbye\n");
         xassert_eqq($mailer->expand("Hello\n\n\n{{OPT(REASON)}}\n\nGoodbye\n"),

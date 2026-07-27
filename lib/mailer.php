@@ -14,21 +14,23 @@ class Mailer {
     public static $email_fields = ["to" => "To", "cc" => "Cc", "bcc" => "Bcc", "reply-to" => "Reply-To"];
     public static $template_fields = ["to", "cc", "bcc", "reply-to", "subject", "body"];
 
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var ?Contact */
-    public $sending_user;
+    /** @var Contact
+     * @readonly */
+    public $permsender;
     /** @var ?Contact */
     public $recipient;
     /** @var string */
     protected $eol;
 
     /** @var int */
-    protected $width;
+    protected $width = 72;
     /** @var bool */
     protected $flowed = false;
     /** @var int */
-    protected $censor;
+    protected $censor = self::CENSOR_NONE;
     /** @var ?string */
     protected $reason;
     /** @var ?string */
@@ -40,7 +42,7 @@ class Mailer {
     /** @var ?string */
     public $capability_token;
     /** @var bool */
-    protected $sensitive;
+    protected $sensitive = false;
 
     /** @var ?MailPreparation */
     protected $preparation;
@@ -60,22 +62,21 @@ class Mailer {
     /** @var bool */
     private $_was_urlparam;
 
-    /** @param ?Contact $recipient
-     * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
-    function __construct(Conf $conf, $recipient = null, $settings = []) {
-        $this->conf = $conf;
-        $this->eol = $conf->opt("postfixEOL") ?? "\r\n";
+    function __construct(Contact $permsender) {
+        $this->conf = $permsender->conf;
+        if ($permsender->privChair) {
+            $this->permsender = $this->conf->root_user();
+        } else {
+            $this->permsender = $permsender;
+        }
+        $this->eol = $this->conf->opt("postfixEOL") ?? "\r\n";
         $this->flowed = !!$this->conf->opt("mailFormatFlowed");
-        $this->reset($recipient, $settings);
     }
 
     /** @param ?Contact $recipient
      * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
-        if (array_key_exists("sending_user", $settings ?? [])) {
-            $this->sending_user = $settings["sending_user"];
-        }
         $this->width = $settings["width"] ?? 72;
         if ($this->width <= 0) {
             $this->width = 10000000;

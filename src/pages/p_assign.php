@@ -667,7 +667,7 @@ class Assign_Page {
         }
 
         // reason area
-        $null_mailer = new HotCRPMailer($this->conf);
+        $null_mailer = new HotCRPMailer($this->conf->root_user());
         $reqbody = $null_mailer->expand_template("requestreview");
         if ($reqbody && strpos($reqbody["body"], "REASON") !== false) {
             echo '<div class="f-i">',

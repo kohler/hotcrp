@@ -1856,11 +1856,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
     function test_bulk_assign_request_notify() {
         $conf = $this->conf;
         MailChecker::clear();
-        $null_mailer = new HotCRPMailer($conf, null, [
+        $null_mailer = new HotCRPMailer($this->u_chair, null, [
             "requester_contact" => $this->u_chair,
-            "sending_user" => $this->u_chair,
             "reason" => "",
-            "width" => false
+            "width" => 0
         ]);
         $tmpl = $null_mailer->expand_template("requestreview");
         xassert(!!$tmpl);
