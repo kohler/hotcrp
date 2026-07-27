@@ -22,7 +22,72 @@ class ContactDecorations {
     }
 }
 
-class Contact implements JsonSerializable {
+abstract class ContactPermissions {
+    /** @var Conf
+     * @readonly */
+    public $conf;
+    /** @var int */
+    public $contactId = 0;
+    /** @var int */
+    public $contactXid = 0;
+
+    /** @return bool */
+    abstract function is_chairlike();
+    /** @return bool */
+    abstract function is_admin(PaperInfo $prow);
+    /** @return bool */
+    abstract function implies_author_view(PaperInfo $prow);
+    /** @return bool */
+    abstract function can_view_authors(PaperInfo $prow);
+    /** @param PaperOption $opt
+     * @param 0|4 $override
+     * @return bool */
+    abstract function can_view_option(PaperInfo $prow, $opt, $override = 0);
+    /** @return bool */
+    abstract function is_my_review(?ReviewInfo $rrow);
+    /** @param ?ReviewInfo $rrow
+     * @param ?int $viewscore
+     * @param int $flags
+     * @return bool */
+    abstract function can_view_review(PaperInfo $prow, $rrow, $viewscore = null, $flags = 0);
+    /** @param ?ReviewInfo $rrow
+     * @return bool */
+    abstract function can_view_review_assignment(PaperInfo $prow, $rrow);
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @return bool */
+    abstract function can_view_review_identity(PaperInfo $prow, $rbase = null);
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @return bool */
+    abstract function can_view_review_meta(PaperInfo $prow, $rbase = null);
+    /** @return int */
+    abstract function view_score_bound(PaperInfo $prow, ReviewInfo $rrow);
+    /** @param ?CommentInfo $crow
+     * @return bool */
+    abstract function is_my_comment(PaperInfo $prow, $crow);
+    /** @return bool */
+    abstract function can_view_comment(PaperInfo $prow, CommentInfo $crow, $textless = false);
+    /** @return bool */
+    abstract function can_view_comment_content(PaperInfo $prow, CommentInfo $crow);
+    /** @return bool */
+    abstract function can_view_comment_identity(PaperInfo $prow, CommentInfo $crow);
+    /** @return bool */
+    abstract function can_view_comment_time(PaperInfo $prow, CommentInfo $crow);
+    /** @return bool */
+    abstract function can_view_comment_tags(PaperInfo $prow, CommentInfo $crow);
+    /** @return bool */
+    abstract function can_view_manager(?PaperInfo $prow = null);
+    /** @return bool */
+    abstract function can_view_shepherd(?PaperInfo $prow);
+    /** @return bool */
+    abstract function can_view_decision(PaperInfo $prow);
+    /** @return int */
+    abstract function tag_perm_flags(?PaperInfo $prow);
+    /** @param string $tag
+     * @return bool */
+    abstract function can_view_tag(?PaperInfo $prow, $tag);
+}
+
+final class Contact extends ContactPermissions implements JsonSerializable {
     /** @var int */
     static public $rights_version = 1;
     /** @var ?Contact
@@ -33,15 +98,10 @@ class Contact implements JsonSerializable {
     /** @var int */
     static public $next_xid = -2;
 
-    /** @var Conf */
-    public $conf;
+    // NB `conf`, `contactId`, `contactXid` are inherited from ContactPermissions
 
     /** @var int */
-    public $contactId = 0;
-    /** @var int */
     public $contactDbId = 0;
-    /** @var int */
-    public $contactXid = 0;
     /** @var int */
     public $cdb_confid = 0; // nonzero iff this is a CDB user
 
@@ -317,11 +377,11 @@ class Contact implements JsonSerializable {
 
     /** @param ?string $email
      * @param int $cflags
-     * @return Contact
-     * @suppress PhanAccessReadOnlyProperty */
+     * @return Contact */
     static function make_email_cflags(Conf $conf, $email, $cflags) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
+        // @phan-suppress-next-line PhanAccessReadOnlyProperty
         $u->email = $email ?? "";
         $u->cflags = $cflags;
         $u->set_roles_properties();
@@ -341,12 +401,12 @@ class Contact implements JsonSerializable {
     }
 
     /** @param int $contactId
-     * @return Contact
-     * @suppress PhanAccessReadOnlyProperty */
+     * @return Contact */
     static function make_deleted(Conf $conf, $contactId) {
         $u = new Contact($conf);
         $u->contactId = $contactId;
         $u->contactXid = $contactId > 0 ? $contactId : self::$next_xid--;
+        // @phan-suppress-next-line PhanAccessReadOnlyProperty
         $u->email = "<deleted>";
         $u->cflags = self::CF_DELETED;
         $u->set_roles_properties();
@@ -419,7 +479,6 @@ class Contact implements JsonSerializable {
      * @return ?Contact */
     static function fetch($result, Conf $conf) {
         if (($u = $result->fetch_object("Contact", [$conf]))) {
-            $u->conf = $conf;
             $u->fetch_incorporate();
             $u->set_roles_properties();
             $u->contactXid = $u->contactId ? : self::$next_xid--;
@@ -427,7 +486,6 @@ class Contact implements JsonSerializable {
         return $u;
     }
 
-    /** @suppress PhanDeprecatedProperty */
     private function fetch_incorporate() {
         $this->contactId = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
@@ -3767,6 +3825,12 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function act_author_view(PaperInfo $prow) {
         return $this->rights($prow)->act_author_view();
+    }
+
+    /** @return bool */
+    function implies_author_view(PaperInfo $prow) {
+        return !$this->is_actas_user()
+            && $this->rights($prow)->act_author_view();
     }
 
     /** @param ?string $table

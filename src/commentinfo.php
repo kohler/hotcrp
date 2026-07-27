@@ -331,7 +331,7 @@ class CommentInfo {
         return $this->commentOverflow ?? $this->comment ?? "";
     }
 
-    /** @param Contact $viewer
+    /** @param ContactPermissions $viewer
      * @return bool */
     private function _mention_censorable($viewer) {
         $this->_recently_censorable = !$viewer->is_my_comment($this->prow, $this)
@@ -339,7 +339,7 @@ class CommentInfo {
         return $this->_recently_censorable;
     }
 
-    /** @param Contact $viewer
+    /** @param ContactPermissions $viewer
      * @param array{int,int,int,?bool} $mn
      * @param int $censor_until
      * @return bool */
@@ -384,7 +384,7 @@ class CommentInfo {
         return true;
     }
 
-    /** @param Contact $viewer
+    /** @param ContactPermissions $viewer
      * @param int $uid
      * @return string */
     private function _mention_pseudonym($viewer, $uid) {
@@ -392,7 +392,7 @@ class CommentInfo {
         return "@{$s}";
     }
 
-    /** @param ?Contact $viewer
+    /** @param ?ContactPermissions $viewer
      * @param ?int $censor_until
      * @return string */
     function content($viewer = null, $censor_until = null) {
@@ -525,7 +525,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    private function unparse_commenter_pseudonym(Contact $viewer) {
+    private function unparse_commenter_pseudonym(ContactPermissions $viewer) {
         if (($this->commentType & self::CTM_BYAUTHOR) !== 0) {
             return "Author";
         } else if (($this->commentType & (self::CTM_VIS | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)
@@ -578,7 +578,7 @@ class CommentInfo {
     }
 
     /** @return string */
-    function unparse_commenter_text(Contact $viewer) {
+    function unparse_commenter_text(ContactPermissions $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo($this->commenter(), NAME_P|NAME_I);
         } else {
@@ -606,7 +606,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    function searchable_tags(Contact $viewer) {
+    function searchable_tags(ContactPermissions $viewer) {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_SEARCH, $tags, $viewer, $this->prow);
@@ -615,7 +615,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    function viewable_tags(Contact $viewer) {
+    function viewable_tags(ContactPermissions $viewer) {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, $this->prow);
@@ -624,7 +624,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    function viewable_nonresponse_tags(Contact $viewer) {
+    function viewable_nonresponse_tags(ContactPermissions $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
@@ -861,7 +861,7 @@ class CommentInfo {
 
     /** @param int $flags
      * @return string */
-    function unparse_text(Contact $viewer, $flags = 0) {
+    function unparse_text(ContactPermissions $viewer, $flags = 0) {
         if (($rrd = $this->response_round())) {
             $x = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
         } else {

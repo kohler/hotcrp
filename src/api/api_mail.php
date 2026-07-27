@@ -18,7 +18,7 @@ class Mail_API {
             "prow" => $prow,
             "requester_contact" => $user,
             "width" => $qreq->width ?? 10000,
-            "censor" => Mailer::CENSOR_DISPLAY
+            "censor" => Mailer::CENSOR_PREVIEW
         ];
         if (isset($qreq->reason)) {
             $mailinfo["reason"] = $qreq->reason;

@@ -1236,7 +1236,7 @@ class TagMap {
     /** @param 0|1 $ctype
      * @param ?string $tags
      * @return string */
-    function censor($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
+    function censor($ctype, $tags, ContactPermissions $user, ?PaperInfo $prow = null) {
         // empty tag optimization
         if ($tags === null || $tags === "") {
             return "";
@@ -1540,7 +1540,7 @@ class Tagger {
 
     /** @var Conf */
     private $conf;
-    /** @var Contact */
+    /** @var ContactPermissions */
     private $contact;
     /** @var int */
     private $_contactId = 0;
@@ -1553,7 +1553,7 @@ class Tagger {
     private static $value_increment_map = [1, 1, 1, 1, 1, 2, 2, 2, 3, 4];
 
 
-    function __construct(Contact $contact) {
+    function __construct(ContactPermissions $contact) {
         $this->conf = $contact->conf;
         $this->contact = $contact;
         if ($contact->contactId > 0) {

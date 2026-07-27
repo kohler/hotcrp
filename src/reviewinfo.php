@@ -514,12 +514,12 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @return int */
-    function mtime(Contact $viewer) {
+    function mtime(ContactPermissions $viewer) {
         return ($this->mtime_info($viewer))[0];
     }
 
     /** @return array{int,bool} */
-    function mtime_info(Contact $viewer) {
+    function mtime_info(ContactPermissions $viewer) {
         // Return the modification time of this review according to $viewer,
         // plus a bool indicating whether the time was obscured.
 
@@ -568,7 +568,8 @@ class ReviewInfo implements JsonSerializable {
             }
         } else {
             if ($viewer->can_view_review_identity($this->prow, $this)
-                || (($viewer_rrow = $this->prow->review_by_user($viewer))
+                || ($viewer instanceof Contact
+                    && ($viewer_rrow = $this->prow->review_by_user($viewer))
                     && $viewer_rrow->timeDisplayed > 0
                     && $this->timeDisplayed > 0
                     && $viewer_rrow->timeDisplayed < $this->timeDisplayed)) {
@@ -1162,7 +1163,7 @@ class ReviewInfo implements JsonSerializable {
 
 
     /** @return array<string,ReviewField> */
-    function viewable_fields(Contact $user, $include_nonexistent = false) {
+    function viewable_fields(ContactPermissions $user, $include_nonexistent = false) {
         $bound = $user->view_score_bound($this->prow, $this);
         $fs = [];
         foreach ($this->conf->all_review_fields() as $fid => $f) {

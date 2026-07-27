@@ -324,6 +324,7 @@ src/contact.php
 src/contactalerts.php
 src/contactcounter.php
 src/contactcountmatcher.php
+src/contactintersection.php
 src/contactlist.php
 src/contactprimary.php
 src/contactsearch.php

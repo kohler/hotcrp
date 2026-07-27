@@ -1611,7 +1611,7 @@ class PaperInfo {
         return $ct;
     }
 
-    /** @param Contact|int $c
+    /** @param ContactPermissions|int $c
      * @return int */
     function conflict_type($c) {
         $this->check_rights_version();
@@ -1651,7 +1651,7 @@ class PaperInfo {
         return $this->conflict_type($contact) > CONFLICT_MAXUNCONFLICTED;
     }
 
-    /** @param Contact|int $contact
+    /** @param ContactPermissions|int $contact
      * @return bool */
     function has_author($contact) {
         return $this->conflict_type($contact) >= CONFLICT_AUTHOR;
@@ -1789,7 +1789,7 @@ class PaperInfo {
         return empty($as) ? $cas : $as;
     }
 
-    /** @param ?Contact $viewer
+    /** @param ?ContactPermissions $viewer
      * @param int $cid
      * @return ?string */
     function unparse_pseudonym($viewer, $cid) {
@@ -3163,7 +3163,7 @@ class PaperInfo {
 
     /** @param int $cid
      * @return bool */
-    function can_view_review_identity_of($cid, Contact $viewer) {
+    function can_view_review_identity_of($cid, ContactPermissions $viewer) {
         if ($viewer->is_admin($this)
             || $cid === $viewer->contactId) {
             return true;

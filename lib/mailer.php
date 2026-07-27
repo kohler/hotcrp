@@ -8,6 +8,8 @@ class Mailer {
     const CONTEXT_EMAIL = 2;
 
     const CENSOR_NONE = 0;
+    const CENSOR_PREVIEW = 1;
+    /** @deprecated */
     const CENSOR_DISPLAY = 1;
     const CENSOR_ALL = 2;
 

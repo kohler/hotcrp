@@ -46,8 +46,10 @@ class HotCRPMailPreparation extends MailPreparation {
 class HotCRPMailer extends Mailer {
     /** @var array<string,Contact|Author> */
     protected $contacts = [];
-    /** @var ?Contact */
+    /** @var Contact */
     protected $permreceiver;
+    /** @var ContactPermissions */
+    protected $permuser;
     /** @var ?MailRecipients */
     protected $recip_set;
 
@@ -62,7 +64,9 @@ class HotCRPMailer extends Mailer {
     /** @var ?int */
     protected $newrev_since;
     /** @var bool */
-    protected $no_send = false;
+    protected $preview = false;
+    /** @var bool */
+    protected $sender_visible = false;
     /** @var int */
     public $combination_type = 0;
     /** @var ?string */
@@ -97,7 +101,8 @@ class HotCRPMailer extends Mailer {
         $this->comment_row = $rest["comment_row"] ?? null;
         $this->newrev_since = $rest["newrev_since"] ?? null;
         $this->rrow_unsubmitted = !!($rest["rrow_unsubmitted"] ?? false);
-        $this->no_send = !!($rest["no_send"] ?? false);
+        $this->preview = !!($rest["preview"] ?? false);
+        $this->sender_visible = !!($rest["sender_visible"] ?? false);
         if (($rest["author_permission"] ?? false) && $this->row) {
             $this->permreceiver = $this->row->author_user();
         } else {
@@ -114,8 +119,16 @@ class HotCRPMailer extends Mailer {
         }
         // Do not put passwords in email that is cc'd elsewhere
         if ((($rest["cc"] ?? null) || ($rest["bcc"] ?? null))
-            && (!$this->censor || $this->censor === self::CENSOR_DISPLAY)) {
+            && (!$this->censor || $this->censor === self::CENSOR_PREVIEW)) {
             $this->censor = self::CENSOR_ALL;
+        }
+        // Create `permuser`. Bound the expansion by the sending user’s
+        // permissions only if the sending user, or someone they chose, will
+        // read this copy; a conference-configured cc/bcc is not their choice.
+        if ($this->censor === self::CENSOR_PREVIEW || $this->sender_visible) {
+            $this->permuser = ContactIntersection::make($this->permsender, $this->permreceiver);
+        } else {
+            $this->permuser = $this->permreceiver;
         }
     }
 
@@ -133,8 +146,7 @@ class HotCRPMailer extends Mailer {
         }
         if ($this->row
             && $this->rrow
-            && $this->rrow->is_blind()
-            && !$this->permreceiver->can_view_review_identity($this->row, $this->rrow)) {
+            && !$this->permuser->can_view_review_identity($this->row, $this->rrow)) {
             if ($isbool) {
                 return false;
             } else if ($this->context == self::CONTEXT_EMAIL) {
@@ -168,18 +180,21 @@ class HotCRPMailer extends Mailer {
         $text = "";
         $rf = $this->conf->review_form();
         foreach ($rrows as $rrow) {
-            if (($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
-                 || ($rrow === $this->rrow && $this->rrow_unsubmitted))
-                && $this->permreceiver->can_view_review($this->row, $rrow)) {
-                if ($text !== "") {
-                    $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
-                }
-                $flags = ReviewForm::UNPARSE_NO_TITLE;
-                if ($this->no_send) {
-                    $flags |= ReviewForm::UNPARSE_NO_AUTHOR_SEEN;
-                }
-                $text .= $rf->unparse_text($this->row, $rrow, $this->permreceiver, $flags);
+            // skip incomplete or nonviewable reviews
+            if (($rrow->reviewStatus < ReviewInfo::RS_COMPLETED
+                 && ($rrow !== $this->rrow || !$this->rrow_unsubmitted))
+                || !$this->permuser->can_view_review($this->row, $rrow)) {
+                continue;
             }
+            // render
+            if ($text !== "") {
+                $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
+            }
+            $flags = ReviewForm::UNPARSE_NO_TITLE;
+            if ($this->preview || $this->censor === self::CENSOR_PREVIEW) {
+                $flags |= ReviewForm::UNPARSE_NO_AUTHOR_SEEN;
+            }
+            $text .= $rf->unparse_text($this->row, $rrow, $this->permuser, $flags);
         }
 
         $this->permreceiver->set_overrides($old_overrides);
@@ -201,7 +216,7 @@ class HotCRPMailer extends Mailer {
 
         $crows = array_filter($crows, function ($crow) use ($tag) {
             return (!$tag || $crow->has_tag($tag))
-                && $this->permreceiver->can_view_comment($this->row, $crow);
+                && $this->permuser->can_view_comment($this->row, $crow);
         });
 
         $flags = ReviewForm::UNPARSE_NO_TITLE | ReviewForm::UNPARSE_TRUNCATE;
@@ -216,7 +231,7 @@ class HotCRPMailer extends Mailer {
             if ($text !== "") {
                 $text .= "\n";
             }
-            $text .= $crow->unparse_text($this->permreceiver, $flags);
+            $text .= $crow->unparse_text($this->permuser, $flags);
         }
 
         $this->permreceiver->set_overrides($old_overrides);
@@ -394,9 +409,7 @@ class HotCRPMailer extends Mailer {
         return $this->row->paperId;
     }
     function kw_authors($args, $isbool) {
-        if (!$this->permreceiver->is_root_user()
-            && !$this->permreceiver->can_view_authors($this->row)
-            && !$this->permreceiver->act_author_view($this->row)) {
+        if (!$this->permuser->can_view_authors($this->row)) {
             return $isbool ? false : "Hidden for anonymous review";
         }
         $t = [];
@@ -431,16 +444,22 @@ class HotCRPMailer extends Mailer {
             return "";
         } else if (!$this->censor) {
             return "cap={$tok->salt}";
-        } else if ($this->censor === self::CENSOR_DISPLAY) {
+        } else if ($this->censor === self::CENSOR_PREVIEW) {
             return "cap=HIDDEN";
         }
         return null;
     }
     function kw_decision($args, $isbool) {
-        if ($this->row->outcome === 0 && $isbool) {
+        $outcome = $this->row->outcome;
+        if ($outcome !== 0
+            && $this->censor !== self::CENSOR_NONE
+            && !$this->permsender->can_view_decision($this->row)) {
+            $outcome = 0;
+        }
+        if ($outcome === 0 && $isbool) {
             return false;
         }
-        return $this->row->decision()->name;
+        return $this->conf->decision_set()->get($outcome)->name;
     }
     function kw_tagvalue($args, $isbool, $uf) {
         $tag = isset($uf->match_data) ? $uf->match_data[1] : $args;
@@ -448,14 +467,12 @@ class HotCRPMailer extends Mailer {
         if (!$tag) {
             return null;
         }
-        if ($this->permsender
-            && !$this->permsender->privChair
-            && !$this->permsender->can_view_tag($this->row, $tag)) {
+        if (!$this->permsender->can_view_tag($this->row, $tag)) {
             if ($isbool) {
                 return false;
             }
             $this->warning("<0>You aren’t allowed to view the ‘{$tag}’ tag for submission #{$this->row->paperId}");
-            return "(none)";
+            return "HIDDEN";
         }
         $value = $this->row->tag_value($tag);
         if ($value === null) {
@@ -497,9 +514,10 @@ class HotCRPMailer extends Mailer {
         return !!$uf->option && $uf->option->published(FieldRender::CFMAIL);
     }
     function kw_paperfield($args, $isbool, $uf) {
-        if (!$this->permreceiver->can_view_option($this->row, $uf->option)
-            || !($ov = $this->row->option($uf->option))) {
+        if (!($ov = $this->row->option($uf->option))) {
             return $isbool ? false : "";
+        } else if (!$this->permuser->can_view_option($this->row, $uf->option)) {
+            return $isbool ? false : ($this->censor !== self::CENSOR_NONE ? "HIDDEN" : "");
         }
         $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permreceiver);
         $uf->option->render($fr, $ov);
@@ -508,18 +526,24 @@ class HotCRPMailer extends Mailer {
         }
         return (string) $fr->value;
     }
-    function kw_paperpc($args, $isbool, $uf) {
-        $k = "{$uf->pctype}ContactId";
-        $cid = $this->row->$k;
-        if ($cid > 0 && ($u = $this->conf->user_by_id($cid, USER_SLICE))) {
+    function kw_shepherd($args, $isbool, $uf) {
+        $is_email = $this->context === self::CONTEXT_EMAIL
+            || $uf->userx === "EMAIL";
+        $cid = $this->row->shepherdContactId;
+        if ($cid > 0
+            && $this->censor !== self::CENSOR_NONE
+            && !$this->permsender->can_view_shepherd($this->row)) {
+            if ($isbool) {
+                return false;
+            }
+            return $is_email ? "<hidden>" : "HIDDEN";
+        } else if ($cid > 0
+                   && ($u = $this->conf->user_by_id($cid, USER_SLICE))) {
             return $this->expand_user($u, $uf->userx);
         } else if ($isbool)  {
             return false;
-        } else if ($this->context === self::CONTEXT_EMAIL
-                   || $uf->userx === "EMAIL") {
-            return "<none>";
         }
-        return "(no {$uf->pctype} assigned)";
+        return $is_email ? "<none>" : "(no shepherd assigned)";
     }
     function kw_reviewname($args) {
         $s = $args === "SUBJECT";

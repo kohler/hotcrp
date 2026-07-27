@@ -161,7 +161,7 @@ class MailSender {
             // XXX should only apply to papers you administer
             $qreq->cc = simplify_whitespace($qreq->cc);
         } else {
-            $qreq->cc = $conf->opt("emailCc") ?? "";
+            $qreq->cc = simplify_whitespace($conf->opt("emailCc") ?? "");
         }
         if (isset($qreq["reply-to"]) && $qreq->user()->is_manager()) {
             // XXX should only apply to papers you administer
@@ -545,6 +545,11 @@ class MailSender {
             "no_error_quit" => true,
             "author_permission" => $is_authors
         ];
+        if ($rest["cc"] !== ""
+            && $rest["cc"] !== simplify_whitespace($this->conf->opt("emailCc") ?? "")
+            && !$this->user->privChair) {
+            $rest["sender_visible"] = true;
+        }
 
         // test whether this mail is paper-sensitive
         $mailer = new HotCRPMailer($this->user, $this->user, $rest);
@@ -566,7 +571,7 @@ class MailSender {
             // Mail format matters
             $this->user->log_activity("Sending mail #{$this->mailid} \"{$subject}\"");
         } else {
-            $rest["no_send"] = true;
+            $rest["preview"] = true;
         }
         $need_censored_prep = !$this->user->privChair || $this->conf->opt("chairHidePasswords");
 
@@ -630,7 +635,7 @@ class MailSender {
                 if ($this->active_censored_prep) {
                     $this->active_censored_prep->merge($prep);
                 } else {
-                    $rest["censor"] = Mailer::CENSOR_DISPLAY;
+                    $rest["censor"] = Mailer::CENSOR_PREVIEW;
                     $mailer->reset($user, $rest);
                     $this->active_censored_prep = $mailer->prepare($template, $rest);
                     $rest["censor"] = Mailer::CENSOR_NONE;
