@@ -17,7 +17,7 @@ class Mailer_Tester {
         }
         ob_start();
         try {
-            $ms = new MailSender($mr, $qreq, 2);
+            $ms = new MailSender($mr, $qreq, MailSender::PHASE_SEND);
             $ms->set_template($template);
             $ms->set_no_print(true)->set_send_all(true);
             $ms->prepare_sending_mailid();
