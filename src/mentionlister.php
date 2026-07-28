@@ -157,7 +157,7 @@ class MentionLister {
             || $reason === self::FOR_PARSE
             || !$prow->conf->check_track_view_sensitivity()
             || !$user->can_view_user_tags()) {
-            return $prow->conf->pc_members();
+            return $user->conf->pc_members();
         }
         // enumerate track permissions that allow viewing this paper,
         // but leave off permissions this user can't see (e.g. `+~~chair_tag`)

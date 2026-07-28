@@ -166,6 +166,16 @@ class Mention_Tester {
         return $ns;
     }
 
+    function test_mentioncompletion_without_paper() {
+        // `p` is optional for this endpoint, so a paperless call must still work
+        foreach (["chair@_.com", "estrin@usc.edu"] as $email) {
+            $u = $this->conf->checked_user_by_email($email);
+            $jr = call_api_result("mentioncompletion", $u, []);
+            xassert_eqq($jr->status ?? 200, 200);
+            xassert_neqq($jr->content["mentioncompletion"] ?? [], []);
+        }
+    }
+
     /** @param int $ctype
      * @return int */
     private function add_shepherd_comment($ctype) {
