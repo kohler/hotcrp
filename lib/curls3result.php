@@ -115,6 +115,11 @@ class CurlS3Result extends S3Result {
         list($this->url, $hdr) = $this->s3->signed_headers($this->skey, $this->method, $this->args);
         curl_setopt($this->curlh, CURLOPT_URL, $this->url);
         curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, $this->method);
+        if ($this->method === "HEAD") {
+            // NB without CURLOPT_NOBODY, curl awaits a response body that a
+            // HEAD reply will never send, and times out
+            curl_setopt($this->curlh, CURLOPT_NOBODY, true);
+        }
         if (isset($this->args["content"])) {
             curl_setopt($this->curlh, CURLOPT_POSTFIELDS, $this->args["content"]);
         } else if (($cf = $this->args["content_file"] ?? null) !== null) {
