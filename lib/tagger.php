@@ -1640,11 +1640,10 @@ class Tagger {
         case self::ALLOWSTAR:
             return "<0>Invalid tag{$t} (stars aren’t allowed here)";
         case self::NOCHAIR:
-            if ($this->contact->privChair) {
+            if ($this->contact->is_chairlike()) {
                 return "<0>Invalid tag{$t} (chair tags aren’t allowed here)";
-            } else {
-                return "<0>Tag{$t} reserved for chairs";
             }
+            return "<0>Tag{$t} reserved for chairs";
         case self::NOPRIVATE:
             return "<0>Private tags aren’t allowed here";
         case self::ALLOWCONTACTID:
@@ -1693,11 +1692,8 @@ class Tagger {
         } else if ($tag === "") {
             return $this->set_error_code(self::EEMPTY, $tag);
         }
-        if (!$this->contact->privChair) {
-            $flags |= self::NOCHAIR;
-        }
         if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m)) {
-            if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/\#=]+)[\s,]+\S+/', $tag, $m)
+            if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/\#=~]+)[\s,]+\S+/', $tag, $m)
                 && $this->check($m[1], $flags)) {
                 return $this->set_error_code(self::EMULTIPLE, $tag);
             }
@@ -1710,7 +1706,8 @@ class Tagger {
         if ($m[1] === "") {
             // OK
         } else if ($m[1] === "~~") {
-            if (($flags & self::NOCHAIR) !== 0) {
+            if (($flags & self::NOCHAIR) !== 0
+                || !$this->contact->is_chairlike()) {
                 return $this->set_error_code(self::NOCHAIR, $tag);
             }
         } else {

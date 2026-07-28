@@ -1605,6 +1605,11 @@ class Contact implements JsonSerializable {
         return ($this->roles & self::ROLE_PCLIKE) !== 0;
     }
 
+    /** @return bool */
+    function is_chairlike() {
+        return ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
+    }
+
     /** @return int */
     function viewable_pc_roles(Contact $viewer) {
         if (($this->roles & Contact::ROLE_PCLIKE)
