@@ -18,7 +18,7 @@ class ContactIntersection extends ContactPermissions {
     static function make(?Contact $a, ?Contact $b) {
         assert($a !== null || $b !== null);
         if (!$a || $a->is_root_user()) {
-            return $b;
+            return $b ?? $a;
         } else if (!$b || $b->is_root_user()) {
             return $a;
         }

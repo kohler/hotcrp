@@ -173,9 +173,7 @@ class Mention_Tester {
         $conf->qe("insert into PaperComment set paperId=13, contactId=?, timeModified=?, comment=?, commentType=?, commentRound=0, replyTo=0",
             $conf->checked_user_by_email("estrin@usc.edu")->contactId,
             Conf::$now, "shepherd note", $ctype);
-        $cmtid = (int) $conf->dblink->insert_id;
-        $conf->invalidate_caches([]);
-        return $cmtid;
+        return $conf->dblink->insert_id;
     }
 
     function test_mentioncompletion_gates_shepherd_existence() {

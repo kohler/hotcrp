@@ -66,7 +66,7 @@ class DatabaseIDRandomizer_Type {
                 $n = max(100, $factor * $this->conf->fetch_ivalue("select count(*) from {$this->table}"));
             }
             while (count($this->ids) < $this->batch) {
-                $this->ids[] = mt_rand(1, $n);
+                $this->ids[] = random_int(1, $n);
             }
             $this->ids = array_values(array_unique($this->ids));
 
