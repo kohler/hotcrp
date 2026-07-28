@@ -52,7 +52,6 @@ class FollowAPI_Tester {
             . "{$this->pid},primary,{$this->u_varghese->email},no\n"
             . "{$this->pid},primary,{$this->u_mgbaker->email},yes");
         xassert($as->execute());
-        $conf->invalidate_caches(["pc" => true]);
 
         $prow = $conf->checked_paper_by_id($this->pid);
         $tf = new ReviewValues($this->u_lixia);
@@ -137,6 +136,5 @@ class FollowAPI_Tester {
         // see it in its original review-free state
         $this->conf->qe("delete from PaperReview where paperId=?", $this->pid);
         $this->conf->qe("delete from PaperWatch where paperId=?", $this->pid);
-        $this->conf->invalidate_caches(["paper" => true, "pc" => true]);
     }
 }

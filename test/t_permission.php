@@ -1038,7 +1038,6 @@ class Permission_Tester {
         $sub3 = $p3->timeSubmitted;
         // withdraw paper 3 -> a non-manager PC member can no longer view it
         $this->conf->qe("update Paper set timeWithdrawn=?, timeSubmitted=? where paperId=3", 100, -100);
-        $this->conf->invalidate_caches(["paper" => true]);
         xassert(!$user->can_view_paper($this->conf->checked_paper_by_id(3)));
 
         $la = new Revpref_ListAction($this->conf, (object) ["name" => "get/revprefx"]);
@@ -1052,7 +1051,6 @@ class Permission_Tester {
 
         // restore paper 3
         $this->conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=? where paperId=3", $sub3);
-        $this->conf->invalidate_caches(["paper" => true]);
     }
 
     function test_assign_administrator() {
@@ -1580,7 +1578,6 @@ class Permission_Tester {
         xassert_eqq($paper16->sorted_viewable_tags($this->u_marina), " app#2 crap#3 vote#6");
         xassert_eqq($paper16->sorted_searchable_tags($this->u_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 app#2 crap#3 vote#6");
 
-        $this->conf->invalidate_caches("pc");
         xassert(SettingValues::make_request($this->u_chair, [
             "has_tag_vote_approval" => 1, "tag_vote_approval" => "app app2"
         ])->execute());
@@ -1879,7 +1876,6 @@ class Permission_Tester {
 
     function test_search_submission_field_edit_condition() {
         $this->conf->save_refresh_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","exists_if":"calories>200"}]');
-        $this->conf->invalidate_caches("options");
         $this->conf->qe("insert into PaperOption (paperId,optionId,value) values (1,2,1),(2,2,1),(3,2,1),(4,2,1),(5,2,1)");
         xassert_search($this->u_chair, "has:fattening", "1 3 4");
     }

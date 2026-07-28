@@ -334,7 +334,7 @@ class Tags_Tester {
     function test_taganno_api_hides_hidden_tags_from_pc() {
         $this->conf->save_setting("tag_hidden", 1, "secretorder");
         Contact::update_rights();
-        $this->conf->invalidate_caches(["tags" => true]);
+        $this->conf->invalidate_caches("tags");
         // varghese is a plain PC member: an admin-only tag is not his to read
         xassert(!$this->u_varghese->can_view_hidden_tags());
         xassert(!$this->u_varghese->can_view_tag_somewhere("secretorder"));
@@ -347,7 +347,7 @@ class Tags_Tester {
         $this->conf->qe("delete from PaperTagAnno where tag='secretorder'");
         $this->conf->save_setting("tag_hidden", null);
         Contact::update_rights();
-        $this->conf->invalidate_caches(["tags" => true]);
+        $this->conf->invalidate_caches("tags");
     }
 
     function test_taganno_api_set_stays_gated() {

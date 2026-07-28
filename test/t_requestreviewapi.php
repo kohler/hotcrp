@@ -106,7 +106,6 @@ class RequestReviewAPI_Tester {
         $this->conf->qe("delete from ReviewRequest where paperId=?", $this->pid);
         $this->conf->qe("delete from PaperReview where paperId=? and contactId not in (?, ?)",
             $this->pid, $this->u_prober->contactId, $this->u_hidden->contactId);
-        $this->conf->invalidate_caches([]);
     }
 
     /** Probe $fn twice, differing only in hidden state, and return the two
@@ -144,7 +143,6 @@ class RequestReviewAPI_Tester {
         $this->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=?",
             $this->pid, $u->email, $u->firstName, $u->lastName, $u->affiliation,
             $this->u_chair->contactId, Conf::$now, "", null);
-        $this->conf->invalidate_caches([]);
     }
 
     /** Install a refusal by $u, declining a request from $requester.
@@ -153,12 +151,10 @@ class RequestReviewAPI_Tester {
         $this->conf->qe("insert into PaperReviewRefused set paperId=?, contactId=?, email=?, requestedBy=?, refusedBy=?, reason=?, timeRefused=?",
             $this->pid, $u->contactId, $u->email, $requester->contactId,
             $u->contactId, $reason, Conf::$now);
-        $this->conf->invalidate_caches([]);
     }
 
     private function clear_refusals() {
         $this->conf->qe("delete from PaperReviewRefused where paperId=?", $this->pid);
-        $this->conf->invalidate_caches([]);
     }
 
     /** Hide reviewer identities from the PC, then run $f.
@@ -257,14 +253,14 @@ class RequestReviewAPI_Tester {
         $u_primary = $this->conf->checked_user_by_email("cheshire@cs.stanford.edu");
         $this->conf->qe("update ContactInfo set primaryContactId=? where contactId=?",
             $u_primary->contactId, $u_secondary->contactId);
-        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->invalidate_caches("users");
         xassert($this->conf->checked_user_by_email($u_secondary->email)->should_use_primary("extrev"));
         try {
             $f($u_secondary, $u_primary);
         } finally {
             $this->conf->qe("update ContactInfo set primaryContactId=0 where contactId=?",
                 $u_secondary->contactId);
-            $this->conf->invalidate_caches(["users" => true]);
+            $this->conf->invalidate_caches("users");
         }
     }
 
@@ -277,11 +273,9 @@ class RequestReviewAPI_Tester {
                 // block the request: the primary is conflicted with #20
                 $this->conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=?",
                     $this->pid, $u_primary->contactId, CONFLICT_AUTHOR);
-                $this->conf->invalidate_caches([]);
                 $t = $this->masked_probe($u_secondary->email, $this->u_prober);
                 $this->conf->qe("delete from PaperConflict where paperId=? and contactId=?",
                     $this->pid, $u_primary->contactId);
-                $this->conf->invalidate_caches([]);
                 xassert_str_contains($t, "cannot be asked");
                 xassert_not_str_contains($t, $u_primary->email);
                 xassert_not_str_contains($t, "Cheshire");
@@ -296,11 +290,9 @@ class RequestReviewAPI_Tester {
         $this->with_primary_link(function ($u_secondary, $u_primary) {
             $this->conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=?",
                 $this->pid, $u_primary->contactId, CONFLICT_AUTHOR);
-            $this->conf->invalidate_caches([]);
             $t = $this->masked_probe($u_secondary->email, $this->u_chair);
             $this->conf->qe("delete from PaperConflict where paperId=? and contactId=?",
                 $this->pid, $u_primary->contactId);
-            $this->conf->invalidate_caches([]);
             xassert_str_contains($t, "primary account");
         });
     }
@@ -374,12 +366,10 @@ class RequestReviewAPI_Tester {
         $conf = $this->conf;
         $email = "newrev-req-probe@example.edu";
         $conf->qe("delete from ContactInfo where email=?", $email);
-        $conf->invalidate_caches(["users" => true]);
         $prow = $conf->checked_paper_by_id($this->pid);
         // chair + extrev_chairreq=0 + unconflicted new email => direct assignment
         call_api_result("=requestreview", $this->u_chair,
             ["email" => $email, "given_name" => "New", "family_name" => "Reviewer"], $prow);
-        $conf->invalidate_caches(["users" => true]);
         $u = $conf->fresh_user_by_email($email);
         xassert(!!$u);
         $conf->checked_paper_by_id($this->pid)->load_reviews(true);
@@ -388,7 +378,6 @@ class RequestReviewAPI_Tester {
         if ($u) {
             $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u->contactId);
             $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
-            $conf->invalidate_caches(["users" => true]);
         }
     }
 
@@ -396,17 +385,14 @@ class RequestReviewAPI_Tester {
         $conf = $this->conf;
         $email = "newrev-assign-probe@example.edu";
         $conf->qe("delete from ContactInfo where email=?", $email);
-        $conf->invalidate_caches(["users" => true]);
         $reviewer = Contact::make_keyed($conf, ["email" => $email, "name" => "Assign Ee"])
             ->store(0, $this->u_chair);
         $rid = $this->u_chair->assign_review($this->pid, $reviewer, REVIEW_EXTERNAL);
         xassert($rid > 0);
-        $conf->invalidate_caches(["users" => true]);
         $u = $conf->fresh_user_by_email($email);
         xassert(!!$u);
         xassert(!$u->is_placeholder());
         $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u->contactId);
         $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
-        $conf->invalidate_caches(["users" => true]);
     }
 }

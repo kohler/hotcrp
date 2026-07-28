@@ -208,8 +208,8 @@ class PaperAPI_Tester {
         $qreq = TestQreq::post_json(["object" => "comment", "title" => "Foo"]);
         $jr = call_api_result("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->content["ok"], false);
-        xassert_eqq($jr->content["message_list"][0]->field, "object");
-        xassert_match($jr->content["message_list"][0]->message, '/Object type mismatch/');
+        xassert_eqq($jr->message_item(0)->field, "object");
+        xassert_match($jr->message_item(0)->message, '/Object type mismatch/');
     }
 
     function test_decision() {
@@ -938,7 +938,6 @@ class PaperAPI_Tester {
 
         // (a) a no-op save must not escalate the saver to contact-author
         call_api_result("=paper", $attacker, TestQreq::post_json(["pid" => $pid], ["p" => $pid]));
-        $conf->invalidate_caches([]);
         $prow = $conf->checked_paper_by_id($pid);
         xassert_eqq($prow->conflict_type($attacker) & CONFLICT_CONTACTAUTHOR, 0);
         xassert(!$attacker->can_edit_paper($prow));
@@ -946,7 +945,6 @@ class PaperAPI_Tester {
         // (b) explicitly naming self as a contact must also be refused
         call_api_result("=paper", $attacker,
             TestQreq::post_json(["pid" => $pid, "contacts" => [$attacker->email => true]], ["p" => $pid]));
-        $conf->invalidate_caches([]);
         $prow = $conf->checked_paper_by_id($pid);
         xassert_eqq($prow->conflict_type($attacker) & CONFLICT_CONTACTAUTHOR, 0);
         xassert(!$attacker->can_edit_paper($prow));

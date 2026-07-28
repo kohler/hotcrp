@@ -308,7 +308,6 @@ class Search_Tester {
 
         xassert_assign($a, "paper,tag\n1,~sscx\n");
         xassert_assign($b, "paper,tag\n2,~sscx\n");
-        $this->conf->invalidate_caches(["tags" => true]);
         // `a` saves a global search whose body is the personal tag "#~sscx"
         $this->conf->save_setting("named_searches", 1,
             json_encode([(object) ["name" => "sscx", "q" => "#~sscx", "owner" => $a->contactId]]));
@@ -324,7 +323,6 @@ class Search_Tester {
         }
         $this->conf->load_settings();
         $this->conf->qe("delete from PaperTag where tag like '%~sscx'");
-        $this->conf->invalidate_caches(["tags" => true]);
     }
 
     function test_sensitive_search_rate_limit() {
@@ -592,7 +590,7 @@ class Search_Tester {
         $old_tags = $chair->contactTags;
         $conf->qe("update ContactInfo set contactTags=? where contactId=?",
             " chairtag#0", $chair->contactId);
-        $conf->invalidate_caches(["pc" => true]);
+        $conf->invalidate_caches("pc");
         xassert($conf->pc_tag_exists("chairtag"));
         xassert($lixia->can_view_user_tag("chairtag"));
 
@@ -617,7 +615,7 @@ class Search_Tester {
         $conf->qe("delete from PaperReviewPreference where contactId=?", $chair->contactId);
         $conf->qe("update ContactInfo set contactTags=? where contactId=?",
             $old_tags, $chair->contactId);
-        $conf->invalidate_caches(["pc" => true]);
+        $conf->invalidate_caches("pc");
     }
 
 }

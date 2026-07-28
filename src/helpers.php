@@ -237,6 +237,19 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         return $this;
     }
 
+    /** @param int $i
+     * @return ?MessageItem */
+    function message_item($i) {
+        $ml = $this->content["message_list"] ?? null;
+        if (is_array($ml) && isset($ml[$i])) {
+            if ($ml[$i] instanceof MessageItem) {
+                return $ml[$i];
+            }
+            return MessageItem::from_json($ml[$i]);
+        }
+        return null;
+    }
+
 
     /** @return bool */
     function ok() {

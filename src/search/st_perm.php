@@ -26,7 +26,7 @@ class Perm_SearchTerm extends SearchTerm {
         return new False_SearchTerm;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (!$this->user->is_admin()) {
+        if (!$this->user->is_manager()) {
             return "false";
         } else if ($this->perm === "author_write_final") {
             return "(Paper.timeWithdrawn<=0 and Paper.outcome>0)";

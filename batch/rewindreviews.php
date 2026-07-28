@@ -64,7 +64,7 @@ class RewindReviews_Batch {
                     continue;
                 }
                 foreach ($rf->all_fields() as $f) {
-                    $rrow->set_fval_prop($f, $xrow->finfoval($f), true);
+                    $rrow->set_fval_prop($f, $xrow->finfoval($f));
                 }
                 if ($rrow->save_prop($stager) >= 0) {
                     $rrow->commit_prop();

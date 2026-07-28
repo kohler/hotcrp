@@ -39,7 +39,6 @@ class Formulas_Tester {
         $ps = new PaperStatus($conf->root_user());
         xassert($ps->save_paper_json(json_decode('{"id":1,"calories":350,"weight":72.5,"vegan":true}')));
         xassert_paper_status($ps);
-        $conf->invalidate_caches("options");
     }
 
     /** Define the Calories (numeric), Weight (real-number), and Vegan
@@ -56,7 +55,6 @@ class Formulas_Tester {
         }
         unset($d);
         $this->conf->save_refresh_setting("options", 1, json_encode($defs));
-        $this->conf->invalidate_caches("options");
     }
 
     function finalize() {
@@ -66,7 +64,6 @@ class Formulas_Tester {
         } else {
             $this->conf->save_refresh_setting("options", 1, $this->saved_options);
         }
-        $this->conf->invalidate_caches("options");
     }
 
     /** @param string $expr
@@ -903,7 +900,6 @@ class Formulas_Tester {
         });
         xassert($ps->save_paper_json(json_decode("{\"id\":1,\"submission\":{\"content_file\":\"test/sample50pg.pdf\",\"type\":\"application/pdf\"}}")));
         xassert_paper_status($ps);
-        $this->conf->invalidate_caches("options");
         $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
         xassert_eqq($paper1->document(DTYPE_SUBMISSION)->npages(), 50);
 
@@ -922,7 +918,6 @@ class Formulas_Tester {
             "sf/1/condition" => "#secret"
         ]);
         xassert($sv->execute());
-        $this->conf->invalidate_caches("options");
 
         $subopt = $this->conf->option_by_id(DTYPE_SUBMISSION);
         $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
@@ -944,7 +939,6 @@ class Formulas_Tester {
             "sf/1/presence" => "all"
         ]);
         xassert($sv->execute());
-        $this->conf->invalidate_caches("options");
     }
 
     function test_formulas_respect_option_presence() {

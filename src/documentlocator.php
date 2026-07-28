@@ -45,9 +45,10 @@ class DocumentLocator {
         if (($updoc = $this->uploaded_document($qreq))) {
             $ct = $updoc->mimetype;
             $ct_form = false;
-        } else if (isset($qreq->upload)) {
-            JsonResult::make_missing_error("upload", "<0>Upload not found")->complete();
         } else {
+            if (isset($qreq->upload)) {
+                JsonResult::make_missing_error("upload", "<0>Upload not found")->complete();
+            }
             $ct = $qreq->body_content_type();
             $ct_form = $ct === null || Mimetype::is_form($ct);
         }

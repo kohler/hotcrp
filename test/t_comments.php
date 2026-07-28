@@ -660,7 +660,7 @@ class Comments_Tester {
         $cid = $j->comment->cid;
         $jr = call_api_result("comment", $this->u_chair, ["c" => (string) $cid, "response" => "1"], $paper1);
         xassert_eqq($jr->status, 404);
-        xassert_eqq($jr->content["message_list"][0]->field, "response");
+        xassert_eqq($jr->message_item(0)->field, "response");
 
         // a comment the caller can't see must NOT be disclosed by the mismatch:
         // the permission check wins, so the caller gets not-found, never 400
@@ -715,7 +715,7 @@ class Comments_Tester {
         $jr = call_api_result("=comment", $this->u_chair, ["c" => "new"], $paper1);
         xassert_eqq($jr->status, 400);
         xassert(!$jr->content["ok"]);
-        xassert_eqq($jr->content["message_list"][0]->field, "text");
+        xassert_eqq($jr->message_item(0)->field, "text");
 
         MailChecker::clear();
     }
@@ -736,7 +736,7 @@ class Comments_Tester {
         xassert(!$paper3->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0"));
         $jr = call_api_result("comment", $this->u_chair, ["response" => "1"], $paper3);
         xassert_eqq($jr->status, 404);
-        xassert_match($jr->content["message_list"][0]->message, '/response not found/i');
+        xassert_match($jr->message_item(0)->message, '/response not found/i');
 
         MailChecker::clear();
     }
@@ -797,7 +797,7 @@ class Comments_Tester {
         // missing `q` => parameter error
         $jr = call_api_result("comments", $this->u_chair, []);
         xassert_eqq($jr->status, 400);
-        xassert_match($jr->content["message_list"][0]->message, '/required|missing/i');
+        xassert_match($jr->message_item(0)->message, '/required|missing/i');
 
         MailChecker::clear();
     }
@@ -831,8 +831,8 @@ class Comments_Tester {
         // `q` and `p` together is a conflict error
         $jr = call_api_result("comments", $this->u_chair, ["q" => "1", "p" => "2"]);
         xassert_eqq($jr->status, 400);
-        xassert_eqq($jr->content["message_list"][0]->field, "p");
-        xassert_match($jr->content["message_list"][0]->message, '/conflict/i');
+        xassert_eqq($jr->message_item(0)->field, "p");
+        xassert_match($jr->message_item(0)->message, '/conflict/i');
 
         MailChecker::clear();
     }
@@ -1120,7 +1120,7 @@ class Comments_Tester {
         $qreq = TestQreq::post_json(["object" => "paper", "text" => "nope"]);
         $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
         xassert_eqq($jr->status, 400);
-        xassert_eqq($jr->content["message_list"][0]->field, "object");
+        xassert_eqq($jr->message_item(0)->field, "object");
         // `object: "comment"` is explicitly accepted
         $qreq = TestQreq::post_json(["object" => "comment", "text" => "yep", "visibility" => "rev", "topic" => "paper"]);
         $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
@@ -1131,7 +1131,7 @@ class Comments_Tester {
         $qreq = TestQreq::post_json(["cid" => $cid, "pid" => 4, "text" => "wrong paper"]);
         $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
         xassert_eqq($jr->status, 400);
-        xassert_eqq($jr->content["message_list"][0]->field, "pid");
+        xassert_eqq($jr->message_item(0)->field, "pid");
         // a matching `pid` is fine (and `id` is ignored, not a target)
         $qreq = TestQreq::post_json(["cid" => $cid, "pid" => 3, "id" => 99999, "text" => "right paper"]);
         $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
@@ -1144,7 +1144,7 @@ class Comments_Tester {
         $qreq->c = (string) ($cid + 1);
         $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
         xassert_eqq($jr->status, 400);
-        xassert_eqq($jr->content["message_list"][0]->field, "cid");
+        xassert_eqq($jr->message_item(0)->field, "cid");
         // a `cid` that agrees with `c` is fine
         $qreq = TestQreq::post_json(["cid" => $cid, "text" => "agrees"]);
         $qreq->c = (string) $cid;
@@ -1183,7 +1183,7 @@ class Comments_Tester {
         ]);
         $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
         xassert_eqq($jr->status, 400);
-        xassert_str_contains($jr->content["message_list"][0]->message, "at most one of `json` and `upload`");
+        xassert_str_contains($jr->message_item(0)->message, "at most one of `json` and `upload`");
     }
 
     function test_comment_delete_method() {
@@ -1368,7 +1368,7 @@ class Comments_Tester {
         $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
         xassert_eqq($jr->status, 400);
         xassert(!$jr->content["ok"]);
-        xassert_match($jr->content["message_list"][0]->message, '/missing\.txt.*not found/i');
+        xassert_match($jr->message_item(0)->message, '/missing\.txt.*not found/i');
         // nothing was saved
         $paper3->load_comments();
         xassert(!$paper3->fetch_comments("comment like '%zip missing-entry probe%'"));
@@ -1386,7 +1386,7 @@ class Comments_Tester {
         $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
         xassert_eqq($jr->status, 400);
         xassert(!$jr->content["ok"]);
-        xassert_match($jr->content["message_list"][0]->message, '/did not match the provided hash/i');
+        xassert_match($jr->message_item(0)->message, '/did not match the provided hash/i');
         // nothing was saved
         $paper3->load_comments();
         xassert(!$paper3->fetch_comments("comment like '%hash mismatch probe%'"));
@@ -1973,7 +1973,6 @@ class Comments_Tester {
         $this->conf->qe("insert into PaperComment set paperId=?, contactId=?, timeModified=?, comment=?, commentType=?, commentRound=1, replyTo=0",
             $pid, $this->u_chair->contactId, Conf::$now, "draft response text",
             CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT | CommentInfo::CT_BYAUTHOR | CommentInfo::CTVIS_AUTHOR);
-        $this->conf->invalidate_caches([]);
         return (int) $this->conf->fetch_ivalue("select commentId from PaperComment where paperId=? and (commentType&?)!=0",
             $pid, CommentInfo::CT_RESPONSE);
     }
@@ -1986,7 +1985,6 @@ class Comments_Tester {
             $pid, $this->u_chair->contactId, Conf::$now, "administrators only",
             CommentInfo::CTVIS_ADMINONLY | CommentInfo::CT_BYADMINISTRATOR);
         $cid = (int) $this->conf->dblink->insert_id;
-        $this->conf->invalidate_caches([]);
         return $cid;
     }
 
@@ -2015,7 +2013,6 @@ class Comments_Tester {
         $this->add_draft_response(2);
         $conf->qe("delete from PaperComment where paperId=3 and (commentType&?)!=0",
             CommentInfo::CT_RESPONSE);
-        $conf->invalidate_caches([]);
         $p2 = $conf->checked_paper_by_id(2);
         $p3 = $conf->checked_paper_by_id(3);
         // the chair can read it; the prober cannot
@@ -2026,7 +2023,6 @@ class Comments_Tester {
         xassert_not_str_contains($exists, "200 ");
         $conf->qe("delete from PaperComment where paperId=2 and (commentType&?)!=0",
             CommentInfo::CT_RESPONSE);
-        $conf->invalidate_caches([]);
         xassert_eqq($exists, $absent);
     }
 
@@ -2043,7 +2039,6 @@ class Comments_Tester {
         $exists = $this->cmt_observable("comment", $u, ["c" => (string) $cid], $p2);
         $absent = $this->cmt_observable("comment", $u, ["c" => "99999"], $p2);
         $conf->qe("delete from PaperComment where commentId=?", $cid);
-        $conf->invalidate_caches([]);
         xassert_eqq($exists, $absent);
         xassert_str_contains($exists, "404");
     }
@@ -2059,7 +2054,6 @@ class Comments_Tester {
         $exists = $this->cmt_observable("=comment", $u, ["c" => (string) $cid, "text" => "x"], $p2);
         $absent = $this->cmt_observable("=comment", $u, ["c" => "99999", "text" => "x"], $p2);
         $conf->qe("delete from PaperComment where commentId=?", $cid);
-        $conf->invalidate_caches([]);
         xassert_eqq($exists, $absent);
     }
 
@@ -2072,7 +2066,6 @@ class Comments_Tester {
         $exists = $this->cmt_observable("comment", $this->u_chair, ["c" => (string) $cid], $p2);
         $absent = $this->cmt_observable("comment", $this->u_chair, ["c" => "99999"], $p2);
         $conf->qe("delete from PaperComment where commentId=?", $cid);
-        $conf->invalidate_caches([]);
         xassert_neqq($exists, $absent);
         xassert_str_contains($exists, "200 ");
     }

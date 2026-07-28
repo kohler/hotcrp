@@ -2783,7 +2783,6 @@ class Settings_Tester {
 
         // an option spec can request checking beyond the settings
         $this->conf->set_opt("sub_banal", "letter;30;{\"checkers\":[\"TestChecker\"]}");
-        $this->conf->invalidate_caches("options");
         $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
         xassert_eqq($fspec->pagelimit, [0, 30]);
         xassert_eqq($fspec->checkers, ["TestChecker"]);
@@ -2794,7 +2793,6 @@ class Settings_Tester {
         $sv->add_json_string('{"format":[{"id":"submission","active":false}]}');
         xassert($sv->execute());
         xassert_eqq($this->conf->setting("sub_banal"), -1);
-        $this->conf->invalidate_caches("options");
         $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
         xassert($fspec->is_banal_empty());
         xassert_eqq($fspec->pagelimit, null);
@@ -2805,26 +2803,22 @@ class Settings_Tester {
         $sv->add_json_string('{"format":[{"id":"submission","active":true,"pagelimit":"25"}]}');
         xassert($sv->execute());
         xassert_gt($this->conf->setting("sub_banal"), 0);
-        $this->conf->invalidate_caches("options");
         $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
         xassert_eqq($fspec->pagelimit, [0, 25]);
         xassert_eqq($fspec->checkers, ["TestChecker"]);
 
         // without banal constraints in the option spec, disabling stores 0
         $this->conf->set_opt("sub_banal", "{\"checkers\":[\"TestChecker\"]}");
-        $this->conf->invalidate_caches("options");
         $sv = (new SettingValues($this->u_chair))->set_use_req(true);
         $sv->add_json_string('{"format":[{"id":"submission","active":false}]}');
         xassert($sv->execute());
         xassert_eqq($this->conf->setting("sub_banal"), 0);
-        $this->conf->invalidate_caches("options");
         $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
         xassert($fspec->is_banal_empty());
         xassert_eqq($fspec->checkers, ["TestChecker"]);
 
         $this->conf->set_opt("sub_banal", null);
         $this->conf->save_refresh_setting("sub_banal", $old_sub_banal, $old_sub_banal_data);
-        $this->conf->invalidate_caches("options");
     }
 
     function test_explicit_placeholder() {
