@@ -114,15 +114,13 @@ class CurlS3Result extends S3Result {
         }
         list($this->url, $hdr) = $this->s3->signed_headers($this->skey, $this->method, $this->args);
         curl_setopt($this->curlh, CURLOPT_URL, $this->url);
-        curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, $this->method);
-        if ($this->method === "HEAD") {
-            // NB without CURLOPT_NOBODY, curl awaits a response body that a
-            // HEAD reply will never send, and times out
-            curl_setopt($this->curlh, CURLOPT_NOBODY, true);
-        }
+        // Set curl behavior (e.g. whether to wait for a response body), then
+        // set the method
         if (isset($this->args["content"])) {
+            // www-form-encoded request body
             curl_setopt($this->curlh, CURLOPT_POSTFIELDS, $this->args["content"]);
         } else if (($cf = $this->args["content_file"] ?? null) !== null) {
+            // file request body
             if ($this->_fstream) {
                 rewind($this->_fstream);
             } else if (is_string($cf)) {
@@ -131,9 +129,17 @@ class CurlS3Result extends S3Result {
                 rewind($cf);
                 $this->_fstream = $cf;
             }
-            curl_setopt($this->curlh, CURLOPT_PUT, true);
+            curl_setopt($this->curlh, CURLOPT_UPLOAD, true);
             curl_setopt($this->curlh, CURLOPT_INFILE, $this->_fstream);
+            curl_setopt($this->curlh, CURLOPT_INFILESIZE, $this->_fsize);
+        } else if ($this->method === "HEAD") {
+            // no request body, no response body
+            curl_setopt($this->curlh, CURLOPT_NOBODY, true);
+        } else {
+            // no request body, yes response body
+            curl_setopt($this->curlh, CURLOPT_HTTPGET, true);
         }
+        curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, $this->method);
         $hdr[] = "Expect:";
         $hdr[] = "Transfer-Encoding:";
         curl_setopt($this->curlh, CURLOPT_HTTPHEADER, $hdr);
