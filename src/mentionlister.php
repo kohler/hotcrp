@@ -106,12 +106,26 @@ class MentionLister {
     /** @param PaperInfo $prow
      * @param Contact $user */
     private function add_shepherd($prow, $user) {
+        $can_view = $user->can_view_shepherd($prow);
+        if (!$can_view
+            && !$user->can_view_decision($prow)) {
+            $any = false;
+            foreach ($prow->viewable_comment_skeletons($user) as $crow) {
+                if (($crow->commentType & CommentInfo::CT_BYSHEPHERD) !== 0) {
+                    $any = true;
+                    break;
+                }
+            }
+            if (!$any) {
+                return;
+            }
+        }
         $au = Author::make_last("Shepherd");
         $au->contactId = $prow->shepherdContactId;
         $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
         $this->lists["reviewers"][] = $au;
-        if (!in_array($prow->shepherdContactId, $this->rcids, true)
-            && $user->can_view_shepherd($prow)
+        if ($can_view
+            && !in_array($prow->shepherdContactId, $this->rcids, true)
             && ($shepherd = $user->conf->user_by_id($prow->shepherdContactId, USER_SLICE))
             && !$shepherd->is_dormant()) {
             $this->lists["reviewers"][] = $shepherd;
