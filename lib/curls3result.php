@@ -5,6 +5,12 @@
 /** @template T
  * @inherits S3Result<T> */
 class CurlS3Result extends S3Result {
+    /** Minimum acceptable transfer rate in bytes/sec */
+    const LOW_SPEED_LIMIT = 8192;
+    /** Number of contiguous seconds below LOW_SPEED_LIMIT that aborts a
+     * transfer */
+    const LOW_SPEED_TIME = 10;
+
     /** @var ?CurlHandle */
     public $curlh;
     /** @var resource */
@@ -116,6 +122,8 @@ class CurlS3Result extends S3Result {
             $this->curlh = curl_init();
             curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->_hstream);
             curl_setopt($this->curlh, CURLOPT_FILE, $this->_dstream);
+            curl_setopt($this->curlh, CURLOPT_LOW_SPEED_LIMIT, self::LOW_SPEED_LIMIT);
+            curl_setopt($this->curlh, CURLOPT_LOW_SPEED_TIME, self::LOW_SPEED_TIME);
         }
         if (++$this->runindex === 1) {
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 3);
