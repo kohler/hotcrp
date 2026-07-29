@@ -43,7 +43,6 @@ class Upload_API {
         $this->max_blob = $conf->opt("uploadApiMaxBlob") ?? self::MAX_BLOB;
         $this->segments = [[0, 5<<20], [5<<20, 13<<20], [13<<20, 29<<20]];
         $this->tmpdir = $conf->docstore_tempdir();
-        //S3Client::$verbose = true;
     }
 
     /** @param int $offset

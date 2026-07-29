@@ -1173,8 +1173,8 @@ class TestRunner {
     private $conf;
     /** @var ComponentSet */
     private $cs;
-    /** @var bool */
-    private $verbose;
+    /** @var int */
+    public $verbose;
     /** @var bool */
     private $all;
     /** @var bool */
@@ -1208,7 +1208,7 @@ class TestRunner {
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
-        $this->verbose = isset($arg["verbose"]);
+        $this->verbose = $arg["verbose"] ?? 0;
         $this->all = isset($arg["all"]);
         if (isset($arg["stop"])) {
             Xassert::$stop = true;
@@ -1563,6 +1563,20 @@ class TestRunner {
             assert(!$ctor || $ctor->getNumberOfParameters() === 0);
             $this->tester = $class->newInstance();
         }
+
+        // maybe set verbosity
+        $ro = new ReflectionObject($this->tester);
+        if ($ro->hasMethod("set_verbose")
+            && ($m = $ro->getMethod("set_verbose"))->isPublic()) {
+            $m->invoke($this->tester, $this->verbose);
+        }
+
+        // maybe initialize (usually the constructor suffices; this exists
+        // because it runs post-set_verbose)
+        if ($ro->hasMethod("initialize")
+            && ($m = $ro->getMethod("initialize"))->isPublic()) {
+            $m->invoke($this->tester);
+        }
     }
 
     private function push_test_state() {
@@ -1739,7 +1753,7 @@ class TestRunner {
             $arg = (new Getopt)->long(
                 "config: Set test options [test/options.php]",
                 "all,a Run all test collections",
-                "verbose,V Be verbose",
+                "verbose#,V# Be verbose",
                 "help,h !",
                 "reset,reset Reset test database",
                 "no-reset,no-reset-db,R Do not reset test database",

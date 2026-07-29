@@ -24,6 +24,8 @@ class S3Client {
     /** @var ?string
      * @readonly */
     public $s3_domain;
+    /** @var bool */
+    public $verbose = false;
     /** @var ?Conf */
     private $setting_cache;
     /** @var string */
@@ -38,13 +40,21 @@ class S3Client {
     private $reset_key = false;
     /** @var class-string<S3Result> */
     public $result_class = "StreamS3Result";
+    /** @var int */
+    public $request_count = 0;
+    /** @var int */
+    public $retry_count = 0;
+    /** @var int */
+    public $success_count = 0;
+    /** @var int */
+    public $fail_count = 0;
+    /** @var int */
+    public $incomplete_count = 0;
 
     /** @var int */
     static public $retry_timeout_allowance = 10; // in seconds
     /** @var list<S3Client> */
     static private $instances = [];
-    /** @var bool */
-    static public $verbose = false;
 
     /** @var array<string,string>
      * @readonly */
@@ -97,6 +107,32 @@ class S3Client {
     function set_result_class($result_class) {
         $this->result_class = $result_class;
         return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_verbose($x) {
+        $this->verbose = $x;
+        return $this;
+    }
+
+    /** @return $this */
+    function reset_counts() {
+        $this->request_count = $this->retry_count = $this->success_count = $this->fail_count = $this->incomplete_count = 0;
+        return $this;
+    }
+
+    /** @param ?int $status */
+    function account($status) {
+        if ($status === null || $status === 500) {
+            ++$this->retry_count;
+        } else if ($status === 598) {
+            ++$this->incomplete_count;
+        } else if ($status < 400) {
+            ++$this->success_count;
+        } else {
+            ++$this->fail_count;
+        }
     }
 
     /** @return string */
@@ -271,6 +307,7 @@ class S3Client {
      * @return S3Result<T> */
     private function start($skey, $method, $args,
                            $finisher = "S3Result::success_finisher") {
+        ++$this->request_count;
         $klass = $this->result_class;
         return new $klass($this, $skey, $method, $args, $finisher);
     }
@@ -340,6 +377,7 @@ class S3Client {
     /** @param string $skey
      * @return CurlS3Result<?string> */
     function start_curl_get($skey) {
+        ++$this->request_count;
         return new CurlS3Result($this, $skey, "GET", [], "S3Client::finish_get");
     }
 
@@ -350,7 +388,7 @@ class S3Client {
         }
         if ($s3r->status !== 404 && $s3r->status !== 500) {
             trigger_error("S3 warning: GET {$s3r->skey}: status {$s3r->status}", E_USER_WARNING);
-            if (self::$verbose) {
+            if ($s3r->s3->verbose) {
                 trigger_error("S3 response: " . var_export($s3r->response_headers, true), E_USER_WARNING);
             }
         }

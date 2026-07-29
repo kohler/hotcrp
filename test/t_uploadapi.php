@@ -9,9 +9,11 @@ class UploadAPI_Tester {
     /** @var Contact
      * @readonly */
     public $user;
-    /** @var S3Client
+    /** @var ?S3Client
      * @readonly */
     public $s3c;
+    /** @var int */
+    private $verbose = 0;
     /** @var ?string */
     private $old_docstore;
     /** @var ?array{?string,?string,?string,?string} */
@@ -56,18 +58,27 @@ In thee!
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->s3c = S3_Tester::make_s3_client($conf, "UploadAPI");
-    }
-
-    function test_initialize_docstore() {
         $this->tmpdir = tempdir();
         $this->old_docstore = $this->conf->opt("docstore");
         $this->conf->set_opt("docstore", "{$this->tmpdir}%h%x");
+    }
+
+    function set_verbose($v) {
+        $this->verbose = $v;
+        if ($v > 1 && $this->s3c) {
+            $this->s3c->set_verbose(true);
+        }
+    }
+
+    function initialize() {
         if ($this->s3c) {
             $this->old_s3_opt = S3_Tester::install_s3_options($this->conf, $this->s3c);
             $this->s3c->delete_many([
                 "doc/32f/sha2-32f67cf69678d2ac17ab979b926e18cb830b96cbdb46866362bd083c619c4d6c.txt",
                 "doc/054/sha2-054bfbd046e415952829e66856a1c7d6240d97ea2c08de3069d1578052b9b7a7.txt"
             ]);
+            // don't count the requests made by this setup
+            $this->s3c->reset_counts();
         }
         $this->conf->refresh_settings();
         xassert(!!$this->conf->docstore());
@@ -304,7 +315,28 @@ In thee!
         xassert(file_exists("{$this->tmpdir}{$expected_hash}.txt"));
     }
 
-    function test_cleanup_docstore() {
+    function test_s3_requests() {
+        if (!$this->s3c) {
+            if ($this->conf->opt("testS3Key")) {
+                Xassert::will_print();
+                fwrite(STDERR, "  - UploadAPI: S3 not tested; set testS3Key and testS3Secret, and add \"UploadAPI\" to testS3Testers\n");
+            }
+            return;
+        }
+        // the code under test must use this very client, or we counted nothing
+        xassert($this->conf->s3_client() === $this->s3c);
+        xassert_gt($this->s3c->request_count, 0);
+        xassert_eqq($this->s3c->incomplete_count, 0);
+        if ($this->verbose > 0) {
+            Xassert::will_print();
+            fwrite(STDERR, "  - UploadAPI: {$this->s3c->request_count} S3 requests, "
+                . "{$this->s3c->success_count} succeeded, {$this->s3c->fail_count} failed, "
+                . "{$this->s3c->incomplete_count} incomplete, "
+                . "{$this->s3c->retry_count} retries\n");
+        }
+    }
+
+    function finalize() {
         rm_rf_tempdir($this->tmpdir);
         $this->conf->set_opt("docstore", $this->old_docstore);
         if ($this->s3c) {

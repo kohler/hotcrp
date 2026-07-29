@@ -9,10 +9,31 @@ class DocumentBasics_Tester {
     /** @var ?S3Client
      * @readonly */
     public $s3c;
+    /** @var int */
+    private $verbose = 0;
+    /** @var ?array{?string,?string,?string,?string} */
+    private $old_s3_opt;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->s3c = S3_Tester::make_s3_client($conf, "DocumentBasics");
+    }
+
+    function set_verbose($v) {
+        $this->verbose = $v;
+        if ($v > 1 && $this->s3c) {
+            $this->s3c->set_verbose(true);
+        }
+    }
+
+    function initialize() {
+        if ($this->s3c) {
+            $this->old_s3_opt = S3_Tester::install_s3_options($this->conf, $this->s3c);
+            // NB `S3Client::make` caches by credentials, so this client may be
+            // shared with another tester that has already used it
+            $this->s3c->reset_counts();
+            $this->conf->refresh_settings();
+        }
     }
 
     function test_s3_signature() {
@@ -161,6 +182,54 @@ class DocumentBasics_Tester {
         $this->conf->save_refresh_setting("opt.docstore", null);
     }
 
+    function test_prefetch_content() {
+        if (!$this->s3c) {
+            return;
+        }
+        $old_docstore = $this->conf->opt("docstore");
+        $this->conf->set_opt("docstore", null);
+        $this->conf->refresh_settings();
+        // the prefetch must use the client we are counting
+        xassert($this->conf->s3_client() === $this->s3c);
+
+        // store more documents than the 8-document sliding window
+        $n = 12;
+        $content = $keys = $hashes = [];
+        for ($i = 0; $i !== $n; ++$i) {
+            $content[] = $t = "prefetch test {$i}\n" . str_repeat("abcdefgh", $i + 1);
+            $doc = DocumentInfo::make_content($this->conf, $t, "text/plain");
+            $keys[] = $doc->s3_key();
+            $hashes[] = $doc->text_hash();
+            xassert_eqq($this->s3c->put($doc->s3_key(), $t, "text/plain"), true);
+        }
+
+        // fresh documents with no content: these can only come from S3
+        $docs = [];
+        for ($i = 0; $i !== $n; ++$i) {
+            $docs[] = $doc = DocumentInfo::make_hash($this->conf, $hashes[$i], "text/plain");
+            xassert($doc->need_prefetch_content());
+        }
+
+        $this->s3c->reset_counts();
+        DocumentInfo::prefetch_content($docs, DocumentInfo::FLAG_NO_DOCSTORE);
+        $nreq = $this->s3c->request_count;
+        xassert_ge($nreq, $n);
+        xassert_eqq($this->s3c->incomplete_count, 0);
+
+        // NB `content_available()` does not itself load; and had the prefetch
+        // missed a document, `content()` would fetch it separately, so
+        // request_count would grow
+        for ($i = 0; $i !== $n; ++$i) {
+            xassert($docs[$i]->content_available());
+            xassert_eqq($docs[$i]->content(), $content[$i]);
+        }
+        xassert_eqq($this->s3c->request_count, $nreq);
+
+        $this->s3c->delete_many($keys);
+        $this->conf->set_opt("docstore", $old_docstore);
+        $this->conf->refresh_settings();
+    }
+
     function test_create_s3() {
         if (!$this->s3c) {
             return;
@@ -177,6 +246,27 @@ class DocumentBasics_Tester {
         xassert_eqq(iterator_to_array($this->s3c->ls_all_keys("h")), ["hello.txt", "hello1.txt"]);
     }
 
+    function test_s3_requests() {
+        if (!$this->s3c) {
+            if ($this->conf->opt("testS3Key")) {
+                Xassert::will_print();
+                fwrite(STDERR, "  - DocumentBasics: S3 not tested; set testS3Key and testS3Secret, and add \"DocumentBasics\" to testS3Testers\n");
+            }
+            return;
+        }
+        // the code under test must use this very client, or we counted nothing
+        xassert($this->conf->s3_client() === $this->s3c);
+        xassert_gt($this->s3c->request_count, 0);
+        xassert_eqq($this->s3c->incomplete_count, 0);
+        if ($this->verbose > 0) {
+            Xassert::will_print();
+            fwrite(STDERR, "  - DocumentBasics: {$this->s3c->request_count} S3 requests, "
+                . "{$this->s3c->success_count} succeeded, {$this->s3c->fail_count} failed, "
+                . "{$this->s3c->incomplete_count} incomplete, "
+                . "{$this->s3c->retry_count} retries\n");
+        }
+    }
+
     function test_cleanup_s3() {
         if (!$this->s3c) {
             return;
@@ -186,6 +276,13 @@ class DocumentBasics_Tester {
         } else {
             $this->s3c->delete_many(iterator_to_array($this->s3c->ls_all_keys("")));
             $this->s3c->delete_bucket(S3Client::CONFIRM_DELETE_BUCKET);
+        }
+    }
+
+    function finalize() {
+        if ($this->s3c) {
+            S3_Tester::install_s3_options($this->conf, $this->old_s3_opt);
+            $this->conf->refresh_settings();
         }
     }
 }

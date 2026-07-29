@@ -11,8 +11,6 @@ class CurlS3Result extends S3Result {
     private $_hstream;
     /** @var ?resource */
     private $_dstream;
-    /** @var bool */
-    private $_dstream_local = true;
     /** @var ?resource */
     private $_fstream;
     /** @var int */
@@ -59,7 +57,6 @@ class CurlS3Result extends S3Result {
         assert($this->_dstream === null);
         if ($stream) {
             $this->_dstream = $stream;
-            $this->_dstream_local = false;
         }
         return $this;
     }
@@ -179,15 +176,16 @@ class CurlS3Result extends S3Result {
                 $this->status = 598;
             }
         }
-        if ($this->status !== null && S3Client::$verbose) {
-            error_log("{$this->method} {$this->url} -> {$this->status} {$this->status_text}");
+        $this->s3->account($this->status);
+        if ($this->status !== null && $this->s3->verbose) {
+            $time = sprintf("%.0fms", (microtime(true) - $this->first_start) * 1000);
+            error_log("{$this->method} {$this->url} -> {$this->status} {$this->status_text} in {$time}");
         }
         if ($this->status !== null && $this->status !== 500) {
             $this->close();
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return $this */
@@ -230,7 +228,6 @@ class CurlS3Result extends S3Result {
         if ($this->_dstream) {
             fclose($this->_dstream);
             $this->_dstream = null;
-            $this->_dstream_local = true;
         }
     }
 }

@@ -1382,9 +1382,10 @@ class DocumentInfo implements JsonSerializable {
             }
         }
 
-        // clean up leftovers
+        // clean up leftovers; these requests never reached a final status
         foreach ($adocs as $adoc) {
             $adoc[1]->status = null;
+            ++$adoc[1]->s3->incomplete_count;
             $adoc[0]->handle_load_s3_curl($adoc[1], $adoc[3], $adoc[4]);
         }
         curl_multi_close($curlm);
