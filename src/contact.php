@@ -5953,92 +5953,14 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     /** @param string $tag
+     * @param null|int|float $previndex
      * @param null|int|float $index
      * @return bool */
-    private function __can_edit_tag1(PaperInfo $prow, $tag, $index) {
-        // earlier implementation of can_edit_tag; used to cross-check
-        // __can_edit_tag2, with which it should agree at full scope
-        if (!$this->isPC) {
-            return false;
-        } else if ($this->_root_user
-                   || ($this->_overrides & self::OVERRIDE_TAG_CHECKS)) {
-            return true;
-        }
-        $rights = $this->rights($prow);
-        if (!$rights->scope_allows(TS::S_TAG_WRITE)) {
-            return false;
-        }
-        // look up permission flags for user and tag
-        $ufl = $this->tag_perm_flags($prow);
-        $tagmap = $this->conf->tags();
-        $tfl = $tagmap->perm_flags($tag, $this->contactId);
-        // cannot view, or can only view because pc-public -> cannot edit
-        if (($ufl & $tfl & ~TagInfo::TF_PC_PUBLIC) === 0) {
-            return false;
-        }
-        // adjust tag flags
-        if ($tfl & TagInfo::TFM_PRIVATE) {
-            $ti = $tagmap->find_having(substr($tag, strpos($tag, "~") + 1), ~TagInfo::TFM_PERM & ~TagInfo::TF_AUTOMATIC);
-            $tfl |= $ti ? $ti->flags & ~TagInfo::TFM_PERM & ~TagInfo::TF_AUTOMATIC : 0;
-            $tfl &= ~TagInfo::TFM_READONLY;
-        } else {
-            $ti = $tagmap->find_having($tag, ~TagInfo::TFM_PERM);
-            $tfl |= $ti ? $ti->flags & ~TagInfo::TFM_PERM : 0;
-        }
-        // adjust user flags
-        if ($index >= 0 && ($tfl & TagInfo::TFM_PRIVATE)) {
-            $ufl |= TagInfo::TF_ALLOTMENT;
-        }
-        if ($this->privChair && $rights->scope_allows(TS::S_TAG_ADMIN)) {
-            $ufl |= TagInfo::TF_CHAIR_READONLY;
-            if ($tfl & TagInfo::TFM_ADMIN_PUBLIC) {
-                $ufl |= TagInfo::TF_READONLY;
-            }
-        }
-        if ($rights->is_admin() && $rights->scope_allows(TS::S_TAG_ADMIN)) {
-            $ufl |= TagInfo::TF_READONLY | TagInfo::TF_OTHER_PRIVATE;
-        } else {
-            $ufl &= ~TagInfo::TF_OTHER_PRIVATE;
-        }
-        // check non-visibility flags
-        if ($tfl & ~$ufl & (TagInfo::TF_AUTOMATIC | TagInfo::TF_ALLOTMENT | TagInfo::TFM_READONLY | TagInfo::TF_OTHER_PRIVATE)) {
-            return false;
-        }
-        return ($ufl & TagInfo::TFM_ADMIN_PUBLIC)
-            || $this->conf->time_pc_view($prow, false);
-    }
-
-    /** @param string $tag
-     * @param null|int|float $index
-     * @return bool */
-    private function __can_edit_tag2(PaperInfo $prow, $tag, $index) {
+    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
         $ufl = $this->tag_edit_flags($prow);
         $tfl = $this->conf->tags()->edit_flags($tag, $this->contactId, $index);
         return ($tfl & $ufl & TagInfo::TFM_PERM_EDIT) !== 0
             && ($tfl & ~$ufl & TagInfo::TFM_EDIT_RESTRICT) === 0;
-    }
-
-    /** @param string $tag
-     * @param null|int|float $index
-     * @param bool $v2 */
-    private function __edit_tag_complain(PaperInfo $prow, $tag, $index, $v2) {
-        $ts = sprintf("tag %s#%s [%x]", $tag, $index ?? "none", $this->conf->tags()->edit_flags($tag, $this->contactId, $index));
-        $ps = sprintf("paper %d [%x S%x]", $prow->paperId, $this->tag_edit_flags($prow), $this->rights($prow)->scope_bits & 0xFFFF);
-        error_log(caller_landmark() . " tag edit alignment error: expected " . json_encode(!$v2)
-            . ", user {$this->contactId}, {$ts}, {$ps}");
-        assert(false);
-    }
-
-    /** @param string $tag
-     * @return bool */
-    function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
-        assert(!!$tag);
-        $v2 = $this->__can_edit_tag2($prow, $tag, $index);
-        if ($this->rights($prow)->scope_bits === ~0
-            && $this->__can_edit_tag1($prow, $tag, $index) !== $v2) {
-            $this->__edit_tag_complain($prow, $tag, $index, $v2);
-        }
-        return $v2;
     }
 
     /** @param string $tag
