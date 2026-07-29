@@ -1337,9 +1337,11 @@ class DocumentInfo implements JsonSerializable {
             }
 
             // block if needed
+            // ($adoc[2] is 0 if never attempted, -1 if in flight, otherwise
+            // the time at which the next attempt should start)
             $mintime = $stoptime;
             foreach ($adocs as &$adoc) {
-                if ($adoc[2] === 0 || $adoc[2] >= $time) {
+                if ($adoc[2] === 0 || ($adoc[2] > 0 && $adoc[2] <= $time)) {
                     $adoc[1]->prepare();
                     curl_multi_add_handle($curlm, $adoc[1]->curlh);
                     $adoc[2] = -1;
