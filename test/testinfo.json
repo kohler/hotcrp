@@ -3,7 +3,7 @@
         "name": "test01",
         "members": [
             "fresh_db", "Permission_Tester", "Tags_Tester", "Tracks_Tester",
-            "Banners_Tester", "Session_Tester"
+            "Banners_Tester", "Session_Tester", "UserSecurity_Tester"
         ]
     },
     {
