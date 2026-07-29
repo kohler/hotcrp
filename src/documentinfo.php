@@ -1296,14 +1296,14 @@ class DocumentInfo implements JsonSerializable {
         $adocs = [];
         '@phan-var-force list<array{DocumentInfo,CurlS3Result,int|float,?string,?string}> $adocs';
         $curlm = curl_multi_init();
-        $starttime = $stoptime = null;
+        $starttime = microtime(true);
+        $stoptime = null;
         $docstore = ($flags & self::FLAG_NO_DOCSTORE) === 0;
 
         while (true) {
             // check time
             $time = microtime(true);
             if ($stoptime === null) {
-                $starttime = $time;
                 $stoptime = $time + 20 * max(ceil(count($pfdocs) / 8), 1);
                 S3Client::$retry_timeout_allowance += 5 * count($pfdocs) / 4;
             }
@@ -1336,20 +1336,27 @@ class DocumentInfo implements JsonSerializable {
                 break;
             }
 
-            // block if needed
+            // start requests that are ready to go
             // ($adoc[2] is 0 if never attempted, -1 if in flight, otherwise
-            // the time at which the next attempt should start)
+            // the time at which the next attempt should start; $mintime is
+            // the earliest time at which a waiting request comes due)
             $mintime = $stoptime;
+            $nactive = 0;
             foreach ($adocs as &$adoc) {
                 if ($adoc[2] === 0 || ($adoc[2] > 0 && $adoc[2] <= $time)) {
                     $adoc[1]->prepare();
                     curl_multi_add_handle($curlm, $adoc[1]->curlh);
                     $adoc[2] = -1;
                 }
-                $mintime = min($mintime, $adoc[2]);
+                if ($adoc[2] < 0) {
+                    ++$nactive;
+                } else {
+                    $mintime = min($mintime, $adoc[2]);
+                }
             }
             unset($adoc);
-            if ($mintime > $time) {
+            // block if every request is waiting to be retried
+            if ($nactive === 0) {
                 usleep((int) (($mintime - $time) * 1000000));
                 S3Client::$retry_timeout_allowance -= $mintime - $time;
                 continue;
@@ -1365,7 +1372,12 @@ class DocumentInfo implements JsonSerializable {
             // handle results
             while (($minfo = curl_multi_info_read($curlm))) {
                 $curlh = $minfo["handle"];
-                for ($i = 0; $i < count($adocs) && $adocs[$i][1]->curlh !== $curlh; ++$i) {
+                for ($i = 0; $i !== count($adocs) && $adocs[$i][1]->curlh !== $curlh; ++$i) {
+                }
+                if ($i === count($adocs)) {
+                    // unknown handle: should not happen, but do not lose it
+                    curl_multi_remove_handle($curlm, $curlh);
+                    continue;
                 }
                 $adoc = $adocs[$i];
                 $s3l = $adoc[1];
@@ -1374,23 +1386,36 @@ class DocumentInfo implements JsonSerializable {
                     $adoc[0]->handle_load_s3_curl($s3l, $adoc[3], $adoc[4]);
                     array_splice($adocs, $i, 1);
                 } else {
-                    $adocs[$i][2] = microtime(true) + 0.005 * (1 << $s3l->runindex);
+                    $retrytime = microtime(true) + 0.005 * (1 << $s3l->runindex);
+                    $adocs[$i][2] = $retrytime;
+                    $mintime = min($mintime, $retrytime);
                 }
             }
 
-            // maybe block
-            if ($mrunning) {
-                curl_multi_select($curlm, $stoptime - microtime(true));
+            // maybe block, but no longer than the next waiting request needs
+            if ($mrunning
+                && ($delay = $mintime - microtime(true)) > 0
+                && curl_multi_select($curlm, $delay) < 0) {
+                // no file descriptors to wait on; avoid spinning
+                usleep(50000);
             }
         }
 
         // clean up leftovers; these requests never reached a final status
         foreach ($adocs as $adoc) {
-            $adoc[1]->status = null;
-            ++$adoc[1]->s3->incomplete_count;
-            $adoc[0]->handle_load_s3_curl($adoc[1], $adoc[3], $adoc[4]);
+            $s3l = $adoc[1];
+            // detach the request and close its curl handle *before* its
+            // response body stream is closed
+            if ($s3l->curlh !== null) {
+                curl_multi_remove_handle($curlm, $s3l->curlh);
+                $s3l->close();
+            }
+            $s3l->status = 598;
+            $s3l->s3->account(598);
+            $adoc[0]->handle_load_s3_curl($s3l, $adoc[3], $adoc[4]);
         }
         curl_multi_close($curlm);
+        Conf::$blocked_time += microtime(true) - $starttime;
     }
 
 

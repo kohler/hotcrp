@@ -472,7 +472,6 @@ class Hotcrapi_Batch extends MessageSet {
         curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $method ?? "POST");
         curl_setopt($curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
         curl_setopt($curlh, CURLOPT_WRITEHEADER, $this->headerf);
-        curl_setopt($curlh, CURLOPT_SAFE_UPLOAD, true);
         if ($this->apitoken) {
             curl_setopt($curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
         }

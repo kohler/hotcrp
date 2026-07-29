@@ -207,7 +207,6 @@ class Mention_Tester {
         xassert_eqq(count($prow->viewable_comment_skeletons($au)), 1);
         xassert_in_eqq("Shepherd", $this->mention_names($au, $prow));
         $conf->qe("delete from PaperComment where commentId=?", $cmtid);
-        $conf->invalidate_caches([]);
 
         // ... but an unlabeled comment that merely happens to be by the
         // shepherd does not: the author can’t tell who wrote it
@@ -217,7 +216,6 @@ class Mention_Tester {
         xassert_eqq(count($prow->viewable_comment_skeletons($au)), 1);
         xassert_not_in_eqq("Shepherd", $this->mention_names($au, $prow));
         $conf->qe("delete from PaperComment where commentId=?", $cmtid);
-        $conf->invalidate_caches([]);
 
         // ... and neither does a visible decision
         xassert_assign($chair, "paper,action,decision\n13,decision,yes\n");

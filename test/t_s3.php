@@ -19,6 +19,17 @@ class S3_Tester {
         ]);
     }
 
+    /** Return an S3 client that records requests rather than sending them.
+     * @return S3Client */
+    static function make_offline_client() {
+        Offline_S3Result::$requests = [];
+        $s3 = new S3Client([
+            "key" => "AKIAOFFLINETESTKEY", "secret" => "offlinetestsecret",
+            "bucket" => "offlinetestbucket"
+        ]);
+        return $s3->set_result_class("Offline_S3Result");
+    }
+
     /** @param S3Client|array{?string,?string,?string,?string} $s3i
      * @return array{?string,?string,?string,?string} */
     static function install_s3_options(Conf $conf, $s3i) {
@@ -29,5 +40,28 @@ class S3_Tester {
             $conf->set_opt($k, $v);
         }
         return $r;
+    }
+}
+
+/** An `S3Result` that records its request and reports success without
+ * contacting S3.
+ * @inherits S3Result<bool> */
+class Offline_S3Result extends S3Result {
+    /** @var list<array{string,string,string}> */
+    static public $requests = [];
+
+    /** @return $this */
+    function run() {
+        if ($this->status === null) {
+            self::$requests[] = [$this->method, $this->skey, $this->args["content"] ?? ""];
+            $this->status = 200;
+            $this->status_text = "OK";
+        }
+        return $this;
+    }
+
+    /** @return string */
+    function response_body() {
+        return "";
     }
 }

@@ -602,7 +602,7 @@ class S3Client {
     function delete_many($skeys) {
         $i = 0;
         while ($i < count($skeys)) {
-            $j = min(1000, count($skeys) - $i);
+            $j = min($i + 1000, count($skeys));
             $l = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Delete xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n"];
             for (; $i < $j; ++$i) {
                 $l[] = "<Object><Key>" . htmlspecialchars($skeys[$i]) . "</Key></Object>\n";

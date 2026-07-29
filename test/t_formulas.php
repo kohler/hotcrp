@@ -25,6 +25,7 @@ class Formulas_Tester {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        Conf::$blocked_time = 0.0;
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
         $this->u_mjh = $conf->checked_user_by_email("mjh@isi.edu");

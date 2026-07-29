@@ -63,6 +63,70 @@ class DocumentBasics_Tester {
         xassert_eqq($sig["signature"], "fea454ca298b7da1c68078a5d1bdbfbbe0d65c699e0f91ac7a200a0136783543");
     }
 
+    function test_s3_response_lines() {
+        $s3 = S3_Tester::make_offline_client();
+        $s3r = new Offline_S3Result($s3, "test.txt", "GET", [], "S3Result::success_finisher");
+        // a `100 Continue` block must not shadow the real response
+        $s3r->parse_response_lines([
+            "HTTP/1.1 100 Continue",
+            "x-amz-meta-hotcrp: continue",
+            "HTTP/1.1 200 OK",
+            "Content-Type: text/plain",
+            "x-amz-meta-hotcrp: real"
+        ]);
+        xassert_eqq($s3r->status, 200);
+        xassert_eqq($s3r->status_text, "OK");
+        xassert_eqq(count($s3r->response_headers), 2);
+        xassert_eqq(count($s3r->user_data), 1);
+        xassert_eqq($s3r->response_headers["content-type"] ?? null, "text/plain");
+        xassert_eqq($s3r->user_data["hotcrp"] ?? null, "real");
+    }
+
+    function test_s3_delete_many() {
+        $s3 = S3_Tester::make_offline_client();
+        $keys = [];
+        for ($i = 0; $i !== 1500; ++$i) {
+            $keys[] = sprintf("offline/%04d.txt", $i);
+        }
+        // NB before HotCRP 3.x this looped forever on the second batch
+        xassert_eqq($s3->delete_many($keys), true);
+        xassert_eqq(count(Offline_S3Result::$requests), 2);
+        xassert_eqq(Offline_S3Result::$requests[0][0], "POST");
+        xassert_eqq(substr_count(Offline_S3Result::$requests[0][2], "<Object>"), 1000);
+        xassert_eqq(substr_count(Offline_S3Result::$requests[1][2], "<Object>"), 500);
+        xassert_str_contains(Offline_S3Result::$requests[0][2], "<Key>offline/0000.txt</Key>");
+        xassert_str_contains(Offline_S3Result::$requests[1][2], "<Key>offline/1499.txt</Key>");
+    }
+
+    function test_curl_s3_result() {
+        if (!function_exists("curl_init")) {
+            return;
+        }
+        $s3 = S3_Tester::make_offline_client();
+
+        // `close()` must not close a caller-provided request body stream
+        $stream = fopen("php://temp", "w+b");
+        xassert(is_resource($stream));
+        fwrite($stream, "hello\n");
+        $args = ["content_file" => $stream, "content_type" => "text/plain"];
+        '@phan-var-force array<string,string> $args';
+        $s3r = new CurlS3Result($s3, "test.txt", "PUT", $args,
+            "S3Result::success_finisher");
+        $s3r->prepare();
+        $s3r->close();
+        xassert(is_resource($stream));
+        fclose($stream);
+
+        // a result that never runs accumulates no blocked time
+        $blocked = Conf::$blocked_time;
+        $s3r = new CurlS3Result($s3, "", "GET", [], "S3Result::success_finisher");
+        xassert_eqq($s3r->status, 404);
+        $s3r->run();
+        xassert_eqq(Conf::$blocked_time, $blocked);
+        xassert_eqq($s3r->response_body(), "");
+        xassert_eqq(Conf::$blocked_time, $blocked);
+    }
+
     function test_docstore_root() {
         $d = Docstore::make(null);
         xassert_eqq($d, null);

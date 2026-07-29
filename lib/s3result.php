@@ -60,12 +60,14 @@ abstract class S3Result {
     }
 
     function parse_response_lines($w) {
-        if (preg_match('/\AHTTP\/[\d.]+\s+(\d+)\s+(.+)\z/', $w[0], $m)) {
-            $this->status = (int) $m[1];
-            $this->status_text = $m[2];
-        }
-        for ($i = 1; $i != count($w); ++$i) {
-            if (preg_match('/\A(.*?):\s*(.*)\z/', $w[$i], $m)) {
+        foreach ($w as $line) {
+            if (preg_match('/\AHTTP\/[\d.]+\s+(\d+)(?:\s+(.*))?\z/', $line, $m)) {
+                // a new status line starts a new response block; later blocks
+                // (e.g. after `100 Continue`) supersede earlier ones
+                $this->status = (int) $m[1];
+                $this->status_text = $m[2] ?? "";
+                $this->response_headers = $this->user_data = [];
+            } else if (preg_match('/\A(.*?):\s*(.*)\z/', $line, $m)) {
                 $this->response_headers[strtolower($m[1])] = $m[2];
                 if (substr($m[1], 0, 11) == "x-amz-meta-") {
                     $this->user_data[substr($m[1], 11)] = $m[2];
@@ -144,12 +146,12 @@ class StreamS3Result extends S3Result {
     }
 
     private function parse_stream_response($metadata) {
-        $this->response_headers["url"] = $this->url;
         if ($metadata
             && ($w = $metadata["wrapper_data"] ?? null)
             && is_array($w)) {
             $this->parse_response_lines($w);
         }
+        $this->response_headers["url"] = $this->url;
     }
 
     private function run_stream_once() {
