@@ -1,6 +1,6 @@
 <?php
 // qsession.php -- HotCRP session handling; default is empty
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Qsession {
     /** @var ?string
@@ -8,8 +8,12 @@ class Qsession {
     public $sid;
     /** @var bool */
     protected $sopen = false;
+    /** @var bool */
+    private $scommitted = false;
     /** @var 0|1|2 */
     private $opentype = 0;
+    /** @var array<string,mixed> */
+    protected $sv = [];
 
     function maybe_open() {
         if (!$this->sopen && isset($_COOKIE[session_name()])) {
@@ -52,16 +56,16 @@ class Qsession {
         if (!$this->sopen) {
             $this->start($cookie_sid);
             if (!$this->sopen) {
+                $this->assign_fail();
                 return;
             }
         }
 
         // reset session while reopened, empty [session fixation], or deleted
-        if ($this->sid === $cookie_sid) {
-            $this->check_reopen();
-            if ($this->sid === null) {
-                return;
-            }
+        if ($this->sid === $cookie_sid
+            && !$this->check_reopen()) {
+            $this->assign_fail();
+            return;
         }
 
         // maybe update session format
@@ -77,6 +81,7 @@ class Qsession {
         }
     }
 
+    /** @return bool */
     private function check_reopen() {
         $tries = 0;
         while (true) {
@@ -84,7 +89,7 @@ class Qsession {
             if (($this->opentype !== 1 || $tries > 0)
                 && (!empty($curv) || $tries > 0)
                 && !isset($curv["deletedat"])) {
-                return;
+                return true;
             }
             ++$tries;
 
@@ -110,7 +115,7 @@ class Qsession {
 
             $this->start($nsid);
             if (!$this->sopen) {
-                return;
+                return false;
             }
 
             if ($transfer) {
@@ -138,11 +143,46 @@ class Qsession {
             $this->sopen = true;
         } else {
             $this->sid = null;
+            $this->sv = [];
         }
     }
 
-    /** @return bool */
+    /** @param ?string $sid
+     * @param array<string,mixed> $sv
+     * @suppress PhanAccessReadOnlyProperty */
+    protected function assign_open($sid, $sv) {
+        assert(!$this->sopen || $sid === $this->sid);
+        $this->sid = $sid;
+        $this->sopen = true;
+        $this->scommitted = false;
+        $this->sv = $sv;
+    }
+
+    protected function assign_fail() {
+        $this->sid = null;
+        $this->sopen = $this->scommitted = false;
+        $this->sv = [];
+    }
+
+    protected function assign_commit() {
+        assert($this->sopen);
+        $this->sopen = false;
+        $this->scommitted = true;
+    }
+
+    /** @return bool
+     * @deprecated */
     function is_open() {
+        return $this->sopen;
+    }
+
+    /** @return bool */
+    function is_readable() {
+        return $this->sopen || $this->scommitted;
+    }
+
+    /** @return bool */
+    function is_writable() {
         return $this->sopen;
     }
 
@@ -167,23 +207,25 @@ class Qsession {
 
     /** @return array<string,mixed> */
     function all() {
-        return [];
+        return $this->sv;
     }
 
     /** @return void */
     function clear() {
+        assert($this->sopen);
+        $this->sv = [];
     }
 
     /** @param string $key
      * @return bool */
     function has($key) {
-        return false;
+        return isset($this->sv[$key]);
     }
 
     /** @param string $key
      * @return mixed */
     function get($key) {
-        return null;
+        return $this->sv[$key] ?? null;
     }
 
     /** @param string $key
@@ -201,14 +243,14 @@ class Qsession {
      * @param string $key2
      * @return bool */
     function has2($key1, $key2) {
-        return false;
+        return isset($this->sv[$key1][$key2]);
     }
 
     /** @param string $key1
      * @param string $key2
      * @return mixed */
     function get2($key1, $key2) {
-        return null;
+        return $this->sv[$key1][$key2] ?? null;
     }
 
     /** @param string $key1

@@ -5319,7 +5319,7 @@ class Conf {
         // Callback for version warnings
         if ($user
             && $user->privChair
-            && $qreq->qsession()->is_open()
+            && $qreq->qsession()->is_writable()
             && (!$qreq->has_gsession("updatecheck")
                 || $qreq->gsession("updatecheck") + ($this->opt["updatesSiteFrequency"] ?? 3600) <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
