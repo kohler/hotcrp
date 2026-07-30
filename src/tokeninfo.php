@@ -60,8 +60,10 @@ class TokenInfo {
      * @readonly */
     public $lookupKey;
 
-    /** @var ?string */
-    public $email;
+    /** Not in the Capability table; occasionally joined
+     * @var ?string */
+    protected $email;
+
     /** @var ?Contact|false */
     private $_user = false;
     /** @var ?string */
@@ -388,6 +390,16 @@ class TokenInfo {
         return ($capabilityType === null || $this->capabilityType === $capabilityType)
             && ($this->timeExpires === 0 || $this->timeExpires > Conf::$now)
             && ($this->timeInvalid === 0 || $this->timeInvalid > Conf::$now);
+    }
+
+    /** @return ?string */
+    final function email() {
+        if ($this->email !== null) {
+            return $this->email;
+        } else if (($u = $this->user())) {
+            return $u->email;
+        }
+        return null;
     }
 
     /** @return ?Contact */

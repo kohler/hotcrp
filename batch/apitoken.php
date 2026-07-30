@@ -181,9 +181,7 @@ class APIToken_Batch {
 
     /** @return string */
     private function unparse_token(TokenInfo $tok) {
-        if (($who = $tok->email ?? "") === "") {
-            $who = $tok->contactId > 0 ? "#{$tok->contactId}" : "(no user)";
-        }
+        $who = $tok->email() ?? ($tok->contactId > 0 ? "#{$tok->contactId}" : "(no user)");
         $f = [];
         if ($tok->is_cdb) {
             $f[] = "global";
