@@ -116,51 +116,6 @@ class Search_API {
         }
     }
 
-    static function fieldhtml(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if ($qreq->f === null) {
-            return JsonResult::make_missing_error("f");
-        }
-        $search = self::make_search($user, $qreq, $prow);
-        if ($search instanceof JsonResult) {
-            return $search;
-        }
-        $pl = new PaperList("empty", $search);
-        $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
-        $response = $pl->table_html_json();
-
-        $j = [
-            "ok" => !empty($response["fields"]),
-            "message_list" => $pl->message_list()
-        ] + $response;
-        if ($j["ok"]
-            && $qreq->session
-            && $qreq->valid_token()
-            && !$qreq->is_head()
-            && friendly_boolean($qreq->session) === null) {
-            Session_API::change_session($qreq, $qreq->session);
-        }
-        return $j;
-    }
-
-    static function fieldtext(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if ($qreq->f === null) {
-            return JsonResult::make_missing_error("f");
-        }
-        $search = self::make_search($user, $qreq, $prow);
-        if ($search instanceof JsonResult) {
-            return $search;
-        }
-        $pl = new PaperList("empty", $search);
-        $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
-        $response = $pl->text_json();
-
-        return [
-            "ok" => !empty($response),
-            "message_list" => $pl->message_list(),
-            "data" => $response
-        ];
-    }
-
     static function searchaction(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (($qreq->action ?? "") === "") {
             return JsonResult::make_missing_error("action");

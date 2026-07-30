@@ -24,8 +24,6 @@
     {   "name": "documenthistory", "get": true, "deprecated": true, "function": "Document_API::documenthistory"   },
     {   "name": "documentlist", "get": true, "function": "Document_API::documentlist"   },
     {   "name": "events", "get": true, "function": "Events_API::run"   },
-    {   "name": "fieldtext", "get": true, "deprecated": true, "function": "Search_API::fieldtext"   },
-    {   "name": "fieldhtml", "get": true, "deprecated": true, "function": "Search_API::fieldhtml"   },
     {   "name": "follow", "post": true, "paper": true, "xxx": true, "function": "Follow_API::run"   },
     {   "name": "formatcheck", "get": true, "function": "FormatCheck_API::run"   },
     {   "name": "graphdata", "get": true, "function": "GraphData_API::graphdata"   },
