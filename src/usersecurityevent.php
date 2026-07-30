@@ -147,10 +147,9 @@ class UserSecurityEvent {
     }
 
 
-    /** @param Qsession|Qrequest $qsr */
-    function store($qsr) {
+    function store(Qrequest $qreq) {
         assert(isset($this->email));
-        $qs = $qsr instanceof Qrequest ? $qsr->qsession() : $qsr;
+        $qs = $qreq->qsession();
         $uindex = Contact::session_index_by_email($qs, $this->email);
         assert(($this->uindex ?? -1) < 0 || $this->uindex === $uindex);
         $this->uindex = $uindex;
