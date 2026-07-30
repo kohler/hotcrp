@@ -12,13 +12,19 @@ class UserSecurity_Tester {
     }
 
     /** @param list<string> $emails
-     * @return MemoryQsession */
+     * @return Qsession */
     private function make_qsession($emails = []) {
         $qs = new MemoryQsession;
         foreach ($emails as $email) {
             UserSecurityEvent::session_user_add($qs, $email);
         }
         return $qs;
+    }
+
+    /** @param list<string> $emails
+     * @return Qrequest */
+    private function make_qrequest($emails = []) {
+        return TestQreq::get()->set_qsession($this->make_qsession($emails));
     }
 
 
@@ -79,94 +85,94 @@ class UserSecurity_Tester {
     // store()
 
     function test_store_assigns_uindex() {
-        $qs = $this->make_qsession(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
-        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qs);
-        $usec = $qs->get("usec");
+        $qreq = $this->make_qrequest(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
+        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qreq);
+        $usec = $qreq->gsession("usec");
         xassert_eqq(count($usec), 1);
         xassert_eqq($usec[0]["u"] ?? 0, 1);
     }
 
     function test_store_keeps_unrelated_events() {
-        $qs = $this->make_qsession(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
-        UserSecurityEvent::make("estrin@usc.edu")->store($qs);
-        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qs);
-        xassert_eqq(count($qs->get("usec")), 2);
+        $qreq = $this->make_qrequest(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
+        UserSecurityEvent::make("estrin@usc.edu")->store($qreq);
+        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qreq);
+        xassert_eqq(count($qreq->gsession("usec")), 2);
     }
 
     function test_store_success_supersedes_same_kind() {
-        $qs = $this->make_qsession(["estrin@usc.edu"]);
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
         $old = UserSecurityEvent::make("estrin@usc.edu");
         $old->timestamp = Conf::$now - 100;
-        $old->store($qs);
-        UserSecurityEvent::make("estrin@usc.edu")->store($qs);
+        $old->store($qreq);
+        UserSecurityEvent::make("estrin@usc.edu")->store($qreq);
         // same user, type, subtype, and reason: only the newer entry survives
-        $usec = $qs->get("usec");
+        $usec = $qreq->gsession("usec");
         xassert_eqq(count($usec), 1);
         xassert_eqq($usec[0]["a"], Conf::$now);
     }
 
     function test_store_success_keeps_other_kinds() {
-        $qs = $this->make_qsession(["estrin@usc.edu"]);
-        UserSecurityEvent::make("estrin@usc.edu", UserSecurityEvent::TYPE_PASSWORD)->store($qs);
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        UserSecurityEvent::make("estrin@usc.edu", UserSecurityEvent::TYPE_PASSWORD)->store($qreq);
         UserSecurityEvent::make("estrin@usc.edu", UserSecurityEvent::TYPE_OAUTH)
-            ->set_subtype("google")->store($qs);
-        xassert_eqq(count($qs->get("usec")), 2);
+            ->set_subtype("google")->store($qreq);
+        xassert_eqq(count($qreq->gsession("usec")), 2);
 
         // differing subtype is also a different kind
         UserSecurityEvent::make("estrin@usc.edu", UserSecurityEvent::TYPE_OAUTH)
-            ->set_subtype("orcid")->store($qs);
-        xassert_eqq(count($qs->get("usec")), 3);
+            ->set_subtype("orcid")->store($qreq);
+        xassert_eqq(count($qreq->gsession("usec")), 3);
     }
 
     function test_store_failure_does_not_supersede() {
-        $qs = $this->make_qsession(["estrin@usc.edu"]);
-        UserSecurityEvent::make("estrin@usc.edu")->set_success(false)->store($qs);
-        UserSecurityEvent::make("estrin@usc.edu")->set_success(false)->store($qs);
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        UserSecurityEvent::make("estrin@usc.edu")->set_success(false)->store($qreq);
+        UserSecurityEvent::make("estrin@usc.edu")->set_success(false)->store($qreq);
         // failures accumulate; only a success clears earlier matches
-        xassert_eqq(count($qs->get("usec")), 2);
+        xassert_eqq(count($qreq->gsession("usec")), 2);
     }
 
     function test_store_drops_stale_reauth() {
-        $qs = $this->make_qsession(["estrin@usc.edu"]);
-        $qs->set("usec", [
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $qreq->set_gsession("usec", [
             ["r" => 1, "a" => Conf::$now - 86401],  // stale reauth: dropped
             ["r" => 1, "a" => Conf::$now - 86399],  // still fresh
             ["a" => Conf::$now - 200000]            // signin: no age limit
         ]);
-        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qs);
+        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qreq);
         $ages = [];
-        foreach ($qs->get("usec") as $x) {
+        foreach ($qreq->gsession("usec") as $x) {
             $ages[] = Conf::$now - $x["a"];
         }
         xassert_eqq($ages, [86399, 200000, 0]);
     }
 
     function test_store_drops_old_failures_when_crowded() {
-        $qs = $this->make_qsession(["estrin@usc.edu"]);
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
         // under the 150-entry threshold, old failures are kept
         $usec = [];
         for ($i = 0; $i !== 149; ++$i) {
             $usec[] = ["e" => "x{$i}@example.com", "x" => true, "a" => Conf::$now - 901];
         }
-        $qs->set("usec", $usec);
-        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qs);
-        xassert_eqq(count($qs->get("usec")), 150);
+        $qreq->set_gsession("usec", $usec);
+        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qreq);
+        xassert_eqq(count($qreq->gsession("usec")), 150);
 
         // at the threshold, failures older than 900s go
         $usec[] = ["e" => "x149@example.com", "x" => true, "a" => Conf::$now - 899];
-        $qs->set("usec", $usec);
-        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qs);
-        $usec = $qs->get("usec");
+        $qreq->set_gsession("usec", $usec);
+        UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qreq);
+        $usec = $qreq->gsession("usec");
         xassert_eqq(count($usec), 2);
         xassert_eqq($usec[0]["e"], "x149@example.com");
     }
 
     function test_store_backfills_uindex() {
-        $qs = $this->make_qsession(["estrin@usc.edu"]);
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
         // an entry stored before the account was indexed is keyed by email
-        $qs->set("usec", [["e" => "estrin@usc.edu", "t" => 2, "a" => Conf::$now - 100]]);
-        UserSecurityEvent::make("estrin@usc.edu", UserSecurityEvent::TYPE_OAUTH)->store($qs);
-        $usec = $qs->get("usec");
+        $qreq->set_gsession("usec", [["e" => "estrin@usc.edu", "t" => 2, "a" => Conf::$now - 100]]);
+        UserSecurityEvent::make("estrin@usc.edu", UserSecurityEvent::TYPE_OAUTH)->store($qreq);
+        $usec = $qreq->gsession("usec");
         xassert_eqq(count($usec), 2);
         // the old entry is rewritten against index 0, losing its `e` key
         xassert_eqq($usec[0], ["t" => 2, "a" => Conf::$now - 100]);
@@ -176,8 +182,9 @@ class UserSecurity_Tester {
     // session_list_by_email
 
     function test_session_list_by_email_matches_index_and_email() {
-        $qs = $this->make_qsession(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
-        $qs->set("usec", [
+        $qreq = $this->make_qrequest(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
+        $qs = $qreq->qsession();
+        $qreq->set_gsession("usec", [
             ["a" => 1],                                 // index 0 = estrin
             ["u" => 1, "a" => 2],                       // index 1 = floyd
             ["e" => "estrin@usc.edu", "a" => 3],        // email-keyed estrin
@@ -197,7 +204,8 @@ class UserSecurity_Tester {
     }
 
     function test_session_latest_signin_by_email() {
-        $qs = $this->make_qsession(["estrin@usc.edu"]);
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $qs = $qreq->qsession();
         $qs->set("usec", [
             ["a" => 1],
             ["r" => 1, "a" => 2],   // reauth, not a signin

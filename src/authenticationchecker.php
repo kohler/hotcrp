@@ -189,7 +189,7 @@ class AuthenticationChecker {
         $info = $this->user->check_password_info($this->qreq->password);
         foreach ($info["usec"] ?? [] as $use) {
             $use->set_reason(UserSecurityEvent::REASON_REAUTH)
-                ->store($this->qreq->qsession());
+                ->store($this->qreq);
         }
         $ms = new MessageSet;
         if ($info["ok"]) {

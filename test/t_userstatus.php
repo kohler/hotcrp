@@ -29,7 +29,7 @@ class UserStatus_Tester {
         UserSecurityEvent::session_user_add($qreq->qsession(), $email);
         UserSecurityEvent::make($email)
             ->set_reason(UserSecurityEvent::REASON_REAUTH)
-            ->store($qreq->qsession());
+            ->store($qreq);
         $u = $u->activate($qreq, true);
         $qreq->set_user($u);
         return [$u, $qreq];

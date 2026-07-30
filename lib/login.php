@@ -148,7 +148,7 @@ class LoginHelper {
     static function login_complete($info, Qrequest $qreq) {
         if (!$info["ok"]) {
             foreach ($info["usec"] ?? [] as $use) {
-                $use->store($qreq->qsession());
+                $use->store($qreq);
             }
             return $info;
         }
@@ -165,7 +165,7 @@ class LoginHelper {
         $qs->open_new_sid();
         UserSecurityEvent::session_user_add($qs, $xuser->email);
         foreach ($info["usec"] ?? [] as $use) {
-            $use->set_email($xuser->email)->store($qs);
+            $use->set_email($xuser->email)->store($qreq);
         }
 
         // activate
