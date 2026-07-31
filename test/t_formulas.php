@@ -885,6 +885,41 @@ class Formulas_Tester {
         $this->conf->qe("update Paper set timeSubmitted=? where paperId=1", $saved);
     }
 
+    function test_graph_type_prefix() {
+        foreach (["dot", "dots", "dotplot"] as $s) {
+            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::DOT, $s]);
+        }
+        foreach (["numdot", "numdots", "numdotplot"] as $s) {
+            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::NUMDOT, $s]);
+        }
+        // `numdot` is a distinct type, but shares DOT's bit so that everything
+        // keyed on DOT (highlighting, for one) applies to it too
+        xassert_neqq(FormulaGraph::NUMDOT, FormulaGraph::DOT);
+        xassert(FormulaGraph::NUMDOT & FormulaGraph::DOT);
+        xassert_eqq(FormulaGraph::NUMDOT & (FormulaGraph::CDF | FormulaGraph::BARCHART | FormulaGraph::BOXPLOT | FormulaGraph::SCATTER), 0);
+        xassert_eqq(FormulaGraph::graph_type_prefix("numdotty"), null);
+    }
+
+    function test_graph_numdot() {
+        // `numdot` plots like `dot`; the JS labels each dot with its pid
+        foreach ([["dot", "dot"], ["numdot", "numdot"], ["numdots", "numdot"]] as $st) {
+            $fg = new FormulaGraph($this->u_chair, $st[0], "pid", "pid");
+            $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+            $j = $fg->graph_json([]);
+            xassert_eqq($j["type"], $st[1]);
+            xassert_eqq($j["data_format"], "style_xyi");
+            $n = 0;
+            array_walk_recursive($j["data"], function () use (&$n) { ++$n; });
+            xassert($n > 0);
+        }
+
+        // the type may also arrive as a prefix on the Y axis formula
+        $fg = new FormulaGraph($this->u_chair, null, "pid", "numdot pid");
+        $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+        xassert_eqq($fg->graph_json([])["type"], "numdot");
+        xassert_eqq($fg->fy->expression, "pid");
+    }
+
     function test_graph_explains_empty_data() {
         // A search that matches nothing plots nothing; say so rather than
         // rendering a blank chart.

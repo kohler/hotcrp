@@ -1389,11 +1389,45 @@ function graph_scatter(element, args) {
     }
 }
 
+const DOT_RADIUS = 5;
+
 function dot_highlight(svg, data, klass) {
     highlight_update(svg, data, d => d.id, klass)
         .attr("cx", projx)
         .attr("cy", projy)
-        .attr("r", 4.5);
+        .attr("r", d => d.r - 0.5);
+}
+
+const DOT_LABEL_MAX = 6;
+
+function dot_label_class(d) {
+    // longer labels get their own class, so CSS can condense them further;
+    // `gdot-label-DOT_LABEL_MAX` means "that many characters or more"
+    const n = Math.min(d.label.length, DOT_LABEL_MAX);
+    return n > 2 ? "gdot-label gdot-label-" + n : "gdot-label";
+}
+
+// Label each datum with its pid, then give every dot one radius: the pid is
+// not data, so it must not vary a dot's visual weight. Labels of the same
+// length render at the same width, so one measurement per length suffices.
+function assign_dot_labels(svg, data) {
+    const text = svg.append("text"),
+        widths = [];
+    let width = 0;
+    for (const d of data) {
+        d.label = "" + d.id;
+        const n = d.label.length;
+        if (widths[n] === undefined) {
+            text.attr("class", dot_label_class(d)).text(d.label);
+            widths[n] = text.node().getComputedTextLength();
+        }
+        width = Math.max(width, widths[n]);
+    }
+    text.remove();
+    const r = Math.max(DOT_RADIUS, width / 2 + 3);
+    for (const d of data) {
+        d.r = r;
+    }
 }
 
 function data_pidcode(data) {
@@ -1427,11 +1461,15 @@ function graph_dot(element, args) {
         axes = make_axis_pair(args, x, y);
     data = data.map(d => {
         const xv = x(d[0]), yv = y(d[1]);
-        return {"0": d[0], "1": d[1], x: xv, x0: xv, y: yv, y0: yv, id: d[2], cc: d[3]};
+        return {"0": d[0], "1": d[1], x: xv, x0: xv, y: yv, y0: yv, id: d[2], cc: d[3], r: DOT_RADIUS};
     });
+    const numbered = args.type === "numdot";
+    if (numbered) {
+        assign_dot_labels(svg, data);
+    }
 
     const sim = d3.forceSimulation(data)
-        .force("collide", d3.forceCollide(6))
+        .force("collide", d3.forceCollide(d => d.r + 1))
         .force("x", d3.forceX(d => d.x0).strength(0.05))
         .force("y", d3.forceY(d => d.y0).strength(0.05))
         .stop();
@@ -1441,23 +1479,40 @@ function graph_dot(element, args) {
 
     svg.append("circle").attr("class", "gdot gdot-hover");
     const hovers = svg.selectAll(".gdot-hover")
-            .attr("r", 5)
+            .attr("r", DOT_RADIUS)
             .style("display", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
     draw_axes(svg, axes[0], axes[1], args);
     draw_annotations(svg, args);
 
-    svg.selectAll(".gdot:not(.gdot-hover)")
+    // A numbered dot is two elements sharing one position, so group them and
+    // place the group; a plain dot is just the circle and needs no wrapper.
+    const enter = svg.selectAll(numbered ? ".gdot-g" : ".gdot:not(.gdot-hover)")
         .data(data)
-        .enter()
-        .append("circle")
-        .attr("cx", projx)
-        .attr("cy", projy)
-        .attr("r", 5)
-        .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
-        .style("fill", d => ensure_pattern(d.cc, "gdot"))
-        .on("mouseover", mouseover)
+        .enter();
+    let target;
+    if (numbered) {
+        target = enter.append("g")
+            .attr("class", "gdot-g")
+            .attr("transform", d => "translate(" + projx(d) + "," + projy(d) + ")");
+        target.append("circle")
+            .attr("r", d => d.r)
+            .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
+            .style("fill", d => ensure_pattern(d.cc, "gdot"));
+        target.append("text")
+            .attr("class", dot_label_class)
+            .attr("dy", "0.35em")
+            .text(d => d.label);
+    } else {
+        target = enter.append("circle")
+            .attr("cx", projx)
+            .attr("cy", projy)
+            .attr("r", d => d.r)
+            .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
+            .style("fill", d => ensure_pattern(d.cc, "gdot"));
+    }
+    target.on("mouseover", mouseover)
         .on("mouseout", hoverer.mouseout_soon)
         .on("click", mouseclick);
 
@@ -1489,6 +1544,7 @@ function graph_dot(element, args) {
         hovers.datum(p)
             .attr("cx", projx)
             .attr("cy", projy)
+            .attr("r", d => d.r)
             .style("display", null);
         show_bubble();
         if (titles === null) {
@@ -2025,6 +2081,7 @@ const graphers = {
     procrastination: {filter: true, function: procrastination_filter},
     scatter: {function: graph_scatter},
     dot: {function: graph_dot},
+    numdot: {function: graph_dot},
     cdf: {function: graph_cdf},
     cumfreq: {function: graph_cdf},
     bar: {function: graph_bars},

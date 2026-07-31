@@ -178,6 +178,7 @@ class FormulaGraph extends MessageSet {
     const DOT = 16;
     const FBARCHART = 132; // 128 | BARCHART
     const OGIVE = 130;    // 128 | CDF
+    const NUMDOT = 144;   // 128 | DOT
 
     // formula class
     const DATA_PAPER = 1;
@@ -250,7 +251,7 @@ class FormulaGraph extends MessageSet {
     /** @param string $s
      * @return ?array{int,string} */
     static function graph_type_prefix($s) {
-        if (!preg_match('/\A\s*+(cdf(?![-\w])|)((?:ogive|cumfreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w])|)((?:stack|fraction)(?![-\w])|)((?:box|boxplot)(?![-\w])|)(scatter(?:plot|)(?![-\w])|)(dot(?:plot|s|)(?![-\w])|)(?![-\w])\s*+/', $s, $m)) {
+        if (!preg_match('/\A\s*+(cdf(?![-\w])|)((?:ogive|cumfreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w])|)((?:stack|fraction)(?![-\w])|)((?:box|boxplot)(?![-\w])|)(scatter(?:plot|)(?![-\w])|)((?:numdot|ldot|dotlabel)(?:plot|s|)(?![-\w])|)(dot(?:plot|s|)(?![-\w])|)(?![-\w])\s*+/', $s, $m)) {
             return null;
         } else if ($m[1]) {
             return [self::CDF, $m[0]];
@@ -265,6 +266,8 @@ class FormulaGraph extends MessageSet {
         } else if ($m[6]) {
             return [self::SCATTER, $m[0]];
         } else if ($m[7]) {
+            return [self::NUMDOT, $m[0]];
+        } else if ($m[8]) {
             return [self::DOT, $m[0]];
         }
         return null;
@@ -1310,6 +1313,7 @@ class FormulaGraph extends MessageSet {
         $tj = [
             self::SCATTER => "scatter",
             self::DOT => "dot",
+            self::NUMDOT => "numdot",
             self::CDF => "cdf",
             self::OGIVE => "cumfreq",
             self::BARCHART => "bar",
