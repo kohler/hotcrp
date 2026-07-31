@@ -852,14 +852,22 @@ class Formulas_Tester {
         xassert_eqq($ds[0]->t, null);
     }
 
-    /** @return int number of plotted submissions */
-    private function graph_pid_count($t) {
-        $fg = new FormulaGraph($this->u_chair, "scatter", "pid", "pid");
+    /** @param string $fx
+     * @param string $fy
+     * @param ?string $t
+     * @return int number of plotted values */
+    private function graph_point_count($fx, $fy, $t) {
+        $fg = new FormulaGraph($this->u_chair, "scatter", $fx, $fy);
         $fg->add_dataset(new FormulaGraphDataset("", $t, "", ""));
         $data = $fg->graph_json([])["data"];
         $n = 0;
         array_walk_recursive($data, function () use (&$n) { ++$n; });
         return $n;
+    }
+
+    /** @return int number of plotted submissions */
+    private function graph_pid_count($t) {
+        return $this->graph_point_count("pid", "pid", $t);
     }
 
     function test_graph_t_filters_results() {
@@ -875,6 +883,70 @@ class Formulas_Tester {
         xassert_eqq($submitted, $all - 1);
 
         $this->conf->qe("update Paper set timeSubmitted=? where paperId=1", $saved);
+    }
+
+    function test_graph_explains_empty_data() {
+        // A search that matches nothing plots nothing; say so rather than
+        // rendering a blank chart.
+        $fg = new FormulaGraph($this->u_chair, "scatter", "pid", "pid");
+        $fg->add_dataset(new FormulaGraphDataset("12345", "all", "", ""));
+        xassert_eqq($fg->graph_json([])["data"], []);
+        xassert_eqq($fg->full_feedback_text(), "No data to graph\n");
+    }
+
+    function test_graph_explains_axes_that_never_coexist() {
+        // Split the scored reviews between rounds R1 and R2, then restrict
+        // OveMer to R1 and RevExp to R2. No review is in both rounds, so a
+        // scatterplot of one field against the other is necessarily empty --
+        // the situation a conference hits when it reviews in rounds with
+        // different forms. Restricting a field also clears its out-of-round
+        // scores, so save the review rows and put them back afterwards.
+        $saved = Dbl::fetch_rows($this->conf->dblink,
+            "select reviewId, reviewRound, s01, s02 from PaperReview");
+        $scored = array_values(array_filter($saved, function ($row) {
+            return $row[2] !== "0" && $row[3] !== "0";
+        }));
+        xassert(count($scored) >= 2);
+        $rids = array_map(function ($row) { return (int) $row[0]; }, $scored);
+        $half = intdiv(count($rids), 2);
+        $this->conf->qe("update PaperReview set reviewRound=1 where reviewId?a", array_slice($rids, 0, $half));
+        $this->conf->qe("update PaperReview set reviewRound=2 where reviewId?a", array_slice($rids, $half));
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01",
+            "rf/1/presence" => "round:R1",
+            "rf/2/id" => "s02",
+            "rf/2/presence" => "round:R2"
+        ]);
+        xassert($sv->execute());
+
+        // each field has values on its own
+        xassert($this->graph_point_count("OveMer", "OveMer", "all") > 0);
+        xassert($this->graph_point_count("RevExp", "RevExp", "all") > 0);
+
+        // but never on the same review, and the graph explains why it is empty
+        $fg = new FormulaGraph($this->u_chair, "scatter", "OveMer", "RevExp");
+        $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+        xassert_eqq($fg->graph_json([])["data"], []);
+        xassert_eqq($fg->full_feedback_text(),
+            "No review has values for both ‘OveMer’ and ‘RevExp’\n    Try ‘avg(OveMer)’ and ‘avg(RevExp)’ to compare per-submission averages.\n");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01",
+            "rf/1/presence" => "all",
+            "rf/2/id" => "s02",
+            "rf/2/presence" => "all"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->checked_review_field("s01")->exists_condition(), null);
+        xassert_eqq($this->conf->checked_review_field("s02")->exists_condition(), null);
+
+        foreach ($saved as $row) {
+            $this->conf->qe("update PaperReview set reviewRound=?, s01=?, s02=? where reviewId=?",
+                (int) $row[1], (int) $row[2], (int) $row[3], (int) $row[0]);
+        }
     }
 
     /** @param Contact $user

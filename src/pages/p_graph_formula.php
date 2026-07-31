@@ -42,6 +42,10 @@ class Graph_Formula_Page {
             $fg->add_dataset($ds);
         }
 
+        // compute the graph before printing messages: an empty graph
+        // reports why it is empty
+        $gj = $fg->graph_json();
+
         if ($fg->has_message()) {
             echo Ht::msg(MessageSet::feedback_html($fg->decorated_message_list()), $fg->problem_status());
         }
@@ -76,7 +80,7 @@ class Graph_Formula_Page {
 
         echo Ht::unstash(), Ht::script_open(),
             '$(function () { hotcrp.graph("#hotgraph", ',
-            json_encode_browser($fg->graph_json()),
+            json_encode_browser($gj),
             ") });</script>\n";
     }
 
