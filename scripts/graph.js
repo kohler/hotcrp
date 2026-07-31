@@ -1494,7 +1494,7 @@ function graph_dot(element, args) {
     let target;
     if (numbered) {
         target = enter.append("g")
-            .attr("class", "gdot-g")
+            .attr("class", d => "gdot-g" + (d.cc ? " " + d.cc : ""))
             .attr("transform", d => "translate(" + projx(d) + "," + projy(d) + ")");
         target.append("circle")
             .attr("r", d => d.r)

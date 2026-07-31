@@ -5605,6 +5605,9 @@ th.pl_logaction {
 	text-anchor: middle;
 	pointer-events: none;
 }
+.dark > .gdot-label {
+	fill: #fff;
+}
 /* every dot is the same size, so condense longer labels rather than grow it */
 .gdot-label-3, .gdot-label-4, .gdot-label-5, .gdot-label-6 {
 	font-family: "Arial Narrow", "Liberation Sans Narrow", "Roboto Condensed", sans-serif;
