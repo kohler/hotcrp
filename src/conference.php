@@ -5965,6 +5965,9 @@ class Conf {
         if (!is_string($uf->function)) {
             return JsonResult::make_error(404, "<0>Function not found");
         }
+        if (($uf->session ?? null) === false) {
+            $qreq->commit_session();
+        }
         try {
             self::xt_resolve_require($uf);
             $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);

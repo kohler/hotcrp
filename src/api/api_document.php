@@ -4,7 +4,6 @@
 
 class Document_API {
     static function archive_contents(Contact $user, Qrequest $qreq) {
-        $qreq->commit_session();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
@@ -27,7 +26,6 @@ class Document_API {
     }
 
     static function archivelisting(Contact $user, Qrequest $qreq) {
-        $qreq->commit_session();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
@@ -114,7 +112,6 @@ class Document_API {
     }
 
     static function documentlist(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        $qreq->commit_session();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
@@ -144,7 +141,6 @@ class Document_API {
     }
 
     static function document(Contact $user, Qrequest $qreq) {
-        $qreq->commit_session();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }

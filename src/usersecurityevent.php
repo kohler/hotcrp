@@ -190,7 +190,7 @@ class UserSecurityEvent {
 
         // add self
         $result[] = $this->as_array();
-        $qs->set("usec", $result);
+        $qreq->set_gsession("usec", $result);
     }
 
 
