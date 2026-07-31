@@ -41,7 +41,7 @@ class APIToken_Batch {
             throw new CommandLineException("Bad `--expiry`");
         }
         $this->cdb = isset($arg["cdb"]);
-        $this->note = simplify_whitespace($arg["note"] ?? "");
+        $this->note = simplify_whitespace(convert_to_utf8($arg["note"] ?? ""));
         $this->scope = simplify_whitespace($arg["scope"] ?? "");
         if (!preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)*+\z/', $this->scope)) {
             throw new CommandLineException("Bad `--scope`");

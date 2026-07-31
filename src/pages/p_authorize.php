@@ -680,7 +680,7 @@ class Authorize_Page {
         $atok = Authorization_Token::prepare_bearer($user, $exp);
         $atok->change_data("client_id", $tok->data("client_id"))
             ->change_data("scope", TokenScope::unparse($ts));
-        // XXX note
+        // XXX no way to specify a note
         return $atok->insert();
     }
 

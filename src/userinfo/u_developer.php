@@ -286,7 +286,7 @@ class Developer_UserInfo {
         $token = Authorization_Token::prepare_bearer($tuser, $expiry);
         $this->_new_token = $token;
 
-        $note = simplify_whitespace($us->qreq["bearer_token/new/note"] ?? "");
+        $note = simplify_whitespace(convert_to_utf8($us->qreq["bearer_token/new/note"] ?? ""));
         if ($note !== "") {
             $token->change_data("note", $note);
         }
