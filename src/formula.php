@@ -1441,10 +1441,11 @@ class FormulaCompiler {
      * @param string $expr
      * @return string */
     function define_gvar($name, $expr) {
-        if (preg_match('/\A\$?(\d.*|.*[^A-Ya-z0-9_].*)\z/', $name, $m)) {
+        if (!str_starts_with($name, "\$")) {
+            $name = "\${$name}";
+        }
+        if (preg_match('/\A\$(\d.*|.*[^A-Ya-z0-9_].*)\z/', $name, $m)) {
             $name = '$' . preg_replace_callback('/\A\d|[^A-Ya-z0-9_]/', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
-        } else {
-            $name = $name[0] === "$" ? $name : '$' . $name;
         }
         if (!isset($this->defined[$name])) {
             $this->defined[$name] = true;
@@ -1609,7 +1610,7 @@ class FormulaCompiler {
             $expr = "{$rrow} && \$user->can_view_review_meta(\$prow, {$rrow})";
             if ($this->index_type === Fexpr::IDX_NONE
                 || $this->index_type === Fexpr::IDX_MY) {
-                $this->define_gvar($mv, $expr);
+                $this->gstmt[] = "{$mv} = {$expr};";
             } else {
                 $this->lstmt[] = "{$mv} = {$expr};";
             }
