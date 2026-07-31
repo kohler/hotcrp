@@ -45,49 +45,54 @@ class Cacheable_Page {
             return;
         }
 
-        // analyze file
-        $prefix = "";
-        if (preg_match('/\A(?:images|scripts|stylesheets)(?:\/[^.\/][^\/]+)+\z/', $file)
-            && ($dot = strrpos($file, ".")) !== false
-            && ctype_alnum(($ext = substr($file, $dot + 1)))) {
-            if ($ext === "js") {
-                Navigation::header("Content-Type: text/javascript; charset=utf-8");
-                if (isset($_GET["strictjs"]) && $_GET["strictjs"]) {
-                    $prefix = "\"use strict\";\n";
-                }
-            } else if ($ext === "map" || $ext === "json") {
-                Navigation::header("Content-Type: application/json; charset=utf-8");
-            } else if ($ext === "css") {
-                Navigation::header("Content-Type: text/css; charset=utf-8");
-            } else if ($ext === "gif") {
-                Navigation::header("Content-Type: image/gif");
-            } else if ($ext === "jpg") {
-                Navigation::header("Content-Type: image/jpeg");
-            } else if ($ext === "png") {
-                Navigation::header("Content-Type: image/png");
-            } else if ($ext === "svg") {
-                Navigation::header("Content-Type: image/svg+xml");
-            } else if ($ext === "mp3") {
-                Navigation::header("Content-Type: audio/mpeg");
-            } else if ($ext === "woff") {
-                Navigation::header("Content-Type: application/font-woff");
-            } else if ($ext === "woff2") {
-                Navigation::header("Content-Type: application/font-woff2");
-            } else if ($ext === "ttf") {
-                Navigation::header("Content-Type: application/x-font-ttf");
-            } else if ($ext === "otf") {
-                Navigation::header("Content-Type: font/opentype");
-            } else if ($ext === "eot") {
-                Navigation::header("Content-Type: application/vnd.ms-fontobject");
-            } else {
-                self::fail(403 /* Forbidden */, "File cannot be served", true);
-                return;
+        // analyze extension
+        $ext = "";
+        if (preg_match('/\A(\@\d++\/|)(?:images|scripts|stylesheets)(?:\/[^.\/][^\/]*+)++\z/', $file, $m)
+            && ($dot = strrpos($file, ".")) !== false) {
+            $ext = substr($file, $dot + 1);
+            if ($m[1] !== "") {
+                $file = substr($file, strlen($m[1]));
             }
-            Navigation::header("Access-Control-Allow-Origin: *");
+        }
+
+        // determine MIME type from extension, refuse unknown types
+        $prefix = "";
+        if ($ext === "js") {
+            Navigation::header("Content-Type: text/javascript; charset=utf-8");
+            if (isset($_GET["strictjs"]) && $_GET["strictjs"]) {
+                $prefix = "\"use strict\";\n";
+            }
+        } else if ($ext === "map" || $ext === "json") {
+            Navigation::header("Content-Type: application/json; charset=utf-8");
+        } else if ($ext === "wasm") {
+            Navigation::header("Content-Type: application/wasm");
+        } else if ($ext === "css") {
+            Navigation::header("Content-Type: text/css; charset=utf-8");
+        } else if ($ext === "gif") {
+            Navigation::header("Content-Type: image/gif");
+        } else if ($ext === "jpg") {
+            Navigation::header("Content-Type: image/jpeg");
+        } else if ($ext === "png") {
+            Navigation::header("Content-Type: image/png");
+        } else if ($ext === "svg") {
+            Navigation::header("Content-Type: image/svg+xml");
+        } else if ($ext === "mp3") {
+            Navigation::header("Content-Type: audio/mpeg");
+        } else if ($ext === "woff") {
+            Navigation::header("Content-Type: application/font-woff");
+        } else if ($ext === "woff2") {
+            Navigation::header("Content-Type: application/font-woff2");
+        } else if ($ext === "ttf") {
+            Navigation::header("Content-Type: application/x-font-ttf");
+        } else if ($ext === "otf") {
+            Navigation::header("Content-Type: font/opentype");
+        } else if ($ext === "eot") {
+            Navigation::header("Content-Type: application/vnd.ms-fontobject");
         } else {
             self::fail(403 /* Forbidden */, "File cannot be served", true);
             return;
         }
+        Navigation::header("Access-Control-Allow-Origin: *");
 
         $mtime = @filemtime($file);
         if ($mtime === false) {

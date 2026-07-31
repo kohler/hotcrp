@@ -55,7 +55,10 @@ if ($nav->page === "u" && !$nav->shift_path_components(2)) {
 }
 
 // handle pages
-if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
+if ($nav->page === "images"
+    || $nav->page === "scripts"
+    || $nav->page === "stylesheets"
+    || (($pl = strlen($nav->page)) > 1 && $nav->page[0] === "@" && strspn($nav->page, "0123456789", 1) === $pl - 1)) {
     $_GET["file"] = $nav->page . $nav->path;
     include("src/pages/p_cacheable.php");
     Cacheable_Page::go_nav($nav);
