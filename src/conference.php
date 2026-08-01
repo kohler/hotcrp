@@ -4360,8 +4360,6 @@ class Conf {
         // return known-empty result
         if (($cxid < 0
              && (($options["myReviewRequests"] ?? false)
-                 || ($options["myLead"] ?? false)
-                 || ($options["myShepherd"] ?? false)
                  || ($options["myManaged"] ?? false)
                  || ($options["myWatching"] ?? false)
                  || ($options["myConflicts"] ?? false)))
@@ -4390,7 +4388,7 @@ class Conf {
 
         // author options
         $author = $options["author"] ?? false;
-        $aucondition = $user && $author ? $user->act_author_view_sql("PaperConflict", true) : null;
+        $aucondition = $user && $author ? $user->is_author_view_sql("PaperConflict", true) : null;
         if ($aucondition) {
             $where[] = $aucondition;
         } else if ($author && $cxid < 0) {
@@ -4532,14 +4530,10 @@ class Conf {
         foreach ($options["decision"] ?? [] as $d) {
             $where[] = $this->decision_set()->sqlexpr($d);
         }
-        if ($options["myLead"] ?? false) {
-            $where[] = "leadContactId={$cxid}";
-        } else if ($options["anyLead"] ?? false) {
+        if ($options["anyLead"] ?? false) {
             $where[] = "leadContactId!=0";
         }
-        if ($options["myShepherd"] ?? false) {
-            $where[] = "shepherdContactId={$cxid}";
-        } else if ($options["anyShepherd"] ?? false) {
+        if ($options["anyShepherd"] ?? false) {
             $where[] = "shepherdContactId!=0";
         }
         if ($options["myManaged"] ?? false) {

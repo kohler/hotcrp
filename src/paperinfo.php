@@ -135,21 +135,21 @@ final class PaperContactInfo {
     const CIF_ALLOW_PC_BROAD = 0x200;
     const CIF_ALLOW_PC = 0x400;
     const CIF_ALLOW_AUTHOR_EDIT = 0x800;
-    const CIF_ACT_AUTHOR_VIEW = 0x1000;
-    const CIF_ALLOW_AUTHOR_VIEW = 0x2000;
-    const CIF_CAN_VIEW_DECISION = 0x4000;
-    const CIF_SET2 = 0x8000;
-    const CIF_ALLOW_VIEW_AUTHORS = 0x10000;
-    const CIF_PREFER_VIEW_AUTHORS = 0x20000;
-    const CIFSHIFT_VIEW_AUTHORS_STATE = 16; // === log2(CIF_ALLOW_VIEW_AUTHORS)
-    const CIF_SET3 = 0x40000;
-    const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x80000;
+    const CIF_AUTHOR_VIEW = 0x1000;
+    const CIF_CONFLICT_VIEW = 0x2000;
+    const CIF_ACT_AUTHOR_VIEW = 0x4000;
+    const CIF_ALLOW_AUTHOR_VIEW = 0x8000;
+    const CIF_CAN_VIEW_DECISION = 0x10000;
+    const CIF_SET2 = 0x20000;
+    const CIF_ALLOW_VIEW_AUTHORS = 0x40000;
+    const CIF_PREFER_VIEW_AUTHORS = 0x80000;
+    const CIFSHIFT_VIEW_AUTHORS_STATE = 18; // === log2(CIF_ALLOW_VIEW_AUTHORS)
+    const CIF_SET3 = 0x100000;
+    const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x200000;
     /** @var int */
     public $scope_bits;
     /** @var bool */
     public $primary_administrator;
-    /** @var int */
-    public $view_conflict_type;
 
     // cached by PaperInfo methods
     /** @var ?list<ReviewInfo> */
@@ -304,6 +304,16 @@ final class PaperContactInfo {
     }
 
     /** @return bool */
+    function is_author_view() {
+        return ($this->ciflags & self::CIF_AUTHOR_VIEW) !== 0;
+    }
+
+    /** @return bool */
+    function is_conflict_view() {
+        return ($this->ciflags & self::CIF_CONFLICT_VIEW) !== 0;
+    }
+
+    /** @return bool */
     function allow_author_view() {
         return ($this->ciflags & self::CIF_ALLOW_AUTHOR_VIEW) !== 0;
     }
@@ -337,20 +347,21 @@ final class PaperContactInfo {
     private function mark_review_type($conf, $rflags,
             $reviewNeedsSubmit, $reviewRound) {
         $this->rflags |= $rflags;
-
-        if (($rflags & ReviewInfo::RFM_TYPES) !== 0) {
-            $this->reviewType = max(ReviewInfo::rflags_type($rflags), $this->reviewType);
-            $this->reviewRound = $reviewRound;
-
-            if (($rflags & ReviewInfo::RF_SUBMITTED) !== 0
-                || $reviewNeedsSubmit === 0) {
-                $this->review_status = self::CIRS_SUBMITTED;
-            } else if ($this->review_status === 0) {
-                $m = $conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONDRAFT;
-                if (($rflags & $m) !== 0) {
-                    $this->review_status = self::CIRS_UNSUBMITTED;
-                }
-            }
+        if (($rflags & ReviewInfo::RFM_TYPES) === 0) {
+            return;
+        }
+        $this->reviewType = max(ReviewInfo::rflags_type($rflags), $this->reviewType);
+        $this->reviewRound = $reviewRound;
+        // ghost reviews don't count
+        $m = $conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
+        if (($rflags & $m) === 0) {
+            return;
+        }
+        if (($rflags & ReviewInfo::RF_SUBMITTED) !== 0
+            || $reviewNeedsSubmit === 0) {
+            $this->review_status = self::CIRS_SUBMITTED;
+        } else if ($this->review_status === 0) {
+            $this->review_status = self::CIRS_UNSUBMITTED;
         }
     }
 
@@ -1665,7 +1676,7 @@ class PaperInfo {
 
     /** @return bool */
     function has_author_view(Contact $user) {
-        return $user->view_conflict_type($this) >= CONFLICT_AUTHOR;
+        return $user->is_author_view($this);
     }
 
 

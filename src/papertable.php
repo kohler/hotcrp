@@ -2617,9 +2617,8 @@ class PaperTable {
         $prow = $this->prow;
         $conf = $prow->conf;
         $subrev = [];
-        $cflttype = $user->view_conflict_type($prow);
         $allow_actas = $user->privChair && $user->allow_admin($prow);
-        $hideUnviewable = ($cflttype > 0 && !$this->admin)
+        $hideUnviewable = (!$this->admin && $user->is_conflict_view($prow))
             || (!$user->act_pc($prow) && ($conf->setting("viewrev_ext") ?? 0) < 0);
         $show_ratings = $user->can_view_review_ratings($prow);
         $want_scores = !in_array($this->mode, ["assign", "edit", "re"], true);
@@ -2793,7 +2792,7 @@ class PaperTable {
         }
         $t .= '<tbody>';
         foreach ($subrev as $r) {
-            $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
+            $t .= '<tr class="rl' . ($r[0] ? " {$r[0]}" : "") . '">' . $r[1];
             if ($r[2] ?? null) {
                 foreach ($score_header as $fid => $header_needed) {
                     if ($header_needed !== "") {
@@ -2812,7 +2811,7 @@ class PaperTable {
     /** @return string */
     private function _review_links() {
         $prow = $this->prow;
-        $cflttype = $this->user->view_conflict_type($prow);
+        $author_view = $this->user->act_author_view($prow);
         $any_comments = false;
 
         $nvisible = 0;
@@ -2930,7 +2929,7 @@ class PaperTable {
                     }
                     $title_prefix = $rrd->unnamed ? "" : "{$rrd->name} ";
                     $img = Ht::img("comment48.png", "[{$what} response]", $dlimgjs);
-                    $uk = $cflttype >= CONFLICT_AUTHOR ? ' class="font-weight-bold"' : '';
+                    $uk = $author_view ? ' class="font-weight-bold"' : '';
                     $cid = $cr->unparse_html_id();
                     $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#{$cid}\">{$img} <u{$uk}>{$what} {$title_prefix}response</u></a>";
                     $any_comments = true;

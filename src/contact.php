@@ -3550,22 +3550,26 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 $cif |= PCI::CIF_ALLOW_AUTHOR_EDIT;
             }
 
-            // check author view allowance (includes capabilities)
-            // If an author-view capability is set, then use it -- unless
-            // this user is a PC member or reviewer, which takes priority.
-            $ci->view_conflict_type = $ci->conflictType;
-            if ($ci->view_conflict_type <= CONFLICT_MAXUNCONFLICTED) {
-                $ci->view_conflict_type = 0;
+            // check author view state (includes capabilities)
+            // (Broad PC permission and reviewer status take precedence over
+            // an author-view capability.)
+            $av_active = false;
+            if ($ci->conflictType >= CONFLICT_AUTHOR) {
+                $cif |= PCI::CIF_AUTHOR_VIEW;
+            } else if ($this->_capabilities !== null
+                       && ($this->_capabilities["@av{$prow->paperId}"] ?? null)) {
+                $cif |= PCI::CIF_AUTHOR_VIEW;
+                if (!$allow_pc_broad && $ci->review_status === 0) {
+                    $av_active = true;
+                }
             }
-            if ($this->_capabilities !== null
-                && ($this->_capabilities["@av{$prow->paperId}"] ?? null)
-                && !$allow_pc_broad
-                && $ci->review_status === 0) {
-                $ci->view_conflict_type = CONFLICT_AUTHOR;
+            if ($ci->conflictType > CONFLICT_MAXUNCONFLICTED
+                || $av_active) {
+                $cif |= PCI::CIF_CONFLICT_VIEW;
             }
-            $act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR
+            $act_author_view = $sub_read_scope
                 && !$forceShow
-                && $sub_read_scope;
+                && ($ci->conflictType >= CONFLICT_AUTHOR || $av_active);
             if ($allow_administer || $act_author_view) {
                 $cif |= PCI::CIF_ALLOW_AUTHOR_VIEW;
             }
@@ -3582,7 +3586,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && $prow->can_author_view_decision())
                 || ($sdr
                     && ($sd = $this->conf->setting("seedec")) > 0
-                    && ($sd !== Conf::SEEDEC_NCREV || $ci->view_conflict_type <= 0));
+                    && ($sd !== Conf::SEEDEC_NCREV
+                        || ($cif & PCI::CIF_CONFLICT_VIEW) === 0));
             if ($can_view_decision) {
                 $cif |= PCI::CIF_CAN_VIEW_DECISION;
             }
@@ -3814,12 +3819,14 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 || ($this->has_tag(substr($vis, 1)) === ($vis[0] === "+")));
     }
 
-    /** @return int */
-    function view_conflict_type(?PaperInfo $prow) {
-        if ($prow) {
-            return $this->rights($prow)->view_conflict_type;
-        }
-        return 0;
+    /** @return bool */
+    function is_author_view(PaperInfo $prow) {
+        return $this->rights($prow)->is_author_view();
+    }
+
+    /** @return bool */
+    function is_conflict_view(PaperInfo $prow) {
+        return $this->rights($prow)->is_conflict_view();
     }
 
     /** @return bool */
@@ -3835,10 +3842,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @param ?string $table
      * @param bool $only_if_complex
-     * @return ?string */
-    function act_author_view_sql($table, $only_if_complex = false) {
+     * @return ?string
+     * @see PaperContactInfo::is_author_view */
+    function is_author_view_sql($table, $only_if_complex = false) {
         $m = [];
-        if ($this->_capabilities !== null && !$this->isPC) {
+        if ($this->_capabilities !== null) {
             foreach ($this->author_view_capability_paper_ids() as $pid) {
                 $m[] = "Paper.paperId=" . $pid;
             }
@@ -4646,7 +4654,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
      * @param PaperContactInfo $rights
      * @return -1|0|1|3|4 */
     private function viewrev_setting(PaperInfo $prow, $rbase, $rights) {
-        if ($rights->view_conflict_type
+        if ($rights->is_conflict_view()
             || (!$rights->allow_pc() && !$rights->is_reviewer())
             || !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWREV)
             || !$rights->scope_allows(TS::S_REV_READ)) {
@@ -4791,7 +4799,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $whyNot["permission"] = "review:view";
         } else if ($rights->act_author_view()) {
             $whyNot["deadline"] = "au_seerev";
-        } else if ($rights->view_conflict_type) {
+        } else if ($rights->is_conflict_view()) {
             $whyNot["conflict"] = true;
         } else if ($rights->reviewType === REVIEW_EXTERNAL
                    && $this->viewrev_setting($prow, $rrow, $rights) < 0) {
@@ -5508,7 +5516,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                             : $this->can_view_submitted_review_as_author($prow)))))) {
             return true;
         }
-        if (!$rights->view_conflict_type
+        if (!$rights->is_conflict_view()
             && $ctype >= ($rights->allow_pc() ? CommentInfo::CTVIS_PCONLY : CommentInfo::CTVIS_REVIEWER)
             && (($ctype & CommentInfo::CT_DRAFT) === 0
                 || ($textless && ($ctype & CommentInfo::CT_RESPONSE) !== 0))

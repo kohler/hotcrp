@@ -1211,7 +1211,7 @@ class Limit_SearchTerm extends SearchTerm {
 
         // mark flags
         $this->lflag &= ~self::LFLAGM_TYPE;
-        if (in_array($limstr, ["a", "ar", "r", "req", "viewable", "all", "none"], true)) {
+        if (in_array($limstr, ["a", "ar", "r", "viewable", "all", "none"], true)) {
             // no additional flags
         } else if ($limstr === "reviewable") {
             if ($this->user->contactXid !== $this->reviewer->contactXid) {
@@ -1309,7 +1309,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "a":
             $options["author"] = true;
             // If complex author SQL, always do search the long way
-            return !$this->user->act_author_view_sql("%", true);
+            return !$this->user->is_author_view_sql("%", true);
         case "ar":
             return false;
         case "r":
@@ -1336,16 +1336,22 @@ class Limit_SearchTerm extends SearchTerm {
             $options["unsub"] = true;
             return $this->user->allow_admin_all();
         case "lead":
-            $options["myLead"] = true;
-            return true;
+            // Leading a submission does not imply permission to view it: a
+            // lead may have left the PC. Since this path skips
+            // `Contact::can_view_paper`, use the long way.
+            return false;
         case "alladmin":
         case "actadmin":
             return $this->user->allow_admin_all();
         case "admin":
             return false;
         case "req":
+            assert($act || $fin);
             $options["myReviewRequests"] = true;
-            return true;
+            // A requester views a submission as a PC member, so restrict to
+            // submissions PC members can view (see Conf::time_pc_view)
+            return $this->user->isPC
+                && ($fin || $this->user->can_view_all_incomplete());
         default:
             return false;
         }
@@ -1418,7 +1424,7 @@ class Limit_SearchTerm extends SearchTerm {
 
         $arf = [];
         if ($need_ar & 1) {
-            $arf[] = $this->user->act_author_view_sql($sqi->conflict_table($this->user));
+            $arf[] = $this->user->is_author_view_sql($sqi->conflict_table($this->user));
         }
         if ($need_ar & 2) {
             $sqi->add_reviewer_columns();
@@ -1540,7 +1546,7 @@ class Limit_SearchTerm extends SearchTerm {
             return $row->has_author_view($user);
         case "ar":
             return $row->has_author_view($user)
-                || ($row->timeWithdrawn <= 0 && $row->has_active_reviewer($user));
+                || $row->has_active_reviewer($user);
         case "r":
             return $row->has_active_reviewer($user);
         case "rout":
