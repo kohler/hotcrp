@@ -74,6 +74,9 @@ if (PHP_SAPI === "cli") {
     if (function_exists("pcntl_signal")) {
         pcntl_signal(SIGPIPE, SIG_DFL);
     }
+    if (getenv("HOTCRP_BATCHMODE") === "background") {
+        BatchProcess::detach();
+    }
 }
 
 

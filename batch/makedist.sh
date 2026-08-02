@@ -119,6 +119,7 @@ batch/createdb.php
 batch/deletepapers.php
 batch/fixdelegation.php
 batch/hotcrapi.php
+batch/hotcrp-daemonize
 batch/killinactivedoc.php
 batch/paperjson.php
 batch/pcemails.php
@@ -136,7 +137,6 @@ batch/updatecontactdb.php
 
 conf/.htaccess
 
-devel/hotcrp-daemonize.c
 devel/manual/components.md
 devel/manual/css.md
 devel/manual/docstore.md

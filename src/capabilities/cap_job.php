@@ -218,7 +218,13 @@ class Job_Token extends TokenInfo {
         $cmd = [];
         if ($batchmode === "background"
             && ($daemonize = $this->conf->opt("daemonizeCommand"))) {
-            $cmd[] = $daemonize;
+            if (is_array($daemonize)) {
+                array_push($cmd, ...$daemonize);
+            } else if (is_string($daemonize)) {
+                $cmd[] = $daemonize;
+            } else if (is_executable("/bin/bash")) {
+                $cmd[] = SiteLoader::$root . "/batch/hotcrp-daemonize";
+            }
         }
         $cmd[] = self::shell_quote_light($this->conf->opt("phpCommand") ?? "php");
         $cmd[] = self::shell_quote_light($paths[0]);
