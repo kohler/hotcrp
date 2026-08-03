@@ -51,10 +51,10 @@ class Tags_API {
             }
             if ($tv[1] < $t->allotment) {
                 $nleft = $t->allotment - $tv[1];
-                $tmr->message_list[] = MessageItem::marked_note("<5>{$link}" . plural($nleft, "vote") . " remaining");
+                $tmr->message_list[] = MessageItem::marked_note("<5>{$link}" . plural($nleft, "vote") . " remaining")->with(["context" => $t->tag]);
             } else {
-                $tmr->message_list[] = MessageItem::warning("<5>{$link}Too many votes");
-                $tmr->message_list[] = MessageItem::inform("<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.");
+                $tmr->message_list[] = MessageItem::warning("<5>{$link}Too many votes")->with(["context" => $t->tag]);
+                $tmr->message_list[] = MessageItem::inform("<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.")->with(["context" => $t->tag]);
             }
         }
     }

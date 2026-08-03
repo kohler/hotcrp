@@ -13399,8 +13399,8 @@ function render_tag_messages(message_list) {
         feedback.append_item(t0, mi);
         mi.status > 0 && feedback.append_item(t1, mi);
     }
-    toggleClass(t0, "hidden", !t0.firstChild);
-    toggleClass(t1, "hidden", !t1.firstChild);
+    t0.hidden = !t0.firstChild;
+    t1.hidden = !t1.firstChild;
 }
 
 function prepare_pstags() {

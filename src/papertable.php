@@ -82,6 +82,8 @@ class PaperTable {
     private $_ready_state;
     /** @var ?array */
     private $_ready_condition;
+    /** @var ?TagMessageReport */
+    private $_tagreport;
 
     /** @var ?CheckFormat */
     public $cf;
@@ -1671,6 +1673,29 @@ class PaperTable {
         $this->_papstripLeadShepherd("manager", "Paper administrator");
     }
 
+    /** @param ?string $tag
+     * @return array{list<MessageItem>,list<MessageItem>} */
+    private function tag_messages($tag) {
+        if (!$this->_tagreport) {
+            $this->_tagreport = Tags_API::tagmessages($this->user, $this->prow, null);
+        }
+        $m0 = $m1 = [];
+        foreach ($this->_tagreport->message_list as $mi) {
+            if ($tag !== null) {
+                if (strcasecmp($mi->context ?? "", $tag) !== 0) {
+                    continue;
+                } else if (preg_match('/\A<5><a.*?<\/a>(?:: )*(.*)\z/', $mi->message, $m)) {
+                    $mi = $mi->with(["message" => "<5>" . $m[1]]);
+                }
+            }
+            $m0[] = $mi;
+            if ($mi->status > 0) {
+                $m1[] = $mi;
+            }
+        }
+        return [$m0, $m1];
+    }
+
     private function papstripTags() {
         if (!$this->prow->paperId || !$this->user->can_view_tags($this->prow)) {
             return;
@@ -1700,14 +1725,11 @@ class PaperTable {
         echo $this->papt("tags", $editable ? Ht::label("Tags", $id) : "Tags",
             ["type" => "ps", "fold" => $editable ? "tags" : false, "foldopen" => true]);
         if ($editable) {
-            $treport = Tags_API::tagmessages($this->user, $this->prow, null);
-            $treport_warn = array_filter($treport->message_list, function ($mi) {
-                return $mi->status > 0;
-            });
+            [$treport, $treport_warn] = $this->tag_messages(null);
 
             // uneditable
             if (empty($treport_warn)) {
-                echo '<ul class="fn want-tag-report-warnings feedback-list hidden"></ul>';
+                echo '<ul class="fn want-tag-report-warnings feedback-list" hidden></ul>';
             } else {
                 echo '<ul class="fn want-tag-report-warnings feedback-list"><li>',
                     join("</li><li>", MessageSet::feedback_html_items($treport_warn)), "</li></ul>";
@@ -1716,11 +1738,11 @@ class PaperTable {
             echo '<div class="fn js-tag-result">', $tx === "" ? "None" : $tx, '</div>';
 
             echo '<div class="fx js-tag-editor">';
-            if (empty($treport->message_list)) {
-                echo '<ul class="want-tag-report feedback-list hidden"></ul>';
+            if (empty($treport)) {
+                echo '<ul class="want-tag-report feedback-list" hidden></ul>';
             } else {
                 echo '<ul class="want-tag-report feedback-list"><li>',
-                    join("</li><li>", MessageSet::feedback_html_items($treport->message_list)), "</li></ul>";
+                    join("</li><li>", MessageSet::feedback_html_items($treport)), "</li></ul>";
             }
             if ($is_sitewide) {
                 echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit selected tags.";
@@ -1907,8 +1929,9 @@ class PaperTable {
         $this->papstrip_onetag_begin();
         $mytag = "{$this->user->contactId}~{$ti->tag}";
         $myval = $this->prow->tag_value($mytag);
+        [$treport, $treport_warn] = $this->tag_messages($ti->tag);
         if ($ti->allotment === 1.0 && ($myval === null || $myval === 1.0)) {
-            $this->papstrip_finish_approval($ti, $mytag, $myval);
+            $this->papstrip_finish_approval($ti, $mytag, $myval, $treport);
             return;
         }
         echo $this->papt(null,
@@ -1916,6 +1939,7 @@ class PaperTable {
                 ["type" => "ps", "fold" => true,
                  "rest" => $this->papstrip_onetag_result($ti->tag, "allotment")]),
             '<form class="ui-submit uin fx mf">',
+            empty($treport) ? "" : MessageSet::feedback_html($treport),
             Ht::entry("tagindex", $myval ?? "",
                 ["size" => 4, "class" => "uich js-tag-index want-focus mr-1",
                  "data-tag" => $mytag, "inputmode" => "decimal",
@@ -1935,13 +1959,14 @@ class PaperTable {
 
         $this->papstrip_onetag_begin();
         $mytag = "{$this->user->contactId}~{$ti->tag}";
-        $this->papstrip_finish_approval($ti, $mytag, $this->prow->tag_value($mytag));
+        $this->papstrip_finish_approval($ti, $mytag, $this->prow->tag_value($mytag), []);
     }
 
     /** @param TagInfo $ti
      * @param string $mytag
-     * @param ?float $myval */
-    private function papstrip_finish_approval($ti, $mytag, $myval) {
+     * @param ?float $myval
+     * @param list<MessageItem> $treport */
+    private function papstrip_finish_approval($ti, $mytag, $myval, $treport) {
         $xt = $this->onetag($ti->tag) . " vote";
         $value = $ti->is(TagInfo::TF_APPROVAL) ? "0" : "1";
         echo $this->papt(null,
@@ -1955,6 +1980,7 @@ class PaperTable {
                  "foldtitle" => "Vote details",
                  "rest" => $this->papstrip_onetag_result($ti->tag, "approval")]),
             '<div class="fx">',
+            empty($treport) ? "" : MessageSet::feedback_html($treport),
             $this->conf->hotlink("Edit all", "search", ["q" => "editsort:-#~{$ti->tag}"]),
             "</div></div>\n";
     }
