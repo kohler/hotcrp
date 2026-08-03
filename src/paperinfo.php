@@ -266,7 +266,7 @@ final class PaperContactInfo {
 
     /** @return bool */
     function allow_manage_reviews() {
-        return ($this->ciflags & self::CIF_ALLOW_MANAGE) !== 0
+        return ($this->ciflags & self::CIF_ALLOW_ADMIN) !== 0
             && ($this->scope_bits & TS::S_REV_ADMIN) !== 0;
     }
 
@@ -276,16 +276,10 @@ final class PaperContactInfo {
             && ($this->scope_bits & TS::S_REV_ADMIN) !== 0;
     }
 
-    /** @return bool
-     * @deprecated */
-    function allow_administer() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMIN) !== 0;
-    }
-
-    /** @return bool
-     * @deprecated */
-    function can_administer() {
-        return ($this->ciflags & self::CIF_IS_ADMIN) !== 0;
+    /** @return bool */
+    function can_manage_tags() {
+        return ($this->ciflags & self::CIF_IS_ADMIN) !== 0
+            && ($this->scope_bits & TS::S_TAG_ADMIN) !== 0;
     }
 
     /** @return bool */

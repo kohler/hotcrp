@@ -3636,21 +3636,6 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     /** @return bool
-     * @deprecated */
-    function allow_administer_all() {
-        return $this->allow_admin_all();
-    }
-
-    /** @return bool
-     * @deprecated */
-    function allow_administer(?PaperInfo $prow = null) {
-        if (!$prow) {
-            return $this->privChair;
-        }
-        return $this->rights($prow)->allow_admin();
-    }
-
-    /** @return bool
      *
      * Is this user allowed to administer `$prow` only after overriding their
      * conflict? Ignores scope. */
@@ -3674,7 +3659,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @return bool
      *
      * Is this user allowed to administer `$prow`’s reviews, possibly after
-     * overriding conflicts? Checks `submeta:admin` and `rev:admin` scopes. */
+     * overriding conflicts? Checks `review:admin` scope. */
     function allow_manage_reviews(PaperInfo $prow) {
         return $this->rights($prow)->allow_manage_reviews();
     }
@@ -3689,17 +3674,19 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool
      *
-     * Is this user allowed to administer `$prow`? Checks `submeta:admin` and
-     * `rev:admin` scopes; implies `allow_manage_reviews($prow)`; obeys
+     * Is this user allowed to administer `$prow`’s reviews? Checks
+     * `review:admin` scope; implies `allow_manage_reviews($prow)`; obeys
      * conflicts. */
     function can_manage_reviews(PaperInfo $prow) {
         return $this->rights($prow)->can_manage_reviews();
     }
 
     /** @return bool
-     * @deprecated */
-    function can_administer(PaperInfo $prow) {
-        return $this->rights($prow)->can_manage();
+     *
+     * Is this user allowed to administer `$prow`’s tags? Checks
+     * `tag:admin` scope; obeys conflicts. */
+    function can_manage_tags(PaperInfo $prow) {
+        return $this->rights($prow)->can_manage_tags();
     }
 
     /** @return bool */
