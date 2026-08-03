@@ -6203,22 +6203,15 @@ $(function () {
 
 function minifeedback(e, rv) {
     const ul = document.createElement("ul");
-    let status = 0;
+    let status = rv && !rv.ok ? 2 : 0;
     ul.className = "feedback-list";
     if (rv && rv.message_list) {
         for (let mx of rv.message_list) {
             feedback.append_item(ul, mx);
             status = Math.max(status, mx.status);
         }
-    } else if (rv && rv.error) {
-        log_jserror("rv has error: " + JSON.stringify(rv));
-        feedback.append_item(ul, {status: 2, message: "<5>" + rv.error});
-        status = 2;
     }
-    if (!ul.firstChild && (!rv || !rv.ok)) {
-        if (rv && (rv.error || rv.warning)) {
-            log_jserror("rv has error/warning: " + JSON.stringify(rv));
-        }
+    if (!ul.firstChild && (!rv || (!rv.ok && !rv.message_list))) {
         feedback.append_item(ul, {status: 2, message: "Error"});
         status = 2;
     }
@@ -6231,17 +6224,16 @@ function minifeedback(e, rv) {
         make_bubble({content: ul, class: status > 1 ? "errorbubble" : "warningbubble"}).near(e).removeOn(e, "input change click hide" + (status > 1 ? "" : " focus blur"));
     }
 
-    let ctr, prev = null;
+    let ctr = null, prev = null;
     if (hasClass(e, "mf-label")
-        || (status === 0 && hasClass(e, "mf-label-success"))
-        || ["checkbox", "radio", "select-one", "select-multiple", "button"].includes(e.type)) {
+        || (!(ctr = e.closest(".mf"))
+            && ["checkbox", "radio", "select-one", "select-multiple", "button"].includes(e.type))) {
         ctr = e.closest("label");
         if (!ctr && e.id) {
             ctr = document.querySelector(`label[for='${e.id}']`);
         }
     }
-    if (!ctr
-        && !(ctr = e.closest(".mf"))) {
+    if (!ctr) {
         prev = e;
         ctr = e.parentElement;
         if (hasClass(ctr, "select") || hasClass(ctr, "btnbox")) {
@@ -10948,12 +10940,15 @@ handle_ui.on("js-annotate-order", function () {
 
 function make_tag_save_callback(elt) {
     return function (rv) {
-        if (elt)
+        if (elt) {
             minifeedback(elt, rv);
+        }
         if (rv.ok) {
             var focus = document.activeElement;
             $(window).trigger("hotcrptags", [rv]);
             focus && focus.focus();
+        } else if (elt.type === "checkbox" || elt.type === "radio") {
+            elt.checked = elt.defaultChecked;
         }
     };
 }
@@ -10968,7 +10963,12 @@ handle_ui.on("js-plist-tag", function (evt) {
         || key === "Enter") {
         m = this.name.match(/^tag:(\S+) (\d+)$/);
         if (this.type === "checkbox") {
-            ch = this.checked ? m[1] : m[1] + "#clear";
+            ch = m[1];
+            if (!this.checked) {
+                ch += "#clear";
+            } else if (this.value !== "" && this.value !== "x") {
+                ch += "#" + this.value;
+            }
         } else if ((newval = tagvalue_parse(this.value)) !== null) {
             ch = m[1].concat("#", newval !== false ? newval : "clear");
         } else {
@@ -13493,25 +13493,38 @@ function save_pstags(evt) {
     });
 }
 
-handle_ui.on("js-tag-index", function () {
+handle_ui.on("js-tag-index", function (evt) {
     const self = this;
     let m = self.id.match(/^tag:(\S+) (\d+)$/), value;
-    if (this.type === "checkbox")
+    if (this.type === "checkbox") {
         value = this.checked ? this.value : "";
-    else
+        handle_ui.stopImmediatePropagation(evt);
+    } else {
         value = this.value.trim();
-    if (value === "")
+    }
+    if (value === "") {
         value = "clear";
-    if (/^(?:\d+\.?\d*|\.\d+|clear|unset)$/.test(value))
+    }
+    if (/^(?:\d+\.?\d*|\.\d+|clear|unset)$/.test(value)) {
         $.post(hoturl("=api/tags", {p: m[2]}), {add_tags: m[1] + "#" + value}, done);
-    else
-        minifeedback(this, {ok: false, message_list: [{status: 2, message: "<0>Bad tag value"}]});
+    } else {
+        done({ok: false, message_list: [{status: 2, message: "<0>Bad tag value"}]});
+    }
     function done(rv) {
-        minifeedback(self, rv);
-        if (rv.ok && (rv.message_list || []).length === 0)
-            foldup.call(self, null, {open: false});
-        if (rv.ok)
+        const pst = self.closest(".psc").lastChild;
+        while (pst.firstChild && hasClass(pst.firstChild, "feedback-list")) {
+            pst.removeChild(pst.firstChild);
+        }
+        if (rv.message_list && rv.message_list.length) {
+            foldup.call(self, null, {open: true});
+            pst.insertBefore(feedback.render_list(rv.message_list), pst.firstChild);
+        }
+        minifeedback(self, {ok: rv.ok, message_list: []});
+        if (rv.ok) {
             $(window).trigger("hotcrptags", [rv]);
+        } else if (self.type === "checkbox" || self.type === "radio") {
+            self.checked = self.defaultChecked;
+        }
     }
 });
 
@@ -13678,7 +13691,7 @@ function run_edit_condition() {
         ec = JSON.parse(this.getAttribute("data-edit-condition")),
         off = !evaluate_edit_condition(ec, f),
         link = navsidebar.get(this);
-    toggleClass(this, "hidden", off);
+    this.hidden = off;
     if (link) {
         link.element.hidden = off;
     }
@@ -14113,8 +14126,7 @@ function set_tag_index(e, taglist) {
 
     // one index: set text, maybe hide
     if (!hasClass(e, "is-tag-votish")) {
-        e.textContent = e.getAttribute("data-prefix") + vtext;
-        toggleClass(e, "hidden", vtext === "");
+        e.textContent = vtext === "" ? "" : e.getAttribute("data-prefix") + vtext;
         return;
     }
 
@@ -14129,7 +14141,6 @@ function set_tag_index(e, taglist) {
     // no base value: set text, maybe hide
     if (bval === null) {
         e.textContent = vtext === "" ? "" : ": " + vtext;
-        toggleClass(e, "hidden", vtext === "");
         return;
     }
 
@@ -14150,7 +14161,6 @@ function set_tag_index(e, taglist) {
         }
     }
     a.textContent = bval + (vtype === "rank" ? " overall" : " total");
-    removeClass(e, "hidden");
 }
 
 if (siteinfo.paperid) {

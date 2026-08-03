@@ -1900,7 +1900,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         }
 
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
-        echo '<div class="grid-btn-explanation"><div class="d-flex mf mf-absolute">';
+        echo '<div class="grid-btn-explanation"><div class="d-flex mf">';
 
         echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $us->user->is_disabled()]), '</div><p></p>';
 
@@ -1923,7 +1923,7 @@ topics. We use this information to help match papers to reviewers.</p>',
                 $p = "<p class=\"pt-1 mb-0\">Disabled accounts cannot sign in or view the site.</p>";
                 $disabled = false;
             }
-            echo '<div class="d-flex mf mf-absolute">',
+            echo '<div class="d-flex mf">',
                 Ht::button($disablement ? "Enable account" : "Disable account", [
                     "class" => $klass, "disabled" => $disabled
                 ]), '</div>', $p;
