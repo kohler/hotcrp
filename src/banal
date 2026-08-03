@@ -88,7 +88,7 @@ for (my $i = 0; $i < @ARGV; ) {
     } elsif ($ARGV[$i] =~ /\A--?debug[-_]words\z/) {
         $debug_words = 1;
         splice @ARGV, $i, 1;
-    } elsif ($ARGV[$i] =~ /\A--?(?:pagen(?:um|o)|headings|headers)\z/) {
+    } elsif ($ARGV[$i] =~ /\A--?(?:p|pagen(?:um|o)|headings|headers)\z/) {
         $json_pagenum = 1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(?:no-?time(?:stamp|))\z/) {
@@ -536,7 +536,7 @@ sub heading_number ($) {
     my ($t) = @_;
     if ($t =~ /\A(\d+)((?:\.\d+)*)/) {
         ($1 + 0, $1 + 0, $1 . $2, 1);
-    } elsif ($t =~ /\A(X*)(I+|IV|VI*|IX|)((?:\.\d+)*)/ && ($1 || $2)) {
+    } elsif ($t =~ /\A(X*)(I[VX]|I+|VI*|)((?:\.\d+)*)/ && ($1 || $2)) {
         my ($n) = length($1) * 10;
         if ($2 eq "IX") {
             $n += 9;
