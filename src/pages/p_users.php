@@ -1,6 +1,6 @@
 <?php
 // pages/p_users.php -- HotCRP people listing/editing page
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Users_Page {
     /** @var Conf */
@@ -21,8 +21,9 @@ class Users_Page {
         }
         $this->viewer = $viewer;
         $this->qreq = $qreq;
-        if (isset($qreq->pap) && $qreq->pap !== "all") {
-            $this->papersel = SearchSelection::make($qreq, null, "pap")->selection();
+        $pap = $qreq->p ?? $qreq->pap;
+        if (isset($pap) && $pap !== "all") {
+            $this->papersel = SearchSelection::make($qreq)->selection();
         }
 
         $this->add_limit("pc", "Program committee");
