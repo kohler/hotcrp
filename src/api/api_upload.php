@@ -661,7 +661,6 @@ class Upload_API {
         } else {
             $user->ensure_account_here();
         }
-        $qreq->qsession()->commit();
 
         if (friendly_boolean($qreq->start)) {
             $j = $this->exec_start($user, $qreq, $prow);

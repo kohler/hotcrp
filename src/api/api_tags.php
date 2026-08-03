@@ -124,24 +124,23 @@ class Tags_API {
         $ok = $assigner->execute();
 
         // execute
-        if ($ok) {
-            $prow->load_tags();
-            if (isset($qreq->tags)) {
-                $interest = null;
-            } else {
-                $interest = [];
-                foreach ($assigner->assignments() as $ai) {
-                    if ($ai instanceof Tag_Assigner)
-                        $interest[strtolower($ai->tag)] = true;
-                }
-            }
-            $taginfo = self::tagmessages($user, $prow, $interest);
-            $prow->add_tag_info_json($taginfo, $user);
-            $taginfo->message_list = self::combine_message_lists($mlist, $taginfo->message_list);
-            $jr = new JsonResult($taginfo);
-        } else {
-            $jr = new JsonResult(["ok" => false, "message_list" => $mlist]);
+        if (!$ok) {
+            return new JsonResult(["ok" => false, "message_list" => $mlist]);
         }
+        $prow->load_tags();
+        if (isset($qreq->tags)) {
+            $interest = null;
+        } else {
+            $interest = [];
+            foreach ($assigner->assignments() as $ai) {
+                if ($ai instanceof Tag_Assigner)
+                    $interest[strtolower($ai->tag)] = true;
+            }
+        }
+        $taginfo = self::tagmessages($user, $prow, $interest);
+        $prow->add_tag_info_json($taginfo, $user);
+        $taginfo->message_list = self::combine_message_lists($mlist, $taginfo->message_list);
+        $jr = new JsonResult($taginfo);
         if ($qreq->search) {
             Search_API::apply_search($jr, $user, $qreq, $qreq->search);
         }
@@ -171,14 +170,13 @@ class Tags_API {
         $ok = $assigner->execute();
 
         // execute
-        if ($ok) {
-            $jr = new JsonResult([
-                "ok" => true,
-                "p" => Assign_API::assigned_paper_info($user, $assigner)
-            ]);
-        } else {
-            $jr = new JsonResult(["ok" => false, "message_list" => $mlist]);
+        if (!$ok) {
+            return new JsonResult(["ok" => false, "message_list" => $mlist]);
         }
+        $jr = new JsonResult([
+            "ok" => true,
+            "p" => Assign_API::assigned_paper_info($user, $assigner)
+        ]);
         if ($qreq->search) {
             Search_API::apply_search($jr, $user, $qreq, $qreq->search);
         }
