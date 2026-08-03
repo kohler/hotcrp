@@ -230,7 +230,10 @@ class AssignmentState extends MessageSet {
     private $nonexact_msgs = [];
     /** @var bool */
     public $has_user_error = false;
+    /** @var array */
     private $callables = [];
+    /** @var array<string,mixed> */
+    private $stash = [];
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -599,6 +602,16 @@ class AssignmentState extends MessageSet {
         parent::clear_messages();
         $this->nonexact_msgs = [];
         $this->has_user_error = false;
+    }
+
+    /** @param string $name
+     * @return bool */
+    function mark_stash($name) {
+        if (array_key_exists($name, $this->stash)) {
+            return false;
+        }
+        $this->stash[$name] = true;
+        return true;
     }
 
     /** @template T

@@ -985,6 +985,18 @@ class TagMap {
     function is_allotment($tag) {
         return !!$this->find_having($tag, TagInfo::TF_ALLOTMENT);
     }
+    /** Return a regex matching votish tags and their per-user forms.
+     * @return ?string */
+    function votish_tag_regex() {
+        $ltre = [];
+        foreach ($this->entries_having(TagInfo::TFM_VOTES) as $ti) {
+            $ltre[] = $ti->tag_regex();
+        }
+        if (empty($ltre)) {
+            return null;
+        }
+        return '{\A(?:\d+~|)(?:' . join("|", $ltre) . ')\z}i';
+    }
     /** @param string $tag
      * @return bool */
     function is_approval($tag) {

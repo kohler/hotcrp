@@ -54,6 +54,17 @@ class Tag_Assignable extends Assignable {
             }
         }
     }
+    static function load_tag(AssignmentState $astate, $ltag) {
+        if ($astate->mark_stash("#{$ltag}")) {
+            $known = $astate->paper_ids();
+            $arg = empty($known) ? [] : ["where" => "Paper.paperId not in (" . join(",", $known) . ") and exists (select * from PaperTag where paperId=Paper.paperId and tag='" . sqlq($ltag) . "')"];
+            $arg["tags"] = true;
+            foreach ($astate->user->paper_set($arg) as $prow) {
+                $astate->add_prow($prow);
+                self::load_prow($astate, $prow);
+            }
+        }
+    }
     static function load_prow(AssignmentState $state, PaperInfo $prow) {
         foreach (Tagger::split_unpack($prow->all_tags_text()) as $ti) {
             $state->load(new Tag_Assignable($prow->paperId, strtolower($ti[0]), $ti[0], $ti[1]));
@@ -64,8 +75,6 @@ class Tag_Assignable extends Assignable {
 class NextTagAssignmentState {
     /** @var AssignmentState */
     private $astate;
-    /** @var bool */
-    private $all = false;
     /** @var ?string */
     private $prev_ltag;
     /** @var ?int */
@@ -75,25 +84,6 @@ class NextTagAssignmentState {
 
     function __construct(AssignmentState $astate) {
         $this->astate = $astate;
-    }
-    /** @param bool $x
-     * @return $this */
-    function set_all($x) {
-        $this->all = $x;
-        return $this;
-    }
-    private function resolve_all() {
-        if ($this->all) {
-            return;
-        }
-        $known = $this->astate->paper_ids();
-        $arg = empty($known) ? [] : ["where" => "Paper.paperId not in (" . join(",", $known) . ")"];
-        $arg["tags"] = true;
-        foreach ($this->astate->user->paper_set($arg) as $prow) {
-            $this->astate->add_prow($prow);
-            Tag_Assignable::load_prow($this->astate, $prow);
-        }
-        $this->all = true;
     }
     /** @param string $ltag
      * @param bool $isseq
@@ -105,7 +95,7 @@ class NextTagAssignmentState {
             ++$this->expected_state_version;
             return $this->prev_value;
         }
-        $this->resolve_all();
+        Tag_Assignable::load_tag($this->astate, $ltag);
         $items = $this->astate->query_items(new Tag_Assignable(null, $ltag));
         $maxvalue = null;
         foreach ($items as $item) {
@@ -269,13 +259,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                 $this->itype = $aj->next === "seq" ? self::I_NEXTSEQ : self::I_NEXT;
             }
         }
-    }
-    function expand_papers($req, AssignmentState $state) {
-        if ($this->itype & self::I_NEXT) {
-            $state->callable("NextTagAssignmentState")->set_all(true);
-            return "ALL";
-        }
-        return parent::expand_papers($req, $state);
     }
 
     function set_req($req, AssignmentState $state) {
@@ -449,7 +432,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $ltag = strtolower($ntag);
         if ($piece->xitype === self::I_NEXT
             || $piece->xitype === self::I_NEXTSEQ) {
-            $nvalue = $state->callable("NextTagAssignmentState")->compute_next($prow, $ltag, $piece->xitype === self::I_NEXTSEQ);
+            $nvalue = $state->callable("NextTagAssignmentState")
+                ->compute_next($prow, $ltag, $piece->xitype === self::I_NEXTSEQ);
         } else if ($nvalue === null) {
             $items = $state->query_items(new Tag_Assignable($prow->paperId, $ltag),
                                          AssignmentState::INCLUDE_DELETED);

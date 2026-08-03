@@ -651,6 +651,14 @@ final class PaperStatus extends MessageSet {
                     $this->_reset_fields[] = $opt;
                 }
             }
+            // remove voting tags so people don't have phantom votes
+            if (($tag_re = $this->conf->tags()->votish_tag_regex()) !== null) {
+                foreach (Tagger::split_unpack($this->prow->all_tags_text()) as $tv) {
+                    if (preg_match($tag_re, $tv[0])) {
+                        $this->_tags_changed[] = [$tv[0], false];
+                    }
+                }
+            }
         }
         if (isset($pj->status->withdraw_reason)) {
             $this->prow->set_prop("withdrawReason", UnicodeHelper::utf8_truncate_invalid(substr($pj->status->withdraw_reason, 0, 1024)));

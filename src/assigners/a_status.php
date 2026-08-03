@@ -54,14 +54,10 @@ class WithdrawVotesAssigner implements AssignmentPreapplyFunction {
                 $wpids[] = $pid;
             }
         }
-        if (empty($wpids)) {
+        if (empty($wpids)
+            || ($tag_re = $state->conf->tags()->votish_tag_regex()) === null) {
             return;
         }
-        $ltre = [];
-        foreach ($state->conf->tags()->entries_having(TagInfo::TFM_VOTES) as $ti) {
-            $ltre[] = $ti->tag_regex();
-        }
-        $tag_re = '{\A(?:\d+~|)(?:' . join("|", $ltre) . ')\z}i';
         foreach ($wpids as $pid) {
             foreach ($state->query(new Tag_Assignable($pid, null)) as $x) {
                 if (preg_match($tag_re, $x->ltag)) {
