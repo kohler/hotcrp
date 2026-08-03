@@ -710,6 +710,208 @@ class Tags_Tester {
         xassert_assign($this->u_chair, "action,paper,tag,user\nclearconflict,1-4,,huitema@bellcore.com\nclearadministrator,4\ncleartag,1-4,~~ch ~~chx\n");
     }
 
+    function test_vote_allotment_exceeded() {
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "tag_vote_allotment": "vtest#1"
+        }');
+        xassert($sv->execute());
+        $vcid = $this->u_varghese->contactId;
+
+        // first vote uses up the allotment
+        $p1 = $this->conf->checked_paper_by_id(1);
+        $jr = call_api("=tags", $this->u_varghese, ["add_tags" => "~vtest#1"], $p1);
+        xassert_eqq($jr->ok, true);
+        $p1->load_tags();
+        xassert_eqq($p1->tag_value("{$vcid}~vtest"), 1.0);
+
+        // second vote exceeds the allotment, so it must be refused, not saved
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $jr = call_api("=tags", $this->u_varghese, ["add_tags" => "~vtest#1"], $p2);
+        xassert_eqq($jr->ok, false);
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("{$vcid}~vtest"), null);
+        xassert_eqq($p2->tag_value("vtest"), null);
+        xassert_eqq($this->conf->fetch_ivalue("select sum(tagIndex) from PaperTag where tag='{$vcid}~vtest'"), 1);
+
+        xassert_assign($this->u_chair, "action,paper,tag\ncleartag,1-2,{$vcid}~vtest\n");
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "tag_vote_allotment": ""
+        }');
+        xassert($sv->execute());
+        xassert_assign($this->u_chair, "action,paper,tag\ncleartag,1-2,vtest\n");
+        xassert_search_all($this->u_chair, "#vtest", "");
+    }
+
+    /** @param string $allotment */
+    private function set_vote_allotment($allotment) {
+        $sv = (new SettingValues($this->u_chair))->add_json_string(json_encode([
+            "tag_vote_allotment" => $allotment
+        ]));
+        xassert($sv->execute());
+    }
+
+    /** @param string $tags */
+    private function clear_vote_tags($tags) {
+        $this->set_vote_allotment("");
+        xassert_assign($this->u_chair, "action,paper,tag\ncleartag,all,{$tags}\n");
+        foreach (explode(" ", $tags) as $tag) {
+            xassert_search_all($this->u_chair, "#{$tag}", "");
+        }
+    }
+
+    function test_vote_allotment_moves() {
+        $this->set_vote_allotment("vmove#2");
+        $vcid = $this->u_varghese->contactId;
+
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,1,~vmove#2\n");
+
+        // moving a vote in a single assignment stays within the allotment
+        xassert_assign($this->u_varghese, "action,paper,tag\ncleartag,1,~vmove\ntag,2,~vmove#2\n");
+        $pset = $this->conf->paper_set(["paperId" => [1, 2]]);
+        xassert_eqq($pset->cget(1)->tag_value("{$vcid}~vmove"), null);
+        xassert_eqq($pset->cget(2)->tag_value("{$vcid}~vmove"), 2.0);
+
+        // splitting a vote across papers likewise
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,1,~vmove#1\ntag,2,~vmove#1\n");
+        $pset = $this->conf->paper_set(["paperId" => [1, 2]]);
+        xassert_eqq($pset->cget(1)->tag_value("{$vcid}~vmove"), 1.0);
+        xassert_eqq($pset->cget(2)->tag_value("{$vcid}~vmove"), 1.0);
+
+        // an administrator may push someone over their allotment...
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,3,{$vcid}~vmove#3\n");
+        xassert_eqq($this->conf->fetch_ivalue("select sum(tagIndex) from PaperTag where tag='{$vcid}~vmove'"), 5);
+
+        // ...after which the voter can still reduce their votes...
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,3,~vmove#2\ncleartag,1,~vmove\n");
+        xassert_eqq($this->conf->fetch_ivalue("select sum(tagIndex) from PaperTag where tag='{$vcid}~vmove'"), 3);
+
+        // ...but not increase them
+        xassert_assign_fail($this->u_varghese, "action,paper,tag\ntag,1,~vmove#1\n");
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($p1->tag_value("{$vcid}~vmove"), null);
+
+        $this->clear_vote_tags("vmove");
+    }
+
+    function test_vote_allotment_multiple_tags() {
+        $this->set_vote_allotment("vona#1 vonb#1");
+        $vcid = $this->u_varghese->contactId;
+
+        // the first tag is within its allotment, the second is not;
+        // the whole assignment must fail
+        xassert_assign_fail($this->u_varghese, "action,paper,tag\ntag,1,~vona#1\ntag,1,~vonb#1\ntag,2,~vonb#1\n");
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperTag where tag in ('{$vcid}~vona','{$vcid}~vonb')"), 0);
+
+        // each tag has its own allotment
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,1,~vona#1\ntag,2,~vonb#1\n");
+        $pset = $this->conf->paper_set(["paperId" => [1, 2]]);
+        xassert_eqq($pset->cget(1)->tag_value("{$vcid}~vona"), 1.0);
+        xassert_eqq($pset->cget(2)->tag_value("{$vcid}~vonb"), 1.0);
+
+        $this->clear_vote_tags("vona vonb");
+    }
+
+    function test_vote_allotment_unsubmitted() {
+        $this->set_vote_allotment("vwith#2");
+        $vcid = $this->u_varghese->contactId;
+
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,3,~vwith#2\n");
+
+        // unsubmitting a paper leaves votes in place
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => 3, "status" => (object) ["submitted" => false]]));
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_eqq($p3->timeSubmitted, 0);
+        xassert_eqq($p3->tag_value("{$vcid}~vwith"), 2.0);
+
+        // but they no longer count against the allotment, as reported...
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $jr = call_api("tags", $this->u_varghese, [], $p2);
+        xassert_str_contains(json_encode($jr->message_list), "2 votes remaining");
+
+        // ...so the votes can be spent elsewhere
+        $jr = call_api("=tags", $this->u_varghese, ["add_tags" => "~vwith#2"], $p2);
+        xassert_eqq($jr->ok, true);
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("{$vcid}~vwith"), 2.0);
+
+        // the allotment still applies to submitted papers
+        $jr = call_api("=tags", $this->u_varghese, ["add_tags" => "~vwith#1"], $this->conf->checked_paper_by_id(5));
+        xassert_eqq($jr->ok, false);
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => 3, "status" => (object) ["submitted" => true]]));
+        $this->clear_vote_tags("vwith");
+    }
+
+    function test_withdraw_removes_votes() {
+        $this->set_vote_allotment("vwd#2");
+        $this->conf->save_refresh_setting("tag_approval", 1, "awd#0");
+        $vcid = $this->u_varghese->contactId;
+        $fcid = $this->u_floyd->contactId;
+
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,3,~vwd#2\ntag,3,~awd\n");
+        xassert_assign($this->u_floyd, "action,paper,tag\ntag,3,~vwd#1\n");
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_eqq($p3->tag_value("vwd"), 3.0);
+        xassert_eqq($p3->tag_value("awd"), 1.0);
+
+        // withdrawing through `PaperStatus` removes every voting tag
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => 3, "status" => (object) ["withdrawn" => true]]));
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_lt($p3->timeSubmitted, 0);
+        xassert_eqq($p3->tag_value("{$vcid}~vwd"), null);
+        xassert_eqq($p3->tag_value("{$fcid}~vwd"), null);
+        xassert_eqq($p3->tag_value("{$vcid}~awd"), null);
+        xassert_eqq($p3->tag_value("vwd"), null);
+        xassert_eqq($p3->tag_value("awd"), null);
+
+        // so the votes are available again, and reviving does not bring them back
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,5,~vwd#2\n");
+        xassert_assign($this->u_chair, "paper,action,notify\n3,revive,no\n");
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_eqq($p3->tag_value("{$vcid}~vwd"), null);
+
+        // the assignment path behaves the same way
+        xassert_assign($this->u_varghese, "action,paper,tag\ncleartag,5,~vwd\ntag,3,~vwd#2\n");
+        xassert_assign($this->u_chair, "paper,action,notify\n3,withdraw,no\n");
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_eqq($p3->tag_value("{$vcid}~vwd"), null);
+        xassert_eqq($p3->tag_value("vwd"), null);
+
+        xassert_assign($this->u_chair, "paper,action,notify\n3,revive,no\n");
+        $this->conf->save_refresh_setting("tag_approval", null);
+        $this->clear_vote_tags("vwd awd");
+    }
+
+    function test_vote_allotment_other_user() {
+        $this->set_vote_allotment("vother#3");
+        $fcid = $this->u_floyd->contactId;
+        $this->conf->save_refresh_setting("tag_vote_private_peruser", 1);
+
+        // floyd has spent his allotment; varghese can neither see nor edit it
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,{$fcid}~vother#3\n");
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert(!$this->u_varghese->can_view_tag($p2, "{$fcid}~vother"));
+
+        // varghese's request to vote on floyd's behalf is ignored, as before,
+        // and reports nothing about floyd's votes
+        $aset = new AssignmentSet($this->u_varghese);
+        $aset->parse("action,paper,tag\ntag,2,floyd~vother#1\n");
+        xassert($aset->execute());
+        xassert_not_str_contains($aset->full_feedback_text(), "vother");
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("{$fcid}~vother"), null);
+
+        // varghese's own votes are still checked
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,1,~vother#3\n");
+        xassert_assign_fail($this->u_varghese, "action,paper,tag\ntag,2,~vother#1\n");
+
+        $this->conf->save_refresh_setting("tag_vote_private_peruser", null);
+        $this->clear_vote_tags("vother");
+    }
+
     /** @suppress PhanDeprecatedClassConstant */
     function test_flag_values() {
         xassert_eqq(Track::FM_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));

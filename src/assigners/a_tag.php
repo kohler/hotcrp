@@ -114,6 +114,52 @@ class NextTagAssignmentState {
     }
 }
 
+class AllotmentCheckAssigner implements AssignmentPreapplyFunction {
+    /** @var AssignmentState */
+    private $astate;
+    private $ltags = [];
+    function __construct(AssignmentState $astate) {
+        $this->astate = $astate;
+    }
+    function add_ltag($ltag, $ntag, $allotment, $landmark) {
+        if (!isset($this->ltags[$ltag])) {
+            Tag_Assignable::load_tag($this->astate, $ltag);
+        }
+        $this->ltags[$ltag] = [$ntag, $allotment, $landmark];
+    }
+    function preapply(AssignmentState $astate) {
+        foreach ($this->ltags as $ltag => $talm) {
+            $total = 0.0;
+            $pids = [];
+            foreach ($astate->query_items(new Tag_Assignable(null, $ltag),
+                                          AssignmentState::INCLUDE_DELETED) as $item) {
+                $prow = $astate->prow($item->pid());
+                if (!$prow || $prow->timeSubmitted <= 0) {
+                    continue;
+                }
+                $pids[] = $prow->paperId;
+                if (!$item->deleted()) {
+                    $total += $item->post("_index");
+                }
+            }
+            if ($total <= $talm[1]) {
+                continue;
+            }
+            sort($pids);
+            $mine = intval($ltag) === $astate->user->contactId;
+            $xtag = $talm[0];
+            if ($mine) {
+                $xtag = substr($xtag, strpos($xtag, "~"));
+            }
+            $astate->append_item_near(MessageItem::error("<0>Too many ‘#{$xtag}’ votes"), $talm[2]);
+            if ($mine) {
+                $url = $astate->conf->hoturl("search", ["q" => "edit:#{$xtag} " . join(" ", $pids)]);
+                $astate->append_item_near(MessageItem::inform("<5>You may want to <a href=\"{url}\">edit your votes using search</a>.", new FmtArg("url", $url, 0)));
+            }
+        }
+    }
+}
+
 class TagAssignmentPiece {
     /** @var string */
     public $xuser;
@@ -447,21 +493,34 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             // WithdrawVotesAssigner
             $nvalue = $nvalue ?? 0.0;
         }
-        if ($nvalue <= 0
+        if ($nvalue !== false && ($nvalue <= -TAG_INDEXBOUND || $nvalue >= TAG_INDEXBOUND)) {
+            $state->error("<0>Tag value out of range");
+            return false;
+        }
+
+        // on allotment/approval votes, adjust value and maybe prepare allotment check
+        if ($piece->xuser !== ""
+            && $nvalue !== false
             && ($dt = $tagmap->find_having($piece->xtag, TagInfo::TF_ALLOTMENT))
             && !$dt->is(TagInfo::TF_APPROVAL)) {
-            $nvalue = false;
+            if ($nvalue <= 0) {
+                $nvalue = false;
+            } else {
+                $items = $state->query_items(new Tag_Assignable($prow->paperId, $ltag),
+                                             AssignmentState::INCLUDE_DELETED);
+                $item = $items[0] ?? null;
+                if ((!$item || $nvalue > $item->pre("_index"))
+                    && !$state->user->can_manage_tags($prow)
+                    && $state->user->can_edit_tag($prow, $ltag, $item ? $item->pre("_index") : null, $nvalue)) {
+                    $state->callable("AllotmentCheckAssigner")->add_ltag($ltag, $ntag, $dt->allotment, $state->landmark());
+                }
+            }
         }
 
         // perform assignment
         if ($nvalue === false) {
             $state->remove(new Tag_Assignable($prow->paperId, $ltag));
         } else {
-            assert(is_float($nvalue));
-            if ($nvalue <= -TAG_INDEXBOUND || $nvalue >= TAG_INDEXBOUND) {
-                $state->error("<0>Tag value out of range");
-                return false;
-            }
             $state->add(new Tag_Assignable($prow->paperId, $ltag, $ntag, $nvalue));
         }
         return true;

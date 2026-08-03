@@ -1990,6 +1990,7 @@ Phil Porras.");
         $this->conf->save_setting("opt.pdftohtmlCommand", 1, $slow);
         $this->conf->refresh_settings();
         $this->conf->qe("delete from Settings where name=?", $banal_key);
+        Conf::$blocked_time = 0.0; // ensure we can start new banals
 
         // launch a background format check on the same document; it runs on its
         // own until we drive it to completion below
