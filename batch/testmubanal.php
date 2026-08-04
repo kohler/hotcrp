@@ -120,6 +120,9 @@ class TestMubanal_Batch {
             }
         }
         $this->include = self::field_list($arg["include"] ?? "");
+        if ($this->html !== null && $this->mutool === "NONE") {
+            throw new CommandLineException("Cannot find `mutool` for generating thumbnails");
+        }
     }
 
     /** @param string $s
@@ -1035,6 +1038,13 @@ class TestMubanal_Batch {
         } else {
             $mubanal = getenv("HOME") . "/mubanal/build/mubanal";
         }
+        if (($mutool = getenv("MUTOOL"))) {
+            // found in environment
+        } else if (self::command_exists("mutool")) {
+            $mutool = "mutool";
+        } else {
+            $mutool = "NONE";
+        }
         $arg = (new Getopt)->long(
             "name:,n: !",
             "config: !",
@@ -1053,7 +1063,7 @@ class TestMubanal_Batch {
             "spec: =SPEC Format spec for --verdict [" . self::DEFAULT_SPEC . "]",
             "summary Print a tally of differences instead of listing them",
             "html: =FILE Write an HTML report with page images to FILE",
-            "mutool: =CMD mutool program, for --html [mutool]",
+            "mutool: =CMD mutool program, for --html [{$mutool}]",
             "dpi: {n} =DPI Render pages at DPI for --html [72]",
             "quiet,silent,q Be quiet",
             "verbose,V Report documents that agree",
@@ -1098,6 +1108,7 @@ Usage: php batch/testmubanal.php [-c COUNT] [-s SEED] [-l] [DOCSTORE | FILE]...\
             $confdps[] = self::default_docstore($arg);
         }
         $arg["mubanal"] = $arg["mubanal"] ?? $mubanal;
+        $arg["mutool"] = $arg["mutool"] ?? $mutool;
         return new TestMubanal_Batch($confdps, $files, $arg);
     }
 
