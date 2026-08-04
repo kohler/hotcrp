@@ -518,9 +518,8 @@ function plural_word($n, $singular, $plural = null) {
         return $singular;
     } else if (($plural ?? "") !== "") {
         return $plural;
-    } else {
-        return pluralize($singular);
     }
+    return pluralize($singular);
 }
 
 /** @param string $s

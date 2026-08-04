@@ -744,8 +744,8 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         }
         if (isset($arg["S"])) {
             $hcli->set_site($arg["S"]);
-        } else if (isset($_ENV["HOTCRAPI_SITE"])) {
-            $hcli->set_site($_ENV["HOTCRAPI_SITE"]);
+        } else if (($x = getenv("HOTCRAPI_SITE"))) {
+            $hcli->set_site($x);
         }
 
         if (isset($arg["T"])) {
@@ -758,8 +758,8 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
                 $t = $arg["T"];
             }
             $hcli->set_apitoken($t);
-        } else if (isset($_ENV["HOTCRAPI_TOKEN"])) {
-            $hcli->set_apitoken($_ENV["HOTCRAPI_TOKEN"]);
+        } else if (($x = getenv("HOTCRAPI_TOKEN"))) {
+            $hcli->set_apitoken($x);
         }
 
         if (isset($arg["quiet"])) {
