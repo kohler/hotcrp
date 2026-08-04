@@ -24,6 +24,10 @@ class TestMubanal_Batch {
     /** @var list<string> */
     public $ignore;
     /** @var bool */
+    public $ignore_all;
+    /** @var list<string> */
+    public $include;
+    /** @var bool */
     public $verbose;
     /** @var bool */
     public $quiet;
@@ -39,6 +43,12 @@ class TestMubanal_Batch {
     public $spec_string;
     /** @var bool */
     public $summary;
+    /** @var int */
+    public $render_pages;
+    /** @var ?string */
+    public $corpus;
+    /** @var list<string> */
+    public $mubanal_opt;
     /** @var array<string,int> */
     public $tally = [];
     /** @var int */
@@ -54,6 +64,8 @@ class TestMubanal_Batch {
 
     const MODE_COMPARE = 0;
     const MODE_LIST = 1;
+    const MODE_RENDER = 2;
+    const MODE_CORPUS = 3;
 
     /** Fields ignored unless `--include`d.
      *
@@ -71,7 +83,21 @@ class TestMubanal_Batch {
     function __construct($docstores, $files, $arg) {
         $this->docstores = $docstores;
         $this->files = $files;
-        $this->mode = isset($arg["list"]) ? self::MODE_LIST : self::MODE_COMPARE;
+        if (isset($arg["list"])) {
+            $this->mode = self::MODE_LIST;
+        } else if (isset($arg["render"])) {
+            $this->mode = self::MODE_RENDER;
+        } else if (isset($arg["corpus"])) {
+            $this->mode = self::MODE_CORPUS;
+        } else {
+            $this->mode = self::MODE_COMPARE;
+        }
+        $this->corpus = $arg["corpus"] ?? null;
+        $this->mubanal_opt = $arg["mubanal-opt"] ?? [];
+        // Two pages, because page 1 is a title page as often as it is a
+        // representative one.
+        $this->render_pages = is_int($arg["render"] ?? null)
+            ? max(1, $arg["render"]) : 2;
         $this->count = $arg["count"] ?? null;
         $this->seed = $arg["seed"] ?? mt_rand();
         $this->mubanal = $arg["mubanal"];
@@ -85,16 +111,15 @@ class TestMubanal_Batch {
         $this->verbose = isset($arg["verbose"]);
         $this->quiet = isset($arg["quiet"]);
         $this->ignore = self::IGNORED;
+        $this->ignore_all = false;
         foreach (self::field_list($arg["ignore"] ?? "") as $f) {
-            if (!in_array($f, $this->ignore, true)) {
+            if ($f === "all") {
+                $this->ignore_all = true;
+            } else if (!in_array($f, $this->ignore, true)) {
                 $this->ignore[] = $f;
             }
         }
-        foreach (self::field_list($arg["include"] ?? "") as $f) {
-            if (($i = array_search($f, $this->ignore, true)) !== false) {
-                array_splice($this->ignore, $i, 1);
-            }
-        }
+        $this->include = self::field_list($arg["include"] ?? "");
     }
 
     /** @param string $s
@@ -201,12 +226,39 @@ class TestMubanal_Batch {
     /** @param string $fname
      * @return ?object */
     function run_mubanal($fname) {
-        return $this->run_json([$this->mubanal, "-json", "-no-time", "-colpos", $fname]);
+        $cmd = [$this->mubanal, "-json", "-no-time", "-colpos"];
+        array_push($cmd, ...$this->mubanal_opt);
+        $cmd[] = $fname;
+        return $this->run_json($cmd);
+    }
+
+    /** Keys that hold other keys rather than a value of their own.
+     *
+     * `--ignore=all` must not swallow these, or there would be nothing left to
+     * descend into and `--include=columns` would report only the document's
+     * count while saying nothing about any page. Ignoring one by name still
+     * works, and is how you ask for a document-level comparison only. */
+    const CONTAINER = ["pages"];
+
+    /** What is being ignored, for the report header.
+     * @return string */
+    private function ignore_description() {
+        if (!$this->ignore_all) {
+            return empty($this->ignore) ? "nothing" : join(", ", $this->ignore);
+        }
+        return empty($this->include)
+            ? "every field" : "every field but " . join(", ", $this->include);
     }
 
     /** @param string $key
      * @return bool */
     private function ignored($key) {
+        if (in_array($key, $this->include, true)) {
+            return false;
+        }
+        if ($this->ignore_all) {
+            return !in_array($key, self::CONTAINER, true);
+        }
         return in_array($key, $this->ignore, true);
     }
 
@@ -331,22 +383,43 @@ class TestMubanal_Batch {
         return $by;
     }
 
-    /** Render one page to a PNG and return it, or null.
+    /** Render pages `$first` through `$last`, keyed by page number.
+     *
+     * A range past the end of the document is not an error: mutool renders the
+     * pages that exist and says nothing about the rest, so the returned keys
+     * are how a document shorter than the range is recognized. `%d` in the
+     * output name is the absolute page number, not a counter.
+     *
      * @param string $fname
-     * @param int $pageno
-     * @return ?string */
-    private function render_page($fname, $pageno) {
-        $png = tempnam(sys_get_temp_dir(), "mubanal") . ".png";
-        $subp = (new Subprocess([$this->mutool, "draw", "-o", $png,
-                                 "-r", (string) $this->dpi, $fname, (string) $pageno],
+     * @param int $first
+     * @param int $last
+     * @return array<int,string> */
+    private function render_range($fname, $first, $last) {
+        if (($dir = tempnam(sys_get_temp_dir(), "mubanal")) === false) {
+            return [];
+        }
+        unlink($dir);
+        if (!@mkdir($dir, 0700)) {
+            return [];
+        }
+        $subp = (new Subprocess([$this->mutool, "draw", "-o", "{$dir}/p%d.png",
+                                 "-r", (string) $this->dpi, $fname,
+                                 "{$first}-{$last}"],
                                 SiteLoader::$root))
             ->set_env(["PATH" => getenv("PATH")]);
         $subp->run();
-        $data = $subp->ok && is_readable($png) ? file_get_contents($png) : null;
-        if (file_exists($png)) {
-            unlink($png);
+        $pngs = [];
+        for ($p = $first; $p <= $last; ++$p) {
+            if (is_readable("{$dir}/p{$p}.png")
+                && ($data = file_get_contents("{$dir}/p{$p}.png"))) {
+                $pngs[$p] = $data;
+            }
         }
-        return $data === false || $data === "" ? null : $data;
+        foreach (glob("{$dir}/*") ? : [] as $f) {
+            unlink($f);
+        }
+        rmdir($dir);
+        return $pngs;
     }
 
     /** @param list<string> $diffs
@@ -408,9 +481,115 @@ class TestMubanal_Batch {
         return [$mbox, $cols];
     }
 
+    /** One rendered page, with the overlays for `$page` if there are any.
+     *
+     * `$page` is mubanal's JSON for this page, or null where there is none;
+     * the image is then bare, since both overlays are mubanal's geometry, and
+     * it is left unwrapped so it does not advertise a click that does nothing.
+     *
+     * @param string $png
+     * @param ?object $page
+     * @return string */
+    static private function page_image($png, $page) {
+        $img = "<img src=\"data:image/png;base64," . base64_encode($png) . "\">";
+        list($mbox, $cols) = self::overlay_boxes($page);
+        if ($mbox === "" && empty($cols)) {
+            return $img;
+        }
+        $h = "<div class=\"page\" data-ov=\"0\">" . $img;
+        if ($mbox !== "") {
+            $h .= "<div class=\"ov ov-margin\"><b style=\"{$mbox}\"></b></div>";
+        }
+        if (!empty($cols)) {
+            $h .= "<div class=\"ov ov-cols\">";
+            foreach ($cols as $c) {
+                $h .= "<b style=\"{$c}\"></b>";
+            }
+            $h .= "</div>";
+        }
+        return $h . "</div>";
+    }
+
+    /** A document's heading, with the checkbox the copy button reads.
+     * @param string $fname
+     * @return string */
+    static private function doc_heading($fname) {
+        $e = htmlspecialchars($fname);
+        return "<h2><label><input type=\"checkbox\" class=\"fsel\" value=\"{$e}\">"
+            . "{$e}</label></h2>\n";
+    }
+
+    /** The differing documents, each page under the complaints about it.
+     * @param int &$nimg
+     * @return string */
+    private function compare_report(&$nimg) {
+        $h = "";
+        foreach ($this->report as [$fname, $diffs, $mj]) {
+            $h .= self::doc_heading($fname);
+            $by_page = self::diff_by_page($diffs);
+            // Document-level complaints belong to no page, so they stay above
+            // the images rather than under one.
+            if (isset($by_page[0])) {
+                $h .= self::diff_list($by_page[0]);
+                unset($by_page[0]);
+            }
+            // Every other complaint goes under the page it is about; a
+            // document with only document-level complaints still shows page 1,
+            // which is enough to see what kind of document it is.
+            if (empty($by_page)) {
+                $by_page[1] = [];
+            }
+            foreach ($by_page as $pageno => $pdiffs) {
+                $pngs = $this->render_range($fname, $pageno, $pageno);
+                $img = "<em>cannot render</em>";
+                if (isset($pngs[$pageno])) {
+                    ++$nimg;
+                    $img = self::page_image($pngs[$pageno],
+                                            $mj->pages[$pageno - 1] ?? null);
+                }
+                $h .= "<figure>{$img}<figcaption>page {$pageno}</figcaption>"
+                    . self::diff_list($pdiffs) . "</figure>\n";
+            }
+        }
+        return $h;
+    }
+
+    /** The first pages of every document traversed.
+     *
+     * Nothing has been run over these documents, so there is nothing to say
+     * about them: this is for looking at a corpus, or at a candidate for one.
+     *
+     * @param int &$nimg
+     * @return string */
+    private function render_report(&$nimg) {
+        $h = "";
+        foreach ($this->report as [$fname, , ]) {
+            $h .= self::doc_heading($fname);
+            if ($this->verbose) {
+                fwrite(STDERR, "rendering {$fname}\n");
+            }
+            // A document with fewer than `--render` pages simply yields fewer
+            // images; one that will not render at all yields none, and says so,
+            // since otherwise it would appear with no images and no explanation.
+            $pngs = $this->render_range($fname, 1, $this->render_pages);
+            if (empty($pngs)) {
+                $h .= "<figure><em>cannot render</em></figure>\n";
+                continue;
+            }
+            foreach ($pngs as $pageno => $png) {
+                ++$nimg;
+                $h .= "<figure>" . self::page_image($png, null)
+                    . "<figcaption>page {$pageno}</figcaption></figure>\n";
+            }
+        }
+        return $h;
+    }
+
     private function write_html() {
+        $render = $this->mode === self::MODE_RENDER;
+        $title = $render ? "mubanal corpus" : "banal vs mubanal";
         $h = "<!DOCTYPE html>\n<meta charset=\"utf-8\">\n"
-            . "<title>banal vs mubanal</title>\n"
+            . "<title>" . $title . "</title>\n"
             . "<style>\n"
             . "body { font: 14px/1.5 system-ui, sans-serif; margin: 2em auto; max-width: 60em; }\n"
             . "h2 { font-size: 1em; font-family: monospace; word-break: break-all;\n"
@@ -430,62 +609,52 @@ class TestMubanal_Batch {
             . "             background: rgba(220,50,0,.12); }\n"
             . ".page[data-ov=\"1\"] .ov-margin, .page[data-ov=\"2\"] .ov-cols { display: block; }\n"
             . ".hint { color: #666; font-size: .85em; }\n"
+            . "h2 label { cursor: pointer; }\n"
+            . "h2 input { margin-right: .6em; }\n"
+            . "#tools { position: fixed; right: 1.5em; bottom: 1.5em; z-index: 10;\n"
+            . "         display: flex; align-items: center; gap: .6em; }\n"
+            . "#tools button { width: 2.8em; height: 2.8em; border-radius: 50%;\n"
+            . "         cursor: pointer; border: 1px solid #888; background: #fff;\n"
+            . "         color: #333; box-shadow: 0 1px 6px rgba(0,0,0,.3); }\n"
+            . "#copyb.ok { background: #dcf3dc; border-color: #3a3; color: #163; }\n"
+            . "#copymsg { background: #fff; padding: .2em .6em; border-radius: .3em;\n"
+            . "           font-size: .85em; box-shadow: 0 1px 6px rgba(0,0,0,.2);\n"
+            . "           white-space: nowrap;\n"
+            . "           opacity: 0; transition: opacity .15s; pointer-events: none; }\n"
+            . "#copymsg.show { opacity: 1; }\n"
             . "</style>\n"
-            . "<h1>banal vs mubanal</h1>\n"
+            . "<h1>" . $title . "</h1>\n"
             . "<p>seed " . htmlspecialchars((string) $this->seed) . ", "
-            . plural(count($this->report), "document") . " with differences. "
-            . "Margin differences of " . htmlspecialchars((string) $this->margin_tolerance)
-            . "pt or less are ignored";
-        if (!empty($this->ignore)) {
-            $h .= "; " . htmlspecialchars(join(", ", $this->ignore)) . " ignored";
+            . plural(count($this->report), "document");
+        if ($render) {
+            $h .= ", up to " . plural($this->render_pages, "page") . " each.</p>\n";
+        } else {
+            $h .= " with differences. Margin differences of "
+                . htmlspecialchars((string) $this->margin_tolerance)
+                . "pt or less are ignored";
+            $h .= "; " . htmlspecialchars($this->ignore_description()) . " ignored";
+            $h .= ".</p>\n<p class=\"hint\">Click a page to cycle: bare &rarr; "
+                . "<span style=\"color:#006eff\">margins</span> &rarr; "
+                . "<span style=\"color:#dc3200\">columns</span> &rarr; bare. "
+                . "Both are mubanal's.</p>\n";
         }
-        $h .= ".</p>\n<p class=\"hint\">Click a page to cycle: bare &rarr; "
-            . "<span style=\"color:#006eff\">margins</span> &rarr; "
-            . "<span style=\"color:#dc3200\">columns</span> &rarr; bare. "
-            . "Both are mubanal's.</p>\n";
 
         $nimg = 0;
-        foreach ($this->report as [$fname, $diffs, $mj]) {
-            $h .= "<h2>" . htmlspecialchars($fname) . "</h2>\n";
-            $by_page = self::diff_by_page($diffs);
-            // Document-level complaints belong to no page, so they stay above
-            // the images rather than under one.
-            if (isset($by_page[0])) {
-                $h .= self::diff_list($by_page[0]);
-                unset($by_page[0]);
-            }
-            // Every other complaint goes under the page it is about; a
-            // document with only document-level complaints still shows page 1,
-            // which is enough to see what kind of document it is.
-            if (empty($by_page)) {
-                $by_page[1] = [];
-            }
-            foreach ($by_page as $pageno => $pdiffs) {
-                $png = $this->render_page($fname, $pageno);
-                $h .= "<figure>";
-                if ($png === null) {
-                    $h .= "<em>cannot render</em>";
-                } else {
-                    ++$nimg;
-                    list($mbox, $cols) = self::overlay_boxes($mj->pages[$pageno - 1] ?? null);
-                    $h .= "<div class=\"page\" data-ov=\"0\">"
-                        . "<img src=\"data:image/png;base64," . base64_encode($png) . "\">";
-                    if ($mbox !== "") {
-                        $h .= "<div class=\"ov ov-margin\"><b style=\"{$mbox}\"></b></div>";
-                    }
-                    if (!empty($cols)) {
-                        $h .= "<div class=\"ov ov-cols\">";
-                        foreach ($cols as $c) {
-                            $h .= "<b style=\"{$c}\"></b>";
-                        }
-                        $h .= "</div>";
-                    }
-                    $h .= "</div>";
-                }
-                $h .= "<figcaption>page {$pageno}</figcaption>"
-                    . self::diff_list($pdiffs) . "</figure>\n";
-            }
-        }
+        $h .= $render ? $this->render_report($nimg) : $this->compare_report($nimg);
+
+        // Both glyphs are drawn rather than typed -- U+2FFB especially is
+        // missing from most systems' default fonts, and this page is opened off
+        // the filesystem with whatever fonts happen to be there.
+        $svg = "<svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\""
+            . " stroke=\"currentColor\" stroke-width=\"2\">";
+        $h .= "<div id=\"tools\"><span id=\"copymsg\"></span>"
+            . "<button id=\"clearb\" title=\"Uncheck every filename\">"
+            . $svg . "<path d=\"M5 5L19 19M19 5L5 19\" stroke-linecap=\"round\"></path>"
+            . "</svg></button>"
+            . "<button id=\"copyb\" title=\"Copy filenames (all, or just the checked ones)\">"
+            . $svg . "<rect x=\"3\" y=\"3\" width=\"13\" height=\"13\" rx=\"1.5\"></rect>"
+            . "<rect x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"1.5\"></rect>"
+            . "</svg></button></div>\n";
 
         $h .= "<script>\n"
             . "document.addEventListener('click', function (e) {\n"
@@ -493,6 +662,44 @@ class TestMubanal_Batch {
             . "    if (p) {\n"
             . "        p.dataset.ov = (+p.dataset.ov + 1) % 3;\n"
             . "    }\n"
+            . "});\n"
+            . "function copytext(t) {\n"
+            . "    if (navigator.clipboard && navigator.clipboard.writeText) {\n"
+            . "        return navigator.clipboard.writeText(t);\n"
+            . "    }\n"
+            // Reached when the page is opened somewhere navigator.clipboard is
+            // not available; execCommand still works inside a click handler.
+            . "    var ta = document.createElement('textarea');\n"
+            . "    ta.value = t;\n"
+            . "    ta.style.cssText = 'position:fixed;opacity:0';\n"
+            . "    document.body.appendChild(ta);\n"
+            . "    ta.select();\n"
+            . "    var ok = document.execCommand('copy');\n"
+            . "    document.body.removeChild(ta);\n"
+            . "    return ok ? Promise.resolve() : Promise.reject();\n"
+            . "}\n"
+            . "document.getElementById('clearb').addEventListener('click', function () {\n"
+            . "    document.querySelectorAll('.fsel').forEach(function (c) {\n"
+            . "        c.checked = false;\n"
+            . "    });\n"
+            . "});\n"
+            . "document.getElementById('copyb').addEventListener('click', function () {\n"
+            . "    var all = Array.prototype.slice.call(document.querySelectorAll('.fsel')),\n"
+            . "        sel = all.filter(function (c) { return c.checked; }),\n"
+            . "        b = this, msg = document.getElementById('copymsg');\n"
+            . "    if (!sel.length) {\n"
+            . "        sel = all;\n"
+            . "    }\n"
+            . "    var t = sel.map(function (c) { return c.value; }).join('\\n');\n"
+            . "    copytext(t + '\\n').then(function () {\n"
+            . "        msg.textContent = sel.length + (sel.length === 1 ? ' file' : ' files') + ' copied';\n"
+            . "        b.className = 'ok';\n"
+            . "    }, function () {\n"
+            . "        msg.textContent = 'copy failed';\n"
+            . "    }).then(function () {\n"
+            . "        msg.className = 'show';\n"
+            . "        setTimeout(function () { msg.className = ''; b.className = ''; }, 1200);\n"
+            . "    });\n"
             . "});\n"
             . "</script>\n";
 
@@ -520,6 +727,12 @@ class TestMubanal_Batch {
     private function handle_file($fname) {
         if ($this->mode === self::MODE_LIST) {
             fwrite(STDOUT, "{$fname}\n");
+            return false;
+        }
+        if ($this->mode === self::MODE_RENDER) {
+            // Rendering is deferred to `write_html`, which is where every other
+            // image is made; here the document is only collected.
+            $this->report[] = [$fname, [], null];
             return false;
         }
         list($diffs, $mj, $bj) = $this->compare_file($fname);
@@ -574,12 +787,158 @@ class TestMubanal_Batch {
         return true;
     }
 
+    /** Column count asserted by a corpus heading, or null if it asserts none.
+     *
+     * The assertion is the `N-column documents|pages` prefix; whatever follows
+     * is a human qualifier ("with a narrow gutter") that categorizes the entry
+     * without changing what it claims. A heading with no such prefix -- "Slides
+     * and other non-textual documents" -- collects documents that are in the
+     * corpus without an expected answer.
+     *
+     * @param string $h
+     * @return ?array{int,bool} count, and whether the section is about pages */
+    static private function corpus_heading($h) {
+        if (!preg_match('/\A(one|two|three|four|five)-column\s+(document|page)/i', $h, $m)) {
+            return null;
+        }
+        $n = ["one" => 1, "two" => 2, "three" => 3, "four" => 4, "five" => 5];
+        return [$n[strtolower($m[1])], strtolower($m[2]) === "page"];
+    }
+
+    /** Read corpus.md into per-file assertions.
+     *
+     * Fenced blocks are skipped: the preamble illustrates the page syntax with
+     * a line that is otherwise indistinguishable from a real entry.
+     *
+     * @param string $fn
+     * @return array<string,array{doc:?array{int,string},pages:array<int,array{int,string}>}> */
+    static private function parse_corpus($fn) {
+        if (($t = @file_get_contents($fn)) === false) {
+            throw new CommandLineException("{$fn}: Cannot read");
+        }
+        $files = [];
+        $heading = "";
+        $assert = null;
+        $fenced = false;
+        foreach (explode("\n", $t) as $lineno => $line) {
+            $line = trim($line);
+            if (str_starts_with($line, "```")) {
+                $fenced = !$fenced;
+                continue;
+            }
+            if ($fenced || $line === "") {
+                continue;
+            }
+            if (preg_match('/\A#+\s*(.*)\z/', $line, $m)) {
+                $heading = $m[1];
+                $assert = self::corpus_heading($heading);
+                continue;
+            }
+            if (preg_match('/\A(?:(\d+)\s+)?(\/.*)\z/', $line, $m)) {
+                $fname = $m[2];
+                $files[$fname] = $files[$fname] ?? ["doc" => null, "pages" => []];
+                if ($assert === null) {
+                    continue;         // in the corpus, but nothing is claimed
+                }
+                list($ncols, $is_page) = $assert;
+                if ($is_page !== ($m[1] !== "")) {
+                    fwrite(STDERR, "{$fn}:" . ($lineno + 1) . ": "
+                        . ($is_page ? "page entry without a page number" : "page number in a document section")
+                        . "\n");
+                    continue;
+                }
+                if ($is_page) {
+                    $files[$fname]["pages"][intval($m[1])] = [$ncols, $heading];
+                } else if ($files[$fname]["doc"] !== null
+                           && $files[$fname]["doc"][0] !== $ncols) {
+                    fwrite(STDERR, "{$fn}:" . ($lineno + 1) . ": listed as "
+                        . $files[$fname]["doc"][0] . " and {$ncols} columns\n");
+                } else {
+                    $files[$fname]["doc"] = [$ncols, $heading];
+                }
+            }
+        }
+        return $files;
+    }
+
+    /** Score mubanal's column counts against the corpus.
+     * @return int */
+    private function run_corpus() {
+        $files = self::parse_corpus($this->corpus);
+        $hit = $miss = [];
+        $nfail = 0;
+        foreach ($files as $fname => $a) {
+            if ($a["doc"] === null && empty($a["pages"])) {
+                continue;
+            }
+            if (!is_readable($fname)) {
+                fwrite(STDERR, "{$fname}: Not readable\n");
+                ++$nfail;
+                continue;
+            }
+            $mj = $this->run_mubanal($fname);
+            if ($mj === null || !is_array($mj->pages ?? null)) {
+                fwrite(STDERR, "{$fname}: mubanal failed\n");
+                ++$nfail;
+                continue;
+            }
+            $this->resolve_defaults($mj);
+            $checks = [];
+            if ($a["doc"] !== null) {
+                $checks[] = [null, $a["doc"][0], $mj->columns ?? null, $a["doc"][1]];
+            }
+            foreach ($a["pages"] as $pageno => list($want, $head)) {
+                $pg = $mj->pages[$pageno - 1] ?? null;
+                $checks[] = [$pageno, $want, $pg->columns ?? null, $head];
+            }
+            foreach ($checks as list($pageno, $want, $got, $head)) {
+                $where = $fname . ($pageno === null ? "" : " page {$pageno}");
+                if ($got === $want) {
+                    $hit[$head] = ($hit[$head] ?? 0) + 1;
+                } else {
+                    $miss[$head][] = [$where, $want, $got];
+                }
+            }
+        }
+
+        $nhit = array_sum($hit);
+        $nmiss = 0;
+        foreach ($miss as $ms) {
+            $nmiss += count($ms);
+        }
+        foreach (array_keys($hit + $miss) as $head) {
+            $h = $hit[$head] ?? 0;
+            $n = $h + count($miss[$head] ?? []);
+            fwrite(STDOUT, sprintf("%4d/%-4d %s\n", $h, $n, $head));
+        }
+        foreach ($miss as $head => $ms) {
+            foreach ($ms as list($where, $want, $got)) {
+                fwrite(STDOUT, sprintf("  want %d, got %s  %s\n",
+                                       $want, $got === null ? "?" : $got, $where));
+            }
+        }
+        if (!$this->quiet) {
+            fwrite(STDERR, sprintf("%d/%d correct%s\n", $nhit, $nhit + $nmiss,
+                                   $nfail ? ", {$nfail} unusable" : ""));
+        }
+        return $nmiss > 0 || $nfail > 0 ? 1 : 0;
+    }
+
     /** @return int */
     function run() {
         if ($this->mode !== self::MODE_LIST
-            && !is_executable($this->mubanal)
+            && $this->mode !== self::MODE_RENDER
+            && !self::command_exists($this->mubanal)
             && !is_executable(SiteLoader::$root . "/" . $this->mubanal)) {
             throw new CommandLineException("{$this->mubanal}: Not executable, use `--mubanal`");
+        }
+        if ($this->mode === self::MODE_RENDER && $this->html === null) {
+            throw new CommandLineException("`--render` requires `--html`");
+        }
+        // The corpus names its own documents, so none of the traversal below
+        // applies to it.
+        if ($this->mode === self::MODE_CORPUS) {
+            return $this->run_corpus();
         }
 
         // Named files come first, in order; the docstore then tops the run up
@@ -638,13 +997,13 @@ class TestMubanal_Batch {
             fwrite(STDERR, "No PDFs found\n");
             return 1;
         }
-        if ($this->mode !== self::MODE_LIST && $this->summary) {
+        if ($this->mode === self::MODE_COMPARE && $this->summary) {
             arsort($this->tally);
             foreach ($this->tally as $f => $n) {
                 fwrite(STDOUT, sprintf("%6d  %s\n", $n, $f));
             }
         }
-        if ($this->mode !== self::MODE_LIST && !$this->quiet) {
+        if ($this->mode === self::MODE_COMPARE && !$this->quiet) {
             $what = $this->verdict ? "changed verdict" : "difference";
             fwrite(STDERR, plural($nfile, "file") . " compared, "
                 . plural($ndiff, $what) . "\n");
@@ -682,11 +1041,14 @@ class TestMubanal_Batch {
             "count:,c: {n} =COUNT Test COUNT documents [20, or all named files]",
             "seed:,s: {n} =SEED Seed the document choice [random]",
             "list,l Output document pathnames and exit",
+            "render::,R:: {n} =N Just render N pages of each document to --html [2]",
+            "corpus: =FILE Score mubanal's columns against the corpus in FILE",
+            "mubanal-opt[] =OPT Pass OPT to mubanal",
             "files: =FILENAME Test the files named in FILENAME, one per line",
             "mubanal: =CMD mubanal program [{$mubanal}]",
             "margin-tolerance: {n} =PTS Ignore margin differences <=PTS [4]",
-            "ignore: =FIELD[,...] Also ignore differences in FIELD",
-            "include: =FIELD[,...] Report differences in FIELD [c,w ignored]",
+            "ignore: =FIELD[,...] Also ignore differences in FIELD (`all` for every field)",
+            "include: =FIELD[,...] Report differences in FIELD anyway [c,w ignored]",
             "verdict Compare HotCRP format-check verdicts, not JSON fields",
             "spec: =SPEC Format spec for --verdict [" . self::DEFAULT_SPEC . "]",
             "summary Print a tally of differences instead of listing them",
@@ -731,6 +1093,7 @@ Usage: php batch/testmubanal.php [-c COUNT] [-s SEED] [-l] [DOCSTORE | FILE]...\
         // resolve the default one only when that can actually happen -- a run
         // over named files alone should not require a configured docstore.
         if (empty($confdps)
+            && !isset($arg["corpus"])
             && (empty($files) || ($arg["count"] ?? 0) > count($files))) {
             $confdps[] = self::default_docstore($arg);
         }
