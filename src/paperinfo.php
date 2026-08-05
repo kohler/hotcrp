@@ -674,7 +674,7 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         foreach ($this->prows as $prow) {
             if (call_user_func($func, $prow)) {
                 $prows[] = $by_pid[$prow->paperId] = $prow;
-            } else {
+            } else if ($prow->_row_set === $this) {
                 $prow->_row_set = PaperInfoSet::make_singleton($prow);
             }
         }

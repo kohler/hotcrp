@@ -4571,8 +4571,9 @@ class Conf {
             && empty($where)
             && $user->has_authored_papers()
             && $want_set) {
+            // `authored_papers()` itself should be immutable
             /** @phan-suppress-next-line PhanTypeMismatchReturn */
-            return $user->authored_papers();
+            return clone $user->authored_papers();
         }
 
         $pq = "select " . join(",\n    ", $cols)
