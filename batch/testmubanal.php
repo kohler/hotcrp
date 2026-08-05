@@ -37,7 +37,7 @@ class TestMubanal_Batch {
     public $mutool;
     /** @var int */
     public $dpi;
-    /** @var bool */
+    /** @var ?string */
     public $verdict;
     /** @var string */
     public $spec_string;
@@ -63,6 +63,8 @@ class TestMubanal_Batch {
     private $_resolved = [];
     /** @var ?FormatSpec */
     private $_spec;
+    /** @var ?bool */
+    private $_color;
     /** @var ?int */
     private $_doc_dtype;
     /** @var list<array{string,list<string>,?object}> */
@@ -122,7 +124,17 @@ class TestMubanal_Batch {
         $this->html = $arg["html"] ?? null;
         $this->mutool = $arg["mutool"] ?? "mutool";
         $this->dpi = $arg["dpi"] ?? 72;
-        $this->verdict = isset($arg["verdict"]);
+        if (isset($arg["verdict"])) {
+            if ($arg["verdict"] === false || $arg["verdict"] === "any") {
+                $this->verdict = "any";
+            } else if ($arg["verdict"] === "worse") {
+                $this->verdict = "worse";
+            } else if ($arg["verdict"] === "better") {
+                $this->verdict = "better";
+            } else {
+                throw new CommandLineException("Expected `--verdict=any|worse|better`");
+            }
+        }
         // Left null when unset, so a conference's own spec can stand in.
         $this->spec_string = $arg["spec"] ?? null;
         // A search names papers, so asking for one is asking for --papers.
@@ -244,6 +256,36 @@ class TestMubanal_Batch {
         return PaperInfoSet::make_search($srch);
     }
 
+    /** Wrap `$t` in an ANSI colour, if the output is a terminal.
+     *
+     * Only on a tty: these reports are routinely piped into `grep` and into the
+     * `--summary` tallies, where escape codes would be noise at best and would
+     * break a comparison at worst.
+     *
+     * @param string $t
+     * @param string $color one of "red", "green", "yellow", "dim"
+     * @return string */
+    private function colored($t, $color) {
+        $this->_color = $this->_color ?? posix_isatty(STDOUT);
+        if (!$this->_color || $t === "") {
+            return $t;
+        }
+        $c = ["red" => "31", "green" => "32", "yellow" => "33", "dim" => "90"];
+        return "\033[" . ($c[$color] ?? "0") . "m{$t}\033[0m";
+    }
+
+    /** How a verdict reads.
+     *
+     * "Good" is an empty verdict -- HotCRP found nothing to say about the
+     * paper. A change into that state is an improvement, a change out of it a
+     * regression, and a change between two different complaints is neither.
+     *
+     * @param ?list<string> $v
+     * @return string */
+    static private function verdict_text($v) {
+        return $v === null ? "(no output)" : (empty($v) ? "ok" : join(" ", $v));
+    }
+
     /** The spec `--verdict` checks against.
      *
      * `--papers` reads a conference's own submissions, so it checks them
@@ -275,7 +317,7 @@ class TestMubanal_Batch {
      * and their tolerances are the real ones.
      *
      * @param ?object $bj
-     * @return ?list<string> sorted "field:status" pairs, or null */
+     * @return array{int,?list<string>} sorted "field:status" pairs, or null */
     private function verdict_of($bj) {
         if (!$bj || !is_array($bj->pages ?? null)) {
             return null;
@@ -300,7 +342,7 @@ class TestMubanal_Batch {
             $v[] = ($mi->field ?? "?") . ":" . $mi->status;
         }
         sort($v);
-        return $v;
+        return [$cf->problem_status(), $v];
     }
 
     /** @param list<string> $command
@@ -871,23 +913,45 @@ class TestMubanal_Batch {
         if ($this->verdict) {
             // In verdict mode the JSON differences are only context; what
             // counts is whether HotCRP would say anything different.
-            $bv = $this->verdict_of($bj);
-            $mv = $this->verdict_of($mj);
+            [$bstatus, $bv] = $this->verdict_of($bj);
+            [$mstatus, $mv] = $this->verdict_of($mj);
             if ($bv === $mv) {
                 if ($this->verbose) {
-                    $t = $bv === null ? "(no output)" : (empty($bv) ? "ok" : join(" ", $bv));
-                    fwrite(STDOUT, "{$fname}{$xanno}: same verdict ({$t})\n");
+                    $t = self::verdict_text($bv);
+                    fwrite(STDOUT, $this->colored("{$fname}{$xanno}: same verdict ({$t})", "dim") . "\n");
+                }
+                return false;
+            } else if (($this->verdict === "worse" && $bstatus >= $mstatus)
+                       || ($this->verdict === "better" && $bstatus <= $mstatus)) {
+                if ($this->verbose) {
+                    $t = self::verdict_text($bv);
+                    fwrite(STDOUT, $this->colored("{$fname}{$xanno}: verdict not {$this->verdict} ({$t})", "dim") . "\n");
                 }
                 return false;
             }
             ++$this->nflip;
             $this->tally["verdict"] = ($this->tally["verdict"] ?? 0) + 1;
+            if (empty($bv)) {
+                $this->tally["verdict_fail"] = ($this->tally["verdict_fail"] ?? 0) + 1;
+            } else if (empty($mv)) {
+                $this->tally["verdict_pass"] = ($this->tally["verdict_pass"] ?? 0) + 1;
+            }
             if (!$this->summary) {
+                // Green where mubanal newly finds nothing to complain about,
+                // red where it complains about a paper banal passed, yellow
+                // where both complain but differently.
+                if (empty($mv) && !empty($bv)) {
+                    $mcolor = "green";
+                } else if (empty($bv) && !empty($mv)) {
+                    $mcolor = "red";
+                } else {
+                    $mcolor = "yellow";
+                }
                 fwrite(STDOUT, "{$fname}{$xanno}\n");
-                fwrite(STDOUT, "    banal:   " . ($bv === null ? "(no output)" : (empty($bv) ? "ok" : join(" ", $bv))) . "\n");
-                fwrite(STDOUT, "    mubanal: " . ($mv === null ? "(no output)" : (empty($mv) ? "ok" : join(" ", $mv))) . "\n");
+                fwrite(STDOUT, "    banal:   " . $this->colored(self::verdict_text($bv), "dim") . "\n");
+                fwrite(STDOUT, "    mubanal: " . $this->colored(self::verdict_text($mv), $mcolor) . "\n");
                 foreach ($diffs as $d) {
-                    fwrite(STDOUT, "      {$d}\n");
+                    fwrite(STDOUT, "      " . $this->colored($d, "dim") . "\n");
                 }
             }
             if ($this->html !== null) {
@@ -1064,7 +1128,7 @@ class TestMubanal_Batch {
                 }
             }
             if (!empty($diff)) {
-                $this->report[] = [$path, $diff, $mj];
+                $this->report[] = [$path, $diff, $mj, ""];
             }
         }
 
@@ -1203,8 +1267,12 @@ class TestMubanal_Batch {
         }
         if ($this->mode === self::MODE_COMPARE && !$this->quiet) {
             $what = $this->verdict ? "changed verdict" : "difference";
+            $rest = "";
+            if (isset($this->tally["verdict_fail"])) {
+                $rest = ", " . plural($this->tally["verdict_fail"], "new fail");
+            }
             fwrite(STDERR, plural($nfile, "file") . " compared, "
-                . plural($ndiff, $what) . "\n");
+                . plural($ndiff, $what) . $rest . "\n");
         }
         return $ndiff > 0 ? 1 : 0;
     }
@@ -1248,7 +1316,7 @@ class TestMubanal_Batch {
             "list,l Output document pathnames and exit",
             "files: =FILENAME Test the files listed in FILENAME, one per line",
             "corpus: =FILE Score mubanal's columns against the corpus in FILE",
-            "verdict Compare HotCRP format-check verdicts, not JSON fields",
+            "verdict:: Compare HotCRP format-check verdicts, not JSON fields",
             "papers Test the current conference's submissions, not the docstore",
             "q:,search: =QUERY Test papers matching QUERY (implies --papers)",
             "t:,type: =SCOPE Scope for --search [submitted]",
