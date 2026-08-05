@@ -877,7 +877,7 @@ class TestMubanal_Batch {
             if ($fenced || $line === "") {
                 continue;
             }
-            if (preg_match('/\A#+\s*(.*)\z/', $line, $m)) {
+            if (preg_match('/\A\#+\s*(.*)\z/', $line, $m)) {
                 $heading = $m[1];
                 $assert = self::corpus_heading($heading);
                 continue;
@@ -962,20 +962,26 @@ class TestMubanal_Batch {
             $this->resolve_defaults($mj);
             $checks = [];
             if ($a["doc"] !== null) {
-                $checks[] = [null, $a["doc"][0], $mj->columns ?? null, $a["doc"][1]];
+                $checks[] = [0, $a["doc"][0], $mj->columns ?? null, $a["doc"][1]];
             }
             foreach ($a["pages"] as $pageno => list($want, $head)) {
                 $pg = $mj->pages[$pageno - 1] ?? null;
                 $checks[] = [$pageno, $want,
                              self::page_columns($pg, $mj->columns ?? null), $head];
             }
+            $diff = [];
             foreach ($checks as list($pageno, $want, $got, $head)) {
-                $where = $fname . ($pageno === null ? "" : " page {$pageno}");
+                $where = $fname . ($pageno === 0 ? "" : " page {$pageno}");
                 if ($got === $want) {
                     $hit[$head] = ($hit[$head] ?? 0) + 1;
                 } else {
                     $miss[$head][] = [$where, $want, $got];
+                    $what = $pageno === 0 ? "columns" : "pages[" . ($pageno - 1) . "].columns";
+                    $diff[] = "{$what}: gold={$want} mubanal={$got}";
                 }
+            }
+            if (!empty($diff)) {
+                $this->report[] = [$path, $diff, $mj];
             }
         }
 
@@ -998,6 +1004,9 @@ class TestMubanal_Batch {
         if (!$this->quiet) {
             fwrite(STDERR, sprintf("%d/%d correct%s\n", $nhit, $nhit + $nmiss,
                                    $nfail ? ", {$nfail} unusable" : ""));
+        }
+        if ($this->html !== null) {
+            $this->write_html();
         }
         return $nmiss > 0 || $nfail > 0 ? 1 : 0;
     }
