@@ -53,8 +53,14 @@ class TestMubanal_Batch {
     public $tally = [];
     /** @var int */
     public $nflip = 0;
+    /** @var ?string */
+    public $config;
+    /** @var ?string */
+    public $name;
     /** @var ?Conf */
     private $_conf;
+    /** @var array<string,?string> */
+    private $_resolved = [];
     /** @var ?FormatSpec */
     private $_spec;
     /** @var list<array{string,list<string>,?object}> */
@@ -93,6 +99,8 @@ class TestMubanal_Batch {
             $this->mode = self::MODE_COMPARE;
         }
         $this->corpus = $arg["corpus"] ?? null;
+        $this->config = $arg["config"] ?? null;
+        $this->name = $arg["name"] ?? null;
         $this->mubanal_opt = $arg["mubanal-opt"] ?? [];
         // Two pages, because page 1 is a title page as often as it is a
         // representative one.
@@ -160,8 +168,45 @@ class TestMubanal_Batch {
 
     /** @return Conf */
     private function conf() {
-        $this->_conf = $this->_conf ?? (Conf::$main ?? initialize_conf(null, null));
+        $this->_conf = $this->_conf
+            ?? (Conf::$main ?? initialize_conf($this->config, $this->name));
         return $this->_conf;
+    }
+
+    /** Resolve a `--files` or corpus entry to a readable path.
+     *
+     * A name with no slash is a docstore name: documents there are named by
+     * their hash, so `sha2-<hex>.pdf` identifies one wherever it is stored.
+     * Resolving it through `DocumentInfo` rather than the filesystem means the
+     * search falls through the docstore to the database and to S3, so a corpus
+     * stays usable on a machine that holds only some of it -- and a corpus
+     * written in hashes is portable, where one written in absolute paths is
+     * not.
+     *
+     * @param string $name
+     * @return ?string */
+    private function resolve_file($name) {
+        if (array_key_exists($name, $this->_resolved)) {
+            return $this->_resolved[$name];
+        }
+        $path = null;
+        if (strpos($name, "/") !== false) {
+            $path = is_readable($name) ? $name : null;
+        } else {
+            // Any extension is dropped: the docstore adds one, the hash is the
+            // name. A name that is not a hash is still tried as a path, so a
+            // file in the working directory keeps working.
+            $hash = preg_replace('/\.[A-Za-z0-9]+\z/', "", $name);
+            if (HashAnalysis::hash_as_binary($hash) === false) {
+                $path = is_readable($name) ? $name : null;
+            } else {
+                $doc = DocumentInfo::make_hash($this->conf(), $hash, "application/pdf");
+                $path = $doc->content_file();
+                $path = $path !== null && is_readable($path) ? $path : null;
+            }
+        }
+        $this->_resolved[$name] = $path;
+        return $path;
     }
 
     /** @return FormatSpec */
@@ -645,17 +690,14 @@ class TestMubanal_Batch {
         $nimg = 0;
         $h .= $render ? $this->render_report($nimg) : $this->compare_report($nimg);
 
-        // Both glyphs are drawn rather than typed -- U+2FFB especially is
-        // missing from most systems' default fonts, and this page is opened off
-        // the filesystem with whatever fonts happen to be there.
-        $svg = "<svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\""
-            . " stroke=\"currentColor\" stroke-width=\"2\">";
+        // U+2FFB drawn rather than typed: the character is missing from most
+        // systems' default fonts, and this page is opened off the filesystem
+        // with whatever fonts happen to be there.
         $h .= "<div id=\"tools\"><span id=\"copymsg\"></span>"
-            . "<button id=\"clearb\" title=\"Uncheck every filename\">"
-            . $svg . "<path d=\"M5 5L19 19M19 5L5 19\" stroke-linecap=\"round\"></path>"
-            . "</svg></button>"
-            . "<button id=\"copyb\" title=\"Copy filenames (all, or just the checked ones)\">"
-            . $svg . "<rect x=\"3\" y=\"3\" width=\"13\" height=\"13\" rx=\"1.5\"></rect>"
+            . "<button id=\"copyb\" title=\"Copy filenames; shift-click for full paths\">"
+            . "<svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\""
+            . " stroke=\"currentColor\" stroke-width=\"2\">"
+            . "<rect x=\"3\" y=\"3\" width=\"13\" height=\"13\" rx=\"1.5\"></rect>"
             . "<rect x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"1.5\"></rect>"
             . "</svg></button></div>\n";
 
@@ -681,22 +723,25 @@ class TestMubanal_Batch {
             . "    document.body.removeChild(ta);\n"
             . "    return ok ? Promise.resolve() : Promise.reject();\n"
             . "}\n"
-            . "document.getElementById('clearb').addEventListener('click', function () {\n"
-            . "    document.querySelectorAll('.fsel').forEach(function (c) {\n"
-            . "        c.checked = false;\n"
-            . "    });\n"
-            . "});\n"
-            . "document.getElementById('copyb').addEventListener('click', function () {\n"
+            . "document.getElementById('copyb').addEventListener('click', function (e) {\n"
             . "    var all = Array.prototype.slice.call(document.querySelectorAll('.fsel')),\n"
             . "        sel = all.filter(function (c) { return c.checked; }),\n"
-            . "        b = this, msg = document.getElementById('copymsg');\n"
+            . "        full = e.shiftKey, b = this, msg = document.getElementById('copymsg');\n"
             . "    if (!sel.length) {\n"
             . "        sel = all;\n"
             . "    }\n"
-            . "    var t = sel.map(function (c) { return c.value; }).join('\\n');\n"
+            // Bare names by default: that is what a corpus is written in, since
+            // a name with no `/` is looked up by hash and so is portable.
+            . "    var t = sel.map(function (c) {\n"
+            . "        return full ? c.value : c.value.replace(/^.*\\//, '');\n"
+            . "    }).join('\\n');\n"
             . "    copytext(t + '\\n').then(function () {\n"
-            . "        msg.textContent = sel.length + (sel.length === 1 ? ' file' : ' files') + ' copied';\n"
+            . "        msg.textContent = sel.length + (sel.length === 1 ? ' file' : ' files')\n"
+            . "            + (full ? ' copied with paths' : ' copied');\n"
             . "        b.className = 'ok';\n"
+            // Clearing after a copy means the next selection starts empty,
+            // rather than silently including what was already taken.
+            . "        all.forEach(function (c) { c.checked = false; });\n"
             . "    }, function () {\n"
             . "        msg.textContent = 'copy failed';\n"
             . "    }).then(function () {\n"
@@ -837,7 +882,14 @@ class TestMubanal_Batch {
                 $assert = self::corpus_heading($heading);
                 continue;
             }
-            if (preg_match('/\A(?:(\d+)\s+)?(\/.*)\z/', $line, $m)) {
+            // An entry is a lone token, optionally preceded by a page number:
+            // a path, or a docstore name, which is a hash. Requiring a `/`, a
+            // `.` or a hash keeps the prose in the preamble from reading as a
+            // list of very short filenames.
+            if (preg_match('/\A(?:(\d+)\s+)?(\S+)\z/', $line, $m)
+                && (strpos($m[2], "/") !== false
+                    || strpos($m[2], ".") !== false
+                    || HashAnalysis::hash_as_binary($m[2]) !== false)) {
                 $fname = $m[2];
                 $files[$fname] = $files[$fname] ?? ["doc" => null, "pages" => []];
                 if ($assert === null) {
@@ -864,6 +916,28 @@ class TestMubanal_Batch {
         return $files;
     }
 
+    /** The column count decided for a page.
+     *
+     * `colpos` is one left/right pair per column, so it carries the count
+     * directly. It is preferred because the `columns` field is suppressed on
+     * `figure` and `appendix` pages -- banal prints a page field only when it
+     * differs from the document, and never on those -- so reading the field
+     * alone would inherit the document's count and score the report's
+     * formatting convention rather than what the analysis found.
+     *
+     * @param ?object $pg
+     * @param ?int $doc
+     * @return ?int */
+    static private function page_columns($pg, $doc) {
+        if ($pg === null) {
+            return null;
+        }
+        if (is_array($pg->colpos ?? null) && !empty($pg->colpos)) {
+            return intdiv(count($pg->colpos), 2);
+        }
+        return $pg->columns ?? $doc;
+    }
+
     /** Score mubanal's column counts against the corpus.
      * @return int */
     private function run_corpus() {
@@ -874,12 +948,12 @@ class TestMubanal_Batch {
             if ($a["doc"] === null && empty($a["pages"])) {
                 continue;
             }
-            if (!is_readable($fname)) {
-                fwrite(STDERR, "{$fname}: Not readable\n");
+            if (($path = $this->resolve_file($fname)) === null) {
+                fwrite(STDERR, "{$fname}: Not found\n");
                 ++$nfail;
                 continue;
             }
-            $mj = $this->run_mubanal($fname);
+            $mj = $this->run_mubanal($path);
             if ($mj === null || !is_array($mj->pages ?? null)) {
                 fwrite(STDERR, "{$fname}: mubanal failed\n");
                 ++$nfail;
@@ -892,7 +966,8 @@ class TestMubanal_Batch {
             }
             foreach ($a["pages"] as $pageno => list($want, $head)) {
                 $pg = $mj->pages[$pageno - 1] ?? null;
-                $checks[] = [$pageno, $want, $pg->columns ?? null, $head];
+                $checks[] = [$pageno, $want,
+                             self::page_columns($pg, $mj->columns ?? null), $head];
             }
             foreach ($checks as list($pageno, $want, $got, $head)) {
                 $where = $fname . ($pageno === null ? "" : " page {$pageno}");
@@ -954,12 +1029,12 @@ class TestMubanal_Batch {
             if ($nfile >= $limit) {
                 break;
             }
-            if (!is_readable($fname)) {
-                fwrite(STDERR, "{$fname}: Not readable\n");
+            if (($path = $this->resolve_file($fname)) === null) {
+                fwrite(STDERR, "{$fname}: Not found\n");
                 continue;
             }
             ++$nfile;
-            $ndiff += $this->handle_file($fname) ? 1 : 0;
+            $ndiff += $this->handle_file($path) ? 1 : 0;
         }
 
         if ($nfile < $limit && !empty($this->docstores)) {
@@ -979,7 +1054,10 @@ class TestMubanal_Batch {
             // would just be confusing.
             $seen = [];
             foreach ($this->files as $fname) {
-                if (($rp = realpath($fname)) !== false) {
+                // Compare where the name resolved to, not the name: a docstore
+                // hash and the docstore path for it are the same document.
+                $path = $this->resolve_file($fname);
+                if ($path !== null && ($rp = realpath($path)) !== false) {
                     $seen[$rp] = true;
                 }
             }
@@ -1051,20 +1129,20 @@ class TestMubanal_Batch {
             "count:,c: {n} =COUNT Test COUNT documents [20, or all named files]",
             "seed:,s: {n} =SEED Seed the document choice [random]",
             "list,l Output document pathnames and exit",
-            "render::,R:: {n} =N Just render N pages of each document to --html [2]",
+            "files: =FILENAME Test the files listed in FILENAME, one per line",
             "corpus: =FILE Score mubanal's columns against the corpus in FILE",
-            "mubanal-opt[] =OPT Pass OPT to mubanal",
-            "files: =FILENAME Test the files named in FILENAME, one per line",
-            "mubanal: =CMD mubanal program [{$mubanal}]",
-            "margin-tolerance: {n} =PTS Ignore margin differences <=PTS [4]",
-            "ignore: =FIELD[,...] Also ignore differences in FIELD (`all` for every field)",
-            "include: =FIELD[,...] Report differences in FIELD anyway [c,w ignored]",
             "verdict Compare HotCRP format-check verdicts, not JSON fields",
             "spec: =SPEC Format spec for --verdict [" . self::DEFAULT_SPEC . "]",
+            "ignore: =FIELD[,...] Also ignore differences in FIELD (`all` for every field)",
+            "include: =FIELD[,...] Report differences in FIELD anyway [c,w ignored]",
+            "margin-tolerance: {n} =PTS Ignore margin differences <=PTS [4]",
             "summary Print a tally of differences instead of listing them",
             "html: =FILE Write an HTML report with page images to FILE",
-            "mutool: =CMD mutool program, for --html [{$mutool}]",
+            "render::,R:: {n} =N Just render N pages of each document to --html [2]",
             "dpi: {n} =DPI Render pages at DPI for --html [72]",
+            "mubanal: =CMD mubanal program [{$mubanal}]",
+            "mubanal-opt[] =OPT Pass OPT to mubanal",
+            "mutool: =CMD mutool program, for --html [{$mutool}]",
             "quiet,silent,q Be quiet",
             "verbose,V Report documents that agree",
             "help,h"
