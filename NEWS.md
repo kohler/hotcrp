@@ -1,7 +1,7 @@
 HotCRP NEWS
 ===========
 
-## Version 3.4
+## Version 3.4 – 5.Aug.2026
 
 * Security updates
 
@@ -20,15 +20,23 @@ HotCRP NEWS
 
 * Settings
 
-    * Support word limits on text submission fields.
+    * Text submission fields gain word limits (advanced settings only).
     * Author certification: Withdrawing a submission deletes all its author
       certifications. This plugs a hole where withdrawing and reviving a
       submission could evade max-author limits.
     * Fix JSON export/import of format settings.
+    * Remove separate `sub_update` deadline (which only direct database access
+      could turn on before). If you want to allow submitting a paper but not
+      editing its fields, mark the fields as read-only.
 
 * Reviews
 
     * Improve handling of review-acceptor links.
+
+* Tags
+
+    * Improve UI around allotment votes: don’t allow overvoting, show vote
+      counts more often, use checkboxes if the allotment is 1.
 
 * API
 
@@ -38,6 +46,8 @@ HotCRP NEWS
       endpoints support textual review form uploads; `POST /comment` gains
       `dry_run` support.
     * The `hotcrapi` batch script understands `review` and `comment`.
+    * Removed obsolete `GET /fieldtext` and `GET /fieldhtml` APIs; use `GET
+      /search` instead.
 
 * Other changes
 
@@ -48,6 +58,9 @@ HotCRP NEWS
     * Review history: Fix recovery of draft reviews after decline; new reviews
       never reuse IDs from deleted reviews.
     * Site creation supports `%` wildcards in `--grant-host`.
+    * Graphs support `numdots` style.
+    * New batch scripts for maintenance, including `account.php`,
+      `apitoken.php`, and `checkformat.php`.
     * Fix action log for non-chair users.
 
 

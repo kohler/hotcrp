@@ -1,4 +1,4 @@
-export VERSION=3.3.1
+export VERSION=3.4
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -40,7 +40,7 @@ mkdistdir () {
     while read f; do
         if [ -n "$f" ]; then
             d=`echo "$f" | sed 's/[^\/]*$//'`
-            [ -n "$d" -a ! -d "$crpd/$d" ] && mkdir "$crpd/$d"
+            [ -n "$d" -a ! -d "$crpd/$d" ] && mkdir -p "$crpd/$d"
             if [ -f "$f" ]; then
                 ln "$f" "$crpd/$f"
             else
@@ -60,6 +60,7 @@ mkdistdir <<EOF
 LICENSE
 NEWS.md
 README.md
+SECURITY.md
 api.php
 assign.php
 authorize.php
@@ -83,6 +84,7 @@ mergeaccounts.php
 newaccount.php
 oauth.php
 offline.php
+package.json
 paper.php
 profile.php
 resetpassword.php
@@ -96,11 +98,14 @@ signout.php
 users.php
 
 batch/.htaccess
+batch/account.php
 batch/actionlog.php
 batch/apispec.php
+batch/apitoken.php
 batch/assign.php
 batch/autoassign.php
 batch/backupdb.php
+batch/checkformat.php
 batch/checkinvariants.php
 batch/cli/cli_assign.php
 batch/cli/cli_autoassign.php
@@ -118,6 +123,7 @@ batch/collaboratordiff.php
 batch/createdb.php
 batch/deletepapers.php
 batch/fixdelegation.php
+batch/fileinfo.php
 batch/hotcrapi.php
 batch/hotcrp-daemonize
 batch/killinactivedoc.php
@@ -125,6 +131,7 @@ batch/paperjson.php
 batch/pcemails.php
 batch/render.php
 batch/reviewcsv.php
+batch/rewindreviews.php
 batch/s3test.php
 batch/s3transfer.php
 batch/s3verifyall.php
@@ -146,6 +153,7 @@ devel/manual/index.md
 devel/manual/oauth.md
 devel/manual/pages.md
 devel/manual/sessions.md
+devel/manual/settings.md
 devel/openapi.json
 
 etc/.htaccess
