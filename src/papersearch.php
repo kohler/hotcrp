@@ -303,6 +303,7 @@ class PaperSearch extends MessageSet {
         "reviewable" => "Reviewable",
         "rout" => "Your incomplete reviews",
         "s" => "Submitted",
+        "sa" => "All submitted",
         "undecided" => "Undecided",
         "unsub" => "Draft {submissions}",
         "viewable" => "{Submissions} you can view"
@@ -1723,7 +1724,7 @@ class PaperSearch extends MessageSet {
     }
 
     /** @return list<string> */
-    static function viewable_manager_limits(Contact $user) {
+    static function viewable_manager_limits(Contact $user, $limit = null) {
         if (!$user->privChair) {
             return ["alladmin", "admin"];
         }
@@ -1732,6 +1733,9 @@ class PaperSearch extends MessageSet {
             array_push($ts, "alladmin", "admin");
         }
         array_push($ts, "s", "accepted", "undecided", "all");
+        if ($limit === "sa") {
+            $ts[] = "sa";
+        }
         return $ts;
     }
 
@@ -1749,13 +1753,12 @@ class PaperSearch extends MessageSet {
                 $extra["aria-label"] = "Search collection";
             }
             return Ht::select("t", $sel_opt, $selected, $extra);
-        } else {
-            $t = self::limit_description($conf, $selected);
-            if (isset($extra["id"])) {
-                $t = '<span id="' . htmlspecialchars($extra["id"]) . "\">{$t}</span>";
-            }
-            return $t . Ht::hidden("t", $selected);
         }
+        $t = self::limit_description($conf, $selected);
+        if (isset($extra["id"])) {
+            $t = '<span id="' . htmlspecialchars($extra["id"]) . "\">{$t}</span>";
+        }
+        return $t . Ht::hidden("t", $selected);
     }
 
     /** @param list<int> $ids

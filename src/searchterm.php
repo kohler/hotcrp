@@ -1089,6 +1089,8 @@ class Limit_SearchTerm extends SearchTerm {
         "reviews" => ["r", "reviews"],
         "rout" => ["rout", "outstandingreviews"],
         "s" => ["s", "submitted"],
+        "sa" => ["sa", "sall"],
+        "sall" => ["sa", "sall"],
         "submitted" => ["s", "submitted"],
         "und" => "undecided",
         "undec" => "undecided",
@@ -1237,6 +1239,8 @@ class Limit_SearchTerm extends SearchTerm {
                    || ($conf->can_pc_view_some_incomplete()
                        && !in_array($limstr, ["s", "accepted"], true))) {
             $this->lflag |= self::LFLAG_ACTIVE | self::LFLAG_STDDEC;
+        } else if ($limstr === "sa") {
+            $this->lflag |= self::LFLAG_SUBMITTED;
         } else {
             $this->lflag |= self::LFLAG_SUBMITTED | self::LFLAG_STDDEC;
         }
@@ -1279,7 +1283,8 @@ class Limit_SearchTerm extends SearchTerm {
             && $conf->has_tracks()
             && $this->limit !== "a"
             && $this->limit !== "r"
-            && $this->limit !== "s") {
+            && $this->limit !== "s"
+            && $this->limit !== "sa") {
             return false;
         }
         // otherwise go by limit
@@ -1298,6 +1303,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "viewable":
             return $this->user->privChair;
         case "s":
+        case "sa":
             assert($fin);
             return $this->user->isPC;
         case "active":
@@ -1450,6 +1456,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "all":
         case "viewable":
         case "s":
+        case "sa":
         case "active":
             break;
         case "reviewable":
@@ -1540,6 +1547,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "all":
         case "viewable":
         case "s":
+        case "sa":
         case "active":
             return true;
         case "a":

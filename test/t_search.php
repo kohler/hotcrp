@@ -780,4 +780,73 @@ class Search_Tester {
         $conf->invalidate_caches("pc");
     }
 
+    /** Give the conference a desk-reject decision and hand it to one paper.
+     * @param string $name
+     * @return int the decision id */
+    private function add_desk_reject($name) {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $sv = SettingValues::make_request($chair, [
+            "has_decision" => 1,
+            "decision/1/name" => $name,
+            "decision/1/id" => "new",
+            "decision/1/category" => "desk_reject"
+        ]);
+        xassert($sv->execute());
+        foreach ($this->conf->decision_set() as $dec) {
+            if ($dec->name === $name) {
+                xassert_eqq($dec->sign, -2);
+                return $dec->id;
+            }
+        }
+        xassert(false);
+        return 0;
+    }
+
+    /** @param string $name */
+    private function remove_decision($name) {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        foreach ($this->conf->decision_set() as $dec) {
+            if ($dec->name === $name) {
+                $sv = SettingValues::make_request($chair, [
+                    "has_decision" => 1,
+                    "decision/1/id" => (string) $dec->id,
+                    "decision/1/delete" => "1"
+                ]);
+                xassert($sv->execute());
+                return;
+            }
+        }
+    }
+
+    function test_limit_sa_includes_desk_rejected() {
+        // `s` means "submitted, still under consideration": it drops papers
+        // whose decision is a desk rejection. `sa` is the same set without that
+        // exclusion, so it is a superset of `s` and differs from it by exactly
+        // the desk-rejected papers.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $this->add_desk_reject("Desk rejected");
+
+        $s_before = (new PaperSearch($this->u_root, ["q" => "", "t" => "s"]))->paper_ids();
+        $sa_before = (new PaperSearch($this->u_root, ["q" => "", "t" => "sa"]))->paper_ids();
+        xassert_eqq($sa_before, $s_before);
+
+        xassert_assign($chair, "paper,action,decision\n2,decision,Desk rejected\n");
+        xassert_eqq($conf->checked_paper_by_id(2)->outcome_sign, -2);
+
+        $s_after = (new PaperSearch($this->u_root, ["q" => "", "t" => "s"]))->paper_ids();
+        $sa_after = (new PaperSearch($this->u_root, ["q" => "", "t" => "sa"]))->paper_ids();
+        xassert(!in_array(2, $s_after, true));
+        xassert_in_eqq(2, $sa_after);
+        // Nothing else moved: the two limits differ by that paper alone.
+        xassert_eqq($sa_after, $sa_before);
+        xassert_eqq(array_values(array_diff($sa_after, $s_after)), [2]);
+
+        // A desk-rejected paper is still reachable by number only under `sa`
+        xassert_search($this->u_root, ["q" => "2", "t" => "sa"], "2");
+        xassert_search($this->u_root, ["q" => "2", "t" => "s"], "");
+
+        xassert_assign($chair, "paper,action,decision\n2,cleardecision,Desk rejected\n");
+        $this->remove_decision("Desk rejected");
+    }
 }

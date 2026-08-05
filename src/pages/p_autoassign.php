@@ -54,7 +54,7 @@ class Autoassign_Page {
         }
         // Since autoassignment can expose information about preferences,
         // users can only search within manager limits
-        $limits = PaperSearch::viewable_manager_limits($this->user);
+        $limits = PaperSearch::viewable_manager_limits($this->user, $qreq->t);
         if (!isset($qreq->t) || !in_array($qreq->t, $limits, true)) {
             $qreq->t = $limits[0];
         }
@@ -449,7 +449,7 @@ class Autoassign_Page {
                 "data-submit-fn" => "requery",
                 "spellcheck" => false, "autocomplete" => "off"
             ]), " &nbsp;in &nbsp;",
-            PaperSearch::limit_selector($conf, PaperSearch::viewable_manager_limits($this->user), $qreq->t),
+            PaperSearch::limit_selector($conf, PaperSearch::viewable_manager_limits($this->user, $qreq->t), $qreq->t),
             " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
         if (isset($qreq->requery) || isset($qreq->has_pap)) {
             $search = (new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q]))->set_urlbase("autoassign");
