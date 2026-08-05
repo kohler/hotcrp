@@ -390,6 +390,31 @@ class TestMubanal_Batch {
         }
     }
 
+    /** Page types on which banal has no column count to disagree with.
+     *
+     * banal prints no per-page `columns` for these, so `resolve_defaults` has
+     * just filled both sides in from their documents -- comparing them would
+     * report a disagreement about a number banal never computed. mubanal does
+     * print one for appendix pages, deliberately, and its reading of a figure
+     * page is its own; neither is a defect measured against banal.
+     *
+     * @param object $bj
+     * @param object $mj */
+    static private function drop_untyped_columns($bj, $mj) {
+        foreach ($bj->pages ?? [] as $i => $bp) {
+            if (!is_object($bp)
+                || (($bp->type ?? "body") !== "figure"
+                    && ($bp->type ?? "body") !== "appendix")) {
+                continue;
+            }
+            unset($bp->columns);
+            $mp = $mj->pages[$i] ?? null;
+            if (is_object($mp)) {
+                unset($mp->columns);
+            }
+        }
+    }
+
     /** @param string $fname
      * @return array{list<string>,?object,?object} */
     function compare_file($fname) {
@@ -404,6 +429,7 @@ class TestMubanal_Batch {
         }
         $this->resolve_defaults($bj);
         $this->resolve_defaults($mj);
+        self::drop_untyped_columns($bj, $mj);
         $diffs = [];
         $this->compare($bj, $mj, "", 0, $diffs);
         return [$diffs, $mj, $bj];
