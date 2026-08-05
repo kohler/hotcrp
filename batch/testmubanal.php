@@ -63,10 +63,19 @@ class TestMubanal_Batch {
     private $_resolved = [];
     /** @var ?FormatSpec */
     private $_spec;
+    /** @var ?int */
+    private $_doc_dtype;
     /** @var list<array{string,list<string>,?object}> */
     public $report = [];
     /** @var list<DocumentFileTree> */
     public $ftrees = [];
+
+    /** @var bool */
+    public $papers;
+    /** @var ?string */
+    public $search_q;
+    /** @var string */
+    public $search_t;
 
     const MODE_COMPARE = 0;
     const MODE_LIST = 1;
@@ -114,7 +123,14 @@ class TestMubanal_Batch {
         $this->mutool = $arg["mutool"] ?? "mutool";
         $this->dpi = $arg["dpi"] ?? 72;
         $this->verdict = isset($arg["verdict"]);
-        $this->spec_string = $arg["spec"] ?? self::DEFAULT_SPEC;
+        // Left null when unset, so a conference's own spec can stand in.
+        $this->spec_string = $arg["spec"] ?? null;
+        // A search names papers, so asking for one is asking for --papers.
+        $this->search_q = $arg["q"] ?? null;
+        $this->search_t = $arg["t"] ?? "s";
+        $this->papers = isset($arg["papers"])
+            || $this->search_q !== null
+            || isset($arg["t"]);
         $this->summary = isset($arg["summary"]);
         $this->verbose = isset($arg["verbose"]);
         $this->quiet = isset($arg["quiet"]);
@@ -209,9 +225,44 @@ class TestMubanal_Batch {
         return $path;
     }
 
-    /** @return FormatSpec */
-    private function spec() {
-        $this->_spec = $this->_spec ?? new FormatSpec($this->spec_string);
+    /** The papers to test, in paper order.
+     *
+     * With no search this is every submission; with one it is whatever the
+     * search names, evaluated as the site's root user so that nothing is
+     * hidden by visibility rules -- this is a maintenance tool, not a view.
+     *
+     * @return iterable<PaperInfo> */
+    private function paper_rows() {
+        $user = $this->conf()->root_user();
+        if (!in_array($this->search_t, PaperSearch::viewable_limits($user, $this->search_t), true)) {
+            throw new CommandLineException("No search collection ‘{$this->search_t}’");
+        }
+        $srch = new PaperSearch($user, ["q" => $this->search_q ?? "", "t" => $this->search_t]);
+        foreach ($srch->message_list() as $mi) {
+            fwrite(STDERR, "search: " . $mi->message_as(0) . "\n");
+        }
+        return PaperInfoSet::make_search($srch);
+    }
+
+    /** The spec `--verdict` checks against.
+     *
+     * `--papers` reads a conference's own submissions, so it checks them
+     * against that conference's own rules -- the point of the mode is to ask
+     * what this conference would tell these authors. Anywhere else there is no
+     * conference to ask, so a representative spec stands in. An explicit
+     * `--spec` wins over both.
+     *
+     * @param ?int $dtype
+     * @return FormatSpec */
+    private function spec($dtype = null) {
+        if ($this->spec_string !== null) {
+            $this->_spec = $this->_spec ?? new FormatSpec($this->spec_string);
+            return $this->_spec;
+        }
+        if ($this->papers) {
+            return $this->conf()->format_spec($dtype ?? DTYPE_SUBMISSION);
+        }
+        $this->_spec = $this->_spec ?? new FormatSpec(self::DEFAULT_SPEC);
         return $this->_spec;
     }
 
@@ -243,7 +294,7 @@ class TestMubanal_Batch {
                 $cf->appendix_page = $i + 1;
             }
         }
-        (new Default_FormatChecker)->check($cf, $this->spec(), DocumentInfo::make_empty($this->conf()));
+        (new Default_FormatChecker)->check($cf, $this->spec($this->_doc_dtype), DocumentInfo::make_empty($this->conf()));
         $v = [];
         foreach ($cf->message_list() as $mi) {
             $v[] = ($mi->field ?? "?") . ":" . $mi->status;
@@ -586,11 +637,14 @@ class TestMubanal_Batch {
 
     /** A document's heading, with the checkbox the copy button reads.
      * @param string $fname
+     * @param string $anno
      * @return string */
-    static private function doc_heading($fname) {
+    static private function doc_heading($fname, $anno) {
         $e = htmlspecialchars($fname);
         return "<h2><label><input type=\"checkbox\" class=\"fsel\" value=\"{$e}\">"
-            . "{$e}</label></h2>\n";
+            . "{$e}</label>"
+            . ($anno === "" ? "" : " [" . htmlspecialchars($anno) . "]")
+            . "</h2>\n";
     }
 
     /** The differing documents, each page under the complaints about it.
@@ -598,8 +652,8 @@ class TestMubanal_Batch {
      * @return string */
     private function compare_report(&$nimg) {
         $h = "";
-        foreach ($this->report as [$fname, $diffs, $mj]) {
-            $h .= self::doc_heading($fname);
+        foreach ($this->report as [$fname, $diffs, $mj, $anno]) {
+            $h .= self::doc_heading($fname, $anno);
             $by_page = self::diff_by_page($diffs);
             // Document-level complaints belong to no page, so they stay above
             // the images rather than under one.
@@ -637,10 +691,11 @@ class TestMubanal_Batch {
      * @return string */
     private function render_report(&$nimg) {
         $h = "";
-        foreach ($this->report as [$fname, , ]) {
-            $h .= self::doc_heading($fname);
+        foreach ($this->report as [$fname, , , $anno]) {
+            $h .= self::doc_heading($fname, $anno);
             if ($this->verbose) {
-                fwrite(STDERR, "rendering {$fname}\n");
+                $xanno = $anno === "" ? "" : " [{$anno}]";
+                fwrite(STDERR, "rendering {$fname}{$xanno}\n");
             }
             // A document with fewer than `--render` pages simply yields fewer
             // images; one that will not render at all yields none, and says so,
@@ -797,16 +852,18 @@ class TestMubanal_Batch {
 
     /** Compare one file and record the result.
      * @param string $fname
+     * @param string $anno
      * @return bool true if the file differs */
-    private function handle_file($fname) {
+    private function handle_file($fname, $anno = "") {
+        $xanno = $anno === "" ? "" : " [{$anno}]";
         if ($this->mode === self::MODE_LIST) {
-            fwrite(STDOUT, "{$fname}\n");
+            fwrite(STDOUT, "{$fname}{$xanno}\n");
             return false;
         }
         if ($this->mode === self::MODE_RENDER) {
             // Rendering is deferred to `write_html`, which is where every other
             // image is made; here the document is only collected.
-            $this->report[] = [$fname, [], null];
+            $this->report[] = [$fname, [], null, $anno];
             return false;
         }
         list($diffs, $mj, $bj) = $this->compare_file($fname);
@@ -819,14 +876,14 @@ class TestMubanal_Batch {
             if ($bv === $mv) {
                 if ($this->verbose) {
                     $t = $bv === null ? "(no output)" : (empty($bv) ? "ok" : join(" ", $bv));
-                    fwrite(STDOUT, "{$fname}: same verdict ({$t})\n");
+                    fwrite(STDOUT, "{$fname}{$xanno}: same verdict ({$t})\n");
                 }
                 return false;
             }
             ++$this->nflip;
             $this->tally["verdict"] = ($this->tally["verdict"] ?? 0) + 1;
             if (!$this->summary) {
-                fwrite(STDOUT, "{$fname}\n");
+                fwrite(STDOUT, "{$fname}{$xanno}\n");
                 fwrite(STDOUT, "    banal:   " . ($bv === null ? "(no output)" : (empty($bv) ? "ok" : join(" ", $bv))) . "\n");
                 fwrite(STDOUT, "    mubanal: " . ($mv === null ? "(no output)" : (empty($mv) ? "ok" : join(" ", $mv))) . "\n");
                 foreach ($diffs as $d) {
@@ -834,14 +891,14 @@ class TestMubanal_Batch {
                 }
             }
             if ($this->html !== null) {
-                $this->report[] = [$fname, $diffs, $mj];
+                $this->report[] = [$fname, $diffs, $mj, $anno];
             }
             return true;
         }
 
         if (empty($diffs)) {
             if ($this->verbose) {
-                fwrite(STDOUT, "{$fname}: same\n");
+                fwrite(STDOUT, "{$fname}{$xanno}: same\n");
             }
             return false;
         }
@@ -850,13 +907,13 @@ class TestMubanal_Batch {
             $this->tally[$f] = ($this->tally[$f] ?? 0) + 1;
         }
         if (!$this->summary) {
-            fwrite(STDOUT, "{$fname}\n");
+            fwrite(STDOUT, "{$fname}{$xanno}\n");
             foreach ($diffs as $d) {
                 fwrite(STDOUT, "    {$d}\n");
             }
         }
         if ($this->html !== null) {
-            $this->report[] = [$fname, $diffs, $mj];
+            $this->report[] = [$fname, $diffs, $mj, $anno];
         }
         return true;
     }
@@ -1055,9 +1112,14 @@ class TestMubanal_Batch {
         }
 
         // Named files come first, in order; the docstore then tops the run up
-        // to `--count`. With no count, a named list is taken in full and a bare
-        // docstore run samples 20.
-        $limit = $this->count ?? (empty($this->files) ? 20 : count($this->files));
+        // to `--count`. With no count, a named list is taken in full, a bare
+        // docstore run samples 20 -- the docstore is a population to sample --
+        // and `--papers` takes every match, since a search names the set it
+        // means rather than a sample of one.
+        $limit = $this->count
+            ?? ($this->papers || !empty($this->files)
+                ? ($this->papers ? PHP_INT_MAX : count($this->files))
+                : 20);
 
         $nfile = $ndiff = 0;
         foreach ($this->files as $fname) {
@@ -1072,7 +1134,27 @@ class TestMubanal_Batch {
             $ndiff += $this->handle_file($path) ? 1 : 0;
         }
 
-        if ($nfile < $limit && !empty($this->docstores)) {
+        // The conference's own submissions, in paper order, replacing the
+        // docstore rather than topping it up: this mode is asking about a
+        // specific set of documents, not sampling a population.
+        if ($this->papers) {
+            foreach ($this->paper_rows() as $prow) {
+                if ($nfile >= $limit) {
+                    break;
+                }
+                $doc = $prow->primary_document();
+                if (!$doc) {
+                    continue;
+                }
+                if (($path = $doc->content_file()) === null || !is_readable($path)) {
+                    fwrite(STDERR, "#{$prow->paperId}: document not available\n");
+                    continue;
+                }
+                $this->_doc_dtype = $doc->documentType;
+                ++$nfile;
+                $ndiff += $this->handle_file($path, $doc->export_filename()) ? 1 : 0;
+            }
+        } else if ($nfile < $limit && !empty($this->docstores)) {
             foreach ($this->docstores as $dp) {
                 if (!str_starts_with($dp, "/") || strpos($dp, "%") === false) {
                     throw new CommandLineException("{$dp}: Bad docstore pattern");
@@ -1167,7 +1249,11 @@ class TestMubanal_Batch {
             "files: =FILENAME Test the files listed in FILENAME, one per line",
             "corpus: =FILE Score mubanal's columns against the corpus in FILE",
             "verdict Compare HotCRP format-check verdicts, not JSON fields",
-            "spec: =SPEC Format spec for --verdict [" . self::DEFAULT_SPEC . "]",
+            "papers Test the current conference's submissions, not the docstore",
+            "q:,search: =QUERY Test papers matching QUERY (implies --papers)",
+            "t:,type: =SCOPE Scope for --search [submitted]",
+            "spec: =SPEC Format spec for --verdict [conference's own, or "
+                . self::DEFAULT_SPEC . "]",
             "ignore: =FIELD[,...] Also ignore differences in FIELD (`all` for every field)",
             "include: =FIELD[,...] Report differences in FIELD anyway [c,w ignored]",
             "margin-tolerance: {n} =PTS Ignore margin differences <=PTS [4]",
@@ -1178,7 +1264,7 @@ class TestMubanal_Batch {
             "mubanal: =CMD mubanal program [{$mubanal}]",
             "mubanal-opt[] =OPT Pass OPT to mubanal",
             "mutool: =CMD mutool program, for --html [{$mutool}]",
-            "quiet,silent,q Be quiet",
+            "quiet,silent Be quiet",
             "verbose,V Report documents that agree",
             "help,h"
         )->helpopt("help")
@@ -1217,6 +1303,7 @@ Usage: php batch/testmubanal.php [-c COUNT] [-s SEED] [-l] [DOCSTORE | FILE]...\
         // over named files alone should not require a configured docstore.
         if (empty($confdps)
             && !isset($arg["corpus"])
+            && !isset($arg["papers"])
             && (empty($files) || ($arg["count"] ?? 0) > count($files))) {
             $confdps[] = self::default_docstore($arg);
         }
