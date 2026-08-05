@@ -543,7 +543,7 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return $set;
     }
     /** @param PaperSearch|Contact $user_or_search
-     * @param ?string $q
+     * @param null|string|array $q
      * @return PaperInfoSet */
     static function make_search($user_or_search, $q = null) {
         if ($user_or_search instanceof PaperSearch) {
@@ -551,8 +551,10 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         } else {
             $srch = new PaperSearch($user_or_search, $q);
         }
-        $result = $srch->conf->paper_result(["paperId" => $srch->paper_ids()], $srch->user);
-        $set = self::make_result($result, $srch->user);
+        if (($opt = $srch->simple_search_options()) === false) {
+            $opt = ["paperId" => $srch->paper_ids()];
+        }
+        $set = $srch->conf->paper_set($opt, $srch->user);
         $set->sort_by_search($srch);
         return $set;
     }
