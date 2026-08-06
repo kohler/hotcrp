@@ -307,8 +307,8 @@ class Review_Assigner extends Assigner {
     /** @return string */
     private function unparse_preference_span(AssignmentSet $aset) {
         $prow = $aset->prow($this->pid);
-        $pf = $prow->preference($this->cid);
-        $tv = $pf->preference ? null : $prow->topic_interest_score($this->cid);
+        $pf = $prow->preference($this->cid());
+        $tv = $pf->preference ? null : $prow->topic_interest_score($this->cid());
         return $pf->exists() || $tv ? " " . $pf->unparse_span($tv) : "";
     }
     /** @param bool $before
@@ -380,9 +380,9 @@ class Review_Assigner extends Assigner {
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column("reviewers");
-        if ($this->cid > 0) {
+        if ($this->cid() > 0) {
             $deltarev->has |= AssignmentCountSet::HAS_REVIEW;
-            $ct = $deltarev->ensure($this->cid);
+            $ct = $deltarev->ensure($this->cid());
             ++$ct->ass;
             $oldtype = $this->item->pre("_rtype") ? : 0;
             $ct->rev += ($this->rtype != 0 ? 1 : 0) - ($oldtype != 0 ? 1 : 0);
@@ -437,19 +437,18 @@ class Review_Assigner extends Assigner {
     }
     /** @param list<Review_Assigner> $as */
     static function notify_all(AssignmentSet $aset, $as) {
-        $pids = $cids = [];
+        $pids = [];
         foreach ($as as $a) {
             $pids[] = $a->pid;
-            $cids[] = $a->cid;
-            $aset->conf->invalidate_user_by_id($a->cid);
-            $aset->conf->prefetch_user_by_id($a->cid);
+            $aset->conf->invalidate_user_by_id($a->cid());
+            $aset->conf->prefetch_user_by_id($a->cid());
         }
         $prows = $aset->conf->paper_set(["paperId" => $pids]);
         foreach ($as as $a) {
-            $user = $aset->conf->user_by_id($a->cid);
+            $user = $aset->conf->user_by_id($a->cid());
             $prow = $prows->paper_by_id($a->pid);
             HotCRPMailer::send_to($user, $a->notify, [
-                "prow" => $prow, "rrow" => $prow->fresh_review_by_user($a->cid),
+                "prow" => $prow, "rrow" => $prow->fresh_review_by_user($a->cid()),
                 "requester_contact" => $aset->user, "reason" => $a->item["_reason"]
             ]);
         }

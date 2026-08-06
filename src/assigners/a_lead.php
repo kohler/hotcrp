@@ -174,7 +174,7 @@ class Lead_Assigner extends Assigner {
                 --$ct->$k;
             }
             if (!$this->item->deleted()) {
-                $ct = $deltarev->ensure($this->cid);
+                $ct = $deltarev->ensure($this->cid());
                 ++$ct->ass;
                 ++$ct->$k;
             }

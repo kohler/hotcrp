@@ -192,7 +192,7 @@ class Preference_Assigner extends Assigner {
         return new PaperReviewPreference($pref, $exp);
     }
     function unparse_display(AssignmentSet $aset) {
-        if (!$this->cid) {
+        if (!$this->cid()) {
             return "remove all preferences";
         }
         $t = $aset->user->reviewer_html_for($this->contact);
@@ -218,6 +218,6 @@ class Preference_Assigner extends Assigner {
         $locks["PaperReviewPreference"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $this->preference_data(false)->save($this->pid, $this->cid, [$aset, "stage_qe"]);
+        $this->preference_data(false)->save($this->pid, $this->cid(), [$aset, "stage_qe"]);
     }
 }

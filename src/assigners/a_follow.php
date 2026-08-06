@@ -152,12 +152,12 @@ class Follow_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         if ($this->watch) {
             $aset->stage_qe("insert into PaperWatch set paperId=?, contactId=?, watch=? on duplicate key update watch=(watch&~?)|?",
-                $this->pid, $this->cid, $this->watch,
+                $this->pid, $this->cid(), $this->watch,
                 Contact::WATCH_REVIEW_EXPLICIT | Contact::WATCH_REVIEW, $this->watch);
         } else {
             $aset->stage_qe("update PaperWatch set watch=(watch&~?) where paperId=? and contactId=?",
-                Contact::WATCH_REVIEW_EXPLICIT | Contact::WATCH_REVIEW, $this->pid, $this->cid);
-            $aset->stage_qe("delete from PaperWatch where paperId=? and contactId=? and watch=0", $this->pid, $this->cid);
+                Contact::WATCH_REVIEW_EXPLICIT | Contact::WATCH_REVIEW, $this->pid, $this->cid());
+            $aset->stage_qe("delete from PaperWatch where paperId=? and contactId=? and watch=0", $this->pid, $this->cid());
         }
     }
 }

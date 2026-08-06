@@ -961,8 +961,6 @@ class Assigner {
     public $item;
     /** @var int */
     public $pid;
-    /** @var ?int */
-    public $cid;
     /** @var ?Contact */
     public $contact;
     /** @var ?int */
@@ -970,10 +968,13 @@ class Assigner {
     function __construct(AssignmentItem $item, AssignmentState $state) {
         $this->item = $item;
         $this->pid = $item["pid"];
-        $this->cid = $item["cid"] ? : $item["_cid"];
-        if ($this->cid) {
-            $this->contact = $state->user_by_id($this->cid);
+        if (($cid = $item["cid"] ? : $item["_cid"])) {
+            $this->contact = $state->user_by_id($cid);
         }
+    }
+    /** @return int */
+    function cid() {
+        return $this->contact ? $this->contact->contactId : 0;
     }
     /** @return string */
     function type() {
@@ -2238,7 +2239,6 @@ class AssignmentSet {
         foreach ($this->assigners as $assigner) {
             if (($u = $assigner->contact) && $u->contactId < 0) {
                 $u->store($u->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0, $this->user);
-                $assigner->cid = $u->contactId;
             }
             $assigner->add_locks($this, $locks);
             if ($assigner->pid > 0) {
