@@ -398,7 +398,490 @@ class UserStatus_Tester {
         $u->abort_prop();
     }
 
+    /* CSV user saving.
+       These pin the behavior of `UserStatus::parse_csv_main` and the CSV
+       column vocabulary shared by `batch/saveusers.php` and
+       `Profile > Bulk update`. */
+
+    /** @var list<list<string>> */
+    private $csv_diffs;
+    /** @var list<string> */
+    private $csv_feedback;
+    /** @var ?UserStatus */
+    private $csv_us;
+
+    /** @param string $pattern */
+    private function delete_users($pattern) {
+        $this->conf->qe("delete from ContactInfo where email like ?", $pattern);
+        if (($cdb = $this->conf->contactdb())) {
+            Dbl::qe($cdb, "delete from ContactInfo where email like ?", $pattern);
+        }
+        $this->conf->invalidate_caches("users");
+    }
+
+    private function ensure_topics() {
+        if (!$this->conf->has_topics()) {
+            $this->conf->qe("insert into TopicArea (topicName) values ('Cloud computing'), ('Architecture'), ('Security'), ('Cloud networking')");
+            $this->conf->save_refresh_setting("has_topics", 1);
+        }
+    }
+
+    /** @return array<string,int> */
+    private function topic_ids() {
+        $tids = [];
+        foreach ($this->conf->topic_set() as $id => $name) {
+            $tids[$name] = $id;
+        }
+        return $tids;
+    }
+
+    /** Run CSV text through the same pipeline as `batch/saveusers.php` and
+     * `Profile > Bulk update`. Returns the saved email for each data row, or
+     * null for a row that failed; per-row diffs and feedback land in
+     * `$csv_diffs` and `$csv_feedback`.
+     * @param string $text
+     * @param 0|1|2 $if_empty
+     * @return list<?string> */
+    private function csv_save($text, $if_empty = UserStatus::IF_EMPTY_NONE) {
+        $csv = new CsvParser(cleannl($text));
+        $csv->add_comment_prefix("###");
+        $header = $csv->next_list();
+        xassert($header !== null && !!preg_grep('/\Aemail\z/i', $header));
+        $csv->set_header($header);
+
+        $us = $this->csv_us = (new UserStatus($this->conf->root_user()))
+            ->set_if_empty($if_empty);
+        $us->add_csv_synonyms($csv);
+
+        $this->csv_diffs = $this->csv_feedback = [];
+        $emails = [];
+        while (($line = $csv->next_row())) {
+            $us->clear_messages();
+            $us->start_update();
+            $us->parse_csv($line);
+            $ok = $us->execute_update();
+            $emails[] = $ok ? $us->user->email : null;
+            $this->csv_diffs[] = array_map("strval", array_keys($us->diffs));
+            $this->csv_feedback[] = $us->full_feedback_text();
+        }
+        return $emails;
+    }
+
+    function test_csv_blank_means_unchanged() {
+        $this->delete_users("csvt%");
+
+        $r = $this->csv_save("email,name,affiliation,roles\n"
+            . "csvt1@_.com,John Adams,UC Berkeley,pc\n");
+        xassert_eqq($r, ["csvt1@_.com"]);
+        $u = $this->conf->fresh_user_by_email("csvt1@_.com");
+        xassert_eqq($u->firstName, "John");
+        xassert_eqq($u->lastName, "Adams");
+        xassert_eqq($u->affiliation, "UC Berkeley");
+        xassert_eqq($u->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC);
+
+        // a blank cell means “leave this alone”, not “clear this”
+        $r = $this->csv_save("email,name,affiliation,roles\ncsvt1@_.com,,,\n");
+        xassert_eqq($r, ["csvt1@_.com"]);
+        xassert_eqq($this->csv_diffs[0], []);
+        $u = $this->conf->fresh_user_by_email("csvt1@_.com");
+        xassert_eqq($u->firstName, "John");
+        xassert_eqq($u->lastName, "Adams");
+        xassert_eqq($u->affiliation, "UC Berkeley");
+        xassert_eqq($u->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC);
+
+        // values are trimmed
+        $this->csv_save("email,affiliation\ncsvt1@_.com,\"   Brandeis   \"\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt1@_.com")->affiliation, "Brandeis");
+    }
+
+    function test_csv_field_synonyms() {
+        $this->delete_users("csvt2%");
+
+        $r = $this->csv_save("email,given,surname,affiliation,city,province,zipcode,country,role,tag\n"
+            . "csvt2@_.com,Quincy,Adams,Whitehouse,Washington,DC,20500,US,\"pc,chair\",red\n");
+        xassert_eqq($r, ["csvt2@_.com"]);
+
+        $u = $this->conf->fresh_user_by_email("csvt2@_.com");
+        xassert_eqq($u->firstName, "Quincy");
+        xassert_eqq($u->lastName, "Adams");
+        xassert_eqq($u->affiliation, "Whitehouse");
+        xassert_eqq($u->prop("city"), "Washington");
+        xassert_eqq($u->prop("state"), "DC");
+        xassert_eqq($u->prop("zip"), "20500");
+        xassert_eqq($u->prop("country"), "US");
+        xassert_eqq($u->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC | Contact::ROLE_CHAIR);
+        xassert($u->has_tag("red"));
+
+        // the other spellings resolve to the same fields
+        $this->csv_save("email,first_name,family_name,postal_code,region\n"
+            . "csvt2@_.com,Johnny,Quince,02138,MA\n");
+        $u = $this->conf->fresh_user_by_email("csvt2@_.com");
+        xassert_eqq($u->firstName, "Johnny");
+        xassert_eqq($u->lastName, "Quince");
+        xassert_eqq($u->prop("zip"), "02138");
+        xassert_eqq($u->prop("state"), "MA");
+    }
+
+    function test_csv_name_columns() {
+        $this->delete_users("csvt3%");
+
+        // `name` splits on the comma
+        $this->csv_save("email,name\ncsvt3a@_.com,\"Adams, John Quincy\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt3a@_.com");
+        xassert_eqq($u->firstName, "John Quincy");
+        xassert_eqq($u->lastName, "Adams");
+
+        // explicit first/last columns win over `name`
+        $this->csv_save("email,name,firstName,lastName\n"
+            . "csvt3b@_.com,Ignored Entirely,Millard,Fillmore\n");
+        $u = $this->conf->fresh_user_by_email("csvt3b@_.com");
+        xassert_eqq($u->firstName, "Millard");
+        xassert_eqq($u->lastName, "Fillmore");
+
+        // `user` supplies only components no other field gives
+        $this->csv_save("email,user\ncsvt3c@_.com,\"Bill Bixby <other@_.com>\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt3c@_.com");
+        xassert_eqq($u->firstName, "Bill");
+        xassert_eqq($u->lastName, "Bixby");
+        xassert_eqq($u->email, "csvt3c@_.com");
+
+        $this->csv_save("email,user,firstName\ncsvt3d@_.com,\"Bill Bixby\",Lou\n");
+        $u = $this->conf->fresh_user_by_email("csvt3d@_.com");
+        xassert_eqq($u->firstName, "Lou");
+        xassert_eqq($u->lastName, "Bixby");
+    }
+
+    function test_csv_address_multiline() {
+        $this->delete_users("csvt4%");
+
+        // interior blank and whitespace-only lines are dropped, not just
+        // trailing ones (the CSV cell is trimmed before it gets here)
+        $this->csv_save("email,address,city\n"
+            . "csvt4@_.com,\"1 Main Street\n\n   \nApt 3\n\n\n\",Cambridge\n");
+        $u = $this->conf->fresh_user_by_email("csvt4@_.com");
+        xassert_eqq($u->prop("address"), ["1 Main Street", "Apt 3"]);
+        xassert_eqq($u->prop("city"), "Cambridge");
+
+        $this->csv_save("email,address1,address2,address3\ncsvt4b@_.com,1 Main Street,,Apt 3\n");
+        $u = $this->conf->fresh_user_by_email("csvt4b@_.com");
+        xassert_eqq($u->prop("address"), ["1 Main Street", "Apt 3"]);
+
+        // changing one line reports a diff…
+        $this->csv_save("email,address2\ncsvt4b@_.com,Apt 4\n");
+        $u = $this->conf->fresh_user_by_email("csvt4b@_.com");
+        xassert_eqq($u->prop("address"), ["1 Main Street", "Apt 4"]);
+        xassert_eqq($this->csv_diffs[0], ["address"]);
+
+        // …and re-saving the same value reports none
+        $this->csv_save("email,address2\ncsvt4b@_.com,Apt 4\n");
+        xassert_eqq($this->csv_diffs[0], []);
+
+        // `city`, `state`, and `zip` are stored alongside `address` and
+        // report under the same diff key
+        $this->csv_save("email,city,state,zip\ncsvt4b@_.com,Cambridge,MA,02138\n");
+        xassert_eqq($this->csv_diffs[0], ["address"]);
+        $this->csv_save("email,city,state,zip\ncsvt4b@_.com,Cambridge,MA,02138\n");
+        xassert_eqq($this->csv_diffs[0], []);
+    }
+
+    function test_csv_roles() {
+        $this->delete_users("csvt5%");
+
+        $this->csv_save("email,roles\ncsvt5@_.com,\"chair,sysadmin\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt5@_.com");
+        xassert_eqq($u->roles & Contact::ROLE_PCLIKE,
+            Contact::ROLE_PC | Contact::ROLE_CHAIR | Contact::ROLE_ADMIN);
+
+        // an absolute list replaces every role
+        $this->csv_save("email,roles\ncsvt5@_.com,pc\n");
+        xassert_eqq($this->csv_diffs[0], ["roles"]);
+        xassert_eqq($this->conf->fresh_user_by_email("csvt5@_.com")->roles & Contact::ROLE_PCLIKE,
+            Contact::ROLE_PC);
+
+        // `+`/`-` adjust instead of replacing
+        $this->csv_save("email,roles\ncsvt5@_.com,+sysadmin\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt5@_.com")->roles & Contact::ROLE_PCLIKE,
+            Contact::ROLE_PC | Contact::ROLE_ADMIN);
+        $this->csv_save("email,roles\ncsvt5@_.com,-pc\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt5@_.com")->roles & Contact::ROLE_PCLIKE,
+            Contact::ROLE_ADMIN);
+
+        // `none` clears
+        $this->csv_save("email,roles\ncsvt5@_.com,none\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt5@_.com")->roles & Contact::ROLE_PCLIKE, 0);
+
+        // an unknown role warns, and — since the list is absolute — clears roles
+        $this->csv_save("email,roles\ncsvt5@_.com,chair\n");
+        $r = $this->csv_save("email,roles\ncsvt5@_.com,reviewer\n");
+        xassert_eqq($r, ["csvt5@_.com"]);
+        xassert_str_contains($this->csv_feedback[0], "reviewer");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt5@_.com")->roles & Contact::ROLE_PCLIKE, 0);
+    }
+
+    function test_csv_tags() {
+        $this->delete_users("csvt6%");
+
+        $this->csv_save("email,roles,tags\ncsvt6@_.com,pc,\"red green#3\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert($u->has_tag("red"));
+        xassert_eqq($u->tag_value("green"), 3.0);
+
+        // `tags` replaces the whole set
+        $this->csv_save("email,tags\ncsvt6@_.com,blue\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert($u->has_tag("blue"));
+        xassert(!$u->has_tag("red"));
+
+        // add/remove/change are incremental
+        $this->csv_save("email,add_tag,remove_tag\ncsvt6@_.com,red,blue\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert($u->has_tag("red"));
+        xassert(!$u->has_tag("blue"));
+
+        $this->csv_save("email,change_tags\ncsvt6@_.com,\"+blue -red\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert($u->has_tag("blue"));
+        xassert(!$u->has_tag("red"));
+
+        // Role-ish automatic tags are accepted by `Tagger` but dropped by
+        // `UserStatus::check_pc_tag`: the row succeeds and stores nothing.
+        // Check `contactTags` directly — `has_tag` would answer for the
+        // derived role rather than for what this CSV stored.
+        $before = $this->conf->fresh_user_by_email("csvt6@_.com")->contactTags;
+        $r = $this->csv_save("email,add_tags\ncsvt6@_.com,\"chair sysadmin pc enabled\"\n");
+        xassert_eqq($r, ["csvt6@_.com"]);
+        xassert_eqq($this->csv_diffs[0], []);
+        xassert_eqq($this->conf->fresh_user_by_email("csvt6@_.com")->contactTags, $before);
+
+        // reserved tags are rejected by `Tagger` instead, which fails the row
+        $r = $this->csv_save("email,add_tags\ncsvt6@_.com,none\n");
+        xassert_eqq($r, [null]);
+        xassert_str_contains($this->csv_feedback[0], "reserved");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt6@_.com")->contactTags, $before);
+    }
+
+    function test_csv_follow() {
+        $this->delete_users("csvt7%");
+
+        $this->csv_save("email,roles,follow\ncsvt7@_.com,pc,\"review anyreview\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt7@_.com");
+        xassert_eqq($u->defaultWatch & Contact::WATCH_REVIEW, Contact::WATCH_REVIEW);
+        xassert_eqq($u->defaultWatch & Contact::WATCH_REVIEW_ALL, Contact::WATCH_REVIEW_ALL);
+
+        // a plain list replaces
+        $this->csv_save("email,follow\ncsvt7@_.com,review\n");
+        $u = $this->conf->fresh_user_by_email("csvt7@_.com");
+        xassert_eqq($u->defaultWatch & Contact::WATCH_REVIEW_ALL, 0);
+
+        // `partial` keeps what isn't mentioned
+        $this->csv_save("email,follow\ncsvt7@_.com,\"partial anyreview\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt7@_.com");
+        xassert_eqq($u->defaultWatch & Contact::WATCH_REVIEW, Contact::WATCH_REVIEW);
+        xassert_eqq($u->defaultWatch & Contact::WATCH_REVIEW_ALL, Contact::WATCH_REVIEW_ALL);
+
+        // `none` clears
+        $this->csv_save("email,follow\ncsvt7@_.com,none\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt7@_.com")->defaultWatch, 0);
+
+        // unknown keywords warn but don't fail the row
+        $r = $this->csv_save("email,follow\ncsvt7@_.com,\"review sillyness\"\n");
+        xassert_eqq($r, ["csvt7@_.com"]);
+        xassert_str_contains($this->csv_feedback[0], "sillyness");
+    }
+
+    function test_csv_topics() {
+        $this->ensure_topics();
+        $tids = $this->topic_ids();
+        xassert(isset($tids["Architecture"]) && isset($tids["Security"])
+                && isset($tids["Cloud computing"]));
+        $this->delete_users("csvt8%");
+
+        $this->csv_save("email,roles,topic: Architecture,topic: Security\n"
+            . "csvt8@_.com,pc,high,-1\n");
+        $ti = $this->conf->fresh_user_by_email("csvt8@_.com")->topic_interest_map();
+        ksort($ti);
+        xassert_eqq($ti, [$tids["Architecture"] => 2, $tids["Security"] => -1]);
+
+        // `topic:` columns merge into existing interests by default…
+        $this->csv_save("email,topic: Cloud computing\ncsvt8@_.com,low\n");
+        $ti = $this->conf->fresh_user_by_email("csvt8@_.com")->topic_interest_map();
+        ksort($ti);
+        xassert_eqq($ti, [$tids["Cloud computing"] => -2,
+                          $tids["Architecture"] => 2,
+                          $tids["Security"] => -1]);
+
+        // …a blank cell means no interest…
+        $this->csv_save("email,topic: Architecture\ncsvt8@_.com,\n");
+        $ti = $this->conf->fresh_user_by_email("csvt8@_.com")->topic_interest_map();
+        xassert_eqq($ti[$tids["Architecture"]] ?? 0, 0);
+
+        // …and `topic_override=no` applies only to users with no interests yet
+        $this->csv_save("email,topic_override,topic: Security\ncsvt8@_.com,no,high\n");
+        $ti = $this->conf->fresh_user_by_email("csvt8@_.com")->topic_interest_map();
+        xassert_eqq($ti[$tids["Security"]] ?? 0, -1);
+
+        $this->csv_save("email,roles,topic_override,topic: Security\ncsvt8b@_.com,pc,no,high\n");
+        $ti = $this->conf->fresh_user_by_email("csvt8b@_.com")->topic_interest_map();
+        xassert_eqq($ti[$tids["Security"]] ?? 0, 2);
+
+        // an unrecognized topic column is collected in `unknown_topics`
+        $this->csv_save("email,topic: Nonesuch\ncsvt8@_.com,high\n");
+        xassert_eqq(array_keys($this->csv_us->unknown_topics ?? []), ["Nonesuch"]);
+    }
+
+    function test_csv_user_override() {
+        $this->delete_users("csvt9%");
+
+        $this->csv_save("email,name,affiliation\ncsvt9@_.com,Grover Cleveland,Buffalo\n");
+
+        // by default an update overwrites nonempty profile fields
+        $this->csv_save("email,name,affiliation\ncsvt9@_.com,Benjamin Harrison,Indianapolis\n");
+        $u = $this->conf->fresh_user_by_email("csvt9@_.com");
+        xassert_eqq($u->firstName, "Benjamin");
+        xassert_eqq($u->affiliation, "Indianapolis");
+
+        // `user_override=no` fills only fields that are currently empty
+        $this->csv_save("email,name,affiliation,collaborators,user_override\n"
+            . "csvt9@_.com,Grover Cleveland,Buffalo,None,no\n");
+        $u = $this->conf->fresh_user_by_email("csvt9@_.com");
+        xassert_eqq($u->firstName, "Benjamin");
+        xassert_eqq($u->affiliation, "Indianapolis");
+        xassert_eqq($u->collaborators(), "None");
+
+        // `IF_EMPTY_PROFILE`, which is what Bulk update uses without the
+        // “Override existing” checkbox, behaves the same way
+        $this->csv_save("email,name,affiliation\ncsvt9@_.com,William McKinley,Canton\n",
+            UserStatus::IF_EMPTY_PROFILE);
+        $u = $this->conf->fresh_user_by_email("csvt9@_.com");
+        xassert_eqq($u->firstName, "Benjamin");
+        xassert_eqq($u->affiliation, "Indianapolis");
+    }
+
+    function test_csv_disabled_and_preferred_email() {
+        $this->delete_users("csvt10%");
+
+        $this->csv_save("email,disabled\ncsvt10@_.com,yes\n");
+        xassert($this->conf->fresh_user_by_email("csvt10@_.com")->is_disabled());
+
+        $this->csv_save("email,disabled\ncsvt10@_.com,no\n");
+        xassert(!$this->conf->fresh_user_by_email("csvt10@_.com")->is_disabled());
+
+        // `preferred_email` is parsed but only saved where the site allows it
+        $this->csv_save("email,preferredemail\ncsvt10@_.com,elsewhere@_.com\n");
+        $u = $this->conf->fresh_user_by_email("csvt10@_.com");
+        if ($this->conf->allow_preferred_email()) {
+            xassert_eqq($u->preferredEmail, "elsewhere@_.com");
+        } else {
+            xassert_eqq($u->preferredEmail, null);
+        }
+    }
+
+    function test_csv_rows_are_independent() {
+        $this->delete_users("csvt11%");
+
+        $r = $this->csv_save("email,roles\n"
+            . "not an email,pc\n"
+            . "csvt11@_.com,pc\n");
+        xassert_eqq($r, [null, "csvt11@_.com"]);
+        xassert_str_contains($this->csv_feedback[0], "Invalid email address");
+        xassert_eqq($this->csv_feedback[1], "");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt11@_.com")->roles & Contact::ROLE_PCLIKE,
+            Contact::ROLE_PC);
+    }
+
+    function test_csv_comment_lines() {
+        $this->delete_users("csvt12%");
+
+        $r = $this->csv_save("email,roles\n"
+            . "### this line is a comment\n"
+            . "csvt12@_.com,pc\n");
+        xassert_eqq($r, ["csvt12@_.com"]);
+    }
+
+    function test_csv_dash_clears() {
+        $this->delete_users("csvt13%");
+
+        $this->csv_save("email,roles,affiliation,collaborators,city,country,"
+            . "tags,follow,address1,address2\n"
+            . "csvt13@_.com,pc,Michigan,Bob Bell (MIT),Ann Arbor,US,"
+            . "red,\"review anyreview\",1 Main Street,Apt 3\n");
+        $u = $this->conf->fresh_user_by_email("csvt13@_.com");
+        xassert_eqq($u->affiliation, "Michigan");
+        xassert_eqq($u->prop("address"), ["1 Main Street", "Apt 3"]);
+
+        // a lone dash clears; a blank cell still leaves the value alone
+        $this->csv_save("email,affiliation,city,country,tags,follow,address2\n"
+            . "csvt13@_.com,-,-,-,-,-,-\n");
+        $u = $this->conf->fresh_user_by_email("csvt13@_.com");
+        xassert_eqq($u->affiliation, "");
+        xassert_eqq($u->prop("city"), null);
+        xassert_eqq($u->prop("country"), null);
+        xassert_eqq($u->contactTags, null);
+        xassert_eqq($u->defaultWatch, 0);
+        xassert_eqq($u->prop("address"), ["1 Main Street"]);
+        xassert_eqq($u->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC);
+
+        // en dash and em dash mean the same thing
+        $this->csv_save("email,collaborators\ncsvt13@_.com,–\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt13@_.com")->prop("collaborators"), null);
+        $this->csv_save("email,affiliation\ncsvt13@_.com,Michigan\n");
+        $this->csv_save("email,affiliation\ncsvt13@_.com,—\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt13@_.com")->affiliation, "");
+    }
+
+    function test_csv_dash_exceptions() {
+        $this->delete_users("csvt14%");
+
+        $this->csv_save("email,roles,disabled,lastName\n"
+            . "csvt14@_.com,\"pc,sysadmin\",yes,Adams\n");
+        $u = $this->conf->fresh_user_by_email("csvt14@_.com");
+        xassert_eqq($u->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC | Contact::ROLE_ADMIN);
+        xassert($u->is_disabled());
+
+        // `roles` and `disabled` ignore a dash — they have their own
+        // `none`/`no` keywords, and clearing them isn't a text edit
+        $this->csv_save("email,roles,disabled\ncsvt14@_.com,-,-\n");
+        xassert_eqq($this->csv_diffs[0], []);
+        $u = $this->conf->fresh_user_by_email("csvt14@_.com");
+        xassert_eqq($u->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC | Contact::ROLE_ADMIN);
+        xassert($u->is_disabled());
+
+        // `lastName` keeps a literal dash: it is a real surname placeholder
+        $this->csv_save("email,lastName\ncsvt14@_.com,-\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt14@_.com")->lastName, "-");
+
+        // `collaborators` of “None” is data, not a clear — that is what the
+        // dash is for
+        $this->csv_save("email,collaborators\ncsvt14@_.com,None\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt14@_.com")->prop("collaborators"), "None");
+        $this->csv_save("email,collaborators\ncsvt14@_.com,-\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt14@_.com")->prop("collaborators"), null);
+    }
+
+    function test_qreq_address_lines() {
+        $this->delete_users("csvt15%");
+        $this->csv_save("email,address1,address2\ncsvt15@_.com,1 Main Street,Apt 3\n");
+
+        // the web form submits every line, so it is authoritative: a blank
+        // input clears that line rather than keeping the stored one
+        list($viewer, $qreq) = $this->make_qreq_for("chair@_.com", [
+            "addressLine1" => "2 Oak Avenue", "addressLine2" => "",
+            "addressLine3" => "Floor 4", "city" => "Somerville",
+            "state" => "MA", "zipCode" => "02143"
+        ]);
+        $us = (new UserStatus($viewer))->set_qreq($qreq);
+        $us->start_update()->set_user($this->conf->fresh_user_by_email("csvt15@_.com"));
+        $us->request_group("");
+        xassert($us->execute_update());
+
+        $u = $this->conf->fresh_user_by_email("csvt15@_.com");
+        xassert_eqq($u->prop("address"), ["2 Oak Avenue", "Floor 4"]);
+        xassert_eqq($u->prop("city"), "Somerville");
+        xassert_eqq($u->prop("zip"), "02143");
+    }
+
     function finalize() {
+        $this->delete_users("csvt%");
         $emails = ["van@ee.lbl.gov", "raju@watson.ibm.com", "chris@w3.org"];
         $this->delete_secondary(false, "xvan@usc.edu");
         $this->delete_secondary(false, "yvan@usc.edu");

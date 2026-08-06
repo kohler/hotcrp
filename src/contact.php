@@ -1815,7 +1815,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if (($d->$key ?? null) === $value) {
             return;
         }
-        if (!array_key_exists("data", $this->_mod_undo ?? [])) {
+        $this->_mod_undo = $this->_mod_undo ?? [];
+        if (!array_key_exists("data", $this->_mod_undo)) {
             $this->_mod_undo["data"] = $this->data;
         }
         if ($value !== null) {
@@ -1834,7 +1835,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     function clear_data_prop() {
         $this->_slice !== 0 && $this->unslice();
         if ($this->_jdata !== null || $this->data !== null) {
-            if (!array_key_exists("data", $this->_mod_undo ?? [])) {
+            $this->_mod_undo = $this->_mod_undo ?? [];
+            if (!array_key_exists("data", $this->_mod_undo)) {
                 $this->_mod_undo["data"] = $this->data;
             }
             $this->data = $this->_jdata = null;
@@ -2157,10 +2159,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $value = null;
         }
         // save
+        $this->_mod_undo = $this->_mod_undo ?? [];
         if (($shape & self::PROP_DATA) !== 0) {
             $this->set_data_prop($prop, $value);
         } else {
-            $this->_mod_undo = $this->_mod_undo ?? [];
             $has_old = array_key_exists($prop, $this->_mod_undo);
             $oldv = $has_old ? $this->_mod_undo[$prop] : $old;
             $newv = $value;
@@ -2234,7 +2236,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @param ?string $prop
      * @return bool */
     function prop_changed($prop = null) {
-        return $prop ? array_key_exists($prop, $this->_mod_undo ?? []) : !empty($this->_mod_undo);
+        if (!$prop) {
+            return !empty($this->_mod_undo);
+        } else if (((self::$props[$prop] ?? 0) & self::PROP_DATA) === 0) {
+            return array_key_exists($prop, $this->_mod_undo ?? []);
+        } else if (!array_key_exists("data", $this->_mod_undo ?? [])) {
+            return false;
+        }
+        $old_data = json_decode($this->_mod_undo["data"] ?? "{}") ?? (object) [];
+        return $this->data($prop) !== ($old_data->$prop ?? null);
     }
 
     /** @return bool */

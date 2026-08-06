@@ -99,8 +99,7 @@ class SaveUsers_Batch {
         while (($line = $csv->next_row())) {
             $this->ustatus->clear_messages();
             $this->ustatus->start_update();
-            $this->ustatus->csvreq = $line;
-            $this->ustatus->parse_csv_group("");
+            $this->ustatus->parse_csv($line);
             if ($this->ustatus->execute_update()) {
                 if ($this->quiet) {
                     // print nothing

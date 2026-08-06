@@ -250,8 +250,7 @@ class Profile_Page {
         while (($line = $csv->next_row())) {
             $ustatus->clear_messages();
             $ustatus->start_update();
-            $ustatus->csvreq = $line;
-            $ustatus->parse_csv_group("");
+            $ustatus->parse_csv($line);
             $ustatus->set_notify(friendly_boolean($line["notify"]) ?? true);
             $saved_user = $this->save_user($ustatus);
             if ($saved_user) {

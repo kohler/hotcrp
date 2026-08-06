@@ -23,6 +23,9 @@ class UserStatus extends MessageSet {
     /** @var Contact
      * @readonly */
     public $user;
+    /** @var Qrequest
+     * @readonly */
+    public $qreq;
     const AUTHF_USER = 1;
     const AUTHF_SELF = 2;
     const AUTHF_CDB = 4;
@@ -42,11 +45,6 @@ class UserStatus extends MessageSet {
     /** @var bool */
     private $follow_primary = false;
 
-    /** @var Qrequest
-     * @readonly */
-    public $qreq;
-    /** @var CsvRow */
-    public $csvreq;
     /** @var object */
     public $jval;
 
@@ -566,7 +564,6 @@ class UserStatus extends MessageSet {
         foreach (["preferredEmail" => "preferred_email",
                   "institution" => "affiliation",
                   "voicePhoneNumber" => "phone",
-                  "addressLine1" => "address",
                   "zipCode" => "zip",
                   "postal_code" => "zip"] as $x => $y) {
             if (isset($cj->$x) && !isset($cj->$y)) {
@@ -620,35 +617,51 @@ class UserStatus extends MessageSet {
         }
 
         // Address
-        $address = null;
-        if (is_array($cj->address ?? null)) {
-            $address = $cj->address;
-        } else if (is_string($cj->address ?? null)) {
-            $address = [$cj->address];
-            if (is_string($cj->address2 ?? null)) {
-                $address[] = $cj->address2;
-            } else if (is_string($cj->addressLine2 ?? null)) {
-                $address[] = $cj->addressLine2;
-            } else if (($cj->address2 ?? null) || ($cj->addressLine2 ?? null)) {
-                $this->error_at("address2", "<0>Format error [address2]");
+        $address = [];
+        $address0 = $address1 = $address1error = false;
+        for ($i = 0; true; ++$i) {
+            $sfx = $i ? (string) $i : "";
+            $k = isset($cj->{"address{$sfx}"}) ? "address{$sfx}" : "addressLine{$sfx}";
+            $v = $cj->$k ?? null;
+            if ($v === null && $i >= 5) {
+                break;
+            } else if ($v === null || is_string($v) || is_string_list($v)) {
+                if ($i > 0 || $v !== null) {
+                    $address[] = $v;
+                }
+                if ($v !== null) {
+                    $i === 0 ? ($address0 = true) : ($address1 = true);
+                    if ($address0 && $i > 0 && !$address1error) {
+                        $this->error_at($k, "<0>Conflict: supply at most one of `address` and `{$k}`");
+                        $address1error = true;
+                    }
+                }
+            } else {
+                $this->error_at($k, "<0>Format error [{$k}]");
             }
-        } else if ($cj->address ?? null) {
-            $this->error_at("address", "<0>Format error [address]");
         }
-        if ($address !== null) {
-            foreach ($address as &$a) {
-                if (!is_string($a)) {
-                    $this->error_at("address", "<0>Format error [address]");
-                } else {
-                    $a = simplify_whitespace($a);
+        if ($address0 || $address1) {
+            // allow changes to just one address line
+            if ($old_user && ($old_address = $old_user->prop("address"))) {
+                for ($i = 0; $i < count($address) || $i < count($old_address); ++$i) {
+                    $address[$i] = $address[$i] ?? $old_address[$i] ?? null;
                 }
             }
-            unset($a);
-            while (!empty($address)
-                   && $address[count($address) - 1] === "") {
-                array_pop($address);
+            // expand and compress
+            $cj->address = [];
+            foreach ($address as $a) {
+                if ($a === null || $a === "") {
+                    continue;
+                }
+                if (is_array($a)) {
+                    $a = join("\n", $a);
+                }
+                foreach (preg_split('/\r\n?|\n/', $a) as $s) {
+                    if (($s = simplify_whitespace($s)) !== "") {
+                        $cj->address[] = $s;
+                    }
+                }
             }
-            $cj->address = $address;
         }
 
         // Collaborators
@@ -1370,9 +1383,11 @@ class UserStatus extends MessageSet {
         // normal fields
         foreach (["firstName", "lastName", "preferredEmail", "affiliation",
                   "collaborators", "addressLine1", "addressLine2",
+                  "addressLine3", "addressLine4", "addressLine5",
                   "city", "state", "zipCode", "country", "phone"] as $k) {
-            if (($v = $qreq[$k]) !== null)
+            if (($v = $qreq[$k]) !== null) {
                 $cj->$k = $v;
+            }
         }
 
         // follow settings
@@ -1440,47 +1455,37 @@ class UserStatus extends MessageSet {
 
 
     static private $csv_keys = [
-        ["email"],
-        ["user"],
-        ["firstName", "firstname", "first_name", "first", "givenname", "given_name", "given"],
-        ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name", "family"],
-        ["name"],
-        ["preferred_email", "preferredemail"],
-        ["affiliation"],
-        ["collaborators"],
-        ["address1", "addressline1", "address_1", "address_line_1"],
-        ["address2", "addressline2", "address_2", "address_line_2"],
-        ["city"],
-        ["state", "province", "region"],
-        ["zip", "zipcode", "zip_code", "postalcode", "postal_code"],
-        ["country"],
-        ["roles", "role"],
-        ["follow"],
-        ["tags", "tag"],
-        ["add_tags", "add_tag"],
-        ["remove_tags", "remove_tag"],
-        ["change_tags", "change_tag"],
-        ["disabled"]
+        "email",
+        "user",
+        "firstName", "lastName", "name",
+        "preferred_email",
+        "affiliation", "collaborators",
+        "address", "address1", "address2", "address3", "address4", "address5",
+        "city", "state", "zip", "country",
+        "roles",
+        "follow",
+        "tags", "add_tags", "remove_tags", "change_tags",
+        "disabled"
     ];
 
-    static function parse_csv_main(UserStatus $us) {
-        $line = $us->csvreq;
+    static function parse_csv_main(UserStatus $us, CsvRow $line) {
         $cj = $us->jval;
 
         // set keys
-        foreach (self::$csv_keys as $ks) {
-            if (($v = trim((string) $line[$ks[0]])) !== "") {
-                $cj->{$ks[0]} = $v;
-            }
-        }
-
-        // clean up
-        if (isset($line["address"])
-            && trim($line["address"]) !== "") {
-            $cj->address = explode("\n", cleannl($line["address"]));
-            while (!empty($cj->address)
-                   && $cj->address[count($cj->address) - 1] === "") {
-                array_pop($cj->address);
+        foreach (self::$csv_keys as $k) {
+            $v = $line[$k];
+            if ($v === null || $v === "" || ($v = trim($v)) === "") {
+                // skip
+            } else if ($v === "-" || $v === "–" || $v === "—") {
+                if ($k === "roles" || $k === "disabled") {
+                    // ignore
+                } else if ($k === "lastName") {
+                    $cj->$k = $v;
+                } else {
+                    $cj->$k = "";
+                }
+            } else {
+                $cj->$k = $v;
             }
         }
 
@@ -1514,16 +1519,38 @@ class UserStatus extends MessageSet {
         }
     }
 
+    static private $csv_synonyms = [
+        "firstName" => ["given_name", "givenname", "given", "firstname", "first_name", "first"],
+        "lastName" => ["family_name", "familyname", "family", "lastname", "last_name", "last", "surname"],
+        "preferred_email" => ["preferredemail"],
+        "address1" => ["addressline1", "address_1", "address_line_1"],
+        "address2" => ["addressline2", "address_2", "address_line_2"],
+        "address3" => ["addressline3", "address_3", "address_line_3"],
+        "address4" => ["addressline4", "address_4", "address_line_4"],
+        "address5" => ["addressline5", "address_5", "address_line_5"],
+        "state" => ["province", "region"],
+        "zip" => ["zipcode", "zip_code", "postalcode", "postal_code"],
+        "roles" => ["role"],
+        "tags" => ["tag"],
+        "add_tags" => ["add_tag"],
+        "remove_tags" => ["remove_tag"],
+        "change_tags" => ["change_tag"]
+    ];
+
     function add_csv_synonyms(CsvParser $csv) {
-        foreach (self::$csv_keys as $ks) {
-            $csv->add_synonym(...$ks);
+        foreach (self::$csv_synonyms as $k => $rest) {
+            $csv->add_synonym($k, ...$rest);
         }
     }
 
+    function parse_csv(CsvRow $line) {
+        $this->parse_csv_group("", $line);
+    }
+
     /** @param string $name */
-    function parse_csv_group($name) {
+    function parse_csv_group($name, CsvRow $line) {
         foreach ($this->cs()->members($name, "parse_csv_function") as $gj) {
-            $this->cs()->call_function($gj, $gj->parse_csv_function, $gj);
+            $this->cs()->call_function($gj, $gj->parse_csv_function, $line, $gj);
         }
     }
 
