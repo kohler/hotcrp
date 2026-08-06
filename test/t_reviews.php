@@ -1877,6 +1877,47 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::clear();
     }
 
+    // A new external reviewer assigned to several papers in one bulk
+    // assignment is notified about every paper
+    function test_bulk_assign_new_user_multiple_papers_notify() {
+        $conf = $this->conf;
+        MailChecker::clear();
+        $null_mailer = new HotCRPMailer($this->u_chair, null, [
+            "requester_contact" => $this->u_chair,
+            "reason" => "",
+            "width" => 0
+        ]);
+        $tmpl = $null_mailer->expand_template("requestreview");
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("paper,action,email,name\n24,review,bulknotify2@_.com,Bulk Notify2\n25,review,bulknotify2@_.com,Bulk Notify2\n", "", [
+            "extrev_notify" => ["subject" => $tmpl["subject"], "body" => $tmpl["body"]]
+        ]);
+        xassert($aset->execute());
+        $u = $conf->checked_user_by_email("bulknotify2@_.com");
+        xassert(!!$conf->checked_paper_by_id(24)->review_by_user($u));
+        xassert(!!$conf->checked_paper_by_id(25)->review_by_user($u));
+        xassert_eqq(count(MailChecker::$preps), 2);
+        foreach (MailChecker::$preps as $prep) {
+            xassert(!str_contains($prep->body, "{{"));
+            xassert_str_contains($prep->body, "cap=hcra");
+        }
+        MailChecker::clear();
+    }
+
+    // Assigners that write contactIds directly must use the stored account,
+    // not the negative placeholder id the new user had before storage
+    function test_bulk_assign_new_user_multiple_papers_contact() {
+        $conf = $this->conf;
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("paper,action,email,name\n24,contact,bulkcontact@_.com,Bulk Contact\n25,contact,bulkcontact@_.com,Bulk Contact\n");
+        xassert_eqq($aset->full_feedback_text(), "");
+        xassert($aset->execute());
+        $u = $conf->checked_user_by_email("bulkcontact@_.com");
+        xassert($u->contactId > 0);
+        xassert_eqq($conf->fetch_ivalue("select count(*) from PaperConflict where contactId=? and paperId in (24,25)", $u->contactId), 2);
+        xassert_eqq($conf->fetch_ivalue("select count(*) from PaperConflict where contactId<=0"), 0);
+    }
+
     // Pin the observable decline (`declinereview`) contract and its inverse,
     // undecline (`acceptreview`), independent of how a refused review is stored
     // internally: declining removes the live review, records a refusal carrying
