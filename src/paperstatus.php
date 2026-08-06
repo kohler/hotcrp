@@ -1170,7 +1170,7 @@ final class PaperStatus extends MessageSet {
     function prepare_save_paper_json($pj, $prow = null) {
         assert(is_object($pj));
 
-        if (($pj->object ?? "paper") !== "paper") {
+        if (isset($pj->object) && $pj->object !== "paper") {
             $this->error_at("object", "<0>Object type mismatch");
             return false;
         }

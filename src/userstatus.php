@@ -442,7 +442,7 @@ class UserStatus extends MessageSet {
         if (!$this->user) {
             return null;
         }
-        $this->jval = (object) [];
+        $this->jval = (object) ["object" => "user"];
         $cs = $this->cs();
         foreach ($cs->members("", "unparse_json_function") as $gj) {
             $cs->call_function($gj, $gj->unparse_json_function, $gj);
@@ -559,6 +559,10 @@ class UserStatus extends MessageSet {
     /** @param ?Contact $old_user */
     private function normalize($cj, $old_user) {
         // Errors prevent saving
+        if (isset($cj->object) && $cj->object !== "user") {
+            $this->error_at("object", "<0>Object type mismatch");
+            return false;
+        }
 
         // Canonicalize keys
         foreach (["preferredEmail" => "preferred_email",

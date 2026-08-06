@@ -296,7 +296,7 @@ function initialize_user_preferred_uindex($qreq, $uindex) {
 function initialize_user($qreq, $kwarg = null) {
     $conf = $qreq->conf();
 
-    // check for bearer token
+    // check for bearer token - currently only reached from /api pages
     if (($kwarg["bearer"] ?? false)
         && ($htauth = $qreq->raw_header("HTTP_AUTHORIZATION"))
         && substr_compare($htauth, "bearer", 0, 6, true) === 0
@@ -320,7 +320,7 @@ function initialize_user($qreq, $kwarg = null) {
             $conf->www_authenticate_header("invalid_token", $qreq);
             JsonResult::make_error(401, "<0>Unauthorized")->complete();
         }
-        $qreq->approve_token(); // explicit authorization
+        $qreq->approve_token(); // the bearer token counts as explicit authorization
         $qreq->set_user($user);
         $qreq->set_qsession(new MemoryQsession($salt, ["u" => $user->email]));
         $user->set_bearer_authorized();
