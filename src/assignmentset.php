@@ -532,23 +532,6 @@ class AssignmentState extends MessageSet {
         return $this->reviewer_users;
     }
 
-    /** @param null|int|string $landmark
-     * @param string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function msg_near($landmark, $msg, $status) {
-        $l = $this->landmark_near($landmark);
-        if (($mi = $this->back_message())
-            && $mi->landmark === $l
-            && $mi->message === $msg) {
-            $this->change_item_status($mi, $status);
-        } else {
-            $mi = $this->append_item(new MessageItem($status, null, $msg));
-            $mi->landmark = $l;
-        }
-        return $mi;
-    }
     /** @param MessageItem $mi
      * @param null|int|string|AssignmentItem $landmark
      * @return MessageItem */
@@ -1224,11 +1207,6 @@ class AssignmentSet {
         $this->astate->overrides = (int) $overrides;
         return $this;
     }
-    /** @return $this
-     * @deprecated */
-    function override_conflicts() {
-        return $this->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
-    }
     /** @param bool $override
      * @return $this */
     function set_override_conflicts($override) {
@@ -1330,15 +1308,6 @@ class AssignmentSet {
     function has_error() {
         return $this->astate->has_error();
     }
-    /** @param null|int|string $landmark
-     * @param string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    function msg_near($landmark, $msg, $status) {
-        return $this->astate->msg_near($landmark, $msg, $status);
-    }
     /** @param MessageItem $mi
      * @param null|int|string|AssignmentItem $landmark
      * @return MessageItem */
@@ -1355,27 +1324,9 @@ class AssignmentSet {
     function warning($msg) {
         $this->astate->warning($msg);
     }
-    /** @param MessageItem $mi
-     * @return void
-     * @deprecated */
-    function prepend_item($mi) {
-        $this->astate->prepend_item($mi);
-    }
-    /** @param string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return $this
-     * @deprecated */
-    function prepend_msg($msg, $status) {
-        $this->astate->prepend_item(new MessageItem($status, null, $msg));
-        return $this;
-    }
     /** @return string */
     function full_feedback_text() {
         return $this->astate->full_feedback_text();
-    }
-    /** @deprecated */
-    function report_errors() {
-        $this->feedback_msg(self::FEEDBACK_ASSIGN);
     }
     const FEEDBACK_ASSIGN = 0;
     const FEEDBACK_CHANGE = 1;
@@ -2237,13 +2188,20 @@ class AssignmentSet {
         $this->conf->pause_log();
         $pids = [];
         foreach ($this->assigners as $assigner) {
-            if (($u = $assigner->contact) && $u->contactId < 0) {
-                $u->store($u->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0, $this->user);
+            if (($u = $assigner->contact)
+                && $u->contactId < 0
+                && !$u->store($u->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0, $this->user)) {
+                $this->append_item_near(MessageItem::error("<0>Could not create account for user {$u->email}"), $assigner->item);
+                continue;
             }
             $assigner->add_locks($this, $locks);
             if ($assigner->pid > 0) {
                 $pids[$assigner->pid] = true;
             }
+        }
+        if ($this->has_error()) {
+            $this->conf->resume_log();
+            return false;
         }
 
         // execute assignments

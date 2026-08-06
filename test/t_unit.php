@@ -122,6 +122,16 @@ class Unit_Tester {
                     "insert (1,NULL), (2,'A'), ('b',0.1)");
     }
 
+    function test_validate_email() {
+        xassert(validate_email("ekohler@hotcrp.com"));
+        xassert(validate_email("kohler@_.com"));
+        xassert(!validate_email(""));
+        xassert(!validate_email("kohler"));
+        // no longer than the `email` columns in the schema
+        xassert(validate_email(str_repeat("x", 114) . "@_.com"));
+        xassert(!validate_email(str_repeat("x", 115) . "@_.com"));
+    }
+
     function test_escape_like() {
         xassert_eqq(Dbl::fetch_ivalue("select '1' like cast(? as binary) from dual", Dbl::escape_like("1")), 1);
         xassert_eqq(Dbl::fetch_ivalue("select '%' like cast(? as binary) from dual", Dbl::escape_like("%")), 1);

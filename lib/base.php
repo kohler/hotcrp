@@ -411,8 +411,10 @@ function ini_get_bytes($varname, $value = null) {
 /** @param string $email
  * @return bool */
 function validate_email($email) {
-    // Allow @_.com email addresses.  Simpler than RFC822 validation.
+    // Allow @_.com email addresses; simpler than RFC822 validation.
+    // The length limit matches the `email` columns in the schema.
     return $email !== ""
+        && strlen($email) <= 120
         && preg_match('/\A[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+\z/', $email);
 }
 
@@ -421,7 +423,8 @@ function validate_email($email) {
  * @return ?string */
 function validate_email_at($s, $pos) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
-    if (preg_match('/\G[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+(?=\z|[-,.;:()\[\]{}\s]|–|—)/', $s, $m, 0, $pos)) {
+    if (preg_match('/\G[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+(?=\z|[-,.;:()\[\]{}\s]|–|—)/', $s, $m, 0, $pos)
+        && strlen($m[0]) <= 120) {
         return $m[0];
     }
     return null;

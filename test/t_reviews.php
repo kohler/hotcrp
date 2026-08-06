@@ -1918,6 +1918,17 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($conf->fetch_ivalue("select count(*) from PaperConflict where contactId<=0"), 0);
     }
 
+    // An email too long to store is rejected when the assignment is parsed
+    function test_bulk_assign_overlong_email() {
+        $conf = $this->conf;
+        $email = str_repeat("x", 130) . "@_.com";
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("paper,action,email\n24,contact,{$email}\n", "over.csv");
+        xassert_eqq($aset->full_feedback_text(), "over.csv:2: Email address ‘{$email}’ invalid\n");
+        xassert(!$aset->execute());
+        xassert_eqq($conf->fetch_ivalue("select count(*) from PaperConflict pc left join ContactInfo c using (contactId) where c.contactId is null"), 0);
+    }
+
     // Pin the observable decline (`declinereview`) contract and its inverse,
     // undecline (`acceptreview`), independent of how a refused review is stored
     // internally: declining removes the live review, records a refusal carrying
