@@ -156,7 +156,6 @@ class Icons {
     /** @return string */
     static function ui_move_handle_horizontal() {
         return self::$move_handle_horizontal_open . self::svg_contents("move_handle_horizontal") . '</svg>';
-
     }
     /** @return string */
     static function ui_graph_scatter() {

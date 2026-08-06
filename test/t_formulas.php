@@ -885,6 +885,67 @@ class Formulas_Tester {
         $this->conf->qe("update Paper set timeSubmitted=? where paperId=1", $saved);
     }
 
+    function test_graph_catalog_quantities_are_usable() {
+        // the graphing wizard offers these expressions in its axis menus, so
+        // every one must parse; `indexed` drives which summaries it offers
+        $groups = (new FormulaGraphCatalog($this->u_chair))->quantity_groups();
+        xassert(count($groups) > 0);
+        $n = 0;
+        foreach ($groups as $g) {
+            xassert(count($g->quantities) > 0);
+            foreach ($g->quantities as $q) {
+                ++$n;
+                if ($q->special ?? false) {
+                    continue;
+                }
+                $f = Formula::make_indexed($this->u_chair, $q->expr);
+                xassert_eqq([$q->expr, $f->viewable()], [$q->expr, true]);
+                xassert_eqq([$q->expr, $f->indexed()], [$q->expr, $q->indexed ?? false]);
+            }
+        }
+        xassert($n > 5);
+    }
+
+    function test_graph_catalog_examples_graph_without_error() {
+        $exs = (new FormulaGraphCatalog($this->u_chair))->examples();
+        xassert(count($exs) > 0);
+        foreach ($exs as $ex) {
+            $fg = new FormulaGraph($this->u_chair, $ex->param["gtype"], $ex->param["x"], $ex->param["y"]);
+            if (isset($ex->param["xorder"])) {
+                $fg->set_xorder($ex->param["xorder"]);
+            }
+            $fg->add_dataset(new FormulaGraphDataset("", null, "", ""));
+            xassert_eqq([$ex->title, $fg->full_feedback_text()], [$ex->title, ""]);
+            xassert_eqq([$ex->title, $fg->graph_json([])["type"]], [$ex->title, $ex->param["gtype"]]);
+        }
+    }
+
+    function test_graphdata_api_accepts_wizard_parameters() {
+        // the graphing wizard previews graphs by sending exactly these
+        // parameters to /api/graphdata
+        $j = call_api("graphdata", $this->u_chair, TestQreq::get([
+            "gtype" => "box", "x" => "review re:round", "y" => "OveMer",
+            "q1" => "", "s1" => "default", "q2" => "1-5", "s2" => "tag-red"
+        ]));
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->type, "box");
+
+        // a per-submission graph plots something whatever the review state is
+        $j = call_api("graphdata", $this->u_chair, TestQreq::get([
+            "gtype" => "scatter", "x" => "paper pid", "y" => "au", "q1" => "", "s1" => "plain"
+        ]));
+        xassert_eqq($j->ok, true);
+        xassert(!empty($j->data));
+
+        // an unusable formula comes back as a message tagged with the field
+        // name the wizard gives its axis inputs
+        $j = call_api("graphdata", $this->u_chair, TestQreq::get([
+            "gtype" => "scatter", "x" => "nonesuch", "y" => "pid", "q1" => ""
+        ]));
+        xassert_eqq($j->ok, false);
+        xassert_eqq($j->message_list[0]->field, "fx");
+    }
+
     function test_graph_type_prefix() {
         foreach (["dot", "dots", "dotplot"] as $s) {
             xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::DOT, $s]);

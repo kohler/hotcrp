@@ -441,9 +441,8 @@ function mime_quote_string($word) {
 function mime_token_quote($word) {
     if (preg_match('/\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"\/?=]+\z/', $word)) {
         return $word;
-    } else {
-        return mime_quote_string($word);
     }
+    return mime_quote_string($word);
 }
 
 /** @param string $words
@@ -453,9 +452,8 @@ function rfc2822_words_quote($words) {
     // to names containing `'`, which invalidates a DKIM signature.
     if (preg_match('/\A[-A-Za-z0-9!#$%&*+\/=?^_`{|}~ \t]*\z/', $words)) {
         return $words;
-    } else {
-        return mime_quote_string($words);
     }
+    return mime_quote_string($words);
 }
 
 

@@ -5651,6 +5651,184 @@ th.pl_logaction {
 	shape-rendering: crispEdges;
 }
 
+/* graph examples */
+.graph-example-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	columns: 20em 2;
+}
+.graph-example-list > li {
+	break-inside: avoid;
+	margin-bottom: 0.6em;
+}
+
+/* graphing wizard */
+.graph-wizard-modal {
+	width: 62rem;
+}
+.graph-wizard {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.5rem;
+}
+.graph-wizard-main {
+	flex: 1 1 26rem;
+	min-width: 0;
+}
+.graph-wizard-side {
+	flex: 1 1 24rem;
+	min-width: 0;
+}
+.graph-wizard-title {
+	margin-top: 0;
+}
+.graph-wizard-side-title {
+	margin-top: 0;
+	font-size: smaller;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #666;
+}
+.graph-wizard-tabs {
+	display: flex;
+	gap: 0.25em;
+	border-bottom: 2px solid #f3d06e;
+	margin-bottom: 1em;
+}
+.graph-wizard-tab {
+	background: none;
+	border: 2px solid transparent;
+	border-bottom: 0;
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+	padding: 0.25em 0.9em;
+	font-size: smaller;
+	cursor: pointer;
+}
+.graph-wizard-tab.active {
+	background: #fff4d5;
+	border-color: #f3d06e;
+	font-weight: bold;
+}
+.graph-wizard-panel {
+	min-height: 20rem;
+}
+
+.graph-wizard-types {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.5rem;
+}
+.graph-wizard-type {
+	display: block;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	padding: 0.25rem;
+	text-align: center;
+	cursor: pointer;
+}
+.graph-wizard-type:hover {
+	border-color: #8089d1;
+}
+.graph-wizard-type.active {
+	border-color: #6b73b5;
+	box-shadow: 0 0 0 2px #8089d1;
+}
+.graph-wizard-type:focus-within {
+	outline: 1px dotted #6b73b5;
+}
+.graph-wizard-type-radio {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+.graph-wizard-type-title {
+	display: block;
+	font-size: smaller;
+	line-height: 1.15;
+}
+.graph-wizard-icon {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+.graph-wizard-icon .gwiz-axis {
+	fill: none;
+	stroke: #999;
+	stroke-width: 2px;
+	stroke-linejoin: miter;
+}
+.graph-wizard-icon .gwiz-label {
+	font-size: 10px;
+	fill: #111;
+	stroke: none;
+	text-anchor: middle;
+}
+.graph-wizard-type-hint {
+	font-size: smaller;
+	color: #666;
+	min-height: 3em;
+}
+
+.graph-wizard-axis {
+	margin-bottom: 1em;
+}
+.graph-wizard-axis-label {
+	display: block;
+	font-weight: bold;
+	font-size: smaller;
+}
+.graph-wizard-axis-menus {
+	display: flex;
+	gap: 0.5em;
+	margin-bottom: 0.25em;
+}
+.graph-wizard-axis-menus > select {
+	flex: 1 1 0;
+	min-width: 0;
+}
+.graph-wizard-expr {
+	width: 100%;
+	font-family: monospace;
+}
+
+.graph-wizard-dataset {
+	display: flex;
+	gap: 0.5em;
+	align-items: center;
+	margin-bottom: 0.5em;
+}
+.graph-wizard-search {
+	flex: 1 1 0;
+	min-width: 0;
+}
+.graph-wizard-remove {
+	background: none;
+	border: 0;
+	cursor: pointer;
+	color: #888;
+}
+.graph-wizard-remove:hover {
+	color: #a00;
+}
+
+.graph-wizard-preview {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	background: #fff;
+	min-height: 18rem;
+}
+/* the preview is not the graph: clicking a point would navigate away */
+.graph-wizard-preview svg {
+	pointer-events: none;
+}
+.graph-wizard-status:not(:empty) {
+	margin-bottom: 0.5em;
+}
+
 @media print {
 .no-print {
 	display: none !important;
