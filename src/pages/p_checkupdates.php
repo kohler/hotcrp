@@ -79,25 +79,44 @@ class CheckUpdates_Page {
                 if (is_string(($message = $update["message"] ?? null))) {
                     $ml[] = MessageItem::inform("<5>" . CleanHTML::basic_clean($message));
                 }
-                $x = [];
+                $notes = [];
                 if (is_string(($hash = $update["to"] ?? null))
                     && ctype_xdigit($hash)
                     && strlen($hash) >= 7) {
-                    $x[] = "First unaffected commit: {$hash}";
+                    $notes[] = "First unaffected commit: {$hash}";
                 }
-                if (is_string(($cve = $update["cve"] ?? null))
-                    && preg_match('/\ACVE-[-0-9]+\z/', $cve)) {
-                    $x[] = "<a href=\"https://www.cve.org/CVERecord?id={$cve}\">{$cve}</a>";
+                $cvel = $update["cve+"] ?? $update["cve"] ?? null;
+                if (is_string($cvel)) {
+                    $cvel = [$cvel];
                 }
-                if (is_string(($ghsa = $update["ghsa"] ?? null))
-                    && preg_match('/\AGHSA-[-a-z0-9]+\z/', $ghsa)) {
-                    $x[] = "<a href=\"https://github.com/advisories/{$ghsa}\">GitHub {$ghsa}</a>";
+                $xp = [];
+                foreach (is_string_list($cvel) ? $cvel : [] as $cve) {
+                    if (preg_match('/\ACVE-[-0-9]+\z/', $cve)) {
+                        $xp[] = "<a href=\"https://www.cve.org/CVERecord?id={$cve}\">{$cve}</a>";
+                    }
                 }
+                if (!empty($xp)) {
+                    $notes[] = join(", ", $xp);
+                }
+                $ghsal = $update["ghsa+"] ?? $update["ghsa"] ?? null;
+                if (is_string($ghsal)) {
+                    $ghsal = [$ghsal];
+                }
+                $xp = [];
+                foreach (is_string_list($ghsal) ? $ghsal : [] as $ghsa) {
+                    if (preg_match('/\AGHSA-[-a-z0-9]+\z/', $ghsa)) {
+                        $xp[] = "<a href=\"https://github.com/advisories/{$ghsa}\">" . (empty($xp) ? "GitHub " : "") . $ghsa . "</a>";
+                    }
+                }
+                if (!empty($xp)) {
+                    $notes[] = join(", ", $xp);
+                }
+
                 if ($errid !== null) {
-                    $x[] = "<button type=\"button\" class=\"link ui js-check-version-ignore\" data-errid=\"{$errid}\">Ignore for two days</button>";
+                    $notes[] = "<button type=\"button\" class=\"link ui js-check-version-ignore\" data-errid=\"{$errid}\">Ignore for two days</button>";
                 }
-                if (!empty($x)) {
-                    $ml[] = MessageItem::inform("<5>" . join(' <span class="barsep">·</span> ', $x));
+                if (!empty($notes)) {
+                    $ml[] = MessageItem::inform("<5>" . join(' <span class="barsep">·</span> ', $notes));
                 }
             }
         }
