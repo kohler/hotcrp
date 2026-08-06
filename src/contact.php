@@ -1809,11 +1809,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $d;
     }
 
-    /** @param string $key */
+    /** @param string $key
+     * @return bool */
     function set_data_prop($key, $value) {
         $d = $this->make_data();
         if (($d->$key ?? null) === $value) {
-            return;
+            return false;
         }
         $this->_mod_undo = $this->_mod_undo ?? [];
         if (!array_key_exists("data", $this->_mod_undo)) {
@@ -1824,6 +1825,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         } else {
             unset($d->$key);
         }
+        return true;
     }
 
     /** @param string $key
@@ -2161,7 +2163,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // save
         $this->_mod_undo = $this->_mod_undo ?? [];
         if (($shape & self::PROP_DATA) !== 0) {
-            $this->set_data_prop($prop, $value);
+            if (!$this->set_data_prop($prop, $value)) {
+                $shape &= ~self::PROP_UPDATE;
+            }
         } else {
             $has_old = array_key_exists($prop, $this->_mod_undo);
             $oldv = $has_old ? $this->_mod_undo[$prop] : $old;

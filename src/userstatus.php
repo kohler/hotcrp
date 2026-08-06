@@ -642,7 +642,9 @@ class UserStatus extends MessageSet {
         }
         if ($address0 || $address1) {
             // allow changes to just one address line
-            if ($old_user && ($old_address = $old_user->prop("address"))) {
+            if ($old_user
+                && !$address0
+                && ($old_address = $old_user->prop("address"))) {
                 for ($i = 0; $i < count($address) || $i < count($old_address); ++$i) {
                     $address[$i] = $address[$i] ?? $old_address[$i] ?? null;
                 }
@@ -1455,16 +1457,12 @@ class UserStatus extends MessageSet {
 
 
     static private $csv_keys = [
-        "email",
-        "user",
+        "email", "user", "preferred_email",
         "firstName", "lastName", "name",
-        "preferred_email",
         "affiliation", "collaborators",
         "address", "address1", "address2", "address3", "address4", "address5",
         "city", "state", "zip", "country",
-        "roles",
-        "follow",
-        "tags", "add_tags", "remove_tags", "change_tags",
+        "roles", "follow", "tags", "add_tags", "remove_tags", "change_tags",
         "disabled"
     ];
 

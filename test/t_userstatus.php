@@ -582,6 +582,55 @@ class UserStatus_Tester {
         xassert_eqq($this->csv_diffs[0], ["address"]);
         $this->csv_save("email,city,state,zip\ncsvt4b@_.com,Cambridge,MA,02138\n");
         xassert_eqq($this->csv_diffs[0], []);
+
+        // the whole-address and per-line forms cannot be mixed
+        $r = $this->csv_save("email,address,address1\n"
+            . "csvt4c@_.com,1 Main Street,Apt 3\n");
+        xassert_eqq($r, [null]);
+        xassert_str_contains($this->csv_feedback[0], "at most one of");
+        xassert(!$this->conf->fresh_user_by_email("csvt4c@_.com"));
+
+        // `address` is the whole address, so a shorter value replaces rather
+        // than merging: no stale tail from the previous value
+        $this->csv_save("email,address\ncsvt4d@_.com,\"1 Main Street\nApt 3\"\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt4d@_.com")->prop("address"),
+            ["1 Main Street", "Apt 3"]);
+        $this->csv_save("email,address\ncsvt4d@_.com,2 Oak Avenue\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt4d@_.com")->prop("address"),
+            ["2 Oak Avenue"]);
+
+        // …while a per-line update still merges with the stored lines
+        $this->csv_save("email,address2\ncsvt4d@_.com,Suite 9\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt4d@_.com")->prop("address"),
+            ["2 Oak Avenue", "Suite 9"]);
+    }
+
+    /** @return int */
+    private function update_time($email) {
+        return $this->conf->fresh_user_by_email($email)->prop("updateTime");
+    }
+
+    function test_address_no_op_leaves_update_time() {
+        $this->delete_users("csvt16%");
+        $this->csv_save("email,address1,address2,city\n"
+            . "csvt16@_.com,1 Main Street,Apt 3,Cambridge\n");
+        $t0 = $this->update_time("csvt16@_.com");
+        xassert_eqq($t0, Conf::$now);
+
+        Conf::advance_current_time(Conf::$now + 1);
+
+        // re-saving identical data changes nothing — including `updateTime`,
+        // which `PROP_DATA` props used to bump even when unchanged
+        $this->csv_save("email,address1,address2,city\n"
+            . "csvt16@_.com,1 Main Street,Apt 3,Cambridge\n");
+        xassert_eqq($this->csv_diffs[0], []);
+        xassert_eqq($this->update_time("csvt16@_.com"), $t0);
+
+        // a real change does bump it
+        $this->csv_save("email,city\ncsvt16@_.com,Somerville\n");
+        xassert_eqq($this->csv_diffs[0], ["address"]);
+        xassert_eqq($this->update_time("csvt16@_.com"), Conf::$now);
+        xassert_gt(Conf::$now, $t0);
     }
 
     function test_csv_roles() {
