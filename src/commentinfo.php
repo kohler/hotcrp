@@ -1099,9 +1099,10 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
         $result = $this->conf->qe_apply($q, $qv);
         if (Dbl::is_error($result)) {
             return false;
-        }
-
-        if ($inserting) {
+        } else if ($inserting) {
+            if ($result->affected_rows === 0) { // concurrent response insertion
+                return false;
+            }
             $this->commentId = (int) $result->insert_id;
         }
 
@@ -1145,6 +1146,7 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
 
     /** Delete this comment from the database and write the activity log. Does
      * not check permissions, recompute automatic tags, or send notifications.
+     * The comment may have staged changes.
      * @return bool */
     function delete(Contact $acting_user) {
         if (!$this->commentId) {
@@ -1161,7 +1163,7 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
             $this->paperId);
 
         // document links
-        if ($this->has_attachments()) {
+        if ($this->has_attachments() || $this->_old_docs !== null) {
             $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType=?", $this->paperId, $this->commentId, DTYPE_COMMENT);
             $this->prow->mark_inactive_linked_documents();
             $this->prow->invalidate_linked_documents();
@@ -1176,7 +1178,7 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
     function mark_deleted() {
         $this->commentId = 0;
         $this->comment = "";
-        $this->commentTags = $this->commentData = $this->_jdata = null;
+        $this->commentTags = $this->commentData = $this->commentOverflow = $this->_jdata = null;
         $this->_old_docs = $this->_docs = null;
     }
 

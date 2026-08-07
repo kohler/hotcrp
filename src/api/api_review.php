@@ -24,6 +24,8 @@ class Review_API_Status implements JsonSerializable {
     /** @var int */
     public $message_count;
     /** @var bool */
+    public $dry_run;
+    /** @var bool */
     public $valid;
     /** @var list<string> */
     public $change_list;
@@ -35,14 +37,16 @@ class Review_API_Status implements JsonSerializable {
     public $rid;
 
     /** @param int $message_count
+     * @param bool $dry_run
      * @param bool $valid
      * @param list<string> $change_list
      * @param bool $conflict
      * @param ?int $pid
      * @param ?string $rid */
-    function __construct($message_count, $valid = false, $change_list = [],
+    function __construct($message_count, $dry_run, $valid = false, $change_list = [],
                          $conflict = false, $pid = null, $rid = null) {
         $this->message_count = $message_count;
+        $this->dry_run = $dry_run;
         $this->valid = $valid;
         $this->change_list = $change_list;
         $this->conflict = $conflict;
@@ -61,6 +65,9 @@ class Review_API_Status implements JsonSerializable {
         }
         if ($this->rid !== null) {
             $u["rid"] = $this->rid;
+        }
+        if ($this->dry_run) {
+            $u["dry_run"] = true;
         }
         return $u;
     }
@@ -460,7 +467,7 @@ class Review_API extends MessageSet {
             $valid = $rrow->delete($this->user, ["no_rights" => true, "snapshot" => true]);
         }
 
-        $this->status_list[] = new Review_API_Status($this->message_count(),
+        $this->status_list[] = new Review_API_Status($this->message_count(), $this->dry_run,
             $valid, ["delete"], $conflict, $prow->paperId, $rrow->unparse_ordinal_id());
         $this->reviews[] = null;
         return $this->post_result();
@@ -770,7 +777,7 @@ class Review_API extends MessageSet {
             $this->reviews[] = null;
         }
         $this->status_list[] = new Review_API_Status(
-            $this->message_count(),
+            $this->message_count(), $this->dry_run,
             $this->ivalid, $this->change_list ?? [],
             $this->stale, $prow ? $prow->paperId : null, $rid
         );
@@ -778,7 +785,7 @@ class Review_API extends MessageSet {
 
     /** Record a per-item resolution failure (no save attempted). */
     private function execute_fail() {
-        $this->status_list[] = new Review_API_Status($this->message_count());
+        $this->status_list[] = new Review_API_Status($this->message_count(), $this->dry_run);
         $this->reviews[] = null;
     }
 
@@ -808,9 +815,6 @@ class Review_API extends MessageSet {
             "ok" => $ok,
             "message_list" => $this->message_list()
         ]);
-        if ($this->dry_run) {
-            $jr->content["dry_run"] = true;
-        }
         if ($this->single) {
             // omit `pid`: the URL pins the paper
             foreach ($this->status_list[0]->jsonSerialize() as $k => $v) {
@@ -822,6 +826,9 @@ class Review_API extends MessageSet {
                 $jr->content["review"] = $this->reviews[0];
             }
         } else {
+            if ($this->dry_run) { // XXX backward compat, use the ones in `status_list`
+                $jr->content["dry_run"] = true;
+            }
             $jr->content["status_list"] = $this->status_list;
             if (!$this->dry_run) {
                 $jr->content["reviews"] = $this->reviews;

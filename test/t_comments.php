@@ -606,6 +606,263 @@ class Comments_Tester {
         xassert($sv->execute());
     }
 
+    /** Open response round 1 on paper 1 and drop any response it already has.
+     * @return PaperInfo */
+    private function open_clean_response_round() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "review_open" => "1",
+            "has_response" => "1",
+            "response_active" => "1",
+            "response/1/id" => "1",
+            "response/1/name" => "",
+            "response/1/open" => "@" . (Conf::$now - 1),
+            "response/1/done" => "@" . (Conf::$now + 10000)
+        ]);
+        xassert($sv->execute());
+        foreach ($paper1->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0") as $c) {
+            call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $c->commentId, "delete" => 1], $paper1);
+        }
+        MailChecker::clear();
+        return $paper1;
+    }
+
+    private function close_response_round() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => "1", "response_active" => "0", "response/1/id" => "1"
+        ]);
+        xassert($sv->execute());
+        MailChecker::clear();
+    }
+
+    /** @return int */
+    private function nresponses(PaperInfo $prow) {
+        return count($prow->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0"));
+    }
+
+    /** Submit the response that wins a concurrent insert race.
+     * @return int */
+    private function winning_response($text) {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => $text], $paper1);
+        xassert($j->ok);
+        MailChecker::clear();
+        return (int) $j->comment->cid;
+    }
+
+    /** Post a response for `$text` that loses a concurrent insert race. The
+     * request resolves its target while paper 1 still has no response; a
+     * competing response for `$winner_text` is committed from
+     * `pre_save_function`, so this request's own insert is the one suppressed.
+     * `$attachment`, if given, is attached to the losing request only.
+     * @return object the losing request's JSON response */
+    private function losing_response_post($text, $winner_text, $attachment = null) {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($this->nresponses($paper1), 0);
+        $args = ["response" => "1", "text" => $text];
+        if ($attachment !== null) {
+            $args["attachment:1"] = "new";
+        }
+        $qreq = TestQreq::post($args);
+        if ($attachment !== null) {
+            $qreq->set_file_content("attachment:1:file", $attachment, "text/plain");
+        }
+        $qreq->set_user($this->u_floyd);
+        $qreq->set_paper($paper1);
+        Qrequest::set_main_request($qreq);
+        $capi = new Comment_API($this->u_floyd, $qreq, $paper1);
+        $capi->set_pre_save_function(function () use ($qreq, $winner_text) {
+            $this->winning_response($winner_text);
+            // the winner ran as a nested request; restore this one
+            Qrequest::set_main_request($qreq);
+        });
+        try {
+            $jr = $capi->run_post($qreq, $paper1, DocumentLocator::M_ONE);
+        } catch (JsonCompletion $jc) {
+            $jr = $jc->result;
+        }
+        MailChecker::clear();
+        return (object) $jr->content;
+    }
+
+    /** Stage the response save that loses that race: paper 1 already has a
+     * response, and this status holds a skeleton whose target was resolved
+     * before the winner committed. Returned after its save has failed.
+     * @return array{CommentStatus,CommentInfo} */
+    private function losing_response_save($text) {
+        $rrd = $this->conf->response_round("1");
+        $skel = CommentInfo::make_response_template($rrd, $this->conf->checked_paper_by_id(1));
+        $cs = new CommentStatus($this->u_floyd);
+        xassert($cs->prepare_save($skel, ["text" => $text, "submit" => true]));
+        xassert_eqq($cs->execute_save(), false);
+        return [$cs, $skel];
+    }
+
+    // A response insert is guarded by `not exists`, so a second concurrent
+    // insert writes no row. `CommentInfo::save` must report that as a failure:
+    // `Comment_API::save_comment` reaches its response re-entry branch — which
+    // separates an identical re-entry (success) from a conflicting edit
+    // (`conflict`) — only when the save fails. Two requests cannot be
+    // interleaved in-process, so this drives the same objects the API drives,
+    // with the skeleton standing in for a target resolved before the winner
+    // committed.
+    function test_response_reentry_losing_save() {
+        $paper1 = $this->open_clean_response_round();
+        $cid = $this->winning_response("Winning response");
+
+        list($cs, $skel) = $this->losing_response_save("Losing response");
+        xassert_eqq($skel->commentId, 0);
+
+        // the winner is untouched and still the only response
+        xassert_eqq($this->nresponses($paper1), 1);
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert_eqq($cmt->raw_content(), "Winning response");
+
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "delete" => 1], $paper1);
+        $this->close_response_round();
+    }
+
+    // A failed save must leave nothing behind. `execute_save` marks the status
+    // saved only once the commit succeeds, so a failure still lets `abort_save`
+    // roll back the staged properties, and still leaves `notify_followers` with
+    // nothing to announce — otherwise a response that was never written mails
+    // the submission's authors.
+    function test_response_failed_save_leaves_nothing_behind() {
+        $paper1 = $this->open_clean_response_round();
+        $cid = $this->winning_response("Winning response");
+
+        list($cs, $skel) = $this->losing_response_save("Losing response");
+
+        // the loser's staged changes stay live until aborted, then are gone
+        xassert_eqq($skel->prop_changed(), true);
+        $cs->abort_save();
+        xassert_eqq($skel->prop_changed(), false);
+
+        // nothing is announced for a response that was never written
+        $cs->notify_followers();
+        xassert_eqq(count(MailChecker::$preps), 0);
+
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "delete" => 1], $paper1);
+        $this->close_response_round();
+    }
+
+    // Losing the insert race with the *same* text is not an error: both
+    // requests wanted the same response, and the one that arrives second
+    // reports the committed response rather than a conflict.
+    function test_response_reentry_identical() {
+        $paper1 = $this->open_clean_response_round();
+
+        $j = $this->losing_response_post("Simultaneous response", "Simultaneous response");
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        xassert(!($j->conflict ?? false));
+        // this request established nothing; the concurrent one did
+        xassert_eqq($j->change_list, []);
+
+        // the reported comment is the one that actually committed
+        xassert_eqq($this->nresponses($paper1), 1);
+        $cmt = $paper1->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0")[0];
+        xassert_eqq((int) $j->cid, $cmt->commentId);
+        xassert_eqq($cmt->raw_content(), "Simultaneous response");
+
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cmt->commentId, "delete" => 1], $paper1);
+        $this->close_response_round();
+    }
+
+    // Losing the insert race with *different* text is a conflict: the loser's
+    // edit is refused and the committed response comes back so the client can
+    // reconcile.
+    function test_response_reentry_conflict() {
+        $paper1 = $this->open_clean_response_round();
+
+        $j = $this->losing_response_post("Loser text", "Winner text");
+        xassert(!$j->ok);
+        xassert_eqq($j->valid, false);
+        xassert_eqq($j->conflict, true);
+        // as for an `if_unmodified_since` conflict, report the attempted diff
+        xassert_eqq($j->change_list, ["new", "text", "visibility"]);
+
+        // the winner survives untouched and is returned to the loser
+        xassert_eqq($this->nresponses($paper1), 1);
+        $cmt = $paper1->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0")[0];
+        xassert_eqq($cmt->raw_content(), "Winner text");
+        xassert_eqq($j->comment->text, "Winner text");
+
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cmt->commentId, "delete" => 1], $paper1);
+        $this->close_response_round();
+    }
+
+    // The re-entry comparison must also see the losing request's own
+    // attachments. Attaching a file to otherwise identical text is a different
+    // response, so it is a conflict — not a success that drops the attachment.
+    function test_response_reentry_conflict_attachment() {
+        $paper1 = $this->open_clean_response_round();
+
+        $j = $this->losing_response_post("Same text", "Same text", "Loser attachment");
+        xassert(!$j->ok);
+        xassert_eqq($j->conflict, true);
+
+        // the winner survives, and the loser's attachment was not silently kept
+        xassert_eqq($this->nresponses($paper1), 1);
+        $cmt = $paper1->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0")[0];
+        xassert_eqq($cmt->raw_content(), "Same text");
+        xassert_eqq($cmt->attachment_ids(), []);
+
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cmt->commentId, "delete" => 1], $paper1);
+        $this->close_response_round();
+    }
+
+    // The re-entry comparison must read the response's full text. A response
+    // over 32000 characters keeps only a prefix in `comment`, so comparing that
+    // column would report a conflict for two requests that submitted exactly
+    // the same long text.
+    function test_response_reentry_identical_overflow() {
+        $paper1 = $this->open_clean_response_round();
+
+        $text = rtrim(str_repeat("Simultaneous overflowing response. ", 1000));
+        xassert(strlen($text) > 32000);
+        $j = $this->losing_response_post($text, $text);
+        xassert($j->ok);
+        xassert_eqq($j->valid, true);
+        xassert(!($j->conflict ?? false));
+
+        xassert_eqq($this->nresponses($paper1), 1);
+        $cmt = $paper1->fetch_comments("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0")[0];
+        xassert_neqq($cmt->comment, $text);
+        xassert_eqq($cmt->raw_content(), $text);
+
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cmt->commentId, "delete" => 1], $paper1);
+        $this->close_response_round();
+    }
+
+    // A response over 32000 characters keeps only a prefix in `comment` and the
+    // whole text in `commentOverflow`. The re-entry comparison must therefore
+    // read `raw_content()`: comparing `comment` would make every long response
+    // look like a conflicting edit rather than an identical re-entry.
+    function test_response_overflow_raw_content() {
+        $paper1 = $this->open_clean_response_round();
+
+        $text = rtrim(str_repeat("Overflowing response. ", 2000));
+        xassert(strlen($text) > 32000);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => $text], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        MailChecker::clear();
+
+        $cmt = $paper1->fetch_comments("commentId={$cid}")[0];
+        xassert(!!$cmt);
+        xassert_neqq($cmt->comment, $text);
+        xassert_eqq($cmt->commentOverflow, $text);
+        xassert_eqq($cmt->raw_content(), $text);
+
+        // a deleted comment keeps no overflow text behind
+        $cmt->mark_deleted();
+        xassert_eqq($cmt->raw_content(), "");
+
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "delete" => 1], $paper1);
+        $this->close_response_round();
+    }
+
     function test_response_c_mismatch() {
         // `response=N` combined with `c=MMM` that names a *different* comment
         // (here a plain comment, not the round-N response) is reported as a
@@ -1037,6 +1294,129 @@ class Comments_Tester {
         xassert(!$j->ok);
         xassert_eqq($j->valid, false);
 
+        MailChecker::clear();
+    }
+
+    /** @param list<object> $message_list
+     * @return ?object */
+    static private function find_warning($message_list) {
+        foreach ($message_list as $mi) {
+            if ($mi->status >= MessageSet::WARNING)
+                return $mi;
+        }
+        return null;
+    }
+
+    /** @return int */
+    private function ncomments($pid) {
+        return $this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=?", $pid);
+    }
+
+    // `dry_run=if_warning` saves only when the save produces no warnings.
+    // Mentioning a user who cannot view the comment warns, so such a comment is
+    // validated and reported, but not stored.
+    function test_comment_dry_run_if_warning() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        // `viewrev=1` fixes mention visibility: mgbaker, a paper-1 reviewer, can
+        // view a `rev` comment; mjh, a PC member conflicted with paper 1, cannot
+        xassert_eqq($this->conf->setting("viewrev"), null);
+        $this->conf->save_refresh_setting("viewrev", 1);
+        MailChecker::clear();
+        $before = $this->ncomments(1);
+
+        // a mention the mentionee cannot see: valid, warned, and not saved
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => "new", "text" => "Hello @Mark Handley", "visibility" => "rev",
+             "dry_run" => "if_warning"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run ?? false, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["new", "text", "visibility"]);
+        xassert(!isset($j->comment));
+        $mi = self::find_warning($j->message_list ?? []);
+        xassert(!!$mi);
+        $mi && xassert_str_contains($mi->message, "cannot currently see");
+        xassert_eqq($this->ncomments(1), $before);
+
+        // the same request without `dry_run` saves: only the warning held it back
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => "new", "text" => "Hello @Mark Handley", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        xassert(!($j->dry_run ?? false));
+        xassert_eqq($j->valid, true);
+        xassert_eqq($this->ncomments(1), $before + 1);
+        $cid = (int) $j->comment->cid;
+
+        // a mention the mentionee can see does not warn, so `if_warning` commits
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => "new", "text" => "Hello @Mary Baker", "visibility" => "rev",
+             "dry_run" => "if_warning"], $paper1);
+        xassert($j->ok);
+        xassert(!($j->dry_run ?? false));
+        xassert_eqq($j->valid, true);
+        xassert_eqq(self::find_warning($j->message_list ?? []), null);
+        xassert(isset($j->comment));
+        xassert_eqq($this->ncomments(1), $before + 2);
+        $cid2 = (int) $j->comment->cid;
+
+        // a comment with no mentions commits too
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => "new", "text" => "No mentions here", "visibility" => "rev",
+             "dry_run" => "if_warning"], $paper1);
+        xassert($j->ok);
+        xassert(!($j->dry_run ?? false));
+        xassert(isset($j->comment));
+        $cid3 = (int) $j->comment->cid;
+
+        // editing an existing comment to add an unviewable mention is withheld,
+        // and the stored comment keeps its original text
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => (string) $cid3, "text" => "No mentions here @Mark Handley",
+             "visibility" => "rev", "dry_run" => "if_warning"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run ?? false, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["text"]);
+        xassert(!isset($j->comment));
+        $cmt = $paper1->fetch_comments("commentId={$cid3}")[0];
+        xassert_eqq($cmt->unparse_json($this->u_chair)->text, "No mentions here");
+
+        // `notify=off` means no mention would have been notified anyway, so an
+        // unviewable mention is not a warning and the comment commits
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => "new", "text" => "Silent @Mark Handley", "visibility" => "rev",
+             "notify" => "off", "dry_run" => "if_warning"], $paper1);
+        xassert($j->ok);
+        xassert(!($j->dry_run ?? false));
+        xassert_eqq(self::find_warning($j->message_list ?? []), null);
+        xassert(isset($j->comment));
+        $cid4 = (int) $j->comment->cid;
+
+        // a draft response notifies no one, so an unviewable mention in one is
+        // not a warning either
+        $j = call_api("=comment", $this->u_chair,
+            ["response" => "1", "text" => "Draft @Mark Handley", "draft" => 1,
+             "dry_run" => "if_warning"], $paper1);
+        xassert($j->ok);
+        xassert(!($j->dry_run ?? false));
+        xassert_eqq(self::find_warning($j->message_list ?? []), null);
+        xassert(isset($j->comment));
+        $cid5 = (int) $j->comment->cid;
+
+        // an error is not a withheld dry run: `valid` is false and `dry_run` unset
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => "new", "text" => "", "dry_run" => "if_warning"], $paper1);
+        xassert(!$j->ok);
+        xassert_eqq($j->valid, false);
+        xassert(!($j->dry_run ?? false));
+
+        foreach ([$cid, $cid2, $cid3, $cid4, $cid5] as $c) {
+            $j = call_api("=comment", $this->u_chair, ["c" => (string) $c, "delete" => 1], $paper1);
+            xassert($j->ok);
+        }
+        xassert_eqq($this->ncomments(1), $before);
+
+        $this->conf->save_refresh_setting("viewrev", null);
         MailChecker::clear();
     }
 
@@ -1823,13 +2203,59 @@ class Comments_Tester {
         ], ["notify" => "off", "dry_run" => 1]);
         $j = call_api("=comments", $this->u_chair, $qreq);
         xassert($j->ok);
-        xassert_eqq($j->dry_run, true);
         xassert(!isset($j->comments));
         xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[0]->dry_run ?? false, true);
         xassert_eqq($j->status_list[1]->valid, true);
+        xassert_eqq($j->status_list[1]->dry_run ?? false, true);
         xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=1"), $b1);
         xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=3"), $b3);
 
+        MailChecker::clear();
+    }
+
+    // `dry_run=if_warning` applies per item: a warned item is withheld while its
+    // neighbors in the same batch still commit.
+    function test_comments_multi_post_if_warning() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($this->conf->setting("viewrev"), null);
+        $this->conf->save_refresh_setting("viewrev", 1);
+        MailChecker::clear();
+        $before = $this->ncomments(1);
+
+        $qreq = TestQreq::post_json([
+            ["pid" => 1, "text" => "Batch warn @Mark Handley", "visibility" => "rev"],
+            ["pid" => 1, "text" => "Batch clean", "visibility" => "rev"]
+        ], ["dry_run" => "if_warning"]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);
+        // the request as a whole is not a dry run
+        xassert(!($j->dry_run ?? false));
+
+        // item 0 warned, so it was validated but not stored
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[0]->dry_run ?? false, true);
+        xassert_eqq($j->status_list[0]->change_list, ["new", "text", "visibility"]);
+        xassert(!isset($j->status_list[0]->cid));
+
+        // item 1 was clean, so it committed
+        xassert_eqq($j->status_list[1]->valid, true);
+        xassert(!($j->status_list[1]->dry_run ?? false));
+        xassert(isset($j->status_list[1]->cid));
+
+        // `comments` is present, with `null` for the withheld item
+        xassert_eqq(count($j->comments), 2);
+        xassert_eqq($j->comments[0], null);
+        xassert_eqq($j->comments[1]->text, "Batch clean");
+
+        xassert_eqq($this->ncomments(1), $before + 1);
+
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => (string) $j->comments[1]->cid, "delete" => 1], $paper1);
+        xassert($j->ok);
+        xassert_eqq($this->ncomments(1), $before);
+
+        $this->conf->save_refresh_setting("viewrev", null);
         MailChecker::clear();
     }
 

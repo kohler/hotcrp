@@ -31,10 +31,11 @@ final class CommentStatus extends MessageSet {
     private $_desired_mentions = [];
 
     const SSF_PREPARED = 1;
-    const SSF_SAVED = 2;
-    const SSF_ABORTED = 4;
-    const SSF_DELETE = 8;
-    const SSF_CREATE = 16;
+    const SSF_SAVE_ATTEMPTED = 2;
+    const SSF_SAVED = 4;
+    const SSF_ABORTED = 8;
+    const SSF_DELETE = 16;
+    const SSF_CREATE = 32;
 
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
@@ -122,6 +123,10 @@ final class CommentStatus extends MessageSet {
             if ($crow->commentId === 0) {
                 return false;
             }
+            // delete comment contents so callers see changes
+            $crow->set_prop("comment", "");
+            $crow->set_prop("commentOverflow", null);
+            $crow->set_attachments([]);
             return true;
         }
 
@@ -175,15 +180,6 @@ final class CommentStatus extends MessageSet {
         $this->_desired_mentions = $desired_mentions;
         $crow->set_data_prop("mentions", empty($desired_mentions) ? null : $desired_mentions);
 
-        // more properties
-        if (!$crow->commentId) {
-            $crow->_old_prop["contactId"] = null;
-            $crow->set_prop("contactId", $user->contactId);
-            $crow->_old_prop["paperId"] = null;
-            $crow->_old_prop["replyTo"] = null;
-            $crow->_old_prop["commentRound"] = null;
-            $crow->_old_prop["commentType"] = null;
-        }
         // timeDisplayed, timeNotified
         if ($crow->timeModified >= Conf::$now) {
             Conf::advance_current_time($crow->timeModified);
@@ -202,19 +198,57 @@ final class CommentStatus extends MessageSet {
             }
         }
 
+        // ensure _old_prop entries for new comments
+        if (!$crow->commentId) {
+            $crow->set_prop("contactId", $user->contactId);
+            $crow->_old_prop["contactId"] = $crow->contactId;
+            $crow->_old_prop["paperId"] = $crow->paperId;
+            $crow->_old_prop["replyTo"] = $crow->replyTo;
+            $crow->_old_prop["commentRound"] = $crow->commentRound;
+            $crow->_old_prop["commentType"] = $crow->commentType;
+        }
+
         $this->_has_change = $crow->prop_changed() || $crow->docs_changed();
         return true;
     }
 
+    /** Warn about mentions that a commit would fail to notify. The guards match
+     * `notify_followers`, which informs mentions only for a notifying, non-draft,
+     * non-delete save. */
+    function prepare_notification_warnings() {
+        if (!$this->notify
+            || !$this->_has_change
+            || !$this->_displayed
+            || $this->is_delete()
+            || !$this->crow) {
+            return;
+        }
+        foreach ($this->_desired_mentions as $mxm) {
+            $this->conf->prefetch_user_by_id($mxm->user->contactId);
+        }
+        $crow = $this->crow;
+        foreach ($this->_desired_mentions as $mxm) {
+            if (($mentionee = $mxm->user($this->conf, USER_SLICE))
+                && !$mentionee->is_dormant()
+                && !$mentionee->can_view_comment($crow->prow, $crow)) {
+                $this->warning_at(null, "<0>Some mentioned users cannot currently see this comment");
+                return;
+            }
+        }
+    }
 
     /** Commit the staged changes to the database.
      * @return bool */
     function execute_save() {
-        if (($this->_status & (self::SSF_PREPARED | self::SSF_SAVED | self::SSF_ABORTED)) !== self::SSF_PREPARED) {
+        if (($this->_status & (self::SSF_PREPARED | self::SSF_SAVE_ATTEMPTED | self::SSF_SAVED | self::SSF_ABORTED)) !== self::SSF_PREPARED) {
             throw new ErrorException("CommentStatus::execute_save called inappropriately");
         }
+        $this->_status |= self::SSF_SAVE_ATTEMPTED;
+        if ($this->is_delete() ? !$this->_commit_delete() : !$this->_commit()) {
+            return false;
+        }
         $this->_status |= self::SSF_SAVED;
-        return $this->is_delete() ? $this->_commit_delete() : $this->_commit();
+        return true;
     }
 
     /** @return bool */

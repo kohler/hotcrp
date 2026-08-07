@@ -4,6 +4,8 @@
 
 class Paper_API_Status implements JsonSerializable {
     /** @var bool */
+    public $dry_run;
+    /** @var bool */
     public $valid;
     /** @var list<string> */
     public $change_list;
@@ -12,7 +14,10 @@ class Paper_API_Status implements JsonSerializable {
     /** @var null|int|'new' */
     public $pid;
 
-    function __construct($valid = false, $change_list = [], $conflict = false, $pid = null) {
+    /** @param bool $dry_run
+     * @param bool $valid */
+    function __construct($dry_run, $valid = false, $change_list = [], $conflict = false, $pid = null) {
+        $this->dry_run = $dry_run;
         $this->valid = $valid;
         $this->change_list = $change_list;
         $this->conflict = $conflict;
@@ -27,6 +32,9 @@ class Paper_API_Status implements JsonSerializable {
         }
         if ($this->pid !== null) {
             $u["pid"] = $this->pid;
+        }
+        if ($this->dry_run) {
+            $u["dry_run"] = true;
         }
         return $u;
     }
@@ -374,7 +382,7 @@ class Paper_API extends MessageSet {
             $this->papers[] = null;
         }
         $this->status_list[] = new Paper_API_Status(
-            $ok, $ps->change_list(true),
+            $this->dry_run, $ok, $ps->change_list(true),
             $ps->has_error_at("if_unmodified_since"),
             $ps->saved_pid() ?? "new"
         );
@@ -389,7 +397,7 @@ class Paper_API extends MessageSet {
     }
 
     private function execute_fail() {
-        $this->status_list[] = new Paper_API_Status;
+        $this->status_list[] = new Paper_API_Status($this->dry_run);
         $this->papers[] = null;
     }
 
@@ -401,9 +409,6 @@ class Paper_API extends MessageSet {
             "ok" => $ok,
             "message_list" => $this->message_list()
         ]);
-        if ($this->dry_run) {
-            $jr->content["dry_run"] = true;
-        }
         if ($this->single) {
             foreach ($this->status_list[0]->jsonSerialize() as $k => $v) {
                 $jr->content[$k] = $v;
@@ -412,6 +417,9 @@ class Paper_API extends MessageSet {
                 $jr->content["paper"] = $this->papers[0];
             }
         } else {
+            if ($this->dry_run) { // XXX backward compat, use the ones in `status_list`
+                $jr->content["dry_run"] = true;
+            }
             $jr->content["status_list"] = $this->status_list;
             if (!$this->dry_run) {
                 $jr->content["papers"] = $this->papers;
@@ -506,7 +514,7 @@ class Paper_API extends MessageSet {
             }
             $valid = $prow->delete_from_database($this->user);
         }
-        $this->status_list[] = new Paper_API_Status($valid, ["delete"], $conflict, $prow->paperId);
+        $this->status_list[] = new Paper_API_Status($this->dry_run, $valid, ["delete"], $conflict, $prow->paperId);
         $this->papers[] = null;
         return $this->post_result();
     }

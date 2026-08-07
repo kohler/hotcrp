@@ -598,10 +598,23 @@ class MessageSet {
     }
     /** @param int $msgcount
      * @return bool */
+    function has_problem_since($msgcount) {
+        if ($this->has_problem()) {
+            for (; isset($this->msgs[$msgcount]); ++$msgcount) {
+                if ($this->msgs[$msgcount]->status >= self::WARNING)
+                    return true;
+            }
+        }
+        return false;
+    }
+    /** @param int $msgcount
+     * @return bool */
     function has_error_since($msgcount) {
-        for (; isset($this->msgs[$msgcount]); ++$msgcount) {
-            if ($this->msgs[$msgcount]->status >= self::ERROR)
-                return true;
+        if ($this->has_error()) {
+            for (; isset($this->msgs[$msgcount]); ++$msgcount) {
+                if ($this->msgs[$msgcount]->status >= self::ERROR)
+                    return true;
+            }
         }
         return false;
     }
