@@ -507,6 +507,17 @@
                     null
                 ]
             },
+            "dry_run_mode": {
+                "oneOf": [
+                    {"type": "boolean"},
+                    {"type": "string", "enum": ["if_warning"]}
+                ],
+                "description": "Boolean, or `if_warning` to make the dry run conditional on warnings",
+                "examples": [
+                    1,
+                    "if_warning"
+                ]
+            },
             "pid": {
                 "type": "integer",
                 "description": "Submission ID",
@@ -1096,6 +1107,10 @@
                     "conflict": {
                         "type": "boolean",
                         "description": "True when this update was rejected by an if_unmodified_since edit-conflict check"
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "description": "True for dry-run requests that did not modify the database"
                     }
                 }
             },
@@ -1125,6 +1140,10 @@
                     "conflict": {
                         "type": "boolean",
                         "description": "True when this update was rejected by an if_unmodified_since edit-conflict check"
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "description": "True for dry-run requests that did not modify the database"
                     }
                 }
             },
@@ -1152,6 +1171,10 @@
                     "conflict": {
                         "type": "boolean",
                         "description": "True when this update was rejected by an edit-conflict check"
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "description": "True for dry-run requests that did not modify the database"
                     }
                 }
             },

@@ -81,7 +81,7 @@ web application. These conventions are subject to change, and third-party
 applications should prefer JSON.
 
 To test a modification without saving, supply a `dry_run=1` parameter. This will
-test the uploaded JSON but make no changes to the database.
+test the uploaded JSON but make no visible changes to the database.
 
 
 ## ZIP and form uploads
@@ -319,8 +319,9 @@ be applied to all papers returned by the `q` search query.
 * param reviewer
 
     * group Search modifiers
-* response ?dry_run boolean: True for `dry_run` requests.
 * response ?papers [paper]: The modified submission objects.
+
+    * condition !dry_run
 * response ?+status_list [update_status]: Per-submission results, one entry per input object.
 
     For array input, `status_list` has the same length and order as the input:

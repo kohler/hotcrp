@@ -198,7 +198,7 @@ web application. These conventions are subject to change, and third-party
 applications should prefer JSON.
 
 To test a modification without saving, supply a `dry_run=1` parameter. This will
-test the input but make no changes to the database.
+test the input but make no visible changes to the database.
 
 * param ?p pid: Submission to review. Optional when the JSON or text data
   supplies a `pid`; if both are present they must match.
@@ -400,7 +400,6 @@ particular, `if_vtag_match=0` requires that every saved review be newly created.
 
     * default true
     * badge admin
-* response ?dry_run boolean: True for `dry_run` requests.
 * response ?+status_list [review_update_status]: Per-review results, one entry per
   input object (same length and order as the input). Entry *i* reports `valid`,
   `change_list` (beginning with `"new"` for a created review), the submission’s
