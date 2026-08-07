@@ -344,10 +344,9 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         foreach ($this->_headers ?? [] as $h) {
             Navigation::header($h);
         }
+        $pprint = $this->pretty_print ?? true;
         if ($qreq && isset($qreq->pretty)) {
-            $pprint = friendly_boolean($qreq->pretty);
-        } else {
-            $pprint = $this->pretty_print ?? true;
+            $pprint = friendly_boolean($qreq->pretty) ?? $pprint;
         }
         echo json_encode_browser($this->content, ($pprint ? JSON_PRETTY_PRINT : 0) | JSON_UNESCAPED_SLASHES), "\n";
     }

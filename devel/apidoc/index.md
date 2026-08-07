@@ -103,6 +103,11 @@ submissions to search), and the modifiers `qt`, `sort`, `scoresort`, and
 [`/assign`](#post-assign). See [Search](#tag-search) for the search-string
 syntax and the full meaning of each parameter.
 
+**`pretty`**: HotCRP APIs generally pretty-print JSON results, unless (as for
+[`/graphdata`](#get-graphdata)) pretty-printing would overly expand the result.
+Set `pretty=0` to turn off pretty printing or `pretty=1` to explicitly request
+it.
+
 
 ## Message lists
 

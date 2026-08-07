@@ -18,6 +18,7 @@ class GraphData_API {
         if ($fg->has_error()) {
             return new JsonResult(["ok" => false, "message_list" => $fg->message_list()]);
         }
-        return $fg->graph_json(["ok" => true]);
+        return new JsonResult($fg->graph_json(["ok" => true, "message_list" => $fg->message_list()]))
+            ->set_pretty_print(false);
     }
 }
