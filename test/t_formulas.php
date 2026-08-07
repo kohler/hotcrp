@@ -889,20 +889,24 @@ class Formulas_Tester {
         foreach (["dot", "dots", "dotplot"] as $s) {
             xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::DOT, $s]);
         }
-        foreach (["numdot", "numdots", "numdotplot"] as $s) {
-            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::NUMDOT, $s]);
+        foreach (["ldot", "ldots", "ldotplot", "dotlabel", "dotlabels",
+                  "dotlabelplot", "numdot", "numdots", "numdotplot"] as $s) {
+            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::LDOT, $s]);
         }
-        // `numdot` is a distinct type, but shares DOT's bit so that everything
+        // `ldot` is a distinct type, but shares DOT's bit so that everything
         // keyed on DOT (highlighting, for one) applies to it too
-        xassert_neqq(FormulaGraph::NUMDOT, FormulaGraph::DOT);
-        xassert(FormulaGraph::NUMDOT & FormulaGraph::DOT);
-        xassert_eqq(FormulaGraph::NUMDOT & (FormulaGraph::CDF | FormulaGraph::BARCHART | FormulaGraph::BOXPLOT | FormulaGraph::SCATTER), 0);
+        xassert_neqq(FormulaGraph::LDOT, FormulaGraph::DOT);
+        xassert(FormulaGraph::LDOT & FormulaGraph::DOT);
+        xassert_eqq(FormulaGraph::LDOT & (FormulaGraph::CDF | FormulaGraph::BARCHART | FormulaGraph::BOXPLOT | FormulaGraph::SCATTER), 0);
+        xassert_eqq(FormulaGraph::graph_type_prefix("ldotty"), null);
         xassert_eqq(FormulaGraph::graph_type_prefix("numdotty"), null);
     }
 
-    function test_graph_numdot() {
-        // `numdot` plots like `dot`; the JS labels each dot with its pid
-        foreach ([["dot", "dot"], ["numdot", "numdot"], ["numdots", "numdot"]] as $st) {
+    function test_graph_ldot() {
+        // `ldot` plots like `dot`; the JS labels each dot with its pid.
+        // `numdot` is the old spelling and still works
+        foreach ([["dot", "dot"], ["ldot", "ldot"], ["ldots", "ldot"],
+                  ["dotlabel", "ldot"], ["numdot", "ldot"]] as $st) {
             $fg = new FormulaGraph($this->u_chair, $st[0], "pid", "pid");
             $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
             $j = $fg->graph_json([]);
@@ -914,9 +918,9 @@ class Formulas_Tester {
         }
 
         // the type may also arrive as a prefix on the Y axis formula
-        $fg = new FormulaGraph($this->u_chair, null, "pid", "numdot pid");
+        $fg = new FormulaGraph($this->u_chair, null, "pid", "ldot pid");
         $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
-        xassert_eqq($fg->graph_json([])["type"], "numdot");
+        xassert_eqq($fg->graph_json([])["type"], "ldot");
         xassert_eqq($fg->fy->expression, "pid");
     }
 

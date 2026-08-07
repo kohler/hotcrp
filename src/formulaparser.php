@@ -810,9 +810,12 @@ class FormulaParser {
             }
             $this->formula->fexpr_lerror($fe, "<0>Circular reference in formula");
             $this->formula->lerrors[] = MessageItem::error_at("circular_reference");
-        } else if ((string) $this->str === "") {
+            return $fe;
+        }
+        $s = (string) $this->str;
+        if (trim($s) === "") {
             $fe = Fexpr::cerror();
-            $fe->apply_strspan(0, 0, $this->string_context);
+            $fe->apply_strspan(0, strlen($this->str), $this->string_context);
             $this->formula->fexpr_lerror($fe, "<0>Empty formula");
         } else {
             $fe = $this->_parse_ternary(false)

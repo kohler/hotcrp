@@ -338,7 +338,10 @@ function draw_axes(svg, xAxis, yAxis, args) {
             .attr("y", args.marginBottom - 3)
             .attr("text-anchor", "end")
             .attr("pointer-events", "none")
-            .text(`${args.x.label} →`);
+            .text(args.x.label)
+            .append("tspan")
+            .attr("class", "arrow")
+            .text(" →");
     }
     xaxe.select(".domain").each(function () {
         const d = this.getAttribute("d");
@@ -357,13 +360,19 @@ function draw_axes(svg, xAxis, yAxis, args) {
         .attr("fill", null)
         .call(make_rotate_ticks(args.y.tickRotation));
     if (args.y.label) {
+        const uparrow = d3.create("svg:tspan")
+            .attr("class", "arrow")
+            .text("↑ ");
         yaxe.append("text")
             .attr("class", "label")
             .attr("x", -args.marginLeft)
             .attr("y", -14)
             .attr("text-anchor", "start")
             .attr("pointer-events", "none")
-            .text(`↑ ${args.y.label}`);
+            .text(args.y.label)
+            .each(function () {
+                this.insertBefore(uparrow.node(), this.firstChild);
+            });
     }
     yaxe.select(".domain").remove();
     /*args.y.axisinfo.discrete && yaxe.select(".domain").each(function () {
@@ -867,16 +876,18 @@ function graph_cdf(element, args) {
     draw_axes(svg, axes[0], axes[1], args);
     draw_annotations(svg, args);
 
-    svg.append("rect")
-        .attr("x", -args.marginLeft)
-        .attr("width", args.plotWidth + args.marginLeft)
-        .attr("height", args.plotHeight + args.marginBottom)
-        .attr("fill", "none")
-        .attr("pointer-events", "all")
-        .on("mouseover", mousemoved)
-        .on("mousemove", mousemoved)
-        .on("mouseout", mouseout)
-        .on("click", mouseclick);
+    if (args.interactive !== false) {
+        svg.append("rect")
+            .attr("x", -args.marginLeft)
+            .attr("width", args.plotWidth + args.marginLeft)
+            .attr("height", args.plotHeight + args.marginBottom)
+            .attr("fill", "none")
+            .attr("pointer-events", "all")
+            .on("mouseover", mousemoved)
+            .on("mousemove", mousemoved)
+            .on("mouseout", mouseout)
+            .on("click", mouseclick);
+    }
 
     var hovered_path, hovered_series, hubble;
     function mousemoved(event) {
@@ -1133,7 +1144,7 @@ function ungroup_data(data) {
         return data;
     }
     for (const style in data) {
-        if (style) {
+        if (style && style !== "none") {
             data[style].forEach(d => d.push(style));
         }
     }
@@ -1144,15 +1155,15 @@ function remap_scatter_data(data, rv, map) {
     if (!rv.x || !rv.x.reordered || rv.x.axisinfo.type !== "ordinal") {
         return;
     }
-    var ov2ok = {}, k;
-    for (k in map) {
+    const ov2ok = {};
+    for (let k in map) {
         if (typeof map[k] === "string")
             ov2ok[map[k]] = +k;
         else
             ov2ok[map[k].id] = +k;
     }
-    var ik2ok = {}, inmap = rv.x.axisinfo.range;
-    for (k in inmap) {
+    const ik2ok = {}, inmap = rv.x.axisinfo.range;
+    for (let k in inmap) {
         if (typeof inmap[k] === "string") {
             if (ov2ok[inmap[k]] != null)
                 ik2ok[k] = ov2ok[inmap[k]];
@@ -1161,9 +1172,9 @@ function remap_scatter_data(data, rv, map) {
                 ik2ok[k] = ov2ok[inmap[k].id];
         }
     }
-    var n = data.length;
-    for (var i = 0; i !== n; ) {
-        var x = ik2ok[data[i][0]];
+    let n = data.length;
+    for (let i = 0; i !== n; ) {
+        let x = ik2ok[data[i][0]];
         if (x != null) {
             data[i][0] = x;
             ++i;
@@ -1329,16 +1340,18 @@ function graph_scatter(element, args) {
     draw_axes(svg, axes[0], axes[1], args);
     draw_annotations(svg, args);
 
-    svg.append("rect")
-        .attr("x", -args.marginLeft)
-        .attr("width", args.plotWidth + args.marginLeft)
-        .attr("height", args.plotHeight + args.marginBottom)
-        .attr("fill", "none")
-        .attr("pointer-events", "all")
-        .on("mouseover", mousemoved)
-        .on("mousemove", mousemoved)
-        .on("mouseout", hoverer.mouseout_soon)
-        .on("click", mouseclick);
+    if (args.interactive !== false) {
+        svg.append("rect")
+            .attr("x", -args.marginLeft)
+            .attr("width", args.plotWidth + args.marginLeft)
+            .attr("height", args.plotHeight + args.marginBottom)
+            .attr("fill", "none")
+            .attr("pointer-events", "all")
+            .on("mouseover", mousemoved)
+            .on("mousemove", mousemoved)
+            .on("mouseout", hoverer.mouseout_soon)
+            .on("click", mouseclick);
+    }
 
     function make_tooltip(p) {
         const pinstance = p.data[0];
@@ -1463,8 +1476,8 @@ function graph_dot(element, args) {
         const xv = x(d[0]), yv = y(d[1]);
         return {"0": d[0], "1": d[1], x: xv, x0: xv, y: yv, y0: yv, id: d[2], cc: d[3], r: DOT_RADIUS};
     });
-    const numbered = args.type === "numdot";
-    if (numbered) {
+    const labeled = args.type === "ldot";
+    if (labeled) {
         assign_dot_labels(svg, data);
     }
 
@@ -1486,13 +1499,13 @@ function graph_dot(element, args) {
     draw_axes(svg, axes[0], axes[1], args);
     draw_annotations(svg, args);
 
-    // A numbered dot is two elements sharing one position, so group them and
+    // A labeled dot is two elements sharing one position, so group them and
     // place the group; a plain dot is just the circle and needs no wrapper.
-    const enter = svg.selectAll(numbered ? ".gdot-g" : ".gdot:not(.gdot-hover)")
+    const enter = svg.selectAll(labeled ? ".gdot-g" : ".gdot:not(.gdot-hover)")
         .data(data)
         .enter();
     let target;
-    if (numbered) {
+    if (labeled) {
         target = enter.append("g")
             .attr("class", d => "gdot-g" + (d.cc ? " " + d.cc : ""))
             .attr("transform", d => "translate(" + projx(d) + "," + projy(d) + ")");
@@ -1512,9 +1525,11 @@ function graph_dot(element, args) {
             .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
             .style("fill", d => ensure_pattern(d.cc, "gdot"));
     }
-    target.on("mouseover", mouseover)
-        .on("mouseout", hoverer.mouseout_soon)
-        .on("click", mouseclick);
+    if (args.interactive !== false) {
+        target.on("mouseover", mouseover)
+            .on("mouseout", hoverer.mouseout_soon)
+            .on("click", mouseclick);
+    }
 
     let titles = null, hovering = null;
 
@@ -1622,7 +1637,7 @@ function data_to_barchart(data, yaxis) {
             sx: d[4]
         };
         ndata.push(cur);
-        if (last && cur[0] == last[0] && cur.sx == last.sx) {
+        if (last && cur[0] == last[0] && (cur.sx == last.sx || yaxis.fraction)) {
             cur.yoff = last.yoff + last[1];
             cur.i0 = last.i0;
         }
@@ -1702,10 +1717,12 @@ function graph_bars(element, args) {
             return d1.i0 === d2.i0;
         });
 
-    svg.selectAll(".gbar")
-        .on("mouseover", mouseover)
-        .on("mouseout", hoverer.mouseout_soon)
-        .on("click", mouseclick);
+    if (args.interactive !== false) {
+        svg.selectAll(".gbar")
+            .on("mouseover", mouseover)
+            .on("mouseout", hoverer.mouseout_soon)
+            .on("click", mouseclick);
+    }
 
     function make_tooltip(p) {
         return [
@@ -1724,11 +1741,19 @@ function graph_bars(element, args) {
             sx: p.sx,
             i0: p.i0
         };
-        for (let i = p.i0; i !== bdata.length && bdata[i].i0 === p.i0; ++i) {
-            const p2 = bdata[i];
-            hd[1] = p2[1] + p2.yoff;
-            for (let id of p2.ids) {
-                hd.ids.push(p2.cc ? {id: id, cc: p2.cc} : id);
+        for (let i = p.i0, any = false, q;
+             i !== bdata.length && (q = bdata[i]).i0 === p.i0;
+             ++i) {
+            if (q.sx !== p.sx) {
+                continue;
+            }
+            if (!any) {
+                hd.yoff = q.yoff;
+                any = true;
+            }
+            hd[1] = q[1] + q.yoff - hd.yoff;
+            for (let id of q.ids) {
+                hd.ids.push(q.cc ? {id: id, cc: q.cc} : id);
             }
         }
         return hd;
@@ -1926,21 +1951,23 @@ function graph_boxplot(element, args) {
 
     $(element).on("hotgraphhighlight", highlight);
 
-    element.addEventListener("mouseout", hoverer.mouseout_soon, false);
+    if (args.interactive !== false) {
+        element.addEventListener("mouseout", hoverer.mouseout_soon, false);
 
-    element.addEventListener("mouseover", function (event) {
-        if (hasClass(event.target, "outlier")
-            || hasClass(event.target, "gscatter"))
-            mouseover_outlier.call(event.target);
-        else if (hasClass(event.target, "gbox"))
-            mouseover.call(event.target);
-    }, false);
+        element.addEventListener("mouseover", function (event) {
+            if (hasClass(event.target, "outlier")
+                || hasClass(event.target, "gscatter"))
+                mouseover_outlier.call(event.target);
+            else if (hasClass(event.target, "gbox"))
+                mouseover.call(event.target);
+        }, false);
 
-    element.addEventListener("click", function (event) {
-        if (hasClass(event.target, "gbox")
-            || hasClass(event.target, "gscatter"))
-            mouseclick.call(event.target, event);
-    }, false);
+        element.addEventListener("click", function (event) {
+            if (hasClass(event.target, "gbox")
+                || hasClass(event.target, "gscatter"))
+                mouseclick.call(event.target, event);
+        }, false);
+    }
 
     function make_tooltip(p) {
         const yformat = args.y.axisinfo.render_onto,
@@ -2081,7 +2108,7 @@ const graphers = {
     procrastination: {filter: true, function: procrastination_filter},
     scatter: {function: graph_scatter},
     dot: {function: graph_dot},
-    numdot: {function: graph_dot},
+    ldot: {function: graph_dot},
     cdf: {function: graph_cdf},
     cumfreq: {function: graph_cdf},
     bar: {function: graph_bars},
@@ -2118,6 +2145,8 @@ function make_args(element, args) {
     args.y = $.extend({}, args.y || {});
     args.x.axisinfo = make_axisinfo(args.x.scale);
     args.y.axisinfo = make_axisinfo(args.y.scale);
+    // Other arguments:
+    // args.interactive: Set to false to disable pointer interaction
     return args;
 }
 

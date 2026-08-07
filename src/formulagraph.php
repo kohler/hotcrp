@@ -177,8 +177,8 @@ class FormulaGraph extends MessageSet {
     const BOXPLOT = 8;
     const DOT = 16;
     const FBARCHART = 132; // 128 | BARCHART
-    const OGIVE = 130;    // 128 | CDF
-    const NUMDOT = 144;   // 128 | DOT
+    const OGIVE = 130;     // 128 | CDF
+    const LDOT = 144;      // 128 | DOT
 
     // formula class
     const DATA_PAPER = 1;
@@ -266,7 +266,7 @@ class FormulaGraph extends MessageSet {
         } else if ($m[6]) {
             return [self::SCATTER, $m[0]];
         } else if ($m[7]) {
-            return [self::NUMDOT, $m[0]];
+            return [self::LDOT, $m[0]];
         } else if ($m[8]) {
             return [self::DOT, $m[0]];
         }
@@ -383,14 +383,14 @@ class FormulaGraph extends MessageSet {
         }
         foreach ($this->fxs as $i => $f) {
             foreach ($f->message_list() as $mi) {
-                $this->append_item($mi->with_field("fx"));
+                $this->append_item($mi->with_field("x"));
             }
             if (!$f->ok()) {
                 continue;
             }
             if ($fx_data !== 0
                 && !self::check_data_type($fx_data, $f)) {
-                $this->error_at("fx", $this->conf->_("<0>Formula incompatible with data type ‘{}’", self::unparse_data_type($fx_data)));
+                $this->error_at("x", $this->conf->_("<0>Formula incompatible with data type ‘{}’", self::unparse_data_type($fx_data)));
             }
             if ($i === 0 && $this->_fx_type === 0) {
                 $this->_fx_type = $f->format();
@@ -399,7 +399,7 @@ class FormulaGraph extends MessageSet {
                  && $this->_fx_type !== $f->format())
                 || ($this->_fx_type === Fexpr::FREVIEWFIELD
                     && $this->fxs[0]->format_detail() !== $f->format_detail())) {
-                $this->error_at("fx", "<0>X axis formulas must all use the same units");
+                $this->error_at("x", "<0>X axis formulas must all use the same units");
                 $this->_fx_type = 0;
             }
         }
@@ -408,12 +408,12 @@ class FormulaGraph extends MessageSet {
         // Y axis expression
         $this->fy = Formula::make_indexed($this->user, $fy);
         foreach ($this->fy->message_list() as $mi) {
-            $this->append_item($mi->with_field("fy"));
+            $this->append_item($mi->with_field("y"));
         }
         if ($this->fy->ok()
             && $fy_data !== 0
             && !self::check_data_type($fy_data, $this->fy)) {
-            $this->error_at("fy", $this->conf->_("<0>Formula incompatible with data type ‘{}’", self::unparse_data_type($fy_data)));
+            $this->error_at("y", $this->conf->_("<0>Formula incompatible with data type ‘{}’", self::unparse_data_type($fy_data)));
         }
 
         // infer data type
@@ -437,7 +437,7 @@ class FormulaGraph extends MessageSet {
         // check types
         if (($this->type & self::CDF) !== 0
             && $this->_fx_type === Fexpr::FTAG) {
-            $this->error_at("fy", "<0>CDFs by tag don’t make sense");
+            $this->error_at("y", "<0>CDFs by tag don’t make sense");
         }
 
         if ($this->_fx_combine
@@ -445,8 +445,8 @@ class FormulaGraph extends MessageSet {
             if ($this->fy->format() === Fexpr::FBOOL) {
                 $this->fy = Formula::make_indexed($this->user, "sum({$fy})");
             } else if (!$this->fy->support_combiner()) {
-                $this->error_at("fy", "<0>Y axis formula cannot be used for this chart");
-                $this->inform_at("fy", "<0>Try an aggregate function like ‘sum({$fy})’.");
+                $this->error_at("y", "<0>Y axis formula cannot be used for this chart");
+                $this->inform_at("y", "<0>Try an aggregate function like ‘sum({$fy})’.");
                 $this->fy = Formula::make_indexed($this->user, "sum(0)");
             }
         }
@@ -830,6 +830,9 @@ class FormulaGraph extends MessageSet {
                 } else {
                     $s = $ps;
                 }
+                if ($s === "") {
+                    $s = "none";
+                }
                 if ($this->_fx_type === Fexpr::FSEARCH) {
                     $xs = $this->_filter_queries($prow, $rrow);
                 } else if ($this->_fx_type === Fexpr::FTAG) {
@@ -963,9 +966,7 @@ class FormulaGraph extends MessageSet {
 
     private function _valuemap_axes($format) {
         $axes = 0;
-        if ((!$this->_fx_type && !$format)
-            || ($this->_fx_type === Fexpr::FTAG && $format === Fexpr::FTAG)
-            || ($this->_fx_type === Fexpr::FREVIEWER && $format === Fexpr::FREVIEWER)) {
+        if ($format ? $this->_fx_type === $format : !$this->_fx_type) {
             $axes |= 1;
         }
         if (($this->type & self::CDF) === 0
@@ -1044,8 +1045,9 @@ class FormulaGraph extends MessageSet {
 
     private function _revround_reformat() {
         if (!($axes = $this->_valuemap_axes(Fexpr::FROUND))
-            || !($rs = $this->_valuemap_collect($axes)))
+            || !($rs = $this->_valuemap_collect($axes))) {
             return;
+        }
         $i = 0;
         $m = [];
         foreach ($this->conf->defined_rounds() as $n => $rname) {
@@ -1313,7 +1315,7 @@ class FormulaGraph extends MessageSet {
         $tj = [
             self::SCATTER => "scatter",
             self::DOT => "dot",
-            self::NUMDOT => "numdot",
+            self::LDOT => "ldot",
             self::CDF => "cdf",
             self::OGIVE => "cumfreq",
             self::BARCHART => "bar",
@@ -1339,9 +1341,9 @@ class FormulaGraph extends MessageSet {
     function decorated_message_list() {
         $mis = [];
         foreach ($this->message_list() as $mi) {
-            if ($mi->field === "fx") {
+            if ($mi->field === "x") {
                 $mi = $mi->with_prefix("X axis: ");
-            } else if ($mi->field === "fy") {
+            } else if ($mi->field === "y") {
                 $mi = $mi->with_prefix("Y axis: ");
             } else if ($mi->field === "xorder") {
                 $mi = $mi->with_prefix("Order: ");

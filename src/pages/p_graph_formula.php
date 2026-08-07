@@ -97,16 +97,16 @@ class Graph_Formula_Page {
 
         // X axis
         echo '<div class="f-mcol">',
-            '<div class="', $fgm->control_class("fx", "f-i maxw-480"), '">',
+            '<div class="', $fgm->control_class("x", "f-i maxw-480"), '">',
             '<label for="x_entry">X axis</label>',
-            $fgm->feedback_html_at("fx"),
+            $fgm->feedback_html_at("x"),
             Ht::entry("x", (string) $this->qreq->x, ["id" => "x_entry", "size" => 32, "class" => "w-99", "spellcheck" => false]),
             '<div class="f-d">', $this->conf->hotlink("Formula", "help", ["t" => "formulas"]), ' or “search”</div>',
             '</div>';
         // Y axis
-        echo '<div class="', $fgm->control_class("fy", "f-i maxw-480"), '">',
+        echo '<div class="', $fgm->control_class("y", "f-i maxw-480"), '">',
             '<label for="y_entry">Y axis</label>',
-            $fgm->feedback_html_at("fy"),
+            $fgm->feedback_html_at("y"),
             Ht::entry("y", (string) $this->qreq->y, ["id" => "y_entry", "size" => 32, "class" => "w-99", "spellcheck" => false]),
             '<div class="f-d">', $this->conf->hotlink("Formula", "help", ["t" => "formulas"]), ' or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</div>',
             '</div>',
