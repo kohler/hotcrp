@@ -326,7 +326,7 @@ class FormulaParser {
      * @return ?Fexpr */
     private function _reviewer_base($t) {
         $t = strtolower($t);
-        if (preg_match('/\A(?:r|re|rev|review)type\z/i', $t)) {
+        if (preg_match('/\A(?:|r|re|rev|review)type\z/i', $t)) {
             return Revtype_Fexpr::make($this->user);
         } else if (preg_match('/\A(?:|r|re|rev|review)round\z/i', $t)) {
             return ReviewRound_Fexpr::make($this->user);
