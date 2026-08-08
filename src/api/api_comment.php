@@ -808,17 +808,21 @@ class Comment_API extends MessageSet {
         $aunames = $mentions = [];
         $mentions_missing = $mentions_censored = false;
         foreach ($xcrow->notifications ?? [] as $n) {
-            if ($n->has(NotificationInfo::CONTACT | NotificationInfo::SENT)) {
+            if ($n->is_all(NotificationInfo::CONTACT | NotificationInfo::SENT)) {
                 $aunames[] = $n->user->name_h(NAME_EB);
             }
-            if ($n->has(NotificationInfo::MENTION)) {
-                if ($n->sent()) {
-                    $mentions[] = $n->user_html ?? $suser->reviewer_html_for($n->user);
+            if ($n->is(NotificationInfo::MENTION)) {
+                if ($n->is(NotificationInfo::SENT | NotificationInfo::PRETEND_SENT)) {
+                    if ($n->text !== null) {
+                        $mentions[] = htmlspecialchars($n->text);
+                    } else {
+                        $mentions[] = $suser->reviewer_html_for($n->user);
+                    }
                 } else if ($xcrow->timeNotified === $xcrow->timeModified) {
                     $mentions_missing = true;
                 }
             }
-            if ($n->has(NotificationInfo::CENSORED)) {
+            if ($n->is(NotificationInfo::CENSORED)) {
                 $mentions_censored = true;
             }
         }
@@ -830,13 +834,13 @@ class Comment_API extends MessageSet {
             }
         }
         if ($mentions) {
-            $this->success($this->conf->_("<5>Notified mentioned users {:nblist}", $mentions));
+            $this->success($this->conf->_("<5>Mentioned users {:nblist}", $mentions));
         }
         if ($mentions_missing) {
             $this->append_item(MessageItem::warning_note($this->conf->_("<0>Some mentioned users cannot currently see this comment, so they were not notified.")));
         }
         if ($mentions_censored) {
-            $this->append_item(MessageItem::warning_note($this->conf->_("<0>Some notifications were censored to anonymize mentioned users.")));
+            $this->append_item(MessageItem::warning_note($this->conf->_("<0>Mentioned names will be anonymized for some readers.")));
         }
         return $xcrow;
     }

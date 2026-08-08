@@ -1307,6 +1307,30 @@ class Comments_Tester {
         return null;
     }
 
+    /** @param list<object> $message_list
+     * @param string $substr
+     * @return bool */
+    static private function has_message($message_list, $substr) {
+        foreach ($message_list as $mi) {
+            if (strpos($mi->message, $substr) !== false)
+                return true;
+        }
+        return false;
+    }
+
+    /** Count the mails queued so far addressed to `$email`.
+     * @param string $email
+     * @return int */
+    private function mail_count_to($email) {
+        $u = $this->conf->checked_user_by_email($email);
+        $n = 0;
+        foreach (MailChecker::$preps as $prep) {
+            if ($prep->has_recipient($u))
+                ++$n;
+        }
+        return $n;
+    }
+
     /** @return int */
     private function ncomments($pid) {
         return $this->conf->fetch_ivalue("select count(*) from PaperComment where paperId=?", $pid);
@@ -1414,6 +1438,117 @@ class Comments_Tester {
             $j = call_api("=comment", $this->u_chair, ["c" => (string) $c, "delete" => 1], $paper1);
             xassert($j->ok);
         }
+        xassert_eqq($this->ncomments(1), $before);
+
+        $this->conf->save_refresh_setting("viewrev", null);
+        MailChecker::clear();
+    }
+
+    // The mention warning must not become an oracle for facts the commenter
+    // cannot otherwise learn. A conflicted PC member cannot see any comment on
+    // the submission, so warning about them would tell any PC member whether an
+    // arbitrary other PC member is conflicted -- which `sub_pcconfvis` hides.
+    // Such a mention is therefore reported exactly like a mention that was
+    // really notified, and the save proceeds.
+    function test_comment_mention_conflict_not_an_oracle() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);
+        xassert_eqq($this->conf->setting("viewrev"), null);
+        $pccv0 = $this->conf->setting("sub_pcconfvis");
+        // `viewrev=always` makes mention visibility depend on conflict alone
+        $this->conf->save_refresh_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        MailChecker::clear();
+        $before = $this->ncomments(1);
+
+        $mjh = $this->conf->checked_user_by_email("mjh@isi.edu");
+        xassert($paper1->has_conflict($mjh));
+        $diot = $this->conf->checked_user_by_email("christophe.diot@sophia.inria.fr");
+        xassert(!$paper1->has_conflict($diot));
+
+        // hide PC conflicts, so mgbaker may not learn that mjh is conflicted
+        $this->conf->save_refresh_setting("sub_pcconfvis", 1);
+        $mgbaker = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert(!$mgbaker->can_view_conflicts($paper1));
+        xassert(!$mjh->can_view_comment($paper1, new CommentInfo($paper1)));
+
+        // the unviewable mention and the viewable one are indistinguishable:
+        // both commit under `if_warning`, neither warns, both are reported
+        $cids = [];
+        foreach (["@Mark Handley", "@Christophe Diot"] as $mention) {
+            $j = call_api("=comment", $mgbaker,
+                ["c" => "new", "text" => "Hello {$mention}", "visibility" => "rev",
+                 "dry_run" => "if_warning"], $paper1);
+            xassert($j->ok);
+            xassert(!($j->dry_run ?? false));
+            xassert_eqq(self::find_warning($j->message_list ?? []), null);
+            xassert(isset($j->comment));
+            xassert(self::has_message($j->message_list ?? [], "Mentioned users"));
+            $cids[] = (int) $j->comment->cid;
+        }
+        xassert_eqq($this->ncomments(1), $before + 2);
+
+        // only the mention that could see the comment was actually notified
+        xassert_eqq($this->mail_count_to("mjh@isi.edu"), 0);
+        xassert_eqq($this->mail_count_to("christophe.diot@sophia.inria.fr"), 1);
+
+        // where the commenter may see conflicts, the warning is allowed, and
+        // `if_warning` withholds the save as usual
+        $this->conf->save_refresh_setting("sub_pcconfvis", 2);
+        $mgbaker = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($mgbaker->can_view_conflicts($paper1));
+        $j = call_api("=comment", $mgbaker,
+            ["c" => "new", "text" => "Hello @Mark Handley", "visibility" => "rev",
+             "dry_run" => "if_warning"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->dry_run ?? false, true);
+        $mi = self::find_warning($j->message_list ?? []);
+        xassert(!!$mi);
+        $mi && xassert_str_contains($mi->message, "cannot currently see");
+        xassert(!isset($j->comment));
+        xassert_eqq($this->ncomments(1), $before + 2);
+
+        foreach ($cids as $c) {
+            $j = call_api("=comment", $mgbaker, ["c" => (string) $c, "delete" => 1], $paper1);
+            xassert($j->ok);
+        }
+        xassert_eqq($this->ncomments(1), $before);
+
+        $this->conf->save_refresh_setting("viewrev", null);
+        $this->conf->save_refresh_setting("sub_pcconfvis", $pccv0);
+        MailChecker::clear();
+    }
+
+    // A mention typed anonymously is echoed back anonymously, even when the
+    // commenter could resolve the identity themselves: the confirmation repeats
+    // the phrase the commenter used rather than resolving it for them.
+    function test_comment_mention_pseudonym_echo() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);
+        xassert_eqq($this->conf->setting("viewrev"), null);
+        $this->conf->save_refresh_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        MailChecker::clear();
+        $before = $this->ncomments(1);
+
+        $rrow = $paper1->review_by_user($this->u_mgbaker);
+        xassert(!!$rrow && $rrow->reviewOrdinal > 0);
+        $pseudonym = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+        // the chair can see that {$pseudonym} is mgbaker, but asked anonymously
+        xassert($this->u_chair->can_view_review_identity($paper1, $rrow));
+
+        $j = call_api("=comment", $this->u_chair,
+            ["c" => "new", "text" => "Hello @{$pseudonym}", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        xassert(isset($j->comment));
+        $cid = (int) $j->comment->cid;
+        xassert(self::has_message($j->message_list ?? [], $pseudonym));
+        xassert(!self::has_message($j->message_list ?? [], "Baker"));
+
+        // mgbaker is both the mentionee and a paper-1 reviewer, but is notified
+        // just once
+        xassert_eqq($this->mail_count_to("mgbaker@cs.stanford.edu"), 1);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper1);
+        xassert($j->ok);
         xassert_eqq($this->ncomments(1), $before);
 
         $this->conf->save_refresh_setting("viewrev", null);

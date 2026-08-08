@@ -8,13 +8,15 @@ class NotificationInfo {
     /** @var int */
     public $flags = 0;
     /** @var ?string */
-    public $user_html;
+    public $text;
 
     const CONTACT = 1;
     const FOLLOW = 2;
     const MENTION = 4;
-    const SENT = 8;
-    const CENSORED = 16;
+    const ATTEMPTED = 8;
+    const SENT = 16;
+    const PRETEND_SENT = 32;
+    const CENSORED = 64;
 
     /** @param Contact $user
      * @param int $flags */
@@ -25,11 +27,25 @@ class NotificationInfo {
 
     /** @param int $flags
      * @return bool */
-    function has($flags) {
+    function is_all($flags) {
         return ($this->flags & $flags) === $flags;
     }
 
-    /** @return bool */
+    /** @param int $flags
+     * @return bool */
+    function is($flags) {
+        return ($this->flags & $flags) !== 0;
+    }
+
+    /** @param int $flags
+     * @return bool
+     * @deprecated */
+    function has($flags) {
+        return $this->is_all($flags);
+    }
+
+    /** @return bool
+     * @deprecated */
     function sent() {
         return ($this->flags & self::SENT) !== 0;
     }

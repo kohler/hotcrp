@@ -2,50 +2,9 @@
 // mentionparser.php -- HotCRP helper class for parsing mentions
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-class MentionPhrase implements JsonSerializable {
-    /** @var Contact|Author
-     * @readonly */
-    public $user;
-    /** @var int
-     * @readonly */
-    public $pos1;
-    /** @var int
-     * @readonly */
-    public $pos2;
-
-    /** @param Contact|Author $user
-     * @param int $pos1
-     * @param int $pos2 */
-    function __construct($user, $pos1, $pos2) {
-        $this->user = $user;
-        $this->pos1 = $pos1;
-        $this->pos2 = $pos2;
-    }
-
-    /** @return bool */
-    function named() {
-        return $this->user instanceof Contact
-            || $this->user->status !== Author::STATUS_ANONYMOUS_REVIEWER;
-    }
-
-    /** @param 0|1 $sliced
-     * @return ?Contact */
-    function user(Conf $conf, $sliced = 0) {
-        if ($this->user instanceof Contact) {
-            return $this->user;
-        }
-        return $conf->user_by_id($this->user->contactId, $sliced);
-    }
-
-    #[\ReturnTypeWillChange]
-    function jsonSerialize() {
-        return [$this->user->contactId, $this->pos1, $this->pos2, $this->named()];
-    }
-}
-
 class PossibleMentionParse implements JsonSerializable {
-    /** @var Contact|Author */
-    public $user;
+    /** @var MentionPhrase */
+    public $mxm;
     /** @var string */
     public $text;
     /** @var int */
@@ -55,12 +14,12 @@ class PossibleMentionParse implements JsonSerializable {
     /** @var int */
     public $priority;
 
-    /** @param Contact|Author $user
+    /** @param MentionPhrase $mxm
      * @param string $text
      * @param int $breakpos
      * @param int $priority */
-    function __construct($user, $text, $breakpos, $priority) {
-        $this->user = $user;
+    function __construct($mxm, $text, $breakpos, $priority) {
+        $this->mxm = $mxm;
         $this->text = $text;
         $this->matchpos = 0;
         $this->breakpos = $breakpos;
@@ -70,9 +29,10 @@ class PossibleMentionParse implements JsonSerializable {
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = [];
+        $u = $this->mxm->user;
         foreach (["email", "firstName", "lastName"] as $k) {
-            if ($this->user->$k)
-                $j[$k] = $this->user->$k;
+            if ($u->$k !== "")
+                $j[$k] = $u->$k;
         }
         return $j + ["text" => $this->text, "matchpos" => $this->matchpos, "breakpos" => $this->breakpos, "priority" => $this->priority];
     }
@@ -80,14 +40,14 @@ class PossibleMentionParse implements JsonSerializable {
 
 class MentionParser {
     /** @param string $s
-     * @param array<Contact|Author> ...$user_lists
+     * @param list<MentionPhrase> ...$mention_lists
      * @return list<MentionPhrase> */
-    static function parse($s, ...$user_lists) {
+    static function parse($s, ...$mention_lists) {
         // filter out empty user lists
-        $ulists = [];
-        foreach ($user_lists as $ulist) {
-            if (!empty($ulist)) {
-                $ulists[] = $ulist;
+        $mxmlists = [];
+        foreach ($mention_lists as $mxmlist) {
+            if (!empty($mxmlist)) {
+                $mxmlists[] = $mxmlist;
             }
         }
 
@@ -117,11 +77,11 @@ class MentionParser {
 
             // check emails
             if (($email = validate_email_at($s, $pos + 1))) {
-                foreach ($ulists as $ulist) {
-                    foreach ($ulist as $u) {
-                        if (strcasecmp($u->email, $email) === 0
+                foreach ($mxmlists as $mxmlist) {
+                    foreach ($mxmlist as $mxm) {
+                        if (strcasecmp($mxm->user->email, $email) === 0
                             && self::mention_ends_at($s, $pos + 1 + strlen($email))) {
-                            $result[] = new MentionPhrase($u, $pos, $pos + 1 + strlen($email));
+                            $result[] = $mxm->at($pos, $pos + 1 + strlen($email));
                             $pos += 1 + strlen($email);
                             continue 3;
                         }
@@ -141,8 +101,9 @@ class MentionParser {
 
             // Match the first word
             $uset = $matchuids = [];
-            foreach ($ulists as $listindex => $ulist) {
-                foreach ($ulist as $u) {
+            foreach ($mxmlists as $listindex => $mxmlist) {
+                foreach ($mxmlist as $mxm) {
+                    $u = $mxm->user;
                     if (in_array($u->contactId, $matchuids, true)) {
                         continue;
                     }
@@ -154,7 +115,7 @@ class MentionParser {
                             $fn = preg_replace('/\.\s*/', " ", $fn);
                             $n = preg_replace('/\.\s*/', " ", $n);
                         }
-                        $ux = new PossibleMentionParse($u, $n, strlen($fn === "" ? $n : $fn), $listindex);
+                        $ux = new PossibleMentionParse($mxm, $n, strlen($fn === "" ? $n : $fn), $listindex);
                         if (self::match_word($ux, $w, $collator)) {
                             $uset[] = $ux;
                             $matchuids[] = $u->contactId;
@@ -166,7 +127,7 @@ class MentionParser {
                     if ($at > 1
                         && substr_compare($s, $u->email, $pos + 1, $at, true) === 0
                         && self::mention_ends_at($s, $pos + 1 + $at)) {
-                        $uset[] = new PossibleMentionParse($u, substr($u->email, 0, $at) . " ", $at + 1, $listindex);
+                        $uset[] = new PossibleMentionParse($mxm, substr($u->email, 0, $at) . " ", $at + 1, $listindex);
                         $matchuids[] = $u->contactId;
                         continue;
                     }
@@ -178,7 +139,7 @@ class MentionParser {
             $endpos = $pos + 1 + strlen($w);
             $pos2 = $pos + 1 + strlen($m[0]);
             $best_ux = $best_pos2 = $best_endpos = null;
-            $sorted = count($ulists) === 1 || count($uset) <= 1;
+            $sorted = count($mxmlists) === 1 || count($uset) <= 1;
             while (count($uset) > 1 && self::word_at($s, $pos2, $isascii, $m)) {
                 if (!$sorted) {
                     usort($uset, function ($a, $b) {
@@ -231,7 +192,7 @@ class MentionParser {
             // Yield result if any
             if (count($uset) === 1
                 && self::mention_ends_at($s, $endpos)) {
-                $ux = $uset[0]->user;
+                $ux = $uset[0]->mxm->user;
                 // Heuristic to include the period after an initial
                 if ($endpos < $len
                     && $s[$endpos] === "."
@@ -239,7 +200,7 @@ class MentionParser {
                     && strpos($ux->firstName . $ux->lastName, substr($s, $endpos - 1, 2)) !== false) {
                     ++$endpos;
                 }
-                $result[] = new MentionPhrase($ux, $pos, $endpos);
+                $result[] = $uset[0]->mxm->at($pos, $endpos);
             }
 
             $pos = $pos2;

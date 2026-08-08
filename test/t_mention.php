@@ -6,20 +6,22 @@ class Mention_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
-    /** @var array<int,Contact> */
+    /** @var list<MentionPhrase> */
     public $pc;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->pc = $conf->pc_members();
+        foreach ($conf->pc_members() as $u) {
+            $this->pc[] = new MentionPhrase($u, MentionPhrase::TF_NAMED);
+        }
     }
 
     /** @param string $s
-     * @param array<Contact|Author> ...$user_lists
+     * @param list<MentionPhrase> ...$user_lists
      * @return list<MentionPhrase> */
     function parse_mentions($s, ...$user_lists) {
         if (empty($user_lists)) {
-            $user_lists = [$this->pc];
+            $user_lists[] = $this->pc;
         }
         return MentionParser::parse($s, ...$user_lists);
     }
@@ -115,7 +117,8 @@ class Mention_Tester {
 
     function test_priorities() {
         $user_pdanzig = $this->conf->pc_member_by_email("PETER.DANZIG@usc.edu");
-        $mpxs = $this->parse_mentions("a @Peter Danzig b @Peter c @Peter Druschel d", [$user_pdanzig], $this->pc);
+        $mxm_pdanzig = new MentionPhrase($user_pdanzig, MentionPhrase::TF_NAMED);
+        $mpxs = $this->parse_mentions("a @Peter Danzig b @Peter c @Peter Druschel d", [$mxm_pdanzig], $this->pc);
         xassert_eqq(count($mpxs), 3);
         xassert_eqq($mpxs[0]->user->email, "peter.danzig@usc.edu");
         xassert_eqq($mpxs[0]->pos1, 2);
@@ -128,7 +131,8 @@ class Mention_Tester {
         xassert_eqq($mpxs[2]->pos2, 42);
 
         $user_pdruschel = $this->conf->pc_member_by_email("pdruschel@cs.rice.edu");
-        $mpxs = $this->parse_mentions("A @PETER DANZIG B @PETER C @PETER DRUSCHEL D", [$user_pdruschel], $this->pc);
+        $mxm_pdruschel = new MentionPhrase($user_pdruschel, MentionPhrase::TF_NAMED);
+        $mpxs = $this->parse_mentions("A @PETER DANZIG B @PETER C @PETER DRUSCHEL D", [$mxm_pdruschel], $this->pc);
         xassert_eqq(count($mpxs), 3);
         xassert_eqq($mpxs[0]->user->email, "peter.danzig@usc.edu");
         xassert_eqq($mpxs[0]->pos1, 2);
@@ -143,13 +147,14 @@ class Mention_Tester {
 
     function test_name_email_prefix() {
         $user_jon = $this->conf->pc_member_by_email("jon@cs.ucl.ac.uk");
-        $mpxs = $this->parse_mentions("@Jon Crowcroft fun", [$user_jon], $this->pc);
+        $mxm_jon = new MentionPhrase($user_jon, MentionPhrase::TF_NAMED);
+        $mpxs = $this->parse_mentions("@Jon Crowcroft fun", [$mxm_jon], $this->pc);
         xassert_eqq(count($mpxs), 1);
         xassert_eqq($mpxs[0]->user->email, "jon@cs.ucl.ac.uk");
         xassert_eqq($mpxs[0]->pos1, 0);
         xassert_eqq($mpxs[0]->pos2, 14);
 
-        $mpxs = $this->parse_mentions("@pdruschel HELLO", [$user_jon], $this->pc);
+        $mpxs = $this->parse_mentions("@pdruschel HELLO", [$mxm_jon], $this->pc);
         xassert_eqq(count($mpxs), 1);
         xassert_eqq($mpxs[0]->user->email, "pdruschel@cs.rice.edu");
         xassert_eqq($mpxs[0]->pos1, 0);

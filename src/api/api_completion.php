@@ -302,25 +302,4 @@ class Completion_API {
             "fields" => $fs
         ];
     }
-
-    const MENTION_PARSE = 0;
-    const MENTION_COMPLETION = 1;
-
-    /** @param Contact $user
-     * @param ?PaperInfo $prow
-     * @param int $cvis
-     * @param 0|1 $reason
-     * @return list<list<Contact|Author>>
-     * @deprecated */
-    static function mention_lists($user, $prow, $cvis, $reason) {
-        $mlister = new MentionLister($user, $prow, $cvis, $reason);
-        return $mlister->list_values();
-    }
-
-    /** @param Qrequest $qreq
-     * @param ?PaperInfo $prow
-     * @deprecated */
-    static function mentioncompletion_api(Contact $user, $qreq, $prow) {
-        return MentionLister::mentioncompletion_api($user, $qreq, $prow);
-    }
 }

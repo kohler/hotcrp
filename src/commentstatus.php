@@ -230,9 +230,13 @@ final class CommentStatus extends MessageSet {
         foreach ($this->_desired_mentions as $mxm) {
             if (($mentionee = $mxm->user($this->conf, USER_SLICE))
                 && !$mentionee->is_dormant()
-                && !$mentionee->can_view_comment($crow->prow, $crow)) {
+                && !$mentionee->can_view_comment($crow->prow, $crow)
+                && $mxm->is_notification_viewable($this->viewer, $crow)) {
                 $this->warning_at(null, "<0>Some mentioned users cannot currently see this comment");
-                return;
+                if (($crow->commentType & CommentInfo::CT_TOPIC_PAPER) === 0) {
+                    $this->inform_at("thread", "<0>Should the comment be on the submission thread instead?");
+                }
+                break;
             }
         }
     }

@@ -426,6 +426,7 @@ src/mailsender.php
 src/meetingtracker.php
 src/mentionlister.php
 src/mentionparser.php
+src/mentionphrase.php
 src/multiconference.php
 src/namedformula.php
 src/notificationinfo.php

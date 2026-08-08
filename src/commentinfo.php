@@ -393,6 +393,27 @@ class CommentInfo {
     }
 
     /** @param ?ContactPermissions $viewer
+     * @return bool */
+    function content_censored($viewer) {
+        if (!$viewer
+            || !($mns = $this->data("mentions"))
+            || !is_array($mns)) {
+            return false;
+        }
+        $ret = false;
+        if ($this->_mention_censorable($viewer)) {
+            foreach ($mns as $mn) {
+                if ($this->_mention_censor($viewer, $mn, PHP_INT_MAX)) {
+                    $ret = true;
+                    break;
+                }
+            }
+        }
+        $this->_recently_censorable = null;
+        return $ret;
+    }
+
+    /** @param ?ContactPermissions $viewer
      * @param ?int $censor_until
      * @return string */
     function content($viewer = null, $censor_until = null) {
@@ -400,18 +421,19 @@ class CommentInfo {
         if ($t === ""
             || !$viewer
             || !($mns = $this->data("mentions"))
-            || !is_array($mns)
-            || !$this->_mention_censorable($viewer)) {
+            || !is_array($mns)) {
             return $t;
         }
-        $delta = 0;
-        $censor_until = $censor_until ?? PHP_INT_MAX;
-        foreach ($mns as $mn) {
-            if ($this->_mention_censor($viewer, $mn, $censor_until - $delta)) {
-                $r = $this->_mention_pseudonym($viewer, $mn[0]);
-                $t = substr_replace($t, $r, $mn[1] + $delta, $mn[2] - $mn[1]);
-                $delta += strlen($r) - ($mn[2] - $mn[1]);
-                $this->_recently_censored = true;
+        if ($this->_mention_censorable($viewer)) {
+            $delta = 0;
+            $censor_until = $censor_until ?? PHP_INT_MAX;
+            foreach ($mns as $mn) {
+                if ($this->_mention_censor($viewer, $mn, $censor_until - $delta)) {
+                    $r = $this->_mention_pseudonym($viewer, $mn[0]);
+                    $t = substr_replace($t, $r, $mn[1] + $delta, $mn[2] - $mn[1]);
+                    $delta += strlen($r) - ($mn[2] - $mn[1]);
+                    $this->_recently_censored = true;
+                }
             }
         }
         $this->_recently_censorable = null;
@@ -1222,9 +1244,22 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
                 continue;
             }
             $notification = $this->notification($mentionee, NotificationInfo::MENTION);
-            if ($notification->sent()
-                || $mentionee->is_dormant()
-                || !$mentionee->can_view_comment($this->prow, $this)) {
+            if ($notification->is(NotificationInfo::ATTEMPTED)
+                || $mentionee->is_dormant()) {
+                continue;
+            }
+            $notification->flags |= NotificationInfo::ATTEMPTED;
+            if (!$mxm->named()) {
+                $n = substr($this->raw_content(), $mxm->pos1 + 1, $mxm->pos2 - $mxm->pos1 - 1);
+                $notification->text = $n;
+            }
+            if (!$mentionee->can_view_comment($this->prow, $this)) {
+                if (!$mxm->is_notification_viewable($user, $this)) {
+                    $notification->flags |= NotificationInfo::PRETEND_SENT;
+                    if ($this->content_censored($mentionee)) {
+                        $notification->flags |= NotificationInfo::CENSORED;
+                    }
+                }
                 continue;
             }
             $this->_recently_censored = false;
@@ -1232,11 +1267,6 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
                 "prow" => $this->prow,
                 "comment_row" => $this
             ]);
-            if (!$mxm->named()
-                && !$this->prow->can_view_review_identity_of($mxm->user->contactId, $user)) {
-                $n = substr($this->raw_content(), $mxm->pos1 + 1, $mxm->pos2 - $mxm->pos1 - 1);
-                $notification->user_html = htmlspecialchars($n);
-            }
             $notification->flags |= NotificationInfo::SENT;
             if ($this->_recently_censored) {
                 $notification->flags |= NotificationInfo::CENSORED;
@@ -1300,9 +1330,10 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
             }
             $is_author = $this->prow->has_author($minic);
             $notification = $this->notification($minic, $is_author ? NotificationInfo::CONTACT : NotificationInfo::FOLLOW);
-            if ($notification->sent()) {
+            if ($notification->is(NotificationInfo::ATTEMPTED)) {
                 continue;
             }
+            $notification->flags |= NotificationInfo::ATTEMPTED;
             // prepare mail
             $this->_recently_censored = false;
             $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
