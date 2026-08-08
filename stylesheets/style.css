@@ -4646,8 +4646,7 @@ fieldset.s-sf > legend {
 	margin-top: 0.5rem;
 	margin-bottom: -0.25rem;
 }
-.document-file, .document-upload, .document-stamps,
-.document-shortformat, .document-actions {
+.document-file, .document-upload, .document-stamps, .document-actions {
 	display: inline-block;
 }
 .document-file, .document-upload {

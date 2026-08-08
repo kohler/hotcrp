@@ -7588,7 +7588,7 @@ function cmt_render_form_prop(cj, cid, btnbox) {
     const einfo = $e("div", "cmteditinfo fold3c fold4c");
 
     // attachments
-    einfo.append($e("div", {id: cid + "-attachments", class: "entryi has-editable-attachments hidden", "data-dt": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
+    einfo.append($e("div", {id: cid + "-attachments", class: "entryi has-editable-attachments", hidden: true, "data-dt": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
     btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, $svg_use_licon("attachment")));
 
     // tags
@@ -7856,10 +7856,13 @@ function cmt_start_edit(celt, cj) {
     $(form.elements.tags).val(tags.join(" ")).autogrow();
 
     if (cj.docs && cj.docs.length) {
-        const entry = $e("div", "entry");
-        $(celt).find(".has-editable-attachments").removeClass("hidden").append(entry);
-        for (i in cj.docs || [])
+        const entry = $e("div", "entry"),
+            ea = celt.querySelector(".has-editable-attachments");
+        ea.hidden = false;
+        ea.append(entry);
+        for (i in cj.docs || []) {
             entry.append(cmt_render_attachment_input(+i + 1, cj.docs[i]));
+        }
     }
 
     if (!cj.visibility || cj.blind) {
@@ -12793,11 +12796,12 @@ handle_ui.on("js-reauth", function (evt) {
 
 // paper UI
 handle_ui.on("js-check-format", function () {
-    var $self = $(this), doce = this.closest(".has-document"),
+    const doce = this.closest(".has-document"),
         $cf = $(doce).find(".document-format");
-    if (this && "tagName" in this && this.tagName === "A")
-        $self.addClass("hidden");
-    var running = setTimeout(function () {
+    if (this && "tagName" in this && this.tagName === "A") {
+        this.hidden = true;
+    }
+    let running = setTimeout(function () {
         $cf.html(feedback.render_alert([{message: "<0>Checking format (this can take a while)...", status: -4 /*MessageSet::MARKED_NOTE*/}]));
     }, 1000);
     $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
@@ -12904,23 +12908,25 @@ handle_ui.on("js-add-attachment", function () {
         ++n;
         name = attache.getAttribute("data-document-prefix") + ":" + n;
     } while (f.elements[name]);
-    if (this.id === name)
+    if (this.id === name) {
         this.removeAttribute("id");
+    }
     var filee = document.createElement("input");
     filee.type = "file";
     filee.name = name + ":file";
     filee.size = 15;
     filee.className = "uich document-uploader";
-    var cancele = $e("button", "link ui js-cancel-document", "Cancel"),
+    const cancele = $e("button", "link ui js-cancel-document", "Cancel"),
         actionse = $e("div", "document-actions", cancele);
     cancele.type = "button";
-    var max_size = attache.getAttribute("data-document-max-size"),
-        doce = $e("div", "has-document document-new-instance hidden",
+    const max_size = attache.getAttribute("data-document-max-size"),
+        doce = $e("div", {class: "has-document document-new-instance", hidden: true},
             $e("div", "document-upload", filee), actionse);
     doce.setAttribute("data-dt", attache.getAttribute("data-dt"));
     doce.setAttribute("data-document-name", name);
-    if (max_size != null)
+    if (max_size != null) {
         doce.setAttribute("data-document-max-size", max_size);
+    }
     ee.appendChild(doce);
     // this hidden_input cannot be in the document-uploader: the uploader
     // might be removed later, but we need to hold the place
@@ -12935,7 +12941,7 @@ handle_ui.on("js-replace-document", function () {
         actions = doce.querySelector(".document-actions"),
         u = doce.querySelector(".document-uploader");
     if (!actions) {
-        actions = $e("div", "document-actions hidden");
+        actions = $e("div", {class: "document-actions", hidden: true});
         doce.querySelector(".document-replacer").before(actions);
     }
     if (!u) {
@@ -12947,25 +12953,25 @@ handle_ui.on("js-replace-document", function () {
         if (doce.hasAttribute("data-document-accept")) {
             u.setAttribute("accept", doce.getAttribute("data-document-accept"));
         }
-        actions.before($e("div", "document-upload hidden", u));
+        actions.before($e("div", {class: "document-upload", hidden: true}, u));
     } else {
         $(u).trigger("hotcrp-change-document");
     }
     if (!actions.querySelector(".js-cancel-document")) {
-        actions.append($e("button", {type: "button", class: "link ui js-cancel-document hidden"}, "Cancel"));
+        actions.append($e("button", {type: "button", class: "link ui js-cancel-document", hidden: true}, "Cancel"));
     }
     u.click();
 });
 
 handle_ui.on("document-uploader", function () {
     var doce = this.closest(".has-document"), $doc = $(doce);
-    if (hasClass(doce, "document-new-instance") && hasClass(doce, "hidden")) {
-        removeClass(doce, "hidden");
-        var hea = doce.closest(".has-editable-attachments");
-        hea && removeClass(hea, "hidden");
+    if (hasClass(doce, "document-new-instance") && doce.hidden) {
+        doce.hidden = false;
+        const hea = doce.closest(".has-editable-attachments");
+        hea && (hea.hidden = false);
     } else {
-        $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").addClass("hidden");
-        $doc.find(".document-upload, .document-actions, .js-cancel-document").removeClass("hidden");
+        $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").prop("hidden", true);
+        $doc.find(".document-upload, .document-actions, .js-cancel-document").prop("hidden", false);
         $doc.find(".document-remover").remove();
         $doc.find(".js-replace-document").text("Replace");
         $doc.find(".js-remove-document").removeClass("undelete").text("Delete");
@@ -13026,7 +13032,7 @@ handle_ui.on("document-uploader", function (event) {
             return false;
         }
         remove_feedback();
-        removeClass(that, "hidden");
+        that.hidden = false;
         removeClass(that, "prevent-submit");
         delete that.hotcrpUploader;
         cancelled = true;
@@ -13120,7 +13126,7 @@ handle_ui.on("document-uploader", function (event) {
         }
     }
 
-    addClass(that, "hidden");
+    that.hidden = true;
     addClass(that, "prevent-submit");
     $(that).on("hotcrp-change-document", cancel);
     ajax({ok: true});
@@ -13135,11 +13141,12 @@ handle_ui.on("js-cancel-document", function () {
     if (hasClass(doce, "document-new-instance")) {
         var holder = doce.parentElement;
         $doc.remove();
-        if (!holder.firstChild && hasClass(holder.parentElement, "has-editable-attachments"))
-            addClass(holder.parentElement, "hidden");
+        if (!holder.firstChild && hasClass(holder.parentElement, "has-editable-attachments")) {
+            holder.parentElement.hidden = true;
+        }
     } else {
         $doc.find(".document-upload").remove();
-        $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").removeClass("hidden");
+        $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").prop("hidden", false);
         $doc.find(".document-file > del > *").unwrap();
         $doc.find(".js-replace-document").text(doce.hasAttribute("data-docid") ? "Replace" : "Upload");
         $doc.find(".js-cancel-document").remove();
@@ -13155,14 +13162,14 @@ handle_ui.on("js-remove-document", function () {
     if (hasClass(this, "undelete")) {
         $doc.find(".document-remover").val("").trigger("change").remove();
         $en.find("del > *").unwrap();
-        $doc.find(".document-stamps, .document-shortformat").removeClass("hidden");
+        $doc.find(".document-stamps").prop("hidden", false);
         $(this).removeClass("undelete").html("Delete");
     } else {
         $(hidden_input(doce.getAttribute("data-document-name") + ":delete", "1", {class: "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
         $doc.find(".document-uploader").trigger("hotcrp-change-document");
-        $doc.find(".document-stamps, .document-shortformat").addClass("hidden");
+        $doc.find(".document-stamps").prop("hidden", true);
         $(this).addClass("undelete").html("Restore");
     }
 });
