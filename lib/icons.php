@@ -141,37 +141,12 @@ class Icons {
 </svg>';
     }
     /** @return string */
-    static function ui_attachment() {
-        return self::$svg_open . self::svg_contents("attachment") . '</svg>';
-    }
-    /** @return string */
-    static function ui_tag() {
-        return self::$svg_open . self::svg_contents("tag") . '</svg>';
-//<path d="M 19.9 15.7 C 19.9 15.7 18.5 17.2 18.5 18.5 L 18.5 58.8 C 18.5 60.5 19.8 61.8 21.5 61.7 L 43.5 61.8 C 45.2 61.8 46.5 60.4 46.5 58.8 L 46.5 18.4 C 46.6 17.9 46.4 17 45.7 15.9 L 35.9 4 C 34.7 2.6 33.7 2 32.6 2 C 31.5 2 30.4 2.6 29.3 4 C 29.3 4 20 15.8 19.9 15.7 Z M 43.4 58.1 L 21.6 58.1 L 21.7 19.6 L 43.5 19.6 Z M 34.5 8.4 C 36.3 9.5 36.7 11.8 35.7 13.6 C 34.6 15.4 32.2 16 30.4 14.9 C 28.6 13.8 28.1 11.5 29.3 9.7 C 30.4 7.9 32.7 7.3 34.5 8.4 Z" /></svg>';
-    }
-    /** @return string */
     static function ui_solid_question() {
         return '<svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 64 64" preserveAspectRatio="none">' . self::svg_contents("solid_question") . '</svg>';
     }
     /** @return string */
     static function ui_move_handle_horizontal() {
         return self::$move_handle_horizontal_open . self::svg_contents("move_handle_horizontal") . '</svg>';
-    }
-    /** @return string */
-    static function ui_graph_scatter() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path stroke-linejoin="miter" d="M7 12V60H89" /><circle cx="22" cy="22" r="4" class="gdot" /><circle cx="39" cy="41" r="6" class="gdot" /><circle cx="54" cy="22" r="2" class="gdot" /><circle cx="64" cy="50" r="3" class="gdot" /><circle cx="64" cy="20" r="2" class="gdot" /><circle cx="75" cy="39" r="3" class="gdot" /></svg>';
-    }
-    /** @return string */
-    static function ui_graph_bars() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M18 59V29H25V59" class="gbar" /><path d="M35 59V22H42V59" class="gbar" /><path d="M70 59V41H77V59" class="gbar" /><path d="M53 59V33H60V59" class="gbar" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
-    }
-    /** @return string */
-    static function ui_graph_box() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M19 50V27H25V50Z M22 18V27 M22 50V53" class="gbox" /><path d="M37 43V29H43V43Z M40 13V29 M40 43V49" class="gbox" /><path d="M70 40V20H76V40Z M73 17V20 M73 40V56" class="gbox" /><path d="M53 47V44H59V47Z M56 36V41 M56 47V53" class="gbox" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
-    }
-    /** @return string */
-    static function ui_graph_cdf() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M21 60V54H33V46H50V32H60V28H66V15H71V12H89" class="gcdf" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
     /** @param string $name */
     static function stash_licon($name) {

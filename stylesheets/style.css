@@ -1654,7 +1654,7 @@ button.link.disabled, button.q.disabled, button.qo.disabled, button.qx.disabled 
 	padding: 4px 9px 4px;
 	min-height: 31px;
 }
-.aabig .btn-licon, .btn-licon.big {
+.aabig .btn-licon {
 	padding: 1px 7px 1px;
 }
 .aab {

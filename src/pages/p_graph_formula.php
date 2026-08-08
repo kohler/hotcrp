@@ -88,12 +88,6 @@ class Graph_Formula_Page {
      * @param list<FormulaGraphDataset> $datasets */
     private function print_ui($fgm, $datasets) {
         echo $this->conf->hotform("graph", ["group" => "formula"], ["method" => "get"]);
-        /*echo '<div>',
-            Ht::button(Icons::ui_graph_scatter(), ["class" => "btn-t"]),
-            Ht::button(Icons::ui_graph_bars(), ["class" => "btn-t"]),
-            Ht::button(Icons::ui_graph_box(), ["class" => "btn-t"]),
-            Ht::button(Icons::ui_graph_cdf(), ["class" => "btn-t"]),
-            '</div>';*/
 
         // X axis
         echo '<div class="f-mcol">',
