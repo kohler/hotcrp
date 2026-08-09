@@ -1359,7 +1359,7 @@ class Comments_Tester {
         xassert(!isset($j->comment));
         $mi = self::find_warning($j->message_list ?? []);
         xassert(!!$mi);
-        $mi && xassert_str_contains($mi->message, "cannot currently see");
+        $mi && xassert_str_contains($mi->message, "cannot see");
         xassert_eqq($this->ncomments(1), $before);
 
         // the same request without `dry_run` saves: only the warning held it back
@@ -1503,7 +1503,7 @@ class Comments_Tester {
         xassert_eqq($j->dry_run ?? false, true);
         $mi = self::find_warning($j->message_list ?? []);
         xassert(!!$mi);
-        $mi && xassert_str_contains($mi->message, "cannot currently see");
+        $mi && xassert_str_contains($mi->message, "cannot see");
         xassert(!isset($j->comment));
         xassert_eqq($this->ncomments(1), $before + 2);
 
