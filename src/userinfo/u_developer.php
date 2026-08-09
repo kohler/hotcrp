@@ -126,7 +126,7 @@ class Developer_UserInfo {
         $id = "{$tok->timeCreated}.{$dbid}." . substr($tok->salt, 0, 12);
         echo Ht::hidden("bearer_token/{$n}/id", $id),
             Ht::hidden("bearer_token/{$n}/delete", "", ["class" => "deleter", "data-default-value" => ""]),
-            Ht::button(Icons::ui_use("trash"), [
+            Ht::button(Icons::ui_use("trash", "m"), [
                 "class" => "ml-3 btn-licon-s ui js-profile-token-delete need-tooltip",
                 "aria-label" => "Delete API token"
             ]);

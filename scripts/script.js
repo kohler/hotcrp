@@ -4807,9 +4807,13 @@ function $svg(tag, attr) {
     return e;
 }
 
-function $svg_use_licon(name) {
-    return $svg("svg", {class: "licon", width: "1em", height: "1em", viewBox: "0 0 64 64", preserveAspectRatio: "none"},
-        $svg("use", {href: "#i-def-" + name}));
+function $svg_use_licon(name, size, rest) {
+    rest = Object.assign({}, rest || {});
+    rest.class = "licon licon-" + (size || "l") + (rest.class ? ` ${rest.class}` : "");
+    rest.viewBox = "0 0 64 64";
+    rest.preserveAspectRatio = "none";
+    rest["aria-hidden"] = "true";
+    return $svg("svg", rest, $svg("use", {href: "#i-def-" + name}));
 }
 
 function $e(tag, attr) {
@@ -4849,7 +4853,7 @@ function $frag() {
 
 function make_expander_element(foldnum) {
     function mksvgp(d) {
-        return $svg("svg", {class: "licon", width: "0.75em", height: "0.75em", viewBox: "0 0 16 16", preserveAspectRatio: "none"}, $svg("path", {d: d}));
+        return $svg("svg", {class: "licon licon-s", viewBox: "0 0 16 16", preserveAspectRatio: "none"}, $svg("path", {d: d}));
     }
     let fx = foldnum == null ? "ifx" : "fx" + foldnum,
         fn = foldnum == null ? "ifnx" : "fn" + foldnum;
@@ -10892,7 +10896,7 @@ handle_ui.on("js-annotate-order", function () {
                 type: "button",
                 class: "ml-2 need-tooltip js-delete-ta",
                 "aria-label": "Delete annotation"
-            }, $svg_use_licon("trash")),
+            }, $svg_use_licon("trash", "m")),
             fieldset = $e("fieldset", "mt-3 mb-2",
                 $e("legend", null,
                     "#" + dtag + "#",
@@ -14336,24 +14340,24 @@ handle_ui.on("js-delete-review", function () {
 
 handle_ui.on("js-approve-review", function (evt) {
     const self = this, grid = $e("div", "grid-btn-explanation");
-    let subreviewClass = "";
+    let subreviewClass = null;
     if (hasClass(self, "can-adopt")) {
-        grid.append($e("button", {type: "button", name: "adoptsubmit", class: "btn-primary big"}, "Adopt and submit"),
+        grid.append($e("button", {type: "button", name: "adoptsubmit", class: "btn-primary"}, "Adopt and submit"),
             $e("p", null, "Submit a copy of this review under your own name. You can make changes afterwards."),
-            $e("button", {type: "button", name: "adoptdraft", class: "bug"}, "Adopt as draft"),
+            $e("button", {type: "button", name: "adoptdraft"}, "Adopt as draft"),
             $e("p", null, "Save a copy of this review as a draft review under your name."));
     } else if (hasClass(self, "can-adopt-replace")) {
-        grid.append($e("button", {type: "button", name: "adoptsubmit", class: "btn-primary big"}, "Adopt and submit"),
+        grid.append($e("button", {type: "button", name: "adoptsubmit", class: "btn-primary"}, "Adopt and submit"),
             $e("p", null, "Replace your draft review with a copy of this review and submit it. You can make changes afterwards."),
-            $e("button", {type: "button", name: "adoptdraft", class: "big"}, "Adopt as draft"),
+            $e("button", {type: "button", name: "adoptdraft"}, "Adopt as draft"),
             $e("p", null, "Replace your draft review with a copy of this review."));
     } else {
-        subreviewClass = " btn-primary";
+        subreviewClass = "btn-primary";
     }
-    grid.append($e("button", {type: "button", name: "approvesubreview", class: "big" + subreviewClass}, "Approve subreview"),
+    grid.append($e("button", {type: "button", name: "approvesubreview", class: subreviewClass}, "Approve subreview"),
         $e("p", null, "Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics."));
     if (hasClass(self, "can-approve-submit")) {
-        grid.append($e("button", {type: "button", name: "approvesubmit", class: "big"}, "Submit as full review"),
+        grid.append($e("button", {type: "button", name: "approvesubmit"}, "Submit as full review"),
             $e("p", null, "Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics."));
     }
     const $pu = $popup({near: evt.sidebarTarget || self}).append(grid)
@@ -14380,7 +14384,7 @@ handle_ui.on("js-edit-formulas", function () {
         if (f.editable) {
             nei.className = "mb-1";
             nei.append($e("input", {type: "text", id: "k-formula/" + count + "/name", class: "editformulas-name need-autogrow", name: "formula/" + count + "/name", size: 30, value: f.name, placeholder: "Formula name"}),
-                $e("button", {type: "button", class: "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, $svg_use_licon("trash")));
+                $e("button", {type: "button", class: "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, $svg_use_licon("trash", "m")));
             xei.append($e("textarea", {class: "editformulas-expression need-autogrow w-99", id: "k-formula/" + count + "/expression", name: "formula/" + count + "/expression", rows: 1, cols: 64, placeholder: "Formula definition"}, f.expression));
         } else {
             nei.append(f.name);

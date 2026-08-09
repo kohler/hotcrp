@@ -468,13 +468,15 @@ class LogEntryGenerator {
 
     /** @param int|'earliest' $pageno
      * @param int|string $html
+     * @param ?string $class
      * @return string */
-    function page_link_html($pageno, $html) {
+    function page_link_html($pageno, $html, $class = null) {
         $url = $this->log_url_base;
         if ($pageno !== 1 && $this->delta > 0) {
             $url .= "&amp;offset=" . $this->delta;
         }
-        return "<a href=\"{$url}&amp;page={$pageno}\">{$html}</a>";
+        $k = $class === null ? "" : " class=\"{$class}\"";
+        return "<a href=\"{$url}&amp;page={$pageno}\"{$k}>{$html}</a>";
     }
 
     private function _make_users() {

@@ -710,7 +710,7 @@ class PaperTable {
 
         if (($time = $doc->timeReferenced ?? $doc->timestamp) > 0) {
             $t[] = ($tooltip ? '<span class="nb need-tooltip" aria-label="Upload time">' : '<span class="nb">')
-                . '<svg width="12" height="12" viewBox="0 0 96 96" class="licon"><path d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64zM48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z" /></svg>'
+                . '<svg class="licon licon-s" viewBox="0 0 96 96"><path d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64zM48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z" /></svg>'
                 . " " . $doc->conf->unparse_time($time) . "</span>";
         }
 
@@ -726,7 +726,7 @@ class PaperTable {
                     $x .= "SHA-1 checksum";
                 }
             }
-            $x .= '"><svg width="12" height="12" viewBox="0 0 48 48" class="licon"><path d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19zM15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z" /></svg> '
+            $x .= '"><svg class="licon licon-s" viewBox="0 0 48 48"><path d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19zM15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z" /></svg> '
                 . '<span class="checksum-overflow">' . $h . '</span>'
                 . '<span class="checksum-abbreviation">' . substr($h, 0, 8) . '</span></span>';
             $t[] = $x;

@@ -101,7 +101,7 @@ class Sround_SettingParser extends SettingParser {
         $namesi = $sv->si("submission/{$ctr}/tag");
         echo '<legend>', $sv->label($namesi->name, "Submission class"), ' &nbsp;',
             $sv->entry($namesi->name, ["class" => "uii uich js-settings-submission-round-name want-focus want-delete-marker"]),
-            Ht::button(Icons::ui_use("trash"), ["name" => "submission/{$ctr}/deleter", "class" => "ui js-settings-submission-round-delete ml-2 btn-licon-s need-tooltip", "aria-label" => "Delete submission class", "tabindex" => -1]);
+            Ht::button(Icons::ui_use("trash", "m"), ["name" => "submission/{$ctr}/deleter", "class" => "ui js-settings-submission-round-delete ml-2 btn-licon-s need-tooltip", "aria-label" => "Delete submission class", "tabindex" => -1]);
         /*if ($id > 0 && ($round_map[$id - 1] ?? 0) > 0) {
             echo '<span class="ml-3 d-inline-block">',
                 $sv->conf->hotlink(plural($round_map[$id - 1], "review"),

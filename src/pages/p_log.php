@@ -258,7 +258,7 @@ class Log_Page {
             }
             echo "</div></td><td><div class=\"lognavxr\">";
             if ($page > 1) {
-                echo $leg->page_link_html($page - 1, "<strong>" . Icons::ui_linkarrow(3) . "Newer</strong>");
+                echo $leg->page_link_html($page - 1, "&lt; <strong class=\"ul\">Newer</strong>", "noul");
             }
             echo "</div></td><td><div class=\"lognavdr\">";
             if ($page - $this->nlinks > 1) {
@@ -276,7 +276,7 @@ class Log_Page {
             }
             echo "</div></td><td><div class=\"lognavx\">";
             if ($leg->has_page($page + 1)) {
-                echo $leg->page_link_html($page + 1, "<strong>Older" . Icons::ui_linkarrow(1) . "</strong>");
+                echo $leg->page_link_html($page + 1, "<strong class=\"ul\">Older</strong> &gt;", "noul");
             }
             echo "</div></td><td><div class=\"lognavd\">";
             if ($leg->has_page($page + $this->nlinks + 1)) {

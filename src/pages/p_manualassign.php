@@ -197,8 +197,8 @@ class ManualAssign_Page {
                 '<ul class="entry inline">', join('', $show_data), '</ul></div>';
         }
         echo Ht::hidden("forceShow", 1, ["id" => "showforce"]); // search API must override conflicts
-        echo '<div class="entryi autosave-hidden hidden"><label></label><div class="entry">',
-            Ht::submit("update", "Save assignments", ["class" => "btn-primary big"]), '</div></div>';
+        echo '<div class="entryi autosave-hidden" hidden><label></label><div class="entry">',
+            Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div></div>';
         echo '</div>';
 
         $pl->set_table_id_class("pl", null);
