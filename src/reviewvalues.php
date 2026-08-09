@@ -211,15 +211,6 @@ class ReviewValues extends MessageSet {
         return $this;
     }
 
-    /** @param int|string $field
-     * @param string $msg
-     * @param int $status
-     * @return MessageItem
-     * @deprecated */
-    function rmsg($field, $msg, $status) {
-        return $this->rvmsg($status, $field, $msg);
-    }
-
     /** @param int $status
      * @param int|string $field
      * @param string $msg
@@ -1072,7 +1063,7 @@ class ReviewValues extends MessageSet {
                 $fval = $old_fval;
             }
             if ($fval === false) {
-                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_word_abbreviate(trim($this->req[$f->short_id]), 100)));
+                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>Invalid value ‘{}’", UnicodeHelper::utf8_word_abbreviate(trim($this->req[$f->short_id]), 100)));
                 $fval = $old_fval;
                 $allow_new_submit = false;
             }
@@ -1145,7 +1136,7 @@ class ReviewValues extends MessageSet {
         if ($fmissing) {
             $status = $want_ready ? self::ERROR : self::WARNING;
             foreach ($fmissing as $f) {
-                $this->rvmsg($status, $f->short_id, $this->conf->_("<0>{}: Entry required", $f->name));
+                $this->rvmsg($status, $f->short_id, $this->conf->_("<0>Entry required"));
             }
             if ($status === self::ERROR) {
                 $this->rvmsg(self::ERROR, "ready", $this->conf->_("<0>The review can’t be submitted until entries are provided for all required fields."));
@@ -1752,19 +1743,37 @@ class ReviewValues extends MessageSet {
         return MessageSet::SUCCESS;
     }
 
-    function report() {
+    /** @param bool $link_fields
+     * @return void */
+    function report($link_fields = false) {
         $this->finished || $this->finish();
-        if ($this->finished < 3) {
-            $mis = $this->message_list();
-            if ($this->text !== null && $this->has_problem()) {
-                $errtype = $this->has_error() ? "errors" : "warnings";
-                array_unshift($mis, MessageItem::inform($this->conf->_("<0>There were {$errtype} while parsing the uploaded review file.")));
-            }
-            if (($status = $this->summary_status()) !== MessageSet::PLAIN) {
-                $this->conf->feedback_msg($mis, new MessageItem($status));
-            }
-            $this->finished = 3;
+        if ($this->finished >= 3) {
+            return;
         }
+        $this->finished = 3;
+        if (($status = $this->summary_status()) === MessageSet::PLAIN) {
+            return;
+        }
+        $ml = [new MessageItem($status)];
+        if ($this->text !== null && $this->has_problem()) {
+            $errtype = $this->has_error() ? "errors" : "warnings";
+            $ml[] = MessageItem::inform($this->conf->_("<0>There were {$errtype} while parsing the uploaded review file."));
+        }
+        foreach ($this->message_list() as $mi) {
+            if ($mi->field
+                && $mi->message
+                && $mi->status !== MessageSet::INFORM
+                && ($f = $this->rf->fmap[$mi->field] ?? null)) {
+                if ($link_fields) {
+                    $pfx = "<5><a href=\"#{$mi->field}\">{$f->name_html}</a>: ";
+                } else {
+                    $pfx = "<0>{$f->name}: ";
+                }
+                $mi = $mi->with_message(Ftext::concat($pfx, $mi->message));
+            }
+            $ml[] = $mi;
+        }
+        $this->conf->feedback_msg($ml);
     }
 
     function json_report() {

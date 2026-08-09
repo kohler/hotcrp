@@ -130,6 +130,12 @@ class MessageItem implements JsonSerializable {
         return $mi;
     }
 
+    /** @param ?string $m
+     * @return MessageItem */
+    function with_message($m) {
+        return $this->message === ($m ?? "") ? $this : $this->with(["message" => $m ?? ""]);
+    }
+
     /** @param ?string $field
      * @return MessageItem */
     function with_field($field) {

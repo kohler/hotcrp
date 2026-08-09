@@ -124,7 +124,7 @@ class Review_Page {
             && $rv->check_and_save($this->prow, $this->rrow)) {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
         }
-        $rv->report();
+        $rv->report(true);
         if (!$rv->has_error() && !$rv->has_problem_at("ready")) {
             $this->qreq->redirect_self();
         }
@@ -160,7 +160,7 @@ class Review_Page {
             $rv->warning_at(null, "<0>Reviews for other {submissions} ignored");
             $rv->inform_at(null, "<5>Upload multiple-review files " . $this->conf->hotlink("here", "offline") . ".");
         }
-        $rv->report();
+        $rv->report(true);
         if (!$rv->has_error()) {
             $this->qreq->redirect_self();
         }
@@ -237,7 +237,7 @@ class Review_Page {
                 }
             }
         }
-        $rv->report();
+        $rv->report(true);
         $this->qreq->redirect_self(["r" => $want_rid]);
     }
 
