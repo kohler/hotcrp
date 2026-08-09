@@ -249,7 +249,7 @@ class PaperTable {
         }
 
         $qreq->print_header($title, $id, [
-            "action_bar" => QuicklinksRenderer::make($qreq, $amode),
+            "action_bar" => "quicklinks:{$amode}" . ($prow && $prow->paperId ? ":{$prow->paperId}" : ""),
             "title_div" => $t,
             "body_class" => $body_class,
             "paperId" => $qreq->paperId,
@@ -285,7 +285,7 @@ class PaperTable {
         }
 
         if (($list = SessionList::load_cookie($this->user, "p"))
-            && ($list->set_current_id($prow->paperId) || $list->digest)) {
+            && $list->possibly_active($prow->paperId)) {
             return $list;
         }
 
@@ -325,9 +325,7 @@ class PaperTable {
         if (!$srch->test($prow)) {
             return null;
         }
-        $list = $srch->session_list_object();
-        $list->set_current_id($prow->paperId);
-        return $list;
+        return $srch->session_list_object();
     }
 
     /** @param bool $useRequest

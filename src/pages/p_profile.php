@@ -35,9 +35,10 @@ class Profile_Page {
 
     /** @return never */
     private function fail_user_search($text) {
-        $action_bar = $this->viewer->privChair ? QuicklinksRenderer::make($this->qreq, "account") : "";
+        $action_bar = $this->viewer->privChair ? "quicklinks:account" : "";
         Multiconference::fail($this->qreq, 404, [
-            "title" => "Profile", "action_bar" => $action_bar
+            "title" => "Profile",
+            "action_bar" => $action_bar
         ], $text);
     }
 
@@ -512,7 +513,7 @@ class Profile_Page {
         // set session list
         if ($this->page_type === 0
             && ($list = SessionList::load_cookie($this->viewer, "u"))
-            && $list->set_current_id($this->user->contactId)) {
+            && $list->possibly_active($this->user->contactId)) {
             $this->qreq->set_active_list($list);
         }
 
@@ -545,7 +546,7 @@ class Profile_Page {
         $this->qreq->print_header($title, "account", [
             "title_div" => "",
             "body_class" => "leftmenu",
-            "action_bar" => QuicklinksRenderer::make($this->qreq, "account"),
+            "action_bar" => "quicklinks:account" . ($this->page_type ? "" : ":{$this->user->contactId}"),
             "save_messages" => true
         ]);
 

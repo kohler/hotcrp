@@ -5,27 +5,6 @@
 class QuicklinksRenderer {
     /** @param Qrequest $qreq
      * @return string */
-    static private function one_quicklink($qreq, $id, $baseUrl, $urlrest, $listtype, $isprev) {
-        if ($listtype == "u") {
-            $result = $qreq->conf()->ql("select email from ContactInfo where contactId=?", $id);
-            $row = $result->fetch_row();
-            Dbl::free($result);
-            $paperText = htmlspecialchars($row ? $row[0] : (string) $id);
-            $urlrest["u"] = (string) $id;
-        } else {
-            $paperText = "#{$id}";
-            $urlrest["p"] = $id;
-        }
-        $url = Ht::escape_attr($qreq->conf()->hoturl($baseUrl, $urlrest));
-        $icon = Icons::ui_linkarrow($isprev ? 3 : 1);
-        if ($isprev) {
-            return "<a id=\"n-prev\" class=\"ulh pnum\" href=\"{$url}\">{$icon}{$paperText}</a>";
-        }
-        return "<a id=\"n-next\" class=\"ulh pnum\" href=\"{$url}\">{$paperText}{$icon}</a>";
-    }
-
-    /** @param Qrequest $qreq
-     * @return string */
     static private function quicksearch_form($qreq, $baseUrl = null, $args = []) {
         if ($qreq->user()->is_empty()) {
             return "";
@@ -43,7 +22,7 @@ class QuicklinksRenderer {
         return $x . Ht::submit("Search", ["class" => "ml-2"]) . "</form>";
     }
 
-    /** @param null|'paper'|'review'|'assign'|'edit'|'account' $mode
+    /** @param ?string $mode
      * @return string */
     static function make(Qrequest $qreq, $mode = null) {
         $user = $qreq->user();
@@ -51,13 +30,19 @@ class QuicklinksRenderer {
             return "";
         }
 
+        // extract id from $mode
+        $qlid = null;
+        if ($mode !== null && ($colon = strpos($mode, ":")) !== false) {
+            $qlid = stoi(substr($mode, $colon + 1));
+            $mode = substr($mode, 0, $colon);
+        }
+
         $xmode = [];
         $listtype = "p";
-
         $goBase = "paper";
         if ($mode === "assign") {
             $goBase = "assign";
-        } else if ($mode === "re") {
+        } else if ($mode === "review") {
             $goBase = "review";
         } else if ($mode === "account") {
             $listtype = "u";
@@ -74,15 +59,15 @@ class QuicklinksRenderer {
         // quicklinks
         $x = "";
         if (($list = $qreq->active_list())) {
-            $x .= '<div id="n-quicklinks" class="quicklink-item"';
+            $x .= "<div id=\"n-quicklinks\" class=\"quicklink-item\"";
+            if ($qlid) {
+                $x .= " data-qlid=\"{$qlid}\"";
+            }
             if ($xmode || $goBase !== "paper") {
                 $x .= ' data-link-params="' . htmlspecialchars(json_encode_browser(["page" => $goBase] + $xmode)) . '"';
             }
             $x .= '>';
-            if (($prev = $list->neighbor_id(-1)) !== false) {
-                $x .= self::one_quicklink($qreq, $prev, $goBase, $xmode, $listtype, true) . " ";
-            }
-            if ($list->description) {
+            if ($list && $list->description) {
                 $d = htmlspecialchars($list->description);
                 $url = $list->full_site_relative_url($user);
                 if ($url) {
@@ -91,11 +76,7 @@ class QuicklinksRenderer {
                     $x .= "<span id=\"n-list\">{$d}</span>";
                 }
             }
-            if (($next = $list->neighbor_id(1)) !== false) {
-                $x .= " " . self::one_quicklink($qreq, $next, $goBase, $xmode, $listtype, false);
-            }
             $x .= '</div>';
-
             if ($user->is_track_manager() && $listtype === "p") {
                 $x .= '<div class="quicklink-item no-print"><button type="button" id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" aria-label="Start meeting tracker">&#9759;</button></div>';
             }

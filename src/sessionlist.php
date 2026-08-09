@@ -21,14 +21,6 @@ class SessionList {
     /** @var ?string
      * @readonly */
     public $digest;
-    /** @var ?int */
-    private $curid;
-    /** @var ?int */
-    private $previd;
-    /** @var ?int */
-    private $nextid;
-    /** @var null|false|int */
-    private $id_index;
 
     /** @param string $listid
      * @param list<int> $ids
@@ -321,15 +313,6 @@ class SessionList {
             $list->highlight = true;
         }
         $list->digest = $digest;
-        if (isset($j->curid) && is_int($j->curid)) {
-            $list->curid = $j->curid;
-        }
-        if (isset($j->previd) && is_int($j->previd)) {
-            $list->previd = $j->previd;
-        }
-        if (isset($j->nextid) && is_int($j->nextid)) {
-            $list->nextid = $j->nextid;
-        }
         return $list;
     }
 
@@ -403,9 +386,8 @@ class SessionList {
             && ($list = SessionList::decode_info_string($user, $_COOKIE[$found], $type))
             && $list->list_type() === $type) {
             return $list;
-        } else {
-            return null;
         }
+        return null;
     }
 
     function set_cookie(Qrequest $qreq) {
@@ -413,30 +395,12 @@ class SessionList {
         $qreq->set_cookie("hotlist-info-" . $t, $this->info_string(), Conf::$now + 20);
     }
 
-    /** @param int $id
+    /** Return true if this list might contain `$id`. A digested list, whose
+     * IDs are only known to the browser, might contain anything.
+     * @param int $id
      * @return bool */
-    function set_current_id($id) {
-        if ($this->curid !== $id) {
-            $this->curid = $this->previd = $this->nextid = null;
-        }
-        $this->id_index = $this->ids ? array_search($id, $this->ids) : false;
-        return $this->id_index !== false;
-    }
-
-    /** @param int $delta
-     * @return int|false */
-    function neighbor_id($delta) {
-        if ($delta === -1 && $this->previd !== null) {
-            return $this->previd;
-        } else if ($delta === 1 && $this->nextid !== null) {
-            return $this->nextid;
-        } else if (isset($this->curid) && $this->set_current_id($this->curid)) {
-            $pos = $this->id_index + $delta;
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-            if ($pos >= 0 && isset($this->ids[$pos])) {
-                return $this->ids[$pos];
-            }
-        }
-        return false;
+    function possibly_active($id) {
+        return ($this->ids !== null && in_array($id, $this->ids))
+            || !!$this->digest;
     }
 }

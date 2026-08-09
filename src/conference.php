@@ -5202,8 +5202,14 @@ class Conf {
             }
             echo $title_div ?? "";
         }
-        echo $extra["action_bar"] ?? QuicklinksRenderer::make($qreq),
-            "<hr class=\"c\">\n";
+        $ab = $extra["action_bar"] ?? "quicklinks";
+        if (str_starts_with($ab, "quicklinks")) {
+            $abt = strlen($ab) === 10 ? null : substr($ab, 11);
+            echo QuicklinksRenderer::make($qreq, $abt);
+        } else {
+            echo $ab;
+        }
+        echo "<hr class=\"c\">\n";
     }
 
     /** @param Qrequest $qreq
@@ -5298,18 +5304,24 @@ class Conf {
         $this->_mx_auto = strpos($body_elt_class, "error") !== false;
         echo "</header>\n";
 
-        echo "<main id=\"p-body\"";
-        if ($body_class !== "") {
-            echo " class=\"{$body_class}\"";
-        }
-        echo ">\n";
-
         // Maybe send browser the script immediately
+        if (str_starts_with($extra["action_bar"] ?? "", "quicklinks:")
+            && strpos($extra["action_bar"], ":", 11) !== false) {
+            Ht::stash_script("hotcrp.add_quicklinks()");
+            $need_unstash = true;
+        }
         if ($need_unstash
             || ($this->has_active_tracker()
                 && MeetingTracker::session_owns_tracker($this, $qreq))) {
             echo Ht::unstash();
         }
+
+        // Start the `<main>`
+        echo "<main id=\"p-body\"";
+        if ($body_class !== "") {
+            echo " class=\"{$body_class}\"";
+        }
+        echo ">\n";
 
         // Callback for version warnings
         if ($user

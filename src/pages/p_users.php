@@ -474,7 +474,7 @@ class Users_Page {
             $title = "Users";
         }
         $this->qreq->print_header($title, "users", [
-            "action_bar" => QuicklinksRenderer::make($this->qreq, "account")
+            "action_bar" => "quicklinks:account"
         ]);
 
 

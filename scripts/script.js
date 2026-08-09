@@ -9911,7 +9911,7 @@ Hotlist.prototype.resolve = function () {
     }
     return this;
 };
-Hotlist.prototype.cookie_at = function (pid) {
+Hotlist.prototype.cookie_at = function () {
     this.resolve();
     let digest;
     if (this.str.length <= 1500
@@ -9923,14 +9923,6 @@ Hotlist.prototype.cookie_at = function (pid) {
     const x = Object.assign({digest: "listdigest" + digest}, this.obj);
     delete x.ids;
     delete x.sorted_ids;
-    let ids, pos;
-    if (pid
-        && (ids = this.ids())
-        && (pos = $.inArray(pid, ids)) >= 0) {
-        x.curid = pid;
-        x.previd = pos > 0 ? ids[pos - 1] : false;
-        x.nextid = pos < ids.length - 1 ? ids[pos + 1] : false;
-    }
     return JSON.stringify(x);
 };
 Hotlist.prototype.reorder = function (tbody) {
@@ -9978,22 +9970,22 @@ Hotlist.prototype.id_search = function () {
     this.obj.sorted_ids = encode_session_list_ids(ids);
     return "pidcode:" + this.obj.sorted_ids;
 };
-function set_cookie(info, pid) {
+function set_cookie(info) {
     const p = hoturl_cookie_params();
     if (cookie_set_at) {
         document.cookie = "hotlist-info-".concat(cookie_set_at, "=; Max-Age=0", p);
     }
     cookie_set_at = now_msec();
-    document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(info.cookie_at(pid)), "; Max-Age=20", p);
+    document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(info.cookie_at()), "; Max-Age=20", p);
 }
 function is_listable(sitehref) {
     return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
 }
 function handle_list(e, href) {
-    let sitehref, hl, info;
+    let hl, info;
     if (href
         && href.substring(0, siteinfo.site_relative.length) === siteinfo.site_relative
-        && is_listable((sitehref = href.substring(siteinfo.site_relative.length)))
+        && is_listable(href.substring(siteinfo.site_relative.length))
         && (hl = e.closest(".has-hotlist"))
         && (info = Hotlist.at(hl)).str) {
         if (hl.tagName === "TABLE"
@@ -10002,8 +9994,7 @@ function handle_list(e, href) {
             && document.getElementById("p-footer"))
             // Existence of `#p-footer` checks that the table is fully loaded
             info.reorder(hl.tBodies[0]);
-        let m = /^[^/]*\/(\d+)(?:$|[a-zA-Z]*\/|\?)/.exec(sitehref);
-        set_cookie(info, m ? +m[1] : null);
+        set_cookie(info);
     }
 }
 function unload_list() {
@@ -10101,36 +10092,43 @@ $(document).on("submit", "form", function (evt) {
 
 $(window).on("beforeunload", unload_list);
 
-$(function () {
+hotcrp.add_quicklinks = function () {
     // resolve list digests
     if (document.body.hasAttribute("data-hotlist")) {
         document.body.setAttribute("data-hotlist", Hotlist.at(document.body).resolve().str);
     }
     // having resolved digests, insert quicklinks
     const ql = $$("n-quicklinks");
-    if (!siteinfo.paperid || !ql || $$("n-prev") || $$("n-next")) {
+    if (!ql || $$("n-prev") || $$("n-next")) {
         return;
     }
-    let info = Hotlist.at(ql.closest(".has-hotlist")), ids, pos, page, mode;
+    let info = Hotlist.at(ql.closest(".has-hotlist")), mode, k;
     try {
         mode = JSON.parse(ql.getAttribute("data-link-params") || "{}");
     } catch (e) {
         mode = {};
     }
-    page = mode.page || "paper";
-    delete mode.page;
-    if ((ids = info.ids())
-        && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
-        if (pos > 0) {
-            mode.p = ids[pos - 1];
-            ql.prepend($e("a", {id: "n-prev", class: "ulh", href: hoturl(page, mode)}, "< #" + ids[pos - 1]), " ");
-        }
-        if (pos < ids.length - 1) {
-            mode.p = ids[pos + 1];
-            ql.append(" ", $e("a", {id: "n-next", class: "ulh", href: hoturl(page, mode)}, "#" + ids[pos + 1] + " >"));
-        }
+    const page = mode.page || "paper";
+    if (page === "profile") {
+        k = "u";
+    } else {
+        k = "p";
     }
-});
+    const id = +ql.getAttribute("data-qlid");
+    if (!id) {
+        return;
+    }
+    delete mode.page;
+    const ids = info.ids(), pos = $.inArray(id, ids || []);
+    if (pos > 0) {
+        mode[k] = ids[pos - 1];
+        ql.prepend($e("a", {id: "n-prev", class: "ulh", href: hoturl(page, mode)}, k === "u" ? "<" : "< #" + ids[pos - 1]), " ");
+    }
+    if (pos >= 0 && pos < ids.length - 1) {
+        mode[k] = ids[pos + 1];
+        ql.append(" ", $e("a", {id: "n-next", class: "ulh", href: hoturl(page, mode)}, k === "u" ? ">" : "#" + ids[pos + 1] + " >"));
+    }
+};
 })($);
 
 handle_ui.on("click.js-sq", function () {
@@ -15870,6 +15868,7 @@ Object.assign(window.hotcrp, {
     // add_diff_check
     // add_review
     // add_preference_ajax
+    // add_quicklinks
     // banner
     check_form_differs: check_form_differs,
     check_version: check_version,
