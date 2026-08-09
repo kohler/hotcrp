@@ -8021,8 +8021,11 @@ function cmt_toggle_editing(celt, editing) {
 function cmt_save_callback(cj) {
     var cid = cj_cid(cj), celt = $$(cid), form = celt.querySelector("form");
     return function (data) {
-        if (!data.ok) {
-            if (data.signedout || data.loggedout) {
+        // `dry_run` means the server declined to save because of warnings;
+        // like an error, leave the editor open, but let the next attempt
+        // through (the user has now seen the warnings).
+        if (!data.ok || data.dry_run) {
+            if (!data.ok && (data.signedout || data.loggedout)) {
                 has_unload = false;
                 form.method = "post";
                 var arg = {editcomment: 1, p: siteinfo.paperid};
@@ -8030,7 +8033,19 @@ function cmt_save_callback(cj) {
                 form.action = hoturl("=paper", arg);
                 form.submit();
             }
-            $(celt).find(".cmtmsg").html(feedback.render_alert(data.message_list));
+            let ml = data.message_list || [];
+            if (data.dry_run) {
+                form.setAttribute("data-no-dry-run", "");
+                const bsub = form.elements.bsubmit;
+                ml.push({
+                    message: "<0>To continue anyway, click “" + (bsub ? bsub.textContent : "Save") + "” again.",
+                    status: -4 /*MessageSet::MARKED_NOTE*/
+                });
+            }
+            if (form.elements.topic) {
+                toggleClass(form.elements.topic.parentElement, "is-warning", feedback.list_status(ml, "topic") > 0);
+            }
+            $(celt).find(".cmtmsg").html(feedback.render_alert(ml));
             $(celt).find("button, input[type=file]").prop("disabled", false);
             $(form.elements.draft).remove();
             return;
@@ -8105,6 +8120,11 @@ function cmt_save(elt, action, really) {
     really && (arg.override = 1);
     siteinfo.want_override_conflict && (arg.forceShow = 1);
     action === "delete" && (arg.delete = 1);
+    // On a new comment, let the server refuse the first save if it has
+    // warnings; `data-no-dry-run` is set once those warnings have been shown.
+    if (cj.is_new && action !== "delete" && !form.hasAttribute("data-no-dry-run")) {
+        arg.dry_run = "if_warning";
+    }
     const url = hoturl("=api/comment", arg),
         callback = cmt_save_callback(cj);
     if (window.FormData) {

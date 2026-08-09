@@ -232,9 +232,10 @@ final class CommentStatus extends MessageSet {
                 && !$mentionee->is_dormant()
                 && !$mentionee->can_view_comment($crow->prow, $crow)
                 && $mxm->is_notification_viewable($this->viewer, $crow)) {
-                $this->warning_at(null, "<0>Some mentioned users cannot currently see this comment");
-                if (($crow->commentType & CommentInfo::CT_TOPIC_PAPER) === 0) {
-                    $this->inform_at("thread", "<0>Should the comment be on the submission thread instead?");
+                $field = ($crow->commentType & CommentInfo::CT_TOPIC_PAPER) === 0 ? "topic" : null;
+                $this->warning_at($field, "<0>Some mentioned users cannot see this comment now");
+                if ($field) {
+                    $this->inform_at($field, "<0>Should the comment be on the submission thread instead?");
                 }
                 break;
             }
