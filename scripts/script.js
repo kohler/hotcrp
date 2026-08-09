@@ -7588,66 +7588,76 @@ function cmt_render_form(cj) {
     return eform;
 }
 
+/** @param {string} name
+ * @param {string} id
+ * @param {Array} options - [value, text] pairs
+ * @return {HTMLElement} */
+function cmt_inline_select(name, id, options, label) {
+    const esel = $e("select", {id: id, name: name, "aria-label": label});
+    for (const opt of options) {
+        esel.append($e("option", {value: opt[0]}, opt[1]));
+    }
+    return $e("span", "select-inline", $e("span", "select-sizer"), esel);
+}
+
+// Match a select's width to its selected option. The sizer is the only
+// child in flow, so setting its text sets the control's width.
+function cmt_size_inline_select(sel) {
+    const sizer = sel.parentElement.firstChild;
+    sizer.textContent = sel.options[sel.selectedIndex].text;
+}
+
 function cmt_render_form_prop(cj, cid, btnbox) {
-    const einfo = $e("div", "cmteditinfo fold3c fold4c");
+    const einfo = $e("div", "cmteditinfo");
 
     // attachments
-    einfo.append($e("div", {id: cid + "-attachments", class: "entryi has-editable-attachments", hidden: true, "data-dt": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
+    einfo.append($e("div", {class: "cmtprop w-text has-editable-attachments", hidden: true, role: "group", "aria-label": "Attachments"},
+        $e("span", {class: "need-tooltip", "data-tooltip": "Attachments"}, $svg_use_licon("attachment")),
+        $e("div", {id: cid + "-attachments", class: "entry", "data-dt": -2, "data-document-prefix": "attachment"})));
     btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, $svg_use_licon("attachment")));
 
-    // tags
-    if (!cj.response && !cj.by_author) {
-        einfo.append($e("div", "entryi fx3",
-            $e("label", {for: cid + "-tags"}, "Tags"),
-            $e("input", {id: cid + "-tags", name: "tags", type: "text", size: 50, placeholder: "Comment tags"})));
-        btnbox.append($e("button", {type: "button", name: "showtags", class: "btn-licon need-tooltip", "aria-label": "Tags"}, $svg_use_licon("tag")));
-    }
-
-    // visibility
-    if (!cj.response && (!cj.by_author || cj.by_author_visibility)) {
-        const evsel = $e("select", {id: cid + "-visibility", name: "visibility"});
-        if (cj.by_author) {
-            evsel.append($e("option", {value: "au"}, "Reviewers and PC"));
-        } else {
-            evsel.append($e("option", {value: "au"}, "Authors and reviewers"),
-                $e("option", {value: "rev"}, "Reviewers"),
-                $e("option", {value: "pc"}, "PC only"));
-        }
-        evsel.append($e("option", {value: "admin"}, "Administrators only"));
-
-        const evis = $e("div", "entry",
-            $e("span", "select", evsel),
-            $e("p", "f-d text-break-line hidden"));
-        if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
-            evis.append($e("div", "checki",
-                $e("label", null,
-                    $e("span", "checkc", $e("input", {type: "checkbox", name: "blind", value: 1})),
-                    "Anonymous to authors")));
-        }
-        einfo.append($e("div", "entryi",
-            $e("label", {for: cid + "-visibility"}, "Visibility"),
-            evis));
-    }
-
-    // topic/thread
+    // visibility and thread, stated as an editable sentence
     if (!cj.response) {
-        const etsel = $e("select", {id: cid + "-thread", name: "topic"}),
-            tlist = hotcrp.status.myperm.comment_topics || ["paper", "rev"];
+        const evis = $e("div");
+        let eblind = null;
+        if (!cj.by_author || cj.by_author_visibility) {
+            const vopt = cj.by_author
+                ? [["au", "reviewers and PC"]]
+                : [["au", "authors and reviewers"], ["rev", "reviewers"], ["pc", "PC members"]];
+            vopt.push(["admin", "administrators only"]);
+            evis.append("Visible to ", cmt_inline_select("visibility", cid + "-visibility", vopt, "Visible to"), " on the ");
+            if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
+                eblind = $e("div", "checki",
+                    $e("label", null,
+                        $e("span", "checkc", $e("input", {type: "checkbox", name: "blind", value: 1})),
+                        "Anonymous to authors"));
+            }
+        } else {
+            evis.append("On the ");
+        }
+
+        const topt = [], tlist = hotcrp.status.myperm.comment_topics || ["paper", "rev"];
         if (tlist.indexOf("paper") >= 0) {
-            etsel.append($e("option", {value: "paper"}, siteinfo.snouns[2] + " (not reviews)"));
+            topt.push(["paper", siteinfo.snouns[0] + " thread"]);
         }
         if (tlist.indexOf("rev") >= 0) {
-            etsel.append($e("option", {value: "rev", selected: true}, "Reviews"));
+            topt.push(["rev", "review thread"]);
         }
         /*if (tlist.indexOf("dec") >= 0) {
-            etsel.append($e("option", {value: "dec"}, "Decision"));
+            topt.push(["dec", "decision thread"]);
         }*/
-        einfo.append($e("div", "entryi fx4",
-            $e("label", {for: cid + "-thread"}, "Thread"),
-            $e("div", "entry",
-                $e("span", "select", etsel),
-                $e("p", "f-d text-break-line"))));
-        btnbox.append($e("button", {type: "button", name: "showthread", class: "btn-licon need-tooltip", "aria-label": "Thread", "data-editable-attachments": cid + "-attachments"}, $svg_use_licon("thread")));
+        evis.append(cmt_inline_select("topic", cid + "-thread", topt, "Thread"));
+        einfo.append($e("div", "cmtprop w-text",
+            $e("span", {class: "need-tooltip", "data-tooltip": "Visibility"}, $svg_use_licon("eye")),
+            $e("div", "entry", evis, eblind, $e("div", {class: "cmtvis-hints", "aria-live": "polite"}))));
+    }
+
+    // tags (appended below the sentence)
+    if (!cj.response && !cj.by_author) {
+        einfo.append($e("div", {class: "cmtprop w-text", hidden: true},
+            $e("label", {for: cid + "-tags", class: "need-tooltip", "data-tooltip": "Tags"}, $svg_use_licon("tag")),
+            $e("input", {id: cid + "-tags", class: "pled", name: "tags", type: "text", size: 50, placeholder: "Comment tags", "aria-label": "Tags"})));
+        btnbox.append($e("button", {type: "button", name: "showtags", class: "btn-licon need-tooltip", "aria-label": "Tags"}, $svg_use_licon("tag")));
     }
 
     // delete
@@ -7674,45 +7684,45 @@ function cmt_render_form_prop(cj, cid, btnbox) {
     return einfo;
 }
 
+/** @param {string} text
+ * @param {boolean} warning
+ * @return {HTMLElement} */
+function cmt_hint(text, warning) {
+    if (warning) {
+        text = $e("span", "is-diagnostic is-warning", text);
+    }
+    return $e("p", "f-d mt-0", text);
+}
+
 function cmt_visibility_change() {
     const form = this.closest("form"),
         vis = form.elements.visibility,
         topic = form.elements.topic,
-        is_paper = topic && topic.value === "paper" && (!vis || vis.value !== "admin");
+        is_paper = topic && topic.value === "paper" && (!vis || vis.value !== "admin"),
+        would_auvis = is_paper
+            || hotcrp.status.myperm[topic && topic.value === "dec" ? "some_author_can_view_decision" : "some_author_can_view_review"],
+        m = [];
+    let aunotify = false;
+
     if (vis && vis.type === "select-one" && !form.elements.by_author) {
-        const vishint = vis.closest(".entryi").querySelector(".f-d"),
-            would_auvis = is_paper
-                || hotcrp.status.myperm[topic && topic.value === "dec" ? "some_author_can_view_decision" : "some_author_can_view_review"],
-            m = [];
+        vis.firstChild.textContent = would_auvis
+            ? "authors and reviewers" : "authors (eventually) and reviewers";
         if (vis.value === "au") {
-            if (would_auvis) {
-                m.length && m.push("\n");
-                m.push($e("span", "is-diagnostic is-warning", "Authors will be notified immediately."));
-            } else if (topic.value === "dec") {
-                m.length && m.push("\n");
-                m.push("Authors cannot currently view the decision or comments about the decision.");
-            } else {
-                m.length && m.push("\n");
-                m.push("Authors cannot currently view reviews or comments about reviews.");
-            }
             if (hotcrp.status.rev.blind === true) {
-                m.length && m.push("\n");
-                m.push(would_auvis ? "The comment will be anonymous to authors." : "When visible, the comment will be anonymous to authors.");
+                m.push(cmt_hint(would_auvis ? "The comment will be anonymous to authors." : "When visible, the comment will be anonymous to authors."));
+            }
+            if (would_auvis) {
+                aunotify = true;
+            } else if (topic.value === "dec") {
+                m.push(cmt_hint("Authors cannot currently view the decision or comments about the decision."));
+            } else {
+                m.push(cmt_hint("Authors cannot currently view reviews or comments about reviews."));
             }
         } else if (vis.value === "pc") {
-            m.length && m.push("\n");
-            m.push("The comment will be hidden from authors and external reviewers.");
+            m.push(cmt_hint("The comment will be hidden from authors and external reviewers."));
         } else if (vis.value === "rev"
                    && hotcrp.status.myperm.some_external_reviewer_can_view_comment === false) {
-            m.length && m.push("\n");
-            m.push($e("span", "is-diagnostic is-warning", "External reviewers cannot view comments at this time."));
-        }
-        vishint.replaceChildren(...m);
-        toggleClass(vishint, "hidden", m.length === 0);
-        if (would_auvis) {
-            vis.firstChild.textContent = "Authors and reviewers";
-        } else {
-            vis.firstChild.textContent = "Authors (eventually) and reviewers";
+            m.push(cmt_hint("External reviewers cannot view comments at this time.", true));
         }
         if (vis.value === "au" && would_auvis) {
             form.elements.bsubmit.textContent = "Save and notify authors";
@@ -7727,19 +7737,27 @@ function cmt_visibility_change() {
             toggleClass(form.elements.blind.closest(".checki"), "hidden", vis.value !== "au");
         }
     }
+
     if (topic) {
-        const topichint = topic.closest(".entryi").querySelector(".f-d");
         if (is_paper) {
-            topichint.replaceChildren("The comment will appear even when reviews are hidden.");
+            m.push(cmt_hint("The comment will appear even when reviews are hidden."));
         } else if (topic.value === "dec") {
-            topichint.replaceChildren("The comment will appear when the decision is visible.");
-        } else {
-            topichint.replaceChildren("The comment will appear when reviews are visible.");
-            if (!document.querySelector("article.s-review-submitted")) {
-                topichint.append("\n", $e("span", "is-diagnostic is-warning", "Reviews are not visible now."));
-            }
+            m.push(cmt_hint("The comment will appear when the decision is visible."));
+        } else if (topic.value === "rev"
+                   && !document.querySelector("article.s-review-submitted")) {
+            m.push(cmt_hint("The comment will appear when reviews are visible (they are not visible now).", true));
         }
     }
+
+    if (aunotify) {
+        m.push(cmt_hint("Authors will be notified immediately.", true));
+    }
+
+    vis && cmt_size_inline_select(vis);
+    topic && cmt_size_inline_select(topic);
+
+    const hints = form.querySelector(".cmtvis-hints");
+    hints && hints.replaceChildren(...m);
 }
 
 function cmt_ready_change() {
@@ -7839,9 +7857,6 @@ function cmt_start_edit(celt, cj) {
         .attr("data-default-value", cj.visibility || "rev")
         .on("change", cmt_visibility_change);
 
-    if (cj.topic !== "rev") {
-        fold(celt.querySelector(".cmteditinfo"), false, 4);
-    }
     $(form.elements.topic).val(cj.topic || "rev")
         .attr("data-default-value", cj.topic || "rev")
         .on("change", cmt_visibility_change);
@@ -7850,20 +7865,20 @@ function cmt_start_edit(celt, cj) {
         cmt_visibility_change.call(elt);
     }
 
-    const tags = [];
-    for (i in cj.tags || []) {
-        tags.push(unparse_tag(cj.tags[i]));
+    if ((elt = form.elements.tags)) {
+        const tags = [];
+        for (i in cj.tags || []) {
+            tags.push(unparse_tag(cj.tags[i]));
+        }
+        if (tags.length) {
+            elt.closest(".cmtprop").hidden = false;
+        }
+        elt.value = tags.join(" ");
     }
-    if (tags.length) {
-        fold(celt.querySelector(".cmteditinfo"), false, 3);
-    }
-    $(form.elements.tags).val(tags.join(" ")).autogrow();
 
     if (cj.docs && cj.docs.length) {
-        const entry = $e("div", "entry"),
-            ea = celt.querySelector(".has-editable-attachments");
-        ea.hidden = false;
-        ea.append(entry);
+        const entry = celt.querySelector(".has-editable-attachments > .entry");
+        entry.parentElement.hidden = false;
         for (i in cj.docs || []) {
             entry.append(cmt_render_attachment_input(+i + 1, cj.docs[i]));
         }
@@ -8126,11 +8141,8 @@ function cmt_button_click(evt) {
             cmt_save(self, self.name, true);
         });
     } else if (this.name === "showtags") {
-        fold(this.form.querySelector(".cmteditinfo"), false, 3);
+        this.form.elements.tags.closest(".cmtprop").hidden = false;
         this.form.elements.tags.focus();
-    } else if (this.name === "showthread") {
-        fold(this.form.querySelector(".cmteditinfo"), false, 4);
-        this.form.elements.topic.focus();
     }
 }
 
@@ -13135,13 +13147,13 @@ handle_ui.on("document-uploader", function (event) {
 });
 
 handle_ui.on("js-cancel-document", function () {
-    var doce = this.closest(".has-document"),
+    const doce = this.closest(".has-document"),
         $doc = $(doce), $actions = $doc.find(".document-actions"),
         f = doce.closest("form"),
         $uploader = $doc.find(".document-uploader");
     $uploader.val("").trigger("hotcrp-change-document").trigger("change");
     if (hasClass(doce, "document-new-instance")) {
-        var holder = doce.parentElement;
+        const holder = doce.parentElement;
         $doc.remove();
         if (!holder.firstChild && hasClass(holder.parentElement, "has-editable-attachments")) {
             holder.parentElement.hidden = true;

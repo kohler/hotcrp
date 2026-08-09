@@ -1688,9 +1688,8 @@ class ReviewValues extends MessageSet {
             return null;
         } else if ($this->single_approval > 0) {
             return "approvable";
-        } else {
-            return "draft";
         }
+        return "draft";
     }
 
     function finish() {
