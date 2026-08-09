@@ -42,7 +42,7 @@ class Nonblind_PaperOption extends PaperOption {
         if ($ov->prow->phase() === PaperInfo::PHASE_FINAL) {
             return;
         }
-        $pt->print_editable_option_papt($this, null, ["id" => $this->formid, "for" => false, "required" => true]);
+        $pt->print_editable_option_papt($this, null, ["id" => $this->formid, "for" => false, "fieldset" => true, "role" => "radiogroup", "required" => true]);
         if ($ov->prow->is_new()) {
             $oval = $reqval = null;
         } else {
@@ -58,6 +58,6 @@ class Nonblind_PaperOption extends PaperOption {
                     ["data-default-checked" => $k === $oval]),
                 '</span>', $s, '</label></div>';
         }
-        echo "</div></div>\n\n";
+        echo "</div></fieldset>\n\n";
     }
 }

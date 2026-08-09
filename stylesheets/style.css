@@ -20,7 +20,7 @@
 	--submission-bg-dark: #dce4e8;
 	--submission-bg: #e2e9ec;
 	--submission-sidebar-bg: #edf3f5;
-	--warning-fg: #c07700;
+	--warning-fg: #9d6100;
 	color: var(--text);
 	background-color: var(--paper);
 }
@@ -66,7 +66,7 @@ select, button {
 }
 
 .dim, li.disabled {
-	color: #888888;
+	color: #757575;
 }
 .color-red {
 	color: #ff0000;
@@ -193,9 +193,12 @@ input[type=number] {
 form, fieldset {
 	margin: 0;
 }
+/* A fieldset otherwise floors at `min-inline-size: min-content`, so it cannot
+   shrink and percentage widths inside it have nothing to resolve against. */
 fieldset {
 	border: 1px solid #9999cc;
 	border-radius: 4px;
+	min-inline-size: 0;
 }
 ul.x {
 	margin: 0 0 1em;
@@ -1479,8 +1482,8 @@ legend {
 	font-family: inherit;
 	font-size: 100%;
 }
-.select > select::-ms-expand {
-	display: none;
+select, .select {
+	max-width: 100%;
 }
 .select::after, .select-inline::after {
 	content: "";
@@ -1539,9 +1542,6 @@ legend {
 	background: none;
 	color: inherit;
 	cursor: pointer;
-}
-.select-inline > select::-ms-expand {
-	display: none;
 }
 /* Hover and focus change color only, never geometry, so the words after
    the control never shift. */
@@ -1612,50 +1612,50 @@ button:hover, button:focus, button:active, button:focus-within,
 .btn-default,
 .btn-primary,
 input.btn:checked {
-	border-color: #6b73b5;
-	background: #8089d1;
-	background-image: linear-gradient(#9ca3d6, #8089d1);
+	border-color: #4b54a4;
+	background: #5b65bc;
+	background-image: linear-gradient(#747dba, #5b65bc);
 	color: white;
 }
 .btn-default:hover, .btn-default:active,
-.btn-primary:hover, .btn-primary:active
+.btn-primary:hover, .btn-primary:active,
 input.btn:checked:hover, input.btn:checked:active {
-	border-color: #505799;
-	background-image: linear-gradient(#8089d1, #6b73b5);
+	border-color: #353e8d;
+	background-image: linear-gradient(#5b65bc, #4b54a4);
 }
 .btn-success {
-	border-color: #007f00;
-	background: #00ba00;
-	background-image: linear-gradient(#00ba00, #00a500);
+	border-color: #006400;
+	background: #009300;
+	background-image: linear-gradient(#009300, #008200);
 	color: white;
 }
 .btn-success:hover, .btn-success:active {
-	border-color: #005f00;
-	background-image: linear-gradient(#00a200, #007f00);
+	border-color: #004b00;
+	background-image: linear-gradient(#008000, #006400);
 }
 .btn-danger {
 	color: #cc0000;
 }
 .btn-danger:hover, .btn-danger:active {
-	border: 1px solid #b00000;
-	background: #ff0000;
-	background-image: linear-gradient(#ee0000, #cc0000);
+	border: 1px solid #990000;
+	background: #af0000;
+	background-image: linear-gradient(#d10000, #af0000);
 	color: white;
 }
 .differs .btn-default,
 .differs .btn-primary,
 .btn-highlight,
 .btn-highlight.btn-danger {
-	border-color: #cc0000;
-	background: #ff0000;
-	background-image: linear-gradient(#ff4040, #ff0000);
+	border-color: #af0000;
+	background: #d60000;
+	background-image: linear-gradient(#e91313, #d60000);
 	color: white;
 }
 .differs .btn-default:hover, .differs .btn-default:active,
 .differs .btn-primary:hover, .differs .btn-primary:active,
 .btn-highlight:hover, .btn-highlight:active {
-	border: 1px solid #b00000;
-	background-image: linear-gradient(#ee0000, #cc0000);
+	border: 1px solid #990000;
+	background-image: linear-gradient(#d10000, #af0000);
 }
 a.btn-default, a.btn-primary, a.btn-success, a.btn-highlight,
 a.btn-default:hover, a.btn-primary:hover, a.btn-success:hover,
@@ -2405,7 +2405,7 @@ fieldset.grid-option.active > legend {
 .settings-xf-view > .s-sf {
 	margin-bottom: 0;
 }
-.settings-xf-view > .s-sf.pf-separator {
+.settings-xf-view > .s-sf.s-sf-separator {
 	margin-top: 0.5rem;
 }
 .settings-xf-view > .s-rf-head {
@@ -2592,7 +2592,7 @@ label.f-c, .f-i > label, .f-i > .label {
 }
 .is-diagnostic.is-warning::before, .feedback.is-warning::before,
 .warning-mark {
-	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle style='fill:none;stroke-width:2.5px;stroke:%23c07700' cx='16' cy='16' r='14.5' /%3E%3Ccircle style='fill:%23c07700' cx='16' cy='23' r='2.5' /%3E%3Cpolygon style='fill:%23c07700' points='15 19 13.5 6.5 18.5 6.5 17 19' /%3E%3C/svg%3E");
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle style='fill:none;stroke-width:2.5px;stroke:%239d6100' cx='16' cy='16' r='14.5' /%3E%3Ccircle style='fill:%239d6100' cx='16' cy='23' r='2.5' /%3E%3Cpolygon style='fill:%239d6100' points='15 19 13.5 6.5 18.5 6.5 17 19' /%3E%3C/svg%3E");
 }
 .is-diagnostic.is-success::before, .feedback.is-success::before,
 .success-mark {
@@ -2609,7 +2609,7 @@ label.f-c, .f-i > label, .f-i > .label {
 }
 .is-diagnostic.is-warning-note::before, .feedback.is-warning-note::before,
 .warning-note-mark {
-	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14.5' fill='none' stroke-width='2.5' stroke='%23c07700'/%3E%3Cpath d='M7 17.8v-3.6l13.5.3L14 9l3-3 9 10-9 10-3-3 6.5-5.5z' fill='%23c07700'/%3E%3C/svg%3E");
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14.5' fill='none' stroke-width='2.5' stroke='%239d6100'/%3E%3Cpath d='M7 17.8v-3.6l13.5.3L14 9l3-3 9 10-9 10-3-3 6.5-5.5z' fill='%239d6100'/%3E%3C/svg%3E");
 }
 
 .has-error > .f-c,
@@ -2620,7 +2620,7 @@ h2.has-error,
 h3.has-error,
 .is-error,
 .is-urgent-note {
-	color: #ee0000;
+	color: #dc0000;
 }
 .has-error input[type=text],
 .has-error input[type=email],
@@ -3120,8 +3120,8 @@ del .rto {
 	color: white;
 }
 .rtinc {
-	color: red;
-	border-color: red;
+	color: #dc0000;
+	border-color: #dc0000;
 }
 .rtghost {
 	opacity: 0.4;
@@ -3133,12 +3133,12 @@ del .rto {
 }
 .rt-1, .rt-2, .rt-3,
 .rtconflict, .rtauthor, .rtdeclined {
-	color: gray;
-	border: 1px solid gray;
+	color: #757575;
+	border: 1px solid #757575;
 }
 .rtpotential {
-	color: #ff6600;
-	border: 1px solid #ff6600;
+	color: #b34700;
+	border: 1px solid #b34700;
 }
 .rti {
 	display: table-cell;
@@ -3900,7 +3900,7 @@ h1 .badge {
 	background-color: #aa00ee;
 }
 .badge-gray {
-	background-color: #8c8c94;
+	background-color: #757575;
 }
 .badge-pink {
 	background-color: #ffc3c8;
@@ -4165,7 +4165,7 @@ a.badge-white:hover {
 	position: relative;
 }
 .suggestion.s9lopri {
-	color: #888888;
+	color: #757575;
 }
 .suggestion.s9y {
 	background-color: #6088d0;
@@ -4375,30 +4375,32 @@ h3.pavfn, h3.psfn {
 .pavfnsp::after {
 	content: " ";
 }
-.pfehead {
+.s-sf-title {
 	font-size: inherit;
 	color: #313168;
 	margin-top: 0;
 	margin-bottom: 0.25rem;
 }
-.pf-separator > .pfehead {
-	font-size: larger;
-	margin-top: 1rem;
-}
-.pfehead .n {
+.s-sf-title .n {
 	font-variant: normal;
 	font-weight: normal;
 	text-transform: none;
 }
+.s-sf.s-sf-separator > .s-sf-title {
+	font-size: larger;
+	margin-top: 1rem;
+}
 .field-required::after {
 	content: " *";
-	color: #ee0000;
+}
+.field-required::after, .required-mark {
+	color: #dc0000;
 	font-variant: normal;
 	font-weight: normal;
 	text-transform: none;
 }
 .field-required-explanation {
-	color: #ee0000;
+	color: #dc0000;
 }
 .longtext-fader {
 	z-index: 1;
@@ -4620,7 +4622,7 @@ fieldset.s-sf > legend {
 	font-style: normal;
 	display: inline-block;
 	padding-left: 1em;
-	color: #999999;
+	color: #757575;
 }
 .revoff {
 	margin: 0.2em 0 0.5em 0;
@@ -4671,7 +4673,7 @@ fieldset.s-sf > legend {
 .s-sf, .pge {
 	margin-bottom: 2.5rem;
 }
-.s-sf.pf-separator {
+.s-sf.s-sf-separator {
 	margin-top: 3rem;
 	border-top: 3px solid #9e9ece;
 	max-width: 720px;
@@ -4697,18 +4699,21 @@ fieldset.s-sf > legend {
 	min-width: 3.9em;
 }
 
+.author-entry > .flex-grow-1 {
+	min-width: 0;
+}
 .editable-author-name, .editable-author-affiliation, .editable-author-email {
 	margin: 2px 0.5em 2px 0;
 }
 .editable-author-name, .editable-author-affiliation {
-	min-width: 268px;
+	min-width: min(268px, 100%);
 	width: 268px;
-	max-width: 600px;
+	max-width: min(600px, 100%);
 }
 .editable-author-email {
-	min-width: 248px;
+	min-width: min(248px, 100%);
 	width: 248px;
-	max-width: 600px;
+	max-width: min(600px, 100%);
 }
 .has-document + .has-document {
 	margin-top: 0.35rem;

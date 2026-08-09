@@ -937,7 +937,7 @@ class PaperOption implements JsonSerializable {
                 "data-format" => $fi ? $fi->format : null,
                 "data-wordlimit" => ($extra["wordlimit"] ?? 0) > 0 ? $extra["wordlimit"] : null,
                 "data-hard-wordlimit" => ($extra["hard_wordlimit"] ?? 0) > 0 ? $extra["hard_wordlimit"] : null
-            ]),
+            ] + $pt->sf_aria($this)),
             "</div></div>\n\n";
     }
     /** @param PaperValue $ov */
@@ -1144,9 +1144,9 @@ class Separator_PaperOption extends PaperOption {
         parent::__construct($conf, $args, "only-form");
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        echo '<div class="pf s-sf pf-separator">';
+        echo '<div class="s-sf s-sf-separator">';
         if (($h = $pt->edit_title_html($this))) {
-            echo '<h3 class="pfehead">', $h, '</h3>';
+            echo '<h3 class="s-sf-title">', $h, '</h3>';
         }
         $pt->print_field_description($this);
         echo '</div>';
@@ -1182,7 +1182,7 @@ class Checkbox_PaperOption extends PaperOption {
         $cb = Ht::checkbox($this->formid, 1, !!$reqov->value, [
             "id" => $this->readable_formid(),
             "data-default-checked" => !!$ov->value
-        ]);
+        ] + $pt->sf_aria($this));
         $pt->print_editable_option_papt($this,
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
@@ -1362,7 +1362,7 @@ class Selector_PaperOption extends PaperOption {
         $pt->print_editable_option_papt($this, null,
             $this->type === "dropdown"
             ? ["for" => $this->readable_formid()]
-            : ["id" => $this->readable_formid(), "for" => false, "fieldset" => true]);
+            : ["id" => $this->readable_formid(), "for" => false, "fieldset" => true, "role" => "radiogroup"]);
         echo '<div class="papev">';
         if ($this->type === "dropdown") {
             $sel = [];
@@ -1373,9 +1373,10 @@ class Selector_PaperOption extends PaperOption {
                 if ($s !== null)
                     $sel[$i + 1] = $s;
             }
-            echo Ht::select($this->formid, $sel, $reqov->value,
-                ["id" => $this->readable_formid(),
-                 "data-default-value" => $ov->value ?? 0]);
+            echo Ht::select($this->formid, $sel, $reqov->value, [
+                "id" => $this->readable_formid(),
+                "data-default-value" => $ov->value ?? 0
+            ] + $pt->sf_aria($this));
         } else {
             foreach ($this->values() as $i => $s) {
                 if ($s !== null) {
@@ -1608,8 +1609,7 @@ class Document_PaperOption extends PaperOption {
             $heading .= ' <span class="n">(' . join(", ", $msgs) . ')</span>';
         }
         $pt->print_editable_option_papt($this, $heading, [
-            "for" => $doc ? false : "{$fk}:uploader",
-            "id" => $this->readable_formid(),
+            "for" => false, "id" => $this->readable_formid(),
             "fieldset" => "{$this->formid}:field"
         ]);
 
@@ -1628,6 +1628,7 @@ class Document_PaperOption extends PaperOption {
 
         // current version, if any
         $has_cf = false;
+        $otitle = $this->edit_title($ov->prow);
         if ($doc) {
             if ($doc->mimetype === "application/pdf"
                 && ($spec = $this->conf->format_spec($this->id))
@@ -1637,16 +1638,21 @@ class Document_PaperOption extends PaperOption {
                 $pt->cf->check_document($doc);
             }
 
+            $dfn = $doc->filename ?? $doc->export_filename();
+            $aria_dfn = $dfn . ($doc->size() > 0 ? " (" . unparse_byte_size($doc->size()) . ")" : "") . " ({$otitle})";
             echo '<div class="document-file">',
                 Ht::hidden($this->formid, $doc->paperStorageId),
-                $doc->link_html(htmlspecialchars($doc->filename ?? $doc->export_filename())),
+                $doc->link_html(htmlspecialchars($dfn), 0, null, ["aria-label" => $aria_dfn]),
                 '</div><div class="document-stamps">';
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {
                 echo $stamps;
             }
             echo '</div><div class="document-actions">';
             if ($this->id > 0) {
-                echo '<button type="button" class="link ui js-remove-document">Delete</button>';
+                echo Ht::button("Delete", [
+                    "class" => "link ui js-remove-document",
+                    "aria-label" => "Delete {$aria_dfn}"
+                ]);
             }
             if ($has_cf && $pt->cf->allow_recheck()) {
                 echo '<button type="button" class="link ui js-check-format">',
@@ -1663,10 +1669,21 @@ class Document_PaperOption extends PaperOption {
                 }
                 echo '</div>';
             }
+            echo '<div class="document-replacer">',
+                Ht::button("Replace", [
+                    "class" => "ui js-replace-document", "id" => "{$fk}:uploader",
+                    "aria-label" => "Replace {$aria_dfn}",
+                    "aria-describedby" => "sf-{$this->formid}:d"
+                ]);
+        } else {
+            echo '<div class="document-replacer">',
+                Ht::button("Upload", [
+                    "class" => "ui js-replace-document", "id" => "{$fk}:uploader",
+                    "aria-label" => "Upload {$otitle}",
+                    "aria-describedby" => "sf-{$this->formid}:d"
+                ]);
         }
-
-        echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "{$fk}:uploader"]), '</div>',
-            "</div></fieldset>\n\n";
+        echo "</div></div></fieldset>\n\n";
     }
     function print_web_edit_hidden(PaperTable $pt, $ov) {
         echo '<fieldset name="', $this->formid, ':field" role="none" hidden>',

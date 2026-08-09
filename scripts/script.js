@@ -13621,7 +13621,11 @@ edit_conditions.checkbox = function (ec, form) {
     return e && e.checked;
 };
 function fieldset(form, fsname) {
-    return form.elements[fsname] || form.querySelector(`fieldset[name="${fsname}"]`);
+    const e = form.elements[fsname];
+    if (e && e.tagName === "FIELDSET") {
+        return e;
+    }
+    return form.querySelector(`fieldset[name="${fsname}"]`);
 }
 edit_conditions.checkboxes = function (ec, form) {
     const vs = ec.values;
@@ -13786,15 +13790,15 @@ function add_pslitem_header() {
     sidee.hidden = hasClass(this.parentElement, "hidden") || this.parentElement.hidden;
 }
 
-function add_pslitem_pfe() {
-    if (hasClass(this, "pf-separator")) {
+function add_pslitem_sf() {
+    if (hasClass(this, "s-sf-separator")) {
         navsidebar.append_li($e("li", "pslitem pslitem-separator"));
     } else {
         let ch = this.firstChild;
         if (ch.tagName === "LEGEND") {
             ch = ch.firstChild;
         }
-        if (hasClass(ch, "pfehead")) {
+        if (hasClass(ch, "s-sf-title")) {
             add_pslitem_header.call(ch);
         }
     }
@@ -13906,7 +13910,7 @@ hotcrp.load_editable_paper = function () {
     var f = $$("f-paper");
     hotcrp.add_diff_check(f);
     prepare_autoready_condition(f);
-    $(".s-sf").each(add_pslitem_pfe);
+    $(".s-sf").each(add_pslitem_sf);
     var h = $(".js-savepaper").first(),
         k = hasClass(f, "differs") ? "" : " hidden";
     $(".s-psl-nav").append('<div class="paper-alert mt-5'.concat(k,
@@ -13982,7 +13986,7 @@ hotcrp.replace_editable_field = function (field, elt) {
     while (elt.firstChild) {
         pfe.appendChild(elt.firstChild);
     }
-    add_pslitem_pfe.call(pfe);
+    add_pslitem_sf.call(pfe);
 };
 
 hotcrp.evaluate_edit_condition = function (ec, form) {

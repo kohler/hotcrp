@@ -1703,8 +1703,9 @@ class DocumentInfo implements JsonSerializable {
     /** @param string $html
      * @param int $flags
      * @param ?list<FileFilter> $filters
+     * @param ?array<string,mixed> $attr
      * @return string */
-    function link_html($html = "", $flags = 0, $filters = null) {
+    function link_html($html = "", $flags = 0, $filters = null, $attr = null) {
         $p = htmlspecialchars($this->url($filters));
         $suffix = $info = "";
         $title = null;
@@ -1740,7 +1741,8 @@ class DocumentInfo implements JsonSerializable {
             $alt = "[" . ($m && $m->description ? $m->description : $this->mimetype) . "]";
         }
 
-        $x = "<a href=\"{$p}\" class=\"qo" . ($need_run ? " need-format-check" : "") . '">'
+        $x = "<a href=\"{$p}\" class=\"qo" . ($need_run ? " need-format-check" : "") . '"'
+            . Ht::extra($attr) . '>'
             . Ht::img($img . $suffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
         if ($html) {
             $x .= " <u class=\"x\">{$html}</u>";

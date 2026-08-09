@@ -85,7 +85,7 @@ class Numeric_PaperOption extends PaperOption {
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
                 "data-default-value" => $ov->value ?? "",
                 "min" => $this->min_value, "max" => $this->max_value
-            ]),
+            ] + $pt->sf_aria($this)),
             "</div></div>\n\n";
     }
 

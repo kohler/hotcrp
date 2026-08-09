@@ -38,7 +38,7 @@ class TextFormat {
         }
         if ($this->has_preview) {
             $d[] = '<button type="button" class="link ui js-togglepreview" data-format="'
-                . $this->format . '" tabindex="-1">Preview</button>';
+                . $this->format . '">Preview</button>';
         }
         if ($d) {
             return '<div class="formatdescription">'

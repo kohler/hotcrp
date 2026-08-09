@@ -125,7 +125,7 @@ class RealNumber_PaperOption extends PaperOption {
                 "data-default-value" => $ov->data() ?? "",
                 "min" => $this->min_value, "max" => $this->max_value,
                 "step" => $this->precision === null ? "any" : pow(10, -$this->precision)
-            ]),
+            ] + $pt->sf_aria($this)),
             "</div></div>\n\n";
     }
 

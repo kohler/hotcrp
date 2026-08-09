@@ -59,7 +59,7 @@ class S3Transfer_Batch {
             $chash = $doc->content_binary_hash($doc->binary_hash());
             if ($chash !== $doc->binary_hash()) {
                 $saved = $checked = false;
-                error_log("{$front}: S3 upload cancelled: data claims checksum {$doc->text_hash()}"
+                error_log("{$front}: S3 upload canceled: data claims checksum {$doc->text_hash()}"
                           . ", has checksum " . HashAnalysis::hash_as_text($chash));
             } else {
                 $saved = $checked = $doc->check_s3();

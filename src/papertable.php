@@ -497,11 +497,13 @@ class PaperTable {
         } else {
             $for = $rest["for"] ?? false;
         }
+        $required = $rest["required"] ?? $opt->required > 0;
+        $hide_required = $rest["hide_required"] ?? !!$for;
         if ($fieldset) {
             $fsname = $fieldset === true ? $opt->formid : $fieldset;
-            echo "<fieldset name=\"{$fsname}\" class=\"pf s-sf";
+            echo "<fieldset name=\"{$fsname}\" class=\"s-sf";
         } else {
-            echo "<div class=\"pf s-sf";
+            echo "<div class=\"s-sf";
         }
         if ($opt->has_complex_exists_condition()
             && !$this->settings_mode
@@ -512,14 +514,32 @@ class PaperTable {
             if (str_starts_with($key, "data-"))
                 echo "\" {$key}=\"", Ht::escape_attr($value);
         }
+        // Group fields have no single control to carry ARIA, so the fieldset
+        // takes it. `aria-required` is undefined on role=group, so a required
+        // radio group must be exposed as a radiogroup for it to mean anything.
+        $xattr = "";
+        if ($fieldset) {
+            $xattr = " aria-describedby=\"sf-{$opt->formid}:d\"";
+            if (($rest["role"] ?? null) === "radiogroup") {
+                $xattr .= " role=\"radiogroup\"";
+                if ($required) {
+                    $xattr .= " aria-required=\"true\"";
+                    $hide_required = true;
+                }
+            }
+            if ($this->edit_status
+                && $this->edit_status->has_error_under($opt->formid, ":")) {
+                $xattr .= " aria-invalid=\"true\"";
+            }
+        }
         if ((!$opt->test_exists($this->prow) && !$this->settings_mode)
             || ($rest["hidden"] ?? false)) {
-            echo "\" hidden>";
+            echo "\"{$xattr} hidden>";
         } else {
-            echo "\">";
+            echo "\"{$xattr}>";
         }
         echo $fieldset ? "<legend>" : "",
-            "<h3 class=\"", $this->control_class($opt->formid, "pfehead");
+            "<h3 class=\"", $this->control_class($opt->formid, "s-sf-title");
         if ($for === "checkbox") {
             echo " checki";
         }
@@ -531,12 +551,15 @@ class PaperTable {
         }
         echo '">';
         $heading = $heading ?? $this->edit_title_html($opt);
-        $required = $rest["required"] ?? $opt->required;
-        $klass = Ht::add_tokens("field-title", $required ? "field-required" : "");
+        if ($required) {
+            $heading .= ' <span class="required-mark need-tooltip" data-tooltip="Field required"'
+                . ($hide_required ? ' aria-hidden="true"' : ' aria-label="(required)"')
+                . '>*</span>';
+        }
         if ($for) {
-            echo Ht::label($heading, $for === "checkbox" ? null : $for, ["class" => $klass]);
+            echo Ht::label($heading, $for === "checkbox" ? null : $for, ["class" => "field-title"]);
         } else {
-            echo "<span class=\"{$klass}\">{$heading}</span>";
+            echo "<span class=\"field-title\">{$heading}</span>";
         }
         $vis = $opt->visibility();
         if ($vis === PaperOption::VIS_ADMIN) {
@@ -681,13 +704,28 @@ class PaperTable {
 
     /** @param PaperOption $opt */
     function print_field_description($opt) {
-        echo $this->messages_at($opt->formid);
+        echo '<div id="sf-', $opt->formid, ':d">',
+            $this->messages_at($opt->formid);
         $fr = new FieldRender(FieldRender::CFHTML);
         $opt->render_description($fr);
         if (!$fr->is_empty()) {
             echo $fr->value_html("field-d");
         }
-        echo $this->messages_at($opt->formid . ":context");
+        echo $this->messages_at($opt->formid . ":context"), '</div>';
+    }
+
+    /** @param PaperOption $opt
+     * @return array<string,mixed> */
+    function sf_aria($opt) {
+        $js = ["aria-describedby" => "sf-{$opt->formid}:d"];
+        if ($opt->required > 0) {
+            $js["aria-required"] = "true";
+        }
+        if ($this->edit_status
+            && $this->edit_status->has_error_under($opt->formid, ":")) {
+            $js["aria-invalid"] = "true";
+        }
+        return $js;
     }
 
     /** @param PaperOption $opt

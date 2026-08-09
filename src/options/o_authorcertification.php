@@ -683,8 +683,8 @@ class AuthorCertification_PaperOption extends PaperOption {
             $ready[2][] = $this->web_edit_one($pt, $oe->user, $oe, $reqentries, $n);
         }
 
-        $pt->print_editable_option_papt($this, null, ["for" => false, "id" => $this->readable_formid()]);
-        echo '<fieldset class="papev fieldset-covert" name="', $this->formid, '">';
+        $pt->print_editable_option_papt($this, null, ["for" => false, "fieldset" => true, "id" => $this->readable_formid()]);
+        echo '<div class="papev">';
         if (!empty($ready[1])) {
             $mb = empty($ready[0]) && empty($ready[2]) ? " mb-0" : "";
             echo "<ul class=\"x{$mb}\">", join("", $ready[1]), "</ul>";
@@ -702,7 +702,7 @@ class AuthorCertification_PaperOption extends PaperOption {
             echo '<h4 class="mb-0 font-italic">No authors yet</h4>',
                 Ht::checkbox("", 1, false, ["hidden" => true, "disabled" => true]);
         }
-        echo "</fieldset></div>\n\n";
+        echo "</div></fieldset>\n\n";
     }
 
     function print_web_edit_hidden(PaperTable $pt, $ov) {

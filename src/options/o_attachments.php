@@ -153,21 +153,34 @@ class Attachments_PaperOption extends PaperOption {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
         }
         echo '>';
+        // Need option title for accessibility
+        $otitle = $this->edit_title($ov->prow);
         foreach ($ov->document_set() as $i => $doc) {
             $ctr = $i + 1;
             $oname = "{$this->formid}:{$ctr}";
+            $dfn = $doc->member_filename();
+            $aria_dfn = $dfn . ($doc->size() > 0 ? " (" . unparse_byte_size($doc->size()) . ")" : "") . " ({$otitle})";
             echo '<div class="has-document" data-dt="', $this->id,
                 '" data-document-name="', $oname, '"><div class="document-file">',
                 Ht::hidden($oname, $doc->paperStorageId),
-                $doc->link_html(htmlspecialchars($doc->member_filename())),
+                $doc->link_html(htmlspecialchars($dfn), 0, null, ["aria-label" => $aria_dfn]),
                 '</div><div class="document-stamps">';
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {
                 echo $stamps;
             }
-            echo '</div><div class="document-actions">', Ht::button("Delete", ["class" => "link ui js-remove-document"]), '</div></div>';
+            echo '</div><div class="document-actions">',
+                Ht::button("Delete", [
+                    "class" => "link ui js-remove-document",
+                    "aria-label" => "Delete {$aria_dfn}"
+                ]), '</div></div>';
         }
         echo '</div><div class="mt-2">',
-            Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]),
+            Ht::button("Add attachment", [
+                "class" => "ui js-add-attachment",
+                "data-editable-attachments" => "{$this->formid}:attachments",
+                "aria-label" => "Add attachment ({$otitle})",
+                "aria-describedby" => "sf-{$this->formid}:d"
+            ]),
             "</div></fieldset>\n\n";
     }
     function print_web_edit_hidden(PaperTable $pt, $ov) {
