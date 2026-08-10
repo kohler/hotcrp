@@ -472,7 +472,8 @@ class Assign_Page {
         echo '</div>'; // .pctbname
         if ($potconf) {
             echo '<div class="pcconfmatch need-tooltip" data-tooltip-class="gray" data-tooltip="',
-                str_replace('"', '&quot;', $potconf->tooltip_html($this->prow)),
+                // NB double-escaping required!
+                Ht::escape_attr($potconf->tooltip_html($this->prow)),
                 '">', $potconf->description_html(), '</div>';
         }
 

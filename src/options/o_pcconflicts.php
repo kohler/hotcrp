@@ -277,7 +277,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 Conflict::is_conflicted($pct) ? " pcconf-conflicted" : "";
             if ($potconf) {
                 $potconftts[] = "<div id=\"d-pcconf:{$id}\" class=\"bubble\" role=\"tooltip\" hidden><div class=\"bubcontent\">" . $potconf->tooltip_html($ov->prow) . "</div></div>";
-                echo ' want-tooltip" aria-describedby="d-pcconf:', $id;
+                echo ' need-tooltip-within" aria-describedby="d-pcconf:', $id;
             }
             echo '">';
 

@@ -1784,7 +1784,12 @@ class DocumentInfo implements JsonSerializable {
             }
             if (($flags & self::L_SMALL) === 0) {
                 $ffh = htmlspecialchars($cf->full_feedback_html());
-                $message = "<strong class=\"need-tooltip\" aria-label=\"{$ffh}\">ⓘ</strong>";
+                $message = "<strong class=\"need-tooltip\" data-tooltip=\""
+                    // NB note double escape!
+                    . Ht::escape_attr($cf->full_feedback_html())
+                    . "\" aria-label=\""
+                    . Ht::escape_attr($cf->full_feedback_text())
+                    . "\">ⓘ</strong>";
             }
         }
         return [$message, $suffix, $need_run];

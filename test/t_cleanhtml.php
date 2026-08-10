@@ -34,6 +34,33 @@ class CleanHTML_Tester {
         xassert_eqq($chtml->clean('<!----!>-->'), null);
     }
 
+    function test_bogus_comment() {
+        // A `<!` that opens neither a comment nor CDATA is an error, and the
+        // error must span the whole bogus declaration. Nothing need follow the
+        // `<!`, so the declaration-name match can be empty; check the reported
+        // positions, which are what go wrong if that match is assumed nonempty.
+        $expected = [
+            "<!" => [0, 2, "<0>Incorrectly opened HTML comment"],
+            "<! " => [0, 3, "<0>Incorrectly opened HTML comment"],
+            "<!\n\t" => [0, 4, "<0>Incorrectly opened HTML comment"],
+            "a<!" => [1, 3, "<0>Incorrectly opened HTML comment"],
+            "<!x" => [0, 3, "<0>Incorrectly opened HTML comment"],
+            "<!doctype html>" => [0, 9, "<0>HTML DOCTYPE declarations not allowed"],
+            "<!DOCTYPE html>" => [0, 9, "<0>HTML DOCTYPE declarations not allowed"],
+            "<![if x]>" => [0, 5, "<0>Conditional HTML comments not allowed"],
+            "<![endif]>" => [0, 10, "<0>Conditional HTML comments not allowed"]
+        ];
+        foreach ($expected as $t => $pm) {
+            $ch = new CleanHTML;
+            xassert_eqq($ch->clean($t), null);
+            $ml = $ch->message_list();
+            xassert_eqq(count($ml), 1);
+            xassert_eqq($ml[0]->message, $pm[2]);
+            xassert_eqq($ml[0]->pos1, $pm[0]);
+            xassert_eqq($ml[0]->pos2, $pm[1]);
+        }
+    }
+
     function test_void() {
         $chtml = CleanHTML::basic();
         xassert_eqq($chtml->clean('<br>'), '<br>');
@@ -61,7 +88,109 @@ class CleanHTML_Tester {
         xassert_eqq($chtml->clean('<span class="ui">Hi</span>'), null);
         xassert_eqq($chtml->clean('<span class="xui">Hi</span>'), '<span class="xui">Hi</span>');
         xassert_eqq($chtml->clean('<span class="hi" data-fart>Hi</span>'), null);
-        xassert_eqq($chtml->clean('<span class="hi" data-tooltip="hi&">Hi</span>'), '<span class="hi" data-tooltip="hi&amp;">Hi</span>');
+    }
+
+    function test_attr_denied() {
+        $chtml = CleanHTML::basic();
+        // event handlers, in any case, spelled with any prefix length
+        xassert_eqq($chtml->clean('<img src="/x" onerror="alert(1)">'), null);
+        xassert_eqq($chtml->clean('<img src="/x" ONERROR="alert(1)">'), null);
+        xassert_eqq($chtml->clean('<img src="/x" onerror = "alert(1)">'), null);
+        xassert_eqq($chtml->clean('<b onmouseover=x>Hi</b>'), null);
+        // `on` itself is not an event handler
+        xassert_eqq($chtml->clean('<b on="x">Hi</b>'), '<b on="x">Hi</b>');
+        // style/script/id: CSS injection and JS lookup by id
+        xassert_eqq($chtml->clean('<b style="color:red">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b STYLE=x>Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b script="x">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b id="x">Hi</b>'), null);
+        // `name` on <img> would clobber `document.<name>` just like `id`
+        xassert_eqq($chtml->clean('<img name="getElementById" src="/x">'), null);
+        // `ping` POSTs to an arbitrary URL when a link is clicked
+        xassert_eqq($chtml->clean('<a href="/x" ping="https://evil.example/c">Hi</a>'), null);
+        // data-* drives JS behavior, including several innerHTML sinks
+        xassert_eqq($chtml->clean('<b data-format="5" data-content="x">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b data-tooltip-info="x">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b data-tooltip="x">Hi</b>'), null);
+        // formaction/xlink:href are inert today (<button>, <svg> are disabled)
+        // but would be live URL sinks if those elements were ever enabled
+        xassert_eqq($chtml->clean('<b formaction="/x">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b xlink:href="/x">Hi</b>'), null);
+        // ordinary attributes are unaffected
+        xassert_eqq($chtml->clean('<b title="t" aria-label="a" lang="en">Hi</b>'),
+            '<b title="t" aria-label="a" lang="en">Hi</b>');
+    }
+
+    function test_attr_class_denied() {
+        $chtml = CleanHTML::basic();
+        // classes that hook up JS behavior
+        xassert_eqq($chtml->clean('<b class="ui">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b class="js-foo">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b class="s-x">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b class="need-format">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b class="need-tooltip">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b class="pl">Hi</b>'), null);
+        xassert_eqq($chtml->clean('<b class="plx">Hi</b>'), null);
+        // one bad class in a list rejects the whole thing
+        xassert_eqq($chtml->clean('<b class="mt-1 need-format">Hi</b>'), null);
+        // near misses are fine
+        xassert_eqq($chtml->clean('<b class="needy pl-2 xui sx">Hi</b>'),
+            '<b class="needy pl-2 xui sx">Hi</b>');
+    }
+
+    function test_url_scheme() {
+        $chtml = CleanHTML::basic();
+        // rejected schemes
+        xassert_eqq($chtml->clean('<a href="javascript:alert(1)">X</a>'), null);
+        xassert_eqq($chtml->clean('<a href="JaVaScRiPt:alert(1)">X</a>'), null);
+        xassert_eqq($chtml->clean('<a href="data:text/html,x">X</a>'), null);
+        xassert_eqq($chtml->clean('<a href="vbscript:msgbox(1)">X</a>'), null);
+        xassert_eqq($chtml->clean('<img src="javascript:alert(1)">'), null);
+        // Browsers strip leading whitespace and C0 controls from URLs before
+        // parsing the scheme, so the sanitizer must too.
+        xassert_eqq($chtml->clean('<a href=" javascript:alert(1)">X</a>'), null);
+        xassert_eqq($chtml->clean("<a href=\"\tjavascript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"\njavascript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"\x01javascript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"\x08javascript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"\x0bjavascript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"\x1fjavascript:alert(1)\">X</a>"), null);
+        // Browsers also remove tab/CR/LF from *anywhere* in a URL, including
+        // the middle of the scheme; entity references decode to those too.
+        xassert_eqq($chtml->clean("<a href=\"java\tscript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"java\nscript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"java\rscript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean("<a href=\"j\ta\nva\rscript:alert(1)\">X</a>"), null);
+        xassert_eqq($chtml->clean('<a href="java&#9;script:alert(1)">X</a>'), null);
+        xassert_eqq($chtml->clean('<a href="java&#10;script:alert(1)">X</a>'), null);
+        xassert_eqq($chtml->clean('<a href="java&Tab;script:alert(1)">X</a>'), null);
+        xassert_eqq($chtml->clean('<a href="da&#9;ta:text/html,x">X</a>'), null);
+        // accepted URLs
+        xassert_eqq($chtml->clean('<a href="https://example.com/x">X</a>'), '<a href="https://example.com/x">X</a>');
+        xassert_eqq($chtml->clean('<a href="HTTP://example.com/x">X</a>'), '<a href="HTTP://example.com/x">X</a>');
+        xassert_eqq($chtml->clean('<a href="//example.com/x">X</a>'), '<a href="//example.com/x">X</a>');
+        xassert_eqq($chtml->clean('<a href="/paper/1">X</a>'), '<a href="/paper/1">X</a>');
+        xassert_eqq($chtml->clean('<a href="paper/1">X</a>'), '<a href="paper/1">X</a>');
+        xassert_eqq($chtml->clean('<a href="#frag">X</a>'), '<a href="#frag">X</a>');
+        xassert_eqq($chtml->clean('<a href="?q=1">X</a>'), '<a href="?q=1">X</a>');
+        // a colon that is not a scheme separator
+        xassert_eqq($chtml->clean('<a href="/x/a:b">X</a>'), '<a href="/x/a:b">X</a>');
+        // http itself survives the same normalization
+        xassert_eqq($chtml->clean("<a href=\"htt\tp://example.com/\">X</a>"), "<a href=\"htt\tp://example.com/\">X</a>");
+    }
+
+    function test_unquoted_attr_value() {
+        $chtml = CleanHTML::basic();
+        // An unquoted value ends at the first non-word character, so the rest
+        // of `javascript:alert(1)` is parsed as a second attribute. Browsers
+        // agree that the result is inert: `:alert(1)` is a valid attribute
+        // name, and href is the relative URL `javascript`.
+        xassert_eqq($chtml->clean('<a href=javascript:alert(1)>X</a>'),
+            '<a href="javascript" :alert(1)>X</a>');
+        xassert_eqq($chtml->clean('<img src=x:y>'), '<img src="x" :y>');
+        // The tail is still checked as an attribute, so it cannot smuggle in
+        // an event handler.
+        xassert_eqq($chtml->clean('<img src=x onerror=alert(1)>'), null);
     }
 
     function test_nesting_scope() {
@@ -114,6 +243,13 @@ class CleanHTML_Tester {
         xassert_eqq($chtml->clean('<b>x</b>'), '<b>x</b>');
         xassert_eqq($chtml->clean('<i>x</i>'), '<i>x</i>');
         xassert_eqq($chtml->clean('<span>x</span>'), '<span>x</span>');
+        // CLEAN_FIX materializes a paragraph for a stray </p>, but must not do
+        // so in inline mode, where it would emit output it then rejects
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
+        xassert_eqq($ch->clean('bbb</p>'), 'bbb<p></p>');
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX | CleanHTML::CLEAN_INLINE);
+        xassert_eqq($ch->clean('bbb</p>'), null);
+        xassert_eqq($ch->clean('<b>x</b>'), '<b>x</b>');
     }
 
     function test_strip_ignore_flags() {
@@ -268,5 +404,20 @@ class CleanHTML_Tester {
         // no base_url: relative URLs pass through unchanged
         $ch2 = new CleanHTML;
         xassert_eqq($ch2->clean('<a href="page">X</a>'), '<a href="page">X</a>');
+    }
+
+    function test_fix_adoption_agency_stack_repair() {
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX);
+        // The adoption agency splices a node out of the middle of the open
+        // element stack. The node above it saved *that* node's flags as its
+        // enclosing context, so they must be repaired, or a later fixup walks
+        // off the end of the stack.
+        xassert_eqq($ch->clean('<a><small></a></div>'), null);
+        xassert_eqq($ch->clean('<a><small></a></p>'),
+            '<a><small></small></a><small></small><p></p>');
+        xassert_eqq($ch->clean('<b><i></b><div>'), null);
+        $ch = new CleanHTML(CleanHTML::CLEAN_FIX | CleanHTML::CLEAN_INLINE);
+        xassert_eqq($ch->clean('<p<b><a></b><li><p><tr>'), null);
+        xassert_eqq($ch->clean('</ul><b><code></b></b>'), null);
     }
 }

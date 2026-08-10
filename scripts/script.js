@@ -3023,9 +3023,9 @@ function prepare_info(elt, info) {
                && hasClass(es[0], "bubble")) {
         info.contentElement = es[0];
     } else if (elt.hasAttribute("aria-label")) {
-        info.content = elt.getAttribute("aria-label");
+        info.content = escape_html(elt.getAttribute("aria-label"));
     } else if (elt.hasAttribute("title")) {
-        info.content = elt.getAttribute("title");
+        info.content = escape_html(elt.getAttribute("title"));
     }
     return info;
 }
@@ -3152,14 +3152,14 @@ function tooltip() {
 function tooltip_within(elt) {
     const info = prepare_info(elt, {});
     function enter(evt) {
-        const wte = evt.target.closest(".want-tooltip");
+        const wte = evt.target.closest(".need-tooltip-within");
         if (wte) {
             const tt = tooltip_map.get(wte) || show_tooltip.call(wte, info);
             tt && tt.enter();
         }
     }
     function leave(evt) {
-        const wte = evt.target.closest(".want-tooltip");
+        const wte = evt.target.closest(".need-tooltip-within");
         wte && ttleave.call(wte);
     }
     elt.addEventListener("mouseover", enter);
@@ -13283,7 +13283,7 @@ function save_potential_conflicts(d) {
             if (wantc.description !== "<0>" + elt.lastChild.textContent) {
                 render_text.onto(elt.lastChild, "f", wantc.description);
             }
-            addClass(elt, "want-tooltip");
+            addClass(elt, "need-tooltip-within");
             elt.setAttribute("aria-describedby", `d-pcconf:${uid}`);
         } else if (isc) {
             if (hasClass(elt.lastChild, "pcconfmatch")) {
@@ -13292,7 +13292,7 @@ function save_potential_conflicts(d) {
             if (!hasClass(elt, "pcconf-conflicted")) {
                 nul.insertBefore(li, nli);
             }
-            removeClass(elt, "want-tooltip");
+            removeClass(elt, "need-tooltip-within");
             elt.removeAttribute("aria-describedby");
         }
     }
@@ -15554,6 +15554,18 @@ handle_ui.on("js-open-activity", function (evt) {
 })(jQuery);
 
 
+// Return `value` if it is a valid value for CSS property `prop`, else `dflt`.
+function css_value(prop, value, dflt) {
+    if (value) {
+        const e = document.createElement("div");
+        e.style.setProperty(prop, value);
+        if ((value = e.style.getPropertyValue(prop)) !== "") {
+            return value;
+        }
+    }
+    return dflt;
+}
+
 customElements.define("hotcrp-multimeter", class extends HTMLElement {
     static observedAttributes = ["values", "colors", "pointers", "pointer-colors", "width", "height"];
 
@@ -15575,8 +15587,8 @@ customElements.define("hotcrp-multimeter", class extends HTMLElement {
     connectedCallback() {
         const cs = getComputedStyle(this),
             style = this.shadowRoot.firstChild,
-            width = style.width || this.getAttribute("width") || "10em",
-            height = style.height || this.getAttribute("height") || "2ex",
+            width = css_value("width", this.getAttribute("width"), "10em"),
+            height = css_value("height", this.getAttribute("height"), "2ex"),
             flex = this.shadowRoot.lastChild.firstChild;
         style.textContent = `:host { display: inline-block; width: ${width}; height: ${height}; }`;
         flex.style.borderRadius = cs.borderRadius;

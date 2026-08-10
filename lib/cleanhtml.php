@@ -406,6 +406,7 @@ class CleanHTML {
             if ($travtag->tag === $tag) {
                 '@phan-var-force CleanHTMLTag $prevtag';
                 $prevtag->next = $travtag->next;
+                $prevtag->tagfl = $travtag->tagfl;
                 return "{$b}</{$tag}>{$a}";
             }
             $a = ($travtag->opener ?? "<{$travtag->tag}>") . $a;
@@ -468,8 +469,11 @@ class CleanHTML {
             || $lattr === "style"
             || $lattr === "script"
             || $lattr === "id"
-            || (str_starts_with($lattr, "data-")
-                && !str_starts_with($lattr, "data-tooltip"))) {
+            || $lattr === "name"
+            || $lattr === "ping"
+            || $lattr === "formaction"
+            || $lattr === "xlink:href"
+            || str_starts_with($lattr, "data-")) {
             $this->lerror("<0>HTML attribute {$attr} not allowed", $attrpos, $endpos);
             return "";
         }
@@ -481,6 +485,7 @@ class CleanHTML {
                 if (str_starts_with($class, "ui")
                     || str_starts_with($class, "js-")
                     || str_starts_with($class, "s-")
+                    || str_starts_with($class, "need-")
                     || (str_starts_with($class, "pl")
                         && !preg_match('/\Apl-\d\z/', $class))) {
                     $this->lerror("<0>HTML class {$class} not allowed", $attrpos, $endpos);
@@ -493,10 +498,13 @@ class CleanHTML {
             }
         }
         if (($lattr === "href" || $lattr === "src")
-            && $value !== null
-            && preg_match('/\A\s*+((?!http[\s:]|https[\s:])[a-z][-+.a-z0-9]*+)\s*+:/i', $value, $m)) {
-            $this->lerror("<0>URL scheme {$m[1]} not allowed in links", $attrpos, $endpos);
-            return "";
+            && $value !== null) {
+            // follow WHATWG URL parsing rules: remove \t\r\n, trim leading controls
+            $uvalue = ltrim(str_replace(["\t", "\n", "\r"], "", $value), "\x00..\x20");
+            if (preg_match('/\A((?!https?+[\s:]|mailto[\s:])[a-z][-+.a-z0-9]*+)\s*+:/i', $uvalue, $m)) {
+                $this->lerror("<0>URL scheme {$m[1]} not allowed in links", $attrpos, $endpos);
+                return "";
+            }
         }
         if ($this->base_url !== null
             && ($lattr === "href" || $lattr === "src")
@@ -544,7 +552,7 @@ class CleanHTML {
                     $x .= substr($t, $xp, $p - $xp);
                     $p = $xp = $p + strlen($m[0]);
                 } else {
-                    preg_match('/\G<!\s*(\S+)/s', $t, $m, 0, $p);
+                    preg_match('/\G<!\s*+(\S*+)/s', $t, $m, 0, $p);
                     if (str_starts_with(strtolower($m[1]), "doctype")) {
                         $this->lerror("<0>HTML DOCTYPE declarations not allowed", $p, $p + strlen($m[0]));
                     } else if (str_starts_with(strtolower($m[1]), "[i")
@@ -593,7 +601,6 @@ class CleanHTML {
                     }
                 }
                 $p = $tagp + 1 + strlen($m[1]) + strlen($m[2]) + strlen($m[3]);
-                // XXX should sanitize 'id', 'class', 'data-', etc.
                 while ($p !== $len && $t[$p] !== "/" && $t[$p] !== ">") {
                     if (!preg_match('/\G([^\s\/<>=\'"]++)\s*+/s', $t, $m, 0, $p)) {
                         $this->lerror("<0>Invalid character in HTML tag attributes", $p, $p);
@@ -678,6 +685,7 @@ class CleanHTML {
                     $x .= substr($t, $xp, $p - $xp) . $ins;
                     if ($this->fixed_by_adoption) {
                         $xp = $p = $endp;
+                        $this->fixed_by_adoption = false;
                         continue;
                     }
                     $xp = $p;
@@ -690,7 +698,7 @@ class CleanHTML {
                         $x .= substr($t, $xp, $p - $xp) . "</{$tag}";
                         $xp = $endp - 1;
                     }
-                } else if (($this->flags & self::CLEAN_FIX) !== 0
+                } else if (($this->flags & (self::CLEAN_INLINE | self::CLEAN_FIX)) === self::CLEAN_FIX
                            && $tag === "p"
                            && !$this->has_open_tag("p")) {
                     $x .= substr($t, $xp, $tagp - $xp);

@@ -220,10 +220,11 @@ class Session_API {
             $fmt = Ftext::format($message);
             if ($fmt === null) {
                 $ml[] = new MessageItem($status, null, "<0>{$message}");
-            } else if ($fmt === 0
-                       || $fmt === 1
-                       || ($fmt === 5 && CleanHtml::basic_clean(substr($message, 3)))) {
+            } else if ($fmt === 0 || $fmt === 1) {
                 $ml[] = new MessageItem($status, null, $message);
+            } else if ($fmt === 5
+                       && ($html = CleanHtml::basic_clean(substr($message, 3)))) {
+                $ml[] = new MessageItem($status, null, "<5>{$html}");
             }
         }
         if (empty($ml)) {
