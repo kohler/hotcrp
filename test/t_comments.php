@@ -1482,7 +1482,7 @@ class Comments_Tester {
             xassert(!($j->dry_run ?? false));
             xassert_eqq(self::find_warning($j->message_list ?? []), null);
             xassert(isset($j->comment));
-            xassert(self::has_message($j->message_list ?? [], "Mentioned users"));
+            xassert(self::has_message($j->message_list ?? [], "Mentioned user"));
             $cids[] = (int) $j->comment->cid;
         }
         xassert_eqq($this->ncomments(1), $before + 2);
