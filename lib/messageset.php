@@ -657,27 +657,34 @@ class MessageSet {
     }
 
     /** @param string $prefix
+     * @param ?string $separator
      * @return int */
-    function problem_status_under($prefix) {
+    function problem_status_under($prefix, $separator = null) {
         if ($this->problem_status < self::WARNING) {
             return 0;
         }
         $st = 0;
         foreach ($this->errf as $field => $fst) {
-            if ($fst > $st && str_starts_with($field, $prefix))
+            if ($fst > $st
+                && str_starts_with($field, $prefix)
+                && ($separator === null
+                    || strlen($field) === strlen($prefix)
+                    || substr_compare($field, $separator, strlen($prefix), strlen($separator)) === 0))
                 $st = $fst;
         }
         return $st;
     }
     /** @param string $prefix
+     * @param ?string $separator
      * @return bool */
-    function has_problem_under($prefix) {
-        return $this->problem_status_under($prefix) >= self::WARNING;
+    function has_problem_under($prefix, $separator = null) {
+        return $this->problem_status_under($prefix, $separator) >= self::WARNING;
     }
     /** @param string $prefix
+     * @param ?string $separator
      * @return bool */
-    function has_error_under($prefix) {
-        return $this->problem_status_under($prefix) >= self::ERROR;
+    function has_error_under($prefix, $separator = null) {
+        return $this->problem_status_under($prefix, $separator) >= self::ERROR;
     }
 
     /** @param int $status

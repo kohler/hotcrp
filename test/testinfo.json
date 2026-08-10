@@ -11,7 +11,8 @@
         "members": [
             "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",
             "AuthorMatch_Tester", "Ht_Tester", "Fmt_Tester",
-            "Getopt_Tester", "CleanHTML_Tester", "Abbreviation_Tester",
+            "Getopt_Tester", "CleanHTML_Tester", "MessageSet_Tester",
+            "Abbreviation_Tester",
             "DocumentBasics_Tester", "FixCollaborators_Tester",
             "Mention_Tester", "Search_Tester", "Settings_Tester",
             "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester"
