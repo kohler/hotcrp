@@ -66,7 +66,7 @@
     ["<0>Options {:list} not found", "<0>Topics {:list} not found", ["{type}=topics"]],
     ["<0>Options {:list} not found", "<0>Option ‘{:list}’ not found", ["#{0}=1"]],
     ["<0>Ignoring unknown fields {:list}", "<0>Ignoring unknown field {:list}", ["#{0}=1"]],
-    ["<5>Notified mentioned users {:nblist}", "<5>Notified mentioned user {:nblist}", ["#{0}=1"]],
+    ["<5>Mentioned users {:nblist}", "<5>Mentioned user {:nblist}", ["#{0}=1"]],
     ["<5>Notified {submission} contacts {:nblist}", "<5>Notified {submission} contact {:nblist}", ["#{0}=1"]],
 
     ["sf_submission", "Draft submission", ["{draft}"]],
