@@ -3258,7 +3258,12 @@ function $popup(options) {
     options = options || {};
     const near = options.near || options.anchor || window,
         forme = $e("form", {enctype: "multipart/form-data", "accept-charset": "UTF-8", class: options.form_class || null}),
-        modale = $e("div", {class: "modal hidden", role: "dialog"},
+        modale = $e("div", {
+                class: "modal", role: "dialog", hidden: true,
+                "aria-modal": "true",
+                "aria-label": options["aria-label"] || null,
+                "aria-labelledby": options["aria-labelledby"] || null
+            },
             $e("div", {class: "modal-dialog".concat(near === window ? " modal-dialog-centered" : "", options.className ? " " + options.className : ""), role: "document"},
                 $e("div", "modal-content", forme)));
     if (options.action) {
@@ -3284,9 +3289,27 @@ function $popup(options) {
     document.body.addEventListener("keydown", dialog_keydown);
     let prior_focus, actionse;
 
+    // The `inert` property is the modern way to disable focus/clicking.
+    function set_inert(yes) {
+        if (!yes) {
+            // Check for another dialog
+            for (const e of document.querySelectorAll(".modal")) {
+                if (e !== modale && !e.hidden)
+                    return;
+            }
+        }
+        for (const id of ["p-tracker", "p-page", "p-footer"]) {
+            const e = document.getElementById(id);
+            if (e) {
+                e.inert = yes;
+            }
+        }
+    }
+
     function close() {
         removeClass(document.body, "modal-open");
         document.body.removeEventListener("keydown", dialog_keydown);
+        set_inert(false);
         if (document.activeElement
             && modale.contains(document.activeElement)) {
             document.activeElement.blur();
@@ -3299,6 +3322,7 @@ function $popup(options) {
             prior_focus.focus({preventScroll: true});
         }
     }
+
     function dialog_click(evt) {
         if (evt.button === 0
             && ((evt.target === modale && !form_differs(forme))
@@ -3306,27 +3330,19 @@ function $popup(options) {
             close();
         }
     }
+
     function dialog_keydown(evt) {
         if (event_key(evt) === "Escape"
             && event_key.modcode(evt) === 0
-            && !hasClass(modale, "hidden")
+            && !modale.hidden
             && !form_differs(forme)) {
             close();
             evt.preventDefault();
         }
     }
+
     const self = {
-        show: function () {
-            const e = document.activeElement;
-            $(modale).awaken();
-            popup_near(modale, near);
-            if (e && document.activeElement !== e) {
-                prior_focus = e;
-            }
-            hotcrp.tooltip.close();
-            // XXX also close down suggestions
-            return self;
-        },
+        show: open,
         append: function (...es) {
             for (const e of es) {
                 if (e != null) {
@@ -3373,42 +3389,68 @@ function $popup(options) {
         },
         close: close
     };
-    return self;
-}
 
-function popup_near(elt, near) {
-    hotcrp.tooltip.close();
-    if (elt.jquery)
-        elt = elt[0];
-    while (!hasClass(elt, "modal-dialog"))
-        elt = elt.childNodes[0];
-    var bgelt = elt.parentNode;
-    removeClass(bgelt, "hidden");
-    addClass(document.body, "modal-open");
-    if (!hasClass(elt, "modal-dialog-centered")) {
-        var anchorPos = $(near).geometry(),
-            wg = $(window).geometry(),
-            po = $(bgelt).offset(),
-            y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
-        y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - po.top;
-        elt.style.top = y + "px";
-        var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
-        x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - po.left;
-        elt.style.left = x + "px";
-    }
-    var efocus;
-    $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
-        if (hasClass(this, "want-focus")) {
-            efocus = this;
-            return false;
-        } else if (!efocus
-                   && !hasClass(this, "btn-danger")
-                   && !hasClass(this, "no-focus")) {
-            efocus = this;
+    function open() {
+        if (!modale.isConnected) {
+            throw new Error("trying to show previously-closed $popup");
+        } else if (!modale.hidden) {
+            return self;
         }
-    });
-    efocus && focus_at(efocus);
-    $(elt).awaken();
+        const activee = document.activeElement;
+
+        // Prepare for open: awaken, assign label, close current tooltips
+        $(modale).awaken();
+        if (!modale.hasAttribute("aria-label")
+            && !modale.hasAttribute("aria-labelledby")) {
+            const le = forme.querySelector("h1, h2");
+            if (le) {
+                le.id = le.id || HtmlCollector.next_input_id();
+                modale.setAttribute("aria-labelledby", le.id);
+            }
+        }
+        hotcrp.tooltip.close();
+        // XXX should also close suggestions
+
+        // Position the modal
+        modale.hidden = false;
+        addClass(document.body, "modal-open");
+        const elt = modale.firstElementChild;
+        if (!hasClass(elt, "modal-dialog-centered")) {
+            let anchorPos = $(near).geometry(),
+                wg = $(window).geometry(),
+                po = $(modale).offset(),
+                y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
+            y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - po.top;
+            elt.style.top = y + "px";
+            let x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
+            x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - po.left;
+            elt.style.left = x + "px";
+        }
+
+        // Adjust focus
+        let efocus;
+        $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
+            if (hasClass(this, "want-focus")) {
+                efocus = this;
+                return false;
+            } else if (!efocus
+                       && !hasClass(this, "btn-danger")
+                       && !hasClass(this, "no-focus")) {
+                efocus = this;
+            }
+        });
+        if (efocus) {
+            focus_at(efocus);
+        }
+        set_inert(true);
+        if (activee && !modale.contains(activee)) {
+            prior_focus = activee;
+        }
+
+        return self;
+    }
+
+    return self;
 }
 
 function override_deadlines(callback) {
@@ -3452,10 +3494,11 @@ function override_deadlines(callback) {
         }
         $pu.close();
     });
+    const label = this.getAttribute("data-override-label") || "Confirm override";
     if (typeof callback === "object" && "sidebarTarget" in callback) {
-        $pu = $popup({near: callback.sidebarTarget});
+        $pu = $popup({near: callback.sidebarTarget, "aria-label": label});
     } else {
-        $pu = $popup({near: this});
+        $pu = $popup({near: this, "aria-label": label});
     }
     $pu.append(p).append_actions(bu, "Cancel").show();
 }
@@ -3463,7 +3506,7 @@ handle_ui.on("js-override-deadlines", override_deadlines);
 
 handle_ui.on("js-confirm-override-conflict", function () {
     const self = this;
-    $popup({near: this})
+    $popup({near: this, "aria-label": "Confirm conflict override"})
         .append($e("p", null, "Are you sure you want to override your conflict?"))
         .append_actions($e("button", {type: "button", name: "bsubmit", class: "btn-primary"}, "Override conflict"), "Cancel")
         .show().on("click", "button", function () {
@@ -6720,6 +6763,7 @@ handle_ui.on("js-revrating-clearall", function (evt) {
         go();
     } else {
         this.setAttribute("data-override-text", "Are you sure you want to reset all ratings for this review?");
+        this.setAttribute("data-override-label", "Confirm ratings reset");
         override_deadlines.call(this, go);
     }
 });
@@ -8100,6 +8144,7 @@ function cmt_save(elt, action, really) {
                    && !cj.draft
                    && (action === "delete" || !form.elements.ready.checked)) {
             elt.setAttribute("data-override-text", "The response is currently visible to reviewers. Are you sure you want to " + (action === "submit" ? "unsubmit" : "delete") + " it?");
+            elt.setAttribute("data-override-label", "Confirm response action");
             override_deadlines.call(elt, function () {
                 cmt_save(elt, action, true);
             });
@@ -13304,7 +13349,7 @@ handle_ui.on("js-update-potential-conflicts", function () {
 })();
 
 handle_ui.on("js-withdraw", function () {
-    const f = this.form, $pu = $popup({near: this, action: f});
+    const f = this.form, $pu = $popup({near: this, action: f, "aria-label": "Confirm " + siteinfo.snouns[0] + " withdrawal"});
     $pu.append($e("p", null, "Are you sure you want to withdraw this " + siteinfo.snouns[0] + " from evaluation and/or publication?" + (this.hasAttribute("data-revivable") ? "" : " Only administrators can undo this step.")));
     if (this.hasAttribute("data-clear-fields")) {
         $pu.append($e("p", null, "Withdrawal will reset " + this.getAttribute("data-clear-fields") + " as a side effect."));
@@ -13325,7 +13370,7 @@ handle_ui.on("js-withdraw", function () {
 });
 
 handle_ui.on("js-delete-paper", function () {
-    const f = this.form, $pu = $popup({near: this, action: f});
+    const f = this.form, $pu = $popup({near: this, action: f, "aria-label": "Confirm " + siteinfo.snouns[0] + " deletion"});
     $pu.append($e("p", null, "Be careful: This will permanently delete all information about this " + siteinfo.snouns[0] + " from the database and ", $e("strong", null, "cannot be undone"), "."));
     $pu.append_actions($e("button", {type: "submit", name: "delete", value: 1, class: "btn-danger"}, "Delete"), "Cancel");
     $pu.show();
@@ -14240,16 +14285,18 @@ handle_ui.on("js-delete-user", function () {
         }
         return $e("a", {href: hoturl("paper", {q: pids.join(" ")}), target: "_blank", rel: "noopener"}, pids.length === 1 ? siteinfo.snouns[0] + " #" + pids[0] : pids.length + " " + siteinfo.snouns[1]);
     }
-    const f = this.form, $pu = $popup({near: this, action: f});
     if (this.hasAttribute("data-sole-contact")) {
         const pids = this.getAttribute("data-sole-contact").split(/\s+/);
-        $pu.append($e("p", null, $e("strong", null, "This account cannot be deleted"),
-            " because it is the sole contact for ",
-            plinks(pids), ". To delete the account, first delete ".concat(plural_word(pids, "that " + siteinfo.snouns[0], "those " + siteinfo.snouns[1]), " from the database or give ", plural_word(pids, "it"), " more contacts.")))
+        $popup({near: this, "aria-label": "Account deletion error"})
+            .append($e("p", null,
+                $e("strong", null, "This account cannot be deleted"),
+                " because it is the sole contact for ", plinks(pids),
+                ". To delete the account, first delete ".concat(plural_word(pids, "that " + siteinfo.snouns[0], "those " + siteinfo.snouns[1]), " from the database or give ", plural_word(pids, "it"), " more contacts.")))
             .append_actions("Cancel").show();
         return;
     }
-    const ul = $e("ul");
+    const f = this.form, ul = $e("ul"),
+        $pu = $popup({near: this, action: f, "aria-label": "Confirm account deletion"});
     if (this.hasAttribute("data-contact")) {
         const pids = this.getAttribute("data-contact").split(/\s+/);
         ul.append($e("li", null, "Contact authorship on ", plinks(pids)));
@@ -14359,7 +14406,7 @@ handle_ui.on("js-acceptish-review", function (evt) {
 });
 
 handle_ui.on("js-deny-review-request", function () {
-    const f = this.form, $pu = $popup({near: this, action: f})
+    const f = this.form, $pu = $popup({near: this, action: f, "aria-label": "Confirm request denial"})
         .append($e("p", null, "Select “Deny request” to deny this review request."),
             $e("textarea", {name: "reason", rows: 3, cols: 60, placeholder: "Optional explanation", spellcheck: "true", class: "w-99 need-autogrow"}))
         .append_actions($e("button", {type: "submit", name: "denyreview", value: 1, class: "btn-danger"}, "Deny request"), "Cancel")
@@ -14368,7 +14415,7 @@ handle_ui.on("js-deny-review-request", function () {
 });
 
 handle_ui.on("js-delete-review", function () {
-    $popup({near: this, action: this.form})
+    $popup({near: this, action: this.form, "aria-label": "Confirm review deletion"})
         .append($e("p", null, "Be careful: This will permanently delete all information about this review assignment from the database and ", $e("strong", null, "cannot be undone"), "."))
         .append_actions($e("button", {type: "submit", name: "deletereview", value: 1, class: "btn-danger"}, "Delete review"), "Cancel")
         .show();
@@ -14396,7 +14443,8 @@ handle_ui.on("js-approve-review", function (evt) {
         grid.append($e("button", {type: "button", name: "approvesubmit"}, "Submit as full review"),
             $e("p", null, "Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics."));
     }
-    const $pu = $popup({near: evt.sidebarTarget || self}).append(grid)
+    const $pu = $popup({near: evt.sidebarTarget || self, "aria-label": "Approve review"})
+        .append(grid)
         .append_actions("Cancel")
         .show().on("click", "button", function (evt) {
             const b = evt.target.name;
@@ -14707,7 +14755,7 @@ handle_ui.on("js-named-search", function (evt) {
                 return create1(i, data);
             }
         }
-        $pu = $popup({near: evt.target});
+        $pu = $popup({near: evt.target, "aria-label": "Named search error"});
         $pu.append($e("p", null, "That search has been deleted."))
             .append_actions($e("button", {type: "button", class: "btn-primary"}, "OK"))
             .on("click", "button", $pu.close)
@@ -14801,7 +14849,8 @@ function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
         return true;
     }
     const ctr = $e("div", "container"),
-        $pu = $popup({near: evt.target}).append(ctr)
+        $pu = $popup({near: evt.target, "aria-label": "Bulk download warning"})
+            .append(ctr)
             .append_actions($e("button", {type: "button", name: "bsubmit", class: "btn-primary"}, "Download"), "Cancel");
     let m = table.getAttribute("data-bulkwarn-ftext");
     if (m === null || m === "") {

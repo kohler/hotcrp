@@ -238,7 +238,7 @@ function do_show_papers() {
 }
 
 function do_kiosk() {
-    const $pu = hotcrp.$popup({near: this, action: hotcrp.hoturl("=buzzer")})
+    const $pu = hotcrp.$popup({near: this, action: hotcrp.hoturl("=buzzer"), "aria-label": "Kiosk mode"})
         .append($e("p", null, "Kiosk mode is a discussion status page with no other site privileges. It’s safe to leave a browser in kiosk mode open in the hallway."),
             $e("p", null, $e("strong", null, "Kiosk mode will sign your browser out of the site."), " Do not use kiosk mode on your main browser."),
             $e("p", null, "These URLs access kiosk mode directly:"),
