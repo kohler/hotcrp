@@ -64,8 +64,8 @@ class PaperTable {
     private $pre_status_feedback;
     /** @var int */
     private $npapstrip = 0;
-    /** @var bool */
-    private $_ps_was_open;
+    /** @var ?string */
+    private $_psid;
     /** @var bool */
     private $allow_folds;
     /** @var bool */
@@ -596,85 +596,57 @@ class PaperTable {
         }
     }
 
-    /** @param ?string $what
-     * @param string|array{string,string} $name
+    /** @param string $name
      * @param array<string,int|string> $extra
      * @return string */
-    private function papt($what, $name, $extra = []) {
+    private function papt($name, $extra = []) {
         $fold = $extra["fold"] ?? false;
-        $foldnum = $fold ? $extra["foldnum"] ?? 0 : 0;
-        $foldtarget = "";
-        if ($fold && ($foldnum || isset($extra["foldopen"]))) {
-            $foldtarget = " data-fold-target=\"{$foldnum}"
-                . (isset($extra["foldopen"]) ? "o\"" : "\"");
-        }
 
+        // Papstrip captions are not document sections: each labels one control
+        // (or a `section.pspcard` that is already a named landmark), so they
+        // are spans, not headings.
         if (($extra["type"] ?? null) === "ps") {
-            list($divclass, $hdrclass) = ["pst", "psfn"];
+            $divclass = "pst";
+            $hdrclass = "psfn";
+            $hdrtag = "span";
         } else {
-            list($divclass, $hdrclass) = ["pavt", "pavfn"];
+            $divclass = "pavt";
+            $hdrclass = "pavfn";
+            $hdrtag = "h3";
         }
 
-        $c = "<div class=\"" . ($what ? $this->control_class($what, $divclass) : $divclass);
+        $c = "<div class=\"{$divclass}";
         if (($extra["divclass"] ?? "") !== "") {
             $c .= " " . $extra["divclass"];
         }
-        if ($fold && $fold !== "expander") {
+        if ($fold) {
             $c .= " ui js-foldup";
         }
-        $c .= "\"{$foldtarget}><h3 class=\"{$hdrclass}";
+        $c .= "\"><{$hdrtag} class=\"{$hdrclass}";
         if (isset($extra["fnclass"])) {
             $c .= " " . $extra["fnclass"];
         }
+        if ($divclass === "pst") {
+            $c .= "\" id=\"s-{$this->_psid}-label";
+        }
         $c .= '">';
-        if (!$fold) {
-            $c .= is_array($name) ? $name[0] : $name;
-        } else if ($fold === "x") {
+        if ($fold) {
             $c .= '<button type="button" class="q ui js-foldup" aria-expanded="'
-                . ($this->_ps_was_open ? "true" : "false");
+                . ($extra["open"] ?? false ? "true" : "false");
             if (($controls = $extra["aria-controls"] ?? null)) {
                 $c .= "\" aria-controls=\"{$controls}";
             }
-            if (($title = $extra["foldtitle"] ?? null)) {
+            if (($label = $extra["aria-label"] ?? null)) {
+                $c .= "\" aria-label=\"{$label}";
+            } else if (($title = $extra["foldtitle"] ?? null)) {
                 $c .= "\" title=\"{$title}";
             }
-            $c .= '">' . aria_expander();
-            if (!is_array($name)) {
-                $name = [$name, $name];
-            }
-            if ($name[0] !== $name[1]) {
-                $c .= '<span class="ifnx">' . $name[1] . '</span><span class="ifx">' . $name[0] . '</span>';
-            } else {
-                $c .= $name[0];
-            }
-            $c .= '</button>';
+            $c .= '">' . aria_expander()
+                . ($fold === "xx" ? "</button>{$name}" : "{$name}</button>");
         } else {
-            '@phan-var-force int $foldnum';
-            '@phan-var-force string $foldtarget';
-            $c .= '<button type="button" class="q ui js-foldup"' . $foldtarget;
-            if (($title = $extra["foldtitle"] ?? false)) {
-                $c .= ' title="' . $title . '"';
-            }
-            if (isset($this->foldmap[$foldnum])) {
-                $c .= ' aria-expanded="' . ($this->foldmap[$foldnum] ? "false" : "true") . '"';
-            }
-            $c .= '>' . expander(null, $foldnum);
-            if ($fold === "expander") {
-                $c .= '</button>';
-            }
-            if (!is_array($name)) {
-                $name = [$name, $name];
-            }
-            if ($name[0] !== $name[1]) {
-                $c .= '<span class="fn' . $foldnum . '">' . $name[1] . '</span><span class="fx' . $foldnum . '">' . $name[0] . '</span>';
-            } else {
-                $c .= $name[0];
-            }
-            if ($fold !== "expander") {
-                $c .= '</button>';
-            }
+            $c .= $name;
         }
-        $c .= "</h3>";
+        $c .= "</{$hdrtag}>";
         if (isset($extra["rest"])) {
             $c .= $extra["rest"];
         }
@@ -987,10 +959,9 @@ class PaperTable {
         $extra = [];
         if ($this->_allow_collapse["abstract"] ?? false) {
             $extra = ["fold" => "x", "aria-controls" => "s-abstract-body", "foldtitle" => "Toggle full abstract"];
-            $this->_ps_was_open = false;
         }
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
-            . $this->papt("abstract", $o->title_html(), $extra)
+            . $this->papt($o->title_html(), $extra)
             . '<div id="s-abstract-body" class="pavb no-fold abstract';
         list($ss, $ls) = FieldRender::split_wordlimit($text, $o->wordlimit, $o->hard_wordlimit);
         if ($ss !== "") {
@@ -1127,7 +1098,7 @@ class PaperTable {
         $vas = $this->user->view_authors_state($this->prow);
         if ($vas === 0) {
             $fr->value = '<div class="pg">'
-                . $this->papt("authors", $o->title_html())
+                . $this->papt($o->title_html())
                 . '<div class="pavb"><i>Hidden</i></div>'
                 . "</div>\n\n";
             return;
@@ -1162,11 +1133,14 @@ class PaperTable {
             . $this->control_class("authors", "pavt ui js-aufoldup")
             . '"><h3 class="pavfn">';
         if ($vas === 1 || $this->allow_folds) {
-            $fr->value .= '<button type="button" class="q ui js-aufoldup" title="Toggle author display" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
+            $fr->value .= '<button type="button" class="q ui js-aufoldup" title="Toggle author display">';
         }
         $collapse_anonau = $this->_allow_collapse["anonau"];
+        // Since author cycling isn't a pure collapse/expand toggle, use
+        // hidden screenreader text to advertise its meaning.
         if ($vas === 1 && $collapse_anonau) {
-            $fr->value .= '<span class="fn8">' . $o->title_html() . '</span><span class="fx8">';
+            $fr->value .= '<span class="fn8">' . $o->title_html()
+                . '<span class="sr-only">, show authors</span></span><span class="fx8">';
         }
         if ($this->allow_folds) {
             $fr->value .= expander(null, 9);
@@ -1174,6 +1148,12 @@ class PaperTable {
             $fr->value .= expander(false);
         }
         $fr->value .= $auname;
+        if ($this->allow_folds) {
+            $fr->value .= '<span class="fn9 sr-only">, show affiliations</span>'
+                . '<span class="fx9 sr-only">, hide '
+                . ($vas === 1 && $collapse_anonau ? "authors" : "affiliations")
+                . '</span>';
+        }
         if ($vas === 1 && $collapse_anonau) {
             $fr->value .= '</span>';
         }
@@ -1197,14 +1177,14 @@ class PaperTable {
         // contents
         $fr->value .= '<div class="pavb">';
         if ($vas === 1 && $collapse_anonau) {
-            $fr->value .= '<button type="button" class="q fn8 ui js-aufoldup" title="Toggle author display">'
+            $fr->value .= '<button type="button" class="q fn8 ui js-aufoldup" title="Toggle author display" aria-label="Show hidden authors">'
                 . '+&nbsp;<i>Hidden</i>'
                 . '</button><div class="fx8">';
         }
         if ($this->allow_folds) {
             $fr->value .= '<div class="fn9">'
                 . $this->authorData($aulist, "last", null)
-                . ' <button type="button" class="link ui js-aufoldup">[details]</button>'
+                . ' <button type="button" class="link ui js-aufoldup" aria-label="Show author details">[details]</button>'
                 . '</div><div class="fx9">';
         }
         $fr->value .= $this->authorData($aulist, "col", $this->user);
@@ -1223,7 +1203,7 @@ class PaperTable {
                 || $this->prow->timeSubmitted <= 0)) {
             $contacts_option = $this->conf->option_by_id(PaperOption::CONTACTSID);
             $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
-                . $this->papt("contacts", $contacts_option->title_html(new FmtArg("count", $contacts)))
+                . $this->papt($contacts_option->title_html(new FmtArg("count", $contacts)))
                 . '<div class="pavb">'
                 . $this->authorData($contacts, "col", $this->user)
                 . "</div></div>\n\n";
@@ -1371,6 +1351,10 @@ class PaperTable {
         }
 
         $this->_print_foldpaper_div();
+
+        // Prevent outline from skipping a level; hidden except for a11y
+        // because the paper title already reads as the visible heading.
+        echo '<h2 class="sr-only">', htmlspecialchars($this->conf->snouns[2]), "</h2>\n";
 
         // status
         list($class, $name) = $this->prow->status_class_and_name($this->user);
@@ -1555,7 +1539,10 @@ class PaperTable {
                 '<div class="pcard-left">',
                 '<section class="pspcard" aria-label="Submission properties">',
                 '<div class="ui pspcard-fold">',
-                '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
+                // The whole summary stays clickable for pointer users, but the
+                // affordance must also be a real control: this is the only way
+                // into the papstrip at narrow widths.
+                '<div style="float:right;margin-left:1em;cursor:pointer"><button type="button" class="q psfn" aria-controls="s-pspcard-open" aria-label="More submission properties">More ', expander(true), '</button></div>';
 
             if (($viewable = $this->prow->sorted_viewable_tags($this->user))) {
                 $tagger = new Tagger($this->user);
@@ -1565,45 +1552,30 @@ class PaperTable {
                 echo '<hr class="c">';
             }
 
-            echo '</div><div class="pspcard-open">';
+            echo '</div><div id="s-pspcard-open" class="pspcard-open">';
         }
         ++$this->npapstrip;
     }
 
-    private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
+    private function _ps_start($psid, $extra = null) {
         $this->_print_papstrip_framework();
-        echo '<div';
-        if ($foldid) {
-            echo " id=\"fold{$foldid}\"";
-        }
-        echo ' class="psc';
-        if ($foldid) {
-            echo " fold", ($folded ? "c" : "o");
-        }
+        $this->_psid = $psid;
+        echo "<div id=\"s-{$psid}\" class=\"s-ps";
         if ($extra) {
             if (isset($extra["class"])) {
                 echo " ", $extra["class"];
             }
             foreach ($extra as $k => $v) {
                 if ($k !== "class")
-                    echo "\" {$k}=\"", str_replace("\"", "&quot;", $v);
+                    echo "\" {$k}=\"", Ht::escape_attr($v);
             }
         }
-        echo '">';
+        echo '" role="group" aria-labelledby="s-', $psid, '-label">';
     }
 
-    private function _ps_start_expandable($sfx, $open, $extra = null) {
-        $this->_print_papstrip_framework();
-        echo "<div id=\"s-{$sfx}\" class=\"psc", $open ? " expanded" : " collapsed";
-        if (isset($extra["class"])) {
-            echo " ", $extra["class"];
-        }
-        foreach ($extra ?? [] as $k => $v) {
-            if ($k !== "class")
-                echo "\" {$k}=\"", str_replace("\"", "&quot;", $v);
-        }
-        echo "\">";
-        $this->_ps_was_open = $open;
+    private function _ps_start_expandable($psid, $open, $extra = null) {
+        $extra["class"] = Ht::add_tokens($open ? "expanded" : "collapsed", $extra["class"] ?? null);
+        $this->_ps_start($psid, $extra);
     }
 
     private function _print_ps_collaborators() {
@@ -1619,8 +1591,10 @@ class PaperTable {
             "class" => "need-fold-storage fold-storage-hidden",
             "hidden" => $this->_allow_collapse["anonau"] ?? false
         ]);
-        echo $this->papt("collaborators", $option->title_html(),
-                         ["type" => "ps", "fold" => "x", "aria-controls" => "s-collaborators-body"]),
+        echo $this->papt($option->title_html(), [
+                "type" => "ps", "fold" => "x", "open" => true,
+                "aria-controls" => "s-collaborators-body"
+            ]),
             '<ul id="s-collaborators-body" class="x namelist-columns">',
             Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-collaborators\"))");
         foreach (explode("\n", $data) as $line) {
@@ -1650,8 +1624,10 @@ class PaperTable {
         $this->_ps_start_expandable("pcconf", !$this->allow_folds, [
             "data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage fold-storage-hidden"
         ]);
-        echo $this->papt("pc_conflicts", $option->title_html(),
-                         ["type" => "ps", "fold" => "x", "aria-controls" => "s-pcconf-body"]),
+        echo $this->papt($option->title_html(), [
+                "type" => "ps", "fold" => "x", "open" => !$this->allow_folds,
+                "aria-controls" => "s-pcconf-body"
+            ]),
             '<ul id="s-pcconf-body" class="x namelist-columns">',
             Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-pcconf\"))"),
             join("", $pcconf),
@@ -1669,8 +1645,10 @@ class PaperTable {
         $value = $this->prow->$field;
 
         $this->_ps_start_expandable($type, false, $editable ? ["class" => "ui-fold js-unfold-pcselector js-fold-focus need-paper-select-api"] : []);
-        echo $this->papt($type, $name,
-            ["type" => "ps", "fold" => $editable ? "x" : false, "aria-controls" => "f-{$type}"]);
+        echo $this->papt($name, [
+                "type" => "ps", "fold" => $editable ? "x" : false,
+                "aria-controls" => "f-{$type}"
+            ]);
         if (!$value) {
             $n = "";
         } else if (($p = $this->conf->user_by_id($value, USER_SLICE))
@@ -1680,7 +1658,7 @@ class PaperTable {
         } else {
             $n = "<strong>[removed from PC]</strong>";
         }
-        echo '<div class="pscopen"><p class="ifnx odname js-psedit-result">',
+        echo '<div class="s-psopen"><p class="ifnx odname js-psedit-result">',
             $n, '</p></div>';
 
         if ($editable) {
@@ -1732,96 +1710,95 @@ class PaperTable {
         return [$m0, $m1];
     }
 
-    private function papstripTags() {
-        if (!$this->prow->paperId || !$this->user->can_view_tags($this->prow)) {
+    private function _print_ps_tags() {
+        // Note that tags MUST NOT contain HTML special characters.
+        if (!$this->prow->paperId
+            || !$this->user->can_view_tags($this->prow)) {
             return;
         }
 
         $tags = $this->prow->all_tags_text();
+        $tagger = new Tagger($this->user);
+        $viewable = $this->prow->sorted_viewable_tags($this->user);
+        $tx = $tagger->unparse_link($viewable);
         $editable = $this->user->can_edit_some_tag($this->prow);
-        $is_sitewide = $editable && !$this->user->can_edit_most_tags($this->prow);
-        if ($tags === "" && !$editable) {
+        if (!$editable) {
+            $this->_ps_start("tags");
+            echo $this->papt("Tags", ["type" => "ps"]),
+                '<div class="js-tag-result">', ($tx === "" ? "None" : $tx), '</div>',
+                '</div>';
             return;
         }
 
-        // Note that tags MUST NOT contain HTML special characters.
-        $tagger = new Tagger($this->user);
-        $viewable = $this->prow->sorted_viewable_tags($this->user);
+        $is_sitewide = !$this->user->can_edit_most_tags($this->prow);
+        $this->_ps_start_expandable("tags", false, [
+            "class" => "ui-fold js-fold-focus"
+        ]);
+        echo $this->papt(Ht::label("Tags", "k-tags"), [
+                "type" => "ps", "fold" => "xx",
+                "aria-controls" => "f-tags",
+                "aria-label" => "Edit tags"
+            ]);
 
-        $tx = $tagger->unparse_link($viewable);
-        $unfolded = $editable && $this->has_problem_at("tags");
-        $id = "tags {$this->prow->paperId}";
+        // tag messages
+        [$treport, $treport_warn] = $this->tag_messages(null);
 
-        $this->_papstripBegin("tags", true, $editable ? ["class" => "need-tag-form ui-fold js-fold-focus"] : []);
-
-        if ($editable) {
-            echo Ht::form($this->prow->hoturl([]), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
-        }
-
-        echo $this->papt("tags", $editable ? Ht::label("Tags", $id) : "Tags",
-            ["type" => "ps", "fold" => $editable ? "tags" : false, "foldopen" => true]);
-        if ($editable) {
-            [$treport, $treport_warn] = $this->tag_messages(null);
-
-            // uneditable
-            if (empty($treport_warn)) {
-                echo '<ul class="fn want-tag-report-warnings feedback-list" hidden></ul>';
-            } else {
-                echo '<ul class="fn want-tag-report-warnings feedback-list"><li>',
-                    join("</li><li>", MessageSet::feedback_html_items($treport_warn)), "</li></ul>";
-            }
-
-            echo '<div class="fn js-tag-result">', $tx === "" ? "None" : $tx, '</div>';
-
-            echo '<div class="fx js-tag-editor">';
-            if (empty($treport)) {
-                echo '<ul class="want-tag-report feedback-list" hidden></ul>';
-            } else {
-                echo '<ul class="want-tag-report feedback-list"><li>',
-                    join("</li><li>", MessageSet::feedback_html_items($treport)), "</li></ul>";
-            }
-            if ($is_sitewide) {
-                echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit selected tags.";
-                if ($this->user->allow_admin($this->prow)) {
-                    echo ' ', $this->conf->selflink("Override your conflict", $this->qreq, ["forceShow" => 1]), ' to view and edit all tags.';
-                }
-                echo '</p>';
-            }
-            $editable_tags = $this->prow->sorted_editable_tags($this->user);
-            echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest mf-label ',
-                $is_sitewide ? "sitewide-editable-tags" : "editable-tags suggest-emoji-codes",
-                '" spellcheck="false" id="', $id, '">',
-                $tagger->unparse($editable_tags),
-                '</textarea><div class="aab flex-row-reverse mt-1"><div class="aabut">',
-                Ht::submit("save", "Save", ["class" => "btn-primary"]),
-                '</div><div class="aabut">',
-                Ht::submit("cancel", "Cancel"),
-                "</div></div>",
-                '<span class="hint">', $this->conf->hotlink("Learn more", "help", ["t" => "tags"]), ' <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
-                "</div>";
+        // collapsed version
+        if (empty($treport_warn)) {
+            echo '<ul class="ifnx want-tag-report-warnings feedback-list" hidden></ul>';
         } else {
-            echo '<div class="js-tag-result">', ($tx === "" ? "None" : $tx), '</div>';
+            echo '<ul class="ifnx want-tag-report-warnings feedback-list"><li>',
+                join("</li><li>", MessageSet::feedback_html_items($treport_warn)), "</li></ul>";
         }
+        echo '<div class="ifnx js-tag-result">', $tx === "" ? "None" : $tx, '</div>';
 
-        if ($editable) {
-            echo "</form>";
+        // expanded version
+        echo Ht::form("", [
+                "id" => "f-tags",
+                "data-pid" => $this->prow->paperId,
+                "class" => "ui need-diff-check need-unload-protection need-tag-form expanded-if-differs",
+                "hidden" => true
+            ]);
+        if (empty($treport)) {
+            echo '<ul class="want-tag-report feedback-list" hidden></ul>';
+        } else {
+            echo '<ul class="want-tag-report feedback-list"><li>',
+                join("</li><li>", MessageSet::feedback_html_items($treport)), "</li></ul>";
         }
-        if ($unfolded) {
-            echo Ht::unstash_script('hotcrp.fold("tags",0)');
+        if ($is_sitewide) {
+            echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit selected tags.";
+            if ($this->user->allow_admin($this->prow)) {
+                echo ' ', $this->conf->selflink("Override your conflict", $this->qreq, ["forceShow" => 1]), ' to view and edit all tags.';
+            }
+            echo '</p>';
         }
-        echo "</div>\n";
+        $editable_tags = $this->prow->sorted_editable_tags($this->user);
+        echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest mf-label ',
+            $is_sitewide ? "sitewide-editable-tags" : "editable-tags suggest-emoji-codes",
+            ' need-autogrow" spellcheck="false" id="k-tags">',
+            $tagger->unparse($editable_tags),
+            '</textarea><div class="aab flex-row-reverse mt-1"><div class="aabut">',
+            Ht::submit("save", "Save", ["class" => "btn-primary"]),
+            '</div><div class="aabut">',
+            Ht::submit("cancel", "Cancel"),
+            "</div></div>",
+            '<span class="hint">', $this->conf->hotlink("Learn more", "help", ["t" => "tags"]), ' <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
+            "</div>",
+            "</form>\n";
     }
 
-    function papstripOutcomeSelector() {
+    function _print_ps_decision() {
         $sfx = "p{$this->prow->paperId}-decision";
         $this->_ps_start_expandable("decision", false, [
             "class" => "need-paper-select-api ui-fold js-fold-focus"
         ]);
-        echo $this->papt("decision", "Decision",
-                ["type" => "ps", "fold" => "x", "aria-controls" => "f-{$sfx}"]),
+        echo $this->papt("Decision", [
+                "type" => "ps", "fold" => "x",
+                "aria-controls" => "f-decision"
+            ]),
             '<p class="odname js-psedit-result ifnx">',
             $this->prow->decision()->name_as(5),
-            "</p><form id=\"f-{$sfx}\" class=\"ui-submit uin\" hidden>";
+            "</p><form id=\"f-decision\" class=\"ui-submit uin\" hidden>";
         $opts = [];
         foreach ($this->conf->decision_set() as $dec) {
             $opts[$dec->id] = $dec->name;
@@ -1839,20 +1816,21 @@ class PaperTable {
             return;
         }
 
-        $this->_papstripBegin("revpref");
-        echo $this->papt("revpref", "Review preference", ["type" => "ps"]);
+        $this->_ps_start("revpref");
+        echo $this->papt($editable ? Ht::label("Review preference", "k-revpref") : "Review preference",
+                ["type" => "ps"]);
         if ($editable) {
             $rp = $pf->exists() ? $pf->unparse() : "";
-            echo "<form class=\"ui\"><input id=\"revprefform_d\" type=\"text\" name=\"revpref{$this->prow->paperId}\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\"></form>";
-            Ht::stash_script("hotcrp.add_preference_ajax(\"#revprefform_d\",true);hotcrp.shortcut(\"revprefform_d\").add()");
+            echo "<form class=\"ui\"><input id=\"k-revpref\" type=\"text\" name=\"revpref{$this->prow->paperId}\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\"></form>";
+            Ht::stash_script("hotcrp.add_preference_ajax(\"#k-revpref\",true);hotcrp.shortcut(\"k-revpref\").add()");
         } else {
             echo "<p class=\"odname\">", htmlspecialchars($pf->unparse_fancy()), "</p>";
         }
         echo "</div>\n";
     }
 
-    private function papstrip_onetag_begin() {
-        $this->_papstripBegin(null, false, ["class" => "pste ui-fold js-fold-focus has-fold foldc"]);
+    private function papstrip_onetag_begin($mytag) {
+        $this->_ps_start("tag:{$mytag}", ["class" => "s-ps-tag collapsed ui-fold js-fold-focus"]);
     }
 
     /** @param string $tag
@@ -1877,7 +1855,7 @@ class PaperTable {
         $repclass = $report ? " is-tag-report" : "";
         if ($totval === null) {
             $mytext = $myval === null || $type === "approval" ? "" : ": {$myval}";
-            return "<span class=\"js-tag-index is-tag-votish fn{$repclass}\" data-tag=\"{$mytag}\" data-vote-type=\"{$type}\">{$mytext}</span>";
+            return "<span class=\"js-tag-index is-tag-votish ifnx{$repclass}\" data-tag=\"{$mytag}\" data-vote-type=\"{$type}\">{$mytext}</span>";
         }
 
         $sort = $type === "rank" ? "#{$tag}" : "-#{$tag}";
@@ -1889,7 +1867,7 @@ class PaperTable {
         }
         $totlink = $this->conf->hotlink("{$totval} {$totword}", "search", ["q" => "show:#{$tag} sort:{$sort}"], $js);
         $mytext = $myval === null || $type === "approval" ? "" : "{$myval}, ";
-        return "<span class=\"js-tag-index is-tag-votish fn{$repclass}\" data-tag=\"{$tag}\" data-vote-type=\"{$type}\">: {$mytext}{$totlink}</span>";
+        return "<span class=\"js-tag-index is-tag-votish ifnx{$repclass}\" data-tag=\"{$tag}\" data-vote-type=\"{$type}\">: {$mytext}{$totlink}</span>";
     }
 
     /** @param string $tag
@@ -1922,9 +1900,9 @@ class PaperTable {
             || $this->prow->tag_value($ti->tag) === null) {
             return;
         }
-        $this->papstrip_onetag_begin();
-        echo $this->papt(null,
-                $this->papstrip_onetag_heading($ti, $type),
+        $mytag = "{$this->user->contactId}~{$ti->tag}";
+        $this->papstrip_onetag_begin($mytag);
+        echo $this->papt($this->papstrip_onetag_heading($ti, $type),
                 ["type" => "ps", "rest" => $this->papstrip_onetag_result($ti->tag, $type)]),
             "</div>\n";
     }
@@ -1936,18 +1914,20 @@ class PaperTable {
             return;
         }
 
-        $this->papstrip_onetag_begin();
         $mytag = "{$this->user->contactId}~{$ti->tag}";
+        $this->papstrip_onetag_begin($mytag);
         $myval = $this->prow->tag_value($mytag);
-        echo $this->papt(null,
-                Ht::label($this->papstrip_onetag_heading($ti, "rank"), "tag:~{$ti->tag} {$this->prow->paperId}"),
-                ["type" => "ps", "fold" => true, "fnclass" => "mf",
+        echo $this->papt(Ht::label($this->papstrip_onetag_heading($ti, "rank"), "tag:~{$ti->tag}#{$this->prow->paperId}"),
+                ["type" => "ps", "fold" => "xx", "fnclass" => "mf",
+                 "aria-controls" => "f-tag:{$mytag}",
+                 "aria-label" => "Edit #~{$ti->tag} rank",
                  "rest" => $this->papstrip_onetag_result($ti->tag, "rank")]),
-            '<form class="ui-submit uin fx"><div class="mf">',
+            "<form id=\"f-tag:{$mytag}\" class=\"ui-submit uin\" hidden><div class=\"mf\">",
             Ht::entry("tagindex", $myval ?? "",
                 ["size" => 4, "class" => "uich js-tag-index want-focus",
-                 "data-tag" => $mytag, "inputmode" => "decimal",
-                 "id" => "tag:~{$ti->tag} {$this->prow->paperId}"]),
+                 "data-tag" => $mytag, "data-pid" => $this->prow->paperId,
+                 "inputmode" => "decimal",
+                 "id" => "tag:~{$ti->tag}#{$this->prow->paperId}"]),
             ' <span class="barsep">·</span> ',
             $this->conf->hotlink("Edit all", "search", ["q" => "editsort:#~{$ti->tag}"]),
             '</div><div class="hint" style="margin-top:4px"><strong>Tip:</strong> ', $this->conf->hotlink("Search “editsort:#~{$ti->tag}”", "search", ["q" => "editsort:#~{$ti->tag}"]), " to drag and drop your ranking, or ", $this->conf->hotlink("use offline reviewing", "offline"), ' to rank many papers at once.</div>',
@@ -1962,24 +1942,26 @@ class PaperTable {
             return;
         }
 
-        $this->papstrip_onetag_begin();
         $mytag = "{$this->user->contactId}~{$ti->tag}";
+        $this->papstrip_onetag_begin($mytag);
         $myval = $this->prow->tag_value($mytag);
         [$treport, $treport_warn] = $this->tag_messages($ti->tag);
         if ($ti->allotment === 1.0 && ($myval === null || $myval === 1.0)) {
             $this->papstrip_finish_approval($ti, $mytag, $myval, $treport);
             return;
         }
-        echo $this->papt(null,
-                Ht::label($this->papstrip_onetag_heading($ti, "allotment"), "tag:~{$ti->tag} {$this->prow->paperId}"),
-                ["type" => "ps", "fold" => true,
+        echo $this->papt(Ht::label($this->papstrip_onetag_heading($ti, "allotment"), "tag:~{$ti->tag}#{$this->prow->paperId}"),
+                ["type" => "ps", "fold" => "xx",
+                 "aria-controls" => "f-tag:{$mytag}",
+                 "aria-label" => "Edit #~{$ti->tag} votes",
                  "rest" => $this->papstrip_onetag_result($ti->tag, "allotment")]),
-            '<form class="ui-submit uin fx mf">',
+            "<form id=\"f-tag:{$mytag}\" class=\"ui-submit uin mf\" hidden>",
             empty($treport) ? "" : MessageSet::feedback_html($treport),
             Ht::entry("tagindex", $myval ?? "",
                 ["size" => 4, "class" => "uich js-tag-index want-focus mr-1",
-                 "data-tag" => $mytag, "inputmode" => "decimal",
-                 "id" => "tag:~{$ti->tag} {$this->prow->paperId}"]),
+                 "data-tag" => $mytag, "data-pid" => $this->prow->paperId,
+                 "inputmode" => "decimal",
+                 "id" => "tag:~{$ti->tag}#{$this->prow->paperId}"]),
             " of {$allotment}",
             ' <span class="barsep">·</span> ',
             $this->conf->hotlink("Edit all", "search", ["q" => "editsort:-#~{$ti->tag}"]),
@@ -1993,8 +1975,8 @@ class PaperTable {
             return;
         }
 
-        $this->papstrip_onetag_begin();
         $mytag = "{$this->user->contactId}~{$ti->tag}";
+        $this->papstrip_onetag_begin($mytag);
         $this->papstrip_finish_approval($ti, $mytag, $this->prow->tag_value($mytag), []);
     }
 
@@ -2005,23 +1987,24 @@ class PaperTable {
     private function papstrip_finish_approval($ti, $mytag, $myval, $treport) {
         $xt = $this->onetag($ti->tag) . " vote";
         $value = $ti->is(TagInfo::TF_APPROVAL) ? "0" : "1";
-        echo $this->papt(null,
-                '<label class="checki d-inline"><span class="checkc">'
+        echo $this->papt('<label class="checki d-inline"><span class="checkc">'
                     . Ht::checkbox("tagindex", $value, $myval !== null,
                         ["class" => "ui js-tag-index want-focus",
-                         "data-tag" => $mytag,
-                         "id" => "tag:~{$ti->tag} {$this->prow->paperId}"])
+                         "data-tag" => $mytag, "data-pid" => $this->prow->paperId,
+                         "id" => "tag:~{$ti->tag}#{$this->prow->paperId}"])
                     . "</span>{$xt}</label>",
-                ["type" => "ps", "fold" => "expander", "divclass" => "mf",
-                 "foldtitle" => "Vote details",
+                ["type" => "ps", "fold" => "xx",
+                 "aria-controls" => "s-tag:{$mytag}-body",
+                 "aria-label" => "Show #{$ti->tag} vote details",
+                 "divclass" => "mf",
                  "rest" => $this->papstrip_onetag_result($ti->tag, "approval")]),
-            '<div class="fx">',
+            "<div id=\"s-tag:{$mytag}-body\" hidden>",
             empty($treport) ? "" : MessageSet::feedback_html($treport),
             $this->conf->hotlink("Edit all", "search", ["q" => "editsort:-#~{$ti->tag}"]),
             "</div></div>\n";
     }
 
-    private function papstripWatch() {
+    private function _print_ps_follow() {
         if ($this->prow->timeSubmitted <= 0
             || $this->user->contactId <= 0
             || ($this->prow->has_conflict($this->user)
@@ -2030,9 +2013,8 @@ class PaperTable {
             return;
         }
 
-        $this->_papstripBegin();
-        echo $this->papt("watch",
-                '<label><span class="checkc">'
+        $this->_ps_start("follow");
+        echo $this->papt('<label><span class="checkc">'
                 . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, -1), ["class" => "uich js-follow-change"])
                 . '</span>Email notification</label>',
                 ["type" => "ps", "fnclass" => "checki"]),
@@ -2385,7 +2367,7 @@ class PaperTable {
             && $this->user->can_view_manager($this->prow)) {
             $this->papstripManager();
         }
-        $this->papstripTags();
+        $this->_print_ps_tags();
         foreach ($this->conf->tags()->sorted_entries_having(TagInfo::TF_APPROVAL | TagInfo::TF_ALLOTMENT | TagInfo::TF_RANK) as $t) {
             if ($this->user->can_edit_tag($this->prow, "~{$t->tag}", null, 0)) {
                 if ($t->is(TagInfo::TF_APPROVAL)) {
@@ -2397,7 +2379,7 @@ class PaperTable {
                 }
             }
         }
-        $this->papstripWatch();
+        $this->_print_ps_follow();
         if ($this->user->can_view_conflicts($this->prow) && $this->edit_mode === 0) {
             $this->_print_ps_pc_conflicts();
         }
@@ -2405,7 +2387,7 @@ class PaperTable {
             $this->_print_ps_collaborators();
         }
         if ($this->user->can_set_decision($this->prow)) {
-            $this->papstripOutcomeSelector();
+            $this->_print_ps_decision();
         }
         if ($this->user->can_view_lead($this->prow)) {
             $this->papstripLead();
@@ -2613,7 +2595,7 @@ class PaperTable {
         } else {
             echo 'Reviews and comments';
         }
-        echo '"><h4 class="pslcard-home">';
+        echo '"><div class="pslcard-home">';
         $viewable_tags = $this->prow->viewable_tags($this->user);
         if ($viewable_tags || $this->user->can_view_tags($this->prow)) {
             $color = $this->prow->conf->tags()->color_classes($viewable_tags);
@@ -2635,7 +2617,7 @@ class PaperTable {
         } else {
             echo "#", $this->prow->paperId, " review";
         }
-        echo '</a>', $close, '</h4><ul class="s-psl"></ul></nav></div>';
+        echo '</a>', $close, '</div><ul class="s-psl"></ul></nav></div>';
 
         if ($this->allow_admin && $this->prow->paperId > 0) {
             if (!$this->admin) {

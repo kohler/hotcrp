@@ -125,7 +125,7 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
                 . Ht::hidden("has_{$this->short_id}", 1)
                 . Ht::checkbox($this->short_id, 1, $checked, [
                         "id" => $this->short_id, "data-default-checked" => $on
-                    ])
+                    ] + $this->rf_aria($rvalues))
                 . '</span>' . $this->name_html,
             "label_class" => "revfn checki"
         ]);

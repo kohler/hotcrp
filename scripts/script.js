@@ -2240,7 +2240,7 @@ hotcrp.add_diff_check = function (form) {
 
 $(function () {
     $("form.need-unload-protection").each(function () {
-        var form = this;
+        const form = this;
         removeClass(form, "need-unload-protection");
         $(form).on("submit", function () { addClass(this, "submitting"); });
         $(window).on("beforeunload", function () {
@@ -4677,11 +4677,25 @@ function foldup(evt, opts) {
     } else if (!opts) {
         opts = {};
     }
-    if (this.tagName === "DIV"
-        && evt
-        && evt.target.closest("a")
-        && !opts.required) {
-        return;
+    let preventDefault = false;
+    if (evt
+        && typeof evt === "object"
+        && evt.type === "click") {
+        preventDefault = !hasClass(evt.target, "uic");
+    }
+    if (evt
+        && !opts.required
+        && this.tagName === "DIV") {
+        let l;
+        if (evt.target.closest("a")) {
+            return;
+        } else if ((l = evt.target.closest("label"))) {
+            opts.open = true;
+            preventDefault = false;
+            if (l.control && l.control.checkVisibility()) {
+                return;
+            }
+        }
     }
     let acting;
     if (this.tagName === "DIV"
@@ -4700,11 +4714,23 @@ function foldup(evt, opts) {
         if (!("open" in opts)) {
             opts.open = acting.ariaExpanded !== "true";
         }
+        let any = false;
         for (const e of controlsElements) {
-            if (e.hidden !== !opts.open && !hasClass(e, "no-fold")) {
-                e.hidden = !opts.open;
-                e.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
+            if (hasClass(e, "no-fold")) {
+                any = true;
+                continue;
+            } else if (e.hidden === !opts.open
+                       || (!e.hidden
+                           && hasClass(e, "expanded-if-differs")
+                           && hasClass(e, "differs"))) {
+                continue;
             }
+            any = true;
+            e.hidden = !opts.open;
+            e.dispatchEvent(new CustomEvent("foldtoggle", {bubbles: true, detail: opts}));
+        }
+        if (!any) {
+            return;
         }
         const p = acting.closest(".expanded, .collapsed");
         if (p) {
@@ -4787,10 +4813,7 @@ function foldup(evt, opts) {
             this.ariaExpanded = wantopen ? "true" : "false";
         }
     }
-    if (evt
-        && typeof evt === "object"
-        && evt.type === "click"
-        && !hasClass(evt.target, "uic")) {
+    if (preventDefault) {
         handle_ui.stopPropagation(evt);
         evt.preventDefault(); // needed for expanders despite handle_ui!
     }
@@ -4798,9 +4821,10 @@ function foldup(evt, opts) {
 
 handle_ui.on("js-foldup", foldup);
 handle_ui.on("foldtoggle.js-fold-focus", function (evt) {
-    if (evt.detail.nofocus)
+    if (evt.detail.nofocus) {
         return;
-    var ns = evt.detail.n || "";
+    }
+    const ns = evt.detail.n || "";
     if (!hasClass(this, `fold${ns}c`)
         && !hasClass(this, `fold${ns}o`)) {
         return;
@@ -6610,7 +6634,7 @@ function render_review_body_in(rrow, bodye) {
         }
 
         const fe = document.createElement("div");
-        fe.className = "rf rfd" + display;
+        fe.className = "rfd" + display;
         fe.setAttribute("data-rf", f.uid);
         bodye.appendChild(fe);
 
@@ -6624,7 +6648,7 @@ function render_review_body_in(rrow, bodye) {
             fte.setAttribute("aria-describedby", ttid);
         }
         const h3 = document.createElement("h3");
-        h3.className = "s-rf-head";
+        h3.className = "s-rf-title";
         h3.appendChild(fte);
         let vis = f.visibility || "re";
         if (vis === "audec" && hotcrp.status && hotcrp.status.myperm
@@ -8254,7 +8278,9 @@ function cmt_render(cj, editing) {
 
     // header
     const hdre = $e("header", cj.editable ? "cmtt ui js-click-child" : "cmtt");
-    cj.is_new || (hdre.id = "cx" + cj.cid);
+    if (!cj.is_new && (cj.response || cj.ordinal)) {
+        hdre.id = "cx" + cj.cid;
+    }
     if (cj.response && cj.text !== false) {
         const h2 = $e("h2");
         let cnc = h2;
@@ -8567,7 +8593,7 @@ function make_selector_shortcut(type) {
     }
     function end(evt) {
         var e = $$("fold" + type) || $$("s-" + type);
-        e.className = e.className.replace(/ psfocus\b/g, "");
+        removeClass(e, "s-ps-focus");
         e = find(e);
         e.removeEventListener("blur", end, false);
         e.removeEventListener("change", end, false);
@@ -8577,7 +8603,7 @@ function make_selector_shortcut(type) {
     return function (evt) {
         var e = $$("fold" + type) || $$("s-" + type);
         if (e) {
-            e.className += " psfocus";
+            addClass(e, "s-ps-focus");
             foldup.call(e, null, {open: true});
             $(e).scrollIntoView();
             if ((e = find(e))) {
@@ -13411,9 +13437,17 @@ handle_ui.on("js-follow-change", function () {
 });
 
 handle_ui.on("pspcard-fold", function (evt) {
-    if (!evt.target.closest("a")) {
-        addClass(this, "hidden");
-        $(this.parentElement).find(".pspcard-open").addClass("unhidden");
+    const opene = document.getElementById("s-pspcard-open");
+    if (evt.target.closest("a") || !opene) {
+        return;
+    }
+    const wasfocus = this.contains(document.activeElement);
+    this.hidden = true;
+    addClass(opene, "unhidden");
+    // this element is being hidden, so keyboard focus must move
+    if (wasfocus) {
+        opene.tabIndex = -1;
+        opene.focus();
     }
 });
 
@@ -13476,12 +13510,12 @@ function prepare_paper_select() {
 }
 
 function render_tag_messages(message_list) {
-    var t0 = this.querySelector(".want-tag-report"),
-        t1 = this.querySelector(".want-tag-report-warnings"), i;
+    const e = this.closest(".s-ps"),
+        t0 = e.querySelector(".want-tag-report"),
+        t1 = e.querySelector(".want-tag-report-warnings");
     t0.replaceChildren();
     t1.replaceChildren();
-    for (i = 0; i !== message_list.length; ++i) {
-        var mi = message_list[i];
+    for (const mi of message_list) {
         feedback.append_item(t0, mi);
         mi.status > 0 && feedback.append_item(t1, mi);
     }
@@ -13490,35 +13524,33 @@ function render_tag_messages(message_list) {
 }
 
 function prepare_pstags() {
-    var self = this,
-        $f = this.tagName === "FORM" ? $(self) : $(self).find("form"),
-        ta = $f[0].elements.tags;
+    var f = this, $f = $(f), ta = f.elements.tags, psc = f.closest(".s-ps");
     removeClass(this, "need-tag-form");
     function handle_tag_report(data) {
-        data.message_list && render_tag_messages.call(self, data.message_list);
+        data.message_list && render_tag_messages.call(f, data.message_list);
     }
     $f.on("keydown", "textarea", function (evt) {
         var key = event_key(evt);
         if (key === "Enter" && event_key.is_submit_enter(evt, true)) {
-            $f[0].elements.save.click();
+            f.elements.save.click();
         } else if (key === "Escape") {
-            $f[0].elements.cancel.click();
+            f.elements.cancel.click();
         } else {
             return;
         }
         evt.preventDefault();
         handle_ui.stopImmediatePropagation(evt);
     });
-    $f.find("button[name=cancel]").on("click", function (evt) {
+    $(f.elements.cancel).on("click", function (evt) {
         ta.value = ta.defaultValue;
         removeClass(ta, "has-error");
         $f.find(".is-error").remove();
-        $f.find(".btn-highlight").removeClass("btn-highlight");
-        foldup.call(ta, evt, {open: false});
+        check_form_differs(f, ta);
+        foldup.call(psc, evt, {open: false});
         ta.blur();
     });
     $f.on("submit", save_pstags);
-    $f.closest(".foldc, .foldo").on("foldtoggle", function (evt) {
+    $f.on("foldtoggle", function (evt) {
         if (!evt.detail.open)
             return;
         $f.data("everOpened", true);
@@ -13528,23 +13560,26 @@ function prepare_pstags() {
         }
         $f.removeData("noTagReport");
         $(ta).autogrow();
-        focus_within($f[0]);
+        focus_within(f);
     });
     $(window).on("hotcrptags", function (evt, data) {
-        if (!data.pid || data.pid != $f.attr("data-pid")) {
+        if (!data.pid || data.pid != f.getAttribute("data-pid")) {
             return;
         }
         var h = data.tags_view_html == "" ? "None" : data.tags_view_html,
-            $p = $(self).find(".js-tag-result").first();
-        if ($p.html() !== h)
+            $p = $(psc).find(".js-tag-result").first();
+        if ($p.html() !== h) {
             $p.html(h);
+        }
         input_set_default_value(ta, data.tags_edit_text);
         if (ta.value !== data.tags_edit_text
-            && !$(ta).is(":visible")
+            && (f.hasAttribute("data-saving")
+                || f.hidden)
             && (!$f.data("everOpened")
                 || hotcrp.parse_tags.delta(data.tags_edit_text, ta.value).length)) {
             ta.value = data.tags_edit_text;
         }
+        check_form_differs(f, ta);
         handle_tag_report(data);
     });
 }
@@ -13560,28 +13595,37 @@ function save_pstags(evt) {
         success: function (data) {
             $f.find("input").prop("disabled", false);
             if (data.ok) {
+                removeClass(f.elements.tags, "has-error");
+                f.setAttribute("data-saving", "");
+                $(window).trigger("hotcrptags", [data]);
+                f.removeAttribute("data-saving");
                 if (feedback.list_status(data.message_list) < 2) {
-                    foldup.call(f, null, {open: false});
+                    foldup.call(f.closest(".s-ps"), null, {open: false});
                     minifeedback(ta, {ok: true});
                 }
-                $(window).trigger("hotcrptags", [data]);
-                removeClass(f.elements.tags, "has-error");
-                removeClass(f.elements.save, "btn-highlight");
             } else {
                 addClass(f.elements.tags, "has-error");
-                addClass(f.elements.save, "btn-highlight");
                 data.message_list = data.message_list || [];
                 data.message_list.unshift({message: "Your changes were not saved. Please correct these errors and try again.", status: -2 /*MessageSet::WARNING_NOTE*/});
             }
-            if (data.message_list)
+            if (data.message_list) {
                 render_tag_messages.call($f[0], data.message_list);
+            }
         }
     });
 }
 
 handle_ui.on("js-tag-index", function (evt) {
     const self = this;
-    let m = self.id.match(/^tag:(\S+) (\d+)$/), value;
+    let tag = self.getAttribute("data-tag"), pid = +self.getAttribute("data-pid");
+    if (!tag || !pid) { // XXX OBS
+        const m = self.id.match(/^tag:(\S+)[ #](\d+)$/);
+        if (m) {
+            tag = m[1];
+            pid = +m[2];
+        }
+    }
+    let value;
     if (this.type === "checkbox") {
         value = this.checked ? this.value : "";
         handle_ui.stopImmediatePropagation(evt);
@@ -13592,12 +13636,12 @@ handle_ui.on("js-tag-index", function (evt) {
         value = "clear";
     }
     if (/^(?:\d+\.?\d*|\.\d+|clear|unset)$/.test(value)) {
-        $.post(hoturl("=api/tags", {p: m[2]}), {add_tags: m[1] + "#" + value}, done);
+        $.post(hoturl("=api/tags", {p: pid}), {add_tags: tag + "#" + value}, done);
     } else {
         done({ok: false, message_list: [{status: 2, message: "<0>Bad tag value"}]});
     }
     function done(rv) {
-        const pst = self.closest(".psc").lastChild;
+        const pst = self.closest(".s-ps").lastChild;
         while (pst.firstChild && hasClass(pst.firstChild, "feedback-list")) {
             pst.removeChild(pst.firstChild);
         }
@@ -13982,7 +14026,7 @@ hotcrp.load_editable_paper = function () {
 };
 
 hotcrp.load_editable_review = function () {
-    const rfehead = $(".s-rf-head");
+    const rfehead = $(".s-rf-title");
     rfehead.each(add_pslitem_header);
     if (rfehead.length) {
         $(".s-psl > .pslitem:last-child").addClass("mb-3");

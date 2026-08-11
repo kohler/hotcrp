@@ -196,7 +196,6 @@ class ReviewForm {
     private function print_web_edit(PaperInfo $prow, ReviewInfo $rrow,
                                     Contact $contact, ReviewValues $rvalues) {
         $fi = $this->conf->format_info(null);
-        echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact, true) as $f) {
             if (!$f->test_exists($rrow)) {
                 $rvalues->warning_at($f->short_id, "<0>This review field is currently hidden by a field condition and is not visible to others.");
@@ -205,7 +204,6 @@ class ReviewForm {
             $reqstr = $rvalues->req[$f->short_id] ?? null;
             $f->print_web_edit($fv, $reqstr, $rvalues, ["format" => $fi]);
         }
-        echo "</div>\n";
     }
 
     /** @return int */
@@ -552,7 +550,7 @@ Ready\n";
         echo '<hr class="c">';
         echo "<table class=\"revoff\"><tr>
       <td><strong>Offline reviewing</strong> &nbsp;</td>
-      <td>Upload form: &nbsp; <input class=\"ignore-diff\" type=\"file\" name=\"file\" accept=\"text/plain\" size=\"30\">
+      <td>Upload form: &nbsp; <input class=\"ignore-diff\" type=\"file\" name=\"file\" accept=\"text/plain\" size=\"24\">
       &nbsp; ", Ht::submit("upload", "Go"), "</td>
     </tr><tr>
       <td></td>
@@ -574,11 +572,13 @@ Ready\n";
         // blind?
         if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
             $blind = !!($rvalues->req["blind"] ?? $rrow->is_blind());
-            echo '<div class="rge"><h3 class="s-rf-head checki"><label class="revfn">',
+            echo '<div class="s-rfg">',
+                '<h3 class="s-rf-title checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
-                '<span class="checkc">', Ht::checkbox("blind", 1, $blind), '</span>',
-                "Anonymous review</label></h3>\n",
-                '<div class="field-d">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
+                '<span class="checkc">',
+                Ht::checkbox("blind", 1, $blind, ["aria-describedby" => "rf-blind:d"]),
+                '</span>Anonymous review</label></h3>',
+                '<div id="rf-blind:d" class="field-d">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
                 "</div>\n";
         }
 

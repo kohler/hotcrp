@@ -879,7 +879,7 @@ function rf_render_view(fld, example) {
     // header
     labele = $e("label", "revfn" + (fld.required ? " field-required" : ""),
         fld.name || (example ? "Field name" : "<unnamed>"));
-    xfv.append((e = $e("h3", "s-rf-head", labele)));
+    xfv.append((e = $e("h3", "s-rf-title", labele)));
     if ((t = rf_visibility_text(fld.visibility))) {
         e.append($e("div", "field-visibility", t));
     }
