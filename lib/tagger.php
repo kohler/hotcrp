@@ -60,11 +60,17 @@ class TagInfo {
 
     const TFM_VOTES = 0x3000;
     const TFM_DECORATION = 0xE0000;
-    const TFM_NOT_CHAIR_HIDDEN = 0x3E0;
-    const TFM_NOT_HIDDEN = 0x380;
+    const TFM_NOT_CHAIR_HIDDEN = 0x3E0; // bits forced off by TF_CHAIR_HIDDEN:
+                                      // OTHER_PRIVATE, PC_PUBLIC, PC,
+                                      // ADMIN_PUBLIC, HIDDEN
+    const TFM_NOT_HIDDEN = 0x380;     // bits forced off by TF_HIDDEN:
+                                      // OTHER_PRIVATE, PC_PUBLIC, PC
     const TFM_ADMIN_PUBLIC = 0x50;
     const TFM_PRIVATE = 0x204;        // permission bits for my or other private tags
     const TFM_READONLY = 0xC00;       // permission bits for readonly or chair-readonly
+    const TFM_PC_NONEDITABLE = 0x18C28; // bits that prevent editing by normal PC:
+                                      // CHAIR_HIDDEN, HIDDEN, CHAIR_READONLY,
+                                      // READONLY, AUTOMATIC, AUTOSEARCH
     const TFM_PERM = 0x3F8;           // permission bits
     const TFM_PERM_NONPRIVATE = 0x1F8; // permission bits for public tags
     const TFM_PERM_CHAIR = 0x3F8;     // permissions for sysadmins (or chairs)
