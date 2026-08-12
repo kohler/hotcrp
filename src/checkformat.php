@@ -589,6 +589,7 @@ class Default_FormatChecker implements FormatChecker {
             || count($bj->papersize) != 2) {
             $cf->unprocessable_error($doc);
         } else {
+            $this->check_unsafe($cf, $bj);
             if ($spec->papersize) {
                 $this->check_papersize($cf, $bj, $spec);
             }
@@ -621,6 +622,57 @@ class Default_FormatChecker implements FormatChecker {
         // store messages in metadata
         if ($cf->run_attempted()) {
             $doc->set_prop("banal", self::truncate_banal_json($bj, $cf, $nmsg0, $spec));
+        }
+    }
+
+    /** @param object $bj */
+    private function check_unsafe(CheckFormat $cf, $bj) {
+        if (!($bj->unsafe ?? null)) {
+            return;
+        }
+        $pagemap = [];
+        $errmap = [];
+        $morepages = false;
+        $status = 0;
+        foreach ($bj->unsafe as $k => $pagelist) {
+            if (empty($pagelist)) {
+                continue;
+            }
+            if ($k === "rellaunch" || $k === "multimedia") {
+                if ($status === 0) {
+                    $status = 1;
+                } else if ($status === 2) {
+                    continue;
+                }
+            } else if ($status < 2) {
+                $status = 2;
+                $errmap = $pagemap = [];
+            }
+            $errmap[$k] = true;
+            foreach ($pagelist as $page) {
+                if ($page === 0) {
+                    $morepages = true;
+                } else {
+                    $pagemap[$page] = true;
+                }
+            }
+        }
+        if ($status === 0) {
+            return;
+        }
+        ksort($pagemap);
+        $pagelist = array_keys($pagemap);
+        if ($morepages) {
+            $pagelist[] = "others";
+        }
+        ksort($errmap);
+        $errnames = array_keys($errmap);
+        if ($status === 1) {
+            $cf->warning_at("unsafe", "<0>Unusual content: this PDF contains links to content that may not be available on other machines.");
+            $cf->inform_at("unsafe", "<0>Such links often point to artifact files (source code, multimedia content) that might be submitted alongside the PDF. (" . plural_word($pagelist, "page") . " " . numrangejoin($pagelist) . ")");
+        } else {
+            $cf->error_at("unsafe", "<5><strong>Dangerous content</strong>: this PDF may cause some PDF viewers to run embedded code or contact external servers, potentially deanonymizing reviewers.");
+            $cf->inform_at("unsafe", "<0>These features are sometimes added by tools without author knowledge; printing the PDF to a new PDF file usually removes them. (" . plural_word($pagelist, "page") . " " . numrangejoin($pagelist) . "; " . plural_word($errnames, "feature") . ": " . commajoin($errnames) . ")");
         }
     }
 
