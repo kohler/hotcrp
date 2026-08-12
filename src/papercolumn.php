@@ -341,7 +341,7 @@ class Status_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($class, $name) = $row->status_class_and_name($pl->user);
-        if (!$this->show_submitted && $class === "ps-submitted") {
+        if (!$this->show_submitted && $class === "status-submitted") {
             return "";
         }
         return "<span class=\"pstat {$class}\">" . htmlspecialchars($name) . "</span>";

@@ -952,7 +952,7 @@ function procrastination_seq(ri) {
 }
 
 function procrastination_filter(revdata) {
-    const args = {type: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip dark"};
+    const args = {type: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip-s"};
 
     // collect data
     const alldata = [];

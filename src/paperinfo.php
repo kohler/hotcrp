@@ -2307,21 +2307,21 @@ class PaperInfo {
     /** @return array{string,string} */
     function status_class_and_name(Contact $user) {
         if ($this->timeWithdrawn > 0) {
-            return ["ps-withdrawn", "Withdrawn"];
+            return ["status-withdrawn", "Withdrawn"];
         }
         $dec = $this->viewable_decision($user);
         if ($dec->id !== 0) {
             return [$dec->status_class(), $dec->name];
         } else if ($this->timeSubmitted > 0) {
-            return ["ps-submitted", "Submitted"];
+            return ["status-submitted", "Submitted"];
         }
         if ($this->paperStorageId <= 1) {
             $subopt = $this->conf->option_by_id(DTYPE_SUBMISSION);
             if ($subopt->test_exists($this) && $subopt->test_required($this)) {
-                return ["ps-draft", "No submission"];
+                return ["status-draft", "No submission"];
             }
         }
-        return ["ps-draft", "Draft"];
+        return ["status-draft", "Draft"];
     }
 
 

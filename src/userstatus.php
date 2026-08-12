@@ -1646,9 +1646,9 @@ class UserStatus extends MessageSet {
             return;
         }
         if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
-            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Manage email →", "manageemail", ["u" => $this->user->email], ["class" => "btn btn-success btn-sm"]) . "</p>";
+            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Manage email <span class=\"arrow\">→</span>", "manageemail", ["u" => $this->user->email], ["class" => "btn btn-success btn-sm"]) . "</p>";
         } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
-            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Transfer reviews →", "manageemail", ["t" => "transferreview", "u" => $this->user->email], ["class" => "btn btn-primary btn-sm"]) . "</p>";
+            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Transfer reviews <span class=\"arrow\">→</span>", "manageemail", ["t" => "transferreview", "u" => $this->user->email], ["class" => "btn btn-primary btn-sm"]) . "</p>";
         } else {
             $link = "";
         }

@@ -63,11 +63,11 @@ h1.leftmenu, h2.leftmenu {
 	background: var(--paper);
 }
 body.leftmenu #p-header {
-	background: #ecf2f4;
+	background: var(--sidebar-bg);
 	min-height: auto;
 }
 body.paper #p-header {
-	background: #dce4e8;
+	background: var(--submission-bg-dark);
 }
 #p-body, #p-body.paper, #p-body.body-home {
 	margin-left: 12px;
@@ -135,7 +135,7 @@ h2.paptitle {
 	padding-left: 12px;
 	padding-right: 12px;
 	padding-bottom: 12px;
-	background: #ecf2f4;
+	background: var(--sidebar-bg);
 }
 h1.leftmenu > a:after {
 	content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 8 8' preserveAspectRatio='none'%3E%3Cpath d='M1 2l3.5 2.5l-3.5 2.5' stroke='currentColor' fill='none' /%3E%3C/svg%3E");

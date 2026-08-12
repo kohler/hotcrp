@@ -163,7 +163,7 @@ class Assign_API {
             $pr->add_tag_info_json($tmr, $user);
             if (($pids[$pr->paperId] & 2) !== 0) {
                 list($class, $name) = $pr->status_class_and_name($user);
-                if ($class !== "ps-submitted") {
+                if ($class !== "status-submitted") {
                     $tmr->status_html = "<span class=\"pstat {$class}\">" . htmlspecialchars($name) . "</span>";
                 } else {
                     $tmr->status_html = "";

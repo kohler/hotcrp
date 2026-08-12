@@ -3011,7 +3011,7 @@ function prepare_info(elt, info) {
         info.type = elt.getAttribute("data-tooltip-type");
     }
     if (info.className == null || elt.hasAttribute("data-tooltip-class")) {
-        info.className = elt.getAttribute("data-tooltip-class") || "dark";
+        info.className = elt.getAttribute("data-tooltip-class") || "";
     }
     let es;
     if (elt.hasAttribute("data-tooltip")) {
@@ -3101,7 +3101,8 @@ function show_tooltip(info) {
             tx = null;
         }
 
-        const bubinfo = {class: `tooltip ${info.className}`, anchor: info.anchor};
+        const className = info.className ? `tooltip ${info.className}` : "tooltip",
+            bubinfo = {class: className, anchor: info.anchor};
         if (info.type === "focus") {
             bubinfo.class += " position-absolute";
         }
@@ -11475,7 +11476,7 @@ Assign_DraggableTable.prototype.commit = function () {
 
         // create dragger
         if (!dragger) {
-            dragger = make_bubble({class: "prowdrag dark", anchor: "w!*"});
+            dragger = make_bubble({class: "prowdrag", anchor: "w!*"});
             window.disable_tooltip = true;
         }
 
@@ -11489,7 +11490,7 @@ Assign_DraggableTable.prototype.commit = function () {
             y = rowanal.rs[rowanal.rs.length - 1].bottom();
         dragger.html(rowanal.content())
             .at(rowanal.rs[rowanal.srcindex].left() + 36, y)
-            .className("prowdrag dark" + (rowanal.srcindex === rowanal.dragindex ? " unchanged" : ""));
+            .className("prowdrag" + (rowanal.srcindex === rowanal.dragindex ? " unchanged" : ""));
     }
 
     function prowdrag_mousedown(evt) {

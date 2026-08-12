@@ -385,7 +385,7 @@ class ManageEmail_Page {
         if ($what === "fail") {
             echo '<div class="aabut">', Ht::submit("Restart", ["name" => "back", "value" => "restart"]), '</div>';
         } else {
-            echo '<div class="aabut">', Ht::submit($this->curstep->next_label ?? "Next →", ["class" => $this->curstep->next_class ?? "btn-primary", "name" => "next", "value" => 1]), '</div>';
+            echo '<div class="aabut">', Ht::submit($this->curstep->next_label ?? "Next <span class=\"arrow\">→</span>", ["class" => $this->curstep->next_class ?? "btn-primary", "name" => "next", "value" => 1]), '</div>';
             if ($this->curstep->index > 0) {
                 echo '<div class="aabut">', Ht::submit("Back", ["name" => "back", "value" => 1]), '</div>';
             }
