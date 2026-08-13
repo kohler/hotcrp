@@ -1698,7 +1698,7 @@ class UserStatus extends MessageSet {
             }
         }
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
-            echo "<table class=\"w-text\"><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td><td>";
+            echo "<div class=\"d-flex flex-wrap\"><div class=\"mr-3\">Send mail for:</div><div>";
             if (!$us->user->is_empty() && $us->user->is_track_manager()) {
                 self::print_follow_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_PAPER_REGISTER_ALL, "register", "Newly registered submissions, including draft submissions");
@@ -1721,7 +1721,7 @@ class UserStatus extends MessageSet {
                 self::print_follow_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_FINAL_UPDATE_ALL, "finalupdate", "Updates to final versions for submissions you administer");
             }
-            echo "</td></tr></table>";
+            echo "</div></div>";
         } else {
             self::print_follow_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW, "review", "Send mail for new reviews and comments on authored or reviewed submissions");

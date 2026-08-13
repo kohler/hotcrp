@@ -51,7 +51,9 @@ Generic values
       and reviews
 * `id^=m-` defines the page type; it is only set on the `<body>` element
 * `id^=p-` is for page-level elements
-    * `#p-tracker` (optional)
+    * `#p-theme` (in header)
+    * `#p-banner` (optional: custom banners)
+        * `#p-tracker` (optional)
     * `#p-page`
         * `#p-header`
         * `#p-body`

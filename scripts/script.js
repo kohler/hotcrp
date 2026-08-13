@@ -3299,7 +3299,7 @@ function $popup(options) {
                     return;
             }
         }
-        for (const id of ["p-tracker", "p-page", "p-footer"]) {
+        for (const id of ["p-banner", "p-page", "p-footer"]) {
             const e = document.getElementById(id);
             if (e) {
                 e.inert = yes;
