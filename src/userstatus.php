@@ -400,7 +400,7 @@ class UserStatus extends MessageSet {
         // keys that might come from user or contactdb
         foreach (["email", "firstName", "lastName", "affiliation",
                   "collaborators", "country", "phone", "address",
-                  "city", "state", "zip", "country"] as $prop) {
+                  "city", "state", "zip", "country", "theme"] as $prop) {
             $value = $user->gprop($prop);
             if ($value !== null && $value !== "") {
                 $cj->$prop = $value;
@@ -719,6 +719,19 @@ class UserStatus extends MessageSet {
                 } else if ($v) {
                     $cj->bad_follow[] = $k;
                 }
+            }
+        }
+
+        // Theme
+        if (isset($cj->theme)) {
+            $t = is_string($cj->theme) ? strtolower(trim($cj->theme)) : null;
+            if ($t === "" || $t === "auto" || $t === "default" || $t === "none") {
+                $cj->theme = "";
+            } else if ($t === "light" || $t === "dark") {
+                $cj->theme = $t;
+            } else {
+                $this->warning_at("theme", "<0>Theme should be “auto”, “light”, or “dark”");
+                unset($cj->theme);
             }
         }
 
@@ -1213,7 +1226,8 @@ class UserStatus extends MessageSet {
                   "address" => "address",
                   "city" => "address",
                   "state" => "address",
-                  "zip" => "address"] as $prop => $diff) {
+                  "zip" => "address",
+                  "theme" => "theme"] as $prop => $diff) {
             if (($v = $this->jval->$prop ?? null) !== null) {
                 $user->set_prop($prop, $v, $ifempty);
                 if ($user->prop_changed($prop)) {
@@ -1390,7 +1404,7 @@ class UserStatus extends MessageSet {
         foreach (["firstName", "lastName", "preferredEmail", "affiliation",
                   "collaborators", "addressLine1", "addressLine2",
                   "addressLine3", "addressLine4", "addressLine5",
-                  "city", "state", "zipCode", "country", "phone"] as $k) {
+                  "city", "state", "zipCode", "country", "phone", "theme"] as $k) {
             if (($v = $qreq[$k]) !== null) {
                 $cj->$k = $v;
             }
@@ -1467,7 +1481,7 @@ class UserStatus extends MessageSet {
         "address", "address1", "address2", "address3", "address4", "address5",
         "city", "state", "zip", "country",
         "roles", "follow", "tags", "add_tags", "remove_tags", "change_tags",
-        "disabled"
+        "disabled", "theme"
     ];
 
     static function parse_csv_main(UserStatus $us, CsvRow $line) {
@@ -1674,6 +1688,22 @@ class UserStatus extends MessageSet {
         $user_country = Countries::fix($us->user->country_code());
         $t = Countries::selector("country", $us->qreq->country ?? $user_country, ["id" => "country", "data-default-value" => $user_country, "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
         $us->print_field("country", "Country/region", $t);
+    }
+
+    static function print_theme(UserStatus $us) {
+        $themeuser = $us->cdb_user() ?? $us->user;
+        $itheme = $themeuser->theme() ?? "auto";
+        $reqtheme = $us->qreq->theme ?? $itheme;
+        echo '<div class="', $us->control_class("theme", "w-text"), '">',
+            $us->feedback_html_at("theme");
+        foreach (["auto" => "Automatic (follow system setting)",
+                  "light" => "Light",
+                  "dark" => "Dark"] as $value => $label) {
+            echo '<label class="checki"><span class="checkc">',
+                Ht::radio("theme", $value, $reqtheme === $value, ["class" => "uich js-retheme", "data-default-checked" => $itheme === $value]),
+                '</span>', $us->conf->_($label), "</label>\n";
+        }
+        echo "</div>\n";
     }
 
     /** @param int $reqwatch

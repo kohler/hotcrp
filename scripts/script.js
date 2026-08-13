@@ -4931,6 +4931,20 @@ function make_expander_element(foldnum) {
 }
 
 
+// theme selection
+handle_ui.on("js-retheme", function () {
+    const v = this.value || this.getAttribute("data-theme"),
+        th = $$("p-theme");
+    if (v === "auto") {
+        th.textContent = "";
+    } else if (v === "light") {
+        th.textContent = "@layer dark-mode, theme;";
+    } else if (v === "dark") {
+        th.textContent = "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }";
+    }
+});
+
+
 // special-case folding for author table
 handle_ui.on("js-aufoldup", function (evt) {
     if (evt.target === this || evt.target.tagName !== "A") {

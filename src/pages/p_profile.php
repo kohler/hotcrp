@@ -151,8 +151,20 @@ class Profile_Page {
             $ustatus->inform_at("email", "<0>Use ‘Manage email’ to manage your accounts’ email addresses.");
         }
 
-        // save account
-        return $ustatus->execute_update() ? $ustatus->user : null;
+        // attempt save
+        if (!$ustatus->execute_update()) {
+            return null;
+        }
+
+        // maybe save theme
+        if ($ustatus->is_auth_self()
+            && isset($ustatus->jval->theme)
+            && ($ui = $this->user->session_index()) >= 0) {
+            UpdateSession::apply_theme($this->qreq->qsession(), $ui, $this->user->theme());
+        }
+
+        // return user
+        return $ustatus->user;
     }
 
 

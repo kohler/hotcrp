@@ -361,7 +361,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_SIMPLIFY | self::PROP_UPDATE,
         "city" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
         "state" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
-        "zip" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE
+        "zip" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
+        "theme" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT
     ];
 
 
@@ -1809,6 +1810,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $d;
     }
 
+    /** @return 'light'|'dark'|null */
+    function theme() {
+        $t = $this->data("theme");
+        return $t === "light" || $t === "dark" ? $t : null;
+    }
+
     /** @param string $key
      * @return bool */
     function set_data_prop($key, $value) {
@@ -2280,6 +2287,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $qf = $qv = [];
         foreach (self::$props as $prop => $shape) {
             if (($shape & $flag) === 0
+                || ($shape & self::PROP_DATA) !== 0
                 || (!array_key_exists($prop, $this->_mod_undo)
                     && ($this->$idk > 0 || ($shape & self::PROP_NULL) !== 0))) {
                 continue;
@@ -2559,9 +2567,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
      * @param ?Contact $actor
      * @return ?Contact */
     private function _store_create($cdbu, $actor) {
-        $this->_mod_undo = ["cflags" => -1];
+        $this->_mod_undo = ["cflags" => -1, "data" => null];
         foreach ($this->importable_props() as $prop => $shape) {
-            $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
+            if (($shape & self::PROP_DATA) === 0) {
+                $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
+            }
         }
 
         if ($cdbu) {

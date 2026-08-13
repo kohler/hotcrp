@@ -80,4 +80,26 @@ class UpdateSession {
             }
         }
     }
+
+    /** @param Qsession $qs
+     * @param int $ui
+     * @param ?string $theme */
+    static function apply_theme($qs, $ui, $theme) {
+        $themes = $qs->get("themes");
+        if (!isset($themes) || !is_array($themes)) {
+            $themes = [];
+        }
+        while (count($themes) <= $ui) {
+            $themes[] = null;
+        }
+        $themes[$ui] = $theme;
+        while (!empty($themes) && $themes[count($themes) - 1] === null) {
+            array_pop($themes);
+        }
+        if (empty($themes)) {
+            $qs->unset("themes");
+        } else {
+            $qs->set("themes", $themes);
+        }
+    }
 }

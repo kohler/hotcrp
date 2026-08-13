@@ -929,6 +929,105 @@ class UserStatus_Tester {
         xassert_eqq($u->prop("zip"), "02143");
     }
 
+    /* Theme preference (dark mode). Stored in the `data` JSON blob via
+       `Contact::$props`; null means “auto”, i.e. follow the OS setting. */
+
+    function test_theme_prop() {
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->theme(), null);
+        $u->set_prop("theme", "dark");
+        xassert($u->prop_changed("theme"));
+        xassert($u->save_prop());
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->prop("theme"), "dark");
+        xassert_eqq($u->theme(), "dark");
+
+        // `theme()` does not expose junk stored in the blob
+        $u->set_prop("theme", "purple");
+        xassert_eqq($u->prop("theme"), "purple");
+        xassert_eqq($u->theme(), null);
+        $u->abort_prop();
+
+        // the empty string clears the preference
+        $u->set_prop("theme", "");
+        xassert($u->save_prop());
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->prop("theme"), null);
+    }
+
+    function test_qreq_theme() {
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu", ["theme" => "dark"]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert_eqq($us->jval->theme, "dark");
+        xassert($us->execute_update());
+        xassert_eqq($us->diffs["theme"] ?? null, true);
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->theme(), "dark");
+
+        // a self-save updates the global profile as well
+        if ($this->conf->contactdb()) {
+            $cdbu = $this->conf->fresh_cdb_user_by_email("estrin@usc.edu");
+            xassert_eqq($cdbu->prop("theme"), "dark");
+        }
+
+        // an invalid value warns and leaves the setting alone
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu", ["theme" => "purple"]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update());
+        xassert_str_contains($us->full_feedback_text(), "Theme");
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->theme(), "dark");
+
+        // `auto` clears the preference
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu", ["theme" => "auto"]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update());
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->prop("theme"), null);
+        if ($this->conf->contactdb()) {
+            $cdbu = $this->conf->fresh_cdb_user_by_email("estrin@usc.edu");
+            xassert_eqq($cdbu->prop("theme"), null);
+        }
+    }
+
+    function test_csv_theme() {
+        $this->delete_users("csvt17%");
+
+        $this->csv_save("email,theme\ncsvt17@_.com,dark\n");
+        $u = $this->conf->fresh_user_by_email("csvt17@_.com");
+        xassert_eqq($u->theme(), "dark");
+
+        // a blank cell leaves the preference alone
+        $this->csv_save("email,theme\ncsvt17@_.com,\n");
+        xassert_eqq($this->csv_diffs[0], []);
+        xassert_eqq($this->conf->fresh_user_by_email("csvt17@_.com")->theme(), "dark");
+
+        // values are case-insensitive; a change reports a `theme` diff
+        $this->csv_save("email,theme\ncsvt17@_.com,Light\n");
+        xassert_eqq($this->csv_diffs[0], ["theme"]);
+        xassert_eqq($this->conf->fresh_user_by_email("csvt17@_.com")->theme(), "light");
+
+        // a dash clears, as does `auto`
+        $this->csv_save("email,theme\ncsvt17@_.com,-\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt17@_.com")->prop("theme"), null);
+        $this->csv_save("email,theme\ncsvt17@_.com,dark\n");
+        $this->csv_save("email,theme\ncsvt17@_.com,auto\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt17@_.com")->prop("theme"), null);
+
+        // unknown values warn but don't fail the row or change the setting
+        $this->csv_save("email,theme\ncsvt17@_.com,dark\n");
+        $r = $this->csv_save("email,theme\ncsvt17@_.com,purple\n");
+        xassert_eqq($r, ["csvt17@_.com"]);
+        xassert_str_contains($this->csv_feedback[0], "Theme");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt17@_.com")->theme(), "dark");
+    }
+
     function finalize() {
         $this->delete_users("csvt%");
         $emails = ["van@ee.lbl.gov", "raju@watson.ibm.com", "chris@w3.org"];

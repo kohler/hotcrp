@@ -2,6 +2,12 @@
 /* style.css -- HotCRP CSS styles */
 /* Copyright (c) 2006-2026 Eddie Kohler; see LICENSE. */
 
+/* Theming: Set layer order based on prefers-color-scheme */
+@supports (color: light-dark(red, blue)) {
+@media (prefers-color-scheme: dark) {
+@layer theme, dark-mode;
+}
+}
 @layer dark-mode, theme;
 
 /* Theme colors and widths */

@@ -160,13 +160,14 @@ class LoginHelper {
         $xuser = $luser->contactId ? $luser : $luser->cdb_user();
         $xuser->mark_login();
 
-        // store authentication
+        // store authentication and theme
         $qs = $qreq->qsession();
         $qs->open_new_sid();
-        UserSecurityEvent::session_user_add($qs, $xuser->email);
+        $ui = UserSecurityEvent::session_user_add($qs, $xuser->email);
         foreach ($info["usec"] ?? [] as $use) {
             $use->set_email($xuser->email)->store($qreq);
         }
+        UpdateSession::apply_theme($qs, $ui, $xuser->theme());
 
         // activate
         $user = $xuser->activate($qreq, false);
@@ -175,7 +176,7 @@ class LoginHelper {
         $nav = $qreq->navigation();
         $url = $nav->server . $nav->base_path;
         if ($qreq->has_gsession("us")) {
-            $url .= "u/" . Contact::session_index_by_email($qs, $user->email) . "/";
+            $url .= "u/{$ui}/";
         }
         $url .= "?postlogin=1";
         if ($qreq->redirect !== null && $qreq->redirect !== "1") {

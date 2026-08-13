@@ -4858,6 +4858,20 @@ class Conf {
         echo "<!DOCTYPE html>\n<html lang=\"{$this->lang}\">\n<head>\n",
             "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n";
 
+        // session theme
+        echo "<style id=\"p-theme\">";
+        if (($themes = $qreq->gsession("themes"))
+            && is_array($themes)
+            && ($ui = $qreq->user()->base_user()->session_index()) >= 0
+            && $ui < count($themes)) {
+            if ($themes[$ui] === "dark") {
+                echo "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }";
+            } else if ($themes[$ui] === "light") {
+                echo "@layer dark-mode, theme;";
+            }
+        }
+        echo "</style>\n";
+
         // gather stylesheets
         $cssx = [];
         $has_default_css = $has_media = false;

@@ -74,6 +74,8 @@ encoding](https://www.php.net/manual/en/function.session-encode.php).
       check succeeded, true means it failed.
     * `a` (integer timestamp): Time of the event.
 
+* `themes` (list of nullable strings): Array of theme by user index
+
 ### Other
 
 * `addrs` (list of up to 5 strings): Recent IP addresses
