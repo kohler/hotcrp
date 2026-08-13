@@ -53,16 +53,26 @@ final class Conflict_SearchTerm extends SearchTerm {
         }
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (!$this->self) {
-            $sqi->add_allConflictType_column();
-        }
-        $snc = $this->ccm->simplified_nonnegative_comparison();
         $cidsql = $this->ccm->contact_match_sql("contactId");
-        if ($snc === ">0" || $snc === "=0") {
-            $n = $snc === "=0" ? "not exists" : "exists";
-            return "{$n} (select * from PaperConflict where paperId=Paper.paperId and {$cidsql})";
+        if ($this->self) {
+            // The searcher always sees their own conflicts, so an exact prefilter is safe.
+            $snc = $this->ccm->simplified_nonnegative_comparison();
+            if ($snc === ">0" || $snc === "=0") {
+                $n = $snc === "=0" ? "not exists" : "exists";
+                return "{$n} (select * from PaperConflict where paperId=Paper.paperId and {$cidsql})";
+            }
+            return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$snc}";
         }
-        return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$snc}";
+        // For other users the searcher may not be able to view every conflict
+        // (`test()` gates each on `can_view_conflicts`), so the prefilter must be a
+        // conservative superset — never a subtractive `not exists`/upper-bound that
+        // would drop a paper with a hidden conflict that `test()` would keep.
+        $sqi->add_allConflictType_column();
+        $cnc = $this->ccm->conservative_nonnegative_comparison();
+        if ($cnc === ">=0") {
+            return "true";
+        }
+        return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$cnc}";
     }
     function is_sqlexpr_precise() {
         return $this->self;

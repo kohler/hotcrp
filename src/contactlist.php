@@ -761,13 +761,9 @@ class ContactList {
                 $this->_re_data = $this->_reord_data = [];
             }
             foreach ($prows as $prow) {
-                if ($this->user->can_view_review_assignment($prow, null)
-                    && $this->user->can_view_review_identity($prow, null)) {
-                    foreach ($prow->all_reviews() as $rrow) {
-                        if ($this->user->can_view_review_assignment($prow, $rrow)
-                            && $this->user->can_view_review_identity($prow, $rrow)) {
-                            $this->collect_review_data($prow, $rrow, $repapers, $review_limit);
-                        }
+                foreach ($prow->all_reviews() as $rrow) {
+                    if ($this->user->can_view_review_identity($prow, $rrow)) {
+                        $this->collect_review_data($prow, $rrow, $repapers, $review_limit);
                     }
                 }
             }

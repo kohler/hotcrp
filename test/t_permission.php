@@ -2023,6 +2023,50 @@ class Permission_Tester {
         $this->conf->refresh_settings();
     }
 
+    function test_review_identity_implies_assignment() {
+        // Invariant: seeing a review's reviewer identity entails being allowed to
+        // know the review exists, so `can_view_review_identity` must imply
+        // `can_view_review_assignment` — both for a specific review and for the
+        // null "can view all identities" form. The historical gap was an author of
+        // a NON-BLIND review whose content wasn't released to authors (`au_seerev`
+        // off): they saw the reviewer's identity without clearing the existence
+        // gate. The BLIND_NEVER + au_seerev=off configuration below exercises that
+        // case against every paper an author-viewer owns.
+        $conf = $this->conf;
+        $old_revblind = $conf->setting("rev_blind");
+        $old_auseerev = $conf->setting("au_seerev");
+
+        $viewers = [$this->u_chair, $this->u_estrin, $this->u_mgbaker, $this->u_marina,
+                    $this->u_van, $this->u_shenker, $this->u_mogul];
+        $configs = [[Conf::BLIND_ALWAYS, null], [Conf::BLIND_NEVER, null],
+                    [Conf::BLIND_NEVER, 1], [Conf::BLIND_OPTIONAL, 1]];
+        $identity_seen = 0;
+        foreach ($configs as list($rb, $au)) {
+            $conf->save_refresh_setting("rev_blind", $rb);
+            $conf->save_refresh_setting("au_seerev", $au);
+            foreach ($conf->paper_set(["allConflictType" => true]) as $prow) {
+                foreach ($viewers as $v0) {
+                    $v = $conf->checked_user_by_email($v0->email);
+                    if ($v->can_view_review_identity($prow, null)) {
+                        ++$identity_seen;
+                        xassert($v->can_view_review_assignment($prow, null));
+                    }
+                    foreach ($prow->all_reviews() as $rrow) {
+                        if ($v->can_view_review_identity($prow, $rrow)) {
+                            ++$identity_seen;
+                            xassert($v->can_view_review_assignment($prow, $rrow));
+                        }
+                    }
+                }
+            }
+        }
+        // Non-vacuous: the assertion body actually fired for real visible identities.
+        xassert_gt($identity_seen, 0);
+
+        $conf->save_refresh_setting("rev_blind", $old_revblind);
+        $conf->save_refresh_setting("au_seerev", $old_auseerev);
+    }
+
     function test_reset_deadlines() {
         $this->conf->save_setting("sub_reg", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);

@@ -3602,16 +3602,18 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             }
 
             // check decision visibility
-            $sdr = $allow_pc_broad
-                || ($ci->review_status > PCI::CIRS_UNSUBMITTED
-                    && ($this->conf->setting("viewrev_ext") ?? 0) >= 0);
-            $can_view_decision = $can_administer
-                || (($sdr || $act_author_view)
-                    && $prow->can_author_view_decision())
-                || ($sdr
-                    && ($sd = $this->conf->setting("seedec")) > 0
-                    && ($sd !== Conf::SEEDEC_NCREV
-                        || ($cif & PCI::CIF_CONFLICT_VIEW) === 0));
+            if ($can_administer) {
+                $can_view_decision = true;
+            } else if ($act_author_view) {
+                $can_view_decision = $prow->can_author_view_decision();
+            } else if ($allow_pc_broad
+                       || ($ci->review_status > PCI::CIRS_UNSUBMITTED
+                           && ($this->conf->setting("viewrev_ext") ?? 0) >= 0)) {
+                $can_view_decision = $prow->can_author_view_decision()
+                    || $this->conf->time_reviewer_view_decision($allow_pc_broad, ($cif & PCI::CIF_CONFLICT_VIEW) !== 0);
+            } else {
+                $can_view_decision = false;
+            }
             if ($can_view_decision) {
                 $cif |= PCI::CIF_CAN_VIEW_DECISION;
             }
@@ -4579,6 +4581,28 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             || ($oview === PaperOption::VIS_REVIEW && $this->is_reviewer());
     }
 
+
+    /** @return list<SubmissionRound> */
+    function relevant_submission_rounds() {
+        $srds = [];
+        foreach ($this->conf->submission_round_list() as $srd) {
+            if ($srd->relevant($this))
+                $srds[] = $srd;
+        }
+        return $srds;
+    }
+
+    /** @return list<ResponseRound> */
+    function relevant_response_rounds() {
+        $rrds = [];
+        foreach ($this->conf->response_round_list() as $rrd) {
+            if ($rrd->relevant($this))
+                $rrds[] = $rrd;
+        }
+        return $rrds;
+    }
+
+
     /** @return bool */
     function is_my_review(?ReviewInfo $rrow) {
         return $rrow
@@ -4606,7 +4630,14 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && ($this->_capabilities["@ra{$rbase->paperId}"] ?? null) == $rbase->contactId));
     }
 
-    /** @param ?ReviewInfo $rrow
+    /** Returns true if this review's existence is visible by this user.
+     * Implied by can_view_review and can_view_review_identity, but does NOT
+     * imply them -- a co-reviewer can sometimes see that a review exists even
+     * if they can't see anything else about it. Does not imply
+     * can_view_review_meta. For authors with no other rights,
+     * can_view_review_assignment is the same as can_view_review.
+     *
+     * @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rrow
      * @return bool */
     function can_view_review_assignment(PaperInfo $prow, $rrow) {
         if ($rrow && $rrow->reviewType <= 0) {
@@ -4620,26 +4651,6 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && ($rights->allow_pc()
                         || $rights->review_status > 0
                         || $this->can_view_review($prow, $rrow))));
-    }
-
-    /** @return list<SubmissionRound> */
-    function relevant_submission_rounds() {
-        $srds = [];
-        foreach ($this->conf->submission_round_list() as $srd) {
-            if ($srd->relevant($this))
-                $srds[] = $srd;
-        }
-        return $srds;
-    }
-
-    /** @return list<ResponseRound> */
-    function relevant_response_rounds() {
-        $rrds = [];
-        foreach ($this->conf->response_round_list() as $rrd) {
-            if ($rrd->relevant($this))
-                $rrds[] = $rrd;
-        }
-        return $rrds;
     }
 
     /** @return bool */
@@ -4864,6 +4875,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         // See also can_view_comment_identity.
+        // Implies can_view_review_assignment.
+
+        // Note that the blindness of reviews (the `rev_blind` setting)
+        // ONLY affects blindness to authors: review identity visibility
+        // among reviewers is constrained by other settings and by tracks.
         if (!$rights->scope_allows(TS::S_REV_READ)) {
             return false;
         }
@@ -4881,7 +4897,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             || ($rbase
                 && $this->is_owned_review($rbase))
             || ($rights->act_author_view()
-                && !$this->conf->is_review_blind(!$rbase || $rbase->reviewType < 0 || (bool) $rbase->reviewBlind))) {
+                && (!$rbase || $rbase->reviewType > 0)
+                && !$this->conf->is_review_blind(!$rbase || (bool) $rbase->reviewBlind)
+                && $this->can_view_review($prow, $rbase))) {
             return true;
         }
         return $this->seerevid_setting($prow, $rbase, $rights);
@@ -4891,7 +4909,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     function can_view_some_review_identity() {
         if (($this->role_mask & self::ROLE_VIEW_SOME_REVIEW_ID) === 0) {
             $this->role_mask |= self::ROLE_VIEW_SOME_REVIEW_ID;
-            if ($this->is_manager()) {
+            if ($this->is_manager()
+                || (!$this->conf->is_review_blind(null)
+                    && $this->is_author()
+                    && $this->can_view_some_review())) {
                 $this->roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
             } else {
                 $tags = "";
@@ -5562,7 +5583,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $rights->is_admin() || $rights->allow_pc();
     }
 
-    /** @return bool */
+    /** Requires the caller to check can_view_comment first.
+     *
+     * @return bool */
     function can_view_comment_identity(PaperInfo $prow, CommentInfo $crow) {
         $ctype = $crow->commentType;
         if (($ctype & CommentInfo::CTM_BYAUTHOR) !== 0) {
@@ -5614,7 +5637,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @return bool */
     function can_view_all_decision() {
         return $this->allow_admin_all()
-            || ($this->isPC && $this->conf->setting("seedec") === Conf::SEEDEC_REV);
+            || ($this->isPC
+                && $this->conf->setting("seedec") === Conf::SEEDEC_REV
+                && $this->conf->time_all_author_view_decision());
     }
 
     /** @return bool */

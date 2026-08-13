@@ -16,6 +16,9 @@ class Desirability_PaperColumn extends PaperColumn {
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $a->desirability() <=> $b->desirability();
     }
+    function content_empty(PaperList $pl, PaperInfo $row) {
+        return !$pl->user->can_view_preference($row, true);
+    }
     function content(PaperList $pl, PaperInfo $row) {
         $d = $row->desirability();
         return $d < 0 ? "−" /*U+2122*/ . (-$d) : (string) $d;

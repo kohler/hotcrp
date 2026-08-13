@@ -466,6 +466,268 @@ class Search_Tester {
         $conf->save_refresh_setting("seedec", null);
     }
 
+    function test_decision_none_seedec_rev_hides_own_decision() {
+        // Regression: under SEEDEC_REV a PC member `can_view_all_decision()`,
+        // which drove a *precise* `outcome=0` SQL prefilter for `dec:none`. But a
+        // PC member who authors a submission views that paper as an author, so its
+        // decision follows the author-release rules — and until decisions are
+        // released to authors, it stays hidden even though the paper is visible.
+        // The precise prefilter dropped that decided paper before `test()` could
+        // keep it as "no decision", omitting it from `dec:none` and so leaking
+        // that a decision exists. `can_view_all_decision()` therefore holds only
+        // once decisions are released to all authors.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+
+        $old_seedec = $conf->setting("seedec");
+        $old_au_seedec = $conf->setting("au_seedec");
+        $conf->save_refresh_setting("seedec", Conf::SEEDEC_REV);
+        $conf->save_refresh_setting("au_seedec", null); // decisions NOT released to authors
+
+        // estrin is a PC member and an author of paper 1.
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        xassert($estrin->isPC);
+
+        xassert_assign($chair, "paper,action,decision\n1,decision,accept\n");
+        $prow = $conf->checked_paper_by_id(1);
+        xassert_gt($prow->outcome, 0);
+
+        // She sees her own paper but not its (author-release-gated) decision, is
+        // not an administrator, and — with the fix — no longer claims to view all
+        // decisions, since her own decision is hidden from her.
+        xassert($estrin->can_view_paper($prow));
+        xassert(!$estrin->can_view_decision($prow));
+        xassert(!$estrin->allow_admin_all());
+        xassert(!$estrin->can_view_all_decision());
+
+        // The decision is invisible to her, so paper 1 degrades to "no
+        // decision" and must appear in both decision-none search vectors.
+        xassert_in_eqq(1, (new PaperSearch($estrin, "dec:none"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($estrin, "in:undecided"))->paper_ids());
+
+        // Once decisions are released to all authors, she can view her own
+        // decision, so `can_view_all_decision()` holds and the precise prefilter
+        // is sound: paper 1 leaves `dec:none` and appears in `dec:yes`.
+        $conf->save_refresh_setting("au_seedec", 1); // released to all authors
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        $prow = $conf->checked_paper_by_id(1);
+        xassert($estrin->can_view_decision($prow));
+        xassert($estrin->can_view_all_decision());
+        xassert_not_in_eqq(1, (new PaperSearch($estrin, "dec:none"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($estrin, "dec:yes"))->paper_ids());
+
+        // clean up
+        xassert_assign($chair, "paper,action,decision\n1,cleardecision,accept\n");
+        $conf->save_refresh_setting("seedec", $old_seedec);
+        $conf->save_refresh_setting("au_seedec", $old_au_seedec);
+    }
+
+    function test_conflict_count_hides_invisible_conflicts() {
+        // Regression: `Conflict_SearchTerm::sqlexpr` emitted a subtractive
+        // `not exists` for `conflict:U=0` (and raw upper-bound counts) using the
+        // TRUE conflict rows, while `test()` counts a member's conflict only when
+        // the searcher `can_view_conflicts($row)`. When conflicts are hidden from
+        // the PC (`sub_pcconfvis=1`), a paper with a hidden conflict was dropped
+        // from `conflict:U=0` before `test()` could keep it (it looks like 0 to
+        // the searcher) — so the omission leaked that U is conflicted there.
+        $conf = $this->conf;
+        $old_pccv = $conf->setting("sub_pcconfvis");
+        $conf->save_refresh_setting("sub_pcconfvis", 1); // hide conflicts from PC
+
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $searcher = $conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // PC, not admin of p5
+        $marina = $conf->checked_user_by_email("marina@poema.ru");
+
+        // marina gets a hidden PC conflict on paper 5; searcher is not conflicted there.
+        xassert_assign($chair, "paper,action,user\n5,conflict,marina@poema.ru\n");
+        $p5 = $conf->checked_paper_by_id(5);
+        xassert($searcher->can_view_paper($p5));
+        xassert(!$searcher->can_view_conflicts($p5));
+
+        // The conflict is invisible to the searcher, so paper 5 counts as 0 and
+        // must satisfy `=0` and `<2`; it must never surface via `>0`.
+        xassert_in_eqq(5, (new PaperSearch($searcher, "conflict:\"marina@poema.ru\"=0"))->paper_ids());
+        xassert_in_eqq(5, (new PaperSearch($searcher, "conflict:\"marina@poema.ru\"<2"))->paper_ids());
+        xassert_not_in_eqq(5, (new PaperSearch($searcher, "conflict:\"marina@poema.ru\">0"))->paper_ids());
+
+        // An administrator sees the conflict, so their results are exact.
+        xassert_not_in_eqq(5, (new PaperSearch($chair, "conflict:\"marina@poema.ru\"=0"))->paper_ids());
+        xassert_in_eqq(5, (new PaperSearch($chair, "conflict:\"marina@poema.ru\">0"))->paper_ids());
+
+        // clean up
+        xassert_assign($chair, "paper,action,user\n5,noconflict,marina@poema.ru\n");
+        $conf->save_refresh_setting("sub_pcconfvis", $old_pccv);
+    }
+
+    function test_desirability_column_respects_aggregate_pref_visibility() {
+        // Regression: the Desirability column renders the signed reviewer-
+        // preference aggregate. `prepare()` gates only on the global `is_manager()`
+        // role, so without a per-paper `content_empty()` a manager who is
+        // conflicted with (or track-restricted from) a paper saw its desirability
+        // even though `can_view_preference($row, aggregate)` is false there.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+
+        // marina becomes an assigned manager of paper 4 -> is_manager() globally.
+        xassert_assign($chair, "action,paper,user\nadministrator,4,marina@poema.ru\n");
+        // ...but she is conflicted with paper 3, which she does not manage.
+        xassert_assign($chair, "paper,action,user\n3,conflict,marina@poema.ru\n");
+        // seed reviewer preferences on paper 3 so its desirability is non-zero.
+        foreach ([["mogul@wrl.dec.com", 8], ["van@ee.lbl.gov", 6], ["jon@cs.ucl.ac.uk", -20]] as list($em, $pf)) {
+            $rid = $conf->checked_user_by_email($em)->contactId;
+            $conf->qe("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values (3,?,?,null) on duplicate key update preference=?", $rid, $pf, $pf);
+        }
+        $conf->invalidate_caches(["pc" => true]);
+
+        $marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p3 = $conf->checked_paper_by_id(3);
+        $p4 = $conf->checked_paper_by_id(4);
+        xassert($marina->is_manager());
+        xassert($marina->can_view_paper($p3));
+        xassert(!$marina->can_view_preference($p3, true)); // conflicted -> no aggregate prefs
+        xassert_neqq($p3->desirability(), 0);
+
+        $col = PaperColumn::make($conf, $conf->paper_columns("desirability", $marina)[0]);
+        $pl = new PaperList("empty", new PaperSearch($marina, "3 4"));
+        xassert($col->prepare($pl, PaperColumn::PREP_VISIBLE));
+        // The conflicted paper's cell is blanked; her own managed paper renders.
+        xassert($col->content_empty($pl, $p3));
+        xassert(!$col->content_empty($pl, $p4));
+
+        // clean up
+        xassert_assign($chair, "action,paper,user\nclearadministrator,4,marina@poema.ru\n");
+        xassert_assign($chair, "paper,action,user\n3,noconflict,marina@poema.ru\n");
+        $conf->qe("delete from PaperReviewPreference where paperId=3 and contactId in (select contactId from ContactInfo where email in ('mogul@wrl.dec.com','van@ee.lbl.gov','jon@cs.ucl.ac.uk'))");
+        $conf->invalidate_caches(["pc" => true]);
+    }
+
+    function test_pdf_none_hides_unviewable_pdf() {
+        // Regression: `pdf:none`/`submission:none` emitted a subtractive
+        // `paperStorageId<=1` on raw document presence, so a paper whose PDF the
+        // searcher cannot view (but whose row exists) was dropped from `:none`,
+        // leaking that a hidden PDF exists. The absent branch is now a conservative
+        // superset and `test()` filters via `viewable_primary_document`. Also pins
+        // that the unqualified `pdf:` form loads `mimetype`, so it agrees with
+        // document visibility (previously it saw no PDF at all).
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $old_open = $conf->setting("sub_open");
+        $old_sub = $conf->setting("sub_sub");
+        $old_seeallpdf = $conf->setting("pc_seeallpdf");
+        $old_seeall = $conf->setting("pc_seeall");
+        $conf->save_refresh_setting("sub_open", 1);
+        $conf->save_refresh_setting("sub_sub", Conf::$now + 100000);
+        $conf->save_refresh_setting("pc_seeallpdf", 0); // PC cannot view PDFs...
+        $conf->save_refresh_setting("pc_seeall", 1);    // ...but can view papers
+
+        $mg = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+
+        // Ground truth: for every paper mgbaker can view, `pdf:any` must hold
+        // exactly when they can view a PDF primary document, and `pdf:none` the
+        // rest. A subtractive prefilter would have dropped hidden-PDF papers from
+        // `pdf:none` (leak); the missing-`mimetype` bug would have made every
+        // paper PDF-less. Both are excluded by matching ground truth exactly.
+        $truth_any = $truth_none = [];
+        foreach ($conf->paper_set(["allConflictType" => true]) as $prow) {
+            if (!$mg->can_view_paper($prow)) {
+                continue;
+            }
+            $doc = $prow->viewable_primary_document($mg);
+            if ($doc && $doc->mimetype === "application/pdf") {
+                $truth_any[] = $prow->paperId;
+            } else {
+                $truth_none[] = $prow->paperId;
+            }
+        }
+        sort($truth_any);
+        sort($truth_none);
+        $search_any = (new PaperSearch($mg, "pdf:any"))->paper_ids();
+        $search_none = (new PaperSearch($mg, "pdf:none"))->paper_ids();
+        sort($search_any);
+        sort($search_none);
+        xassert_eqq($search_any, $truth_any);
+        xassert_eqq($search_none, $truth_none);
+        // Config took effect and the check is non-vacuous: with PC PDFs hidden,
+        // there are viewable papers whose PDF mgbaker cannot see.
+        xassert_gt(count($truth_none), 0);
+
+        // The dtype-specific `submission:` form must match the same ground truth
+        // (this exercises the conservative absent-branch: a non-admin must not get
+        // the subtractive `paperStorageId<=1` prefilter that would drop a viewable
+        // paper whose submission PDF is hidden).
+        $sub_any = $sub_none = [];
+        foreach ($conf->paper_set(["allConflictType" => true]) as $prow) {
+            if (!$mg->can_view_paper($prow)) {
+                continue;
+            }
+            $ov = $prow->option(DTYPE_SUBMISSION);
+            $doc = $ov && $mg->can_view_option($prow, $ov->option)
+                ? $ov->document_set(true)->document_by_index(0) : null;
+            if ($doc && $doc->mimetype === "application/pdf") {
+                $sub_any[] = $prow->paperId;
+            } else {
+                $sub_none[] = $prow->paperId;
+            }
+        }
+        sort($sub_any);
+        sort($sub_none);
+        $ssub_none = (new PaperSearch($mg, "submission:none"))->paper_ids();
+        sort($ssub_none);
+        xassert_eqq($ssub_none, $sub_none);
+
+        // Administrator sees every PDF: the unqualified `pdf:` form matches
+        // `submission:` (it no longer classifies every paper as PDF-less), and the
+        // null-dtype `:none` form does not fault.
+        xassert_eqq((new PaperSearch($chair, "pdf:any"))->paper_ids(),
+                    (new PaperSearch($chair, "submission:any"))->paper_ids());
+        xassert(count((new PaperSearch($chair, "final:none"))->paper_ids()) >= 0);
+
+        $conf->save_refresh_setting("sub_open", $old_open);
+        $conf->save_refresh_setting("sub_sub", $old_sub);
+        $conf->save_refresh_setting("pc_seeallpdf", $old_seeallpdf);
+        $conf->save_refresh_setting("pc_seeall", $old_seeall);
+    }
+
+    function test_token_none_hides_invisible_token_review() {
+        // Regression: `token:none` emitted a subtractive `count(reviewToken)=0`
+        // over ALL reviews, so a paper with a token review the searcher cannot see
+        // was dropped from `token:none`, leaking that a hidden token review exists.
+        // The sqlexpr is now conservative and `test()` counts a token review only
+        // when the searcher can view its assignment AND identity.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $old_auseerev = $conf->setting("au_seerev");
+        $conf->save_refresh_setting("au_seerev", null); // authors cannot see reviews
+
+        // Stamp a review token on an existing submitted review of estrin's paper 1.
+        $rid = $conf->fetch_ivalue("select reviewId from PaperReview where paperId=1 and reviewType>0 order by reviewId asc limit 1");
+        xassert_gt($rid, 0);
+        $conf->qe("update PaperReview set reviewToken=? where reviewId=?", 8675309, $rid);
+        $conf->invalidate_caches(["pc" => true]);
+
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu"); // author of paper 1
+        $p1 = $conf->checked_paper_by_id(1);
+        $rrow = null;
+        foreach ($p1->all_reviews() as $r) {
+            if ($r->reviewId === $rid) {
+                $rrow = $r;
+            }
+        }
+        xassert(!$estrin->can_view_review_assignment($p1, $rrow)); // author can't see it exists
+
+        // Leak closed: author can't see the token review, so paper 1 stays in `token:none`.
+        xassert_in_eqq(1, (new PaperSearch($estrin, "token:none"))->paper_ids());
+        xassert_not_in_eqq(1, (new PaperSearch($estrin, "token:any"))->paper_ids());
+
+        // Chair sees it: `token:any` includes paper 1, `token:none` excludes it.
+        xassert_in_eqq(1, (new PaperSearch($chair, "token:any"))->paper_ids());
+        xassert_not_in_eqq(1, (new PaperSearch($chair, "token:none"))->paper_ids());
+
+        // clean up
+        $conf->qe("update PaperReview set reviewToken=0 where reviewId=?", $rid);
+        $conf->save_refresh_setting("au_seerev", $old_auseerev);
+    }
+
     function test_reviewer_aliases_to_search_user() {
         // A `reviewer` naming the search user is canonicalized away, even when
         // it arrives as a distinct Contact object for that same user (as from

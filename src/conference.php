@@ -3683,6 +3683,15 @@ class Conf {
     function time_all_author_view_decision() {
         return $this->_au_seedec instanceof True_SearchTerm;
     }
+    /** @param bool $pc
+     * @param bool $conflicted
+     * @return bool */
+    function time_reviewer_view_decision($pc, $conflicted) {
+        $sd = $this->settings["seedec"] ?? 0;
+        return $sd > 0
+            && ($sd !== Conf::SEEDEC_NCREV || !$conflicted)
+            && ($pc || ($this->settings["viewrev_ext"] ?? 0) >= 0);
+    }
     /** @return bool */
     function time_review_open() {
         return ($this->_permbits & self::PB_REVIEW_OPEN) !== 0;

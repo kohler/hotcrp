@@ -71,15 +71,12 @@ class PaperPDF_SearchTerm extends SearchTerm {
         $sqi->add_column("pdfFormatStatus", "Paper.pdfFormatStatus");
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->format_problem !== null) {
-            $this->add_columns($sqi);
-        } else {
-            if ($this->dtype === DTYPE_SUBMISSION || $this->dtype === null) {
-                $sqi->add_column("paperStorageId", "Paper.paperStorageId");
-            }
-            if ($this->dtype === DTYPE_FINAL || $this->dtype === null) {
-                $sqi->add_column("finalPaperStorageId", "Paper.finalPaperStorageId");
-            }
+        $this->add_columns($sqi);
+        if (!$this->present
+            && ($this->dtype === null
+                || !$this->user->conf->option_by_id($this->dtype)->always_visible()
+                || !$this->user->allow_admin_all())) {
+            return "true";
         }
         $f = [];
         if ($this->dtype === DTYPE_SUBMISSION || $this->dtype === null) {

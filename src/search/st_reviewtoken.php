@@ -21,21 +21,19 @@ class ReviewToken_SearchTerm extends SearchTerm {
             return new ReviewToken_SearchTerm($srch->user, 0, false);
         } else if (($token = decode_token($word, "V"))) {
             return new ReviewToken_SearchTerm($srch->user, $token, null);
-        } else {
-            $srch->lwarning($sword, "<0>Invalid review token");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>Invalid review token");
+        return new False_SearchTerm;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_review_signature_columns();
+        if ($this->any === false) {
+            return "true";
+        }
         $thistab = "ReviewTokens_" . $this->token;
         $where = "reviewToken" . ($this->token ? "={$this->token}" : "!=0");
-        $sqi->add_table($thistab, ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where $where and reviewType>0 group by paperId)"]);
-        if ($this->any !== false) {
-            return "coalesce({$thistab}.count,0)>0";
-        } else {
-            return "coalesce({$thistab}.count,0)=0";
-        }
+        $sqi->add_table($thistab, ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where {$where} and reviewType>0 group by paperId)"]);
+        return "coalesce({$thistab}.count,0)>0";
     }
     function test(PaperInfo $prow, $xinfo) {
         $nr = $nt = 0;
@@ -44,22 +42,20 @@ class ReviewToken_SearchTerm extends SearchTerm {
         } else {
             $rrows = $prow->all_reviews();
         }
-        foreach ($rrows as $rrow) {
-            if ($this->user->can_view_review_assignment($prow, $rrow)) {
-                ++$nr;
-                if ($this->token
-                    ? $rrow->reviewToken == $this->token
-                    : !$rrow->reviewToken && $this->user->can_view_review_identity($prow, $rrow))
-                    ++$nt;
+        if ($this->token) {
+            foreach ($rrows as $rrow) {
+                if ($rrow->reviewToken == $this->token
+                    && $this->user->can_view_review_assignment($prow, $rrow))
+                    return true;
             }
+            return false;
         }
-        if ($this->any === false) {
-            return $nt === $nr;
-        } else if ($this->any === true) {
-            return $nt !== $nr;
-        } else {
-            return $nt !== 0;
+        foreach ($rrows as $rrow) {
+            if ($rrow->reviewToken
+                && $this->user->can_view_review_identity($prow, $rrow))
+                return $this->any;
         }
+        return !$this->any;
     }
     function about() {
         return self::ABOUT_REVIEW;
