@@ -13577,7 +13577,7 @@ function prepare_pstags() {
             && (f.hasAttribute("data-saving")
                 || f.hidden)
             && (!$f.data("everOpened")
-                || hotcrp.parse_tags.delta(data.tags_edit_text, ta.value).length)) {
+                || hotcrp.parse_tags.delta(data.tags_edit_text, ta.value).length === 0)) {
             ta.value = data.tags_edit_text;
         }
         check_form_differs(f, ta);
