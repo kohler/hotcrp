@@ -12536,7 +12536,7 @@ hotcrp.update_tag_decoration = function ($title, html) {
 
 /* pattern fill functions */
 var ensure_pattern = (function () {
-var fmap = {},
+let fmap = {},
     knownmap = {
         "tag-white": true, "tag-red": true, "tag-orange": true, "tag-yellow": true,
         "tag-green": true, "tag-blue": true, "tag-purple": true, "tag-gray": true,
@@ -12581,11 +12581,7 @@ function make_color(k, r, g, b, a) {
     } else {
         h = 240 + 60 * (rx - gx) / cx;
     }
-    if (l <= 0.00001 || l >= 0.99999) {
-        s = 0;
-    } else {
-        s = (vx - l) / Math.min(l, 1 - l);
-    }
+    s = vx <= 0.00001 ? 0 : cx / vx;
 
     return {
         k: k,
@@ -12602,18 +12598,18 @@ function make_color(k, r, g, b, a) {
     };
 }
 function color_compare(a, b) {
-    if (a.s < 0.1 && b.s >= 0.1)
+    if (a.s < 0.1 && b.s >= 0.1) {
         return a.l >= 0.9 ? -1 : 1;
-    else if (b.s < 0.1 && a.s >= 0.1)
+    } else if (b.s < 0.1 && a.s >= 0.1) {
         return b.l >= 0.9 ? 1 : -1;
-    else if (a.h != b.h)
+    } else if (a.h != b.h) {
         return a.h < b.h ? -1 : 1;
-    else if (a.l != b.l)
+    } else if (a.l != b.l) {
         return a.l < b.l ? 1 : -1;
-    else
-        return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
+    }
+    return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
 }
-const class_analyses = {tagbg: null, dark: null, badge: null};
+const class_analyses = {tagbg: null, badge: null};
 function analyze_class(k) {
     if (k in class_analyses) {
         return class_analyses[k];
@@ -12625,14 +12621,15 @@ function analyze_class(k) {
     let m;
     if (k.startsWith("tag-rgb-")
         && (m = k.match(/^tag-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
-        const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
-        ensure_stylesheet().insertRule(".".concat(k, " { background-color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
+        const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0),
+            scheme = c.l < 0.3 ? " color-scheme: dark;" : "";
+        ensure_stylesheet().insertRule(`.${k} { background-color: rgb(${c.r}, ${c.g}, ${c.b});${scheme} }`, 0);
         return set("bg", c);
     }
     if (k.startsWith("tag-text-rgb-")
         && (m = k.match(/^tag-text-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
         const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
-        ensure_stylesheet().insertRule(".".concat(k, " { color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
+        ensure_stylesheet().insertRule(`.${k} { color: rgb(${c.r}, ${c.g}, ${c.b}); --text: rgb(${c.r}, ${c.g}, ${c.b}); --tag-text: rgb(${c.r}, ${c.g}, ${c.b}); }`, 0);
         return set("text", c);
     }
     if (k.startsWith("tag-dot-rgb-")
@@ -12642,29 +12639,30 @@ function analyze_class(k) {
     if (k.startsWith("tag-font-")) {
         m = k.substring(9).replace(/_/g, " ");
         const ff = /^(?:serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-(?:serif|sans-serif|monospace|rounded)|math|emoji|fangsong)$/.test(m) ? "" : "\"";
-        ensure_stylesheet().insertRule(".".concat(k, ".taghh, .", k, " .taghl { font-family: ", ff, m, ff, "; }"), 0);
+        ensure_stylesheet().insertRule(`.${k}.taghh, .${k} .taghl { font-family: ${ff}${m}${ff}; }`, 0);
         return set();
     }
     if (k.startsWith("tag-weight-")) {
-        ensure_stylesheet().insertRule(".".concat(k, ".taghh, .", k, " .taghl { font-weight: ", k.substring(11), "; }"), 0);
+        ensure_stylesheet().insertRule(`.${k}.taghh, .${k} .taghl { font-weight: ${k.substring(11)}; }`, 0);
         return set();
     }
     if (k.startsWith("badge-rgb-")
         && (m = k.match(/^badge-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
-        const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
-        var rules = ["background-color: rgb(".concat(c.r, ", ", c.g, ", ", c.b, ");")];
-        if (c.l < 0.3)
-            rules.push("color: white;");
-        else if (c.l < 0.75)
+        const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0),
+            rules = [`background-color: rgb(${c.r}, ${c.g}, ${c.b});`];
+        if (c.l < 0.3) {
+            rules.push("color: white;", "color-scheme: dark;");
+        } else if (c.l < 0.75) {
             rules.push("color: #111111;");
-        else {
+        } else {
             rules.push("color: #333333;");
             if (Math.min(c.r, c.g, c.b) > 200)
                 rules.push("border: 1px solid #333333;", "padding: 1px 0.2em 2px;");
         }
         ensure_stylesheet().insertRule(".".concat(k, " { ", rules.join(" "), " }"), 0);
-        if (c.l >= 0.3)
+        if (c.l >= 0.3) {
             ensure_stylesheet().insertRule("a.".concat(k, ":hover { color: #c45500; border-color: #c45500; }"), 0);
+        }
         return set("badge", c);
     }
     if (testdiv === null) {
@@ -12679,17 +12677,17 @@ function analyze_class(k) {
     } else if ((m = value.match(/^rgba\(([\d.]+), ([\d.]+), ([\d.]+), ([\d.]+)\)$/))
                && +m[4] > 0) {
         return set("bg", make_color(k, +m[1], +m[2], +m[3], +m[4]));
-    } else {
-        return set();
     }
+    return set();
 }
 function bgcolor(color) {
-    return "rgba(".concat(color.r, ", ", color.g, ", ", color.b, ", ", color.a, ")");
+    return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
 }
 function gfillcolor(color) {
-    if (color.gfill !== null)
+    if (color.gfill !== null) {
         return color.gfill;
-    var r = color.r / 255,
+    }
+    let r = color.r / 255,
         g = color.g / 255,
         b = color.b / 255,
         min = Math.min(r, g, b),
@@ -12712,7 +12710,7 @@ function gfillcolor(color) {
 }
 function fillcolor(color) {
     const gf = gfillcolor(color);
-    return "rgba(".concat(gf[0], ", ", gf[1], ", ", gf[2], ", ", gf[3], ")");
+    return `rgba(${gf[0]}, ${gf[1]}, ${gf[2]}, ${gf[3]})`;
 }
 function strokecolor(color) {
     let gf = gfillcolor(color);
@@ -12720,7 +12718,7 @@ function strokecolor(color) {
         const f = 0.75 / color.l;
         gf = [gf[0] * f, gf[1] * f, gf[2] * f, gf[3]];
     }
-    return "rgba(".concat(gf[0], ", ", gf[1], ", ", gf[2], ", 0.8)");
+    return `rgba(${gf[0]}, ${gf[1]}, ${gf[2]}, 0.8)`;
 }
 function paramcolor(param, color) {
     return (param.type === 1 ? fillcolor : bgcolor)(color);
@@ -12728,14 +12726,44 @@ function paramcolor(param, color) {
 function ensure_graph_rules(color) {
     if (!color.has_graph) {
         var stylesheet = ensure_stylesheet(), k = color.k;
-        stylesheet.insertRule(".gcdf.".concat(k, ", .gdot.", k, ", .gbar.", k, ", .gbox.", k, " { stroke: ", strokecolor(color), "; }"), 0);
-        stylesheet.insertRule(".gdot.".concat(k, ", .gbar.", k, ", .gbox.", k, ", .glab.", k, " { fill: ", fillcolor(color), "; }"), 0);
+        stylesheet.insertRule(`.gcdf.${k}, .gdot.${k}, .gbar.${k}, .gbox.${k} { stroke: ${strokecolor(color)}; }`, 0);
+        stylesheet.insertRule(`.gdot.${k}, .gbar.${k}, .gbox.${k}, .glab.${k} { fill: ${fillcolor(color)}; }`, 0);
         color.has_graph = true;
     }
 }
+function compute_scheme(colors, dots) {
+    // choose color scheme by area-weighted mean luminance
+    const darea = dots.length ? (dots.length === 1 ? 8 : 16) * 0.0276 : 0;
+    let lbar = 0, mixed = false;
+    if (colors.length) {
+        for (const c of colors) {
+            lbar += c.l;
+        }
+        lbar = (1 - darea) * (lbar / colors.length);
+    } else {
+        lbar = (1 - darea) * analyze_class("bg-paper").l;
+    }
+    for (const c of dots) {
+        lbar += (darea / dots.length) * c.l;
+    }
+    const dark = lbar < 0.3;
+    let extra = ` color-scheme: ${dark ? "dark" : "light"};`;
+    for (const c of colors.concat(dots)) {
+        mixed = mixed || (dark ? c.l > 0.4 : c.l < 0.4);
+    }
+    if (mixed) {
+        // no scheme suits every stripe; halo the text so it
+        // survives the minority-luminance bands
+        const sc = dark ? "0, 0, 0" : "255, 255, 255";
+        extra += ` text-shadow: 0 0 1px rgba(${sc}, 1), 0 0 3px rgba(${sc}, 0.8);`;
+    } else {
+        extra += ` text-shadow: none;`;
+    }
+    return extra;
+}
 return function (classes, type) {
     if (!classes
-        || (type === "" && classes.endsWith(" tagbg") && knownmap[classes.substr(0, -6)]))
+        || (type === "" && classes.endsWith(" tagbg") && knownmap[classes.slice(0, -6)]))
         return null;
     // quick check on classes in input order
     const param = params[type || ""] || params[""],
@@ -12803,12 +12831,13 @@ return function (classes, type) {
         }
         svgdef.appendChild(pelt);
     } else if (window.btoa) {
-        const t = ['<svg xmlns="', svgns, '" width="', size, '" height="', size, '">'];
+        const t = [`<svg xmlns="${svgns}" width="${size}" height="${size}">`];
         for (let i = 0; i !== dxs.length; i += 2) {
-            t.push('<path d="', dxs[i], '" fill="', dxs[i + 1], '"></path>');
+            t.push(`<path d="${dxs[i]}" fill="${dxs[i + 1]}"></path>`);
         }
         t.push('</svg>');
-        ensure_stylesheet().insertRule(".".concat(tags.join("."), " { background-image: url(data:image/svg+xml;base64,", btoa(t.join("")), '); }'), 0);
+        const extra = param.type === 0 ? compute_scheme(colors, dots) : "";
+        ensure_stylesheet().insertRule(".".concat(tags.join("."), " { background-image: url(data:image/svg+xml;base64,", btoa(t.join("")), ");", extra, " }"), 0);
     }
     fmap[index] = fmap[cindex] = "url(#" + id + ")";
     return fmap[index];

@@ -5129,7 +5129,7 @@ class Conf {
             $button_class = "q d-inline-block";
         } else {
             $details_id = $details_class = $details_prefix = "";
-            $details_suffix = '<svg class="licon licon-m ml-1" viewBox="0 0 16 16" preserveAspectRatio="none" role="none"><path d="M2 3h12M2 8h12M2 13h12" stroke="#222" stroke-width="2" /></svg>';
+            $details_suffix = '<svg class="licon licon-m ml-1" viewBox="0 0 16 16" preserveAspectRatio="none" role="none"><path d="M2 3h12M2 8h12M2 13h12" stroke="currentColor" stroke-width="2" /></svg>';
             $button_class = "profile-dropmenu-menubutton btn-t";
         }
         $user_html = $user->has_email() ? htmlspecialchars($user->email) : "Not signed in";

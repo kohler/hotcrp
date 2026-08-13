@@ -1132,18 +1132,13 @@ class TagMap {
             return null;
         }
         $classes = [];
-        $sf = $nbg = $ndarkbg = 0;
+        $sf = $nbg = 0;
         foreach ($kss as $ks) {
             $classes[] = "tag-{$ks->style}";
             $sf |= $ks->styleflags;
             if (($ks->styleflags & TagStyle::BG) !== 0) {
                 ++$nbg;
-                if ($ks->dark())
-                    ++$ndarkbg;
             }
-        }
-        if ($nbg > 0 && $ndarkbg * 2 > $nbg) {
-            $classes[] = "dark";
         }
         if ($nbg > 0) {
             $classes[] = "tagbg"; // NB if present, tagbg must come last

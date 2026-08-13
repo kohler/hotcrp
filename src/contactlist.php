@@ -1454,15 +1454,15 @@ class ContactList {
                     echo "<th class=\"pl plh {$fdef->className}\"></th>";
                     continue;
                 }
-                echo "<th class=\"pl plh {$fdef->className}\">";
+                echo "<th class=\"pl plh ", $fdef->className;
                 $ftext = $this->header($fieldId);
                 if ($fieldId === $sortField) {
                     $klass = $this->reverseSort ? "sort-descending" : "sort-ascending";
-                    echo Ht::link($ftext, $this->_next_sort_link($sortUrl), ["class" => "pl_sort {$klass}", "rel" => "nofollow"]);
+                    echo " sortable\">", Ht::link($ftext, $this->_next_sort_link($sortUrl), ["class" => "pl_sort {$klass}", "rel" => "nofollow"]);
                 } else if ($fdef->sort) {
-                    echo Ht::link($ftext, $sortUrl . $fdef->name, ["class" => "pl_sort", "rel" => "nofollow"]);
+                    echo " sortable\">", Ht::link($ftext, $sortUrl . $fdef->name, ["class" => "pl_sort", "rel" => "nofollow"]);
                 } else {
-                    echo $ftext;
+                    echo "\">", $ftext;
                 }
                 echo "</th>";
             }
