@@ -47,6 +47,9 @@ class Authorize_Tester {
             "name" => "dchair", "dynamic" => true, "scope" => "all", "allow_if" => "chair",
             "redirect_uris" => ["https://dchair.com/"]
         ], (object) [
+            "name" => "dloop", "dynamic" => true, "scope" => "read",
+            "redirect_uris" => ["http://127.0.0.1:5000/cb", "https://dloop.com/"]
+        ], (object) [
             "name" => "mdoc", "metadata_document" => true, "scope" => "all",
             "client_id_match" => "https://mdoc.example.com/*"
         ], (object) [
@@ -179,6 +182,7 @@ class Authorize_Tester {
             // Parse query parameters from redirect URL
             $query = parse_url($url, PHP_URL_QUERY);
             parse_str($query ?? "", $params);
+            xassert_eqq($params["iss"] ?? null, $this->conf->oauth_issuer());
             if (($params["state"] ?? "") !== $state) {
                 $this->_failure = "Step 3 failed: state mismatch";
                 return null;
@@ -328,6 +332,44 @@ class Authorize_Tester {
         xassert_eqq($token3->data("scope"), "write");
     }
 
+    /** A dynamically registered client that receives its code on the loopback
+     * interface runs on the user's own computer, so the secret it was issued
+     * can be extracted from it and cannot protect the code. PKCE must
+     * (RFC 8252 §§8.1, 8.5). */
+    function test_dynamic_client_loopback_requires_pkce() {
+        foreach ([["http://127.0.0.1:5000/cb", true], ["https://dloop.com/", false]] as [$ruri, $needs_pkce]) {
+            $qreq = TestQreq::post_json(["redirect_uris" => [$ruri]]);
+            $jr = call_api("=oauthregister", $this->u_empty, $qreq);
+            xassert(isset($jr->client_id));
+            if (!isset($jr->client_id)) {
+                continue;
+            }
+            $qreq = TestQreq::get([
+                "client_id" => $jr->client_id,
+                "redirect_uri" => $ruri,
+                "response_type" => "code",
+                "state" => base48_encode(random_bytes(16)),
+                "scope" => "read"
+            ])->set_page("authorize")->set_user($this->u_chair);
+            Qrequest::set_main_request($qreq);
+            $err = $code = null;
+            try {
+                (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
+            } catch (JsonCompletion $jc) {
+                $code = $jc->result->content["code"] ?? null;
+            } catch (Redirection $redir) {
+                $err = $this->redirect_error($redir->url);
+            }
+            if ($needs_pkce) {
+                xassert_eqq($code, null);
+                xassert_eqq($err, "invalid_request");
+            } else {
+                xassert_neqq($code, null);
+                xassert_eqq($err, null);
+            }
+        }
+    }
+
     #[RequireClass("Uri\\Rfc3986\\Uri")]
     function test_refresh_token_replay_prevention() {
         // Get initial tokens
@@ -463,6 +505,7 @@ class Authorize_Tester {
                 return null;
             }
             parse_str(parse_url($redir->url, PHP_URL_QUERY) ?? "", $params);
+            xassert_eqq($params["iss"] ?? null, $this->conf->oauth_issuer());
             if (($params["state"] ?? "") !== $state) {
                 $this->_failure = "Step 2 failed: state mismatch";
                 return null;
@@ -503,6 +546,8 @@ class Authorize_Tester {
      * @return ?string */
     private function redirect_error($url) {
         parse_str(parse_url($url, PHP_URL_QUERY) ?? "", $params);
+        // an error response identifies its issuer too (RFC 9207)
+        xassert_eqq($params["iss"] ?? null, $this->conf->oauth_issuer());
         return $params["error"] ?? null;
     }
 
@@ -706,6 +751,9 @@ class Authorize_Tester {
         xassert_eqq($j->client_id_metadata_document_supported ?? null, true);
         xassert(in_array("none", $j->token_endpoint_auth_methods_supported, true));
         xassert(in_array("S256", $j->code_challenge_methods_supported, true));
+        // advertised only because every authorization response carries `iss`;
+        // a client that sees this and then a response without `iss` rejects it
+        xassert_eqq($j->authorization_response_iss_parameter_supported ?? null, true);
     }
 
     #[RequireClass("Uri\\Rfc3986\\Uri")]

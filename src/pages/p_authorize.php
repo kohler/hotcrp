@@ -172,9 +172,9 @@ class Authorize_Page {
                 $this->redirect_error("invalid_request", "Invalid `code_challenge_method`");
             }
         }
-        if ($this->client->client_document
+        if ($this->client->public_client($this->qreq->redirect_uri)
             && $code_challenge_method !== "S256") {
-            // public clients must use PKCE (OAuth 2.1)
+            // public clients must use PKCE (OAuth 2.1, RFC 8252 §8.1)
             $this->redirect_error("invalid_request", "Code challenge with method `S256` required");
         }
 
@@ -354,7 +354,8 @@ class Authorize_Page {
         $this->qreq->redirect_uri = $this->token->data("redirect_uri");
         throw new Redirection($this->extend_redirect_uri([
             "code" => $this->token->salt,
-            "state" => $this->token->data("state")
+            "state" => $this->token->data("state"),
+            "iss" => $this->conf->oauth_issuer()
         ]));
     }
 
@@ -369,6 +370,7 @@ class Authorize_Page {
         if (isset($this->qreq->state)) {
             $p["state"] = $this->qreq->state;
         }
+        $p["iss"] = $this->conf->oauth_issuer();
         throw new Redirection($this->extend_redirect_uri($p));
     }
 
@@ -526,11 +528,12 @@ class Authorize_Page {
         }
 
         // check arguments
-        $redirect_uri = $this->qreq->redirect_uri ?? "";
+        $redirect_uri = $tok->data("redirect_uri");
+        $qreq_redirect_uri = $this->qreq->redirect_uri ?? "";
         $code_challenge = $tok->data("code_challenge") ?? "";
         if ($code_challenge === ""
-            && ($this->client->client_document
-                || ($redirect_uri === "" && !$tok->data("nonce")))) {
+            && ($this->client->public_client($redirect_uri)
+                || ($qreq_redirect_uri === "" && !$tok->data("nonce")))) {
             return null;
         }
         $code_verifier = $this->qreq->code_verifier ?? "";
@@ -547,8 +550,8 @@ class Authorize_Page {
                 return null;
             }
         }
-        if ($redirect_uri !== ""
-            && $redirect_uri !== $tok->data("redirect_uri")) {
+        if ($qreq_redirect_uri !== ""
+            && $qreq_redirect_uri !== $redirect_uri) {
             return null;
         }
 

@@ -143,6 +143,13 @@ class OAuthClient {
         return htmlspecialchars($this->title_text());
     }
 
+    /** @param string $redirect_uri
+     * @return bool */
+    function public_client($redirect_uri) {
+        return $this->client_document
+            || str_starts_with($redirect_uri, "http://") /* => localhost b/c of check_redirect_uri() */;
+    }
+
 
     /** Redirect URI configured by this site’s administrator. */
     const VALIDATION_BASIC = 0;

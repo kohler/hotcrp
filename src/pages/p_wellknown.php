@@ -78,6 +78,7 @@ class WellKnown_Page {
             $j["client_id_metadata_document_supported"] = true;
         }
         $j["grant_types_supported"] = ["authorization_code"];
+        $j["authorization_response_iss_parameter_supported"] = true;
         $j["response_types_supported"] = ["code"];
         $j["token_endpoint_auth_methods_supported"] = ["client_secret_basic", "client_secret_post"];
         if ($has_mdoc) {
