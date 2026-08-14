@@ -189,7 +189,9 @@ class Authorize_Tester {
         xassert_eqq($jr->token_type, "Bearer");
         // Bearer tokens start with hct_ (local) or hcT_ (cdb)
         xassert(str_starts_with($jr->access_token, "hct_") || str_starts_with($jr->access_token, "hcT_"));
-        xassert_eqq($jr->_token->data("scope"), "read");
+        // this request asked for `openid` only, so the token gets no API
+        // access, even though the client is configured for `read`
+        xassert_eqq($jr->_token->data("scope"), "none");
 
         $jr = call_api_result("whoami", $jr->_token, []);
         xassert_eqq($jr->response_code(), 200);
