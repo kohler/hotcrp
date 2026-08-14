@@ -5805,6 +5805,9 @@ hotcrp.monitor_job = function (jobid, statuselt) {
         function success(data) {
             const dead = !data.ok
                 || (data.update_at && data.update_at < now_sec() - 40);
+            if (dead && !data.message_list) {
+                data.message_list = [{message: "<0>Job stopped responding", status: 2}];
+            }
             if (data.message_list) {
                 let ex = statuselt.firstElementChild;
                 while (ex && ex.nodeName === "H3") {
@@ -5851,6 +5854,11 @@ hotcrp.monitor_job = function (jobid, statuselt) {
             if (data.status === "done") {
                 resolve(data);
             } else if (dead) {
+                let ex = statuselt.firstElementChild;
+                while (ex && ex.nodeName !== "PROGRESS") {
+                    ex = ex.nextElementSibling;
+                }
+                ex && ex.remove();
                 reject(data);
             } else if (tries < 20) {
                 setTimeout(retry, 250);
