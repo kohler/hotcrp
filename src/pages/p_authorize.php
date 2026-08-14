@@ -349,8 +349,8 @@ class Authorize_Page {
         // `redirect_uri` must be present and match a configured value
         if (!isset($this->qreq->redirect_uri)) {
             $this->print_error_exit("<0>Authorization parameter `redirect_uri` missing");
-        } else if (!in_array($this->qreq->redirect_uri, $this->client->redirect_uris, true)
-                   || !OAuthClient::check_redirect_uri($this->qreq->redirect_uri, $this->qreq)) {
+        } else if (!$this->client->has_redirect_uri($this->qreq->redirect_uri)
+                   || !OAuthClient::check_redirect_uri($this->qreq->redirect_uri)) {
             $this->print_error_exit("<0>Invalid authorization parameter `redirect_uri`");
         }
 
@@ -673,7 +673,7 @@ class Authorize_Page {
         $redirect_uris = $reqj->redirect_uris;
         foreach ($redirect_uris as $uri) {
             if (!is_string($uri)
-                || !OAuthClient::check_redirect_uri($uri, $this->qreq, OAuthClient::VALIDATION_DYNAMIC)) {
+                || !OAuthClient::check_redirect_uri($uri, OAuthClient::VALIDATION_DYNAMIC)) {
                 return $this->oauthregister_error("invalid_redirect_uri");
             }
         }

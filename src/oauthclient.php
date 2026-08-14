@@ -3,7 +3,7 @@
 // Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
-use Conf, Qrequest, TokenScope, TokenInfo;
+use Conf, TokenScope, TokenInfo;
 
 class OAuthClient {
     /** @var string */
@@ -94,29 +94,74 @@ class OAuthClient {
     }
 
 
+    /** Redirect URI configured by this site’s administrator. */
     const VALIDATION_BASIC = 0;
+    /** Redirect URI supplied by a client registering dynamically. */
     const VALIDATION_DYNAMIC = 1;
 
     /** @param string $uri
-     * @param ?Qrequest $qreq
      * @param 0|1 $validation_level
      * @return bool */
-    static function check_redirect_uri($uri, $qreq = null, $validation_level = self::VALIDATION_BASIC) {
+    static function check_redirect_uri($uri, $validation_level = self::VALIDATION_BASIC) {
         if (strpos($uri, "#") !== false
             || strlen($uri) > 1024) {
             return false;
         }
-        if ($validation_level === 1
+        // check for special characters unless preconfigured
+        if ($validation_level !== self::VALIDATION_BASIC
             && preg_match('/[^\x21-\x7E]/', $uri)) {
             return false;
         }
-        if (str_starts_with($uri, "https://")) {
-            return true;
+        // `https:` allowed; `http:` to localhost allowed
+        return str_starts_with($uri, "https://")
+            || self::check_loopback_host($uri);
+    }
+
+    /** If `$uri` is an `http://` URL to one of the precise loopback spellings
+     * `localhost`, `127.0.0.1`, and `[::1]`, possibly with a port, then
+     * return an array of two positions: the first position after the hostname,
+     * and the first position after the port.
+     * @param string $uri
+     * @return ?array{int,int} */
+    static private function check_loopback_host($uri) {
+        if (!str_starts_with($uri, "http://")) {
+            return null;
         }
-        return str_starts_with($uri, "http://")
-            && $qreq
-            && $qreq->navigation()->host === "localhost"
-            && preg_match('/\Ahttp:\/\/localhost(?::\d++)?+\//', $uri);
+        $delim = 7 + strcspn($uri, "/?@", 7);
+        $len = strlen($uri);
+        $hpos = ($delim !== $len && $uri[$delim] === "@" ? $delim + 1 : 7);
+        if (substr_compare($uri, "localhost", $hpos, 9, true) === 0
+            || substr_compare($uri, "127.0.0.1", $hpos, 9) === 0) {
+            $ppos = $hpos + 9;
+        } else if (substr_compare($uri, "[::1]", $hpos, 5) === 0) {
+            $ppos = $hpos + 5;
+        } else {
+            return null;
+        }
+        $xpos = $ppos;
+        if ($xpos !== $len && $uri[$xpos] === ":") {
+            $xpos += 1 + strspn($uri, "0123456789", $xpos + 1);
+        }
+        if ($xpos !== $len && ($ch = $uri[$xpos]) !== "/" && $ch !== "?") {
+            return null;
+        }
+        return [$ppos, $xpos];
+    }
+
+    /** Return true if `$uri` is one of this client's registered redirect URIs.
+     *
+     * A loopback redirect URI matches whatever port the request uses. A
+     * program running on the user's computer takes an ephemeral port from the
+     * operating system when it opens its listener, so it cannot know that port
+     * in advance and register it; an authorization server must allow any port
+     * for a loopback URI (RFC 8252, section 7.3). The host still matters:
+     * `localhost` and `127.0.0.1` are different origins to a browser.
+     * @param string $uri
+     * @return bool */
+    function has_redirect_uri($uri) {
+        return in_array($uri, $this->redirect_uris, true)
+            || (($pr = self::check_loopback_host($uri))
+                && in_array(substr($uri, 0, $pr[0]) . substr($uri, $pr[1]), $this->redirect_uris, true));
     }
 
 
