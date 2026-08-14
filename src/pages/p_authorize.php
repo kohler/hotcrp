@@ -5,7 +5,7 @@
 namespace HotCRP;
 use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection, PageCompletion;
 use TokenInfo, TokenScope, Signin_Page, Authorization_Token, ComponentSet, XtParams;
-use MessageItem, FmtArg;
+use MessageItem, FmtArg, SettingParser;
 
 class OAuthClient {
     /** @var string */
