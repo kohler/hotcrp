@@ -37,6 +37,7 @@ software:
   (Or [Apache](https://httpd.apache.org), or another web server that works with PHP)
 * PHP version 8.1 or higher, http://php.net/
   - Including MySQL support, php-fpm, and php-intl
+  - Some features may require later versions of PHP.
 * MariaDB, https://mariadb.org/
 * Poppler’s version of pdftohtml, https://poppler.freedesktop.org/ (only
   required for format checking)
