@@ -789,6 +789,71 @@ class Navigation_Tester {
         xassert_eqq($ns->path, "/");
     }
 
+    function test_server_numbered_host() {
+        $ns = NavigationState::make_server([
+            "HTTP_HOST" => "example.com", "SERVER_PORT" => 8080,
+            "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->host, "example.com");
+        xassert_eqq($ns->server, "http://example.com:8080");
+
+        $ns = NavigationState::make_server([
+            "HTTP_HOST" => "127.0.0.1", "SERVER_PORT" => 80,
+            "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->host, "127.0.0.1");
+        xassert_eqq($ns->server, "http://127.0.0.1");
+
+        $ns = NavigationState::make_server([
+            "HTTP_HOST" => "[::1]", "SERVER_PORT" => 8080,
+            "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->host, "[::1]");
+        xassert_eqq($ns->server, "http://[::1]:8080");
+
+        $ns = NavigationState::make_server([
+            "SERVER_NAME" => "[::1]:8080", "SERVER_PORT" => 8080,
+            "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->host, "[::1]");
+        xassert_eqq($ns->server, "http://[::1]:8080");
+    }
+
+    function test_base_numbered_host() {
+        $ns = NavigationState::make_base("http://example.com:8080/fart/");
+        xassert_eqq($ns->host, "example.com");
+        xassert_eqq($ns->server, "http://example.com:8080");
+        xassert_eqq($ns->base_path, "/fart/");
+
+        $ns = NavigationState::make_base("http://127.0.0.1/fart/");
+        xassert_eqq($ns->host, "127.0.0.1");
+        xassert_eqq($ns->server, "http://127.0.0.1");
+
+        $ns = NavigationState::make_base("http://[::1]:8080/fart/");
+        xassert_eqq($ns->host, "[::1]");
+        xassert_eqq($ns->server, "http://[::1]:8080");
+
+        $ns = NavigationState::make_base("https://[2001:db8::5]:8080/fart/");
+        xassert_eqq($ns->host, "[2001:db8::5]");
+        xassert_eqq($ns->server, "https://[2001:db8::5]:8080");
+
+        $ns = NavigationState::make_base("https://[2001:db8::5]/fart/");
+        xassert_eqq($ns->host, "[2001:db8::5]");
+        xassert_eqq($ns->server, "https://[2001:db8::5]");
+
+        $ns = NavigationState::make_base("https://example.com/fart/");
+        xassert_eqq($ns->host, "example.com");
+        xassert_eqq($ns->server, "https://example.com");
+
+        $ns = NavigationState::make_base("http://[::1]:8080");
+        xassert_eqq($ns->host, "[::1]");
+        xassert_eqq($ns->server, "http://[::1]:8080");
+
+        $ns = NavigationState::make_base("http://example.com");
+        xassert_eqq($ns->host, "example.com");
+        xassert_eqq($ns->server, "http://example.com");
+    }
+
     function test_test_mode() {
         xassert(Navigation::$test_mode > 0);
         Navigation::headers_reset();

@@ -56,26 +56,22 @@ class NavigationState {
             || ($server["HTTP_X_FORWARDED_PROTO"] ?? null) === "https"
             || ($server["REQUEST_SCHEME"] ?? null) === "https") {
             $nav->protocol = "https://";
-            $plen = 8;
             $xport = 443;
         } else {
             $nav->protocol = "http://";
-            $plen = 7;
             $xport = 80;
         }
-        $http_host = $server["HTTP_HOST"] ?? null;
-        $srv = $nav->protocol
-            . (($http_host ?? $server["SERVER_NAME"] ?? null) ? : "localhost");
-        $colon = strpos($srv, ":", $plen);
+        $hp = ($server["HTTP_HOST"] ?? $server["SERVER_NAME"] ?? null) ? : "localhost";
+        $colon = str_ends_with($hp, "]") ? false : strrpos($hp, ":");
         if ($colon === false) {
-            $colon = strlen($srv);
+            $colon = strlen($hp);
             if (($port = $server["SERVER_PORT"])
                 && $port != $xport) {
-                $srv .= ":" . $port;
+                $hp .= ":" . $port;
             }
         }
-        $nav->host = substr($srv, $plen, $colon - $plen);
-        $nav->server = $srv;
+        $nav->host = substr($hp, 0, $colon);
+        $nav->server = $nav->protocol . $hp;
 
         $nav->request_uri = $server["REQUEST_URI"];
         $pct = strpos($nav->request_uri, "%") !== false;
@@ -189,7 +185,7 @@ class NavigationState {
                 $rest = substr($rest, 1);
             }
         }
-        // protocol, host
+        // protocol, host, server
         $nav = new NavigationState;
         $nav->protocol = $is_https ? "https://" : "http://";
         $plen = strlen($nav->protocol);
@@ -198,11 +194,11 @@ class NavigationState {
             $slash = strlen($base_uri);
         }
         $nav->server = substr($base_uri, 0, $slash);
-        if (($colon = strpos($nav->server, ":", $plen)) === false) {
-            $nav->host = substr($nav->server, $plen);
-        } else {
-            $nav->host = substr($nav->server, $plen, $colon - $plen);
+        $colon = $base_uri[$slash - 1] === "]" ? false : strrpos($nav->server, ":", $plen);
+        if ($colon === false) {
+            $colon = strlen($nav->server);
         }
+        $nav->host = substr($nav->server, $plen, $colon - $plen);
         // base path
         if ($slash === strlen($base_uri)) {
             $nav->base_path = "/";
