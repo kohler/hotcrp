@@ -13576,8 +13576,12 @@ function render_tag_messages(message_list) {
 }
 
 function prepare_pstags() {
-    var f = this, $f = $(f), ta = f.elements.tags, psc = f.closest(".s-ps");
+    var f = this.tagName === "FORM" ? this : this.querySelector("form"); // XXX backward compat
     removeClass(this, "need-tag-form");
+    if (!f) {
+        return;
+    }
+    var $f = $(f), ta = f.elements.tags, psc = f.closest(".s-ps");
     function handle_tag_report(data) {
         data.message_list && render_tag_messages.call(f, data.message_list);
     }

@@ -1783,8 +1783,8 @@ class PaperTable {
             Ht::submit("cancel", "Cancel"),
             "</div></div>",
             '<span class="hint">', $this->conf->hotlink("Learn more", "help", ["t" => "tags"]), ' <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
-            "</div>",
-            "</form>\n";
+            "</form>",
+            "</div>\n";
     }
 
     function _print_ps_decision() {
