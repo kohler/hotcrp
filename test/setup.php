@@ -262,6 +262,16 @@ class RequireCdb {
 }
 
 #[Attribute]
+class RequireClass {
+    /** @var string */
+    public $class;
+    /** @param string $class */
+    function __construct($class) {
+        $this->class = $class;
+    }
+}
+
+#[Attribute]
 class RequireDb {
     /** @var bool|'fresh' */
     public $required;
@@ -1514,6 +1524,10 @@ class TestRunner {
         if ($require_cdb !== null
             && $require_cdb !== !!$this->conf->opt("contactdbDsn")) {
             return false;
+        }
+        foreach ($class->getAttributes("RequireClass") ?? [] as $attr) {
+            if (!class_exists($attr->newInstance()->class, false))
+                return false;
         }
         if ($require_db === false) {
             $this->need_fresh = false;

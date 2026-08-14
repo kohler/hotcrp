@@ -44,11 +44,23 @@ class Authorize_Page {
         return TokenInfo::find_from($salt, $this->conf, $salt[2] === "T");
     }
 
-    /** @return ?OAuthClient */
+    /** Look up the client named by `$client_id`, if any.
+     * @return ?OAuthClient */
     private function find_client($client_id) {
+        if ($this->conf->opt("oAuthMetadataDocumentClients")
+            && ($ocd = OAuthClientDocument::try_make($this->conf, $client_id))) {
+            foreach ($this->clients as $cx) {
+                if (($cx->metadata_document ?? false)
+                    && $ocd->matches($cx)) {
+                    return OAuthClient::make_metadata_document($cx, $ocd);
+                }
+            }
+        }
         $dynamic = [];
         foreach ($this->clients as $cx) {
-            if ($cx->dynamic ?? false) {
+            if ($cx->metadata_document ?? false) {
+                // skip
+            } else if ($cx->dynamic ?? false) {
                 $dynamic[] = $cx;
             } else if (($cx->client_id ?? null) === $client_id) {
                 return OAuthClient::make($cx);
@@ -68,6 +80,19 @@ class Authorize_Page {
             }
         }
         return null;
+    }
+
+    /** Apply the client ID metadata document stored in `$tok` to
+     * `$this->client`.
+     * @return bool */
+    private function apply_token_document(TokenInfo $tok) {
+        if (!$this->client->client_document) {
+            return true;
+        } else if (!is_object(($docj = $tok->data("client_document")))) {
+            return false;
+        }
+        $this->client->client_document->document = $docj;
+        return $this->client->load_document();
     }
 
     /** @param array<string,mixed> $param
@@ -147,6 +172,11 @@ class Authorize_Page {
                 $this->redirect_error("invalid_request", "Invalid `code_challenge_method`");
             }
         }
+        if ($this->client->client_document
+            && $code_challenge_method !== "S256") {
+            // public clients must use PKCE (OAuth 2.1)
+            $this->redirect_error("invalid_request", "Code challenge with method `S256` required");
+        }
 
         // XXX max_age
         // XXX prompt login vs. select_account vs. consent
@@ -164,6 +194,10 @@ class Authorize_Page {
         if ($code_challenge !== null) {
             $token->change_data("code_challenge", $code_challenge)
                 ->change_data("code_challenge_method", $code_challenge_method);
+        }
+        if ($this->client->client_document) {
+            // remember relevant subset of the client’s metadata document
+            $token->change_data("client_document", $this->client->token_document());
         }
         $this->token = $token->insert();
         $this->print_form();
@@ -209,7 +243,31 @@ class Authorize_Page {
         $this->conf->report_saved_messages();
     }
 
+    /** Print the identity of a client that identified itself with a metadata
+     * document. Such a client is not registered with this site, and its name
+     * is whatever it chose to call itself, so show the user the domains
+     * actually involved. */
+    private function print_metadata_document_identity() {
+        $host = $this->client->client_document->host();
+        $ruri = $this->token->data("redirect_uri") ?? "";
+        $rhost = parse_url($ruri, PHP_URL_HOST) ?? $ruri;
+        echo '<div class="msg msg-warning mt-4">',
+            '<p>This request comes from <strong>', htmlspecialchars($host),
+            '</strong>.</p>';
+        if ($rhost === "localhost" || $rhost === "127.0.0.1" || $rhost === "[::1]") {
+            echo '<p class="mb-0">Your authorization will be sent to a program running on your own computer (<code>',
+                htmlspecialchars($ruri), '</code>).</p>';
+        } else {
+            echo '<p class="mb-0">Your authorization will be sent to <strong>',
+                htmlspecialchars($rhost), '</strong>.</p>';
+        }
+        echo '</div>';
+    }
+
     function print_form_annotation() {
+        if ($this->client->client_document) {
+            $this->print_metadata_document_identity();
+        }
         $clt = $this->client->title_html();
         echo '<p class="mt-4 mb-0 hint">If you continue, HotCRP will share your name, email address, affiliation, and other profile information with ', $clt, '.</p>';
         if (!$this->client->only_openid
@@ -244,7 +302,8 @@ class Authorize_Page {
         return $this->qreq->code
             && ($this->token = TokenInfo::find($this->qreq->code, $this->conf))
             && $this->token->is_active(TokenInfo::OAUTHCODE)
-            && ($this->client = $this->find_client($this->token->data("client_id")));
+            && ($this->client = $this->find_client($this->token->data("client_id")))
+            && $this->apply_token_document($this->token);
     }
 
     private function handle_authconfirm() {
@@ -346,6 +405,13 @@ class Authorize_Page {
             $this->print_error_exit("<0>Authorization client not found");
         }
 
+        // a client identified by a metadata document URL describes itself
+        // in a JSON document served by that URL
+        if ($this->client->client_document
+            && !$this->client->load_document()) {
+            $this->print_error_exit("<0>{$this->client->client_document->error}");
+        }
+
         // `redirect_uri` must be present and match a configured value
         if (!isset($this->qreq->redirect_uri)) {
             $this->print_error_exit("<0>Authorization parameter `redirect_uri` missing");
@@ -417,8 +483,12 @@ class Authorize_Page {
             return $this->oauthtoken_error("invalid_request");
         }
 
-        if (!($client = $this->find_client($clids[0]))
-            || !hash_equals($client->client_secret ?? "", $clsecrets[0])) {
+        $client = $this->find_client($clids[0]);
+        if (!$client
+            || ($client->client_document
+                // public clients have no secret; PKCE authenticates the request
+                ? $clsecrets[0] !== ""
+                : !hash_equals($client->client_secret ?? "", $clsecrets[0]))) {
             $this->conf->www_authenticate_header("invalid_client", $this->qreq);
             return $this->oauthtoken_error("invalid_client");
         }
@@ -450,16 +520,17 @@ class Authorize_Page {
             || !($tok = TokenInfo::find($this->qreq->code, $this->conf))
             || !$tok->is_active(TokenInfo::OAUTHCODE)
             || !$tok->data("email")
-            || $tok->data("client_id") !== $this->client->client_id) {
+            || $tok->data("client_id") !== $this->client->client_id
+            || !$this->apply_token_document($tok)) {
             return null;
         }
 
         // check arguments
         $redirect_uri = $this->qreq->redirect_uri ?? "";
         $code_challenge = $tok->data("code_challenge") ?? "";
-        if ($redirect_uri === ""
-            && $code_challenge === ""
-            && !$tok->data("nonce")) {
+        if ($code_challenge === ""
+            && ($this->client->client_document
+                || ($redirect_uri === "" && !$tok->data("nonce")))) {
             return null;
         }
         $code_verifier = $this->qreq->code_verifier ?? "";
@@ -538,6 +609,14 @@ class Authorize_Page {
         $payload["given_name"] = $user->firstName;
         $payload["family_name"] = $user->lastName;
 
+        if ($this->client->client_secret === null) {
+            // A public client shares no secret, so there is no key with which
+            // to sign. The ID token travels directly from this endpoint to the
+            // client over TLS, so it may be unsecured (OpenID Connect Core
+            // §3.1.3.7 item 6 and the `id_token_signed_response_alg` value
+            // `none`, which applies to the authorization code flow).
+            return JWTParser::make_plaintext((object) $payload);
+        }
         return JWTParser::make_mac((object) $payload, $this->client->client_secret);
     }
 
@@ -582,6 +661,9 @@ class Authorize_Page {
         $rtok->change_data("client_id", $tok->data("client_id"))
             ->change_data("scope", $tok->data("scope"))
             ->change_data("access_token", $atok->salt);
+        if (($docj = $tok->data("client_document")) !== null) {
+            $rtok->change_data("client_document", $docj);
+        }
         return $rtok->insert();
     }
 
@@ -603,7 +685,8 @@ class Authorize_Page {
                 && !str_starts_with($rsalt, "hcTr_"))
             || !($rtok = $this->find_token($rsalt))
             || $rtok->capabilityType !== TokenInfo::OAUTHREFRESH
-            || $rtok->data("client_id") !== $this->client->client_id) {
+            || $rtok->data("client_id") !== $this->client->client_id
+            || !$this->apply_token_document($rtok)) {
             return null;
         } else if (!$rtok->is_active()) {
             // replay attack: revoke all refresh tokens and access tokens

@@ -16,6 +16,8 @@ class OAuthClient {
     public $client_secret;
     /** @var ?string */
     public $client_uri;
+    /** @var ?OAuthClientDocument */
+    public $client_document;
     /** @var ?bool */
     public $is_cdb;
     /** @var null|int|string */
@@ -83,9 +85,57 @@ class OAuthClient {
         return $oac;
     }
 
+    /** Make a client whose `client_id` is a client ID metadata document URL.
+     * The client’s metadata is filled in later by `load_document`.
+     * @param object $x
+     * @param OAuthClientDocument $cdoc
+     * @return OAuthClient */
+    static function make_metadata_document($x, $cdoc) {
+        $oac = new OAuthClient($x);
+        $oac->client_id = $cdoc->client_id;
+        $oac->client_document = $cdoc;
+        $oac->client_secret = null;
+        $oac->client_uri = null;
+        $oac->redirect_uris = [];
+        return $oac;
+    }
+
+    /** Fetch this client's metadata document and apply it.
+     * @return bool */
+    function load_document() {
+        assert(!!$this->client_document);
+        if (!$this->client_document->load()) {
+            return false;
+        }
+        $docj = $this->client_document->document;
+        $this->title = $docj->client_name ?? $this->title;
+        $this->client_uri = $docj->client_uri ?? null;
+        $this->redirect_uris = $docj->redirect_uris ?? [];
+        $this->requested_scope = $docj->scope ?? null;
+        return true;
+    }
+
+    /** @return ?object */
+    function token_document() {
+        $x = [];
+        if (($doc = $this->client_document->document ?? null)) {
+            foreach (["client_name", "client_uri", "redirect_uris", "scope"] as $k) {
+                if (isset($doc->$k))
+                    $x[$k] = $doc->$k;
+            }
+        }
+        return empty($x) ? null : (object) $x;
+    }
+
+
     /** @return string */
     function title_text() {
-        return $this->title ?? $this->name;
+        if ($this->title !== null) {
+            return $this->title;
+        } else if ($this->client_document) {
+            return $this->client_document->host();
+        }
+        return $this->name;
     }
 
     /** @return string */
@@ -168,9 +218,14 @@ class OAuthClient {
     /** @return array<string,object> */
     static function list(Conf $conf) {
         $clients = $conf->_xtbuild_resolve([], "oAuthClients");
-        if (empty($clients) || $conf->opt("oAuthDynamicClients")) {
+        $flags = ($conf->opt("oAuthDynamicClients") ? 1 : 0)
+            | ($conf->opt("oAuthMetadataDocumentClients") ? 2 : 0);
+        if (empty($clients) || $flags === 3) {
             return $clients;
         }
-        return array_filter($clients, function ($cx) { return !($cx->dynamic ?? false); });
+        return array_filter($clients, function ($cx) use ($flags) {
+            return (($flags & 1) !== 0 || !($cx->dynamic ?? false))
+                && (($flags & 2) !== 0 || !($cx->metadata_document ?? false));
+        });
     }
 }

@@ -55,14 +55,16 @@ class WellKnown_Page {
         $site = $conf->opt("paperSite");
         $j = ["issuer" => $conf->oauth_issuer()];
         // enumerate capabilities implied by clients
-        $has_dynamic = false;
+        $has_dynamic = $has_mdoc = false;
         $scope_bits = 0;
         foreach (HotCRP\OAuthClient::list($conf) as $clj) {
-            if (!$has_dynamic
-                && ($clj->dynamic ?? false)) {
+            if ($clj->metadata_document ?? false) {
+                $has_mdoc = true;
+            } else if ($clj->dynamic ?? false) {
                 $has_dynamic = true;
             }
-            if ($clj->scope ?? false) {
+            if ($scope_bits !== ~0
+                && ($clj->scope ?? false)) {
                 $ts = TokenScope::parse($clj->scope, null);
                 $scope_bits = $ts ? $scope_bits | $ts->any_bits() : ~0;
             }
@@ -72,9 +74,16 @@ class WellKnown_Page {
         if ($has_dynamic) {
             $j["registration_endpoint"] = "{$site}/api/oauthregister";
         }
+        if ($has_mdoc) {
+            $j["client_id_metadata_document_supported"] = true;
+        }
         $j["grant_types_supported"] = ["authorization_code"];
         $j["response_types_supported"] = ["code"];
         $j["token_endpoint_auth_methods_supported"] = ["client_secret_basic", "client_secret_post"];
+        if ($has_mdoc) {
+            // clients identified by metadata document are public clients
+            $j["token_endpoint_auth_methods_supported"][] = "none";
+        }
         $j["code_challenge_methods_supported"] = ["S256", "plain"];
         $scopes = ["openid", "email", "profile"];
         if ($scope_bits !== 0) {
