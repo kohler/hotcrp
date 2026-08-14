@@ -306,10 +306,13 @@ class Authorize_Page {
             && $this->apply_token_document($this->token);
     }
 
+    /** @return never */
     private function handle_authconfirm() {
         if (!$this->lookup_code()) {
             $this->print_error_exit("<0>Invalid or expired authentication request");
         }
+        // `redirect_error` requires this
+        $this->qreq->redirect_uri = $this->token->data("redirect_uri");
 
         if (!$this->viewer->has_email()
             || $this->viewer->is_actas_user()
@@ -345,13 +348,20 @@ class Authorize_Page {
             $this->token->change_data("email", $this->viewer->email)
                 ->change_data("iat", Conf::$now);
             if (isset($this->qreq->scope)) {
-                $this->token->change_data("scope", $this->qreq->scope);
+                // the consent form’s scope field limits what was requested, as
+                // it says it does; it is user input, so it gets the same
+                // syntax check as the authorization request
+                $uscope = trim($this->qreq->scope);
+                if (!self::check_scope_syntax($uscope)) {
+                    $this->redirect_error("invalid_scope");
+                }
+                $this->token->change_data("scope", TokenScope::unparse(
+                    TokenScope::intersect(TokenScope::parse($this->token->data("scope"), null), $uscope)));
             }
             $this->token->set_invalid_in(10 * 60)
                 ->update();
         }
 
-        $this->qreq->redirect_uri = $this->token->data("redirect_uri");
         throw new Redirection($this->extend_redirect_uri([
             "code" => $this->token->salt,
             "state" => $this->token->data("state"),
@@ -389,8 +399,13 @@ class Authorize_Page {
     function go() {
         // handle internal action
         if (friendly_boolean($this->qreq->authconfirm)) {
-            $this->handle_authconfirm();
-        } else if (isset($this->qreq->code) && $this->lookup_code()) {
+            // need CSRF protection
+            if ($this->qreq->valid_post()) {
+                $this->handle_authconfirm();  // does not return
+            }
+            $this->conf->warning_msg($this->conf->_i($this->qreq->post_retry ? "session_failed_error" : "badpost"));
+        }
+        if (isset($this->qreq->code) && $this->lookup_code()) {
             $this->print_form();
             return;
         }

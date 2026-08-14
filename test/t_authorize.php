@@ -995,6 +995,136 @@ class Authorize_Tester {
         xassert(!$ck("https://mdoc.example.com/c.json?*", "https://mdoc.example.com/c.json/more"));
     }
 
+    /** Run `$qreq` through the authorization page and report whether it
+     * redirected. Feedback messages are absorbed rather than printed.
+     * @return bool */
+    private function authconfirm_redirects(Qrequest $qreq) {
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
+            return false;
+        } catch (Redirection $redir) {
+            return true;
+        } catch (JsonCompletion $jc) {
+            return false;
+        } catch (PageCompletion $pc) {
+            return false;
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** A request that is not a valid POST must not confirm an authorization.
+     * Otherwise any site could cause a signed-in user's browser to issue one,
+     * binding that user's account to a client the attacker controls
+     * (RFC 6749 §10.12). */
+    function test_authconfirm_requires_valid_post() {
+        // an attacker registers a client and obtains an unconfirmed code
+        $jr = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => ["https://dro.com/"]]));
+        xassert(isset($jr->client_id));
+        $qreq = TestQreq::get([
+            "client_id" => $jr->client_id, "redirect_uri" => "https://dro.com/",
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ])->set_page("authorize")->set_user($this->u_empty);
+        Qrequest::set_main_request($qreq);
+        $code = null;
+        try {
+            (new HotCRP\Authorize_Page($this->u_empty, $qreq))->go();
+        } catch (JsonCompletion $jc) {
+            $code = $jc->result->content["code"] ?? null;
+        }
+        xassert_neqq($code, null);
+        if ($code === null) {
+            return;
+        }
+
+        // a signed-in victim is made to issue a GET: no redirect, no binding
+        $vq = TestQreq::get(["authconfirm" => 1, "code" => $code])
+            ->set_page("authorize")->set_user($this->u_chair);
+        Qrequest::set_main_request($vq);
+        xassert(!$this->authconfirm_redirects($vq));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
+
+        // nor does a POST without the form's post token
+        $vq = (new Qrequest("POST", ["authconfirm" => 1, "code" => $code]))
+            ->set_navigation(Navigation::get())
+            ->set_body(null, "application/x-www-form-urlencoded")
+            ->set_page("authorize")->set_user($this->u_chair);
+        Qrequest::set_main_request($vq);
+        xassert(!$this->authconfirm_redirects($vq));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
+
+        // the real form, which posts with a token, still works
+        $vq = TestQreq::post(["authconfirm" => 1, "code" => $code])
+            ->set_page("authorize")->set_user($this->u_chair);
+        Qrequest::set_main_request($vq);
+        $url = null;
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+        } catch (Redirection $redir) {
+            $url = $redir->url;
+        }
+        xassert_neqq($url, null);
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), "chair@_.com");
+    }
+
+    /** The consent form's scope field limits what the client asked for, as its
+     * description says; it cannot widen the grant, and it is user input. */
+    function test_authconfirm_scope_limits_only() {
+        $mk = function ($form_scope) {
+            $jr = call_api("=oauthregister", $this->u_empty,
+                TestQreq::post_json(["redirect_uris" => ["https://dall.com/"]]));
+            xassert(isset($jr->client_id));
+            $qreq = TestQreq::get([
+                "client_id" => $jr->client_id, "redirect_uri" => "https://dall.com/",
+                "response_type" => "code", "state" => "S", "scope" => "read"
+            ])->set_page("authorize")->set_user($this->u_empty);
+            Qrequest::set_main_request($qreq);
+            $code = null;
+            try {
+                (new HotCRP\Authorize_Page($this->u_empty, $qreq))->go();
+            } catch (JsonCompletion $jc) {
+                $code = $jc->result->content["code"] ?? null;
+            }
+            xassert_neqq($code, null);
+            $vq = TestQreq::post(["authconfirm" => 1, "code" => $code, "scope" => $form_scope])
+                ->set_page("authorize")->set_user($this->u_chair);
+            Qrequest::set_main_request($vq);
+            $err = $url = null;
+            try {
+                (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+            } catch (Redirection $redir) {
+                $url = $redir->url;
+                $err = $this->redirect_error($url);
+            }
+            // the consent form posts no `redirect_uri`, but an error must
+            // still reach the client rather than redirecting back here
+            if ($url !== null) {
+                xassert_str_starts_with($url, "https://dall.com/");
+            }
+            $tok = TokenInfo::find($code, $this->conf);
+            return [$err, $tok ? $tok->data("scope") : null];
+        };
+
+        // the request asked for `read`; the form cannot grant more than that
+        [$err, $scope] = $mk("all");
+        xassert_eqq($err, null);
+        xassert(!TokenScope::scope_str_contains($scope, "write"));
+
+        // narrowing works
+        [$err, $scope] = $mk("none");
+        xassert_eqq($err, null);
+        xassert(!TokenScope::scope_str_contains($scope, "read"));
+
+        // and the field is validated like any other request parameter
+        [$err, $scope] = $mk("bad\x01scope");
+        xassert_eqq($err, "invalid_scope");
+    }
+
     function test_special_use_address() {
         foreach (["127.0.0.1", "10.1.2.3", "192.168.1.1", "169.254.7.7", "172.16.0.1",
                   "100.64.3.3", "0.0.0.0", "::1", "fe80::1", "fd00::1", "::ffff:127.0.0.1",
