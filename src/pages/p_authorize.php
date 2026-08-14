@@ -5,7 +5,7 @@
 namespace HotCRP;
 use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection, PageCompletion;
 use TokenInfo, TokenScope, Signin_Page, Authorization_Token, ComponentSet, XtParams;
-use MessageItem, FmtArg, SettingParser;
+use MessageItem, FmtArg, SettingParser, UnicodeHelper;
 
 class Authorize_Page {
     /** @var Conf */
@@ -243,17 +243,18 @@ class Authorize_Page {
         $this->conf->report_saved_messages();
     }
 
-    /** Print the identity of a client that identified itself with a metadata
-     * document. Such a client is not registered with this site, and its name
+    /** Print the domains involved for a client that registered itself. Such a client is not registered with this site, and its name
      * is whatever it chose to call itself, so show the user the domains
      * actually involved. */
-    private function print_metadata_document_identity() {
-        $host = $this->client->client_document->host();
+    private function print_self_registered_identity() {
         $ruri = $this->token->data("redirect_uri") ?? "";
         $rhost = parse_url($ruri, PHP_URL_HOST) ?? $ruri;
-        echo '<div class="msg msg-warning mt-4">',
-            '<p>This request comes from <strong>', htmlspecialchars($host),
-            '</strong>.</p>';
+        echo '<div class="msg msg-warning mt-4">';
+        if ($this->client->client_document) {
+            echo '<p>This request comes from <strong>',
+                htmlspecialchars($this->client->client_document->host()),
+                '</strong>.</p>';
+        }
         if ($rhost === "localhost" || $rhost === "127.0.0.1" || $rhost === "[::1]") {
             echo '<p class="mb-0">Your authorization will be sent to a program running on your own computer (<code>',
                 htmlspecialchars($ruri), '</code>).</p>';
@@ -265,8 +266,8 @@ class Authorize_Page {
     }
 
     function print_form_annotation() {
-        if ($this->client->client_document) {
-            $this->print_metadata_document_identity();
+        if ($this->client->self_registered) {
+            $this->print_self_registered_identity();
         }
         $clt = $this->client->title_html();
         echo '<p class="mt-4 mb-0 hint">If you continue, HotCRP will share your name, email address, affiliation, and other profile information with ', $clt, '.</p>';
@@ -502,10 +503,11 @@ class Authorize_Page {
 
         $client = $this->find_client($clids[0]);
         if (!$client
-            || ($client->client_document
-                // public clients have no secret; PKCE authenticates the request
+            || (($client->client_secret ?? "") === ""
+                // a public client has no secret; accept none from it, rather
+                // than accepting the empty one it never set
                 ? $clsecrets[0] !== ""
-                : !hash_equals($client->client_secret ?? "", $clsecrets[0]))) {
+                : !hash_equals($client->client_secret, $clsecrets[0]))) {
             $this->conf->www_authenticate_header("invalid_client", $this->qreq);
             return $this->oauthtoken_error("invalid_client");
         }
@@ -582,7 +584,11 @@ class Authorize_Page {
         // check user
         $luser = $this->conf->user_by_email($tok->data("email"));
         $guser = $this->conf->cdb_user_by_email($tok->data("email"));
-        $user = $this->client->is_cdb ? $guser : $luser ?? $guser;
+        if ($this->client->is_cdb) {
+            $user = $guser;
+        } else {
+            $user = $luser ?? ($guser ? $guser->ensure_account_here() : null);
+        }
         if (!$user
             || $user->is_disabled()) {
             $tok->update();
@@ -735,14 +741,15 @@ class Authorize_Page {
         if (!$rtok->has_data("next_refresh_token")) {
             return;
         }
-        $i = 0;
+        // Walk to the live token. The loop clears each link before following
+        // it, so it cannot visit a token twice and needs no iteration bound;
+        // a bound would silently leave the live token active on a long chain,
+        // which is the compromise this revocation exists to stop.
         while ($rtok
                && $rtok->capabilityType === TokenInfo::OAUTHREFRESH
-               && ($next = $rtok->data("next_refresh_token"))
-               && $i < 200) {
+               && ($next = $rtok->data("next_refresh_token"))) {
             $rtok->change_data("next_refresh_token", null)->update();
             $rtok = $this->find_token($next);
-            ++$i;
         }
         if ($rtok) {
             $this->oauthtoken_revoke($rtok, TokenInfo::BEARER);
@@ -816,7 +823,8 @@ class Authorize_Page {
             $ctok->change_data("hotcrp_name", $client->name);
         }
         if (isset($reqj->client_name) && is_string($reqj->client_name)) {
-            $ctok->change_data("client_name", $reqj->client_name);
+            $ctok->change_data("client_name", UnicodeHelper::utf8_truncate(
+                simplify_whitespace($reqj->client_name), OAuthClientDocument::MAXNAME));
         }
         if (isset($reqj->scope) && is_string($reqj->scope)) {
             $ctok->change_data("requested_scope", $reqj->scope);

@@ -84,6 +84,12 @@ class OAuthProvider {
             if (!is_string($instance->$k))
                 return null;
         }
+        // The ID token returned by the token endpoint is accepted without
+        // checking its signature, which OpenID Connect allows only if the
+        // token arrives over a trusted channel.
+        if (!OAuthClient::secure_uri($instance->token_uri)) {
+            return null;
+        }
         return $instance;
     }
 }

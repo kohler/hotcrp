@@ -933,7 +933,7 @@ class Authorize_Tester {
         $ap->client = $client;
         $ro = new ReflectionObject($ap);
         $tokp = $ro->getProperty("token");
-        $meth = $ro->getMethod("print_metadata_document_identity");
+        $meth = $ro->getMethod("print_self_registered_identity");
 
         $render = function ($ruri) use ($ap, $tokp, $meth) {
             $tok = (new TokenInfo($this->conf, TokenInfo::OAUTHCODE))
@@ -1127,6 +1127,141 @@ class Authorize_Tester {
         // and the field is validated like any other request parameter
         [$err, $scope] = $mk("bad\x01scope");
         xassert_eqq($err, "invalid_scope");
+    }
+
+    /** Replaying an old refresh token must revoke the live one however long
+     * the rotation chain has grown. A bounded walk would stop short and leave
+     * the attacker's tokens working, which is the case this exists to stop. */
+    function test_refresh_token_replay_long_chain() {
+        $tok1 = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($this->_last_refresh_token, null);
+        $stale = $this->_last_refresh_token;
+
+        // rotate past any plausible iteration bound
+        for ($i = 0; $i !== 205; ++$i) {
+            xassert_neqq($this->refresh_access_token(), null);
+        }
+        $live_refresh = $this->_last_refresh_token;
+        $live_access = $this->find_token_salt($live_refresh)->data("access_token");
+        xassert($this->find_token_salt($live_refresh)->is_active());
+        xassert($this->find_token_salt($live_access)->is_active());
+
+        // the stale token is replayed: the whole family must be revoked
+        $qreq = TestQreq::post([
+            "grant_type" => "refresh_token",
+            "refresh_token" => $stale,
+            "client_id" => $this->_last_client_id,
+            "client_secret" => $this->_last_client_secret
+        ]);
+        $jr = call_api("=oauthtoken", $this->u_empty, $qreq, null);
+        xassert_eqq($jr->error ?? null, "invalid_grant");
+
+        xassert(!$this->find_token_salt($live_refresh)->is_active());
+        xassert(!$this->find_token_salt($live_access)->is_active());
+    }
+
+    /** @param string $salt
+     * @return ?TokenInfo */
+    private function find_token_salt($salt) {
+        return TokenInfo::find_from($salt, $this->conf, $salt[2] === "T");
+    }
+
+    /** A configured client with no `client_secret` cannot prove who it is, so
+     * it is a public client: PKCE is required, and an empty secret is not
+     * accepted as authentication (RFC 8252 §8.5). */
+    function test_client_without_secret_is_public() {
+        $old = $this->conf->opt("oAuthClients");
+        $this->conf->set_opt("oAuthClients", array_merge($old, [(object) [
+            "name" => "nosecret", "client_id" => "nosecret-client",
+            "redirect_uris" => ["https://nosecret.example.com/cb"], "scope" => "all"
+        ]]));
+        $this->conf->refresh_settings();
+
+        $authorize = function ($rest) {
+            $qreq = TestQreq::get($rest + [
+                "client_id" => "nosecret-client",
+                "redirect_uri" => "https://nosecret.example.com/cb",
+                "response_type" => "code", "state" => "S", "scope" => "read"
+            ])->set_page("authorize")->set_user($this->u_chair);
+            Qrequest::set_main_request($qreq);
+            $code = $err = null;
+            try {
+                (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
+            } catch (JsonCompletion $jc) {
+                $code = $jc->result->content["code"] ?? null;
+            } catch (Redirection $redir) {
+                $err = $this->redirect_error($redir->url);
+            }
+            if ($code !== null) {
+                $vq = TestQreq::post(["authconfirm" => 1, "code" => $code])
+                    ->set_page("authorize")->set_user($this->u_chair);
+                Qrequest::set_main_request($vq);
+                try {
+                    (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+                } catch (Redirection $redir) {
+                }
+            }
+            return [$code, $err];
+        };
+
+        // without PKCE the authorization request is refused
+        [$code, $err] = $authorize([]);
+        xassert_eqq($code, null);
+        xassert_eqq($err, "invalid_request");
+
+        // with PKCE it proceeds, and the code redeems with a verifier
+        $verifier = base48_encode(random_bytes(32));
+        [$code, $err] = $authorize([
+            "code_challenge" => base64url_encode(hash("sha256", $verifier, true)),
+            "code_challenge_method" => "S256"
+        ]);
+        xassert_neqq($code, null);
+        if ($code === null) {
+            $this->conf->set_opt("oAuthClients", $old);
+            $this->conf->refresh_settings();
+            return;
+        }
+
+        // a secret is not accepted from a client that has none
+        $jr = call_api("=oauthtoken", $this->u_empty, TestQreq::post([
+            "grant_type" => "authorization_code", "code" => $code,
+            "client_id" => "nosecret-client", "client_secret" => "anything",
+            "redirect_uri" => "https://nosecret.example.com/cb",
+            "code_verifier" => $verifier
+        ]), null);
+        xassert_eqq($jr->error ?? null, "invalid_client");
+
+        // ...and PKCE alone authenticates it
+        $jr = call_api("=oauthtoken", $this->u_empty, TestQreq::post([
+            "grant_type" => "authorization_code", "code" => $code,
+            "client_id" => "nosecret-client",
+            "redirect_uri" => "https://nosecret.example.com/cb",
+            "code_verifier" => $verifier
+        ]), null);
+        xassert_neqq($jr->access_token ?? null, null);
+
+        $this->conf->set_opt("oAuthClients", $old);
+        $this->conf->refresh_settings();
+    }
+
+    /** `secure_uri` decides whether a URL may be trusted without TLS: only a
+     * loopback request qualifies, because it never leaves the machine. */
+    function test_secure_uri() {
+        $ck = function ($uri) { return HotCRP\OAuthClient::secure_uri($uri); };
+        xassert($ck("https://idp.example.com/token"));
+        xassert($ck("https://idp.example.com:8443/token"));
+        // a loopback request has no network for an attacker to sit on
+        xassert($ck("http://localhost:19382/token"));
+        xassert($ck("http://127.0.0.1:19382/token"));
+        xassert($ck("http://[::1]:19382/token"));
+        xassert($ck("http://localhost/token"));
+        // anything else in plaintext is exposed
+        xassert(!$ck("http://idp.example.com/token"));
+        xassert(!$ck("http://localhost.evil.example.com/token"));
+        xassert(!$ck("http://127.0.0.2:19382/token"));
+        xassert(!$ck("http://localhost@evil.example.com/token"));
+        xassert(!$ck("ftp://idp.example.com/token"));
+        xassert(!$ck(""));
     }
 
     function test_special_use_address() {

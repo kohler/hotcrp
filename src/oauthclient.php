@@ -35,6 +35,10 @@ class OAuthClient {
 
     /** @var ?string */
     public $requested_scope;
+    /** True if the client registered itself rather than being configured by
+     * this site, so its name is whatever it chose to call itself.
+     * @var bool */
+    public $self_registered = false;
     /** @var ?TokenInfo */
     public $token;
 
@@ -78,6 +82,7 @@ class OAuthClient {
     static function make_dynamic($x, $ctok) {
         $oac = new OAuthClient($x);
         $oac->title = $ctok->data("client_name") ?? $oac->title;
+        $oac->self_registered = true;
         $oac->client_id = $ctok->salt;
         $oac->client_secret = $ctok->data("client_secret");
         $oac->redirect_uris = $ctok->data("redirect_uris");
@@ -93,6 +98,7 @@ class OAuthClient {
     static function make_metadata_document($x, $cdoc) {
         $oac = new OAuthClient($x);
         $oac->client_id = $cdoc->client_id;
+        $oac->self_registered = true;
         $oac->client_document = $cdoc;
         $oac->client_secret = null;
         $oac->client_uri = null;
@@ -146,7 +152,11 @@ class OAuthClient {
     /** @param string $redirect_uri
      * @return bool */
     function public_client($redirect_uri) {
-        return $this->client_document
+        // A client with no secret cannot prove who it is, so PKCE must protect
+        // the code instead (RFC 8252 §8.5). Metadata document clients never
+        // have a secret; neither does a configured client whose
+        // `client_secret` was left out.
+        return ($this->client_secret ?? "") === ""
             || str_starts_with($redirect_uri, "http://") /* => localhost b/c of check_redirect_uri() */;
     }
 
@@ -169,9 +179,18 @@ class OAuthClient {
             && preg_match('/[^\x21-\x7E]/', $uri)) {
             return false;
         }
-        // `https:` allowed; `http:` to localhost allowed
+        return self::secure_uri($uri);
+    }
+
+    /** Return true if `$uri` is an `https` URL, or an `http` URL to the
+     * loopback interface. A loopback request never leaves the machine, so it
+     * has no network for an attacker to sit on and needs no TLS
+     * (RFC 8252, section 8.3).
+     * @param string $uri
+     * @return bool */
+    static function secure_uri($uri) {
         return str_starts_with($uri, "https://")
-            || self::check_loopback_host($uri);
+            || self::check_loopback_host($uri) !== null;
     }
 
     /** If `$uri` is an `http://` URL to one of the precise loopback spellings
