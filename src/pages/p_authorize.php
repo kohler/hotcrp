@@ -615,6 +615,7 @@ class Authorize_Page {
     private function make_id_token(Contact $user, TokenInfo $tok) {
         $payload = [
             "iss" => $this->conf->oauth_issuer(),
+            "sub" => $user->email,
             "aud" => $this->client->client_id,
             "exp" => Conf::$now + 86400,
             "iat" => Conf::$now

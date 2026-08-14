@@ -627,6 +627,10 @@ class Authorize_Tester {
         xassert_eqq($payload->aud ?? null, self::MDOC_CLIENT_ID);
         xassert_eqq($payload->email ?? null, "chair@_.com");
         xassert_eqq($payload->nonce ?? null, $nonce);
+        // OpenID Connect requires `sub`, and a relying party may key an
+        // account on it; a HotCRP email is permanent, so it serves
+        xassert_eqq($payload->sub ?? null, "chair@_.com");
+        xassert_eqq($payload->exp ?? null, ($payload->iat ?? 0) + 86400);
     }
 
     #[RequireClass("Uri\\Rfc3986\\Uri")]
