@@ -7,95 +7,6 @@ use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection, PageComple
 use TokenInfo, TokenScope, Signin_Page, Authorization_Token, ComponentSet, XtParams;
 use MessageItem, FmtArg, SettingParser;
 
-class OAuthClient {
-    /** @var string */
-    public $name;
-    /** @var ?string */
-    public $title;
-    /** @var string */
-    public $client_id;
-    /** @var string */
-    public $client_secret;
-    /** @var ?string */
-    public $client_uri;
-    /** @var ?bool */
-    public $is_cdb;
-    /** @var null|int|string */
-    public $access_token_expires_in;
-    /** @var null|int|string */
-    public $refresh_token_expires_in;
-    /** @var ?string */
-    public $scope;
-    /** @var bool */
-    public $only_openid;
-    /** @var mixed */
-    public $allow_if;
-    /** @var list<string> */
-    public $redirect_uris = [];
-
-    /** @var ?string */
-    public $requested_scope;
-    /** @var ?TokenInfo */
-    public $token;
-
-    /** @param object $x */
-    function __construct($x) {
-        $this->name = $x->name ?? null;
-        $this->title = $x->title ?? null;
-        $this->client_id = $x->client_id ?? null;
-        $this->client_secret = $x->client_secret ?? null;
-        $this->client_uri = $x->client_uri ?? null;
-        $this->is_cdb = $x->is_cdb ?? false;
-        $this->access_token_expires_in = $x->access_token_expires_in ?? null;
-        $this->refresh_token_expires_in = $x->refresh_token_expires_in ?? null;
-        $this->scope = $x->scope ?? null;
-        $this->only_openid = $this->scope === null
-            || trim($this->scope) === ""
-            || TokenScope::scope_str_all_openid($this->scope);
-        $this->allow_if = $x->allow_if ?? null;
-        $uri = $x->redirect_uris ?? $x->redirect_uri ?? [];
-        if (is_string($uri)) {
-            $this->redirect_uris[] = $uri;
-        } else if (is_list($uri)) {
-            $this->redirect_uris = $uri;
-        }
-    }
-
-    /** @param object $x
-     * @return ?OAuthClient */
-    static function make($x) {
-        $oac = new OAuthClient($x);
-        if (!is_string($oac->client_id)
-            || empty($oac->redirect_uris)) {
-            return null;
-        }
-        return $oac;
-    }
-
-    /** @param object $x
-     * @param TokenInfo $ctok
-     * @return OAuthClient */
-    static function make_dynamic($x, $ctok) {
-        $oac = new OAuthClient($x);
-        $oac->title = $ctok->data("client_name") ?? $oac->title;
-        $oac->client_id = $ctok->salt;
-        $oac->client_secret = $ctok->data("client_secret");
-        $oac->redirect_uris = $ctok->data("redirect_uris");
-        $oac->requested_scope = $ctok->data("requested_scope");
-        return $oac;
-    }
-
-    /** @return string */
-    function title_text() {
-        return $this->title ?? $this->name;
-    }
-
-    /** @return string */
-    function title_html() {
-        return htmlspecialchars($this->title_text());
-    }
-}
-
 class Authorize_Page {
     /** @var Conf */
     public $conf;
@@ -117,17 +28,14 @@ class Authorize_Page {
         $this->viewer = $viewer;
         $this->qreq = $qreq;
         $this->cs = $cs;
-        $this->clients = self::oauth_clients($this->conf);
+        $this->clients = OAuthClient::list($this->conf);
     }
 
 
-    /** @return array<string,object> */
+    /** @return array<string,object>
+     * @deprecated */
     static function oauth_clients(Conf $conf) {
-        $clients = $conf->_xtbuild_resolve([], "oAuthClients");
-        if (empty($clients) || $conf->opt("oAuthDynamicClients")) {
-            return $clients;
-        }
-        return array_filter($clients, function ($cx) { return !($cx->dynamic ?? false); });
+        return OAuthClient::list($conf);
     }
 
     /** @param string $salt
@@ -166,9 +74,6 @@ class Authorize_Page {
      * @return string */
     private function extend_redirect_uri($param) {
         $uri = $this->qreq->redirect_uri;
-        if (($hash = strpos($uri, "#")) !== false) {
-            $uri = substr($uri, 0, $hash);
-        }
         if (strpos($uri, "?") === false) {
             $uri .= "?";
         } else if (!str_ends_with($uri, "&") && !str_ends_with($uri, "?")) {
@@ -420,19 +325,6 @@ class Authorize_Page {
         Navigation::complete();
     }
 
-    /** @param string $uri
-     * @return bool */
-    private function check_redirect_uri($uri) {
-        if (strpos($uri, "#") !== false) {
-            return false;
-        }
-        return str_starts_with($uri, "https://")
-            // allow localhost redirect URIs for local development
-            || ((str_starts_with($uri, "http://localhost/")
-                 || str_starts_with($uri, "http://localhost:"))
-                && $this->qreq->navigation()->host === "localhost");
-    }
-
     function go() {
         // handle internal action
         if (friendly_boolean($this->qreq->authconfirm)) {
@@ -458,7 +350,7 @@ class Authorize_Page {
         if (!isset($this->qreq->redirect_uri)) {
             $this->print_error_exit("<0>Authorization parameter `redirect_uri` missing");
         } else if (!in_array($this->qreq->redirect_uri, $this->client->redirect_uris, true)
-                   || !$this->check_redirect_uri($this->qreq->redirect_uri)) {
+                   || !OAuthClient::check_redirect_uri($this->qreq->redirect_uri, $this->qreq)) {
             $this->print_error_exit("<0>Invalid authorization parameter `redirect_uri`");
         }
 
@@ -781,7 +673,7 @@ class Authorize_Page {
         $redirect_uris = $reqj->redirect_uris;
         foreach ($redirect_uris as $uri) {
             if (!is_string($uri)
-                || !$this->check_redirect_uri($uri)) {
+                || !OAuthClient::check_redirect_uri($uri, $this->qreq, OAuthClient::VALIDATION_DYNAMIC)) {
                 return $this->oauthregister_error("invalid_redirect_uri");
             }
         }

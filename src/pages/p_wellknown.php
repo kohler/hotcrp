@@ -57,7 +57,7 @@ class WellKnown_Page {
         // enumerate capabilities implied by clients
         $has_dynamic = false;
         $any_scopes = null;
-        foreach (HotCRP\Authorize_Page::oauth_clients($conf) as $clj) {
+        foreach (HotCRP\OAuthClient::list($conf) as $clj) {
             if (!$has_dynamic
                 && ($clj->dynamic ?? false)) {
                 $has_dynamic = true;
