@@ -127,6 +127,91 @@ class Login_Tester {
         xassert_str_contains($result->url, "resetpassword");
     }
 
+    /** Return the newest password reset token belonging to `$email`, which is
+     * the one a just-sent reset mail would carry.
+     * @param string $email
+     * @return ?TokenInfo */
+    private function latest_reset_token($email) {
+        $dbs = [];
+        if ($this->cdb && ($cdbu = $this->conf->cdb_user_by_email($email))) {
+            $dbs[] = [$this->cdb, true, $cdbu->contactDbId];
+        }
+        if (($u = $this->conf->user_by_email($email))) {
+            $dbs[] = [$this->conf->dblink, false, $u->contactId];
+        }
+        foreach ($dbs as $dbx) {
+            $result = Dbl::qe($dbx[0], "select * from Capability where capabilityType=? and contactId=? order by timeCreated desc, salt desc limit 1",
+                TokenInfo::RESETPASSWORD, $dbx[2]);
+            $tok = TokenInfo::fetch($result, $this->conf, $dbx[1]);
+            Dbl::free($result);
+            if ($tok) {
+                return $tok;
+            }
+        }
+        return null;
+    }
+
+    /** A `redirect` given to `signin` should survive the whole detour through
+     * account creation and password reset: the reset token carries it across
+     * the email hop, and the reset hands it back to `signin`, which delivers
+     * the user to the page they originally wanted. */
+    function test_redirect_survives_reset() {
+        $email = "newuser@hotcrp.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        if ($this->cdb) {
+            Dbl::qe($this->cdb, "delete from ContactInfo where email=?", $email);
+        }
+        $this->conf->invalidate_caches("users");
+
+        // create an account, asking to end up at `paper/1`
+        $user = Contact::make($this->conf);
+        $qreq = TestQreq::post(["email" => $email, "redirect" => "paper/1"])
+            ->set_user($user)->set_page("newaccount");
+        $result = null;
+        try {
+            (new Signin_Page)->create_request($user, $qreq);
+        } catch (Redirection $redir) {
+            $result = $redir;
+        }
+        // account creation returns to `signin` with the destination intact
+        xassert(!!$result);
+        xassert_str_contains($result->url, "signin");
+        xassert_str_contains(urldecode($result->url), "paper/1");
+
+        // the mailed reset token remembers the destination
+        $tok = $this->latest_reset_token($email);
+        xassert(!!$tok);
+        xassert_str_contains($tok->data("redirect") ?? "", "paper/1");
+
+        $this->conf->invalidate_caches("users");
+
+        // resetting the password sends the user to `signin`, destination intact
+        $user = Contact::make_email($this->conf, $email);
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
+        $qreq->set_req("resetcap", $tok->salt);
+        $qreq->set_req("password", "newuserpassword!");
+        $qreq->set_req("password2", "newuserpassword!");
+        $result = null;
+        try {
+            $cs = $this->conf->page_components($user, $qreq);
+            $cs->callable("Signin_Page")->reset_request($user, $qreq, $cs);
+        } catch (Redirection $redir) {
+            $result = $redir;
+        }
+        xassert(!!$result);
+        xassert_str_contains($result->url, "signin");
+        xassert_str_contains(urldecode($result->url), "paper/1");
+
+        // and signing in from there lands on the requested page
+        $user = Contact::make($this->conf);
+        $qreq = TestQreq::post([
+            "email" => $email, "password" => "newuserpassword!", "redirect" => "paper/1"
+        ])->set_user($user)->set_page("signin");
+        $info = LoginHelper::login_complete(LoginHelper::login_info($this->conf, $qreq), $qreq);
+        xassert_eqq($info["ok"], true);
+        xassert_str_contains(urldecode($info["redirect"]), "redirect=paper/1");
+    }
+
     function test_login_placeholder() {
         $email = "scapegoat2@baa.com";
         Contact::make_keyed($this->conf, [
