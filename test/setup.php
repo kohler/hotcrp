@@ -1744,6 +1744,7 @@ class TestRunner {
                         fwrite(STDERR, "* All test databases are in use; sharing {$lfx[$i]}\n");
                     }
                     include $lfx[$i];
+                    putenv("HOTCRP_DBLOCKFILE={$lfx[$i]}");
                     return $strm;
                 }
                 if ($strm !== false) {
