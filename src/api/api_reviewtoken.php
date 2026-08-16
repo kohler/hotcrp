@@ -6,6 +6,8 @@ class ReviewToken_API {
     static function run(Contact $user, Qrequest $qreq) {
         if ($user->is_empty()) {
             return JsonResult::make_error(401, "<0>Unauthorized");
+        } else if ($user->is_bearer_authorized()) {
+            return JsonResult::make_error(403, "<0>Review tokens require an interactive session");
         }
         $ml = [];
         if ($qreq->valid_post() && isset($qreq->token)) {

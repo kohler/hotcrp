@@ -97,11 +97,7 @@ class AuthenticationChecker {
         if (!$this->user->has_email()) {
             return false;
         }
-        if ($this->user === $this->qreq->user()
-            && $this->user->is_bearer_authorized()) {
-            $this->ok = true;
-            return true;
-        }
+        // NB bearer tokens have no security events, so this intentionally fails
         foreach ($this->security_events() as $use) {
             if (($use->reason === UserSecurityEvent::REASON_REAUTH
                  && $use->timestamp >= Conf::$now - $this->max_age)

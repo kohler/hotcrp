@@ -4,8 +4,10 @@
 
 class Sharing_API extends MessageSet {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+        // require `can_manage` (admin scope) because this yields a bearer
+        // credential
         if (!$prow->has_author($user)
-            && ($qreq->is_getlike() ? !$user->is_admin($prow) : !$user->can_manage($prow))) {
+            && !$user->can_manage($prow)) {
             return JsonResult::make_permission_error();
         }
         if (!$qreq->is_getlike()) {
