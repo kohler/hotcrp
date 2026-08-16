@@ -317,8 +317,9 @@ function initialize_user($qreq, $kwarg = null) {
             $user = $token->local_user();
         }
         if (!$user) {
-            $conf->www_authenticate_header("invalid_token", $qreq);
-            JsonResult::make_error(401, "<0>Unauthorized")->complete();
+            JsonResult::make_error(401, "<0>Unauthorized")
+                ->set_header($conf->www_authenticate_header("invalid_token", $qreq))
+                ->complete();
         }
         $qreq->approve_token(); // the bearer token counts as explicit authorization
         $qreq->set_user($user);

@@ -5890,10 +5890,12 @@ class Conf {
 
     // API
 
-    /** @param ?string $error
+    /** Return a `WWW-Authenticate` header for a 401 response.
+     * @param ?string $error
      * @param ?Qrequest $qreq
      * @param mixed $scope
      * @return string */
+    #[\NoDiscard]
     function www_authenticate_header($error, $qreq, $scope = null) {
         $issuer = $this->oauth_issuer();
         $rest = "";

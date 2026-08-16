@@ -508,8 +508,8 @@ class Authorize_Page {
                 // than accepting the empty one it never set
                 ? $clsecrets[0] !== ""
                 : !hash_equals($client->client_secret, $clsecrets[0]))) {
-            $this->conf->www_authenticate_header("invalid_client", $this->qreq);
-            return $this->oauthtoken_error("invalid_client");
+            return $this->oauthtoken_error("invalid_client")
+                ->set_header($this->conf->www_authenticate_header("invalid_client", $this->qreq));
         }
 
         $scope = trim($this->qreq->scope ?? "");
