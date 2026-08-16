@@ -5851,17 +5851,21 @@ th.pl_logaction {
 .gcdf {
 	fill: none;
 	stroke: rgba(0, 92, 168, 0.5);
+	stroke: light-dark(rgba(0, 92, 168, 0.5), rgba(58, 132, 220, 0.6));
 	stroke-width: 1.5px;
 }
 .gcdf-many {
 	stroke: rgba(70, 130, 180, 0.5);
+	stroke: light-dark(rgba(70, 130, 180, 0.5), rgba(100, 153, 197, 0.5));
 }
 .gcdf-cumulative {
 	stroke: red;
+	stroke: light-dark(red, #ff5555);
 	stroke-width: 2.5px;
 }
 .gcdf-highlight {
 	stroke: black;
+	stroke: light-dark(#000000, #ffffff);
 }
 .gcdf-thin {
 	stroke-width: 0.5px;
@@ -5869,7 +5873,9 @@ th.pl_logaction {
 
 .gdot, .gbar, .gbox {
 	stroke: rgba(0, 92, 168, 0.8);
+	stroke: light-dark(rgba(0, 92, 168, 0.8), rgba(58, 132, 220, 0.8));
 	fill: rgba(0, 92, 168, 0.2);
+	fill: light-dark(rgba(0, 92, 168, 0.2), rgba(58, 132, 220, 0.25));
 	stroke-width: 1px;
 	stroke-linecap: butt;
 	stroke-linejoin: miter;
@@ -5896,6 +5902,7 @@ th.pl_logaction {
 
 .gcdf-hover0 {
 	stroke: rgba(70, 0, 0, 0.5);
+	stroke: light-dark(rgba(70, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
 	stroke-width: 3px;
 	fill: none;
 }
@@ -5932,12 +5939,20 @@ th.pl_logaction {
 }
 .gdot-hover, .gbar-hover0, .gbox-hover {
 	stroke: rgba(0, 0, 0, 0.4);
+	stroke: light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.5));
 	stroke-width: 2px;
 	fill: rgba(0, 0, 0, 0.1);
+	fill: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
 }
 .gbar-hover1 {
 	stroke-width: 0;
 	fill: none;
+}
+.gxline {
+	stroke: rgba(0, 0, 0, 0.2);
+	stroke: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.4));
+	stroke-dasharray: 10 5;
+	stroke-width: 3px;
 }
 .ghighlight {
 	fill: none;

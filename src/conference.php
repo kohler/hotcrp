@@ -4882,15 +4882,10 @@ class Conf {
 
         // session theme
         echo "<style id=\"p-theme\">";
-        if (($themes = $qreq->gsession("themes"))
-            && is_array($themes)
-            && ($ui = $qreq->user()->base_user()->session_index()) >= 0
-            && $ui < count($themes)) {
-            if ($themes[$ui] === "dark") {
-                echo "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }";
-            } else if ($themes[$ui] === "light") {
-                echo "@layer dark-mode, theme;";
-            }
+        if (($theme = $qreq->user()->session_theme($qreq)) === "dark") {
+            echo "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }";
+        } else if ($theme === "light") {
+            echo "@layer dark-mode, theme;";
         }
         echo "</style>\n";
 

@@ -1816,6 +1816,18 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $t === "light" || $t === "dark" ? $t : null;
     }
 
+    /** @return ?string */
+    function session_theme(Qrequest $qreq) {
+        if (($themes = $qreq->gsession("themes"))
+            && is_array($themes)
+            && ($ui = $this->base_user()->session_index()) >= 0
+            && $ui < count($themes)
+            && ($themes[$ui] === null || is_string($themes[$ui]))) {
+            return $themes[$ui];
+        }
+        return null;
+    }
+
     /** @param string $key
      * @return bool */
     function set_data_prop($key, $value) {

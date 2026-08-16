@@ -392,13 +392,11 @@ function draw_annotations(svg, args) {
         if (anno.type === "xline") {
             const x = args.x.scale(anno.x);
             svg.append("line")
+                .attr("class", "gxline")
                 .attr("x1", x)
                 .attr("y1", args.y.scale(args.y.scale.domain()[0]))
                 .attr("x2", x)
-                .attr("y2", args.y.scale(args.y.scale.domain()[1]))
-                .attr("stroke", "rgba(0, 0, 0, 0.2)")
-                .attr("stroke-dasharray", "10 5")
-                .attr("stroke-width", "3");
+                .attr("y2", args.y.scale(args.y.scale.domain()[1]));
         }
     }
 }

@@ -1694,6 +1694,10 @@ class UserStatus extends MessageSet {
         $themeuser = $us->cdb_user() ?? $us->user;
         $itheme = $themeuser->theme() ?? "auto";
         $reqtheme = $us->qreq->theme ?? $itheme;
+        $sessiontheme = $us->viewer->session_theme($us->qreq) ?? "auto";
+        if ($us->is_auth_self() && $sessiontheme !== $itheme) {
+            $us->append_item(MessageItem::warning_note_at("theme", "<0>This session is using the {$sessiontheme} theme, which differs from your saved preference. Save your preferences to update the session."));
+        }
         echo '<div class="', $us->control_class("theme", "w-text"), '">',
             $us->feedback_html_at("theme");
         foreach (["auto" => "Automatic (follow system setting)",

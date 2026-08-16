@@ -12616,6 +12616,7 @@ function make_color(k, r, g, b, a) {
         l: l,
         has_graph: false,
         gfill: null,
+        light: null,
         type: null
     };
 }
@@ -12687,20 +12688,33 @@ function analyze_class(k) {
         }
         return set("badge", c);
     }
+    const c = probe_bg(k, "");
+    return c ? set("bg", c) : set();
+}
+function probe_bg(k, scheme) {
     if (testdiv === null) {
         testdiv = document.createElement("div");
         testdiv.style.display = "none";
         document.body.appendChild(testdiv);
     }
-    testdiv.className = k;
-    const value = window.getComputedStyle(testdiv).backgroundColor;
-    if ((m = value.match(/^rgb\(([\d.]+), ([\d.]+), ([\d.]+)\)$/))) {
-        return set("bg", make_color(k, +m[1], +m[2], +m[3], 1.0));
-    } else if ((m = value.match(/^rgba\(([\d.]+), ([\d.]+), ([\d.]+), ([\d.]+)\)$/))
-               && +m[4] > 0) {
-        return set("bg", make_color(k, +m[1], +m[2], +m[3], +m[4]));
+    testdiv.className = k.startsWith("tag-") ? k + " tagbg" : k;
+    testdiv.style.colorScheme = scheme;
+    const value = window.getComputedStyle(testdiv).backgroundColor,
+        m = value.match(/^rgba?\(([\d.]+), ([\d.]+), ([\d.]+)(?:, ([\d.]+))?\)$/);
+    if (m && (m[4] === undefined || +m[4] > 0)) {
+        return make_color(k, +m[1], +m[2], +m[3], m[4] === undefined ? 1.0 : +m[4]);
     }
-    return set();
+    return null;
+}
+function light_color(color) {
+    // graph fills and strokes are always light-scheme
+    if (color.light === null) {
+        const c = /-rgb-/.test(color.k) ? null : probe_bg(color.k, "light");
+        color.light = c !== null
+            && (c.r !== color.r || c.g !== color.g || c.b !== color.b || c.a !== color.a)
+            ? c : color;
+    }
+    return color.light;
 }
 function bgcolor(color) {
     return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
@@ -12743,13 +12757,13 @@ function strokecolor(color) {
     return `rgba(${gf[0]}, ${gf[1]}, ${gf[2]}, 0.8)`;
 }
 function paramcolor(param, color) {
-    return (param.type === 1 ? fillcolor : bgcolor)(color);
+    return param.type === 1 ? fillcolor(light_color(color)) : bgcolor(color);
 }
 function ensure_graph_rules(color) {
     if (!color.has_graph) {
-        var stylesheet = ensure_stylesheet(), k = color.k;
-        stylesheet.insertRule(`.gcdf.${k}, .gdot.${k}, .gbar.${k}, .gbox.${k} { stroke: ${strokecolor(color)}; }`, 0);
-        stylesheet.insertRule(`.gdot.${k}, .gbar.${k}, .gbox.${k}, .glab.${k} { fill: ${fillcolor(color)}; }`, 0);
+        const stylesheet = ensure_stylesheet(), k = color.k, lc = light_color(color);
+        stylesheet.insertRule(`.gcdf.${k}, .gdot.${k}, .gbar.${k}, .gbox.${k} { stroke: ${strokecolor(lc)}; }`, 0);
+        stylesheet.insertRule(`.gdot.${k}, .gbar.${k}, .gbox.${k}, .glab.${k} { fill: ${fillcolor(lc)}; }`, 0);
         color.has_graph = true;
     }
 }
@@ -15480,6 +15494,8 @@ function rgb_array_for(svx) {
     if (!sccolor[svx]) {
         var sp = document.createElement("span"), st, m;
         sp.className = "svb hidden " + svx;
+        // graphs use light-scheme score colors in every theme
+        sp.style.colorScheme = "light";
         document.body.appendChild(sp);
         sccolor[svx] = [0, 0, 0];
         st = window.getComputedStyle(sp).color;
