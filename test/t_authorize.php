@@ -927,8 +927,12 @@ class Authorize_Tester {
         if (!$j) {
             return;
         }
-        xassert_eqq($j->client_id_metadata_document_supported ?? null, true);
-        xassert(in_array("none", $j->token_endpoint_auth_methods_supported, true));
+        // metadata document clients exist only where client identifier URLs
+        // can be checked, so both directions are asserted: a capability this
+        // installation cannot honor must not be advertised
+        $mdoc = HotCRP\OAuthClientDocument::supported();
+        xassert_eqq($j->client_id_metadata_document_supported ?? false, $mdoc);
+        xassert_eqq(in_array("none", $j->token_endpoint_auth_methods_supported, true), $mdoc);
         xassert(in_array("S256", $j->code_challenge_methods_supported, true));
         // advertised only because every authorization response carries `iss`;
         // a client that sees this and then a response without `iss` rejects it
@@ -2177,6 +2181,7 @@ class Authorize_Tester {
 
     /** The client metadata document is fetched from a URL the requester chose,
      * so an anonymous request must not be able to make this site issue it. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
     function test_metadata_fetch_needs_a_user() {
         $fetched = 0;
         $old = HotCRP\OAuthClientDocument::$fetch_function;
@@ -2885,7 +2890,9 @@ class Authorize_Tester {
         xassert_eqq($post("confclient", "wrong"), "invalid_client");
         // a client_id containing `:` is reachable only through the encoding
         xassert_eqq($post("https://mdoc.example.com/client.json", ""), "invalid_client");
-        xassert_neqq($post(rawurlencode(self::MDOC_CLIENT_ID), ""), "invalid_client");
+        if (class_exists("Uri\\Rfc3986\\Uri", false)) {
+            xassert_neqq($post(rawurlencode(self::MDOC_CLIENT_ID), ""), "invalid_client");
+        }
     }
 
     /** An OpenID-Connect-only client is never issued a refresh token, so a
@@ -3192,6 +3199,7 @@ class Authorize_Tester {
      * all three. A host wildcard must therefore cover all three: an IPv6
      * literal is one host, and the colons inside its brackets are part of that
      * host, not a port separator. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
     function test_client_id_match_ipv6_host() {
         $ck = function ($pat, $client_id) {
             $doc = $this->client_document($client_id);
@@ -3560,17 +3568,33 @@ class Authorize_Tester {
             $html = ob_get_clean();
             Navigation::$test_mode = $old_test_mode;
         }
+        // the user may have authorized other clients, and the grant list is
+        // ordered by use, so pick this client's row rather than the first
+        $row = "";
+        foreach (preg_split('/(?=<div class="f-i)/', $html) as $r) {
+            if (str_contains($r, "value=\"L.{$client_id}\""))
+                $row = $r;
+        }
         // the row names the client, counts its live tokens, and states its scope
-        xassert_str_contains($html, "2 tokens");
-        xassert_str_contains($html, "scope read");
+        xassert_neqq($row, "");
+        xassert_str_contains($row, "2 tokens");
+        xassert_str_contains($row, "scope read");
         // and carries the identifier the save handler matches on
-        xassert(preg_match('/name="(grant\/\d+\/id)" value="([^"]*)"/', $html, $m) === 1);
-        xassert_eqq($m[2] ?? null, "L.{$client_id}");
+        xassert(preg_match('/name="(grant\/\d+\/id)"/', $row, $m) === 1);
         $idfield = $m[1];
         $delfield = str_replace("/id", "/delete", $idfield);
 
+        // the browser submits every rendered row, and the save handler stops
+        // at the first index it does not see, so post them all
+        preg_match_all('/name="(grant\/\d+\/id)" value="([^"]*)"/', $html, $ms, PREG_SET_ORDER);
+        $form = [];
+        foreach ($ms as $mx) {
+            $form[$mx[1]] = $mx[2];
+        }
+        xassert_eqq($form[$idfield] ?? null, "L.{$client_id}");
+
         // a request that names the row but does not ask to delete it
-        [$us, ] = $this->developer_us($this->u_chair, [$idfield => "L.{$client_id}"]);
+        [$us, ] = $this->developer_us($this->u_chair, $form);
         $d = new Developer_UserInfo($us);
         $d->request_delete_grants($us);
         $d->save_delete_grants($us);
@@ -3578,7 +3602,7 @@ class Authorize_Tester {
 
         // a request naming some other grant leaves this one alone
         [$us, ] = $this->developer_us($this->u_chair,
-            [$idfield => "L.hctk_nonesuch", $delfield => "1"]);
+            [$idfield => "L.hctk_nonesuch", $delfield => "1"] + $form);
         $d = new Developer_UserInfo($us);
         $d->request_delete_grants($us);
         $d->save_delete_grants($us);
@@ -3586,7 +3610,7 @@ class Authorize_Tester {
 
         // and the real thing revokes the whole grant
         [$us, ] = $this->developer_us($this->u_chair,
-            [$idfield => "L.{$client_id}", $delfield => "1"]);
+            [$delfield => "1"] + $form);
         $d = new Developer_UserInfo($us);
         $d->request_delete_grants($us);
         $d->save_delete_grants($us);

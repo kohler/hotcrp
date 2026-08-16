@@ -120,8 +120,12 @@ class OAuthClient {
         if (empty($clients)) {
             return $clients;
         }
+        // A metadata document client is identified by a URL this site must
+        // check before fetching, so without `OAuthClientDocument::supported`
+        // there is no such client—and, in particular, nothing to advertise.
         $flags = ($conf->opt("oAuthDynamicClients") ? 1 : 0)
-            | ($conf->opt("oAuthMetadataDocumentClients") ? 2 : 0);
+            | ($conf->opt("oAuthMetadataDocumentClients")
+               && OAuthClientDocument::supported() ? 2 : 0);
         return array_filter($clients, function ($cx) use ($flags) {
             // A cdb token is meant to work at every conference sharing the
             // contact database, so a rule about who may hold it has nothing to
