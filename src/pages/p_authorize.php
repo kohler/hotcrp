@@ -598,8 +598,28 @@ class Authorize_Page {
         return $jr;
     }
 
-    private function oauthtoken_error($type) {
-        return JsonResult::make_minimal(400, ["error" => $type]);
+    /** @param string $type
+     * @param ?string $description
+     * @return JsonResult */
+    private function oauthtoken_error($type, $description = null) {
+        $j = ["error" => $type];
+        if ($description !== null) {
+            // RFC 6749 §5.2 restricts this to %x20-21 / %x23-5B / %x5D-7E
+            $j["error_description"] = $description;
+        }
+        return JsonResult::make_minimal(400, $j);
+    }
+
+    /** Report a failed grant; private clients also get an error_description
+     * (public clients do not, as it would be an oracle).
+     * @param string $description
+     * @param string $type
+     * @return JsonResult */
+    private function grant_error($description, $type = "invalid_grant") {
+        if ($this->client->client_secret === null) {
+            return $this->oauthtoken_error("invalid_grant", "Grant not valid");
+        }
+        return $this->oauthtoken_error($type, $description);
     }
 
     /** RFC 6749 §5.2: a client that authenticated via the `Authorization`
@@ -622,9 +642,8 @@ class Authorize_Page {
      * as the token endpoint does, so both go through here.
      * @return OAuthClient|JsonResult */
     private function authenticate_client() {
-        // exactly one authentication method, never both
         $clids = $clsecrets = [];
-        $clbasic = $clbody = false;
+        $clbasic = false;
         if (($auth = $this->qreq->header("Authorization"))) {
             if (preg_match('/\A\s*Basic\s+(\S+)\s*\z/i', $auth, $m)
                 && ($d = base64_decode($m[1], true)) !== false
@@ -642,18 +661,36 @@ class Authorize_Page {
                     $clsecrets[] = $rawsecret;
                 }
             } else {
-                return $this->oauthtoken_error("invalid_request");
+                return $this->oauthtoken_error("invalid_request", "Unparseable Authorization header");
             }
         }
-        if (isset($this->qreq->client_id)) {
-            $clbody = true;
+        if ($clbasic) {
+            // A client that authenticated in the header usually repeats its
+            // `client_id` in the body anyway; RFC 6749 §4.1.3 asks for it when
+            // the client does not authenticate, and clients send it either
+            // way. The repetition is redundant, not a second authentication
+            // method, so it is accepted — but it must name the same client, or
+            // the request would authenticate as one and act as another.
+            if (isset($this->qreq->client_id)
+                && !in_array($this->qreq->client_id, $clids, true)) {
+                return $this->oauthtoken_error("invalid_request", "client_id disagrees with Authorization header");
+            }
+            // RFC 6749 §2.3 allows one authentication method per request. A
+            // repeated secret is redundant rather than ambiguous, so only a
+            // second secret that differs from the first is a conflict.
+            if (($clsecret = $this->qreq->client_secret) !== null) {
+                $found = false;
+                foreach ($clsecrets as $s) {
+                    $found = $found || hash_equals($s, $clsecret);
+                }
+                if (!$found) {
+                    return $this->oauthtoken_error("invalid_request", "client_secret disagrees with Authorization header");
+                }
+            }
+        } else if (isset($this->qreq->client_id)) {
             $clids[] = $this->qreq->client_id;
             $clsecrets[] = $this->qreq->client_secret ?? "";
-        }
-        if ($clbasic && $clbody) {
-            // RFC 6749 §2.3: never more than one authentication method
-            return $this->oauthtoken_error("invalid_request");
-        } else if (!$clbasic && !$clbody) {
+        } else {
             return $this->invalid_client_error(false);
         }
 
@@ -678,7 +715,7 @@ class Authorize_Page {
     private function check_secret_params() {
         foreach (self::SECRET_PARAMS as $k) {
             if ($this->qreq->from_query($k)) {
-                return $this->oauthtoken_error("invalid_request");
+                return $this->oauthtoken_error("invalid_request", "Parameter {$k} invalid in URL");
             }
         }
         return null;
@@ -697,7 +734,7 @@ class Authorize_Page {
 
         $scope = trim($this->qreq->scope ?? "");
         if (!self::check_scope_syntax($scope)) {
-            return $this->oauthtoken_error("invalid_scope");
+            return $this->oauthtoken_error("invalid_scope", "Unparseable scope");
         }
 
         // handle grant request
@@ -707,7 +744,8 @@ class Authorize_Page {
         } else if ($this->qreq->grant_type === "refresh_token") {
             $jr = $this->handle_oauthtoken_refresh($scope);
         } else {
-            return $this->oauthtoken_error("unsupported_grant_type");
+            return $this->oauthtoken_error("unsupported_grant_type",
+                "This endpoint supports grant_type authorization_code and refresh_token");
         }
         return $jr ?? $this->oauthtoken_error("invalid_grant");
     }
@@ -721,7 +759,7 @@ class Authorize_Page {
             || !$tok->data("email")
             || $tok->data("client_id") !== $this->client->client_id
             || !$this->apply_token_document($tok, $this->client)) {
-            return null;
+            return $this->grant_error("Unknown, expired, or reassigned code");
         }
 
         // check arguments
@@ -731,11 +769,14 @@ class Authorize_Page {
         if ($code_challenge === ""
             && ($this->client->public_client($redirect_uri)
                 || ($qreq_redirect_uri === "" && !$tok->data("nonce")))) {
-            return null;
+            return $this->grant_error("Code was authorized without PKCE");
         }
         $code_verifier = $this->qreq->code_verifier ?? "";
         if (($code_verifier !== "") !== ($code_challenge !== "")) {
-            return $this->oauthtoken_error("invalid_request");
+            return $this->grant_error($code_verifier === ""
+                ? "Code was authorized with a code_challenge, so code_verifier is required"
+                : "Code was authorized without a code_challenge, so code_verifier does not apply",
+                "invalid_request");
         }
         if ($code_verifier !== "") {
             if ($tok->data("code_challenge_method") === "plain") {
@@ -744,12 +785,12 @@ class Authorize_Page {
                 $code_check = base64url_encode(hash("sha256", $code_verifier, true));
             }
             if ($code_challenge !== $code_check) {
-                return null;
+                return $this->grant_error("code_verifier does not match code_challenge");
             }
         }
         if ($qreq_redirect_uri !== ""
             && $qreq_redirect_uri !== $redirect_uri) {
-            return null;
+            return $this->grant_error("redirect_uri does not match the authorization request");
         }
 
         // Claim the code. A code is good once; a second redemption means it
@@ -770,7 +811,7 @@ class Authorize_Page {
                 && ($rtok = $this->find_token($rsalt))) {
                 $this->oauthtoken_revoke_all($rtok);
             }
-            return null;
+            return $this->grant_error("Code was already redeemed; the tokens it issued have been revoked");
         }
         $tok->set_invalid_in($retain)
             ->set_expires_in($retain);
@@ -786,7 +827,7 @@ class Authorize_Page {
         if (!$user
             || $user->is_disabled()) {
             $tok->update();
-            return null;
+            return $this->grant_error("The authorized account is unavailable here");
         }
 
         // create id_token
@@ -919,13 +960,13 @@ class Authorize_Page {
             || $rtok->capabilityType !== TokenInfo::OAUTHREFRESH
             || $rtok->data("client_id") !== $this->client->client_id
             || !$this->apply_token_document($rtok, $this->client)) {
-            return null;
+            return $this->grant_error("Unknown or reassigned refresh_token");
         } else if (!$rtok->is_active()
                    || !$rtok->consume()) {
             // replay attack: revoke all refresh tokens and access tokens;
             // `consume` catches the case of two redemptions in flight at once
             $this->oauthtoken_revoke_all($rtok);
-            return null;
+            return $this->grant_error("refresh_token was already used; the grant has been revoked");
         }
         $this->oauthtoken_revoke($rtok, TokenInfo::BEARER);
         // check user
@@ -941,7 +982,7 @@ class Authorize_Page {
             // and a client narrowed to OpenID Connect since has no API grant
             // left to refresh
             || $this->client->only_openid) {
-            return null;
+            return $this->grant_error("The account is no longer authorized to hold this grant");
         }
         $atok1 = $this->oauthtoken_create_access($rtok, $user, $scope);
         $rtok1 = $this->oauthtoken_create_refresh($rtok, $user, $atok1);
@@ -996,32 +1037,32 @@ class Authorize_Page {
 
         $salt = $this->qreq->token;
         if (($salt ?? "") === "") {
-            return $this->oauthtoken_error("invalid_request");
+            return $this->oauthtoken_error("invalid_request", "Parameter token missing");
         }
         $hint = $this->qreq->token_type_hint ?? null;
         if ($hint !== null
             && $hint !== "access_token"
             && $hint !== "refresh_token") {
             // the hint is advisory; a nonsensical one is still a bad request
-            return $this->oauthtoken_error("unsupported_token_type");
+            return $this->oauthtoken_error("unsupported_token_type",
+                "token_type_hint must be access_token or refresh_token");
         }
 
-        // RFC 7009 §2.2: an unknown or malformed token is a success. Anything
-        // else would make this endpoint an oracle for token existence.
-        // the prefix decides the length, so no fixed offset works for both:
-        // access tokens are `hct_`, refresh tokens `hctr_`
+        // RFC 7009 §2.2: a token this client cannot revoke is a success —
+        // unknown, malformed, the wrong type, or issued to another client.
+        // Anything else would make this endpoint an oracle for token
+        // existence.
         if (strlen($salt) < 20
-            || (!str_starts_with($salt, "hct_") && !str_starts_with($salt, "hcT_")
-                && !str_starts_with($salt, "hctr_") && !str_starts_with($salt, "hcTr_"))
+            || $salt[0] !== "h"
+            || $salt[1] !== "c"
+            || ($salt[2] !== "t" && $salt[2] !== "T")
+            || ($salt[3] !== "_" && ($salt[3] !== "r" || $salt[4] !== "_"))
             || !($tok = $this->find_token($salt))
             || ($tok->capabilityType !== TokenInfo::BEARER
-                && $tok->capabilityType !== TokenInfo::OAUTHREFRESH)) {
+                && $tok->capabilityType !== TokenInfo::OAUTHREFRESH)
+            // §2.1: the token must have been issued to the client asking
+            || $tok->data("client_id") !== $this->client->client_id) {
             return JsonResult::make_minimal(200, []);
-        }
-
-        // §2.1: the token must have been issued to the client asking
-        if ($tok->data("client_id") !== $this->client->client_id) {
-            return $this->oauthtoken_error("invalid_grant");
         }
 
         // Keep the rows: a revoked refresh token presented later is the replay

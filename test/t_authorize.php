@@ -213,13 +213,20 @@ class Authorize_Tester {
         }
 
         // Step 4: Exchange code for token via api/oauthtoken
-        $qreq = TestQreq::post([
+        $args = [
             "grant_type" => "authorization_code",
             "code" => $code,
             "redirect_uri" => $redirect_uri,
-            "client_id" => $this->_last_client_id,
-            "client_secret" => $this->_last_client_secret
-        ]);
+            "client_id" => $this->_last_client_id
+        ];
+        $qreq = TestQreq::post($args + ["client_secret" => $this->_last_client_secret]);
+        if ($rest["client_secret_basic"] ?? false) {
+            // the shape `client_secret_basic` clients actually send: the secret
+            // moves to the header, `client_id` stays in the body
+            $qreq = TestQreq::post($args)->set_header("Authorization", "Basic "
+                . base64_encode(rawurlencode($this->_last_client_id) . ":"
+                    . rawurlencode($this->_last_client_secret)));
+        }
         $jr = call_api("=oauthtoken", $this->u_empty, $qreq);
         if (!isset($jr->access_token)) {
             $this->_failure = "Step 4 failed: " . json_encode($jr);
@@ -272,6 +279,91 @@ class Authorize_Tester {
         $jr = call_api_result("whoami", $jr->_token, []);
         xassert_eqq($jr->response_code(), 200);
         xassert_eqq($jr->get("email"), "chair@_.com");
+    }
+
+    /** `client_secret_basic` clients repeat `client_id` in the body — the MCP
+     * reference client does, and so does anything built on `requests-oauthlib`
+     * — while the secret travels only in the header. That is one
+     * authentication method with a redundant hint, not two, and refusing it
+     * locks out the clients that matter. */
+    function test_client_secret_basic_with_client_id_in_body() {
+        $jr = $this->dynamic_client_result("https://dro.com/", $this->u_chair,
+            ["scope" => "read", "client_secret_basic" => true]);
+        xassert_neqq($jr, null);
+        if (!$jr) {
+            error_log($this->_failure ?? "");
+            return;
+        }
+        xassert_eqq(call_api_result("whoami", $jr->_token, [])->response_code(), 200);
+
+        // but a body `client_id` naming a different client is malformed: the
+        // request would authenticate as one client and act as another
+        $post = function ($param, $hdr) {
+            $qq = TestQreq::post($param)->set_conf($this->conf)->set_page("api")
+                ->set_header("Authorization", $hdr);
+            Qrequest::set_main_request($qq);
+            return HotCRP\Authorize_Page::oauthtoken_api($this->u_empty, $qq);
+        };
+        $basic = "Basic " . base64_encode($this->_last_client_id . ":" . $this->_last_client_secret);
+        $r = $post(["grant_type" => "refresh_token",
+                    "refresh_token" => $this->_last_refresh_token,
+                    "client_id" => "hctk_nosuchclient0000000000000000"], $basic);
+        xassert_eqq([$r->status, $r->content["error"] ?? null], [400, "invalid_request"]);
+
+        // as is a body secret that disagrees with the header
+        $r = $post(["grant_type" => "refresh_token",
+                    "refresh_token" => $this->_last_refresh_token,
+                    "client_secret" => "wrong"], $basic);
+        xassert_eqq([$r->status, $r->content["error"] ?? null], [400, "invalid_request"]);
+
+        // neither attempt spent the refresh token
+        xassert_neqq($this->refresh_access_token(), null);
+    }
+
+    /** A grant failure names the check that failed, which is what a client
+     * developer needs and a stranger must not have: it says whether a token
+     * exists and whether someone else has already spent it. Only a client that
+     * authenticated with a secret may hear it. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_grant_error_descriptions_need_client_authentication() {
+        $post = function ($param) {
+            $qq = TestQreq::post($param)->set_conf($this->conf)->set_page("api");
+            Qrequest::set_main_request($qq);
+            return HotCRP\Authorize_Page::oauthtoken_api($this->u_empty, $qq);
+        };
+        /** @return list<?string> */
+        $failures = function ($param) use ($post) {
+            $stale = $this->_last_refresh_token;
+            xassert_neqq($this->refresh_access_token(), null);
+            $ds = [];
+            foreach ([$stale, "hctr_" . str_repeat("z", 36), "garbage"] as $rt) {
+                $r = $post($param + ["grant_type" => "refresh_token", "refresh_token" => $rt]);
+                xassert_eqq($r->content["error"] ?? null, "invalid_grant", $rt);
+                $ds[] = $r->content["error_description"] ?? null;
+            }
+            return $ds;
+        };
+
+        // a confidential client asking about its own grant hears which check
+        // failed, so a developer can tell a replay from a token this server
+        // never issued
+        $jr = $this->dynamic_client_result("https://dro.com/", $this->u_chair,
+            ["scope" => "read"]);
+        xassert_neqq($jr, null);
+        $ds = $failures(["client_id" => $this->_last_client_id,
+                         "client_secret" => $this->_last_client_secret]);
+        xassert_str_contains($ds[0] ?? "", "already used");
+        xassert_neqq($ds[0], $ds[1]);
+        // an unissued token and an unparseable one stay indistinguishable
+        xassert_eqq($ds[1], $ds[2]);
+
+        // a metadata document client authenticates on a `client_id` that is a
+        // public URL, so every failure has to read the same
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            ["scope" => "read"]);
+        xassert_neqq($jr, null);
+        $ds = $failures(["client_id" => self::MDOC_CLIENT_ID]);
+        xassert_eqq($ds, ["Grant not valid", "Grant not valid", "Grant not valid"]);
     }
 
     /** A client that holds a secret gets a signed ID token, and the signature
@@ -3670,12 +3762,17 @@ class Authorize_Tester {
             xassert_eqq($r->status ?? 200, $bad === "" ? 400 : 200, $bad);
         }
 
-        // a token issued to some other client is refused
+        // a token issued to some other client is left alone, and reported the
+        // same way an unknown one is: registration is open, so an error here
+        // would tell anyone willing to spend one request whether a token exists
         $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
         $victim = $jr->access_token;
         $this->register_client("https://dall.com/");   // a different client
         $r = $this->revoke_token($victim);
-        xassert_eqq($r->content["error"] ?? null, "invalid_grant");
+        $unknown = $this->revoke_token("hct_" . str_repeat("z", 30));
+        xassert_eqq([$r->status ?? 200, $r->content], [200, []]);
+        xassert_eqq([$r->status ?? 200, $r->content],
+                    [$unknown->status ?? 200, $unknown->content]);
         xassert_eqq(call_api_result("whoami", $this->find_token($victim), [])->response_code(), 200);
 
         // Client authentication is required, as at the token endpoint, and
@@ -3709,11 +3806,21 @@ class Authorize_Tester {
         xassert_eqq([$r->status, $r->content["error"] ?? null], [401, "invalid_client"]);
         xassert_str_contains($r->header("WWW-Authenticate") ?? "", "Bearer");
 
-        // supplying both methods at once is the malformed request
+        // repeating the credentials in the body is redundant, not a second
+        // authentication method: the request is well formed and authenticates,
+        // where a malformed one is 400 and an unauthenticated one 401
+        $basic = "Basic " . base64_encode($this->_last_client_id . ":" . $this->_last_client_secret);
+        $r = $post(["token" => $victim, "client_id" => $this->_last_client_id], $basic);
+        xassert_eqq([$r->status ?? 200, $r->content], [200, []]);
         $r = $post(["token" => $victim, "client_id" => $this->_last_client_id,
-                    "client_secret" => $this->_last_client_secret],
-            "Basic " . base64_encode($this->_last_client_id . ":" . $this->_last_client_secret));
-        xassert_eqq($r->content["error"] ?? null, "invalid_request");
+                    "client_secret" => $this->_last_client_secret], $basic);
+        xassert_eqq([$r->status ?? 200, $r->content], [200, []]);
+
+        // a body credential that disagrees with the header is malformed
+        $r = $post(["token" => $victim, "client_id" => "hctk_nosuchclient0000000000000000"], $basic);
+        xassert_eqq([$r->status, $r->content["error"] ?? null], [400, "invalid_request"]);
+        $r = $post(["token" => $victim, "client_secret" => "wrong"], $basic);
+        xassert_eqq([$r->status, $r->content["error"] ?? null], [400, "invalid_request"]);
 
         // the token may not travel in the query string
         $qreq = TestQreq::post(["token" => $victim, "client_id" => $this->_last_client_id,

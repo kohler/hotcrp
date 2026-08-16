@@ -240,7 +240,9 @@ On success the response is a standard OAuth token object containing
 `scope`, and—when the `openid` scope was granted—an `id_token` JWT. On failure
 the response carries an HTTP `4xx` status and a body of the form `{"error":
 "invalid_grant"}` (other values include `invalid_request`, `invalid_client`,
-`invalid_scope`, and `unsupported_grant_type`).
+`invalid_scope`, and `unsupported_grant_type`). A client that authenticated
+with a secret also gets an `error_description` naming the check that failed;
+a public client, whose `client_id` is all anyone needs to ask, does not.
 
 * param ?=grant_type string: `authorization_code` or `refresh_token`
 * param ?=code string: Authorization code (for `authorization_code` grants)
@@ -263,10 +265,11 @@ not use HotCRP’s usual `{"ok": ...}` response envelope; the client
 authenticates the same way, and may revoke only its own tokens. Revoking a
 refresh token also revokes the access tokens it produced.
 
-As required by the RFC, unknown and already-revoked tokens get a success
-response, so the endpoint cannot test whether a token exists. Failures carry a
-`4xx` status and a body like `{"error": "invalid_client"}` (also
-`invalid_request`, `unsupported_token_type`, `invalid_grant`).
+As required by the RFC, a token this client cannot revoke — unknown, already
+revoked, or issued to someone else — gets a success response, so the endpoint
+cannot test whether a token exists. Failures carry a `4xx` status and a body
+like `{"error": "invalid_client"}` (also `invalid_request`,
+`unsupported_token_type`), sometimes with an `error_description`.
 
 * param ?=token string: The access or refresh token to revoke
 * param ?=token_type_hint string: `access_token` or `refresh_token`
