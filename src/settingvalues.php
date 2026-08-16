@@ -20,6 +20,8 @@ class SettingValues extends MessageSet {
     public $link_json = false;
     /** @var bool */
     private $allowed;
+    /** @var bool */
+    private $edit_allowed;
 
     /** @var array<string,?string> */
     public $req = [];
@@ -95,7 +97,10 @@ class SettingValues extends MessageSet {
     function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->allowed = $user->privChair || $user->check_xtrack("settings!");
+        $this->allowed = ($user->privChair || $user->check_xtrack("settings!"))
+            && $user->scope_allows(TokenScope::S_SETTINGS_READ);
+        $this->edit_allowed = $this->allowed
+            && $user->scope_allows(TokenScope::S_SETTINGS_ADMIN);
         $this->_icollator = new Collator("en_US.utf8");
         $this->_icollator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
         $this->_icollator->setAttribute(Collator::STRENGTH, Collator::SECONDARY);
@@ -573,7 +578,7 @@ class SettingValues extends MessageSet {
         $si = is_string($id) ? $this->conf->si($id) : $id;
         return $si
             && $si->configurable
-            && $this->allowed
+            && $this->edit_allowed
             && $this->test_si_filter($si);
     }
 

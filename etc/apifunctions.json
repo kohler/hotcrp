@@ -1,6 +1,7 @@
 [
     {   "name": "acceptreview", "post": true, "function": "RequestReview_API::acceptreview"   },
-    {   "name": "account", "get": true, "post": true, "function": "User_API::account", "scope": false   },
+    {   "name": "account", "get": true, "function": "User_API::account", "scope": false   },
+    {   "name": "account", "post": true, "function": "User_API::account", "scope": "other:admin"   },
     {   "name": "administrator", "alias": "manager", "get": true, "post": true   },
     {   "name": "alltags", "get": true, "function": "AllTags_API::run"   },
     {   "name": "archivecontents", "get": true, "session": false, "function": "Document_API::archive_contents"   },
@@ -63,7 +64,8 @@
     {   "name": "session", "get": true, "auth": false, "function": "Session_API::getsession"   },
     {   "name": "session", "post": true, "function": "Session_API::setsession"   },
     {   "name": "settingdescriptions", "get": true, "function": "Settings_API::descriptions"   },
-    {   "name": "settings", "get": true, "post": true, "session": false, "function": "Settings_API::run", "scope": false   },
+    {   "name": "settings", "get": true, "session": false, "function": "Settings_API::run", "scope": "settings:read"   },
+    {   "name": "settings", "post": true, "session": false, "function": "Settings_API::run", "scope": "settings:admin"   },
     {   "name": "share", "get": true, "post": true, "delete": true, "paper": true, "function": "Sharing_API::run"   },
     {   "name": "shepherd", "get": true, "post": true, "paper": true, "function": "PaperPC_API::shepherd_api"   },
     {   "name": "stashmessages", "post": true, "function": "Session_API::stashmessages"   },

@@ -5968,15 +5968,16 @@ class Conf {
         }
         if (($scope = $user->scope())
             && $uf
-            && ($uf->scope ?? null) === false) {
-            if ($getlike) {
-                $bit = TokenScope::S_OTH_READ;
+            && isset($uf->scope)) {
+            if ($uf->scope !== false) {
+                $bits = TokenScope::parse_basic($uf->scope);
+            } else if ($getlike) {
+                $bits = TokenScope::S_OTH_READ;
             } else {
-                $bit = TokenScope::S_OTH_WRITE;
+                $bits = TokenScope::S_OTH_WRITE;
             }
-            if (!$scope->allows($bit)) {
-                return JsonResult::make_error(401, "<0>Method not permitted by scope")
-                    ->set_header($this->www_authenticate_header("insufficient_scope", $qreq, $bit));
+            if (!$scope->allows($bits)) {
+                return JsonResult::make_scope_error($qreq, $bits);
             }
         }
         if (!$uf) {

@@ -41,6 +41,9 @@ final class TokenScope {
     const S_OTH_READ = 0x100000;
     const S_OTH_WRITE = 0x200000;
     const S_OTH_ADMIN = 0x400000;
+    const S_SETTINGS_READ = 0x1000000;
+    const S_SETTINGS_WRITE = 0x2000000;
+    const S_SETTINGS_ADMIN = 0x4000000;
 
     /** @var int */
     private $_all_bits;
@@ -55,7 +58,7 @@ final class TokenScope {
     static public $scopes = [
         "*" => -1, "all" => -1, "none" => 0,
         "openid" => -2, "email" => -2, "profile" => -2, "address" => -2, "phone" => -2,
-        "write" => 0x33333333, "read" => 0x11111111, "admin" => -1,
+        "write" => 0x3333333, "read" => 0x1111111, "admin" => -1,
         "paper:admin" => 0x77777, "paper:write" => 0x33333, "paper:read" => 0x11111,
         "submission:admin" => 0x77, "submission:write" => 0x33, "submission:read" => 0x11,
         "document:admin" => 0x73, "document:write" => 0x33, "document:read" => 0x11,
@@ -63,7 +66,8 @@ final class TokenScope {
         "tag:admin" => 0x7001, "tag:write" => 0x3001, "tag:read" => 0x1001,
         "comment:admin" => 0x70001, "comment:write" => 0x30001, "comment:read" => 0x10001,
         "other:admin" => 0x700000, "other:write" => 0x300000, "other:read" => 0x100000,
-        "submeta:admin" => 0x7, "submeta:write" => 0x3, "submeta:read" => 0x1
+        "submeta:admin" => 0x7, "submeta:write" => 0x3, "submeta:read" => 0x1,
+        "settings:admin" => 0x7000000, "settings:write" => 0x3000000, "settings:read" => 0x1000000
     ];
 
     /** @param int $all_bits
@@ -86,6 +90,12 @@ final class TokenScope {
             $this->_rest[] = clone $tss;
         }
         $this->_user = $user;
+    }
+
+    /** @param string $s
+     * @return int */
+    static function parse_basic($s) {
+        return self::$scopes[$s] ?? 0;
     }
 
     /** @param string $s
@@ -140,7 +150,8 @@ final class TokenScope {
                     $b = self::$scopes[substr($w, 0, $h)] ?? 0;
                 }
             }
-            if ($b !== 0 && $lt !== 0 && $ld !== null) {
+            // `none`, OpenID scopes, and errors don’t add subsets
+            if ($b !== 0 && $b !== -2 && $lt !== 0 && $ld !== null) {
                 $rest[] = new TokenSubsetScope($b, $lt, $ld);
             }
             $any = true;
@@ -266,6 +277,23 @@ final class TokenScope {
         return new TokenScope($all, $rest, $tsa->_user ?? $tsb->_user);
     }
 
+    /** Return true if this scope grants rights on a selected subset of
+     * submissions (`#12`, `#tag`, `?q=…`) beyond what it grants generally.
+     * @return bool */
+    function has_selector() {
+        return $this->_rest !== null;
+    }
+
+    /** Return this scope with its subset scopes removed. The result grants no
+     * more than this one does.
+     * @return TokenScope */
+    function without_selectors() {
+        if ($this->_rest !== null) {
+            return new TokenScope($this->_all_bits, null, $this->_user);
+        }
+        return $this;
+    }
+
     /** @param int $bits
      * @return list<string> */
     static function unparse_bits($bits) {
@@ -358,22 +386,28 @@ final class TokenScope {
         }
     }
 
+    /** Split `$scope` into OpenID scopes and other scopes, and return
+     * `[$openid_subset, $rest]`.
+     * @param ?string $scope
+     * @return array{string,string} */
+    static function scope_str_split_openid($scope) {
+        $x = ["", ""];
+        if ($scope !== null && $scope !== "") {
+            foreach (explode(" ", $scope) as $w) {
+                if ($w === "") {
+                    continue;
+                }
+                $m = &$x[(self::$scopes[$w] ?? 0) === -2 ? 0 : 1];
+                $m .= ($m === "" ? $w : " " . $w);
+            }
+        }
+        return $x;
+    }
+
     /** @param ?string $scope
      * @return bool */
     static function scope_str_all_openid($scope) {
-        if ($scope === null || $scope === "") {
-            return false;
-        }
-        $any = false;
-        foreach (explode(" ", $scope) as $w) {
-            if ($w === "") {
-                continue;
-            }
-            $any = true;
-            if ((self::$scopes[$w] ?? null) !== -2) {
-                return false;
-            }
-        }
-        return $any;
+        $x = self::scope_str_split_openid($scope);
+        return $x[0] !== "" && $x[1] === "";
     }
 }

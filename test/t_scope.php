@@ -201,6 +201,23 @@ class Scope_Tester {
         xassert_eqq(TokenScope::unparse($s), "all#r2-forced");
     }
 
+    function test_scope_str_split_openid() {
+        xassert_array_eqq(TokenScope::scope_str_split_openid(null), ["", ""]);
+        xassert_array_eqq(TokenScope::scope_str_split_openid("   "), ["", ""]);
+        xassert_array_eqq(TokenScope::scope_str_split_openid("openid email profile address phone"), ["openid email profile address phone", ""]);
+        xassert_array_eqq(TokenScope::scope_str_split_openid("read"), ["", "read"]);
+        xassert_array_eqq(TokenScope::scope_str_split_openid("openid#2 email"), ["email", "openid#2"]);
+    }
+
+    function test_malformed_openid_scope() {
+        $ts = TokenScope::parse("openid#2", $this->u_chair);
+        xassert_neqq($ts, null);
+        xassert_eqq(TokenScope::unparse($ts), "none");
+        xassert(!$ts->has_selector());
+        xassert(!TokenScope::scope_str_all_openid("openid#2"));
+        xassert(!TokenScope::scope_str_contains("openid#2", "openid"));
+    }
+
     function finalize() {
         $this->u_chair->set_scope();
         $this->u_floyd->set_scope();
