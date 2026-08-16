@@ -317,7 +317,7 @@ class OAuthClientDocument {
             $this->set_error("Authorization client documents require libcurl 7.80 or later");
             return null;
         }
-        (void) curl_exec($curlh);
+        curl_exec($curlh);
         $errno = curl_errno($curlh);
         $status = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
         $ctype = curl_getinfo($curlh, CURLINFO_CONTENT_TYPE);
