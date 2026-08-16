@@ -3,7 +3,7 @@
 // Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
-use Conf, TokenScope, TokenInfo;
+use Conf, TokenScope, TokenInfo, UnicodeHelper;
 
 class OAuthClient {
     /** @var string */
@@ -24,7 +24,7 @@ class OAuthClient {
     public $access_token_expires_in;
     /** @var null|int|string */
     public $refresh_token_expires_in;
-    /** @var ?string */
+    /** @var ?non-empty-string */
     public $scope;
     /** @var bool */
     public $only_openid;
@@ -47,14 +47,21 @@ class OAuthClient {
         $this->name = $x->name ?? null;
         $this->title = $x->title ?? null;
         $this->client_id = $x->client_id ?? null;
-        $this->client_secret = $x->client_secret ?? null;
+        // `client_secret` is either a shared secret or absent; an empty one
+        // is absent, so that "public client" means the same thing to the token
+        // endpoint's authentication check and to `make_id_token`, which would
+        // otherwise sign with the empty key
+        $csec = $x->client_secret ?? null;
+        $this->client_secret = is_string($csec) && $csec !== "" ? $csec : null;
         $this->client_uri = $x->client_uri ?? null;
         $this->is_cdb = $x->is_cdb ?? false;
         $this->access_token_expires_in = $x->access_token_expires_in ?? null;
         $this->refresh_token_expires_in = $x->refresh_token_expires_in ?? null;
         $this->scope = $x->scope ?? null;
+        if ($this->scope !== null && trim($this->scope) === "") {
+            $this->scope = null;
+        }
         $this->only_openid = $this->scope === null
-            || trim($this->scope) === ""
             || TokenScope::scope_str_all_openid($this->scope);
         $this->allow_if = $x->allow_if ?? null;
         $uri = $x->redirect_uris ?? $x->redirect_uri ?? [];
@@ -84,7 +91,8 @@ class OAuthClient {
         $oac->title = $ctok->data("client_name") ?? $oac->title;
         $oac->self_registered = true;
         $oac->client_id = $ctok->salt;
-        $oac->client_secret = $ctok->data("client_secret");
+        $csec = $ctok->data("client_secret");
+        $oac->client_secret = is_string($csec) && $csec !== "" ? $csec : null;
         $oac->redirect_uris = $ctok->data("redirect_uris");
         $oac->requested_scope = $ctok->data("requested_scope");
         return $oac;
@@ -104,6 +112,26 @@ class OAuthClient {
         $oac->client_uri = null;
         $oac->redirect_uris = [];
         return $oac;
+    }
+
+    /** @return array<string,object> */
+    static function list(Conf $conf) {
+        $clients = $conf->_xtbuild_resolve([], "oAuthClients");
+        if (empty($clients)) {
+            return $clients;
+        }
+        $flags = ($conf->opt("oAuthDynamicClients") ? 1 : 0)
+            | ($conf->opt("oAuthMetadataDocumentClients") ? 2 : 0);
+        return array_filter($clients, function ($cx) use ($flags) {
+            // A cdb token is meant to work at every conference sharing the
+            // contact database, so a rule about who may hold it has nothing to
+            // evaluate: `allow_if` names roles this site knows and the others
+            // do not. Refuse the combination rather than pick a site.
+            return (($flags & 1) !== 0 || !($cx->dynamic ?? false))
+                && (($flags & 2) !== 0 || !($cx->metadata_document ?? false))
+                && (!($cx->is_cdb ?? false) || !isset($cx->allow_if))
+                && !($cx->disabled ?? false);
+        });
     }
 
     /** Fetch this client's metadata document and apply it.
@@ -137,7 +165,9 @@ class OAuthClient {
     /** @return string */
     function title_text() {
         if ($this->title !== null) {
-            return $this->title;
+            // a self-registered client chose this string; bidi controls in it
+            // would reorder the one page whose job is naming who is asking
+            return UnicodeHelper::strip_bidi($this->title);
         } else if ($this->client_document) {
             return $this->client_document->host();
         }
@@ -156,7 +186,7 @@ class OAuthClient {
         // the code instead (RFC 8252 §8.5). Metadata document clients never
         // have a secret; neither does a configured client whose
         // `client_secret` was left out.
-        return ($this->client_secret ?? "") === ""
+        return $this->client_secret === null
             || str_starts_with($redirect_uri, "http://") /* => localhost b/c of check_redirect_uri() */;
     }
 
@@ -174,9 +204,12 @@ class OAuthClient {
             || strlen($uri) > 1024) {
             return false;
         }
-        // check for special characters unless preconfigured
+        // Check for special characters unless preconfigured. 0x5C `\` is
+        // excluded: browsers read it as the `/` that ends an authority, so the
+        // host of `http://evil.com\@localhost/` is `evil.com` to a browser and
+        // `localhost` to `parse_url` and `check_loopback_host`.
         if ($validation_level !== self::VALIDATION_BASIC
-            && preg_match('/[^\x21-\x7E]/', $uri)) {
+            && preg_match('/[^\x21-\x5B\x5D-\x7E]/', $uri)) {
             return false;
         }
         return self::secure_uri($uri);
@@ -238,20 +271,5 @@ class OAuthClient {
         return in_array($uri, $this->redirect_uris, true)
             || (($pr = self::check_loopback_host($uri))
                 && in_array(substr($uri, 0, $pr[0]) . substr($uri, $pr[1]), $this->redirect_uris, true));
-    }
-
-
-    /** @return array<string,object> */
-    static function list(Conf $conf) {
-        $clients = $conf->_xtbuild_resolve([], "oAuthClients");
-        $flags = ($conf->opt("oAuthDynamicClients") ? 1 : 0)
-            | ($conf->opt("oAuthMetadataDocumentClients") ? 2 : 0);
-        if (empty($clients) || $flags === 3) {
-            return $clients;
-        }
-        return array_filter($clients, function ($cx) use ($flags) {
-            return (($flags & 1) !== 0 || !($cx->dynamic ?? false))
-                && (($flags & 2) !== 0 || !($cx->metadata_document ?? false));
-        });
     }
 }

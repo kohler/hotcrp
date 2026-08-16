@@ -120,6 +120,7 @@ class Signin_Page {
 
     /** @param ComponentSet $cs */
     static function print_signin_head(Contact $user, Qrequest $qreq, $cs) {
+        $user->conf->emit_credential_page_headers();
         $st = $user->conf->saved_messages_status();
         $qreq->print_header("Sign in", "home", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
         $cs->print_on_leave("__footer");
@@ -282,8 +283,8 @@ class Signin_Page {
             $param += $this->_oauth_hoturl_param;
         }
         $top = "";
-        foreach ($conf->oauth_providers() as $authdata) {
-            if ($authdata->button_html && !($authdata->disabled ?? false)) {
+        foreach (OAuthProvider::list($conf) as $authdata) {
+            if ($authdata->button_html) {
                 $param["authtype"] = $authdata->name;
                 $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("oauth", $param), "formmethod" => "post", "class" => "{$top}w-100 flex-grow-1"]);
                 $top = "mt-2 ";
@@ -408,6 +409,7 @@ class Signin_Page {
     }
     /** @param ComponentSet $cs */
     static function print_newaccount_head(Contact $user, Qrequest $qreq, $cs) {
+        $user->conf->emit_credential_page_headers();
         $qreq->print_header("New account", "newaccount", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
         $cs->print_on_leave("__footer");
         if (!$user->conf->allow_user_self_register()) {
@@ -470,6 +472,7 @@ class Signin_Page {
         }
     }
     static function print_forgot_head(Contact $user, Qrequest $qreq, $cs) {
+        $user->conf->emit_credential_page_headers();
         $qreq->print_header("Forgot password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
         $cs->print_on_leave("__footer");
         if ($user->conf->login_type()) {
@@ -637,6 +640,7 @@ class Signin_Page {
         return $info;
     }
     static function print_reset_head(Contact $user, Qrequest $qreq, $cs) {
+        $user->conf->emit_credential_page_headers();
         $qreq->print_header("Reset password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
         $cs->print_on_leave("__footer");
         if ($user->conf->login_type()) {

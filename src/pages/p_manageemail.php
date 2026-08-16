@@ -1146,6 +1146,7 @@ class ManageEmail_Page {
     }
 
     static function go(Contact $user, Qrequest $qreq) {
+        $user->conf->emit_credential_page_headers();
         $pg = new ManageEmail_Page($user, $qreq);
         $pg->run();
     }

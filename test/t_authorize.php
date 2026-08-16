@@ -22,6 +22,8 @@ class Authorize_Tester {
     /** @var ?string */
     private $_last_client_secret;
     /** @var ?string */
+    private $_last_page_html;
+    /** @var ?string */
     private $_last_refresh_token;
     /** @var array<string,array{int,?string,string}> */
     private $_documents = [];
@@ -47,8 +49,19 @@ class Authorize_Tester {
             "name" => "dchair", "dynamic" => true, "scope" => "all", "allow_if" => "chair",
             "redirect_uris" => ["https://dchair.com/"]
         ], (object) [
+            // `u_chair` cannot be demoted (a site keeps one chair), so
+            // `allow_if` re-checks need a role a test user can actually lose
+            "name" => "dpc", "dynamic" => true, "scope" => "all", "allow_if" => "pc",
+            "redirect_uris" => ["https://dpc.com/"]
+        ], (object) [
             "name" => "dloop", "dynamic" => true, "scope" => "read",
             "redirect_uris" => ["http://127.0.0.1:5000/cb", "https://dloop.com/"]
+        ], (object) [
+            // registered by this site's administrator, so its redirect URI is
+            // one this site chose to trust
+            "name" => "conf1", "title" => "Configured Client",
+            "client_id" => "confclient", "client_secret" => "confsecret",
+            "scope" => "read", "redirect_uris" => ["https://conf1.example.com/cb"]
         ], (object) [
             "name" => "mdoc", "metadata_document" => true, "scope" => "all",
             "client_id_match" => "https://mdoc.example.com/*"
@@ -132,13 +145,18 @@ class Authorize_Tester {
 
         // Step 2: Begin authorization request (Authorize_Page::go without ComponentSet)
         $state = base48_encode(random_bytes(16));
-        $qreq = TestQreq::get([
+        $args = [
             "client_id" => $this->_last_client_id,
             "redirect_uri" => $redirect_uri,
             "response_type" => "code",
-            "state" => $state,
-            "scope" => $rest["scope"] ?? "openid"
-        ])->set_page("authorize")->set_user($user);
+            "state" => $state
+        ];
+        // omitted unless asked for: that is what a client that takes the
+        // server's default sends
+        if (isset($rest["scope"])) {
+            $args["scope"] = $rest["scope"];
+        }
+        $qreq = TestQreq::user_get($user, $args)->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         $code = null;
@@ -157,10 +175,10 @@ class Authorize_Tester {
         }
 
         // Step 3: Confirm authorization request (Authorize_Page::go with authconfirm=1)
-        $qreq = TestQreq::post([
+        $qreq = TestQreq::user_post($user, [
             "code" => $code,
             "authconfirm" => "1"
-        ])->set_page("authorize")->set_user($user);
+        ])->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         try {
@@ -239,7 +257,8 @@ class Authorize_Tester {
     }
 
     function test_dynamic_client_authorization() {
-        $jr = $this->dynamic_client_result("https://dro.com/", $this->u_chair);
+        $jr = $this->dynamic_client_result("https://dro.com/", $this->u_chair,
+            ["scope" => "openid"]);
         xassert_neqq($jr, null);
         xassert_neqq($jr->access_token, null);
         xassert_neqq($jr->refresh_token, null);
@@ -253,6 +272,46 @@ class Authorize_Tester {
         $jr = call_api_result("whoami", $jr->_token, []);
         xassert_eqq($jr->response_code(), 200);
         xassert_eqq($jr->get("email"), "chair@_.com");
+    }
+
+    /** A client that holds a secret gets a signed ID token, and the signature
+     * has to be the one every other JWS implementation computes: the base64url
+     * encoding of the MAC's octets, not of its hexadecimal spelling
+     * (RFC 7515 §5.1). A round trip through this code alone would not catch
+     * that, since both halves would agree on the wrong thing. */
+    function test_id_token_signature() {
+        $jr = $this->dynamic_client_result("https://dro.com/", $this->u_chair,
+            ["scope" => "openid"]);
+        xassert_neqq($jr, null);
+        if (!$jr || !isset($jr->id_token)) {
+            xassert(false);
+            return;
+        }
+        $secret = $this->_last_client_secret;
+        [$h, $p, $sig] = explode(".", $jr->id_token);
+        xassert_eqq($sig, base64url_encode(hash_hmac("sha256", "{$h}.{$p}", $secret, true)));
+        xassert_eqq(strlen(base64url_decode($sig)), 32);
+        xassert_eqq(json_decode(base64url_decode($h))->alg ?? null, "HS256");
+
+        // and this code verifies what it produces
+        $jwt = new HotCRP\JWTParser;
+        $jwt->verify_key = $secret;
+        xassert_neqq($jwt->validate($jr->id_token), null);
+        xassert_eqq($jwt->errcode, 0);
+
+        // a token signed with the wrong key does not verify
+        $jwt = new HotCRP\JWTParser;
+        $jwt->verify_key = $secret . "x";
+        xassert_eqq($jwt->validate($jr->id_token), null);
+        xassert_eqq($jwt->errcode, 1111);
+
+        // nor does one whose payload was edited under the original signature
+        $forged = base64url_encode(str_replace("chair@_.com", "chair@x.com",
+            base64url_decode($p)));
+        $jwt = new HotCRP\JWTParser;
+        $jwt->verify_key = $secret;
+        xassert_eqq($jwt->validate("{$h}.{$forged}.{$sig}"), null);
+        xassert_eqq($jwt->errcode, 1111);
     }
 
     function test_refresh_token() {
@@ -344,28 +403,21 @@ class Authorize_Tester {
             if (!isset($jr->client_id)) {
                 continue;
             }
-            $qreq = TestQreq::get([
+            [$how, $detail] = $this->authorize_outcome([
                 "client_id" => $jr->client_id,
                 "redirect_uri" => $ruri,
                 "response_type" => "code",
                 "state" => base48_encode(random_bytes(16)),
                 "scope" => "read"
-            ])->set_page("authorize")->set_user($this->u_chair);
-            Qrequest::set_main_request($qreq);
-            $err = $code = null;
-            try {
-                (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
-            } catch (JsonCompletion $jc) {
-                $code = $jc->result->content["code"] ?? null;
-            } catch (Redirection $redir) {
-                $err = $this->redirect_error($redir->url);
-            }
+            ], $this->u_chair);
             if ($needs_pkce) {
-                xassert_eqq($code, null);
-                xassert_eqq($err, "invalid_request");
+                // a self-registered client's request error is reported on the
+                // page, not bounced to the URI the client chose
+                xassert_eqq($how, "page");
+                xassert_str_contains($detail ?? "", "invalid_request");
             } else {
-                xassert_neqq($code, null);
-                xassert_eqq($err, null);
+                xassert_eqq($how, "code");
+                xassert_neqq($detail, null);
             }
         }
     }
@@ -444,7 +496,7 @@ class Authorize_Tester {
             $args["code_challenge"] = $args["code_challenge_method"] === "plain"
                 ? $verifier : base64url_encode(hash("sha256", $verifier, true));
         }
-        $qreq = TestQreq::get($args)->set_page("authorize")->set_user($user);
+        $qreq = TestQreq::user_get($user, $args)->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         // test_mode 2 routes page feedback messages into the page, where the
@@ -461,6 +513,11 @@ class Authorize_Tester {
             $this->_last_error = $this->redirect_error($redir->url);
             $this->_failure = "Step 1 failed with redirect: " . $redir->url;
         } catch (PageCompletion $pc) {
+            // a self-registered client's request error is reported on the page,
+            // with the protocol's error response behind a link
+            if (preg_match('/<a[^>]*href="([^"]*[?&]error=[^"]*)"/', ob_get_contents(), $m)) {
+                $this->_last_error = $this->redirect_error(html_entity_decode($m[1]));
+            }
             $this->_failure = "Step 1 failed with error page";
         } finally {
             ob_end_clean();
@@ -475,8 +532,8 @@ class Authorize_Tester {
         }
 
         // Step 2: Confirm authorization request
-        $qreq = TestQreq::post(["code" => $code, "authconfirm" => "1"])
-            ->set_page("authorize")->set_user($user);
+        $qreq = TestQreq::user_post($user, ["code" => $code, "authconfirm" => "1"])
+            ->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         Navigation::$test_mode = 2;
@@ -540,6 +597,43 @@ class Authorize_Tester {
         $jr->_token = $this->find_token($jr->access_token);
         $this->_last_refresh_token = $jr->refresh_token ?? null;
         return $jr;
+    }
+
+    /** Run an authorization request and report how it ended.
+     * @param array<string,mixed> $param
+     * @param Contact $user
+     * @return array{'code'|'redirect'|'page'|'none',?string} */
+    private function authorize_outcome($param, $user) {
+        $qreq = TestQreq::user_get($user, $param)->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        // test_mode 2 routes page feedback into the page, where the output
+        // buffer absorbs it
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($user, $qreq))->go();
+            return ["none", null];
+        } catch (JsonCompletion $jc) {
+            return ["code", $jc->result->content["code"] ?? null];
+        } catch (Redirection $redir) {
+            return ["redirect", $redir->url];
+        } catch (PageCompletion $pc) {
+            // the page itself, so a test can say which error it expected;
+            // `_last_page_html` keeps the markup for a test that needs a link
+            $this->_last_page_html = ob_get_contents();
+            return ["page", trim(preg_replace('/\s+/', " ", strip_tags($this->_last_page_html)))];
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** @return int */
+    private function count_codes() {
+        return (int) Dbl::fetch_ivalue($this->conf->dblink,
+            "select count(*) from Capability where capabilityType=?",
+            TokenInfo::OAUTHCODE);
     }
 
     /** @param string $url
@@ -631,6 +725,87 @@ class Authorize_Tester {
         // account on it; a HotCRP email is permanent, so it serves
         xassert_eqq($payload->sub ?? null, "chair@_.com");
         xassert_eqq($payload->exp ?? null, ($payload->iat ?? 0) + 86400);
+    }
+
+    /** An ID token is proof for this site only if this site is its whole
+     * audience. An extra audience means it was issued to that party too, so it
+     * is rejected unless the provider is configured to expect one. */
+    function test_id_token_audience() {
+        $base = [
+            "iss" => "https://idp.example.com", "exp" => Conf::$now + 600,
+            "iat" => Conf::$now, "email" => "x@example.com"
+        ];
+        /** @param array<string,mixed> $over
+         * @param true|list<string> $trusted
+         * @return ?int */
+        $errcode = function ($over, $trusted = []) use ($base) {
+            $authi = (object) [
+                "name" => "probe", "client_id" => "CLIENT",
+                "issuer" => "https://idp.example.com", "nonce" => null,
+                "trusted_audiences" => $trusted
+            ];
+            '@phan-var-force \HotCRP\OAuthProvider $authi';
+            $jwt = new HotCRP\JWTParser;
+            return $jwt->validate_id_token((object) ($over + $base), $authi)
+                ? null : $jwt->errcode;
+        };
+
+        // one audience, naming this client
+        xassert_eqq($errcode(["aud" => "CLIENT"]), null);
+        xassert_eqq($errcode(["aud" => ["CLIENT"]]), null);
+        // an audience that is not this client
+        xassert_eqq($errcode(["aud" => "other"]), 1204);
+        xassert_eqq($errcode(["aud" => ["other"]]), 1204);
+        // `aud` is required, and has to be a string or a list
+        xassert_eqq($errcode(["aud" => 17]), 1203);
+        // ...and `iss` still has to match
+        xassert_eqq($errcode(["iss" => "https://evil.example.com", "aud" => "CLIENT"]), 1202);
+
+        // an extra audience this site was not told to expect
+        xassert_eqq($errcode(["aud" => ["CLIENT", "other"]]), 1205);
+        // ...and the same token once the provider declares that audience
+        xassert_eqq($errcode(["aud" => ["CLIENT", "other"]], ["other"]), null);
+        xassert_eqq($errcode(["aud" => ["CLIENT", "other"]], ["nope"]), 1205);
+        xassert_eqq($errcode(["aud" => ["CLIENT", "other"]], true), null);
+        // trusting an audience does not excuse this client's absence
+        xassert_eqq($errcode(["aud" => ["other"]], ["other"]), 1204);
+        xassert_eqq($errcode(["aud" => ["other"]], true), 1204);
+    }
+
+    /** `trusted_audiences` is admin configuration, so it is normalized and
+     * type-checked where the provider is built, not where it is used. */
+    function test_provider_trusted_audiences_config() {
+        $mk = function ($ta) {
+            $base = [
+                "name" => "p", "client_id" => "C", "client_secret" => "S",
+                "auth_uri" => "https://idp.example.com/auth",
+                "token_uri" => "https://idp.example.com/token",
+                "redirect_uri" => "https://conf.example.com/oauth"
+            ];
+            if ($ta !== null) {
+                $base["trusted_audiences"] = $ta;
+            }
+            $this->conf->set_opt("oAuthProviders", [(object) $base]);
+            $this->conf->refresh_settings();
+            $authi = HotCRP\OAuthProvider::find($this->conf, "p");
+            return $authi ? $authi->trusted_audiences : false;
+        };
+
+        try {
+            xassert_eqq($mk(null), []);
+            xassert_eqq($mk("one"), ["one"]);
+            xassert_eqq($mk(["one", "two"]), ["one", "two"]);
+            xassert_eqq($mk(true), true);
+            xassert_eqq($mk(false), []);
+            // malformed configuration disables the provider rather than
+            // silently widening or narrowing what it accepts
+            xassert_eqq($mk(17), false);
+            xassert_eqq($mk(["one", 17]), false);
+            xassert_eqq($mk((object) ["a" => "b"]), false);
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
     }
 
     #[RequireClass("Uri\\Rfc3986\\Uri")]
@@ -928,7 +1103,7 @@ class Authorize_Tester {
         $client = HotCRP\OAuthClient::make_metadata_document((object) ["name" => "mdoc"], $cdoc);
         xassert($client->load_document());
 
-        $qreq = TestQreq::get()->set_page("authorize")->set_user($this->u_chair);
+        $qreq = TestQreq::user_get($this->u_chair)->set_page("authorize");
         $ap = new HotCRP\Authorize_Page($this->u_chair, $qreq);
         $ap->client = $client;
         $ro = new ReflectionObject($ap);
@@ -997,6 +1172,79 @@ class Authorize_Tester {
         xassert($ck("https://mdoc.example.com/c.json?*", "https://mdoc.example.com/c.json?a=1&b=2"));
         xassert(!$ck("https://mdoc.example.com/c.json?*", "https://mdoc.example.com/c.jsonevil"));
         xassert(!$ck("https://mdoc.example.com/c.json?*", "https://mdoc.example.com/c.json/more"));
+        // a pattern names one scheme, and matches only that scheme
+        xassert(!$ck("https://localhost/*", "http://localhost/c.json"));
+        xassert(!$ck("http://localhost/*", "https://mdoc.example.com/c.json"));
+
+        // a host with no port matches no port; a program that takes an
+        // ephemeral port from the OS cannot know it in advance, so `:*` ends
+        // a host to mean any port or none (RFC 8252 §7.3)
+        xassert($ck("https://mdoc.example.com:*/c.json", "https://mdoc.example.com/c.json"));
+        xassert($ck("https://mdoc.example.com:*/c.json", "https://mdoc.example.com:8443/c.json"));
+        xassert($ck("https://*.example.com:*/c.json", "https://a.example.com:8443/c.json"));
+        xassert($ck("https://*.example.com:*/c.json", "https://a.example.com/c.json"));
+        xassert(!$ck("https://mdoc.example.com/c.json", "https://mdoc.example.com:8443/c.json"));
+        xassert(!$ck("https://mdoc.example.com:8443/c.json", "https://mdoc.example.com/c.json"));
+        // the port wildcard stays inside the host: it neither swallows the
+        // path nor lets the host run on
+        xassert(!$ck("https://mdoc.example.com:*/c.json", "https://mdoc.example.com:8443/other"));
+        xassert(!$ck("https://mdoc.example.com:*/c.json", "https://mdoc.example.com.evil.com/c.json"));
+        xassert(!$ck("https://mdoc.example.com:*/*", "https://evil.com/mdoc.example.com:8443/c.json"));
+
+        // a host wildcard stops at the `:` that introduces a port: a different
+        // port is a different origin, and only `:*` opts into any of them
+        xassert(!$ck("https://mdoc.example.*/c.json", "https://mdoc.example.com:8443/c.json"));
+        xassert($ck("https://mdoc.example.*/c.json", "https://mdoc.example.com/c.json"));
+        xassert(!$ck("https://*.example.com/c.json", "https://a.example.com:8443/c.json"));
+        // a pattern with no path matches nothing, since a client_id has one
+        xassert(!$ck("https://*.example.com", "https://a.example.com/c.json"));
+        xassert($ck("https://*.example.com/*", "https://a.example.com/c.json"));
+    }
+
+    /** A plaintext `http` client identifier is a development convenience, so
+     * it may name only this machine — and it is accepted only where a
+     * `client_id_match` names the `http` scheme itself. Nothing weaker can say
+     * an administrator meant to trust a document fetched over a channel anyone
+     * can rewrite. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_plaintext_client_id_needs_an_explicit_scheme() {
+        // only loopback hosts are even well formed over plaintext
+        xassert(!!$this->client_document("http://localhost/c.json"));
+        xassert(!!$this->client_document("http://127.0.0.1:5173/c.json"));
+        xassert(!!$this->client_document("http://[::1]/c.json"));
+        xassert(!$this->client_document("http://ex.example.com/c.json"));
+        xassert(!$this->client_document("http://10.0.0.1/c.json"));
+
+        /** @param null|string|list<string> $pat */
+        $ck = function ($pat, $client_id) {
+            $cx = $pat === null ? (object) [] : (object) ["client_id_match" => $pat];
+            return $this->client_document($client_id)->matches($cx);
+        };
+        // a pattern naming `http` accepts it...
+        xassert($ck("http://localhost/*", "http://localhost/c.json"));
+        xassert($ck("http://localhost:*/c.json", "http://localhost:5173/c.json"));
+        xassert($ck("http://localhost/c.json", "http://localhost/c.json"));
+        xassert($ck(["https://mdoc.example.com/*", "http://localhost/*"], "http://localhost/c.json"));
+        // ...and nothing else does, however permissive
+        xassert(!$ck("*", "http://localhost/c.json"));
+        xassert(!$ck(null, "http://localhost/c.json"));
+        xassert(!$ck("https://*/*", "http://localhost/c.json"));
+        xassert(!$ck("http://127.0.0.1/*", "http://localhost/c.json"));
+
+        // an `https` identifier is unaffected by all of this
+        xassert($ck("*", "https://mdoc.example.com/c.json"));
+        xassert($ck(null, "https://mdoc.example.com/c.json"));
+
+        // the loopback connection a plaintext identifier needs is refused
+        // unless that identifier was the one a pattern named
+        xassert(HotCRP\OAuthClientDocument::special_use_address("127.0.0.1"));
+        xassert(!HotCRP\OAuthClientDocument::special_use_address("127.0.0.1", true));
+        xassert(!HotCRP\OAuthClientDocument::special_use_address("::1", true));
+        // ...and the exemption is loopback alone, not every private range
+        xassert(HotCRP\OAuthClientDocument::special_use_address("10.0.0.1", true));
+        xassert(HotCRP\OAuthClientDocument::special_use_address("192.168.1.1", true));
+        xassert(HotCRP\OAuthClientDocument::special_use_address("169.254.1.1", true));
+        xassert(HotCRP\OAuthClientDocument::special_use_address("fd00::1", true));
     }
 
     /** Run `$qreq` through the authorization page and report whether it
@@ -1026,18 +1274,19 @@ class Authorize_Tester {
      * binding that user's account to a client the attacker controls
      * (RFC 6749 §10.12). */
     function test_authconfirm_requires_valid_post() {
-        // an attacker registers a client and obtains an unconfirmed code
+        // an attacker registers a client and, from their own account, obtains
+        // a code that is not yet bound to anyone
         $jr = call_api("=oauthregister", $this->u_empty,
             TestQreq::post_json(["redirect_uris" => ["https://dro.com/"]]));
         xassert(isset($jr->client_id));
-        $qreq = TestQreq::get([
+        $qreq = TestQreq::user_get($this->u_mgbaker, [
             "client_id" => $jr->client_id, "redirect_uri" => "https://dro.com/",
             "response_type" => "code", "state" => "S", "scope" => "read"
-        ])->set_page("authorize")->set_user($this->u_empty);
+        ])->set_page("authorize");
         Qrequest::set_main_request($qreq);
         $code = null;
         try {
-            (new HotCRP\Authorize_Page($this->u_empty, $qreq))->go();
+            (new HotCRP\Authorize_Page($this->u_mgbaker, $qreq))->go();
         } catch (JsonCompletion $jc) {
             $code = $jc->result->content["code"] ?? null;
         }
@@ -1047,24 +1296,22 @@ class Authorize_Tester {
         }
 
         // a signed-in victim is made to issue a GET: no redirect, no binding
-        $vq = TestQreq::get(["authconfirm" => 1, "code" => $code])
-            ->set_page("authorize")->set_user($this->u_chair);
+        $vq = TestQreq::user_get($this->u_chair, ["authconfirm" => 1, "code" => $code])
+            ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert(!$this->authconfirm_redirects($vq));
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
 
         // nor does a POST without the form's post token
-        $vq = (new Qrequest("POST", ["authconfirm" => 1, "code" => $code]))
-            ->set_navigation(Navigation::get())
-            ->set_body(null, "application/x-www-form-urlencoded")
-            ->set_page("authorize")->set_user($this->u_chair);
+        $vq = TestQreq::apply_user($this->u_chair, TestQreq::unapproved_post(["authconfirm" => 1, "code" => $code]))
+            ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert(!$this->authconfirm_redirects($vq));
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
 
         // the real form, which posts with a token, still works
-        $vq = TestQreq::post(["authconfirm" => 1, "code" => $code])
-            ->set_page("authorize")->set_user($this->u_chair);
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+            ->set_page("authorize");
         Qrequest::set_main_request($vq);
         $url = null;
         try {
@@ -1083,20 +1330,20 @@ class Authorize_Tester {
             $jr = call_api("=oauthregister", $this->u_empty,
                 TestQreq::post_json(["redirect_uris" => ["https://dall.com/"]]));
             xassert(isset($jr->client_id));
-            $qreq = TestQreq::get([
+            $qreq = TestQreq::user_get($this->u_mgbaker, [
                 "client_id" => $jr->client_id, "redirect_uri" => "https://dall.com/",
                 "response_type" => "code", "state" => "S", "scope" => "read"
-            ])->set_page("authorize")->set_user($this->u_empty);
+            ])->set_page("authorize");
             Qrequest::set_main_request($qreq);
             $code = null;
             try {
-                (new HotCRP\Authorize_Page($this->u_empty, $qreq))->go();
+                (new HotCRP\Authorize_Page($this->u_mgbaker, $qreq))->go();
             } catch (JsonCompletion $jc) {
                 $code = $jc->result->content["code"] ?? null;
             }
             xassert_neqq($code, null);
-            $vq = TestQreq::post(["authconfirm" => 1, "code" => $code, "scope" => $form_scope])
-                ->set_page("authorize")->set_user($this->u_chair);
+            $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "scope" => $form_scope])
+                ->set_page("authorize");
             Qrequest::set_main_request($vq);
             $err = $url = null;
             try {
@@ -1127,6 +1374,929 @@ class Authorize_Tester {
         // and the field is validated like any other request parameter
         [$err, $scope] = $mk("bad\x01scope");
         xassert_eqq($err, "invalid_scope");
+    }
+
+    /** @param string $redirect_uri
+     * @return string */
+    private function register_client($redirect_uri) {
+        $jr = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => [$redirect_uri]]));
+        xassert(isset($jr->client_id));
+        $this->_last_client_id = $jr->client_id ?? null;
+        $this->_last_client_secret = $jr->client_secret ?? null;
+        return $this->_last_client_id;
+    }
+
+    /** A client that registered itself chose its own `redirect_uri`, so this
+     * endpoint must not bounce an anonymous visitor there just because the
+     * request was malformed: that would make it an open redirector for anyone
+     * willing to register (RFC 9700 §4.11.2). A signed-in user is in a real
+     * authorization flow, and still gets the protocol's error response. */
+    function test_self_registered_error_is_not_an_open_redirect() {
+        $param = [
+            "client_id" => $this->register_client("https://dro.com/"),
+            "redirect_uri" => "https://dro.com/", "response_type" => "code",
+            "state" => "S", "scope" => "read", "prompt" => "none"
+        ];
+
+        // signed in or not, a request error is reported on this page
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_empty);
+        xassert_eqq($how, "page");
+
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "page");
+        // the destination is offered as a link, which shows where it goes and
+        // takes a click, and it still carries the protocol's error response
+        $href = null;
+        if (preg_match('/<a[^>]*href="(https:\/\/dro\.com\/[^"]*)"/', $this->_last_page_html ?? "", $m)) {
+            $href = html_entity_decode($m[1]);
+        }
+        xassert_neqq($href, null);
+        xassert_eqq($this->redirect_error($href ?? ""), "interaction_required");
+
+        // a client this site's administrator registered names a redirect URI
+        // this site chose to trust, so it is answered either way
+        $cparam = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read",
+            "prompt" => "none"
+        ];
+        [$how, $detail] = $this->authorize_outcome($cparam, $this->u_empty);
+        xassert_eqq($how, "redirect");
+        xassert_str_starts_with($detail ?? "", "https://conf1.example.com/cb");
+        xassert_eqq($this->redirect_error($detail), "interaction_required");
+
+        // and the user can authorize the bounce themselves: Cancel on the
+        // consent form is a CSRF-protected POST, so it answers the client
+        unset($param["prompt"]);
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        $vq = TestQreq::user_post($this->u_chair,
+            ["authconfirm" => 1, "code" => $code, "cancel" => 1])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        $url = null;
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+        } catch (Redirection $redir) {
+            $url = $redir->url;
+        }
+        xassert_str_starts_with($url ?? "", "https://dro.com/");
+        xassert_eqq($this->redirect_error($url ?? ""), "access_denied");
+    }
+
+    /** An authorization code is a database row, so an anonymous request must
+     * not be able to create one. The visitor signs in first and the request is
+     * replayed on the way back. */
+    function test_authorization_request_needs_a_user() {
+        $client_id = $this->register_client("https://dro.com/");
+        $param = [
+            "client_id" => $client_id, "redirect_uri" => "https://dro.com/",
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+
+        $n0 = $this->count_codes();
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_empty);
+        xassert_eqq($how, "redirect");
+        xassert_str_contains($detail ?? "", "signin");
+        // the request survives the round trip
+        xassert_str_contains($detail ?? "", $client_id);
+        xassert_eqq($this->count_codes(), $n0);
+
+        // the same request from a signed-in user does create one
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        xassert_eqq($this->count_codes(), $n0 + 1);
+    }
+
+    /** `state` and `nonce` are stored and echoed, so they are bounded. The
+     * complaint stays on this site: the error response would have to echo the
+     * oversized `state`. */
+    function test_opaque_parameter_length_limit() {
+        $param = [
+            "client_id" => $this->register_client("https://dro.com/"),
+            "redirect_uri" => "https://dro.com/", "response_type" => "code",
+            "scope" => "read", "state" => str_repeat("A", 6000)
+        ];
+        $n0 = $this->count_codes();
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "page");
+        xassert_eqq($this->count_codes(), $n0);
+
+        $param["state"] = "S";
+        $param["nonce"] = str_repeat("A", 6000);
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "page");
+        xassert_eqq($this->count_codes(), $n0);
+    }
+
+    /** An authorization response answers a POST — the consent form — so its
+     * redirect must not invite the user agent to repeat that POST at the
+     * client. 307 would (RFC 9700 §4.12 forbids it) and 302 is only
+     * conventionally understood not to; 303 says so. */
+    function test_authorization_response_is_303() {
+        $ruri = "https://dall.com/";
+        $param = [
+            "client_id" => $this->register_client($ruri), "redirect_uri" => $ruri,
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+
+        $status = function ($vq) {
+            try {
+                (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+            } catch (Redirection $redir) {
+                return $redir->status;
+            }
+            return null;
+        };
+
+        // the grant
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert_eqq($status($vq), 303);
+
+        // and the error responses that answer the same form
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "cancel" => 1])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert_eqq($status($vq), 303);
+    }
+
+    /** An authorization URL can carry a code, and the consent page links to a
+     * URL the client chose for itself, so the Referer must not follow the user
+     * off-site (RFC 9700 §4.2.4). The header is site-wide; it is tested here
+     * because this is what asks for it. */
+    function test_referrer_policy() {
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        $emit = function () {
+            Navigation::headers_reset();
+            $this->conf->emit_browser_security_headers(TestQreq::get());
+            foreach (Navigation::headers_list() as $h) {
+                if (str_starts_with($h, "Referrer-Policy:"))
+                    return trim(substr($h, 16));
+            }
+            return null;
+        };
+        try {
+            // same-origin keeps the full URL for this site, which it reads to
+            // mark a preferred account index, and sends nothing anywhere else
+            xassert_eqq($emit(), "same-origin");
+            $this->conf->set_opt("httpReferrerPolicy", "no-referrer");
+            xassert_eqq($emit(), "no-referrer");
+            $this->conf->set_opt("httpReferrerPolicy", false);
+            xassert_eqq($emit(), null);
+        } finally {
+            $this->conf->set_opt("httpReferrerPolicy", null);
+            Navigation::headers_reset();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** The consent page links to the client's own URL, which a self-registered
+     * client picked. The link carries nothing along: no Referer, and no handle
+     * on this window. */
+    function test_client_link_is_inert() {
+        $client = HotCRP\OAuthClient::make((object) [
+            "name" => "x", "title" => "Test Client", "client_id" => "cid",
+            "client_uri" => "https://client.example.com/",
+            "redirect_uris" => ["https://client.example.com/cb"]
+        ]);
+        xassert_neqq($client, null);
+        $qreq = TestQreq::user_get($this->u_chair, [])->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        $ap = new HotCRP\Authorize_Page($this->u_chair, $qreq);
+        $ap->client = $client;
+        ob_start();
+        try {
+            $ap->print_form_title();
+        } finally {
+            $html = ob_get_clean();
+        }
+        xassert_str_contains($html, 'href="https://client.example.com/"');
+        xassert_str_contains($html, 'rel="noopener noreferrer"');
+    }
+
+    /** Cancelling is an error response to the client's request, so it carries
+     * that request's `state` (RFC 6749 §4.1.2.1). The confirmation form posts
+     * no `state` of its own, so taking it from the request would drop it. */
+    function test_cancel_reports_state() {
+        [$how, $code] = $this->authorize_outcome([
+            "client_id" => $this->register_client("https://dro.com/"),
+            "redirect_uri" => "https://dro.com/", "response_type" => "code",
+            "state" => "STATE123", "scope" => "read"
+        ], $this->u_chair);
+        xassert_eqq($how, "code");
+
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "cancel" => 1])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        $url = null;
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+        } catch (Redirection $redir) {
+            $url = $redir->url;
+        }
+        xassert_neqq($url, null);
+        parse_str(parse_url($url ?? "", PHP_URL_QUERY) ?? "", $p);
+        xassert_eqq($p["error"] ?? null, "access_denied");
+        xassert_eqq($p["state"] ?? null, "STATE123");
+    }
+
+    /** Redeem an authorization code and return the token response.
+     * @param string $code
+     * @return object */
+    private function redeem_code($code, $redirect_uri) {
+        return call_api("=oauthtoken", $this->u_empty, TestQreq::post([
+            "grant_type" => "authorization_code", "code" => $code,
+            "redirect_uri" => $redirect_uri,
+            "client_id" => $this->_last_client_id,
+            "client_secret" => $this->_last_client_secret
+        ]));
+    }
+
+    /** Confirm an authorization request and return the code it delivers.
+     * @param string $code
+     * @return ?string */
+    private function confirm_code($code, $form_scope = null) {
+        $param = ["authconfirm" => 1, "code" => $code];
+        if ($form_scope !== null) {
+            $param["scope"] = $form_scope;
+        }
+        $vq = TestQreq::user_post($this->u_chair, $param)
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+            return null;
+        } catch (Redirection $redir) {
+            parse_str(parse_url($redir->url, PHP_URL_QUERY) ?? "", $p);
+            return $p["code"] ?? null;
+        } catch (PageCompletion $pc) {
+            return null;
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** A code redeemed twice means the code reached someone else, so the
+     * tokens it produced are revoked — however long after the first redemption
+     * the replay arrives. Dismissing a late replay as an expired code would
+     * leave the attacker's tokens live (RFC 9700 §4.2.4). */
+    function test_authorization_code_replay_revokes_late() {
+        $ruri = "https://dall.com/";
+        $this->register_client($ruri);
+        $param = [
+            "client_id" => $this->_last_client_id, "redirect_uri" => $ruri,
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+
+        // redeemed, then replayed at once: revoked
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        $rcode = $this->confirm_code($code);
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert(isset($jr->access_token));
+        $atok = $jr->access_token;
+        xassert_eqq($this->redeem_code($rcode, $ruri)->error ?? null, "invalid_grant");
+        xassert(!$this->find_token($atok)->is_active());
+
+        // and a spent code is no longer offered by the consent page
+        xassert_eqq($this->confirm_code($code), null);
+
+        // redeemed, then replayed long after the code stopped being offerable:
+        // still revoked
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        $rcode = $this->confirm_code($code);
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert(isset($jr->access_token));
+        $atok = $jr->access_token;
+        xassert(!!$this->find_token($atok)->is_active());
+
+        $now = Conf::$now;
+        Conf::set_current_time($now + 900);
+        try {
+            $jr = $this->redeem_code($rcode, $ruri);
+            xassert_eqq($jr->error ?? null, "invalid_grant");
+            xassert(!$this->find_token($atok)->is_active());
+        } finally {
+            Conf::set_current_time($now);
+        }
+    }
+
+    /** The consent form’s scope field narrows API access — that is what its
+     * label says, and it is prefilled with the client’s API scope, so a user
+     * who submits the form unchanged posts a value with no `openid` in it. The
+     * OpenID Connect scopes come from the authorization request and name no API
+     * rights, so they must survive the narrowing; `TokenScope` models API bits
+     * alone and cannot reproduce them from the bits. Losing them silently
+     * withholds the `id_token` the client asked for. */
+    function test_authconfirm_keeps_openid_scope() {
+        $ruri = "https://dall.com/";
+        $this->register_client($ruri);
+        $param = [
+            "client_id" => $this->_last_client_id, "redirect_uri" => $ruri,
+            "response_type" => "code", "state" => "S", "scope" => "openid read"
+        ];
+
+        // the browser form posts the client's API scope, without `openid`
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        $rcode = $this->confirm_code($code, "read");
+        xassert_neqq($rcode, null);
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("scope"), "openid read");
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert(isset($jr->id_token));
+        xassert_eqq($jr->_token ?? null, null);
+
+        // narrowing to nothing leaves sign-in alone, and does not leave a
+        // stray `none` beside it
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        $rcode = $this->confirm_code($code, "none");
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("scope"), "openid");
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert(isset($jr->id_token));
+
+        // a request with no OpenID Connect scope still narrows as before
+        $param["scope"] = "read write";
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        $rcode = $this->confirm_code($code, "read");
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("scope"), "read");
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert(!isset($jr->id_token));
+
+        // and the field only limits: `write` covers the read bits, so
+        // intersecting it with a `read` request still leaves `read`
+        $param["scope"] = "openid read";
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        $rcode = $this->confirm_code($code, "write");
+        $scope = TokenInfo::find($code, $this->conf)->data("scope");
+        xassert_eqq($scope, "openid read");
+        xassert(!TokenScope::scope_str_contains($scope, "write"));
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert_eqq($this->find_token($jr->access_token)->data("scope"), "read");
+    }
+
+    /** Users reload and go back. None of that may cost them a working grant.
+     *
+     * A code is single-use at the token endpoint, so the consent page must
+     * stop offering one that has been redeemed: re-delivering it would make
+     * the client redeem it twice, and the second redemption revokes the tokens
+     * of the first. Everything before redemption stays idempotent, so a
+     * double-clicked or resubmitted consent form is harmless. */
+    function test_reload_does_not_break_a_grant() {
+        $ruri = "https://dall.com/";
+        $this->register_client($ruri);
+        $param = [
+            "client_id" => $this->_last_client_id, "redirect_uri" => $ruri,
+            "response_type" => "code", "state" => "S", "scope" => "openid read"
+        ];
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+
+        // before redemption everything repeats: the form re-delivers the same
+        // code, and the consent page still renders
+        $rcode = $this->confirm_code($code, "read");
+        xassert_eqq($this->confirm_code($code, "read"), $rcode);
+        xassert_eqq($this->authorize_outcome(["code" => $code], $this->u_chair)[0], "code");
+
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert(isset($jr->access_token));
+        xassert(isset($jr->id_token));
+        $atok = $jr->access_token;
+
+        // after redemption the page refuses, and blames the request rather
+        // than falling through to complain about a missing client
+        [$how, $detail] = $this->authorize_outcome(["code" => $code], $this->u_chair);
+        xassert_eqq($how, "page");
+        xassert_str_contains($detail ?? "", "authorization request");
+        xassert(!str_contains($detail ?? "", "client missing"));
+        xassert_eqq($this->confirm_code($code, "read"), null);
+
+        // ...and none of it disturbed the grant the user actually has
+        xassert(!!$this->find_token($atok)->is_active());
+
+        // returning to the original authorization URL starts a fresh request,
+        // which is what a back button most often lands on
+        [$how, $code2] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        xassert_neqq($code2, $code);
+        xassert(!!$this->find_token($atok)->is_active());
+    }
+
+    /** Changing conference settings is administration, not writing, so it
+     * needs `settings:admin`. `write` keeps meaning “write anything I can
+     * write”, and still reads settings. */
+    function test_settings_post_needs_admin_scope() {
+        $wtok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "write"]);
+        xassert_eqq(call_api_result("settings", $wtok, [])->response_code(), 200);
+        $jr = call_api_result("=settings", $wtok, []);
+        xassert_eqq($jr->response_code(), 401);
+        // the refusal names the scope to ask for
+        xassert_str_contains($jr->header("WWW-Authenticate") ?? "", 'scope="settings:admin"');
+
+        $atok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "settings:admin"]);
+        xassert_neqq(call_api_result("=settings", $atok, [])->response_code(), 401);
+
+        // settings is its own family: administering everything else is not
+        // enough, and reading is a separate grant from `read`
+        $otok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "other:admin"]);
+        xassert_eqq(call_api_result("=settings", $otok, [])->response_code(), 401);
+        $rtok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "settings:read"]);
+        xassert_eqq(call_api_result("settings", $rtok, [])->response_code(), 200);
+        xassert_eqq(call_api_result("=settings", $rtok, [])->response_code(), 401);
+    }
+
+    /** A 401 has to say how to authenticate (RFC 6750 §3). This is the 401 a
+     * client gets when its token expires, and the `resource_metadata` in the
+     * header is how it finds the authorization server again (RFC 9728), so a
+     * silent 401 leaves an expired client with nowhere to go. */
+    function test_expired_bearer_401_says_how_to_authenticate() {
+        $qreq = TestQreq::get([])->set_conf($this->conf)
+            ->set_page("api")->set_path("/whoami")
+            ->set_header("Authorization", "Bearer hct_" . str_repeat("z", 30));
+        Qrequest::set_main_request($qreq);
+        $jr = null;
+        try {
+            initialize_user($qreq, ["bearer" => true]);
+        } catch (JsonCompletion $jc) {
+            $jr = $jc->result;
+        }
+        xassert_neqq($jr, null);
+        xassert_eqq($jr->response_code(), 401);
+        $h = $jr->header("WWW-Authenticate") ?? "";
+        xassert_str_contains($h, "Bearer ");
+        xassert_str_contains($h, 'error="invalid_token"');
+        xassert_str_contains($h, "resource_metadata=");
+    }
+
+    /** HotCRP signs in through a provider with PKCE (RFC 9700 §2.1.1). The
+     * verifier stays here; only its hash travels. */
+    function test_outbound_pkce() {
+        $start = function ($pkce) {
+            $base = [
+                "name" => "p", "client_id" => "C", "client_secret" => "S",
+                "auth_uri" => "https://idp.example.com/auth",
+                "token_uri" => "https://idp.example.com/token",
+                "redirect_uri" => "https://conf.example.com/oauth"
+            ];
+            if ($pkce !== null) {
+                $base["pkce"] = $pkce;
+            }
+            $this->conf->set_opt("oAuthProviders", [(object) $base]);
+            $this->conf->refresh_settings();
+            $qreq = TestQreq::user_get($this->u_chair, ["authtype" => "p"])->set_page("oauth");
+            Qrequest::set_main_request($qreq);
+            try {
+                (new HotCRP\OAuth_Page($this->u_chair, $qreq))->start();
+            } catch (Redirection $redir) {
+                parse_str(parse_url($redir->url, PHP_URL_QUERY) ?? "", $p);
+                return $p;
+            }
+            return null;
+        };
+
+        try {
+            $p = $start(null) ?? [];
+            xassert_eqq($p["code_challenge_method"] ?? null, "S256");
+            // the challenge is the hash of the verifier this site kept
+            $tok = TokenInfo::find_from($p["state"], $this->conf, !!$this->conf->contactdb());
+            $cv = $tok->data("code_verifier");
+            xassert_eqq(strlen($cv), 43);
+            xassert_eqq($p["code_challenge"], base64url_encode(hash("sha256", $cv, true)));
+            // ...and the verifier itself never leaves
+            xassert(!str_contains(join(" ", $p), $cv));
+
+            // a provider that cannot take it can be excused
+            $p = $start(false) ?? [];
+            xassert(!isset($p["code_challenge"]));
+            xassert(!isset($p["code_challenge_method"]));
+            $tok = TokenInfo::find_from($p["state"], $this->conf, !!$this->conf->contactdb());
+            xassert_eqq($tok->data("code_verifier"), null);
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** Sign in through a provider, from the redirect out to the account that
+     * comes back. The token endpoint is stubbed, so this covers the half of
+     * `OAuth_Page` that talks to the network: the `code_verifier` it sends and
+     * the ID token it accepts. */
+    function test_inbound_signin() {
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        $email = "oauthy@hotcrp-oauth.org";
+        $seen = null;
+
+        try {
+            // 1. start: keep the session, and learn the state
+            $q1 = TestQreq::user_get($this->u_empty, ["authtype" => "p"])
+                ->set_page("oauth");
+            $qs = $q1->qsession();
+            $old_qsid = $qs->sid;
+            Qrequest::set_main_request($q1);
+            $auth = null;
+            try {
+                (new HotCRP\OAuth_Page($this->u_empty, $q1))->start();
+            } catch (Redirection $redir) {
+                $auth = $redir->url;
+            }
+            xassert_neqq($auth, null);
+            parse_str(parse_url($auth ?? "", PHP_URL_QUERY) ?? "", $ap);
+            $tok = TokenInfo::find_from($ap["state"], $this->conf, !!$this->conf->contactdb());
+            xassert_neqq($tok, null);
+
+            // 2. the provider answers, and we record what it was asked
+            HotCRP\OAuth_Page::$fetch_function = function ($authi, $param) use (&$seen, $ap, $email) {
+                $seen = $param;
+                $idt = HotCRP\JWTParser::make_plaintext((object) [
+                    "iss" => "https://idp.example.com", "aud" => "C",
+                    "exp" => Conf::$now + 600, "iat" => Conf::$now,
+                    "nonce" => $ap["nonce"], "sub" => "u1",
+                    "email" => $email, "email_verified" => true,
+                    "given_name" => "Oona", "family_name" => "Authy"
+                ]);
+                return [200, json_encode(["id_token" => $idt])];
+            };
+
+            // 3. the callback, on the same session and with the nonce cookie
+            $_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]] = "1";
+            $q2 = TestQreq::user_get($this->u_empty,
+                    ["code" => "CODE", "state" => $ap["state"]], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            $oap = new HotCRP\OAuth_Page($this->u_empty, $q2);
+            $ml = $oap->response();
+
+            xassert($oap->success);
+            xassert_eqq($oap->email, $email);
+            // a session that predates the login must not carry the identity it
+            // produced, as `LoginHelper::login_complete` ensures elsewhere
+            xassert($qs->sid !== $old_qsid);
+            // the verifier it kept is the verifier it sent
+            xassert_eqq($seen["code_verifier"] ?? null, $tok->data("code_verifier"));
+            xassert_eqq($seen["grant_type"] ?? null, "authorization_code");
+            // and the account exists now
+            $u = $this->conf->fresh_user_by_email($email);
+            xassert_neqq($u, null);
+            xassert_eqq($u->firstName, "Oona");
+
+            // a replayed authorization response finds no request
+            Qrequest::set_main_request($q2);
+            $ml = (new HotCRP\OAuth_Page($this->u_empty, $q2))->response();
+            xassert_str_contains(join(" ", array_map(function ($mi) { return $mi->message; },
+                is_array($ml) ? $ml : [$ml])), "not found");
+        } finally {
+            HotCRP\OAuth_Page::$fetch_function = null;
+            unset($_COOKIE["hotcrp-oauth-nonce-" . ($ap["nonce"] ?? "")]);
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** Pages that authenticate a user or authorize a client must not be
+     * framable (RFC 9700 §4.16). A site that sets its own
+     * `httpContentSecurityPolicy` — for a `script-src`, say — must not thereby
+     * lose the frame protection on them. */
+    /** Render page `$page` as `$user` does, and return the headers it set.
+     * @return list<string> */
+    private function page_headers($page, $user) {
+        $qreq = TestQreq::user_get($user, [])->set_page($page);
+        Qrequest::set_main_request($qreq);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        Navigation::headers_reset();
+        ob_start();
+        try {
+            $pc = $this->conf->page_components($user, $qreq);
+            $pagej = $pc->get($page);
+            xassert_neqq($pagej, null);
+            $pc->set_root($pagej->group);
+            $pc->print_body_members($pagej->group);
+        } catch (Redirection $redir) {
+        } catch (JsonCompletion $jc) {
+        } catch (PageCompletion $pcx) {
+        } finally {
+            ob_end_clean();
+            $h = Navigation::headers_list();
+            Navigation::headers_reset();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        return $h;
+    }
+
+    function test_no_frame_pages() {
+        // every page that takes a credential or grants access says so itself
+        foreach (["authorize", "signin", "oauth", "newaccount",
+                  "forgotpassword", "resetpassword"] as $page) {
+            $h = $this->page_headers($page, $this->u_empty);
+            xassert(in_array("X-Frame-Options: DENY", $h, true), "page {$page}");
+            xassert(in_array("Referrer-Policy: same-origin", $h, true), "page {$page}");
+        }
+        $h = $this->page_headers("manageemail", $this->u_chair);
+        xassert(in_array("X-Frame-Options: DENY", $h, true));
+        $h = $this->page_headers("index", $this->u_chair);
+        xassert(!in_array("X-Frame-Options: DENY", $h, true));
+
+        // and the headers bind whatever the site policy is
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        try {
+            foreach ([null, "script-src 'self'", false] as $csp) {
+                $this->conf->set_opt("httpContentSecurityPolicy", $csp);
+                // these URLs carry `code=`, so the site policy does not get to
+                // loosen the referrer either
+                $this->conf->set_opt("httpReferrerPolicy", "unsafe-url");
+                Navigation::headers_reset();
+                $this->conf->emit_browser_security_headers(TestQreq::get()->set_page("authorize"));
+                $this->conf->emit_credential_page_headers();
+                $h = Navigation::headers_list();
+                xassert(in_array("Content-Security-Policy: frame-ancestors 'none'", $h, true));
+                xassert(in_array("X-Frame-Options: DENY", $h, true));
+                xassert(in_array("Referrer-Policy: same-origin", $h, true));
+            }
+        } finally {
+            $this->conf->set_opt("httpContentSecurityPolicy", null);
+            $this->conf->set_opt("httpReferrerPolicy", null);
+            Navigation::headers_reset();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** A backslash is not an RFC 3986 character, and a browser reads it as the
+     * `/` that ends an authority — so `http://evil.com\@localhost/` is
+     * `localhost` to `strcspn` and `parse_url`, and `evil.com` to the browser
+     * that follows the redirect. Everything downstream, including the host the
+     * consent page shows the user, would be about the wrong host. */
+    function test_redirect_uri_rejects_backslash() {
+        // every client-supplied redirect URI enters at `VALIDATION_DYNAMIC`,
+        // which is where the character check lives
+        $ck = function ($u) {
+            return HotCRP\OAuthClient::check_redirect_uri($u, HotCRP\OAuthClient::VALIDATION_DYNAMIC);
+        };
+        // the browser's host is not HotCRP's host for any of these
+        xassert(!$ck("http://evil.example\\@localhost/cb"));
+        xassert(!$ck("http://evil.example\\@127.0.0.1:5173/cb"));
+        xassert(!$ck("https://evil.example\\@good.example/cb"));
+        xassert(!$ck("https://good.example/cb\\x"));
+        // as are the other characters that check excludes
+        xassert(!$ck("https://good.example/c b"));
+        xassert(!$ck("https://good.example/cb\x7f"));
+        xassert(!$ck("https://good.example/cb\u{00e9}"));
+        // ...and the ordinary forms still pass, at either level
+        foreach (["http://localhost/cb", "http://127.0.0.1:5173/cb",
+                  "https://good.example/cb", "https://good.example/cb?x=1",
+                  "https://good.example/[cb]"] as $u) {
+            xassert($ck($u), $u);
+            xassert(HotCRP\OAuthClient::check_redirect_uri($u), $u);
+        }
+    }
+
+    /** Redeeming a code twice means it reached someone else, so everything it
+     * produced is revoked — including whatever the first pair has rotated into.
+     * Revoking only the first link leaves the live tokens working, which is the
+     * outcome the revocation exists to stop (RFC 9700 §4.2.4). */
+    function test_code_replay_revokes_the_whole_chain() {
+        $ruri = "https://dall.com/";
+        $this->register_client($ruri);
+        $param = [
+            "client_id" => $this->_last_client_id, "redirect_uri" => $ruri,
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        $rcode = $this->confirm_code($code, "read");
+
+        // whoever holds the code redeems it, then rotates once
+        $t0 = $this->redeem_code($rcode, $ruri);
+        xassert(isset($t0->access_token));
+        $t1 = call_api("=oauthtoken", $this->u_empty, TestQreq::post([
+            "grant_type" => "refresh_token", "refresh_token" => $t0->refresh_token,
+            "client_id" => $this->_last_client_id,
+            "client_secret" => $this->_last_client_secret]));
+        xassert(isset($t1->access_token));
+        xassert(!!$this->find_token($t1->access_token)->is_active());
+
+        // the other party redeems the same code: the rotated pair dies too
+        xassert_eqq($this->redeem_code($rcode, $ruri)->error ?? null, "invalid_grant");
+        xassert(!$this->find_token($t1->access_token)->is_active());
+        xassert(!$this->find_token($t1->refresh_token)->is_active());
+        xassert_eqq(call_api_result("whoami", $this->find_token($t1->access_token), [])->response_code(), 401);
+    }
+
+    /** An OpenID Connect scope names no API rights, so a selector on one adds
+     * none. The `-2` sentinel is `~1`, so storing it as a bitmask would grant
+     * every right but `S_SUB_READ` on the selected papers — a token whose
+     * scope reads as identity-only. */
+    function test_openid_scope_with_selector_grants_nothing() {
+        foreach (["openid#1", "email#12", "profile?q=tag:x", "address#1", "phone#1"] as $s) {
+            $ts = TokenScope::parse($s, null);
+            xassert_eqq(TokenScope::unparse($ts), "none", $s);
+            xassert(!$ts->allows_some(TokenScope::S_SUB_ADMIN));
+            xassert(!$ts->allows_some(TokenScope::S_REV_READ));
+        }
+        // a selector cannot widen through intersection either
+        xassert_eqq(TokenScope::unparse(
+            TokenScope::intersect(TokenScope::parse("all#1", null), "openid#1")), "none");
+        // ...and real selectors are unaffected
+        xassert_eqq(TokenScope::unparse(TokenScope::parse("all#12", null)), "all#12");
+        xassert_eqq(TokenScope::unparse(TokenScope::parse("submission:admin#r1", null)), "submission:admin#r1");
+        xassert_eqq(TokenScope::unparse(TokenScope::parse("openid read#3", null)), "read#3");
+    }
+
+    /** A disabled provider hides its sign-in button. It must not still
+     * authenticate for anyone who names it in the URL. */
+    function test_disabled_provider() {
+        $mk = function ($disabled, $extra = null) {
+            $p = ["name" => "p", "client_id" => "C", "client_secret" => "S",
+                  "auth_uri" => "https://idp.example.com/auth",
+                  "token_uri" => "https://idp.example.com/token",
+                  "redirect_uri" => "https://conf.example.com/oauth"];
+            if ($disabled) {
+                $p["disabled"] = true;
+            }
+            $list = $extra ? [(object) $p, (object) $extra] : [(object) $p];
+            $this->conf->set_opt("oAuthProviders", $list);
+            $this->conf->refresh_settings();
+        };
+        try {
+            $mk(false);
+            xassert_neqq(HotCRP\OAuthProvider::find($this->conf, "p"), null);
+            $mk(true);
+            xassert_eqq(HotCRP\OAuthProvider::find($this->conf, "p"), null);
+            // nor may it be the default for a bare /oauth
+            xassert_eqq(HotCRP\OAuthProvider::find($this->conf, null), null);
+            // ...while a live provider later in the list still is
+            $mk(true, ["name" => "q", "client_id" => "C", "client_secret" => "S",
+                       "auth_uri" => "https://q.example.com/auth",
+                       "token_uri" => "https://q.example.com/token",
+                       "redirect_uri" => "https://conf.example.com/oauth"]);
+            $q = HotCRP\OAuthProvider::find($this->conf, null);
+            xassert_neqq($q, null);
+            xassert_eqq($q->name ?? null, "q");
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** `expires_in` must be how long the token works, not how long its row is
+     * retained; a client that refreshes on the latter holds a dead token for
+     * the retention period. */
+    function test_expires_in_is_the_usable_lifetime() {
+        $ruri = "https://dall.com/";
+        $this->register_client($ruri);
+        [$how, $code] = $this->authorize_outcome([
+            "client_id" => $this->_last_client_id, "redirect_uri" => $ruri,
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ], $this->u_chair);
+        xassert_eqq($how, "code");
+        $jr = $this->redeem_code($this->confirm_code($code, "read"), $ruri);
+        xassert(isset($jr->access_token));
+        $tok = $this->find_token($jr->access_token);
+        xassert_eqq($jr->expires_in, $tok->timeInvalid - Conf::$now);
+        xassert(($jr->expires_in ?? 0) <= 3600);
+    }
+
+    /** The client metadata document is fetched from a URL the requester chose,
+     * so an anonymous request must not be able to make this site issue it. */
+    function test_metadata_fetch_needs_a_user() {
+        $fetched = 0;
+        $old = HotCRP\OAuthClientDocument::$fetch_function;
+        HotCRP\OAuthClientDocument::$fetch_function = function ($url) use (&$fetched, $old) {
+            ++$fetched;
+            return $old ? $old($url) : null;
+        };
+        try {
+            $param = ["client_id" => self::MDOC_CLIENT_ID,
+                      "redirect_uri" => self::MDOC_REDIRECT_URI,
+                      "response_type" => "code", "state" => "S", "scope" => "read"];
+            [$how, $detail] = $this->authorize_outcome($param, $this->u_empty);
+            xassert_eqq($how, "redirect");
+            xassert_str_contains($detail ?? "", "signin");
+            xassert_eqq($fetched, 0);
+
+            // a signed-in user still gets the document fetched
+            $this->authorize_outcome($param, $this->u_chair);
+            xassert_gt($fetched, 0);
+        } finally {
+            HotCRP\OAuthClientDocument::$fetch_function = $old;
+        }
+    }
+
+    /** Confirming an account means the user proved it just now. The provider
+     * must say when it authenticated them, and the window must be fixed when
+     * the request starts — otherwise a silent SSO round trip, with a `max_age`
+     * of the attacker's choosing, satisfies the gate that guards email changes
+     * and password changes. */
+    function test_reauth_requires_a_fresh_auth_time() {
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        $old = HotCRP\OAuth_Page::$fetch_function;
+
+        /** @return array{bool,array} */
+        $run = function ($startargs, $auth_time) {
+            $q1 = TestQreq::user_get($this->u_chair, $startargs + ["reauth" => 1])
+                ->set_page("oauth");
+            $qs = $q1->qsession();
+            Qrequest::set_main_request($q1);
+            $auth = null;
+            try {
+                (new HotCRP\OAuth_Page($this->u_chair, $q1))->start();
+            } catch (Redirection $redir) {
+                $auth = $redir->url;
+            }
+            parse_str(parse_url($auth ?? "", PHP_URL_QUERY) ?? "", $ap);
+            HotCRP\OAuth_Page::$fetch_function = function ($authi, $param) use ($ap, $auth_time) {
+                $c = ["iss" => "https://idp.example.com", "aud" => "C",
+                      "exp" => Conf::$now + 600, "iat" => Conf::$now,
+                      "nonce" => $ap["nonce"], "sub" => "u1",
+                      "email" => "chair@_.com", "email_verified" => true];
+                if ($auth_time !== null) {
+                    $c["auth_time"] = $auth_time;
+                }
+                return [200, json_encode(["id_token" => HotCRP\JWTParser::make_plaintext((object) $c)])];
+            };
+            $_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]] = "1";
+            $q2 = TestQreq::user_get($this->u_chair, ["code" => "C", "state" => $ap["state"]], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            $oap = new HotCRP\OAuth_Page($this->u_chair, $q2);
+            $oap->response();
+            unset($_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]]);
+            return [$oap->success, $ap];
+        };
+
+        try {
+            // the request asks the provider to authenticate again and to say when
+            [$ok, $ap] = $run(["max_age" => "600"], Conf::$now);
+            xassert($ok);
+            xassert_eqq($ap["prompt"] ?? null, "login");
+            xassert_eqq($ap["max_age"] ?? null, "600");
+
+            // a provider that omits `auth_time` confirms nothing
+            [$ok, ] = $run(["max_age" => "600"], null);
+            xassert(!$ok);
+
+            // nor does a stale one
+            [$ok, ] = $run(["max_age" => "600"], Conf::$now - 4000);
+            xassert(!$ok);
+
+            // and the window cannot be widened from the request
+            [$ok, $ap] = $run(["max_age" => "999999"], Conf::$now - 100000);
+            xassert_eqq($ap["max_age"] ?? null, "3600");
+            xassert(!$ok);
+
+            // omitting `max_age` gives the tightest window, not the loosest
+            [$ok, $ap] = $run([], Conf::$now - 100000);
+            xassert_eqq($ap["max_age"] ?? null, "0");
+            xassert(!$ok);
+        } finally {
+            HotCRP\OAuth_Page::$fetch_function = $old;
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A code is good once. The check has to be atomic: two redemptions in
+     * flight at the same time would both read an unconsumed code and both
+     * succeed, and the second one is the signal that the code leaked. */
+    function test_token_consume_is_atomic() {
+        $tok = (new TokenInfo($this->conf, TokenInfo::OAUTHCODE))
+            ->set_token_pattern("hcoc[36]")
+            ->set_expires_in(3600)
+            ->insert();
+        xassert(!!$tok->salt);
+        // two requests holding the same row, neither aware of the other
+        $t1 = TokenInfo::find($tok->salt, $this->conf);
+        $t2 = TokenInfo::find($tok->salt, $this->conf);
+        xassert($t1->consume());
+        xassert(!$t2->consume());
+        xassert(!$t1->consume());
+        $tok->delete();
     }
 
     /** Replaying an old refresh token must revoke the live one however long
@@ -1178,11 +2348,11 @@ class Authorize_Tester {
         $this->conf->refresh_settings();
 
         $authorize = function ($rest) {
-            $qreq = TestQreq::get($rest + [
+            $qreq = TestQreq::user_get($this->u_chair, $rest + [
                 "client_id" => "nosecret-client",
                 "redirect_uri" => "https://nosecret.example.com/cb",
                 "response_type" => "code", "state" => "S", "scope" => "read"
-            ])->set_page("authorize")->set_user($this->u_chair);
+            ])->set_page("authorize");
             Qrequest::set_main_request($qreq);
             $code = $err = null;
             try {
@@ -1193,8 +2363,8 @@ class Authorize_Tester {
                 $err = $this->redirect_error($redir->url);
             }
             if ($code !== null) {
-                $vq = TestQreq::post(["authconfirm" => 1, "code" => $code])
-                    ->set_page("authorize")->set_user($this->u_chair);
+                $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+                    ->set_page("authorize");
                 Qrequest::set_main_request($vq);
                 try {
                     (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
@@ -1368,6 +2538,1185 @@ class Authorize_Tester {
         xassert(!$this->client_document($cid)->check_document(200, "text/html", json_encode($base)));
         xassert(!$this->client_document($cid)->check_document(200, "application/json", "[]"));
         xassert(!$this->client_document($cid)->check_document(200, "application/json", "not json"));
+    }
+
+    /** A dynamic component's redirect-URI allowlist may be spelled either way,
+     * as `OAuthClient` accepts both. Reading only the plural turns a component
+     * written with the singular into an unrestricted registration endpoint. */
+    function test_dynamic_registration_allowlist_spellings() {
+        $old = $this->conf->opt("oAuthClients");
+        $try = function ($cx, $uri) {
+            $this->conf->set_opt("oAuthClients", [(object) $cx]);
+            $this->conf->refresh_settings();
+            $jr = call_api("=oauthregister", $this->u_empty,
+                TestQreq::post_json(["redirect_uris" => [$uri]]));
+            return isset($jr->client_id);
+        };
+        foreach ([["redirect_uris" => ["https://ok.example.com/cb"]],
+                  ["redirect_uris" => "https://ok.example.com/cb"],
+                  ["redirect_uri" => "https://ok.example.com/cb"],
+                  ["redirect_uri" => ["https://ok.example.com/cb"]]] as $allow) {
+            $cx = $allow + ["name" => "d1", "dynamic" => true, "scope" => "read"];
+            xassert($try($cx, "https://ok.example.com/cb"));
+            xassert(!$try($cx, "https://evil.example.com/cb"));
+        }
+
+        // an allowlist this site cannot parse restricts to nothing
+        xassert(!$try(["name" => "d1", "dynamic" => true, "scope" => "read",
+                       "redirect_uris" => 17], "https://evil.example.com/cb"));
+        // only an absent key means "no restriction"
+        xassert($try(["name" => "d1", "dynamic" => true, "scope" => "read"],
+                     "https://anywhere.example.com/cb"));
+
+        $this->conf->set_opt("oAuthClients", $old);
+        $this->conf->refresh_settings();
+    }
+
+    /** The consent form's scope box starts out holding the scope this request
+     * asked for, so that leaving it alone grants what it displays. */
+    function test_consent_scope_box_shows_the_request() {
+        // read the box's value attribute out of the rendered consent page
+        $html = function ($client_id, $redirect_uri, $scope) {
+            $qreq = TestQreq::user_get($this->u_chair, [
+                "client_id" => $client_id, "redirect_uri" => $redirect_uri,
+                "response_type" => "code", "state" => "S", "scope" => $scope
+            ])->set_page("authorize");
+            Qrequest::set_main_request($qreq);
+            $old_test_mode = Navigation::$test_mode;
+            Navigation::$test_mode = 2;
+            ob_start();
+            try {
+                // The consent page renders only with a component set; without
+                // one `print_form` short-circuits to the JSON code response.
+                // The form's own components resolve through the component set,
+                // so they must find this instance, not a fresh one.
+                $cs = $this->conf->page_components($this->u_chair, $qreq);
+                $ap = new HotCRP\Authorize_Page($this->u_chair, $qreq, $cs);
+                $cs->set_callable("HotCRP\\Authorize_Page", $ap);
+                $ap->go();
+            } catch (PageCompletion $pc) {
+            } finally {
+                $t = ob_get_clean();
+                Navigation::$test_mode = $old_test_mode;
+            }
+            $this->_last_page_html = $t;
+            if (preg_match('/<input[^>]*name="scope"[^>]*>/', $t, $m)
+                && preg_match('/value="([^"]*)"/', $m[0], $m2)) {
+                return html_entity_decode($m2[1]);
+            }
+            return null;
+        };
+
+        // a hand-registered client's request scope was never displayed before
+        xassert_eqq($html("confclient", "https://conf1.example.com/cb", "openid read"),
+                    "read");
+        // the consent form closes, with or without the scope block
+        xassert_eqq(substr_count($this->_last_page_html ?? "", "<form"), 1);
+        xassert_eqq(substr_count($this->_last_page_html ?? "", "</form>"), 1);
+        xassert_eqq($html("confclient", "https://conf1.example.com/cb", "openid"), "none");
+        xassert_eqq(substr_count($this->_last_page_html ?? "", "</form>"), 1);
+        // a dynamic client's registration scope is not this request's scope
+        xassert_eqq($html($this->register_client("https://dall.com/"),
+                          "https://dall.com/", "write"), "write");
+        // and the seeded value round-trips: granting it changes nothing
+        $code = null;
+        [$how, $code] = $this->authorize_outcome([
+            "client_id" => $this->register_client("https://dall.com/"),
+            "redirect_uri" => "https://dall.com/", "response_type" => "code",
+            "state" => "S", "scope" => "openid read"
+        ], $this->u_chair);
+        xassert_eqq($how, "code");
+        $vq = TestQreq::user_post($this->u_chair,
+            ["authconfirm" => 1, "code" => $code, "scope" => "openid read"])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+        } catch (Redirection $redir) {
+        }
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("scope"), "openid read");
+    }
+
+    /** `validate` must not take its algorithm from the message it is checking
+     * (RFC 8725 §2.1, §3.1). */
+    function test_jwt_algorithm_confusion() {
+        $payload = (object) ["iss" => "https://idp.example.com", "sub" => "u1"];
+        $secret = "sekrit";
+        $mac = HotCRP\JWTParser::make_mac($payload, $secret);
+        $plain = HotCRP\JWTParser::make_plaintext($payload);
+
+        // with no key, an unsecured message is accepted: this client trusts TLS
+        $jwt = new HotCRP\JWTParser;
+        xassert_neqq($jwt->validate($plain), null);
+
+        // with a key, it is not: a key means a signature is required
+        $jwt = new HotCRP\JWTParser;
+        $jwt->verify_key = $secret;
+        xassert_eqq($jwt->validate($plain), null);
+        xassert_neqq($jwt->validate($mac), null);
+
+        // a PEM public key is not an HMAC secret; anyone holding it could
+        // otherwise sign a token this site would believe
+        $pem = (new HotCRP\JWTParser)->jwk_to_pem((object) [
+            "kty" => "RSA", "n" => base64url_encode(str_repeat("\xc5", 256)),
+            "e" => base64url_encode("\x01\x00\x01")
+        ]);
+        xassert_neqq($pem, null);
+        $jwt = new HotCRP\JWTParser;
+        $jwt->verify_key = $pem;
+        xassert_eqq($jwt->validate(HotCRP\JWTParser::make_mac($payload, $pem)), null);
+
+        // and a caller that knows what it expects can say so
+        $jwt = (new HotCRP\JWTParser)->set_algorithms(["RS256"]);
+        $jwt->verify_key = $secret;
+        xassert_eqq($jwt->validate($mac), null);
+        $jwt = (new HotCRP\JWTParser)->set_algorithms(["HS256"]);
+        $jwt->verify_key = $secret;
+        xassert_neqq($jwt->validate($mac), null);
+    }
+
+    /** The `email` claim becomes an account key, so it gets the same
+     * normalization as every other sign-in path. */
+    function test_oauth_email_is_normalized() {
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        $old = HotCRP\OAuth_Page::$fetch_function;
+
+        /** @return array{bool,?string} */
+        $run = function ($claim) {
+            $q1 = TestQreq::user_get($this->u_empty, ["authtype" => "p"])
+                ->set_page("oauth");
+            $qs = $q1->qsession();
+            Qrequest::set_main_request($q1);
+            $auth = null;
+            try {
+                (new HotCRP\OAuth_Page($this->u_empty, $q1))->start();
+            } catch (Redirection $redir) {
+                $auth = $redir->url;
+            }
+            parse_str(parse_url($auth ?? "", PHP_URL_QUERY) ?? "", $ap);
+            HotCRP\OAuth_Page::$fetch_function = function ($authi, $param) use ($ap, $claim) {
+                return [200, json_encode(["id_token" => HotCRP\JWTParser::make_plaintext((object) [
+                    "iss" => "https://idp.example.com", "aud" => "C",
+                    "exp" => Conf::$now + 600, "iat" => Conf::$now,
+                    "nonce" => $ap["nonce"], "sub" => "u1",
+                    "email" => $claim, "email_verified" => true
+                ])])];
+            };
+            $_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]] = "1";
+            $q2 = TestQreq::user_get($this->u_empty, ["code" => "C", "state" => $ap["state"]], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            $oap = new HotCRP\OAuth_Page($this->u_empty, $q2);
+            $oap->response();
+            unset($_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]]);
+            return [$oap->success, $oap->email];
+        };
+
+        try {
+            // surrounding whitespace names the same account, not a new one
+            [$ok, $email] = $run("  oauthnorm@hotcrp-oauth.org\t");
+            xassert($ok);
+            xassert_eqq($email, "oauthnorm@hotcrp-oauth.org");
+            xassert_neqq($this->conf->fresh_user_by_email("oauthnorm@hotcrp-oauth.org"), null);
+
+            // an email with an interior space is not a key
+            [$ok, ] = $run("oauth norm@hotcrp-oauth.org");
+            xassert(!$ok);
+
+            // nor is one the `email` column would have to truncate
+            [$ok, ] = $run(str_repeat("a", 115) . "@hotcrp-oauth.org");
+            xassert(!$ok);
+
+            [$ok, ] = $run("");
+            xassert(!$ok);
+        } finally {
+            HotCRP\OAuth_Page::$fetch_function = $old;
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A token for a cdb client works at every conference on the contact
+     * database, so a selector cannot travel with it: `#12` names a different
+     * submission at each site. */
+    function test_cdb_client_rejects_subset_scopes() {
+        if (!$this->conf->contactdb()) {
+            return;
+        }
+        $old = $this->conf->opt("oAuthClients");
+        $this->conf->set_opt("oAuthClients", array_merge($old, [(object) [
+            "name" => "cdbc", "client_id" => "cdbclient", "client_secret" => "s",
+            "is_cdb" => true, "scope" => "all",
+            "redirect_uris" => ["https://cdbc.example.com/cb"]
+        ]]));
+        $this->conf->refresh_settings();
+
+        $go = function ($scope) {
+            return $this->authorize_outcome([
+                "client_id" => "cdbclient",
+                "redirect_uri" => "https://cdbc.example.com/cb",
+                "response_type" => "code", "state" => "S", "scope" => $scope
+            ], $this->u_chair);
+        };
+
+        // a scope naming no submission subset is fine
+        [$how, ] = $go("read");
+        xassert_eqq($how, "code");
+
+        // one that names a paper, a tag, or a search is not
+        foreach (["submission:admin#12", "read submission:admin#hot",
+                  "submission:read?q=au%3Ame"] as $scope) {
+            [$how, $detail] = $go($scope);
+            xassert_eqq($how, "redirect");
+            xassert_eqq($this->redirect_error($detail ?? ""), "invalid_scope");
+        }
+
+        // and the mint-time invariant holds even if a request got through
+        $ts = TokenScope::parse("read submission:admin#hot", null);
+        xassert($ts->has_selector());
+        xassert(!$ts->without_selectors()->has_selector());
+        xassert_eqq(TokenScope::unparse($ts->without_selectors()), "read");
+
+        $this->conf->set_opt("oAuthClients", $old);
+        $this->conf->refresh_settings();
+    }
+
+    /** @return list<object> */
+    private function grants_for($user) {
+        $us = (new UserStatus($user))->set_user($user);
+        return (new Developer_UserInfo($us))->recent_grants();
+    }
+
+    /** @return list<TokenInfo> */
+    private function bearer_tokens_for($user) {
+        $us = (new UserStatus($user))->set_user($user);
+        return (new Developer_UserInfo($us))->recent_bearer_tokens();
+    }
+
+    /** Make a bearer token for `$user` with scope `$scope`.
+     * @return TokenInfo */
+    private function bearer_token($user, $scope) {
+        $tok = Authorization_Token::prepare_bearer($user, 3600);
+        return $tok->change_data("scope", $scope)->insert();
+    }
+
+    /** `client_secret: ""` is no secret at all. The token endpoint already
+     * read it that way; `make_id_token` did not, and signed HS256 with the
+     * empty key — a signature anyone can produce. */
+    function test_empty_client_secret_is_no_secret() {
+        $c = new HotCRP\OAuthClient((object) [
+            "name" => "x", "client_id" => "x", "client_secret" => "",
+            "redirect_uris" => ["https://x.example.com/cb"]
+        ]);
+        xassert_eqq($c->client_secret, null);
+        xassert($c->public_client("https://x.example.com/cb"));
+
+        $old = $this->conf->opt("oAuthClients");
+        $this->conf->set_opt("oAuthClients", array_merge($old, [(object) [
+            "name" => "emptysec", "client_id" => "emptysec", "client_secret" => "",
+            "scope" => "read", "redirect_uris" => ["https://emptysec.example.com/cb"]
+        ]]));
+        $this->conf->refresh_settings();
+
+        // a public client must use PKCE, which is what makes the empty secret
+        // safe to treat as absent
+        [$how, $detail] = $this->authorize_outcome([
+            "client_id" => "emptysec",
+            "redirect_uri" => "https://emptysec.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "openid"
+        ], $this->u_chair);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail ?? ""), "invalid_request");
+
+        $this->conf->set_opt("oAuthClients", $old);
+        $this->conf->refresh_settings();
+    }
+
+    /** Credentials and grant material belong in the body; in the URI they
+     * reach logs, `Referer`, and history (RFC 6749 §2.3.1, §3.2). */
+    function test_token_endpoint_refuses_query_credentials() {
+        foreach (HotCRP\Authorize_Page::SECRET_PARAMS as $k) {
+            $qreq = TestQreq::user_post($this->u_empty, ["grant_type" => "authorization_code", $k => "v"])
+                ->set_page("api")->set_query_keys([$k]);
+            Qrequest::set_main_request($qreq);
+            $jr = HotCRP\Authorize_Page::oauthtoken_api($this->u_empty, $qreq);
+            xassert_eqq($jr->content["error"] ?? null, "invalid_request", "param {$k}");
+        }
+        // the same parameter in the body is fine
+        $qreq = TestQreq::user_post($this->u_empty, ["grant_type" => "authorization_code", "client_id" => "nope"])
+            ->set_page("api");
+        Qrequest::set_main_request($qreq);
+        // and an error response is no more cacheable than a success (RFC 6749 §5.2)
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        try {
+            Navigation::headers_reset();
+            $jr = HotCRP\Authorize_Page::oauthtoken_api($this->u_empty, $qreq);
+            xassert_eqq($jr->content["error"] ?? null, "invalid_client");
+            xassert(in_array("Cache-Control: no-store", Navigation::headers_list(), true));
+        } finally {
+            Navigation::headers_reset();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** RFC 6749 §2.3.1 form-urlencodes each half of the Basic credentials
+     * before base64. That encoding is what lets a `client_id` contain the
+     * `:` the header is split on. */
+    function test_basic_credentials_are_urldecoded() {
+        $post = function ($clid, $secret) {
+            $qreq = TestQreq::user_post($this->u_empty, ["grant_type" => "refresh_token"])
+                ->set_page("api")
+                ->set_header("Authorization", "Basic " . base64_encode("{$clid}:{$secret}"));
+            Qrequest::set_main_request($qreq);
+            return HotCRP\Authorize_Page::oauthtoken_api($this->u_empty, $qreq)
+                ->content["error"] ?? null;
+        };
+        // `confclient`/`confsecret` are configured; encoded or raw, both work
+        xassert_neqq($post("confclient", "confsecret"), "invalid_client");
+        xassert_neqq($post("confclient", rawurlencode("confsecret")), "invalid_client");
+        xassert_eqq($post("confclient", "wrong"), "invalid_client");
+        // a client_id containing `:` is reachable only through the encoding
+        xassert_eqq($post("https://mdoc.example.com/client.json", ""), "invalid_client");
+        xassert_neqq($post(rawurlencode(self::MDOC_CLIENT_ID), ""), "invalid_client");
+    }
+
+    /** An OpenID-Connect-only client is never issued a refresh token, so a
+     * registration that asks for the grant is answered with what the client
+     * can actually use rather than refused (RFC 7591 §3.2.1). */
+    function test_registration_reports_usable_grant_types() {
+        $old = $this->conf->opt("oAuthClients");
+        $this->conf->set_opt("oAuthClients", array_merge($old, [(object) [
+            // no `scope`, so this component is OpenID Connect only
+            "name" => "doidc", "dynamic" => true,
+            "redirect_uris" => ["https://doidc.example.com/cb"]
+        ]]));
+        $this->conf->refresh_settings();
+
+        $reg = function ($uri, $rest = []) {
+            return call_api("=oauthregister", $this->u_empty,
+                TestQreq::post_json(["redirect_uris" => [$uri]] + $rest));
+        };
+        // asking for `refresh_token` is not an error, with or without a scope
+        $jr = $reg("https://doidc.example.com/cb",
+            ["grant_types" => ["authorization_code", "refresh_token"]]);
+        xassert_neqq($jr->client_id ?? null, null);
+        xassert_eqq($jr->grant_types ?? null, ["authorization_code"]);
+        $jr = $reg("https://doidc.example.com/cb",
+            ["grant_types" => ["authorization_code", "refresh_token"], "scope" => "read"]);
+        xassert_neqq($jr->client_id ?? null, null);
+        xassert_eqq($jr->grant_types ?? null, ["authorization_code"]);
+        // a component that grants API access does report the refresh grant
+        $jr = $reg("https://dall.com/", ["grant_types" => ["authorization_code", "refresh_token"]]);
+        xassert_eqq($jr->grant_types ?? null, ["authorization_code", "refresh_token"]);
+
+        $this->conf->set_opt("oAuthClients", $old);
+        $this->conf->refresh_settings();
+    }
+
+    /** A registered `scope` is user input like any other scope input. */
+    function test_registration_scope_is_checked() {
+        $reg = function ($scope) {
+            $jr = call_api("=oauthregister", $this->u_empty, TestQreq::post_json([
+                "redirect_uris" => ["https://dall.com/"], "scope" => $scope
+            ]));
+            return $jr->client_id ?? ($jr->error ?? "??");
+        };
+        xassert_neqq($reg("read"), "invalid_client_metadata");
+        xassert_eqq($reg(str_repeat("read ", 400)), "invalid_client_metadata");
+        xassert_eqq($reg("read\n\nwrite"), "invalid_client_metadata");
+        xassert_eqq($reg(17), "invalid_client_metadata");
+    }
+
+    /** `GET /api/share` returns a bearer credential for the paper, so it is
+     * an admin action, not a read. */
+    function test_share_token_needs_admin_scope() {
+        $prow = $this->conf->checked_paper_by_id(1);
+        $jr = call_api_result("share", $this->bearer_token($this->u_chair, "read"),
+            TestQreq::get(["p" => 1]), $prow);
+        xassert_eqq($jr->status, 403);
+        $jr = call_api_result("=share", $this->bearer_token($this->u_chair, "submission:admin"),
+            TestQreq::post(["p" => 1, "share" => 1]), $prow);
+        xassert_eqq($jr->status ?? 200, 200);
+        xassert_neqq($jr->content["token"] ?? null, null);
+        // the credential now exists, and a read-scoped token still cannot see it
+        $jr = call_api_result("share", $this->bearer_token($this->u_chair, "read"),
+            TestQreq::get(["p" => 1]), $prow);
+        xassert_eqq($jr->status, 403);
+        $jr = call_api_result("share", $this->bearer_token($this->u_chair, "submission:admin"),
+            TestQreq::get(["p" => 1]), $prow);
+        xassert_neqq($jr->content["token"] ?? null, null);
+    }
+
+    /** A review token is session state. A bearer request gets a fresh session
+     * each time, so the 5-failure lockout never accumulates and what is left
+     * is an unlimited guessing oracle. */
+    function test_reviewtoken_refuses_bearer() {
+        $jr = call_api_result("=reviewtoken", $this->bearer_token($this->u_chair, "all"),
+            TestQreq::post(["token" => "AAAAAAAA"]));
+        xassert_eqq($jr->status, 403);
+    }
+
+    /** A consent button names a session slot, and slots can be reused between
+     * render and post; it names the account too. */
+    function test_authconfirm_checks_the_named_account() {
+        [$how, $code] = $this->authorize_outcome([
+            "client_id" => $this->register_client("https://dall.com/"),
+            "redirect_uri" => "https://dall.com/", "response_type" => "code",
+            "state" => "S", "scope" => "read"
+        ], $this->u_chair);
+        xassert_eqq($how, "code");
+
+        // the slot now resolves to someone else than the button named
+        $vq = TestQreq::user_post($this->u_chair, [
+            "authconfirm" => 1, "code" => $code, "authemail" => $this->u_mgbaker->email
+        ])->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert(!$this->authconfirm_redirects($vq));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
+
+        // the button the user actually pressed still works
+        $vq = TestQreq::user_post($this->u_chair, [
+            "authconfirm" => 1, "code" => $code, "authemail" => "CHAIR@_.com"
+        ])->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert($this->authconfirm_redirects($vq));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), "chair@_.com");
+    }
+
+    /** The consent page's one job is telling the user who is asking, so a
+     * name cannot reorder itself. */
+    function test_client_name_is_not_reorderable() {
+        $c = new HotCRP\OAuthClient((object) [
+            "name" => "x", "client_id" => "x",
+            "title" => "hotcrp\u{202E}moc.live\u{202C}",
+            "redirect_uris" => ["https://x.example.com/cb"]
+        ]);
+        xassert_eqq($c->title_text(), "hotcrpmoc.live");
+        xassert_eqq($c->title_html(), "hotcrpmoc.live");
+    }
+
+    /** RFC 8414 §3.3 obliges a client to reject a resource whose
+     * `authorization_servers` does not match the server's own `issuer`. */
+    /** Fetch protected resource metadata as if `$url` had been requested.
+     * @return string */
+    private function well_known($url) {
+        $base = NavigationState::make_base($this->conf->opt("paperSite"));
+        // `make_base` splits `$rest` at its first "/", so it must not start with one
+        $nav = NavigationState::make_base($base->server . "/",
+            substr($url, strlen($base->server) + 1));
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            WellKnown_Page::oauth_protected_resource($nav, $this->conf);
+        } catch (PageCompletion $pc) {
+        } finally {
+            $t = ob_get_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        return $t;
+    }
+
+    function test_protected_resource_metadata() {
+        $site = $this->conf->opt("paperSite");
+        $base = NavigationState::make_base($site);
+        $wk = $base->server . "/.well-known/oauth-protected-resource";
+        $get = function ($suffix = "") use ($wk, $base) {
+            return $this->well_known($wk . rtrim($base->base_path, "/") . $suffix);
+        };
+        $this->conf->set_opt("oAuthIssuer", "https://issuer.example.com");
+        $j = json_decode($get("/api/whoami"));
+        xassert_neqq($j, null);
+        xassert_eqq($j->authorization_servers ?? null, [$this->conf->oauth_issuer()]);
+        xassert_eqq($j->authorization_servers ?? null, ["https://issuer.example.com"]);
+        $this->conf->set_opt("oAuthIssuer", null);
+
+        // the scope advertised is what that endpoint needs, not what the site
+        // is willing to grant somebody
+        $j = json_decode($get("/api/settings"));
+        xassert_neqq($j, null);
+        xassert_eqq($j->resource ?? null, rtrim($site, "/") . "/api/settings");
+        // GET wants settings:read, POST settings:admin; the union is admin
+        xassert(in_array("settings:admin", $j->scopes_supported ?? [], true));
+        xassert(!in_array("all", $j->scopes_supported ?? [], true));
+        // sign-in scopes ride along, since a client uses this list verbatim
+        foreach (["openid", "email", "profile"] as $sc) {
+            xassert(in_array($sc, $j->scopes_supported ?? [], true));
+        }
+        // an endpoint with no scope key is not scope-gated, so nothing is ruled out
+        $j = json_decode($get("/api/whoami"));
+        xassert(in_array("all", $j->scopes_supported ?? [], true));
+
+        // The URL a 401 sends clients to must be one this endpoint answers. It
+        // names the API, not the endpoint that failed: the token the client
+        // goes on to get is used across the API, so a scope adequate for one
+        // function would leave it short everywhere else. The request must
+        // navigate under `paperSite`, or the URL it advertises names a
+        // different host than the one serving the metadata.
+        $qreq = TestQreq::get([])->set_conf($this->conf)
+            ->set_navigation(NavigationState::make_base($site, "api/settings"));
+        Qrequest::set_main_request($qreq);
+        $h = $this->conf->www_authenticate_header("invalid_token", $qreq);
+        xassert(preg_match('/resource_metadata="([^"]*)"/', $h, $m) === 1);
+        // no empty path component, whatever the site's base path
+        xassert(strpos(substr($m[1] ?? "", 8), "//") === false);
+        $j = json_decode($this->well_known($m[1] ?? ""));
+        xassert_neqq($j, null);
+        xassert_eqq($j->resource ?? null, rtrim($site, "/") . "/api");
+        xassert(in_array("all", $j->scopes_supported ?? [], true));
+
+        // an endpoint that does not exist has no metadata
+        xassert_str_contains($get("/api/nonesuch"), "404 Not Found");
+
+        // and it describes nothing when this site is no authorization server
+        $old = $this->conf->opt("oAuthClients");
+        $this->conf->set_opt("oAuthClients", null);
+        $this->conf->refresh_settings();
+        xassert_str_contains($get("/api/whoami"), "404 Not Found");
+        $this->conf->set_opt("oAuthClients", $old);
+        $this->conf->refresh_settings();
+    }
+
+    /** A `roles` or `groups` claim is whatever the provider sent. */
+    function test_role_claim_ignores_non_strings() {
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com", "roles" => true,
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        $old = HotCRP\OAuth_Page::$fetch_function;
+        $email = "oauthroles@hotcrp-oauth.org";
+
+        try {
+            $q1 = TestQreq::user_get($this->u_empty, ["authtype" => "p"])
+                ->set_page("oauth");
+            $qs = $q1->qsession();
+            Qrequest::set_main_request($q1);
+            $auth = null;
+            try {
+                (new HotCRP\OAuth_Page($this->u_empty, $q1))->start();
+            } catch (Redirection $redir) {
+                $auth = $redir->url;
+            }
+            parse_str(parse_url($auth ?? "", PHP_URL_QUERY) ?? "", $ap);
+            HotCRP\OAuth_Page::$fetch_function = function ($authi, $param) use ($ap, $email) {
+                return [200, json_encode(["id_token" => HotCRP\JWTParser::make_plaintext((object) [
+                    "iss" => "https://idp.example.com", "aud" => "C",
+                    "exp" => Conf::$now + 600, "iat" => Conf::$now,
+                    "nonce" => $ap["nonce"], "sub" => "u1",
+                    "email" => $email, "email_verified" => true,
+                    "roles" => [17, null, ["pc"], "pc"]
+                ])])];
+            };
+            $_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]] = "1";
+            $q2 = TestQreq::user_get($this->u_empty, ["code" => "C", "state" => $ap["state"]], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            $oap = new HotCRP\OAuth_Page($this->u_empty, $q2);
+            $oap->response();
+            unset($_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]]);
+
+            // the junk is skipped and the one real role still applies
+            xassert($oap->success);
+            $u = $this->conf->fresh_user_by_email($email);
+            xassert_neqq($u, null);
+            xassert($u && $u->isPC);
+        } finally {
+            HotCRP\OAuth_Page::$fetch_function = $old;
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** The `/oauth` state token is claimed atomically and dropped however the
+     * callback ends; two callbacks in flight must not both proceed, and a
+     * request that fails early must not leave the state usable. */
+    function test_oauth_state_is_single_use() {
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+
+        try {
+            $q1 = TestQreq::user_get($this->u_empty, ["authtype" => "p"])
+                ->set_page("oauth");
+            $qs = $q1->qsession();
+            Qrequest::set_main_request($q1);
+            $auth = null;
+            try {
+                (new HotCRP\OAuth_Page($this->u_empty, $q1))->start();
+            } catch (Redirection $redir) {
+                $auth = $redir->url;
+            }
+            parse_str(parse_url($auth ?? "", PHP_URL_QUERY) ?? "", $ap);
+            $state = $ap["state"] ?? "";
+            xassert_neqq($state, "");
+
+            // this callback fails early: it has no `code`, and its nonce cookie
+            // was never set. The state must still be spent.
+            $q2 = TestQreq::user_get($this->u_empty, ["state" => $state], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            (new HotCRP\OAuth_Page($this->u_empty, $q2))->response();
+            xassert_eqq(TokenInfo::find_from($state, $this->conf, !!$this->conf->contactdb()), null);
+
+            // and a second callback with the same state finds nothing
+            $q3 = TestQreq::user_get($this->u_empty, ["code" => "C", "state" => $state], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q3);
+            $oap = new HotCRP\OAuth_Page($this->u_empty, $q3);
+            $oap->response();
+            xassert(!$oap->success);
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A loopback client identifier has three spellings, and `try_make` accepts
+     * all three. A host wildcard must therefore cover all three: an IPv6
+     * literal is one host, and the colons inside its brackets are part of that
+     * host, not a port separator. */
+    function test_client_id_match_ipv6_host() {
+        $ck = function ($pat, $client_id) {
+            $doc = $this->client_document($client_id);
+            xassert_neqq($doc, null);
+            return $doc && $doc->matches((object) ["client_id_match" => $pat]);
+        };
+
+        // a bare host wildcard covers every loopback spelling
+        xassert($ck("http://*/cb", "http://localhost/cb"));
+        xassert($ck("http://*/cb", "http://127.0.0.1/cb"));
+        xassert($ck("http://*/cb", "http://[::1]/cb"));
+
+        // so does one that also accepts any port
+        xassert($ck("http://*:*/cb", "http://localhost:5000/cb"));
+        xassert($ck("http://*:*/cb", "http://127.0.0.1:5000/cb"));
+        xassert($ck("http://*:*/cb", "http://[::1]:5000/cb"));
+        xassert($ck("http://*:*/cb", "http://[::1]/cb"));
+
+        // and naming the address literally still works, with and without a port
+        xassert($ck("http://[::1]:*/cb", "http://[::1]:5000/cb"));
+        xassert($ck("http://[::1]:*/cb", "http://[::1]/cb"));
+        xassert($ck("http://[::1]/cb", "http://[::1]/cb"));
+
+        // the port is still outside the host: naming no port means no port
+        xassert(!$ck("http://[::1]/cb", "http://[::1]:5000/cb"));
+        xassert(!$ck("http://*/cb", "http://[::1]:5000/cb"));
+        xassert(!$ck("http://*/cb", "http://localhost:5000/cb"));
+    }
+
+    /** A cdb token works at every conference sharing the contact database, so
+     * `allow_if` has nothing to evaluate: it names roles this site knows and
+     * the others do not. The combination is refused rather than half-applied. */
+    function test_cdb_client_refuses_allow_if() {
+        $old = $this->conf->opt("oAuthClients");
+        $mk = function ($cx) use ($old) {
+            $this->conf->set_opt("oAuthClients", array_merge($old, [(object) $cx]));
+            $this->conf->refresh_settings();
+            return isset(HotCRP\OAuthClient::list($this->conf)["cdbc"]);
+        };
+        $base = ["name" => "cdbc", "client_id" => "cdbclient", "client_secret" => "s",
+                 "scope" => "read", "redirect_uris" => ["https://cdbc.example.com/cb"]];
+        xassert($mk($base));
+        xassert($mk($base + ["is_cdb" => true]));
+        xassert($mk($base + ["allow_if" => "chair"]));
+        // …but not both
+        xassert(!$mk($base + ["is_cdb" => true, "allow_if" => "chair"]));
+        // and the client is then absent, not merely unauthorized
+        [$how, $detail] = $this->authorize_outcome([
+            "client_id" => "cdbclient", "redirect_uri" => "https://cdbc.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ], $this->u_chair);
+        xassert_eqq($how, "page");
+        xassert_str_contains($detail ?? "", "not found");
+
+        $this->conf->set_opt("oAuthClients", $old);
+        $this->conf->refresh_settings();
+    }
+
+    /** `allow_if` limits who may hold a client's tokens, not just who may press
+     * Approve. Losing the role must stop the token — otherwise refresh rotation
+     * renews the grant forever past the rule that justified it. */
+    function test_allow_if_rechecked_after_grant() {
+        $jr = $this->dynamic_client_result("https://dpc.com/", $this->u_mgbaker, ["scope" => "read"]);
+        xassert_neqq($jr, null);
+        xassert_neqq($this->_last_refresh_token, null);
+        $atok = $jr->_token;
+        xassert_neqq($atok, null);
+        // the very first access token names its client, like every later one
+        xassert_neqq($atok->data("client_name"), null);
+        // the grant records the rule it was made under
+        xassert_eqq($atok->data("allow_if"), "pc");
+        // while the user is still PC, both the API and refresh work
+        xassert_eqq(call_api_result("whoami", $atok, [])->response_code(), 200);
+        xassert_neqq(($atok2 = $this->refresh_access_token()), null);
+
+        $roles = $this->u_mgbaker->roles;
+        try {
+            $this->u_mgbaker->save_roles(0, $this->u_chair);
+            $this->conf->invalidate_caches("pc");
+            // the live access token stops working...
+            xassert_eqq(call_api_result("whoami", $atok2, [])->response_code(), 401);
+            // ...and refresh cannot mint a new one
+            xassert_eqq($this->refresh_access_token(), null);
+        } finally {
+            $this->u_mgbaker->save_roles($roles, $this->u_chair);
+            $this->conf->invalidate_caches("pc");
+        }
+
+        // restoring the role does not resurrect anything: the refresh token was
+        // spent by the failed attempt
+        xassert_eqq($this->refresh_access_token(), null);
+    }
+
+    /** Revoking a grant must take the whole chain: the access token the user
+     * can see renews itself from a refresh token they cannot, so deleting the
+     * visible half achieves nothing. */
+    function test_grant_revocation() {
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($jr, null);
+        $atok = $jr->_token;
+        $client_id = $this->_last_client_id;
+
+        // an OAuth token is not an "API token": it belongs to a grant, and the
+        // hand-made token list must not offer a deletion that refresh undoes
+        foreach ($this->bearer_tokens_for($this->u_chair) as $t) {
+            xassert_neqq($t->salt, $atok->salt);
+        }
+
+        $grants = $this->grants_for($this->u_chair);
+        $g = null;
+        foreach ($grants as $gx) {
+            if ($gx->client_id === $client_id)
+                $g = $gx;
+        }
+        xassert_neqq($g, null);
+        if (!$g) {
+            return;
+        }
+        xassert_eqq($g->scopes, ["read"]);
+        // the grant knows its client by name, so it stays revocable after the
+        // client is removed from the configuration
+        xassert_neqq($g->name, null);
+        // both halves are present: revoking only the access token would leave
+        // the refresh token to mint another
+        $types = [];
+        foreach ($g->tokens as $t) {
+            $types[$t->capabilityType] = true;
+        }
+        xassert(isset($types[TokenInfo::BEARER]));
+        xassert(isset($types[TokenInfo::OAUTHREFRESH]));
+
+        // revoke, the way the profile page does
+        foreach ($g->tokens as $t) {
+            if ($t->is_active()) {
+                $t->set_invalid()->set_expires_in(Authorization_Token::BEARER_RETENTION)->update();
+            }
+        }
+
+        // the access token is dead, and refresh cannot resurrect the grant
+        xassert_eqq(call_api_result("whoami", $this->find_token($atok->salt), [])->response_code(), 401);
+        xassert_eqq($this->refresh_access_token(), null);
+        // and the grant is gone from the list, which shows only live ones
+        foreach ($this->grants_for($this->u_chair) as $gx) {
+            xassert_neqq($gx->client_id, $client_id);
+        }
+    }
+
+    /** A client that omits `scope` gets this server's default, which asks for
+     * everything and is then capped by the client's configuration — the
+     * administrator's decision. Defaulting to `openid` minted an access token
+     * good for nothing, since an OpenID Connect scope names no API rights. */
+    function test_omitted_scope_defaults_to_client_scope() {
+        // `dall` is configured "all", `dro` is configured "read"
+        foreach ([["https://dall.com/", "all"], ["https://dro.com/", "read"]] as [$uri, $want]) {
+            $jr = $this->dynamic_client_result($uri, $this->u_chair);
+            xassert_neqq($jr, null);
+            if (!$jr) {
+                continue;
+            }
+            // the request is recorded as asking for everything...
+            xassert_eqq($jr->_token->data("client_id"), $this->_last_client_id);
+            // ...and the access token is capped to what the client may have
+            xassert_eqq($jr->_token->data("scope"), $want, $uri);
+            xassert_neqq($jr->id_token ?? null, null);
+            xassert_neqq($jr->refresh_token ?? null, null);
+        }
+
+        // an explicit identity-only request is still honored as identity-only:
+        // a client that asks for nothing must not be handed API rights
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair,
+            ["scope" => "openid"]);
+        xassert_neqq($jr, null);
+        xassert_eqq($jr->_token->data("scope"), "none");
+        // and one that names a scope gets that scope, not the default
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair,
+            ["scope" => "openid tag:read"]);
+        xassert_eqq($jr->_token->data("scope"), "tag:read");
+    }
+
+    /** A dynamically registered client declares a `scope` of its own, and it
+     * caps every token the client is issued — the consent field limits within
+     * it rather than reaching past it. */
+    function test_registration_scope_caps_the_grant() {
+        $ruri = "https://dall.com/";
+        // the client registers itself as wanting `read` only
+        $jr = call_api("=oauthregister", $this->u_empty, TestQreq::post_json([
+            "redirect_uris" => [$ruri], "scope" => "read"
+        ]));
+        xassert_neqq($jr->client_id ?? null, null);
+        $this->_last_client_id = $jr->client_id;
+        $this->_last_client_secret = $jr->client_secret;
+        // ...then asks for more than that in the authorization request. `dall`
+        // is configured "all", so the registration scope is the only thing
+        // that can narrow this.
+        $param = [
+            "client_id" => $jr->client_id, "redirect_uri" => $ruri,
+            "response_type" => "code", "state" => "S", "scope" => "openid write"
+        ];
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+        $rjr = $this->redeem_code($this->confirm_code($code), $ruri);
+        xassert_eqq($this->find_token($rjr->access_token)->data("scope"), "read");
+
+        // and the consent field does not reach past it either
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        $rjr = $this->redeem_code($this->confirm_code($code, "write"), $ruri);
+        xassert_eqq($this->find_token($rjr->access_token)->data("scope"), "read");
+        // and the cap holds across rotation
+        $this->_last_refresh_token = $rjr->refresh_token;
+        $atok = $this->refresh_access_token();
+        xassert_neqq($atok, null);
+        xassert_eqq($atok->data("scope"), "read");
+    }
+
+    /** What a grant's row says about scope. An access token records the scope
+     * granted; once its row is gone — which happens days before the refresh
+     * token's — only the requested scope survives, and that is an upper bound,
+     * not the grant. Neither may be reported as "full scope", which is what
+     * `all` means. */
+    function test_grant_scope_display() {
+        $mk = function ($uri, $scope) {
+            $jr = $this->dynamic_client_result($uri, $this->u_chair, ["scope" => $scope]);
+            xassert_neqq($jr, null);
+            $cid = $this->_last_client_id;
+            foreach ($this->grants_for($this->u_chair) as $g) {
+                if ($g->client_id === $cid)
+                    return $g;
+            }
+            return null;
+        };
+
+        // an access token is present, so the granted scope is known exactly.
+        // Each of these registers a fresh dynamic client, so each is its own
+        // row rather than accumulating.
+        $g = $mk("https://dall.com/", "openid read");
+        xassert_neqq($g, null);
+        xassert_eqq($g->scopes, ["read"]);
+        xassert_eqq(count($g->tokens), 2);   // access + refresh
+        $g = $mk("https://dall.com/", "openid all");
+        xassert_eqq($g->scopes, ["all"]);
+        // an identity-only request grants no API access — and that is not the
+        // same as not knowing
+        $g = $mk("https://dall.com/", "openid");
+        xassert_eqq($g->scopes, ["none"]);
+
+        // now retire the access token the way time does, leaving the refresh
+        // token: the grant is still listed, and its scope is still described
+        $g = $mk("https://dall.com/", "openid read");
+        xassert_eqq($g->scopes, ["read"]);
+        $cid = $g->client_id;
+        foreach ($g->tokens as $t) {
+            if ($t->capabilityType === TokenInfo::BEARER) {
+                $t->set_invalid_at(Conf::$now - 6 * 86400)->update();
+            }
+        }
+        $g2 = null;
+        foreach ($this->grants_for($this->u_chair) as $gx) {
+            if ($gx->client_id === $cid)
+                $g2 = $gx;
+        }
+        xassert_neqq($g2, null);
+        // the exact scope is gone with the row, but the request bound remains,
+        // and it must not read as "full scope"
+        xassert_eqq($g2->scopes, []);
+        xassert_eqq($g2->max_scopes, ["read"]);
+        xassert_eqq(count($g2->tokens), 1);
+    }
+
+    /** A metadata-document client keeps one `client_id` — a URL — across every
+     * authorization, so several authorizations are one connected application.
+     * The row must describe all of them, and describe them the same way each
+     * time it is built. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_grants_merge_authorizations_of_one_client() {
+        $doc = [
+            "client_id" => self::MDOC_CLIENT_ID,
+            "client_name" => "Metadata Document Test Client",
+            "client_uri" => "https://mdoc.example.com/",
+            "redirect_uris" => [self::MDOC_REDIRECT_URI, "https://mdoc.example.com/cb2"],
+            "grant_types" => ["authorization_code", "refresh_token"],
+            "response_types" => ["code"],
+            "token_endpoint_auth_method" => "none"
+        ];
+        // other tests authorize this same client, and that is the point: they
+        // all land in one row. Measure the change rather than the total.
+        $before = 0;
+        foreach ($this->grants_for($this->u_chair) as $gx) {
+            if ($gx->client_id === self::MDOC_CLIENT_ID)
+                $before = count($gx->tokens);
+        }
+        try {
+            $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+                ["scope" => "openid read"]);
+            xassert_neqq($jr, null);
+            // the document renames the client and it is authorized again,
+            // genuinely later each time — the test clock does not advance by
+            // itself, and "most recent" is meaningless while it stands still
+            foreach (["Renamed Client", "Renamed Again"] as $name) {
+                Conf::advance_current_time(Conf::$now + 2);
+                $this->set_document(self::MDOC_CLIENT_ID,
+                    ["client_name" => $name] + $doc);
+                $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI,
+                    $this->u_chair, ["scope" => "openid all"]);
+                xassert_neqq($jr, null);
+                // the row still names the client as of its newest authorization
+                $g = null;
+                foreach ($this->grants_for($this->u_chair) as $gx) {
+                    if ($gx->client_id === self::MDOC_CLIENT_ID) {
+                        // one row, however many authorizations
+                        xassert_eqq($g, null);
+                        $g = $gx;
+                    }
+                }
+                xassert_neqq($g, null);
+                xassert_eqq($g ? $g->name : null, $name);
+            }
+            if (!$g) {
+                return;
+            }
+            // every authorization's access and refresh tokens
+            xassert_eqq(count($g->tokens) - $before, 6);
+            // and every scope, so no authorization is misdescribed
+            xassert(in_array("read", $g->scopes, true));
+            xassert(in_array("all", $g->scopes, true));
+        } finally {
+            $this->set_document(self::MDOC_CLIENT_ID, $doc);
+        }
+    }
+
+    /** Build a reauthenticated POST `UserStatus` for `$user`, as
+     * Profile > Developer runs under.
+     * @return array{UserStatus,Qrequest} */
+    private function developer_us($user, $req = []) {
+        $qreq = (new Qrequest("POST", $req))->approve_token();
+        $qreq->set_conf($this->conf)->set_qsession(new MemoryQsession);
+        UserSecurityEvent::session_user_add($qreq->qsession(), $user->email);
+        UserSecurityEvent::make($user->email)
+            ->set_reason(UserSecurityEvent::REASON_REAUTH)
+            ->store($qreq);
+        $u = $user->activate($qreq, true);
+        $qreq->set_user($u);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        return [$us, $qreq];
+    }
+
+    /** Disconnecting an application goes through the profile form, so the
+     * field the page renders and the field the save handler reads have to be
+     * the same field. Revoking the tokens by hand tests neither. */
+    function test_grant_revocation_through_the_form() {
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($jr, null);
+        $client_id = $this->_last_client_id;
+        $atok = $jr->_token;
+
+        // what the page renders
+        [$us, ] = $this->developer_us($this->u_chair);
+        xassert($us->is_auth_self());
+        xassert($us->has_recent_authentication());
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new Developer_UserInfo($us))->print_grants($us);
+        } finally {
+            $html = ob_get_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        // the row names the client, counts its live tokens, and states its scope
+        xassert_str_contains($html, "2 tokens");
+        xassert_str_contains($html, "scope read");
+        // and carries the identifier the save handler matches on
+        xassert(preg_match('/name="(grant\/\d+\/id)" value="([^"]*)"/', $html, $m) === 1);
+        xassert_eqq($m[2] ?? null, "L.{$client_id}");
+        $idfield = $m[1];
+        $delfield = str_replace("/id", "/delete", $idfield);
+
+        // a request that names the row but does not ask to delete it
+        [$us, ] = $this->developer_us($this->u_chair, [$idfield => "L.{$client_id}"]);
+        $d = new Developer_UserInfo($us);
+        $d->request_delete_grants($us);
+        $d->save_delete_grants($us);
+        xassert($this->find_token($atok->salt)->is_active());
+
+        // a request naming some other grant leaves this one alone
+        [$us, ] = $this->developer_us($this->u_chair,
+            [$idfield => "L.hctk_nonesuch", $delfield => "1"]);
+        $d = new Developer_UserInfo($us);
+        $d->request_delete_grants($us);
+        $d->save_delete_grants($us);
+        xassert($this->find_token($atok->salt)->is_active());
+
+        // and the real thing revokes the whole grant
+        [$us, ] = $this->developer_us($this->u_chair,
+            [$idfield => "L.{$client_id}", $delfield => "1"]);
+        $d = new Developer_UserInfo($us);
+        $d->request_delete_grants($us);
+        $d->save_delete_grants($us);
+        xassert(isset($us->diffs["connected applications"]));
+        xassert(!$this->find_token($atok->salt)->is_active());
+        $this->_last_refresh_token = $jr->refresh_token;
+        xassert_eqq($this->refresh_access_token(), null);
+        foreach ($this->grants_for($this->u_chair) as $g) {
+            xassert_neqq($g->client_id, $client_id);
+        }
+    }
+
+    /** Post a revocation request as the last dynamic client registered.
+     * @return JsonResult */
+    private function revoke_token($token, $rest = [], $auth = true) {
+        $param = $rest;
+        if ($token !== null) {
+            $param["token"] = $token;
+        }
+        if ($auth) {
+            $param["client_id"] = $this->_last_client_id;
+            $param["client_secret"] = $this->_last_client_secret;
+        }
+        $qreq = TestQreq::post($param)->set_conf($this->conf)->set_page("api");
+        Qrequest::set_main_request($qreq);
+        return HotCRP\Authorize_Page::oauthrevoke_api($this->u_empty, $qreq);
+    }
+
+    /** RFC 7009: a client can hand back a token it no longer needs. */
+    function test_token_revocation_endpoint() {
+        // revoking an access token stops it, and only it
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($jr, null);
+        $atok = $jr->_token;
+        $this->_last_refresh_token = $jr->refresh_token;
+        xassert_eqq(call_api_result("whoami", $atok, [])->response_code(), 200);
+        xassert_eqq($this->revoke_token($jr->access_token)->status ?? 200, 200);
+        xassert_eqq(call_api_result("whoami", $this->find_token($jr->access_token), [])->response_code(), 401);
+        // the grant survives: §2.1 makes that cascade a MAY, and we do not
+        xassert_neqq($this->refresh_access_token(), null);
+
+        // revoking a refresh token takes the grant with it
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        $this->_last_refresh_token = $jr->refresh_token;
+        xassert_eqq($this->revoke_token($jr->refresh_token)->status ?? 200, 200);
+        xassert_eqq(call_api_result("whoami", $this->find_token($jr->access_token), [])->response_code(), 401);
+        xassert_eqq($this->refresh_access_token(), null);
+        // and it leaves the user's connected-application list
+        foreach ($this->grants_for($this->u_chair) as $g) {
+            xassert_neqq($g->client_id, $this->_last_client_id);
+        }
+
+        // an unknown or malformed token is a success, not an oracle
+        foreach (["hct_" . str_repeat("z", 30), "hctr_" . str_repeat("z", 36),
+                  "garbage", "hct_short", ""] as $bad) {
+            $r = $this->revoke_token($bad);
+            xassert_eqq($r->status ?? 200, $bad === "" ? 400 : 200, $bad);
+        }
+
+        // a token issued to some other client is refused
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        $victim = $jr->access_token;
+        $this->register_client("https://dall.com/");   // a different client
+        $r = $this->revoke_token($victim);
+        xassert_eqq($r->content["error"] ?? null, "invalid_grant");
+        xassert_eqq(call_api_result("whoami", $this->find_token($victim), [])->response_code(), 200);
+
+        // Client authentication is required, as at the token endpoint, and
+        // RFC 6749 §5.2 governs how it fails: "no client authentication
+        // included" is `invalid_client`, and a client that tried via the
+        // `Authorization` header gets 401 with a challenge rather than 400.
+        $r = $this->revoke_token($victim, [], false);
+        xassert_eqq($r->content["error"] ?? null, "invalid_client");
+        xassert_eqq($r->status, 400);
+        xassert_str_contains($r->header("WWW-Authenticate") ?? "", "Bearer");
+
+        // unknown client and wrong secret are the same answer, so the endpoint
+        // does not enumerate clients
+        $post = function ($param, $hdr = null) {
+            $qq = TestQreq::post($param)->set_conf($this->conf)->set_page("api");
+            if ($hdr !== null) {
+                $qq->set_header("Authorization", $hdr);
+            }
+            Qrequest::set_main_request($qq);
+            return HotCRP\Authorize_Page::oauthrevoke_api($this->u_empty, $qq);
+        };
+        $r = $post(["token" => $victim, "client_id" => "hctk_nosuchclient0000000000000000"]);
+        xassert_eqq([$r->status, $r->content["error"] ?? null], [400, "invalid_client"]);
+        $r = $post(["token" => $victim, "client_id" => $this->_last_client_id,
+                    "client_secret" => "wrong"]);
+        xassert_eqq([$r->status, $r->content["error"] ?? null], [400, "invalid_client"]);
+
+        // the same failure over the Authorization header is a 401
+        $r = $post(["token" => $victim],
+            "Basic " . base64_encode($this->_last_client_id . ":wrong"));
+        xassert_eqq([$r->status, $r->content["error"] ?? null], [401, "invalid_client"]);
+        xassert_str_contains($r->header("WWW-Authenticate") ?? "", "Bearer");
+
+        // supplying both methods at once is the malformed request
+        $r = $post(["token" => $victim, "client_id" => $this->_last_client_id,
+                    "client_secret" => $this->_last_client_secret],
+            "Basic " . base64_encode($this->_last_client_id . ":" . $this->_last_client_secret));
+        xassert_eqq($r->content["error"] ?? null, "invalid_request");
+
+        // the token may not travel in the query string
+        $qreq = TestQreq::post(["token" => $victim, "client_id" => $this->_last_client_id,
+                                "client_secret" => $this->_last_client_secret])
+            ->set_conf($this->conf)->set_page("api")->set_query_keys(["token"]);
+        Qrequest::set_main_request($qreq);
+        $r = HotCRP\Authorize_Page::oauthrevoke_api($this->u_empty, $qreq);
+        xassert_eqq($r->content["error"] ?? null, "invalid_request");
+
+        // a nonsense type hint is rejected
+        $r = $this->revoke_token($victim, ["token_type_hint" => "banana"]);
+        xassert_eqq($r->content["error"] ?? null, "unsupported_token_type");
+
+        // and the endpoint is advertised
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            WellKnown_Page::oauth_authorization_server(Navigation::get(), $this->conf);
+        } catch (PageCompletion $pc) {
+        } finally {
+            $t = ob_get_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        $j = json_decode($t);
+        xassert_str_contains($j->revocation_endpoint ?? "", "/api/oauthrevoke");
+        xassert_neqq($j->revocation_endpoint_auth_methods_supported ?? null, null);
     }
 
     function test_allow_if() {

@@ -252,6 +252,28 @@ the response carries an HTTP `4xx` status and a body of the form `{"error":
 * param ?=scope string: Space-separated requested scopes
 
 
+# post /oauthrevoke
+
+> OAuth 2.0 token revocation endpoint
+
+Revoke a token, following [RFC
+7009](https://datatracker.ietf.org/doc/html/rfc7009). Like [`POST
+/oauthtoken`](#post-oauthtoken), this is a standards-based endpoint that does
+not use HotCRP’s usual `{"ok": ...}` response envelope; the client
+authenticates the same way, and may revoke only its own tokens. Revoking a
+refresh token also revokes the access tokens it produced.
+
+As required by the RFC, unknown and already-revoked tokens get a success
+response, so the endpoint cannot test whether a token exists. Failures carry a
+`4xx` status and a body like `{"error": "invalid_client"}` (also
+`invalid_request`, `unsupported_token_type`, `invalid_grant`).
+
+* param ?=token string: The access or refresh token to revoke
+* param ?=token_type_hint string: `access_token` or `refresh_token`
+* param ?=client_id string: Client identifier
+* param ?=client_secret string: Client secret
+
+
 # post /jserror
 
 > Report a client-side Javascript error

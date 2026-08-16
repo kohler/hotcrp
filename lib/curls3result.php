@@ -180,7 +180,7 @@ class CurlS3Result extends S3Result {
     }
 
     function exec() {
-        curl_exec($this->curlh);
+        return curl_exec($this->curlh);
     }
 
     function parse_result() {

@@ -315,6 +315,9 @@ function initialize_user($qreq, $kwarg = null) {
             && $token->capabilityType === TokenInfo::BEARER
             && $token->is_active()) {
             $user = $token->local_user();
+            if ($user && !Authorization_Token::check_allow_if($token, $user)) {
+                $user = null;
+            }
         }
         if (!$user) {
             JsonResult::make_error(401, "<0>Unauthorized")

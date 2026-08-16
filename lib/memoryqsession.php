@@ -9,6 +9,12 @@ class MemoryQsession extends Qsession {
         $this->assign_open($sid ?? "sess_" . base64_encode(random_bytes(15)), $sv);
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
+    function open_new_sid() {
+        // test fixture
+        $this->sid = "sess_" . base64_encode(random_bytes(15));
+    }
+
     function set($key, $value) {
         assert($this->sopen);
         $this->sv[$key] = $value;

@@ -23,6 +23,23 @@ class Authorization_Token {
             $token->set_invalid_at(0)->set_expires_at(0);
         }
     }
+    /** Return true if `$user` still satisfies the `allow_if` that was in force
+     * when `$tok` was granted.
+     *
+     * A client’s `allow_if` limits who may hold its tokens, not merely who may
+     * press Approve, so it is checked on every use. The expression is recorded
+     * on the token: the user-side terms it names — roles, tags — are what
+     * change, and they are evaluated live here, while looking the client up
+     * per request would cost a query for a dynamically registered one.
+     * @param TokenInfo $tok
+     * @param Contact $user
+     * @return bool */
+    static function check_allow_if($tok, $user) {
+        $allow_if = $tok->data("allow_if");
+        return $allow_if === null
+            || (new XtParams($user->conf, $user))->check($allow_if);
+    }
+
     /** @param Contact $user
      * @param int $expires_in
      * @return TokenInfo */

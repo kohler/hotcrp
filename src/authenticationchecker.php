@@ -151,13 +151,7 @@ class AuthenticationChecker {
         }
 
         // OAuth
-        $authi = null;
-        foreach ($this->conf->oauth_providers() as $authdata) {
-            if ($authdata->name === $use->subtype
-                && !($authdata->disabled ?? false)) {
-                $authi = $authdata;
-            }
-        }
+        $authi = (OAuthProvider::list($this->conf))[$use->subtype] ?? null;
         if (!$authi) {
             return false;
         }

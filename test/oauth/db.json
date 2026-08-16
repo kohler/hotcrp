@@ -4,7 +4,16 @@
 			"client_id": "hotcrp-oauth-test",
 			"client_secret": "Dudfield",
 			"name": "HotCRP OAuth Test",
-			"redirect_uri": "http://localhost:8080/testconf/oauth"
+			"redirect_uri": "http://localhost:8020/testconf/oauth"
+		}
+	],
+	"servers": [
+		{
+			"name": "local",
+			"hotcrp_uri": "http://localhost:8020/testconf/",
+			"client_id": "hotcrp-oauth-servertest",
+			"client_secret": "Y5Ay6heHUZbXeZWMuKthYFrMfaJcyeCE",
+			"scope": "openid read"
 		}
 	],
 	"users": [

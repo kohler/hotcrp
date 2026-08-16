@@ -39,6 +39,7 @@
     {   "name": "mentioncompletion", "get": true, "function": "MentionLister::mentioncompletion_api"   },
     {   "name": "oauthregister", "post": true, "auth": false, "function": "HotCRP\\Authorize_Page::oauthregister_api"   },
     {   "name": "oauthtoken", "post": true, "auth": false, "function": "HotCRP\\Authorize_Page::oauthtoken_api"   },
+    {   "name": "oauthrevoke", "post": true, "auth": false, "function": "HotCRP\\Authorize_Page::oauthrevoke_api"   },
     {   "name": "paper", "get": true, "delete": true, "paper": true, "session": false, "function": "Paper_API::run_one"   },
     {   "name": "paper", "post": true, "session": false, "function": "Paper_API::run_one"   },
     {   "name": "papers", "get": true, "post": true, "session": false, "function": "Paper_API::run_multi"   },

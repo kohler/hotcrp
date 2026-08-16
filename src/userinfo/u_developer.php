@@ -7,8 +7,12 @@ class Developer_UserInfo {
     private $us;
     /** @var ?TokenInfo */
     private $_new_token;
+    /** @var ?list<TokenInfo> */
+    private $_recent_tokens;
     /** @var list<array{int,bool,string}> */
     private $_delete_tokens = [];
+    /** @var list<string> */
+    private $_delete_grants = [];
 
     function __construct(UserStatus $us) {
         $this->us = $us;
@@ -44,33 +48,109 @@ class Developer_UserInfo {
         return $t <= 0 || $t > Conf::$now - 5 * 86400;
     }
 
-    /** @param ?Contact $user
-     * @return list<TokenInfo> */
-    static function recent_bearer_tokens($user) {
+    /** @param ?Contact $user */
+    private function _add_recent_tokens_at($user) {
         if (!$user) {
-            return [];
+            // no contactdb, or no account there
+            return;
         }
         $is_cdb = $user->is_cdb_user();
         $uid = $is_cdb ? $user->contactDbId : $user->contactId;
         if ($uid <= 0) {
-            return [];
+            return;
         }
         $dblink = $is_cdb ? $user->conf->contactdb() : $user->conf->dblink;
-        $result = Dbl::qe($dblink, "select * from Capability where capabilityType=? and contactId=?", TokenInfo::BEARER, $uid);
-        $toks = [];
+        $result = Dbl::qe($dblink, "select * from Capability where capabilityType?a and contactId=?", [TokenInfo::BEARER, TokenInfo::OAUTHREFRESH], $uid);
         while (($tok = TokenInfo::fetch($result, $user->conf, $is_cdb))) {
             if (self::is_recent($tok))
-                $toks[] = $tok;
+                $this->_recent_tokens[] = $tok;
         }
         Dbl::free($result);
+    }
+
+    private function recent_tokens() {
+        if ($this->_recent_tokens === null) {
+            $this->_recent_tokens = [];
+            $this->_add_recent_tokens_at($this->us->user);
+            $this->_add_recent_tokens_at($this->us->user->cdb_user());
+        }
+        return $this->_recent_tokens;
+    }
+
+    /** Tokens this user made by hand. A token an OAuth client was issued
+     * carries a `client_id`; it belongs to a grant, not to this list, and
+     * deleting one there would achieve nothing—the client’s next refresh
+     * replaces it.
+     * @return list<TokenInfo> */
+    function recent_bearer_tokens() {
+        $toks = [];
+        foreach ($this->recent_tokens() as $tok) {
+            if ($tok->capabilityType === TokenInfo::BEARER
+                && $tok->data("client_id") === null)
+                $toks[] = $tok;
+        }
         return $toks;
     }
 
-    /** @param Contact $user
-     * @return list<TokenInfo> */
-    static function all_recent_bearer_tokens($user) {
-        $toks1 = self::recent_bearer_tokens($user->cdb_user());
-        return array_merge($toks1, self::recent_bearer_tokens($user));
+    /** Return this user’s OAuth grants, one entry per client, most recently
+     * used first. Every token of a grant is included: an access token, the
+     * refresh token that renews it, and the spent links of the rotation chain,
+     * which have to be revoked together or not at all.
+     * @return list<object> */
+    function recent_grants() {
+        $toks = $this->recent_tokens();
+        // Oldest first, so that “the last one wins” means the newest: one
+        // `client_id` covers every authorization of that client, and the query
+        // that produced these imposed no order. Tokens minted in the same
+        // second tie, so break by salt: an arbitrary winner is fine, a
+        // different winner on every page load is not.
+        usort($toks, function ($a, $b) {
+            return ($a->timeCreated <=> $b->timeCreated)
+                ? : strcmp($a->salt, $b->salt);
+        });
+        $grants = [];
+        foreach ($toks as $tok) {
+            if (!$tok->is_active()
+                || ($client_id = $tok->data("client_id")) === null) {
+                continue;
+            }
+            $key = ($tok->is_cdb ? "A" : "L") . $client_id;
+            $g = $grants[$key] ?? null;
+            if (!$g) {
+                $g = $grants[$key] = (object) [
+                    "client_id" => $client_id, "is_cdb" => $tok->is_cdb,
+                    "name" => null, "tokens" => [],
+                    "timeCreated" => $tok->timeCreated, "timeUsed" => 0,
+                    "scopes" => [], "max_scopes" => []
+                ];
+            }
+            $g->tokens[] = $tok;
+            $g->name = $tok->data("client_name") ?? $g->name;
+            $g->timeCreated = min($g->timeCreated, $tok->timeCreated);
+            $g->timeUsed = max($g->timeUsed, $tok->timeUsed);
+            if ($tok->capabilityType === TokenInfo::BEARER) {
+                // an access token records the scope actually granted
+                $x = $tok->data("scope") ?? "";
+                if (!in_array($x, $g->scopes, true)) {
+                    $g->scopes[] = $x;
+                }
+            } else {
+                // a refresh token records the scope *requested*; the grant is
+                // that capped by the client, so this is an upper bound. It is
+                // all there is once the access token’s row has been dropped,
+                // which happens well before the refresh token’s.
+                [, $x] = TokenScope::scope_str_split_openid($tok->data("scope"));
+                if (!in_array($x, $g->max_scopes, true)) {
+                    $g->max_scopes[] = $x;
+                }
+            }
+        }
+        $grants = array_values($grants);
+        usort($grants, function ($a, $b) {
+            return ($b->timeUsed <=> $a->timeUsed)
+                ? : ($b->timeCreated <=> $a->timeCreated);
+        });
+        return $grants;
     }
 
     function print_bearer_tokens(UserStatus $us) {
@@ -83,7 +163,7 @@ class Developer_UserInfo {
     }
 
     function print_current_bearer_tokens(UserStatus $us) {
-        $toks = self::all_recent_bearer_tokens($us->user);
+        $toks = $this->recent_bearer_tokens();
         usort($toks, function ($a, $b) {
             $aa = $a->is_active();
             if ($aa !== $b->is_active()) {
@@ -195,6 +275,119 @@ class Developer_UserInfo {
             '<p class="w-text mb-0">';
         $this->print_bearer_token_info($us->conf, $tok);
         echo '</p></div></div>';
+    }
+
+    function print_grants(UserStatus $us) {
+        $grants = $this->recent_grants();
+        if (empty($grants)) {
+            return;
+        }
+        $us->print_start_section("Connected applications");
+        echo '<p class="w-text">These applications may act on your behalf using ',
+            'HotCRP’s API. Disconnecting one revokes every token it holds; ',
+            'it can ask for your authorization again.</p>';
+        Icons::stash_defs("trash");
+        echo '<div class="mt-4">', Ht::unstash();
+        $n = 1;
+        foreach ($grants as $g) {
+            $this->print_grant($us, $g, $n);
+            ++$n;
+        }
+        echo '</div>';
+    }
+
+    /** @param object $g
+     * @param int $n */
+    private function print_grant(UserStatus $us, $g, $n) {
+        $name = $g->name ?? $g->client_id;
+        echo '<div class="f-i w-text"><div class="f-c">',
+            htmlspecialchars($name);
+        if ($us->is_auth_self()
+            && !$us->user->security_locked()
+            && $us->has_recent_authentication()) {
+            echo Ht::hidden("grant/{$n}/id", ($g->is_cdb ? "A." : "L.") . $g->client_id),
+                Ht::hidden("grant/{$n}/delete", "", ["class" => "deleter", "data-default-value" => ""]),
+                Ht::button(Icons::ui_use("trash", "m"), [
+                    "class" => "ml-3 btn-licon-s ui js-profile-token-delete need-tooltip",
+                    "aria-label" => "Disconnect application"
+                ]);
+            $us->mark_inputs_printed();
+        }
+        echo '</div>';
+        echo plural(count($g->tokens), "token"),
+            ' <span class="barsep">·</span> ',
+            self::unparse_grant_scope($g),
+            ' <span class="barsep">·</span> ',
+            self::unparse_last_used($g->timeUsed),
+            ' <span class="barsep">·</span> authorized ',
+            $us->conf->unparse_time_point($g->timeCreated),
+            '</div>';
+    }
+
+    /** @param object $g
+     * @return string */
+    static private function unparse_grant_scope($g) {
+        $approx = empty($g->scopes);
+        $ss = $approx ? $g->max_scopes : $g->scopes;
+        if (empty($ss)) {
+            return "scope unknown";
+        }
+        $a = [];
+        foreach ($ss as $s) {
+            // `parse` returns null for `all`, which is full scope, and for the
+            // empty string, which is no information at all; those must not
+            // print the same thing
+            $ts = $s === "" ? null : TokenScope::parse($s, null);
+            $x = $s === "" ? "none" : ($ts ? TokenScope::unparse($ts) : "all");
+            if (!in_array($x, $a, true)) {
+                $a[] = $x;
+            }
+        }
+        if (count($a) > 1) {
+            $t = "scopes " . htmlspecialchars(join(", ", $a));
+        } else if ($a[0] === "all") {
+            $t = "full scope";
+        } else if ($a[0] === "none") {
+            // an upper bound of nothing is not approximate
+            return "no API access";
+        } else {
+            $t = "scope " . htmlspecialchars($a[0]);
+        }
+        return $approx ? "at most {$t}" : $t;
+    }
+
+    function request_delete_grants(UserStatus $us) {
+        for ($i = 1; isset($us->qreq["grant/{$i}/id"]); ++$i) {
+            if (friendly_boolean($us->qreq["grant/{$i}/delete"])) {
+                $this->_delete_grants[] = $us->qreq["grant/{$i}/id"];
+            }
+        }
+    }
+
+    function save_delete_grants(UserStatus $us) {
+        if (empty($this->_delete_grants)) {
+            return;
+        }
+        $any = false;
+        foreach ($this->recent_grants() as $g) {
+            if (!in_array(($g->is_cdb ? "A." : "L.") . $g->client_id, $this->_delete_grants, true)) {
+                continue;
+            }
+            foreach ($g->tokens as $tok) {
+                if (!$tok->is_active()) {
+                    continue;
+                }
+                // Keep the rows: a revoked refresh token presented later is the
+                // replay signal, and the rotation chain is walked through them.
+                $tok->set_invalid()
+                    ->set_expires_in(Authorization_Token::BEARER_RETENTION)
+                    ->update();
+                $any = true;
+            }
+        }
+        if ($any) {
+            $us->diffs["connected applications"] = true;
+        }
     }
 
     static function unparse_last_used($time) {
@@ -328,7 +521,7 @@ class Developer_UserInfo {
         if ($this->_delete_tokens === null) {
             return;
         }
-        $toks = self::all_recent_bearer_tokens($us->user);
+        $toks = $this->recent_bearer_tokens();
         $deleteables = [];
         foreach ($toks as $tok) {
             foreach ($this->_delete_tokens as $dt) {

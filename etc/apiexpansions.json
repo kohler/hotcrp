@@ -433,6 +433,11 @@
     "response_content": { "default": {} }
   },
   {
+    "name": "oauthrevoke", "post": true,
+    "tags": ["Session"],
+    "response_content": { "default": {} }
+  },
+  {
     "name": "session", "get": true, "post": true,
     "tags": ["Session"],
     "response": "sessioninfo"

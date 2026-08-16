@@ -17,12 +17,12 @@ use Uri\Rfc3986\Uri;
  * public clients—the document may not contain a `client_secret`—so PKCE is
  * required. */
 class OAuthClientDocument {
-    /** @var Conf */
-    private $conf;
     /** @var string */
     public $client_id;
     /** @var \Uri\Rfc3986\Uri */
     private $_client_uri;
+    /** @var bool */
+    private $_secure;
     /** @var ?object */
     public $document;
     /** @var ?string */
@@ -79,17 +79,19 @@ class OAuthClientDocument {
 
     /** @param string $client_id
      * @param \Uri\Rfc3986\Uri $uri */
-    private function __construct(Conf $conf, $client_id, $uri) {
-        $this->conf = $conf;
+    private function __construct($client_id, $uri) {
         $this->client_id = $client_id;
         $this->_client_uri = $uri;
+        $this->_secure = $client_id[4] === "s" /* `https://...` */;
     }
 
-    /** @return ?OAuthClientDocument */
+    /** Return a document object for `$client_id` if that identifier is
+     * well formed. Whether any component will *accept* it is a separate
+     * question, answered by `matches`.
+     * @return ?OAuthClientDocument */
     static function try_make(Conf $conf, $client_id) {
         if (!str_starts_with($client_id, "https://")
-            && (!str_starts_with($client_id, "http://")
-                || $conf->opt("oAuthMetadataDocumentClients") !== "insecure")) {
+            && !str_starts_with($client_id, "http://")) {
             return null;
         }
         // check URL parsing availability
@@ -109,7 +111,7 @@ class OAuthClientDocument {
                 : $host !== "localhost" && $host !== "127.0.0.1" && $host !== "[::1]")) {
             return null;
         }
-        return new OAuthClientDocument($conf, $client_id, $uri);
+        return new OAuthClientDocument($client_id, $uri);
     }
 
     /** @param string $host
@@ -121,17 +123,16 @@ class OAuthClientDocument {
     }
 
 
-    /** @param object|string|list<string> $cx
-     * @return bool */
-    /** Return true if this document's client identifier is one that component
-     * `$cx` accepts. A `client_id_match` setting, if present, restricts those
-     * identifiers; it is a glob pattern or a list of glob patterns.
+    /** Return true if component `$cx` accepts this document's client_id.
+     *
+     * `$cx->client_id_match` is a pattern, or list of patterns, one of which
+     * the client_id must match; see `devel/manual/oauth.md`.
      * @param object $cx
      * @return bool */
     function matches($cx) {
         $match = $cx->client_id_match ?? null;
         if ($match === null) {
-            return true;
+            return $this->_secure;
         }
         foreach (is_string($match) ? [$match] : $match as $pat) {
             if ($this->_matches_one($pat))
@@ -145,33 +146,73 @@ class OAuthClientDocument {
     private function _matches_one($pat) {
         if ($pat === $this->client_id) {
             return true;
-        } else if (strpos($pat, "*") === false) {
+        } else if (($starpos = strpos($pat, "*")) === false) {
             return false;
         } else if ($pat === "*") {
-            return true;
+            return $this->_secure;
         }
-        $s = $this->_client_uri->getScheme();
-        $slen = strlen($s);
-        if (substr_compare($pat, $s, 0, $slen, true) !== 0
-            || substr_compare($pat, "://", $slen, 3) !== 0) {
+
+        // find positions
+        $plen = strlen($pat);
+        // scheme must be literal
+        $hostpos = $plen < 4 ? $plen : ($pat[4] === "s" ? 8 : 7);
+        if ($hostpos >= $plen
+            || $starpos < $hostpos
+            || ($hostpos === 8) !== $this->_secure) {
             return false;
         }
-        $pathpos = $slen + 3 + strcspn($pat, "/?", $slen + 3);
+        $pathpos = $hostpos + strcspn($pat, "/?", $hostpos);
         $querypos = $pathpos + strcspn($pat, "?", $pathpos);
-        $pathp = substr($pat, $slen + 3, $pathpos - $slen - 3);
-        $patpath = substr($pat, $pathpos, $querypos - $pathpos);
-        $patquery = substr($pat, $querypos);
-        $pattern = '[a-z]*+://' . str_replace('\*', '[^\/?]*', preg_quote($pathp));
-        if ($patquery !== "") {
-            $pattern .= str_replace('\*', '[^?]*', preg_quote($patpath))
-                // `?*` means “query optional”, so the `?` itself is optional;
-                // a pattern that names a parameter, such as `?v=*`, still
-                // requires a query
-                . ($patquery === "?*" ? '(?:\?.*)?' : str_replace('\*', '.*', preg_quote($patquery)));
+        // separate host & port is hard
+        $host = substr($pat, $hostpos, $pathpos - $hostpos);
+        $bracketoff = (int) strrpos($host, "]");
+        $bracketpos = $hostpos + $bracketoff;
+        if (($colonoff = strrpos($host, ":", $bracketoff)) !== false) {
+            $portpos = $hostpos + $colonoff;
         } else {
-            $pattern .= str_replace('\*', str_ends_with($patpath, "*") ? '.*' : '[^?]*', preg_quote($patpath));
+            $portpos = $pathpos;
         }
-        return !!preg_match("\x01\\A{$pattern}\\z\x01", $this->client_id);
+
+        // quote star based on region
+        $pos = 0;
+        $regex = "\x01\\A";
+        while (true) {
+            $regex .= preg_quote(substr($pat, $pos, $starpos - $pos));
+            if ($starpos === $plen) {
+                break;
+            } else if ($starpos === $hostpos && $starpos + 1 === $portpos) {
+                $regex .= '(?:\[[^\/?\]]*+\]|[^\[\/?:]*+)';
+            } else if ($starpos < $bracketpos) {
+                $regex .= '[^\/?\]]*' . ($starpos + 1 === $bracketpos ? '+' : '');
+            } else if ($starpos < $portpos) {
+                $regex .= '[^\/?:]*' . ($starpos + 1 === $portpos ? '+' : '');
+            } else if ($starpos < $pathpos) {
+                if ($starpos === $portpos + 1 && $starpos + 1 === $pathpos) {
+                    $regex = substr($regex, 0, -2) . '(?::[0-9]*+)?+';
+                } else {
+                    $regex .= '[0-9]*';
+                }
+            } else if ($starpos < $querypos) {
+                if ($starpos + 1 === $plen) {
+                    $regex .= '.*+';
+                } else {
+                    $regex .= '[^?]*' . ($starpos + 1 === $querypos ? '+' : '');
+                }
+            } else {
+                if ($starpos === $querypos + 1 && $starpos + 1 === $plen) {
+                    $regex = substr($regex, 0, -2) . '(?:\?.*+)?+';
+                } else {
+                    $regex .= '.*';
+                }
+            }
+            $pos = $starpos + 1;
+            if (($starpos = strpos($pat, "*", $pos)) === false) {
+                $starpos = $plen;
+            }
+        }
+        $regex .= "\\z\x01";
+
+        return !!preg_match($regex, $this->client_id);
     }
 
 
@@ -193,9 +234,14 @@ class OAuthClientDocument {
     }
 
     /** Return true if `$ip` belongs to a special-use address range.
+     *
+     * `$allow_loopback` exempts the loopback ranges, which a plaintext
+     * identifier necessarily uses; it is set only for an identifier some
+     * component's `client_id_match` named with an explicit `http` scheme.
      * @param string $ip
+     * @param bool $allow_loopback
      * @return bool */
-    static function special_use_address($ip) {
+    static function special_use_address($ip, $allow_loopback = false) {
         $a = @inet_pton($ip);
         if ($a === false) {
             return true;
@@ -203,6 +249,10 @@ class OAuthClientDocument {
         if (strlen($a) === 16
             && str_starts_with($a, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xFF")) {
             $a = substr($a, 12); // IPv4-mapped IPv6 address
+        }
+        if ($allow_loopback
+            && self::address_in_range($a, strlen($a) === 4 ? "127.0.0.0/8" : "::1/128")) {
+            return false;
         }
         $ranges = strlen($a) === 4 ? self::$special_ipv4 : self::$special_ipv6;
         foreach ($ranges as $range) {
@@ -263,12 +313,11 @@ class OAuthClientDocument {
             $this->content .= $s;
             return strlen($this->content) > self::MAXSIZE ? 0 : strlen($s);
         });
-        if ($this->conf->opt("oAuthMetadataDocumentClients") !== "insecure"
-            && !self::setopt_address_check($curlh)) {
+        if (!self::setopt_address_check($curlh, !$this->_secure)) {
             $this->set_error("Authorization client documents require libcurl 7.80 or later");
             return null;
         }
-        curl_exec($curlh);
+        (void) curl_exec($curlh);
         $errno = curl_errno($curlh);
         $status = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
         $ctype = curl_getinfo($curlh, CURLINFO_CONTENT_TYPE);
@@ -297,15 +346,17 @@ class OAuthClientDocument {
      * connection is established and before the request is sent, so aborting
      * there sends nothing to the peer.
      * @param \CurlHandle $curlh
+     * @param bool $allow_loopback
      * @return bool */
-    static private function setopt_address_check($curlh) {
+    static private function setopt_address_check($curlh, $allow_loopback) {
         if (!defined("CURLOPT_PREREQFUNCTION")) {
             return false; // libcurl < 7.80
         }
         return curl_setopt($curlh, CURLOPT_PREREQFUNCTION,
-            function ($ch, $primary_ip, $local_ip, $primary_port, $local_port) {
-                return self::special_use_address($primary_ip)
-                    ? CURL_PREREQFUNC_ABORT : CURL_PREREQFUNC_OK;
+            function ($ch, $primary_ip, $local_ip, $primary_port, $local_port) use ($allow_loopback) {
+                return self::special_use_address($primary_ip, $allow_loopback)
+                    ? CURL_PREREQFUNC_ABORT
+                    : CURL_PREREQFUNC_OK;
             });
     }
 

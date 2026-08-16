@@ -432,6 +432,7 @@ src/namedformula.php
 src/notificationinfo.php
 src/oauthclient.php
 src/oauthclientdocument.php
+src/oauthprovider.php
 src/options/o_abstract.php
 src/options/o_attachments.php
 src/options/o_authorcertification.php

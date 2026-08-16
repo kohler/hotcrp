@@ -16,6 +16,8 @@ class JWTParser extends \MessageSet {
     public $errcode = 0;
     /** @var ?int */
     private $fixed_time;
+    /** @var ?list<string> */
+    private $algs;
 
     /** @var bool */
     static private $has_openssl;
@@ -42,6 +44,25 @@ class JWTParser extends \MessageSet {
     function set_fixed_time($t) {
         $this->fixed_time = $t;
         return $this;
+    }
+
+    /** Restrict the signature algorithms `validate` will accept.
+     *
+     * The `alg` header is chosen by whoever wrote the message, so a caller
+     * that knows which algorithm it expects should say so; `null`, the
+     * default, accepts anything this class implements, which is only safe when
+     * the message already arrived over a channel the caller trusts.
+     * @param null|string|list<string> $algs
+     * @return $this */
+    function set_algorithms($algs) {
+        $this->algs = is_string($algs) ? [$algs] : $algs;
+        return $this;
+    }
+
+    /** @param ?string $key
+     * @return bool */
+    static private function is_pem($key) {
+        return $key !== null && str_starts_with(ltrim($key), "-----BEGIN");
     }
 
     /** @param int $t
@@ -195,11 +216,21 @@ class JWTParser extends \MessageSet {
      * @return bool */
     function verify($s, $alg, $signature) {
         if ($alg === "none") {
-            return $signature === "";
+            // an unsecured message satisfies no key
+            return false;
         } else if (isset(self::$hash_alg_map[$alg])) {
-            $hash = hash_hmac(self::$hash_alg_map[$alg], $s, $this->verify_key);
+            // A public key is not a secret, so HMAC-ing against one would let
+            // anyone who has it forge a signature (RFC 8725 §2.1, §3.8): the
+            // key decides the algorithm family, not the message.
+            if (self::is_pem($this->verify_key)) {
+                return false;
+            }
+            $hash = hash_hmac(self::$hash_alg_map[$alg], $s, $this->verify_key, true);
             return hash_equals($hash, $signature);
         } else if (isset(self::$openssl_alg_map[$alg])) {
+            if (!self::is_pem($this->verify_key)) {
+                return false;
+            }
             // XXX openssl_error_string();
             return openssl_verify($s, $signature, $this->verify_key, self::$openssl_alg_map[$alg]) === 1;
         }
@@ -224,6 +255,11 @@ class JWTParser extends \MessageSet {
         $this->jose = $jose;
         if (!$this->has_alg($jose->alg ?? null)) {
             return $this->null_error(1104, "<0>Unknown algorithm");
+        } else if ($this->algs !== null && !in_array($jose->alg, $this->algs, true)) {
+            return $this->null_error(1112, "<0>Unexpected algorithm");
+        } else if ($this->verify_key !== null && $jose->alg === "none") {
+            // a key means a signature is required, whatever the message says
+            return $this->null_error(1113, "<0>Message signature missing");
         } else if (isset($jose->typ) && ($jose->typ ?? null) !== "JWT") {
             $suffix = isset($jose->typ) && is_string($jose->typ) ? " ‘{$jose->typ}’" : "";
             return $this->null_error(1105, "<0>Unexpected message type{$suffix}");
@@ -259,7 +295,7 @@ class JWTParser extends \MessageSet {
 
     /** @param object $payload
      * @param OAuthProvider $authi
-     * @param 0|1|2 $level
+     * @param 0|1|2 $level strictness; 2 also checks `iat`
      * @return bool */
     function validate_id_token($payload, $authi, $level = 1) {
         // check issuer claim
@@ -269,27 +305,27 @@ class JWTParser extends \MessageSet {
             return $this->false_error(1202, "<0>`iss` claim does not match expected issuer");
         }
 
-        // check audience claim
+        // check audience claim: must contain our client_id; all contents
+        // must be validated by our `trusted_audiences`
         if (!isset($payload->aud) || (!is_string($payload->aud) && !is_array($payload->aud))) {
             return $this->false_error(1203, "<0>`aud` claim missing or invalid");
-        } else if (is_array($payload->aud)
-                   ? !in_array($authi->client_id, $payload->aud, true)
-                   : $authi->client_id !== $payload->aud) {
+        }
+        $auds = is_array($payload->aud) ? $payload->aud : [$payload->aud];
+        if (!in_array($authi->client_id, $auds, true)) {
             return $this->false_error(1204, "<0>`aud` claim does not match client ID");
         }
-
-        // check authorized-party claim
-        if ($level >= 1) {
-            if (isset($payload->azt)) {
-                if (!is_string($payload->azt)) {
-                    return $this->false_error(1206, "<0>`azt` claim invalid");
-                } else if ($authi->client_id !== $payload->azt) {
-                    return $this->false_error(1207, "<0>`azt` claim does not match client ID");
-                }
-            } else if (is_array($payload->aud) && !isset($payload->azt)) {
-                return $this->false_error(1205, "<0>`azt` claim missing");
+        $trusted = $authi->trusted_audiences ?? [];
+        if ($trusted !== true) {
+            foreach ($auds as $aud) {
+                if ($aud !== $authi->client_id
+                    && !in_array($aud, $trusted, true))
+                    return $this->false_error(1205, "<0>`aud` claim names an untrusted audience");
             }
         }
+
+        // The `azp` (authorized party) claim is deliberately not checked;
+        // we don’t understand any extensions that use it, so OpenID Connect
+        // Core says to ignore it when it occurs.
 
         // XXX check algorithm claim
 
@@ -338,7 +374,7 @@ class JWTParser extends \MessageSet {
         $jose = '{"alg":"' . $alg . '","typ":"JWT"}';
         $payload = json_encode_db($payload);
         $s = base64url_encode($jose) . "." . base64url_encode($payload);
-        $signature = hash_hmac(self::$hash_alg_map[$alg], $s, $key);
+        $signature = hash_hmac(self::$hash_alg_map[$alg], $s, $key, true);
         return $s . "." . base64url_encode($signature);
     }
 }

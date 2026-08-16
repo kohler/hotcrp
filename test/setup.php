@@ -1022,6 +1022,10 @@ function call_api_result($fn, $user, $qreq, $prow = null) {
         $qreq->set_header("Authorization", "Bearer {$token->salt}");
         $qreq->approve_token();
         $user = clone $token->local_user();
+        // as `initialize_user`: this harness stands in for it
+        if (!Authorization_Token::check_allow_if($token, $user)) {
+            return JsonResult::make_error(401, "<0>Unauthorized");
+        }
         $user->set_bearer_authorized();
         $user->set_scope($token->data("scope"));
     } else {
@@ -1813,6 +1817,16 @@ class TestRunner {
 
 
 class TestQreq {
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param ?Qsession $qs
+     * @return Qrequest */
+    static function apply_user($user, $qreq, ?Qsession $qs = null) {
+        $qs = $qs ?? new MemoryQsession;
+        $user->has_email() ? $qs->set("u", $user->email) : $qs->unset("u");
+        return $qreq->set_user($user)->set_qsession($qs);
+    }
+
     /** @param array<string,mixed> $args
      * @return Qrequest */
     static function get($args = []) {
@@ -1831,12 +1845,35 @@ class TestQreq {
     }
 
     /** @param array<string,mixed> $args
+     * @param ?Qsession $qs
+     * @return Qrequest */
+    static function user_get(Contact $user, $args = [], ?Qsession $qs = null) {
+        return self::apply_user($user, self::get($args), $qs);
+    }
+
+    /** @param array<string,mixed> $args
      * @return Qrequest */
     static function post($args = []) {
         return (new Qrequest("POST", $args))
             ->set_navigation(Navigation::get())
             ->approve_token()
             ->set_body(null, "application/x-www-form-urlencoded");
+    }
+
+    /** `post` approves the token, so a test that means to check the token
+     * has to start here instead.
+     * @param array<string,mixed> $args
+     * @return Qrequest */
+    static function unapproved_post($args = []) {
+        return (new Qrequest("POST", $args))
+            ->set_navigation(Navigation::get())
+            ->set_body(null, "application/x-www-form-urlencoded");
+    }
+
+    /** @param array<string,mixed> $args
+     * @return Qrequest */
+    static function user_post(Contact $user, $args = []) {
+        return self::apply_user($user, self::post($args));
     }
 
     /** @param string $page

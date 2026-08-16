@@ -213,7 +213,7 @@ class Conf {
     /** @var ?array<int,object> */
     private $_token_types;
     /** @var ?array<string,object> */
-    private $_oauth_providers;
+    public $_oauth_providers; // maintained externally
     /** @var ?array<string,FileFilter> */
     public $_file_filters; // maintained externally
     /** @var ?SettingInfoSet */
@@ -470,6 +470,7 @@ class Conf {
         $this->_assignment_parsers = null;
         $this->_decision_set = null;
         $this->_topic_set = null;
+        $this->_oauth_providers = null;
         $this->_au_seerev = null;
         $this->_au_seedec = null;
 
@@ -2091,14 +2092,6 @@ class Conf {
     function allow_user_self_register() {
         // see also Contact::allow_self_register
         return !$this->disable_non_pc() && !$this->opt("disableNewUsers");
-    }
-
-    /** @return array<string,object> */
-    function oauth_providers() {
-        if ($this->_oauth_providers === null) {
-            $this->_oauth_providers = $this->_xtbuild_resolve([], "oAuthProviders");
-        }
-        return $this->_oauth_providers;
     }
 
     /** @return string */
@@ -4851,6 +4844,26 @@ class Conf {
         if ($ctopt !== false && $ctopt !== "") {
             Navigation::header("X-Content-Type-Options: " . $ctopt);
         }
+        // drop cross-origin `Referer` (review confidentiality); we need local
+        // Referer for `/u/NNN` preferences
+        $rpol = $this->opt["httpReferrerPolicy"] ?? "same-origin";
+        if ($rpol !== false && $rpol !== "") {
+            Navigation::header("Referrer-Policy: " . $rpol);
+        }
+    }
+
+    /** Headers for a page that authenticates a user or authorizes a client:
+     * refuse to be framed (RFC 9700 §4.16) and keep the URL out of `Referer`.
+     *
+     * Browsers enforce every `Content-Security-Policy` header they are given,
+     * so this binds beside a site `httpContentSecurityPolicy` that omits
+     * `frame-ancestors`. */
+    function emit_credential_page_headers() {
+        Navigation::header("Content-Security-Policy: frame-ancestors 'none'", false);
+        Navigation::header("X-Frame-Options: DENY");
+        // These URLs carry `code=`, `token=`, and the like, so the site's
+        // `httpReferrerPolicy` does not get to loosen them.
+        Navigation::header("Referrer-Policy: same-origin");
     }
 
     /** @param Qrequest $qreq
@@ -5783,9 +5796,8 @@ class Conf {
         } else if (is_string($j->match ?? null)) {
             $this->_xtbuild_factories[] = $j;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
     /** @param list<string> $defaults
      * @param ?string $optname
@@ -5915,8 +5927,7 @@ class Conf {
             $qreq = $qreq ?? Qrequest::$main_request;
             if ($qreq && $qreq->page() === "api") {
                 $nav = $qreq->navigation();
-                $bptrunc = substr($nav->base_path, 0, -1);
-                $rest .= ", resource_metadata=\"{$nav->server}/.well-known/oauth-protected-resource{$bptrunc}\"";
+                $rest .= ", resource_metadata=\"{$nav->server}/.well-known/oauth-protected-resource{$nav->base_path}api\"";
             }
         }
         return "WWW-Authenticate: Bearer realm=\"{$issuer}\"{$rest}";

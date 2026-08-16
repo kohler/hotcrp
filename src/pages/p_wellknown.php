@@ -34,14 +34,59 @@ class WellKnown_Page {
         echo "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>HotCRP</center></body></html>\n";
     }
 
+    const OAPSTRLEN = 25; /* strlen("/oauth-protected-resource") */
     static function oauth_protected_resource(NavigationState $nav, Conf $conf) {
+        if (!$conf->opt("oAuthClients")) {
+            self::not_found();
+            return;
+        }
+
+        // check that this is an API path
+        $site = $conf->opt("paperSite");
+        $sitenav = NavigationState::make_base($site);
+        $bplen = strlen($sitenav->base_path);
+        if (substr_compare($nav->path, $sitenav->base_path, self::OAPSTRLEN, $bplen) !== 0
+            || !preg_match('/\G(?:u\/\d++\/)?+api(?:\/(?:\d++|new))?+\/?([^\/?]*+)/', $nav->path, $m, 0, self::OAPSTRLEN + $bplen)) {
+            self::not_found();
+            return;
+        }
+
+        // look up scope for requested API
+        if ($m[1] === "") {
+            $bits = -1;
+        } else {
+            $funcs = ($conf->api_map())[$m[1]] ?? null;
+            if (empty($funcs)) {
+                self::not_found();
+                return;
+            }
+            $bits = 0;
+            foreach ($funcs as $gj) {
+                if (!isset($gj->scope)) {
+                    $bits = -1;
+                } else if (is_string($gj->scope)) {
+                    $bits |= TokenScope::parse_basic($gj->scope);
+                } else if ($gj->post ?? false) {
+                    $bits |= TokenScope::S_OTH_WRITE;
+                } else {
+                    $bits |= TokenScope::S_OTH_READ;
+                }
+            }
+        }
+        $scopes = ["openid", "email", "profile"];
+        if ($bits === -1) {
+            $scopes[] = "all";
+        } else if ($bits !== 0) {
+            array_push($scopes, ...TokenScope::unparse_bits($bits));
+        }
+
         self::cache_headers(604800);
         Navigation::header("Content-Type: application/json; charset=utf-8");
-        $site = $conf->opt("paperSite");
         echo json_encode([
-            "resource" => "{$site}/api",
-            "authorization_servers" => [$site],
-            "bearer_methods_supported" => ["header"]
+            "resource" => $sitenav->server . substr($nav->path, self::OAPSTRLEN),
+            "authorization_servers" => [$conf->oauth_issuer()],
+            "bearer_methods_supported" => ["header"],
+            "scopes_supported" => $scopes
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "\n";
     }
 
@@ -71,6 +116,7 @@ class WellKnown_Page {
         }
         $j["authorization_endpoint"] = "{$site}/authorize";
         $j["token_endpoint"] = "{$site}/api/oauthtoken";
+        $j["revocation_endpoint"] = "{$site}/api/oauthrevoke";
         if ($has_dynamic) {
             $j["registration_endpoint"] = "{$site}/api/oauthregister";
         }
@@ -85,6 +131,7 @@ class WellKnown_Page {
             // clients identified by metadata document are public clients
             $j["token_endpoint_auth_methods_supported"][] = "none";
         }
+        $j["revocation_endpoint_auth_methods_supported"] = $j["token_endpoint_auth_methods_supported"];
         $j["code_challenge_methods_supported"] = ["S256", "plain"];
         $scopes = ["openid", "email", "profile"];
         if ($scope_bits !== 0) {
@@ -92,7 +139,7 @@ class WellKnown_Page {
             if ($scope_bits === ~0) {
                 $scopes[] = "all";
             } else {
-                array_push($scopes, ...explode(" ", TokenScope::unparse(new TokenScope($scope_bits))));
+                array_push($scopes, ...TokenScope::unparse_bits($scope_bits));
             }
         }
         $j["scopes_supported"] = $scopes;

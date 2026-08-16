@@ -123,6 +123,18 @@ class UnicodeHelper {
         return normalizer_normalize($str);
     }
 
+    /** Remove Unicode bidirectional formatting characters.
+     *
+     * These reorder the text a reader sees without changing the bytes, so a
+     * name carrying them can display as some other name. Use on any name that
+     * arrived from outside and is shown as an identity.
+     * @param string $str
+     * @return string */
+    static function strip_bidi($str) {
+        // U+061C, U+200E-200F, U+202A-202E, U+2066-2069
+        return preg_replace('/\xD8\x9C|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]/', "", $str);
+    }
+
     /** @param 'UTF-8'|'Windows-1252'|'UTF-16LE'|'UTF-16BE' $encoding
      * @param string $s
      * @return string */

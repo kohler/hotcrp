@@ -21,6 +21,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_method;
     /** @var ?array<string,string> */
     private $_headers;
+    /** @var ?array<string,true> */
+    private $_query_keys;
     /** @var int */
     private $_body_type = 0;
     /** @var ?string */
@@ -249,6 +251,24 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return $this */
     function set_header($k, $v) {
         $this->_headers["HTTP_" . strtoupper(str_replace("-", "_", $k))] = $v;
+        return $this;
+    }
+
+    /** Return true if `$name` was set from this request’s query string.
+     * (In tests, defaults false; call set_query_keys() to change that.)
+     * @param string $name
+     * @return bool */
+    function from_query($name) {
+        if ($this->_query_keys !== null) {
+            return isset($this->_query_keys[$name]);
+        }
+        return isset($_GET[$name]);
+    }
+
+    /** @param list<string> $names
+     * @return $this */
+    function set_query_keys($names) {
+        $this->_query_keys = array_fill_keys($names, true);
         return $this;
     }
 
@@ -836,14 +856,18 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     /** @param string $key
-     * @param mixed $value */
+     * @param mixed $value
+     * @return $this */
     function set_gsession($key, $value) {
         $this->_qsession->set($key, $value);
+        return $this;
     }
 
-    /** @param string $key */
+    /** @param string $key
+     * @return $this */
     function unset_gsession($key) {
         $this->_qsession->unset($key);
+        return $this;
     }
 
     /** @param string $key
@@ -864,18 +888,22 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     /** @param string $key
-     * @param mixed $value */
+     * @param mixed $value
+     * @return $this */
     function set_csession($key, $value) {
         if ($this->_conf && $this->_conf->session_key !== null) {
             $this->_qsession->set2($this->_conf->session_key, $key, $value);
         }
+        return $this;
     }
 
-    /** @param string $key */
+    /** @param string $key
+     * @return $this */
     function unset_csession($key) {
         if ($this->_conf && $this->_conf->session_key !== null) {
             $this->_qsession->unset2($this->_conf->session_key, $key);
         }
+        return $this;
     }
 
     /** @return string */

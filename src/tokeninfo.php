@@ -560,6 +560,26 @@ class TokenInfo {
         return $this;
     }
 
+    /** Atomically consume the single use this token is good for.
+     *
+     * Returns true for the first caller and false for every later one, even
+     * when the callers overlap: this is one conditional UPDATE, so the
+     * database picks the winner. Reading a flag and then writing it back
+     * cannot do that — two requests redeeming the same authorization code
+     * would both find it unconsumed and both succeed — and a second redemption
+     * is exactly the signal that the code reached someone it should not have.
+     * @return bool
+     * @suppress PhanAccessReadOnlyProperty */
+    final function consume() {
+        assert(!!$this->salt);
+        $result = Dbl::qe($this->dblink(), "update Capability set useCount=useCount+1 where salt=? and useCount=0", $this->salt);
+        if ($result->affected_rows <= 0) {
+            return false;
+        }
+        $this->useCount = 1;
+        return true;
+    }
+
     /** @param ?string $data
      * @return $this */
     final function change_data($data, $value = null) {
