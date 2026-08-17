@@ -1999,7 +1999,7 @@ final class PaperStatus extends MessageSet {
             $options["reason"] = $this->notify_reason;
         }
         $final = ($flags === Contact::WATCH_FINAL_UPDATE_ALL);
-        foreach ($prow->generic_followers([], "(defaultWatch&{$flags})!=0 and roles!=0") as $u) {
+        foreach ($prow->generic_followers([], "(defaultWatch&{$flags})!=0 and roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0") as $u) {
             if ($u->contactId !== $this->user->contactId
                 && ($final ? $u->following_final_update($prow) : $u->following_submission($prow))) {
                 HotCRPMailer::send_to($u, $template, $options);

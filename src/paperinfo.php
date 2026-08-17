@@ -3766,7 +3766,7 @@ class PaperInfo {
     /** @return list<Contact> */
     function late_withdrawal_followers() {
         $us = [];
-        foreach ($this->generic_followers([], "(defaultWatch&" . Contact::WATCH_LATE_WITHDRAWAL_ALL . ")!=0 and roles!=0") as $u) {
+        foreach ($this->generic_followers([], "(defaultWatch&" . Contact::WATCH_LATE_WITHDRAWAL_ALL . ")!=0 and roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0") as $u) {
             if ($u->following_late_withdrawal($this))
                 $us[] = $u;
         }
