@@ -923,6 +923,7 @@ class Authorize_Page {
         if (isset($this->client->allow_if)) {
             $atok->change_data("allow_if", $this->client->allow_if);
         }
+        $user->mark_has_app();
         // XXX no way to specify a note
         return $atok->insert();
     }

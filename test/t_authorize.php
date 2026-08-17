@@ -366,6 +366,75 @@ class Authorize_Tester {
         xassert_eqq($ds, ["Grant not valid", "Grant not valid", "Grant not valid"]);
     }
 
+    /** The contactdb cannot enumerate the conferences where a user has
+     * authorized a client, so each conference records the fact on the user and
+     * `cdb_roles()` carries it across. It is set when a grant is made and
+     * never cleared, including by a writer that computes `roles` whole. */
+    function test_grant_marks_has_app() {
+        $roles_of = function ($email) {
+            $this->conf->invalidate_caches("users");
+            return $this->conf->checked_user_by_email($email)->roles;
+        };
+        $email = "estrin@usc.edu";
+        $user = $this->conf->checked_user_by_email($email);
+        $uid = $user->contactId;
+        Dbl::qe($this->conf->dblink, "update ContactInfo set roles=roles&? where contactId=?",
+                ~Contact::ROLE_HASAPP, $uid);
+        $before = $roles_of($email);
+        xassert_eqq($before & Contact::ROLE_HASAPP, 0);
+        xassert(!$this->conf->checked_user_by_email($email)->has_app());
+
+        $nlog = (int) Dbl::fetch_ivalue($this->conf->dblink,
+            "select count(*) from ActionLog where (contactId=? or destContactId=?) and action like 'Account edited: roles%'",
+            $uid, $uid);
+        $user = $this->conf->checked_user_by_email($email);
+        xassert_neqq($this->dynamic_client_result("https://dro.com/", $user,
+            ["scope" => "read"]), null);
+
+        // recorded, persisted, and the other roles are untouched
+        $after = $roles_of($email);
+        xassert_eqq($after, $before | Contact::ROLE_HASAPP);
+        xassert($this->conf->checked_user_by_email($email)->has_app());
+
+        // and it is not an account edit: no role the chair granted changed,
+        // so nothing is logged against the user
+        xassert_eqq((int) Dbl::fetch_ivalue($this->conf->dblink,
+            "select count(*) from ActionLog where (contactId=? or destContactId=?) and action like 'Account edited: roles%'",
+            $uid, $uid), $nlog);
+
+        // a second grant does not write again
+        $user = $this->conf->checked_user_by_email($email);
+        $mtime = Dbl::fetch_ivalue($this->conf->dblink,
+            "select updateTime from ContactInfo where contactId=?", $uid);
+        $user->mark_has_app();
+        xassert_eqq(Dbl::fetch_ivalue($this->conf->dblink,
+            "select updateTime from ContactInfo where contactId=?", $uid), $mtime);
+
+        // `cdb_roles()` echoes it, which is how the contactdb row gets it
+        $user = $this->conf->checked_user_by_email($email);
+        $cdbr = $user->cdb_roles();
+        xassert_eqq($cdbr & Contact::ROLE_HASAPP, Contact::ROLE_HASAPP);
+        // and carries the granted roles alongside, unchanged
+        xassert_eqq($cdbr & Contact::ROLE_PCLIKE, $before & Contact::ROLE_PCLIKE);
+
+        // A chair editing the profile must not drop it. The profile form
+        // sets roles absolutely — nothing in the request mentions `hasapp` —
+        // so only the settable roles may be reset.
+        $user = $this->conf->checked_user_by_email($email);
+        xassert_eqq($user->roles & Contact::ROLE_PC, Contact::ROLE_PC);
+        $us = new UserStatus($this->u_chair);
+        xassert_neqq($us->save_user((object) ["email" => $email, "roles" => ["none"]]), null);
+        xassert(!$us->has_error());
+        $roles = $roles_of($email);
+        xassert_eqq($roles & Contact::ROLE_PC, 0);
+        xassert_eqq($roles & Contact::ROLE_HASAPP, Contact::ROLE_HASAPP);
+
+        // put the role back the same way
+        $us = new UserStatus($this->u_chair);
+        xassert_neqq($us->save_user((object) ["email" => $email, "roles" => ["pc"]]), null);
+        xassert_eqq($roles_of($email), $before | Contact::ROLE_HASAPP);
+    }
+
     /** A client that holds a secret gets a signed ID token, and the signature
      * has to be the one every other JWS implementation computes: the base64url
      * encoding of the MAC's octets, not of its hexadecimal spelling

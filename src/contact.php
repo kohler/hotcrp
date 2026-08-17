@@ -215,14 +215,16 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @var ?int */
     private $_name_decorations_flags;
 
-    // Roles
-    const ROLE_PC = 0x0001; // value matters
-    const ROLE_ADMIN = 0x0002;
-    const ROLE_CHAIR = 0x0004;
-    const ROLE_PCLIKE = 0x000F;
-    const ROLE_AUTHOR = 0x0010;
-    const ROLE_REVIEWER = 0x0020;
-    const ROLE_REQUESTER = 0x0040;
+    // Roles (value matters, especially ROLE_PC)
+    const ROLE_PC = 0x0001;             // DB+CDB: is PC?
+    const ROLE_ADMIN = 0x0002;          // DB+CDB: is sysadmin?
+    const ROLE_CHAIR = 0x0004;          // DB+CDB: is PC chair?
+    const ROLE_PCLIKE = 0x000F;         // any PC role (PC | ADMIN | CHAIR)
+    const ROLE_AUTHOR = 0x0010;         // CDB: is author?
+    const ROLE_REVIEWER = 0x0020;       // CDB: is reviewer?
+    const ROLE_HASAPP = 0x0040;         // DB+CDB: some OAuth client existed
+    // (conservative: client ⟹ HASAPP, but HASAPP + no current client is ok)
+    const ROLE_REQUESTER = 0x0080;      // is review requester?
     const ROLE_OUTSTANDING_REVIEW = 0x1000;
     const ROLE_METAREVIEWER = 0x2000;
     const ROLE_LEAD = 0x4000;
@@ -233,8 +235,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     const ROLE_VIEW_SOME_REVIEW_ID = 0x40000;
     const ROLE_OUTSTANDING_REQUEST = 0x80000;
 
-    const ROLE_DBMASK = 0x000F;
-    const ROLE_CDBMASK = 0x003F; // DBMASK | AUTHOR | REVIEWER
+    const ROLE_DBMASK = 0x004F;         // PCLIKE | HASAPP
+    const ROLE_CDBMASK = 0x007F;        // DBMASK | AUTHOR | REVIEWER
 
     /** @var bool */
     public $isPC = false;
@@ -2319,6 +2321,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 $qv[] = $overflow ? null : $value;
                 $qf[] = "{$prop}Overflow=?";
                 $qv[] = $overflow ? $value : null;
+            } else if ($prop === "roles" && $this->$idk > 0) {
+                $qf[] = "{$prop}=({$prop}&~?)|?";
+                $old_value = $this->_mod_undo[$prop] ?? 0;
+                $qv[] = $old_value & ~$value;
+                $qv[] = ~$old_value & $value;
             } else {
                 $qf[] = "{$prop}=?";
                 $qv[] = $value;
@@ -2430,29 +2437,34 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             error_log("bad \$new_roles {$new_roles}: " . debug_string_backtrace());
         }
         $old_roles = ($this->_mod_undo["roles"] ?? $this->roles) & self::ROLE_DBMASK;
+        $remove_roles = $old_roles & ~$new_roles;
+        $add_roles = ~$old_roles & $new_roles;
         if (($old_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0
             && ($new_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) === 0) {
             // ensure there's at least one chair or system administrator
             // (MySQL 5.5 requires this syntax, not a subselect)
             $result = $this->conf->qe("update ContactInfo c, (select contactId from ContactInfo where roles>? and (roles&?)!=0 and contactId!=? limit 1) d
-                set c.roles=? where c.contactId=? and d.contactId is not null",
+                set c.roles=(c.roles&~?)|?
+                where c.contactId=? and d.contactId is not null",
                 self::ROLE_PC, self::ROLE_ADMIN | self::ROLE_CHAIR, $this->contactId,
-                $new_roles, $this->contactId);
+                $remove_roles, $add_roles, $this->contactId);
+            if ($result->affected_rows === 0) {
+                return $old_roles;
+            }
         } else {
-            $result = $this->conf->qe("update ContactInfo set roles=? where contactId=?",
-                $new_roles, $this->contactId);
+            $result = $this->conf->qe("update ContactInfo set roles=(roles&~?)|? where contactId=?",
+                $remove_roles, $add_roles, $this->contactId);
         }
         unset($this->_mod_undo["roles"]);
         // save the roles bits
-        if ($result->affected_rows === 0) {
-            return $old_roles;
-        }
-        $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
         $this->roles = ($this->roles & ~self::ROLE_DBMASK) | $new_roles;
         $this->set_roles_properties();
-        $this->conf->invalidate_caches("pc");
         $this->conf->invalidate_user($this, true);
         $this->update_cdb_roles();
+        if (($add_roles | $remove_roles) & self::ROLE_PCLIKE) {
+            $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
+            $this->conf->invalidate_caches("pc");
+        }
         return $new_roles;
     }
 
@@ -3134,6 +3146,20 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $this->check_author_reviewer_status(self::ROLE_CDBMASK);
         return $this->roles & self::ROLE_CDBMASK;
+    }
+
+    /** @return bool */
+    function has_app() {
+        return ($this->roles & self::ROLE_HASAPP) !== 0;
+    }
+
+    /** Record that this user has authorized an OAuth client here.
+     * @return void */
+    function mark_has_app() {
+        if ($this->contactId > 0
+            && ($this->roles & self::ROLE_HASAPP) === 0) {
+            $this->save_roles(($this->roles & self::ROLE_DBMASK) | self::ROLE_HASAPP, null);
+        }
     }
 
     /** @return bool */

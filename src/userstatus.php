@@ -878,7 +878,7 @@ class UserStatus extends MessageSet {
         }
 
         if ($reset_roles) {
-            $remove_roles = ~0;
+            $remove_roles = Contact::ROLE_PCLIKE;
         }
         if (($add_roles & Contact::ROLE_CHAIR) !== 0) {
             $add_roles |= Contact::ROLE_PC;
