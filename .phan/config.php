@@ -116,7 +116,7 @@ $config = [
     "suppress_issue_types" => [
         "PhanUnusedPublicMethodParameter",
         "PhanUnusedVariableValueOfForeachWithKey",
-        "PhanUndeclaredClassAttribute"
+        "PhanUnusedVariableDeclarationCaughtException"
     ],
 
     "plugins" => [

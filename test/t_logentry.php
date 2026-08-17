@@ -65,6 +65,7 @@ class LogEntry_Tester {
 
     private function check_log_page(LogEntryGenerator $leg, $pn) {
         $entries = $leg->page_rows($pn);
+        $first = 0;
         if (!$leg->has_filter()) {
             $first = max(self::N - ($pn - 1) * $leg->page_size(), 0);
             $last = max($first - $leg->page_size() + 1, 1);

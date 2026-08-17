@@ -908,18 +908,20 @@ class CsvGenerator {
         return '"' . str_replace('"', '""', $text) . '"';
     }
 
-    /** @param string $text
+    /** @param int|float|string $text
      * @return string */
     static function quote($text, $quote_empty = false) {
-        if (($text ?? "") === "") {
+        if ($text === null || $text === "") {
             return $quote_empty ? '""' : $text;
-        } else if (preg_match('/\A[-_@\/\$+A-Za-z0-9.](?:[-_@\/\$+A-Za-z0-9. \t]*[-_@\/\$+A-Za-z0-9.]|)\z/', $text)) {
+        }
+        $text = (string) $text;
+        if (preg_match('/\A[-_@\/\$+A-Za-z0-9.](?:[-_@\/\$+A-Za-z0-9. \t]*[-_@\/\$+A-Za-z0-9.]|)\z/', $text)) {
             return $text;
         }
         return self::always_quote($text);
     }
 
-    /** @param list<string> $array
+    /** @param list<int|float|string> $array
      * @return string */
     static function quote_join($array, $quote_empty = false) {
         $x = [];

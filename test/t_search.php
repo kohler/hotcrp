@@ -577,7 +577,7 @@ class Search_Tester {
             $rid = $conf->checked_user_by_email($em)->contactId;
             $conf->qe("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values (3,?,?,null) on duplicate key update preference=?", $rid, $pf, $pf);
         }
-        $conf->invalidate_caches(["pc" => true]);
+        $conf->invalidate_caches("pc");
 
         $marina = $conf->checked_user_by_email("marina@poema.ru");
         $p3 = $conf->checked_paper_by_id(3);
@@ -589,7 +589,7 @@ class Search_Tester {
 
         $col = PaperColumn::make($conf, $conf->paper_columns("desirability", $marina)[0]);
         $pl = new PaperList("empty", new PaperSearch($marina, "3 4"));
-        xassert($col->prepare($pl, PaperColumn::PREP_VISIBLE));
+        xassert($col->prepare($pl, FieldRender::CFLIST));
         // The conflicted paper's cell is blanked; her own managed paper renders.
         xassert($col->content_empty($pl, $p3));
         xassert(!$col->content_empty($pl, $p4));
@@ -598,7 +598,7 @@ class Search_Tester {
         xassert_assign($chair, "action,paper,user\nclearadministrator,4,marina@poema.ru\n");
         xassert_assign($chair, "paper,action,user\n3,noconflict,marina@poema.ru\n");
         $conf->qe("delete from PaperReviewPreference where paperId=3 and contactId in (select contactId from ContactInfo where email in ('mogul@wrl.dec.com','van@ee.lbl.gov','jon@cs.ucl.ac.uk'))");
-        $conf->invalidate_caches(["pc" => true]);
+        $conf->invalidate_caches("pc");
     }
 
     function test_pdf_none_hides_unviewable_pdf() {
@@ -703,7 +703,7 @@ class Search_Tester {
         $rid = $conf->fetch_ivalue("select reviewId from PaperReview where paperId=1 and reviewType>0 order by reviewId asc limit 1");
         xassert_gt($rid, 0);
         $conf->qe("update PaperReview set reviewToken=? where reviewId=?", 8675309, $rid);
-        $conf->invalidate_caches(["pc" => true]);
+        $conf->invalidate_caches("pc");
 
         $estrin = $conf->checked_user_by_email("estrin@usc.edu"); // author of paper 1
         $p1 = $conf->checked_paper_by_id(1);
@@ -949,7 +949,7 @@ class Search_Tester {
             (new PaperSearch($pc, ["q" => "in:r", "t" => "all"]))->paper_ids()));
         sort($union);
         xassert_eqq((new PaperSearch($pc, ["q" => "in:ar", "t" => "all"]))->paper_ids(),
-                    array_values($union));
+                    $union);
         xassert_assign($chair, "paper,action\n{$wpid},revive\n");
 
         // `a`: an author-view capability, held by a PC member and by a non-PC user

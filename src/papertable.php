@@ -1573,6 +1573,9 @@ class PaperTable {
         echo '" role="group" aria-labelledby="s-', $psid, '-label">';
     }
 
+    /** @param string $psid
+     * @param bool $open
+     * @param array<string,mixed> $extra */
     private function _ps_start_expandable($psid, $open, $extra = null) {
         $extra["class"] = Ht::add_tokens($open ? "expanded" : "collapsed", $extra["class"] ?? null);
         $this->_ps_start($psid, $extra);
