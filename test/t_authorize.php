@@ -3390,35 +3390,6 @@ class Authorize_Tester {
         xassert(!$ck("http://*/cb", "http://localhost:5000/cb"));
     }
 
-    /** A cdb token works at every conference sharing the contact database, so
-     * `allow_if` has nothing to evaluate: it names roles this site knows and
-     * the others do not. The combination is refused rather than half-applied. */
-    function test_cdb_client_refuses_allow_if() {
-        $old = $this->conf->opt("oAuthClients");
-        $mk = function ($cx) use ($old) {
-            $this->conf->set_opt("oAuthClients", array_merge($old, [(object) $cx]));
-            $this->conf->refresh_settings();
-            return isset(HotCRP\OAuthClient::list($this->conf)["cdbc"]);
-        };
-        $base = ["name" => "cdbc", "client_id" => "cdbclient", "client_secret" => "s",
-                 "scope" => "read", "redirect_uris" => ["https://cdbc.example.com/cb"]];
-        xassert($mk($base));
-        xassert($mk($base + ["is_cdb" => true]));
-        xassert($mk($base + ["allow_if" => "chair"]));
-        // …but not both
-        xassert(!$mk($base + ["is_cdb" => true, "allow_if" => "chair"]));
-        // and the client is then absent, not merely unauthorized
-        [$how, $detail] = $this->authorize_outcome([
-            "client_id" => "cdbclient", "redirect_uri" => "https://cdbc.example.com/cb",
-            "response_type" => "code", "state" => "S", "scope" => "read"
-        ], $this->u_chair);
-        xassert_eqq($how, "page");
-        xassert_str_contains($detail ?? "", "not found");
-
-        $this->conf->set_opt("oAuthClients", $old);
-        $this->conf->refresh_settings();
-    }
-
     /** `allow_if` limits who may hold a client's tokens, not just who may press
      * Approve. Losing the role must stop the token — otherwise refresh rotation
      * renews the grant forever past the rule that justified it. */

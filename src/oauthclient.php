@@ -127,13 +127,8 @@ class OAuthClient {
             | ($conf->opt("oAuthMetadataDocumentClients")
                && OAuthClientDocument::supported() ? 2 : 0);
         return array_filter($clients, function ($cx) use ($flags) {
-            // A cdb token is meant to work at every conference sharing the
-            // contact database, so a rule about who may hold it has nothing to
-            // evaluate: `allow_if` names roles this site knows and the others
-            // do not. Refuse the combination rather than pick a site.
             return (($flags & 1) !== 0 || !($cx->dynamic ?? false))
                 && (($flags & 2) !== 0 || !($cx->metadata_document ?? false))
-                && (!($cx->is_cdb ?? false) || !isset($cx->allow_if))
                 && !($cx->disabled ?? false);
         });
     }
