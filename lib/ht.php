@@ -439,7 +439,7 @@ class Ht {
         }
     }
 
-    /** @param string $name
+    /** @param ?string $name
      * @param string|int $value
      * @param ?array<string,mixed> $js
      * @return string */
@@ -447,10 +447,14 @@ class Ht {
         $js = $js ?? [];
         self::apply_placeholder($value, $js);
         $type = $js["type"] ?? "text";
-        $nt = self::escape_attr($name);
+        if ((string) $name !== "") {
+            $nt = " name=\"" . self::escape_attr($name) . "\"";
+        } else {
+            $nt = "";
+        }
         $vt = self::escape_attr($value);
         $jst = self::extra($js);
-        return "<input type=\"{$type}\" name=\"{$nt}\" value=\"{$vt}\"{$jst}>";
+        return "<input type=\"{$type}\"{$nt} value=\"{$vt}\"{$jst}>";
     }
 
     /** @param string $name

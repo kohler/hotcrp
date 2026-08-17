@@ -2986,6 +2986,52 @@ return make_bubble;
 })();
 
 
+// clipboard
+
+// Put `text` on the clipboard; returns a Promise resolving to true on success.
+// The async clipboard API requires a secure context, which a site served over
+// plain HTTP is not, so fall back to a selection-based copy when it is absent.
+function copy_text(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).then(function () {
+            return true;
+        }, function () {
+            return false;
+        });
+    }
+    // offscreen rather than hidden: `select()` does nothing on an element
+    // that is not rendered
+    const active = document.activeElement,
+        ta = $e("textarea", {"aria-hidden": "true", tabindex: "-1",
+            style: "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0"});
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    active && active.focus && active.focus();
+    return Promise.resolve(ok);
+}
+
+// Copy the text of the element matched by `data-copy-from` to the clipboard,
+// and report the result in a bubble. Mark the control `class="ui js-copy"`.
+handle_ui.on("js-copy", function () {
+    const self = this, src = document.querySelector(self.getAttribute("data-copy-from"));
+    if (!src) {
+        return;
+    }
+    copy_text(src.textContent).then(function (ok) {
+        hotcrp.tooltip.close();
+        const bub = make_bubble({
+            content: ok ? "Copied" : "Could not copy to the clipboard",
+            class: ok ? "tooltip" : "errorbubble",
+            anchor: "v"
+        }).near(self);
+        setTimeout(function () { bub.remove(); }, ok ? 1000 : 2500);
+    });
+});
+
+
 hotcrp.tooltip = (function ($) {
 const builders = {};
 let global_tooltip = null;
