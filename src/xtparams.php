@@ -27,6 +27,10 @@ class XtParams {
     public $component_set;
     /** @var ?PaperList */
     public $paper_list;
+    /** @var string */
+    private $_str;
+    /** @var int */
+    private $_pos;
 
     /** @param Conf $conf
      * @param ?Contact $user */
@@ -82,55 +86,61 @@ class XtParams {
 
     /** @param string $s
      * @param ?object $xt
-     * @param bool $simple
+     * @param bool $complex
      * @return bool */
-    function check_string($s, $xt, $simple = false) {
+    function check_string($s, $xt, $complex = false) {
         $user = $this->user;
-        if ($s === "chair" || $s === "admin") {
-            return !$user || $user->privChair;
-        } else if ($s === "manager") {
-            return !$user || $user->is_manager();
-        } else if ($s === "pc") {
-            return !$user || $user->isPC;
-        } else if ($s === "pc_member") {
-            return !$user || $user->is_pc_member();
-        } else if ($s === "author") {
-            return !$user || $user->is_author();
-        } else if ($s === "reviewer") {
-            return !$user || $user->is_reviewer();
-        } else if ($s === "view_review") {
-            return !$user || $user->can_view_some_review();
-        } else if ($s === "!empty") {
-            return !$user || !$user->is_empty();
-        } else if ($s === "empty") {
-            return $user && $user->is_empty();
-        } else if ($s === "email") {
-            return !$user || $user->has_email();
-        } else if ($s === "disabled") {
-            return $user && $user->is_disabled();
-        } else if ($s === "!disabled") {
-            return !$user || !$user->is_disabled();
-        } else if ($s === "allow" || $s === "true") {
-            return true;
-        } else if ($s === "deny" || $s === "false") {
-            return false;
-        } else if (!$simple && strcspn($s, " !&|()") !== strlen($s)) {
+        if (strlen($s) <= 11 // length of longest basic term (view_review)
+            && strpos($s, ".") === false) {
+            if ($s === "chair") { // fast path
+                return !$user || $user->privChair;
+            } else if ($s === "manager") {
+                return !$user || $user->is_manager();
+            } else if ($s === "pc") {
+                return !$user || $user->isPC;
+            } else if ($s === "admin") {
+                return !$user || $user->privChair;
+            } else if ($s === "pc_member") {
+                return !$user || $user->is_pc_member();
+            } else if ($s === "author") {
+                return !$user || $user->is_author();
+            } else if ($s === "reviewer") {
+                return !$user || $user->is_reviewer();
+            } else if ($s === "view_review") {
+                return !$user || $user->can_view_some_review();
+            } else if ($s === "!empty") {
+                return !$user || !$user->is_empty();
+            } else if ($s === "empty") {
+                return $user && $user->is_empty();
+            } else if ($s === "email") {
+                return !$user || $user->has_email();
+            } else if ($s === "disabled") {
+                return $user && $user->is_disabled();
+            } else if ($s === "!disabled") {
+                return !$user || !$user->is_disabled();
+            } else if ($s === "allow" || $s === "true") {
+                return true;
+            } else if ($s === "deny" || $s === "false") {
+                return false;
+            }
+        }
+        if (!$complex && strcspn($s, " !&|()") !== strlen($s)) {
+            $save_str = $this->_str;
+            $save_pos = $this->_pos;
+            $this->_str = $s;
             $e = $this->check_complex_string($s, $xt);
+            $this->_str = $save_str;
+            $this->_pos = $save_pos;
             if ($e === null) {
                 throw new UnexpectedValueException("xt_check syntax error in `{$s}`");
             }
             return $e;
-        } else if (str_starts_with($s, "tag:")) {
-            return !$user || $user->has_tag(substr($s, 4));
-        } else if (strpos($s, "::") !== false) {
-            Conf::xt_resolve_require($xt);
-            return call_user_func($s, $xt, $this);
         } else if (str_starts_with($s, "opt.")) {
-            list($x, $compar, $compval) = self::split_comparison($s);
+            list($x, $compar, $compval) = $this->split_comparison($s, $complex);
             $v = $this->conf->opt(substr($x, 4));
             return self::resolve_comparison($v, $compar, $compval);
         } else if (str_starts_with($s, "setting.")) {
-            list($x, $compar, $compval) = self::split_comparison($s);
+            list($x, $compar, $compval) = $this->split_comparison($s, $complex);
             $v = $this->conf->setting(substr($x, 8));
             return self::resolve_comparison($v, $compar, $compval);
         } else if (str_starts_with($s, "conf.")) {
@@ -139,6 +149,11 @@ class XtParams {
         } else if (str_starts_with($s, "user.")) {
             $f = substr($s, 5);
             return !$user || $user->$f();
+        } else if (str_starts_with($s, "tag:")) {
+            return !$user || $user->has_tag(substr($s, 4));
+        } else if (strpos($s, "::") !== false) {
+            Conf::xt_resolve_require($xt);
+            return call_user_func($s, $xt, $this);
         }
         if (isset($this->primitive_checkers)) {
             foreach ($this->primitive_checkers as $checker) {
@@ -151,18 +166,48 @@ class XtParams {
     }
 
     /** @param string $s
+     * @param int $p
+     * @return 0|1|2 */
+    static private function oplen_at($s, $p) {
+        $oplen = strspn($s, "!=<>", $p);
+        if ($oplen === 1
+            ? $s[$p] !== "!"
+            : $oplen === 2 && $s[$p + 1] === "=") {
+            return $oplen;
+        }
+        return 0;
+    }
+
+    /** @param string $word
+     * @param bool $complex
      * @return array{string,string,string} */
-    static private function split_comparison($s) {
-        $len = strlen($s);
-        $p = strcspn($s, "!=<>");
-        if ($p === $len) {
-            return [$s, "", ""];
+    private function split_comparison($word, $complex) {
+        if (!$complex) {
+            $rest = $word;
+            $p = strcspn($rest, "!=<>");
+        } else {
+            $rest = $this->_str;
+            $p = $this->_pos + strspn($rest, " ", $this->_pos);
         }
-        $op = $s[$p];
-        if ($p + 1 !== $len && $s[$p+1] === "=") {
-            $op .= "=";
+        if (($oplen = self::oplen_at($rest, $p)) === 0) {
+            return [$word, "", ""];
         }
-        return [substr($s, 0, $p), $op, substr($s, $p + strlen($op))];
+        if (!$complex) {
+            return [substr($word, 0, $p), substr($rest, $p, $oplen), substr($rest, $p + $oplen)];
+        }
+        $vp = $p + $oplen + strspn($rest, " ", $p + $oplen);
+        $vep = $vp + strcspn($rest, " ()&|", $vp);
+        $this->_pos = $vep;
+        return [$word, substr($rest, $p, $oplen), substr($rest, $vp, $vep - $vp)];
+    }
+
+    /** @param string $word */
+    private function maybe_skip_comparison($word) {
+        if (str_starts_with($word, "opt.")
+            || str_starts_with($word, "setting.")) {
+            // called for its side effect
+            $this->split_comparison("", true);
+        }
     }
 
     /** @param mixed $v
@@ -228,9 +273,14 @@ class XtParams {
                 if ($e !== null) {
                     return null;
                 }
-                $wl = strcspn($s, " &|()", $p);
-                $e = $eval && $this->check_string(substr($s, $p, $wl), $xt, true);
-                $p += $wl;
+                $wl = strcspn($s, " &|()=!<>", $p);
+                $word = substr($s, $p, $wl);
+                $this->_pos = $p + $wl;
+                $e = $eval && $this->check_string($word, $xt, true);
+                if (!$eval) {
+                    $this->maybe_skip_comparison($word);
+                }
+                $p = $this->_pos;
             }
         }
         if (!empty($stk) && $e !== null) {
