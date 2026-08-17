@@ -283,7 +283,7 @@ class Signin_Page {
             $param += $this->_oauth_hoturl_param;
         }
         $top = "";
-        foreach (OAuthProvider::list($conf) as $authdata) {
+        foreach (HotCRP\OAuthProvider::list($conf) as $authdata) {
             if ($authdata->button_html) {
                 $param["authtype"] = $authdata->name;
                 $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("oauth", $param), "formmethod" => "post", "class" => "{$top}w-100 flex-grow-1"]);
