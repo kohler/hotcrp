@@ -151,7 +151,7 @@ class AuthenticationChecker {
         }
 
         // OAuth
-        $authi = (OAuthProvider::list($this->conf))[$use->subtype] ?? null;
+        $authi = (HotCRP\OAuthProvider::list($this->conf))[$use->subtype] ?? null;
         if (!$authi) {
             return false;
         }

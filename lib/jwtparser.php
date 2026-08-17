@@ -294,7 +294,7 @@ class JWTParser extends \MessageSet {
     }
 
     /** @param object $payload
-     * @param OAuthProvider $authi
+     * @param HotCRP\OAuthProvider $authi
      * @param 0|1|2 $level strictness; 2 also checks `iat`
      * @return bool */
     function validate_id_token($payload, $authi, $level = 1) {
