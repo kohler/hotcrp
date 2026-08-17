@@ -5,7 +5,7 @@
 namespace HotCRP;
 use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection, PageCompletion;
 use TokenInfo, TokenScope, Signin_Page, Authorization_Token, ComponentSet, XtParams;
-use MessageItem, FmtArg, SettingParser, UnicodeHelper;
+use MessageItem, MessageSet, FmtArg, SettingParser, UnicodeHelper;
 
 class Authorize_Page {
     /** @var Conf */
@@ -336,17 +336,33 @@ class Authorize_Page {
         $buttons = [];
         $nav = $this->qreq->navigation();
         $top = "";
+        if ($this->client) {
+            $this->conf->prefetch_users_by_email(array_values($this->authorized_emails()));
+        }
+        $any_disabled = false;
         // `u/{$i}` is a session slot, and slots can be reused between this
         // render and the post; name the account too, so the request that comes
         // back is for the account whose button the user pressed
         foreach ($this->authorized_emails() as $i => $email) {
+            if ($this->client) {
+                $user = $this->conf->user_by_email($email)
+                    ?? $this->conf->cdb_user_by_email($email);
+                $enabled = $user
+                    && (new XtParams($this->conf, $user))->checkf($this->client);
+            } else {
+                $enabled = true;
+            }
+            $any_disabled = $any_disabled || !$enabled;
             $url = $nav->base_absolute() . "u/{$i}/authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1&authemail=" . urlencode($email);
-            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "btn-primary{$top} w-100 flex-grow-1"]);
+            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "btn-primary{$top} w-100 flex-grow-1", "disabled" => !$enabled]);
             $top = " mt-2";
         }
 
         $buttons[] = Ht::link("Use another account", $this->signin_url(),
             ["class" => "btn{$top} w-100 flex-grow-1"]);
+        if ($any_disabled) {
+            echo MessageSet::feedback_html([MessageItem::warning($this->conf->_("<0>This site limits which users can authenticate with {}", new FmtArg(0, $this->client->title_text(), 0)))]);
+        }
         echo '<div class="mb-5">', join("", $buttons), '</div>';
     }
 

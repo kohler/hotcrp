@@ -133,5 +133,4 @@ class XtCheck_Tester {
 
         $this->conf->set_opt("xt_check_test", null);
     }
-
 }

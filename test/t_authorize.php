@@ -3897,4 +3897,52 @@ class Authorize_Tester {
         $jr = $this->dynamic_client_result("https://dchair.com/", $this->u_mgbaker, ["scope" => "read write"]);
         xassert_eqq($jr, null);
     }
+
+    /** The consent form is rendered before an account is chosen, so an account
+     * the client's `allow_if` excludes is shown but not offered — otherwise
+     * the only way to learn is to click and be refused. */
+    function test_consent_form_marks_ineligible_accounts() {
+        $qreq = TestQreq::post_json(["redirect_uris" => ["https://dchair.com/"]]);
+        $jr = call_api("=oauthregister", $this->u_empty, $qreq);
+        xassert_neqq($jr->client_id ?? null, null);
+        $args = ["client_id" => $jr->client_id, "redirect_uri" => "https://dchair.com/",
+                 "response_type" => "code", "state" => "x", "scope" => "read"];
+
+        // this client is registered `allow_if: chair`
+        $render = function ($u) use ($args) {
+            $q = TestQreq::user_get($u, $args)->set_page("authorize");
+            Qrequest::set_main_request($q);
+            $cs = $this->conf->page_components($u, $q);
+            $ap = new HotCRP\Authorize_Page($u, $q, $cs);
+            $cs->set_callable("HotCRP\\Authorize_Page", $ap);
+            $old = Navigation::$test_mode;
+            Navigation::$test_mode = 2;
+            ob_start();
+            try {
+                $ap->go();
+            } catch (PageCompletion $pc) {
+            } finally {
+                $out = ob_get_clean();
+                Navigation::$test_mode = $old;
+            }
+            return $out;
+        };
+
+        $chair = $render($this->u_chair);
+        xassert_str_contains($chair, "Sign in as " . $this->u_chair->email);
+        xassert(!preg_match('/<button[^>]*\bdisabled\b/', $chair));
+        xassert(strpos($chair, "limits which users") === false);
+
+        $pc = $render($this->u_mgbaker);
+        // the account is still listed — it vanishing would be its own puzzle —
+        // but the button is dead and the page says why
+        xassert(preg_match('/<button[^>]*\bdisabled\b[^>]*>Sign in as '
+            . preg_quote($this->u_mgbaker->email, "/") . '/', $pc)
+            || preg_match('/<button[^>]*>Sign in as '
+                . preg_quote($this->u_mgbaker->email, "/") . '/', $pc) === 0);
+        xassert_str_contains($pc, "disabled");
+        xassert_str_contains($pc, "limits which users");
+        // and the way forward is still offered
+        xassert_str_contains($pc, "Use another account");
+    }
 }
