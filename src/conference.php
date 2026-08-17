@@ -999,9 +999,9 @@ class Conf {
             $this->_shutdown_functions = [];
             register_shutdown_function([$this, "call_shutdown_functions"]);
         }
-        $sf = $this->_shutdown_functions[$name] ?? null;
+        $sf = &$this->_shutdown_functions[$name];
         if ($sf === null) {
-            $sf = $this->_shutdown_functions[$name] = new $name($this);
+            $sf = new $name($this);
         }
         return $sf;
     }

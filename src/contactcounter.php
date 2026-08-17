@@ -14,7 +14,7 @@ class ContactCounter {
     public $contactId;
     /** @var bool - true if this counter has been loaded */
     public $is_loaded;
-    /** @var int - total number of API requests made */
+    /** @var int - total number of API requests made (not including _pending) */
     public $apiCount;
     /** @var int - apiCount at window 1 start */
     public $apiBase;
@@ -40,6 +40,14 @@ class ContactCounter {
     public $sensitiveSearchBase;
     /** @var int - time in msec at window start */
     public $sensitiveSearchBaseMtime;
+    /** @var int - API cost charged this request, not yet saved */
+    private $_pending = 0;
+    /** @var ?int - `apiBaseMtime` observed before this request refreshed window 1 */
+    private $_flush_base;
+    /** @var ?int - `apiBaseMtime2` observed before this request refreshed window 2 */
+    private $_flush_base2;
+    /** @var int - cost of the most recent `api_account` refusal */
+    private $_refused_cost = 1;
     /** @var ?ContactCounter */
     private $_related;
     /** @var ?bool */
@@ -135,53 +143,99 @@ class ContactCounter {
             Dbl::free($result);
             if ($row) {
                 $this->fetch_incorporate($row);
+                $this->is_loaded = true;
                 return $this;
             }
             Dbl::qe_raw($dblink, "insert into ContactCounter set contactId={$this->contactId} on duplicate key update apiCount=apiCount");
         }
     }
 
-    /** @return bool */
-    function api_account() {
+    /** Requests charged to this user, including this request's unsaved charge.
+     * @return int */
+    function api_count() {
+        return $this->apiCount + $this->_pending;
+    }
+
+    /** Account `$cost` API requests against this user's budget. Return true
+     * if `$cost` is allowed. The update is charged only at shutdown.
+     * @param int $cost
+     * @return bool */
+    function api_account($cost = 1) {
+        $this->ensure();
         $nowms = (int) (Conf::$unow * 1000);
-        while (true) {
-            $this->ensure();
-
-            $qu = [];
-            $qw = ["contactId=" . $this->contactId];
-            if ($this->apiRefreshAmount > 0
-                && $this->apiBaseMtime + $this->apiRefreshWindow <= $nowms) {
-                $qw[] = "apiBaseMtime=" . $this->apiBaseMtime;
-                $this->apiBase = $this->apiCount;
-                $this->apiBaseMtime = $nowms;
-                $qu[] = "apiBase=" . $this->apiBase;
-                $qu[] = "apiBaseMtime=" . $this->apiBaseMtime;
-            }
-            if ($this->apiRefreshAmount2 > 0
-                && $this->apiBaseMtime2 + $this->apiRefreshWindow2 <= $nowms) {
-                $qw[] = "apiBaseMtime2=" . $this->apiBaseMtime2;
-                $this->apiBase2 = $this->apiCount;
-                $this->apiBaseMtime2 = $nowms;
-                $qu[] = "apiBase2=" . $this->apiBase2;
-                $qu[] = "apiBaseMtime2=" . $this->apiBaseMtime2;
-            }
-            if ($this->apiCount >= $this->apiBase + $this->apiRefreshAmount
-                || $this->apiCount >= $this->apiBase2 + $this->apiRefreshAmount2) {
-                // any window refresh computed above is dropped, not persisted;
-                // it will be recomputed next request
-                return false;
-            }
-            $qw[] = "apiCount=" . $this->apiCount;
-            ++$this->apiCount;
-            $qu[] = "apiCount=" . $this->apiCount;
-
-            $result = Dbl::qe_raw($this->dblink(), "update ContactCounter set " . join(", ", $qu) . " where " . join(" and ", $qw));
-            if ($result->affected_rows > 0) {
-                return true;
-            }
-
-            $this->is_loaded = false;
+        $count = $this->api_count();
+        $flush1 = $this->apiRefreshAmount > 0
+            && $this->apiBaseMtime + $this->apiRefreshWindow <= $nowms;
+        if (!$flush1 && $count + $cost > $this->apiBase + $this->apiRefreshAmount) {
+            $this->_refused_cost = $cost;
+            return false;
         }
+        $flush2 = $this->apiRefreshAmount2 > 0
+            && $this->apiBaseMtime2 + $this->apiRefreshWindow2 <= $nowms;
+        if (!$flush2 && $count + $cost > $this->apiBase2 + $this->apiRefreshAmount2) {
+            $this->_refused_cost = $cost;
+            return false;
+        }
+        if ($flush1) {
+            // `??` keeps the mtime the row actually holds, so that a second
+            // refresh within one request still guards on a value the row has
+            $this->_flush_base = $this->_flush_base ?? $this->apiBaseMtime;
+            $this->apiBase = $count;
+            $this->apiBaseMtime = $nowms;
+        }
+        if ($flush2) {
+            $this->_flush_base2 = $this->_flush_base2 ?? $this->apiBaseMtime2;
+            $this->apiBase2 = $count;
+            $this->apiBaseMtime2 = $nowms;
+        }
+        $this->api_charge($cost);
+        return true;
+    }
+
+    /** Add `$cost` to this request's API charge
+     * @param int $cost */
+    function api_charge($cost) {
+        if ($cost <= 0 || $this->contactId <= 0) {
+            return;
+        }
+        $this->_pending += $cost;
+        $this->conf->register_shutdown_function("ContactCounterFlush")->add($this);
+    }
+
+    /** Save this request's accumulated API charge. */
+    function flush_api_account() {
+        if ($this->_pending <= 0) {
+            return;
+        }
+        $cost = $this->_pending;
+        $this->_pending = 0;
+        // the bases are written as the values this request computed, so the
+        // row and this object agree on when each window opened
+        $qu = $qw = [];
+        if ($this->_flush_base !== null) {
+            $qu[] = "apiBase={$this->apiBase}";
+            $qu[] = "apiBaseMtime={$this->apiBaseMtime}";
+            $qw[] = "apiBaseMtime={$this->_flush_base}";
+        }
+        if ($this->_flush_base2 !== null) {
+            $qu[] = "apiBase2={$this->apiBase2}";
+            $qu[] = "apiBaseMtime2={$this->apiBaseMtime2}";
+            $qw[] = "apiBaseMtime2={$this->_flush_base2}";
+        }
+        $qu[] = "apiCount=apiCount+{$cost}";
+        $dblink = $this->dblink();
+        $result = Dbl::qe_raw($dblink, "update ContactCounter set " . join(", ", $qu)
+            . " where contactId={$this->contactId}"
+            . (empty($qw) ? "" : " and " . join(" and ", $qw)));
+        if ($result->affected_rows === 0 && !empty($qw)) {
+            // another request opened the window first; its reset stands, but
+            // this request's charge still has to land
+            Dbl::qe_raw($dblink, "update ContactCounter set apiCount=apiCount+{$cost}
+                where contactId={$this->contactId}");
+        }
+        $this->apiCount += $cost;
+        $this->_flush_base = $this->_flush_base2 = null;
+        $this->is_loaded = false;
     }
 
     function api_ratelimit_headers() {
@@ -190,14 +244,14 @@ class ContactCounter {
         } else if ($this->apiRefreshWindow <= 0) {
             $left = PHP_INT_MAX;
         } else {
-            $left = max(0, $this->apiBase + $this->apiRefreshAmount - $this->apiCount);
+            $left = max(0, $this->apiBase + $this->apiRefreshAmount - $this->api_count());
         }
         if ($this->apiRefreshAmount2 <= 0) {
             $left2 = 0;
         } else if ($this->apiRefreshWindow2 <= 0) {
             $left2 = PHP_INT_MAX;
         } else {
-            $left2 = max(0, $this->apiBase2 + $this->apiRefreshAmount2 - $this->apiCount);
+            $left2 = max(0, $this->apiBase2 + $this->apiRefreshAmount2 - $this->api_count());
         }
         if ($left === PHP_INT_MAX && $left2 === PHP_INT_MAX) {
             Navigation::header("x-ratelimit-limit: unlimited");
@@ -215,12 +269,34 @@ class ContactCounter {
         }
     }
 
+    /** Seconds until the budget allows another request, 0 if unknown.
+     * @return int */
+    function api_retry_after() {
+        $nowms = (int) (Conf::$unow * 1000);
+        $t = 0;
+        if ($this->apiRefreshAmount > 0
+            && $this->apiRefreshWindow > 0
+            && $this->api_count() + $this->_refused_cost > $this->apiBase + $this->apiRefreshAmount) {
+            $t = max($t, $this->apiBaseMtime + $this->apiRefreshWindow - $nowms);
+        }
+        if ($this->apiRefreshAmount2 > 0
+            && $this->apiRefreshWindow2 > 0
+            && $this->api_count() + $this->_refused_cost > $this->apiBase2 + $this->apiRefreshAmount2) {
+            $t = max($t, $this->apiBaseMtime2 + $this->apiRefreshWindow2 - $nowms);
+        }
+        return (int) ceil($t / 1000);
+    }
+
     /** @return JsonResult */
     function api_fail() {
         if ($this->apiRefreshAmount <= 0 || $this->apiRefreshAmount2 <= 0) {
             return JsonResult::make_error(403, "<0>API access disabled");
         }
-        return JsonResult::make_error(429, "<0>Rate limit exceeded");
+        $jr = JsonResult::make_error(429, "<0>Rate limit exceeded");
+        if (($delay = $this->api_retry_after()) > 0) {
+            $jr->set_header("Retry-After: {$delay}");  // RFC 9110 §10.2.3
+        }
+        return $jr;
     }
 
     /** Account one sensitive (timing-channel-prone) search against this user's
@@ -260,5 +336,28 @@ class ContactCounter {
             $this->is_loaded = false;
         }
         return $this->_sensitive_search;
+    }
+}
+
+class ContactCounterFlush {
+    /** @var list<ContactCounter> */
+    private $_counters = [];
+
+    function __construct(Conf $conf) {
+    }
+
+    /** @param ContactCounter $ctr */
+    function add($ctr) {
+        if (!in_array($ctr, $this->_counters, true)) {
+            $this->_counters[] = $ctr;
+        }
+    }
+
+    function __invoke() {
+        $ctrs = $this->_counters;
+        $this->_counters = [];
+        foreach ($ctrs as $ctr) {
+            $ctr->flush_api_account();
+        }
     }
 }
