@@ -4882,7 +4882,8 @@ class Conf {
 
         // session theme
         echo "<style id=\"p-theme\">";
-        if (($theme = $qreq->user()->session_theme($qreq)) === "dark") {
+        if (($user = $qreq->user())
+            && ($theme = $user->session_theme($qreq)) === "dark") {
             echo "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }";
         } else if ($theme === "light") {
             echo "@layer dark-mode, theme;";
