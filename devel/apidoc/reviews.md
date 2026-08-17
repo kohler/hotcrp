@@ -128,6 +128,7 @@ returned in the `review` field as a [review object](#tag-reviews). If the
 review does not exist the response is a `404`; if it exists but the caller may
 not see it, a `403`.
 
+* scope review:read
 * param p pid
 * param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
 * param ?format =json|text|form
@@ -200,6 +201,7 @@ applications should prefer JSON.
 To test a modification without saving, supply a `dry_run=1` parameter. This will
 test the input but make no visible changes to the database.
 
+* scope review:write
 * param ?p pid: Submission to review. Optional when the JSON or text data
   supplies a `pid`; if both are present they must match.
 * param ?r rid: Review to create or modify: `new`, a numeric review ID, a
@@ -272,6 +274,7 @@ administrators may delete reviews.
 To test without deleting, supply `dry_run=1`. The edit-conflict preconditions
 `if_vtag_match` and `if_unmodified_since` behave as for [`POST /review`](#post-review).
 
+* scope review:admin
 * param ?r rid: Review to delete: a numeric review ID or display ordinal, or
   empty for the caller’s own review.
 * param ?dry_run boolean: True checks the request but does not delete.
@@ -309,6 +312,7 @@ which submissions are searched). Supply at most one of them:
 `reviewer` is a *search* parameter, like `q` and `t`: it sets the perspective the
 submission search uses. It does not restrict which reviews are returned.
 
+* scope review:read
 * param ?q search_string: Search selecting submissions whose reviews to return. Required unless `p` is given.
 * param ?t search_scope: Scope of search; defaults to the submissions the caller can view.
 
@@ -375,6 +379,7 @@ The `if_vtag_match` and `if_unmodified_since` request parameters set batch-wide
 default preconditions, applied to every item that does not specify its own. In
 particular, `if_vtag_match=0` requires that every saved review be newly created.
 
+* scope review:write
 * body application/json [review]: An array of [review objects](#tag-reviews),
   each naming its submission with `pid`.
 
@@ -425,6 +430,7 @@ or, for an incremental edit, a **review delta** (`object: "review_delta"`) that
 records only the fields that changed in that version. Set `expand=1` to receive
 every version as a full review object instead of a delta.
 
+* scope review:read
 * param r rid: Review whose history to return, as a numeric review ID or ordinal.
 * param ?expand boolean: If true, return each version as a complete review object rather than a delta.
 * response pid pid: Submission ID.
@@ -445,6 +451,7 @@ only when the caller is allowed to rate this review. Each value is a rating (see
 [`reviewrating` POST](#post-reviewrating) for the vocabulary): the string `none`,
 a single flag, or an array of flags.
 
+* scope review:read
 * param r rid: Review whose ratings to return.
 * response ?ratings string|[string]: Aggregate rating flags, or `none`.
 * response ?user_rating string|[string]: The caller’s own rating, or `none`.
@@ -462,6 +469,7 @@ caller’s rating, or the equivalent integer bitmask. The flags are `good`,
 `needswork`, `short`, `vague`, `narrow`, `disrespectful`, and `wrong`.
 Administrators may pass `clearall` to remove *every* rating on the review.
 
+* scope review:write
 * param r rid: Review to rate.
 * param =user_rating string: New rating: a space-separated list of flags, `none`, or (administrators) `clearall`.
 * response ?ratings string|[string]: Updated aggregate rating flags, or `none`.
@@ -485,6 +493,7 @@ created. Administrators can set `override=1` to bypass conflict and
 prior-refusal checks that would otherwise block or downgrade the request to a
 proposal.
 
+* scope review:admin
 * param =email email: Email of the person to ask. The special value `newanonymous` (administrators only) creates an anonymous review with a token.
 * param ?=given_name string: Reviewer’s first name (used when creating a new account).
 * param ?=family_name string: Reviewer’s last name.
@@ -508,6 +517,7 @@ This acknowledges the assignment (advancing it out of the `empty` state) and, if
 the review had previously been declined, reinstates it. The response’s
 `review_site_relative` is a site-relative URL for the review page.
 
+* scope review:write
 * param r rid: Numeric review ID of the assignment to accept.
 * response action =accept: Always `accept`.
 * response review_site_relative string: Site-relative URL of the review.
@@ -522,6 +532,7 @@ Decline the review identified by `r` on submission `p`, optionally recording a
 primary or secondary review. The response’s `review_site_relative` is a
 site-relative URL for the review page.
 
+* scope review:write
 * param r rid: Numeric review ID of the assignment to decline.
 * param ?=reason string: Optional explanation, shown to the requester.
 * response action =decline: Always `decline`.
@@ -541,6 +552,7 @@ review that has already been submitted. The returned `review_site_relative` URL
 points at the review under the destination account (with a `u/<index>/` prefix
 when that account differs from the current one).
 
+* scope review:write
 * param r rid: Numeric review ID to reassign.
 * param email email: Email of the destination account; must be one you are signed in to this session.
 * response action =claim: Always `claim`.
@@ -555,6 +567,7 @@ Return the review tokens currently active in the caller’s session, in the
 `token` array (encoded form). Review tokens grant the ability to edit specific
 anonymous reviews.
 
+* scope review:read
 * response token [string]: Encoded review tokens active in the session.
 
 
@@ -570,5 +583,6 @@ token is activated. Submitting with no usable tokens clears the active tokens.
 For security, the session is locked out after five failed token attempts until
 the user signs out. Per-token results are reported in `message_list`.
 
+* scope review:write
 * param ?token string: Review token(s) to activate, separated by whitespace or commas, or a JSON array. Omit (or pass none) to clear active tokens.
 * response token [string]: Encoded review tokens active after the change.

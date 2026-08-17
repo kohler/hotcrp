@@ -20,6 +20,7 @@ might set `exclude` to `#identity OR #deadline`; this excludes settings relevant
 to a conference’s identity (`conference_name`, `site_contact_email`, etc.) or
 deadlines.
 
+* scope settings:read
 * badge featured
 * param ?reset boolean
 * param ?filter string: Search expression defining settings to include
@@ -45,6 +46,7 @@ will only change settings relevant to the review form.
 
 For more information on JSON settings, see [Help > Advanced settings](https://help.hotcrp.com/help/jsonsettings).
 
+* scope settings:admin
 * badge featured
 * param ?dry_run boolean: True checks input for errors, but does not save changes
 * param ?reset boolean
@@ -71,6 +73,7 @@ present settings in a user interface.
 Each entry in `setting_descriptions` describes one top-level setting. The set
 mirrors the settings the caller is allowed to view.
 
+* scope settings:read
 * response setting_descriptions [setting_description]: One descriptor per top-level setting.
 * badge siteadmin
 
@@ -84,6 +87,7 @@ add to the site. HotCRP’s settings UI uses this to offer sample fields (for
 example, “Supplemental material” or a “Subject area” selector) and to enumerate
 the submission-field types this installation supports. Chair only.
 
+* scope settings:read
 * response samples [object]: Sample submission-field configurations, each a
   settings object ready to merge into [`/settings`](#post-settings).
 * response types [object]: The submission-field types available on this site.
@@ -99,6 +103,7 @@ Return a library of ready-made **review fields**, the review-form counterpart of
 review-field configurations and `types` enumerates the review-field types this
 installation supports. Chair only.
 
+* scope settings:read
 * response samples [object]: Sample review-field configurations, each a settings
   object ready to merge into [`/settings`](#post-settings).
 * response types [object]: The review-field types available on this site.
@@ -131,6 +136,7 @@ optionally `given_name`, `family_name`, and `affiliation`), a submission with
 `p`, and one of its reviews with `r`; `reason` fills the `%REASON%` keyword and
 `width` sets the line-wrapping width.
 
+* scope settings:read
 * param ?template string: Name of the template to expand, or `all` to expand
   every available template.
 * param ?p pid: Submission supplying context for paper-specific keywords.
@@ -182,6 +188,7 @@ array. PC members only. Each entry has a `name` and its search string `q`, and
 may also carry a `display` hint, a `description`, and `editable` (whether the
 caller may change it). Per-search diagnostics, if any, appear in `message_list`.
 
+* scope other:read
 * response searches [named_search]: The caller’s viewable named searches.
 
 
@@ -196,6 +203,7 @@ one), `name`, `search` (the search string), `highlight`, `description`, and
 `delete`. On success the updated list is returned exactly as [`namedsearch`
 GET](#get-namedsearch) returns it.
 
+* scope other:write
 * param ?=:named_search string: Structured per-search fields, `named_search/<n>/<field>` (see above).
 * response searches [named_search]: The named searches after the change.
 
@@ -210,6 +218,7 @@ from searches, scoring, and graphs. Each entry has a `name`, its `expression`,
 and an `id`; `editable` marks formulas the caller may change, and a per-formula
 `message_list` reports any problems evaluating the expression.
 
+* scope other:read
 * response formulas [named_formula]: The conference’s named formulas.
 
 
@@ -223,5 +232,6 @@ formula; the fields are `id` (the existing formula’s ID, or `new`), `name`,
 `expression`, and `delete`. On success the updated list is returned as
 [`namedformula` GET](#get-namedformula) returns it.
 
+* scope other:write
 * param ?=:formula string: Structured per-formula fields, `formula/<n>/<field>` (see above).
 * response formulas [named_formula]: The named formulas after the change.

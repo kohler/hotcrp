@@ -52,6 +52,7 @@ them, drawn from:
 * `author`—an author or contact of at least one submission
 * `reviewer`—assigned at least one review
 
+* scope none
 * badge featured
 * response email email: Email of the signed-in user
 * response given_name string: First (given) name
@@ -80,6 +81,7 @@ The returned `sessioninfo.postvalue` is the CSRF token; see [CSRF tokens and
 `post`](#tag-session) above. The `email` and `uid` fields are present only
 when a user is signed in.
 
+* scope none
 * response sessioninfo sessioninfo: Session information, omitted for cross-origin requests
 
 
@@ -117,6 +119,7 @@ Parsing is best-effort: every recognized assignment is applied, and any
 component that is not understood is silently ignored. A successful request
 returns `ok` of `true` whether or not every component was recognized.
 
+* scope other:write
 * param v string: Whitespace-separated list of preference assignments
 * response sessioninfo sessioninfo: Updated session information
 
@@ -141,6 +144,7 @@ success message in `message_list` on success. The `email` and `totpcode`
 parameters support alternate verification flows (such as time-based one-time
 passwords) where those are configured.
 
+* scope none
 * param ?confirm boolean: If true, include a success message on success
 * param ?=reason string: Short tag describing why reauthentication is requested
 * param ?=email email: Email of the account being confirmed
@@ -180,6 +184,7 @@ were supplied, `smsg` is `false`. To append to an existing stash, supply its
 identifier in the `smsg` request parameter (a 10–64 character alphanumeric
 string); otherwise the server generates a fresh identifier.
 
+* scope none
 * param =message_list string: JSON-encoded array of `{status, message}` objects
 * param ?=smsg string: Existing stash identifier to append to
 * response smsg string|boolean: Stash identifier, or `false` if nothing was stashed
@@ -216,6 +221,8 @@ the accepted `redirect_uris`, the supported `grant_types`
 `4xx` status and a body of the form `{"error": "invalid_request"}` (other
 values include `invalid_redirect_uri` and `invalid_client_metadata`).
 
+* scope none
+
 
 # post /oauthtoken
 
@@ -244,6 +251,7 @@ the response carries an HTTP `4xx` status and a body of the form `{"error":
 with a secret also gets an `error_description` naming the check that failed;
 a public client, whose `client_id` is all anyone needs to ask, does not.
 
+* scope none
 * param ?=grant_type string: `authorization_code` or `refresh_token`
 * param ?=code string: Authorization code (for `authorization_code` grants)
 * param ?=redirect_uri string: Redirect URI matching the authorization request
@@ -271,6 +279,7 @@ cannot test whether a token exists. Failures carry a `4xx` status and a body
 like `{"error": "invalid_client"}` (also `invalid_request`,
 `unsupported_token_type`), sometimes with an `error_description`.
 
+* scope none
 * param ?=token string: The access or refresh token to revoke
 * param ?=token_type_hint string: `access_token` or `refresh_token`
 * param ?=client_id string: Client identifier
@@ -289,6 +298,7 @@ even when the report is ignored.
 Reports are filtered: errors that appear to originate in browser extensions, or
 that come from known crawlers, are accepted but not logged.
 
+* scope none
 * param =error string: Error message
 * param ?=url string: URL where the error occurred
 * param ?=lineno integer: Line number
@@ -314,4 +324,5 @@ discarded. A well-formed request returns `{"ok": true}`. A malformed body
 returns a `400` error; if the report cannot be persisted (the log is missing,
 unwritable, or over quota) the response is a `5xx` error.
 
+* scope none
 * response ok boolean: True if the report was accepted

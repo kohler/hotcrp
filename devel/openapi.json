@@ -32,6 +32,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/forceShow",
@@ -107,6 +120,19 @@
                     },
                     {
                         "name": "Admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -244,6 +270,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -487,6 +526,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "q",
@@ -613,6 +665,19 @@
                     },
                     {
                         "name": "Site admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -855,6 +920,19 @@
                 "tags": [
                     "Submissions"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "p",
@@ -985,6 +1063,19 @@
                 "tags": [
                     "Submissions"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path",
@@ -1046,6 +1137,19 @@
                 "x-order": 93,
                 "tags": [
                     "Submissions"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -1131,6 +1235,19 @@
                 "tags": [
                     "Submissions"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path",
@@ -1202,6 +1319,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "document:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -1321,6 +1451,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "document:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/doc",
@@ -1410,6 +1553,19 @@
                 "x-order": 18,
                 "tags": [
                     "Documents"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "document:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -1553,6 +1709,19 @@
                 "tags": [
                     "Documents"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "document:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/doc",
@@ -1667,6 +1836,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "document:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -1904,6 +2086,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "q",
@@ -2094,6 +2289,19 @@
                 "tags": [
                     "Search"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -2148,6 +2356,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -2257,6 +2478,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -2370,6 +2604,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -2421,6 +2668,19 @@
                 "x-order": 49,
                 "tags": [
                     "Search"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -2523,6 +2783,19 @@
                 "x-badges": [
                     {
                         "name": "Site admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -2645,6 +2918,19 @@
                 "tags": [
                     "Search"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "category",
@@ -2715,6 +3001,19 @@
                 "x-order": 52,
                 "tags": [
                     "Search"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -2861,6 +3160,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path",
@@ -2945,6 +3257,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -3089,6 +3414,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "requestBody": {
                     "description": "",
                     "content": {
@@ -3183,6 +3521,19 @@
                 "tags": [
                     "Tags"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -3239,6 +3590,19 @@
                 "x-order": 100,
                 "tags": [
                     "Tags"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -3338,6 +3702,19 @@
                 "x-order": 101,
                 "tags": [
                     "Tags"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -3463,6 +3840,19 @@
                 "tags": [
                     "Tags"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path",
@@ -3517,6 +3907,19 @@
                 "x-order": 103,
                 "tags": [
                     "Tags"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "tag:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -3586,6 +3989,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -3672,6 +4088,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -3780,6 +4209,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "paper:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -4036,6 +4478,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -4094,6 +4549,19 @@
                     },
                     {
                         "name": "Admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "paper:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -4325,6 +4793,19 @@
                         "name": "Admin only"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -4376,6 +4857,19 @@
                 "x-order": 76,
                 "tags": [
                     "Submission administration"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -4445,6 +4939,19 @@
                     },
                     {
                         "name": "Admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -4531,6 +5038,19 @@
                 "tags": [
                     "Submission administration"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path",
@@ -4596,6 +5116,19 @@
                 "x-badges": [
                     {
                         "name": "Admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -4682,6 +5215,19 @@
                 "tags": [
                     "Submission administration"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path",
@@ -4747,6 +5293,19 @@
                 "x-badges": [
                     {
                         "name": "Site admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -4833,6 +5392,19 @@
                 "tags": [
                     "Submission administration"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path",
@@ -4898,6 +5470,19 @@
                 "x-badges": [
                     {
                         "name": "Admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "submeta:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -4989,6 +5574,19 @@
                         "name": "Admin only"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "r",
@@ -5062,6 +5660,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -5167,6 +5778,19 @@
                     },
                     {
                         "name": "Admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -5289,6 +5913,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -5545,6 +6182,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "q",
@@ -5707,6 +6357,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -5888,6 +6551,19 @@
                 "tags": [
                     "Reviews"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "r",
@@ -5976,6 +6652,19 @@
                 "tags": [
                     "Reviews"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "r",
@@ -6061,6 +6750,19 @@
                 "x-order": 33,
                 "tags": [
                     "Reviews"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -6169,6 +6871,19 @@
                 "x-order": 34,
                 "tags": [
                     "Reviews"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -6296,6 +7011,19 @@
                 "tags": [
                     "Reviews"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "r",
@@ -6368,6 +7096,19 @@
                 "x-order": 36,
                 "tags": [
                     "Reviews"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -6463,6 +7204,19 @@
                 "tags": [
                     "Reviews"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "r",
@@ -6546,6 +7300,19 @@
                 "tags": [
                     "Reviews"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -6595,6 +7362,19 @@
                 "x-order": 39,
                 "tags": [
                     "Reviews"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "review:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -6663,6 +7443,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "comment:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -6751,6 +7544,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "comment:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -6993,6 +7799,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "comment:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "c",
@@ -7123,6 +7942,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "comment:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "q",
@@ -7227,6 +8059,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "comment:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -7381,6 +8226,19 @@
                 "tags": [
                     "Comments"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "p",
@@ -7445,6 +8303,20 @@
                 "tags": [
                     "Meeting tracker"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -7502,6 +8374,19 @@
                 "x-badges": [
                     {
                         "name": "Track manager only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -7632,6 +8517,19 @@
                         "name": "Track manager only"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "requestBody": {
                     "description": "",
                     "content": {
@@ -7740,6 +8638,19 @@
                 "x-badges": [
                     {
                         "name": "Featured"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -7875,6 +8786,19 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "ui",
@@ -7951,6 +8875,19 @@
                 "tags": [
                     "Users"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "email",
@@ -8023,6 +8960,19 @@
                 "x-badges": [
                     {
                         "name": "Site admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -8126,6 +9076,19 @@
                 "tags": [
                     "Account"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "p",
@@ -8219,6 +9182,19 @@
                 "tags": [
                     "Account"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "alertid",
@@ -8274,6 +9250,19 @@
                 "x-order": 22,
                 "tags": [
                     "Notifications"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "paper:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -8353,6 +9342,19 @@
                 "x-order": 23,
                 "tags": [
                     "Notifications"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -8443,6 +9445,20 @@
                     {
                         "name": "Featured"
                     }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
                 ],
                 "parameters": [
                     {
@@ -8560,6 +9576,19 @@
                         "name": "Site admin only"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "settings:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "reset",
@@ -8653,6 +9682,19 @@
                     },
                     {
                         "name": "Site admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "settings:admin"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "parameters": [
@@ -8794,6 +9836,19 @@
                         "name": "Site admin only"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "settings:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -8849,6 +9904,19 @@
                 "x-badges": [
                     {
                         "name": "Site admin only"
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "settings:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
                     }
                 ],
                 "responses": {
@@ -8916,6 +9984,19 @@
                         "name": "Site admin only"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "settings:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -8975,6 +10056,19 @@
                 "x-order": 70,
                 "tags": [
                     "Settings"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "settings:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -9186,6 +10280,19 @@
                 "tags": [
                     "Settings"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -9235,6 +10342,19 @@
                 "x-order": 72,
                 "tags": [
                     "Settings"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "requestBody": {
                     "description": "",
@@ -9305,6 +10425,19 @@
                 "tags": [
                     "Settings"
                 ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:read"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -9354,6 +10487,19 @@
                 "x-order": 74,
                 "tags": [
                     "Settings"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "requestBody": {
                     "description": "",
@@ -9429,6 +10575,17 @@
                         "name": "Featured"
                     }
                 ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -9500,6 +10657,18 @@
                 "tags": [
                     "Session"
                 ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -9546,6 +10715,19 @@
                 "x-order": 56,
                 "tags": [
                     "Session"
+                ],
+                "security": [
+                    {
+                        "oauth2": [
+                            "other:write"
+                        ]
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -9607,6 +10789,17 @@
                 "x-order": 57,
                 "tags": [
                     "Session"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
                 ],
                 "parameters": [
                     {
@@ -9695,6 +10888,17 @@
                 "tags": [
                     "Session"
                 ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    }
+                ],
                 "requestBody": {
                     "description": "",
                     "content": {
@@ -9770,11 +10974,23 @@
         "/oauthregister": {
             "post": {
                 "summary": "OAuth 2.0 dynamic client registration endpoint",
-                "description": "Register a new OAuth client and obtain its credentials, following [RFC\n7591](https://datatracker.ietf.org/doc/html/rfc7591) (OAuth 2.0 Dynamic Client\nRegistration). Like [`POST /oauthtoken`](#post-oauthtoken), this is\na standards-based endpoint used when HotCRP acts as an OAuth/OpenID Connect\nidentity provider; it does not use HotCRP’s usual `{\"ok\": ...}` response\nenvelope. It is available only when the conference enables OAuth clients and\ndynamic registration; otherwise it returns `404`.\n\nThe request body is a JSON object (content type `application/json`). The only\nrequired member is `redirect_uris`, a non-empty array of redirect URI strings;\nevery URI is validated. Optional members include `client_name` (a\nhuman-readable name) and `scope` (a space-separated scope string). Registration\nsucceeds only when the request matches a dynamic-client template configured for\nthe conference (in particular, the requested `redirect_uris` must be permitted\nby that template).\n\nOn success the response has HTTP status `201` and a JSON body describing the\nnewly registered client: `client_id`, `client_secret`,\n`client_id_issued_at`, `client_secret_expires_at` (Unix timestamps),\nthe accepted `redirect_uris`, the supported `grant_types`\n(`authorization_code` and `refresh_token`), and the\n`token_endpoint_auth_method` (`client_secret_basic`). Use the returned\n`client_id` and `client_secret` with [`POST\n/oauthtoken`](#post-oauthtoken). On failure the response has a\n`4xx` status and a body of the form `{\"error\": \"invalid_request\"}` (other\nvalues include `invalid_redirect_uri` and `invalid_client_metadata`).\n\n\n",
+                "description": "Register a new OAuth client and obtain its credentials, following [RFC\n7591](https://datatracker.ietf.org/doc/html/rfc7591) (OAuth 2.0 Dynamic Client\nRegistration). Like [`POST /oauthtoken`](#post-oauthtoken), this is\na standards-based endpoint used when HotCRP acts as an OAuth/OpenID Connect\nidentity provider; it does not use HotCRP’s usual `{\"ok\": ...}` response\nenvelope. It is available only when the conference enables OAuth clients and\ndynamic registration; otherwise it returns `404`.\n\nThe request body is a JSON object (content type `application/json`). The only\nrequired member is `redirect_uris`, a non-empty array of redirect URI strings;\nevery URI is validated. Optional members include `client_name` (a\nhuman-readable name) and `scope` (a space-separated scope string). Registration\nsucceeds only when the request matches a dynamic-client template configured for\nthe conference (in particular, the requested `redirect_uris` must be permitted\nby that template).\n\nOn success the response has HTTP status `201` and a JSON body describing the\nnewly registered client: `client_id`, `client_secret`,\n`client_id_issued_at`, `client_secret_expires_at` (Unix timestamps),\nthe accepted `redirect_uris`, the supported `grant_types`\n(`authorization_code` and `refresh_token`), and the\n`token_endpoint_auth_method` (`client_secret_basic`). Use the returned\n`client_id` and `client_secret` with [`POST\n/oauthtoken`](#post-oauthtoken). On failure the response has a\n`4xx` status and a body of the form `{\"error\": \"invalid_request\"}` (other\nvalues include `invalid_redirect_uri` and `invalid_client_metadata`).\n",
                 "operationId": "oauthregister",
                 "x-order": 59,
                 "tags": [
                     "Session"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
                 ],
                 "responses": {
                     "default": {
@@ -9786,11 +11002,23 @@
         "/oauthtoken": {
             "post": {
                 "summary": "OAuth 2.0 / OpenID Connect token endpoint",
-                "description": "Exchange an authorization grant for tokens, following [RFC\n6749](https://datatracker.ietf.org/doc/html/rfc6749). This is a standards-based\nOAuth/OpenID Connect token endpoint used when HotCRP acts as an identity\nprovider for a registered client application; it is not a general HotCRP API\ncall and does not use HotCRP’s usual `{\"ok\": ...}` response envelope.\n\nThe request is form-encoded. Send `grant_type=authorization_code` with the\n`code` returned from the authorization step (plus `redirect_uri` and, for\n[PKCE](https://datatracker.ietf.org/doc/html/rfc7636) clients, `code_verifier`), or\n`grant_type=refresh_token` with a `refresh_token`. The client authenticates\neither with HTTP Basic authentication (`Authorization: Basic`) or by sending\n`client_id` and `client_secret` as body parameters. An optional `scope`\nparameter narrows the requested scopes.\n\nOn success the response is a standard OAuth token object containing\n`access_token`, `token_type` (`Bearer`), `expires_in`, `refresh_token`,\n`scope`, and—when the `openid` scope was granted—an `id_token` JWT. On failure\nthe response carries an HTTP `4xx` status and a body of the form `{\"error\":\n\"invalid_grant\"}` (other values include `invalid_request`, `invalid_client`,\n`invalid_scope`, and `unsupported_grant_type`).\n",
+                "description": "Exchange an authorization grant for tokens, following [RFC\n6749](https://datatracker.ietf.org/doc/html/rfc6749). This is a standards-based\nOAuth/OpenID Connect token endpoint used when HotCRP acts as an identity\nprovider for a registered client application; it is not a general HotCRP API\ncall and does not use HotCRP’s usual `{\"ok\": ...}` response envelope.\n\nThe request is form-encoded. Send `grant_type=authorization_code` with the\n`code` returned from the authorization step (plus `redirect_uri` and, for\n[PKCE](https://datatracker.ietf.org/doc/html/rfc7636) clients, `code_verifier`), or\n`grant_type=refresh_token` with a `refresh_token`. The client authenticates\neither with HTTP Basic authentication (`Authorization: Basic`) or by sending\n`client_id` and `client_secret` as body parameters. An optional `scope`\nparameter narrows the requested scopes.\n\nOn success the response is a standard OAuth token object containing\n`access_token`, `token_type` (`Bearer`), `expires_in`, `refresh_token`,\n`scope`, and—when the `openid` scope was granted—an `id_token` JWT. On failure\nthe response carries an HTTP `4xx` status and a body of the form `{\"error\":\n\"invalid_grant\"}` (other values include `invalid_request`, `invalid_client`,\n`invalid_scope`, and `unsupported_grant_type`). A client that authenticated\nwith a secret also gets an `error_description` naming the check that failed;\na public client, whose `client_id` is all anyone needs to ask, does not.\n",
                 "operationId": "oauthtoken",
                 "x-order": 60,
                 "tags": [
                     "Session"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
                 ],
                 "requestBody": {
                     "description": "",
@@ -9854,11 +11082,23 @@
         "/oauthrevoke": {
             "post": {
                 "summary": "OAuth 2.0 token revocation endpoint",
-                "description": "Revoke a token, following [RFC\n7009](https://datatracker.ietf.org/doc/html/rfc7009). Like [`POST\n/oauthtoken`](#post-oauthtoken), this is a standards-based endpoint that does\nnot use HotCRP’s usual `{\"ok\": ...}` response envelope; the client\nauthenticates the same way, and may revoke only its own tokens. Revoking a\nrefresh token also revokes the access tokens it produced.\n\nAs required by the RFC, unknown and already-revoked tokens get a success\nresponse, so the endpoint cannot test whether a token exists. Failures carry a\n`4xx` status and a body like `{\"error\": \"invalid_client\"}` (also\n`invalid_request`, `unsupported_token_type`, `invalid_grant`).\n",
+                "description": "Revoke a token, following [RFC\n7009](https://datatracker.ietf.org/doc/html/rfc7009). Like [`POST\n/oauthtoken`](#post-oauthtoken), this is a standards-based endpoint that does\nnot use HotCRP’s usual `{\"ok\": ...}` response envelope; the client\nauthenticates the same way, and may revoke only its own tokens. Revoking a\nrefresh token also revokes the access tokens it produced.\n\nAs required by the RFC, a token this client cannot revoke — unknown, already\nrevoked, or issued to someone else — gets a success response, so the endpoint\ncannot test whether a token exists. Failures carry a `4xx` status and a body\nlike `{\"error\": \"invalid_client\"}` (also `invalid_request`,\n`unsupported_token_type`), sometimes with an `error_description`.\n",
                 "operationId": "oauthrevoke",
                 "x-order": 61,
                 "tags": [
                     "Session"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
                 ],
                 "requestBody": {
                     "description": "",
@@ -9907,6 +11147,18 @@
                 "x-order": 62,
                 "tags": [
                     "Session"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
                 ],
                 "requestBody": {
                     "description": "",
@@ -9996,6 +11248,18 @@
                 "x-order": 63,
                 "tags": [
                     "Session"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    },
+                    {
+                        "apiToken": []
+                    },
+                    {
+                        "session": []
+                    },
+                    {}
                 ],
                 "responses": {
                     "200": {
@@ -11772,6 +13036,54 @@
                 "in": "cookie",
                 "name": "hotcrpsession",
                 "description": "Browser sessions authenticate to HotCRP’s API via a cookie. The name of the cookie varies by installation. Operations other than GET and HEAD also require a `post` query parameter for CSRF protection."
+            },
+            "oauth2": {
+                "type": "oauth2",
+                "description": "HotCRP acts as an OAuth 2.0 and OpenID Connect provider for registered client applications. A conference’s authorization endpoint is `/authorize` and its token endpoint is `/api/oauthtoken`; discover them, and the scopes the conference actually offers, from `/.well-known/oauth-authorization-server`.\n\nEvery access token carries a **scope**, which bounds what the token may do independently of what its user may do: a request is refused unless *both* the user has the right and the token’s scope grants it. Scopes are written as a space-separated list. The same scopes apply to the personal API tokens created under Account settings > Developer, so the scope listed on an operation below is what any token needs, however it was obtained.\n\nWithin a resource family, `:write` includes `:read`, and `:admin` includes both — so a `tag:admin` token satisfies an operation that asks for `tag:read`. The aggregate scopes `read`, `write`, and `admin` grant that level across every family, `all` grants everything, and `none` grants no API access at all.\n\nA scope may be narrowed to a subset of submissions by appending a selector: `#12` limits it to submission 12, `#tag` to the submissions carrying that tag, and `?q=SEARCH` to the submissions matching a search. For example, `paper:write#discuss` permits writing only to submissions tagged `#discuss`.",
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "../authorize",
+                        "tokenUrl": "api/oauthtoken",
+                        "refreshUrl": "api/oauthtoken",
+                        "scopes": {
+                            "openid": "Authenticate the user and issue an ID token. Grants no API access on its own.",
+                            "email": "Include the user’s email address in the ID token and `userinfo`. Grants no API access on its own.",
+                            "profile": "Include the user’s name and other profile claims in the ID token and `userinfo`. Grants no API access on its own.",
+                            "submeta:read": "Read submission metadata: fields, authors, topics, decisions, and status. Does not grant access to document contents.",
+                            "submeta:write": "Read and modify submission metadata.",
+                            "submeta:admin": "Read and modify submission metadata with submission administrator privilege.",
+                            "document:read": "Read documents — submission PDFs and attachments — and the submission metadata needed to locate them.",
+                            "document:write": "Read and upload documents, and modify the submissions they belong to.",
+                            "document:admin": "Read and upload documents with document administrator privilege.",
+                            "submission:read": "Read submissions and their documents.",
+                            "submission:write": "Read and modify submissions and their documents.",
+                            "submission:admin": "Read and modify submissions and their documents with submission administrator privilege.",
+                            "review:read": "Read reviews.",
+                            "review:write": "Read and write reviews, including submitting the caller’s own.",
+                            "review:admin": "Read and write reviews with review administrator privilege, including reviews the caller does not own.",
+                            "tag:read": "Read submission tags.",
+                            "tag:write": "Read and change submission tags.",
+                            "tag:admin": "Read and change submission tags with administrator privilege, including twiddle tags belonging to other users.",
+                            "comment:read": "Read comments and responses.",
+                            "comment:write": "Read and write comments and responses.",
+                            "comment:admin": "Read and write comments with administrator privilege, including comments the caller does not own.",
+                            "other:read": "Read everything not covered by another family: users, search metadata, the meeting tracker, notifications, and session state.",
+                            "other:write": "Read and modify everything not covered by another family.",
+                            "other:admin": "Read and modify everything not covered by another family, with administrator privilege — including modifying accounts other than the caller’s.",
+                            "settings:read": "Read site settings.",
+                            "settings:write": "Read site settings. Modifying settings requires `settings:admin`, since any settings change is an administrative act.",
+                            "settings:admin": "Read and modify site settings.",
+                            "paper:read": "Read submissions, documents, reviews, tags, and comments. Equivalent to `submission:read review:read tag:read comment:read`.",
+                            "paper:write": "Read and write submissions, documents, reviews, tags, and comments.",
+                            "paper:admin": "Read and write submissions, documents, reviews, tags, and comments with administrator privilege.",
+                            "read": "Read access across every family, including settings.",
+                            "write": "Read and write access across every family. Does not grant administrator privilege.",
+                            "admin": "Full access, including administrator privilege. Equivalent to `all`.",
+                            "all": "Full access, including administrator privilege.",
+                            "none": "No API access. Useful with `openid` when an application only needs to identify the user."
+                        }
+                    }
+                }
             }
         }
     },
@@ -11786,7 +13098,7 @@
         },
         {
             "name": "Search",
-            "description": "These endpoints run submission **searches** and manage the machinery around\nthem: saved (named) searches, the display options that control how a result list\nis shown, search-box completions, formula graphs, and bulk **search actions**.\n\nA search is written as a HotCRP **search string**—the same syntax as the web\nsearch box—in the `q` parameter, and runs against a **collection** of submissions\nnamed by `t`. [`/search`](#get-search) returns the matching submission IDs and,\noptionally, display fields; it is the backbone of every paper list, and several\nother endpoints (here and in other sections) accept the same search parameters to\nact on a search result.\n\nThese shared search parameters are:\n\n- `q`—the search string.\n- `t`—the collection of submissions to search. `t=viewable`, the broadest,\n  checks every submission the caller can view; `t=s` is complete submissions. If\n  `t` is omitted, HotCRP picks a default from the caller’s roles and the site\n  configuration (typically `t=s` for PC members and chairs).\n- `qt`—default fields to search for query terms that do not name a field, such as\n  `ti` (title) or `au` (authors).\n- `sort`—the result sort order, such as `id` or `-title`.\n- `scoresort`—the sort order for review-score fields, such as `average` or\n  `counts`.\n- `reviewer`—the reviewer (email or ID) whose viewpoint evaluates\n  reviewer-relative search terms such as `myreview`.\n\n\n"
+            "description": "These endpoints run submission **searches** and manage the machinery around\nthem: saved (named) searches, the display options that control how a result list\nis shown, search-box completions, formula graphs, and bulk **search actions**.\n\nA search is written as a HotCRP **search string**—the same syntax as the web\nsearch box—in the `q` parameter, and runs against a **collection** of submissions\nnamed by `t`. [`/search`](#get-search) returns the matching submission IDs and,\noptionally, display fields; it is the backbone of every paper list, and several\nother endpoints (here and in other sections) accept the same search parameters to\nact on a search result.\n\nThese shared search parameters are:\n\n- `q`—the search string.\n- `t`—the search *scope*, which is the collection of submissions to search.\n  `t=viewable`, the broadest, checks every submission the caller can view; `t=s`\n  is complete submissions. If `t` is omitted, HotCRP picks a default from the\n  caller’s roles and the site configuration (typically `t=s` for PC members and\n  chairs).\n- `qt`—default fields to search for query terms that do not name a field, such as\n  `ti` (title) or `au` (authors).\n- `sort`—the result sort order, such as `id` or `-title`.\n- `scoresort`—the sort order for review-score fields, such as `average` or\n  `counts`.\n- `reviewer`—the reviewer (email or ID) whose viewpoint evaluates\n  reviewer-relative search terms such as `myreview`.\n\n\n"
         },
         {
             "name": "Tags",

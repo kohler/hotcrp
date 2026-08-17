@@ -14,10 +14,11 @@ act on a search result.
 These shared search parameters are:
 
 - `q`—the search string.
-- `t`—the collection of submissions to search. `t=viewable`, the broadest,
-  checks every submission the caller can view; `t=s` is complete submissions. If
-  `t` is omitted, HotCRP picks a default from the caller’s roles and the site
-  configuration (typically `t=s` for PC members and chairs).
+- `t`—the search *scope*, which is the collection of submissions to search.
+  `t=viewable`, the broadest, checks every submission the caller can view; `t=s`
+  is complete submissions. If `t` is omitted, HotCRP picks a default from the
+  caller’s roles and the site configuration (typically `t=s` for PC members and
+  chairs).
 - `qt`—default fields to search for query terms that do not name a field, such as
   `ti` (title) or `au` (authors).
 - `sort`—the result sort order, such as `id` or `-title`.
@@ -123,6 +124,7 @@ This response might be returned for the search `10-12 THEN 5-8`:
 ```
 
 
+* scope submeta:read
 * badge featured
 * param q search_string: The search expression.
 * param t
@@ -171,6 +173,7 @@ Return a list of all supported display fields. Display fields can be requested
 in the web UI (search for `show:FIELDNAME`) or in the API (supply `f=FIELDNAME`
 to the `/search` endpoint).
 
+* scope other:read
 * response fields [display_field]
 
 
@@ -193,6 +196,7 @@ JSON array, rather than a JSON object. Applications wanting predictable JSON
 responses should use other API endpoints. Nevertheless, `/searchaction` can be
 more convenient than other more standardized APIs.
 
+* scope submeta:read
 * badge featured
 * param action string: Name of action
 * param q search_string: The search expression.
@@ -223,6 +227,7 @@ defined by the `q` and `t` search parameters.
 
 The request format for POST requests is the same as for GET requests.
 
+* scope submeta:read
 * badge featured
 * param action string: Name of action
 * param q search_string: The search expression.
@@ -256,6 +261,7 @@ examples include “Download > Review forms (zip)” and “Tag > Add to order�
 `/searchactions` API endpoint retrieves the search actions that the current user
 can access programmatically via the `/searchaction` API.
 
+* scope other:read
 * badge featured
 * response actions [search_action]: List of available actions
 
@@ -275,6 +281,7 @@ caller currently sees (the site default plus any of their own session
 adjustments), `display_default` is the site default, and `display_difference`
 expresses the caller’s view as a difference from HotCRP’s built-in default.
 
+* scope other:read
 * param ?report =pl|pf: Which report’s options to return; `pl` (paper list,
   the default) or `pf` (review preferences).
 
@@ -295,6 +302,7 @@ Save the site default view options for a report. Chair only. Supply the new view
 string in `display`; the response reports the resulting options exactly as
 [`viewoptions` GET](#get-viewoptions) does.
 
+* scope other:admin
 * param ?report =pl|pf: Which report to configure; `pl` (the default) or `pf`.
 
     * default pl
@@ -319,6 +327,7 @@ searches), `dec` (decisions), or `round` (review rounds). Most entries are
 completion strings; a few are grouped objects that bundle several related
 suggestions.
 
+* scope other:read
 * param ?category string: Limit suggestions to one category (e.g. `sf`, `has`, `ss`, `dec`, `round`).
 * response searchcompletion [string|object]: Completion suggestions.
 
@@ -338,6 +347,7 @@ The response carries the graph in HotCRP’s internal plotting format—the axis
 descriptions (`x`, `y`), a `data_format` code, and the `data` points—intended
 for the HotCRP graphing UI rather than for general consumption.
 
+* scope submeta:read
 * param x string: Formula expression for the x-axis.
 * param ?y string: Formula expression for the y-axis.
 * param ?gtype string: Graph type, such as `scatter`.

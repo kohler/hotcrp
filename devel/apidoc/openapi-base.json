@@ -1615,6 +1615,64 @@
                 "in": "cookie",
                 "name": "hotcrpsession",
                 "description": "Browser sessions authenticate to HotCRP’s API via a cookie. The name of the cookie varies by installation. Operations other than GET and HEAD also require a `post` query parameter for CSRF protection."
+            },
+            "oauth2": {
+                "type": "oauth2",
+                "description": "HotCRP acts as an OAuth 2.0 and OpenID Connect provider for registered client applications. A conference’s authorization endpoint is `/authorize` and its token endpoint is `/api/oauthtoken`; discover them, and the scopes the conference actually offers, from `/.well-known/oauth-authorization-server`.\n\nEvery access token carries a **scope**, which bounds what the token may do independently of what its user may do: a request is refused unless *both* the user has the right and the token’s scope grants it. Scopes are written as a space-separated list. The same scopes apply to the personal API tokens created under Account settings > Developer, so the scope listed on an operation below is what any token needs, however it was obtained.\n\nWithin a resource family, `:write` includes `:read`, and `:admin` includes both — so a `tag:admin` token satisfies an operation that asks for `tag:read`. The aggregate scopes `read`, `write`, and `admin` grant that level across every family, `all` grants everything, and `none` grants no API access at all.\n\nA scope may be narrowed to a subset of submissions by appending a selector: `#12` limits it to submission 12, `#tag` to the submissions carrying that tag, and `?q=SEARCH` to the submissions matching a search. For example, `paper:write#discuss` permits writing only to submissions tagged `#discuss`.",
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "../authorize",
+                        "tokenUrl": "api/oauthtoken",
+                        "refreshUrl": "api/oauthtoken",
+                        "scopes": {
+                            "openid": "Authenticate the user and issue an ID token. Grants no API access on its own.",
+                            "email": "Include the user’s email address in the ID token and `userinfo`. Grants no API access on its own.",
+                            "profile": "Include the user’s name and other profile claims in the ID token and `userinfo`. Grants no API access on its own.",
+
+                            "submeta:read": "Read submission metadata: fields, authors, topics, decisions, and status. Does not grant access to document contents.",
+                            "submeta:write": "Read and modify submission metadata.",
+                            "submeta:admin": "Read and modify submission metadata with submission administrator privilege.",
+
+                            "document:read": "Read documents — submission PDFs and attachments — and the submission metadata needed to locate them.",
+                            "document:write": "Read and upload documents, and modify the submissions they belong to.",
+                            "document:admin": "Read and upload documents with document administrator privilege.",
+
+                            "submission:read": "Read submissions and their documents.",
+                            "submission:write": "Read and modify submissions and their documents.",
+                            "submission:admin": "Read and modify submissions and their documents with submission administrator privilege.",
+
+                            "review:read": "Read reviews.",
+                            "review:write": "Read and write reviews, including submitting the caller’s own.",
+                            "review:admin": "Read and write reviews with review administrator privilege, including reviews the caller does not own.",
+
+                            "tag:read": "Read submission tags.",
+                            "tag:write": "Read and change submission tags.",
+                            "tag:admin": "Read and change submission tags with administrator privilege, including twiddle tags belonging to other users.",
+
+                            "comment:read": "Read comments and responses.",
+                            "comment:write": "Read and write comments and responses.",
+                            "comment:admin": "Read and write comments with administrator privilege, including comments the caller does not own.",
+
+                            "other:read": "Read everything not covered by another family: users, search metadata, the meeting tracker, notifications, and session state.",
+                            "other:write": "Read and modify everything not covered by another family.",
+                            "other:admin": "Read and modify everything not covered by another family, with administrator privilege — including modifying accounts other than the caller’s.",
+
+                            "settings:read": "Read site settings.",
+                            "settings:write": "Read site settings. Modifying settings requires `settings:admin`, since any settings change is an administrative act.",
+                            "settings:admin": "Read and modify site settings.",
+
+                            "paper:read": "Read submissions, documents, reviews, tags, and comments. Equivalent to `submission:read review:read tag:read comment:read`.",
+                            "paper:write": "Read and write submissions, documents, reviews, tags, and comments.",
+                            "paper:admin": "Read and write submissions, documents, reviews, tags, and comments with administrator privilege.",
+
+                            "read": "Read access across every family, including settings.",
+                            "write": "Read and write access across every family. Does not grant administrator privilege.",
+                            "admin": "Full access, including administrator privilege. Equivalent to `all`.",
+                            "all": "Full access, including administrator privilege.",
+                            "none": "No API access. Useful with `openid` when an application only needs to identify the user."
+                        }
+                    }
+                }
             }
         }
     },

@@ -39,6 +39,7 @@ object is returned in the `paper` response field. Error messages—for
 instance, about permission errors or nonexistent submissions—are returned in
 `message_list`.
 
+* scope submeta:read
 * param ?forceShow
 * param ?download boolean: True returns the bare submission object as a file
   (see [Downloads](#tag-submissions)) instead of the usual response envelope.
@@ -123,6 +124,7 @@ submission or create a new submission with that ID. To avoid overwriting an
 existing submission, set the submission JSON’s `if_unmodified_since` to
 `0`.
 
+* scope submeta:write
 * body application/json paper: A submission object sent as a raw JSON body.
 
     * oneof body
@@ -191,6 +193,7 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
 
 Delete the submission specified by `p`, a submission ID.
 
+* scope submeta:admin
 * param ?if_unmodified_since string: Don’t delete if modified since this time
 * param ?forceShow
 * param ?dry_run boolean: True checks input for errors, but does not save changes
@@ -228,6 +231,7 @@ allowed to view submission #1010”, whereas the `/papers` request will return
 no errors. To obtain warnings for missing submissions that were explicitly
 listed in a query, supply a `warn_missing=1` parameter.
 
+* scope submeta:read
 * param q search_string: The search expression.
 * param t
 
@@ -279,6 +283,7 @@ JSON modification object lacking the `pid` field. The JSON modification will
 be applied to all papers returned by the `q` search query.
 
 
+* scope submeta:admin
 * body application/json [paper]: An array of submission objects sent as a raw JSON body.
 
     * oneof body
@@ -362,6 +367,7 @@ Each entry in `potential_conflicts` carries the conflicting PC member’s `uid` 
 `potentialconflict` entry also includes a `description` (plain-text explanation)
 and a `tooltip` (HTML).
 
+* scope submeta:read
 * param ?p pid: Submission to analyze; use `new` for an unsaved submission.
 * param ?sclass string: Submission class, used when `p=new`.
 * param ?json string: JSON object of prospective `authors` and/or `collaborators` to apply to the submission before analysis.
@@ -387,6 +393,7 @@ Retrieve the share link for a submission. This link can be accessed by users not
 signed in to HotCRP; it grants view-only access to the submission and its
 documents. Only authors and submission administrators can fetch the share link.
 
+* scope submeta:read
 * response ?url: The share link
 * response ?token author_view_token: Token for this share link
 * response ?token_type string: `"author_view"`
@@ -415,6 +422,7 @@ whether a link should be created; it must be one of:
 
 Only authors and submission administrators can modify a share link.
 
+* scope submeta:write
 * param !share share_action
 * param ?expires_in integer
 * response !token ?author_view_token
@@ -429,4 +437,5 @@ Only authors and submission administrators can modify a share link.
 
 Delete the share link for a submission, if any has been created.
 
+* scope submeta:write
 * response !token null

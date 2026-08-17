@@ -32,6 +32,7 @@ and a negative ID is a non-accept decision (reject-class or indeterminate).
 `decision_html` is its configured name as HTML. `editable` is present when the
 caller may change the decision.
 
+* scope submeta:read
 * response decision integer: Decision ID; `0` means no decision.
 * response decision_html string: Decision name, as HTML.
 * response ?editable boolean: Present when the caller may change the decision.
@@ -45,6 +46,7 @@ Set the decision for submission `p`. Supply `decision` as either a decision ID o
 a decision name. The caller’s conflicts are overridden. The response reports the
 new decision as [`decision` GET](#get-decision) does.
 
+* scope submeta:admin
 * param =decision string: New decision, given as a decision ID or name.
 * response decision integer: Decision ID; `0` means no decision.
 * response decision_html string: Decision name, as HTML.
@@ -61,6 +63,7 @@ Return the discussion lead of submission `p`. `lead` is the lead’s email, or
 `none` if unset; `lead_html` is their name as HTML (`None` when unset);
 `color_classes` carries any style classes implied by the lead’s user tags.
 
+* scope submeta:read
 * response lead string: Discussion lead’s email, or `none`.
 * response lead_html string: Discussion lead’s name as HTML, or `None`.
 * response ?color_classes style_classes: Style classes from the lead’s user tags.
@@ -74,6 +77,7 @@ Set the discussion lead of submission `p`. Supply `lead` as a PC member’s emai
 or `none` to clear it. The response reports the new lead as
 [`lead` GET](#get-lead) does.
 
+* scope submeta:admin
 * param =lead string: New discussion lead’s email, or `none` to clear.
 * response lead string: Discussion lead’s email, or `none`.
 * response lead_html string: Discussion lead’s name as HTML, or `None`.
@@ -90,6 +94,7 @@ email, or `none` if unset; `manager_html` is their name as HTML (`None` when
 unset); `color_classes` carries any style classes implied by the manager’s user
 tags.
 
+* scope submeta:read
 * response manager string: Manager’s email, or `none`.
 * response manager_html string: Manager’s name as HTML, or `None`.
 * response ?color_classes style_classes: Style classes from the manager’s user tags.
@@ -103,6 +108,7 @@ Set an explicit administrator for submission `p`. Supply `manager` as a PC
 member’s email, or `none` to clear it. The response reports the new manager as
 [`manager` GET](#get-manager) does.
 
+* scope submeta:admin
 * param =manager string: New manager’s email, or `none` to clear.
 * response manager string: Manager’s email, or `none`.
 * response manager_html string: Manager’s name as HTML, or `None`.
@@ -118,6 +124,7 @@ Return the shepherd of submission `p`. `shepherd` is their email, or `none` if
 unset; `shepherd_html` is their name as HTML (`None` when unset); `color_classes`
 carries any style classes implied by the shepherd’s user tags.
 
+* scope submeta:read
 * response shepherd string: Shepherd’s email, or `none`.
 * response shepherd_html string: Shepherd’s name as HTML, or `None`.
 * response ?color_classes style_classes: Style classes from the shepherd’s user tags.
@@ -131,6 +138,7 @@ Set the shepherd of submission `p`. Supply `shepherd` as a PC member’s email, 
 `none` to clear it. The response reports the new shepherd as
 [`shepherd` GET](#get-shepherd) does.
 
+* scope submeta:admin
 * param =shepherd string: New shepherd’s email, or `none` to clear.
 * response shepherd string: Shepherd’s email, or `none`.
 * response shepherd_html string: Shepherd’s name as HTML, or `None`.
@@ -146,6 +154,7 @@ Move one review of submission `p` into a different review round. Restricted to
 submission administrators. Identify the review with `r` and the
 destination round by name in `round`.
 
+* scope review:admin
 * param r rid: Review to move, as a numeric review ID or ordinal.
 * param round string: Name of the destination review round.
 * badge admin

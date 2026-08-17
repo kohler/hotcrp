@@ -90,6 +90,11 @@ class APISpec_Batch {
     private $cur_fielddefault;
     /** @var list<object> */
     private $cur_badge;
+    /** @var list<list<string>> OAuth scope alternatives declared by `* scope`
+     * lines: each element is one alternative, a list of scope names that a
+     * caller's token must hold together. An empty inner list means the
+     * operation needs a token but no particular scope (`* scope none`). */
+    private $cur_scope;
     /** @var list<string> */
     private $cur_fieldsch;
     /** @var array<string,string> response_schema name => field it follows (its
@@ -277,7 +282,7 @@ class APISpec_Batch {
                 $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
                 $d = ltrim(substr($d, strlen($mx[0])));
             }
-            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param(?:eter)?(?:_schema)?|response(?:_schema)?|badge|body) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
+            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param(?:eter)?(?:_schema)?|response(?:_schema)?|badge|body|scope) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
                 $d = cleannl(substr($d, 0, -strlen($mx[0])));
                 $x["fields"] = ltrim($mx[0]);
             }
@@ -522,6 +527,7 @@ class APISpec_Batch {
             $this->cur_bodyschema = [];
             $this->cur_bodyd = [];
             $this->cur_badge = [];
+            $this->cur_scope = [];
             if ($uf->paper ?? false) {
                 $this->add_field("p", self::F_REQUIRED);
             }
@@ -813,13 +819,132 @@ class APISpec_Batch {
         return null;
     }
 
+    /** Record one alternative from a `* scope NAME...` line. Every name on the
+     * line is required together; repeating the directive declares alternatives,
+     * any one of which suffices. `* scope none` declares that the operation
+     * needs a token but no particular scope.
+     * @param string $s */
+    private function add_scope_alternative($s) {
+        $names = [];
+        foreach (preg_split('/[\s,]+/', trim($s), -1, PREG_SPLIT_NO_EMPTY) as $w) {
+            if ($w === "none") {
+                continue;
+            }
+            if (TokenScope::parse_basic($w) === 0) {
+                fwrite(STDERR, $this->cur_prefix() . "unknown scope `{$w}`\n");
+                continue;
+            }
+            if (!in_array($w, $names, true)) {
+                $names[] = $w;
+            }
+        }
+        $this->cur_scope[] = $names;
+    }
+
+    /** Scope bits granted by holding every scope in `$names` at once. OpenID
+     * Connect scopes grant no API access, so they contribute nothing.
+     * @param list<string> $names
+     * @return int */
+    static private function scope_bits($names) {
+        $bits = 0;
+        foreach ($names as $w) {
+            $b = TokenScope::parse_basic($w);
+            if ($b === -1) {
+                return ~0;
+            } else if ($b > 0) {
+                $bits |= $b;
+            }
+        }
+        return $bits;
+    }
+
+    /** The scope an API function declares for endpoint-level enforcement in
+     * `Conf::call_api_on`, or null if it declares none. A `false` scope means
+     * the generic `other:` scope for the method.
+     * @param object $uf
+     * @return ?string */
+    private function uf_scope_name($uf) {
+        if (!isset($uf->scope)) {
+            return null;
+        } else if ($uf->scope === false) {
+            return $this->cur_lmethod === "get" ? "other:read" : "other:write";
+        } else if (is_string($uf->scope) && TokenScope::parse_basic($uf->scope) !== 0) {
+            return $uf->scope;
+        }
+        fwrite(STDERR, $this->cur_prefix() . "bad API function scope " . json_encode($uf->scope) . "\n");
+        return null;
+    }
+
+    /** Attach the operation's OAuth scope requirement as an OpenAPI `security`
+     * list. Each `* scope` alternative becomes an `oauth2` requirement; the
+     * non-OAuth alternatives from the base specification (bearer token, session
+     * cookie) follow, since HotCRP accepts those too, and an operation that
+     * needs no authentication also offers the empty requirement.
+     *
+     * The documented scope must imply whatever `Conf::call_api_on` enforces
+     * from the API function's own `scope` key; where the documentation declares
+     * nothing, that key supplies the answer. An operation with neither is left
+     * without a `security` list, so it inherits the specification default.
+     * @param object $x
+     * @param object $uf */
+    private function apply_security($x, $uf) {
+        $alts = $this->cur_scope;
+        $ufname = $this->uf_scope_name($uf);
+        if ($ufname !== null) {
+            if (empty($alts)) {
+                $alts = [[$ufname]];
+            } else {
+                $ufbits = self::scope_bits([$ufname]);
+                foreach ($alts as $names) {
+                    if ((self::scope_bits($names) & $ufbits) !== $ufbits) {
+                        fwrite(STDERR, $this->cur_prefix() . "documented scope `"
+                            . (empty($names) ? "none" : join(" ", $names))
+                            . "` does not imply enforced scope `{$ufname}`\n");
+                    }
+                }
+            }
+        }
+        if (empty($alts)) {
+            if (($uf->alias ?? null) === null) {
+                fwrite(STDERR, $this->cur_prefix() . "scope missing\n");
+            }
+            return;
+        }
+        $sec = [];
+        foreach ($alts as $names) {
+            $sec[] = (object) ["oauth2" => $names];
+        }
+        foreach ($this->basej->security ?? [] as $req) {
+            if (!isset($req->oauth2)) {
+                $sec[] = self::deep_clone($req);
+            }
+        }
+        if (($uf->auth ?? null) === false) {
+            // an empty requirement marks authentication optional (OpenAPI 3.1 §4.8.30)
+            $sec[] = (object) [];
+        }
+        $x->security = $sec;
+    }
+
     /** @param string $params
      * @param bool $response
      * @param string $landmark */
     private function parse_description_fields($params, $response, $landmark) {
         $pos = 0;
         $last_field = "";
-        while (preg_match('/\G\* (param(?:eter)?(?:_schema)?|response(?:_schema)?|badge|body)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)|\n)((?:(?:[ \t]*+\n)*+  [^\n]*+\n)*+)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+        while (true) {
+            // `* scope` is matched on its own: scope names contain `:`, which
+            // the field-name pattern excludes.
+            if (preg_match('/\G\* scope[ \t]++([^\n]*+)(?:\n|\z)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+                $pos += strlen($m[0]);
+                if (!$response) {
+                    $this->add_scope_alternative($m[1]);
+                }
+                continue;
+            }
+            if (!preg_match('/\G\* (param(?:eter)?(?:_schema)?|response(?:_schema)?|badge|body)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)|\n)((?:(?:[ \t]*+\n)*+  [^\n]*+\n)*+)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+                break;
+            }
             $pos += strlen($m[0]);
             if ($m[1] === "badge") {
                 if (!$response) {
@@ -1066,6 +1191,7 @@ class APISpec_Batch {
             $this->parse_field_info($uf->parameter_info);
         }
         $this->apply_badges($x);
+        $this->apply_security($x, $uf);
         $this->apply_md_field_order();
 
         // Unified document order across query params, form body fields, and

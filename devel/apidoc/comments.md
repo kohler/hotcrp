@@ -63,6 +63,7 @@ comment](#tag-comments)). The comment is returned in the `comment` response
 field as a [comment object](#tag-comments); if it does not exist or the caller
 may not see it, an error is returned.
 
+* scope comment:read
 * param c string: The comment to return (a numeric comment ID or a response
   selector).
 * param ?response string: Response-round name, when selecting a named response.
@@ -146,6 +147,7 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 `attachment:3`, and so forth). To delete an existing attachment, supply its
 `docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
 
+* scope comment:write
 * body application/json comment: A comment object supplied as a raw JSON body (see [JSON upload](#tag-comments)).
 
     * oneof body
@@ -211,6 +213,7 @@ existing comment. This is equivalent to [`POST /{p}/comment`](#post-comment) wit
 `delete=1`, and is subject to the same permission and [concurrency](#tag-comments)
 rules.
 
+* scope comment:write
 * param c string: The comment to delete (a numeric comment ID or a response selector).
 * param ?response string: Response-round name, when selecting a named response.
 * param ?if_unmodified_since string: Reject the delete if the comment has been
@@ -244,6 +247,7 @@ As a shorthand for a single submission, supply its ID in `p` instead of `q`;
 this returns that submission’s visible comments. Supplying both `q` and `p` is
 an error.
 
+* scope comment:read
 * param ?q search_string: The search expression.
 * param ?p pid: A single submission, as an alternative to `q`.
 * param ?t
@@ -290,6 +294,7 @@ reported without aborting the batch. The per-item results are returned in the
 and order as the input. Messages in `message_list` carry a `landmark` field set
 to the integer index of the item they concern.
 
+* scope comment:write
 * body application/json [comment]: An array of comment objects sent as a raw JSON body.
 
     * oneof body
@@ -331,6 +336,7 @@ present): `s` is offered immediately, while `sm1` is offered only once the user
 has typed at least one character. PC members use `sm1`, so the entire committee
 is not listed unprompted; authors and other direct participants use `s`.
 
+* scope other:read
 * param ?p pid: Submission whose participants may be mentioned.
 * response mentioncompletion [object]: Mention candidates, as autocompleter items.
 

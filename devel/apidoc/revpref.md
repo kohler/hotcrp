@@ -38,6 +38,7 @@ expertise letter); `value` is an empty string when no preference is set.
 `topic_score` reports how well the submission’s topics match the PC member’s
 topic interests (present only when the conference uses topics).
 
+* scope review:read
 * badge featured
 * param ?u string: PC member whose preference to read (email or user ID); administrators only. Defaults to the caller.
 * response value string: The preference in text form (e.g. `10X`), or an empty string if unset.
@@ -58,6 +59,7 @@ Supply the new preference in `pref`, in text form: a signed integer, optionally
 followed by an expertise letter (`X`, `Y`, or `Z`)—for example `10`, `-5`, or
 `20X`. An empty value clears the preference.
 
+* scope review:write
 * badge featured
 * param ?u string: PC member whose preference to set (email or user ID); administrators only. Defaults to the caller.
 * param +=pref string: New preference in text form (e.g. `10X`); empty to clear.

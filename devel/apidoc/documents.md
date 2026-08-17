@@ -25,6 +25,7 @@ This API understands conditional requests with HTTP headers `If-Match`,
 responses include `ETag` and `Last-Modified` HTTP headers. It also understands
 range requests.
 
+* scope document:read
 * badge featured
 * param ?doc document_name: Document name, e.g. `testconf-paper1.pdf`.
 
@@ -54,6 +55,7 @@ documents currently associated with the submission. To request information about
 a specific submission field, add a `dt` or `doc` parameter. Setting `history=1`
 requests information about past document versions as well as current ones.
 
+* scope document:read
 * badge featured
 * param ?doc document_name
 
@@ -80,6 +82,7 @@ lists the names of any PDF checks that failed; examples include `"papersize"`,
 and `"wordlimit"`. The `npages_detail` response field is provided only if the
 request’s `detail` parameter is truthy.
 
+* scope document:read
 * param ?doc document_name
     * oneof docspec doc
 * param ?p
@@ -114,6 +117,7 @@ the list of included filenames in the `archive_contents` field. The
 preformatted string that uses `{}` notation to represent subdirectories; for
 instance, `subdir/{file1.txt, file2.txt}`.
 
+* scope document:read
 * param ?doc document_name
     * oneof docspec doc
 * param ?p pid
@@ -164,6 +168,7 @@ response field represents the ranges of bytes received so far.
 The upload API is only available on sites that have enabled the document
 store.
 
+* scope document:write
 * badge featured
 * param ?p pid
 * param ?start boolean

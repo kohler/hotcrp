@@ -22,6 +22,7 @@ UI. As with other HTML the API returns, its markup and class names are internal
 to HotCRP and may change; applications needing structured data should read
 reviews and comments through their own endpoints.
 
+* scope paper:read
 * param ?from integer: Return events before this UNIX time. Defaults to now.
 * response from integer: The cutoff time this page was computed from.
 * response to integer: Cutoff for the next (older) page; pass it back as `from`.
@@ -37,6 +38,7 @@ Set whether a user **follows** submission `p`. A follower is emailed when review
 or comments are added to the submission. By default the setting applies to the
 caller; administrators may change another user’s setting with `u`.
 
+* scope other:write
 * param =following boolean: Whether the user should follow the submission.
 * param ?u string: User whose setting to change (email or user ID); administrators only. Defaults to the caller.
 * response following boolean: The follow state after the change.

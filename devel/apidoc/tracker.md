@@ -50,6 +50,7 @@ Return a lightweight snapshot of the meeting tracker for change detection. This
 endpoint requires no authentication, so the poller (and read-only kiosk
 displays) can call it without a session.
 
+* scope other:read
 * response tracker_status string: Compact status token—`<trackerid>@<position>`, or `off` when no tracker is running.
 * response tracker_eventid integer: Counter that increases whenever the tracker changes.
 
@@ -72,6 +73,7 @@ The list the tracker walks is supplied in `hotlist-info` (an encoded submission
 list, the same form produced elsewhere in the UI). `p` and `tracker_start_at`
 optionally pin a specific submission and start time.
 
+* scope other:write
 * param track string: Tracker command (see above).
 * param ?=hotlist-info string: The submission list the tracker walks through, as a [hotlist](#tag-search) string (the same `hotlist` value returned by [`/search`](#get-search)).
 * param ?p pid: Submission to position the tracker at.
@@ -115,6 +117,7 @@ Trackers are configured as a numbered list of structured parameters
 Set `stopall` to stop every tracker at once. (A legacy flat parameter form,
 `tr<n>-<field>`, is also accepted and translated.)
 
+* scope other:write
 * param ?=stopall boolean: Stop all trackers.
 * param ?=:tr string: Structured per-tracker configuration, `tr/<n>/<field>` (see above).
 * param ?=:has_tr string: Presence markers for checkbox fields, `has_tr/<n>/<field>`.

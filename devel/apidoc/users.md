@@ -27,6 +27,7 @@ return no match. Supplying a submission `p` together with `potential_conflict=1`
 adds a `potential_conflict` description when the looked-up user has a possible
 conflict with that submission and the caller may see its authors.
 
+* scope other:read
 * badge featured
 * param email email: Email address to look up.
 * param ?p pid: Submission to check for a potential conflict with the user.
@@ -74,6 +75,7 @@ members are `assignable` as reviewers.
 
 Set `ui=1` to receive the richer representation HotCRP’s own interface uses.
 
+* scope other:read
 * badge featured
 * param ?ui boolean: Return the representation used by the HotCRP web interface.
 * response pc [object]: The PC members.
@@ -95,6 +97,7 @@ Name the account in `email`; `me` or the caller’s own email selects the caller
 PC members may query other accounts by email; non-PC callers may query only their
 own.
 
+* scope other:read
 * param email email: Account to inspect; `me` or the caller’s own email for self.
 * response email email: The account’s email.
 * response disabled boolean: Whether the account is disabled.
@@ -116,6 +119,7 @@ Exactly one action applies per request:
 The response reports the account’s resulting status, as for
 [`account` GET](#get-account).
 
+* scope other:admin
 * param email email: Account to modify; `me` or the caller’s own email for self.
 * param ?disable boolean: Disable the account.
 * param ?enable boolean: Re-enable the account.

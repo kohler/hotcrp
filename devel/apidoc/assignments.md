@@ -63,6 +63,7 @@ with refreshed tag and status information for the affected submissions. This
 lets a client apply an assignment and update a displayed submission list in a
 single round trip.
 
+* scope paper:admin
 * badge featured
 * param ?assignments string
 
@@ -195,6 +196,7 @@ parameters each action accepts. Use this to discover the `action` values and
 columns valid in an [`/assign`](#post-assign) request.
 The visible set of actions reflects the calling user’s privileges.
 
+* scope other:read
 * badge featured
 * response assigners [assignment_action]: Available assignment actions
 
@@ -225,6 +227,7 @@ endpoint with that identifier to follow progress and retrieve the resulting
 assignment as CSV. When the computation finishes quickly enough, the result is
 returned directly instead, in the same shape as a completed `/job` response.
 
+* scope paper:admin
 * badge featured
 * param autoassigner string: Name of the autoassignment algorithm to run, as listed by [`/autoassigners`](#get-autoassigners).
 * param q search_string: Search selecting the submissions to assign.
@@ -302,6 +305,7 @@ List every autoassignment algorithm understood by this HotCRP installation, with
 the parameters each one accepts. Use this to discover valid `autoassigner` values
 and `param` settings for [`/autoassign`](#post-autoassign).
 
+* scope other:read
 * badge featured
 * badge admin
 * response autoassigners [autoassignment_action]: Available autoassignment algorithms
