@@ -563,9 +563,12 @@ function pluralize($s) {
             return "have";
         } else if ($s === "is") {
             return "are";
-        } else {
-            return "{$s}es";
+        } else if ($s === "does") {
+            return "do";
+        } else if ($s === "was") {
+            return "were";
         }
+        return "{$s}es";
     } else if ($last === "h"
                && $len > 1
                && ($s[$len - 2] === "s" || $s[$len - 2] === "c")) {
@@ -579,15 +582,17 @@ function pluralize($s) {
             return "those";
         } else if ($s === "it") {
             return "them";
-        } else {
-            return "{$s}s";
+        }
+        // fall through
+    } else if ($last === "o") {
+        if ($s === "do") {
+            return "does";
         }
     } else if ($last === ")"
                && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $s, $m)) {
         return pluralize($m[1]) . $m[2];
-    } else {
-        return "{$s}s";
     }
+    return "{$s}s";
 }
 
 /** @param int|float|array $n

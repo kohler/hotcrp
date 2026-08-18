@@ -721,9 +721,12 @@ function pluralize(s) {
             return "have";
         } else if (s === "is") {
             return "are";
-        } else {
-            return s + "es";
+        } else if (s === "does") {
+            return "do";
+        } else if (s === "was") {
+            return "were";
         }
+        return s + "es";
     } else if (last === 104 /*h*/
                && len > 1
                && ((ch = s.charCodeAt(len - 2)) === 115 /*s*/ || ch === 99 /*c*/)) {
@@ -737,15 +740,17 @@ function pluralize(s) {
             return "those";
         } else if (s === "it") {
             return "them";
-        } else {
-            return s + "s";
+        }
+        // fall through
+    } else if (last === 111 /*o*/) {
+        if (s === "do") {
+            return "does";
         }
     } else if (last === 41 /*)*/
                && (m = s.match(/^(.*?)(\s*\([^)]*\))$/))) {
         return pluralize(m[1]) + m[2];
-    } else {
-        return s + "s";
     }
+    return s + "s";
 }
 
 function plural_word(n, singular, plural) {
