@@ -123,7 +123,7 @@ class UpdateContactdb_Batch {
         }
         $max_sub = 0;
         foreach ($this->conf->submission_round_list() as $sr) {
-            $max_sub = max($max_sub, $sr->register, $sr->update, $sr->submit);
+            $max_sub = max($max_sub, $sr->register, $sr->submit);
         }
         if ($max_sub && $max_sub != $this->confrow->submission_deadline_at) {
             $qf[] = "submission_deadline_at=?";

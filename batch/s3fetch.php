@@ -66,7 +66,7 @@ class S3Fetch_Batch {
     function run() {
         $s3 = $this->conf->s3_client();
         if ($this->verbose > 1) {
-            S3Client::$verbose = true;
+            $s3->set_verbose(true);
         }
         foreach ($this->ha as $ha) {
             $pat = DocumentInfo::s3_key_for($ha, "");

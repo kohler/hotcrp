@@ -32,7 +32,8 @@ class Tag_PaperColumn extends PaperColumn {
     const F_CHECK = 0x2;
     const F_VALUE = 0x4;
     const F_EMOJI = 0x8;
-    const F_TAGANNO = 0x10;
+    const F_ONEALLOTMENT = 0x10;
+    const F_TAGANNO = 0x20;
 
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
@@ -58,7 +59,8 @@ class Tag_PaperColumn extends PaperColumn {
             return false;
         }
         $this->ctag = " {$this->etag}#";
-        $this->ti = $pl->conf->tags()->ensure($this->dtag);
+        $tagmap = $pl->conf->tags();
+        $this->ti = $tagmap->ensure($this->dtag);
 
         $this->editable = $this->view_option("edit") ?? false;
         if ($this->is_value !== null) {
@@ -68,7 +70,7 @@ class Tag_PaperColumn extends PaperColumn {
             && preg_match('/\A%?(\d*(?:\.\d*)[bdeEfFgGoxX])\z/', $f, $m)) {
             $this->format = self::F_VALUE;
             $this->real_format = "%{$m[1]}";
-        } else if ($f === "check") {
+        } else if ($f === "check" || $f === "checkbox") {
             $this->format = self::F_CHECK;
         } else if ($f === "value") {
             $this->format = self::F_VALUE;
@@ -111,15 +113,21 @@ class Tag_PaperColumn extends PaperColumn {
             $pl->column_error_at($this->name, $ml);
             return;
         }
-        if ($this->format & self::F_DEFAULT) {
-            // XXX min/max values
-            $dt = $pl->conf->tags()->find($this->etag);
-            if (!$dt && ($tw = strpos($this->etag, "~"))) {
-                $dt = $pl->conf->tags()->find(substr($this->etag, $tw + 1));
-            }
-            if ($dt && $dt->is(TagInfo::TF_APPROVAL)) {
-                $this->format ^= self::F_DEFAULT | self::F_CHECK;
-            }
+        $xti = null;
+        if (($tw = strpos($this->etag, "~")) !== false) {
+            $xti = $pl->conf->tags()->find_having(substr($this->etag, $tw + 1), TagInfo::TFM_VOTES);
+        }
+        if (($this->format & self::F_DEFAULT) !== 0
+            && $xti
+            && ($xti->is(TagInfo::TF_APPROVAL)
+                || ($xti->is(TagInfo::TF_ALLOTMENT) && $xti->allotment === 1.0))) {
+            $this->format ^= self::F_DEFAULT | self::F_CHECK;
+        }
+        if (($this->format & self::F_CHECK) !== 0
+            && $xti
+            && !$xti->is(TagInfo::TF_APPROVAL)
+            && $xti->is(TagInfo::TF_ALLOTMENT)) {
+            $this->format |= self::F_ONEALLOTMENT;
         }
         if (($visible & FieldRender::CFLIST) !== 0
             && $pl->table_id()
@@ -228,7 +236,8 @@ class Tag_PaperColumn extends PaperColumn {
         }
         if ($this->format & self::F_CHECK) {
             $checked = $v === null ? "" : " checked";
-            return "<input type=\"checkbox\" class=\"uic uikd js-range-click js-plist-tag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\"{$checked}>";
+            $value = $this->format & self::F_ONEALLOTMENT ? $v ?? 1 : "x";
+            return "<input type=\"checkbox\" class=\"uic uikd js-range-click js-plist-tag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$value}\"{$checked}>";
         }
         if ($this->editsort) {
             $pl->need_render = true;

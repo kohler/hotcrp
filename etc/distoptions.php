@@ -174,7 +174,8 @@ $Opt["emailSender"] = null;
 //                   alphabetically after B (i.e., C or D).
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   strictJavascript If true, send Javascript with "use strict".
-//   hideManager     If set, PC members are not shown paper managers.
+//   hideManager     If true, reviewers cannot see paper administrator
+//                   identities.
 //   authorSharing   Controls whether authors can create sharing links.
 //                   If -1, they cannot. If +1, authors get sharing links
 //                   by default. If 0, authors can request sharing links.

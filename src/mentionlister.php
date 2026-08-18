@@ -43,17 +43,10 @@ class MentionLister {
 
         if ((!$prow || !$prow->has_author($user))
             && $user->can_view_pc()) {
-            if (!$prow
-                || $reason === self::FOR_PARSE
-                || !$user->conf->check_track_view_sensitivity()) {
-                $pclist = $user->conf->enabled_pc_members();
-            } else {
-                $pclist = [];
-                foreach ($user->conf->pc_members() as $u) {
-                    if (!$u->is_dormant()
-                        && $u->can_pc_view_paper_track($prow))
-                        $pclist[] = $u;
-                }
+            $pclist = [];
+            foreach ($this->get_pc($prow, $user, $reason) as $pc) {
+                if (!$pc->is_dormant())
+                    $pclist[] = $pc;
             }
             if (!empty($pclist)) {
                 $this->lists["pc"] = $pclist;
@@ -92,6 +85,11 @@ class MentionLister {
                 $au->contactId = $rrow->contactId;
                 $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
                 $rlist[] = $au;
+            } else if ($rrow->reviewType === REVIEW_META) {
+                $au = Author::make_last("Metareviewer");
+                $au->contactId = $rrow->contactId;
+                $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
+                $rlist[] = $au;
             }
             if (($cvis >= CommentInfo::CTVIS_REVIEWER || $rrow->reviewType >= REVIEW_PC)
                 && $user->can_view_review_identity($prow, $rrow)
@@ -108,12 +106,26 @@ class MentionLister {
     /** @param PaperInfo $prow
      * @param Contact $user */
     private function add_shepherd($prow, $user) {
+        $can_view = $user->can_view_shepherd($prow);
+        if (!$can_view
+            && !$user->can_view_decision($prow)) {
+            $any = false;
+            foreach ($prow->viewable_comment_skeletons($user) as $crow) {
+                if (($crow->commentType & CommentInfo::CT_BYSHEPHERD) !== 0) {
+                    $any = true;
+                    break;
+                }
+            }
+            if (!$any) {
+                return;
+            }
+        }
         $au = Author::make_last("Shepherd");
         $au->contactId = $prow->shepherdContactId;
         $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
         $this->lists["reviewers"][] = $au;
-        if (!in_array($prow->shepherdContactId, $this->rcids, true)
-            && $user->can_view_shepherd($prow)
+        if ($can_view
+            && !in_array($prow->shepherdContactId, $this->rcids, true)
             && ($shepherd = $user->conf->user_by_id($prow->shepherdContactId, USER_SLICE))
             && !$shepherd->is_dormant()) {
             $this->lists["reviewers"][] = $shepherd;
@@ -134,6 +146,51 @@ class MentionLister {
                 $this->rcids[] = $crow->contactId;
             }
         }
+    }
+
+    /** @param PaperInfo $prow
+     * @param Contact $user
+     * @param 0|1 $reason
+     * @return array<Contact> */
+    private function get_pc($prow, $user, $reason) {
+        if (!$prow
+            || $reason === self::FOR_PARSE
+            || !$prow->conf->check_track_view_sensitivity()
+            || !$user->can_view_user_tags()) {
+            return $user->conf->pc_members();
+        }
+        // enumerate track permissions that allow viewing this paper,
+        // but leave off permissions this user can't see (e.g. `+~~chair_tag`)
+        $relevant_perm = [];
+        $unmatched = true;
+        foreach ($prow->conf->track_list() as $tr) {
+            if ($tr->is_default ? $unmatched : $prow->has_tag($tr->ltag)) {
+                $unmatched = false;
+                $p = $tr->perm[Track::VIEW];
+                if ($p === null) {
+                    return $prow->conf->pc_members();
+                } else if ($p !== "+none"
+                           && $user->can_view_tag_somewhere(substr($p, 1))) {
+                    $relevant_perm[] = $p;
+                }
+            }
+        }
+        // return PC members who match at least one of the permissions,
+        // or are chairs
+        // XXX managerContactId, track admins?
+        $allowed = [];
+        foreach ($prow->conf->pc_members() as $pc) {
+            foreach ($relevant_perm as $perm) {
+                if ($pc->has_permission($perm)) {
+                    $allowed[] = $pc;
+                    continue 2;
+                }
+            }
+            if ($pc->privChair) {
+                $allowed[] = $pc;
+            }
+        }
+        return $allowed;
     }
 
 

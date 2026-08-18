@@ -34,12 +34,12 @@ class Offline_Page {
             $this->ms->error_at("file");
             return false;
         }
-        $tf = (new ReviewValues($this->conf))
+        $tf = (new ReviewValues($this->user))
             ->set_text($this->qreq->file_content("file"),
                        $this->qreq->file_filename("file"));
         $override = friendly_boolean($this->qreq->override) ?? false;
         while ($tf->set_req_override($override)->parse_text()) {
-            $tf->check_and_save($this->user, null, null);
+            $tf->check_and_save(null, null);
             $tf->clear_req();
         }
         $tf->report();

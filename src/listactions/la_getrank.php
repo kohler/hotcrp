@@ -69,7 +69,7 @@ tag," . CsvGenerator::quote(trim($qreq->tag)) . "
 # same rank as the preceding paper. Lines starting with \">>\", \">>>\",
 # and so forth indicate rank gaps between papers. When you are done,
 # upload the file here:\n"
-                . "# " . $user->conf->hoturl_raw("offline", null, Conf::HOTURL_ABSOLUTE) . "\n\n"
+                . "# " . $user->conf->hoturl("offline", null, Conf::HOTURL_ABSOLUTE) . "\n\n"
                 . $real . ($real === "" ? "" : "\n") . $null);
     }
 }

@@ -41,7 +41,6 @@ class PaperStatus_Tester {
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $conf->save_setting("sub_open", 1);
-        $conf->save_setting("sub_update", Conf::$now + 100);
         $conf->save_setting("sub_sub", Conf::$now + 100);
         $conf->save_setting("opt.contentHashMethod", 1, "sha1");
         $conf->save_setting("rev_open", 1);
@@ -194,8 +193,8 @@ class PaperStatus_Tester {
         $u_sclin = $this->conf->user_by_email("sclin@leland.stanford.edu");
         $p3did = $p3->paperStorageId;
 
-        $deadline = $this->conf->setting("sub_update");
-        $this->conf->save_refresh_setting("sub_update", Conf::$now - 3600);
+        $deadline = $this->conf->setting("sub_sub");
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now - 3600);
 
         $ps = new PaperStatus($u_sclin);
         $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content\":\"%PDF-fsanfndsakfndskajfndskjanfkjsdanfkjsdnafkjsnak\\n\",\"type\":\"application/pdf\"}}"));
@@ -203,7 +202,7 @@ class PaperStatus_Tester {
 
         $p3 = $this->conf->checked_paper_by_id(3);
         xassert_eqq($p3->paperStorageId, $p3did);
-        $this->conf->save_refresh_setting("sub_update", $deadline);
+        $this->conf->save_refresh_setting("sub_sub", $deadline);
         xassert(ConfInvariants::test_document_inactive($this->conf));
     }
 
@@ -423,7 +422,7 @@ class PaperStatus_Tester {
 
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["status:submit" => 1]), $newpaper));
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
         xassert($ps->execute_save());
         xassert_paper_status_saved_nonrequired($ps, MessageSet::WARNING);
 
@@ -553,10 +552,10 @@ class PaperStatus_Tester {
 
     function test_save_new_fail_deadline() {
         $old_sub_reg = $this->conf->setting("sub_reg");
-        xassert($this->conf->setting("sub_update") > Conf::$now);
+        xassert($this->conf->setting("sub_sub") > Conf::$now);
         $this->conf->save_refresh_setting("sub_reg", Conf::$now - 1000);
         xassert(!$this->conf->unnamed_submission_round()->time_register(true));
-        xassert($this->conf->unnamed_submission_round()->time_update(true));
+        xassert($this->conf->unnamed_submission_round()->time_submit(true));
 
         $ps = new PaperStatus($this->u_estrin);
         xassert(!$ps->user->privChair);
@@ -582,11 +581,11 @@ class PaperStatus_Tester {
 
     function test_save_existing_fail_deadline() {
         $old_sub_reg = $this->conf->setting("sub_reg");
-        $old_sub_update = $this->conf->setting("sub_update");
+        $old_sub_sub = $this->conf->setting("sub_sub");
         $this->conf->save_setting("sub_reg", Conf::$now - 1000);
-        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now - 1000);
         xassert(!$this->conf->unnamed_submission_round()->time_register(true));
-        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
+        xassert(!$this->conf->unnamed_submission_round()->time_submit(true));
 
         $ps = new PaperStatus($this->u_estrin);
         $paper1 = $this->conf->checked_paper_by_id(1);
@@ -601,39 +600,7 @@ class PaperStatus_Tester {
         xassert(!$ok);
 
         $this->conf->save_setting("sub_reg", $old_sub_reg);
-        $this->conf->save_refresh_setting("sub_update", $old_sub_update);
-    }
-
-    function test_save_finalize() {
-        $ps = new PaperStatus($this->u_chair);
-        xassert($ps->save_paper_json(json_decode('{"pid":1,"draft":true,"title":"Scalable Timers for Soft State Protocols"}')));
-        $paper1 = $this->conf->checked_paper_by_id(1);
-        xassert($paper1->timeSubmitted === 0);
-
-        $old_sub_update = $this->conf->setting("sub_update");
-        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
-        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
-        xassert($this->conf->unnamed_submission_round()->time_submit(true));
-
-        $ps = new PaperStatus($this->u_estrin);
-        $paper1 = $this->conf->checked_paper_by_id(1);
-        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols 2", "status:submit" => 1]), $paper1));
-        xassert($ps->has_change_at("title"));
-        try {
-            $ok = $ps->execute_save();
-        } catch (Exception $e) {
-            $ok = false;
-        }
-        xassert(!$ok);
-
-        $ps = new PaperStatus($this->u_estrin);
-        $paper1 = $this->conf->checked_paper_by_id(1);
-        xassert_eqq($paper1->title, "Scalable Timers for Soft State Protocols");
-        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols", "status:submit" => 1]), $paper1));
-        xassert(!$ps->has_change_at("title"));
-        xassert($ps->execute_save());
-
-        $this->conf->save_refresh_setting("sub_update", $old_sub_update);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
     }
 
     function test_save_finalize_no_edit() {
@@ -645,10 +612,9 @@ class PaperStatus_Tester {
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert($paper1->timeSubmitted === 0);
 
-        $old_sub_update = $this->conf->setting("sub_update");
-        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
-        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
-        xassert($this->conf->unnamed_submission_round()->time_submit(true));
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now - 1000);
+        xassert(!$this->conf->unnamed_submission_round()->time_submit(true));
         $nonpc = $this->conf->checked_user_by_email("waldvogel@tik.ee.ethz.ch");
 
         $ps = new PaperStatus($nonpc);
@@ -664,7 +630,7 @@ class PaperStatus_Tester {
         xassert(!$ps->has_change_at("title"));
         xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1\n");
 
-        $this->conf->save_refresh_setting("sub_update", $old_sub_update);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
     }
 
     function test_save_decision() {
@@ -847,24 +813,225 @@ class PaperStatus_Tester {
         xassert(ConfInvariants::test_summary_settings($this->conf));
     }
 
+    /** @param int $pid */
+    private function add_contact_to_withdrawn_paper($pid) {
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) [
+            "id" => $pid,
+            "contacts" => [(object) ["email" => "estrin@usc.edu"], (object) ["email" => "floyd@ee.lbl.gov"]]
+        ]));
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($p->conflict_type($this->u_sally), CONFLICT_CONTACTAUTHOR);
+        xassert_gt($p->timeWithdrawn, 0);
+        // the paper's status did not change, so the save must not report one
+        xassert(!$ps->has_change_at("status"));
+        return $p;
+    }
+
+    function test_withdrawn_contact_save() {
+        // a withdrawn paper that had been submitted accepts contact changes,
+        // and remembers that it was submitted
+        $prow = $this->make_author_paper("Withdrawn contact save, was submitted");
+        $pid = $prow->paperId;
+        xassert_gt($prow->timeSubmitted, 0);
+        $submitted_at = $prow->timeSubmitted;
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeSubmitted, -$submitted_at);
+
+        $p = $this->add_contact_to_withdrawn_paper($pid);
+        xassert_eqq($p->timeSubmitted, -$submitted_at);
+
+        // reviving restores the submitted state
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => false]]));
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeSubmitted, $submitted_at);
+    }
+
+    function test_withdrawn_draft_contact_save() {
+        // same, for a withdrawn paper that was never submitted
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Withdrawn contact save, never submitted",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeSubmitted, 0);
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+
+        $p = $this->add_contact_to_withdrawn_paper($pid);
+        xassert_eqq($p->timeSubmitted, 0);
+    }
+
+    /** @param int $pid */
+    private function reject_field_edit_on_withdrawn_paper($pid) {
+        $p = $this->conf->checked_paper_by_id($pid);
+        $submitted = $p->timeSubmitted;
+        $withdrawn = $p->timeWithdrawn;
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["id" => $pid, "abstract" => "Edited while withdrawn"]));
+        xassert_str_contains($ps->full_feedback_text(), "has been withdrawn");
+
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($p->abstract(), "This is an abstract");
+        xassert_eqq($p->timeSubmitted, $submitted);
+        xassert_eqq($p->timeWithdrawn, $withdrawn);
+    }
+
+    function test_withdrawn_field_edit() {
+        // a withdrawn paper does not accept field edits, whether or not it
+        // had been submitted; contact edits still work
+        $prow = $this->make_author_paper("Withdrawn field edit, was submitted");
+        $pid = $prow->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        $this->reject_field_edit_on_withdrawn_paper($pid);
+        $this->add_contact_to_withdrawn_paper($pid);
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Withdrawn field edit, never submitted",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        $this->reject_field_edit_on_withdrawn_paper($pid);
+        $this->add_contact_to_withdrawn_paper($pid);
+    }
+
+    function test_revive_denied_rejects_whole_save() {
+        // a never-submitted paper, then withdrawn
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Revive denied save",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+
+        // close the submission deadline so the author cannot revive
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now - 1000);
+        xassert(!$this->u_estrin->can_revive_paper($this->conf->checked_paper_by_id($pid)));
+
+        // a revive the author may not perform is an ESTOP: even on its own,
+        // with nothing else to change, the save reports failure (a lesser error
+        // would let this no-op save succeed silently)
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => false]]));
+        xassert($ps->has_error());
+        xassert_gt($this->conf->checked_paper_by_id($pid)->timeWithdrawn, 0);
+
+        // and a field change bundled with the denied revive is not applied
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) [
+            "id" => $pid,
+            "status" => (object) ["withdrawn" => false],
+            "abstract" => "Changed by denied revive"
+        ]));
+
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_gt($p->timeWithdrawn, 0);
+        xassert_eqq($p->abstract(), "This is an abstract");
+
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+    }
+
+    function test_resubmission_deadline() {
+        // a submitted paper and a draft, both created before any deadline passes
+        $submitted = $this->make_author_paper("Resubmission window, submitted");
+        $spid = $submitted->paperId;
+        xassert_gt($submitted->timeSubmitted, 0);
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "title" => "Resubmission window, draft",
+            "abstract" => "This is an abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert($ps->execute_save());
+        $dpid = $ps->paperId;
+        xassert_eqq($this->conf->checked_paper_by_id($dpid)->timeSubmitted, 0);
+
+        // submission deadline past, resubmission deadline still open
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $old_sub_resub = $this->conf->setting("sub_resub");
+        $this->conf->save_setting("sub_sub", Conf::$now - 1000);
+        $this->conf->save_refresh_setting("sub_resub", Conf::$now + 1000);
+        $sr = $this->conf->unnamed_submission_round();
+        xassert(!$sr->time_submit(true));
+        xassert($sr->time_edit(true, true));    // submitted papers editable
+        xassert(!$sr->time_edit(false, true));  // drafts are not
+
+        // the author may revise the submitted paper...
+        xassert($this->u_estrin->can_edit_paper($this->conf->checked_paper_by_id($spid)));
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["id" => $spid, "abstract" => "Revised in the resubmission window"]));
+        xassert_eqq($this->conf->checked_paper_by_id($spid)->abstract(), "Revised in the resubmission window");
+        // ...but may not unsubmit it back to a draft
+        xassert(!$this->u_estrin->can_unsubmit_paper($this->conf->checked_paper_by_id($spid)));
+
+        // the draft cannot be edited or finalized past the submission deadline
+        xassert(!$this->u_estrin->can_edit_paper($this->conf->checked_paper_by_id($dpid)));
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["id" => $dpid, "abstract" => "Too late for the draft"]));
+        xassert_eqq($this->conf->checked_paper_by_id($dpid)->abstract(), "This is an abstract");
+
+        // with no resubmission deadline set, it is inferred equal to the
+        // submission deadline: submitted papers are frozen too
+        $this->conf->save_refresh_setting("sub_resub", null);
+        $sr = $this->conf->unnamed_submission_round();
+        xassert($sr->inferred_resubmit);
+        xassert_eqq($sr->resubmit, $sr->submit);
+        xassert(!$sr->time_edit(true, true));
+        xassert(!$this->u_estrin->can_edit_paper($this->conf->checked_paper_by_id($spid)));
+
+        $this->conf->save_setting("sub_resub", $old_sub_resub);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+    }
+
     function test_save_options() {
         $this->newpaper1 = $this->newpaper1->reload();
         xassert($this->newpaper1->timeSubmitted > 0);
 
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10", "has_opt1" => "1", "has_status:submit" => 1]), $this->newpaper1));
-        xassert_array_eqq($ps->changed_keys(), ["calories", "status"], true);
+        xassert_array_eqq($ps->change_list(), ["calories", "status"], true);
         xassert($ps->execute_save());
         xassert_paper_status($ps);
 
         $ps = new PaperStatus($this->u_estrin);
         xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10xxxxx", "has_opt1" => "1"]), $this->newpaper1));
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
         xassert($ps->has_error_at("opt1"));
 
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "none", "has_opt1" => "1"]), $this->newpaper1));
-        xassert_array_eqq($ps->changed_keys(), ["calories"], true);
+        xassert_array_eqq($ps->change_list(), ["calories"], true);
         xassert_paper_status($ps);
         // ...but do not save!!
 
@@ -987,7 +1154,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "abstract" => " They\nsee\r\nlots of\n\n\ncolors. \n\n\n"]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["abstract"], true);
+        xassert_array_eqq($ps->change_list(), ["abstract"], true);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->abstract, "They\nsee\nlots of\n\n\ncolors.");
     }
@@ -1000,7 +1167,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1);
         xassert_paper_status($ps, MessageSet::WARNING);
-        xassert_array_eqq($ps->changed_keys(), ["collaborators"], true);
+        xassert_array_eqq($ps->change_list(), ["collaborators"], true);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
     }
@@ -1010,7 +1177,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1);
         xassert_paper_status($ps, MessageSet::WARNING);
-        xassert_array_eqq($ps->changed_keys(), ["collaborators"], true);
+        xassert_array_eqq($ps->change_list(), ["collaborators"], true);
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators(), "Sal Stolfo
@@ -1038,7 +1205,7 @@ Phil Porras.");
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "collaborators" => $long_collab]), $this->u_estrin->checked_paper_by_id($this->pid2));
         xassert_paper_status($ps);
-        xassert_array_eqq($ps->changed_keys(), ["collaborators"], true);
+        xassert_array_eqq($ps->change_list(), ["collaborators"], true);
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators, null);
@@ -1049,7 +1216,7 @@ Phil Porras.");
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "collaborators" => "One guy (MIT)"]), $nprow1);
         xassert_paper_status($ps);
-        xassert_array_eqq($ps->changed_keys(), ["collaborators"], true);
+        xassert_array_eqq($ps->change_list(), ["collaborators"], true);
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators(), "One guy (MIT)");
@@ -1077,7 +1244,7 @@ Phil Porras.");
             "topics" => ["Cloud computing"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["topics"]);
+        xassert_array_eqq($ps->change_list(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [1]);
 
@@ -1086,7 +1253,7 @@ Phil Porras.");
             "topics" => (object) ["Cloud computing" => true, "Security" => true]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["topics"]);
+        xassert_array_eqq($ps->change_list(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [1, 3]);
 
@@ -1097,7 +1264,7 @@ Phil Porras.");
             "topics" => [2, 4]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["topics"]);
+        xassert_array_eqq($ps->change_list(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [2, 4]);
 
@@ -1107,7 +1274,7 @@ Phil Porras.");
             "topics" => ["architecture", "security"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["topics"]);
+        xassert_array_eqq($ps->change_list(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [2, 3]);
 
@@ -1129,7 +1296,7 @@ Phil Porras.");
             "topics" => ["fartchitecture", "architecture"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["topics"]);
+        xassert_array_eqq($ps->change_list(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [2, 5]);
 
@@ -1220,7 +1387,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => true, $this->u_sally->email => true]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_list(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1),
             [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->u_sally->contactId]);
@@ -1229,7 +1396,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => []
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_list(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId]);
 
@@ -1237,7 +1404,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_list(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
 
@@ -1246,7 +1413,7 @@ Phil Porras.");
         ]);
         xassert($ps->has_problem());
         xassert_paper_status($ps, MessageSet::WARNING);
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
@@ -1256,7 +1423,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "advisor"]
         ]);
         xassert(!$ps->has_problem()); // XXX should have problem
-        xassert_array_eqq($ps->changed_keys(), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_list(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
@@ -1266,7 +1433,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "advisor", $this->u_estrin->email => false, $this->u_chair->email => false]
         ]);
         xassert(!$ps->has_problem()); // XXX should have problem
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
@@ -1390,7 +1557,7 @@ Phil Porras.");
             "id" => $this->pid2, "contacts" => ["estrin@usc.edu"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "estrin@usc.edu");
@@ -1402,7 +1569,7 @@ Phil Porras.");
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1, "contacts:2:email" => "", "contacts:2:active" => 1]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
     }
 
     function test_save_contacts_creates_user() {
@@ -1412,7 +1579,7 @@ Phil Porras.");
             "id" => $this->pid2, "contacts" => ["estrin@usc.edu", (object) ["email" => "festrin@fusc.fedu", "name" => "Feborah Festrin"]]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["contacts"], true);
 
         $new_user = $this->conf->fresh_user_by_email("festrin@fusc.fedu");
         xassert(!!$new_user);
@@ -1429,7 +1596,7 @@ Phil Porras.");
         xassert(!$this->conf->fresh_user_by_email("gestrin@gusc.gedu"));
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1, "contacts:2:email" => "festrin@fusc.fedu", "has_contacts:2:active" => 1, "contacts:3:email" => "gestrin@gusc.gedu", "contacts:3:name" => "Geborah Gestrin", "contacts:3:active" => 1]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["contacts"], true);
 
         $new_user2 = $this->conf->fresh_user_by_email("gestrin@gusc.gedu");
         xassert(!!$new_user2);
@@ -1447,7 +1614,7 @@ Phil Porras.");
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu gestrin@gusc.gedu");
@@ -1456,7 +1623,7 @@ Phil Porras.");
 
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "atten@_.com", "contacts:1:active" => 1]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["contacts"], true);
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu gestrin@gusc.gedu");
@@ -1466,7 +1633,7 @@ Phil Porras.");
 
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "gestrin@gusc.gedu", "has_contacts:1:active" => 1, "contacts:2:email" => "atten@_.com", "has_contacts:2:active" => 1]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["contacts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu");
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu");
@@ -1489,7 +1656,7 @@ Phil Porras.");
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:2:name" => "Géborah Géstrin", "authors:2:email" => "gestrin@gusc.gedu"]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["authors", "contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["authors", "contacts"], true);
 
         // *primary* contacts are atten, estrin, festrin (not gestrin)
         $nprow1 = $this->conf->checked_paper_by_id($this->pid2);
@@ -1507,12 +1674,12 @@ Phil Porras.");
         $ps2->save_paper_web(new Qrequest("POST", ["abstract" => "They see lots and LOTS of colors."]), $nprow1);
         $ps2->notify_followers();
         xassert(!$ps2->has_problem());
-        xassert_array_eqq($ps2->changed_keys(), ["abstract"], true);
+        xassert_array_eqq($ps2->change_list(), ["abstract"], true);
         MailChecker::check_db("t_paperstatus-primary-01");
 
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com"]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["authors", "contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["authors", "contacts"], true);
         $nprow1 = $this->conf->checked_paper_by_id($this->pid2);
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu");
         xassert_eqq($nprow1->conflict_type($u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
@@ -1527,7 +1694,7 @@ Phil Porras.");
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu");
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "gestrin@gusc.gedu", "contacts:1:active" => "1"]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["contacts"], true);
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu festrin@fusc.fedu");
@@ -1538,7 +1705,7 @@ Phil Porras.");
 
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "gestrin@gusc.gedu", "has_contacts:1:active" => 1]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), [], true);
+        xassert_array_eqq($ps->change_list(), [], true);
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu festrin@fusc.fedu");
@@ -1549,7 +1716,7 @@ Phil Porras.");
 
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "festrin@fusc.fedu", "has_contacts:1:active" => 1]), $nprow1);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
+        xassert_array_eqq($ps->change_list(), ["contacts"], true);
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu");
@@ -1571,7 +1738,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => ["gestrin@gusc.gedu" => true]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq($ps->changed_keys(), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_list(), ["pc_conflicts"], true);
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->festrin_cid]);
@@ -1708,7 +1875,7 @@ Phil Porras.");
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
 
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
             if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
                 $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
             }
@@ -1799,7 +1966,7 @@ Phil Porras.");
 
         // give paper 3 a fresh submission so `banal` must actually run (no cache)
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
             if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
                 $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
             }
@@ -1823,16 +1990,15 @@ Phil Porras.");
         $this->conf->save_setting("opt.pdftohtmlCommand", 1, $slow);
         $this->conf->refresh_settings();
         $this->conf->qe("delete from Settings where name=?", $banal_key);
+        Conf::$blocked_time = 0.0; // ensure we can start new banals
 
         // launch a background format check on the same document; it runs on its
         // own until we drive it to completion below
-        $env = getenv();
-        $env["HOTCRP_TEST_PDFTOHTML_DELAY"] = "1";
         $subp = (new Subprocess([
             "php", "batch/checkformat.php",
             "--config", SiteLoader::resolve("test/options.php"),
             "-p", "3"
-        ], SiteLoader::$root))->set_env($env);
+        ], SiteLoader::$root));
         $subp->start();
 
         // wait until that run has claimed the lease (it does so before running banal)
@@ -1953,6 +2119,31 @@ Phil Porras.");
         $pr = PaperRequest::make($qreq, false);
         xassert($pr instanceof FailureReason);
         xassert($pr["missingId"]);
+
+        // unparseable id in path => 404, not silent fall-through
+        $qreq = TestQreq::get_page("paper/abc")->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof FailureReason);
+        xassert_eqq($pr["invalidId"], "paper");
+        xassert_eqq($pr->response_code(), 404);
+
+        $qreq = TestQreq::get_page("paper/10r0")->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof FailureReason);
+        xassert_eqq($pr->response_code(), 404);
+
+        // path conflicts with `p` parameter => 404, not a redirect to `p`
+        $qreq = TestQreq::get_page("paper/3", ["p" => "4"])->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof FailureReason);
+        xassert_eqq($pr["conflictingId"], "paper");
+        xassert_eqq($pr->response_code(), 404);
+        xassert_str_contains(MessageSet::feedback_text($pr->message_list()), "‘3’ and ‘4’");
+
+        // agreeing path and `p` are fine
+        $qreq = TestQreq::get_page("paper/3", ["p" => "3"])->set_user($this->u_estrin);
+        $pr = PaperRequest::make($qreq, false);
+        xassert($pr instanceof PaperRequest);
     }
 
     function test_conditional_fields() {
@@ -2262,6 +2453,167 @@ Phil Porras.");
         ]);
         xassert($ps->has_problem());
         xassert(!$this->conf->fresh_user_by_email($bad_email));
+    }
+
+    function test_freeze_create_and_submit() {
+        $this->conf->save_refresh_setting("sub_freeze", 1);
+        xassert($this->conf->unnamed_submission_round()->freeze);
+
+        // The underlying model (PaperStatus) accepts a new paper that is created
+        // and submitted in a single step, via both the web and JSON paths.
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json(json_decode('{
+            "id": "new", "title": "Frozen JSON create-and-submit",
+            "abstract": "Abstract.\n",
+            "authors": [{"name": "Ethan Iverson", "email": "iverson@_.com"}],
+            "submission": {"content": "%PDF-2.0\n", "type": "application/pdf"},
+            "status": {"submitted": true}
+        }')));
+        xassert_paper_status($ps);
+        xassert($ps->paperId > 0);
+        $newpaper = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        xassert($newpaper->timeSubmitted > 0);
+
+        // The paper-edit page must accept the same one-step create-and-submit.
+        MailChecker::clear();
+        $qreq = TestQreq::post([
+            "update" => 1, "status:submit" => 1, "has_status:submit" => 1,
+            "title" => "Frozen web create-and-submit", "abstract" => "Abstract\r\n",
+            "has_authors" => "1", "authors:1:name" => "Ethan Iverson",
+            "authors:1:email" => "iverson@_.com", "has_submission" => 1
+        ])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
+        $pp = new Paper_Page($this->u_estrin, $qreq);
+        $pp->prow = PaperInfo::make_new($this->u_estrin, "");
+        $qreq->set_paper($pp->prow);
+        // On success `handle_update` redirects (throws Redirection); the bug
+        // instead aborts the save and returns without redirecting.
+        $redirected = false;
+        try {
+            $pp->handle_update();
+        } catch (Redirection $redir) {
+            $redirected = true;
+        }
+        xassert($redirected);
+        xassert($pp->ps->paperId > 0);
+        $newpaper = $this->u_estrin->checked_paper_by_id($pp->ps->paperId);
+        xassert($newpaper->timeSubmitted > 0);
+        MailChecker::clear();
+
+        $this->conf->save_refresh_setting("sub_freeze", null);
+    }
+
+    function test_post_deadline_update_render() {
+        $t0 = Conf::$now;
+        $this->conf->save_refresh_setting("sub_freeze", null);
+        $this->conf->save_refresh_setting("sub_open", 1);
+        $this->conf->save_refresh_setting("sub_sub", $t0 + 1000);
+
+        // create a draft paper while the deadline is open
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json(json_decode('{
+            "id": "new", "title": "Original title", "abstract": "Original abstract.\n",
+            "authors": [{"name": "Deborah Estrin", "email": "estrin@usc.edu"}],
+            "submission": {"content": "%PDF-2.0\n", "type": "application/pdf"},
+            "status": {"draft": true}
+        }')));
+        $pid = $ps->paperId;
+        xassert($pid > 0);
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->conflict_type($this->u_estrin) & CONFLICT_AUTHOR, CONFLICT_AUTHOR);
+
+        // advance time past the submission deadline
+        Conf::advance_current_time($t0 + 2000);
+        xassert(!$this->conf->unnamed_submission_round()->time_edit(false, true));
+        $mtime = $this->conf->checked_paper_by_id($pid)->timeModified;
+        xassert($mtime > 0 && $mtime < Conf::$now);
+
+        // author attempts to change the title after the deadline
+        MailChecker::clear();
+        $qreq = TestQreq::post_page("paper", [
+            "update" => 1, "p" => $pid, "m" => "edit", "has_authors" => 1,
+            "title" => "Sneaky post-deadline title", "abstract" => "Original abstract.\r\n",
+            "authors:1:name" => "Deborah Estrin", "authors:1:email" => "estrin@usc.edu"
+        ])->set_user($this->u_estrin);
+        // test_mode 2 routes feedback messages into the page (as in Render_Batch)
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        $rc = RenderCapture::make($qreq);
+        Navigation::$test_mode = $old_test_mode;
+        $html = Render_Batch::normalize($rc->content);
+        MailChecker::clear();
+
+        // (1) the rejected save did not modify the paper
+        xassert_eqq($this->u_estrin->checked_paper_by_id($pid)->timeModified, $mtime);
+
+        // (2) the page shows an error message blaming the deadline
+        xassert_match($html, '/class="[^"]*is-error[^"]*">[^<]*deadline/i');
+
+        // (3) post-deadline, the request is discarded: the fields show the stored
+        // value, not the attempted one. (useRequest redisplay is exercised
+        // separately, where editing is still possible.)
+        xassert_str_contains($html, "Original title");
+        xassert_not_str_contains($html, "Sneaky post-deadline title");
+
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 100);
+    }
+
+    function test_rejected_field_redisplays_request() {
+        // a whole-number submission field
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1, "sf/1/name" => "Difficulty", "sf/1/id" => "new",
+            "sf/1/order" => 100, "sf/1/type" => "numeric"
+        ]);
+        xassert($sv->execute());
+        $opt = $this->conf->options()->find("Difficulty");
+        xassert(!!$opt);
+        $fid = "opt{$opt->id}";
+
+        // deadline open so the paper is editable
+        $this->conf->save_refresh_setting("sub_open", 1);
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 1000);
+
+        // create a draft with a valid Difficulty
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
+            "title" => "Rejected-field original", "abstract" => "Original abstract.\r\n",
+            "has_authors" => 1, "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_{$fid}" => 1, $fid => "5"
+        ]), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        xassert($pid > 0);
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->option($opt->id)->value, 5);
+
+        // author submits a new title AND an invalid (non-numeric) Difficulty
+        MailChecker::clear();
+        $qreq = TestQreq::post_page("paper", [
+            "update" => 1, "p" => $pid, "m" => "edit",
+            "title" => "Rejected-field attempted title",
+            "abstract" => "Original abstract.\r\n",
+            "has_authors" => 1, "authors:1:name" => "Deborah Estrin",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_{$fid}" => 1, $fid => "not a number"
+        ])->set_user($this->u_estrin);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        $rc = RenderCapture::make($qreq);
+        Navigation::$test_mode = $old_test_mode;
+        $html = Render_Batch::normalize($rc->content);
+        MailChecker::clear();
+
+        // the field rejection blocked the save: nothing was stored
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->title, "Rejected-field original");
+        xassert_eqq($prow->option($opt->id)->value, 5);
+
+        // the page shows the field-level rejection
+        xassert_str_contains($html, "Whole number required");
+
+        // useRequest redisplay: the form shows the attempted values, not the
+        // stored ones, with the stored value retained as the change baseline
+        xassert_match($html, '/name="' . $fid . '"[^>]*\bvalue="not a number"/');
+        xassert_match($html, '/name="' . $fid . '"[^>]*\bdata-default-value="5"/');
+        xassert_str_contains($html, "Rejected-field attempted title");
     }
 
     function test_invariants_last() {

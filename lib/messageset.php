@@ -637,6 +637,30 @@ class MessageSet {
         return $this->errf[$field] ?? 0;
     }
 
+    /** @param string $prefix
+     * @return int */
+    function problem_status_under($prefix) {
+        if ($this->problem_status < self::WARNING) {
+            return 0;
+        }
+        $st = 0;
+        foreach ($this->errf as $field => $fst) {
+            if ($fst > $st && str_starts_with($field, $prefix))
+                $st = $fst;
+        }
+        return $st;
+    }
+    /** @param string $prefix
+     * @return bool */
+    function has_problem_under($prefix) {
+        return $this->problem_status_under($prefix) >= self::WARNING;
+    }
+    /** @param string $prefix
+     * @return bool */
+    function has_error_under($prefix) {
+        return $this->problem_status_under($prefix) >= self::ERROR;
+    }
+
     /** @param int $status
      * @param string $rest
      * @return string */

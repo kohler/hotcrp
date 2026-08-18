@@ -3,6 +3,9 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Authorization_Token {
+    /** Time an invalid bearer or refresh token’s row is retained */
+    const BEARER_RETENTION = 604800; // 7 days
+
     /** @param TokenInfo $token
      * @param Contact $user
      * @param string $pattern
@@ -26,7 +29,7 @@ class Authorization_Token {
     static function prepare_bearer($user, $expires_in) {
         $tok = new TokenInfo($user->conf, TokenInfo::BEARER);
         self::set_user_token_pattern($tok, $user, "hct_[30]", "hcT_[30]");
-        self::set_expires_in($tok, $expires_in, 86400);
+        self::set_expires_in($tok, $expires_in, self::BEARER_RETENTION);
         return $tok;
     }
     /** @param Contact $user
@@ -35,7 +38,7 @@ class Authorization_Token {
     static function prepare_refresh($user, $expires_in) {
         $tok = new TokenInfo($user->conf, TokenInfo::OAUTHREFRESH);
         self::set_user_token_pattern($tok, $user, "hctr_[36]", "hcTr_[36]");
-        self::set_expires_in($tok, $expires_in, 604800);
+        self::set_expires_in($tok, $expires_in, self::BEARER_RETENTION);
         return $tok;
     }
 }

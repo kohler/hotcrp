@@ -458,4 +458,21 @@ class Autoassign_Tester {
             xassert_le($an[3][$this->cur_pcc[2]] ?? 0, 3);
         });
     }
+
+    function test_api_requires_manager() {
+        // Regression: the autoassign API must require manager rights (parity
+        // with Autoassign_Page). An ordinary PC member must not run the
+        // autoassigner — its output discloses individual PC review preferences.
+        $conf = $this->conf;
+        $lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($lixia->isPC && !$lixia->is_manager());
+        $jr = call_api_result("=autoassign", $lixia,
+            ["autoassigner" => "review", "q" => "", "t" => "s", "minimal_dry_run" => "1"]);
+        xassert_eqq($jr->status, 403);
+        xassert(!($jr->content["ok"] ?? false));
+        xassert_eqq(call_api_result("autoassigners", $lixia, [])->status, 403);
+        // a chair is still allowed
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        xassert_eqq(call_api_result("autoassigners", $chair, [])->status ?? 200, 200);
+    }
 }

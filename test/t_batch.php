@@ -112,4 +112,44 @@ class Batch_Tester {
         $this->conf->qe("delete from ContactInfo where email='addeduser@_.com'");
         $this->conf->invalidate_user($u);
     }
+
+    function test_hotcrp_daemonize() {
+        if ((!is_dir("/proc/self/fd") && !is_dir("/dev/fd"))
+            || !is_executable("/bin/bash")
+            || !function_exists("stream_socket_pair")) {
+            return;
+        }
+        $daemonize = escapeshellarg(SiteLoader::$root . "/batch/hotcrp-daemonize");
+        $devnull = ["file", "/dev/null", "a"];
+        $descriptors = [["file", "/dev/null", "r"], $devnull, $devnull];
+
+        // no command: usage error
+        $p = proc_open($daemonize, $descriptors, $pipes);
+        xassert_eqq(proc_close($p), 1);
+
+        // this socket stands in for the descriptors a web request holds open,
+        // such as its connection to the browser and to the database
+        $sp = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, 0);
+        xassert_neqq($sp, false);
+
+        $time0 = microtime(true);
+        $p = proc_open("{$daemonize} /bin/sh -c " . escapeshellarg("sleep 3"),
+            $descriptors, $pipes);
+        xassert_eqq(proc_close($p), 0);
+        $elapsed = microtime(true) - $time0;
+
+        // the daemon runs for 3sec, so `hotcrp-daemonize` did not wait for it
+        xassert_lt($elapsed, 1.0);
+
+        // drop this process's copy of the write end; the read end sees
+        // end-of-file unless the daemon inherited a copy, in which case the
+        // read blocks until it times out
+        fclose($sp[1]);
+        stream_set_blocking($sp[0], true);
+        stream_set_timeout($sp[0], 1);
+        fread($sp[0], 1);
+        $metadata = stream_get_meta_data($sp[0]);
+        xassert(!$metadata["timed_out"]);
+        fclose($sp[0]);
+    }
 }

@@ -88,7 +88,7 @@ for (my $i = 0; $i < @ARGV; ) {
     } elsif ($ARGV[$i] =~ /\A--?debug[-_]words\z/) {
         $debug_words = 1;
         splice @ARGV, $i, 1;
-    } elsif ($ARGV[$i] =~ /\A--?(?:pagen(?:um|o)|headings|headers)\z/) {
+    } elsif ($ARGV[$i] =~ /\A--?(?:p|pagen(?:um|o)|headings|headers)\z/) {
         $json_pagenum = 1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(?:no-?time(?:stamp|))\z/) {
@@ -536,7 +536,7 @@ sub heading_number ($) {
     my ($t) = @_;
     if ($t =~ /\A(\d+)((?:\.\d+)*)/) {
         ($1 + 0, $1 + 0, $1 . $2, 1);
-    } elsif ($t =~ /\A(X*)(I+|IV|VI*|IX|)((?:\.\d+)*)/ && ($1 || $2)) {
+    } elsif ($t =~ /\A(X*)(I[VX]|I+|VI*|)((?:\.\d+)*)/ && ($1 || $2)) {
         my ($n) = length($1) * 10;
         if ($2 eq "IX") {
             $n += 9;
@@ -1186,9 +1186,9 @@ sub parse_p2h_fonts ($$) {
 
         if ($color eq "#000000" && $opacity >= 1) {
             $skip = 0;
-        } elsif ($color =~ /\Z\#[0-9a-fA-F]{6}\z/) {
+        } elsif ($color =~ /\A\#[0-9a-fA-F]{6}\z/) {
             $r = hex(substr($color, 1, 2));
-            $g = hex(substr($color, 2, 2));
+            $g = hex(substr($color, 3, 2));
             $b = hex(substr($color, 5, 2));
             if ($opacity >= 0 && $opacity < 1) {
                 $r += (255 - $r) * (1 - $opacity);
@@ -1197,7 +1197,9 @@ sub parse_p2h_fonts ($$) {
             }
             $minc = min $r, $g, $b;
             $maxc = max $r, $g, $b;
-            $skip = ($minc + $maxc) / 2 >= 191;
+            # Threshold: #e5e5e5 (229) is a watermark, #d3d3d3 (211), #cccccc
+            # (204) and #bfbfbf (191) visible in code listings
+            $skip = ($minc + $maxc) / 2 >= 220;
         } else {
             $skip = $opacity <= 0.25;
         }
@@ -1422,7 +1424,7 @@ sub bodyfontsize_reffontsize (\@$$) {
         $ur = $unrefhead->{colr};
         $ut = $unrefhead->{t};
     }
-    my (%ref_alens, %unref_alens, %ref_tlens, %unref_tlens);
+    my (%ref_alens, %text_alens, %ref_tlens, %text_tlens);
     foreach my $text (@$texts)  {
         my($l, $r, $t, $b) = ($text->{l}, $text->{l} + $text->{w}, $text->{t}, $text->{t} + $text->{h});
         if (($refhead && ($l < $rl || $r <= $rl || ($l <= $rr && $b <= $rt)))

@@ -105,6 +105,7 @@ final class TokenScope {
                 return null;
             }
             if ($b === -2) {
+                $any = true; // OIDC scope only, no explicit API access
                 continue;
             }
             if ($b > 0) {

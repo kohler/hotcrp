@@ -137,7 +137,6 @@ class Permission_Tester {
         ConfInvariants::test_all($this->conf);
 
         $this->conf->save_setting("sub_open", 1);
-        $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);
         $this->conf->save_setting("rev_open", 1);
         $this->conf->refresh_settings();
@@ -207,7 +206,6 @@ class Permission_Tester {
         xassert_eq($this->conf->setting("paperacc") ?? 0, 0);
 
         // change submission date
-        $this->conf->save_setting("sub_update", Conf::$now - 5);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
         $paper1 = $user_chair->checked_paper_by_id(1);
         xassert($user_chair->can_edit_paper($paper1));
@@ -637,8 +635,9 @@ class Permission_Tester {
         xassert_search($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
         xassert_search($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
-        // restore chair tag setting
+        // restore chair tag settings
         $this->conf->save_refresh_setting("tag_chair", 1, "accept pcpaper reject");
+        $this->conf->save_refresh_setting("tag_hidden", null);
     }
 
     function test_review_rounds() {
@@ -1027,6 +1026,33 @@ class Permission_Tester {
         xassert_search($this->u_chair, "re:external@_.com", "2 3");
     }
 
+    function test_revpref_get_respects_paper_visibility() {
+        // Exporting one's own review preferences must not leak the content of
+        // papers the exporter cannot view
+        $user = $this->u_marina;
+        xassert($user->isPC);
+        xassert(!$user->is_manager());
+
+        $p3 = $this->conf->checked_paper_by_id(3);
+        $title3 = $p3->title;
+        $sub3 = $p3->timeSubmitted;
+        // withdraw paper 3 -> a non-manager PC member can no longer view it
+        $this->conf->qe("update Paper set timeWithdrawn=?, timeSubmitted=? where paperId=3", 100, -100);
+        xassert(!$user->can_view_paper($this->conf->checked_paper_by_id(3)));
+
+        $la = new Revpref_ListAction($this->conf, (object) ["name" => "get/revprefx"]);
+        $ssel = new SearchSelection([1, 3]);
+        $qreq = TestQreq::get(["reviewer" => $user->email]);
+        $csv = $la->run_get($user, $qreq, $ssel, $user, true)->unparse();
+        // paper 1 is present, but the hidden paper 3's title must not leak
+        xassert_str_contains($csv, "Scalable Timers");
+        xassert(!str_contains($csv, $title3));
+        xassert(!preg_match('/^3,/m', $csv));
+
+        // restore paper 3
+        $this->conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=? where paperId=3", $sub3);
+    }
+
     function test_assign_administrator() {
         xassert_search($this->u_chair, "has:admin", "");
         xassert_search($this->u_chair, "conflict:me", "");
@@ -1116,7 +1142,6 @@ class Permission_Tester {
 
         // reopen submissions: author can update conflicts
         $user_sclin = $this->conf->checked_user_by_email("sclin@leland.stanford.edu");
-        $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now + 10);
         xassert($user_sclin->can_edit_paper($paper3));
 
@@ -1201,7 +1226,6 @@ class Permission_Tester {
         $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 2);
 
-        $this->conf->save_setting("sub_update", Conf::$now - 5);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
         xassert_assign_fail($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
@@ -1554,7 +1578,6 @@ class Permission_Tester {
         xassert_eqq($paper16->sorted_viewable_tags($this->u_marina), " app#2 crap#3 vote#6");
         xassert_eqq($paper16->sorted_searchable_tags($this->u_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 app#2 crap#3 vote#6");
 
-        $this->conf->invalidate_caches("pc");
         xassert(SettingValues::make_request($this->u_chair, [
             "has_tag_vote_approval" => 1, "tag_vote_approval" => "app app2"
         ])->execute());
@@ -1853,7 +1876,6 @@ class Permission_Tester {
 
     function test_search_submission_field_edit_condition() {
         $this->conf->save_refresh_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","exists_if":"calories>200"}]');
-        $this->conf->invalidate_caches("options");
         $this->conf->qe("insert into PaperOption (paperId,optionId,value) values (1,2,1),(2,2,1),(3,2,1),(4,2,1),(5,2,1)");
         xassert_search($this->u_chair, "has:fattening", "1 3 4");
     }
@@ -2003,7 +2025,6 @@ class Permission_Tester {
 
     function test_reset_deadlines() {
         $this->conf->save_setting("sub_reg", Conf::$now + 10);
-        $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);
     }
 

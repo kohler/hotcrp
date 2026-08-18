@@ -43,7 +43,6 @@ class Upload_API {
         $this->max_blob = $conf->opt("uploadApiMaxBlob") ?? self::MAX_BLOB;
         $this->segments = [[0, 5<<20], [5<<20, 13<<20], [13<<20, 29<<20]];
         $this->tmpdir = $conf->docstore_tempdir();
-        //S3Client::$verbose = true;
     }
 
     /** @param int $offset
@@ -181,16 +180,10 @@ class Upload_API {
             "s3_uploadid" => false,
             "s3_lock" => null,
             "status" => 0,
-            "hashctx" => null,
-            "crc32ctx" => null,
+            "hashctx" => base64_encode(serialize(hash_init($this->conf->content_hash_algorithm()))),
+            "crc32ctx" => base64_encode(serialize(hash_init("crc32b"))),
             "hashpos" => 0
         ];
-        if (PHP_VERSION_ID >= 80000) {
-            $hashctx = hash_init($this->conf->content_hash_algorithm());
-            $crc32ctx = hash_init("crc32b");
-            $data["hashctx"] = base64_encode(serialize($hashctx));
-            $data["crc32ctx"] = base64_encode(serialize($crc32ctx));
-        }
         $this->_cap->assign_data($data);
         if ($this->assign_token()) {
             $qreq->token = $this->_cap->salt;
@@ -281,8 +274,7 @@ class Upload_API {
             $this->modify_capd(function ($d) use ($offset, $nbytes) {
                 $d->ranges = Upload_API::add_range($d->ranges, $offset, $offset + $nbytes);
                 if ($this->_hashctx
-                    && $d->hashpos === $offset
-                    && PHP_VERSION_ID >= 80000) {
+                    && $d->hashpos === $offset) {
                     $d->hashctx = base64_encode(serialize($this->_hashctx));
                     $d->crc32ctx = base64_encode(serialize($this->_crc32ctx));
                     $d->hashpos = $this->_hashpos;
@@ -583,8 +575,8 @@ class Upload_API {
         if (!$this->no_s3 && !$this->_capd->temp) {
             $s3c = $this->conf->s3_client();
         }
-        if ($s3c) {
-            //$s3c->result_class = "CurlS3Result";
+        if ($s3c && function_exists("curl_init")) {
+            $s3c->set_result_class("CurlS3Result");
         }
         while ($seg0 < $this->_capd->ranges[1]
                && min($seg1, $this->_capd->size ?? $seg1) <= $this->_capd->ranges[1]) {
@@ -669,7 +661,6 @@ class Upload_API {
         } else {
             $user->ensure_account_here();
         }
-        $qreq->qsession()->commit();
 
         if (friendly_boolean($qreq->start)) {
             $j = $this->exec_start($user, $qreq, $prow);

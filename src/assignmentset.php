@@ -230,7 +230,10 @@ class AssignmentState extends MessageSet {
     private $nonexact_msgs = [];
     /** @var bool */
     public $has_user_error = false;
+    /** @var array */
     private $callables = [];
+    /** @var array<string,mixed> */
+    private $stash = [];
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -499,7 +502,8 @@ class AssignmentState extends MessageSet {
         return $this->placeholder_prow;
     }
 
-    /** @return Contact */
+    /** @param int $cid
+     * @return Contact */
     function user_by_id($cid) {
         return $this->cmap->user_by_id($cid);
     }
@@ -556,6 +560,9 @@ class AssignmentState extends MessageSet {
             $this->change_item_status($bmi, $mi->status);
             return $bmi;
         }
+        if ($mi->need_fmt()) {
+            $mi->fmt($this->conf->fmt());
+        }
         return $this->append_item($mi);
     }
     /** @param MessageItem $mi
@@ -598,6 +605,16 @@ class AssignmentState extends MessageSet {
         parent::clear_messages();
         $this->nonexact_msgs = [];
         $this->has_user_error = false;
+    }
+
+    /** @param string $name
+     * @return bool */
+    function mark_stash($name) {
+        if (array_key_exists($name, $this->stash)) {
+            return false;
+        }
+        $this->stash[$name] = true;
+        return true;
     }
 
     /** @template T
@@ -1160,15 +1177,10 @@ class AssignmentSet {
     const PROGPHASE_UNPARSE = 5;
     const PROGPHASE_SAVE = 6;
 
-    function __construct(Contact $user, $overrides = null) {
+    function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->astate = new AssignmentState($user);
-        if ($overrides !== null) {
-            // XXX backwards compat
-            error_log(debug_string_backtrace());
-            $this->set_overrides($overrides);
-        }
     }
 
     /** @param callable(AssignmentSet) $progressf
@@ -1204,10 +1216,9 @@ class AssignmentSet {
     /** @param int $overrides
      * @return $this */
     function set_overrides($overrides) {
-        if ($overrides === null) { // XXX backward compat
-            $overrides = $this->user->overrides();
-        } else if ($overrides === true) { // XXX backward compat
-            $overrides = $this->user->overrides() | Contact::OVERRIDE_CONFLICT;
+        if ($overrides === null || $overrides === true) { // XXX backward comapt
+            error_log(debug_string_backtrace());
+            $overrides = $this->user->overrides() | ($overrides ? Contact::OVERRIDE_CONFLICT : 0);
         }
         $this->astate->overrides = (int) $overrides;
         return $this;
@@ -1431,7 +1442,7 @@ class AssignmentSet {
         // check for `userid`/`uid`
         if (($req["uid"] ?? "") !== "") {
             if (ctype_digit($req["uid"])
-                && ($u = $this->astate->user_by_id($req["uid"]))) {
+                && ($u = $this->astate->user_by_id(intval($req["uid"])))) {
                 return [$u];
             } else {
                 $this->error("<0>User ID ‘" . $req["uid"] . "’ not found");
@@ -1529,25 +1540,23 @@ class AssignmentSet {
                 $this->error("<0>‘" . self::req_user_text($req) . "’ matches more than one {$cset_text}");
                 $this->astate->append_item_here(MessageItem::inform("<0>Use a full email address to disambiguate."));
                 return null;
-            } else {
-                $this->error("<0>" . ucfirst($cset_text) . " ‘" . self::req_user_text($req) . "’ not found");
-                return null;
             }
+            $this->error("<0>" . ucfirst($cset_text) . " ‘" . self::req_user_text($req) . "’ not found");
+            return null;
         } else if ($email
                    && validate_email($email)
                    && ($u = $this->astate->user_by_email($email, true, $req))) {
             // create contact
             return [$u];
-        } else {
-            if (!$email) {
-                $this->error("<0>Email address required");
-            } else if (!validate_email($email)) {
-                $this->error("<0>Email address ‘{$email}’ invalid");
-            } else {
-                $this->error("<0>Could not create user");
-            }
-            return null;
         }
+        if (!$email) {
+            $this->error("<0>Email address required");
+        } else if (!validate_email($email)) {
+            $this->error("<0>Email address ‘{$email}’ invalid");
+        } else {
+            $this->error("<0>Could not create user");
+        }
+        return null;
     }
 
     /** @param list<string> $req
@@ -1689,7 +1698,9 @@ class AssignmentSet {
         } else {
             $search = $this->searches[$pfield] ?? null;
             if ($search === null) {
-                $search = $this->searches[$pfield] = new PaperSearch($this->user, ["q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer]);
+                $search = $this->searches[$pfield] = new PaperSearch($this->user, [
+                    "q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer
+                ]);
             }
             $pids = $search->sorted_paper_ids();
             if ($report_error && $search->has_problem()) {

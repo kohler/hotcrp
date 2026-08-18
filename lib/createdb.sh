@@ -3,6 +3,7 @@
 ## Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
+set -f   # disable filename globbing
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./
 else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 . ${LIBDIR}dbhelper.sh
@@ -23,6 +24,9 @@ help () {
     echo "      --host=HOST         Specify database host."
     echo "      --grant-host=HOST   HOST is granted DB access privilege (in addition"
     echo '                          to `localhost`).'
+    echo "      --no-default-grant-hosts"
+    echo '                          Do not grant DB access to `localhost`; only'
+    echo '                          `--grant-host` hosts are granted access.'
     echo "      --no-dbuser         Do not create database user."
     echo "      --no-schema         Do not load initial schema."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
@@ -50,8 +54,8 @@ set_dbuserpass () {
 }
 
 add_granthost () {
-    if expr "$1" : '[-a-zA-Z0-9.*][-a-zA-Z0-9.*]*$' >/dev/null; then
-        granthosts="$granthosts $1"
+    if expr "x$1" : 'x[-a-zA-Z0-9.%_/:][-a-zA-Z0-9.%_/:]*$' >/dev/null; then
+        granthosts="$1$granthosts "
     else
         echo "Expected --grant-host=HOSTNAME" 1>&2
         usage
@@ -72,6 +76,7 @@ minimal_options=
 mycreatedb_args=" --defaults-group-suffix=_hotcrp_createdb"
 has_host=false
 granthosts=""
+default_granthosts=true
 needpassword=false
 force=false
 batch=false
@@ -139,6 +144,8 @@ while [ $# -gt 0 ]; do
         add_granthost "`echo "$1" | sed 's/^[^=]*=//'`";;
     --grant-host)
         add_granthost "$2"; shift;;
+    --no-default-grant-hosts|--no-default-grant|--no-default-grant-host)
+        default_granthosts=false;;
     -*)
         FLAGS="$FLAGS '$1'";;
     *)
@@ -146,6 +153,21 @@ while [ $# -gt 0 ]; do
     esac
     shift $shift
 done
+
+if ! $default_granthosts && test -z "$granthosts"; then
+    echo "* \`--no-default-grant-hosts\` given without \`--grant-host\`, so no host" 1>&2
+    echo "* would be granted database access." 1>&2
+    exit 1
+fi
+
+### Read database host from configuration file, unless given on command line
+if ! $has_host; then
+    x="`getdbopt dbHost 2>/dev/null`"
+    x="`eval "echo $x" 2>/dev/null`"
+    if test -n "$x"; then
+        DBHOST="$x"; FLAGS="$FLAGS --host '$x'"; has_host=true
+    fi
+fi
 
 ### Test mysql binary
 check_mysqlish MYSQL mysql
@@ -394,7 +416,19 @@ if [ "$createdb" = y ]; then
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 fi
 
-allhosts="localhost 127.0.0.1 localhost.localdomain$granthosts"
+defaulthosts=""
+if $default_granthosts; then
+    defaulthosts="localhost 127.0.0.1 ::1"
+
+    # Also include `localhost.localdomain` (for backward compatibility), but
+    # only if `skip_name_resolve` is off
+    skip_name_resolve=`echo 'select @@global.skip_name_resolve;' | \
+        eval $MYSQL $mycreatedb_args $myargs $FLAGS -N 2>/dev/null`
+    if [ "x$skip_name_resolve" != x1 ]; then
+        defaulthosts="$defaulthosts localhost.localdomain"
+    fi
+fi
+allhosts="$granthosts$defaulthosts"
 
 if [ "$createuser" = y ]; then
     $qecho "Creating $DBUSER user and password..."
@@ -424,27 +458,48 @@ __EOF__
     done
 fi
 
+user_host_exists () {
+    echo "select User from user where User='$DBUSER' and Host='$1';" | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep . >/dev/null 2>&1
+}
+
+grant_access () {
+    if $verbose; then
+        cat <<__EOF__
+. GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
+.     REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
+.     ON \`$DBNAME\`.* TO '$DBUSER'@'$1';
+. GRANT RELOAD ON *.* TO '$DBUSER'@'$1';
+__EOF__
+    fi
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
+    REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
+    ON \`$DBNAME\`.* TO '$DBUSER'@'$1';
+GRANT RELOAD ON *.* TO '$DBUSER'@'$1';
+__EOF__
+}
+
 if [ "$createdb" = y -o "$createuser" = y ]; then
     $qecho "Granting $DBUSER access to $DBNAME..."
     $verbose && echo ". DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';"
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
 __EOF__
-    for host in $allhosts; do
-        if $verbose; then
-            cat <<__EOF__
-. GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
-.     REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
-.     ON \`$DBNAME\`.* TO '$DBUSER'@'$host';
-. GRANT RELOAD ON *.* TO '$DBUSER'@'$host';
-__EOF__
+    # GRANT fails if the user does not exist at a host; existing users
+    # (`--dbuser`) are not created at new hosts
+    for host in $granthosts; do
+        if [ "$createuser" != y ] && ! user_host_exists "$host"; then
+            echo "* The requested database user '$DBUSER'@'$host' does not exist." 1>&2
+            exit 1
         fi
-        eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
-    REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
-    ON \`$DBNAME\`.* TO '$DBUSER'@'$host';
-GRANT RELOAD ON *.* TO '$DBUSER'@'$host';
-__EOF__
+        grant_access "$host"
+    done
+    for host in $defaulthosts; do
+        if [ "$createuser" != y ] && ! user_host_exists "$host"; then
+            $qecho "Not granting '$DBUSER'@'$host' access: no such user"
+        else
+            grant_access "$host"
+        fi
     done
 
     $qecho "Reloading grant tables..."

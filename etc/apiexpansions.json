@@ -237,11 +237,11 @@
     "response": "value pref ?prefexp ?topic_score"
   },
   {
-    "name": "review", "get": true, "post": true, "merge": true,
+    "name": "review", "get": true, "post": true, "delete": true, "merge": true,
     "tags": ["Reviews"]
   },
   {
-    "name": "reviews", "get": true,
+    "name": "reviews", "get": true, "post": true,
     "tags": ["Reviews"]
   },
   {
@@ -296,8 +296,12 @@
     "name": "comment", "post": true,
     "tags": ["Comments"],
     "parameters": "c ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete",
-    "response": "?comment ?conflict",
+    "response": "?conflict ?cid ?comment",
     "response_info": {"comment": "comment"}
+  },
+  {
+    "name": "comment", "delete": true,
+    "tags": ["Comments"]
   },
   {
     "name": "comments", "get": true,
@@ -305,6 +309,10 @@
     "parameters": "?q ?t ?p ?warn_missing ?content",
     "response": "comments",
     "response_info": {"comments": "[comment]"}
+  },
+  {
+    "name": "comments", "post": true,
+    "tags": ["Comments"]
   },
   {
     "name": "mentioncompletion", "get": true,

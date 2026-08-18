@@ -70,7 +70,7 @@ class OAuthProvider {
         $instance->auth_uri = $authdata->auth_uri ?? null;
         $instance->token_uri = $authdata->token_uri ?? null;
         $instance->redirect_uri = $authdata->redirect_uri
-            ?? $conf->hoturl_raw("oauth", null, Conf::HOTURL_ABSOLUTE);
+            ?? $conf->hoturl("oauth", null, Conf::HOTURL_ABSOLUTE);
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
         $instance->roles = $authdata->roles ?? false;
@@ -305,13 +305,13 @@ class OAuth_Page {
             ->set_subtype($authi->name)
             ->set_reason(UserSecurityEvent::REASON_REAUTH);
         if (strcasecmp($this->email, $reauth) !== 0) {
-            $use->set_success(false)->store($this->qreq->qsession());
+            $use->set_success(false)->store($this->qreq);
             return [
                 MessageItem::error("<0>The {$authi->title()} authenticator verified the wrong email"),
                 MessageItem::inform("<0>You must provide reauthentication for {$reauth}.")
             ];
         }
-        $use->store($this->qreq->qsession());
+        $use->store($this->qreq);
         $this->success = true;
         return $tok->data("quiet") ? [] : [MessageItem::success("<0>Authentication confirmed")];
     }
@@ -425,7 +425,7 @@ class OAuth_Page {
             UserSecurityEvent::make($jid->email, UserSecurityEvent::TYPE_OAUTH)
                 ->set_subtype($authi->name)
                 ->set_success(false)
-                ->store($this->qreq->qsession());
+                ->store($this->qreq);
             return null;
         }
 
@@ -440,7 +440,7 @@ class OAuth_Page {
         UserSecurityEvent::session_user_add($qs, $user->email);
         UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_OAUTH)
             ->set_subtype($authi->name)
-            ->store($qs);
+            ->store($this->qreq);
         $this->success = true;
         return $tok->data("quiet") ? [] : [MessageItem::success("<0>Signed in")];
     }

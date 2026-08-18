@@ -805,6 +805,9 @@
     "mit": {
         "alternate": ["massachusetts institute technology", "m i t"]
     },
+    "montreal": {
+        "weak": true
+    },
     "mpi": {
         "alternate": ["max planck institute"]
     },
@@ -910,6 +913,9 @@
         "alternate": [
             {"word": "ut", "if": "university"}
         ]
+    },
+    "tianjin": {
+        "sync": "nankai"
     },
     "tsinghua": {
         "nameish": false

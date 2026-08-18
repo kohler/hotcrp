@@ -296,6 +296,35 @@ class Search_Tester {
         xassert_eqq($tas[1]->heading, "ss:bar OR #baaar");
     }
 
+    function test_namedsearch_evaluates_in_caller_context() {
+        // A shared saved search executes in the CALLING user's context, not the
+        // owner's: a personal `~tag` in the definition resolves to the caller's
+        // own tag, so no saving-user state leaks into another user's results
+        // (only the definition text is shared). Invariant, not policy.
+        $before = $this->conf->setting_data("named_searches");
+        $a = $this->conf->checked_user_by_email("marina@poema.ru");
+        $b = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($a->isPC && $b->isPC && $a->contactId !== $b->contactId);
+
+        xassert_assign($a, "paper,tag\n1,~sscx\n");
+        xassert_assign($b, "paper,tag\n2,~sscx\n");
+        // `a` saves a global search whose body is the personal tag "#~sscx"
+        $this->conf->save_setting("named_searches", 1,
+            json_encode([(object) ["name" => "sscx", "q" => "#~sscx", "owner" => $a->contactId]]));
+        $this->conf->load_settings();
+
+        xassert_search($a, "ss:sscx", "1");   // a's own ~sscx (paper 1)
+        xassert_search($b, "ss:sscx", "2");   // b's own ~sscx (paper 2), NOT paper 1
+
+        if ($before === null) {
+            $this->conf->save_setting("named_searches", null);
+        } else {
+            $this->conf->save_setting("named_searches", 1, $before);
+        }
+        $this->conf->load_settings();
+        $this->conf->qe("delete from PaperTag where tag like '%~sscx'");
+    }
+
     function test_sensitive_search_rate_limit() {
         $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
         xassert($u->contactId > 0);
@@ -437,4 +466,387 @@ class Search_Tester {
         $conf->save_refresh_setting("seedec", null);
     }
 
+    function test_reviewer_aliases_to_search_user() {
+        // A `reviewer` naming the search user is canonicalized away, even when
+        // it arrives as a distinct Contact object for that same user (as from
+        // `Conf::user_by_email`). Otherwise the search would treat the user as
+        // a foreign reviewer and apply the administrator restrictions below.
+        $conf = $this->conf;
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $mgbaker2 = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($mgbaker !== $mgbaker2);
+        xassert_eqq($mgbaker->contactXid, $mgbaker2->contactXid);
+
+        foreach ([$mgbaker2, $mgbaker->email, strtoupper($mgbaker->email)] as $reviewer) {
+            $srch = new PaperSearch($mgbaker, ["q" => "", "t" => "reviewable", "reviewer" => $reviewer]);
+            xassert_eqq($srch->reviewer_user(), $mgbaker);
+            xassert_not_str_contains($srch->encoded_query_params(), "reviewer=");
+            xassert_not_str_contains($srch->url_site_relative_raw(), "reviewer=");
+        }
+
+        // `reviewable` for oneself is not narrowed to administered papers
+        $self = new PaperSearch($mgbaker, ["q" => "", "t" => "reviewable"]);
+        $aliased = new PaperSearch($mgbaker, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker2]);
+        xassert(!$mgbaker->allow_admin_all());
+        xassert_neqq($self->paper_ids(), []);
+        xassert_eqq($aliased->paper_ids(), $self->paper_ids());
+
+        // `re:me` stays `re:me`
+        xassert((new PaperSearch($mgbaker, ["q" => "re:me", "reviewer" => $mgbaker2]))->query_is_re_me());
+
+        // a genuinely different reviewer is still honored
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $srch = new PaperSearch($chair, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker->email]);
+        xassert_eqq($srch->reviewer_user()->contactId, $mgbaker->contactId);
+        xassert_str_contains($srch->encoded_query_params(), "reviewer=" . urlencode($mgbaker->email));
+        xassert(!$srch->query_is_re_me());
+    }
+
+    function test_nonpc_limits_restricted_to_own_papers() {
+        // Non-PC users cannot search all papers: `Limit_SearchTerm::sqlexpr()`
+        // ANDs an author-or-reviewer restriction into every base limit
+        // (`need_ar === 3`, a left join on `MyReviews`). A bug in that join
+        // silently emptied every base-limit search for authors.
+        $van = $this->conf->checked_user_by_email("van@ee.lbl.gov");
+        xassert(!$van->isPC);
+        xassert($van->is_author());
+        foreach (["a", "ar", "s", "active", "all", "viewable"] as $t) {
+            xassert_search($van, ["t" => $t, "q" => ""], "1");
+        }
+    }
+
+    function test_reviewable_limit_requires_administrator() {
+        // `reviewable` is the one limit relative to `reviewer_user()`; naming
+        // another user requires administrator rights over each paper.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($chair->is_manager());
+        xassert(!$lixia->is_manager());
+        xassert($lixia->can_view_pc());
+
+        // one's own reviewable set needs no administrator rights
+        xassert_eqq(count((new PaperSearch($lixia, ["q" => "", "t" => "reviewable"]))->paper_ids()), 30);
+
+        // an administrator sees another user's reviewable set, and it differs
+        // from their own
+        $chair_mg = (new PaperSearch($chair, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker->email]))->paper_ids();
+        xassert_eqq(count($chair_mg), 28);
+        xassert_neqq($chair_mg, (new PaperSearch($chair, ["q" => "", "t" => "reviewable"]))->paper_ids());
+
+        // a non-administrator gets nothing, though `reviewer` is accepted
+        $srch = new PaperSearch($lixia, ["q" => "", "t" => "reviewable", "reviewer" => $mgbaker->email]);
+        xassert_eqq($srch->reviewer_user()->contactId, $mgbaker->contactId);
+        xassert_eqq($srch->paper_ids(), []);
+    }
+
+    function test_limit_evaluators_agree() {
+        // `Limit_SearchTerm` is evaluated two ways: `sqlexpr()` + `test()`,
+        // which `PaperSearch::paper_ids()` uses, and `simple_search()`, which
+        // hands query options straight to PaperList and skips both. Whenever
+        // `simple_search()` claims a limit, the two must agree.
+        $conf = $this->conf;
+        $emails = ["chair@_.com", "mgbaker@cs.stanford.edu", "lixia@cs.ucla.edu",
+                   "van@ee.lbl.gov"];
+        $limits = ["a", "ar", "r", "rout", "req", "lead", "s", "active", "all",
+                   "viewable", "reviewable", "accepted", "undecided", "unsub",
+                   "admin", "alladmin", "actadmin"];
+        foreach ($emails as $email) {
+            $u = $conf->checked_user_by_email($email);
+            foreach ($limits as $t) {
+                $q = ["q" => "", "t" => $t];
+                $via_sql = (new PaperSearch($u, $q))->paper_ids();
+                $via_list = array_keys(search_json($u, $q, "id", true));
+                sort($via_sql);
+                sort($via_list);
+                xassert_eqq("{$email} t={$t}: " . join(" ", $via_list),
+                            "{$email} t={$t}: " . join(" ", $via_sql));
+            }
+        }
+    }
+
+    /** @param Contact ...$users
+     * @return int */
+    private function unreviewed_submitted_pid(...$users) {
+        foreach ((new PaperSearch($this->conf->root_user(), ["q" => "", "t" => "s"]))->paper_ids() as $pid) {
+            $prow = $this->conf->checked_paper_by_id($pid);
+            $ok = true;
+            foreach ($users as $user) {
+                $ok = $ok && !$prow->review_by_user($user) && !$prow->has_conflict($user);
+            }
+            if ($ok) {
+                return $pid;
+            }
+        }
+        throw new ErrorException("no unreviewed submitted paper");
+    }
+
+    /** A limit has three evaluators that must agree: `sqlexpr()` + `test()`
+     * (PaperSearch), `simple_search()` (PaperList, which skips both `test()`
+     * and `can_view_paper()`), and, since `is_sqlexpr_precise()` lets
+     * `Not_SearchTerm` negate it in SQL, `-in:LIMIT`.
+     * @param Contact $u
+     * @param string $t
+     * @return list<int> */
+    private function xassert_limit_agrees($u, $t) {
+        $ids = (new PaperSearch($u, ["q" => "", "t" => $t]))->paper_ids();
+        $lids = array_keys(search_json($u, ["q" => "", "t" => $t], "id", true));
+        sort($ids);
+        sort($lids);
+        xassert_eqq("{$u->email} t={$t}: " . join(" ", $lids),
+                    "{$u->email} t={$t}: " . join(" ", $ids));
+        $all = (new PaperSearch($u, ["q" => "", "t" => "all"]))->paper_ids();
+        $in = (new PaperSearch($u, ["q" => "in:{$t}", "t" => "all"]))->paper_ids();
+        $out = (new PaperSearch($u, ["q" => "-in:{$t}", "t" => "all"]))->paper_ids();
+        xassert_eqq("{$u->email} in:{$t} + -in:{$t}: " . (count($in) + count($out)),
+                    "{$u->email} in:{$t} + -in:{$t}: " . count($all));
+        return $ids;
+    }
+
+    function test_ghost_review_status() {
+        // Ghostliness must mean the same to `ReviewInfo::is_ghost()`,
+        // `Contact::act_reviewer_sql()`, and `PaperContactInfo::mark_review_type()`:
+        // once reviewing closes only *empty* reviews are ghosts, and a ghost
+        // confers no review status whatever its reviewNeedsSubmit.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $ext = $conf->checked_user_by_email("van@ee.lbl.gov");
+        $pc = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $old_rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+
+        // a drafted, unsubmitted review
+        $pid = $this->unreviewed_submitted_pid($ext);
+        xassert_assign($chair, "paper,action,email\n{$pid},external,{$ext->email}\n");
+        $prow = $conf->checked_paper_by_id($pid);
+        $rv = new ReviewValues($ext);
+        xassert($rv->parse_json(["ovemer" => 2, "papsum" => "Draft", "ready" => false]));
+        xassert($rv->check_and_save($prow, $prow->review_by_user($ext)));
+
+        // a ghost review whose reviewNeedsSubmit is 0, as a secondary's is
+        // once its delegate has submitted
+        $gpid = $this->unreviewed_submitted_pid($pc);
+        xassert_assign($chair, "paper,action,email,ghost\n{$gpid},secondary,{$pc->email},yes\n");
+        $conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and contactId=?",
+            $gpid, $pc->contactId);
+
+        $conf->save_refresh_setting("rev_open", null);
+        $conf->invalidate_caches("users");
+        $ext = $conf->checked_user_by_email("van@ee.lbl.gov");
+        $pc = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+
+        // the drafted review keeps its author's review rights
+        $prow = $conf->checked_paper_by_id($pid);
+        xassert(!$prow->review_by_user($ext)->is_ghost());
+        xassert($prow->has_active_reviewer($ext));
+        xassert($ext->can_view_paper($prow));
+        xassert_in_eqq($pid, $this->xassert_limit_agrees($ext, "r"));
+
+        // the ghost review confers nothing
+        $gprow = $conf->checked_paper_by_id($gpid);
+        xassert($gprow->review_by_user($pc)->is_ghost());
+        xassert(!$gprow->has_active_reviewer($pc));
+        xassert_not_in_eqq($gpid, $this->xassert_limit_agrees($pc, "r"));
+
+        $conf->qe("delete from PaperReview where (paperId=? and contactId=?) or (paperId=? and contactId=?)",
+            $pid, $ext->contactId, $gpid, $pc->contactId);
+        $conf->qe("delete from PaperConflict where conflictType<=? and ((paperId=? and contactId=?) or (paperId=? and contactId=?))",
+            CONFLICT_MAXUNCONFLICTED, $pid, $ext->contactId, $gpid, $pc->contactId);
+        $conf->save_refresh_setting("rev_open", $old_rev_open);
+        $conf->invalidate_caches("users");
+    }
+
+    function test_limit_edge_cases_agree() {
+        // Each state below made a limit's evaluators disagree: `ar` is the
+        // union of `a` and `r`, so like them it keeps withdrawn submissions;
+        // an author-view capability is an author credential whatever its
+        // holder's role; and members of `req` and `lead` may be unable to view
+        // the submission, which the PaperList path never checks.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $pc = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $nonpc = $conf->checked_user_by_email("van@ee.lbl.gov");
+        $old_rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+
+        // `ar`: a withdrawn submission that `pc` reviews but does not author
+        $wpid = null;
+        foreach ((new PaperSearch($pc, ["q" => "", "t" => "r"]))->paper_ids() as $x) {
+            $prow = $conf->checked_paper_by_id($x);
+            if ($prow->timeWithdrawn <= 0 && !$prow->has_author($pc)) {
+                $wpid = $x;
+                break;
+            }
+        }
+        xassert_neqq($wpid, null);
+        xassert_assign($chair, "paper,action\n{$wpid},withdraw\n");
+        xassert_in_eqq($wpid, $this->xassert_limit_agrees($pc, "ar"));
+        $union = array_unique(array_merge(
+            (new PaperSearch($pc, ["q" => "in:a", "t" => "all"]))->paper_ids(),
+            (new PaperSearch($pc, ["q" => "in:r", "t" => "all"]))->paper_ids()));
+        sort($union);
+        xassert_eqq((new PaperSearch($pc, ["q" => "in:ar", "t" => "all"]))->paper_ids(),
+                    array_values($union));
+        xassert_assign($chair, "paper,action\n{$wpid},revive\n");
+
+        // `a`: an author-view capability, held by a PC member and by a non-PC user
+        foreach ([$pc->email, $nonpc->email] as $email) {
+            $u = $conf->fresh_user_by_email($email); // private, so no capability leaks
+            $pid = $this->unreviewed_submitted_pid($u);
+            $u->set_capability("@av{$pid}", true);
+            xassert($u->is_author());
+            xassert_in_eqq($pid, $this->xassert_limit_agrees($u, "a"));
+        }
+
+        // `req`: a requester of a review on a submission that was withdrawn.
+        // (A requester keeps `requestedBy` after being unassigned.)
+        $pid = $this->unreviewed_submitted_pid($pc, $nonpc);
+        xassert_assign($chair, "paper,action,email\n{$pid},external,{$nonpc->email}\n");
+        $conf->qe("update PaperReview set requestedBy=? where paperId=? and contactId=?",
+            $pc->contactId, $pid, $nonpc->contactId);
+        xassert_assign($chair, "paper,action\n{$pid},withdraw\n");
+        $conf->invalidate_caches("users");
+        xassert(!$pc->can_view_paper($conf->checked_paper_by_id($pid)));
+        xassert_not_in_eqq($pid, $this->xassert_limit_agrees($pc, "req"));
+        // the request is moot, so it leaves `req` even for an administrator
+        xassert_not_in_eqq($pid, $this->xassert_limit_agrees($chair, "req"));
+
+        // `lead`: a lead who is no longer a PC member
+        xassert_assign($chair, "paper,action\n{$pid},revive\n");
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $pid, $nonpc->contactId);
+        $conf->qe("update Paper set leadContactId=? where paperId=?", $nonpc->contactId, $pid);
+        $conf->invalidate_caches("users");
+        $nonpc = $conf->checked_user_by_email("van@ee.lbl.gov");
+        xassert(!$nonpc->can_view_paper($conf->checked_paper_by_id($pid)));
+        xassert_not_in_eqq($pid, $this->xassert_limit_agrees($nonpc, "lead"));
+
+        $conf->qe("update Paper set leadContactId=0 where paperId=?", $pid);
+        $conf->qe("delete from PaperConflict where paperId=? and contactId=? and conflictType<=?",
+            $pid, $nonpc->contactId, CONFLICT_MAXUNCONFLICTED);
+        $conf->save_refresh_setting("rev_open", $old_rev_open);
+        $conf->invalidate_caches("users");
+    }
+
+    function test_pref_search_hides_individual_preferences() {
+        // `can_view_preference($prow, false)` reserves an individual's review
+        // preferences to administrators; only the PC-wide aggregate is open to
+        // ordinary PC members (see h_keywords.php: "Administrators can search
+        // preferences by name; PC members can only search preferences for the
+        // PC as a whole"). `Revpref_SearchTerm::parse()` relaxes the gate to
+        // the aggregate form whenever `matching_special_uids()` resolves the
+        // word without error — but `chair`, `admin`, and a user tag can each
+        // resolve to a *single named person*, so that relaxation must not be
+        // reachable for them.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert(!$lixia->is_manager());
+        $p1 = $conf->checked_paper_by_id(1);
+        xassert(!$lixia->can_view_preference($p1, false));
+
+        $conf->qe("delete from PaperReviewPreference where contactId=?", $chair->contactId);
+        $conf->qe("insert into PaperReviewPreference (paperId,contactId,preference) values (2,?,5), (4,?,-3)",
+            $chair->contactId, $chair->contactId);
+        // a *user* tag borne by exactly one PC member resolves the same way
+        $old_tags = $chair->contactTags;
+        $conf->qe("update ContactInfo set contactTags=? where contactId=?",
+            " chairtag#0", $chair->contactId);
+        $conf->invalidate_caches("pc");
+        xassert($conf->pc_tag_exists("chairtag"));
+        xassert($lixia->can_view_user_tag("chairtag"));
+
+        // the sanctioned spelling is denied...
+        xassert_search_all($lixia, "pref:{$chair->email}>0", "");
+        xassert_search_all($lixia, "pref:\"{$chair->email}\">0", "");
+        // ...so these must be denied too: each names the same one person
+        xassert_search_all($lixia, "pref:chair>0", "");
+        xassert_search_all($lixia, "pref:chair<0", "");
+        xassert_search_all($lixia, "pref:admin>0", "");
+        xassert_search_all($lixia, "pref:#chairtag>0", "");
+
+        // an administrator may still search preferences by name
+        xassert_search_all($chair, "pref:{$chair->email}>0", "2");
+        xassert_search_all($chair, "pref:chair<0", "4");
+        // and the PC-wide aggregate remains open to ordinary PC members.
+        // Other testers leave preferences behind, so check membership rather
+        // than pinning the whole result.
+        $agg = (new PaperSearch($lixia, ["q" => "pref:pc>0", "t" => "all"]))->paper_ids();
+        xassert(in_array(2, $agg, true));
+
+        $conf->qe("delete from PaperReviewPreference where contactId=?", $chair->contactId);
+        $conf->qe("update ContactInfo set contactTags=? where contactId=?",
+            $old_tags, $chair->contactId);
+        $conf->invalidate_caches("pc");
+    }
+
+    /** Give the conference a desk-reject decision and hand it to one paper.
+     * @param string $name
+     * @return int the decision id */
+    private function add_desk_reject($name) {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $sv = SettingValues::make_request($chair, [
+            "has_decision" => 1,
+            "decision/1/name" => $name,
+            "decision/1/id" => "new",
+            "decision/1/category" => "desk_reject"
+        ]);
+        xassert($sv->execute());
+        foreach ($this->conf->decision_set() as $dec) {
+            if ($dec->name === $name) {
+                xassert_eqq($dec->sign, -2);
+                return $dec->id;
+            }
+        }
+        xassert(false);
+        return 0;
+    }
+
+    /** @param string $name */
+    private function remove_decision($name) {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        foreach ($this->conf->decision_set() as $dec) {
+            if ($dec->name === $name) {
+                $sv = SettingValues::make_request($chair, [
+                    "has_decision" => 1,
+                    "decision/1/id" => (string) $dec->id,
+                    "decision/1/delete" => "1"
+                ]);
+                xassert($sv->execute());
+                return;
+            }
+        }
+    }
+
+    function test_limit_sa_includes_desk_rejected() {
+        // `s` means "submitted, still under consideration": it drops papers
+        // whose decision is a desk rejection. `sa` is the same set without that
+        // exclusion, so it is a superset of `s` and differs from it by exactly
+        // the desk-rejected papers.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $this->add_desk_reject("Desk rejected");
+
+        $s_before = (new PaperSearch($this->u_root, ["q" => "", "t" => "s"]))->paper_ids();
+        $sa_before = (new PaperSearch($this->u_root, ["q" => "", "t" => "sa"]))->paper_ids();
+        xassert_eqq($sa_before, $s_before);
+
+        xassert_assign($chair, "paper,action,decision\n2,decision,Desk rejected\n");
+        xassert_eqq($conf->checked_paper_by_id(2)->outcome_sign, -2);
+
+        $s_after = (new PaperSearch($this->u_root, ["q" => "", "t" => "s"]))->paper_ids();
+        $sa_after = (new PaperSearch($this->u_root, ["q" => "", "t" => "sa"]))->paper_ids();
+        xassert(!in_array(2, $s_after, true));
+        xassert_in_eqq(2, $sa_after);
+        // Nothing else moved: the two limits differ by that paper alone.
+        xassert_eqq($sa_after, $sa_before);
+        xassert_eqq(array_values(array_diff($sa_after, $s_after)), [2]);
+
+        // A desk-rejected paper is still reachable by number only under `sa`
+        xassert_search($this->u_root, ["q" => "2", "t" => "sa"], "2");
+        xassert_search($this->u_root, ["q" => "2", "t" => "s"], "");
+
+        xassert_assign($chair, "paper,action,decision\n2,cleardecision,Desk rejected\n");
+        $this->remove_decision("Desk rejected");
+    }
 }

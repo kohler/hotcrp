@@ -56,9 +56,8 @@ class Review_SettingParser extends SettingParser {
         if ($si->name0 === "review/" && $si->name2 === "/name") {
             $idv = $sv->vstr("review/{$si->name1}/id");
             return ctype_digit($idv) && $idv !== "0" ? "unnamed" : "(new round)";
-        } else {
-            return null;
         }
+        return null;
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
@@ -432,12 +431,12 @@ class Review_SettingParser extends SettingParser {
             if ($nrs->id <= 0
                 || $nrs->soft !== $ors->soft
                 || $nrs->done !== $ors->done) {
-                $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);
+                $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done");
             }
             if ($nrs->id <= 0
                 || $nrs->external_soft !== $ors->external_soft
                 || $nrs->external_done !== $ors->external_done) {
-                $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done", false);
+                $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done");
             }
             $rss[] = $nrs;
             if ($nrs->id > 0) {

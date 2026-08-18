@@ -16,14 +16,16 @@ through the settings UI, or transfer settings to another site.
 
 The `filter` and `exclude` parameters can filter the returned settings to a
 subset. For example, when exporting one site’s settings for use by another, you
-might set `exclude` to `#id OR #deadline`; this excludes settings relevant to a
-conference’s identity (`conference_name`, `site_contact_email`, etc.) or
+might set `exclude` to `#identity OR #deadline`; this excludes settings relevant
+to a conference’s identity (`conference_name`, `site_contact_email`, etc.) or
 deadlines.
 
 * badge featured
 * param ?reset boolean
 * param ?filter string: Search expression defining settings to include
 * param ?exclude string: Search expression defining settings to exclude
+* param ?download boolean: If true, download the settings object (without `ok`
+  wrapper)
 * response settings object
 * badge siteadmin
 
@@ -158,13 +160,17 @@ optionally `given_name`, `family_name`, and `affiliation`), a submission with
     * group Literal content
 * response ?subject string: Expanded subject line.
 * response ?body string: Expanded mail body.
-* response ?text string: Expanded `text`, when `text` was supplied.
-* response ?templates [object]: Present for `template=all`; one entry per
-  template, each with `name`, `title`, expanded `subject` and `body`, and any
-  default `recipients`, `recipient_description`, and `t`.
 * response ?recipients string: Default recipient set for the expanded template.
 * response ?recipient_description string: Human-readable description of `recipients`.
 * response ?t string: Default search collection associated with the template.
+* response ?text string: Expanded `text`, when `text` was supplied.
+
+    * condition text
+* response ?templates [object]: Present for `template=all`; one entry per
+  template, each with `name`, `title`, expanded `subject` and `body`, and
+  optional `recipients`, `recipient_description`, and `t`.
+
+    * condition template=all
 
 
 # get /namedsearch

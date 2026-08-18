@@ -51,8 +51,8 @@ class SavePapers_Batch {
     /** @var list<callable> */
     public $filters = [];
 
-    /** @var ?ZipArchive */
-    public $ziparchive;
+    /** @var ?DocumentLocator */
+    public $docloc;
     /** @var ?string */
     public $document_directory;
     /** @var ?list<callable> */
@@ -71,7 +71,7 @@ class SavePapers_Batch {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->user->set_overrides(Contact::OVERRIDE_CONFLICT);
-        $this->tf = (new ReviewValues($conf))->set_notify(false);
+        $this->tf = (new ReviewValues($this->user))->set_notify(false);
     }
 
     /** @return $this */
@@ -113,13 +113,9 @@ class SavePapers_Batch {
 
     /** @param string $file */
     function set_zipfile($file) {
-        assert(!$this->ziparchive);
-        $this->ziparchive = new ZipArchive;
-        if ($this->ziparchive->open($file) !== true) {
-            throw new CommandLineException("{$file}: Invalid zip");
-        }
-        list($this->document_directory, $this->_ziparchive_json) =
-            Paper_API::analyze_zip_contents($this->ziparchive);
+        assert(!$this->docloc);
+        $this->docloc = new DocumentLocator;
+        $this->_ziparchive_json = $this->docloc->set_zipfile($file);
     }
 
     /** @return string */
@@ -140,7 +136,7 @@ class SavePapers_Batch {
             $this->document_directory = $this->document_directory ?? (dirname($file) . "/");
         }
 
-        if (!$this->ziparchive
+        if (!$this->docloc
             && str_starts_with($content, "\x50\x4B\x03\x04")) {
             if (!($tmpdir = tempdir())) {
                 throw new CommandLineException("{$this->errprefix}Cannot create temporary directory");
@@ -151,7 +147,7 @@ class SavePapers_Batch {
             $content = null;
         }
 
-        if ($content === null && $this->ziparchive) {
+        if ($content === null && $this->docloc) {
             $content = $this->default_content();
             if ($content === null) {
                 throw new CommandLineException("{$this->errprefix}Should contain exactly one `*-data.json` file");
@@ -175,17 +171,17 @@ class SavePapers_Batch {
         } else {
             $this->errprefix = preg_replace('/: \z/', "/{$this->_ziparchive_json}: ", $this->errprefix);
         }
-        return $this->ziparchive->getFromName($this->_ziparchive_json);
+        return $this->docloc->ziparchive->getFromName($this->_ziparchive_json);
     }
 
-    function on_document_import($docj, PaperOption $o) {
+    /** @param DocumentImporter $importer */
+    function on_document_import($docj, $dt, $importer) {
         if (!is_string($docj->content_file ?? null)
             || $docj instanceof DocumentInfo) {
             return;
         }
-        if ($this->ziparchive) {
-            $fname = $this->document_directory . $docj->content_file;
-            return Paper_API::apply_zip_content_file($docj, $fname, $this->ziparchive, $o, $this->ps);
+        if ($this->docloc) {
+            return $this->docloc->on_document_import($docj, $dt, $importer);
         } else if ($this->document_directory) {
             $docj->content_file = $this->document_directory . $docj->content_file;
         }
@@ -288,7 +284,7 @@ class SavePapers_Batch {
                         "affiliation" => $this->tf->req["reviewerAffiliation"] ?? null,
                         "disablement" => $this->disable_users ? Contact::CF_UDISABLED : 0
                     ])->store();
-                    $this->tf->check_and_save($this->user, $prow, null);
+                    $this->tf->check_and_save($prow, null);
                 }
                 $this->tf->clear_req();
             }

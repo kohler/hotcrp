@@ -314,7 +314,7 @@ class PaperOption implements JsonSerializable {
         if (str_ends_with($s, "-")) {
             $s = substr($s, 0, -1);
         }
-        if (!preg_match('/\A(?:title|paper|submission|final|authors|blind|nonblind|contacts|abstract|topics|pc_conflicts|pcconf|collaborators|reviews|sclass|status.*|submit.*|fold.*|[a-z]?[a-z]?[-_0-9].*|has[-_].*|)\z/', $s)) {
+        if (!preg_match('/\A(?:title|paper|submission|final|authors?+|blind|nonblind|contacts?+|abstract|topics?+|pc_conflicts?+|pcconf|collaborators?+|comments?+|reviews?+|sclass|status.*+|submit.*+|fold.*+|[a-z]?+[a-z]?+[-_0-9].*+|has[-_].*+|new|delete|[a-z]id|)\z/', $s)) {
             return $s;
         }
         return "sf-" . $s;
@@ -675,6 +675,10 @@ class PaperOption implements JsonSerializable {
     }
     /** @return bool */
     function has_attachments() {
+        return false;
+    }
+    /** @return bool */
+    function reset_on_withdraw() {
         return false;
     }
 
@@ -1519,7 +1523,7 @@ class Document_PaperOption extends PaperOption {
     function value_store(PaperValue $ov, PaperStatus $ps) {
         if ($ov->value === PaperValue::NEWDOC_VALUE) {
             if (($fup = $ov->anno("document"))
-                && ($doc = $ps->upload_document($fup, $this))) {
+                && ($doc = $ps->upload_document($fup, $this->id))) {
                 $ov->set_value_data([$doc->paperStorageId], [null]);
             } else {
                 $ov->estop(null);

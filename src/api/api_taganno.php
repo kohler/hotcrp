@@ -7,10 +7,12 @@ class TagAnno_API {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
             return JsonResult::make_error(400, $tagger->error_ftext());
+        } else if (!$user->can_view_tag_somewhere($tag)) {
+            return JsonResult::make_permission_error("tag");
         }
-        $dt = $user->conf->tags()->ensure(Tagger::tv_tag($tag));
         $anno = [];
-        foreach ($dt->order_anno_list() as $oa) {
+        $ti = $user->conf->tags()->find($tag);
+        foreach ($ti ? $ti->order_anno_list() : [] as $oa) {
             if ($oa->annoId !== null)
                 $anno[] = $oa;
         }
@@ -30,9 +32,8 @@ class TagAnno_API {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
             return JsonResult::make_error(400, $tagger->error_ftext());
-        }
-        if (!$user->can_edit_tag_anno($tag)) {
-            return JsonResult::make_permission_error();
+        } else if (!$user->can_edit_tag_anno($tag)) {
+            return JsonResult::make_permission_error("tag");
         }
         $reqanno = json_decode($qreq->anno ?? "");
         if (!is_object($reqanno) && !is_array($reqanno)) {

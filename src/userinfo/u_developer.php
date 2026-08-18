@@ -37,9 +37,16 @@ class Developer_UserInfo {
         }
     }
 
+    /** @param TokenInfo $tok
+     * @return bool */
+    static function is_recent($tok) {
+        $t = $tok->inactive_at();
+        return $t <= 0 || $t > Conf::$now - 5 * 86400;
+    }
+
     /** @param ?Contact $user
      * @return list<TokenInfo> */
-    static function active_bearer_tokens($user) {
+    static function recent_bearer_tokens($user) {
         if (!$user) {
             return [];
         }
@@ -52,7 +59,7 @@ class Developer_UserInfo {
         $result = Dbl::qe($dblink, "select * from Capability where capabilityType=? and contactId=?", TokenInfo::BEARER, $uid);
         $toks = [];
         while (($tok = TokenInfo::fetch($result, $user->conf, $is_cdb))) {
-            if ($tok->is_active())
+            if (self::is_recent($tok))
                 $toks[] = $tok;
         }
         Dbl::free($result);
@@ -61,9 +68,9 @@ class Developer_UserInfo {
 
     /** @param Contact $user
      * @return list<TokenInfo> */
-    static function all_active_bearer_tokens($user) {
-        $toks1 = self::active_bearer_tokens($user->cdb_user());
-        return array_merge($toks1, self::active_bearer_tokens($user));
+    static function all_recent_bearer_tokens($user) {
+        $toks1 = self::recent_bearer_tokens($user->cdb_user());
+        return array_merge($toks1, self::recent_bearer_tokens($user));
     }
 
     function print_bearer_tokens(UserStatus $us) {
@@ -76,8 +83,12 @@ class Developer_UserInfo {
     }
 
     function print_current_bearer_tokens(UserStatus $us) {
-        $toks = self::all_active_bearer_tokens($us->user);
+        $toks = self::all_recent_bearer_tokens($us->user);
         usort($toks, function ($a, $b) {
+            $aa = $a->is_active();
+            if ($aa !== $b->is_active()) {
+                return $aa ? -1 : 1;
+            }
             $au = floor($a->timeUsed / 86400);
             $bu = floor($b->timeUsed / 86400);
             if (($au > 0) !== ($bu > 0)) {
@@ -107,7 +118,8 @@ class Developer_UserInfo {
     private function print_bearer_token_deleter(UserStatus $us, TokenInfo $tok, $n) {
         if (!$us->is_auth_self()
             || $us->user->security_locked()
-            || !$us->has_recent_authentication()) {
+            || !$us->has_recent_authentication()
+            || !$tok->is_active()) {
             return;
         }
         $dbid = $tok->is_cdb ? "A" : "L";
@@ -122,15 +134,22 @@ class Developer_UserInfo {
     }
 
     /** @param int $n */
-    function print_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
-        $short_salt = substr($tok->salt, 0, 10) . (strlen($tok->salt) > 9 ? "…" : "");
+    private function print_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
+        $active = $tok->is_active();
         $note = $tok->data("note") ?? "";
         echo '<div class="f-i w-text"><div class="f-c">';
         if ($note !== "") {
             echo htmlspecialchars($note), ' <span class="barsep">·</span> ';
         }
-        echo '<code>', $short_salt, '</code>';
-        $this->print_bearer_token_deleter($us, $tok, $n);
+        $short_salt = '<code>' . substr($tok->salt, 0, 10) . '</code>'
+            . (strlen($tok->salt) > 9 ? "…" : "");
+        if ($active) {
+            echo $short_salt;
+            $this->print_bearer_token_deleter($us, $tok, $n);
+        } else {
+            echo '<del>', $short_salt, '</del>',
+                '<em class="pl-3">(recently expired)</em>';
+        }
         echo '</div>';
         $this->print_bearer_token_info($us->conf, $tok);
         echo '</div>';
@@ -150,8 +169,15 @@ class Developer_UserInfo {
         }
         echo ' <span class="barsep">·</span> ',
             self::unparse_last_used($tok->timeUsed),
-            ' <span class="barsep">·</span> ',
-            $tok->timeExpires > 0 ? "expires " . $conf->unparse_time_point($tok->timeExpires) : "never expires";
+            ' <span class="barsep">·</span> ';
+        $invt = $tok->inactive_at();
+        if ($invt <= 0) {
+            echo "never expires";
+        } else if ($invt <= Conf::$now) {
+            echo "expired ", $conf->unparse_time_point($invt);
+        } else {
+            echo "expires ", $conf->unparse_time_point($invt);
+        }
     }
 
     /** @param int $n */
@@ -252,32 +278,23 @@ class Developer_UserInfo {
         }
 
         $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
-        if ($exp === "never") {
-            $expiry = -1;
+        if (($ndays = stonum($exp)) !== null) {
+            $expiry = (int) ($ndays * 86400);
         } else {
-            $expiry = (int) ((stonum($exp) ?? 30) * 86400);
+            $expiry = (int) round(SettingParser::parse_duration($exp) ?? 30 * 86400);
         }
-
         $token = Authorization_Token::prepare_bearer($tuser, $expiry);
         $this->_new_token = $token;
 
-        $note = simplify_whitespace($us->qreq["bearer_token/new/note"] ?? "");
+        $note = simplify_whitespace(convert_to_utf8($us->qreq["bearer_token/new/note"] ?? ""));
         if ($note !== "") {
-            $token->assign_data(["note" => $note]);
+            $token->change_data("note", $note);
         }
 
         $scope = simplify_whitespace($us->qreq["bearer_token/new/scope"] ?? "");
         if ($scope !== ""
             && preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)++\z/', $scope)) {
-            $token->assign_data(["scope" => $scope]);
-        }
-
-        $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
-        if ($exp === "never") {
-            $token->set_invalid_at(0)->set_expires_at(0);
-        } else {
-            $expiry = (ctype_digit($exp) ? intval($exp) : 30) * 86400;
-            $token->set_invalid_in($expiry)->set_expires_in($expiry + 604800);
+            $token->change_data("scope", $scope);
         }
     }
 
@@ -311,13 +328,14 @@ class Developer_UserInfo {
         if ($this->_delete_tokens === null) {
             return;
         }
-        $toks = self::all_active_bearer_tokens($us->user);
+        $toks = self::all_recent_bearer_tokens($us->user);
         $deleteables = [];
         foreach ($toks as $tok) {
             foreach ($this->_delete_tokens as $dt) {
                 if ($tok->timeCreated === $dt[0]
                     && $tok->is_cdb === $dt[1]
-                    && str_starts_with($tok->salt, $dt[2])) {
+                    && str_starts_with($tok->salt, $dt[2])
+                    && $tok->is_active()) {
                     $deleteables[] = $tok;
                 }
             }
@@ -325,7 +343,9 @@ class Developer_UserInfo {
         if (!empty($deleteables)
             && count($deleteables) <= count($this->_delete_tokens)) {
             foreach ($deleteables as $tok) {
-                $tok->delete();
+                $tok->set_invalid()
+                    ->set_expires_in(Authorization_Token::BEARER_RETENTION)
+                    ->update();
             }
             $us->diffs["API tokens"] = true;
         }

@@ -1292,6 +1292,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
+    private function v329_delete_withdrawn_certifications() {
+        $oids = [];
+        foreach ($this->conf->options() as $opt) {
+            if ($opt->reset_on_withdraw())
+                $oids[] = $opt->id;
+        }
+        return empty($oids)
+            || $this->conf->ql_ok("delete from PaperOption where optionId?a and paperId in (select paperId from Paper where timeWithdrawn>0)", $oids);
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -1408,6 +1418,14 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion <= 281
             && !$conf->setting("__extrev_seerev_v282")) {
             $this->v282_update_viewrev();
+        }
+
+        // set stored reviewSubmitted null values to 0
+        if ($conf->sversion >= 122
+            && $conf->sversion <= 327
+            && !$conf->setting("__reviewSubmitted_null_v328")) {
+            $conf->ql("update PaperReview set reviewSubmitted=0 where reviewSubmitted is null");
+            $conf->save_setting("__reviewSubmitted_null_v328", 1);
         }
 
         if ($conf->sversion === 6
@@ -3304,6 +3322,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("insert into Settings (name, value, data) select 'idpermuter_assignment', value, data from Settings where name='__assignment_key' on duplicate key update name='idpermuter_assignment'")
             && $conf->ql_ok("delete from Settings where name in ('__assignment_key', '__id_permuter_key', '__banal_count')")) {
             $conf->update_schema_version(327);
+        }
+        if ($conf->sversion === 327
+            && $conf->ql_ok("update PaperReview set reviewSubmitted=0 where reviewSubmitted is null")
+            && $conf->ql_ok("alter table PaperReview change `reviewSubmitted` `reviewSubmitted` bigint NOT NULL DEFAULT 0")) {
+            $conf->update_schema_version(328);
+            $conf->save_setting("__reviewSubmitted_null_v328", null);
+        }
+        if ($conf->sversion === 328
+            && $this->v329_delete_withdrawn_certifications()) {
+            $conf->update_schema_version(329);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

@@ -147,7 +147,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
                 $clib->error_at(null, "<0>{$pfx}Changes invalid");
             } else if (empty($sobj->change_list)) {
                 $clib->success("<0>{$pfx}No changes");
-            } else if ($sobj->dry_run ?? false) {
+            } else if ($cj->dry_run ?? false) {
                 $clib->success("<0>{$pfx}Would change " . commajoin($sobj->change_list));
             } else {
                 $clib->success("<0>{$pfx}Saved changes to " . commajoin($sobj->change_list));

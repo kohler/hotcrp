@@ -54,8 +54,13 @@ class CommentInfo {
     private $_recently_censored;
     /** @var ?bool */
     private $_recently_censorable;
-    /** @var ?array{string,mixed} */
-    private $_old_prop;
+    /** @var ?array<string,mixed> */
+    public $_old_prop;
+    /** @var ?DocumentInfoSet cached attachment set; holds the staged documents
+     * when an attachment change is registered, else the saved documents */
+    private $_docs;
+    /** @var ?DocumentInfoSet base attachment set; non-null iff an attachment change is staged */
+    private $_old_docs;
 
     const CT_DRAFT = 0x01;
     const CT_BLIND = 0x02;
@@ -278,9 +283,8 @@ class CommentInfo {
             && ($ctype & self::CTM_VIS) !== self::CTVIS_ADMINONLY;
     }
 
-    /** @param int $ctype
-     * @return bool */
-    private function ordinal_missing() {
+    /** @return bool */
+    function ordinal_missing() {
         return self::commenttype_needs_ordinal($this->commentType)
             && ($this->commentType >= self::CTVIS_AUTHOR
                 ? $this->authorOrdinal === 0
@@ -327,7 +331,7 @@ class CommentInfo {
         return $this->commentOverflow ?? $this->comment ?? "";
     }
 
-    /** @param Contact $viewer
+    /** @param ContactPermissions $viewer
      * @return bool */
     private function _mention_censorable($viewer) {
         $this->_recently_censorable = !$viewer->is_my_comment($this->prow, $this)
@@ -335,7 +339,7 @@ class CommentInfo {
         return $this->_recently_censorable;
     }
 
-    /** @param Contact $viewer
+    /** @param ContactPermissions $viewer
      * @param array{int,int,int,?bool} $mn
      * @param int $censor_until
      * @return bool */
@@ -380,7 +384,7 @@ class CommentInfo {
         return true;
     }
 
-    /** @param Contact $viewer
+    /** @param ContactPermissions $viewer
      * @param int $uid
      * @return string */
     private function _mention_pseudonym($viewer, $uid) {
@@ -388,7 +392,7 @@ class CommentInfo {
         return "@{$s}";
     }
 
-    /** @param ?Contact $viewer
+    /** @param ?ContactPermissions $viewer
      * @param ?int $censor_until
      * @return string */
     function content($viewer = null, $censor_until = null) {
@@ -521,7 +525,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    private function unparse_commenter_pseudonym(Contact $viewer) {
+    private function unparse_commenter_pseudonym(ContactPermissions $viewer) {
         if (($this->commentType & self::CTM_BYAUTHOR) !== 0) {
             return "Author";
         } else if (($this->commentType & (self::CTM_VIS | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)
@@ -574,7 +578,7 @@ class CommentInfo {
     }
 
     /** @return string */
-    function unparse_commenter_text(Contact $viewer) {
+    function unparse_commenter_text(ContactPermissions $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo($this->commenter(), NAME_P|NAME_I);
         } else {
@@ -602,7 +606,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    function searchable_tags(Contact $viewer) {
+    function searchable_tags(ContactPermissions $viewer) {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_SEARCH, $tags, $viewer, $this->prow);
@@ -611,7 +615,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    function viewable_tags(Contact $viewer) {
+    function viewable_tags(ContactPermissions $viewer) {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, $this->prow);
@@ -620,7 +624,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    function viewable_nonresponse_tags(Contact $viewer) {
+    function viewable_nonresponse_tags(ContactPermissions $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
@@ -637,20 +641,63 @@ class CommentInfo {
 
     /** @return bool */
     function has_attachments() {
+        if ($this->_old_docs !== null) {
+            return !$this->attachments()->is_empty();
+        }
         return ($this->commentType & self::CT_HASDOC) !== 0;
     }
 
     /** @return DocumentInfoSet */
     function attachments() {
-        if (($this->commentType & self::CT_HASDOC) !== 0) {
-            return $this->prow->linked_documents($this->commentId, DTYPE_COMMENT, $this);
+        // `_docs` holds the staged set when a change is registered (so the
+        // comment reads as its unsaved version, mirroring `_old_prop`),
+        // otherwise it lazily caches the saved documents
+        if ($this->_docs === null) {
+            if (($this->commentType & self::CT_HASDOC) !== 0) {
+                $this->_docs = $this->prow->linked_documents($this->commentId, DTYPE_COMMENT, $this);
+            } else {
+                $this->_docs = new DocumentInfoSet;
+            }
         }
-        return new DocumentInfoSet;
+        return $this->_docs;
     }
 
     /** @return list<int> */
     function attachment_ids() {
         return $this->attachments()->document_ids();
+    }
+
+    /** Register a change to this comment's attachments. The new documents
+     * replace the current ones; thereafter `attachments()` reflects them and
+     * `save` rewrites the document links.
+     * @param list<DocumentInfo> $docs */
+    function set_attachments($docs) {
+        // base = the saved attachment set, not any prior staged override
+        $base = $this->_old_docs ?? $this->attachments();
+        $new_ids = [];
+        foreach ($docs as $doc) {
+            $new_ids[] = $doc->paperStorageId;
+        }
+        // reflect the presence of attachments in the comment type
+        $this->set_prop("commentType",
+            ($this->commentType & ~self::CT_HASDOC)
+            | (empty($docs) ? 0 : self::CT_HASDOC));
+        if ($base->document_ids() !== $new_ids) {
+            $this->_old_docs = $base;
+            $dset = new DocumentInfoSet;
+            foreach ($docs as $doc) {
+                $dset->add($doc->with_owner($this));
+            }
+            $this->_docs = $dset;
+        } else {
+            // no net change: drop any staged override and reload the saved set
+            $this->_old_docs = $this->_docs = null;
+        }
+    }
+
+    /** @return bool */
+    function docs_changed() {
+        return $this->_old_docs !== null;
     }
 
     /** @param bool $editable
@@ -814,7 +861,7 @@ class CommentInfo {
 
     /** @param int $flags
      * @return string */
-    function unparse_text(Contact $viewer, $flags = 0) {
+    function unparse_text(ContactPermissions $viewer, $flags = 0) {
         if (($rrd = $this->response_round())) {
             $x = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
         } else {
@@ -871,7 +918,7 @@ class CommentInfo {
     /** @return string */
     function unparse_flow_entry(Contact $viewer) {
         // See also ReviewForm::reviewFlowEntry
-        $url = $this->conf->hoturl_raw("paper", ["p" => $this->paperId, "#" => $this->unparse_html_id()]);
+        $url = $this->conf->hoturl("paper", ["p" => $this->paperId, "#" => $this->unparse_html_id()]);
         $a = '<a href="' . Ht::escape_attr($url) . '"';
         $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
@@ -894,7 +941,8 @@ class CommentInfo {
     }
 
 
-    private function save_ordinal() {
+    /** @internal */
+    function save_ordinal() {
         $okey = $this->commentType >= self::CTVIS_AUTHOR ? "authorOrdinal" : "ordinal";
         $this->conf->qe("update PaperComment, (select coalesce(max(PaperComment.{$okey}),0) maxOrdinal
     from Paper
@@ -930,8 +978,9 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
         return $this->fix_type($ctype);
     }
 
-    /** @return string */
-    private function logid() {
+    /** @return string
+     * @internal */
+    function logid() {
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $s = "Response {$this->commentId}";
             $rrd = $this->response_round();
@@ -949,20 +998,25 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
         return $s;
     }
 
-    /** @param string $prop */
-    private function set_prop($prop, $v) {
+    /** @param string $prop
+     * @param mixed $v */
+    function set_prop($prop, $v) {
+        if ($this->$prop === $v) {
+            return;
+        }
         if ($this->_old_prop === null) {
             $this->_old_prop = [];
         }
-        if (!array_key_exists($prop, $this->_old_prop)
-            && $this->$prop !== $v) {
+        if (!array_key_exists($prop, $this->_old_prop)) {
             $this->_old_prop[$prop] = $this->$prop;
+        } else if ($this->_old_prop[$prop] === $v) {
+            unset($this->_old_prop[$prop]);
         }
         $this->$prop = $v;
     }
 
     /** @param string $key */
-    private function set_data_prop($key, $value) {
+    function set_data_prop($key, $value) {
         $this->make_data();
         if ($value === null) {
             unset($this->_jdata->$key);
@@ -980,7 +1034,7 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
 
     /** @param string $prop
      * @return mixed */
-    private function base_prop($prop) {
+    function base_prop($prop) {
         if ($this->_old_prop !== null
             && array_key_exists($prop, $this->_old_prop)) {
             return $this->_old_prop[$prop];
@@ -988,111 +1042,41 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
         return $this->$prop;
     }
 
-    /** @param array{docs?:list<DocumentInfo>,tags?:?string,no_autosearch?:bool} $req
+    /** @param ?string $prop
      * @return bool */
-    function save_comment($req, Contact $acting_user) {
-        assert($this->paperId > 0 && (!$this->prow || $this->prow->paperId === $this->paperId));
-        $this->notifications = [];
+    function prop_changed($prop = null) {
+        return !empty($this->_old_prop)
+            && (!$prop || array_key_exists($prop, $this->_old_prop));
+    }
 
-        $user = $acting_user;
-        if (!$user->contactId) {
-            $user = $acting_user->reviewer_capability_user($this->paperId);
+    /** Mark this comment clean after its staged changes have been persisted.
+     * `_docs` keeps the now-saved attachment set. */
+    function commit_prop() {
+        $this->_old_prop = $this->_old_docs = null;
+    }
+
+    function abort_prop() {
+        foreach ($this->_old_prop ?? [] as $prop => $v) {
+            $this->$prop = $v;
         }
-        if (!$user || !$user->contactId) {
-            error_log("Comment::save({$this->paperId}): no such user");
-            return false;
-        }
+        $this->_docs = $this->_old_docs;
+        $this->_old_prop = $this->_old_docs = $this->_jdata = null;
+    }
 
-        $text = $req["text"] ?? null;
-        if ($text === false) {
-            return $this->delete_comment($req, $acting_user, $user);
-        }
-
-        $old_ctype = $this->base_prop("commentType");
-        $ctype = $this->requested_type($req) & self::CT_DBMASK;
-        $is_response = ($ctype & self::CT_RESPONSE) !== 0;
-
-        // tags
-        if (!$is_response
-            && isset($req["tags"])
-            && !$user->act_author_view($this->prow)) {
-            $tagger = new Tagger($user);
-            $ts = [];
-            foreach (preg_split('/\s++/', $req["tags"]) as $tt) {
-                if ($tt !== ""
-                    && ($tt = $tagger->check($tt))) {
-                    list($tag, $value) = Tagger::unpack($tt);
-                    $ltag = strtolower($tag);
-                    if (!str_ends_with($ltag, "response")) {
-                        $ts[$ltag] = $tag . "#" . (float) $value;
-                    }
-                }
-            }
-            $ts = $this->conf->tags()->sort_array(array_values($ts));
-            $this->set_prop("commentTags", empty($ts) ? null : " " . join(" ", $ts));
-        }
-
-        // attachments
-        $old_docids = $this->attachment_ids();
-        $docs = $req["docs"] ?? [];
-        $ctype = $docs ? ($ctype | self::CT_HASDOC) : ($ctype & ~self::CT_HASDOC);
-        $this->set_prop("commentType", $ctype);
-
-        // notifications
-        $displayed = ($ctype & self::CT_DRAFT) === 0;
-
-        // text, mentions
-        $desired_mentions = [];
-        $text = (string) $text;
-        if (strlen($text) <= 32000) {
-            $this->set_prop("comment", $text);
-            $this->set_prop("commentOverflow", null);
-        } else {
-            $this->set_prop("comment", UnicodeHelper::utf8_prefix($text, 200));
-            $this->set_prop("commentOverflow", $text);
-        }
-        $desired_mentions = self::parse_mentions($user, $this->prow, $text, $ctype);
-        $this->set_data_prop("mentions", empty($desired_mentions) ? null : $desired_mentions);
-
-        // more properties
-        if (!$this->commentId) {
-            $this->_old_prop["contactId"] = null;
-            $this->set_prop("contactId", $user->contactId);
-            $this->_old_prop["paperId"] = null;
-            $this->_old_prop["replyTo"] = null;
-            $this->_old_prop["commentRound"] = null;
-            $this->_old_prop["commentType"] = null;
-        }
-        // timeDisplayed, timeNotified
-        if ($this->timeModified >= Conf::$now) {
-            Conf::advance_current_time($this->timeModified);
-        }
-        if ($displayed) {
-            if ($this->timeNotified + 10800 < Conf::$now
-                || (($ctype & self::CT_RESPONSE) !== 0
-                    && ($ctype & self::CT_DRAFT) === 0
-                    && ($old_ctype & self::CT_DRAFT) !== 0)) {
-                $this->set_prop("timeNotified", Conf::$now);
-            }
-            // reset timeDisplayed if you change the comment type
-            if ((!$this->timeDisplayed || $this->ordinal_missing())
-                && ($text !== "" || $docs)) {
-                $this->set_prop("timeDisplayed", Conf::$now);
-            }
-        }
-
-        // check for document change
-        $docs_differ = count($docs) !== count($old_docids);
-        for ($i = 0; !$docs_differ && $i !== count($docs); ++$i) {
-            $docs_differ = $docs[$i]->paperStorageId !== $old_docids[$i];
-        }
-
+    /** Persist this comment's registered property and attachment changes to the
+     * database and assign its ordinal. Does not write the activity log (that is
+     * CommentStatus's job, which owns the change list), check permissions,
+     * recompute automatic tags, or send notifications.
+     * @return bool */
+    function save() {
+        $docs_differ = $this->docs_changed();
         if (empty($this->_old_prop) && !$docs_differ) {
             return true;
         }
 
         $this->set_prop("timeModified", Conf::$now);
         $inserting = !$this->commentId;
+        $is_response = $this->is_response();
         if ($inserting) {
             $q = "insert into PaperComment ("
                 . join(", ", array_keys($this->_old_prop))
@@ -1126,46 +1110,10 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
             $this->save_ordinal();
         }
 
-        // log
-        $log = $this->logid();
-        if (($ctype & self::CT_DRAFT) === 0
-            && (!$this->commentId || ($this->commentType & self::CT_DRAFT) !== 0)) {
-            $log .= " submitted";
-        } else {
-            $log .= $this->commentId ? " edited" : " started";
-            if (($ctype & self::CT_DRAFT) !== 0) {
-                $log .= " draft";
-            }
-        }
-        $ch = [];
-        if ($this->commentId
-            && (array_key_exists("comment", $this->_old_prop)
-                || array_key_exists("commentOverflow", $this->_old_prop))) {
-            $ch[] = "text";
-        }
-        if ($this->commentId
-            && array_key_exists("commentType", $this->_old_prop)
-            && ($this->commentType | self::CT_DRAFT) !== ($this->_old_prop["commentType"] | self::CT_DRAFT)) {
-            $ch[] = "visibility";
-        }
-        if (array_key_exists("commentTags", $this->_old_prop)) {
-            $ch[] = "tags";
-        }
-        if ($docs_differ) {
-            $ch[] = "attachments";
-        }
-        if (!empty($ch)) {
-            $log .= ": " . join(", ", $ch);
-        }
-        $acting_user->log_activity_for($this->contactId ? : $user->contactId, $log, $this->paperId);
-
-        // update automatic tags
-        if (!($req["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->prow, SearchTerm::ABOUT_COMMENTS);
-        }
-
         // document links
         if ($docs_differ) {
+            $old_docids = $this->_old_docs->document_ids();
+            $docs = $this->attachments()->as_list();
             if ($old_docids) {
                 $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType=?", $this->paperId, $this->commentId, DTYPE_COMMENT);
             }
@@ -1192,22 +1140,13 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
             }
         }
 
-        // notify mentions and followers
-        if ($displayed
-            && $this->commentId
-            && !empty($desired_mentions)) {
-            $this->inform_mentions($user, $desired_mentions);
-        }
-
-        if ($this->timeNotified === $this->timeModified) {
-            $this->notify($user);
-        }
-
         return true;
     }
 
-    /** @return bool */
-    private function delete_comment($req, Contact $acting_user, Contact $user) {
+    /** Delete this comment from the database and write the activity log. Does
+     * not check permissions, recompute automatic tags, or send notifications.
+     * @return bool */
+    function delete(Contact $acting_user) {
         if (!$this->commentId) {
             return false;
         }
@@ -1217,14 +1156,9 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
         }
 
         // log
-        $acting_user->log_activity_for($this->contactId ? : $user->contactId,
+        $acting_user->log_activity_for($this->contactId ? : $acting_user->contactId,
             $this->logid() . " deleted",
             $this->paperId);
-
-        // update automatic tags
-        if (!($req["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($this->prow, SearchTerm::ABOUT_COMMENTS);
-        }
 
         // document links
         if ($this->has_attachments()) {
@@ -1233,18 +1167,17 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
             $this->prow->invalidate_linked_documents();
         }
 
-        // delete if appropriate
-        $this->commentId = 0;
-        $this->comment = "";
-        $this->commentTags = $this->commentData = $this->_jdata = null;
+        $this->mark_deleted();
         return true;
     }
 
-    function delete(Contact $actor, $req = []) {
-        return $this->save_comment([
-            "text" => false,
-            "no_autosearch" => $req["no_autosearch"] ?? null
-        ], $actor);
+    /** Reset this comment's in-memory state after a committed deletion.
+     * @internal */
+    function mark_deleted() {
+        $this->commentId = 0;
+        $this->comment = "";
+        $this->commentTags = $this->commentData = $this->_jdata = null;
+        $this->_old_docs = $this->_docs = null;
     }
 
     /** @param Contact $user
@@ -1275,8 +1208,9 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
     }
 
     /** @param Contact $user
-     * @param list<MentionPhrase> $mentions */
-    private function inform_mentions($user, $mentions) {
+     * @param list<MentionPhrase> $mentions
+     * @internal */
+    function inform_mentions($user, $mentions) {
         foreach ($mentions as $mxm) {
             $this->conf->prefetch_user_by_id($mxm->user->contactId);
         }

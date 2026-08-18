@@ -26,6 +26,7 @@ class Decision_SettingParser extends SettingParser {
     }
 
     function prepare_oblist(Si $si, SettingValues $sv) {
+        assert($si->name === "decision");
         $m = [];
         foreach ($sv->conf->decision_set() as $dec) {
             if ($dec->id !== 0) {

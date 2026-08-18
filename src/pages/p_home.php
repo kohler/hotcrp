@@ -246,11 +246,10 @@ class Home_Page {
         return $this->_rfs;
     }
 
-    /** @param string $setting
+    /** @param ?int $t
      * @return ?string */
-    private function setting_time_span($setting) {
-        $t = $this->conf->setting($setting) ?? 0;
-        return $t > 0 ? $this->conf->unparse_time_with_local_span($t) : null;
+    private function time_span($t) {
+        return ($t ?? 0) > 0 ? $this->conf->unparse_time_with_local_span($t) : null;
     }
 
     function print_reviews(Contact $user, Qrequest $qreq, ComponentSet $gx) {
@@ -278,7 +277,7 @@ class Home_Page {
                 $q .= ", " . $rf->main_storage;
                 $scores[] = [];
             }
-            $q = "{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)";
+            $q = "{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted>0 or timeSubmitted>0)";
             if (!empty($user->hidden_papers)) {
                 $q .= "and paperId not in (" . join(",", array_keys($user->hidden_papers)) . ")";
             }
@@ -316,7 +315,7 @@ class Home_Page {
                 $q .= ", group_concat(coalesce({$rf->main_storage},'')) {$rf->short_id}Scores";
                 $scores[] = [];
             }
-            $result = Dbl::qe_raw("{$q} from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
+            $result = Dbl::qe_raw("{$q} from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted>0)
                 where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0 group by ContactInfo.contactId");
             while (($row = $result->fetch_row())) {
                 ++$npc;
@@ -347,7 +346,7 @@ class Home_Page {
             }
             echo $conf->_("You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
                 new FmtArg("n", $this->_r_num_submitted), new FmtArg("na", $this->_r_num_needs_submit),
-                new FmtArg("url", $conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0),
+                new FmtArg("url", $conf->hoturl("search", ["q" => "", "t" => "r"]), 0),
                 new FmtArg("scores", $score_texts)),
                 "<br>\n";
         }
@@ -378,24 +377,24 @@ class Home_Page {
                     $rname .= " ";
                 }
                 if ($conf->time_review($round, $user->isPC, false)) {
-                    $dn = $conf->review_deadline_name($round, $user->isPC, false);
-                    if ($conf->setting($dn) <= 0) {
-                        $dn = $conf->review_deadline_name($round, $user->isPC, true);
+                    $dt = $conf->review_deadline($round, $user->isPC, false);
+                    if ($dt <= 0) {
+                        $dt = $conf->review_deadline($round, $user->isPC, true);
                     }
-                    if (($d = $this->setting_time_span($dn))) {
+                    if (($d = $this->time_span($dt))) {
                         echo ' <em class="deadline">Please submit your ', $rname, ($this->_r_num_needs_submit == 1 ? "review" : "reviews"), " by {$d}.</em><br>\n";
                     }
                 } else if ($conf->time_review($round, $user->isPC, true)) {
-                    $dn = $conf->review_deadline_name($round, $user->isPC, false);
-                    $d = $this->setting_time_span($dn);
+                    $dt = $conf->review_deadline($round, $user->isPC, false);
+                    $d = $this->time_span($dt);
                     echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $d, ".</em><br>\n";
                 } else {
                     echo ' <em class="deadline"><strong class="overdue">The ', $conf->hotlink("deadline", "deadlines"), ' for submitting ', $rname, "reviews has passed.</strong></em><br>\n";
                 }
             }
         } else if ($user->isPC && $user->can_review_any()) {
-            $dn = $conf->review_deadline_name(null, $user->isPC, false);
-            if (($d = $this->setting_time_span($dn))) {
+            $dt = $conf->review_deadline(null, $user->isPC, false);
+            if (($d = $this->time_span($dt))) {
                 echo " <em class=\"deadline\">The review deadline is {$d}.</em><br>\n";
             }
         }
@@ -555,7 +554,7 @@ class Home_Page {
     private function print_new_submission(Contact $user, SubmissionRound $sr) {
         $conf = $user->conf;
         if ($sr->register > 0
-            && ($sr->update <= 0 || $sr->register < $sr->update)) {
+            && ($sr->submit <= 0 || $sr->register < $sr->submit)) {
             $dname = $conf->_5("<5>{sclass} registration deadline", new FmtArg("sclass", $sr->label, 0));
             $dtime = $conf->unparse_time_with_local_span($sr->register);
             $dltx = "<em class=\"deadline\">{$dname}: {$dtime}</em>";
@@ -584,7 +583,7 @@ class Home_Page {
     /** @param int $srf */
     private function submission_round_deadlines(&$deadlines, SubmissionRound $sr, $srf) {
         $conf = $this->conf;
-        $dlurl = Ht::escape_attr($conf->hoturl_raw("deadlines"));
+        $dlurl = Ht::escape_attr($conf->hoturl("deadlines"));
         if (($srf & 4) !== 0
             && $sr->final_open
             && ($dl = $sr->final_deadline_for_display()) > 0) {
@@ -615,7 +614,7 @@ class Home_Page {
         if (($srf & 2) !== 0
             && $sr->time_edit(true, true)) {
             if ($sr->time_edit(false, true)) {
-                $d = $conf->unparse_time_with_local_span($sr->update);
+                $d = $conf->unparse_time_with_local_span($sr->submit);
                 $deadlines[] = "You have until {$d} to update {$sr->prefix}{$conf->snouns[1]}.";
                 $srf = 2;
             } else {
@@ -630,7 +629,7 @@ class Home_Page {
         }
         if (($srf & 1) !== 0
             && $sr->time_edit(false, true)) {
-            $d = $conf->unparse_time_with_local_span($sr->update);
+            $d = $conf->unparse_time_with_local_span($sr->submit);
             $deadlines[] = "You have until {$d} to complete {$sr->prefix}draft {$conf->snouns[1]}.";
         } else if (($srf & 1) !== 0) {
             if ($sr->time_submit(true)) {

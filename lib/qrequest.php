@@ -204,6 +204,20 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $pc = explode("/", $this->_path);
         return $decoded ? urldecode($pc[$n]) : $pc[$n];
     }
+    /** @return int */
+    function path_component_index() {
+        return $this->_path_component_index;
+    }
+    /** @param int $n
+     * @return $this */
+    function consume_path_components($n) {
+        if ($this->_path_component_count === null) {
+            $this->path_component(0); // compute _path_component_count
+        }
+        $this->_path_component_index = max(0, $this->_path_component_index + $n);
+        return $this;
+    }
+
     /** @return ?PaperInfo */
     function paper() {
         return $this->_requested_paper;
@@ -231,9 +245,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     /** @param string $k
-     * @param ?string $v */
+     * @param ?string $v
+     * @return $this */
     function set_header($k, $v) {
         $this->_headers["HTTP_" . strtoupper(str_replace("-", "_", $k))] = $v;
+        return $this;
     }
 
     /** True if this request was not initiated by a cross-site context.
@@ -792,6 +808,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_qsession->open();
     }
 
+    /** @return void */
+    function commit_session() {
+        $this->_qsession->commit();
+    }
+
     /** @return ?string */
     function qsid() {
         return $this->_qsession->sid;
@@ -880,7 +901,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @throws Redirection */
     function redirect($url = null, $status = 302) {
         $this->_conf->saved_messages_commit($this);
-        Navigation::redirect_absolute($this->_navigation->resolve($url ?? $this->_conf->hoturl_raw("index")), $status);
+        Navigation::redirect_absolute($this->_navigation->resolve($url ?? $this->_conf->hoturl("index")), $status);
     }
 
     /** @param string $page
@@ -888,7 +909,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return never
      * @throws Redirection */
     function redirect_hoturl($page, $param = null) {
-        $this->redirect($this->_conf->hoturl($page, $param, Conf::HOTURL_RAW));
+        $this->redirect($this->_conf->hoturl($page, $param));
     }
 
     /** @param ?array $param

@@ -304,7 +304,8 @@ class ManualAssign_Page {
     function run() {
         $overrides = $this->viewer->add_overrides(Contact::OVERRIDE_CONFLICT);
 
-        $this->limits = PaperSearch::viewable_manager_limits($this->viewer);
+        $this->limits = PaperSearch::viewable_manager_limits($this->viewer, $this->qreq->t);
+        array_unshift($this->limits, "reviewable");
         if (!$this->qreq->t || !in_array($this->qreq->t, $this->limits, true)) {
             $this->qreq->t = $this->limits[0];
         }

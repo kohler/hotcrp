@@ -200,7 +200,7 @@ class ReviewCSV_Batch {
         $x["review"] = $rrow->unparse_ordinal_id();
         $x["email"] = $rrow->reviewer()->email;
         $x["round"] = $prow->conf->round_name($rrow->reviewRound);
-        $x["submitted_at"] = $rrow->reviewSubmitted;
+        $x["submitted_at"] = $rrow->reviewSubmitted ? : null;
         $x["vtag"] = $rrow->reviewTime;
         $x["status"] = $rrow->status_description();
         $x["format"] = $prow->conf->default_format;

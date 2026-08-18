@@ -34,7 +34,7 @@ class PageCount_PaperColumn extends PaperColumn {
         if ($dt !== null) {
             $this->opt = $pl->conf->options()->find($dt);
             if (!$this->opt || !$this->opt->is_document()) {
-                $pl->column_error_at($this->name, "<0>Document ‘{$dt}’ not found");
+                $pl->column_error_at($this->name, MessageItem::warning("<0>Document ‘{$dt}’ not found"));
                 return false;
             }
         } else {

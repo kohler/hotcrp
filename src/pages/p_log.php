@@ -251,7 +251,7 @@ class Log_Page {
                 if ($this->qreq[$x])
                     $urlp[$x] = $this->qreq[$x];
             }
-            $leg->set_log_url_base($this->conf->hoturl_raw("log", $urlp));
+            $leg->set_log_url_base($this->conf->hoturl("log", $urlp));
             echo "<table class=\"lognav\"><tr><td><div class=\"lognavdr\">";
             if ($page > 1) {
                 echo $leg->page_link_html(1, "<strong>Newest</strong>"), " &nbsp;|&nbsp;&nbsp;";
@@ -386,7 +386,6 @@ class Log_Page {
     function print_page($leg, $page) {
         $conf = $this->conf;
         $this->qreq->print_header("Log", "actionlog");
-        file_put_contents("/tmp/x.txt", "");
 
         $leg->load_row_range($leg->page_index($page),
                              $leg->page_index($page + $this->nlinks + 1) + 1);

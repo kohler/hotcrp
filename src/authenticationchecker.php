@@ -165,7 +165,7 @@ class AuthenticationChecker {
         if (!$authi) {
             return false;
         }
-        $url = $this->conf->hoturl_raw("oauth", [
+        $url = $this->conf->hoturl("oauth", [
             "reauth" => 1, "max_age" => $this->max_age, "redirect" => $this->redirect()
         ], Conf::HOTURL_SITEREL);
         if (($uindex = Contact::session_index_by_email($this->qreq, $this->user->email)) >= 0) {
@@ -189,7 +189,7 @@ class AuthenticationChecker {
         $info = $this->user->check_password_info($this->qreq->password);
         foreach ($info["usec"] ?? [] as $use) {
             $use->set_reason(UserSecurityEvent::REASON_REAUTH)
-                ->store($this->qreq->qsession());
+                ->store($this->qreq);
         }
         $ms = new MessageSet;
         if ($info["ok"]) {

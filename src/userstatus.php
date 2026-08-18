@@ -1049,7 +1049,7 @@ class UserStatus extends MessageSet {
                    && !($cj->user_override ?? false)) {
             $this->error_at("email", "<0>Account {$cj->email} has been deleted");
             if ($this->viewer->privChair) {
-                $this->inform_at("email", "<5>You can recreate the account using <a href=\"{bulkupdate}\">Bulk update</a>. Set the ‘user_override’ column to ‘yes’.", new FmtArg("bulkupdate", $this->conf->hoturl_raw("profile", ["u" => "bulk"]), 0));
+                $this->inform_at("email", "<5>You can recreate the account using <a href=\"{bulkupdate}\">Bulk update</a>. Set the ‘user_override’ column to ‘yes’.", new FmtArg("bulkupdate", $this->conf->hoturl("profile", ["u" => "bulk"]), 0));
             }
             return false;
         }
@@ -1900,7 +1900,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         }
 
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
-        echo '<div class="grid-btn-explanation"><div class="d-flex mf mf-absolute">';
+        echo '<div class="grid-btn-explanation"><div class="d-flex mf">';
 
         echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $us->user->is_disabled()]), '</div><p></p>';
 
@@ -1923,7 +1923,7 @@ topics. We use this information to help match papers to reviewers.</p>',
                 $p = "<p class=\"pt-1 mb-0\">Disabled accounts cannot sign in or view the site.</p>";
                 $disabled = false;
             }
-            echo '<div class="d-flex mf mf-absolute">',
+            echo '<div class="d-flex mf">',
                 Ht::button($disablement ? "Enable account" : "Disable account", [
                     "class" => $klass, "disabled" => $disabled
                 ]), '</div>', $p;

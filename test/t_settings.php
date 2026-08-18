@@ -1438,6 +1438,19 @@ class Settings_Tester {
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
 
+        // `download` returns the bare settings object with a filename
+        $x = call_api("settings", $this->u_chair, ["download" => 1]);
+        xassert(is_object($x));
+        xassert(!isset($x->ok));
+        xassert_eqq($x->review_blind, "blind");
+        $x = call_api("settings", $this->u_chair, ["download" => 1, "exclude" => "#decision"]);
+        xassert(!isset($x->decision));
+        xassert_eqq($x->review_blind, "blind");
+        $jr = call_api_result("settings", $this->u_chair, ["download" => 1]);
+        $cd = $jr->header("Content-Disposition");
+        xassert_str_contains($cd, "attachment");
+        xassert_str_contains($cd, $this->conf->download_prefix . "settings.json");
+
         $x = call_api("=settings", $this->u_chair, ["settings" => "{}"]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
@@ -1592,6 +1605,370 @@ class Settings_Tester {
         if ($j3 !== $j1) {
             self::unexpected_unified_diff($j1, $j3);
         }
+    }
+
+    /** @param string $s
+     * @return ?SearchExpr */
+    static function make_si_filter($s) {
+        return (new SearchParser($s))->parse_expression(SearchOperatorSet::simple_operators());
+    }
+
+    function test_json_export_filter() {
+        // tag filter
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("#decision"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->decision));
+        xassert(isset($j->decision_visibility_author));
+        xassert(!isset($j->review_blind));
+        xassert(!isset($j->sf));
+        xassert(!isset($j->conference_abbreviation));
+
+        // a filtered export imports as a no-op
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string(json_encode($j));
+        $sv->parse();
+        xassert_eqq($sv->changed_top_si(), []);
+        xassert_eqq($sv->message_list(), []);
+
+        // name glob filter
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("review_visibility_*"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->review_visibility_author));
+        xassert(!isset($j->review_blind));
+        xassert(!isset($j->decision));
+
+        // OR combination
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("#decision OR review_blind"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->decision));
+        xassert(isset($j->review_blind));
+        xassert(!isset($j->review_visibility_author));
+
+        // exclude
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("#decision"));
+        $j = $sv->all_jsonv();
+        xassert(!isset($j->decision));
+        xassert(!isset($j->decision_visibility_author));
+        xassert(isset($j->review_blind));
+
+        // filter and exclude combine
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("#decision"))
+            ->set_si_exclude(self::make_si_filter("decision_visibility_*"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->decision));
+        xassert(!isset($j->decision_visibility_author));
+
+        // tag exclusion applies to oblist members via member_tags
+        $sv = (new SettingValues($this->u_chair))
+            ->set_si_filter(self::make_si_filter("review"))
+            ->set_si_exclude(self::make_si_filter("#deadline"));
+        $j = $sv->all_jsonv();
+        xassert(isset($j->review));
+        xassert(count($j->review) > 0);
+        foreach ($j->review as $round) {
+            xassert(isset($round->name));
+            xassert(!isset($round->soft));
+            xassert(!isset($round->done));
+        }
+    }
+
+    function test_json_import_filter() {
+        // importing with a filter silently skips non-matching settings
+        xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true)
+            ->set_si_filter(self::make_si_filter("#decision"));
+        $sv->add_json_string('{"review_blind":"open","decision_visibility_reviewer":true}');
+        $sv->parse();
+        $cl = [];
+        foreach ($sv->changed_top_si() as $si) {
+            $cl[] = $si->name;
+        }
+        xassert_eqq($cl, ["decision_visibility_reviewer"]);
+        xassert_eqq($sv->message_list(), []);
+    }
+
+    function test_json_foreign_import_decisions() {
+        // Importing an export from another conference: ids are stripped
+        // (they are conference-specific), so objects match by name.
+        $this->conf->save_refresh_setting("outcome_map", null);
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
+
+        // id-less additive merge appends new decisions
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision":[{"name":"Desk rejected","category":"reject"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-2":"Desk rejected","-1":"Rejected"}');
+
+        // id-less names match existing decisions; no duplicates created
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision":[{"name":"Accepted","category":"accept"},{"name":"Desk rejected","category":"reject"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-2":"Desk rejected","-1":"Rejected"}');
+
+        // reset prunes decisions the import does not mention,
+        // and name matches preserve existing ids
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision_reset":true,"decision":[{"name":"Accepted","category":"accept"},{"name":"Rejected","category":"reject"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
+        xassert_eqq($this->conf->setting("outcome_map"), null);
+    }
+
+    function test_json_foreign_import_rf() {
+        // an id-less review field import creates a new field when no
+        // name matches
+        $nrf = count((new SettingValues($this->u_chair))->all_jsonv()->rf);
+        xassert_eqq($this->conf->find_review_field("Adopted Field"), null);
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"rf":[{"name":"Adopted Field","type":"text"}]}');
+        xassert($sv->execute());
+        $rf = $this->conf->find_review_field("Adopted Field");
+        xassert_eqq($rf->name, "Adopted Field");
+        $short_id = $rf->short_id;
+        xassert_eqq(count((new SettingValues($this->u_chair))->all_jsonv()->rf), $nrf + 1);
+
+        // a second id-less import matches the field by name and updates
+        // it in place
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"rf":[{"name":"Adopted Field","description":"From another conference"}]}');
+        xassert($sv->execute());
+        $rf = $this->conf->find_review_field("Adopted Field");
+        xassert_eqq($rf->short_id, $short_id);
+        xassert_eqq($rf->description, "From another conference");
+        xassert_eqq(count((new SettingValues($this->u_chair))->all_jsonv()->rf), $nrf + 1);
+
+        // id-less delete also matches by name
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"rf":[{"name":"Adopted Field","delete":true}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->find_review_field("Adopted Field"), null);
+        xassert_eqq(count((new SettingValues($this->u_chair))->all_jsonv()->rf), $nrf);
+    }
+
+    function test_json_unified_diff() {
+        $old = "{\n    \"a\": 1,\n    \"b\": 2,\n    \"c\": 3\n}\n";
+        xassert_eqq(SettingValues::json_unified_diff($old, $old), "");
+        $new = "{\n    \"a\": 1,\n    \"b\": 4,\n    \"c\": 3\n}\n";
+        $diff = SettingValues::json_unified_diff($old, $new);
+        xassert_str_contains($diff, "-    \"b\": 2,\n");
+        xassert_str_contains($diff, "+    \"b\": 4,\n");
+        xassert(!str_contains($diff, "\"a\": 2"));
+    }
+
+    function test_json_export_exclude_id() {
+        // default export includes conference-specific ids
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert(isset($j->decision[0]->id));
+        xassert(isset($j->rf[0]->id));
+
+        // the `id` filter token excludes `id` members at all levels
+        $j = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv();
+        xassert(!isset($j->decision[0]->id));
+        xassert(isset($j->decision[0]->name));
+        $rf0 = $j->rf[0];
+        xassert(!isset($rf0->id));
+        xassert_eqq($rf0->name, "Overall merit");
+        xassert(!isset($rf0->values[0]->id));
+        xassert(isset($rf0->values[0]->name));
+        foreach ($j->review as $round) {
+            xassert(!isset($round->id));
+        }
+
+        // id members with semantic meaning have other names and remain
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"style":"black","tags":"winner"}]}');
+        xassert($sv->execute());
+        $j = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv();
+        $styles = [];
+        foreach ($j->badge as $b) {
+            $styles[] = $b->style;
+        }
+        xassert_in_eqq("black", $styles);
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"style":"black","delete":true}]}');
+        xassert($sv->execute());
+    }
+
+    function test_id_member_convention() {
+        // The `id` filter token matches members literally named `id`.
+        // Excluding it must strip exactly the conference-specific ids:
+        // internal id members are named `id`; id members with semantic
+        // meaning (e.g. track/$/tag, badge/$/style) have other names;
+        // and any other member named `id` is also conference-specific
+        xassert_gt($this->check_id_members(""), 8);
+    }
+
+    /** @param string $pfx
+     * @return int */
+    private function check_id_members($pfx) {
+        $si_set = $this->conf->si_set();
+        $members = $pfx === "" ? $si_set->top_list() : $si_set->member_list($pfx);
+        $nid = 0;
+        foreach ($members as $msi) {
+            if ($msi->id_member) {
+                ++$nid;
+                xassert_eqq($msi->name2 === "/id", $msi->internal);
+            } else if ($msi->name2 === "/id") {
+                xassert($msi->internal);
+            }
+            if ($msi->type === "oblist") {
+                $nid += $this->check_id_members("{$msi->name}/1");
+            }
+        }
+        return $nid;
+    }
+
+    function test_json_noids_roundtrip() {
+        // an id-less export reimports as a no-op: name matching realigns
+        // every object list, including entries with empty names (unnamed
+        // review round, default response)
+        $j1 = json_encode((new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv());
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string($j1);
+        $sv->parse();
+        xassert_eqq($sv->message_list(), []);
+        xassert_eqq($sv->changed_top_si(), []);
+        xassert_eqq($sv->change_descriptions(), []);
+
+        // same with reset semantics
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"reset":true,' . substr($j1, 1));
+        $sv->parse();
+        xassert_eqq($sv->message_list(), []);
+        xassert_eqq($sv->changed_top_si(), []);
+        xassert_eqq($sv->change_descriptions(), []);
+    }
+
+    function test_json_format() {
+        // unconfigured format specs are not exported
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert_eqq($j->format ?? [], []);
+
+        // configured specs export keyed by the semantic `doctype`
+        // member; there are no conference-specific ids
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"pagelimit":"12"}]}');
+        xassert($sv->execute());
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert_eqq(count($j->format), 1);
+        xassert_eqq($j->format[0]->doctype, "submission");
+        xassert(!isset($j->format[0]->id));
+
+        // doctype is semantic, so the `id` filter token spares it
+        $j = (new SettingValues($this->u_chair))
+            ->set_si_exclude(self::make_si_filter("id"))
+            ->all_jsonv();
+        xassert_eqq($j->format[0]->doctype, "submission");
+
+        // `id` is accepted as an alias for `doctype`
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","pagelimit":12}]}');
+        $sv->parse();
+        xassert_eqq($sv->message_list(), []);
+        xassert_eqq($sv->changed_top_si(), []);
+
+        $this->conf->save_refresh_setting("sub_banal", null);
+    }
+
+    function test_json_review_default_round() {
+        // the canonical JSON form of the unnamed default round is "unnamed"
+        $orig = (new SettingValues($this->u_chair))->all_jsonv()->review_default_round;
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"review_default_round":"unnamed"}');
+        xassert($sv->execute());
+        xassert_eqq((new SettingValues($this->u_chair))->all_jsonv()->review_default_round, "unnamed");
+        // canonical storage form is unset
+        xassert_eqq($this->conf->fetch_value("select data from Settings where name='rev_roundtag'"), null);
+
+        // "" is a synonym; importing either form is a no-op whose pending
+        // value unparses canonically
+        foreach (['{"review_default_round":""}', '{"review_default_round":"unnamed"}'] as $jstr) {
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string($jstr);
+            $sv->parse();
+            xassert_eqq($sv->changed_top_si(), []);
+            xassert_eqq($sv->all_jsonv(["new" => true])->review_default_round, "unnamed");
+        }
+
+        // restore
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string(json_encode(["review_default_round" => $orig]));
+        xassert($sv->execute());
+    }
+
+    function test_json_submission_registration_inferred() {
+        $old_reg = $this->conf->setting("sub_reg");
+        $old_sub = $this->conf->setting("sub_sub");
+
+        // saving a submission deadline does not materialize an unset
+        // registration deadline; SubmissionRound infers it
+        $this->conf->save_refresh_setting("sub_reg", null);
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"submission_done":"2029-06-01 12:00:00 UTC"}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_reg"), null);
+        $sr = $this->conf->unnamed_submission_round();
+        xassert($sr->inferred_register);
+        xassert_eqq($sr->register, $this->conf->setting("sub_sub"));
+
+        // the export reimports as a no-op
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        xassert_eqq($j->submission_registration, "");
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string(json_encode([
+            "submission_registration" => $j->submission_registration,
+            "submission_done" => $j->submission_done
+        ]));
+        $sv->parse();
+        xassert_eqq($sv->changed_top_si(), []);
+
+        // registration deadlines must still precede submission deadlines
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"submission_registration":"2029-07-01 12:00:00 UTC","submission_done":"2029-06-01 12:00:00 UTC"}');
+        $sv->parse();
+        xassert($sv->has_error());
+
+        $this->conf->save_setting("sub_reg", $old_reg);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub);
+    }
+
+    function test_json_change_descriptions() {
+        $this->conf->save_refresh_setting("outcome_map", null);
+
+        // dry run: scalar change and oblist addition
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"review_blind":"open","decision":[{"name":"Desk rejected","category":"reject"}]}');
+        $sv->parse();
+        $s = join("\n", $sv->change_descriptions());
+        xassert_str_contains($s, "Decision types: 1 added (Desk rejected)");
+        xassert_str_contains($s, "Review anonymity: \"blind\" → \"open\"");
+
+        // oblist change and deletion
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"decision_reset":true,"decision":[{"name":"Accepted!","id":1,"category":"accept"}]}');
+        $sv->parse();
+        $s = join("\n", $sv->change_descriptions());
+        xassert_str_contains($s, "1 changed (Accepted!)");
+        xassert_str_contains($s, "1 deleted (Rejected)");
+
+        // no changes, no descriptions
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"review_blind":"blind"}');
+        $sv->parse();
+        xassert_eqq($sv->change_descriptions(), []);
     }
 
     function test_new_fixed_id() {
@@ -2120,6 +2497,362 @@ class Settings_Tester {
 
         xassert_search($this->u_chair, "#dodanga", "1-10");
         xassert_assign($this->u_chair, "paper,tag\n1-10,dodanga#clear\n");
+    }
+
+    /** @param string $name
+     * @param string $key
+     * @return array<string,object> */
+    private function all_jsonv_by($name, $key) {
+        $filter = (new SearchParser($name))->parse_expression(SearchOperatorSet::simple_operators());
+        $sv = (new SettingValues($this->u_chair))->set_si_filter($filter);
+        $m = [];
+        foreach ($sv->all_jsonv()->$name ?? [] as $ob) {
+            $m[$ob->$key] = $ob;
+        }
+        return $m;
+    }
+
+    function test_badge_anchor() {
+        // key-anchored object lists export the key value as `id`
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"style":"black","tags":"winner"}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["black"]->id, "black");
+        xassert_eqq($badges["black"]->tags, "winner");
+
+        // the anchor makes renames expressible: move black’s tags to pink
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"black","style":"pink"}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["pink"]->tags, "winner");
+        xassert_eqq($badges["black"]->tags ?? "", "");
+
+        // an unmatched anchor is a matching hint, not an error: entries
+        // can be created with their ids intact (e.g. reimporting an
+        // export after the entry was removed)
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"yellow","style":"yellow","tags":"star"}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["yellow"]->tags, "star");
+
+        // but an entry without a style is an error
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"nonexistent","tags":"x"}]}');
+        $sv->parse();
+        xassert($sv->has_error());
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"badge":[{"id":"pink","tags":""},{"id":"yellow","tags":""}]}');
+        xassert($sv->execute());
+        $badges = $this->all_jsonv_by("badge", "style");
+        xassert_eqq($badges["pink"]->tags ?? "", "");
+        xassert_eqq($badges["yellow"]->tags ?? "", "");
+    }
+
+    function test_automatic_tag_anchor() {
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"tag":"Hotpaper","search":"ti:hot"}]}');
+        xassert($sv->execute());
+        // the anchor is the lowercased stored tag
+        $ats = $this->all_jsonv_by("automatic_tag", "tag");
+        xassert_eqq($ats["Hotpaper"]->id, "hotpaper");
+        xassert_eqq($ats["Hotpaper"]->search, "ti:hot");
+
+        // renaming via the anchor preserves other members
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"hotpaper","tag":"Warmpaper"}]}');
+        xassert($sv->execute());
+        $ats = $this->all_jsonv_by("automatic_tag", "tag");
+        xassert(!isset($ats["Hotpaper"]));
+        xassert_eqq($ats["Warmpaper"]->search, "ti:hot");
+
+        // an entry with an anchor but no tag is an error
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"nonexistent","search":"ti:x"}]}');
+        $sv->parse();
+        xassert($sv->has_error());
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"warmpaper","delete":true}]}');
+        xassert($sv->execute());
+        xassert(!array_key_exists("Warmpaper", $this->all_jsonv_by("automatic_tag", "tag")));
+    }
+
+    function test_automatic_tag_delete() {
+        // creating an automatic tag applies it to matching papers
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"tag":"AutoDel","search":"1 2"}]}');
+        xassert($sv->execute());
+        xassert_search($this->u_chair, "#AutoDel", "1 2");
+
+        // a false-valued delete request does not delete
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_automatic_tag" => 1,
+            "automatic_tag/1/id" => "autodel",
+            "automatic_tag/1/delete" => "no"
+        ]);
+        xassert($sv->execute());
+        xassert(array_key_exists("AutoDel", $this->all_jsonv_by("automatic_tag", "tag")));
+        xassert_search($this->u_chair, "#AutoDel", "1 2");
+
+        // deleting in settings removes the tag from papers
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_automatic_tag" => 1,
+            "automatic_tag/1/id" => "autodel",
+            "automatic_tag/1/delete" => "1"
+        ]);
+        xassert($sv->execute());
+        xassert(!array_key_exists("AutoDel", $this->all_jsonv_by("automatic_tag", "tag")));
+        xassert_search($this->u_chair, "#AutoDel", "");
+    }
+
+    function test_track_anchor() {
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"tag":"redtrack","perm":{"view":"+red"}}]}');
+        xassert($sv->execute());
+        $tracks = $this->all_jsonv_by("track", "tag");
+        xassert_eqq($tracks["redtrack"]->id, "redtrack");
+        xassert_eqq($tracks["redtrack"]->perm->view, "+red");
+
+        // renaming via the anchor preserves permissions
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"id":"redtrack","tag":"bluetrack"}]}');
+        xassert($sv->execute());
+        $tracks = $this->all_jsonv_by("track", "tag");
+        xassert(!isset($tracks["redtrack"]));
+        xassert_eqq($tracks["bluetrack"]->perm->view, "+red");
+
+        // an entry with an anchor but no tag is an error
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"id":"greentrack","perm":{"view":"+green"}}]}');
+        $sv->parse();
+        xassert($sv->has_error());
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"track":[{"id":"bluetrack","delete":true}]}');
+        xassert($sv->execute());
+        xassert(!array_key_exists("bluetrack", $this->all_jsonv_by("track", "tag")));
+    }
+
+    function test_format_checker() {
+        $old_sub_banal = $this->conf->setting("sub_banal");
+        $old_sub_banal_data = $this->conf->setting_data("sub_banal");
+
+        // activate the submission format checker
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":true,"papersize":"letter","pagelimit":"9"}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9");
+
+        // member parse errors are positioned at the member, and an
+        // erroneous component prevents the whole save, including
+        // valid components in the same request
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true,"papersize":"a4","pagelimit":"bogus"}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/pagelimit"));
+        xassert_str_contains($sv->full_feedback_text(), "whole number greater than 0");
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9");
+
+        // margin specifications convert to text blocks, using the
+        // papersize from the same request
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":true,"papersize":"letter","textblock":"1in margins"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9;;6.5in x 9in");
+
+        // margins require a papersize
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":true,"papersize":"any","textblock":"1in margins"}]}');
+        $sv->parse();
+        xassert($sv->has_error_at("format/1/textblock"));
+        xassert($sv->has_error_at("format/1/papersize"));
+
+        // UI deactivation ignores the other member requests, which the
+        // form posts even though they are hidden
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_format" => 1,
+            "format/1/id" => "submission",
+            "format/1/only_if_active" => "1",
+            "format/1/active" => "",
+            "format/1/pagelimit" => "bogus"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9;;6.5in x 9in");
+
+        // reactivation restores the stored specification
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;9;;6.5in x 9in");
+
+        // an active checker with no constraints warns
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_format" => 1,
+            "format/1/id" => "submission",
+            "format/1/active" => "1",
+            "format/1/papersize" => "any",
+            "format/1/pagelimit" => "N/A",
+            "format/1/textblock" => ""
+        ]);
+        xassert($sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "does nothing unless");
+        xassert_eqq($this->conf->setting_data("sub_banal"), null);
+
+        // without `only_if_active`, an inactive save applies the other
+        // components; the stored specification lies dormant
+        // (`unlimitedref` also depends on `pagelimit` applying first)
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"paper","active":false,"papersize":"letter","pagelimit":"17","unlimitedref":true}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;17;;;;;1");
+
+        // reactivation brings the dormant specification to life
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;17;;;;;1");
+
+        // erroneous components fail inactive saves too
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":false,"pagelimit":"bogus"}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/pagelimit"));
+        xassert_eqq($this->conf->setting_data("sub_banal"), "letter;17;;;;;1");
+
+        // doctypes are resolved by option search
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"quextrix","active":false}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/doctype"));
+        xassert_str_contains($sv->full_feedback_text(), "Unknown document type");
+
+        // format checking only applies to submission and final documents
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"title","active":false}]}');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("format/1/doctype"));
+        xassert_str_contains($sv->full_feedback_text(), "not supported");
+
+        // numeric subsettings export as numbers when they are numbers;
+        // ranges and unset values stay strings
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"papersize":"letter","pagelimit":9,"columns":2,"bodyfontsize":10.5,"wordlimit":"200-300"}]}');
+        xassert($sv->execute());
+        $fmt = (new SettingValues($this->u_chair))->all_jsonv()->format[0];
+        xassert_eqq($fmt->doctype, "submission");
+        xassert_eqq($fmt->pagelimit, 9);
+        xassert_eqq($fmt->columns, 2);
+        xassert_eqq($fmt->bodyfontsize, 10.5);
+        xassert_eqq($fmt->wordlimit, "200-300");
+        xassert_eqq($fmt->papersize, "letter");
+        xassert_eqq($fmt->bodylineheight, "any");
+
+        // string and numeric imports are equivalent, as are the
+        // spellings of “unset”
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"pagelimit":"9","columns":"2","bodyfontsize":"10.5","bodylineheight":"any","textblock":""}]}');
+        $sv->parse();
+        xassert_eqq($sv->changed_top_si(), []);
+
+        // null clears a subsetting
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"doctype":"submission","active":false,"bodyfontsize":null}]}');
+        xassert($sv->execute());
+        $fmt = (new SettingValues($this->u_chair))->all_jsonv()->format[0];
+        xassert_eqq($fmt->bodyfontsize, "any");
+        xassert_eqq($fmt->pagelimit, 9);
+
+        $this->conf->save_refresh_setting("sub_banal", $old_sub_banal, $old_sub_banal_data);
+    }
+
+    function test_format_checker_opt_spec() {
+        $old_sub_banal = $this->conf->setting("sub_banal");
+        $old_sub_banal_data = $this->conf->setting_data("sub_banal");
+
+        // an option spec can request checking beyond the settings
+        $this->conf->set_opt("sub_banal", "letter;30;{\"checkers\":[\"TestChecker\"]}");
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert_eqq($fspec->pagelimit, [0, 30]);
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        // disabling the format checker stores -1, which suppresses the
+        // option spec’s banal constraints but preserves its checkers
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":false}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), -1);
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert($fspec->is_banal_empty());
+        xassert_eqq($fspec->pagelimit, null);
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        // reenabling merges the stored spec over the option spec
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":true,"pagelimit":"25"}]}');
+        xassert($sv->execute());
+        xassert_gt($this->conf->setting("sub_banal"), 0);
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert_eqq($fspec->pagelimit, [0, 25]);
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        // without banal constraints in the option spec, disabling stores 0
+        $this->conf->set_opt("sub_banal", "{\"checkers\":[\"TestChecker\"]}");
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"format":[{"id":"submission","active":false}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting("sub_banal"), 0);
+        $fspec = $this->conf->format_spec(DTYPE_SUBMISSION);
+        xassert($fspec->is_banal_empty());
+        xassert_eqq($fspec->checkers, ["TestChecker"]);
+
+        $this->conf->set_opt("sub_banal", null);
+        $this->conf->save_refresh_setting("sub_banal", $old_sub_banal, $old_sub_banal_data);
+    }
+
+    function test_explicit_placeholder() {
+        $sv = new SettingValues($this->u_chair);
+
+        // numeric-ish placeholders explicitly represent the empty value:
+        // exported for empty values, emptied on import
+        $si = $this->conf->si("sf/1/min_value");
+        xassert_eqq($si->jsonv_reqstr("none", $sv), "");
+        xassert_eqq($si->jsonv_reqstr(3.5, $sv), "3.5");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "none");
+
+        // ...including `prefer_numeric` strings
+        $si = $this->conf->si("format/1/pagelimit");
+        xassert_eqq($si->jsonv_reqstr("any", $sv), "");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "any");
+
+        // other string placeholders are hints; literal values survive
+        $si = $this->conf->si("automatic_tag/1/search");
+        xassert_eqq($si->jsonv_reqstr("Search", $sv), "Search");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "");
+        $si = $this->conf->si("decision/1/name");
+        xassert_eqq($si->jsonv_reqstr("Decision name", $sv), "Decision name");
+
+        // placeholder text on other string settings is not special on
+        // either side; bad values fail at parse time
+        $si = $this->conf->si("conference_url");
+        xassert_eqq($si->jsonv_reqstr("N/A", $sv), "N/A");
+        xassert_eqq($si->base_unparse_jsonv("", $sv), "");
+        $sv2 = SettingValues::make_request($this->u_chair, [
+            "conference_url" => "N/A"
+        ]);
+        xassert(!$sv2->execute());
+        xassert_str_contains($sv2->full_feedback_text(), "Valid web address");
     }
 
     // Undo the settings this tester changes to avoid polluting later tests

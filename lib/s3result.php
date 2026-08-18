@@ -60,12 +60,14 @@ abstract class S3Result {
     }
 
     function parse_response_lines($w) {
-        if (preg_match('/\AHTTP\/[\d.]+\s+(\d+)\s+(.+)\z/', $w[0], $m)) {
-            $this->status = (int) $m[1];
-            $this->status_text = $m[2];
-        }
-        for ($i = 1; $i != count($w); ++$i) {
-            if (preg_match('/\A(.*?):\s*(.*)\z/', $w[$i], $m)) {
+        foreach ($w as $line) {
+            if (preg_match('/\AHTTP\/[\d.]+\s+(\d+)(?:\s+(.*))?\z/', $line, $m)) {
+                // a new status line starts a new response block; later blocks
+                // (e.g. after `100 Continue`) supersede earlier ones
+                $this->status = (int) $m[1];
+                $this->status_text = $m[2] ?? "";
+                $this->response_headers = $this->user_data = [];
+            } else if (preg_match('/\A(.*?):\s*(.*)\z/', $line, $m)) {
                 $this->response_headers[strtolower($m[1])] = $m[2];
                 if (substr($m[1], 0, 11) == "x-amz-meta-") {
                     $this->user_data[substr($m[1], 11)] = $m[2];
@@ -138,25 +140,18 @@ class StreamS3Result extends S3Result {
                 @ini_set("memory_limit", (string) ((int) $content_len));
             }
         }
-        if ((int) S3Client::$verbose > 1) {
-            $l = ["{$this->method} {$this->url} -> ...\n"];
-            foreach ($hdr as $x => $y) {
-                $l[] = "  {$x}: {$y}\n";
-            }
-            error_log(join("", $l));
-        }
         return ["header" => $hdr, "content" => $content,
                 "protocol_version" => 1.1, "ignore_errors" => true,
                 "method" => $this->method];
     }
 
     private function parse_stream_response($metadata) {
-        $this->response_headers["url"] = $this->url;
         if ($metadata
             && ($w = $metadata["wrapper_data"] ?? null)
             && is_array($w)) {
             $this->parse_response_lines($w);
         }
+        $this->response_headers["url"] = $this->url;
     }
 
     private function run_stream_once() {
@@ -168,7 +163,7 @@ class StreamS3Result extends S3Result {
             $this->body = stream_get_contents($stream);
             fclose($stream);
         }
-        if (S3Client::$verbose) {
+        if ($this->s3->verbose) {
             error_log("{$this->method} {$this->url} -> {$this->status} {$this->status_text}");
             if ($this->status > 299 && ($this->body ?? "") !== "") {
                 error_log(substr($this->body, 0, 1024));
@@ -179,22 +174,22 @@ class StreamS3Result extends S3Result {
     /** @return $this */
     function run() {
         for ($i = 1; $this->status === null || $this->status === 500; ++$i) {
+            if ($i > 1) {
+                $timeout = 0.005 * (1 << $i);
+                S3Client::$retry_timeout_allowance -= $timeout;
+                usleep((int) (1000000 * $timeout));
+            }
             $this->clear_result();
             $this->run_stream_once();
             if ($this->status === 403) {
                 $this->status = $this->s3->check_403();
             }
-            if ($this->status !== null && $this->status !== 500) {
-                break;
-            }
-            if (S3Client::$retry_timeout_allowance <= 0 || $i >= 5) {
+            if (($this->status === null || $this->status === 500)
+                && (S3Client::$retry_timeout_allowance <= 0 || $i >= 5)) {
                 trigger_error("S3 error: {$this->method} {$this->skey}: failed", E_USER_WARNING);
                 $this->status = 598;
-                break;
             }
-            $timeout = 0.005 * (1 << $i);
-            S3Client::$retry_timeout_allowance -= $timeout;
-            usleep((int) (1000000 * $timeout));
+            $this->s3->account($this->status);
         }
         return $this;
     }

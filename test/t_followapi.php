@@ -52,12 +52,11 @@ class FollowAPI_Tester {
             . "{$this->pid},primary,{$this->u_varghese->email},no\n"
             . "{$this->pid},primary,{$this->u_mgbaker->email},yes");
         xassert($as->execute());
-        $conf->invalidate_caches(["pc" => true]);
 
         $prow = $conf->checked_paper_by_id($this->pid);
-        $tf = new ReviewValues($conf);
+        $tf = new ReviewValues($this->u_lixia);
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Summary", "comaut" => "Comments"]));
-        xassert($tf->check_and_save($this->u_lixia, $prow));
+        xassert($tf->check_and_save($prow));
     }
 
     /** @param int $topic
@@ -137,6 +136,5 @@ class FollowAPI_Tester {
         // see it in its original review-free state
         $this->conf->qe("delete from PaperReview where paperId=?", $this->pid);
         $this->conf->qe("delete from PaperWatch where paperId=?", $this->pid);
-        $this->conf->invalidate_caches(["paper" => true, "pc" => true]);
     }
 }

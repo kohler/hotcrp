@@ -19,6 +19,7 @@ class Mimetype {
     const RAR_TYPE = "application/x-rar-compressed";
     const KEYNOTE_TYPE = "application/vnd.apple.keynote";
     const CSV_TYPE = "text/csv";
+    const FORM_DATA_TYPE = "multipart/form-data";
 
     const TXT_UTF8_TYPE = "text/plain; charset=utf-8";
     const JSON_UTF8_TYPE = "application/json; charset=utf-8";

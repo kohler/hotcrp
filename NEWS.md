@@ -1,6 +1,69 @@
 HotCRP NEWS
 ===========
 
+## Version 3.4 – 5.Aug.2026
+
+* Security updates
+
+    * This release fixes a group of security vulnerabilities found by an
+      internal audit, and other vulnerabilities reported via GitHub.
+    * Fixed a high-severity vulnerability where reviewers could gain author
+      access to submissions. GitHub Security Advisory GHSA-v8jx-vq6p-jq52.
+    * Fixed a range of medium-to-low-severity information exposures via
+      searches, error messages, and APIs. Thanks to Nebula Security for one
+      report. GitHub Security Advisories GHSA-pwrf-v6wh-9qc5 and
+      GHSA-4v58-pj7j-xc8j.
+    * Fixed timing channels remotely exploitable by authors. Thanks to Taehyun
+      Kang, Sangyun Kim, Youngmin Kim, and Byoungyoung Lee at Seoul National
+      University for the report. GitHub Security Advisory GHSA-fr3q-pp37-9wcg.
+    * Improve sanitization of @mentions in comments.
+
+* Settings
+
+    * Text submission fields gain word limits (advanced settings only).
+    * Author certification: Withdrawing a submission deletes all its author
+      certifications. This plugs a hole where withdrawing and reviving a
+      submission could evade max-author limits.
+    * Fix JSON export/import of format settings.
+    * Remove separate `sub_update` deadline (which only direct database access
+      could turn on before). If you want to allow submitting a paper but not
+      editing its fields, mark the fields as read-only.
+
+* Reviews
+
+    * Improve handling of review-acceptor links.
+
+* Tags
+
+    * Improve UI around allotment votes: don’t allow overvoting, show vote
+      counts more often, use checkboxes if the allotment is 1.
+
+* API
+
+    * Support `GET /review`, `GET /reviews`, `DELETE /review`, `POST /review`,
+      `POST /reviews`, `DELETE /comment`, `GET /comments`, and `POST /comments`.
+      `POST` endpoints support JSON, ZIP, and form requests; `POST /review`
+      endpoints support textual review form uploads; `POST /comment` gains
+      `dry_run` support.
+    * The `hotcrapi` batch script understands `review` and `comment`.
+    * Removed obsolete `GET /fieldtext` and `GET /fieldhtml` APIs; use `GET
+      /search` instead.
+
+* Other changes
+
+    * Bump minimum PHP version to 8.1.
+    * Correct deadline display.
+    * Improve site robustness around deadlines by rate-limiting `banal` runs and
+      preventing redundant runs.
+    * Review history: Fix recovery of draft reviews after decline; new reviews
+      never reuse IDs from deleted reviews.
+    * Site creation supports `%` wildcards in `--grant-host`.
+    * Graphs support `numdots` style.
+    * New batch scripts for maintenance, including `account.php`,
+      `apitoken.php`, and `checkformat.php`.
+    * Fix action log for non-chair users.
+
+
 ## Version 3.3.1 – 14.Jun.2026
 
 * Bug fix: Correct crash in forgot-password redirection
@@ -82,11 +145,11 @@ HotCRP NEWS
 
 * Security updates
 
-    * High vulnerability patched in document API. In version 3.2, all documents
-      were delivered with inline Content-Disposition. This opened a vector for
-      cross-site scripting: an attacker could upload an HTML document which, if
-      opened, ran in the user’s browser with their HotCRP credentials. Thanks to
-      Nils Bars for the report (MPI-SP). GitHub Security Advisory
+    * High-severity vulnerability patched in document API. In version 3.2, all
+      documents were delivered with inline Content-Disposition. This opened a
+      vector for cross-site scripting: an attacker could upload an HTML document
+      which, if opened, ran in the user’s browser with their HotCRP credentials.
+      Thanks to Nils Bars for the report (MPI-SP). GitHub Security Advisory
       GHSA-p88p-2f2p-2476; CVE-2026-25156.
     * Recover automatic checking for security notices. To opt out, set
       `$Opt["updatesSite"] = false`.

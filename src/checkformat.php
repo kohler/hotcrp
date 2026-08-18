@@ -50,8 +50,13 @@ class CheckFormat extends MessageSet {
     public $appendix_page;
     /** @var int */
     private $run_flags = 0;
+    /** @var ?list<string> */
+    private $banal_command;
+    /** @var bool */
+    private $banal_command_default;
+    /** @var null|false|int */
+    private $banal_command_mtime;
 
-    static private $banal_zoomarg;
     /** @var int */
     static public $runcount = 0;
 
@@ -59,10 +64,6 @@ class CheckFormat extends MessageSet {
     function __construct(Conf $conf, $allow_run = null) {
         $this->allow_run = $allow_run ?? self::RUN_ALWAYS;
         $this->conf = $conf;
-        if (self::$banal_zoomarg === null) {
-            $z = $this->conf->opt("banalZoom");
-            self::$banal_zoomarg = $z ? "-zoom={$z}" : "";
-        }
         $this->fcheckers["default"] = new Default_FormatChecker;
     }
 
@@ -70,6 +71,69 @@ class CheckFormat extends MessageSet {
     private function banal_lock_expiry() {
         $conf = $this->banal_conf ?? $this->conf;
         return $conf->opt("banalLockExpiry") ?? 60;
+    }
+
+    /** @return list<string> */
+    private function banal_command() {
+        if ($this->banal_command !== null) {
+            return $this->banal_command;
+        }
+        $c = $this->conf->opt("banalCommand");
+        if (is_string($c)) {
+            $c = trim($c);
+            if (strcspn($c, "!#\$*?[]\\(){}<>|&;`\"'") !== strlen($c)) {
+                error_log("\$Opt[banalCommand] contains shell metacharacters, ignored");
+                $c = null;
+            } else if ($c === "") {
+                $c = null;
+            } else {
+                $c = preg_split('/\s+/', trim($c));
+            }
+        }
+        if ($c === null) {
+            $c = ["perl", "src/banal", "-json"];
+            if (($z = $this->conf->opt("banalZoom"))) {
+                $c[] = "-zoom={$z}";
+            }
+        }
+        $this->banal_command = $c;
+        $this->banal_command_default = count($c) >= 3
+            && $c[0] === "perl"
+            && $c[1] === "src/banal"
+            && $c[2] === "-json";
+        return $c;
+    }
+
+    /** @return string */
+    private function banal_command_signature() {
+        $command = $this->banal_command();
+        if ($this->banal_command_default) {
+            if (count($command) === 3) {
+                return "";
+            } else if (count($command) === 4) {
+                return $command[3];
+            }
+        }
+        return json_encode_db($command);
+    }
+
+    /** @return int|false */
+    private function banal_command_mtime() {
+        if ($this->banal_command_mtime !== null) {
+            return $this->banal_command_mtime;
+        }
+        $file = null;
+        foreach ($this->banal_command() as $arg) {
+            if (strpos($arg, "/") !== false && $arg[0] !== "-") {
+                $file = $arg;
+            }
+        }
+        if ($file !== null) {
+            $this->banal_command_mtime = @filemtime(SiteLoader::resolve($file));
+        } else {
+            $this->banal_command_mtime = false;
+        }
+        return $this->banal_command_mtime;
     }
 
     function run_banal_progress($subp) {
@@ -86,12 +150,10 @@ class CheckFormat extends MessageSet {
      * @return ?object */
     function run_banal($filename) {
         $env = ["PATH" => getenv("PATH")];
-        if (($pdftohtml = $this->conf->opt("pdftohtmlCommand"))) {
+        $command = $this->banal_command();
+        if ($this->banal_command_default
+            && ($pdftohtml = $this->conf->opt("pdftohtmlCommand"))) {
             $env["PHP_PDFTOHTML"] = $pdftohtml;
-        }
-        $command = ["perl", "src/banal", "-json"];
-        if (self::$banal_zoomarg) {
-            $command[] = self::$banal_zoomarg;
         }
         $command[] = $filename;
         $subp = (new Subprocess($command, SiteLoader::$root))
@@ -106,7 +168,16 @@ class CheckFormat extends MessageSet {
         if (self::DEBUG && Conf::$blocked_time > 0.1) {
             error_log(sprintf("%.6f: +%.6f %s", Conf::$blocked_time, $subp->runtime, join(" ", $command)));
         }
-        return json_decode($this->banal_run->stdout);
+        $bj = json_decode($this->banal_run->stdout);
+        if (is_object($bj)) {
+            // Set `args` to our signature
+            if (($sig = $this->banal_command_signature()) === "") {
+                unset($bj->args);
+            } else {
+                $bj->args = $sig;
+            }
+        }
+        return $bj;
     }
 
     /** @param mixed $x
@@ -173,8 +244,8 @@ class CheckFormat extends MessageSet {
 
         // check whether to skip run (cached JSON exists, matches spec)
         if ($bj
-            && ($bj->args ?? "") === (self::$banal_args ?? "")
-            && $bj->at >= @filemtime(SiteLoader::resolve("src/banal"))
+            && ($bj->args ?? "") === $this->banal_command_signature()
+            && $bj->at >= $this->banal_command_mtime()
             && ($allow_run !== CheckFormat::RUN_ALWAYS
                 || $bj->at >= Conf::$now - 86400)
             && (!isset($bj->npages) /* i.e., banal JSON is not truncated */

@@ -59,7 +59,7 @@ class Profile_Page {
             $cs = new ContactSearch(ContactSearch::F_USER, $u, $this->viewer);
             if ($cs->user_ids()) {
                 $list = (new SessionList("u/all/" . urlencode($this->qreq->search), $cs->user_ids(), "“{$u}”"))
-                    ->set_urlbase($this->conf->hoturl_raw("users", ["t" => "all"], Conf::HOTURL_SITEREL));
+                    ->set_urlbase($this->conf->hoturl("users", ["t" => "all"], Conf::HOTURL_SITEREL));
                 $list->set_cookie($this->qreq);
                 $user = $this->conf->user_by_id($cs->user_ids()[0]);
                 $this->qreq->redirect_hoturl("profile", ["u" => $user->email]);

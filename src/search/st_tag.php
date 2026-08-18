@@ -84,6 +84,9 @@ class Tag_SearchTerm extends SearchTerm {
     /** @return list<SearchTerm> */
     static function expand_automatic(TagSearchMatcher $tsm, SearchWord $sword,
                                      PaperSearch $srch) {
+        assert($srch->user->is_root_user());
+        // The expansion below requres that `$srch->user` be able to view
+        // automatic tags on ALL papers.
         $dt = $srch->conf->tags();
         $allterms = $nomatch = [];
         foreach ($dt->entries_having(TagInfo::TF_AUTOMATIC) as $ti) {

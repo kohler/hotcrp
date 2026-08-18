@@ -406,11 +406,11 @@ class ReviewForm_SettingParser extends SettingParser {
                 }
                 //error_log("{$rrow->paperId}#{$rrow->reviewId}: {$f->short_id}[" . json_encode($fval) . "→" . json_encode($nfval) . "]");
                 if ($nfval !== $fval) {
-                    $rrow->set_fval_prop($f, $nfval, true);
+                    $rrow->set_fval_prop($f, $nfval);
                 }
             }
-            if ($rrow->prop_changed()) {
-                $rrow->save_prop($stager);
+            if ($rrow->save_prop($stager) >= 0) {
+                $rrow->commit_prop();
             }
         }
         $stager(null);

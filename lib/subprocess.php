@@ -29,7 +29,7 @@ class Subprocess {
     private $_progress_functions;
     /** @var ?resource */
     private $_proc;
-    /** @var ?list<resource> */
+    /** @var array{?resource,resource,resource} */
     private $_pipes;
     /** @var int */
     private $_stdin_pos = 0;

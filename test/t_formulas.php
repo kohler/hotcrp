@@ -25,6 +25,7 @@ class Formulas_Tester {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        Conf::$blocked_time = 0.0;
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
         $this->u_mjh = $conf->checked_user_by_email("mjh@isi.edu");
@@ -39,7 +40,6 @@ class Formulas_Tester {
         $ps = new PaperStatus($conf->root_user());
         xassert($ps->save_paper_json(json_decode('{"id":1,"calories":350,"weight":72.5,"vegan":true}')));
         xassert_paper_status($ps);
-        $conf->invalidate_caches("options");
     }
 
     /** Define the Calories (numeric), Weight (real-number), and Vegan
@@ -56,7 +56,6 @@ class Formulas_Tester {
         }
         unset($d);
         $this->conf->save_refresh_setting("options", 1, json_encode($defs));
-        $this->conf->invalidate_caches("options");
     }
 
     function finalize() {
@@ -66,7 +65,6 @@ class Formulas_Tester {
         } else {
             $this->conf->save_refresh_setting("options", 1, $this->saved_options);
         }
-        $this->conf->invalidate_caches("options");
     }
 
     /** @param string $expr
@@ -77,6 +75,14 @@ class Formulas_Tester {
             $f->prepare()->prepare_json();
         }
         return $f;
+    }
+
+    /** @param string $expr
+     * @return Formula */
+    private function formula_as(Contact $user, $expr) {
+        $f = Formula::make($user, $expr);
+        xassert($f && $f->ok());
+        return $f->prepare();
     }
 
     /** @param array<string,string> $exprs
@@ -846,14 +852,22 @@ class Formulas_Tester {
         xassert_eqq($ds[0]->t, null);
     }
 
-    /** @return int number of plotted submissions */
-    private function graph_pid_count($t) {
-        $fg = new FormulaGraph($this->u_chair, "scatter", "pid", "pid");
+    /** @param string $fx
+     * @param string $fy
+     * @param ?string $t
+     * @return int number of plotted values */
+    private function graph_point_count($fx, $fy, $t) {
+        $fg = new FormulaGraph($this->u_chair, "scatter", $fx, $fy);
         $fg->add_dataset(new FormulaGraphDataset("", $t, "", ""));
         $data = $fg->graph_json([])["data"];
         $n = 0;
         array_walk_recursive($data, function () use (&$n) { ++$n; });
         return $n;
+    }
+
+    /** @return int number of plotted submissions */
+    private function graph_pid_count($t) {
+        return $this->graph_point_count("pid", "pid", $t);
     }
 
     function test_graph_t_filters_results() {
@@ -869,6 +883,105 @@ class Formulas_Tester {
         xassert_eqq($submitted, $all - 1);
 
         $this->conf->qe("update Paper set timeSubmitted=? where paperId=1", $saved);
+    }
+
+    function test_graph_type_prefix() {
+        foreach (["dot", "dots", "dotplot"] as $s) {
+            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::DOT, $s]);
+        }
+        foreach (["numdot", "numdots", "numdotplot"] as $s) {
+            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::NUMDOT, $s]);
+        }
+        // `numdot` is a distinct type, but shares DOT's bit so that everything
+        // keyed on DOT (highlighting, for one) applies to it too
+        xassert_neqq(FormulaGraph::NUMDOT, FormulaGraph::DOT);
+        xassert(FormulaGraph::NUMDOT & FormulaGraph::DOT);
+        xassert_eqq(FormulaGraph::NUMDOT & (FormulaGraph::CDF | FormulaGraph::BARCHART | FormulaGraph::BOXPLOT | FormulaGraph::SCATTER), 0);
+        xassert_eqq(FormulaGraph::graph_type_prefix("numdotty"), null);
+    }
+
+    function test_graph_numdot() {
+        // `numdot` plots like `dot`; the JS labels each dot with its pid
+        foreach ([["dot", "dot"], ["numdot", "numdot"], ["numdots", "numdot"]] as $st) {
+            $fg = new FormulaGraph($this->u_chair, $st[0], "pid", "pid");
+            $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+            $j = $fg->graph_json([]);
+            xassert_eqq($j["type"], $st[1]);
+            xassert_eqq($j["data_format"], "style_xyi");
+            $n = 0;
+            array_walk_recursive($j["data"], function () use (&$n) { ++$n; });
+            xassert($n > 0);
+        }
+
+        // the type may also arrive as a prefix on the Y axis formula
+        $fg = new FormulaGraph($this->u_chair, null, "pid", "numdot pid");
+        $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+        xassert_eqq($fg->graph_json([])["type"], "numdot");
+        xassert_eqq($fg->fy->expression, "pid");
+    }
+
+    function test_graph_explains_empty_data() {
+        // A search that matches nothing plots nothing; say so rather than
+        // rendering a blank chart.
+        $fg = new FormulaGraph($this->u_chair, "scatter", "pid", "pid");
+        $fg->add_dataset(new FormulaGraphDataset("12345", "all", "", ""));
+        xassert_eqq($fg->graph_json([])["data"], []);
+        xassert_eqq($fg->full_feedback_text(), "No data to graph\n");
+    }
+
+    function test_graph_explains_axes_that_never_coexist() {
+        // Split the scored reviews between rounds R1 and R2, then restrict
+        // OveMer to R1 and RevExp to R2. No review is in both rounds, so a
+        // scatterplot of one field against the other is necessarily empty --
+        // the situation a conference hits when it reviews in rounds with
+        // different forms. Restricting a field also clears its out-of-round
+        // scores, so save the review rows and put them back afterwards.
+        $saved = Dbl::fetch_rows($this->conf->dblink,
+            "select reviewId, reviewRound, s01, s02 from PaperReview");
+        $scored = array_values(array_filter($saved, function ($row) {
+            return $row[2] !== "0" && $row[3] !== "0";
+        }));
+        xassert(count($scored) >= 2);
+        $rids = array_map(function ($row) { return (int) $row[0]; }, $scored);
+        $half = intdiv(count($rids), 2);
+        $this->conf->qe("update PaperReview set reviewRound=1 where reviewId?a", array_slice($rids, 0, $half));
+        $this->conf->qe("update PaperReview set reviewRound=2 where reviewId?a", array_slice($rids, $half));
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01",
+            "rf/1/presence" => "round:R1",
+            "rf/2/id" => "s02",
+            "rf/2/presence" => "round:R2"
+        ]);
+        xassert($sv->execute());
+
+        // each field has values on its own
+        xassert($this->graph_point_count("OveMer", "OveMer", "all") > 0);
+        xassert($this->graph_point_count("RevExp", "RevExp", "all") > 0);
+
+        // but never on the same review, and the graph explains why it is empty
+        $fg = new FormulaGraph($this->u_chair, "scatter", "OveMer", "RevExp");
+        $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+        xassert_eqq($fg->graph_json([])["data"], []);
+        xassert_eqq($fg->full_feedback_text(),
+            "No review has values for both ‘OveMer’ and ‘RevExp’\n    Try ‘avg(OveMer)’ and ‘avg(RevExp)’ to compare per-submission averages.\n");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01",
+            "rf/1/presence" => "all",
+            "rf/2/id" => "s02",
+            "rf/2/presence" => "all"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->checked_review_field("s01")->exists_condition(), null);
+        xassert_eqq($this->conf->checked_review_field("s02")->exists_condition(), null);
+
+        foreach ($saved as $row) {
+            $this->conf->qe("update PaperReview set reviewRound=?, s01=?, s02=? where reviewId=?",
+                (int) $row[1], (int) $row[2], (int) $row[3], (int) $row[0]);
+        }
     }
 
     /** @param Contact $user
@@ -888,14 +1001,13 @@ class Formulas_Tester {
 
         // Give paper 1 a 50-page submission PDF and cache its page count.
         $ps = new PaperStatus($this->conf->root_user());
-        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
             if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
                 $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
             }
         });
         xassert($ps->save_paper_json(json_decode("{\"id\":1,\"submission\":{\"content_file\":\"test/sample50pg.pdf\",\"type\":\"application/pdf\"}}")));
         xassert_paper_status($ps);
-        $this->conf->invalidate_caches("options");
         $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
         xassert_eqq($paper1->document(DTYPE_SUBMISSION)->npages(), 50);
 
@@ -914,7 +1026,6 @@ class Formulas_Tester {
             "sf/1/condition" => "#secret"
         ]);
         xassert($sv->execute());
-        $this->conf->invalidate_caches("options");
 
         $subopt = $this->conf->option_by_id(DTYPE_SUBMISSION);
         $paper1 = $this->conf->checked_paper_by_id(1, $u_mgbaker);
@@ -936,7 +1047,6 @@ class Formulas_Tester {
             "sf/1/presence" => "all"
         ]);
         xassert($sv->execute());
-        $this->conf->invalidate_caches("options");
     }
 
     function test_formulas_respect_option_presence() {
@@ -1024,5 +1134,58 @@ class Formulas_Tester {
         xassert_eqq($f_calories->eval($paper1c, null), 350); // OptionValue_Fexpr
         xassert_eqq($f_weight->eval($paper1c, null), 72.5);  // RealNumberOption_Fexpr
         xassert_eqq($f_vegan->eval($paper1c, null), true);   // OptionPresent_Fexpr
+    }
+
+    function test_review_meta_hidden_from_pc_author() {
+        // A PC member who authors a paper may read that paper's submitted
+        // reviews (au_seerev), but a review's *type* and *round* are metadata
+        // gated by can_view_review_meta — false for a conflicted PC-author. So
+        // `revtype`/`reround` must not let them recover it, even though the
+        // formulas compile (they are is_reviewer() globally).
+        $conf = $this->conf;
+        $mjh = $this->u_mjh;        // PC, contact-author of paper 17
+        $lixia = $this->u_lixia;    // PC reviewer on paper 17 (round 1)
+        $p17 = $conf->checked_paper_by_id(17);
+        xassert($mjh->isPC && $mjh->is_reviewer());
+        xassert_ge($p17->conflict_type($mjh), CONFLICT_AUTHOR);
+
+        $old_ausr = $conf->setting("au_seerev");
+        $conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
+
+        // submit lixia's review with author-visible content (Overall merit +
+        // Comments for authors), so the author can see the review itself
+        $text = "==+== Paper #17\n\n==+== Review Readiness\nReady\n\n"
+            . "==+== A. Overall merit\n4\n\n==+== B. Reviewer expertise\n2\n\n"
+            . "==+== D. Comments for authors\nGood work.\n";
+        $tf = (new ReviewValues($lixia))->set_text($text, "r17.txt");
+        xassert($tf->parse_text());
+        xassert($tf->check_and_save(null));
+
+        $p17 = $conf->checked_paper_by_id(17);
+        $rrow = $p17->fresh_review_by_user($lixia);
+        xassert_gt($rrow->reviewType, 0);
+
+        // precondition — the author CAN see the review content but NOT its
+        // metadata, so a null formula result means "gated," not "invisible"
+        xassert($mjh->can_view_review($p17, $rrow));
+        xassert(!$mjh->can_view_review_meta($p17, $rrow));
+
+        // the leak: neither type nor round may be recovered
+        xassert_eqq($this->formula_as($mjh, "max(revtype)")->eval($p17, null), null);
+        xassert_eqq($this->formula_as($mjh, "max(reround)")->eval($p17, null), null);
+        xassert_eqq($this->formula_as($mjh, "count(revtype>0)")->eval($p17, null), 0);
+
+        // ...while an administrator, who may view review metadata, sees them —
+        // proving the data is present and only the gate hides it
+        $maxtype = $maxround = 0;
+        foreach ($p17->viewable_reviews_as_display($this->u_chair) as $rr) {
+            $maxtype = max($maxtype, $rr->reviewType);
+            $maxround = max($maxround, $rr->reviewRound);
+        }
+        xassert_gt($maxtype, 0);
+        xassert_eqq($this->formula_as($this->u_chair, "max(revtype)")->eval($p17, null), $maxtype);
+        xassert_eqq($this->formula_as($this->u_chair, "max(reround)")->eval($p17, null), $maxround);
+
+        $conf->save_refresh_setting("au_seerev", $old_ausr);
     }
 }

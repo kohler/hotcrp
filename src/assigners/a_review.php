@@ -422,11 +422,11 @@ class Review_Assigner extends Assigner {
             assert($this->item->after !== null);
             $prow = $aset->prow($this->pid);
             $rrow = $prow->fresh_review_by_id($reviewId);
-            $rv = (new ReviewValues($aset->conf))
+            $rv = (new ReviewValues($aset->user))
                 ->set_autosearch(false)
                 ->set_can_unsubmit(true)
                 ->set_req_ready(false);
-            $rv->check_and_save($aset->user, $prow, $rrow);
+            $rv->check_and_save($prow, $rrow);
         }
         if (($extra["token"] ?? false) && $reviewId) {
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);

@@ -239,7 +239,8 @@ class PaperSearch extends MessageSet {
      * @readonly */
     private $_qt;
     /** @var ?Contact
-     * @readonly */
+     * @readonly
+     * Null unless the requested reviewer differs from `$user`. */
     private $_reviewer_user;
 
     /** @var ?SearchTerm */
@@ -302,6 +303,7 @@ class PaperSearch extends MessageSet {
         "reviewable" => "Reviewable",
         "rout" => "Your incomplete reviews",
         "s" => "Submitted",
+        "sa" => "All submitted",
         "undecided" => "Undecided",
         "unsub" => "Draft {submissions}",
         "viewable" => "{Submissions} you can view"
@@ -350,7 +352,7 @@ class PaperSearch extends MessageSet {
             } else if (is_object($reviewer) && ($reviewer instanceof Contact)) {
                 $ruser = $reviewer;
             }
-            if ($ruser && $ruser !== $this->user) {
+            if ($ruser && $ruser->contactXid !== $this->user->contactXid) {
                 assert($ruser->contactId > 0);
                 $this->_reviewer_user = $ruser;
             }
@@ -448,7 +450,7 @@ class PaperSearch extends MessageSet {
     }
     /** @return bool */
     function query_is_re_me() {
-        return $this->q === "re:me" && $this->user === $this->reviewer_user();
+        return $this->q === "re:me" && $this->_reviewer_user === null;
     }
 
 
@@ -616,19 +618,6 @@ class PaperSearch extends MessageSet {
         }
         $srch->lwarning($sword, "<0>Unknown search ‘has:{$word}’");
         return new False_SearchTerm;
-    }
-
-    /** @return SearchTerm */
-    static function parse_searchcontrol($word, SearchWord $sword, PaperSearch $srch) {
-        if (strcasecmp($word, "expand_automatic") === 0) {
-            if ($srch->expand_automatic === 0) {
-                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-                $srch->expand_automatic = 1;
-            }
-            return new True_SearchTerm;
-        }
-        $srch->lwarning($sword, "<0>Unknown search control option ‘{$word}’");
-        return new True_SearchTerm;
     }
 
     /** @param string $body
@@ -1021,7 +1010,7 @@ class PaperSearch extends MessageSet {
             $args = [$pid];
             if ($this->_warn_missing > 1) {
                 $sm = "<5><a href=\"{url}\">{Submission} #{}</a>";
-                $args[] = new FmtArg("url", $this->conf->hoturl_raw("paper", ["p" => $pid]));
+                $args[] = new FmtArg("url", $this->conf->hoturl("paper", ["p" => $pid]));
             } else {
                 $sm = "<0>{Submission} #{}";
             }
@@ -1487,8 +1476,7 @@ class PaperSearch extends MessageSet {
         if ($this->_qt !== "n") {
             $x .= "&qt={$this->_qt}";
         }
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
+        if ($this->_reviewer_user) {
             $x .= "&reviewer=" . urlencode($this->_reviewer_user->email);
         }
         return $x;
@@ -1506,12 +1494,11 @@ class PaperSearch extends MessageSet {
         if ($this->_qt !== "n") {
             $xargs["qt"] = $this->_qt;
         }
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactId !== $this->user->contactXid) {
+        if ($this->_reviewer_user) {
             $xargs["reviewer"] = $this->_reviewer_user->email;
         }
         $xargs = array_merge($xargs, $this->_urlbase_args ?? [], $args);
-        return $this->conf->hoturl_raw($basepage, $xargs, Conf::HOTURL_SITEREL);
+        return $this->conf->hoturl($basepage, $xargs, Conf::HOTURL_SITEREL);
     }
 
     /** @return string */
@@ -1578,8 +1565,7 @@ class PaperSearch extends MessageSet {
         if ($this->_qt !== "n") {
             $rest[] = "qt={$this->_qt}";
         }
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
+        if ($this->_reviewer_user) {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         }
         $sort = $args["sort"] ?? $this->_req_sort ?? "";
@@ -1738,16 +1724,17 @@ class PaperSearch extends MessageSet {
     }
 
     /** @return list<string> */
-    static function viewable_manager_limits(Contact $user) {
-        if ($user->privChair) {
-            if ($user->conf->has_any_manager()) {
-                $ts = ["alladmin", "admin", "s"];
-            } else {
-                $ts = ["s"];
-            }
-            array_push($ts, "accepted", "undecided", "all");
-        } else {
-            $ts = ["admin"];
+    static function viewable_manager_limits(Contact $user, $limit = null) {
+        if (!$user->privChair) {
+            return ["alladmin", "admin"];
+        }
+        $ts = [];
+        if ($user->conf->has_any_manager()) {
+            array_push($ts, "alladmin", "admin");
+        }
+        array_push($ts, "s", "accepted", "undecided", "all");
+        if ($limit === "sa") {
+            $ts[] = "sa";
         }
         return $ts;
     }
@@ -1766,13 +1753,12 @@ class PaperSearch extends MessageSet {
                 $extra["aria-label"] = "Search collection";
             }
             return Ht::select("t", $sel_opt, $selected, $extra);
-        } else {
-            $t = self::limit_description($conf, $selected);
-            if (isset($extra["id"])) {
-                $t = '<span id="' . htmlspecialchars($extra["id"]) . "\">{$t}</span>";
-            }
-            return $t . Ht::hidden("t", $selected);
         }
+        $t = self::limit_description($conf, $selected);
+        if (isset($extra["id"])) {
+            $t = '<span id="' . htmlspecialchars($extra["id"]) . "\">{$t}</span>";
+        }
+        return $t . Ht::hidden("t", $selected);
     }
 
     /** @param list<int> $ids

@@ -2,6 +2,36 @@
 // api_paper.php -- HotCRP paper API call
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
+class Paper_API_Status implements JsonSerializable {
+    /** @var bool */
+    public $valid;
+    /** @var list<string> */
+    public $change_list;
+    /** @var bool */
+    public $conflict;
+    /** @var null|int|'new' */
+    public $pid;
+
+    function __construct($valid = false, $change_list = [], $conflict = false, $pid = null) {
+        $this->valid = $valid;
+        $this->change_list = $change_list;
+        $this->conflict = $conflict;
+        $this->pid = $pid;
+    }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $u = ["valid" => $this->valid, "change_list" => $this->change_list];
+        if ($this->conflict) {
+            $u["conflict"] = $this->conflict;
+        }
+        if ($this->pid !== null) {
+            $u["pid"] = $this->pid;
+        }
+        return $u;
+    }
+}
+
 class Paper_API extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -10,41 +40,31 @@ class Paper_API extends MessageSet {
      * @readonly */
     public $user;
     /** @var bool */
+    private $dry_run = false;
+    /** @var bool */
     private $notify = true;
     /** @var bool */
     private $notify_authors = true;
     /** @var ?string */
-    private $reason;
+    private $notify_reason;
     /** @var bool */
     private $disable_users = false;
-    /** @var bool */
-    private $dry_run = false;
+    /** @var ?int */
+    private $if_unmodified_since;
     /** @var bool */
     private $single = false;
-    /** @var ?ZipArchive */
-    private $ziparchive;
-    /** @var ?Qrequest */
-    private $attachment_qreq;
-    /** @var ?string */
-    private $ziparchive_docdir;
+    /** @var DocumentLocator */
+    private $docloc;
 
-    /** @var list<list<string>> */
-    private $change_lists = [];
+    /** @var list<Paper_API_Status> */
+    private $status_list = [];
     /** @var list<object> */
     private $papers = [];
-    /** @var list<bool> */
-    private $valid = [];
-    /** @var list<null|int|'new'> */
-    private $pids = [];
     /** @var int */
     private $npapers = 0;
     /** @var null|int|string */
     private $landmark;
 
-
-    const M_ONE = 1;
-    const M_MULTI = 2;
-    const M_MATCH = 4;
 
     const PIDFLAG_IGNORE_PID = 1;
     const PIDFLAG_MATCH_TITLE = 2;
@@ -55,16 +75,12 @@ class Paper_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    static private function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if (!isset($qreq->p)) {
-            return JsonResult::make_missing_error("p");
-        }
-        $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
-        if (!$prow || $fr) {
-            return Conf::paper_error_json_result($fr);
-        }
+    static private function run_get_one(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $pj = (new PaperExport($user))->paper_json($prow);
         assert(!!$pj);
+        if (friendly_boolean($qreq->download)) {
+            return APIHelpers::make_json_download($user->conf, $pj, "paper{$prow->paperId}");
+        }
         return new JsonResult(["ok" => true, "paper" => $pj]);
     }
 
@@ -98,6 +114,9 @@ class Paper_API extends MessageSet {
                 $pjs[] = $pj;
         }
 
+        if (friendly_boolean($qreq->download)) {
+            return APIHelpers::make_json_download($user->conf, $pjs, "papers");
+        }
         return new JsonResult([
             "ok" => true,
             "message_list" => $srch->message_list_with_default_field("q"),
@@ -109,8 +128,8 @@ class Paper_API extends MessageSet {
      * @return JsonResult */
     private function run_post(Qrequest $qreq, ?PaperInfo $prow, $mode) {
         // check `p` parameter
-        if (($mode & self::M_ONE) !== 0 && isset($qreq->p)) {
-            $mode = self::M_ONE;
+        if (($mode & DocumentLocator::M_ONE) !== 0 && isset($qreq->p)) {
+            $mode = DocumentLocator::M_ONE;
             if ($qreq->p === "") {
                 unset($qreq->p);
             } else {
@@ -121,124 +140,57 @@ class Paper_API extends MessageSet {
             }
         }
 
-        // check `q` parameter
-        if ($mode === self::M_MULTI && !isset($qreq->q)) {
-            return JsonResult::make_missing_error("q");
-        }
-
         // set parameters
         $this->set_post_param($qreq);
+        $this->docloc = new DocumentLocator;
 
         // check Content-Type
-        $ct = $qreq->body_content_type();
-        $ct_form = Mimetype::is_form($ct);
-        if ($ct_form && !$this->post_form_is_json($qreq)) {
+        if (Mimetype::is_form($qreq->body_content_type() ?? Mimetype::FORM_DATA_TYPE)
+            && !$this->post_form_is_json($qreq)) {
             // handle form-encoded data
-            if (($mode & self::M_ONE) === 0) {
+            if (($mode & DocumentLocator::M_ONE) === 0) {
                 return JsonResult::make_error(400, "<0>Unexpected content type");
             }
             return $this->run_post_form_data($qreq, $prow);
         }
 
-        // check for uploaded file
-        if ($ct_form && isset($qreq->upload)) {
-            $updoc = DocumentInfo::make_capability($this->conf, $qreq->upload);
-            if (!$updoc) {
-                return JsonResult::make_missing_error("upload", "<0>Upload not found");
-            }
-            $ct = $updoc->mimetype;
-            $ct_form = false;
-        } else {
-            $updoc = null;
-        }
-
-        // from here on, expect JSON
-        if ($ct === "application/json") {
-            $jsonstr = $updoc ? $updoc->content() : $qreq->body();
-        } else if ($ct === "application/zip") {
-            $this->ziparchive = new ZipArchive;
-            $cf = $updoc ? $updoc->content_file() : $qreq->body_file(".zip");
-            if (!$cf) {
-                return JsonResult::make_error(500, "<0>Uploaded content unreadable");
-            }
-            $ec = $this->ziparchive->open($cf);
-            if ($ec !== true) {
-                return JsonResult::make_error(400, "<0>ZIP error " . json_encode($ec));
-            }
-            list($this->ziparchive_docdir, $jsonname) = self::analyze_zip_contents($this->ziparchive);
-            if (!$jsonname) {
-                return JsonResult::make_error(400, "<0>ZIP `data.json` not found");
-            }
-            $jsonstr = $this->ziparchive->getFromName($jsonname);
-        } else if ($ct_form) {
-            $jsonstr = $qreq->json;
-            $this->attachment_qreq = $qreq;
-        } else {
-            return JsonResult::make_error(400, "<0>Unexpected content type");
-        }
-
-        // read JSON, check format
-        $jp = Json::try_decode($jsonstr);
-        if (is_object($jp)) {
-            if (isset($qreq->q)
-                && ($mode & self::M_MATCH) !== 0) {
-                $mode = self::M_MATCH;
-            } else if (($mode & self::M_ONE) !== 0) {
-                $mode = self::M_ONE;
-            } else {
-                $jp = [$jp];
-                $mode = self::M_MULTI;
-            }
-        } else if (is_array($jp)) {
-            if (($mode & self::M_MULTI) !== 0) {
-                $mode = self::M_MULTI;
-            } else if (($mode & self::M_ONE) !== 0
-                       && count($jp) === 1
-                       && is_object($jp[0])) {
-                $jp = $jp[0];
-                $mode = self::M_ONE;
-            } else {
-                return JsonResult::make_error(400, "<0>Expected object");
-            }
-        } else if ($jp === null) {
-            return JsonResult::make_error(400, "<0>Invalid JSON (" . Json::last_error_msg() . ")");
-        } else {
-            return JsonResult::make_error(400, $mode === self::M_MULTI ? "<0>Expected array of objects" : "<0>Expected object");
-        }
-
-        // process result
-        if ($mode === self::M_ONE) {
+        // extract uploaded JSON
+        list($jp, $mode) = $this->docloc->parse_json_request($qreq, $mode);
+        if ($mode === DocumentLocator::M_ONE) {
             return $this->run_post_single_json($prow, $jp, $qreq->p);
         } else if (!$this->user->privChair) {
             return JsonResult::make_permission_error();
-        } else if ($mode === self::M_MATCH) {
+        } else if ($mode === DocumentLocator::M_MATCH) {
             return $this->run_post_match_json($qreq, $jp);
         }
         return $this->run_post_multi_json($jp);
     }
 
     private function set_post_param(Qrequest $qreq) {
+        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
         if ($this->user->privChair) {
             if (friendly_boolean($qreq->disable_users)) {
                 $this->disable_users = true;
-            }
-            if (friendly_boolean($qreq->notify) === false) {
-                $this->notify = false;
             }
             if (friendly_boolean($qreq->add_topics)) {
                 $this->conf->topic_set()->set_auto_add(true);
                 $this->conf->options()->refresh_topics();
             }
         }
-        if (friendly_boolean($qreq->notify_authors) === false) {
-            $this->notify_authors = false;
-        }
-        $this->reason = $qreq->reason ?? "";
-        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun /* XXX */)) {
-            $this->dry_run = true;
+        // these record requests to suppress notifications; whether they are
+        // honored is decided per paper (execute_save())
+        $this->notify = friendly_boolean($qreq->notify) !== false;
+        $this->notify_authors = friendly_boolean($qreq->notify_authors) !== false;
+        $this->notify_reason = $qreq->reason ?? "";
+        // parse single-paper precondition
+        if (isset($qreq->if_unmodified_since)) {
+            $t = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
+            if ($t === false) {
+                JsonResult::make_parameter_error("if_unmodified_since")->complete();
+            }
+            $this->if_unmodified_since = $t;
         }
     }
-
 
     /** @return bool */
     private function post_form_is_json(Qrequest $qreq) {
@@ -279,6 +231,11 @@ class Paper_API extends MessageSet {
         }
 
         $this->single = true;
+        if ($this->if_unmodified_since !== null
+            && $qreq["if_unmodified_since"] === null
+            && $qreq["status:if_unmodified_since"] === null) {
+            $qreq->set("if_unmodified_since", (string) $this->if_unmodified_since);
+        }
         $ps = $this->paper_status();
         $ok = $ps->prepare_save_paper_web($qreq, $prow);
         $this->execute_save($ok, $ps);
@@ -292,6 +249,7 @@ class Paper_API extends MessageSet {
             $parg = intval($parg);
         }
         if ($this->set_json_landmark(0, $jp, $parg)) {
+            $this->apply_if_unmodified_since($jp);
             $ps = $this->paper_status();
             $ok = $ps->prepare_save_paper_json($jp, $prow);
             $this->execute_save($ok, $ps);
@@ -307,6 +265,7 @@ class Paper_API extends MessageSet {
         $this->single = false;
         foreach ($jps as $i => $jp) {
             if ($this->set_json_landmark($i, $jp, null)) {
+                $this->apply_if_unmodified_since($jp);
                 $ps = $this->paper_status();
                 $ok = $ps->prepare_save_paper_json($jp);
                 $this->execute_save($ok, $ps);
@@ -322,8 +281,11 @@ class Paper_API extends MessageSet {
     private function run_post_match_json(Qrequest $qreq, $jp) {
         if (isset($jp->pid) || isset($jp->id)) {
             return JsonResult::make_error(400, "<0>Unexpected `pid`");
+        } else if (!isset($qreq->q)) {
+            return JsonResult::make_missing_error("q");
         }
         $this->single = false;
+        $this->apply_if_unmodified_since($jp);
         list($srch, $prows) = self::make_search($this->user, $qreq);
         $i = 0;
         foreach ($prows as $prow) {
@@ -337,19 +299,54 @@ class Paper_API extends MessageSet {
     }
 
 
+    /** Parse an `if_unmodified_since` value (a Unix timestamp or a parsable
+     * time string; `0` is valid) into a timestamp.
+     * @param int|string $v
+     * @return int|false false on a malformed value */
+    static function parse_if_unmodified_since($v, Conf $conf) {
+        if (is_int($v)) {
+            $t = $v;
+        } else if (ctype_digit($v)) {
+            $t = intval($v);
+        } else {
+            $t = $conf->parse_time($v, Conf::$now);
+        }
+        return $t === false || $t < 0 ? false : $t;
+    }
+
+    /** Fold the flat `if_unmodified_since` parameter into a paper's
+     * `status.if_unmodified_since`, so PaperStatus performs the check. It is a
+     * per-paper backup: an explicit value in the paper's own JSON wins. Applied
+     * to every paper of a single, multi, or match request.
+     * @param object $jp */
+    private function apply_if_unmodified_since($jp) {
+        if ($this->if_unmodified_since !== null
+            && !isset($jp->if_unmodified_since)
+            && (!is_object($jp->status ?? null) || !isset($jp->status->if_unmodified_since))) {
+            $jp->if_unmodified_since = $this->if_unmodified_since;
+        }
+    }
+
+
     /** @return PaperStatus */
     private function paper_status() {
         return (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
-            ->set_notify($this->notify)
-            ->set_notify_authors($this->notify_authors)
-            ->set_notify_reason($this->reason)
+            ->set_notify_reason($this->notify_reason)
             ->set_any_content_file(true)
-            ->on_document_import([$this, "on_document_import"]);
+            ->on_document_import([$this->docloc, "on_document_import"]);
     }
 
     /** @param PaperStatus $ps */
     private function execute_save($ok, $ps) {
+        // A `notify`/`notify_authors` suppression request is honored only for a
+        // user who administers the paper. The paper is fully resolved only once
+        // prepare has run (its id may arrive in the JSON body, not `p`), so
+        // apply the flags here. Management covers new papers too: a site chair
+        // manages any paper, an ordinary author manages none.
+        $manage = $ps->can_user_manage();
+        $ps->set_notify($this->notify || !$manage)
+            ->set_notify_authors($this->notify_authors || !$manage);
         if ($ok && !$this->dry_run) {
             $ok = $ps->execute_save();
         } else {
@@ -366,44 +363,40 @@ class Paper_API extends MessageSet {
             }
             $this->append_item($mi);
         }
-        $this->change_lists[] = $ps->changed_keys(true);
         if ($ok && !$this->dry_run) {
             if ($ps->has_change()) {
                 $this->execute_change($ps);
             }
-            $pj = (new PaperExport($this->user))->paper_json($ps->saved_prow());
-            $this->papers[] = $pj;
+            $this->papers[] = (new PaperExport($this->user))
+                ->paper_json($ps->saved_prow());
             ++$this->npapers;
         } else {
             $this->papers[] = null;
         }
-        $this->pids[] = $ps->saved_pid() ?? "new";
-        $this->valid[] = $ok;
+        $this->status_list[] = new Paper_API_Status(
+            $ok, $ps->change_list(true),
+            $ps->has_error_at("if_unmodified_since"),
+            $ps->saved_pid() ?? "new"
+        );
     }
 
     /** @param PaperStatus $ps */
     private function execute_change($ps) {
         $ps->log_save_activity("via API");
-        if ($this->notify) {
-            if (!$this->notify_authors
-                && !$this->user->allow_manage($ps->saved_prow())) {
-                $ps->set_notify_authors(true);
-            }
+        if ($ps->notify) {
             $ps->notify_followers();
         }
     }
 
     private function execute_fail() {
-        $this->change_lists[] = null;
+        $this->status_list[] = new Paper_API_Status;
         $this->papers[] = null;
-        $this->pids[] = null;
-        $this->valid[] = false;
     }
 
     /** @return JsonResult */
     private function post_result() {
-        $ok = empty($this->valid)
-            || array_find($this->valid, function ($x) { return !!$x; });
+        $ok = empty($this->status_list)
+            || array_find($this->status_list, function ($x) { return !!$x->valid; });
         $jr = new JsonResult([
             "ok" => $ok,
             "message_list" => $this->message_list()
@@ -412,30 +405,14 @@ class Paper_API extends MessageSet {
             $jr->content["dry_run"] = true;
         }
         if ($this->single) {
-            $jr->content["valid"] = $this->valid[0];
-            $jr->content["change_list"] = $this->change_lists[0];
-            if ($this->pids[0] !== null) {
-                $jr->content["pid"] = $this->pids[0];
+            foreach ($this->status_list[0]->jsonSerialize() as $k => $v) {
+                $jr->content[$k] = $v;
             }
             if ($this->npapers > 0) {
                 $jr->content["paper"] = $this->papers[0];
             }
         } else {
-            $ul = [];
-            for ($i = 0; $i !== count($this->valid); ++$i) {
-                $u = [
-                    "valid" => $this->valid[$i],
-                    "change_list" => $this->change_lists[$i]
-                ];
-                if ($this->pids[$i] !== null) {
-                    $u["pid"] = $this->pids[$i];
-                }
-                if ($this->dry_run) {
-                    $u["dry_run"] = true;
-                }
-                $ul[] = (object) $u;
-            }
-            $jr->content["status_list"] = $ul;
+            $jr->content["status_list"] = $this->status_list;
             if (!$this->dry_run) {
                 $jr->content["papers"] = $this->papers;
             }
@@ -500,136 +477,6 @@ class Paper_API extends MessageSet {
     }
 
 
-    /** @param string $fname
-     * @return bool */
-    static function should_skip_zip_filename($fname) {
-        return preg_match('/(?:\A|\/)(?:__MACOSX|\.[^\/]*+|\$RECYCLE\.BIN|\#[^\/]*\#|[^\/]*~)(?:\z|\/)/', $fname);
-    }
-
-    /** @return array{string,?string} */
-    static function analyze_zip_contents($zip) {
-        // find common directory prefix
-        $dirpfx = null;
-        $xjsons = [];
-        for ($i = 0; $i < $zip->numFiles; ++$i) {
-            $name = $zip->getNameIndex($i);
-            if (self::should_skip_zip_filename($name)) {
-                continue;
-            }
-            if ($dirpfx === null) {
-                $xslash = (int) strrpos($name, "/");
-                $dirpfx = $xslash > 0 ? substr($name, 0, $xslash + 1) : "";
-            }
-            while ($dirpfx !== "" && !str_starts_with($name, $dirpfx)) {
-                $xslash = (int) strrpos($dirpfx, "/", -2);
-                $dirpfx = $xslash > 0 ? substr($dirpfx, 0, $xslash + 1) : "";
-            }
-            if (str_ends_with($name, ".json")) {
-                $xjsons[] = $name;
-            }
-        }
-
-        // find JSONs
-        $datas = $jsons = [];
-        foreach ($xjsons as $name) {
-            if (strpos($name, "/", strlen($dirpfx)) !== false) {
-                continue;
-            }
-            $jsons[] = $name;
-            if (preg_match('/\G(?:|.*[-_])data\.json\z/', $name, $m, 0, strlen($dirpfx))) {
-                $datas[] = $name;
-            }
-        }
-
-        if (count($datas) === 1) {
-            return [$dirpfx, $datas[0]];
-        } else if (count($jsons) === 1) {
-            return [$dirpfx, $jsons[0]];
-        } else {
-            return [$dirpfx, null];
-        }
-    }
-
-    /** @param object $docj
-     * @param string $filename
-     * @return bool */
-    static function apply_zip_content_file($docj, $filename, ZipArchive $zip,
-                                           PaperOption $o, PaperStatus $pstatus) {
-        $stat = $zip->statName($filename);
-        if (!$stat) {
-            $pstatus->error_at_option($o, "<0>{$filename}: File not found");
-            return false;
-        }
-        // use resources to store large files
-        if ($stat["size"] > 50000000) {
-            if (PHP_VERSION_ID >= 80200) {
-                $content = $zip->getStreamIndex($stat["index"]);
-            } else {
-                $content = $zip->getStream($filename);
-            }
-        } else {
-            $content = $zip->getFromIndex($stat["index"]);
-        }
-        if ($content === false) {
-            $pstatus->error_at_option($o, "<0>{$filename}: File not found");
-            return false;
-        }
-        if (is_string($content)) {
-            $docj->content = $content;
-            $docj->content_file = null;
-        } else {
-            $docj->content_file = $content;
-        }
-        self::apply_docj_filename($docj, $filename);
-        return true;
-    }
-
-    /** @param object $docj
-     * @param QrequestFile $qf */
-    static function apply_qrequest_file($docj, $qf) {
-        if ($qf->content !== null) {
-            $docj->content = $qf->content;
-            $docj->content_file = null;
-        } else {
-            $docj->content_file = $qf->tmp_name;
-        }
-        if (!isset($docj->size) && isset($qf->size)) {
-            $docj->size = $qf->size;
-        }
-        if (!isset($docj->mimetype) && isset($qf->type)) {
-            $docj->mimetype = $qf->type;
-        }
-        if (!isset($docj->filename) && isset($qf->name)) {
-            self::apply_docj_filename($docj, $qf->name);
-        }
-    }
-
-    /** @param object $docj
-     * @param string $filename */
-    static function apply_docj_filename($docj, $filename) {
-        if (!isset($docj->filename)) {
-            $slash = strpos($filename, "/");
-            $docj->filename = $slash !== false ? substr($filename, $slash + 1) : $filename;
-        }
-    }
-
-    function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
-        if ($docj instanceof DocumentInfo
-            || !isset($docj->content_file)) {
-            return;
-        }
-        if (is_string($docj->content_file)) {
-            if ($this->ziparchive) {
-                return self::apply_zip_content_file($docj, $this->ziparchive_docdir . $docj->content_file, $this->ziparchive, $o, $pstatus);
-            } else if ($this->attachment_qreq
-                       && ($qf = $this->attachment_qreq->file($docj->content_file))) {
-                return self::apply_qrequest_file($docj, $qf);
-            }
-        }
-        unset($docj->content_file);
-    }
-
-
     /** @return JsonResult */
     private function run_delete(Qrequest $qreq, ?PaperInfo $prow) {
         if (!$prow) {
@@ -639,41 +486,28 @@ class Paper_API extends MessageSet {
         $this->set_post_param($qreq);
         $this->single = true;
 
-        $if_unmodified_since = null;
-        if (isset($qreq->if_unmodified_since)) {
-            if (is_int($qreq->if_unmodified_since)) {
-                $if_unmodified_since = $qreq->if_unmodified_since;
-            } else if (ctype_digit($qreq->if_unmodified_since)) {
-                $if_unmodified_since = intval($qreq->if_unmodified_since);
-            } else {
-                $if_unmodified_since = $this->conf->parse_time($qreq->if_unmodified_since, Conf::$now);
-            }
-            if ($if_unmodified_since === false || $if_unmodified_since < 0) {
-                return JsonResult::make_parameter_error("if_unmodified_since");
-            }
-        }
-
         if (!$this->user->can_manage($prow)) {
             return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete {$this->conf->snouns[1]}");
         }
 
-        $this->change_lists[] = ["delete"];
-        $this->pids[] = $prow->paperId;
-        if ($if_unmodified_since !== null
-            && $if_unmodified_since < $prow->timeModified) {
+        $conflict = $this->if_unmodified_since !== null
+            && $this->if_unmodified_since < $prow->timeModified;
+        if ($conflict) {
             $this->error_at("if_unmodified_since", $this->conf->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
-            $this->valid[] = false;
+            $valid = false;
         } else if ($this->dry_run) {
-            $this->valid[] = true;
+            $valid = true;
         } else {
             if ($this->notify && $this->notify_authors) {
                 HotCRPMailer::send_contacts("@deletepaper", $prow, [
-                    "reason" => (string) $this->reason,
+                    "reason" => (string) $this->notify_reason,
                     "confirm_message_for" => $this->user
                 ]);
             }
-            $this->valid[] = $prow->delete_from_database($this->user);
+            $valid = $prow->delete_from_database($this->user);
         }
+        $this->status_list[] = new Paper_API_Status($valid, ["delete"], $conflict, $prow->paperId);
+        $this->papers[] = null;
         return $this->post_result();
     }
 
@@ -686,7 +520,7 @@ class Paper_API extends MessageSet {
         }
         try {
             if ($qreq->is_getlike()) {
-                if ($mode === self::M_ONE) {
+                if ($mode === DocumentLocator::M_ONE) {
                     $jr = self::run_get_one($user, $qreq, $prow);
                 } else {
                     $jr = self::run_get_multi($user, $qreq);
@@ -696,8 +530,8 @@ class Paper_API extends MessageSet {
             } else {
                 $jr = (new Paper_API($user))->run_post($qreq, $prow, $mode);
             }
-        } catch (JsonResult $jrex) {
-            $jr = $jrex;
+        } catch (JsonCompletion $jc) {
+            $jr = $jc->result;
         }
         $user->set_overrides($old_overrides);
         if (($jr->content["message_list"] ?? null) === []) {
@@ -708,11 +542,11 @@ class Paper_API extends MessageSet {
 
     /** @return JsonResult */
     static function run_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        return self::run($user, $qreq, $prow, self::M_ONE);
+        return self::run($user, $qreq, $prow, DocumentLocator::M_ONE);
     }
 
     /** @return JsonResult */
     static function run_multi(Contact $user, Qrequest $qreq) {
-        return self::run($user, $qreq, null, self::M_MULTI | self::M_MATCH);
+        return self::run($user, $qreq, null, DocumentLocator::M_MULTI | DocumentLocator::M_MATCH);
     }
 }

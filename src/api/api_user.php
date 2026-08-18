@@ -143,7 +143,7 @@ class User_API {
         $u = $qreq->email ?? $qreq->u;
         if ($u === null || $u === "me" || strcasecmp($u, $viewer->email) === 0) {
             $user = $viewer;
-        } else if ($viewer->isPC) {
+        } else if ($viewer->privChair) {
             $user = $viewer->conf->user_by_email($u);
         } else {
             return JsonResult::make_permission_error();

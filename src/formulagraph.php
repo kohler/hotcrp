@@ -178,6 +178,7 @@ class FormulaGraph extends MessageSet {
     const DOT = 16;
     const FBARCHART = 132; // 128 | BARCHART
     const OGIVE = 130;    // 128 | CDF
+    const NUMDOT = 144;   // 128 | DOT
 
     // formula class
     const DATA_PAPER = 1;
@@ -240,6 +241,8 @@ class FormulaGraph extends MessageSet {
     private $_xorder_map;
     /** @var 0|1|2|3 */
     private $_axis_remapped = 0;
+    /** @var 0|1|2|3 */
+    private $_axis_nonempty = 0;
     /** @var bool */
     private $_x_bool = true;
     /** @var bool */
@@ -248,7 +251,7 @@ class FormulaGraph extends MessageSet {
     /** @param string $s
      * @return ?array{int,string} */
     static function graph_type_prefix($s) {
-        if (!preg_match('/\A\s*+(cdf(?![-\w])|)((?:ogive|cumfreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w])|)((?:stack|fraction)(?![-\w])|)((?:box|boxplot)(?![-\w])|)(scatter(?:plot|)(?![-\w])|)(dot(?:plot|)(?![-\w])|)(?![-\w])\s*+/', $s, $m)) {
+        if (!preg_match('/\A\s*+(cdf(?![-\w])|)((?:ogive|cumfreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w])|)((?:stack|fraction)(?![-\w])|)((?:box|boxplot)(?![-\w])|)(scatter(?:plot|)(?![-\w])|)((?:numdot|ldot|dotlabel)(?:plot|s|)(?![-\w])|)(dot(?:plot|s|)(?![-\w])|)(?![-\w])\s*+/', $s, $m)) {
             return null;
         } else if ($m[1]) {
             return [self::CDF, $m[0]];
@@ -263,6 +266,8 @@ class FormulaGraph extends MessageSet {
         } else if ($m[6]) {
             return [self::SCATTER, $m[0]];
         } else if ($m[7]) {
+            return [self::NUMDOT, $m[0]];
+        } else if ($m[8]) {
             return [self::DOT, $m[0]];
         }
         return null;
@@ -807,6 +812,7 @@ class FormulaGraph extends MessageSet {
                 $x = $this->fx->eval_json($prow, $rcid);
                 $y = $this->fy->eval_json($prow, $rcid);
                 if ($x === null || $y === null) {
+                    $this->_axis_nonempty |= ($x === null ? 0 : 1) | ($y === null ? 0 : 2);
                     continue;
                 }
                 if ($this->_x_bool && !is_bool($x)) {
@@ -831,19 +837,21 @@ class FormulaGraph extends MessageSet {
                 } else {
                     $xs = [$x];
                 }
-                if (!empty($xs)) {
-                    if (!isset($this->_scatter_data[$s])) {
-                        $this->_scatter_data[$s] = [];
-                    }
-                    $sdata =& $this->_scatter_data[$s];
-                    foreach ($xs as $xv) {
-                        $sdata[] = new Scatter_GraphData($xv, $y, $id);
-                    }
-                    if ($want_order) {
-                        $order_data[$x][] = $reviewf
-                            ? $this->fxorder->eval_extractor($prow, $rcid)
-                            : $this->fxorder->eval_json($prow, $rcid);
-                    }
+                if (empty($xs)) {
+                    continue;
+                }
+                $this->_axis_nonempty = 3;
+                if (!isset($this->_scatter_data[$s])) {
+                    $this->_scatter_data[$s] = [];
+                }
+                $sdata =& $this->_scatter_data[$s];
+                foreach ($xs as $xv) {
+                    $sdata[] = new Scatter_GraphData($xv, $y, $id);
+                }
+                if ($want_order) {
+                    $order_data[$x][] = $reviewf
+                        ? $this->fxorder->eval_extractor($prow, $rcid)
+                        : $this->fxorder->eval_json($prow, $rcid);
                 }
             }
         }
@@ -1099,6 +1107,41 @@ class FormulaGraph extends MessageSet {
         return "style_xyi";
     }
 
+    /** Explain why the graph will render nothing, if it will.
+     *
+     * The confusing case is a scatterplot whose axes each have values, but
+     * never on the same datum -- for instance two review fields restricted to
+     * different rounds by `exists_if`, which no single review can satisfy. */
+    private function _check_empty_data() {
+        if ($this->has_error()) {
+            return;
+        }
+        if ($this->type & self::CDF) {
+            $empty = empty($this->_cdf_data);
+        } else if ($this->_fx_combine) {
+            $empty = empty($this->_bar_data);
+        } else {
+            $empty = empty($this->_scatter_data);
+        }
+        if (!$empty) {
+            return;
+        }
+        if ($this->_axis_nonempty !== 3) {
+            $this->warning_at(null, "<0>No data to graph");
+            return;
+        }
+        $fx = $this->fx->expression;
+        $fy = $this->fy->expression;
+        if ($this->_indexed()) {
+            $this->warning_at(null, "<0>No review has values for both ‘{$fx}’ and ‘{$fy}’");
+            if ($this->fx->indexed() && $this->fy->indexed()) {
+                $this->inform_at(null, "<0>Try ‘avg({$fx})’ and ‘avg({$fy})’ to compare per-submission averages.");
+            }
+        } else {
+            $this->warning_at(null, "<0>No submission has values for both ‘{$fx}’ and ‘{$fy}’");
+        }
+    }
+
     private function data() {
         if ($this->_cdf_data === null
             && $this->_bar_data === null
@@ -1130,6 +1173,7 @@ class FormulaGraph extends MessageSet {
             $this->_revround_reformat();
             $this->_tag_reformat();
             $this->_xorder_rewrite();
+            $this->_check_empty_data();
         }
         if ($this->type & self::CDF) {
             return $this->_cdf_data;
@@ -1269,6 +1313,7 @@ class FormulaGraph extends MessageSet {
         $tj = [
             self::SCATTER => "scatter",
             self::DOT => "dot",
+            self::NUMDOT => "numdot",
             self::CDF => "cdf",
             self::OGIVE => "cumfreq",
             self::BARCHART => "bar",

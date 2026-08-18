@@ -29,6 +29,18 @@ class APIHelpers {
         }
     }
 
+    /** Return `$content` as a downloadable JSON file rather than in the usual
+     * response envelope.
+     * @param mixed $content
+     * @param string $basename
+     * @return JsonResult */
+    static function make_json_download(Conf $conf, $content, $basename) {
+        return JsonResult::make_minimal(200, $content)
+            ->set_pretty_print(true)
+            ->set_header("Content-Disposition: attachment; filename="
+                . mime_quote_string("{$conf->download_prefix}{$basename}.json"));
+    }
+
     /** @param ?string $text
      * @param ?PaperInfo $prow
      * @return Contact */

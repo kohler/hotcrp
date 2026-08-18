@@ -80,6 +80,28 @@ class FailureReason extends Exception
         return $this;
     }
 
+    /** Return the HTTP status code appropriate for this failure.
+     *
+     * Returns 404 when the failure means a named resource does not exist or
+     * the request did not name a valid resource. Otherwise returns 403, or
+     * 401 when $user is given and not signed in (the client should
+     * authenticate).
+     * @param ?Contact $user
+     * @return int */
+    function response_code(?Contact $user = null) {
+        if (isset($this->_a["invalidId"])
+            || isset($this->_a["conflictingId"])
+            || isset($this->_a["invalidPath"])
+            || ($this->_a["noPaper"] ?? false)
+            || isset($this->_a["documentNotFound"])
+            || ($this->_a["reviewNonexistent"] ?? false)) {
+            return 404;
+        } else if ($user && !$user->is_signed_in()) {
+            return 401;
+        }
+        return 403;
+    }
+
     /** @param array<string,mixed> $a
      * @return $this */
     function merge($a) {
@@ -147,16 +169,20 @@ class FailureReason extends Exception
             || str_starts_with($dn, "extrev_")
             || str_starts_with($dn, "pcrev_")) {
             $odn = "rev_open";
+            $start = $this->conf->setting("rev_open") ?? -1;
         } else {
             $odn = null;
+            $start = 1;
         }
-        $start = $odn !== null ? $this->conf->setting($odn) ?? -1 : 1;
 
         if ($dn === "extrev_chairreq") {
             $dn = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
         }
-        $end = $this->conf->setting($dn) ?? -1;
-        return [$odn, $start, $dn, $end, []];
+        $end = $this->conf->setting($dn);
+        if ($end === null && str_starts_with($dn, "extrev_")) {
+            $end = $this->conf->setting("pcrev_" . substr($dn, 7));
+        }
+        return [$odn, $start, $dn, $end ?? -1, []];
     }
 
     /** @return array{string,int,string,int,list<FmtArg>} */
@@ -166,8 +192,6 @@ class FailureReason extends Exception
             ?? $this->conf->unnamed_submission_round();
         if ($dn === "sub_reg") {
             $end = $sr->register;
-        } else if ($dn === "sub_update") {
-            $end = $sr->update;
         } else if ($dn === "sub_resub") {
             $end = $sr->resubmit;
         } else {
@@ -212,6 +236,18 @@ class FailureReason extends Exception
             $idname = $id === "paper" ? "{submission}" : $id;
             $ms[] = $this->conf->_("<0>Missing {$idname} ID");
         }
+        if (isset($this->_a["conflictingId"])) {
+            $id = $this->_a["conflictingId"];
+            $idname = $id === "paper" ? "{submission}" : $id;
+            if (isset($this->_a["{$id}Id"]) && isset($this->_a["otherId"])) {
+                $ms[] = $this->conf->_("<0>This address contains conflicting {$idname} IDs ‘{}’ and ‘{}’", $this->_a["{$id}Id"], $this->_a["otherId"]);
+            } else {
+                $ms[] = $this->conf->_("<0>Conflicting {$idname} IDs");
+            }
+        }
+        if (isset($this->_a["invalidPath"])) {
+            $ms[] = $this->conf->_("<0>No such page ‘{}’", $this->_a["invalidPath"]);
+        }
         if ($this->_a["invalidSclass"] ?? false) {
             $ms[] = $this->conf->_("<0>{Submission} class ‘{}’ not found", $this->_a["sclass"]);
         }
@@ -245,7 +281,7 @@ class FailureReason extends Exception
             $ms[] = $this->conf->_("<0>Document ‘{}’ not found", $this->_a["documentNotFound"]);
         }
         if (isset($this->_a["signin"])) {
-            $url = $this->_a["signinUrl"] ?? $this->conf->hoturl_raw("signin");
+            $url = $this->_a["signinUrl"] ?? $this->conf->hoturl("signin");
             $ms[] = $this->conf->_i("signin_required",
                 new FmtArg("action", $this->_a["signin"]),
                 new FmtArg("url", $url, 0),
@@ -317,7 +353,7 @@ class FailureReason extends Exception
                     new FmtArg("time", $time),
                     new FmtArg("pid", $paperId),
                     new FmtArg("deadline", $dl),
-                    new FmtArg("deadlineurl", $this->conf->hoturl_raw("deadlines"), 0),
+                    new FmtArg("deadlineurl", $this->conf->hoturl("deadlines"), 0),
                     ...$args);
         }
         if ($this->_a["override"] ?? false) {
@@ -416,10 +452,10 @@ class FailureReason extends Exception
                 $mx[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1]), 0));
             }
             if ($this->_a["listViewable"] ?? false) {
-                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => ""]), 0));
+                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => ""]), 0));
             }
             if ($this->_a["reviewsOutstanding"] ?? false) {
-                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0));
+                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl("search", ["q" => "", "t" => "r"]), 0));
             }
             if (count($mx) > 1) {
                 $mxl = [];

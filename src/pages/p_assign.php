@@ -25,9 +25,16 @@ class Assign_Page {
         $this->ms = new MessageSet;
     }
 
-    function error_exit(...$mls) {
+    /** @return never
+     * @throws PageCompletion */
+    function error_exit(FailureReason $perm) {
+        Navigation::http_response_code($perm->response_code($this->user));
+        if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
+            $perm->set("expand", true);
+            $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
+            $this->conf->feedback_msg($perm->message_list());
+        }
         PaperTable::print_header($this->pt, $this->qreq, true);
-        $this->conf->feedback_msg(...$mls);
         $this->qreq->print_footer();
         throw new PageCompletion;
     }
@@ -44,8 +51,11 @@ class Assign_Page {
         } catch (Redirection $redir) {
             throw $redir;
         } catch (FailureReason $perm) {
-            $perm->set("expand", true);
-            $this->error_exit($perm->message_list());
+            $this->error_exit($perm);
+        }
+        // check for garbage in path
+        if ((string) $this->qreq->path_component(0) !== "") {
+            $this->error_exit(new FailureReason($this->conf, ["invalidPath" => $this->qreq->path_component(0)]));
         }
     }
 
@@ -217,7 +227,7 @@ class Assign_Page {
     private function print_reqrev_main($rrow, $namex, $time) {
         $rname = $rrow->status_title(true) . " (" . $rrow->status_description() . ")";
         if ($this->user->can_view_review($this->prow, $rrow)) {
-            $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId], Conf::HOTURL_RAW));
+            $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId]));
         }
         echo $rname, ': ', $namex,
             '</div><div class="f-d"><ul class="x mb-0">';
@@ -329,7 +339,7 @@ class Assign_Page {
                 && $this->user->privChair
                 && $this->user->allow_admin($this->prow)) {
                 $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
-                    $this->prow->reviewurl(["actas" => $rrowid->email], Conf::HOTURL_RAW));
+                    $this->prow->reviewurl(["actas" => $rrowid->email]));
             }
         } else {
             $name = Text::nameo_h($rrowid, NAME_P);
@@ -657,7 +667,7 @@ class Assign_Page {
         }
 
         // reason area
-        $null_mailer = new HotCRPMailer($this->conf);
+        $null_mailer = new HotCRPMailer($this->conf->root_user());
         $reqbody = $null_mailer->expand_template("requestreview");
         if ($reqbody && strpos($reqbody["body"], "REASON") !== false) {
             echo '<div class="f-i">',

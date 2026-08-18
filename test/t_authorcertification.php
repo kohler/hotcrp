@@ -30,7 +30,6 @@ class AuthorCertification_Tester {
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $conf->save_setting("sub_open", 1);
-        $conf->save_setting("sub_update", Conf::$now + 100);
         $conf->save_setting("sub_sub", Conf::$now + 100);
         $conf->refresh_settings();
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
@@ -94,6 +93,57 @@ class AuthorCertification_Tester {
         return $this->conf->checked_paper_by_id($this->pid);
     }
 
+    /** @return ?object */
+    private function cert_data($cert, $cid) {
+        $row = $this->conf->fetch_first_row("select data from PaperOption where paperId=? and optionId=? and value=?", $this->pid, $cert->id, $cid);
+        return $row ? json_decode($row[0]) : null;
+    }
+
+    function test_json_provenance_not_forgeable_by_author() {
+        // A non-manager author saving via the JSON path must not forge the
+        // provenance (admin/by/at) of their certification: the web path forces
+        // admin=can_manage, by=viewer, at=now, and the JSON path must match.
+        // Only a manager may set provenance explicitly (e.g. when importing).
+        $prow = $this->paper();
+        xassert(!$this->u_carole->can_manage($prow));
+        $jk = $this->cert1->json_key();
+        $cid = $this->u_carole->contactId;
+
+        // carole (author) forges admin=true, by=<sally>, at=1 for her own entry
+        $entry = (object) ["email" => "cleita@berkeley.ca", "value" => true,
+                           "admin" => true, "by" => $this->u_sally->contactId, "at" => 1];
+        $pj = (object) ["object" => "paper", "pid" => $this->pid,
+                        $jk => (object) ["entries" => [$entry]]];
+        xassert((new PaperStatus($this->u_carole))->save_paper_json($pj));
+
+        // the forged provenance must NOT persist; server values are used instead
+        $d = $this->cert_data($this->cert1, $cid);
+        xassert(!!$d);
+        xassert_eqq($d->admin ?? false, false);          // not admin-issued
+        xassert_eqq($d->by ?? $cid, $cid);               // attributed to self
+        xassert_neqq($d->at ?? null, 1);                 // not the forged timestamp
+        xassert_ge($d->at ?? 0, Conf::$now - 5);         // server-set ~now
+
+        // decertify carole (provenance is fixed at certification time, so an
+        // explicit-provenance re-save needs a fresh entry)
+        $entry->value = false;
+        xassert((new PaperStatus($this->u_chair))->save_paper_json($pj));
+
+        // a manager MAY set provenance explicitly on a fresh certification
+        $entry->value = true;
+        $entry->at = 555;
+        xassert((new PaperStatus($this->u_chair))->save_paper_json($pj));
+        $d = $this->cert_data($this->cert1, $cid);
+        xassert_eqq($d->at ?? null, 555);
+        xassert_eqq($d->admin ?? false, true);
+
+        // restore: decertify carole so later tests see a clean paper
+        $entry->value = false;
+        xassert((new PaperStatus($this->u_chair))->save_paper_json($pj));
+        $ov = $this->paper()->option($this->cert1);
+        xassert(!$ov || !in_array($cid, $ov->value_list(), true));
+    }
+
     function test_author_certify() {
         $ps = new PaperStatus($this->u_sally);
         xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
@@ -105,7 +155,7 @@ class AuthorCertification_Tester {
             "{$this->c2key}:1:value" => 1,
             "status:submit" => 1
         ])->set_user($this->u_sally), $this->paper()));
-        xassert_array_eqq($ps->changed_keys(), ["aucert_1", "aucert_2"], true);
+        xassert_array_eqq($ps->change_list(), ["aucert_1", "aucert_2"], true);
         xassert($ps->execute_save());
 
         $prow = $this->paper();
@@ -297,6 +347,84 @@ class AuthorCertification_Tester {
         $prow = $this->paper();
         xassert_le($prow->timeSubmitted, 0);
         xassert_le($prow->timeWithdrawn, 0);
+    }
+
+    /** @param Contact $user
+     * @param string $title
+     * @return int */
+    private function new_certified_paper($user, $title) {
+        $ps = new PaperStatus($user);
+        xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
+            "title" => $title,
+            "abstract" => "The Berkeley Public Library is an excellent library.",
+            "has_authors" => "1",
+            "authors:1:name" => $user->name(),
+            "authors:1:email" => $user->email,
+            "has_submission" => 1,
+            "has_{$this->c1key}" => "1",
+            "{$this->c1key}:1:email" => $user->email,
+            "{$this->c1key}:1:value" => "1",
+            "has_{$this->c2key}" => "1",
+            "{$this->c2key}:1:email" => $user->email,
+            "{$this->c2key}:1:value" => "1"
+        ])->set_file_content("submission:file", "%PDF-Monticello", null, "application/pdf")
+          ->set_user($user), null));
+        xassert($ps->execute_save());
+        return $ps->paperId;
+    }
+
+    function test_withdraw_resets_certifications_via_paperstatus() {
+        $u_ronald = Contact::make_email($this->conf, "rlrivest@mit.edu")->ensure_account_here();
+        $pid = $this->new_certified_paper($u_ronald, "Ronald’s certified paper");
+
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_in_eqq($u_ronald->contactId, $prow->option($this->cert1)->value_list());
+        xassert_in_eqq($u_ronald->contactId, $prow->option($this->cert2)->value_list());
+
+        // withdrawing through PaperStatus clears the certifications
+        $ps = new PaperStatus($u_ronald);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        $ps->log_save_activity();
+
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert_gt($prow->timeWithdrawn, 0);
+        xassert_eqq($prow->force_option($this->cert1)->value_count(), 0);
+        xassert_eqq($prow->force_option($this->cert2)->value_count(), 0);
+
+        // the withdrawal is logged, and the silently-reset certifications are
+        // not named in its change list
+        $action = $this->conf->fetch_value("select action from ActionLog where paperId=? order by logId desc limit 1", $pid);
+        xassert_str_contains($action, "withdrawn");
+        xassert_not_str_contains($action, "aucert");
+    }
+
+    function test_max_submissions_revive() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $this->cert1->id,
+            "sf/1/max_submissions" => 1
+        ]);
+        xassert($sv->execute());
+        $this->cert1 = $this->conf->options()->option_by_id($this->cert1->id);
+
+        $u_estelle = Contact::make_email($this->conf, "estelle@ee.lbl.gov")->ensure_account_here();
+
+        // Estelle certifies and submits one paper, then withdraws it
+        $pid1 = $this->new_certified_paper($u_estelle, "Estelle’s first paper");
+        xassert_assign($u_estelle, "action,paper\nsubmit,{$pid1}");
+        xassert_gt($this->conf->checked_paper_by_id($pid1)->timeSubmitted, 0);
+        xassert_assign($u_estelle, "action,paper\nwithdraw,{$pid1}");
+
+        // the withdrawal frees up her certification limit for a second paper
+        $pid2 = $this->new_certified_paper($u_estelle, "Estelle’s second paper");
+        xassert_assign($u_estelle, "action,paper\nsubmit,{$pid2}");
+        xassert_gt($this->conf->checked_paper_by_id($pid2)->timeSubmitted, 0);
+
+        // reviving the first must not push her over the limit
+        xassert_assign($u_estelle, "action,paper\nrevive,{$pid1}");
+        $prow1 = $this->conf->checked_paper_by_id($pid1);
+        xassert_le($prow1->timeWithdrawn, 0);
+        xassert_le($prow1->timeSubmitted, 0);
     }
 
     function finalize() {

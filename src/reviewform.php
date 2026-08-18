@@ -245,15 +245,14 @@ class ReviewForm {
 
     /** @param PaperInfo $prow
      * @param ?ReviewInfo $rrow
-     * @param Contact $viewer
+     * @param ContactPermissions $viewer
      * @param bool $no_update */
     static function check_review_author_seen($prow, $rrow, $viewer,
                                              $no_update = false) {
         if (!$rrow
             || !$rrow->reviewId
             || ($rrow->reviewAuthorSeen && ($rrow->rflags & ReviewInfo::RF_AUSEEN) !== 0)
-            || !$viewer->act_author_view($prow)
-            || $viewer->is_actas_user()) {
+            || !$viewer->implies_author_view($prow)) {
             return;
         }
         // XXX combination of review tokens & authorship gets weird -- old comment
@@ -272,7 +271,7 @@ class ReviewForm {
         $x = "==+== " . $this->conf->short_name . " Review Form" . ($plural ? "s" : "") . "\n";
         $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" OR \"==*==\".
 ==-== For further guidance, or to upload this file when you are done, go to:
-==-== " . $this->conf->hoturl_raw("offline", null, Conf::HOTURL_ABSOLUTE) . "\n\n";
+==-== " . $this->conf->hoturl("offline", null, Conf::HOTURL_ABSOLUTE) . "\n\n";
         return $x;
     }
 
@@ -353,9 +352,9 @@ Ready\n";
     const UNPARSE_FLOWED = 4;
     const UNPARSE_TRUNCATE = 8;
 
-    function unparse_text(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
-                          $flags = 0) {
-        self::check_review_author_seen($prow, $rrow, $contact, !!($flags & self::UNPARSE_NO_AUTHOR_SEEN));
+    function unparse_text(PaperInfo $prow, ReviewInfo $rrow,
+                          ContactPermissions $viewer, $flags = 0) {
+        self::check_review_author_seen($prow, $rrow, $viewer, !!($flags & self::UNPARSE_NO_AUTHOR_SEEN));
 
         $n = "";
         if (!($flags & self::UNPARSE_NO_TITLE)) {
@@ -366,7 +365,7 @@ Ready\n";
             $n .= " #" . $rrow->unparse_ordinal_id();
         }
         if ($rrow->reviewRound
-            && $contact->can_view_review_meta($prow, $rrow)) {
+            && $viewer->can_view_review_meta($prow, $rrow)) {
             $n .= " [" . $prow->conf->round_name($rrow->reviewRound) . "]";
         }
         $t = [$n . "\n" . str_repeat("=", 75) . "\n"];
@@ -375,12 +374,12 @@ Ready\n";
         if (!($flags & self::UNPARSE_NO_TITLE)) {
             $t[] = prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2, null, $flowed);
         }
-        if ($contact->can_view_review_identity($prow, $rrow)) {
+        if ($viewer->can_view_review_identity($prow, $rrow)) {
             $reviewer = $rrow->reviewer();
             $t[] = "* Reviewer: " . Text::nameo($reviewer, NAME_EB) . "\n";
         }
         if ($rrow->reviewModified > $rrow->reviewSubmitted) {
-            list($time, $obscured) = $rrow->mtime_info($contact);
+            list($time, $obscured) = $rrow->mtime_info($viewer);
             if ($time > 0) {
                 $time_text = $obscured ? $this->conf->unparse_time_obscure($time) : $this->conf->unparse_time($time);
                 $t[] = "* Updated: {$time_text}\n";
@@ -388,7 +387,7 @@ Ready\n";
         }
 
         $args = ["flowed" => ($flags & self::UNPARSE_FLOWED) !== 0];
-        foreach ($rrow->viewable_fields($contact) as $f) {
+        foreach ($rrow->viewable_fields($viewer) as $f) {
             if (($fv = $rrow->fval($f)) !== null) {
                 $f->unparse_text_field($t, $fv, $args);
             }
@@ -487,11 +486,11 @@ Ready\n";
             echo '" data-review-ordinal="', unparse_latin_ordinal($rrow->reviewOrdinal);
         }
         echo '">',
-            Ht::form($this->conf->hoturl_raw("=review", $rlink1 + ["m" => "re"] + $rlink2), [
+            Ht::form($this->conf->hoturl("=review", $rlink1 + ["m" => "re"] + $rlink2), [
                 "id" => "f-review",
                 "class" => "need-unload-protection need-diff-check",
                 "data-differs-toggle" => "review-alert"
-            ], Conf::HOTURL_RAW),
+            ]),
             Ht::hidden_default_submit("default", "");
         if ($rrow->reviewId) {
             echo Ht::hidden("edit_version", ($rrow->reviewEditVersion ?? 0) + 1),
@@ -624,7 +623,7 @@ Ready\n";
     function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $viewer) {
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
-        $a = '<a href="' . Ht::escape_attr($prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()], Conf::HOTURL_RAW)) . '"';
+        $a = '<a href="' . Ht::escape_attr($prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()])) . '"';
         $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . "</a></td>"

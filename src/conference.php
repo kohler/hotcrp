@@ -371,7 +371,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 327) {
+        if ($this->sversion < 329) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -485,6 +485,11 @@ class Conf {
         // time settings
         $this->refresh_time_settings();
 
+        // randomizer
+        if ($this->_id_randomizer) {
+            $this->_id_randomizer->refresh_settings();
+        }
+
         // parse searches last (parse may depend on other settings)
         $au_seerev = $this->settings["au_seerev"] ?? 0;
         if ($au_seerev === self::AUSEEREV_SEARCH) {
@@ -588,19 +593,6 @@ class Conf {
                 }
             }
             $this->_round_settings["max"] = (object) $max_rs;
-        }
-
-        // review times
-        foreach ($this->rounds as $i => $rname) {
-            $suf = $i ? "_{$i}" : "";
-            if (!isset($this->settings["extrev_soft{$suf}"])
-                && isset($this->settings["pcrev_soft{$suf}"])) {
-                $this->settings["extrev_soft{$suf}"] = $this->settings["pcrev_soft{$suf}"];
-            }
-            if (!isset($this->settings["extrev_hard{$suf}"])
-                && isset($this->settings["pcrev_hard{$suf}"])) {
-                $this->settings["extrev_hard{$suf}"] = $this->settings["pcrev_hard{$suf}"];
-            }
         }
     }
 
@@ -3091,7 +3083,7 @@ class Conf {
      * @return null|-1|0|1 */
     function compute_secondary_review_needs_submit($pid, $cid) {
         $secondary = REVIEW_SECONDARY;
-        $row = Dbl::fetch_first_row($this->qe("select sum(reviewType={$secondary} and contactId={$cid} and reviewSubmitted is null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid} and reviewSubmitted is not null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
+        $row = Dbl::fetch_first_row($this->qe("select sum(reviewType={$secondary} and contactId={$cid} and reviewSubmitted<=0), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid} and reviewSubmitted>0), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
         if (!$row || !$row[0]) {
             return null;
         } else if ($row[1]) {
@@ -3104,7 +3096,9 @@ class Conf {
      * @param int $cid
      * @param 2|1|0|-1|-2 $direction */
     function update_review_delegation($pid, $cid, $direction) {
-        if ($direction === 2) {
+        if ($cid <= 0) {
+            // do nothing
+        } else if ($direction === 2) {
             $this->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=?", $pid, $cid);
         } else if ($direction === 1) {
             $this->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewNeedsSubmit=1", $pid, $cid);
@@ -3714,17 +3708,25 @@ class Conf {
     /** @param ?int $round
      * @param bool|int $reviewType
      * @param bool $hard
-     * @return string|false */
+     * @return int */
+    function review_deadline($round, $reviewType, $hard) {
+        $dn = $this->review_deadline_name($round, $reviewType, $hard);
+        $dv = $this->settings[$dn] ?? null;
+        if ($dv === null && str_starts_with($dn, "extrev_")) {
+            $dv = $this->settings["pcrev_" . substr($dn, 7)] ?? null;
+        }
+        return $dv ?? 0;
+    }
+    /** @param ?int $round
+     * @param bool|int $reviewType
+     * @param bool $hard
+     * @return bool */
     function missed_review_deadline($round, $reviewType, $hard) {
         if (!$this->time_review_open()) {
-            return "rev_open";
+            return true;
         }
-        $dn = $this->review_deadline_name($round, $reviewType, $hard);
-        $dv = $this->settings[$dn] ?? 0;
-        if ($dv > 0 && $dv < Conf::$now) {
-            return $dn;
-        }
-        return false;
+        $dv = $this->review_deadline($round, $reviewType, $hard);
+        return $dv > 0 && $dv < Conf::$now;
     }
     /** @param ?int $round
      * @param bool|int $reviewType
@@ -3889,31 +3891,28 @@ class Conf {
         }
     }
 
-    const HOTURL_RAW = 1;
-    const HOTURL_POST = 2;
-    const HOTURL_ABSOLUTE = 4;
-    const HOTURL_SITEREL = 8;
+    const HOTURL_RAW = 0;              // XXX backward compatibility
+    const HOTURL_POST = 2;             // include `post=` CSRF token
+    const HOTURL_ABSOLUTE = 4;         // generate absolute URL
+    const HOTURL_SITEREL = 8;          // generate site-relative URL (no `../../`)
     const HOTURL_SITE_RELATIVE = 8;
-    const HOTURL_SERVERREL = 16;
-    const HOTURL_NO_DEFAULTS = 32;
-    const HOTURL_REDIRECTABLE = 64;
-    const HOTURL_MAYBE_POST = 128;
+    const HOTURL_SERVERREL = 16;       // generate server-relative URL (start with sitepath)
+    const HOTURL_NO_DEFAULTS = 32;     // do not include user default params
+    const HOTURL_REDIRECTABLE = 64;    // in qrequrl, use `redirect` parameter if safe
+    const HOTURL_MAYBE_POST = 128;     // include `post=` CSRF token if exists
+    const HOTURL_PLACEHOLDERS = 256;   // do not encode `{{PLACEHOLDER}}` strings (for mail templates)
 
     /** @param string $page
      * @param ?array $params
      * @param int $flags
      * @return string */
     function hoturl($page, $params = null, $flags = 0) {
-        if (($flags & self::HOTURL_RAW) === 0) {
-            error_log("Missing HOTURL_RAW at " . debug_string_backtrace());
-        }
         if (is_string($params)) {
             error_log("hoturl \$params is string at " . debug_string_backtrace());
             parse_str($params, $xparams);
             $params = $xparams;
         }
         $qreq = Qrequest::$main_request;
-        $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         if (str_starts_with($page, "=")) {
             if ($page[1] === "?") {
                 $flags |= self::HOTURL_MAYBE_POST;
@@ -3923,55 +3922,25 @@ class Conf {
             }
             $flags |= self::HOTURL_POST;
         }
-        $t = $page;
-        $are = '/\A(|.*?(?:&|&amp;))';
-        $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
-        // parse options, separate fragment
-        $fragment = "";
-        $defaults = [];
+        $pm = [];
+        foreach ($params ?? [] as $k => $v) {
+            if ($v !== null) {
+                $pm[$k] = $v;
+            }
+        }
         if (($flags & self::HOTURL_NO_DEFAULTS) === 0
             && $qreq
             && $qreq->user()) {
-            $defaults = $qreq->user()->hoturl_defaults();
+            foreach ($qreq->user()->hoturl_defaults() as $k => $v) {
+                if (!array_key_exists($k, $params ?? [])) {
+                    $pm[$k] = $v;
+                }
+            }
         }
-        if (is_array($params)) {
-            $param = $sep = "";
-            foreach ($params as $k => $v) {
-                /* XXX urlencode($k) */
-                if ($v === null || $v === false) {
-                    continue;
-                }
-                if ($k === "#") {
-                    if (($flags & self::HOTURL_RAW) === 0
-                        && strcspn($v, "&<\"'") !== strlen($v)) {
-                        $v = htmlspecialchars($v);
-                    }
-                    $fragment = "#{$v}";
-                } else {
-                    $param .= "{$sep}{$k}=" . urlencode($v);
-                    $sep = $amp;
-                }
-            }
-            foreach ($defaults as $k => $v) {
-                /* XXX urlencode($k) */
-                if (!array_key_exists($k, $params)) {
-                    $param .= "{$sep}{$k}={$v}";
-                    $sep = $amp;
-                }
-            }
-        } else {
-            $param = (string) $params;
-            if (($pos = strpos($param, "#")) !== false) {
-                $fragment = substr($param, $pos);
-                $param = substr($param, 0, $pos);
-            }
-            $sep = $param === "" ? "" : $amp;
-            foreach ($defaults as $k => $v) {
-                if (!preg_match($are . preg_quote($k) . '=/', $param)) {
-                    $param .= "{$sep}{$k}={$v}";
-                    $sep = $amp;
-                }
-            }
+        $fragment = "";
+        if (isset($pm["#"])) {
+            $fragment = "#" . $pm["#"];
+            unset($pm["#"]);
         }
         if (($flags & (self::HOTURL_POST | self::HOTURL_MAYBE_POST)) !== 0) {
             if (($flags & self::HOTURL_MAYBE_POST) !== 0) {
@@ -3979,11 +3948,10 @@ class Conf {
             } else {
                 $post = $qreq->post_value();
             }
-            $param .= "{$sep}post={$post}";
-            $sep = $amp;
+            $pm["post"] = $post;
         }
         // append forceShow to links to same paper if appropriate
-        $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
+        $is_paper_page = in_array($page, ["paper", "review", "assign"], true);
         if ($is_paper_page
             && $qreq
             && ($paper = $qreq->paper())
@@ -3992,98 +3960,107 @@ class Conf {
             && Contact::$main_user->conf === $this
             && Contact::$main_user->is_admin($paper)
             && $paper->has_conflict(Contact::$main_user)
-            && preg_match("{$are}p={$paper->paperId}{$zre}", $param)
-            && (is_array($params) ? !array_key_exists("forceShow", $params) : !preg_match($are . 'forceShow=/', $param))) {
-            $param .= $amp . "forceShow=1";
+            && ($pm["p"] ?? null) == (string) $paper->paperId
+            && !array_key_exists("forceShow", $params)) {
+            $pm["forceShow"] = 1;
         }
         // create slash-based URLs if appropriate
-        if ($param) {
-            if ($page === "review"
-                && preg_match($are . 'p=(\d+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-                if (preg_match($are . 'r=(\d+)([A-Z]+|r\d+|rnew)' . $zre, $param, $mm)
-                    && $mm[2] === $m[2]) {
-                    $tp .= $mm[3];
-                    $param = $mm[1] . $mm[4];
+        $tp = "";
+        if ($params) {
+            if ($is_paper_page) {
+                if (isset($pm["p"])
+                    && (is_int($pm["p"])
+                        || ctype_digit($pm["p"])
+                        || $pm["p"] === "new"
+                        || (($flags & self::HOTURL_PLACEHOLDERS) !== 0
+                            && preg_match('/\A(?:%\w++%|\{\{\w++\}\})\z/', $pm["p"])))) {
+                    $pid = (string) $pm["p"];
+                    $tp = "/" . $pid;
+                    unset($pm["p"]);
+                    if ($page === "review"
+                        && isset($pm["r"])
+                        && str_starts_with($pm["r"], $pid)
+                        && preg_match('/\G([A-Z]++|r\d++|rnew)\z/', $pm["r"], $m, 0, strlen($pid))) {
+                        $tp .= $m[1];
+                        unset($pm["r"]);
+                    } else if ($page === "paper"
+                               && isset($pm["m"])
+                               && ctype_alnum($pm["m"])) {
+                        $tp .= "/" . $pm["m"];
+                        unset($pm["m"]);
+                    }
                 }
-            } else if (($is_paper_page
-                        && preg_match($are . 'p=(\d++|%25\w++%25|%7B%7B\w++%7D%7D|new)' . $zre, $param, $m))
-                       || ($page === "help"
-                           && preg_match($are . 't=(\w++)' . $zre, $param, $m))
-                       || (($page === "settings" || $page === "graph")
-                           && preg_match($are . 'group=(\w++)' . $zre, $param, $m))) {
-                $tp = "/" . urldecode($m[2]);
-                $param = $m[1] . $m[3];
-                if ($param !== ""
-                    && $page === "paper"
-                    && preg_match($are . 'm=(\w++)' . $zre, $param, $m)) {
-                    $tp .= "/" . $m[2];
-                    $param = $m[1] . $m[3];
+            } else if ($page === "help" || $page === "users") {
+                if (isset($pm["t"])
+                    && ctype_alnum($pm["t"])) {
+                    $tp = "/" . $pm["t"];
+                    unset($pm["t"]);
                 }
-            } else if ($page === "doc"
-                       && preg_match($are . 'file=([^&]++)' . $zre, $param, $m)) {
-                $tp = "/" . str_replace("%2F", "/", $m[2]);
-                $param = $m[1] . $m[3];
-            } else if ($page === "profile"
-                       && preg_match($are . 'u=([^&?]++)' . $zre, $param, $m)) {
-                $tp = "/" . str_replace("%2F", "/", $m[2]);
-                $param = $m[1] . $m[3];
-                if ($param !== ""
-                    && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
-                    $tp .= "/" . $m[2];
-                    $param = $m[1] . $m[3];
+            } else if ($page === "settings" || $page === "graph") {
+                if (isset($pm["group"])
+                    && ctype_alnum($pm["group"])) {
+                    $tp = "/" . $pm["group"];
+                    unset($pm["group"]);
                 }
-            } else if ($page === "profile"
-                       && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-            } else if ($page === "api"
-                       && preg_match($are . 'fn=(\w+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-                if (preg_match($are . 'p=(\d+)' . $zre, $param, $m)) {
-                    $tp = "/" . $m[2] . $tp;
-                    $param = $m[1] . $m[3];
+            } else if ($page === "doc") {
+                if (isset($pm["file"])) {
+                    $tp = "/" . str_replace("%2F", "/", rawurlencode($pm["file"]));
+                    unset($pm["file"]);
                 }
-            } else if ($page === "users"
-                       && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
-                $tp = "/" . $m[2];
-                $param = $m[1] . $m[3];
-            } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)) {
-                $tp = "/" . urldecode($m[2]);
-                $param = $m[1] . $m[3];
-            } else {
-                $tp = "";
+            } else if ($page === "profile") {
+                if (isset($pm["u"])
+                    && strpos($pm["u"], "/") === false) {
+                    $tp = "/" . rawurlencode($pm["u"]);
+                    unset($pm["u"]);
+                }
+                if (isset($pm["t"])
+                    && ctype_alnum($pm["t"])) {
+                    $tp .= "/" . $pm["t"];
+                    unset($pm["t"]);
+                }
+            } else if ($page === "api") {
+                if (isset($pm["fn"])
+                    && preg_match('/\A\w++\z/', $pm["fn"])) {
+                    if (isset($pm["p"])
+                        && (is_int($pm["p"]) || ctype_digit($pm["p"]))) {
+                        $tp = "/" . $pm["p"];
+                        unset($pm["p"]);
+                    }
+                    $tp .= "/" . $pm["fn"];
+                    unset($pm["fn"]);
+                }
             }
-            if ($tp !== "") {
-                $t .= $tp;
-                if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)
-                    && $tp === "/" . urldecode($m[2])) {
-                    $param = $m[1] . $m[3];
+            if (isset($pm["__PATH__"])) {
+                $path = "/" . str_replace("%2F", "/", rawurlencode($pm["__PATH__"]));
+                if ($tp === "" || $tp === $path) {
+                    $tp = $path;
+                    unset($pm["__PATH__"]);
                 }
             }
-            $param = preg_replace('/&(?:amp;)?\z/', "", $param);
         }
+        // prepare $t; insert php_suffix before any slash in the page
+        $t = $page;
         $nav = $qreq ? $qreq->navigation() : Navigation::get();
         if ($nav->php_suffix !== "") {
-            if (($slash = strpos($t, "/")) !== false) {
-                $a = substr($t, 0, $slash);
-                $b = substr($t, $slash);
-            } else {
-                $a = $t;
-                $b = "";
+            $slen = strlen($nav->php_suffix);
+            $slash = strlpos($t, "/");
+            if ($slash < $slen
+                || substr_compare($t, $nav->php_suffix, $slash - $slen, $slen) !== 0) {
+                $t = $slash === strlen($t)
+                    ? $t . $nav->php_suffix
+                    : substr($t, 0, $slash) . $nav->php_suffix . substr($t, $slash);
             }
-            if (!str_ends_with($a, $nav->php_suffix)) {
-                $a .= $nav->php_suffix;
+        }
+        $t .= $tp;
+        if (!empty($pm)) {
+            $qt = http_build_query($pm);
+            if (($flags & self::HOTURL_PLACEHOLDERS) !== 0) {
+                $qt = preg_replace_callback('/=(?:%7B%7B\w++%7D%7D|%25\w++%25)(?=&|\z)/',
+                    function ($m) {
+                        return urldecode($m[0]);
+                    }, $qt);
             }
-            $t = $a . $b;
-        }
-        if ($param !== "" && preg_match('/\A&(?:amp;)?(.*)\z/', $param, $m)) {
-            $param = $m[1];
-        }
-        if ($param !== "") {
-            $t .= "?" . $param;
+            $t .= "?" . $qt;
         }
         if ($fragment !== "") {
             $t .= $fragment;
@@ -4116,9 +4093,10 @@ class Conf {
     /** @param string $page
      * @param ?array $param
      * @param int $flags
-     * @return string */
+     * @return string
+     * @deprecated */
     function hoturl_raw($page, $param = null, $flags = 0) {
-        return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
+        return $this->hoturl($page, $param, $flags);
     }
 
     /** @param int|float|string $html
@@ -4127,7 +4105,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function hotlink($html, $page, $param = null, $js = null) {
-        return Ht::link($html, $this->hoturl($page, $param, self::HOTURL_RAW), $js);
+        return Ht::link($html, $this->hoturl($page, $param), $js);
     }
 
     /** @param string $page
@@ -4135,7 +4113,7 @@ class Conf {
      * @param ?array $js
      * @return string */
     function hotform($page, $param = null, $js = null) {
-        return Ht::form($this->hoturl_raw($page, $param), $js, self::HOTURL_RAW);
+        return Ht::form($this->hoturl($page, $param), $js);
     }
 
 
@@ -4176,7 +4154,7 @@ class Conf {
         foreach ($param as $k => $v) {
             $x[$k] = $v;
         }
-        return $this->hoturl($qreq->page(), $x, $flags | self::HOTURL_RAW);
+        return $this->hoturl($qreq->page(), $x, $flags);
     }
 
     /** @param Qrequest $qreq
@@ -4253,7 +4231,7 @@ class Conf {
      * @deprecated
      * @suppress PhanDeprecatedFunction */
     function redirect_hoturl($page, $param = null) {
-        $this->redirect($this->hoturl($page, $param, self::HOTURL_RAW));
+        $this->redirect($this->hoturl($page, $param));
     }
 
     /** @param Qrequest $qreq
@@ -4382,8 +4360,6 @@ class Conf {
         // return known-empty result
         if (($cxid < 0
              && (($options["myReviewRequests"] ?? false)
-                 || ($options["myLead"] ?? false)
-                 || ($options["myShepherd"] ?? false)
                  || ($options["myManaged"] ?? false)
                  || ($options["myWatching"] ?? false)
                  || ($options["myConflicts"] ?? false)))
@@ -4412,7 +4388,7 @@ class Conf {
 
         // author options
         $author = $options["author"] ?? false;
-        $aucondition = $user && $author ? $user->act_author_view_sql("PaperConflict", true) : null;
+        $aucondition = $user && $author ? $user->is_author_view_sql("PaperConflict", true) : null;
         if ($aucondition) {
             $where[] = $aucondition;
         } else if ($author && $cxid < 0) {
@@ -4554,14 +4530,10 @@ class Conf {
         foreach ($options["decision"] ?? [] as $d) {
             $where[] = $this->decision_set()->sqlexpr($d);
         }
-        if ($options["myLead"] ?? false) {
-            $where[] = "leadContactId={$cxid}";
-        } else if ($options["anyLead"] ?? false) {
+        if ($options["anyLead"] ?? false) {
             $where[] = "leadContactId!=0";
         }
-        if ($options["myShepherd"] ?? false) {
-            $where[] = "shepherdContactId={$cxid}";
-        } else if ($options["anyShepherd"] ?? false) {
+        if ($options["anyShepherd"] ?? false) {
             $where[] = "shepherdContactId!=0";
         }
         if ($options["myManaged"] ?? false) {
@@ -4599,8 +4571,9 @@ class Conf {
             && empty($where)
             && $user->has_authored_papers()
             && $want_set) {
+            // `authored_papers()` itself should be immutable
             /** @phan-suppress-next-line PhanTypeMismatchReturn */
-            return $user->authored_papers();
+            return clone $user->authored_papers();
         }
 
         $pq = "select " . join(",\n    ", $cols)
@@ -4662,7 +4635,7 @@ class Conf {
     function set_paper_request(Qrequest $qreq, Contact $user) {
         $qreq->set_paper(null);
         $prow = null;
-        if ($qreq->p) {
+        if ((string) $qreq->p !== "") {
             $pid = stoi($qreq->p) ?? 0;
             if ($pid > 0 && $pid <= PaperInfo::PID_MAX) {
                 $prow = $this->paper_by_id($pid, $user);
@@ -5026,10 +4999,7 @@ class Conf {
                 $userinfo["session_users"] = $susers;
             }
             if (($defaults = $user->hoturl_defaults())) {
-                $siteinfo["defaults"] = [];
-                foreach ($defaults as $k => $v) {
-                    $siteinfo["defaults"][$k] = urldecode($v);
-                }
+                $siteinfo["defaults"] = $defaults;
             }
         }
         $siteinfo["user"] = $userinfo;
@@ -5344,7 +5314,7 @@ class Conf {
         // Callback for version warnings
         if ($user
             && $user->privChair
-            && $qreq->qsession()->is_open()
+            && $qreq->qsession()->is_writable()
             && (!$qreq->has_gsession("updatecheck")
                 || $qreq->gsession("updatecheck") + ($this->opt["updatesSiteFrequency"] ?? 3600) <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
@@ -5990,6 +5960,9 @@ class Conf {
         if (!is_string($uf->function)) {
             return JsonResult::make_error(404, "<0>Function not found");
         }
+        if (($uf->session ?? null) === false) {
+            $qreq->commit_session();
+        }
         try {
             self::xt_resolve_require($uf);
             $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);
@@ -6006,13 +5979,7 @@ class Conf {
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
-            if (isset($whynot["scope"])) {
-                $status = 401;
-            } else if (isset($whynot["noPaper"])) {
-                $status = 404;
-            } else {
-                $status = 403;
-            }
+            $status = $whynot->response_code();
             array_push($result["message_list"], ...$whynot->message_list(null, 2));
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
@@ -6022,7 +5989,7 @@ class Conf {
             $result["message_list"][] = MessageItem::error_at("p", "<0>Parameter missing");
         }
         $jr = new JsonResult($status, $result);
-        if ($status === 401) {
+        if ($whynot && isset($whynot["scope"])) {
             $jr->set_header($whynot->conf->www_authenticate_header("insufficient_scope", null, $whynot["scope"]));
         }
         return $jr;

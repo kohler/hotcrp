@@ -261,7 +261,7 @@ class Signin_Page {
         foreach ($conf->oauth_providers() as $authdata) {
             if ($authdata->button_html && !($authdata->disabled ?? false)) {
                 $param["authtype"] = $authdata->name;
-                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl_raw("oauth", $param), "formmethod" => "post", "class" => "{$top}w-100 flex-grow-1"]);
+                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("oauth", $param), "formmethod" => "post", "class" => "{$top}w-100 flex-grow-1"]);
                 $top = "mt-2 ";
             }
         }
@@ -505,7 +505,7 @@ class Signin_Page {
             $nqreq = (new Qrequest("POST", ["email" => $resetcap]))
                 ->set_conf($qreq->conf())
                 ->set_navigation($qreq->navigation())
-                ->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL))
+                ->set_annex("redirect", $user->conf->hoturl("resetpassword", null, Conf::HOTURL_SERVERREL))
                 ->approve_token();
             $this->forgot_request($user, $nqreq); // may redirect
             if ($this->problem_status_at("email")) {
@@ -598,7 +598,7 @@ class Signin_Page {
             "email" => $this->_reset_user->email,
             "password" => $info["newpassword"]
         ]);
-        $info["redirect"] = $info["redirect"] ?? $user->conf->hoturl_raw("signin");
+        $info["redirect"] = $info["redirect"] ?? $user->conf->hoturl("signin");
         return $info;
     }
     static function print_reset_head(Contact $user, Qrequest $qreq, $cs) {

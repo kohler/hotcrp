@@ -1,0 +1,50 @@
+#! /bin/bash
+## hotcrp-daemonize -- run a command as a detached daemon
+## Usage: hotcrp-daemonize COMMAND [ARG...]
+## Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
+##
+## Closes every inherited file descriptor greater than 2, starts a new
+## session, runs COMMAND in the background, and exits immediately, so COMMAND
+## outlives the calling process and holds none of its descriptors. Set
+## $Opt["daemonizeCommand"] to this script's absolute path.
+##
+## Requires bash. POSIX shells need support only file descriptor numbers 0-9 in
+## redirections, and dash, ksh, and zsh parse `12<&-` as a command named `12`.
+
+if [ -z "$BASH_VERSION" ]; then
+    echo "$0: must run under bash" 1>&2
+    exit 1
+fi
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 COMMAND [ARG...]" 1>&2
+    exit 1
+fi
+
+fddir=/dev/fd
+if [ -d /proc/self/fd ]; then fddir=/proc/self/fd; fi
+if [ ! -d "$fddir" ]; then
+    echo "$0: no $fddir, cannot close inherited file descriptors" 1>&2
+    exit 1
+fi
+closefds=
+for f in "$fddir"/*; do
+    n=${f##*/}
+    case "$n" in
+        ''|*[!0-9]*|0|1|2) :;;
+        *) closefds="$closefds $n<&-";;
+    esac
+done
+
+# `setsid` detaches from the caller's session and process group. It is absent
+# on macOS, where the daemon should call posix_setsid() itself.
+setsid=
+if command -v setsid >/dev/null 2>&1; then
+    setsid=setsid
+fi
+
+# Redirections on an asynchronous command apply to the child only, so closing
+# descriptors here cannot disturb this shell (bash keeps the script itself open
+# on a high descriptor). Exiting reparents the child to init. Unquoted $setsid
+# expands to no word at all when empty.
+eval $setsid '"$@"' "$closefds" '&'
+exit 0

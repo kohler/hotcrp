@@ -101,8 +101,8 @@ class Review_SearchTerm extends SearchTerm {
                 return null;
             }
         }
-        if (($qr = SearchTerm::make_constant($rsm->tautology()))) {
-            return $qr;
+        if ($rsm->tautology() !== null) {
+            return SearchTerm::make_constant($rsm->tautology());
         }
         if ($contacts !== null && $contacts !== "") {
             $rsm->set_contacts($srch->matching_uids($contacts, null, $rsm->only_pc()));
@@ -248,6 +248,7 @@ class Review_SearchTerm extends SearchTerm {
         }
         return "(select count(*) from PaperReview r where paperId=Paper.paperId and {$wheres}){$cexpr}";
     }
+
     function test(PaperInfo $prow, $xinfo) {
         $this->rsm->prepare_reviews($prow);
         $n = 0;

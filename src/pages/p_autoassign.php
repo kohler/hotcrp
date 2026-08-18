@@ -52,7 +52,9 @@ class Autoassign_Page {
             && $this->conf->can_pc_view_some_incomplete()) {
             $qreq->t = "all";
         }
-        $limits = PaperSearch::viewable_manager_limits($this->user);
+        // Since autoassignment can expose information about preferences,
+        // users can only search within manager limits
+        $limits = PaperSearch::viewable_manager_limits($this->user, $qreq->t);
         if (!isset($qreq->t) || !in_array($qreq->t, $limits, true)) {
             $qreq->t = $limits[0];
         }
@@ -447,7 +449,7 @@ class Autoassign_Page {
                 "data-submit-fn" => "requery",
                 "spellcheck" => false, "autocomplete" => "off"
             ]), " &nbsp;in &nbsp;",
-            PaperSearch::limit_selector($conf, PaperSearch::viewable_manager_limits($this->user), $qreq->t),
+            PaperSearch::limit_selector($conf, PaperSearch::viewable_manager_limits($this->user, $qreq->t), $qreq->t),
             " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
         if (isset($qreq->requery) || isset($qreq->has_pap)) {
             $search = (new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q]))->set_urlbase("autoassign");
@@ -522,7 +524,7 @@ class Autoassign_Page {
 
     function redirect_uri() {
         $nav = $this->qreq->navigation();
-        return $nav->resolve($this->conf->hoturl_raw("autoassign", $this->qreq_parameters()));
+        return $nav->resolve($this->conf->hoturl("autoassign", $this->qreq_parameters()));
     }
 
     function detach_request() {
@@ -533,7 +535,7 @@ class Autoassign_Page {
     function start_job() {
         // prepare arguments for batch autoassigner
         $qreq = $this->qreq;
-        $argv = ["-q" . $this->asel->unparse_search(), "-t" . $qreq->t];
+        $argv = ["-q=" . $this->asel->unparse_search(), "-t=" . $qreq->t];
 
         if ($qreq->pctyp === "sel") {
             $pcsel = [];
@@ -550,14 +552,14 @@ class Autoassign_Page {
             } else {
                 $pcsel = array_keys($this->conf->pc_members());
             }
-            $argv[] = "-u" . join(",", $pcsel);
+            $argv[] = "-u=" . join(",", $pcsel);
         } else if ($qreq->pctyp === "enabled") {
             $argv[] = "-uenabled";
         }
 
         if ($qreq->badpairs) {
             foreach ($this->qreq_badpairs() as $pair) {
-                $argv[] = "-X{$pair}";
+                $argv[] = "-X={$pair}";
             }
         }
 
@@ -682,7 +684,7 @@ class Autoassign_Page {
             sort($ipid);
             $q = PaperSearch::encode_id_search($ipid);
             $this->ms->warning_at(null, "<0>This assignment is incomplete!");
-            $this->ms->inform_at(null, $this->conf->_("<5><a href=\"{url}\">{Submissions} {pids:numlist#}</a> got fewer assignments than you requested.", new FmtArg("url", $this->conf->hoturl_raw("search", ["q" => $q]), 0), new FmtArg("pids", $ipid)));
+            $this->ms->inform_at(null, $this->conf->_("<5><a href=\"{url}\">{Submissions} {pids:numlist#}</a> got fewer assignments than you requested.", new FmtArg("url", $this->conf->hoturl("search", ["q" => $q]), 0), new FmtArg("pids", $ipid)));
             if (strpos($this->qreq->a, "review") !== false) {
                 $reasons = ["conflicts", "preexisting assignments", "previously declined assignments"];
                 if ($qreq->badpairs) {

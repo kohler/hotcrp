@@ -54,6 +54,17 @@ class Tag_Assignable extends Assignable {
             }
         }
     }
+    static function load_tag(AssignmentState $astate, $ltag) {
+        if ($astate->mark_stash("#{$ltag}")) {
+            $known = $astate->paper_ids();
+            $arg = empty($known) ? [] : ["where" => "Paper.paperId not in (" . join(",", $known) . ") and exists (select * from PaperTag where paperId=Paper.paperId and tag='" . sqlq($ltag) . "')"];
+            $arg["tags"] = true;
+            foreach ($astate->user->paper_set($arg) as $prow) {
+                $astate->add_prow($prow);
+                self::load_prow($astate, $prow);
+            }
+        }
+    }
     static function load_prow(AssignmentState $state, PaperInfo $prow) {
         foreach (Tagger::split_unpack($prow->all_tags_text()) as $ti) {
             $state->load(new Tag_Assignable($prow->paperId, strtolower($ti[0]), $ti[0], $ti[1]));
@@ -64,8 +75,6 @@ class Tag_Assignable extends Assignable {
 class NextTagAssignmentState {
     /** @var AssignmentState */
     private $astate;
-    /** @var bool */
-    private $all = false;
     /** @var ?string */
     private $prev_ltag;
     /** @var ?int */
@@ -75,25 +84,6 @@ class NextTagAssignmentState {
 
     function __construct(AssignmentState $astate) {
         $this->astate = $astate;
-    }
-    /** @param bool $x
-     * @return $this */
-    function set_all($x) {
-        $this->all = $x;
-        return $this;
-    }
-    private function resolve_all() {
-        if ($this->all) {
-            return;
-        }
-        $known = $this->astate->paper_ids();
-        $arg = empty($known) ? [] : ["where" => "Paper.paperId not in (" . join(",", $known) . ")"];
-        $arg["tags"] = true;
-        foreach ($this->astate->user->paper_set($arg) as $prow) {
-            $this->astate->add_prow($prow);
-            Tag_Assignable::load_prow($this->astate, $prow);
-        }
-        $this->all = true;
     }
     /** @param string $ltag
      * @param bool $isseq
@@ -105,7 +95,7 @@ class NextTagAssignmentState {
             ++$this->expected_state_version;
             return $this->prev_value;
         }
-        $this->resolve_all();
+        Tag_Assignable::load_tag($this->astate, $ltag);
         $items = $this->astate->query_items(new Tag_Assignable(null, $ltag));
         $maxvalue = null;
         foreach ($items as $item) {
@@ -121,6 +111,52 @@ class NextTagAssignmentState {
         $this->prev_ltag = $ltag;
         $this->expected_state_version = $this->astate->state_version() + 1;
         return $this->prev_value;
+    }
+}
+
+class AllotmentCheckAssigner implements AssignmentPreapplyFunction {
+    /** @var AssignmentState */
+    private $astate;
+    private $ltags = [];
+    function __construct(AssignmentState $astate) {
+        $this->astate = $astate;
+    }
+    function add_ltag($ltag, $ntag, $allotment, $landmark) {
+        if (!isset($this->ltags[$ltag])) {
+            Tag_Assignable::load_tag($this->astate, $ltag);
+        }
+        $this->ltags[$ltag] = [$ntag, $allotment, $landmark];
+    }
+    function preapply(AssignmentState $astate) {
+        foreach ($this->ltags as $ltag => $talm) {
+            $total = 0.0;
+            $pids = [];
+            foreach ($astate->query_items(new Tag_Assignable(null, $ltag),
+                                          AssignmentState::INCLUDE_DELETED) as $item) {
+                $prow = $astate->prow($item->pid());
+                if (!$prow || $prow->timeSubmitted <= 0) {
+                    continue;
+                }
+                $pids[] = $prow->paperId;
+                if (!$item->deleted()) {
+                    $total += $item->post("_index");
+                }
+            }
+            if ($total <= $talm[1]) {
+                continue;
+            }
+            sort($pids);
+            $mine = intval($ltag) === $astate->user->contactId;
+            $xtag = $talm[0];
+            if ($mine) {
+                $xtag = substr($xtag, strpos($xtag, "~"));
+            }
+            $astate->append_item_near(MessageItem::error("<0>Too many ‘#{$xtag}’ votes"), $talm[2]);
+            if ($mine) {
+                $url = $astate->conf->hoturl("search", ["q" => "edit:#{$xtag} " . join(" ", $pids)]);
+                $astate->append_item_near(MessageItem::inform("<5>You may want to <a href=\"{url}\">edit your votes using search</a>.", new FmtArg("url", $url, 0)));
+            }
+        }
     }
 }
 
@@ -269,13 +305,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                 $this->itype = $aj->next === "seq" ? self::I_NEXTSEQ : self::I_NEXT;
             }
         }
-    }
-    function expand_papers($req, AssignmentState $state) {
-        if ($this->itype & self::I_NEXT) {
-            $state->callable("NextTagAssignmentState")->set_all(true);
-            return "ALL";
-        }
-        return parent::expand_papers($req, $state);
     }
 
     function set_req($req, AssignmentState $state) {
@@ -449,7 +478,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $ltag = strtolower($ntag);
         if ($piece->xitype === self::I_NEXT
             || $piece->xitype === self::I_NEXTSEQ) {
-            $nvalue = $state->callable("NextTagAssignmentState")->compute_next($prow, $ltag, $piece->xitype === self::I_NEXTSEQ);
+            $nvalue = $state->callable("NextTagAssignmentState")
+                ->compute_next($prow, $ltag, $piece->xitype === self::I_NEXTSEQ);
         } else if ($nvalue === null) {
             $items = $state->query_items(new Tag_Assignable($prow->paperId, $ltag),
                                          AssignmentState::INCLUDE_DELETED);
@@ -463,21 +493,34 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             // WithdrawVotesAssigner
             $nvalue = $nvalue ?? 0.0;
         }
-        if ($nvalue <= 0
+        if ($nvalue !== false && ($nvalue <= -TAG_INDEXBOUND || $nvalue >= TAG_INDEXBOUND)) {
+            $state->error("<0>Tag value out of range");
+            return false;
+        }
+
+        // on allotment/approval votes, adjust value and maybe prepare allotment check
+        if ($piece->xuser !== ""
+            && $nvalue !== false
             && ($dt = $tagmap->find_having($piece->xtag, TagInfo::TF_ALLOTMENT))
             && !$dt->is(TagInfo::TF_APPROVAL)) {
-            $nvalue = false;
+            if ($nvalue <= 0) {
+                $nvalue = false;
+            } else {
+                $items = $state->query_items(new Tag_Assignable($prow->paperId, $ltag),
+                                             AssignmentState::INCLUDE_DELETED);
+                $item = $items[0] ?? null;
+                if ((!$item || $nvalue > $item->pre("_index"))
+                    && !$state->user->can_manage_tags($prow)
+                    && $state->user->can_edit_tag($prow, $ltag, $item ? $item->pre("_index") : null, $nvalue)) {
+                    $state->callable("AllotmentCheckAssigner")->add_ltag($ltag, $ntag, $dt->allotment, $state->landmark());
+                }
+            }
         }
 
         // perform assignment
         if ($nvalue === false) {
             $state->remove(new Tag_Assignable($prow->paperId, $ltag));
         } else {
-            assert(is_float($nvalue));
-            if ($nvalue <= -TAG_INDEXBOUND || $nvalue >= TAG_INDEXBOUND) {
-                $state->error("<0>Tag value out of range");
-                return false;
-            }
             $state->add(new Tag_Assignable($prow->paperId, $ltag, $ntag, $nvalue));
         }
         return true;

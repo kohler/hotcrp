@@ -8,27 +8,31 @@ class Mailer {
     const CONTEXT_EMAIL = 2;
 
     const CENSOR_NONE = 0;
+    const CENSOR_PREVIEW = 1;
+    /** @deprecated */
     const CENSOR_DISPLAY = 1;
     const CENSOR_ALL = 2;
 
     public static $email_fields = ["to" => "To", "cc" => "Cc", "bcc" => "Bcc", "reply-to" => "Reply-To"];
     public static $template_fields = ["to", "cc", "bcc", "reply-to", "subject", "body"];
 
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var ?Contact */
-    public $sending_user;
+    /** @var Contact
+     * @readonly */
+    public $permsender;
     /** @var ?Contact */
     public $recipient;
     /** @var string */
     protected $eol;
 
     /** @var int */
-    protected $width;
+    protected $width = 72;
     /** @var bool */
     protected $flowed = false;
     /** @var int */
-    protected $censor;
+    protected $censor = self::CENSOR_NONE;
     /** @var ?string */
     protected $reason;
     /** @var ?string */
@@ -40,7 +44,7 @@ class Mailer {
     /** @var ?string */
     public $capability_token;
     /** @var bool */
-    protected $sensitive;
+    protected $sensitive = false;
 
     /** @var ?MailPreparation */
     protected $preparation;
@@ -60,22 +64,21 @@ class Mailer {
     /** @var bool */
     private $_was_urlparam;
 
-    /** @param ?Contact $recipient
-     * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
-    function __construct(Conf $conf, $recipient = null, $settings = []) {
-        $this->conf = $conf;
-        $this->eol = $conf->opt("postfixEOL") ?? "\r\n";
+    function __construct(Contact $permsender) {
+        $this->conf = $permsender->conf;
+        if ($permsender->privChair) {
+            $this->permsender = $this->conf->root_user();
+        } else {
+            $this->permsender = $permsender;
+        }
+        $this->eol = $this->conf->opt("postfixEOL") ?? "\r\n";
         $this->flowed = !!$this->conf->opt("mailFormatFlowed");
-        $this->reset($recipient, $settings);
     }
 
     /** @param ?Contact $recipient
      * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
-        if (array_key_exists("sending_user", $settings ?? [])) {
-            $this->sending_user = $settings["sending_user"];
-        }
         $this->width = $settings["width"] ?? 72;
         if ($this->width <= 0) {
             $this->width = 10000000;
@@ -185,7 +188,7 @@ class Mailer {
             }
         }
         parse_str($a[1], $param);
-        return $m->conf->hoturl_raw($a[0], $param, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
+        return $m->conf->hoturl($a[0], $param, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS | Conf::HOTURL_PLACEHOLDERS);
     }
 
     static function kw_php($args, $isbool, $m) {
@@ -262,9 +265,9 @@ class Mailer {
     }
 
     function kw_passwordlink($args, $isbool, $uf) {
-        if (!$this->recipient) {
-            return $this->conf->login_type() ? false : null;
-        } else if ($this->censor === self::CENSOR_ALL) {
+        if ($this->conf->login_type()) {
+            return false;
+        } else if (!$this->recipient || $this->censor === self::CENSOR_ALL) {
             return null;
         }
         $this->sensitive = true;
@@ -280,7 +283,7 @@ class Mailer {
             $this->preparation->reset_capability = $capinfo->salt;
         }
         $token = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
-        return $this->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
+        return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
     }
 
     /** @param string $what

@@ -52,20 +52,33 @@ class BatchProcess {
         exit($exitStatus);
     }
 
-    /** @return bool */
-    static function daemonize() {
-        if (!function_exists("pcntl_fork")) {
+    /** Detach this process from the session that started it.
+     *
+     * Called when `$HOTCRP_BATCHMODE` is `background`, i.e. when
+     * `Job_Token::run_child` started this process to run a job in the
+     * background. `batch/hotcrp-daemonize` has already forked and closed the
+     * caller's file descriptors, and where `setsid(1)` exists it has started a
+     * new session too; this completes the job elsewhere, such as on macOS.
+     * @return bool */
+    static function detach() {
+        if (!function_exists("posix_setsid")
+            || !function_exists("posix_getsid")
+            || !function_exists("posix_getpgrp")) {
             return false;
         }
-        if (($f = pcntl_fork()) < 0) {
-            return false;
-        } else if ($f > 0) {
-            exit(0);
+        $pid = posix_getpid();
+        if (posix_getsid($pid) === $pid) {
+            return true;
         }
-        if (function_exists("posix_setsid")) {
-            if (posix_setsid() < 0) {
-                error_log("posix_setsid error: " . posix_strerror(posix_get_last_error()));
-            }
+        if (posix_getpgrp() === $pid) {
+            // setsid would fail with EPERM; this process was probably started
+            // from an interactive shell, which puts each job in its own group
+            return false;
+        }
+        $sid = posix_setsid();
+        if (!is_int($sid) || $sid < 0) {
+            error_log("posix_setsid error: " . posix_strerror(posix_get_last_error()));
+            return false;
         }
         return true;
     }

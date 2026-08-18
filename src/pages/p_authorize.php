@@ -271,7 +271,7 @@ class Authorize_Page {
 
     private function signin_url() {
         $nav = $this->qreq->navigation();
-        return $this->conf->hoturl_raw("signin", ["redirect" => "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt)]);
+        return $this->conf->hoturl("signin", ["redirect" => "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt)]);
     }
 
     function print_form() {
@@ -483,10 +483,10 @@ class Authorize_Page {
     static function parse_expires_in($s, $default) {
         if ($s === "never") {
             return -1;
-        } else if (is_string($s) && preg_match('/\A(\d++\.?\d*+|\.\d++)d\z/', $s, $m)) {
-            return (int) (floatval($m[1]) * 86400);
         } else if (is_int($s)) {
             return $s;
+        } else if (is_string($s) && ($v = SettingParser::parse_duration($s)) !== null) {
+            return (int) round($v);
         }
         return $default;
     }
@@ -680,7 +680,7 @@ class Authorize_Page {
         $atok = Authorization_Token::prepare_bearer($user, $exp);
         $atok->change_data("client_id", $tok->data("client_id"))
             ->change_data("scope", TokenScope::unparse($ts));
-        // XXX note
+        // XXX no way to specify a note
         return $atok->insert();
     }
 

@@ -239,6 +239,10 @@ class AuthorCertification_PaperOption extends PaperOption {
         }
     }
 
+    function reset_on_withdraw() {
+        return true;
+    }
+
     /** @param PaperValue $ov
      * @return bool */
     static function is_complete($ov) {
@@ -346,7 +350,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         return $this->conf->_("<5>Each author may certify up to {max_submissions} {submissions}. To certify this {submission}, first decertify or withdraw another one (<a href=\"{url}\">view list</a>).",
             new FmtArg("action", $action, 0),
             new FmtArg("max_submissions", $this->max_submissions, 0),
-            new FmtArg("url", $this->conf->hoturl_raw("search", ["t" => "act", "q" => $this->search_keyword() . ":" . $email]), 0));
+            new FmtArg("url", $this->conf->hoturl("search", ["t" => "act", "q" => $this->search_keyword() . ":" . $email]), 0));
     }
 
     private function _value_check_max_submissions(PaperValue $ov) {
@@ -609,13 +613,14 @@ class AuthorCertification_PaperOption extends PaperOption {
                 $msgs[] = MessageItem::error_at($this->formid, "<0>Invalid author email ‘{$x}’");
                 continue;
             }
+            // provenance information (admin/at/by) requires admin privilege
             $e = ACEntry::make_email_by(
-                $ej->email, $ej->value ?? true, $ej->admin ?? $admin, $user
+                $ej->email, $ej->value ?? true, $admin && ($ej->admin ?? true), $user
             );
-            if (isset($ej->at) && is_int($ej->at)) {
+            if ($admin && isset($ej->at) && is_int($ej->at)) {
                 $e->at = $ej->at;
             }
-            if (isset($ej->by) && is_int($ej->by)) {
+            if ($admin && isset($ej->by) && is_int($ej->by)) {
                 $e->by = $ej->by;
             }
             $entries->append($e);

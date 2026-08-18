@@ -6,7 +6,7 @@ class ResponseRound {
     /** @var bool */
     public $unnamed = false;
     /** @var string */
-    public $name;
+    public $name;              // round name; "1" if unnamed
     /** @var int */
     public $id;
     /** @var bool */
@@ -105,8 +105,7 @@ class ResponseRound {
         $wl = new FmtArg("wordlimit", $this->wordlimit);
         if ($this->instructions !== null) {
             return $conf->_x($this->instructions, $wl);
-        } else {
-            return $conf->_i("resp_instrux", $wl) ?? "";
         }
+        return $conf->_i("resp_instrux", $wl) ?? "";
     }
 }

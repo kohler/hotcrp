@@ -377,11 +377,10 @@ Assignment methods:
             echo '<span class="fx2">&nbsp; in round ', $expected_round, '</span>';
         }
 
-        $null_mailer = new HotCRPMailer($conf, null, [
+        $null_mailer = new HotCRPMailer($this->user, null, [
             "requester_contact" => $this->user,
-            "sending_user" => $this->user,
             "reason" => "",
-            "width" => false
+            "width" => 0
         ]);
         if (($requestreview_template = $null_mailer->expand_template("requestreview"))) {
             echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);

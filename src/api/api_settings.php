@@ -65,6 +65,14 @@ class Settings_API {
             return JsonResult::make_permission_error();
         }
         $sv->set_si_filter($filter)->set_si_exclude($exclude);
+        if (!$qreq->valid_post() && friendly_boolean($qreq->download)) {
+            // bare settings object, suitable for download and reimport
+            $jr = JsonResult::make_minimal(200, (array) $sv->all_jsonv(["reset" => $reset]));
+            $jr->pretty_print = true;
+            $jr->set_header("Content-Disposition: attachment; filename="
+                . mime_quote_string($user->conf->download_prefix . "settings.json"));
+            return $jr;
+        }
         $content["settings"] = $sv->all_jsonv(["reset" => $reset]);
         return new JsonResult($content);
     }

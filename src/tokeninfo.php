@@ -60,8 +60,10 @@ class TokenInfo {
      * @readonly */
     public $lookupKey;
 
-    /** @var ?string */
-    public $email;
+    /** Not in the Capability table; occasionally joined
+     * @var ?string */
+    protected $email;
+
     /** @var ?Contact|false */
     private $_user = false;
     /** @var ?string */
@@ -371,12 +373,33 @@ class TokenInfo {
     }
 
 
+    /** Return the time at which this token stops being active, or 0 if it
+     * never does. `timeInvalid` is normally the earlier time; `timeExpires`
+     * is when the token’s row is removed.
+     * @return int */
+    final function inactive_at() {
+        if ($this->timeInvalid > 0 && $this->timeExpires > 0) {
+            return min($this->timeInvalid, $this->timeExpires);
+        }
+        return $this->timeInvalid > 0 ? $this->timeInvalid : $this->timeExpires;
+    }
+
     /** @param ?int $capabilityType
      * @return bool */
     final function is_active($capabilityType = null) {
         return ($capabilityType === null || $this->capabilityType === $capabilityType)
             && ($this->timeExpires === 0 || $this->timeExpires > Conf::$now)
             && ($this->timeInvalid === 0 || $this->timeInvalid > Conf::$now);
+    }
+
+    /** @return ?string */
+    final function email() {
+        if ($this->email !== null) {
+            return $this->email;
+        } else if (($u = $this->user())) {
+            return $u->email;
+        }
+        return null;
     }
 
     /** @return ?Contact */

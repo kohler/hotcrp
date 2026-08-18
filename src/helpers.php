@@ -116,12 +116,19 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
     /** @param int $status
-     * @param array<string,mixed> $content
+     * @param object|array<string,mixed>|list $content
      * @return JsonResult */
     static function make_minimal($status, $content) {
         $jr = new JsonResult(null);
         $jr->status = $status;
-        $jr->content = $content;
+        if (is_array($content)) {
+            $jr->content = $content;
+        } else if ($content instanceof JsonSerializable) {
+            $jr->content = (array) $content->jsonSerialize();
+        } else {
+            assert(!($content instanceof JsonResult));
+            $jr->content = (array) $content;
+        }
         $jr->minimal = true;
         return $jr;
     }
@@ -228,6 +235,19 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     function append_item($mi) {
         $this->content["message_list"][] = $mi;
         return $this;
+    }
+
+    /** @param int $i
+     * @return ?MessageItem */
+    function message_item($i) {
+        $ml = $this->content["message_list"] ?? null;
+        if (is_array($ml) && isset($ml[$i])) {
+            if ($ml[$i] instanceof MessageItem) {
+                return $ml[$i];
+            }
+            return MessageItem::from_json($ml[$i]);
+        }
+        return null;
     }
 
 
@@ -498,9 +518,8 @@ function plural_word($n, $singular, $plural = null) {
         return $singular;
     } else if (($plural ?? "") !== "") {
         return $plural;
-    } else {
-        return pluralize($singular);
     }
+    return pluralize($singular);
 }
 
 /** @param string $s

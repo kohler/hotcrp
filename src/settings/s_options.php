@@ -281,7 +281,8 @@ class Options_SettingParser extends SettingParser {
             $types = $this->conf->option_type_map();
             $curt = $types[$this->sfs->type];
             if (empty($conversions)) {
-                $content = htmlspecialchars($curt->title) . Ht::hidden("sf/{$this->ctr}/type", $curt->name);
+                $content = htmlspecialchars($curt->title ?? $curt->name)
+                    . Ht::hidden("sf/{$this->ctr}/type", $curt->name);
             } else {
                 $sel = [$curt->name => $curt->title, "_sep" => null];
                 foreach ($types as $t) {
@@ -565,7 +566,7 @@ class Options_SettingParser extends SettingParser {
     static function make_types_json($tmap) {
         $typelist = [];
         foreach ($tmap as $sf) {
-            $j = ["name" => $sf->name, "title" => $sf->title];
+            $j = ["name" => $sf->name, "title" => $sf->title ?? $sf->name];
             if (!empty($sf->placeholders)) {
                 $j["placeholders"] = $sf->placeholders;
             }

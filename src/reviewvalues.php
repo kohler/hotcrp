@@ -9,24 +9,52 @@ class ReviewValues extends MessageSet {
     /** @var ReviewForm
      * @readonly */
     public $rf;
+    /** @var Contact
+     * @readonly */
+    public $user;
 
     /** @var bool */
     private $notify = true;
     /** @var bool */
+    private $create_users = false;
+    /** @var bool */
+    private $disable_users = false;
+    /** @var bool */
     private $can_unsubmit = false;
     /** @var bool */
     private $autosearch = true;
+    /** @var ?Contact */
+    private $reviewer;
+    /** @var bool */
+    private $require_reviewer = false;
 
+    // current request
     /** @var array<string,mixed> */
     public $req;
     /** @var ?bool */
     public $req_json;
-
     /** @var ?int */
     public $reviewId;
     /** @var ?string */
     public $review_ordinal_id;
 
+    // state staged by prepare_save for current request
+    /** @var int */
+    private $_save_status = 0;
+    /** @var ?ReviewInfo */
+    private $stage_rrow;
+    /** @var ?Contact */
+    private $stage_user;
+    /** @var int */
+    private $stage_oldstatus;
+    /** @var int */
+    private $stage_newstatus;
+
+    // `_save_status` bits
+    const SSF_PREPARED = 1;  // prepare_save staged a save awaiting execute/abort
+    const SSF_LOCKED = 2;    // _apply_req is holding PaperReview/History write locks
+
+    // textual review form
     /** @var ?string */
     private $text;
     /** @var ?int */
@@ -44,6 +72,8 @@ class ReviewValues extends MessageSet {
 
     /** @var 0|1|2|3 */
     private $finished = 0;
+
+    // summary information about all reviews parsed in this file
     /** @var ?list<string> */
     private $submitted;
     /** @var ?list<string> */
@@ -67,15 +97,10 @@ class ReviewValues extends MessageSet {
     /** @var ?list<string> */
     private $blank;
 
-    /** @param ReviewForm|Conf $rf */
-    function __construct($rf) {
-        if ($rf instanceof ReviewForm) {
-            $this->conf = $rf->conf;
-            $this->rf = $rf;
-        } else {
-            $this->conf = $rf;
-            $this->rf = $this->conf->review_form();
-        }
+    function __construct(Contact $user) {
+        $this->conf = $user->conf;
+        $this->rf = $this->conf->review_form();
+        $this->user = $user;
         $this->clear_req();
     }
 
@@ -83,6 +108,20 @@ class ReviewValues extends MessageSet {
      * @return $this */
     function set_notify($x) {
         $this->notify = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_create_users($x) {
+        $this->create_users = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_disable_users($x) {
+        $this->disable_users = $x;
         return $this;
     }
 
@@ -100,6 +139,25 @@ class ReviewValues extends MessageSet {
         return $this;
     }
 
+    /** Set the reviewer for requests that do not name one. A request that names
+     * a reviewer of its own (a JSON `reviewer_email`, a form’s `==+== Reviewer`
+     * section) overrides this; a request that resolves to an existing review by
+     * someone else conflicts with it.
+     * @param ?Contact $u
+     * @return $this */
+    function set_reviewer($u) {
+        $this->reviewer = $u;
+        return $this;
+    }
+
+    /** If true, require each form to explicitly list its reviewer.
+     * @param bool $x
+     * @return $this */
+    function set_require_reviewer($x) {
+        $this->require_reviewer = $x;
+        return $this;
+    }
+
     /** @param string $text
      * @param ?string $filename
      * @return $this */
@@ -109,13 +167,6 @@ class ReviewValues extends MessageSet {
         $this->filename = $filename;
         $this->lineno = 0;
         return $this;
-    }
-
-    /** @param ReviewForm|Conf $rf
-     * @return ReviewValues
-     * @deprecated */
-    static function make_text($rf, $text, $filename = null) {
-        return (new ReviewValues($rf))->set_text($text, $filename);
     }
 
     /** @return $this */
@@ -250,12 +301,12 @@ class ReviewValues extends MessageSet {
                         $this->first_lineno = $this->field_lineno["paperId"] = $this->lineno;
                     }
                 } else if (preg_match('/\A==\+== Reviewer:\s*(.*?)\s*\z/', $line, $match)
-                           && ($user = Text::split_name($match[1], true))
-                           && $user[2]) {
+                           && ($un = Text::split_name($match[1], true))
+                           && $un[2]) {
                     $this->field_lineno["reviewerEmail"] = $this->lineno;
-                    $this->req["reviewerFirst"] = $user[0];
-                    $this->req["reviewerLast"] = $user[1];
-                    $this->req["reviewerEmail"] = $user[2];
+                    $this->req["reviewerFirst"] = $un[0];
+                    $this->req["reviewerLast"] = $un[1];
+                    $this->req["reviewerEmail"] = $un[2];
                 } else if (preg_match('/\A==\+== (?:Paper|Submission) (Number|\#)\s*\z/i', $line)) {
                     if ($nfields > 0) {
                         break;
@@ -391,8 +442,16 @@ class ReviewValues extends MessageSet {
         foreach ($j as $k => $v) {
             if ($k === "object") {
                 if (($v ?? "review") !== "review") {
-                    $this->rvmsg(self::ERROR, "object", "<0>JSON does not represent a review");
+                    $this->rvmsg(self::ERROR, $k, "<0>JSON does not represent a review");
                     return false;
+                }
+            } else if ($k === "pid") {
+                if (is_int($v) && $v > 0) {
+                    $this->req["paperId"] = $v;
+                }
+            } else if ($k === "rid") {
+                if (is_int($v) || is_string($v)) {
+                    $this->req["rid"] = $v;
                 }
             } else if ($k === "round") {
                 if ($v === null || is_string($v)) {
@@ -434,6 +493,10 @@ class ReviewValues extends MessageSet {
                 if (is_string($v)) {
                     $this->req["reviewerLast"] = simplify_whitespace($v);
                 }
+            } else if ($k === "review_type" || $k === "reviewType") {
+                if (is_int($v) || is_string($v)) {
+                    $this->req["reviewType"] = $v;
+                }
             } else if ($k === "edit_version") {
                 if (is_int($v)) {
                     $this->req["edit_version"] = $v;
@@ -441,6 +504,13 @@ class ReviewValues extends MessageSet {
             } else if ($k === "if_vtag_match") {
                 if (is_int($v)) {
                     $this->req["if_vtag_match"] = $v;
+                }
+            } else if ($k === "if_unmodified_since") {
+                if (is_int($v) || is_float($v)) {
+                    $this->req["if_unmodified_since"] = $v;
+                } else if (($t = $this->conf->parse_time($v, Conf::$now)) !== false
+                           && $t >= 0) {
+                    $this->req["if_unmodified_since"] = $t;
                 }
             } else if (($f = $this->conf->find_review_field($k))) {
                 if (!isset($this->req[$f->short_id])) {
@@ -469,7 +539,9 @@ class ReviewValues extends MessageSet {
         "r" => self::QREQ_IGNORE, "m" => self::QREQ_IGNORE,
         "post" => self::QREQ_IGNORE, "vtag" => self::QREQ_IGNORE,
         "forceShow" => self::QREQ_IGNORE, "default" => self::QREQ_IGNORE,
-        "deletereview" => self::QREQ_IGNORE,
+        "deletereview" => self::QREQ_IGNORE, "actas" => self::QREQ_IGNORE,
+        "u" => self::QREQ_IGNORE, "t" => self::QREQ_IGNORE,
+        "reviewer" => self::QREQ_IGNORE,
 
         "update" => self::QREQ_UPDATE, "savedraft" => self::QREQ_UNREADY,
         "submitreview" => self::QREQ_READY, "unsubmitreview" => self::QREQ_UNREADY,
@@ -528,11 +600,13 @@ class ReviewValues extends MessageSet {
                 if (($pid = stoi($v) ?? -1) > 0) {
                     $this->req["paperId"] = $pid;
                 }
+            } else if ($k === "review_type" || $k === "reviewType") {
+                $this->req["reviewType"] = $v;
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
-            } else if ($k === "if_vtag_match") {
-                if (ctype_digit($v) && ($iv = stoi($v)) !== null) {
-                    $this->req[$k] = $iv;
+            } else if ($k === "if_vtag_match" || $k === "if_unmodified_since") {
+                if (ctype_digit($v) && ($t = stoi($v)) !== null) {
+                    $this->req[$k] = $t;
                 }
             } else if (str_starts_with($k, "has_")) {
                 $hasreqs[] = substr($k, 4);
@@ -556,22 +630,66 @@ class ReviewValues extends MessageSet {
         $this->rvmsg(self::ERROR, "reviewerEmail", $msg);
     }
 
+    /** Resolve the requested `review_type`, if any.
+     * @return int|false|null  null if none requested, false if invalid */
+    private function requested_review_type() {
+        if (!isset($this->req["reviewType"])) {
+            return null;
+        }
+        $v = $this->req["reviewType"];
+        if (is_int($v)) {
+            return $v >= REVIEW_EXTERNAL && $v <= REVIEW_META ? $v : false;
+        }
+        $rt = ReviewInfo::parse_type($v, true);
+        return is_int($rt) && $rt >= REVIEW_EXTERNAL ? $rt : false;
+    }
+
     /** @param ReviewInfo $rrow
      * @return bool */
     function check_vtag(ReviewInfo $rrow) {
-        if (!isset($this->req["if_vtag_match"])
-            || $this->req["if_vtag_match"] === $rrow->reviewTime) {
+        // compare against the pre-save values: this may run after staging has
+        // advanced reviewModified (so a conflict still reports the attempted diff)
+        if (isset($this->req["if_vtag_match"])
+            && $this->req["if_vtag_match"] !== $rrow->base_prop("reviewTime")) {
+            $pk = "if_vtag_match";
+        } else if (isset($this->req["if_unmodified_since"])
+                   && $this->req["if_unmodified_since"] < $rrow->base_prop("reviewModified")) {
+            $pk = "if_unmodified_since";
+        } else {
             return true;
         }
-        $this->rvmsg(self::ERROR, "if_vtag_match", "<5><strong>Edit conflict</strong>: The review changed since you last loaded this page");
-        $this->rvmsg(self::INFORM, "if_vtag_match", "<0>Your changes were not saved, but you can check the form and save again.");
+        $this->rvmsg(self::ERROR, $pk, "<5><strong>Edit conflict</strong>: The review was edited concurrently");
+        $this->rvmsg(self::INFORM, $pk, "<0>Your changes were not saved, but you can check the form and save again.");
         return false;
     }
 
     /** @return bool */
-    function check_and_save(Contact $user, ?PaperInfo $prow, ?ReviewInfo $rrow = null) {
+    function check_and_save(?PaperInfo $prow, ?ReviewInfo $rrow = null) {
+        if (!$this->prepare_save($prow, $rrow)) {
+            $this->abort_save();
+            return false;
+        }
+        if (!$this->execute_save()) {
+            $this->abort_save();
+            return false;
+        }
+        return true;
+    }
+
+    /** Resolve the target review and stage the request onto it without
+     * committing. A review that does not yet exist is staged onto an unsaved
+     * assignable review (`assign_review_prop`) — no database row is created
+     * here — so a `prepare_save` not followed by `execute_save` (i.e. a dry run)
+     * never touches the database. On success the staged changes are available
+     * via `change_list()`; a following `execute_save()` commits them, or
+     * `abort_save()` reverts them.
+     * @return bool true if the request staged cleanly */
+    function prepare_save(?PaperInfo $prow, ?ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
+        $user = $this->user;
         $this->reviewId = $this->review_ordinal_id = null;
+        $this->_save_status = 0;
+        $this->stage_rrow = $this->stage_user = null;
 
         // look up paper
         if (!$prow) {
@@ -588,64 +706,224 @@ class ReviewValues extends MessageSet {
         }
         $this->req["paperId"] = $this->req_pid() ?? $prow->paperId;
         if ($this->req["paperId"] !== $prow->paperId) {
-            $this->rvmsg(self::ERROR, "paperId", $this->conf->_("<0>{Submission} mismatch: expected #{}, form is for #{}", $prow->paperId, $this->req["paperId"]));
-            $this->rvmsg(self::INFORM, "paperId", $this->conf->_("<0>It looks like you tried to upload a form intended for a different {submission}."));
+            $this->rvmsg(self::ERROR, "paperId", $this->conf->_("<0>{Submission} ID does not match"));
+            $this->rvmsg(self::INFORM, "paperId", $this->conf->_("<0>It looks like you tried to upload a form intended for a different {submission} (expected #{}, form is for #{}).", $prow->paperId, $this->req["paperId"]));
             return false;
         }
 
-        // look up reviewer
-        $reviewer = $user;
-        if ($rrow) {
-            if ($rrow->contactId !== $user->contactId) {
-                $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
+        // resolve an explicit review locator (`rid`): a specific ordinal/ID
+        // selects the review (or confirms a passed one — a disagreement is a
+        // mismatch), while `new`/empty leaves the reviewer's review to be found
+        // or created below
+        if (isset($this->req["rid"])) {
+            $rloc = $prow->parse_ordinal_id($this->req["rid"]);
+            if ($rloc === false) {
+                $this->rvmsg(self::ERROR, "rid", "<0>Review not found");
+                return false;
+            } else if ($rloc !== 0) {
+                $ridrow = $rloc < 0
+                    ? $prow->review_by_ordinal(-$rloc)
+                    : $prow->review_by_id($rloc);
+                if (!$ridrow) {
+                    $this->rvmsg(self::ERROR, "rid", "<0>Review not found");
+                    return false;
+                } else if ($rrow && $rrow->reviewId !== $ridrow->reviewId) {
+                    $this->rvmsg(self::ERROR, "rid", "<0>Review ID does not match");
+                    return false;
+                } else if (($fr = $user->perm_view_review($prow, $ridrow))) {
+                    // an unviewable review the caller may not know exists reads
+                    // as `reviewNonexistent` (mirrors the URL `r` path)
+                    $fr->append_to($this, "rid", self::ERROR);
+                    return false;
+                }
+                $rrow = $rrow ?? $ridrow;
             }
+        }
+
+        // look up reviewer
+        if (!$rrow
+            && ($this->req["reviewerEmail"] ?? "") === ""
+            && $this->require_reviewer) {
+            $this->reviewer_error("<0>Reviewer missing");
+            return false;
+        }
+
+        $reviewer = $this->reviewer ?? $this->user;
+        if ($rrow
+            && $rrow->contactId !== $user->contactId) {
+            $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
         } else if (isset($this->req["reviewerEmail"])
-                   && strcasecmp($this->req["reviewerEmail"], $user->email) !== 0) {
-            // XXX create reviewer?
-            if (!($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
-                $this->reviewer_error($user->privChair ? $this->conf->_("<0>User {} not found", $this->req["reviewerEmail"]) : null);
+                   && strcasecmp($this->req["reviewerEmail"], $reviewer->email) !== 0
+                   && !($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
+            if (!validate_email($this->req["reviewerEmail"])) {
+                $this->rvmsg(self::ERROR, "reviewerEmail", "<0>Invalid email");
+                return false;
+            }
+            $reviewer = Contact::make_keyed($this->conf, [
+                "email" => $this->req["reviewerEmail"],
+                "firstName" => $this->req["reviewerFirst"] ?? "",
+                "lastName" => $this->req["reviewerLast"] ?? "",
+                "disablement" => Contact::CF_PLACEHOLDER
+            ]);
+        }
+
+        // an unknown reviewer is created only where the caller allows it. With
+        // an existing `$rrow` no account is needed: `_apply_req` checks the
+        // requested reviewer against the review instead.
+        if (!$rrow && !$reviewer->has_account_here() && !$this->create_users) {
+            if ($user->privChair) {
+                $this->reviewer_error($this->conf->_("<0>User {} not found", $reviewer->email));
+            } else {
+                $this->reviewer_error($this->conf->_("<0>Can’t edit a review for {}", $reviewer->email));
+            }
+            return false;
+        }
+
+        // resolve a requested review type. Anyone may request the type the
+        // reviewer would receive by default; only an administrator may request a
+        // different type (e.g. primary/secondary/meta)
+        $reqtype = $this->requested_review_type();
+        if ($reqtype !== null) {
+            if ($reqtype === false) {
+                $this->rvmsg(self::ERROR, "reviewType", "<0>Invalid review type");
+                return false;
+            } else if ($rrow ? $reqtype === $rrow->reviewType : $reqtype === REVIEW_PC || $reqtype === REVIEW_EXTERNAL) {
+                // the reviewer's default type — always allowed
+            } else if (!$user->can_manage_reviews($prow)) {
+                $this->rvmsg(self::ERROR, "reviewType", "<0>Only an administrator can set the review type");
+                return false;
+            } else if ($reqtype > REVIEW_PC && !$reviewer->is_pc_member()) {
+                $uname = $reviewer->name(NAME_E);
+                $this->rvmsg(self::ERROR, "reviewType", "<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
                 return false;
             }
         }
 
         // look up review
         if (!$rrow) {
+            // Refuse before the lookup when the caller named someone else and
+            // may not administer reviews: otherwise the refusal would differ
+            // depending on whether that user reviews this submission, which
+            // reveals reviewer identities. Either way the request is refused.
+            if ($reviewer->contactId !== $user->contactId
+                && !$user->can_manage_reviews($prow)) {
+                $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
+                return false;
+            }
             $rrow = $prow->fresh_review_by_user($reviewer);
         }
-        if (!$rrow && $user->review_tokens()) {
+        if (!$rrow && $user === $reviewer && $user->review_tokens()) {
             $prow->ensure_full_reviews();
             if (($xrrows = $prow->reviews_by_user(-1, $user->review_tokens()))) {
                 $rrow = $xrrows[0];
             }
         }
 
-        // maybe create review
-        $new_rrid = false;
+        // a review that does not yet exist is staged onto an unsaved assignable
+        // review; the real database row is created later, by `execute_save`
         if (!$rrow) {
             $round = isset($this->req["round"]) ? (int) $this->conf->round_number($this->req["round"]) : null;
             if (($whynot = $user->perm_create_review($prow, $reviewer, $round))) {
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
             }
-            $new_rrid = $user->assign_review($prow->paperId, $reviewer, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, [
+            if (($reqtype ?? 0) > REVIEW_PC) {
+                $rtype = $reqtype;
+            } else {
+                $rtype = $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
+            }
+            if (!$reviewer->has_account_here()) {
+                if ($this->disable_users) {
+                    $reviewer->cflags |= Contact::CF_UDISABLED;
+                }
+                $reviewer->store(0, $this->user);
+            }
+            $rrow = $user->assign_review_prop($prow->paperId, $reviewer, $rtype, [
                 "selfassign" => $reviewer === $user, "round_number" => $round
             ]);
-            if (!$new_rrid) {
+            if (!$rrow || $rrow->reviewType <= 0) {
                 $this->rvmsg(self::ERROR, null, "<0>Internal error while creating review");
                 return false;
             }
-            $rrow = $prow->fresh_review_by_id($new_rrid);
+        } else if ($reqtype !== null && $reqtype !== $rrow->reviewType) {
+            // `review_type` may pick the type of a new review, but not change an
+            // existing one; use the assignment API for that
+            $this->rvmsg(self::ERROR, "reviewType", "<0>Can’t change the type of an existing review through this API");
+            return false;
         }
 
-        // actually check review and save
-        $ok = $this->_apply_req($user, $prow, $rrow, $new_rrid);
-        if (!$ok) {
-            $rrow->abort_prop();
-            if ($new_rrid) {
-                $user->assign_review($prow->paperId, $reviewer, 0);
-            }
+        // ensure the target review knows its paper, so the commit half (and
+        // callers) can recover it from the review alone
+        if (!$rrow->prow) {
+            $rrow->set_prow($prow);
         }
-        return $ok;
+
+        // stage the request (validation + property staging)
+        if (!$this->_apply_req($prow, $rrow)) {
+            return false;
+        }
+        $this->_save_status |= self::SSF_PREPARED;
+        return true;
+    }
+
+    /** Commit a review staged by `prepare_save` (creating its database row if
+     * necessary). Resets the prepared state.
+     * @return bool */
+    function execute_save() {
+        assert(($this->_save_status & self::SSF_PREPARED) !== 0);
+        $this->_save_status &= ~self::SSF_PREPARED;
+        return $this->_commit_req();
+    }
+
+    /** Revert the changes staged by `prepare_save` without committing. A
+     * would-be-new review was never inserted (creation happens in
+     * `execute_save`), so there is nothing to delete; but tables locked by
+     * `_apply_req` for ordinal assignment must be released. */
+    function abort_save() {
+        if (($this->_save_status & self::SSF_LOCKED) !== 0) {
+            $this->conf->qe_raw("unlock tables");
+        }
+        if ($this->stage_rrow) {
+            $this->stage_rrow->abort_prop();
+        }
+        $this->_save_status &= ~(self::SSF_PREPARED | self::SSF_LOCKED);
+    }
+
+    /** The paper resolved by the last `prepare_save` (from the passed paper or
+     * the request's `paperId`), or null if it did not resolve.
+     * @return ?PaperInfo */
+    function saved_prow() {
+        return $this->stage_rrow ? $this->stage_rrow->prow : null;
+    }
+
+    /** The list of changes staged by the last `prepare_save`, derived from the
+     * review's diff. Must be read before `execute_save`/`abort_save`, which
+     * clear the diff (so a dry run or a conflict can report it, but afterwards
+     * it is empty).
+     *
+     * In `$full` mode, an object created by this save leads with `new`
+     * (consistent across the paper, review, and comment APIs).
+     * @param bool $full
+     * @return list<string> */
+    function change_list($full = false) {
+        if (!$this->stage_rrow) {
+            return [];
+        }
+        $diffinfo = $this->stage_rrow->prop_diff();
+        $cl = [];
+        if ($full && $this->stage_rrow->base_prop("reviewId") <= 0) {
+            $cl[] = "new";
+        }
+        if ($this->stage_oldstatus !== $this->stage_newstatus) {
+            $cl[] = "status";
+        }
+        if (array_key_exists("reviewBlind", $diffinfo->_old_prop)) {
+            $cl[] = "blind";
+        }
+        foreach ($diffinfo->fields() as $f) {
+            $cl[] = $f->short_id;
+        }
+        return $cl;
     }
 
     /** @param ReviewField $f
@@ -674,9 +952,18 @@ class ReviewValues extends MessageSet {
         if ($reqname !== "" && strcasecmp($reqname, $revname) === 0) {
             return true;
         }
+        // allow primaryContactId relationship
+        $requser = $this->conf->user_by_email($reqemail, USER_SLICE);
+        if ($requser
+            && ($requser->primaryContactId === $reviewer->contactId
+                || $requser->contactId === $reviewer->primaryContactId)) {
+            return true;
+        }
         // otherwise complain
+        $revfull = Text::nameo($reviewer, NAME_EB);
+        $reqfull = Text::name($reqfirst, $reqlast, $reqemail, NAME_EB);
         $this->rvmsg(self::ERROR, "reviewerEmail",
-            $this->conf->_("<0>Reviewer conflict: review is for {}, but uploaded form is for {}", Text::nameo($reviewer, NAME_EB), Text::name($reqfirst, $reqlast, $reqemail, NAME_EB)));
+            $this->conf->_("<0>Reviewer conflict: review is for {}, but request names {}", $revfull, $reqfull));
         if ($this->text !== null) {
             $this->rvmsg(self::INFORM, "reviewerEmail",
                 $this->conf->_("<5>To upload the form anyway, remove its ‘<code class=\"nw\">==+== Reviewer</code>’ section."));
@@ -684,15 +971,15 @@ class ReviewValues extends MessageSet {
         return false;
     }
 
-    /** @param Contact $user
-     * @param PaperInfo $prow
+    /** @param PaperInfo $prow
      * @param ReviewInfo $rrow
      * @param int $view_score
      * @param bool $allow_new_submit
      * @param bool $approvable
      * @return int */
-    private function _compute_new_status($user, $prow, $rrow, $view_score,
+    private function _compute_new_status($prow, $rrow, $view_score,
                                          $allow_new_submit, $approvable) {
+        $user = $this->user;
         $oldstatus = $rrow->reviewStatus;
         $olddelivered = $oldstatus >= ReviewInfo::RS_DELIVERED;
         $nonempty = $view_score > VIEWSCORE_EMPTY;
@@ -735,8 +1022,12 @@ class ReviewValues extends MessageSet {
     }
 
     /** @return bool */
-    private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow, $new_rrid) {
+    private function _apply_req(PaperInfo $prow, ReviewInfo $rrow) {
         assert($prow->paperId === $this->req["paperId"] && $rrow->paperId === $prow->paperId);
+        $user = $this->user;
+        // set `stage_rrow` before staging any property, so that an error
+        // return from any point below leaves a state `abort_save` can revert
+        $this->stage_rrow = $rrow;
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
         $approvable = $user->can_approve_review($prow, $rrow);
 
@@ -752,27 +1043,12 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        // reviewer must match if provided
-        if (isset($this->req["reviewerEmail"])
-            && !$this->_check_reviewer($rrow, $this->req["reviewerEmail"])) {
+        // reviewers must match if provided
+        if ((isset($this->req["reviewerEmail"])
+             && !$this->_check_reviewer($rrow, $this->req["reviewerEmail"]))
+            || ($this->reviewer
+                && !$this->_check_reviewer($rrow, $this->reviewer->email))) {
             return false;
-        }
-
-        // version tag must match if provided
-        if (!$this->check_vtag($rrow)) {
-            return false;
-        }
-
-        // correct review type if necessary
-        // XXX this seems weird; if usedReviewToken, then review row user
-        // is never PC...
-        if ($rrow->reviewId
-            && $rrow->reviewType === REVIEW_EXTERNAL
-            && $user->contactId === $rrow->contactId
-            && $user->isPC
-            && !$usedReviewToken) {
-            $rrow->set_prop("reviewType", REVIEW_PC);
-            $rflags = ($rflags & ~ReviewInfo::RFM_TYPES) | (1 << REVIEW_PC);
         }
 
         // process review fields
@@ -780,14 +1056,20 @@ class ReviewValues extends MessageSet {
         $view_score = VIEWSCORE_EMPTY;
         $any_fval = $any_fdiff = false;
         $allow_new_submit = true;
+        $want_ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
         $fmissing = [];
         $wc = 0;
+        // the user can only edit the fields they can view
+        $view_score_bound = $user->view_score_bound($prow, $rrow);
 
         foreach ($this->rf->all_fields() as $f) {
             $exists = $f->test_exists($rrow);
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if (!$exists && $old_fval === null) {
                 continue;
+            }
+            if ($f->view_score <= $view_score_bound) {
+                $fval = $old_fval;
             }
             if ($fval === false) {
                 $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_word_abbreviate(trim($this->req[$f->short_id]), 100)));
@@ -806,7 +1088,7 @@ class ReviewValues extends MessageSet {
             $fdiff = $fval !== $old_fval
                 && (!is_string($fval) || $fval !== cleannl($old_fval ?? ""));
             if ($fdiff || !$rrow->reviewId) {
-                $rrow->set_fval_prop($f, $fval, $fdiff);
+                $rrow->set_fval_prop($f, $fval);
             }
             if ($exists) {
                 $any_fdiff = $any_fdiff || $fdiff;
@@ -826,8 +1108,10 @@ class ReviewValues extends MessageSet {
         }
 
         // check editing allowed
+        // (clickthrough not required to accept review or change status)
         if ($any_fdiff || !$approvable) {
-            if (($whynot = $user->perm_edit_review($prow, $rrow, Contact::EDIT_REVIEW_SUBMIT))) {
+            $erflags = $any_fdiff || $want_ready ? Contact::EDIT_REVIEW_SUBMIT : 0;
+            if (($whynot = $user->perm_edit_review($prow, $rrow, $erflags))) {
                 $this->clear_messages_since($before_msgcount);
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
@@ -859,7 +1143,6 @@ class ReviewValues extends MessageSet {
 
         // warn about missing fields
         if ($fmissing) {
-            $want_ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
             $status = $want_ready ? self::ERROR : self::WARNING;
             foreach ($fmissing as $f) {
                 $this->rvmsg($status, $f->short_id, $this->conf->_("<0>{}: Entry required", $f->name));
@@ -887,7 +1170,7 @@ class ReviewValues extends MessageSet {
             } else {
                 $newstatus = $oldstatus;
             }
-        } else if (!($this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED)
+        } else if (!$want_ready
                    || ($oldstatus < ReviewInfo::RS_DELIVERED && !$allow_new_submit)) {
             // unready nonempty review is at least drafted
             if ($this->can_unsubmit
@@ -912,7 +1195,7 @@ class ReviewValues extends MessageSet {
         }
 
         // new status #2
-        $newstatus2 = $this->_compute_new_status($user, $prow, $rrow, $view_score, $allow_new_submit, $approvable);
+        $newstatus2 = $this->_compute_new_status($prow, $rrow, $view_score, $allow_new_submit, $approvable);
         if ($newstatus !== $newstatus2) {
             error_log("{$this->conf->dbname}: #{$prow->paperId}/{$rrow->reviewId}: old status computation {$newstatus} ≠ new status computation {$newstatus2}");
             error_log("{$this->conf->dbname}: " . json_encode(["view_score" => $view_score, "allow_new_submit" => $allow_new_submit, "approvable" => $approvable, "old_status" => $rrow->reviewStatus, "mtime" => $rrow->reviewModified, "ready" => $this->req["ready"] ?? null]));
@@ -949,12 +1232,12 @@ class ReviewValues extends MessageSet {
             $rflags &= ~(ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED);
         }
         if ($newstatus >= ReviewInfo::RS_COMPLETED
-            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            && $rrow->reviewSubmitted <= 0) {
             $rrow->set_prop("reviewSubmitted", $now);
             $rflags |= ReviewInfo::RF_SUBMITTED;
         } else if ($newstatus < ReviewInfo::RS_COMPLETED
-                   && ($rrow->reviewSubmitted ?? 0) > 0) {
-            $rrow->set_prop("reviewSubmitted", null);
+                   && $rrow->reviewSubmitted > 0) {
+            $rrow->set_prop("reviewSubmitted", 0);
             $rflags &= ~ReviewInfo::RF_SUBMITTED;
         }
         if ($newstatus >= ReviewInfo::RS_APPROVED) {
@@ -1045,9 +1328,28 @@ class ReviewValues extends MessageSet {
             $rflags &= ~ReviewInfo::RF_AUSEEN_LIVE;
         }
 
-        // potentially assign review ordinal (requires table locking since
-        // mySQL is stupid)
-        $locked = $newordinal = false;
+        // capture the minimal commit state now, before the version-tag check, so
+        // a conflict can still report the attempted change list (the list is
+        // derived on demand from the staged diff, and unrecoverable once a commit
+        // or abort clears it)
+        $this->stage_rrow = $rrow;
+        $this->stage_user = $user;
+        $this->stage_oldstatus = $oldstatus;
+        $this->stage_newstatus = $newstatus;
+
+        // version tag / if_unmodified_since precondition. Checked here, after the
+        // request is fully staged but before any database write (the ordinal lock
+        // below is the first), so a conflict reports the attempted diff without
+        // committing; abort_save then reverts the staged changes.
+        if (!$this->check_vtag($rrow)) {
+            return false;
+        }
+
+        // potentially assign a review ordinal and display time (requires table
+        // locking since MySQL is stupid). The tables stay locked past the end of
+        // staging: execute_save saves under the lock and releases it, while a
+        // dry run's abort_save releases it without saving.
+        $newordinal = false;
         if ((!$rrow->reviewId
              && $newsubmit
              && $diffinfo->view_score() >= VIEWSCORE_AUTHORDEC)
@@ -1056,12 +1358,13 @@ class ReviewValues extends MessageSet {
                 && ($newsubmit || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)
                 && ($diffinfo->view_score() >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
-            $result = $this->conf->qe_raw("lock tables PaperReview write, PaperReviewHistory write");
+            $result = $this->conf->qe_raw("lock tables PaperReview write, PaperReviewHistory write"
+                . ($rrow->reviewId ? "" : ", IDReservation write"));
             if (Dbl::is_error($result)) {
                 return false;
             }
             Dbl::free($result);
-            $locked = true;
+            $this->_save_status |= self::SSF_LOCKED;
             $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
             $rrow->set_prop("reviewOrdinal", (int) $max_ordinal + 1);
             $newordinal = true;
@@ -1070,22 +1373,43 @@ class ReviewValues extends MessageSet {
             || (($newsubmit
                  || ($newstatus >= ReviewInfo::RS_APPROVED && $oldstatus < ReviewInfo::RS_APPROVED))
                 && !$rrow->timeDisplayed)) {
-            $rrow->set_prop("timeDisplayed", $now);
+            $rrow->set_prop("timeDisplayed", Conf::$now);
         }
 
-        // actually affect database
+        // finalize the staged rflags (the last staged property; `_commit_req`
+        // only writes what was staged here)
         $rrow->set_prop("rflags", $rflags);
+        return true;
+    }
+
+    /** Commit the review staged by the staging half of `_apply_req`, using the
+     * captured `stage_*` state.
+     * @return bool */
+    private function _commit_req() {
+        $rrow = $this->stage_rrow;
+        $prow = $rrow->prow;
+        $user = $this->stage_user;
+        $diffinfo = $rrow->prop_diff();
+        $oldstatus = $this->stage_oldstatus;
+        $newstatus = $this->stage_newstatus;
+        $newsubmit = $newstatus >= ReviewInfo::RS_COMPLETED
+            && $oldstatus < ReviewInfo::RS_COMPLETED;
+
+        // actually affect database (all properties, including any review
+        // ordinal, were staged by `_apply_req`)
         $result = $rrow->save_prop();
 
-        // unlock tables even if problem
-        if ($locked) {
+        // release the tables `_apply_req` locked for ordinal assignment, if any
+        if (($this->_save_status & self::SSF_LOCKED) !== 0) {
             $this->conf->qe_raw("unlock tables");
+            $this->_save_status &= ~self::SSF_LOCKED;
         }
 
         if ($result < 0) {
-            if ($result === ReviewInfo::SAVE_PROP_CONFLICT) {
+            if ($result === ReviewInfo::SAVERET_CONFLICT) {
                 $this->rvmsg(self::ERROR, null, "<0>Review was edited concurrently, please try again");
             }
+            $rrow->abort_prop();
             return false;
         }
 
@@ -1104,11 +1428,6 @@ class ReviewValues extends MessageSet {
             error_log("{$this->conf->dbname}: review #{$prow->paperId}/{$new_rrow->reviewId} saved reviewStatus {$new_rrow->reviewStatus} (expected {$newstatus})");
         }
         assert($new_rrow->reviewStatus === $newstatus);
-
-        // log updates -- but not if review token is used
-        if (!$usedReviewToken && $diffinfo->is_viewable()) {
-            $user->log_activity_for($rrow->contactId, $this->_log_message($rrow, $oldstatus, $newstatus, $diffinfo), $prow);
-        }
 
         // if external, forgive the requester from finishing their review
         if ($rrow->reviewType < REVIEW_SECONDARY
@@ -1144,7 +1463,7 @@ class ReviewValues extends MessageSet {
             $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
         }
         if ($this->notify) {
-            $this->_notify($prow, $rrow, $diffinfo, $newstatus, $oldstatus, $reviewer, $user);
+            $this->_notify($prow, $rrow, $diffinfo, $newstatus, $oldstatus, $reviewer);
         }
 
         // record what happened
@@ -1181,6 +1500,19 @@ class ReviewValues extends MessageSet {
             $this->author_notified[] = $what;
         }
 
+        // log assignment or commit property
+        if ($rrow->base_prop("reviewId") <= 0) {
+            $rrow->commit_prop_assignment($user, ["no_autosearch" => true, "no_rights" => true]);
+        } else {
+            $rrow->commit_prop();
+        }
+
+        // log updates -- but not if review token is used
+        if ($diffinfo->is_viewable()
+            && !$user->active_review_token_for($prow, $rrow)) {
+            $user->log_activity_for($rrow->contactId, $this->_log_message($rrow, $oldstatus, $newstatus, $diffinfo), $prow);
+        }
+
         return true;
     }
 
@@ -1189,7 +1521,7 @@ class ReviewValues extends MessageSet {
     private function _notify(PaperInfo $prow, ReviewInfo $rrow,
                              ReviewDiffInfo $diffinfo,
                              $newstatus, $oldstatus,
-                             Contact $reviewer, Contact $user) {
+                             Contact $reviewer) {
         assert($this->notify);
         $info = [
             "prow" => $prow,
@@ -1214,7 +1546,7 @@ class ReviewValues extends MessageSet {
             } else if ($newstatus === ReviewInfo::RS_DELIVERED
                        && $oldstatus < ReviewInfo::RS_DELIVERED) {
                 $tmpl = "@reviewapprovalrequest";
-            } else if ($rrow->requestedBy === $user->contactId) {
+            } else if ($rrow->requestedBy === $this->user->contactId) {
                 $tmpl = "@reviewpreapprovaledit";
             } else {
                 $tmpl = "@reviewapprovalupdate";
@@ -1226,9 +1558,9 @@ class ReviewValues extends MessageSet {
                    && $oldstatus < ReviewInfo::RS_ACKNOWLEDGED) {
             if ($rrow->requestedBy > 0
                 && $rrow->requestedBy !== $rrow->contactId
-                && $rrow->requestedBy !== $user->contactId
+                && $rrow->requestedBy !== $this->user->contactId
                 && $rrow->reviewType <= REVIEW_PC
-                && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
+                && ($requser = $this->conf->user_by_id($rrow->requestedBy))) {
                 HotCRPMailer::send_to($requser, "@acceptreviewrequest", [
                     "prow" => $prow, "reviewer_contact" => $reviewer
                 ]);
@@ -1242,7 +1574,7 @@ class ReviewValues extends MessageSet {
         foreach ($prow->review_followers(0) as $minic) {
             assert(($minic->overrides() & Contact::OVERRIDE_CONFLICT) === 0);
             // skip same user, dormant user, cannot view review
-            if ($minic->contactId === $user->contactId
+            if ($minic->contactId === $this->user->contactId
                 || $minic->is_dormant()
                 || !$minic->can_view_review($prow, $rrow, $diff_view_score)) {
                 continue;

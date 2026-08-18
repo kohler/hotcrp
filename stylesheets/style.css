@@ -5598,6 +5598,34 @@ th.pl_logaction {
 	stroke-width: 2px;
 	fill: none;
 }
+.gdot-label {
+	font-size: 10px;
+	fill: #111;
+	stroke: none;
+	text-anchor: middle;
+	pointer-events: none;
+}
+.dark > .gdot-label {
+	fill: #fff;
+}
+/* every dot is the same size, so condense longer labels rather than grow it */
+.gdot-label-3, .gdot-label-4, .gdot-label-5, .gdot-label-6 {
+	font-family: "Arial Narrow", "Liberation Sans Narrow", "Roboto Condensed", sans-serif;
+	font-stretch: condensed;
+}
+.gdot-label-3 {
+	font-size: 9px;
+}
+.gdot-label-4 {
+	font-size: 8px;
+}
+.gdot-label-5 {
+	font-size: 7px;
+}
+/* 6 characters or more */
+.gdot-label-6 {
+	font-size: 6.5px;
+}
 .gdot-hover, .gbar-hover0, .gbox-hover {
 	stroke: rgba(0, 0, 0, 0.4);
 	stroke-width: 2px;

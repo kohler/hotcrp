@@ -25,6 +25,18 @@ class Scope_Tester {
         $this->p2 = $conf->checked_paper_by_id(2);
     }
 
+    function test_oidc_scope_grants_no_api_access() {
+        // An OIDC/identity-only scope must confer NO API access (fail closed),
+        // not collapse to null (== unrestricted, full access).
+        $u = clone $this->u_chair;
+        $u->set_scope("profile");
+        xassert(!$u->scope_allows(TokenScope::S_SUB_WRITE));
+        xassert(!$u->scope_allows(TokenScope::S_TAG_ADMIN));
+        // empty scope is still full access (intended)
+        $u->set_scope();
+        xassert($u->scope_allows(TokenScope::S_SUB_WRITE));
+    }
+
     function test_view_scopes() {
         xassert_search($this->u_chair, "1-18", "1-18");
         xassert_search($this->u_chair, "re:3", "1-18");
@@ -88,6 +100,70 @@ class Scope_Tester {
         xassert(!$this->p2->has_viewable_tag("fart", $this->u_chair));
     }
 
+    function test_tag_edit_scopes() {
+        $this->u_chair->set_scope();
+        $old_readonly = $this->conf->setting_data("tag_chair");
+        $this->conf->save_refresh_setting("tag_chair", 1, "scro");
+        $floyd_p = $this->u_floyd->contactId . "~p";
+
+        // unscoped chair has all edit powers
+        xassert($this->u_chair->can_edit_some_tag($this->p1));
+        xassert($this->u_chair->can_edit_most_tags($this->p1));
+        xassert($this->u_chair->can_edit_tag($this->p1, "fart", null, 1));
+        xassert($this->u_chair->can_edit_tag($this->p1, "~p", null, 1));
+        xassert($this->u_chair->can_edit_tag($this->p1, "scro", null, 1));
+        xassert($this->u_chair->can_edit_tag($this->p1, "~~ct", null, 1));
+        xassert($this->u_chair->can_edit_tag($this->p1, $floyd_p, null, 1));
+        xassert($this->u_chair->can_edit_tag_somewhere("scro"));
+        xassert($this->u_chair->can_edit_tag_somewhere("~~ct"));
+        xassert($this->u_chair->can_edit_tag_anno("scro"));
+
+        // tag:write allows normal editing, not admin-derived powers
+        $this->u_chair->set_scope("tag:write");
+        xassert($this->u_chair->can_edit_some_tag($this->p1));
+        xassert($this->u_chair->can_edit_most_tags($this->p1));
+        xassert($this->u_chair->can_edit_tag($this->p1, "fart", null, 1));
+        xassert($this->u_chair->can_edit_tag($this->p1, "~p", null, 1));
+        xassert(!$this->u_chair->can_edit_tag($this->p1, "scro", null, 1));
+        xassert(!$this->u_chair->can_edit_tag($this->p1, "~~ct", null, 1));
+        xassert(!$this->u_chair->can_edit_tag($this->p1, $floyd_p, null, 1));
+        xassert($this->u_chair->can_edit_tag_somewhere("fart"));
+        xassert(!$this->u_chair->can_edit_tag_somewhere("scro"));
+        xassert(!$this->u_chair->can_edit_tag_somewhere("~~ct"));
+        $why = $this->u_chair->perm_edit_tag($this->p1, "scro", null, 1);
+        xassert_eqq($why["scope"], TokenScope::S_TAG_ADMIN);
+
+        // tag:admin restores admin-derived powers
+        $this->u_chair->set_scope("tag:admin");
+        xassert($this->u_chair->can_edit_tag($this->p1, "scro", null, 1));
+        xassert($this->u_chair->can_edit_tag($this->p1, "~~ct", null, 1));
+        xassert($this->u_chair->can_edit_tag($this->p1, $floyd_p, null, 1));
+        xassert($this->u_chair->can_edit_tag_somewhere("scro"));
+        xassert($this->u_chair->can_edit_tag_anno("scro"));
+
+        // normal PC editing requires only tag:write
+        $this->u_floyd->set_scope("tag:write");
+        xassert($this->u_floyd->can_edit_tag($this->p2, "fart", null, 1));
+        xassert($this->u_floyd->can_edit_tag($this->p2, "~p", null, 1));
+        xassert(!$this->u_floyd->can_edit_tag($this->p2, "scro", null, 1));
+        xassert(!$this->u_floyd->can_edit_tag_anno("~p"));
+        xassert(!$this->u_floyd->can_edit_tag_anno("fart"));
+        xassert(!$this->u_floyd->can_edit_tag_anno("scro"));
+
+        // anno editing requires tag:admin
+        $this->u_floyd->set_scope("tag:admin");
+        xassert($this->u_floyd->can_edit_tag($this->p2, "fart", null, 1));
+        xassert($this->u_floyd->can_edit_tag($this->p2, "~p", null, 1));
+        xassert(!$this->u_floyd->can_edit_tag($this->p2, "scro", null, 1));
+        xassert($this->u_floyd->can_edit_tag_anno("~p"));
+        xassert($this->u_floyd->can_edit_tag_anno("fart"));
+        xassert(!$this->u_floyd->can_edit_tag_anno("scro"));
+
+        $this->u_chair->set_scope();
+        $this->u_floyd->set_scope();
+        $this->conf->save_refresh_setting("tag_chair", $old_readonly === null ? null : 1, $old_readonly);
+    }
+
     function test_document_scopes() {
         $this->u_chair->set_scope("submeta:read");
         $subopt = $this->conf->option_by_id(DTYPE_SUBMISSION);
@@ -136,7 +212,7 @@ class Scope_Tester {
         if (is_int($scope)) {
             $scope = join(" ", TokenScope::unparse_missing_bits($scope));
         }
-        xassert_eqq($resp->response_code(), 401);
+        xassert_eqq($resp->response_code(), 403);
         $header = $resp->header("WWW-Authenticate") ?? "";
         xassert_str_contains($header, "error=\"insufficient_scope\"");
         xassert_str_contains($header, "scope=\"{$scope}\"");

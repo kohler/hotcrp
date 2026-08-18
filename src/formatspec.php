@@ -121,7 +121,7 @@ class FormatSpec {
     }
 
     function merge_banal() {
-        if (($ts = @filemtime(SiteLoader::find("src/banal"))) !== false) {
+        if (($ts = @filemtime(SiteLoader::resolve("src/banal"))) !== false) {
             $this->timestamp = max($ts, $this->timestamp);
         }
     }

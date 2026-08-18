@@ -90,9 +90,6 @@ class PaperPDF_SearchTerm extends SearchTerm {
         }
         return "(" . join($this->present ? " or " : " and ", $f) . ")";
     }
-    function is_sqlexpr_precise() {
-        return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
-    }
     function test(PaperInfo $row, $xinfo) {
         // XXX presence condition
         if ($this->dtype === null) {

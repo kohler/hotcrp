@@ -23,8 +23,8 @@ class AdminHome_Page {
     static function print(Contact $user) {
         $conf = $user->conf;
         $ml = [];
-        if (PHP_VERSION_ID <= 70300) {
-            $ml[] = MessageItem::error("<0>HotCRP requires PHP version 7.3 or higher. You are running PHP version " . phpversion());
+        if (PHP_VERSION_ID < 80100) {
+            $ml[] = MessageItem::error("<0>HotCRP requires PHP version 8.1 or higher. You are running PHP version " . phpversion());
         }
         $max_file_size = ini_get_bytes("upload_max_filesize");
         if (!$conf->opt("dbNoPapers")) {
@@ -55,7 +55,7 @@ class AdminHome_Page {
             $ml[] = MessageItem::warning_note("<5>PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars(ini_get("session.gc_maxlifetime")) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . ($conf->opt("sessionLifetime") ?? 86400) . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect");
         }
         if (!function_exists("imagecreate") && $conf->setting("__gd_required")) {
-            $ml[] = MessageItem::urgent_note("<5>This PHP installation lacks support for the GD library, so HotCRP can’t generate backup score charts for old browsers. Some of your users require this backup. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php" . PHP_MAJOR_VERSION . "-gd</code> package");
+            $ml[] = MessageItem::urgent_note("<5>This PHP installation lacks support for the GD library, so HotCRP can’t generate backup score charts for old browsers. Some of your users require this backup");
         }
         // Conference names
         if ($conf->opt("shortNameDefaulted")) {
@@ -94,7 +94,7 @@ class AdminHome_Page {
         if (($conf->setting("pcrev_assigntime") ?? 0) > ($conf->setting("pcrev_informtime") ?? 0)
             && $conf->time_review_open()) {
             $assigntime = $conf->setting("pcrev_assigntime");
-            $result = $conf->fetch_ivalue("select exists(select * from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and (rflags&" . ReviewInfo::RF_LIVE . ")!=0) from dual");
+            $result = $conf->fetch_ivalue("select exists(select * from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted<=0 and (rflags&" . ReviewInfo::RF_LIVE . ")!=0) from dual");
             if ($result) {
                 $ml[] = MessageItem::marked_note("<5>PC review assignments have changed.&nbsp; " . $conf->hotlink("Send review assignment notifications", "mail", ["template" => "newpcrev"]) . " <span class=\"barsep\">·</span> " . $conf->hotlink("Clear this message", "=index", ["clearnewpcrev" => $assigntime]));
             } else {
@@ -108,7 +108,7 @@ class AdminHome_Page {
             $any_rounds_open = false;
             foreach ($conf->defined_rounds() as $i => $rname) {
                 if (!$conf->missed_review_deadline($i, true, false)
-                    && $conf->setting($conf->review_deadline_name($i, true, false))) {
+                    && $conf->review_deadline($i, true, false)) {
                     $ml[] = MessageItem::marked_note("<5>The deadline for review round " . htmlspecialchars($conf->assignment_round_option(false)) . " has passed. You may want to " . $conf->hotlink("change the round for new assignments", "settings", ["group" => "reviews"]) . " to " . htmlspecialchars($rname) . ".");
                     break;
                 }

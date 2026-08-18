@@ -290,9 +290,8 @@ class SearchConfig_API {
             return "Name required";
         } else if (preg_match('/\A(?:formula[:\d].*|[fs]:.*|ss:.*|search:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown|new)\z|[()\[\]\{\}\\\\"\'\#]|\A(?:~.|\d+~|(?=[^~\d])).*~|~\z|\pZ/u', $name)) {
             return "Name reserved";
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $name
@@ -319,7 +318,10 @@ class SearchConfig_API {
     }
 
     static function save_namedsearch(Contact $user, Qrequest $qreq) {
-        // NB permissions handled in loop
+        // NB permissions handled in loop; for safety, only PC can save searches
+        if (!$user->isPC) {
+            return JsonResult::make_permission_error();
+        }
 
         // capture current named searches set
         $ssjs = $user->conf->named_searches();

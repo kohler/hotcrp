@@ -16,10 +16,9 @@ class Mail_API {
 
         $mailinfo = [
             "prow" => $prow,
-            "sending_user" => $user,
             "requester_contact" => $user,
             "width" => $qreq->width ?? 10000,
-            "censor" => Mailer::CENSOR_DISPLAY
+            "censor" => Mailer::CENSOR_PREVIEW
         ];
         if (isset($qreq->reason)) {
             $mailinfo["reason"] = $qreq->reason;
@@ -36,7 +35,7 @@ class Mail_API {
                 $mailinfo["rrow"] = $rrow;
             }
         }
-        $mailer = new HotCRPMailer($user->conf, $recipient, $mailinfo);
+        $mailer = new HotCRPMailer($user, $recipient, $mailinfo);
 
         if (isset($qreq->text) || isset($qreq->subject) || isset($qreq->body)) {
             $j = ["ok" => true];

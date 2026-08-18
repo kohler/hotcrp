@@ -147,8 +147,9 @@ class UserSecurityEvent {
     }
 
 
-    function store(Qsession $qs) {
+    function store(Qrequest $qreq) {
         assert(isset($this->email));
+        $qs = $qreq->qsession();
         $uindex = Contact::session_index_by_email($qs, $this->email);
         assert(($this->uindex ?? -1) < 0 || $this->uindex === $uindex);
         $this->uindex = $uindex;
@@ -189,7 +190,7 @@ class UserSecurityEvent {
 
         // add self
         $result[] = $this->as_array();
-        $qs->set("usec", $result);
+        $qreq->set_gsession("usec", $result);
     }
 
 

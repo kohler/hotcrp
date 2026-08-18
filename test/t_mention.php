@@ -155,4 +155,79 @@ class Mention_Tester {
         xassert_eqq($mpxs[0]->pos1, 0);
         xassert_eqq($mpxs[0]->pos2, 10);
     }
+
+    /** @return list<string> */
+    private function mention_names(Contact $user, PaperInfo $prow) {
+        $jr = call_api_result("mentioncompletion", $user, ["p" => $prow->paperId], $prow);
+        $ns = [];
+        foreach ($jr->content["mentioncompletion"] ?? [] as $m) {
+            $ns[] = $m["s"] ?? $m["sm1"] ?? "";
+        }
+        return $ns;
+    }
+
+    function test_mentioncompletion_without_paper() {
+        // `p` is optional for this endpoint, so a paperless call must still work
+        foreach (["chair@_.com", "estrin@usc.edu"] as $email) {
+            $u = $this->conf->checked_user_by_email($email);
+            $jr = call_api_result("mentioncompletion", $u, []);
+            xassert_eqq($jr->status ?? 200, 200);
+            xassert_neqq($jr->content["mentioncompletion"] ?? [], []);
+        }
+    }
+
+    /** @param int $ctype
+     * @return int */
+    private function add_shepherd_comment($ctype) {
+        $conf = $this->conf;
+        $conf->qe("insert into PaperComment set paperId=13, contactId=?, timeModified=?, comment=?, commentType=?, commentRound=0, replyTo=0",
+            $conf->checked_user_by_email("estrin@usc.edu")->contactId,
+            Conf::$now, "shepherd note", $ctype);
+        return $conf->dblink->insert_id;
+    }
+
+    function test_mentioncompletion_gates_shepherd_existence() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $shepherd = $conf->checked_user_by_email("estrin@usc.edu");
+        xassert_assign($chair, "paper,action,user\n13,shepherd,{$shepherd->email}\n");
+        $prow = $conf->checked_paper_by_id(13);
+
+        // an author of #13 may see neither the decision nor the shepherd
+        $au = $conf->checked_user_by_email("vern@ee.lbl.gov");
+        xassert(!$au->isPC && $au->can_view_paper($prow));
+        xassert(!$au->can_view_decision($prow));
+        xassert(!$au->can_view_shepherd($prow));
+        xassert_not_in_eqq("Shepherd", $this->mention_names($au, $prow));
+
+        // a comment the author sees as “Shepherd” makes the shepherd apparent
+        $cmtid = $this->add_shepherd_comment(CommentInfo::CTVIS_AUTHOR
+            | CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_BYSHEPHERD);
+        $prow = $conf->checked_paper_by_id(13);
+        xassert_eqq(count($prow->viewable_comment_skeletons($au)), 1);
+        xassert_in_eqq("Shepherd", $this->mention_names($au, $prow));
+        $conf->qe("delete from PaperComment where commentId=?", $cmtid);
+
+        // ... but an unlabeled comment that merely happens to be by the
+        // shepherd does not: the author can’t tell who wrote it
+        $cmtid = $this->add_shepherd_comment(CommentInfo::CTVIS_AUTHOR
+            | CommentInfo::CT_TOPIC_PAPER);
+        $prow = $conf->checked_paper_by_id(13);
+        xassert_eqq(count($prow->viewable_comment_skeletons($au)), 1);
+        xassert_not_in_eqq("Shepherd", $this->mention_names($au, $prow));
+        $conf->qe("delete from PaperComment where commentId=?", $cmtid);
+
+        // ... and neither does a visible decision
+        xassert_assign($chair, "paper,action,decision\n13,decision,yes\n");
+        $conf->save_refresh_setting("au_seedec", Conf::AUSEEREV_YES);
+        $prow = $conf->checked_paper_by_id(13);
+        $au = $conf->checked_user_by_email("vern@ee.lbl.gov");
+        xassert($au->can_view_decision($prow));
+        xassert(!$au->can_view_shepherd($prow));
+        xassert_in_eqq("Shepherd", $this->mention_names($au, $prow));
+
+        $conf->save_refresh_setting("au_seedec", null);
+        xassert_assign($chair, "paper,action,decision\n13,cleardecision,yes\n");
+        xassert_assign($chair, "paper,action,user\n13,clearshepherd,{$shepherd->email}\n");
+    }
 }

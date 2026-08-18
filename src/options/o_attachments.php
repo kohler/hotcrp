@@ -52,7 +52,7 @@ class Attachments_PaperOption extends PaperOption {
         foreach ($docs as $dj) {
             if (is_int($dj)) {
                 $dids[] = $dj;
-            } else if (($doc = $ps->upload_document($dj, $this))) {
+            } else if (($doc = $ps->upload_document($dj, $this->id))) {
                 $dids[] = $doc->paperStorageId;
             }
         }

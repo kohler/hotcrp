@@ -449,7 +449,7 @@ class ManageEmail_Page {
             }
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => $this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1])),
+                "formaction" => $this->conf->hoturl("=manageemail", $this->step_param(["back" => 1])),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));
@@ -499,8 +499,8 @@ class ManageEmail_Page {
             if ($this->token) {
                 $this->token->change_data($key, null)->update();
             }
-            $redirect = $this->conf->hoturl_raw("manageemail", $this->step_param(["signedin" => 1]), Conf::HOTURL_SERVERREL | Conf::HOTURL_RAW);
-            throw new Redirection($this->conf->hoturl_raw("signin", ["redirect" => $redirect]));
+            $redirect = $this->conf->hoturl("manageemail", $this->step_param(["signedin" => 1]), Conf::HOTURL_SERVERREL);
+            throw new Redirection($this->conf->hoturl("signin", ["redirect" => $redirect]));
         }
         if (($user = $this->parse_user($key, $email))) {
             $this->create_token()
@@ -682,7 +682,7 @@ class ManageEmail_Page {
             echo '<p>You must confirm all accounts involved in the link to continue.</p>';
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => $this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1])),
+                "formaction" => $this->conf->hoturl("=manageemail", $this->step_param(["back" => 1])),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));
@@ -917,7 +917,7 @@ class ManageEmail_Page {
             echo '<p>You must confirm this account to continue.</p>';
             $this->authchecker->set_actions_class("aax mt-4");
             $this->authchecker->add_actions(Ht::submit("Back", [
-                "formaction" => $this->conf->hoturl_raw("=manageemail", $this->step_param(["back" => 1])),
+                "formaction" => $this->conf->hoturl("=manageemail", $this->step_param(["back" => 1])),
                 "formmethod" => "post",
                 "formnovalidate" => true
             ]));

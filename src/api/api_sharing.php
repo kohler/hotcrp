@@ -41,7 +41,7 @@ class Sharing_API extends MessageSet {
             if ($tok->timeInvalid > 0) {
                 $jr["expires_at"] = $tok->timeInvalid;
             }
-            $jr["url"] = $prow->hoturl(["cap" => $tok->salt], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_RAW);
+            $jr["url"] = $prow->hoturl(["cap" => $tok->salt], Conf::HOTURL_ABSOLUTE);
         } else {
             $jr["token"] = null;
         }

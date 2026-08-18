@@ -472,7 +472,6 @@ class Hotcrapi_Batch extends MessageSet {
         curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $method ?? "POST");
         curl_setopt($curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
         curl_setopt($curlh, CURLOPT_WRITEHEADER, $this->headerf);
-        curl_setopt($curlh, CURLOPT_SAFE_UPLOAD, true);
         if ($this->apitoken) {
             curl_setopt($curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
         }
@@ -730,6 +729,8 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         Paper_CLIBatch::register($hcli);
         Document_CLIBatch::register($hcli);
         Search_CLIBatch::register($hcli);
+        Comment_CLIBatch::register($hcli);
+        Review_CLIBatch::register($hcli);
         Assign_CLIBatch::register($hcli);
         Autoassign_CLIBatch::register($hcli);
         Settings_CLIBatch::register($hcli);
@@ -743,8 +744,8 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         }
         if (isset($arg["S"])) {
             $hcli->set_site($arg["S"]);
-        } else if (isset($_ENV["HOTCRAPI_SITE"])) {
-            $hcli->set_site($_ENV["HOTCRAPI_SITE"]);
+        } else if (($x = getenv("HOTCRAPI_SITE"))) {
+            $hcli->set_site($x);
         }
 
         if (isset($arg["T"])) {
@@ -757,8 +758,8 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
                 $t = $arg["T"];
             }
             $hcli->set_apitoken($t);
-        } else if (isset($_ENV["HOTCRAPI_TOKEN"])) {
-            $hcli->set_apitoken($_ENV["HOTCRAPI_TOKEN"]);
+        } else if (($x = getenv("HOTCRAPI_TOKEN"))) {
+            $hcli->set_apitoken($x);
         }
 
         if (isset($arg["quiet"])) {

@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
-const HOTCRP_VERSION = "3.3.1";
+const HOTCRP_VERSION = "3.4";
 
 // All positive review types must be 1 digit
 const REVIEW_META = 5;
@@ -73,6 +73,9 @@ if (PHP_SAPI === "cli") {
     ini_set("error_log", "");
     if (function_exists("pcntl_signal")) {
         pcntl_signal(SIGPIPE, SIG_DFL);
+    }
+    if (getenv("HOTCRP_BATCHMODE") === "background") {
+        BatchProcess::detach();
     }
 }
 
@@ -304,8 +307,8 @@ function initialize_user($qreq, $kwarg = null) {
             if (str_starts_with($salt, "hcT_")) {
                 $token = TokenInfo::find_from($salt, $conf, true);
             } else if (str_starts_with($salt, "hct_")) {
-                $token = TokenInfo::find_from($salt, $conf, true) /* XXX backward compat */
-                    ?? TokenInfo::find_from($salt, $conf, false);
+                $token = TokenInfo::find_from($salt, $conf, false)
+                    ?? /* XXX backward compat */ TokenInfo::find_from("hcT_" . substr($salt, 4), $conf, true);
             }
         }
         if ($token

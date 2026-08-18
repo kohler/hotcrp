@@ -278,7 +278,7 @@ class UserActions extends MessageSet {
         $result = $this->conf->qe("select * from PaperReview where contactId=?",
             $user->contactId);
         while (($rrow = ReviewInfo::fetch($result, $prows, $this->conf))) {
-            $rrow->delete($this->viewer, ["no_autosearch" => true]);
+            $rrow->delete($this->viewer, ["no_autosearch" => true, "no_rights" => true]);
         }
         Dbl::free($result);
 
@@ -286,7 +286,7 @@ class UserActions extends MessageSet {
         $result = $this->conf->qe("select * from PaperComment where contactId=? and (commentType&?)=0",
             $user->contactId, CommentInfo::CT_RESPONSE);
         while (($crow = CommentInfo::fetch($result, $prows, $this->conf))) {
-            $crow->delete($this->viewer, ["no_autosearch" => true]);
+            $crow->delete($this->viewer);
         }
         Dbl::free($result);
 

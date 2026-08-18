@@ -2,17 +2,12 @@
 // test/setup.php -- HotCRP helper file to initialize tests
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
-require_once(dirname(__DIR__) . "/src/siteloader.php");
-define("HOTCRP_OPTIONS", SiteLoader::resolve("test/options.php"));
 define("HOTCRP_TESTHARNESS", true);
-ini_set("error_log", "");
+require_once(dirname(__DIR__) . "/src/init.php");
 ini_set("log_errors", "0");
 ini_set("display_errors", "stderr");
 ini_set("assert.exception", "1");
 error_reporting(E_ALL);
-
-require_once(SiteLoader::resolve("src/init.php"));
-initialize_conf();
 
 
 // Record mail in MailChecker.
@@ -420,7 +415,7 @@ class Xassert {
             if (preg_match('/\A[Xx]?assert|\AMailChecker::check|::x?assert/s', $fname)) {
                 continue;
             }
-            if (PHP_MAJOR_VERSION >= 8 && !str_contains($fname, "{closure")) {
+            if (!str_contains($fname, "{closure")) {
                 if (isset($tr["class"])) {
                     $refl = new ReflectionMethod($tr["class"], $tr["function"]);
                 } else {
@@ -692,6 +687,19 @@ function xassert_str_starts_with($haystack, $needle) {
         Xassert::succeed();
     } else {
         Xassert::fail_with("expected `{$haystack}` to start with `{$needle}`");
+    }
+    return $ok;
+}
+
+/** @param string $haystack
+ * @param string $needle
+ * @return bool */
+function xassert_str_ends_with($haystack, $needle) {
+    $ok = str_ends_with($haystack, $needle);
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        Xassert::fail_with("expected `{$haystack}` to end with `{$needle}`");
     }
     return $ok;
 }
@@ -1013,7 +1021,7 @@ function call_api_result($fn, $user, $qreq, $prow = null) {
     $qreq->set_user($user);
     if ($prow) {
         $qreq->set_paper($prow);
-    } else if ($qreq->p && ctype_digit((string) $qreq->p)) {
+    } else if ((string) $qreq->p !== "") {
         $user->conf->set_paper_request($qreq, $user);
     }
     Qrequest::set_main_request($qreq);
@@ -1083,11 +1091,10 @@ function save_review($prow, $user, $revreq, $rrow = null, $args = []) {
     if (is_int($prow)) {
         $prow = $user->conf->checked_paper_by_id($prow, $user);
     }
-    $rf = Conf::$main->review_form();
-    $tf = new ReviewValues($rf);
+    $tf = new ReviewValues($user);
     $tf->parse_qreq(new Qrequest("POST", $revreq));
     $rrowx = $rrow ?? $prow->fresh_review_by_user($user);
-    $tf->check_and_save($user, $prow, $rrowx);
+    $tf->check_and_save($prow, $rrowx);
     if (!($args["quiet"] ?? false)) {
         foreach ($tf->problem_list() as $mx) {
             Xassert::will_print();
@@ -1162,66 +1169,12 @@ function sorted_conflicts(PaperInfo $prow, $flags) {
 class TestRunner {
     static public $original_opt;
 
-    /** @var array<string,list<string>> */
-    static public $collections = [
-        "test01" => [
-            "fresh_db", "Permission_Tester", "Tags_Tester", "Tracks_Tester",
-            "Banners_Tester", "Session_Tester"
-        ],
-        "test02" => [
-            "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",
-            "AuthorMatch_Tester", "Ht_Tester", "Fmt_Tester",
-            "Getopt_Tester", "CleanHTML_Tester", "Abbreviation_Tester",
-            "DocumentBasics_Tester", "FixCollaborators_Tester",
-            "Mention_Tester", "Search_Tester", "Settings_Tester",
-            "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester"
-        ],
-        "test03" => [
-            "MinCostMaxFlow_Tester"
-        ],
-        "test04" => [
-            "Cdb_Tester"
-        ],
-        "test05" => [
-            "fresh_db", "PaperStatus_Tester", "AuthorCertification_Tester",
-            "Login_Tester", "UserStatus_Tester",
-            "(", "no_cdb", "Login_Tester", "UserStatus_Tester", ")"
-        ],
-        "test06" => [
-            "fresh_db", "Reviews_Tester", "Comments_Tester", "UserAPI_Tester",
-            "UploadAPI_Tester", "Mailer_Tester", "Events_Tester",
-            "Autoassign_Tester", "fresh_db", "Formulas_Tester"
-        ],
-        "test07" => [
-            "DiffMatchPatch_Tester"
-        ],
-        "test08" => [
-            "(", "no_cdb", "fresh_db", "Permission_Tester", "Unit_Tester",
-            "XtCheck_Tester", "Abbreviation_Tester",
-            "DocumentBasics_Tester", "Mention_Tester",
-            "Invariants_Tester", "Search_Tester", "Settings_Tester",
-            "Invariants_Tester", "UpdateSchema_Tester",
-            "Invariants_Tester", "Batch_Tester",
-            "PaperStatus_Tester", "Login_Tester",
-            "fresh_db", "Reviews_Tester", "Comments_Tester",
-            "UserAPI_Tester", ")"
-        ],
-        "test09" => [
-            "fresh_db", "PaperAPI_Tester", "ReviewAPI_Tester",
-            "FollowAPI_Tester", "Scope_Tester", "APICounter_Tester"
-        ],
-        "default" => [
-            "test01", "test02", "test03", "test04", "test05", "test06",
-            "test07", "(", "if_all", "test08", ")", "test09"
-        ],
-        "all" => [
-            "test01", "test02", "test03", "test04", "test05", "test06",
-            "test07", "test08", "test09"
-        ]
-    ];
-
-    /** @var bool */
-    private $verbose;
+    /** @var Conf */
+    private $conf;
+    /** @var ComponentSet */
+    private $cs;
+    /** @var int */
+    public $verbose;
     /** @var bool */
     private $all;
     /** @var bool */
@@ -1253,8 +1206,9 @@ class TestRunner {
     private $test_digits = 1;
 
 
-    function __construct($arg) {
-        $this->verbose = isset($arg["verbose"]);
+    function __construct(Conf $conf, $arg) {
+        $this->conf = $conf;
+        $this->verbose = $arg["verbose"] ?? 0;
         $this->all = isset($arg["all"]);
         if (isset($arg["stop"])) {
             Xassert::$stop = true;
@@ -1276,6 +1230,21 @@ class TestRunner {
             $this->color = false;
         } else {
             $this->color = posix_isatty(STDERR);
+        }
+        $this->cs = new ComponentSet($conf->root_user(),
+            ["test/testinfo.json"], $conf->opt("testInfo"));
+        $this->cs->set_context_args($this);
+    }
+
+    /** Run test-lifecycle hooks for `$event`: `function` callbacks on
+     * `__$event` component fragments, each called as
+     * `function(TestRunner, object $gj, ...$args)`. Events: `startup` (before
+     * the test list), `reset` (after each db reset, passed the chair Contact),
+     * `shutdown` (after the test list).
+     * @param string $event */
+    function run_hooks($event, ...$args) {
+        foreach ($this->cs->members("__{$event}", "function") as $gj) {
+            $this->cs->call_function($gj, $gj->function, $gj, ...$args);
         }
     }
 
@@ -1314,10 +1283,15 @@ class TestRunner {
             }
         }
 
-        if ($rebuild
-            || !preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)[,\)]/mi', $s, $m)
-            || Dbl::fetch_ivalue($dblink, "select value from Settings where name=?", $m[1]) !== intval($m[2])) {
-            $rebuild = true;
+        if (!$rebuild) {
+            $ok = preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)[,\)]/mi', $s, $m);
+            $result = $ok ? Dbl::qx($dblink, "select value from Settings where name=?", $m[1]) : null;
+            if (!$result
+                || $dblink->errno !== 0
+                || !($row = $result->fetch_row())
+                || (int) $row[0] !== intval($m[2])) {
+                $rebuild = true;
+            }
         }
 
         if ($rebuild) {
@@ -1337,7 +1311,7 @@ class TestRunner {
 
     /** @param bool $first */
     static function reset_options($first = false) {
-        Conf::$main->qe("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"order\":1,\"display\":\"default\"}]' ?U on duplicate key update data=?U(data)");
+        Conf::$main->qe("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"type\":\"numeric\",\"order\":7,\"display\":\"rest\"}]' ?U on duplicate key update data=?U(data)");
         Conf::$main->qe("alter table PaperOption auto_increment=2");
         Conf::$main->qe("delete from PaperOption where optionId!=1");
         Conf::$main->load_settings();
@@ -1415,6 +1389,10 @@ class TestRunner {
         self::setup_assignments($json->assignments_1, $user_chair);
         $conf->call_shutdown_function("CdbUserUpdate");
         $timer->mark("assignment");
+
+        if (($tr = Xassert::$test_runner)) {
+            $tr->run_hooks("reset", $user_chair);
+        }
         MailChecker::clear();
     }
 
@@ -1524,9 +1502,6 @@ class TestRunner {
     }
 
     private function check_test_attributes($class) {
-        if (PHP_MAJOR_VERSION < 8) {
-            return true;
-        }
         $require_db = $require_cdb = null;
         foreach ($class->getAttributes("RequireDb") ?? [] as $attr) {
             $x = $attr->newInstance();
@@ -1537,7 +1512,7 @@ class TestRunner {
             $require_cdb = $x->required;
         }
         if ($require_cdb !== null
-            && $require_cdb !== !!Conf::$main->opt("contactdbDsn")) {
+            && $require_cdb !== !!$this->conf->opt("contactdbDsn")) {
             return false;
         }
         if ($require_db === false) {
@@ -1583,16 +1558,30 @@ class TestRunner {
         $this->tester = null;
         $ctor = $class->getConstructor();
         if ($ctor && $ctor->getNumberOfParameters() === 1) {
-            $this->tester = $class->newInstance(Conf::$main);
+            $this->tester = $class->newInstance($this->conf);
         } else {
             assert(!$ctor || $ctor->getNumberOfParameters() === 0);
             $this->tester = $class->newInstance();
+        }
+
+        // maybe set verbosity
+        $ro = new ReflectionObject($this->tester);
+        if ($ro->hasMethod("set_verbose")
+            && ($m = $ro->getMethod("set_verbose"))->isPublic()) {
+            $m->invoke($this->tester, $this->verbose);
+        }
+
+        // maybe initialize (usually the constructor suffices; this exists
+        // because it runs post-set_verbose)
+        if ($ro->hasMethod("initialize")
+            && ($m = $ro->getMethod("initialize"))->isPublic()) {
+            $m->invoke($this->tester);
         }
     }
 
     private function push_test_state() {
         $this->save_stack = (object) [
-            "contactdbDsn" => Conf::$main->opt("contactdbDsn"),
+            "contactdbDsn" => $this->conf->opt("contactdbDsn"),
             "skipping" => $this->skipping,
             "next" => $this->save_stack
         ];
@@ -1603,9 +1592,9 @@ class TestRunner {
             return;
         }
         $cdb_dsn = $this->save_stack->contactdbDsn;
-        if (Conf::$main->opt("contactdbDsn") !== $cdb_dsn) {
-            Conf::$main->set_opt("contactdbDsn", $cdb_dsn);
-            Conf::$main->invalidate_caches("cdb");
+        if ($this->conf->opt("contactdbDsn") !== $cdb_dsn) {
+            $this->conf->set_opt("contactdbDsn", $cdb_dsn);
+            $this->conf->invalidate_caches("cdb");
         }
         $this->skipping = $this->save_stack->skipping;
         $this->save_stack = $this->save_stack->next;
@@ -1629,8 +1618,8 @@ class TestRunner {
             }
             return;
         } else if ($test === "no_cdb") {
-            Conf::$main->set_opt("contactdbDsn", null);
-            Conf::$main->invalidate_caches("cdb");
+            $this->conf->set_opt("contactdbDsn", null);
+            $this->conf->invalidate_caches("cdb");
             $this->last_classname = null;
             return;
         } else if ($test === "reset_db") {
@@ -1686,8 +1675,8 @@ class TestRunner {
     private function expand($tests) {
         $new_tests = [];
         foreach ($tests as $test) {
-            if (isset(self::$collections[$test])) {
-                array_push($new_tests, ...$this->expand(self::$collections[$test]));
+            if (($gj = $this->cs->get($test)) && isset($gj->members)) {
+                array_push($new_tests, ...$this->expand($gj->members));
             } else {
                 $new_tests[] = $test;
             }
@@ -1715,42 +1704,97 @@ class TestRunner {
         return $ok;
     }
 
+    /** @return ?resource */
+    static private function handle_dblockfiles() {
+        global $Opt;
+        if (!isset($Opt["dbLockfiles"])) {
+            return null;
+        }
+        $lf = SiteLoader::expand_includes(null, $Opt["dbLockfiles"]);
+
+        $first = true;
+        foreach ([true, false] as $require_lock) {
+            $lfx = $lf;
+            while (!empty($lfx)) {
+                // always try first database first
+                if ($first) {
+                    $i = 0;
+                    $first = false;
+                } else {
+                    $i = mt_rand(0, count($lfx) - 1);
+                }
+                $strm = @fopen($lfx[$i], "rb");
+                if ($strm !== false
+                    && (!$require_lock || flock($strm, LOCK_EX | LOCK_NB))) {
+                    if (!$require_lock) {
+                        fwrite(STDERR, "* All test databases are in use; sharing {$lfx[$i]}\n");
+                    }
+                    include $lfx[$i];
+                    return $strm;
+                }
+                if ($strm !== false) {
+                    fclose($strm);
+                }
+                array_splice($lfx, $i, 1);
+            }
+        }
+
+        throw new CommandLineException("Cannot read \$Opt[\"dbLockfiles\"]");
+    }
+
     /** @param 'no_cdb'|'reset_db'|'fresh_db'|class-string ...$tests */
     static function run(...$tests) {
+        global $Opt;
+
         if (($tests[0] ?? "") === "no_argv") {
             $arg = [];
         } else {
             global $argv;
             $arg = (new Getopt)->long(
-                "all,a run all test collections",
-                "verbose,V be verbose",
+                "config: Set test options [test/options.php]",
+                "all,a Run all test collections",
+                "verbose#,V# Be verbose",
                 "help,h !",
-                "reset,reset reset test database",
-                "no-reset,no-reset-db,R do not reset test database",
-                "no-cdb no contact database",
-                "stop,s stop on first error",
+                "reset,reset Reset test database",
+                "no-reset,no-reset-db,R Do not reset test database",
+                "no-cdb No contact database",
+                "stop,s Stop on first error",
                 "color !",
                 "no-color !"
-            )->description("Usage: php test/" . basename($_SERVER["PHP_SELF"]) . " [-V] [CLASSNAME...]")
+            )->description("Usage: php test/" . basename($_SERVER["PHP_SELF"]) . " [-V] [TEST...]")
              ->helpopt("help")
              ->interleave(true)
              ->parse($argv);
         }
 
-        $tr = new TestRunner($arg);
+        $Opt["__no_main"] = true;
+        initialize_conf($arg["config"] ?? SiteLoader::resolve("test/options.php"));
+
+        // choose a random unlocked test database if multiple are available;
+        // $lockfile holds that database's lock until the process exits
+        $lockfile = self::handle_dblockfiles();
+
+        // connect to database
+        unset($Opt["__no_main"]);
+        $conf = initialize_conf();
+
+        self::$original_opt = $Opt;
+        Navigation::set(NavigationState::make_base("https://hotcrp-test.invalid/"));
+
+        $tr = new TestRunner($conf, $arg);
         Xassert::$test_runner = $tr;
+        $tr->run_hooks("startup");
         $test_list = $arg["_"];
         if (empty($test_list)) {
             $test_list = empty($tests) ? ["default"] : $tests;
         }
         $test_list = $tr->expand($test_list);
         $tr->run_test_list($test_list);
+        $tr->run_hooks("shutdown");
         exit($tr->complete() ? 0 : 1);
     }
 }
 
-TestRunner::$original_opt = $Opt;
-Navigation::set(NavigationState::make_base("https://hotcrp-test.invalid/"));
 
 
 class TestQreq {
