@@ -494,7 +494,8 @@ class Paper_API extends MessageSet {
         $this->set_post_param($qreq);
         $this->single = true;
 
-        if (!$this->user->can_manage($prow)) {
+        if (!$this->user->can_manage($prow)
+            || !$this->user->scope_allows(TokenScope::S_PAPER_ADMIN, $prow)) {
             return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete {$this->conf->snouns[1]}");
         }
 

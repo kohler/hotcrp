@@ -38,6 +38,7 @@ final class TokenScope {
     const S_CMT_READ = 0x10000;
     const S_CMT_WRITE = 0x20000;
     const S_CMT_ADMIN = 0x40000;
+    const S_PAPER_ADMIN = 0x77777; // {SUB+DOC+REV+TAG+CMT}_ADMIN
     const S_OTH_READ = 0x100000;
     const S_OTH_WRITE = 0x200000;
     const S_OTH_ADMIN = 0x400000;
