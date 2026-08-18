@@ -19,7 +19,7 @@ class PCConflicts_PaperOption extends PaperOption {
         // (test_exists() always returns true), so that admins can set
         // conflicts. The presence/exists_if configuration affects *visibility*
         // instead.
-        if (empty($this->conf->pc_members())) {
+        if (empty($this->conf->listed_pc_members())) {
             $this->visible_if = "NONE";
         } else {
             $this->visible_if = $this->exists_condition();
@@ -96,7 +96,7 @@ class PCConflicts_PaperOption extends PaperOption {
         $vm = self::value_map($ov);
         $pcs = [];
         $this->conf->ensure_cached_user_collaborators();
-        foreach ($this->conf->pc_members() as $p) {
+        foreach ($this->conf->listed_pc_members() as $p) {
             if (($vm[$p->contactId] ?? 0) === 0 /* not MAXUNCONFLICTED */
                 && $ov->prow->potential_conflict($p)) {
                 $pcs[] = Ht::link($p->name_h(NAME_P), "#pcconf:{$p->contactId}");
@@ -133,7 +133,11 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $vm = self::paper_value_map($prow);
-        foreach ($prow->conf->pc_members() as $cid => $pc) {
+        if (($u = $qreq->user()) && !$u->can_view_pc()) {
+            /** @phan-suppress-next-line PhanTypeMismatchArgument */
+            return PaperValue::make_multi($prow, $this, array_keys($vm), array_values($vm));
+        }
+        foreach ($prow->conf->listed_pc_members() as $cid => $pc) {
             if (isset($qreq["has_pcconf:{$cid}"]) || isset($qreq["pcconf:{$cid}"])) {
                 $ct = $qreq["pcconf:{$cid}"] ?? "0";
                 if (ctype_digit($ct) && $ct >= 0 && $ct <= 127) {
@@ -214,7 +218,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         $this->conf->ensure_cached_user_collaborators();
-        $pcm = $this->conf->pc_members();
+        $pcm = $this->conf->listed_pc_members();
         if (empty($pcm)
             && !$pt->settings_mode) {
             return;

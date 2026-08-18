@@ -219,8 +219,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     const ROLE_PC = 0x0001;             // DB+CDB: is PC?
     const ROLE_ADMIN = 0x0002;          // DB+CDB: is sysadmin?
     const ROLE_CHAIR = 0x0004;          // DB+CDB: is PC chair?
-    const ROLE_ANYPC = 0x0001;          // synonym for PC
-    const ROLE_PCLIKE = 0x000F;         // any PC role (PC | ADMIN | CHAIR)
+    const ROLE_UNLISTEDPC = 0x0008;     // DB+CDB: is PC, but off PC lists?
+    const ROLE_ANYPC = 0x0009;          // PC | UNLISTEDPC
+    const ROLE_PCLIKE = 0x000F;         // any PC role (PC | ADMIN | CHAIR | UNLISTEDPC)
     const ROLE_AUTHOR = 0x0010;         // CDB: is author?
     const ROLE_REVIEWER = 0x0020;       // CDB: is reviewer?
     const ROLE_HASAPP = 0x0040;         // DB+CDB: some OAuth client existed
@@ -1657,9 +1658,17 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return ($this->_overrides & self::OVERRIDE_CONFLICT) !== 0;
     }
 
-    /** @return bool */
+    /** Is this user a PC member, listed or unlisted?
+     * @return bool */
     function is_pc_member() {
         return ($this->roles & self::ROLE_ANYPC) !== 0;
+    }
+
+    /** Is this user a PC member who appears on the PC roster? Only code that
+     * renders that roster should ask; everything else wants `is_pc_member`.
+     * @return bool */
+    function is_listed_pc_member() {
+        return ($this->roles & self::ROLE_PC) !== 0;
     }
 
     /** @return bool */
@@ -1681,40 +1690,48 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @param int $roles
      * @return string */
     static function role_html_for($roles) {
-        if (($roles & (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN | Contact::ROLE_PC)) === 0) {
+        if (($roles & Contact::ROLE_PCLIKE) === 0) {
             return "";
-        } else if ($roles & Contact::ROLE_CHAIR) {
-            return '<span class="pcrole">chair</span>';
-        } else if (($roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) === (Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
-            return '<span class="pcrole">PC, sysadmin</span>';
-        } else if ($roles & Contact::ROLE_ADMIN) {
-            return '<span class="pcrole">sysadmin</span>';
+        } else if (($roles & Contact::ROLE_CHAIR) !== 0) {
+            $r = "chair";
+        } else if (($roles & Contact::ROLE_ANYPC) !== 0) {
+            $r = ($roles & Contact::ROLE_PC) !== 0 ? "PC" : "unlisted PC";
+            if (($roles & Contact::ROLE_ADMIN) !== 0) {
+                $r .= ", sysadmin";
+            }
+        } else {
+            $r = "sysadmin";
         }
-        return '<span class="pcrole">PC</span>';
+        return "<span class=\"pcrole\">{$r}</span>";
     }
 
     /** @param string $t
      * @return bool */
     function has_tag($t) {
-        if (($this->roles & self::ROLE_PC) !== 0
-            && strcasecmp($t, "pc") === 0) {
-            return true;
-        }
-        if ($this->contactTags) {
-            return stripos($this->contactTags, " {$t}#") !== false;
+        if (strlen($t) === 2 && strcasecmp($t, "pc") === 0) {
+            return ($this->roles & Contact::ROLE_ANYPC) !== 0;
+        } else if (strlen($t) === 8 && strcasecmp($t, "listedpc") === 0) {
+            return ($this->roles & Contact::ROLE_PC) !== 0;
+        } else if (strlen($t) === 10 && strcasecmp($t, "unlistedpc") === 0) {
+            return ($this->roles & Contact::ROLE_UNLISTEDPC) !== 0;
         }
         if ($this->contactTags === false) {
             trigger_error("Contact {$this->email} contactTags missing\n" . debug_string_backtrace());
             $this->contactTags = null;
         }
-        return false;
+        return $this->contactTags
+            && stripos($this->contactTags, " {$t}#") !== false;
     }
 
     /** @param string $t
      * @return ?float */
     function tag_value($t) {
-        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
-            return 0.0;
+        if (strlen($t) === 2 && strcasecmp($t, "pc") === 0) {
+            return ($this->roles & Contact::ROLE_ANYPC) !== 0 ? 0.0 : null;
+        } else if (strlen($t) === 8 && strcasecmp($t, "listedpc") === 0) {
+            return ($this->roles & Contact::ROLE_PC) !== 0 ? 0.0 : null;
+        } else if (strlen($t) === 10 && strcasecmp($t, "unlistedpc") === 0) {
+            return ($this->roles & Contact::ROLE_UNLISTEDPC) !== 0 ? 0.0 : null;
         } else if ($this->contactTags
                    && ($p = stripos($this->contactTags, " {$t}#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
@@ -1733,8 +1750,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // and disablement
         $tags = $x->contactTags ?? "";
         if (($ctflags & self::CTFLAG_ROLES) !== 0
-            && ($x->roles & self::ROLE_PC) !== 0) {
-            $tags = " pc#0{$tags}";
+            && ($x->roles & self::ROLE_ANYPC) !== 0) {
+            $rtag = ($x->roles & self::ROLE_PC) !== 0 ? "listedpc" : "unlistedpc";
+            $tags = " pc#0 {$rtag}#0{$tags}";
         }
         if (($ctflags & self::CTFLAG_DISABLED) !== 0
             && $x->disabled_flags() !== 0) {

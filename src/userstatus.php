@@ -91,6 +91,7 @@ class UserStatus extends MessageSet {
      * @readonly */
     static public $role_map = [
         Contact::ROLE_PC => "pc",
+        Contact::ROLE_UNLISTEDPC => "unlistedpc",
         Contact::ROLE_CHAIR => "chair",
         Contact::ROLE_ADMIN => "sysadmin"
     ];
@@ -374,6 +375,8 @@ class UserStatus extends MessageSet {
         }
         if ($roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)) {
             $rj[] = "pc";
+        } else if ($roles & Contact::ROLE_UNLISTEDPC) {
+            $rj[] = "unlistedpc";
         }
         if ($roles & Contact::ROLE_ADMIN) {
             $rj[] = "sysadmin";
@@ -862,6 +865,8 @@ class UserStatus extends MessageSet {
             $role = 0;
             if (strcasecmp($v, "pc") === 0) {
                 $role = Contact::ROLE_PC;
+            } else if (strcasecmp($v, "unlistedpc") === 0) {
+                $role = Contact::ROLE_UNLISTEDPC;
             } else if (strcasecmp($v, "chair") === 0) {
                 $role = Contact::ROLE_CHAIR;
             } else if (strcasecmp($v, "sysadmin") === 0
@@ -883,6 +888,13 @@ class UserStatus extends MessageSet {
         }
         if (($add_roles & Contact::ROLE_CHAIR) !== 0) {
             $add_roles |= Contact::ROLE_PC;
+        }
+        // a PC member is either listed or unlisted, never both
+        if (($add_roles & Contact::ROLE_PC) !== 0) {
+            $add_roles &= ~Contact::ROLE_UNLISTEDPC;
+            $remove_roles |= Contact::ROLE_UNLISTEDPC;
+        } else if (($add_roles & Contact::ROLE_UNLISTEDPC) !== 0) {
+            $remove_roles |= Contact::ROLE_PC | Contact::ROLE_CHAIR;
         }
         return [$add_roles, $remove_roles];
     }
@@ -920,7 +932,7 @@ class UserStatus extends MessageSet {
 
     /** @return bool */
     static function check_pc_tag($base) {
-        return !preg_match('/\A(?:any|all|none|enabled|disabled|pc|chair|admin|sysadmin)\z/i', $base);
+        return !preg_match('/\A(?:any|all|none|enabled|disabled|pc|listedpc|unlistedpc|chair|admin|sysadmin)\z/i', $base);
     }
 
 
@@ -1453,6 +1465,8 @@ class UserStatus extends MessageSet {
                 $cj->roles[] = "pc";
             } else if ($pctype === "pc") {
                 $cj->roles[] = "pc";
+            } else if ($pctype === "unlistedpc") {
+                $cj->roles[] = "unlistedpc";
             }
             if ($this->qreq->ass) {
                 $cj->roles[] = "sysadmin";
@@ -1781,6 +1795,8 @@ class UserStatus extends MessageSet {
                 $roles[] = "chair";
             } else if (($us->user->roles & Contact::ROLE_PC) !== 0) {
                 $roles[] = "PC";
+            } else if (($us->user->roles & Contact::ROLE_UNLISTEDPC) !== 0) {
+                $roles[] = "unlisted PC";
             }
             if (($us->user->roles & Contact::ROLE_ADMIN) !== 0) {
                 $roles[] = "sysadmin";
@@ -1801,15 +1817,18 @@ class UserStatus extends MessageSet {
             $pcrole = $cpcrole = "chair";
         } else if (($us->user->roles & Contact::ROLE_PC) !== 0) {
             $pcrole = $cpcrole = "pc";
+        } else if (($us->user->roles & Contact::ROLE_UNLISTEDPC) !== 0) {
+            $pcrole = $cpcrole = "unlistedpc";
         } else {
             $pcrole = $cpcrole = "none";
         }
         if (isset($us->qreq->pctype)
-            && in_array($us->qreq->pctype, ["chair", "pc", "none"], true)) {
+            && in_array($us->qreq->pctype, ["chair", "pc", "unlistedpc", "none"], true)) {
             $pcrole = $us->qreq->pctype;
         }
         $diffclass = $us->user->email ? "" : " ignore-diff";
         foreach (["chair" => "PC chair", "pc" => "PC member",
+                  "unlistedpc" => "Unlisted PC member",
                   "none" => "Not on the PC"] as $k => $v) {
             echo '<label class="checki"><span class="checkc">',
                 Ht::radio("pctype", $k, $pcrole === $k, ["class" => "uich js-profile-role" . $diffclass, "data-default-checked" => $cpcrole === $k]),
@@ -1923,7 +1942,8 @@ topics. We use this information to help match papers to reviewers.</p>',
     static function print_tags(UserStatus $us) {
         $user = $us->user;
         $tagger = new Tagger($us->viewer);
-        $itags = $tagger->unparse($us->user->viewable_tags($us->viewer));
+        $vtags = $us->user->viewable_tags($us->viewer, 0 /* no role tags */);
+        $itags = $tagger->unparse($vtags);
         if (!$us->viewer->privChair) {
             if ($us->user->isPC && $itags !== "") {
                 $us->print_start_section("Tags");
@@ -1933,10 +1953,15 @@ topics. We use this information to help match papers to reviewers.</p>',
         }
         $us->cs()->add_section_class("w-text fx2")
             ->print_start_section("<5>" . Ht::label("Tags", "tags"));
+        if ($us->conf->has_unlisted_pc_members()) {
+            $msg = "The “pc”, “listedpc”, and “unlistedpc” tags are";
+        } else {
+            $msg = "The “pc” tag is";
+        }
         echo '<div class="', $us->control_class("tags", "f-i"), '">',
             $us->feedback_html_at("tags"),
             Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw need-suggest pc-tags", "id" => "tags"]),
-            "<p class=\"f-d\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use ", $us->conf->hotlink("tag colors", "settings", ["group" => "tags"]), " to highlight subgroups in review lists.</p></div>\n";
+            "<p class=\"f-d\">Separate tags by spaces; example: “heavy”. {$msg} set automatically and not listed here.<br><strong>Tip:</strong>&nbsp;Use ", $us->conf->hotlink("tag colors", "settings", ["group" => "tags"]), " to highlight subgroups in review lists.</p></div>\n";
     }
 
     private static function print_delete_action(UserStatus $us) {

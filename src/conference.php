@@ -143,6 +143,8 @@ class Conf {
     private $_pc_set;
     /** @var ?array<int,Contact> */
     private $_pc_members_cache;
+    /** @var ?array<int,Contact> */
+    private $_listed_pc_members_cache;
     /** @var ?array<string,string> */
     private $_pc_tags_cache;
     /** @var ?array<int|string,Contact> */
@@ -2687,28 +2689,55 @@ class Conf {
 
         // populate other caches
         $this->_pc_members_cache = [];
+        $this->_listed_pc_members_cache = null;
         $next_pc_index = 0;
         foreach ($this->_pc_set as $u) {
-            if (($u->roles & Contact::ROLE_PC) !== 0) {
-                $u->pc_index = $next_pc_index;
-                ++$next_pc_index;
-                $this->_pc_members_cache[$u->contactId] = $u;
+            if (($u->roles & Contact::ROLE_ANYPC) === 0) {
+                continue;
             }
+            $u->pc_index = $next_pc_index;
+            ++$next_pc_index;
+            if (($u->roles & Contact::ROLE_PC) !== 0) {
+                if ($this->_listed_pc_members_cache !== null) {
+                    $this->_listed_pc_members_cache[$u->contactId] = $u;
+                }
+            } else if ($this->_listed_pc_members_cache === null) {
+                $this->_listed_pc_members_cache = $this->_pc_members_cache;
+            }
+            $this->_pc_members_cache[$u->contactId] = $u;
         }
     }
 
-    /** @return array<int,Contact> */
+    /** PC members, listed and unlisted.
+     * @return array<int,Contact> */
     function pc_members() {
         $this->_pc_set || $this->pc_set();
         return $this->_pc_members_cache;
     }
 
-    /** The PC as this viewer may see it.
+    /** PC members who appear on the PC roster. Only code that renders that
+     * roster should ask; everything else wants `pc_members`.
+     * @return array<int,Contact> */
+    function listed_pc_members() {
+        $this->_pc_set || $this->pc_set();
+        return $this->_listed_pc_members_cache ?? $this->_pc_members_cache;
+    }
+
+    /** @return bool */
+    function has_unlisted_pc_members() {
+        $this->_pc_set || $this->pc_set();
+        return $this->_listed_pc_members_cache !== null;
+    }
+
+    /** The PC as this viewer may see it: unlisted PC members are included
+     * only for viewers with PC-level visibility.
      * @return array<int,Contact> */
     function viewable_pc_members(Contact $viewer) {
         $roles = $viewer->viewable_roles_mask();
         if (($roles & Contact::ROLE_ANYPC) === Contact::ROLE_ANYPC) {
             return $this->pc_members();
+        } else if (($roles & Contact::ROLE_PC) !== 0) {
+            return $this->listed_pc_members();
         }
         return [];
     }
@@ -2780,7 +2809,7 @@ class Conf {
         if ($this->_pc_tags_cache !== null) {
             return $this->_pc_tags_cache;
         }
-        $this->_pc_tags_cache = ["pc" => "pc"];
+        $this->_pc_tags_cache = ["pc" => "pc", "listedpc" => "listedpc", "unlistedpc" => "unlistedpc"];
         foreach ($this->pc_users() as $u) {
             if ($u->contactTags !== null) {
                 foreach (explode(" ", $u->contactTags) as $tv) {
@@ -3230,7 +3259,7 @@ class Conf {
         $cdb = in_array("cdb", $caches, true);
         if ($all || in_array("pc", $caches, true) || $users) {
             $this->_pc_set = null;
-            $this->_pc_members_cache = $this->_pc_tags_cache = null;
+            $this->_pc_members_cache = $this->_listed_pc_members_cache = $this->_pc_tags_cache = null;
             $this->_user_cache = $this->_user_email_cache = null;
         }
         if ($all || $users || $cdb || in_array("cdb_users", $caches, true)) {

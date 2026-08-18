@@ -28,9 +28,11 @@ class Users_Page {
 
         $this->add_limit("pc", "Program committee");
         foreach ($this->conf->viewable_user_tags($viewer) as $t) {
-            if ($t !== "pc")
+            if ($t !== "pc" && $t !== "listedpc" && $t !== "unlistedpc")
                 $this->add_limit("#{$t}", ["optgroup" => "PC tags", "label" => "#{$t} program committee"]);
         }
+        $this->add_limit("unlistedpc", ["label" => "Unlisted program committee", "exclude" => !$this->conf->has_unlisted_pc_members()]);
+        $this->add_limit("fullpc", ["label" => "Listed and unlisted program committee", "exclude" => !$this->conf->has_unlisted_pc_members()]);
         $this->add_limit("admin", "System administrators");
         $this->add_limit("pcadmin", ["label" => "PC and system administrators", "exclude" => true]);
         $this->add_limit("re", "All reviewers");
@@ -144,6 +146,8 @@ class Users_Page {
                 }
                 if ($user->roles & Contact::ROLE_PC) {
                     $r[] = "pc";
+                } else if ($user->roles & Contact::ROLE_UNLISTEDPC) {
+                    $r[] = "unlistedpc";
                 }
                 if ($user->roles & Contact::ROLE_ADMIN) {
                     $r[] = "sysadmin";
@@ -214,10 +218,19 @@ class Users_Page {
             if (!empty($ua->name_list("skipped"))) {
                 $ua->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $ua->name_list("skipped"))));
             }
-        } else if ($modifyfn === "add_pc" || $modifyfn === "remove_pc") {
+        } else if ($modifyfn === "add_pc"
+                   || $modifyfn === "add_unlistedpc"
+                   || $modifyfn === "remove_pc") {
             $ua->$modifyfn($this->papersel);
             $list = $modifyfn;
-            $action = new FmtArg("action", $modifyfn === "add_pc" ? "added to PC" : "removed from PC", 0);
+            if ($modifyfn === "add_pc") {
+                $atext = "added to PC";
+            } else if ($modifyfn === "add_unlistedpc") {
+                $atext = "added to unlisted PC";
+            } else {
+                $atext = "removed from PC";
+            }
+            $action = new FmtArg("action", $atext, 0);
         } else {
             return false;
         }

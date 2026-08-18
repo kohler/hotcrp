@@ -265,9 +265,22 @@ class ManualAssign_Page {
         if (!$reviewer) {
             $rev_opt[0] = "(Select a PC member)";
         }
+        $unlisted = [];
         foreach ($this->conf->pc_members() as $pc) {
-            $rev_opt[$pc->email] = $pc->name(NAME_P|NAME_S) . " ("
-                . plural($acs->get($pc->contactId)->rev, "assignment") . ")";
+            if ($pc->is_listed_pc_member()) {
+                $rev_opt[$pc->email] = $pc->name(NAME_P|NAME_S) . " ("
+                    . plural($acs->get($pc->contactId)->rev, "assignment") . ")";
+            } else {
+                $unlisted[] = $pc;
+            }
+        }
+        // unlisted PC members are assignable, but grouped at the end
+        if (!empty($unlisted)) {
+            $rev_opt[] = ["optgroup", "Unlisted PC members"];
+            foreach ($unlisted as $pc) {
+                $rev_opt[$pc->email] = $pc->name(NAME_P|NAME_S) . " ("
+                    . plural($acs->get($pc->contactId)->rev, "assignment") . ")";
+            }
         }
 
         echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",

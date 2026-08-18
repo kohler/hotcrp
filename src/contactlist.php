@@ -104,6 +104,7 @@ class ContactList {
     const HAS_SELECTOR = 1;
     const HAS_PC = 2;
     const HAS_NONPC = 4;
+    const HAS_UNLISTEDPC = 8;
 
     function __construct(Contact $user, $sortable = true, $qreq = null) {
         $this->conf = $user->conf;
@@ -831,8 +832,10 @@ class ContactList {
 
         $this->user->set_overrides($overrides);
         $this->_viewable_roles = $this->user->viewable_roles_mask();
-        if ($this->limit === "pc") {
+        if ($this->limit === "pc" || $this->limit === "fullpc") {
             $this->_limit_default_roles = Contact::ROLE_PC;
+        } else if ($this->limit === "unlistedpc") {
+            $this->_limit_default_roles = Contact::ROLE_UNLISTEDPC;
         } else {
             $this->_limit_default_roles = 0;
         }
@@ -1081,7 +1084,10 @@ class ContactList {
         }
         switch ($listname) {
         case "pc":
+        case "fullpc":
             return ($viewer->viewable_roles_mask() & Contact::ROLE_PC) !== 0;
+        case "unlistedpc":
+            return ($viewer->viewable_roles_mask() & Contact::ROLE_UNLISTEDPC) !== 0;
         case "admin":
         case "pcadmin":
         case "pcadminx":
@@ -1139,6 +1145,8 @@ class ContactList {
         $this->limit = $listname;
         switch ($this->limit) {
         case "pc":
+        case "unlistedpc":
+        case "fullpc":
         case "admin":
         case "pcadmin":
             return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo nprefs reviews revratings lead shepherd scores");
@@ -1200,8 +1208,9 @@ class ContactList {
             $mods[] = null;
             if ($this->has("nonpc")) {
                 $mods["add_pc"] = "Add to PC";
+                $mods["add_unlistedpc"] = "Add to unlisted PC";
             }
-            if ($this->has("pc")) {
+            if ($this->has("pc") || $this->has("unlistedpc")) {
                 $mods["remove_pc"] = "Remove from PC";
             }
             $plft = PaperList::make_tab("modify", "Modify");
@@ -1225,6 +1234,10 @@ class ContactList {
         $mainwhere = $this->qopt["where"] ?? [];
         if ($this->limit == "pc") {
             $rolemask = Contact::ROLE_PC;
+        } else if ($this->limit == "unlistedpc") {
+            $rolemask = Contact::ROLE_UNLISTEDPC;
+        } else if ($this->limit == "fullpc") {
+            $rolemask = Contact::ROLE_ANYPC;
         } else if ($this->limit == "admin") {
             $rolemask = Contact::ROLE_ADMIN | Contact::ROLE_CHAIR;
         } else if ($this->limit == "pcadmin" || $this->limit == "pcadminx") {
@@ -1379,6 +1392,8 @@ class ContactList {
             $ids[] = (int) $row->contactId;
             if ($row->roles & Contact::ROLE_PC) {
                 $this->has_flags |= self::HAS_PC;
+            } else if ($row->roles & Contact::ROLE_UNLISTEDPC) {
+                $this->has_flags |= self::HAS_UNLISTEDPC;
             } else {
                 $this->has_flags |= self::HAS_NONPC;
             }
@@ -1548,6 +1563,8 @@ class ContactList {
             return ($this->has_flags & self::HAS_PC) !== 0;
         } else if ($field === "nonpc") {
             return ($this->has_flags & self::HAS_NONPC) !== 0;
+        } else if ($field === "unlistedpc") {
+            return ($this->has_flags & self::HAS_UNLISTEDPC) !== 0;
         }
         return false;
     }

@@ -151,13 +151,30 @@ class UserActions extends MessageSet {
             return;
         }
         $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a and (roles&?)=0",
-            [$ids, Contact::ROLE_PCLIKE]);
+            [$ids, Contact::ROLE_PC]);
         if (empty($users)) {
             return;
         }
-        $this->conf->qe("update ContactInfo set roles=roles|? where contactId?a and (roles&?)=0",
-            Contact::ROLE_PC, array_keys($users), Contact::ROLE_PCLIKE);
-        $this->change_roles($users, Contact::ROLE_PC, 0, "add_pc");
+        $this->conf->qe("update ContactInfo set roles=(roles&~?)|? where contactId?a and (roles&?)=0",
+            Contact::ROLE_UNLISTEDPC, Contact::ROLE_PC, array_keys($users), Contact::ROLE_PC);
+        $this->change_roles($users, Contact::ROLE_PC, Contact::ROLE_UNLISTEDPC, "add_pc");
+    }
+
+    /** @param list<int> $ids */
+    function add_unlistedpc($ids) {
+        $this->unames["add_unlistedpc"] = [];
+        if (!$this->viewer->privChair) {
+            $this->error_at(null, "<0>Permission error");
+            return;
+        }
+        $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a and (roles&?)=0 and contactId!=?",
+            [$ids, Contact::ROLE_UNLISTEDPC | Contact::ROLE_CHAIR, $this->viewer->contactId]);
+        if (empty($users)) {
+            return;
+        }
+        $this->conf->qe("update ContactInfo set roles=(roles&~?)|? where contactId?a and (roles&?)=0",
+            Contact::ROLE_PC, Contact::ROLE_UNLISTEDPC, array_keys($users), Contact::ROLE_UNLISTEDPC | Contact::ROLE_CHAIR);
+        $this->change_roles($users, Contact::ROLE_UNLISTEDPC, Contact::ROLE_PC, "add_unlistedpc");
     }
 
     /** @param list<int> $ids */
@@ -168,13 +185,13 @@ class UserActions extends MessageSet {
             return;
         }
         $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a and (roles&?)!=0 and contactId!=?",
-            [$ids, Contact::ROLE_PC, $this->viewer->contactId]);
+            [$ids, Contact::ROLE_ANYPC, $this->viewer->contactId]);
         if (empty($users)) {
             return;
         }
         $this->conf->qe("update ContactInfo set roles=roles&~? where contactId?a and (roles&?)!=0",
-            Contact::ROLE_PC | Contact::ROLE_CHAIR, array_keys($users), Contact::ROLE_PC);
-        $this->change_roles($users, 0, Contact::ROLE_PC | Contact::ROLE_CHAIR, "remove_pc");
+            Contact::ROLE_ANYPC | Contact::ROLE_CHAIR, array_keys($users), Contact::ROLE_ANYPC);
+        $this->change_roles($users, 0, Contact::ROLE_ANYPC | Contact::ROLE_CHAIR, "remove_pc");
     }
 
     const DELETE_FORCE = 1;

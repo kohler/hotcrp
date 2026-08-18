@@ -27,6 +27,10 @@ class Autoassign_Page {
     private $_pcids = [];
     /** @var list<int> */
     private $_enabled_pcids = [];
+    /** @var list<int> */
+    private $_listed_pcids = [];
+    /** @var list<int> */
+    private $_unlisted_pcids = [];
     /** @var array<string,list<int>> */
     private $_pcids_by_ltag = [];
 
@@ -38,16 +42,21 @@ class Autoassign_Page {
         $this->ms->set_message_formatter($this->conf);
 
         $vroles = $user->viewable_roles_mask();
-        foreach ($this->conf->pc_members() as $pc) {
+        foreach ($this->conf->pc_members() as $id => $pc) {
             if (($pc->roles & $vroles) === 0) {
                 continue;
             }
-            $this->_pcids[] = $pc->contactId;
+            $this->_pcids[] = $id;
             if (!$pc->is_dormant()) {
-                $this->_enabled_pcids[] = $pc->contactId;
+                $this->_enabled_pcids[] = $id;
+            }
+            if (($pc->roles & Contact::ROLE_PC) !== 0) {
+                $this->_listed_pcids[] = $id;
+            } else {
+                $this->_unlisted_pcids[] = $id;
             }
             foreach (Tagger::split_unpack(strtolower($pc->viewable_tags($user))) as $tv) {
-                $this->_pcids_by_ltag[$tv[0]][] = $pc->contactId;
+                $this->_pcids_by_ltag[$tv[0]][] = $id;
             }
         }
 
@@ -122,7 +131,7 @@ class Autoassign_Page {
             }
         }
         if (!isset($qreq->pctyp)
-            || ($qreq->pctyp !== "all" && $qreq->pctyp !== "enabled" && $qreq->pctyp !== "sel")) {
+            || !in_array($qreq->pctyp, ["all", "enabled", "listed", "sel"], true)) {
             if ($this->has_disabled_pc_members()
                 && count($this->_enabled_pcids) > 2) {
                 $qreq->pctyp = "enabled";
@@ -371,6 +380,12 @@ class Autoassign_Page {
         $this->_pcsel_sep = ", ";
     }
 
+    private function print_pctyp_div($value, $label, $checked) {
+        echo '<div class="js-radio-focus checki"><label>',
+            '<span class="checkc">', Ht::radio("pctyp", $value, $checked), '</span>',
+            $label, '</label></div>';
+    }
+
     private function print_pc_members() {
         $pctyp = $this->qreq->pctyp;
         echo '<div class="form-section"><h3 class="form-h">PC members</h3>';
@@ -380,15 +395,16 @@ class Autoassign_Page {
             return;
         }
 
-        echo '<div class="js-radio-focus checki"><label>',
-            '<span class="checkc">', Ht::radio("pctyp", "all", $pctyp === "all"), '</span>',
-            'Use entire PC</label></div>';
-
+        $this->print_pctyp_div("all", "Use entire PC", $pctyp === "all");
+        if ($pctyp === "listed"
+            || $pctyp === "unlisted"
+            || (!empty($this->_listed_pcids) && !empty($this->_unlisted_pcids))) {
+            $this->print_pctyp_div("listed", "Use listed PC", $pctyp === "listed");
+            $this->print_pctyp_div("unlisted", "Use unlisted PC", $pctyp === "unlisted");
+        }
         if ($pctyp === "enabled"
             || $this->has_disabled_pc_members()) {
-            echo '<div class="js-radio-focus checki"><label>',
-                '<span class="checkc">', Ht::radio("pctyp", "enabled", $pctyp === "enabled"), '</span>',
-                'Use enabled PC members</label></div>';
+            $this->print_pctyp_div("enabled", "Use enabled PC members", $pctyp === "enabled");
         }
 
         echo '<div class="js-radio-focus js-pcsel-container checki"><label>',
@@ -400,6 +416,10 @@ class Autoassign_Page {
         $this->print_pc_selection_link("none", []);
         if ($this->has_disabled_pc_members()) {
             $this->print_pc_selection_link("enabled", $this->_enabled_pcids);
+        }
+        if (!empty($this->_listed_pcids) && !empty($this->_unlisted_pcids)) {
+            $this->print_pc_selection_link("listed", $this->_listed_pcids);
+            $this->print_pc_selection_link("unlisted", $this->_unlisted_pcids);
         }
         foreach ($this->conf->viewable_user_tags($this->user) as $pctag) {
             $ltag = strtolower($pctag);
@@ -574,8 +594,18 @@ class Autoassign_Page {
                 $pcsel = $this->_pcids;
             }
             $argv[] = "-u=" . join(",", $pcsel);
+        } else if ($qreq->pctyp === "listed") {
+            $pcsel = $this->_listed_pcids;
+        } else if ($qreq->pctyp === "unlisted") {
+            $pcsel = $this->_unlisted_pcids;
         } else if ($qreq->pctyp === "enabled") {
             $argv[] = "-uenabled";
+            $pcsel = null;
+        } else {
+            $pcsel = null;
+        }
+        if ($pcsel !== null) {
+            $argv[] = "-u=" . join(",", $pcsel);
         }
 
         if ($qreq->badpairs) {

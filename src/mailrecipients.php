@@ -248,14 +248,20 @@ class MailRecipients extends MessageSet {
         $this->recipt_default_message = "pc";
         $tags = [];
         foreach ($this->conf->viewable_user_tags($this->user) as $t) {
-            if ($t !== "pc")
+            if ($t !== "pc" && $t !== "listedpc" && $t !== "unlistedpc")
                 $tags[] = $t;
         }
-        if (empty($tags)) {
+        $unlisted = $this->conf->has_unlisted_pc_members()
+            && ($this->user->viewable_roles_mask() & Contact::ROLE_UNLISTEDPC) !== 0;
+        if (empty($tags) && !$unlisted) {
             $this->add_recpt("pc", "Program committee", null, self::F_ANYPC | self::F_NOPAPERS);
         } else {
             $this->add_recpt_group("pc_group", "Program committee");
-            $this->add_recpt("pc", "Program committee", null, self::F_ANYPC | self::F_NOPAPERS);
+            $this->add_recpt("pc", $unlisted ? "Full program committee" : "Program committee", null, self::F_ANYPC | self::F_NOPAPERS);
+            if ($unlisted) {
+                $this->add_recpt("listedpc", "Listed program committee", null, self::F_ANYPC | self::F_NOPAPERS);
+                $this->add_recpt("unlistedpc", "Unlisted program committee", null, self::F_ANYPC | self::F_NOPAPERS);
+            }
             foreach ($tags as $t) {
                 $this->add_recpt("pc:{$t}", "#{$t} program committee", null, self::F_ANYPC | self::F_NOPAPERS);
             }
@@ -599,13 +605,22 @@ class MailRecipients extends MessageSet {
         if ($t === "all") {
             $needpaper = false;
             $where[] = "(ContactInfo.roles!=0 or lastLogin>0 or exists (select * from PaperConflict where contactId=ContactInfo.contactId) or exists (select * from PaperReview where contactId=ContactInfo.contactId and reviewType>0))";
-        } else if ($t === "pc" || str_starts_with($t, "pc:")) {
+        } else if ($t === "pc" || strcasecmp($t, "pc:pc") === 0) {
+            $needpaper = false;
+            // just in case user can't see unlisted PC
+            $roles = $this->user->viewable_roles_mask() & Contact::ROLE_ANYPC;
+            $where[] = "(ContactInfo.roles&" . $roles . ")!=0";
+        } else if ($t === "listedpc" || strcasecmp($t, "pc:listedpc") === 0) {
             $needpaper = false;
             $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";
-            if ($t != "pc") {
-                $x = sqlq(Dbl::escape_like(substr($t, 3)));
-                $where[] = "ContactInfo.contactTags like " . Dbl::utf8ci("'% {$x}#%'");
-            }
+        } else if ($t === "unlistedpc" || strcasecmp($t, "pc:unlistedpc") === 0) {
+            $needpaper = false;
+            $where[] = "(ContactInfo.roles&" . Contact::ROLE_UNLISTEDPC . ")!=0";
+        } else if (str_starts_with($t, "pc:")) {
+            $needpaper = false;
+            $where[] = "(ContactInfo.roles&" . Contact::ROLE_ANYPC . ")!=0";
+            $x = sqlq(Dbl::escape_like(substr($t, 3)));
+            $where[] = "ContactInfo.contactTags like " . Dbl::utf8ci("'% {$x}#%'");
         } else if ($rf & self::FM_REV) {
             $needpaper = true;
             $joins[] = "join Paper";

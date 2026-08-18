@@ -35,6 +35,220 @@ class UserStatus_Tester {
         return [$u, $qreq];
     }
 
+    // ROLE_UNLISTEDPC is a PC role that stays off PC lists: `isPC`, tags, and
+    // PC-level viewing all apply, but `pc_members()` and everything built on it
+    // (conflict lists, PC selectors) skip the user
+    function test_unlistedpc_role() {
+        $us = new UserStatus($this->conf->root_user());
+        $email = "unlisted@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert(!!$acct, $us->full_feedback_text());
+        xassert_eqq($acct->roles, Contact::ROLE_UNLISTEDPC);
+        xassert_eqq($acct->isPC, true);
+        xassert_eqq($acct->is_pclike(), true);
+        xassert_eqq($acct->is_pc_member(), true);
+        xassert_eqq($acct->is_listed_pc_member(), false);
+        xassert_eqq($acct->privChair, false);
+
+        $this->conf->invalidate_caches("users", "pc");
+        xassert(isset($this->conf->pc_members()[$acct->contactId]));
+        xassert(!isset($this->conf->listed_pc_members()[$acct->contactId]));
+        xassert(isset($this->conf->pc_users()[$acct->contactId]));
+        xassert(!!$this->conf->pc_member_by_id($acct->contactId));
+        xassert(!!$this->conf->pc_user_by_id($acct->contactId));
+
+        // an unlisted PC member is a PC member, so `#pc` matches; `#listedpc`
+        // and `#unlistedpc` tell the two apart
+        xassert_eqq($acct->has_tag("pc"), true);
+        xassert_eqq($acct->has_tag("listedpc"), false);
+        xassert_eqq($acct->has_tag("unlistedpc"), true);
+        xassert_eqq($acct->tag_value("pc"), 0.0);
+        xassert_eqq($acct->tag_value("listedpc"), null);
+        xassert_eqq(Contact::all_user_tags_for($acct, Contact::CTFLAG_ROLES), " pc#0 unlistedpc#0");
+        $acct = $us->save_user((object) ["email" => $email, "tags" => ["ztag"]]);
+        xassert_eqq($acct->has_tag("ztag"), true);
+
+        // round-trips through JSON and renders with a label
+        xassert_eqq(UserStatus::unparse_roles_json($acct->roles), ["unlistedpc"]);
+        xassert_str_contains(Contact::role_html_for($acct->roles), "unlisted PC");
+
+        // `pc` and `unlistedpc` are exclusive in both directions
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["pc"]]);
+        xassert_eqq($acct->roles, Contact::ROLE_PC);
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert_eqq($acct->roles, Contact::ROLE_UNLISTEDPC);
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc", "sysadmin"]]);
+        xassert_eqq($acct->roles, Contact::ROLE_UNLISTEDPC | Contact::ROLE_ADMIN);
+
+        // chair implies listed PC, so it clears the unlisted bit
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["chair"]]);
+        xassert_eqq($acct->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR);
+
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
+    function test_role_html_for() {
+        xassert_eqq(Contact::role_html_for(0), "");
+        xassert_eqq(Contact::role_html_for(Contact::ROLE_PC), '<span class="pcrole">PC</span>');
+        xassert_eqq(Contact::role_html_for(Contact::ROLE_CHAIR), '<span class="pcrole">chair</span>');
+        xassert_eqq(Contact::role_html_for(Contact::ROLE_PC | Contact::ROLE_CHAIR), '<span class="pcrole">chair</span>');
+        xassert_eqq(Contact::role_html_for(Contact::ROLE_ADMIN), '<span class="pcrole">sysadmin</span>');
+        xassert_eqq(Contact::role_html_for(Contact::ROLE_PC | Contact::ROLE_ADMIN), '<span class="pcrole">PC, sysadmin</span>');
+        xassert_eqq(Contact::role_html_for(Contact::ROLE_UNLISTEDPC), '<span class="pcrole">unlisted PC</span>');
+        xassert_eqq(Contact::role_html_for(Contact::ROLE_UNLISTEDPC | Contact::ROLE_ADMIN), '<span class="pcrole">unlisted PC, sysadmin</span>');
+    }
+
+    function test_unlistedpc_bulk_and_lists() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $emails = ["unl1@_.com", "unl2@_.com"];
+        $this->conf->qe("delete from ContactInfo where email?a", $emails);
+        $this->conf->invalidate_caches("users", "pc");
+
+        $us = new UserStatus($this->conf->root_user());
+        $ids = [];
+        foreach ($emails as $email) {
+            $acct = $us->save_user((object) ["email" => $email]);
+            xassert(!!$acct, $us->full_feedback_text());
+            $ids[] = $acct->contactId;
+        }
+        $this->conf->invalidate_caches("users", "pc");
+        xassert_eqq($this->conf->has_unlisted_pc_members(), false);
+        $h = (new MailRecipients($chair))->recipient_selector_html("recip");
+        xassert(!str_contains($h, "listedpc"));   // and so not "unlistedpc" either
+
+        // bulk add to unlisted PC
+        $ua = new UserActions($chair);
+        $ua->add_unlistedpc($ids);
+        xassert_eqq(count($ua->name_list("add_unlistedpc")), 2);
+        $this->conf->invalidate_caches("users", "pc");
+        xassert_eqq($this->conf->has_unlisted_pc_members(), true);
+        foreach ($ids as $cid) {
+            xassert(isset($this->conf->pc_members()[$cid]));
+            xassert(!isset($this->conf->listed_pc_members()[$cid]));
+        }
+        // `pc_members` is a superset of `listed_pc_members`
+        foreach ($this->conf->listed_pc_members() as $cid => $u) {
+            xassert(isset($this->conf->pc_members()[$cid]));
+        }
+        xassert_eqq(count($this->conf->pc_members()),
+                    count($this->conf->listed_pc_members()) + 2);
+
+        // the user list can select them, and “full PC” covers both kinds
+        $unl = (new ContactList($chair, false))->sorted_users("unlistedpc");
+        $unlids = array_map(function ($u) { return $u->contactId; }, $unl);
+        xassert_eqq(count($unlids), 2);
+        foreach ($ids as $cid) {
+            xassert_in_eqq($cid, $unlids);
+        }
+        $full = (new ContactList($chair, false))->sorted_users("fullpc");
+        $fullids = array_map(function ($u) { return $u->contactId; }, $full);
+        xassert_eqq(count($fullids), count($this->conf->pc_members()));
+        foreach ($ids as $cid) {
+            xassert_in_eqq($cid, $fullids);
+        }
+        // ...while the plain PC list does not
+        $pl = (new ContactList($chair, false))->sorted_users("pc");
+        foreach ($pl as $u) {
+            xassert(!in_array($u->contactId, $ids, true));
+        }
+
+        // mail: `pc` covers both kinds, `listedpc`/`unlistedpc` split them
+        $mr = new MailRecipients($chair);
+        $h = $mr->recipient_selector_html("recip");
+        xassert_str_contains($h, "\"listedpc\"");
+        xassert_str_contains($h, "\"unlistedpc\"");
+        $seen = [];
+        foreach (["pc", "listedpc", "unlistedpc"] as $t) {
+            $mr->set_recipients($t);
+            $q = $mr->query(false);
+            xassert(!!$q, $t);
+            $cids = [];
+            $result = $this->conf->qe_raw($q);
+            while (($row = $result->fetch_object())) {
+                $cids[] = (int) $row->contactId;
+            }
+            $result->close();
+            $seen[$t] = $cids;
+        }
+        foreach ($ids as $cid) {
+            xassert_in_eqq($cid, $seen["pc"]);
+            xassert_in_eqq($cid, $seen["unlistedpc"]);
+            xassert(!in_array($cid, $seen["listedpc"], true));
+        }
+        xassert_eqq(count($seen["unlistedpc"]), 2);
+        xassert_eqq(count($seen["pc"]), count($seen["listedpc"]) + 2);
+
+        // “Remove from PC” clears the unlisted role too
+        $ua = new UserActions($chair);
+        $ua->remove_pc($ids);
+        xassert_eqq(count($ua->name_list("remove_pc")), 2);
+        $this->conf->invalidate_caches("users", "pc");
+        xassert_eqq($this->conf->has_unlisted_pc_members(), false);
+        foreach ($ids as $cid) {
+            $u = $this->conf->fresh_user_by_id($cid);
+            xassert_eqq($u->roles, 0);
+        }
+
+        $this->conf->qe("delete from ContactInfo where email?a", $emails);
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
+    // unlisted PC members are PC-internal: visible to the PC and to managers,
+    // invisible to everyone else even where the plain PC is public
+    function test_unlistedpc_visibility() {
+        $email = "unlvis@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+        $us = new UserStatus($this->conf->root_user());
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"],
+                                         "firstName" => "Unlisted", "lastName" => "Visitor"]);
+        xassert(!!$acct, $us->full_feedback_text());
+        $this->conf->invalidate_caches("users", "pc");
+        $uid = $acct->contactId;
+        $acct = $this->conf->checked_user_by_email($email);
+
+        // every PC member gets a `pc_index`; conflict rendering indexes by it
+        $idx = [];
+        foreach ($this->conf->pc_members() as $id => $u) {
+            xassert($u->pc_index !== null, "pc_index for {$u->email}");
+            $idx[] = $u->pc_index;
+        }
+        xassert_eqq(count(array_unique($idx)), count($idx));
+
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $pc = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $au = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        xassert(!$au->isPC);
+        xassert($au->can_view_pc());          // the PC itself is public here
+
+        foreach ([[$chair, true], [$pc, true], [$au, false]] as $t) {
+            list($viewer, $sees) = $t;
+            xassert_eqq(($viewer->viewable_roles_mask() & Contact::ROLE_UNLISTEDPC) !== 0, $sees, $viewer->email);
+
+            // ContactSearch obeys the rule
+            $ids = ContactSearch::make_pc("pc", $viewer)->user_ids();
+            xassert_eqq(in_array($uid, $ids, true), $sees, $viewer->email);
+            $anyids = (new ContactSearch(ContactSearch::F_PC | ContactSearch::F_TAG, "any", $viewer))->user_ids();
+            xassert_eqq(in_array($uid, $anyids, true), $sees, $viewer->email);
+
+            // ...as does the PC list stashed for the client
+            $pcj = $this->conf->hotcrp_pc_json($viewer, 0);
+            $names = array_map(function ($x) { return $x->name ?? ""; }, $pcj->pc);
+            xassert_eqq(in_array("Unlisted Visitor", $names, true), $sees, $viewer->email);
+
+            // ...and the role label
+            $rh = Contact::role_html_for($acct->viewable_pc_roles($viewer));
+            xassert_eqq($rh !== "", $sees, $viewer->email);
+        }
+
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
     function test_edit_own_password() {
         list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
         xassert_eqq($u->email, "estrin@usc.edu");

@@ -386,6 +386,8 @@ class Profile_Page {
                 $xcj["pctype"] = "chair";
             } else if (in_array("pc", $roles, true)) {
                 $xcj["pctype"] = "pc";
+            } else if (in_array("unlistedpc", $roles, true)) {
+                $xcj["pctype"] = "unlistedpc";
             } else {
                 $xcj["pctype"] = "none";
             }
@@ -664,6 +666,7 @@ class Profile_Page {
             echo '<div id="foldaccount" class="';
             if ($this->qreq->pctype === "chair"
                 || $this->qreq->pctype === "pc"
+                || $this->qreq->pctype === "unlistedpc"
                 || (!isset($this->qreq->pctype)
                     && $this->user->is_pc_member())) {
                 echo "fold1o fold2o";
