@@ -5116,6 +5116,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // The "reviewNotAssigned" and "deadline" failure reasons are special.
         // If either is set, the system will still allow review form download.
         $whyNot = $prow->failure_reason();
+        if (!$rights->scope_allows(TS::S_REV_WRITE)) {
+            $whyNot["scope"] = "review:write";
+        }
         if ($rights->allow_admin() && !$rights->is_admin()) {
             $whyNot["conflict"] = true;
             $whyNot["forceShow"] = true;
@@ -5128,7 +5131,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = true;
         } else if (!$rights->is_reviewer()
-                   && (!$rights->allow_pc() || $this->conf->time_review(null, true, true))) {
+                   && $this->conf->time_review(null, true, true)) {
             $whyNot["reviewNotAssigned"] = true;
         } else {
             $whyNot["deadline"] = $rights->allow_pc() ? "pcrev_hard" : "extrev_hard";
@@ -5162,6 +5165,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
+        if (!$rights->scope_allows(TS::S_REV_WRITE)) {
+            $whyNot["scope"] = "review:write";
+        }
         if ($rights->can_manage_reviews()) {
             if ($reviewer->isPC
                 && !$reviewer->pc_track_assignable($prow)) {
@@ -5177,7 +5183,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 $whyNot["alreadyReviewed"] = true;
             } else {
                 $whyNot["permission"] = "review:edit";
-                if (!$this->conf->allow_self_assignment()) {
+                if (!$this->conf->allow_self_assignment()
+                    || !$this->conf->check_tracks($prow, $this, Track::SELFASSREV)) {
                     $whyNot["reviewNotAssigned"] = true;
                 }
                 if ($rights->conflicted()) {

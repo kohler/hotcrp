@@ -330,7 +330,7 @@ class FailureReason extends Exception
             $ms[] = $this->conf->_("<0>You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please inform the organizers.");
         }
         if ($this->_a["reviewNotAssigned"] ?? false) {
-            $ms[] = $this->conf->_("<0>You are not assigned to review {submission} #{}", $paperId);
+            $ms[] = $this->conf->_("<0>You aren’t allowed to self-assign a review for {submission} #{}", $paperId);
         }
         if (isset($this->_a["deadline"])) {
             list($odn, $start, $edn, $end, $args) = $this->deadline_info();
