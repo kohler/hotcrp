@@ -1935,7 +1935,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             ->print_start_section("<5>" . Ht::label("Tags", "tags"));
         echo '<div class="', $us->control_class("tags", "f-i"), '">',
             $us->feedback_html_at("tags"),
-            Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw", "id" => "tags"]),
+            Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw need-suggest pc-tags", "id" => "tags"]),
             "<p class=\"f-d\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use ", $us->conf->hotlink("tag colors", "settings", ["group" => "tags"]), " to highlight subgroups in review lists.</p></div>\n";
     }
 
