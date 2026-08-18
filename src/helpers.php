@@ -328,8 +328,22 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
 
+    private function check_fmt() {
+        // warn if message_list contains items that require formatting
+        if (is_array($this->content["message_list"] ?? null)) {
+            foreach ($this->content["message_list"] as $mi) {
+                if ($mi instanceof MessageItem
+                    && $mi->need_fmt()) {
+                    error_log("message item needs fmt: {$mi->message} " . debug_string_backtrace());
+                    break;
+                }
+            }
+        }
+    }
+
     /** @param ?Qrequest $qreq */
     function emit($qreq = null) {
+        $this->check_fmt();
         if (!$this->minimal
             && $this->status
             && !isset($this->content["ok"])) {
@@ -369,6 +383,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
+        $this->check_fmt();
         return $this->content;
     }
 }

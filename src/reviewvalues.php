@@ -99,6 +99,7 @@ class ReviewValues extends MessageSet {
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
+        $this->set_message_formatter($this->conf);
         $this->rf = $this->conf->review_form();
         $this->user = $user;
         $this->clear_req();
@@ -214,8 +215,9 @@ class ReviewValues extends MessageSet {
     /** @param int $status
      * @param int|string $field
      * @param string $msg
+     * @param mixed ...$args
      * @return MessageItem */
-    function rvmsg($status, $field, $msg) {
+    function rvmsg($status, $field, $msg, ...$args) {
         if (is_int($field)) {
             $lineno = $field;
             $field = null;
@@ -224,7 +226,7 @@ class ReviewValues extends MessageSet {
         } else {
             $lineno = $this->lineno;
         }
-        $mi = $this->append_item(new MessageItem($status, $field, $msg));
+        $mi = $this->append_item(new MessageItem($status, $field, $msg, ...$args));
         if ($this->filename) {
             $mi->landmark = "{$this->filename}:{$lineno}";
             if (($pid = $this->req_pid()) > 0) {

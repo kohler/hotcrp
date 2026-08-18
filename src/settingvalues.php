@@ -96,6 +96,7 @@ class SettingValues extends MessageSet {
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
+        $this->set_message_formatter($this->conf);
         $this->user = $user;
         $this->allowed = ($user->privChair || $user->check_xtrack("settings!"))
             && $user->scope_allows(TokenScope::S_SETTINGS_READ);
@@ -487,7 +488,6 @@ class SettingValues extends MessageSet {
     private function decorated_message_list() {
         $lastmi = $prevmi = null;
         $lastloc = [];
-        $this->apply_fmt($this->conf);
         foreach ($this->message_list() as $mi) {
             $mi = clone $mi;
             if ($mi->status === MessageSet::WARNING

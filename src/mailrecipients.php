@@ -78,6 +78,7 @@ class MailRecipients extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->set_ignore_duplicates(true);
+        $this->set_message_formatter($this->conf);
         $this->enumerate_recipients();
         $this->rect = $this->recipts[0];
     }

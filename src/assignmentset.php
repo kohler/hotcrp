@@ -537,14 +537,14 @@ class AssignmentState extends MessageSet {
      * @return MessageItem */
     function append_item_near($mi, $landmark = null) {
         $mi = $mi->with_landmark($this->landmark_near($landmark));
+        if ($mi->need_fmt()) {
+            $mi->fmt($this->conf->fmt());
+        }
         if (($bmi = $this->back_message())
             && $bmi->landmark === $mi->landmark
             && $bmi->message === $mi->message) {
             $this->change_item_status($bmi, $mi->status);
             return $bmi;
-        }
-        if ($mi->need_fmt()) {
-            $mi->fmt($this->conf->fmt());
         }
         return $this->append_item($mi);
     }

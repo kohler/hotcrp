@@ -1061,7 +1061,7 @@ function call_api($fn, $user, $qreq, $prow = null) {
     if (!isset($jr->content["status_code"]) && $jr->status > 299) {
         $jr->content["status_code"] = $jr->status;
     }
-    return (object) $jr->content;
+    return (object) $jr->jsonSerialize();
 }
 
 /** @param Conf $conf

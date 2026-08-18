@@ -170,7 +170,8 @@ class Profile_Page {
 
     /** @return \Generator<MessageItem> */
     private function decorated_message_list(MessageSet $msx, ?UserStatus $us = null) {
-        $ms = (new MessageSet)->set_ignore_duplicates(MessageSet::IGNORE_DUPS_FIELD);
+        $ms = (new MessageSet)->set_ignore_duplicates(MessageSet::IGNORE_DUPS_FIELD)
+            ->set_message_formatter($this->conf);
         foreach ($msx->message_list() as $mi) {
             if (($mi->field ?? "") !== ""
                 && str_ends_with($mi->field, ":context")) {

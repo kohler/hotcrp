@@ -21,7 +21,8 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
 
         $texts = [];
         '@phan-var-force list<array{int,string,int}> $texts';
-        $ms = (new MessageSet)->set_ignore_duplicates(true);
+        $ms = (new MessageSet)->set_ignore_duplicates(true)
+            ->set_message_formatter($user->conf);
         foreach ($ssel->paper_set($user) as $prow) {
             $whyNot = $user->perm_edit_some_review($prow);
             if ($whyNot

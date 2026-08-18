@@ -316,13 +316,15 @@ class MessageSet {
     /** @var ?array<string,int> */
     private $pstatus_at;
     /** @var int */
-    private $_ms_flags = 8 /* WANT_FTEXT */;
+    private $_ms_flags = 0;
+    /** @var null|Conf|Fmt */
+    private $_fmt;
 
     const IGNORE_MSGS = 1;
     const IGNORE_DUPS = 2;
     const IGNORE_DUPS_FIELD = 6;
     const IGNORE_DUPS_FIELD_FLAG = 4;
-    const WANT_FTEXT = 8;
+    const NEED_FMT = 8;
 
     // These numbers are stored in databases (e.g., PaperStorage.infoJson.cfmsg)
     // and should be changed only with great care.
@@ -338,9 +340,25 @@ class MessageSet {
     const MIN_STATUS = -5;
     const MAX_STATUS = 3;
 
+    /** @return $this */
     function clear_messages() {
         $this->errf = $this->msgs = [];
         $this->problem_status = 0;
+        $this->_ms_flags &= ~self::NEED_FMT;
+        return $this;
+    }
+
+    /** @return bool */
+    function need_message_formatter() {
+        return ($this->_ms_flags & self::NEED_FMT) !== 0
+            && !$this->_fmt;
+    }
+
+    /** @param Conf|Fmt $fmt
+     * @return $this */
+    function set_message_formatter($fmt) {
+        $this->_fmt = $fmt;
+        return $this;
     }
 
     /** @param int $message_count */
@@ -383,9 +401,9 @@ class MessageSet {
     }
 
     /** @param bool $x
-     * @return $this */
+     * @return $this
+     * @deprecated */
     function set_want_ftext($x) {
-        $this->change_ms_flags(self::WANT_FTEXT, $x ? self::WANT_FTEXT : 0);
         return $this;
     }
 
@@ -403,6 +421,10 @@ class MessageSet {
     /** @param MessageItem $mi
      * @return int|false */
     function message_index($mi) {
+        if ($mi->need_fmt()) {
+            error_log("cannot call message_index on unformatted message " . debug_string_backtrace());
+            return false;
+        }
         if ($this->problem_status < $mi->status) {
             return false;
         }
@@ -412,12 +434,11 @@ class MessageSet {
             && ($this->errf[$mi->field] ?? -5) < $mi->status) {
             return false;
         }
+        $this->apply_fmt();
         foreach ($this->msgs as $i => $m) {
             if ($m->status === $mi->status
                 && ($ignore_field || $m->field === $mi->field)
-                && $m->message === $mi->message
-                && $m->fmessage === $mi->fmessage
-                && $m->args === $mi->args)
+                && $m->message === $mi->message)
                 return $i;
         }
         return false;
@@ -438,9 +459,13 @@ class MessageSet {
         if (($this->_ms_flags & self::IGNORE_MSGS) !== 0) {
             return $mi;
         }
+        if (($this->_ms_flags & self::IGNORE_DUPS) !== 0
+            && $this->_fmt
+            && $mi->need_fmt()) {
+            $mi->fmt($this->_fmt->fmt());
+        }
         $mtext = $mi->message ?? $mi->fmessage;
         if ($mtext !== ""
-            && ($this->_ms_flags & self::WANT_FTEXT) !== 0
             && !Ftext::is_ftext($mtext)) {
             error_log("not ftext: {$mtext} " . debug_string_backtrace());
             if (isset($mi->message)) {
@@ -448,6 +473,9 @@ class MessageSet {
             } else {
                 $mi->fmessage = "<0>{$mtext}";
             }
+        }
+        if ($mi->need_fmt()) {
+            $this->_ms_flags |= self::NEED_FMT;
         }
         if (($this->_ms_flags & self::IGNORE_DUPS) === 0
             || $this->message_index($mi) === false) {
@@ -498,7 +526,10 @@ class MessageSet {
         if (($this->_ms_flags & self::IGNORE_MSGS) !== 0) {
             return $this;
         }
-        foreach ($ms->msgs as $mi) {
+        $mlx = $ms->need_message_formatter()
+            ? $ms->unformatted_message_list()
+            : $ms->message_list();
+        foreach ($mlx as $mi) {
             $this->append_item($mi);
         }
         return $this;
@@ -568,7 +599,11 @@ class MessageSet {
     }
     /** @return ?MessageItem */
     function back_message() {
-        return empty($this->msgs) ? null : $this->msgs[count($this->msgs) - 1];
+        if (empty($this->msgs)) {
+            return null;
+        }
+        $this->apply_fmt();
+        return $this->msgs[count($this->msgs) - 1];
     }
     /** @return int */
     function message_count() {
@@ -787,6 +822,7 @@ class MessageSet {
      * @return \Generator<MessageItem> */
     private function min_status_list($min_status) {
         if ($this->problem_status >= $min_status) {
+            $this->apply_fmt();
             foreach ($this->msgs as $mi) {
                 if ($mi->status >= $min_status) {
                     yield $mi;
@@ -807,7 +843,13 @@ class MessageSet {
 
 
     /** @return list<MessageItem> */
+    function unformatted_message_list() {
+        return $this->msgs;
+    }
+
+    /** @return list<MessageItem> */
     function message_list() {
+        $this->apply_fmt();
         return $this->msgs;
     }
 
@@ -825,6 +867,7 @@ class MessageSet {
      * @return \Generator<MessageItem> */
     function message_list_at($field) {
         if (isset($this->errf[$field])) {
+            $this->apply_fmt();
             foreach ($this->msgs as $mi) {
                 if ($mi->field === $field) {
                     yield $mi;
@@ -836,6 +879,7 @@ class MessageSet {
     /** @param string $pfx
      * @return \Generator<MessageItem> */
     function message_list_at_prefix($pfx) {
+        $this->apply_fmt();
         foreach ($this->msgs as $mi) {
             if ($mi->field !== null && str_starts_with($mi->field, $pfx)) {
                 yield $mi;
@@ -846,6 +890,7 @@ class MessageSet {
     /** @param string $field
      * @return list<MessageItem> */
     function message_list_with_default_field($field) {
+        $this->apply_fmt();
         $ml = [];
         foreach ($this->msgs as $mi) {
             if ($mi->field === null) {
@@ -893,27 +938,48 @@ class MessageSet {
      * @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return list<MessageItem> */
     static function make_fmt_list($fmt, ...$mls) {
-        $mlx = self::make_list(...$mls);
+        $mlx = [];
         $xfmt = null;
-        foreach ($mlx as $mi) {
-            if ($mi->need_fmt()) {
-                $xfmt = $xfmt ?? $fmt->fmt();
-                $mi->fmt($xfmt);
+        foreach ($mls as $ml) {
+            if ($ml instanceof MessageSet) {
+                $ml = $ml->need_message_formatter()
+                    ? $ml->unformatted_message_list()
+                    : $ml->message_list();
+            } else if ($ml instanceof MessageItem) {
+                $ml = [$ml];
+            }
+            foreach ($ml as $mi) {
+                if ($mi->need_fmt()) {
+                    $xfmt = $xfmt ?? $fmt->fmt();
+                    $mi->fmt($xfmt);
+                }
+                $mlx[] = $mi;
             }
         }
         return $mlx;
     }
 
-    /** @param Fmt|Conf $fmt
+    /** @param null|Fmt|Conf $fmt
      * @return $this */
-    function apply_fmt($fmt) {
+    private function apply_fmt() {
+        if (($this->_ms_flags & self::NEED_FMT) === 0) {
+            return $this;
+        }
         $xfmt = null;
         foreach ($this->msgs as $mi) {
-            if ($mi->need_fmt()) {
-                $xfmt = $xfmt ?? $fmt->fmt();
-                $mi->fmt($xfmt);
+            if (!$mi->need_fmt()) {
+                continue;
             }
+            if (!$xfmt) {
+                if (!$this->_fmt) {
+                    error_log("need formatter: {$mi->message} " . debug_string_backtrace());
+                    return $this;
+                }
+                $xfmt = $this->_fmt->fmt();
+            }
+            $mi->fmt($xfmt);
         }
+        $this->_ms_flags &= ~self::NEED_FMT;
         return $this;
     }
 

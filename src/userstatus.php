@@ -98,6 +98,7 @@ class UserStatus extends MessageSet {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
+        $this->set_message_formatter($this->conf);
     }
 
     const IF_EMPTY_NONE = 0;

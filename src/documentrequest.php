@@ -72,6 +72,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     function __construct($req, Contact $viewer, $path = null) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
+        $this->set_message_formatter($this->conf);
 
         $want_path = !isset($req["p"]) && !isset($req["paperId"]);
         if (!$want_path) {
@@ -347,12 +348,6 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
     }
 
-
-    /** @return list<MessageItem> */
-    function message_list() {
-        $this->apply_fmt($this->conf);
-        return parent::message_list();
-    }
 
     /** @return int */
     function response_code() {

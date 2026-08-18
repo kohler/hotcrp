@@ -15,6 +15,7 @@ class UserActions extends MessageSet {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
+        $this->set_message_formatter($this->conf);
     }
 
     /** @param string $kind

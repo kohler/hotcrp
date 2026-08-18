@@ -944,7 +944,8 @@ class Mailer {
     /** @param string $message
      * @return MessageItem */
     function warning($message) {
-        $this->_ms = $this->_ms ?? (new MessageSet)->set_ignore_duplicates(true);
+        $this->_ms = $this->_ms ?? (new MessageSet)->set_ignore_duplicates(true)
+            ->set_message_formatter($this->conf);
         return $this->_ms->warning_at($this->field, $message);
     }
 

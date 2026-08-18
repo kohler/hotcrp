@@ -105,6 +105,7 @@ final class PaperStatus extends MessageSet {
             $this->doc_savef |= DocumentInfo::SAVEF_ALLOW_HASH_WITHOUT_CONTENT;
         }
         $this->set_ignore_duplicates(true);
+        $this->set_message_formatter($this->conf);
     }
 
     /** @return PaperStatus */

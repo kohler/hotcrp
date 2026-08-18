@@ -4,6 +4,69 @@
 
 #[RequireDb(false)]
 class MessageSet_Tester {
+    function test_fmt_list_expands_arguments() {
+        $mi = MessageItem::error("<0>Field name ‘{}’ is reserved", "zomm_field");
+        xassert($mi->need_fmt());
+        $ml = MessageSet::make_fmt_list(new Fmt, $mi);
+        xassert_eqq(count($ml), 1);
+        xassert(!$ml[0]->need_fmt());
+        xassert_eqq($ml[0]->message, "<0>Field name ‘zomm_field’ is reserved");
+        xassert_eqq(MessageSet::feedback_text($ml), "Field name ‘zomm_field’ is reserved\n");
+    }
+
+    function test_message_set_formatter() {
+        // a set with a formatter expands arguments on every accessor
+        $ms = new MessageSet;
+        $ms->set_message_formatter(new Fmt);
+        $ms->error_at("zf", "<0>Field name ‘{}’ is reserved", "zomm_field");
+        xassert_eqq($ms->message_list()[0]->message, "<0>Field name ‘zomm_field’ is reserved");
+        xassert_eqq(iterator_to_array($ms->message_list_at("zf"))[0]->message,
+                    "<0>Field name ‘zomm_field’ is reserved");
+        xassert_eqq($ms->full_feedback_text(), "Field name ‘zomm_field’ is reserved\n");
+
+        // a set without one hands its raw items to `make_fmt_list`
+        $ms2 = new MessageSet;
+        $ms2->error_at("zf", "<0>Field name ‘{}’ is reserved", "zomm_field");
+        xassert($ms2->need_message_formatter());
+        $ml = MessageSet::make_fmt_list(new Fmt, $ms2);
+        xassert_eqq($ml[0]->message, "<0>Field name ‘zomm_field’ is reserved");
+    }
+
+    function test_ignore_dups_renders_early() {
+        // duplicates that differ only in FmtArg identity must still collapse
+        $mk = function () {
+            return MessageItem::error("<0>Field ‘{keyword}’ is reserved",
+                                      new FmtArg("keyword", "zomm", 0));
+        };
+        $ms = (new MessageSet)->set_ignore_duplicates(true)
+            ->set_message_formatter(new Fmt);
+        $ms->append_item($mk());
+        $ms->append_item($mk());
+        xassert_eqq($ms->message_count(), 1);
+        xassert_eqq($ms->full_feedback_text(), "Field ‘zomm’ is reserved\n");
+
+        // messages that differ only in their arguments are not duplicates
+        $ms->append_item(MessageItem::error("<0>Field ‘{keyword}’ is reserved",
+                                            new FmtArg("keyword", "other", 0)));
+        xassert_eqq($ms->message_count(), 2);
+    }
+
+    function test_back_message_is_formatted() {
+        $ms = (new MessageSet)->set_message_formatter(new Fmt);
+        $ms->error_at("zf", "<0>Field ‘{}’ is reserved", "zomm");
+        xassert_eqq($ms->back_message()->message, "<0>Field ‘zomm’ is reserved");
+    }
+
+    function test_append_set_from_unformatted_source() {
+        // the destination’s formatter can rescue a source that has none
+        $src = new MessageSet;
+        $src->error_at("zf", "<0>Field ‘{}’ is reserved", "zomm");
+        xassert($src->need_message_formatter());
+        $dst = (new MessageSet)->set_message_formatter(new Fmt);
+        $dst->append_set($src);
+        xassert_eqq($dst->full_feedback_text(), "Field ‘zomm’ is reserved\n");
+    }
+
     function test_under_no_separator() {
         $ms = new MessageSet;
         $ms->error_at("aubergine", "<0>Error");
