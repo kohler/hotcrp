@@ -182,7 +182,7 @@ class Preference_PaperColumn extends PaperColumn {
         }
         $rs = [];
         foreach (ContactSearch::make_pc($m[1], $xtp->user)->users() as $u) {
-            if ($u->roles & Contact::ROLE_PC) {
+            if ($u->is_pc_member()) {
                 $fj["name"] = "pref:{$u->email}";
                 $fj["user"] = $u->email;
                 $rs[] = (object) $fj;

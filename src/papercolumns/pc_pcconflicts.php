@@ -18,7 +18,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $y = [];
-        $pcm = $row->conf->pc_members();
+        $pcm = $row->conf->viewable_pc_members($pl->user);
         foreach ($row->conflict_types() as $uid => $ctype) {
             if (!($pc = $pcm[$uid] ?? null)
                 || !Conflict::is_conflicted($ctype)) {
@@ -31,7 +31,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $y = [];
-        $pcm = $row->conf->pc_members();
+        $pcm = $row->conf->viewable_pc_members($pl->user);
         foreach ($row->conflict_types() as $uid => $ctype) {
             if (!($pc = $pcm[$uid] ?? null)
                 || !Conflict::is_conflicted($ctype)) {

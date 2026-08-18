@@ -233,7 +233,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev->_rtype = REVIEW_EXTERNAL;
         }
         if ($rev->_rtype === REVIEW_EXTERNAL
-            && ($user->roles & Contact::ROLE_PC) !== 0) {
+            && $user->is_pc_member()) {
             $rev->_rtype = REVIEW_PC;
         }
         if ($rev->_rtype === REVIEW_EXTERNAL

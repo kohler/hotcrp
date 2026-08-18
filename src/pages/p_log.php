@@ -311,7 +311,7 @@ class Log_Page {
         }
         $roles = 0;
         if (isset($user->roles) && ($user->roles & Contact::ROLE_PCLIKE)) {
-            $roles = $user->viewable_pc_roles($this->viewer);
+            $roles = $user->roles & $this->viewer->viewable_roles_mask();
         }
         if (!($roles & Contact::ROLE_PCLIKE)) {
             $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';

@@ -76,7 +76,7 @@ class ConflictAssign_Page {
         $conf->ensure_cached_user_collaborators();
         $t0 = microtime(true);
         $reportid = $isneg ? "conflictassign:neg" : "conflictassign";
-        foreach ($conf->pc_members() as $pc) {
+        foreach ($conf->viewable_pc_members($user) as $pc) {
             set_time_limit(30);
             $paperlist = new PaperList($reportid, $search, $args, $qreq);
             $paperlist->set_reviewer_user($pc);

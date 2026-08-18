@@ -28,6 +28,8 @@ class ContactSearch {
     private $only_pc = false;
     /** @var ?list<Contact> */
     private $contacts = null;
+    /** @var int */
+    private $viewable_roles;
     /** @var false|string */
     public $warn_html = false;
 
@@ -39,6 +41,7 @@ class ContactSearch {
         $this->type = $type;
         $this->text = $text;
         $this->user = $user;
+        $this->viewable_roles = $user->viewable_roles_mask();
         $this->cset = $cset;
         $ids = null;
         if (($this->type & self::F_QUOTED) === 0
@@ -98,27 +101,33 @@ class ContactSearch {
             }
             return $ids;
         }
-        if ($this->user->can_view_pc()) {
+        if ($this->viewable_roles !== 0) {
+            $allow_dormant = true;
             if ($this->text === ""
                 || strcasecmp($this->text, "pc") === 0) {
-                return array_keys($this->conf->pc_members());
+                $roles = Contact::ROLE_ANYPC;
             } else if (($this->type & self::F_PC) !== 0
                        && strcasecmp($this->text, "enabled") === 0) {
-                return array_keys($this->conf->enabled_pc_members());
+                $roles = Contact::ROLE_ANYPC;
+                $allow_dormant = false;
             } else if (($this->type & self::F_PC) !== 0
                        && (strcasecmp($this->text, "any") === 0
                            || strcasecmp($this->text, "all") === 0
                            || $this->text === "*")) {
-                return array_keys($this->conf->pc_users());
-            } else if (strcasecmp($this->text, "chair") === 0
-                       || strcasecmp($this->text, "admin") === 0) {
-                $flags = Contact::ROLE_CHAIR;
-                if (strcasecmp($this->text, "admin") === 0) {
-                    $flags |= Contact::ROLE_ADMIN;
-                }
+                $roles = Contact::ROLE_PCLIKE;
+            } else if (strcasecmp($this->text, "chair") === 0) {
+                $roles = Contact::ROLE_CHAIR;
+            } else if (strcasecmp($this->text, "admin") === 0) {
+                $roles = Contact::ROLE_CHAIR | Contact::ROLE_ADMIN;
+            } else {
+                $roles = 0;
+            }
+            $roles &= $this->viewable_roles;
+            if ($roles !== 0) {
                 $cids = [];
-                foreach ($this->conf->pc_members() as $p) {
-                    if ($p->roles & $flags)
+                foreach ($this->conf->pc_users() as $p) {
+                    if (($p->roles & $roles) !== 0
+                        && ($allow_dormant || !$p->is_dormant()))
                         $cids[] = $p->contactId;
                 }
                 return $cids;
@@ -157,15 +166,14 @@ class ContactSearch {
             && $this->user->can_view_user_tag($x)) {
             $a = [];
             $want_tag = !$neg || !($this->type & self::F_PC);
-            foreach ($this->conf->pc_members() as $cid => $pc) {
+            foreach ($this->conf->viewable_pc_members($this->user) as $id => $pc) {
                 if ($pc->has_tag($x) === $want_tag)
-                    $a[] = $cid;
+                    $a[] = $id;
             }
             if (!$neg || !$want_tag) {
                 return $a;
-            } else {
-                return $this->select_ids("select contactId from ContactInfo where contactId?A", [$a]);
             }
+            return $this->select_ids("select contactId from ContactInfo where contactId?A", [$a]);
         } else if ($need) {
             $this->warn_html = "No users are tagged ‘" . htmlspecialchars($this->text) . "’.";
             return [];
@@ -179,7 +187,7 @@ class ContactSearch {
             && !$this->cset
             && !($this->type & self::F_PC)) {
             $regex = Dbl::utf8ci($this->conf->dblink, "'^anonymous[0-9]*\$'");
-            return $this->select_ids("select contactId from ContactInfo where email regexp $regex", []);
+            return $this->select_ids("select contactId from ContactInfo where email regexp {$regex}", []);
         }
 
         // split name components
@@ -208,7 +216,7 @@ class ContactSearch {
         if ($this->cset) {
             $cs = $this->cset;
         } else if ($this->type & self::F_PC) {
-            $cs = $this->conf->pc_members();
+            $cs = $this->conf->viewable_pc_members($this->user);
         } else {
             $where = [];
             if ($n !== "") {

@@ -219,6 +219,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     const ROLE_PC = 0x0001;             // DB+CDB: is PC?
     const ROLE_ADMIN = 0x0002;          // DB+CDB: is sysadmin?
     const ROLE_CHAIR = 0x0004;          // DB+CDB: is PC chair?
+    const ROLE_ANYPC = 0x0001;          // synonym for PC
     const ROLE_PCLIKE = 0x000F;         // any PC role (PC | ADMIN | CHAIR)
     const ROLE_AUTHOR = 0x0010;         // CDB: is author?
     const ROLE_REVIEWER = 0x0020;       // CDB: is reviewer?
@@ -1658,7 +1659,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function is_pc_member() {
-        return ($this->roles & self::ROLE_PC) !== 0;
+        return ($this->roles & self::ROLE_ANYPC) !== 0;
     }
 
     /** @return bool */
@@ -1671,17 +1672,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function viewable_pc_roles(Contact $viewer) {
-        if (($this->roles & Contact::ROLE_PCLIKE)
-            && $viewer->can_view_pc()) {
-            $roles = $this->roles & Contact::ROLE_PCLIKE;
-            if (!$viewer->isPC) {
-                $roles &= ~Contact::ROLE_ADMIN;
-            }
-            return $roles;
-        }
-        return 0;
+        return $this->roles & $viewer->viewable_roles_mask();
     }
 
     /** @param int $roles
@@ -1732,33 +1726,36 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     const CTFLAG_DISABLED = 2;
 
     /** @param Contact|Author $x
-     * @param 0|1|2|3 $ctags
+     * @param 0|1|2|3 $ctflags
      * @return string */
-    static function all_user_tags_for($x, $ctags) {
+    static function all_user_tags_for($x, $ctflags) {
         // See also _name_decorations, which depends on the tags used for roles
         // and disablement
         $tags = $x->contactTags ?? "";
-        if (($ctags & self::CTFLAG_ROLES) !== 0
+        if (($ctflags & self::CTFLAG_ROLES) !== 0
             && ($x->roles & self::ROLE_PC) !== 0) {
             $tags = " pc#0{$tags}";
         }
-        if (($ctags & self::CTFLAG_DISABLED) !== 0
+        if (($ctflags & self::CTFLAG_DISABLED) !== 0
             && $x->disabled_flags() !== 0) {
             $tags = "{$tags} dim#0";
         }
         return $tags;
     }
 
-    /** @return string */
+    /** @return string
+     * @deprecated */
     function all_user_tags() {
         return self::all_user_tags_for($this, self::CTFLAG_ROLES);
     }
 
-    /** @return string */
-    function viewable_tags(Contact $viewer) {
+    /** @return string
+     * @param 0|1|2|3 $ctflags */
+    function viewable_tags(Contact $viewer, $ctflags = self::CTFLAG_ROLES) {
         // see also Contact::calculate_name_for
-        if ($viewer->can_view_user_tags() || $viewer->contactXid === $this->contactXid) {
-            $tags = $this->all_user_tags();
+        if ($viewer->can_view_user_tags()
+            || $viewer->contactXid === $this->contactXid) {
+            $tags = self::all_user_tags_for($this, $ctflags);
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, null);
         }
         return "";
@@ -3795,6 +3792,17 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->_can_view_pc > 0;
     }
 
+    /** @return int */
+    function viewable_roles_mask() {
+        $this->can_view_pc();
+        if ($this->_can_view_pc === 0) {
+            return 0;
+        } else if ($this->_can_view_pc === 1) {
+            return Contact::ROLE_PC | Contact::ROLE_CHAIR;
+        }
+        return Contact::ROLE_ANYPC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR;
+    }
+
     /** @return bool */
     function can_lookup_user() {
         if ($this->privChair) {
@@ -5050,14 +5058,14 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function pc_track_assignable(PaperInfo $prow) {
-        return ($this->roles & self::ROLE_PC) !== 0
+        return $this->is_pc_member()
             && $this->conf->check_tracks($prow, $this, Track::ASSREV);
     }
 
     /** @return bool */
     function pc_assignable(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return ($this->roles & self::ROLE_PC) !== 0
+        return $this->is_pc_member()
             && ($rights->is_reviewer()
                 || ($rights->unconflicted()
                     && $this->conf->check_tracks($prow, $this, Track::ASSREV)));
@@ -6532,7 +6540,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
         // PC members always get PC reviews
         if ($type === REVIEW_EXTERNAL
-            && ($reviewer->roles & Contact::ROLE_PC) !== 0) {
+            && ($reviewer->roles & Contact::ROLE_ANYPC) !== 0) {
             $type = REVIEW_PC;
         }
 

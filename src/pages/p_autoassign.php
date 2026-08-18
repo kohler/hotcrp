@@ -23,14 +23,41 @@ class Autoassign_Page {
     private $_bp_pcselector_options;
     /** @var bool */
     private $_aset_ok;
+    /** @var list<int> */
+    private $_pcids = [];
+    /** @var list<int> */
+    private $_enabled_pcids = [];
+    /** @var array<string,list<int>> */
+    private $_pcids_by_ltag = [];
 
     function __construct(Contact $user, Qrequest $qreq) {
         assert($user->is_manager());
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->ms = new MessageSet;
+        $this->ms->set_message_formatter($this->conf);
+
+        $vroles = $user->viewable_roles_mask();
+        foreach ($this->conf->pc_members() as $pc) {
+            if (($pc->roles & $vroles) === 0) {
+                continue;
+            }
+            $this->_pcids[] = $pc->contactId;
+            if (!$pc->is_dormant()) {
+                $this->_enabled_pcids[] = $pc->contactId;
+            }
+            foreach (Tagger::split_unpack(strtolower($pc->viewable_tags($user))) as $tv) {
+                $this->_pcids_by_ltag[$tv[0]][] = $pc->contactId;
+            }
+        }
+
         $this->qreq = $qreq;
         $this->clean_qreq($qreq);
-        $this->ms = new MessageSet;
+    }
+
+    /** @return bool */
+    function has_disabled_pc_members() {
+        return count($this->_enabled_pcids) < count($this->_pcids);
     }
 
     function print_header() {
@@ -96,8 +123,8 @@ class Autoassign_Page {
         }
         if (!isset($qreq->pctyp)
             || ($qreq->pctyp !== "all" && $qreq->pctyp !== "enabled" && $qreq->pctyp !== "sel")) {
-            if ($this->conf->has_disabled_pc_members()
-                && count($this->conf->enabled_pc_members()) > 2) {
+            if ($this->has_disabled_pc_members()
+                && count($this->_enabled_pcids) > 2) {
                 $qreq->pctyp = "enabled";
             } else {
                 $qreq->pctyp = "all";
@@ -348,17 +375,7 @@ class Autoassign_Page {
         $pctyp = $this->qreq->pctyp;
         echo '<div class="form-section"><h3 class="form-h">PC members</h3>';
 
-        $pclist = [];
-        foreach ($this->conf->pc_members() as $pc) {
-            $pclist["all"][] = $pc->contactId;
-            if (!$pc->is_dormant()) {
-                $pclist["enabled"][] = $pc->contactId;
-            }
-            foreach (Tagger::split_unpack(strtolower($pc->viewable_tags($this->user))) as $tv) {
-                $pclist[$tv[0]][] = $pc->contactId;
-            }
-        }
-        if (empty($pclist)) {
+        if (empty($this->_pcids)) {
             echo '<p class="is-warning">There are no PC members</p></div>';
             return;
         }
@@ -367,7 +384,8 @@ class Autoassign_Page {
             '<span class="checkc">', Ht::radio("pctyp", "all", $pctyp === "all"), '</span>',
             'Use entire PC</label></div>';
 
-        if ($pctyp === "enabled" || $this->conf->has_disabled_pc_members()) {
+        if ($pctyp === "enabled"
+            || $this->has_disabled_pc_members()) {
             echo '<div class="js-radio-focus checki"><label>',
                 '<span class="checkc">', Ht::radio("pctyp", "enabled", $pctyp === "enabled"), '</span>',
                 'Use enabled PC members</label></div>';
@@ -378,14 +396,16 @@ class Autoassign_Page {
             'Use selected PC members:</label>',
             " &nbsp; (select ";
         $this->_pcsel_sep = "";
-        $this->print_pc_selection_link("all", $pclist["all"]);
+        $this->print_pc_selection_link("all", $this->_pcids);
         $this->print_pc_selection_link("none", []);
-        if ($this->conf->has_disabled_pc_members()) {
-            $this->print_pc_selection_link("enabled", $pclist["enabled"]);
+        if ($this->has_disabled_pc_members()) {
+            $this->print_pc_selection_link("enabled", $this->_enabled_pcids);
         }
         foreach ($this->conf->viewable_user_tags($this->user) as $pctag) {
-            if ($pctag !== "pc")
-                $this->print_pc_selection_link("#{$pctag}", $pclist[strtolower($pctag)] ?? []);
+            $ltag = strtolower($pctag);
+            if ($ltag !== "pc"
+                && isset($this->_pclist_by_ltag[$ltag]))
+                $this->print_pc_selection_link("#{$pctag}", $this->_pclist_by_ltag[$ltag]);
         }
         $this->print_pc_selection_link("flip", ["flip"]);
         echo ")";
@@ -393,13 +413,14 @@ class Autoassign_Page {
 
         $summary = [];
         $nrev = AssignmentCountSet::load($this->user, AssignmentCountSet::HAS_REVIEW);
-        foreach ($this->conf->pc_members() as $id => $p) {
+        foreach ($this->_pcids as $id) {
+            $pc = $this->conf->pc_user_by_id($id);
             $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
                 . Ht::checkbox("pcc{$id}", 1, friendly_boolean($this->qreq["pcc{$id}"]), [
                     "id" => "pcc{$id}", "data-range-type" => "pcc",
                     "class" => "uic js-range-click js-pcsel"
-                ]) . '</span>' . $this->user->reviewer_html_for($p)
-                . $nrev->unparse_counts_for($p)
+                ]) . '</span>' . $this->user->reviewer_html_for($pc)
+                . $nrev->unparse_counts_for($pc)
                 . "</label></div>";
             $summary[] = $t;
         }
@@ -540,17 +561,17 @@ class Autoassign_Page {
         if ($qreq->pctyp === "sel") {
             $pcsel = [];
             if (isset($qreq->has_pcc)) {
-                foreach ($this->conf->pc_members() as $cid => $p) {
-                    if ($qreq["pcc{$cid}"])
-                        $pcsel[] = $cid;
+                foreach ($this->_pcids as $id) {
+                    if ($qreq["pcc{$id}"])
+                        $pcsel[] = $id;
                 }
             } else if (isset($qreq->pcs)) {
                 foreach (preg_split('/\s+/', $qreq->pcs) as $n) {
-                    if (ctype_digit($n) && $this->conf->pc_member_by_id((int) $n))
+                    if (ctype_digit($n) && in_array($this->_pcids, (int) $n, true))
                         $pcsel[] = (int) $n;
                 }
             } else {
-                $pcsel = array_keys($this->conf->pc_members());
+                $pcsel = $this->_pcids;
             }
             $argv[] = "-u=" . join(",", $pcsel);
         } else if ($qreq->pctyp === "enabled") {

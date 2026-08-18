@@ -665,7 +665,7 @@ class Profile_Page {
             if ($this->qreq->pctype === "chair"
                 || $this->qreq->pctype === "pc"
                 || (!isset($this->qreq->pctype)
-                    && ($this->user->roles & Contact::ROLE_PC) !== 0)) {
+                    && $this->user->is_pc_member())) {
                 echo "fold1o fold2o";
             } else if ($this->qreq->ass
                        || (!isset($this->qreq->pctype)

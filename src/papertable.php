@@ -1609,10 +1609,10 @@ class PaperTable {
     private function _print_ps_pc_conflicts() {
         assert($this->edit_mode === 0 && $this->prow->paperId);
         $pcconf = [];
-        $this->conf->pc_members(); // to ensure pc_index is set
+        $pcm = $this->conf->viewable_pc_members($this->user);
         foreach ($this->prow->conflict_list() as $cu) {
             if (!$cu->user // XXX should never happen
-                || !$cu->user->is_pc_member()
+                || !isset($pcm[$cu->user->contactId])
                 || !Conflict::is_conflicted($cu->conflictType)) {
                 continue;
             }
@@ -2398,7 +2398,7 @@ class PaperTable {
         if ($this->user->can_view_shepherd($this->prow)) {
             $this->papstripShepherd();
         }
-        if (($this->user->roles & Contact::ROLE_PC) !== 0
+        if ($this->user->is_pc_member()
             && $this->user->pc_assignable($this->prow)) {
             $this->papstripReviewPreference();
         }

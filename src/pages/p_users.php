@@ -137,7 +137,7 @@ class Users_Page {
                     $f[] = $fb;
             }
             $row["follow"] = empty($f) ? "none" : join(" ", $f);
-            if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
+            if ($user->roles & Contact::ROLE_PCLIKE) {
                 $r = [];
                 if ($user->roles & Contact::ROLE_CHAIR) {
                     $r[] = "chair";

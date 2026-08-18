@@ -145,8 +145,6 @@ class Conf {
     private $_pc_members_cache;
     /** @var ?array<string,string> */
     private $_pc_tags_cache;
-    /** @var bool */
-    private $_pc_members_all_enabled = true;
     /** @var ?array<int|string,Contact> */
     private $_cdb_user_cache;
     /** @var ?list<int|string> */
@@ -2659,7 +2657,6 @@ class Conf {
         }
 
         // analyze set for ambiguous names, disablement
-        $this->_pc_members_all_enabled = true;
         $by_name_text = [];
         $expected_by_name_count = 0;
         foreach ($this->_pc_set as $u) {
@@ -2667,21 +2664,18 @@ class Conf {
                 $by_name_text[strtolower($name)][] = $u;
                 ++$expected_by_name_count;
             }
-            if ($u->is_disabled()) {
-                $this->_pc_members_all_enabled = false;
-            }
         }
         if ($expected_by_name_count !== count($by_name_text)) {
             foreach ($by_name_text as $us) {
                 if (count($us) === 1) {
                     continue;
                 }
-                $npcus = 0;
+                $nlpc = 0;
                 foreach ($us as $u) {
-                    $npcus += ($u->roles & Contact::ROLE_PC ? 1 : 0);
+                    $nlpc += ($u->roles & Contact::ROLE_PC /* === 1 */);
                 }
                 foreach ($us as $u) {
-                    if ($npcus > 1 || ($u->roles & Contact::ROLE_PC) === 0) {
+                    if ($nlpc > 1 || ($u->roles & Contact::ROLE_PC) === 0) {
                         $u->nameAmbiguous = true;
                     }
                 }
@@ -2709,21 +2703,28 @@ class Conf {
         return $this->_pc_members_cache;
     }
 
-    /** @return bool */
-    function has_disabled_pc_members() {
-        $this->_pc_set || $this->pc_set();
-        return !$this->_pc_members_all_enabled;
+    /** The PC as this viewer may see it.
+     * @return array<int,Contact> */
+    function viewable_pc_members(Contact $viewer) {
+        $roles = $viewer->viewable_roles_mask();
+        if (($roles & Contact::ROLE_ANYPC) === Contact::ROLE_ANYPC) {
+            return $this->pc_members();
+        }
+        return [];
     }
 
-    /** @return array<int,Contact> */
+    /** @return bool
+     * @deprecated */
+    function has_disabled_pc_members() {
+        return count($this->pc_members()) !== count($this->enabled_pc_members());
+    }
+
+    /** @return array<int,Contact>
+     * @deprecated */
     function enabled_pc_members() {
-        $this->_pc_set || $this->pc_set();
-        if ($this->_pc_members_all_enabled) {
-            return $this->_pc_members_cache;
-        }
         $pcm = [];
-        foreach ($this->_pc_members_cache as $cid => $u) {
-            if (!$u->is_disabled())
+        foreach ($this->pc_members() as $cid => $u) {
+            if (!$u->is_dormant())
                 $pcm[$cid] = $u;
         }
         return $pcm;
@@ -2733,19 +2734,19 @@ class Conf {
      * @return ?Contact */
     function pc_member_by_id($uid) {
         $u = $this->pc_set()->get($uid);
-        return $u && ($u->roles & Contact::ROLE_PC) !== 0 ? $u : null;
+        return $u && ($u->roles & Contact::ROLE_ANYPC) !== 0 ? $u : null;
     }
 
     /** @param int $uid
      * @return ?Contact */
     function pc_member_by_primary_id($uid) {
         $u = $this->pc_set()->get($uid);
-        if ($u && ($u->roles & Contact::ROLE_PC) !== 0) {
+        if ($u && ($u->roles & Contact::ROLE_ANYPC) !== 0) {
             return $u;
         }
         foreach ($this->pc_set() as $u) {
             if ($u->primaryContactId === $uid
-                && ($u->roles & Contact::ROLE_PC) !== 0)
+                && ($u->roles & Contact::ROLE_ANYPC) !== 0)
                 return $u;
         }
         return null;
@@ -2760,7 +2761,7 @@ class Conf {
         }
         /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
         $u = $this->_user_email_cache[strtolower($email)] ?? null;
-        return $u && ($u->roles & Contact::ROLE_PC) !== 0 ? $u : null;
+        return $u && ($u->roles & Contact::ROLE_ANYPC) !== 0 ? $u : null;
     }
 
     /** @return array<int,Contact> */
@@ -5456,8 +5457,9 @@ class Conf {
             $flags &= ~(self::PCJ_EMAIL | self::PCJ_UID);
         }
         $pcj = $otherj = [];
-        foreach ($this->pc_members() as $pcm) {
-            $pcj[] = $this->pc_json_item($viewer, $pcm, $flags);
+        $pcm = $this->viewable_pc_members($viewer);
+        foreach ($pcm as $pc) {
+            $pcj[] = $this->pc_json_item($viewer, $pc, $flags);
         }
         $rj = ["ok" => true, "pc" => $pcj];
         if ($this->sort_by_last) {
@@ -5469,9 +5471,9 @@ class Conf {
         $paper = Qrequest::$main_request ? Qrequest::$main_request->paper() : null;
         if ($paper && $paper->conf === $this && $viewer->allow_admin($paper)) {
             $assignable = [];
-            foreach ($this->pc_members() as $pcm) {
-                if ($pcm->pc_assignable($paper)) {
-                    $assignable[] = $pcm->contactId;
+            foreach ($pcm as $pc) {
+                if ($pc->pc_assignable($paper)) {
+                    $assignable[] = $pc->contactId;
                 }
             }
             $pj = ["assignable" => $assignable];

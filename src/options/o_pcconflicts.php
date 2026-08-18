@@ -56,7 +56,7 @@ class PCConflicts_PaperOption extends PaperOption {
         $ov->set_value_data(array_keys($vm), array_values($vm));
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        $pcm = $this->conf->pc_members();
+        $pcm = $this->conf->viewable_pc_members($pex->viewer);
         $confset = $this->conf->conflict_set();
         $can_view_authors = $pex->viewer->can_view_authors($ov->prow);
         $pcc = [];
@@ -189,12 +189,13 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         unset($v);
 
+        $roles = $user->viewable_roles_mask();
         for ($i = 0; $i !== count($emails); ++$i) {
             $u = $prow->conf->user_by_email($emails[$i], USER_SLICE);
             if ($u && !$u->isPC && $u->primaryContactId > 0) {
                 $u = $prow->conf->pc_member_by_primary_id($u->primaryContactId);
             }
-            if ($u && $u->isPC) {
+            if ($u && ($u->roles & $roles) !== 0) {
                 $this->update_value_map($vm, $u->contactId, $values[$i]);
             } else {
                 $pv->warning("<0>Email address ‘{$emails[$i]}’ does not match a PC member");
@@ -207,7 +208,7 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $admin = $pt->user->is_admin($ov->prow);
-        if (!$this->test_visible($ov->prow)
+        if ((!$this->test_visible($ov->prow) || !$pt->user->can_view_pc())
             && !$pt->settings_mode) {
             return;
         }
@@ -342,7 +343,7 @@ class PCConflicts_PaperOption extends PaperOption {
         // XXX potential conflicts?
         $user = $fr->user ?? Contact::make($this->conf);
         $can_view_authors = $user->can_view_authors($ov->prow);
-        $pcm = $this->conf->pc_members();
+        $pcm = $this->conf->viewable_pc_members($user);
         $confset = $this->selectors ? $this->conf->conflict_set() : null;
         $names = [];
         foreach ($ov->prow->conflict_type_list() as $cflt) {

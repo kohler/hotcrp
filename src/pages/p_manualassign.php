@@ -321,7 +321,7 @@ class ManualAssign_Page {
                 ? $this->conf->user_by_id(intval($this->qreq->reviewer), USER_SLICE)
                 : $this->conf->user_by_email($this->qreq->reviewer, USER_SLICE);
         }
-        if ($reviewer && ($reviewer->roles & Contact::ROLE_PC) === 0) {
+        if ($reviewer && !$reviewer->is_pc_member()) {
             $reviewer = null;
         }
 

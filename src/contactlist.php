@@ -93,6 +93,10 @@ class ContactList {
     private $_selection;
     /** @var bool */
     private $_select_all = false;
+    /** @var int */
+    private $_viewable_roles = 0;
+    /** @var int */
+    private $_limit_default_roles = 0;
 
     /** @var ?array<string,int> */
     static private $field_name_map;
@@ -826,6 +830,12 @@ class ContactList {
         }
 
         $this->user->set_overrides($overrides);
+        $this->_viewable_roles = $this->user->viewable_roles_mask();
+        if ($this->limit === "pc") {
+            $this->_limit_default_roles = Contact::ROLE_PC;
+        } else {
+            $this->_limit_default_roles = 0;
+        }
     }
 
     /** @param int $fieldId
@@ -847,11 +857,10 @@ class ContactList {
                 $tagger = new Tagger($this->user);
                 $t .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
             }
-            $roles = $row->viewable_pc_roles($this->user);
-            if ($roles === Contact::ROLE_PC && $this->limit === "pc") {
-                $roles = 0;
-            }
-            if ($roles !== 0 && ($rolet = Contact::role_html_for($roles))) {
+            $roles = $row->roles & $this->_viewable_roles;
+            if ($roles !== 0
+                && $roles !== $this->_limit_default_roles
+                && ($rolet = Contact::role_html_for($roles))) {
                 $t .= " {$rolet}";
             }
             if ($this->user->privChair && $row->email != $this->user->email) {
@@ -1072,11 +1081,11 @@ class ContactList {
         }
         switch ($listname) {
         case "pc":
-            return $viewer->can_view_pc();
+            return ($viewer->viewable_roles_mask() & Contact::ROLE_PC) !== 0;
         case "admin":
         case "pcadmin":
         case "pcadminx":
-            return $viewer->isPC && $viewer->can_view_pc();
+            return ($viewer->viewable_roles_mask() & Contact::ROLE_ADMIN) !== 0;
         case "re":
         case "ext":
         case "extsub":
@@ -1215,12 +1224,19 @@ class ContactList {
 
         $mainwhere = $this->qopt["where"] ?? [];
         if ($this->limit == "pc") {
-            $mainwhere[] = "roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
+            $rolemask = Contact::ROLE_PC;
         } else if ($this->limit == "admin") {
-            $mainwhere[] = "roles!=0 and (roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
+            $rolemask = Contact::ROLE_ADMIN | Contact::ROLE_CHAIR;
         } else if ($this->limit == "pcadmin" || $this->limit == "pcadminx") {
-            $mainwhere[] = "roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0";
+            $rolemask = Contact::ROLE_ANYPC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR;
+        } else {
+            $rolemask = null;
         }
+        if ($rolemask !== null) {
+            $rolemask &= $this->user->viewable_roles_mask(); // might yield 0
+            $mainwhere[] = "roles!=0 and (roles&{$rolemask})!=0";
+        }
+
         if ($this->limit === "all") {
             $mainwhere[] = "(roles!=0 or lastLogin>0 or contactId" . sql_in_int_list(array_keys($this->_limit_cids)) . ")";
         } else if ($this->_limit_cids !== null) {
