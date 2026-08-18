@@ -668,6 +668,107 @@ class Settings_Tester {
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
     }
 
+    function test_rf_name_json_reserved() {
+        // a name shaped like a JSON metadata key is rejected
+        foreach (["zomm", "zomm_field", "zomm__", "zomm2", "zomm_field2"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_rf" => 1,
+                "rf/1/id" => "new",
+                "rf/1/name" => $name,
+                "rf/1/type" => "text"
+            ]);
+            xassert(!$sv->execute());
+            xassert($sv->has_error_at("rf/1/name"));
+            xassert_str_contains($sv->decorated_feedback_text(), "‘{$name}’ is reserved");
+            xassert_str_contains($sv->decorated_feedback_text(), "space or capital letter");
+            xassert(!$this->conf->find_review_field($name));
+        }
+
+        // ‘_’ and ‘$’ are reserved by prefix, whatever follows them
+        foreach (["_Zomm Field", '$Zomm Field', "_zomm", '$z'] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_rf" => 1,
+                "rf/1/id" => "new",
+                "rf/1/name" => $name,
+                "rf/1/type" => "text"
+            ]);
+            xassert(!$sv->execute());
+            xassert($sv->has_error_at("rf/1/name"));
+            xassert_str_contains($sv->decorated_feedback_text(), "cannot begin with ‘{$name[0]}’");
+            xassert(!$this->conf->find_review_field($name));
+        }
+
+        // a capital letter, space, punctuation, or leading digit is enough
+        foreach (["Zomm", "zomm field", "zomm-field", "zómm", "2zomm", "zommField"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_rf" => 1,
+                "rf/1/id" => "new",
+                "rf/1/name" => $name,
+                "rf/1/type" => "text"
+            ]);
+            $sv->parse();
+            xassert(!$sv->has_error(), "‘{$name}’: " . $sv->decorated_feedback_text());
+        }
+
+        // an empty name still reports “Entry required”, not this error
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "new",
+            "rf/1/name" => "",
+            "rf/1/type" => "text"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->decorated_feedback_text(), "Entry required");
+        xassert(!str_contains($sv->decorated_feedback_text(), "is reserved"));
+    }
+
+    function test_rf_name_json_reserved_grandfathered() {
+        // install a field with a reserved-looking name behind the settings UI’s back
+        $old_sv = $this->conf->setting("review_form");
+        $old_data = $this->conf->setting_data("review_form");
+        $j = json_decode($old_data ?? "[]") ?? [];
+        $j[] = (object) [
+            "id" => "t99", "name" => "zomm_legacy", "type" => "text",
+            "order" => 99, "visibility" => "au"
+        ];
+        $this->conf->save_refresh_setting("review_form", ($old_sv ?? 0) + 1, json_encode_db($j));
+        xassert(!!$this->conf->find_review_field("zomm_legacy"));
+
+        // the existing name can be resubmitted unchanged
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "t99",
+            "rf/1/name" => "zomm_legacy",
+            "rf/1/description" => "Hello"
+        ]);
+        xassert($sv->execute(), $sv->decorated_feedback_text());
+        $f = $this->conf->find_review_field("zomm_legacy");
+        xassert($f && $f->name === "zomm_legacy");
+        xassert_eqq($f->description, "Hello");
+
+        // a full settings round-trip preserves it, with no error and no diff
+        $x = call_api("settings", $this->u_chair, []);
+        xassert($x->ok);
+        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
+        xassert($x->ok);
+        xassert_eqq($x->message_list, []);
+        $f = $this->conf->find_review_field("zomm_legacy");
+        xassert($f && $f->name === "zomm_legacy");
+
+        // but it can’t be renamed to another reserved-looking name
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "t99",
+            "rf/1/name" => "zomm_legacy2"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->decorated_feedback_text(), "is reserved");
+
+        $this->conf->save_refresh_setting("review_form", $old_sv === null ? null : ($this->conf->setting("review_form") ?? 0) + 1, $old_data);
+        xassert(!$this->conf->find_review_field("zomm_legacy"));
+    }
+
+
     function test_rf_renumber_choices() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
@@ -2376,6 +2477,177 @@ class Settings_Tester {
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
         xassert($sv->has_error_at("sf/1/name"));
+    }
+
+    function test_sf_name_json_reserved() {
+        // a name shaped like a JSON metadata key is rejected
+        foreach (["zomm", "zomm_field", "zomm__", "zomm2", "zomm_field2"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_sf" => 1,
+                "sf/1/id" => "new",
+                "sf/1/name" => $name,
+                "sf/1/order" => 200,
+                "sf/1/type" => "text"
+            ]);
+            xassert(!$sv->execute());
+            xassert($sv->has_error_at("sf/1/name"));
+            xassert_str_contains($sv->decorated_feedback_text(), "‘{$name}’ is reserved");
+            xassert_str_contains($sv->decorated_feedback_text(), "space or capital letter");
+            xassert(!$this->conf->options()->find($name));
+        }
+
+        // ‘_’ and ‘$’ are reserved by prefix, whatever follows them
+        foreach (["_Zomm Field", '$Zomm Field', "_zomm", '$z'] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_sf" => 1,
+                "sf/1/id" => "new",
+                "sf/1/name" => $name,
+                "sf/1/order" => 200,
+                "sf/1/type" => "text"
+            ]);
+            xassert(!$sv->execute());
+            xassert($sv->has_error_at("sf/1/name"));
+            xassert_str_contains($sv->decorated_feedback_text(), "cannot begin with ‘{$name[0]}’");
+            xassert(!$this->conf->options()->find($name));
+        }
+
+        // a capital letter, space, punctuation, or leading digit is enough
+        foreach (["Zomm", "zomm field", "zomm-field", "zómm", "2zomm", "zommField"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_sf" => 1,
+                "sf/1/id" => "new",
+                "sf/1/name" => $name,
+                "sf/1/order" => 200,
+                "sf/1/type" => "text"
+            ]);
+            $sv->parse();
+            xassert(!$sv->has_error(), "‘{$name}’: " . $sv->decorated_feedback_text());
+        }
+
+        // a reserved word still reports the reserved-word error
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "new",
+            "sf/1/name" => "none",
+            "sf/1/order" => 200,
+            "sf/1/type" => "text"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->decorated_feedback_text(), "‘none’ is reserved");
+        xassert_str_contains($sv->decorated_feedback_text(), "Please pick another name");
+    }
+
+
+    function test_settings_api_formats_message_arguments() {
+        // messages built with `{}` arguments must reach the API caller
+        // expanded, not as a null `message`
+        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode([
+            "sf" => [["id" => "new", "name" => "zomm_field", "order" => 200, "type" => "text"]]
+        ])]);
+        xassert_eqq($x->ok, false);
+        $ml = [];
+        foreach ($x->message_list as $mi) {
+            xassert_eqq(isset($mi->message), true);
+            $ml[] = $mi->message;
+        }
+        xassert_in_eqq("<0>Field name ‘zomm_field’ is reserved", $ml);
+    }
+
+    function test_sf_json_key_is_field_name() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "new",
+            "sf/1/name" => "Status",
+            "sf/1/order" => 200,
+            "sf/1/type" => "numeric",
+            "sf/2/id" => "new",
+            "sf/2/name" => "Zomm Length",
+            "sf/2/order" => 201,
+            "sf/2/type" => "numeric"
+        ]);
+        xassert($sv->execute());
+        $ostatus = $this->conf->options()->find("Status");
+        $olength = $this->conf->options()->find("Zomm Length");
+        xassert($ostatus && $olength);
+        xassert_eqq($ostatus->json_key(), "Status");
+        xassert_eqq($olength->json_key(), "Zomm Length");
+
+        // a `status` key still means the paper’s status, not the field
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_json((object) ["pid" => 1, "status" => "withdrawn"]));
+        xassert_array_eqq($ps->change_list(), ["status"], true);
+
+        // the field is reachable under its own key, which is its name
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_json((object) ["pid" => 1, "Status" => 42]));
+        xassert_array_eqq($ps->change_list(), ["Status"], true);
+
+        // an old-style lower-case key still matches the field on import
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_json((object) ["pid" => 1, "zomm_length" => 7]));
+        xassert_array_eqq($ps->change_list(), ["Zomm Length"], true);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $ostatus->id,
+            "sf/1/delete" => 1,
+            "sf/2/id" => $olength->id,
+            "sf/2/delete" => 1
+        ]);
+        xassert($sv->execute());
+        xassert(!$this->conf->options()->find("Status"));
+    }
+
+    function test_sf_name_json_reserved_grandfathered() {
+        // install fields with reserved-looking names behind the settings UI’s back
+        $old_sv = $this->conf->setting("options");
+        $old_data = $this->conf->setting_data("options");
+        $j = json_decode($old_data ?? "[]") ?? [];
+        $j[] = (object) [
+            "id" => 199, "name" => "zomm_legacy", "type" => "text", "order" => 200
+        ];
+        $j[] = (object) [
+            "id" => 198, "name" => "status", "type" => "numeric", "order" => 201
+        ];
+        $this->conf->save_refresh_setting("options", ($old_sv ?? 0) + 1, json_encode_db($j));
+        $olegacy = $this->conf->options()->find("zomm_legacy");
+        $ostatus = $this->conf->options()->option_by_id(198);
+        xassert($olegacy && $ostatus);
+        xassert_eqq($olegacy->json_key(), "zomm_legacy");
+        xassert_eqq($ostatus->json_key(), "status");
+
+        // the existing name can be resubmitted unchanged
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => 199,
+            "sf/1/name" => "zomm_legacy",
+            "sf/1/description" => "Hello"
+        ]);
+        xassert($sv->execute(), $sv->decorated_feedback_text());
+        $olegacy = $this->conf->options()->find("zomm_legacy");
+        xassert($olegacy && $olegacy->name === "zomm_legacy");
+        xassert_eqq($olegacy->description(), "Hello");
+
+        // a full settings round-trip preserves them, with no error and no diff
+        $x = call_api("settings", $this->u_chair, []);
+        xassert($x->ok);
+        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
+        xassert($x->ok);
+        xassert_eqq($x->message_list, []);
+        $olegacy = $this->conf->options()->find("zomm_legacy");
+        xassert($olegacy && $olegacy->name === "zomm_legacy");
+
+        // but it can’t be renamed to another reserved-looking name
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => 199,
+            "sf/1/name" => "zomm_legacy2"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->decorated_feedback_text(), "is reserved");
+
+        $this->conf->save_refresh_setting("options", $old_sv === null ? null : ($this->conf->setting("options") ?? 0) + 1, $old_data);
+        xassert(!$this->conf->options()->find("zomm_legacy"));
     }
 
     function test_sf_realnumber_conversion() {

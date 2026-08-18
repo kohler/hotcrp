@@ -590,8 +590,16 @@ class Options_SettingParser extends SettingParser {
                 && (strcasecmp($n, "final") !== 0 || $sfs->option_id !== DTYPE_FINAL)
                 && (strcasecmp($n, "title") !== 0 || $sfs->option_id !== PaperOption::TITLEID)
                 && ((strcasecmp($n, "author") !== 0 && strcasecmp($n, "authors") !== 0) || $sfs->option_id !== PaperOption::AUTHORSID)) {
-                $sv->error_at($si, "<0>Field name ‘{$n}’ is reserved");
+                $sv->error_at($si, "<0>Field name ‘{}’ is reserved", $n);
                 $sv->inform_at($si, "<0>Please pick another name.");
+            }
+        } else if (preg_match('/\A(?:[_$]|[a-z][a-z0-9_:]*+\z)/', $n)
+                   && $n !== $sv->oldv("sf/{$si->name1}/name")) {
+            if ($n[0] === "_" || $n[0] === "\$") {
+                $sv->error_at($si->name, "<0>Field names cannot begin with ‘{}’", $n[0]);
+            } else {
+                $sv->error_at($si->name, "<0>Field name ‘{}’ is reserved", $n);
+                $sv->inform_at($si->name, "<0>Please pick a name with at least one space or capital letter.");
             }
         }
         $sv->save($si, $n);

@@ -1020,7 +1020,7 @@ class PaperStatus_Tester {
 
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10", "has_opt1" => "1", "has_status:submit" => 1]), $this->newpaper1));
-        xassert_array_eqq($ps->change_list(), ["calories", "status"], true);
+        xassert_array_eqq($ps->change_list(), ["Calories", "status"], true);
         xassert($ps->execute_save());
         xassert_paper_status($ps);
 
@@ -1031,7 +1031,7 @@ class PaperStatus_Tester {
 
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "none", "has_opt1" => "1"]), $this->newpaper1));
-        xassert_array_eqq($ps->change_list(), ["calories"], true);
+        xassert_array_eqq($ps->change_list(), ["Calories"], true);
         xassert_paper_status($ps);
         // ...but do not save!!
 
@@ -2373,8 +2373,8 @@ Phil Porras.");
             ]
         }');
         xassert($sv->execute());
-        $o1 = $this->conf->options()->option_by_key("include_thing");
-        $o2 = $this->conf->options()->option_by_key("thing");
+        $o1 = $this->conf->options()->option_by_key("Include thing");
+        $o2 = $this->conf->options()->option_by_key("Thing");
         xassert($o1 && $o2);
 
         // can change submitted paper

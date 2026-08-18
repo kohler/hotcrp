@@ -34,7 +34,10 @@ class PaperOption implements JsonSerializable {
      * @readonly */
     public $type; // checkbox, selector, radio, numeric, realnumber, text,
                   // pdf, slides, video, attachments, ...
+    /** @var ?string */
     private $_json_key;
+    /** @var ?string */
+    private $_dtype_name;
     /** @var null|string|false */
     public $_search_keyword;
     /** @var string */
@@ -413,23 +416,25 @@ class PaperOption implements JsonSerializable {
     }
     /** @return string */
     function json_key() {
-        if ($this->_json_key === null) {
-            if ($this->name !== "") {
-                $am = $this->abbrev_matcher();
-                $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
-                $this->_json_key = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE);
-            }
-            $this->_json_key = $this->_json_key ?? $this->formid;
-        }
-        return $this->_json_key;
+        return $this->_json_key
+            ?? ($this->name === "" ? $this->formid : $this->name);
     }
     /** @return string */
     function dtype_name() {
-        return $this->id ? $this->json_key() : "paper";
-    }
-    /** @return string */
-    function uid() {
-        return $this->json_key();
+        if ($this->id === 0) {
+            return "paper";
+        } else if ($this->_json_key !== null) {
+            return $this->_json_key;
+        }
+        if ($this->_dtype_name === null) {
+            if ($this->name !== "") {
+                $am = $this->abbrev_matcher();
+                $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
+                $this->_dtype_name = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE);
+            }
+            $this->_dtype_name = $this->_dtype_name ?? $this->formid;
+        }
+        return $this->_dtype_name;
     }
 
     /** @return string */

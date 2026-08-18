@@ -404,10 +404,10 @@ class PaperAPI_Tester {
         $jr = call_api("=papers", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         for ($i = 0; $i !== 10; ++$i) {
-            xassert_eqq($jr->status_list[$i]->change_list, ["calories"]);
+            xassert_eqq($jr->status_list[$i]->change_list, ["Calories"]);
             xassert_eqq($jr->status_list[$i]->pid, $i + 1);
             xassert_eqq($jr->papers[$i]->pid, $i + 1);
-            xassert_eqq($jr->papers[$i]->calories, 10);
+            xassert_eqq($jr->papers[$i]->Calories, 10);
         }
 
         $qreq = TestQreq::post_json(["calories" => 10, "pid" => 1], ["q" => "1-10"]);
@@ -419,9 +419,9 @@ class PaperAPI_Tester {
         $qreq = TestQreq::post_json(["calories" => 9], ["p" => "1"]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
-        xassert_eqq($jr->change_list, ["calories"]);
+        xassert_eqq($jr->change_list, ["Calories"]);
         xassert_eqq($jr->paper->pid, 1);
-        xassert_eqq($jr->paper->calories, 9);
+        xassert_eqq($jr->paper->Calories, 9);
     }
 
     function test_delete() {

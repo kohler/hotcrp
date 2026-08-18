@@ -98,12 +98,19 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     private function _apply_req_name(Si $si, SettingValues $sv) {
-        if (($name = $sv->base_parse_req($si)) !== null) {
-            if (ReviewField::clean_name($name) !== $name
-                && $sv->oldv($si) !== $name
-                && !$sv->reqstr("{$si->name0}{$si->name1}/name_force")) {
+        if (($name = $sv->base_parse_req($si)) !== null
+            && $sv->oldv($si) !== $name) {
+            if (preg_match('/\A(?:[_$]|[a-z][a-z0-9_:]*+\z)/', $name)) {
+                if ($name[0] === "_" || $name[0] === "\$") {
+                    $sv->error_at($si->name, "<0>Field names cannot begin with ‘{}’", $name[0]);
+                } else {
+                    $sv->error_at($si->name, "<0>Field name ‘{}’ is reserved", $name);
+                    $sv->inform_at($si->name, "<0>Please pick a name with at least one space or capital letter.");
+                }
+            } else if (ReviewField::clean_name($name) !== $name
+                       && !$sv->reqstr("{$si->name0}{$si->name1}/name_force")) {
                 $lparen = strrpos($name, "(");
-                $sv->error_at($si->name, "<0>Please remove ‘" . substr($name, $lparen) . "’ from the field name");
+                $sv->error_at($si->name, "<0>Please remove ‘{}’ from the field name", substr($name, $lparen));
                 $sv->inform_at($si->name, "<0>Visibility descriptions are added automatically.");
             }
             $sv->save($si, $name);
