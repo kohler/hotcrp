@@ -60,6 +60,7 @@
 	--tablink-border: light-dark(#f3d06e, #ab8a24);
 	--tablink-active-bg: light-dark(#fff4d5, #3a3210);
 	--flash-bg: #ffff00;
+	--flash-fg: #000000;
 	--tooltip-bg: light-dark(rgba(247, 248, 251, 0.96), rgba(44, 44, 66, 0.95));
 	--suggest-bg: light-dark(rgba(246, 246, 250, 0.95), rgba(50, 50, 72, 0.97));
 	--suggest-fg: light-dark(#222222, #e8eaf0);
@@ -1271,8 +1272,8 @@ label.hashtarget, .label.hashtarget, .field-title.hashtarget {
 	animation: 10s ease-in-out hashtarget-flash;
 }
 @keyframes hashtarget-flash {
-	from, 2%, 6%, 10%, 14%, 50% { background-color: var(--flash-bg); }
-	4%, 8%, 12%, to { background-color: inherit; }
+	from, 2%, 6%, 10%, 14%, 50% { background-color: var(--flash-bg); color: var(--flash-fg); }
+	4%, 8%, 12%, to { background-color: inherit; color: inherit; }
 }
 
 #m-search .tlcontainer,
