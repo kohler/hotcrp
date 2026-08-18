@@ -684,6 +684,32 @@ class Settings_Tester {
             xassert(!$this->conf->find_review_field($name));
         }
 
+        // a colon does not rescue an otherwise reserved-looking name: field
+        // names also key message fields such as `status:final_submitted`
+        foreach (["status:draft", "status:final_submitted", "zomm:ctx", "a:b:c"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_rf" => 1,
+                "rf/1/id" => "new",
+                "rf/1/name" => $name,
+                "rf/1/type" => "text"
+            ]);
+            xassert(!$sv->execute());
+            xassert($sv->has_error_at("rf/1/name"));
+            xassert_str_contains($sv->decorated_feedback_text(), "‘{$name}’ is reserved");
+        }
+
+        // but a capital or leading digit still does
+        foreach (["Zomm:ctx", "2zomm:x"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_rf" => 1,
+                "rf/1/id" => "new",
+                "rf/1/name" => $name,
+                "rf/1/type" => "text"
+            ]);
+            $sv->parse();
+            xassert(!$sv->has_error(), "‘{$name}’: " . $sv->decorated_feedback_text());
+        }
+
         // ‘_’ and ‘$’ are reserved by prefix, whatever follows them
         foreach (["_Zomm Field", '$Zomm Field', "_zomm", '$z'] as $name) {
             $sv = SettingValues::make_request($this->u_chair, [
@@ -2494,6 +2520,34 @@ class Settings_Tester {
             xassert_str_contains($sv->decorated_feedback_text(), "‘{$name}’ is reserved");
             xassert_str_contains($sv->decorated_feedback_text(), "space or capital letter");
             xassert(!$this->conf->options()->find($name));
+        }
+
+        // a colon does not rescue an otherwise reserved-looking name: field
+        // names also key message fields such as `status:final_submitted`
+        foreach (["status:draft", "status:final_submitted", "zomm:ctx", "a:b:c"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_sf" => 1,
+                "sf/1/id" => "new",
+                "sf/1/name" => $name,
+                "sf/1/order" => 200,
+                "sf/1/type" => "text"
+            ]);
+            xassert(!$sv->execute());
+            xassert($sv->has_error_at("sf/1/name"));
+            xassert_str_contains($sv->decorated_feedback_text(), "‘{$name}’ is reserved");
+        }
+
+        // but a capital or leading digit still does
+        foreach (["Zomm:ctx", "2zomm:x"] as $name) {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_sf" => 1,
+                "sf/1/id" => "new",
+                "sf/1/name" => $name,
+                "sf/1/order" => 200,
+                "sf/1/type" => "text"
+            ]);
+            $sv->parse();
+            xassert(!$sv->has_error(), "‘{$name}’: " . $sv->decorated_feedback_text());
         }
 
         // ‘_’ and ‘$’ are reserved by prefix, whatever follows them

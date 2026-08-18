@@ -2237,7 +2237,46 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq(Score_ReviewField::analyze_symbols(["C", "B", "A"], false), $FLET|$FCHR);
     }
 
+    // A JSON client may quote a numeric symbol -- `{"Overall merit": "4"}` is
+    // the same review as `{"Overall merit": 4}` -- and may echo back the
+    // `{value, description}` object the API prints, whose `No entry` spelling
+    // is not a symbol at all.
+    function test_score_parse_json() {
+        // a field of this test's own, so `required` cannot drift under it
+        $rfi = new ReviewFieldInfo("s96", true, null, "s96");
+        $f = new Score_ReviewField($this->conf, $rfi,
+            json_decode('{"name":"Score","values":["Bad","OK","Good"]}'));
+        xassert_eqq($f->parse_json(2), 2);
+        xassert_eqq($f->parse_json("2"), 2);
+        xassert_eqq($f->parse_json("No entry"), null);
+        xassert_eqq($f->parse_json("nonesuch"), false);
+        xassert_eqq($f->parse_json(99), false);
+        xassert_eqq($f->parse_json("99"), false);
+        xassert_eqq($f->parse_json(true), false);
+        xassert_eqq($f->parse_json([2]), false);
+
+        // where the empty choice is allowed, it is recorded rather than skipped
+        $f2 = new Score_ReviewField($this->conf, $rfi,
+            json_decode('{"name":"Score","values":["Bad","OK","Good"],"required":false}'));
+        xassert_eqq($f2->parse_json("No entry"), 0);
+
+        // a letter field is unaffected: its symbols are strings already
+        $g = ReviewField::make_expertise($this->conf);
+        xassert_eqq($g->parse_json("Y"), 2);
+        xassert_eqq($g->parse_json("y"), 2);
+        xassert_eqq($g->parse_json(2), false);
+    }
+
     function test_checkboxes_review_field() {
+        $rfi = new ReviewFieldInfo("s97", true, null, "s97");
+        $f = new Checkboxes_ReviewField($this->conf, $rfi,
+            json_decode('{"name":"Boxes","values":["A","B","C"]}'));
+        xassert_eqq($f->parse_json([1, 3]), 5);
+        xassert_eqq($f->parse_json(["1", "3"]), 5);
+        xassert_eqq($f->parse_json(["1", "nonesuch"]), false);
+        xassert_eqq($f->parse_json([]), 0);
+        xassert_eqq($f->parse_json("1"), false);
+
         xassert_eqq(Checkboxes_ReviewField::unpack_value(0), []);
         xassert_eqq(Checkboxes_ReviewField::unpack_value(1), [1]);
         xassert_eqq(Checkboxes_ReviewField::unpack_value(2), [2]);
@@ -2314,6 +2353,171 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $r->reviewId);
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $prow->paperId, $r->reviewId);
         $prow->invalidate_reviews();
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
+    // A JSON key that names no review field is reported, not dropped silently;
+    // the report is a warning, so the rest of the review still saves.
+    // `$json_ignore` is maintained by hand against `review_json`’s output, so
+    // sweep every review: a key added to the exporter and not to the list shows
+    // up here as an “Ignoring unknown fields” warning.
+    function test_review_json_round_trip() {
+        $pex = new PaperExport($this->u_chair);
+        $seen = $n = [];
+        $any_ordinal = false;
+        foreach ($this->conf->paper_set(["allReviews" => true]) as $prow) {
+            $prow->ensure_full_reviews();
+            foreach ($prow->all_reviews() as $rrow) {
+                $rj = $pex->review_json($prow, $rrow);
+                foreach ((array) $rj as $k => $v) {
+                    $seen[$k] = true;
+                }
+                $any_ordinal = $any_ordinal || $rrow->reviewOrdinal > 0;
+                $where = "#{$prow->paperId}/{$rrow->reviewId}";
+                $rv = new ReviewValues($this->u_chair);
+                xassert($rv->parse_json($rj), $where);
+                xassert_eqq($rv->full_feedback_text(), "", $where);
+                $n[] = $where;
+            }
+        }
+        // the sweep means nothing unless it saw reviews, and saw the keys
+        xassert_gt(count($n), 5);
+        foreach (["blind", "object", "pid", "rid", "round", "rtype",
+                  "status", "version"] as $k) {
+            xassert(isset($seen[$k]), "review_json never printed ‘{$k}’");
+        }
+        // these appear only once some review has been submitted, which depends
+        // on where in the collection this runs
+        if ($any_ordinal) {
+            foreach (["modified_at", "modified_at_text", "ordinal"] as $k) {
+                xassert(isset($seen[$k]), "review_json never printed ‘{$k}’");
+            }
+        }
+    }
+
+    function test_review_parse_json_unknown_fields() {
+        $rv = new ReviewValues($this->u_mgbaker);
+        xassert($rv->parse_json(["ovemer" => 2, "nonesuch" => 1, "another_nonesuch" => 2]));
+        xassert_eqq($rv->req["s01"], 2);
+        xassert_eqq($rv->full_feedback_text(), "Ignoring unknown fields another_nonesuch and nonesuch\n");
+        xassert_eqq($rv->problem_status(), MessageSet::WARNING);
+
+        // an unknown key is reported even when it is all there is
+        $rv = new ReviewValues($this->u_mgbaker);
+        xassert(!$rv->parse_json(["nonesuch" => 1]));
+        xassert_eqq($rv->full_feedback_text(), "Ignoring unknown field nonesuch\n");
+
+        // keys that only `review_json` prints are ignored, so a review read
+        // from the API can be sent back unchanged
+        $prow = $this->conf->checked_paper_by_id(1);
+        $rrow = $prow->checked_review_by_user($this->u_mgbaker);
+        $rj = (new PaperExport($this->u_chair))->review_json($prow, $rrow);
+        $rv = new ReviewValues($this->u_chair);
+        xassert($rv->parse_json($rj));
+        xassert_eqq($rv->full_feedback_text(), "");
+
+        // and they are dropped before the field lookup, which would otherwise
+        // read `reviewer` as an abbreviation of Reviewer expertise -- taking
+        // the reviewer's name as a score and discarding the real one
+        $rv = new ReviewValues($this->u_chair);
+        xassert($rv->parse_json(["reviewer" => "Mary Baker", "revexp" => 2]));
+        xassert_eqq($rv->req["s02"] ?? null, 2);
+        xassert_eqq($rv->full_feedback_text(), "");
+    }
+
+    // `version` is what `review_json` calls the number `if_vtag_match` tests,
+    // so a review read from the API saves back conditionally, and a stale copy
+    // of it is refused.
+    // `firstName`, `lastName`, and `reviewType` are matched below the field
+    // lookup, so a review field of that name takes the key back
+    function test_review_parse_json_legacy_aliases() {
+        $rv = new ReviewValues($this->u_chair);
+        xassert($rv->parse_json(["firstName" => "Bob", "lastName" => "Roberts",
+                                 "reviewType" => "external", "ovemer" => 2]));
+        xassert_eqq($rv->req["reviewerFirst"], "Bob");
+        xassert_eqq($rv->req["reviewerLast"], "Roberts");
+        xassert_eqq($rv->req["reviewType"], "external");
+        xassert_eqq($rv->full_feedback_text(), "");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "new",
+            "rf/1/name" => "First Name",
+            "rf/1/type" => "text",
+            "rf/1/order" => 40
+        ]);
+        xassert($sv->execute(), $sv->decorated_feedback_text());
+        $f = $this->conf->find_review_field("First Name");
+        xassert(!!$f);
+
+        // now the field owns the key, and the reviewer name is untouched
+        $rv = new ReviewValues($this->u_chair);
+        xassert($rv->parse_json(["firstName" => "Bob"]));
+        xassert_eqq($rv->req[$f->short_id], "Bob");
+        xassert(!isset($rv->req["reviewerFirst"]));
+        xassert_eqq($rv->full_feedback_text(), "");
+
+        // `reviewType` matches no field, so its alias still applies
+        $rv = new ReviewValues($this->u_chair);
+        xassert($rv->parse_json(["reviewType" => "external"]));
+        xassert_eqq($rv->req["reviewType"], "external");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => $f->short_id,
+            "rf/1/delete" => 1
+        ]);
+        xassert($sv->execute(), $sv->decorated_feedback_text());
+        xassert(!$this->conf->find_review_field("First Name"));
+    }
+
+    function test_review_parse_json_version() {
+        $conf = $this->conf;
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        $prow = $conf->checked_paper_by_id(1);
+        $rrow = $prow->checked_review_by_user($this->u_mgbaker);
+        xassert($rrow->reviewTime > 0);
+        $rj = (new PaperExport($this->u_chair))->review_json($prow, $rrow);
+        xassert_eqq($rj->version ?? null, $rrow->reviewTime);
+
+        $rv = new ReviewValues($this->u_mgbaker);
+        xassert($rv->parse_json($rj));
+        xassert_eqq($rv->req["if_vtag_match"] ?? null, $rrow->reviewTime);
+        xassert($rv->prepare_save($prow, $rrow));
+        $rv->abort_save();
+
+        // the same object one version out of date is an edit conflict
+        $rj->version = $rrow->reviewTime - 1;
+        $rv = new ReviewValues($this->u_mgbaker);
+        xassert($rv->parse_json($rj));
+        xassert(!$rv->prepare_save($prow, $rrow));
+        $rv->abort_save();
+        xassert_str_contains($rv->full_feedback_text(), "Edit conflict");
+
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
+    // JSON supplies types a form cannot, so a value of the wrong type is
+    // reported like any other bad value rather than fataling in the report.
+    function test_review_parse_json_bad_value_type() {
+        $conf = $this->conf;
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        $prow = $conf->checked_paper_by_id(1);
+        $rrow = $prow->checked_review_by_user($this->u_mgbaker);
+        $rv = new ReviewValues($this->u_mgbaker);
+        xassert($rv->parse_json(["ovemer" => [1, 2]]));
+        $rv->prepare_save($prow, $rrow);
+        $rv->abort_save();
+        xassert_str_contains($rv->full_feedback_text(), "Invalid value ‘[1,2]’");
+
         $conf->save_refresh_setting("rev_open", $rev_open);
         Contact::update_rights();
     }

@@ -1135,6 +1135,10 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
             return $this->required ? null : 0;
         } else if (($i = array_search($j, $this->symbols, true)) !== false) {
             return $i + 1;
+        } else if (is_string($j)) {
+            // JSON may quote a numeric symbol, and `unparse_verbose_json`
+            // spells the empty choice; `parse` knows both
+            return $this->parse($j);
         }
         return false;
     }

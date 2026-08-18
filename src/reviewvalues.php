@@ -422,6 +422,18 @@ class ReviewValues extends MessageSet {
         return null;
     }
 
+    /** Keys that `PaperExport::review_json` prints but `parse_json` cannot
+     * apply; ignored silently to facilitate round-tripping
+     * @var array<string,true> */
+    static private $json_ignore = [
+        "editable" => true, "format" => true, "ghost" => true,
+        "hidden_fields" => true, "message_list" => true, "modified_at" => true,
+        "modified_at_text" => true, "my_request" => true, "my_review" => true,
+        "ordinal" => true, "ratings" => true, "review_token" => true,
+        "reviewer" => true, "rtype" => true, "status" => true,
+        "subreview" => true, "user_rating" => true
+    ];
+
     /** @return bool */
     function parse_json($j) {
         assert($this->text === null && $this->finished === 0);
@@ -432,6 +444,7 @@ class ReviewValues extends MessageSet {
         }
         // XXX validate more
         // XXX status
+        $unknown = [];
         foreach ($j as $k => $v) {
             if ($k === "object") {
                 if (($v ?? "review") !== "review") {
@@ -478,15 +491,15 @@ class ReviewValues extends MessageSet {
                 if (is_string($v)) {
                     $this->req["reviewerAffiliation"] = $v;
                 }
-            } else if ($k === "given_name" || $k === "first" || $k === "firstName") {
+            } else if ($k === "given_name" || $k === "first") {
                 if (is_string($v)) {
                     $this->req["reviewerFirst"] = simplify_whitespace($v);
                 }
-            } else if ($k === "family_name" || $k === "last" || $k === "lastName") {
+            } else if ($k === "family_name" || $k === "last") {
                 if (is_string($v)) {
                     $this->req["reviewerLast"] = simplify_whitespace($v);
                 }
-            } else if ($k === "review_type" || $k === "reviewType") {
+            } else if ($k === "review_type") {
                 if (is_int($v) || is_string($v)) {
                     $this->req["reviewType"] = $v;
                 }
@@ -494,7 +507,7 @@ class ReviewValues extends MessageSet {
                 if (is_int($v)) {
                     $this->req["edit_version"] = $v;
                 }
-            } else if ($k === "if_vtag_match") {
+            } else if ($k === "if_vtag_match" || $k === "version") {
                 if (is_int($v)) {
                     $this->req["if_vtag_match"] = $v;
                 }
@@ -505,11 +518,31 @@ class ReviewValues extends MessageSet {
                            && $t >= 0) {
                     $this->req["if_unmodified_since"] = $t;
                 }
+            } else if (isset(self::$json_ignore[$k])) {
+                /* skip */
             } else if (($f = $this->conf->find_review_field($k))) {
                 if (!isset($this->req[$f->short_id])) {
                     $this->req[$f->short_id] = $v;
                 }
+            } else if ($k === "firstName" /* XXX backward compat */) {
+                if (is_string($v)) {
+                    $this->req["reviewerFirst"] = simplify_whitespace($v);
+                }
+            } else if ($k === "lastName" /* XXX backward compat */) {
+                if (is_string($v)) {
+                    $this->req["reviewerLast"] = simplify_whitespace($v);
+                }
+            } else if ($k === "reviewType" /* XXX backward compat */) {
+                if (is_int($v) || is_string($v)) {
+                    $this->req["reviewType"] = $v;
+                }
+            } else if (is_string($k)) {
+                $unknown[] = $k;
             }
+        }
+        if (!empty($unknown)) {
+            natcasesort($unknown);
+            $this->rvmsg(self::WARNING, null, "<0>Ignoring unknown fields {:list}", $unknown);
         }
         if (!empty($this->req) && !isset($this->req["ready"])) {
             $this->req["ready"] = true;
@@ -1065,7 +1098,10 @@ class ReviewValues extends MessageSet {
                 $fval = $old_fval;
             }
             if ($fval === false) {
-                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>Invalid value ‘{}’", UnicodeHelper::utf8_word_abbreviate(trim($this->req[$f->short_id]), 100)));
+                // a JSON request can supply any type, so render before trimming
+                $reqv = $this->req[$f->short_id];
+                $reqt = is_scalar($reqv) ? trim((string) $reqv) : json_encode_db($reqv);
+                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>Invalid value ‘{}’", UnicodeHelper::utf8_word_abbreviate($reqt, 100)));
                 $fval = $old_fval;
                 $allow_new_submit = false;
             }

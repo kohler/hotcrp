@@ -204,6 +204,10 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
         foreach ($j as $sym) {
             if (($i = array_search($sym, $this->symbols, true)) !== false) {
                 $b |= 1 << $i;
+            } else if (is_string($sym)
+                       && ($sc = $this->find_symbol($sym)) > 0) {
+                // JSON may quote a numeric symbol
+                $b |= 1 << ($sc - 1);
             } else {
                 return false;
             }
