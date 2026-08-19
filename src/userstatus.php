@@ -965,7 +965,8 @@ class UserStatus extends MessageSet {
 
 
     static function crosscheck_main(UserStatus $us) {
-        if ($us->profile_topic() !== "main") {
+        if ($us->profile_topic() !== "main"
+            || $us->is_new_user()) {
             return;
         }
         $user = $us->user;
@@ -1665,12 +1666,6 @@ class UserStatus extends MessageSet {
         $user = $us->user;
         $qreq = $us->qreq;
 
-        if ($us->conf->external_login()) {
-            $us->print_main_external_username();
-        } else {
-            $us->print_main_email();
-        }
-
         echo '<div class="f-mcol w-text">';
         $t = Ht::entry("firstName", $qreq->firstName ?? $user->firstName, ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => $user->firstName]) . $us->global_profile_difference("firstName");
         $us->print_field("firstName", "First name (given name)", $t, "f-i");
@@ -1692,29 +1687,18 @@ class UserStatus extends MessageSet {
         return $this->qreq->actas_link_for($this->user, " ");
     }
 
-    function print_main_email() {
-        if ($this->user->is_empty()) {
-            $class = "want-focus fullw";
-            if ($this->viewer->can_lookup_user()) {
-                $class .= " uii js-email-populate";
-            }
-            $this->print_field("uemail", "Email" . $this->actas_link(),
-                Ht::entry("uemail", $this->qreq->uemail ?? $this->qreq->email ?? "", ["class" => $class, "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => "", "type" => "email"]));
-            return;
-        }
-        if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
-            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Manage email <span class=\"arrow\">→</span>", "manageemail", ["u" => $this->user->email], ["class" => "btn btn-success btn-sm"]) . "</p>";
-        } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
-            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Transfer reviews <span class=\"arrow\">→</span>", "manageemail", ["t" => "transferreview", "u" => $this->user->email], ["class" => "btn btn-primary btn-sm"]) . "</p>";
+    function print_email() {
+        if ($this->conf->external_login()) {
+            $this->print_external_username();
+        } else if ($this->is_new_user()) {
+            $this->print_new_user_email();
         } else {
-            $link = "";
+            $this->print_existing_email();
         }
-        $this->print_field("", "Email" . $this->actas_link(),
-            "<p><strong class=\"sb\">" . htmlspecialchars($this->user->email) . "</strong></p>{$link}");
     }
 
-    function print_main_external_username() {
-        if ($this->user->is_empty()) {
+    function print_external_username() {
+        if ($this->is_new_user()) {
             $this->print_field("uemail", "Username",
                 Ht::entry("newUsername", $this->qreq->uemail ?? $this->user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => $this->user->email]));
             $peclass = "fullw";
@@ -1725,6 +1709,27 @@ class UserStatus extends MessageSet {
         }
         $this->print_field("preferredEmail", "Email",
             Ht::entry("preferredEmail", $this->qreq->preferredEmail ?? $this->user->preferredEmail, ["class" => $peclass, "size" => 52, "id" => "preferredEmail", "autocomplete" => $this->autocomplete("email"), "data-default-value" => $this->user->preferredEmail, "type" => "email"]));
+    }
+
+    function print_new_user_email() {
+        $class = "want-focus fullw";
+        if ($this->viewer->can_lookup_user()) {
+            $class .= " uii js-email-populate";
+        }
+        $this->print_field("uemail", "Email",
+            Ht::entry("uemail", $this->qreq->uemail ?? $this->qreq->email ?? "", ["class" => $class, "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => "", "type" => "email"]));
+    }
+
+    function print_existing_email() {
+        if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
+            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Manage email <span class=\"arrow\">→</span>", "manageemail", ["u" => $this->user->email], ["class" => "btn btn-success btn-sm"]) . "</p>";
+        } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
+            $link = "<p class=\"nearby\">" . $this->conf->hotlink("Transfer reviews <span class=\"arrow\">→</span>", "manageemail", ["t" => "transferreview", "u" => $this->user->email], ["class" => "btn btn-primary btn-sm"]) . "</p>";
+        } else {
+            $link = "";
+        }
+        $this->print_field("", "Email" . $this->actas_link(),
+            "<p><strong class=\"sb\">" . htmlspecialchars($this->user->email) . "</strong></p>{$link}");
     }
 
     static function print_country(UserStatus $us) {
@@ -1777,27 +1782,27 @@ class UserStatus extends MessageSet {
                 $reqwatch = ($reqwatch & ~$bit) | ($v ? $bit : 0);
             }
         }
-        if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
+        if ($us->is_new_user() ? $us->viewer->privChair : $us->user->isPC) {
             echo "<div class=\"d-flex flex-wrap\"><div class=\"mr-3\">Send mail for:</div><div>";
-            if (!$us->user->is_empty() && $us->user->is_track_manager()) {
+            if (!$us->is_new_user() && $us->user->is_track_manager()) {
                 self::print_follow_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_PAPER_REGISTER_ALL, "register", "Newly registered submissions, including draft submissions");
                 self::print_follow_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_PAPER_NEWSUBMIT_ALL, "submit", "Newly ready submissions");
             }
-            if (!$us->user->is_empty() && $us->user->is_manager()) {
+            if (!$us->is_new_user() && $us->user->is_manager()) {
                 self::print_follow_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_LATE_WITHDRAWAL_ALL, "latewithdraw", "Submissions withdrawn after the deadline");
             }
             self::print_follow_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW, "review", "Reviews and comments on authored or reviewed submissions");
-            if (!$us->user->is_empty() && $us->user->is_manager()) {
+            if (!$us->is_new_user() && $us->user->is_manager()) {
                 self::print_follow_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_REVIEW_MANAGED, "adminreview", "Reviews and comments on submissions you administer");
             }
             self::print_follow_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW_ALL, "anyreview", "Reviews and comments on <em>all</em> submissions");
-            if (!$us->user->is_empty() && $us->user->is_manager()) {
+            if (!$us->is_new_user() && $us->user->is_manager()) {
                 self::print_follow_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_FINAL_UPDATE_ALL, "finalupdate", "Updates to final versions for submissions you administer");
             }

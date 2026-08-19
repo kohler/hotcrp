@@ -13,13 +13,13 @@
         "name": "__crosscheck/alerts", "order": 150,
         "crosscheck_function": "UserStatus::crosscheck_alerts"
     },
-    {   "name": "__field/firstName", "label": "First name", "page": "main"   },
-    {   "name": "__field/lastName", "label": "Last name", "page": "main"   },
-    {   "name": "__field/email", "label": "Email", "page": "main"   },
-    {   "name": "__field/uemail", "label": "Email", "page": "main"   },
-    {   "name": "__field/affiliation", "label": "Affiliation", "page": "main"   },
-    {   "name": "__field/collaborators", "label": "Collaborators", "page": "main"   },
-    {   "name": "__field/topics", "label": "Topics", "page": "main"   },
+    {   "name": "__field/firstName", "label": "First name", "topic": "main"   },
+    {   "name": "__field/lastName", "label": "Last name", "topic": "main"   },
+    {   "name": "__field/email", "label": "Email", "topic": "main"   },
+    {   "name": "__field/uemail", "label": "Email", "topic": "main"   },
+    {   "name": "__field/affiliation", "label": "Affiliation", "topic": "main"   },
+    {   "name": "__field/collaborators", "label": "Collaborators", "topic": "main"   },
+    {   "name": "__field/topics", "label": "Topics", "topic": "main"   },
 
     {
         "name": "__reauthenticate", "autosection": false,
@@ -41,6 +41,7 @@
         "order": 1000
     },
 
+    [   "main/email", 500, "*UserStatus::print_email"   ],
     [   "main/main", 1000, "UserStatus::print_main"   ],
     [   "main/country", 3000, "UserStatus::print_country"   ],
     [   "main/roles", 5000, "UserStatus::print_roles"   ],

@@ -506,10 +506,9 @@ class Profile_Page {
         }
 
         // crosscheck
-        if (!$this->mode) {
-            foreach ($this->ustatus->cs()->members("__crosscheck", "crosscheck_function") as $gj) {
-                $this->ustatus->cs()->call_function($gj, $gj->crosscheck_function, $gj);
-            }
+        $cs = $this->ustatus->cs();
+        foreach ($cs->members("__crosscheck", "crosscheck_function") as $gj) {
+            $cs->call_function($gj, $gj->crosscheck_function, $gj);
         }
     }
 
