@@ -2185,7 +2185,7 @@ td.padls, th.padls, div.padls {
 }
 .dropmenu-container::after {
 	border: 7px solid transparent;
-	border-bottom-color: white;
+	border-bottom-color: var(--paper);
 	/* can be overridden by .dropmenu-sw */
 	top: -14px;
 	left: 10px;
