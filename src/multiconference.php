@@ -89,8 +89,8 @@ class Multiconference {
         }
         global $Opt;
         $Opt["confid"] = $confid;
-        if ($mao && isset($mao->opts)) {
-            foreach ($mao->opts as $k => $v) {
+        if ($mao && isset($mao->opt)) {
+            foreach ($mao->opt as $k => $v) {
                 $Opt[$k] = $v;
             }
         }
