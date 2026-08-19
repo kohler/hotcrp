@@ -19,6 +19,8 @@ class Profile_Page {
     public $ustatus;
     /** @var ?string */
     public $mode;
+    /** @var object */
+    public $_modej;
     /** @var string */
     public $topic;
 
@@ -92,7 +94,9 @@ class Profile_Page {
             $this->qreq->u = $this->qreq->user ? : $this->qreq->contact;
         }
         if (($p = $this->qreq->path_component(0)) !== null) {
-            if (in_array($p, ["", "me", "self", "new", "bulk"], true)
+            if ($p === ""
+                || $p === "me"
+                || $p === "self"
                 || strpos($p, "@") !== false
                 || !$this->ustatus->cs()->might_exist($p)) {
                 if ($this->qreq->u === null) {
@@ -116,11 +120,15 @@ class Profile_Page {
             || ($this->viewer->contactId > 0 && $u === (string) $this->viewer->contactId)) {
             $user = $this->viewer;
         } else if ($this->viewer->privChair
-                   && ($u === "new" || $u === "bulk")) {
+                   && ($gj = $this->ustatus->cs()->get("__mode/{$u}"))) {
             $user = Contact::make_placeholder($this->conf);
             $this->mode = $u;
+            $this->_modej = $gj;
         } else {
             $user = $this->handle_user_search($u);
+        }
+        if (!$this->_modej) {
+            $this->_modej = $this->ustatus->cs()->get("__mode/profile");
         }
 
         $this->user = $user;
@@ -525,7 +533,6 @@ class Profile_Page {
         }
         $this->ustatus->set_profile_topic($this->topic);
         $this->ustatus->set_profile_mode($this->mode);
-        $this->ustatus->cs()->set_root($this->topic);
 
         // set session list
         if (!$this->mode
@@ -550,10 +557,8 @@ class Profile_Page {
         }
 
         // set title
-        if ($this->mode === "bulk") {
-            $title = "Bulk update";
-        } else if ($this->mode === "new") {
-            $title = "New account";
+        if ($this->mode) {
+            $title = $this->_modej->title;
         } else if ($this->user === $this->viewer) {
             $title = "Profile";
             $this->qreq->set_annex("profile_self", true);
@@ -575,9 +580,6 @@ class Profile_Page {
             $form_params["u"] = $this->user->email;
         }
         $form_params["t"] = $this->qreq->t;
-        if (isset($this->qreq->ls)) {
-            $form_params["ls"] = $this->qreq->ls;
-        }
         echo $this->conf->hotform("=profile", $form_params, [
             "id" => "f-profile",
             "class" => "need-diff-check need-unload-protection",
@@ -590,64 +592,16 @@ class Profile_Page {
             '<h1 class="leftmenu"><button type="button" class="q ui js-leftmenu">Account',
             '<span class="leftmenu-not-left">', aria_plus_expander("after"), '</span>',
             '</button></h1><ul class="leftmenu-list">';
-
         if ($this->viewer->privChair) {
-            foreach ([["New account", "new"], ["Bulk update", "bulk"], ["Your profile", null]] as $t) {
-                if (!$t[1] && !$this->mode && $this->user === $this->viewer) {
-                    continue;
-                }
-                $active = $t[1] && $this->mode === $t[1];
-                echo '<li class="leftmenu-item font-italic',
-                    $active ? ' active" aria-current="page' : ' ui js-click-child',
-                    '">';
-                if ($active) {
-                    echo $t[0];
-                } else {
-                    echo $this->conf->selflink($t[0], $this->qreq, ["u" => $t[1], "t" => null]);
-                }
-                echo '</li>';
-            }
+            $this->print_leftmenu_modes();
         }
-
         if (!$this->mode) {
-            $first = $this->viewer->privChair;
-            $cs = $this->ustatus->cs();
-            foreach ($cs->members("", "title") as $gj) {
-                $disabled = false;
-                if (isset($gj->display_if)) {
-                    $disp = $gj->display_if;
-                    if (is_string($disp) && $disp !== "dim") {
-                        $disp = $cs->call_function($gj, $disp);
-                    }
-                    if (!$disp) {
-                        continue;
-                    } else if ($disp === "dim") {
-                        $disabled = true;
-                    }
-                }
-                echo '<li class="leftmenu-item',
-                    $first ? ' leftmenu-item-gap4' : '',
-                    $gj->name === $this->topic ? ' active" aria-current="page' : ' ui js-click-child',
-                    '">';
-                $title = $gj->short_title ?? $gj->title;
-                if ($gj->name === $this->topic) {
-                    echo $title;
-                } else {
-                    $aextra = [];
-                    if ($disabled) {
-                        $aextra["class"] = "dim";
-                    }
-                    echo $this->conf->selflink($title, $this->qreq, ["t" => $gj->name], $aextra);
-                }
-                echo '</li>';
-                $first = false;
-            }
+            $this->print_leftmenu_topics();
         }
-
         echo '</ul>';
 
-        if (!$this->mode || $this->mode === "new") {
-            $t = !$this->mode ? "Save changes" : "Create account";
+        if (!isset($this->_modej->print_group)) {
+            $t = $this->_modej->save_button_label ?? "Save changes";
             echo '<div class="leftmenu-if-left if-differs mt-5">',
                 Ht::submit("save", $t, ["class" => "btn-primary"]), '</div>';
         }
@@ -655,8 +609,8 @@ class Profile_Page {
         echo '</nav></div>',
             '<div class="leftmenu-content main-column">';
 
-        if ($this->mode === "bulk") {
-            echo '<h2 class="leftmenu">Bulk update</h2>';
+        if (isset($this->_modej->print_group)) {
+            echo '<h2 class="leftmenu">', $this->_modej->title, '</h2>';
         } else {
             echo Ht::hidden("profile_contactid", $this->user->contactId);
             if (isset($this->qreq->redirect)) {
@@ -680,8 +634,8 @@ class Profile_Page {
             echo "\">";
 
             echo '<h2 id="h-subtitle" class="leftmenu">';
-            if ($this->mode === "new") {
-                echo 'New account';
+            if (isset($this->_modej->heading)) {
+                echo $this->_modej->heading;
             } else {
                 if ($this->user !== $this->viewer) {
                     echo $this->viewer->name_for("rn", $this->user), ' ';
@@ -700,8 +654,8 @@ class Profile_Page {
 
         $this->conf->report_saved_messages();
 
-        if ($this->mode === "bulk") {
-            $this->ustatus->print_members("__bulk");
+        if (isset($this->_modej->print_group)) {
+            $this->ustatus->print_members($this->_modej->print_group);
         } else {
             $this->print_topic();
             echo "</div>"; // foldaccount
@@ -715,6 +669,70 @@ class Profile_Page {
             Ht::stash_script('$("#f-profile").awaken()');
         }
         $this->qreq->print_footer();
+    }
+
+    private function print_leftmenu_modes() {
+        $cs = $this->ustatus->cs();
+        foreach ($cs->members("__mode") as $gj) {
+            $n = substr($gj->name, strlen($gj->group) + 1);
+            if ($n === "profile" && !$this->mode && $this->user === $this->viewer) {
+                continue;
+            }
+            if (isset($gj->display_if)) {
+                $disp = $gj->display_if;
+                if (is_string($disp)) {
+                    $disp = $cs->call_function($gj, $disp);
+                }
+                if (!$disp) {
+                    continue;
+                }
+            }
+            $active = $n !== "profile" && $this->mode === $n;
+            echo '<li class="leftmenu-item font-italic',
+                $active ? ' active" aria-current="page' : ' ui js-click-child',
+                '">';
+            if ($active) {
+                echo $gj->title;
+            } else {
+                echo $this->conf->selflink($gj->title, $this->qreq, ["u" => $n === "profile" ? null : $n, "t" => null]);
+            }
+            echo '</li>';
+        }
+    }
+
+    private function print_leftmenu_topics() {
+        $first = $this->viewer->privChair;
+        $cs = $this->ustatus->cs();
+        foreach ($cs->members("", "title") as $gj) {
+            $disabled = false;
+            if (isset($gj->display_if)) {
+                $disp = $gj->display_if;
+                if (is_string($disp) && $disp !== "dim") {
+                    $disp = $cs->call_function($gj, $disp);
+                }
+                if (!$disp) {
+                    continue;
+                } else if ($disp === "dim") {
+                    $disabled = true;
+                }
+            }
+            echo '<li class="leftmenu-item',
+                $first ? ' leftmenu-item-gap4' : '',
+                $gj->name === $this->topic ? ' active" aria-current="page' : ' ui js-click-child',
+                '">';
+            $title = $gj->short_title ?? $gj->title;
+            if ($gj->name === $this->topic) {
+                echo $title;
+            } else {
+                $aextra = [];
+                if ($disabled) {
+                    $aextra["class"] = "dim";
+                }
+                echo $this->conf->selflink($title, $this->qreq, ["t" => $gj->name], $aextra);
+            }
+            echo '</li>';
+            $first = false;
+        }
     }
 
     private function print_topic() {

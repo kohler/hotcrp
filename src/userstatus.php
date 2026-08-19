@@ -2062,7 +2062,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         ];
         if ($this->can_update_cdb()
             && $this->cdb_user()
-            && $this->cs()->root === "main") {
+            && $this->profile_topic() === "main") {
             echo '<label class="checki mt-7"><span class="checkc">',
                 Ht::hidden("has_update_global", 1),
                 Ht::checkbox("update_global", 1, !$this->qreq->has_updateglobal || $this->qreq->updateglobal, ["class" => "ignore-diff"]),

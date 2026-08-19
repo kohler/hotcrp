@@ -2153,7 +2153,6 @@ class Authorize_Tester {
             $pc = $this->conf->page_components($user, $qreq);
             $pagej = $pc->get($page);
             xassert_neqq($pagej, null);
-            $pc->set_root($pagej->group);
             $pc->print_body_members($pagej->group);
         } catch (Redirection $redir) {
         } catch (JsonCompletion $jc) {

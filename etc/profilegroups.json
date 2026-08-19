@@ -26,6 +26,21 @@
         "print_function": "Security_UserInfo::print_reauthenticate"
     },
 
+    {
+        "name": "__mode/new",
+        "title": "New account", "heading": "New account",
+        "save_button_label": "Create account",
+        "order": 100
+    },
+    {
+        "name": "__mode/bulk", "title": "Bulk update",
+        "order": 200, "print_group": "__bulk"
+    },
+    {
+        "name": "__mode/profile", "title": "Your profile",
+        "order": 1000
+    },
+
     [   "main/main", 1000, "UserStatus::print_main"   ],
     [   "main/country", 3000, "UserStatus::print_country"   ],
     [   "main/roles", 5000, "UserStatus::print_roles"   ],

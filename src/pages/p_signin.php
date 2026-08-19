@@ -177,7 +177,7 @@ class Signin_Page {
             }
         }
 
-        $folded = $cs->root !== "signin" && !$qreq->signin;
+        $folded = $qreq->page() !== "signin" && !$qreq->signin;
         self::print_form_start_for($qreq, "signin", $folded);
         self::print_redirect_field($qreq);
         if ($folded) {
@@ -491,14 +491,14 @@ class Signin_Page {
     }
     static function print_forgot_form_description(Contact $user, Qrequest $qreq, $cs) {
         echo '<p class="mb-5">Enter your email and we’ll send you a link to reset your password.';
-        if ($cs->root === "resetpassword") {
+        if ($qreq->page() === "resetpassword") {
             echo ' Or enter a password reset code if you have one.';
         }
         echo '</p>';
     }
     function print_forgot_form_email(Contact $user, Qrequest $qreq, $cs) {
         $this->_print_email_entry($user, $qreq,
-            $cs->root === "resetpassword" ? "resetcap" : "email");
+            $qreq->page() === "resetpassword" ? "resetcap" : "email");
     }
     function print_forgot_form_actions() {
         echo '<div class="popup-actions">',

@@ -22,7 +22,6 @@ class ComponentSet {
     /** @var XtParams
      * @readonly */
     public $xtp;
-    public $root;
     private $_raw = [];
     private $_callables;
     /** @var string */
@@ -112,7 +111,6 @@ class ComponentSet {
     /** @return $this */
     function reset_context() {
         assert(empty($this->_ctxstack) && empty($this->_ctx->cleanup));
-        $this->root = null;
         $this->_raw = [];
         $this->_callables = ["Conf" => $this->conf];
         $this->_next_section_class = $this->_section_class;
@@ -126,9 +124,10 @@ class ComponentSet {
         return $this->viewer;
     }
 
-    /** @return ?string */
+    /** @return ?string
+     * @deprecated */
     function root() {
-        return $this->root;
+        return null;
     }
 
 
@@ -292,9 +291,9 @@ class ComponentSet {
 
 
     /** @param ?string $root
-     * @return $this */
+     * @return $this
+     * @deprecated */
     function set_root($root) {
-        $this->root = $root;
         return $this;
     }
 

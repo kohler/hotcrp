@@ -22,7 +22,6 @@ function handle_request($nav) {
         } else if ($user->is_disabled() && !($pagej->allow_disabled ?? false)) {
             Multiconference::fail_user_disabled($user, $qreq);
         }
-        $pc->set_root($pagej->group);
         if (!isset($pagej->request_function)
             || $pc->call_function($pagej, $pagej->request_function, $pagej) !== false) {
             foreach ($pc->members($pagej->group, "request_function") as $gj) {
