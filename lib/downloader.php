@@ -428,7 +428,6 @@ class Downloader {
         return $this->_response_code;
     }
 
-    /** @return string */
     private function ensure_range_boundary() {
         $this->_boundary = $this->_boundary ?? "hcmpb-" . base64_encode(random_bytes(32));
     }

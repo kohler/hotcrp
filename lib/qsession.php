@@ -158,6 +158,7 @@ class Qsession {
         $this->sv = $sv;
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     protected function assign_fail() {
         $this->sid = null;
         $this->sopen = $this->scommitted = false;

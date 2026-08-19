@@ -588,6 +588,7 @@ class AssignmentState extends MessageSet {
         parent::clear_messages();
         $this->nonexact_msgs = [];
         $this->has_user_error = false;
+        return $this;
     }
 
     /** @param string $name

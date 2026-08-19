@@ -514,7 +514,8 @@ class ReviewValues extends MessageSet {
             } else if ($k === "if_unmodified_since") {
                 if (is_int($v) || is_float($v)) {
                     $this->req["if_unmodified_since"] = $v;
-                } else if (($t = $this->conf->parse_time($v, Conf::$now)) !== false
+                } else if (is_string($v)
+                           && ($t = $this->conf->parse_time($v, Conf::$now)) !== false
                            && $t >= 0) {
                     $this->req["if_unmodified_since"] = $t;
                 }

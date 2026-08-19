@@ -424,8 +424,8 @@ class Autoassign_Page {
         foreach ($this->conf->viewable_user_tags($this->user) as $pctag) {
             $ltag = strtolower($pctag);
             if ($ltag !== "pc"
-                && isset($this->_pclist_by_ltag[$ltag]))
-                $this->print_pc_selection_link("#{$pctag}", $this->_pclist_by_ltag[$ltag]);
+                && isset($this->_pcids_by_ltag[$ltag]))
+                $this->print_pc_selection_link("#{$pctag}", $this->_pcids_by_ltag[$ltag]);
         }
         $this->print_pc_selection_link("flip", ["flip"]);
         echo ")";
@@ -587,7 +587,7 @@ class Autoassign_Page {
                 }
             } else if (isset($qreq->pcs)) {
                 foreach (preg_split('/\s+/', $qreq->pcs) as $n) {
-                    if (ctype_digit($n) && in_array($this->_pcids, (int) $n, true))
+                    if (ctype_digit($n) && in_array((int) $n, $this->_pcids, true))
                         $pcsel[] = (int) $n;
                 }
             } else {

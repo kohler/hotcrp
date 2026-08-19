@@ -638,7 +638,7 @@ class S3Client {
         $xml = null;
         $xml_contents = $xml_common_prefixes = $xmlpos = 0;
         while ($max_keys !== 0) {
-            if ($xmlpos < $xml_common_prefixes) {
+            if ($xml && $xmlpos < $xml_common_prefixes) {
                 if ($xmlpos < $xml_contents) {
                     yield $xml->Contents[$xmlpos];
                 } else {

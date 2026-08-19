@@ -959,8 +959,7 @@ class MessageSet {
         return $mlx;
     }
 
-    /** @param null|Fmt|Conf $fmt
-     * @return $this */
+    /** @return $this */
     private function apply_fmt() {
         if (($this->_ms_flags & self::NEED_FMT) === 0) {
             return $this;
