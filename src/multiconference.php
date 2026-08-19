@@ -80,7 +80,7 @@ class Multiconference {
         if (!preg_match("\1\\A{$match}\1", $subject, $m)) {
             return false;
         }
-        $confid = $mao ? $mao->confid : substr($ma, $sp + 1);
+        $confid = $mao ? $mao->confid ?? "\$1" : substr($ma, $sp + 1);
         for ($i = 1; isset($m[$i]); ++$i) {
             $confid = str_replace("\${$i}", $m[$i], $confid);
         }
