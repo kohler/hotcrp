@@ -3897,6 +3897,220 @@ class Authorize_Tester {
         xassert_eqq($jr, null);
     }
 
+    /** Obtain an authorization code for `$client_id` as `$user`.
+     * @return ?string */
+    private function authorization_code($client_id, $redirect_uri, $user, $scope = "read") {
+        $qreq = TestQreq::user_get($user, [
+            "client_id" => $client_id, "redirect_uri" => $redirect_uri,
+            "response_type" => "code", "state" => "S", "scope" => $scope
+        ])->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        try {
+            (new HotCRP\Authorize_Page($user, $qreq))->go();
+        } catch (JsonCompletion $jc) {
+            return $jc->result->content["code"] ?? null;
+        }
+        return null;
+    }
+
+    /** Every token of a grant carries the same identifier inside its salt, so
+     * the web server's access log — which sees only a prefix of whatever
+     * credential was presented, and cannot consult the database — names the
+     * grant rather than the credential of the hour. */
+    function test_grant_id_survives_truncation_and_rotation() {
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($jr, null, $this->_failure ?? "");
+        if (!$jr) {
+            return;
+        }
+        $atok = $jr->_token;
+        $gid = Authorization_Token::grant_id($atok);
+        xassert_eqq(strlen($gid ?? ""), Authorization_Token::GRANT_ID_LENGTH);
+
+        // the access log keeps the first 12 characters of the credential
+        // (`accesslogger.php`), and the identifier has to survive that for
+        // both kinds of token: `hct_` + 7 fits with room, `hctr_` + 7 exactly
+        $rtok = $this->find_token($this->_last_refresh_token);
+        xassert_neqq($rtok, null);
+        xassert_eqq(Authorization_Token::grant_id($rtok), $gid);
+        foreach ([$atok, $rtok] as $tok) {
+            xassert_str_contains(substr($tok->salt, 0, 12), $gid);
+        }
+        // the identifier gives back the randomness it costs, so a grant token is
+        // the length a personal one is — the identifier is printed in logs and
+        // is no part of the secret
+        $plain = Authorization_Token::prepare_bearer($this->u_chair, 86400);
+        xassert($plain->insert() && $plain->stored());
+        xassert_eqq(strlen($atok->salt), strlen($plain->salt));
+        $this->conf->qe("delete from Capability where salt=?", $plain->salt);
+        // and the prefixes are still the ones the endpoint routes on
+        xassert(str_starts_with($atok->salt, "hct_") || str_starts_with($atok->salt, "hcT_"));
+        xassert(str_starts_with($rtok->salt, "hctr_") || str_starts_with($rtok->salt, "hcTr_"));
+
+        // rotation replaces the credential and keeps the identifier
+        $atok2 = $this->refresh_access_token();
+        xassert_neqq($atok2, null, $this->_failure ?? "");
+        xassert_neqq($atok2->salt, $atok->salt);
+        xassert_eqq(Authorization_Token::grant_id($atok2), $gid);
+        xassert_str_contains(substr($atok2->salt, 0, 12), $gid);
+        $rtok2 = $this->find_token($this->_last_refresh_token);
+        xassert_neqq($rtok2->salt, $rtok->salt);
+        xassert_eqq(Authorization_Token::grant_id($rtok2), $gid);
+        xassert_str_contains(substr($rtok2->salt, 0, 12), $gid);
+
+        // a second authorization of the same client is a different grant
+        $jr2 = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($jr2, null, $this->_failure ?? "");
+        xassert_neqq(Authorization_Token::grant_id($jr2->_token), $gid);
+
+        // and the action log ties the identifier to the person who approved it
+        $row = Dbl::fetch_first_row($this->conf->qe("select contactId, action from ActionLog where action like ? order by logId desc limit 1",
+                                                    "%[{$gid}]%"));
+        xassert_neqq($row, null);
+        xassert_eqq((int) $row[0], $this->u_chair->contactId);
+        xassert_str_contains($row[1], "OAuth authorization");
+    }
+
+    /** The identifier is not minted: it is the authorization code's own leading
+     * characters, so the consent request is traceable in an access log too — a
+     * code rides in the redirect URL — and the entry logged at consent names
+     * what the tokens will carry. */
+    function test_grant_id_starts_at_the_code() {
+        $jr = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => ["https://dall.com/"]]));
+        xassert_neqq($jr->client_id ?? null, null);
+        $code = $this->authorization_code($jr->client_id, "https://dall.com/", $this->u_chair);
+        xassert_neqq($code, null);
+
+        // the code itself carries it, right after its own prefix
+        $codetok = TokenInfo::find($code, $this->conf);
+        xassert_neqq($codetok, null);
+        $gid = Authorization_Token::grant_id($codetok);
+        xassert_eqq(strlen($gid ?? ""), Authorization_Token::GRANT_ID_LENGTH);
+        xassert_eqq($gid, substr($codetok->salt, 4, Authorization_Token::GRANT_ID_LENGTH));
+
+        // consent logs that identifier
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert($this->authconfirm_redirects($vq));
+        $row = Dbl::fetch_first_row($this->conf->qe("select action from ActionLog where contactId=? order by logId desc limit 1",
+                                                    $this->u_chair->contactId));
+        xassert_str_contains($row[0] ?? "", "[{$gid}]");
+
+        // and the credentials the code produces carry the same one
+        $qreq = TestQreq::post([
+            "grant_type" => "authorization_code", "code" => $code,
+            "redirect_uri" => "https://dall.com/", "client_id" => $jr->client_id,
+            "client_secret" => $jr->client_secret
+        ]);
+        $tr = call_api("=oauthtoken", $this->u_empty, $qreq);
+        xassert_neqq($tr->access_token ?? null, null);
+        xassert_eqq(Authorization_Token::grant_id($this->find_token($tr->access_token)), $gid);
+        xassert_eqq(Authorization_Token::grant_id($this->find_token($tr->refresh_token)), $gid);
+    }
+
+    /** The salt is the only copy of the identifier: it is what an access log
+     * records, and a token cannot be renamed after issue. */
+    function test_grant_id_comes_from_the_salt() {
+        // a personal token names itself — it never rotates, so its own leading
+        // characters are as stable as any grant identifier
+        $plain = Authorization_Token::prepare_bearer($this->u_chair, 86400);
+        xassert($plain->insert() && $plain->stored());
+        $pid = Authorization_Token::grant_id($plain);
+        xassert_eqq(strlen($pid ?? ""), Authorization_Token::GRANT_ID_LENGTH);
+        xassert_str_contains($plain->abbreviation(), $pid);
+        // and the twelve characters shown are the twelve the access log keeps
+        xassert_eqq($plain->abbreviation(), substr($plain->salt, 0, 12));
+        $this->conf->qe("delete from Capability where salt=?", $plain->salt);
+
+        // every credential of one authorization carries the same identifier,
+        // starting with the code that consent produced
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($jr, null, $this->_failure ?? "");
+        if (!$jr) {
+            return;
+        }
+        $gid = Authorization_Token::grant_id($jr->_token);
+        xassert_eqq(strlen($gid ?? ""), Authorization_Token::GRANT_ID_LENGTH);
+        $rtok = $this->find_token($this->_last_refresh_token);
+        xassert_eqq(Authorization_Token::grant_id($rtok), $gid);
+
+        // nothing is stored beside it, so rotation can only read the salt
+        xassert_eqq($rtok->data("grant_id"), null);
+        $atok2 = $this->refresh_access_token();
+        xassert_neqq($atok2, null, $this->_failure ?? "");
+        xassert_eqq(Authorization_Token::grant_id($atok2), $gid);
+        xassert_str_contains($atok2->abbreviation(), $gid);
+    }
+
+    /** What is *not* a grant identifier. The pattern reads a fixed number of
+     * letters after a fixed set of prefixes, so the shapes it must decline are
+     * worth pinning: they are one edit away from being read as names. */
+    function test_grant_id_declines_other_shapes() {
+        $mk = function ($salt) {
+            $tok = new TokenInfo($this->conf, TokenInfo::BEARER);
+            $tok->salt = $salt;
+            return Authorization_Token::grant_id($tok);
+        };
+        // the placeholder an OpenID-only client is handed in place of an access
+        // token: “invalid” is seven letters, and only the tail requirement
+        // keeps it from being read as a grant
+        xassert_eqq($mk("hct_invalid_token"), null);
+        // a client registration token is a credential of a client, not a grant
+        xassert_eqq($mk("hctk_ABCDEFGHIJKLMNOPQRSTUVWX"), null);
+        // and a session or reset capability shares none of the prefixes
+        xassert_eqq($mk("hcses_ABCDEFGHIJKLMNOPQRSTUVWX"), null);
+        // no token at all is not an error
+        xassert_eqq(Authorization_Token::grant_id(null), null);
+        // while the four shapes that do carry one all read the same way
+        foreach (["hct_", "hcT_", "hctr_", "hcTr_", "hcoc"] as $pfx) {
+            xassert_eqq($mk($pfx . "ABCDEFG" . str_repeat("x", 20)), "ABCDEFG");
+        }
+    }
+
+    /** Revoking a grant logs which grant went away, by the same identifier the
+     * access log shows — otherwise “connected applications” is all a later
+     * reader gets. */
+    function test_grant_revocation_names_the_grant() {
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair, ["scope" => "read"]);
+        xassert_neqq($jr, null, $this->_failure ?? "");
+        if (!$jr) {
+            return;
+        }
+        $gid = Authorization_Token::grant_id($jr->_token);
+
+        // a request with recent authentication, as the profile screen requires
+        $email = $this->u_chair->email;
+        $qreq = (new Qrequest("POST", [
+            "grant/1/id" => "L." . $this->_last_client_id,
+            "grant/1/delete" => 1
+        ]))->approve_token();
+        $qreq->set_qsession(new MemoryQsession);
+        UserSecurityEvent::session_user_add($qreq->qsession(), $email);
+        UserSecurityEvent::make($email)
+            ->set_reason(UserSecurityEvent::REASON_REAUTH)
+            ->store($qreq);
+        $u = $this->conf->fresh_user_by_email($email)->activate($qreq, true);
+        $qreq->set_user($u);
+
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update();
+        $us->set_user($u);
+        xassert($us->has_recent_authentication());
+        $us->request_group("");
+        xassert($us->execute_update(), $us->full_feedback_text());
+
+        // a self-edit logs with the actor alone, so look there
+        $row = Dbl::fetch_first_row($this->conf->qe("select action from ActionLog where contactId=? order by logId desc limit 1",
+                                                    $u->contactId));
+        xassert_neqq($row, null);
+        xassert_eqq($row[0] ?? "", "Account edited: connected applications [revoked {$gid}]");
+        // and the credential really is dead
+        $atok = $this->find_token($jr->access_token);
+        xassert(!$atok || !$atok->is_active());
+    }
+
     /** The consent form is rendered before an account is chosen, so an account
      * the client's `allow_if` excludes is shown but not offered — otherwise
      * the only way to learn is to click and be refused. */

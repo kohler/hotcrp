@@ -221,8 +221,7 @@ class Developer_UserInfo {
         if ($note !== "") {
             echo htmlspecialchars($note), ' <span class="barsep">·</span> ';
         }
-        $short_salt = '<code>' . substr($tok->salt, 0, 10) . '</code>'
-            . (strlen($tok->salt) > 9 ? "…" : "");
+        $short_salt = '<code>' . $tok->abbreviation(TokenInfo::ABBREVIATION_ELLIPSIS) . '</code>';
         if ($active) {
             echo $short_salt;
             $this->print_bearer_token_deleter($us, $tok, $n);
@@ -314,6 +313,19 @@ class Developer_UserInfo {
             $us->mark_inputs_printed();
         }
         echo '</div>';
+        // the identifier the action log and the server's access log both name
+        $gids = [];
+        foreach ($g->tokens as $tok) {
+            if (($gid = Authorization_Token::grant_id($tok))
+                && !in_array($gid, $gids, true)) {
+                $gids[] = $gid;
+            }
+        }
+        if (!empty($gids)) {
+            sort($gids);
+            echo '<code>', htmlspecialchars(join(" ", $gids)), '</code>',
+                ' <span class="barsep">·</span> ';
+        }
         echo plural(count($g->tokens), "token"),
             ' <span class="barsep">·</span> ',
             self::unparse_grant_scope($g),
@@ -368,7 +380,7 @@ class Developer_UserInfo {
         if (empty($this->_delete_grants)) {
             return;
         }
-        $any = false;
+        $gids = [];
         foreach ($this->recent_grants() as $g) {
             if (!in_array(($g->is_cdb ? "A." : "L.") . $g->client_id, $this->_delete_grants, true)) {
                 continue;
@@ -377,16 +389,20 @@ class Developer_UserInfo {
                 if (!$tok->is_active()) {
                     continue;
                 }
+                $gid = Authorization_Token::grant_id($tok) ?? "<unknown>";
+                if (!in_array($gid, $gids, true)) {
+                    $gids[] = $gid;
+                }
                 // Keep the rows: a revoked refresh token presented later is the
                 // replay signal, and the rotation chain is walked through them.
                 $tok->set_invalid()
                     ->set_expires_in(Authorization_Token::BEARER_RETENTION)
                     ->update();
-                $any = true;
             }
         }
-        if ($any) {
-            $us->diffs["connected applications"] = true;
+        if (!empty($gids)) {
+            sort($gids);
+            $us->diffs["connected applications"] = "revoked " . join(" ", $gids);
         }
     }
 
@@ -497,7 +513,7 @@ class Developer_UserInfo {
         }
         $this->_new_token->insert();
         if ($this->_new_token->stored()) {
-            $us->diffs["API tokens"] = true;
+            self::add_token_diff($us, "created " . $this->_new_token->abbreviation());
         } else {
             $us->error_at(null, "<0>Error while creating new API token");
             $this->_new_token = null;
@@ -515,6 +531,15 @@ class Developer_UserInfo {
                 $this->_delete_tokens[] = [intval($m[1]), $m[2] === "A", $m[3]];
             }
         }
+    }
+
+    /** Record a token change for the action log. One save can both create and
+     * revoke, so entries accumulate rather than replace.
+     * @param string $text */
+    static private function add_token_diff(UserStatus $us, $text) {
+        $old = $us->diffs["API tokens"] ?? null;
+        $us->diffs["API tokens"] = is_string($old) && $old !== ""
+            ? "{$old}, {$text}" : $text;
     }
 
     function save_delete_bearer_tokens(UserStatus $us) {
@@ -535,12 +560,14 @@ class Developer_UserInfo {
         }
         if (!empty($deleteables)
             && count($deleteables) <= count($this->_delete_tokens)) {
+            $abbrevs = [];
             foreach ($deleteables as $tok) {
                 $tok->set_invalid()
                     ->set_expires_in(Authorization_Token::BEARER_RETENTION)
                     ->update();
+                $abbrevs[] = $tok->abbreviation();
             }
-            $us->diffs["API tokens"] = true;
+            self::add_token_diff($us, "revoked " . join(" ", $abbrevs));
         }
     }
 }

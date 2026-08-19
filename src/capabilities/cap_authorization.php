@@ -6,6 +6,33 @@ class Authorization_Token {
     /** Time an invalid bearer or refresh token’s row is retained */
     const BEARER_RETENTION = 604800; // 7 days
 
+    /** Length of the random, but non-secret, grant identifier carried in a
+     * prefix of the token’s salt (after `hc[Tt]r?_|hcoc`). The grant ID appears
+     * in HotCRP logs and can be extracted from Authorization headers by web
+     * servers, so it can correlate actions; but even knowing the grant ID
+     * leaves 200 bits of entropy in an access token’s salt (248 in a refresh
+     * token’s), too hard to guess. */
+    const GRANT_ID_LENGTH = 7;
+
+    /** The grant identifier carried in `$tok->salt`, or null.
+     * @param TokenInfo $tok
+     * @return ?string */
+    static function grant_id($tok) {
+        // Only match log-enough real salts (& not `hct_invalid_token`)
+        if ($tok && preg_match('/\A(?:hc[Tt]r?+_|hcoc_?+)([A-Za-z]{' . self::GRANT_ID_LENGTH . '})[A-Za-z]{16}/', $tok->salt, $m)) {
+            return $m[1];
+        }
+        return null;
+    }
+
+    /** Random bytes left for a token salt that also carries `$grant_id`
+     * @param int $bytes
+     * @param string $grant_id
+     * @return int */
+    static private function salt_random_bytes($bytes, $grant_id) {
+        return max(16, $bytes - (int) ceil(strlen($grant_id ?? "") * 11 / 16));
+    }
+
     /** @param TokenInfo $token
      * @param Contact $user
      * @param string $pattern
@@ -42,19 +69,25 @@ class Authorization_Token {
 
     /** @param Contact $user
      * @param int $expires_in
+     * @param ?TokenInfo $grant_source
      * @return TokenInfo */
-    static function prepare_bearer($user, $expires_in) {
+    static function prepare_bearer($user, $expires_in, $grant_source = null) {
         $tok = new TokenInfo($user->conf, TokenInfo::BEARER);
-        self::set_user_token_pattern($tok, $user, "hct_[30]", "hcT_[30]");
+        $grant_id = self::grant_id($grant_source) ?? "";
+        $n = self::salt_random_bytes(30, $grant_id);
+        self::set_user_token_pattern($tok, $user, "hct_{$grant_id}[{$n}]", "hcT_{$grant_id}[{$n}]");
         self::set_expires_in($tok, $expires_in, self::BEARER_RETENTION);
         return $tok;
     }
     /** @param Contact $user
      * @param int $expires_in
+     * @param ?TokenInfo $grant_source
      * @return TokenInfo */
-    static function prepare_refresh($user, $expires_in) {
+    static function prepare_refresh($user, $expires_in, $grant_source = null) {
         $tok = new TokenInfo($user->conf, TokenInfo::OAUTHREFRESH);
-        self::set_user_token_pattern($tok, $user, "hctr_[36]", "hcTr_[36]");
+        $grant_id = self::grant_id($grant_source) ?? "";
+        $n = self::salt_random_bytes(36, $grant_id);
+        self::set_user_token_pattern($tok, $user, "hctr_{$grant_id}[{$n}]", "hcTr_{$grant_id}[{$n}]");
         self::set_expires_in($tok, $expires_in, self::BEARER_RETENTION);
         return $tok;
     }

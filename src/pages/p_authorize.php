@@ -430,6 +430,10 @@ class Authorize_Page {
         if (!$this->token->data("email")) {
             $this->token->change_data("email", $this->viewer->email)
                 ->change_data("iat", Conf::$now);
+            // Log every authorization, naming the grant
+            $this->conf->log_for($this->viewer, $this->viewer,
+                "OAuth authorization for " . $this->client->title_text()
+                . " [" . (Authorization_Token::grant_id($this->token) ?? "?") . "]");
             $tokscope = $this->token->data("scope");
             $reqscope = isset($this->qreq->scope) ? trim($this->qreq->scope) : "";
             if ($reqscope !== "") {
@@ -737,6 +741,7 @@ class Authorize_Page {
         return null;
     }
 
+    /** @return JsonResult */
     private function handle_oauthtoken() {
         // RFC 6749 §5.1 and §5.2: every response from here, error included
         Navigation::header("Cache-Control: no-store");
@@ -869,6 +874,7 @@ class Authorize_Page {
         return JsonResult::make_minimal(200, $a);
     }
 
+    /** @return string */
     private function make_id_token(Contact $user, TokenInfo $tok) {
         $payload = [
             "iss" => $this->conf->oauth_issuer(),
@@ -910,6 +916,10 @@ class Authorize_Page {
         $a["scope"] = Ht::add_tokens($a["scope"] ?? null, $scope ?? "all");
     }
 
+    /** @param TokenInfo $tok
+     * @param Contact $user
+     * @param ?string $scope
+     * @return TokenInfo */
     private function oauthtoken_create_access($tok, $user, $scope) {
         // compute new scope
         $ts = null;
@@ -932,7 +942,7 @@ class Authorize_Page {
         }
 
         $exp = self::parse_expires_in($this->client->access_token_expires_in ?? null, 3600);
-        $atok = Authorization_Token::prepare_bearer($user, $exp);
+        $atok = Authorization_Token::prepare_bearer($user, $exp, $tok);
         $atok->change_data("client_id", $tok->data("client_id"))
             ->change_data("client_name", $tok->data("client_name"))
             ->change_data("scope", TokenScope::unparse($ts));
@@ -944,9 +954,13 @@ class Authorize_Page {
         return $atok->insert();
     }
 
+    /** @param TokenInfo $tok
+     * @param Contact $user
+     * @param TokenInfo $atok
+     * @return TokenInfo */
     private function oauthtoken_create_refresh($tok, $user, $atok) {
         $exp = self::parse_expires_in($this->client->refresh_token_expires_in ?? null, 7 * 86400);
-        $rtok = Authorization_Token::prepare_refresh($user, $exp);
+        $rtok = Authorization_Token::prepare_refresh($user, $exp, $tok);
         $rtok->change_data("client_id", $tok->data("client_id"))
             ->change_data("client_name", $tok->data("client_name"))
             ->change_data("scope", $tok->data("scope"))

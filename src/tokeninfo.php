@@ -384,6 +384,20 @@ class TokenInfo {
         return $this->timeInvalid > 0 ? $this->timeInvalid : $this->timeExpires;
     }
 
+    const ABBREVIATION_PREFIX = 0;
+    const ABBREVIATION_ELLIPSIS = 1;
+    /** Abbreviated token salt, used for correlation across logs.
+     * @param int $type
+     * @return string */
+    final function abbreviation($type = 0) {
+        $s = substr($this->salt, 0, 12);
+        if ($type === self::ABBREVIATION_ELLIPSIS
+            && strlen($this->salt) > 12) {
+            $s .= "…";
+        }
+        return $s;
+    }
+
     /** @param ?int $capabilityType
      * @return bool */
     final function is_active($capabilityType = null) {
