@@ -123,6 +123,7 @@ class Profile_Page {
                    && ($gj = $this->ustatus->cs()->get("__mode/{$u}"))) {
             $user = Contact::make_placeholder($this->conf);
             $this->mode = $u;
+            $this->ustatus->set_profile_mode($u);
             $this->_modej = $gj;
         } else {
             $user = $this->handle_user_search($u);
@@ -182,7 +183,8 @@ class Profile_Page {
             ->set_message_formatter($this->conf);
         foreach ($msx->message_list() as $mi) {
             if (($mi->field ?? "") !== ""
-                && str_ends_with($mi->field, ":context")) {
+                && (str_ends_with($mi->field, "/context")
+                    || str_ends_with($mi->field, ":context"))) {
                 continue;
             }
             if ($us
@@ -531,7 +533,6 @@ class Profile_Page {
             $this->qreq->redirect_self();
         }
         $this->ustatus->set_profile_topic($this->topic);
-        $this->ustatus->set_profile_mode($this->mode);
 
         // set session list
         if (!$this->mode

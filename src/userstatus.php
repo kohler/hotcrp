@@ -1,6 +1,6 @@
 <?php
 // userstatus.php -- HotCRP helpers for reading/storing users as JSON
-// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class UserStatus_UserLinks {
     /** @var list<int> */
@@ -1632,7 +1632,7 @@ class UserStatus extends MessageSet {
         $msfield = self::$web_to_message_map[$field] ?? $field;
         echo '<div class="', $this->control_class($msfield, $class), '">',
             ($field ? Ht::label($caption, $field) : "<div class=\"f-c\">{$caption}</div>"),
-            $this->feedback_html_at($field),
+            $this->feedback_html_under($msfield, "/"),
             $entry, "</div>";
         $this->mark_inputs_printed();
     }
@@ -1750,7 +1750,7 @@ class UserStatus extends MessageSet {
             $us->append_item(MessageItem::warning_note_at("theme", "<0>This session is using the {$sessiontheme} theme, which differs from your saved preference. Re-save your preference to update this session too."));
         }
         echo '<div class="', $us->control_class("theme", "w-text"), '">',
-            $us->feedback_html_at("theme");
+            $us->feedback_html_under("theme", "/");
         foreach (["auto" => "Automatic (follow system setting)",
                   "light" => "Light",
                   "dark" => "Dark"] as $value => $label) {
@@ -1890,7 +1890,7 @@ class UserStatus extends MessageSet {
         } else {
             echo '<p>', $cd, '</p>';
         }
-        echo $us->feedback_html_at("collaborators"),
+        echo $us->feedback_html_under("collaborators", "/"),
             '<textarea id="collaborators" name="collaborators" rows="5" cols="80" class="',
             $us->control_class("collaborators", "need-autogrow w-text"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
@@ -1914,7 +1914,7 @@ class UserStatus extends MessageSet {
         echo '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
-            $us->feedback_html_at("ti"),
+            $us->feedback_html_under("ti", "/"),
             '  <table class="profile-topic-interests"><thead><tr>',
             '<th aria-label="Topic"></th>',
             '<th class="ti_interest" aria-label="', $labels[0], '">Low<br><span class="topic-2"></span></th>',
@@ -1992,7 +1992,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             $msg = "The “pc” tag is";
         }
         echo '<div class="', $us->control_class("tags", "f-i"), '">',
-            $us->feedback_html_at("tags"),
+            $us->feedback_html_under("tags", "/"),
             Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw need-suggest pc-tags", "id" => "tags"]),
             "<p class=\"f-d\">Separate tags by spaces; example: “heavy”. {$msg} set automatically and not listed here.<br><strong>Tip:</strong>&nbsp;Use ", $us->conf->hotlink("tag colors", "settings", ["group" => "tags"]), " to highlight subgroups in review lists.</p></div>\n";
     }

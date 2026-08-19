@@ -691,6 +691,18 @@ class MessageSet {
         return $this->errf[$field] ?? 0;
     }
 
+    /** @param ?string $field
+     * @param string $prefix
+     * @param ?string $separator
+     * @return bool */
+    static function field_is_under($field, $prefix, $separator = null) {
+        return $field !== null
+            && str_starts_with($field, $prefix)
+            && ($separator === null
+                || strlen($field) === strlen($prefix)
+                || substr_compare($field, $separator, strlen($prefix), strlen($separator)) === 0);
+    }
+
     /** @param string $prefix
      * @param ?string $separator
      * @return int */
@@ -700,11 +712,7 @@ class MessageSet {
         }
         $st = 0;
         foreach ($this->errf as $field => $fst) {
-            if ($fst > $st
-                && str_starts_with($field, $prefix)
-                && ($separator === null
-                    || strlen($field) === strlen($prefix)
-                    || substr_compare($field, $separator, strlen($prefix), strlen($separator)) === 0))
+            if ($fst > $st && self::field_is_under($field, $prefix, $separator))
                 $st = $fst;
         }
         return $st;
@@ -876,14 +884,21 @@ class MessageSet {
         }
     }
 
-    /** @param string $pfx
+    /** @param string $prefix
+     * @return \Generator<MessageItem>
+     * @deprecated */
+    function message_list_at_prefix($prefix) {
+        return $this->message_list_under($prefix);
+    }
+
+    /** @param string $prefix
+     * @param ?string $separator
      * @return \Generator<MessageItem> */
-    function message_list_at_prefix($pfx) {
+    function message_list_under($prefix, $separator = null) {
         $this->apply_fmt();
         foreach ($this->msgs as $mi) {
-            if ($mi->field !== null && str_starts_with($mi->field, $pfx)) {
+            if (self::field_is_under($mi->field, $prefix, $separator))
                 yield $mi;
-            }
         }
     }
 
@@ -1143,6 +1158,14 @@ class MessageSet {
      * @return string */
     function feedback_html_at($field, $js = null) {
         return self::feedback_html($this->message_list_at($field), $js);
+    }
+
+    /** @param string $prefix
+     * @param ?string $separator
+     * @param ?array<string,mixed> $js
+     * @return string */
+    function feedback_html_under($prefix, $separator = null, $js = null) {
+        return self::feedback_html($this->message_list_under($prefix, $separator), $js);
     }
 
     /** @return string */

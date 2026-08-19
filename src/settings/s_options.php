@@ -303,8 +303,7 @@ class Options_SettingParser extends SettingParser {
             "data-tooltip-type" => "focus",
             "feedback_items" => make_array(
                 ...$sv->message_list_at("sf/{$this->ctr}/values_text"),
-                ...$sv->message_list_at("sf/{$this->ctr}/values"),
-                ...$sv->message_list_at_prefix("sf/{$this->ctr}/values/")
+                ...$sv->message_list_under("sf/{$this->ctr}/values", "/")
             )
         ]);
     }
@@ -427,7 +426,7 @@ class Options_SettingParser extends SettingParser {
         } else {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’"));
         }
-        foreach ($sv->message_list_at_prefix("sf/{$ctr}/") as $mi) {
+        foreach ($sv->message_list_under("sf/{$ctr}", "/") as $mi) {
             $this->pt->append_item(new MessageItem($mi->status > 0 ? MessageSet::WARNING_NOTE : $mi->status, $io->formid, $mi->message));
         }
         $ei = $io->editable_condition();
