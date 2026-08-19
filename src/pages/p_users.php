@@ -40,6 +40,7 @@ class Users_Page {
         $this->add_limit("extsub", "External reviewers who completed a review");
         $this->add_limit("extrev-not-accepted", "External reviewers with outstanding requests");
         $this->add_limit("req", ["label" => "External reviewers you requested", "exclude" => !$viewer->is_requester()]);
+        $this->add_limit("bot", ["label" => "Bot accounts", "exclude" => !$this->conf->setting("bots") || !$viewer->privChair]);
         $this->add_limit("au", "Contact authors of submitted papers");
         $this->add_limit("auacc", ["label" => "Contact authors of accepted papers", "exclude" => !$this->conf->has_any_accepted()]);
         $this->add_limit("aurej", "Contact authors of rejected papers");

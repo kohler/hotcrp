@@ -3917,7 +3917,7 @@ class Authorize_Tester {
      * script — must run that function and reload settings itself. */
     private function flush_bots() {
         $this->conf->call_shutdown_function("BotContact::enumerate_bots");
-        $this->conf->__load_settings();
+        $this->conf->load_settings();
     }
 
     /** @param Contact $u */

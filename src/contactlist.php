@@ -1118,6 +1118,7 @@ class ContactList {
         case "auuns":
             return $viewer->is_manager();
         case "all":
+        case "bot":
             return $viewer->privChair;
         default:
             return false;
@@ -1152,6 +1153,8 @@ class ContactList {
             return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo nprefs reviews revratings lead shepherd scores");
         case "pcadminx":
             return $this->_resolve_columns("name email aff orcid country lastvisit tags collab topicshi topicslo nprefs");
+        case "bot":
+            return $this->_resolve_columns("sel name email lastvisit tags topicshi topicslo nprefs reviews revratings scores");
         case "re":
             return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo nprefs reviews revratings scores");
         case "ext":
@@ -1248,6 +1251,10 @@ class ContactList {
         if ($rolemask !== null) {
             $rolemask &= $this->user->viewable_roles_mask(); // might yield 0
             $mainwhere[] = "roles!=0 and (roles&{$rolemask})!=0";
+        }
+
+        if ($this->limit === "bot") {
+            $mainwhere[] = "(cflags&" . Contact::CF_BOT . ")!=0";
         }
 
         if ($this->limit === "all") {
