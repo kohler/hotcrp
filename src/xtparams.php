@@ -396,15 +396,18 @@ class XtParams {
                 continue;
             }
             while ($first < $last && ($xt->merge ?? false)) {
-                $nxt = $list[$first];
+                $xxt = $list[$first];
                 ++$first;
-                if ($reqkey !== null && !($nxt->{$reqkey} ?? null)) {
+                if ($reqkey !== null && !($xxt->{$reqkey} ?? null)) {
                     continue;
                 }
                 // apply overlay ($xt) to new base ($nxt)
-                $nxt = clone $nxt;
+                $nxt = clone $xxt;
+                $nxt->__next = $xxt;
                 foreach (get_object_vars($xt) as $k => $v) {
-                    if ($k === "merge" || $k === "__source_order") {
+                    if ($k === "merge"
+                        || $k === "__source_order"
+                        || $k === "__next") {
                         // skip
                     } else if (!property_exists($nxt, $k)
                                || !is_object($v)
