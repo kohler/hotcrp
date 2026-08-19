@@ -81,8 +81,12 @@ class Multiconference {
             return false;
         }
         $confid = $mao ? $mao->confid ?? "\$1" : substr($ma, $sp + 1);
-        for ($i = 1; isset($m[$i]); ++$i) {
-            $confid = str_replace("\${$i}", $m[$i], $confid);
+        if ($confid === "\$1") {
+            $confid = $m[1] ?? "\$1";
+        } else {
+            for ($i = 1; isset($m[$i]); ++$i) {
+                $confid = str_replace("\${$i}", $m[$i], $confid);
+            }
         }
         if (!preg_match('/\A[a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
             return false;
