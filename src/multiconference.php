@@ -61,6 +61,8 @@ class Multiconference {
             $subject = strtolower($nav->host);
         } else if ($t === "p") {
             $subject = $nav->base_path;
+        } else if ($t === "P") {
+            $subject = $nav->base_path . $nav->raw_page . $nav->path;
         } else if ($t === "a") {
             $subject = $nav->site_absolute(true) . $nav->raw_page . $nav->path;
         } else {
