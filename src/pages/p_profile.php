@@ -500,7 +500,7 @@ class Profile_Page {
         if ($this->viewer->privChair
             && $this->mode
             && empty($this->ustatus->jval->roles)) {
-            if (in_array($this->qreq->role, ["pc", "chair"], true)) {
+            if (in_array($this->qreq->role, ["pc", "unlistedpc", "chair"], true)) {
                 $this->qreq->pctype = $this->qreq->role;
             } else if ($this->qreq->role === "sysadmin") {
                 $this->qreq->ass = "1";
