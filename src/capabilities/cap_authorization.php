@@ -63,8 +63,12 @@ class Authorization_Token {
      * @return bool */
     static function check_allow_if($tok, $user) {
         $allow_if = $tok->data("allow_if");
-        return $allow_if === null
-            || (new XtParams($user->conf, $user))->check($allow_if);
+        if ($allow_if === null) {
+            return true;
+        }
+        $xtp = new XtParams($user->conf, $user);
+        $xtp->token = $tok;
+        return $xtp->check($allow_if);
     }
 
     /** @param Contact $user

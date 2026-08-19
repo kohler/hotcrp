@@ -317,22 +317,24 @@ class Authorize_Page {
         }
         $clt = $this->client->title_html();
         echo '<p class="mt-4 mb-0 hint">If you continue, HotCRP will share your name, email address, affiliation, and other profile information with ', $clt, '.</p>';
-        if (!$this->client->only_openid) {
-            [, $reqscope] = TokenScope::scope_str_split_openid($this->token->data("scope"));
-            if ($reqscope === "") {
-                $reqscope = "none";
-            }
-            echo '<div class="has-fold foldc mt-3 js-fold-focus">';
-            if ($reqscope !== "none") {
-                echo '<p class="hint">HotCRP will also allow ', $clt, ' to act on your behalf using an API. <strong>Do not approve this request</strong> unless you trust ', $clt, '.</p>';
-            }
-            echo '<p class="fn hint mb-0">', Ht::button("Edit scopes (advanced)", ["class" => "link ui js-foldup"]), '</p>',
-                '<div class="f-i fx mb-0">',
-                '<label for="k-scope">Scope</label>',
-                Ht::entry("scope", $reqscope, ["id" => "k-scope", "spellcheck" => false, "class" => "w-99 want-focus"]),
-                '<p class="mt-1 mb-0 hint">This space-separated list limits the rights available for API access. Examples: <code>read</code> (read-only access), <code>submission:admin#r1</code> (access to submissions tagged #r1), <code>none</code> (no API access)</p>',
-                '</div></div>';
+        if ($this->client->only_openid) {
+            return;
         }
+        [, $reqscope] = TokenScope::scope_str_split_openid($this->token->data("scope"));
+        if ($reqscope === "") {
+            $reqscope = "none";
+        }
+        $open = friendly_boolean($this->qreq->bots);
+        echo '<div class="has-fold ', $open ? "foldo" : "foldc", ' mt-3 js-fold-focus">';
+        if ($reqscope !== "none") {
+            echo '<p class="hint">HotCRP will also allow ', $clt, ' to act on your behalf using an API. <strong>Do not approve this request</strong> unless you trust ', $clt, '.</p>';
+        }
+        echo '<p class="fn hint mb-0">', Ht::button("Edit scopes (advanced)", ["class" => "link ui js-foldup"]), '</p>',
+            '<div class="f-i fx mb-0">',
+            '<label for="k-scope">Scope</label>',
+            Ht::entry("scope", $reqscope, ["id" => "k-scope", "spellcheck" => false, "class" => "w-99 want-focus"]),
+            '<p class="mt-1 mb-0 hint">This space-separated list limits the rights available for API access. Examples: <code>read</code> (read-only access), <code>submission:admin#r1</code> (access to submissions tagged #r1), <code>none</code> (no API access)</p>',
+            '</div></div>';
     }
 
     /** Bot accounts this request may authorize a grant for, or `[]`.
@@ -1034,7 +1036,9 @@ class Authorize_Page {
 
         $exp = self::parse_expires_in($this->client->access_token_expires_in ?? null, 3600);
         $atok = Authorization_Token::prepare_bearer($user, $exp, $tok);
-        $atok->change_data("client_id", $tok->data("client_id"))
+        $atok->change_data("client_host", $tok->data("client_host")
+                ?? $this->client->identity_host($tok))
+            ->change_data("client_id", $tok->data("client_id"))
             ->change_data("client_name", $tok->data("client_name"))
             ->change_data("scope", TokenScope::unparse($ts));
         if (isset($this->client->allow_if)) {
@@ -1052,7 +1056,9 @@ class Authorize_Page {
     private function oauthtoken_create_refresh($tok, $user, $atok) {
         $exp = self::parse_expires_in($this->client->refresh_token_expires_in ?? null, 7 * 86400);
         $rtok = Authorization_Token::prepare_refresh($user, $exp, $tok);
-        $rtok->change_data("client_id", $tok->data("client_id"))
+        $rtok->change_data("client_host", $tok->data("client_host")
+                ?? $this->client->identity_host($tok))
+            ->change_data("client_id", $tok->data("client_id"))
             ->change_data("client_name", $tok->data("client_name"))
             ->change_data("scope", $tok->data("scope"))
             ->change_data("access_token", $atok->salt);

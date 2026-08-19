@@ -256,6 +256,28 @@ class OAuthClient {
         return [$ppos, $xpos];
     }
 
+    /** The host that identifies this client for policy purposes, or null.
+     * For metadata-document clients, this is that metadata document’s host;
+     * for other clients, it’s taken from the first redirect_uri. Localhost
+     * spellings are normalized to `localhost`.
+     * @param ?string $redirect_uri
+     * @return ?string */
+    function identity_host(?TokenInfo $tok = null) {
+        if ($this->client_document) {
+            return strtolower($this->client_document->host());
+        }
+        $redirect_uri = $tok ? $tok->data("redirect_uri") : null;
+        $uri = $redirect_uri ?? ($this->redirect_uris[0] ?? null);
+        if ($uri === null || $uri === "") {
+            return null;
+        }
+        $host = parse_url($uri, PHP_URL_HOST) ?? $uri;
+        if ($host === "localhost" || $host === "127.0.0.1" || $host === "[::1]") {
+            return "localhost";
+        }
+        return strtolower($host);
+    }
+
     /** Return true if `$uri` is one of this client's registered redirect URIs.
      *
      * A loopback redirect URI matches whatever port the request uses. A

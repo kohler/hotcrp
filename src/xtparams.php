@@ -27,6 +27,8 @@ class XtParams {
     public $component_set;
     /** @var ?PaperList */
     public $paper_list;
+    /** @var ?TokenInfo */
+    public $token;
     /** @var string */
     private $_str;
     /** @var int */
