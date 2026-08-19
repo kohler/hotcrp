@@ -65,6 +65,10 @@ class UserStatus extends MessageSet {
     private $_cs;
     /** @var ?ComponentSet */
     private $_xcs;
+    /** @var ?string */
+    private $_profile_mode;
+    /** @var ?string */
+    private $_profile_topic;
     /** @var bool */
     private $_inputs_printed = false;
     /** @var ?AuthenticationChecker */
@@ -134,6 +138,20 @@ class UserStatus extends MessageSet {
      * @return $this */
     function set_follow_primary($x) {
         $this->follow_primary = $x;
+        return $this;
+    }
+
+    /** @param ?string $mode
+     * @return $this */
+    function set_profile_mode($mode) {
+        $this->_profile_mode = $mode;
+        return $this;
+    }
+
+    /** @param ?string $topic
+     * @return $this */
+    function set_profile_topic($topic) {
+        $this->_profile_topic = $topic;
         return $this;
     }
 
@@ -222,6 +240,16 @@ class UserStatus extends MessageSet {
     /** @return bool */
     function can_update_cdb() {
         return ($this->_authf & self::AUTHF_CDB) !== 0;
+    }
+
+    /** @return ?string */
+    function profile_mode() {
+        return $this->_profile_mode;
+    }
+
+    /** @return string */
+    function profile_topic() {
+        return $this->_profile_topic ?? "main";
     }
 
     /** @param object $gj
@@ -937,7 +965,7 @@ class UserStatus extends MessageSet {
 
 
     static function crosscheck_main(UserStatus $us) {
-        if ($us->cs()->root() !== "main") {
+        if ($us->profile_topic() !== "main") {
             return;
         }
         $user = $us->user;
@@ -966,7 +994,7 @@ class UserStatus extends MessageSet {
     }
 
     static function crosscheck_alerts(UserStatus $us) {
-        if ($us->cs()->root() !== "main"
+        if ($us->profile_topic() !== "main"
             || (!$us->is_auth_self() && !$us->is_actas_self())
             || !$us->user->data("alerts")) {
             return;
