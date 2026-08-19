@@ -453,7 +453,8 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return bool */
     function is_blind() {
-        return $this->conf->is_review_blind(($this->rflags & ReviewInfo::RF_BLIND) !== 0);
+        return ($this->rflags & ReviewInfo::RF_BOT) === 0
+            && $this->conf->is_review_blind(($this->rflags & ReviewInfo::RF_BLIND) !== 0);
     }
 
     /** @return bool */
