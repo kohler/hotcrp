@@ -1347,7 +1347,7 @@ class ReviewValues extends MessageSet {
         }
         if ($diffinfo->notify_author) {
             $rflags |= ReviewInfo::RF_AUSEEN;
-        } else {
+        } else if ($diffinfo->view_score() >= $author_view_score) {
             $rflags &= ~ReviewInfo::RF_AUSEEN;
         }
         if ($newstatus >= ReviewInfo::RS_COMPLETED
