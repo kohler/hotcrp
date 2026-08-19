@@ -175,10 +175,13 @@ class Authorize_Tester {
         }
 
         // Step 3: Confirm authorization request (Authorize_Page::go with authconfirm=1)
-        $qreq = TestQreq::user_post($user, [
-            "code" => $code,
-            "authconfirm" => "1"
-        ])->set_page("authorize");
+        $confirm = ["code" => $code, "authconfirm" => "1"];
+        if (isset($rest["authbot"])) {
+            // the consent page's bot list posts this beside the chair's own
+            // account: the grant speaks as the bot, the chair authorizes it
+            $confirm["authbot"] = $rest["authbot"];
+        }
+        $qreq = TestQreq::user_post($user, $confirm)->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         try {
@@ -1415,12 +1418,12 @@ class Authorize_Tester {
     /** Run `$qreq` through the authorization page and report whether it
      * redirected. Feedback messages are absorbed rather than printed.
      * @return bool */
-    private function authconfirm_redirects(Qrequest $qreq) {
+    private function authconfirm_redirects(Qrequest $qreq, ?Contact $user = null) {
         $old_test_mode = Navigation::$test_mode;
         Navigation::$test_mode = 2;
         ob_start();
         try {
-            (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
+            (new HotCRP\Authorize_Page($user ?? $this->u_chair, $qreq))->go();
             return false;
         } catch (Redirection $redir) {
             return true;
@@ -3897,6 +3900,34 @@ class Authorize_Tester {
         xassert_eqq($jr, null);
     }
 
+    /** @param string $email
+     * @return Contact */
+    private function make_bot($email, $name = "Grantbot") {
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+        $us = new UserStatus($this->conf->root_user());
+        $u = $us->save_user((object) ["email" => $email, "bot" => true, "name" => $name]);
+        xassert(!!$u, $us->full_feedback_text());
+        $this->flush_bots();
+        return $u;
+    }
+
+    /** The bot list is a setting recomputed by a shutdown function, so a
+     * process that makes a bot and then reads the list — a test, or a batch
+     * script — must run that function and reload settings itself. */
+    private function flush_bots() {
+        $this->conf->call_shutdown_function("BotContact::enumerate_bots");
+        $this->conf->__load_settings();
+    }
+
+    /** @param Contact $u */
+    private function delete_bot($u) {
+        $this->conf->qe("delete from Capability where contactId=?", $u->contactId);
+        $this->conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
+        $this->conf->invalidate_caches("users", "pc");
+        $this->flush_bots();
+    }
+
     /** Obtain an authorization code for `$client_id` as `$user`.
      * @return ?string */
     private function authorization_code($client_id, $redirect_uri, $user, $scope = "read") {
@@ -4109,6 +4140,202 @@ class Authorize_Tester {
         // and the credential really is dead
         $atok = $this->find_token($jr->access_token);
         xassert(!$atok || !$atok->is_active());
+    }
+
+    /** A bot cannot sign in, so a chair authorizes a grant on its behalf. The
+     * grant speaks as the bot; the chair is recorded as the one who made it. */
+    function test_bot_oauth_authorization() {
+        $bot = $this->make_bot("grantbot@" . Contact::BOT_EMAIL_DOMAIN);
+        $jr = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => ["https://dall.com/"]]));
+        xassert_neqq($jr->client_id ?? null, null);
+
+        $code = $this->authorization_code($jr->client_id, "https://dall.com/", $this->u_chair);
+        xassert_neqq($code, null);
+        $nlog = $this->conf->fetch_ivalue("select count(*) from ActionLog where destContactId=? and contactId=?",
+                                          $bot->contactId, $this->u_chair->contactId);
+
+        $vq = TestQreq::user_post($this->u_chair, [
+            "authconfirm" => 1, "code" => $code, "authbot" => $bot->email
+        ])->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert($this->authconfirm_redirects($vq));
+
+        $tok = TokenInfo::find($code, $this->conf);
+        // the grant is the bot's, and it remembers who made it
+        xassert_eqq($tok->data("email"), $bot->email);
+        xassert_eqq($tok->data("authorized_by"), $this->u_chair->email);
+        // and the chair's act is logged against the bot
+        $nlog2 = $this->conf->fetch_ivalue("select count(*) from ActionLog where destContactId=? and contactId=?",
+                                           $bot->contactId, $this->u_chair->contactId);
+        xassert_eqq($nlog2, $nlog + 1);
+        xassert_str_contains($this->conf->fetch_value("select action from ActionLog where destContactId=? order by logId desc limit 1", $bot->contactId),
+                             "OAuth authorization");
+
+        $this->delete_bot($bot);
+    }
+
+    /** The access token a bot grant produces belongs to the bot, and rotation
+     * keeps it: the refresh path re-checks `allow_if` against the account the
+     * grant speaks as, which is the same account the consent page checked. */
+    function test_bot_oauth_grant_end_to_end() {
+        $bot = $this->make_bot("e2ebot@" . Contact::BOT_EMAIL_DOMAIN);
+        $jr = $this->dynamic_client_result("https://dall.com/", $this->u_chair,
+            ["scope" => "read", "authbot" => $bot->email]);
+        xassert_neqq($jr, null, $this->_failure ?? "");
+        if ($jr) {
+            xassert_eqq($jr->_token->contactId, $bot->contactId);
+            xassert($this->conf->user_by_id($jr->_token->contactId)->is_bot());
+            $rtok = $this->refresh_access_token();
+            xassert_neqq($rtok, null, $this->_failure ?? "");
+            xassert_eqq($rtok ? $rtok->contactId : null, $bot->contactId);
+        }
+        $this->delete_bot($bot);
+    }
+
+    /** What the consent page offers and what it accepts are decided
+     * separately, so a request that never saw the page gets nothing. */
+    function test_bot_oauth_authorization_refusals() {
+        $bot = $this->make_bot("refusebot@" . Contact::BOT_EMAIL_DOMAIN);
+        $jr = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => ["https://dall.com/"]]));
+        xassert_neqq($jr->client_id ?? null, null);
+
+        $try = function ($user, $authbot) use ($jr) {
+            $code = $this->authorization_code($jr->client_id, "https://dall.com/", $user);
+            xassert_neqq($code, null);
+            $vq = TestQreq::user_post($user, [
+                "authconfirm" => 1, "code" => $code, "authbot" => $authbot
+            ])->set_page("authorize");
+            Qrequest::set_main_request($vq);
+            $redirected = $this->authconfirm_redirects($vq, $user);
+            return [$redirected, TokenInfo::find($code, $this->conf)->data("email")];
+        };
+
+        // a PC member is not a chair, so they cannot authorize for a bot --
+        // and the request does not silently fall back to their own account
+        xassert_eqq($try($this->u_mgbaker, $bot->email), [false, null]);
+        // an ordinary account named as a bot is not one
+        xassert_eqq($try($this->u_chair, $this->u_mgbaker->email), [false, null]);
+        // nor is an address with no account
+        xassert_eqq($try($this->u_chair, "nobody@" . Contact::BOT_EMAIL_DOMAIN), [false, null]);
+        // a disabled bot cannot act, so it cannot be granted to
+        $this->conf->qe("update ContactInfo set cflags=cflags|? where contactId=?",
+                        Contact::CF_UDISABLED, $bot->contactId);
+        $this->conf->invalidate_caches("users", "pc");
+        xassert_eqq($try($this->u_chair, $bot->email), [false, null]);
+        // enabled again, the same request works: the refusals above are about
+        // the account, not about the form
+        $this->conf->qe("update ContactInfo set cflags=cflags&~? where contactId=?",
+                        Contact::CF_UDISABLED, $bot->contactId);
+        $this->conf->invalidate_caches("users", "pc");
+        xassert_eqq($try($this->u_chair, $bot->email), [true, $bot->email]);
+
+        // `allow_if` is evaluated against the account the grant speaks as: a
+        // chair-only client cannot be granted to a bot, even by a chair, since
+        // the refresh path would refuse to rotate that grant on its first use
+        $jr2 = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => ["https://dchair.com/"]]));
+        xassert_neqq($jr2->client_id ?? null, null);
+        $code = $this->authorization_code($jr2->client_id, "https://dchair.com/", $this->u_chair);
+        xassert_neqq($code, null);
+        $vq = TestQreq::user_post($this->u_chair, [
+            "authconfirm" => 1, "code" => $code, "authbot" => $bot->email
+        ])->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert(!$this->authconfirm_redirects($vq));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
+        // and the chair's own authorization of that client still works
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        xassert($this->authconfirm_redirects($vq));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), $this->u_chair->email);
+
+        $this->delete_bot($bot);
+    }
+
+    /** The bot list is a second view of the consent page: a chair reaches it
+     * from the account list, and each bot is offered or refused by the same
+     * `allow_if` the grant will be held to. */
+    function test_consent_form_offers_bots() {
+        $bot = $this->make_bot("viewbot@" . Contact::BOT_EMAIL_DOMAIN);
+        $render = function ($u, $client_id, $redirect_uri, $rest = []) {
+            $q = TestQreq::user_get($u, array_merge([
+                "client_id" => $client_id, "redirect_uri" => $redirect_uri,
+                "response_type" => "code", "state" => "x", "scope" => "read"
+            ], $rest))->set_page("authorize");
+            Qrequest::set_main_request($q);
+            $cs = $this->conf->page_components($u, $q);
+            $ap = new HotCRP\Authorize_Page($u, $q, $cs);
+            $cs->set_callable("HotCRP\\Authorize_Page", $ap);
+            $old = Navigation::$test_mode;
+            Navigation::$test_mode = 2;
+            ob_start();
+            try {
+                $ap->go();
+            } catch (PageCompletion $pc) {
+            } finally {
+                $out = ob_get_clean();
+                Navigation::$test_mode = $old;
+            }
+            return $out;
+        };
+
+        $jr = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => ["https://dall.com/"]]));
+        xassert_neqq($jr->client_id ?? null, null);
+
+        // a chair is offered the list; a PC member is not
+        $chair = $render($this->u_chair, $jr->client_id, "https://dall.com/");
+        xassert_str_contains($chair, "Sign in as a bot");
+        $pc = $render($this->u_mgbaker, $jr->client_id, "https://dall.com/");
+        xassert(!str_contains($pc, "Sign in as a bot"));
+        // the entry point does not name the accounts it leads to
+        xassert(!str_contains($chair, $bot->email));
+
+        // the list itself names them, and posts the bot beside the chair
+        $code = $this->authorization_code($jr->client_id, "https://dall.com/", $this->u_chair);
+        xassert_neqq($code, null);
+        $list = $render($this->u_chair, $jr->client_id, "https://dall.com/",
+                        ["code" => $code, "bots" => 1]);
+        xassert_str_contains($list, "Sign in as " . $bot->email);
+        xassert(preg_match('/authbot=' . preg_quote(urlencode($bot->email), "/") . '/', $list));
+        xassert(preg_match('/authemail=' . preg_quote(urlencode($this->u_chair->email), "/") . '/', $list));
+        xassert(!preg_match('/<button[^>]*\bdisabled\b[^>]*>Sign in as ' . preg_quote($bot->email, "/") . '/', $list));
+
+        // a client `allow_if` excludes offers the bot but does not enable it:
+        // `allow_if` is evaluated against the account the grant speaks as
+        $jr2 = call_api("=oauthregister", $this->u_empty,
+            TestQreq::post_json(["redirect_uris" => ["https://dchair.com/"]]));
+        xassert_neqq($jr2->client_id ?? null, null);
+        $code2 = $this->authorization_code($jr2->client_id, "https://dchair.com/", $this->u_chair);
+        xassert_neqq($code2, null);
+        $list2 = $render($this->u_chair, $jr2->client_id, "https://dchair.com/",
+                         ["code" => $code2, "bots" => 1]);
+        xassert_str_contains($list2, "Sign in as " . $bot->email);
+        xassert(preg_match('/<button[^>]*\bdisabled\b[^>]*>Sign in as ' . preg_quote($bot->email, "/") . '/', $list2));
+        xassert_str_contains($list2, "limits which users");
+
+        // a client that can only sign a person in is not offered bots: the
+        // grant would carry no API access, and there is no person to name
+        $old_clients = $this->conf->opt("oAuthClients");
+        $this->conf->set_opt("oAuthClients", array_merge($old_clients, [(object) [
+            "name" => "oidconly", "client_id" => "oidconly", "client_secret" => "s",
+            "redirect_uris" => ["https://oidconly.example.com/cb"]
+        ]]));
+        $this->conf->refresh_settings();
+        $oidc = $render($this->u_chair, "oidconly", "https://oidconly.example.com/cb",
+                        ["scope" => "openid"]);
+        xassert_str_contains($oidc, "Sign in as " . $this->u_chair->email);
+        xassert(!str_contains($oidc, "Sign in as a bot"));
+        $this->conf->set_opt("oAuthClients", $old_clients);
+        $this->conf->refresh_settings();
+
+        $this->delete_bot($bot);
+        // with no bots at all the option is gone
+        $chair2 = $render($this->u_chair, $jr->client_id, "https://dall.com/");
+        xassert(!str_contains($chair2, "Sign in as a bot"));
     }
 
     /** The consent form is rendered before an account is chosen, so an account

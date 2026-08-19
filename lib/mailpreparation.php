@@ -196,6 +196,9 @@ class MailPreparation implements JsonSerializable {
         foreach ($this->recip as $ru) {
             if ($ru->can_receive_mail($this->_self_requested)) {
                 continue;
+            } else if ($ru->is_bot()) {
+                // bot addresses are implausible, but report them separately
+                $mx["bot"][] = $ru->email;
             } else if (!Contact::is_plausible_email($ru->preferredEmail ?? $ru->email)) {
                 $mx["fake"][] = $ru->email;
             } else if ($ru->is_disabled()) {
@@ -212,6 +215,9 @@ class MailPreparation implements JsonSerializable {
             return [];
         }
         $ml = [];
+        if (isset($mx["bot"])) {
+            $ml[] = MessageItem::warning($this->conf->_("<0>Bot {emails:plural account} {emails:list} {emails:plural was} not notified", new FmtArg("emails", $mx["bot"], 0)));
+        }
         if (isset($mx["disabled"])) {
             $ml[] = MessageItem::warning($this->conf->_("<0>Disabled {emails:plural account} {emails:list} cannot receive mail", new FmtArg("emails", $mx["disabled"], 0)));
         }

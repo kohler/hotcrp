@@ -260,6 +260,11 @@ class ManageEmail_API extends MessageSet {
             $this->error_at("email", "<0>Both accounts are already members of the PC");
             return "pc_conflict";
         }
+        if ($this->user->is_bot()
+            || $this->dstuser->is_bot()) {
+            $this->error_at(null, "<0>Bot accounts cannot transfer reviews");
+            return "bot";
+        }
         if ($this->dstuser->contactId > 0) {
             $result = $this->conf->qe("select paperId, if(contactId=?,1,2) from PaperReview where contactId?a
                 union select paperId, 4 from PaperConflict where contactId=? and conflictType>?",
@@ -582,6 +587,11 @@ class ManageEmail_API extends MessageSet {
                     && !$this->all_sites))) {
             $this->warning_at(null, "<0>Accounts already linked");
             return null;
+        }
+        if ($this->user->is_bot()
+            || $this->dstuser->is_bot()) {
+            $this->error_at(null, "<0>Bot accounts cannot be linked");
+            return "bot";
         }
         if ($this->dry_run) {
             return null;

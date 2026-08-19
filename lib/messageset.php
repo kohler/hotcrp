@@ -1222,6 +1222,13 @@ class MessageSet {
         return self::feedback_text($this->message_list_at($field));
     }
 
+    /** @param string $prefix
+     * @param ?string $separator
+     * @return string */
+    function feedback_text_under($prefix, $separator = null) {
+        return self::feedback_text($this->message_list_under($prefix, $separator));
+    }
+
     /** @param bool $include_fields
      * @return string */
     function full_feedback_text($include_fields = false) {

@@ -1341,6 +1341,18 @@ class ReviewValues extends MessageSet {
             $diffinfo->notify_requester = true;
         }
 
+        // bot-edited flags
+        if (($rflags & (ReviewInfo::RF_BOT_EDITED | ReviewInfo::RF_BOT_EDITED_PREVIOUS)) !== 0) {
+            $rflags |= ReviewInfo::RF_BOT_EDITED_PREVIOUS;
+        }
+        if ($diffinfo->view_score() > VIEWSCORE_REVIEWERONLY) {
+            if ($user->is_acting_bot()) {
+                $rflags |= ReviewInfo::RF_BOT_EDITED;
+            } else {
+                $rflags &= ~ReviewInfo::RF_BOT_EDITED;
+            }
+        }
+
         // viewing fields
         if (($rflags & (ReviewInfo::RF_AUSEEN | ReviewInfo::RF_AUSEEN_PREVIOUS)) !== 0) {
             $rflags |= ReviewInfo::RF_AUSEEN_PREVIOUS;

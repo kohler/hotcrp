@@ -91,6 +91,409 @@ class UserStatus_Tester {
         $this->conf->invalidate_caches("users", "pc");
     }
 
+    // The address rule is the invariant everything else rests on, so the
+    // boundary cases matter: a domain that merely ends in the reserved one is
+    // not the reserved one.
+    function test_bot_email() {
+        foreach (["a@bot.invalid", "reviewbot@bot.invalid", "x@BOT.INVALID",
+                  "x@agent.bot.invalid"] as $e) {
+            xassert_eqq([$e, Contact::is_bot_email($e)], [$e, true]);
+        }
+        foreach (["x@notbot.invalid", "x@bot.invalidly", "x@bot.invalid.com",
+                  "bot.invalid", "@bot.invalid", "x@example.org", "x@invalid",
+                  "", "@", "bot.invalid@example.org"] as $e) {
+            xassert_eqq([$e, Contact::is_bot_email($e)], [$e, false]);
+        }
+        // and every one of those addresses is unmailable and cdb-ineligible,
+        // which is what the reserved domain buys
+        foreach (["a@bot.invalid", "x@agent.bot.invalid"] as $e) {
+            xassert(!Contact::is_plausible_email($e), $e);
+            xassert(!Contact::cdb_allows_email($e), $e);
+        }
+    }
+
+    // A bot account is an account: an unlisted PC member that a program drives.
+    // The kind changes four things -- mail, credentials, the contact database,
+    // and (elsewhere) review-identity visibility -- and nothing else.
+    function test_bot_account() {
+        $us = new UserStatus($this->conf->root_user());
+        $email = "reviewbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+
+        $acct = $us->save_user((object) [
+            "email" => $email, "bot" => true,
+            "name" => "Reviewbot", "affiliation" => "Test Model 1"
+        ]);
+        xassert(!!$acct, $us->full_feedback_text());
+        xassert($acct->is_bot());
+        // unlisted PC by default: unlisted is what keeps it off PC listings and
+        // out of the conflict selectors authors and PC members see
+        xassert_eqq($acct->roles, Contact::ROLE_UNLISTEDPC);
+        xassert_eqq($acct->is_listed_pc_member(), false);
+        xassert_eqq($acct->is_pc_member(), true);
+        // and being a bot is not a disablement: the account is enabled, it is
+        // simply not a person
+        xassert(!$acct->is_disabled());
+        xassert(!$acct->is_dormant());
+
+        // never mailed
+        xassert(!$acct->can_receive_mail());
+        // no interactive credentials, whatever is stored
+        xassert(!$acct->can_reset_password());
+        xassert(!$acct->check_password("anything"));
+        xassert_eqq($acct->check_password_info("anything")["bot"] ?? null, true);
+        // never in the contact database
+        xassert_eqq($acct->update_cdb(), false);
+        xassert(!$this->conf->fresh_cdb_user_by_email($email));
+
+        // the flag survives a reload and round-trips through JSON
+        $this->conf->invalidate_caches("users");
+        $acct2 = $this->conf->checked_user_by_email($email);
+        xassert($acct2->is_bot());
+        $us2 = new UserStatus($this->conf->root_user());
+        $us2->set_user($acct2);
+        xassert_eqq($us2->user_json()->bot ?? null, true);
+
+        // an edit that does not mention the flag leaves it alone, and does not
+        // trip the reserved-domain check
+        $acct3 = $us->save_user((object) ["email" => $email, "affiliation" => "Test Model 2"]);
+        xassert(!!$acct3, $us->full_feedback_text());
+        xassert($acct3->is_bot());
+        xassert_eqq($acct3->affiliation, "Test Model 2");
+
+        // the bit is set at creation and never after, in either direction
+        $us4 = new UserStatus($this->conf->root_user());
+        xassert(!$us4->save_user((object) ["email" => $email, "bot" => false]));
+        xassert_neqq($us4->problem_status_at("bot"), 0);
+        xassert($this->conf->checked_user_by_email($email)->is_bot());
+
+        $hemail = "notabot@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $hemail);
+        $us5 = new UserStatus($this->conf->root_user());
+        $person = $us5->save_user((object) ["email" => $hemail]);
+        xassert(!!$person);
+        xassert(!$person->is_bot());
+        $us6 = new UserStatus($this->conf->root_user());
+        xassert(!$us6->save_user((object) ["email" => $hemail, "bot" => true]));
+        xassert_neqq($us6->problem_status_at("bot"), 0);
+        $this->conf->invalidate_caches("users");
+        xassert(!$this->conf->checked_user_by_email($hemail)->is_bot());
+
+        // the domain is reserved: no ordinary creation path may mint a bot
+        $bemail = "squatter@" . Contact::BOT_EMAIL_DOMAIN;
+        $us7 = new UserStatus($this->conf->root_user());
+        xassert(!$us7->save_user((object) ["email" => $bemail]));
+        xassert_neqq($us7->problem_status_at("email"), 0);
+        xassert(!$this->conf->fresh_user_by_email($bemail));
+
+        // Bots and `bot.invalid` are the same set, in both directions. That
+        // biconditional is the invariant the rest rests on: `.invalid` is
+        // already implausible, so mail suppression and contact-database
+        // exclusion hold in every path that asks `is_plausible_email`, not only
+        // in the paths that remember to ask about bots.
+        $pemail = "otherbot@robots.acm.org";
+        xassert(Contact::is_plausible_email($pemail));
+        xassert(Contact::cdb_allows_email($pemail));
+        $this->conf->qe("delete from ContactInfo where email=?", $pemail);
+        $us8 = new UserStatus($this->conf->root_user());
+        xassert(!$us8->save_user((object) ["email" => $pemail, "bot" => true]));
+        xassert_neqq($us8->problem_status_at("email"), 0);
+        xassert(!$this->conf->fresh_user_by_email($pemail));
+
+        // Nothing can move an existing bot off the domain, because HotCRP has
+        // no email-change path at all -- `ManageEmail_Page::go_changeemail`
+        // answers “Email address changes are not supported” -- so the
+        // biconditional only has to hold where accounts are created.
+
+        // and a bot has no mailbox to prefer: `can_receive_mail` would take a
+        // plausible `preferredEmail` over the account's own address
+        $us10 = new UserStatus($this->conf->root_user());
+        xassert(!$us10->save_user((object) [
+            "email" => $email, "preferred_email" => "operator@robots.acm.org"
+        ]));
+        xassert_neqq($us10->problem_status_at("preferred_email"), 0);
+
+        // The flag checks in `can_receive_mail` and `update_cdb` are defense in
+        // depth rather than the invariant, so they are only reachable by
+        // building a `Contact` that the save paths would refuse to store.
+        $mem = Contact::make_email($this->conf, $pemail);
+        xassert($mem->can_receive_mail());
+        $mem->cflags |= Contact::CF_BOT;
+        xassert(!$mem->can_receive_mail());
+
+        foreach ([$email, $hemail, $pemail] as $e) {
+            $this->conf->qe("delete from ContactInfo where email=?", $e);
+        }
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
+    // A bot is never a recipient. It is enabled, so the disablement test that
+    // filters bulk mail does not exclude it, and without an explicit rule every
+    // reminder run would build mail that `can_receive_mail` then throws away.
+    function test_bot_mail_recipients() {
+        $conf = $this->conf;
+        $email = "mailbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        $bot = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $email, "bot" => true, "name" => "Mailbot"
+        ]);
+        xassert(!!$bot);
+        xassert_eqq($bot->roles, Contact::ROLE_UNLISTEDPC);
+
+        // the recipient query names every PC member but not this one
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $emails_for = function ($type) use ($conf, $chair) {
+            $mr = (new MailRecipients($chair))->set_recipients($type);
+            $q = $mr->query(false);
+            xassert(!!$q, $type);
+            $out = [];
+            $result = $conf->qe_raw($q);
+            while (($row = $result->fetch_object())) {
+                $out[] = $row->email;
+            }
+            $result->close();
+            return $out;
+        };
+        foreach (["pc", "unlistedpc", "all"] as $type) {
+            xassert(!in_array($email, $emails_for($type), true), $type);
+        }
+        // and the check is about bots, not about the role: an unlisted PC
+        // member who is not a bot is still a recipient
+        $hemail = "unlistedhuman@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $hemail);
+        $conf->invalidate_caches("users", "pc");
+        $hu = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $hemail, "roles" => ["unlistedpc"]
+        ]);
+        xassert(!!$hu);
+        xassert(in_array($hemail, $emails_for("unlistedpc"), true));
+
+        // a direct send explains itself rather than dropping the recipient in
+        // silence or blaming the address for looking fake
+        $prep = new MailPreparation($conf, $bot);
+        $ml = $prep->invalid_recipient_message_list();
+        xassert_eqq(count($ml), 1);
+        xassert_match($ml[0]->message ?? "", '/Bot account.*not notified/');
+        xassert_str_contains($ml[0]->message ?? "", $email);
+        // and it reads correctly for more than one. `{X:plural verb}` inverts
+        // for verbs it does not know -- “do” pluralizes to “does” -- so this
+        // message avoids a verb that has to agree
+        $email2 = "mailbot2@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $email2);
+        $conf->invalidate_caches("users", "pc");
+        $bot2 = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $email2, "bot" => true
+        ]);
+        xassert(!!$bot2);
+        $prep2 = new MailPreparation($conf, $bot);
+        $prep2->add_recipient($bot2);
+        $ml2 = $prep2->invalid_recipient_message_list();
+        xassert_eqq(count($ml2), 1);
+        xassert_match($ml2[0]->message ?? "", '/Bot account.*not notified/');
+        xassert_str_contains($ml2[0]->message ?? "", "{$email} and {$email2}");
+        $conf->qe("delete from ContactInfo where email=?", $email2);
+
+        foreach ([$email, $hemail] as $e) {
+            $conf->qe("delete from ContactInfo where email=?", $e);
+        }
+        $conf->invalidate_caches("users", "pc");
+    }
+
+    // A chair may hold a bot's credentials, and nobody else's. The rule that
+    // protects is “an administrator cannot mint a credential that speaks as a
+    // person”; a bot has no person to impersonate and no way to sign in and
+    // mint one for itself, so someone has to.
+    function test_bot_token_principal() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $email = "tokenbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        $bot = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $email, "bot" => true, "name" => "Tokenbot"
+        ]);
+        xassert(!!$bot);
+
+        // both predicates: `display_if` decides whether the section appears,
+        // `allow` whether its requests and saves run
+        $developer_shown = function ($viewer, $user) {
+            $us = new UserStatus($viewer);
+            $us->set_user($user);
+            $dev = new Developer_UserInfo($us);
+            return [$dev->display_if(), $dev->allow()];
+        };
+
+        // the chair may, for a bot
+        xassert_eqq($developer_shown($chair, $bot), [true, true]);
+        // and may not, for a person -- this is the rule the exception is carved
+        // out of, so it is the assertion that matters most here
+        $human = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert_eqq($developer_shown($chair, $human), [false, false]);
+        // nor may a non-chair, for a bot
+        xassert_eqq($developer_shown($human, $bot), [false, false]);
+        // an account still holds its own
+        xassert_eqq($developer_shown($human, $human), [true, true]);
+
+        // *any* chair, not the one who made it: a bot belongs to the
+        // conference, and no operation on one asks who created it
+        $email2 = "otherchair@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email2);
+        $conf->invalidate_caches("users", "pc");
+        $chair2 = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $email2, "name" => "Other Chair", "roles" => ["chair"]
+        ]);
+        xassert(!!$chair2);
+        xassert($chair2->privChair);
+        xassert_eqq($developer_shown($chair2, $bot), [true, true]);
+        // and a system administrator is a chair for this purpose
+        $email3 = "sysadmin@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email3);
+        $conf->invalidate_caches("users", "pc");
+        $admin = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $email3, "name" => "Sys Admin", "roles" => ["sysadmin"]
+        ]);
+        xassert(!!$admin);
+        $admin = $conf->checked_user_by_email($email3);
+        // sysadmin only: no PC role bit, so this pins the rule to `privChair`
+        // rather than to PC membership (`isPC` is true for any administrator)
+        xassert_eqq($admin->roles, Contact::ROLE_ADMIN);
+        xassert($admin->privChair);
+        xassert_eqq($developer_shown($admin, $bot), [true, true]);
+        $conf->qe("delete from ContactInfo where email?a", [$email2, $email3]);
+        $conf->invalidate_caches("users", "pc");
+
+        // a bot's token starts narrow: it is a credential nobody watches, held
+        // by something that acts on its own
+        xassert_eqq(Developer_UserInfo::default_token_scope($bot), "read review:write");
+        xassert_eqq(Developer_UserInfo::default_token_scope($human), "");
+        // and that default is a real scope, and a narrow one: it writes
+        // reviews and reads, and does nothing else
+        $ts = TokenScope::parse(Developer_UserInfo::default_token_scope($bot), null);
+        xassert(!!$ts);
+        xassert($ts->allows_some(TokenScope::S_REV_WRITE));
+        xassert($ts->allows_some(TokenScope::S_SUB_READ));
+        xassert(!$ts->allows_some(TokenScope::S_SUB_WRITE));
+        xassert(!$ts->allows_some(TokenScope::S_TAG_WRITE));
+        xassert(!$ts->allows_some(TokenScope::S_REV_ADMIN));
+
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
+
+    /** Two actions on the profile page are dead ends for a bot: mail is never
+     * sent to one, and its reviews cannot be transferred. Neither is offered. */
+    function test_bot_profile_dead_ends() {
+        $conf = $this->conf;
+        $email = "deadendbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        $bot = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $email, "bot" => true, "name" => "Deadend Bot"
+        ]);
+        xassert(!!$bot);
+        // the branch this test is about is reached only for a reviewer, and an
+        // unlisted PC member is one
+        xassert($bot->is_reviewer());
+
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $render = function ($u) use ($chair) {
+            $us = (new UserStatus($chair))->set_qreq((new Qrequest("GET"))->approve_token());
+            $us->set_user($u);
+            ob_start();
+            $us->print_members("main");
+            return ob_get_clean();
+        };
+
+        $html = $render($bot);
+        xassert(!str_contains($html, "Transfer reviews"));
+        xassert(preg_match('/js-send-user-accountinfo[^>]*disabled|disabled[^>]*js-send-user-accountinfo/', $html));
+
+        // the control: a person who reviews is offered both
+        $human = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($human->is_reviewer());
+        $html = $render($human);
+        xassert_str_contains($html, "Transfer reviews");
+        xassert(!preg_match('/js-send-user-accountinfo[^>]*disabled|disabled[^>]*js-send-user-accountinfo/', $html));
+
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
+
+    /** A chair minting or revoking a bot's credential is an act on someone
+     * else's account,
+     * so it must land in the log with the chair as actor and the bot as
+     * target, and it must name the token: “API tokens” alone cannot tell a
+     * later reader which credential appeared or went away. */
+    function test_bot_token_changes_are_logged() {
+        $conf = $this->conf;
+        $email = "logbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        $bot = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $email, "bot" => true, "name" => "Logbot"
+        ]);
+        xassert(!!$bot);
+
+        list($chair, $qreq) = $this->make_qreq_for("chair@_.com", [
+            "bearer_token/new/enable" => 1,
+            "bearer_token/new/expiration" => "30",
+            "bearer_token/new/note" => "test bot token"
+        ]);
+        $us = (new UserStatus($chair))->set_qreq($qreq);
+        xassert($us->has_recent_authentication());
+        $us->start_update();
+        $us->set_user($bot);
+        $us->request_group("");
+        xassert($us->execute_update(), $us->full_feedback_text());
+
+        // the token exists and belongs to the bot
+        $ntok = $conf->fetch_ivalue("select count(*) from Capability where capabilityType=? and contactId=?",
+                                    TokenInfo::BEARER, $bot->contactId);
+        xassert_eqq($ntok, 1);
+
+        // and the log names the chair as actor, the bot as target
+        $row = Dbl::fetch_first_row($conf->qe("select contactId, destContactId, action from ActionLog where destContactId=? order by logId desc limit 1",
+                                              $bot->contactId));
+        xassert_eqq((int) $row[0], $chair->contactId);
+        xassert_eqq((int) $row[1], $bot->contactId);
+        // the log names the token, so a later reader can tell which credential
+        // appeared — and the name is the one the profile screen shows
+        $tok = TokenInfo::fetch($conf->qe("select * from Capability where capabilityType=? and contactId=?",
+                                          TokenInfo::BEARER, $bot->contactId), $conf, false);
+        xassert(!!$tok);
+        xassert_eqq($row[2], "Account edited: API tokens [created {$tok->abbreviation()}]");
+        // the twelve characters an access log keeps, so the two logs and the
+        // profile screen name a token the same way
+        xassert_eqq($tok->abbreviation(), substr($tok->salt, 0, 12));
+        // and a personal token's identifier is inside them
+        xassert_str_contains($tok->abbreviation(), Authorization_Token::grant_id($tok));
+        xassert(!str_contains($row[2], $tok->salt));
+
+        // revoking says so, and names the same token
+        $dbid = $tok->is_cdb ? "A" : "L";
+        list($chair2, $qreq2) = $this->make_qreq_for("chair@_.com", [
+            "bearer_token/1/id" => "{$tok->timeCreated}.{$dbid}." . substr($tok->salt, 0, 12),
+            "bearer_token/1/delete" => 1
+        ]);
+        $us2 = (new UserStatus($chair2))->set_qreq($qreq2);
+        $us2->start_update();
+        $us2->set_user($conf->checked_user_by_email($email));
+        $us2->request_group("");
+        xassert($us2->execute_update(), $us2->full_feedback_text());
+        $row = Dbl::fetch_first_row($conf->qe("select contactId, destContactId, action from ActionLog where destContactId=? order by logId desc limit 1",
+                                              $bot->contactId));
+        xassert_eqq($row[2], "Account edited: API tokens [revoked {$tok->abbreviation()}]");
+        // and the token is no longer usable
+        $tok2 = TokenInfo::find($tok->salt, $conf);
+        xassert(!$tok2 || !$tok2->is_active());
+
+        $conf->qe("delete from Capability where contactId=?", $bot->contactId);
+        $conf->qe("delete from ContactInfo where contactId=?", $bot->contactId);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function test_role_html_for() {
         xassert_eqq(Contact::role_html_for(0), "");
         xassert_eqq(Contact::role_html_for(Contact::ROLE_PC), '<span class="pcrole">PC</span>');

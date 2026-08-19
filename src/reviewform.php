@@ -374,7 +374,8 @@ Ready\n";
         }
         if ($viewer->can_view_review_identity($prow, $rrow)) {
             $reviewer = $rrow->reviewer();
-            $t[] = "* Reviewer: " . Text::nameo($reviewer, NAME_EB) . "\n";
+            $t[] = "* Reviewer: " . Text::nameo($reviewer, NAME_EB)
+                . ($reviewer->is_bot() ? Contact::bot_mark_text() : "") . "\n";
         }
         if ($rrow->reviewModified > $rrow->reviewSubmitted) {
             list($time, $obscured) = $rrow->mtime_info($viewer);

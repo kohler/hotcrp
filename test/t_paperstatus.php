@@ -1564,6 +1564,157 @@ Phil Porras.");
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu");
     }
 
+    /** A bot account is conference-owned and reviewer-capable. An author who
+     * could make one a contact would give its agent author access to their own
+     * submission, and — because a contact is a conflict — could keep that bot
+     * from ever reviewing it. */
+    function test_save_contacts_bot_is_admin_only() {
+        $conf = $this->conf;
+        $bemail = "papercontactbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $bemail);
+        $conf->invalidate_caches("users", "pc");
+        $bot = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $bemail, "bot" => true, "name" => "Contactbot"
+        ]);
+        xassert(!!$bot);
+
+        $web = function ($user, $extra) {
+            $prow = $user->checked_paper_by_id($this->pid2);
+            $ps = new PaperStatus($user);
+            $ps->save_paper_web(TestQreq::user_post($user, [
+                "status:submit" => 1, "has_contacts" => 1,
+                "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1
+            ] + $extra), $prow);
+            return $ps;
+        };
+
+        // an author cannot add one. The refusal names the address rather than
+        // the rule: it must not advertise that bot accounts exist here
+        $ps = $web($this->u_estrin, ["contacts:2:email" => $bemail, "contacts:2:active" => 1]);
+        xassert($ps->has_problem());
+        xassert_str_contains($ps->feedback_text_under("contacts", ":"), "Invalid email address");
+        // the address it echoes is the one this user typed; what it must not
+        // do is explain the rule, which would confirm the account exists
+        xassert(!str_contains($ps->full_feedback_text(), "administrator"));
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert_eqq($prow->conflict_type($bot), 0);
+
+        // a chair can
+        $ps = $web($this->u_chair, ["contacts:2:email" => $bemail, "contacts:2:active" => 1]);
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert(($prow->conflict_type($bot) & CONFLICT_CONTACTAUTHOR) !== 0);
+
+        // and once it is one, an author cannot take it away either. (In a web
+        // save a contact is removed by posting its row unchecked; a row simply
+        // left out is untouched.)
+        $drop = ["contacts:2:email" => $bemail, "has_contacts:2:active" => 1];
+        // removing one is refused in so many words: a bot already listed on
+        // the submission is no secret from the people who can see it
+        $ps = $web($this->u_estrin, $drop);
+        xassert($ps->has_problem());
+        xassert_str_contains($ps->feedback_text_under("contacts", ":"), "Only administrators");
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert(($prow->conflict_type($bot) & CONFLICT_CONTACTAUTHOR) !== 0);
+
+        // an author editing other contacts, leaving the bot alone, is fine
+        $ps = $web($this->u_estrin, ["contacts:2:email" => $bemail, "contacts:2:active" => 1]);
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+
+        // the chair can remove it again
+        $ps = $web($this->u_chair, $drop);
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert_eqq($prow->conflict_type($bot), 0);
+
+        // the JSON path answers the same way, in both directions: refused for
+        // an author, allowed for an administrator
+        $psj = new PaperStatus($this->u_estrin);
+        $psj->save_paper_json((object) [
+            "id" => $this->pid2, "contacts" => ["estrin@usc.edu", $bemail]
+        ]);
+        xassert($psj->has_problem());
+        xassert_str_contains($psj->feedback_text_under("contacts", ":"), "Invalid email address");
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert_eqq($prow->conflict_type($bot), 0);
+
+        $psj = new PaperStatus($this->u_chair);
+        $psj->save_paper_json((object) [
+            "id" => $this->pid2, "contacts" => ["estrin@usc.edu", $bemail]
+        ]);
+        xassert(!$psj->has_problem(), $psj->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert(($prow->conflict_type($bot) & CONFLICT_CONTACTAUTHOR) !== 0);
+
+        $psj = new PaperStatus($this->u_chair);
+        $psj->save_paper_json((object) [
+            "id" => $this->pid2, "contacts" => ["estrin@usc.edu"]
+        ]);
+        xassert(!$psj->has_problem(), $psj->full_feedback_text());
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert_eqq($prow->conflict_type($bot), 0);
+
+        $conf->qe("delete from PaperConflict where contactId=?", $bot->contactId);
+        $conf->qe("delete from ContactInfo where contactId=?", $bot->contactId);
+        $conf->invalidate_caches("users", "pc");
+    }
+
+    /** Naming a bot in the *author* list links the account too, so it is the
+     * same administrator’s call as a contact. */
+    function test_save_authors_bot_is_admin_only() {
+        $conf = $this->conf;
+        $bemail = "paperauthorbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $bemail);
+        $conf->invalidate_caches("users", "pc");
+        $bot = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $bemail, "bot" => true, "name" => "Authorbot"
+        ]);
+        xassert(!!$bot);
+
+        $authors = function ($extra) {
+            return (object) ["id" => $this->pid2, "authors" => $extra];
+        };
+        $base = [(object) ["email" => "atten@_.com", "name" => "Diane Atten"]];
+        $withbot = array_merge($base, [(object) ["email" => $bemail, "name" => "Authorbot"]]);
+
+        // an author cannot add one: to them the address is simply not one an
+        // author list may name
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json($authors($withbot));
+        xassert($ps->has_problem());
+        // the message lands on the author row, not on the field as a whole
+        xassert_str_contains($ps->full_feedback_text(), "Invalid email address");
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert_eqq($prow->conflict_type($bot), 0);
+
+        // a chair can, and doing so links the account
+        $ps = new PaperStatus($this->u_chair);
+        $ps->save_paper_json($authors($withbot));
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert(($prow->conflict_type($bot) & CONFLICT_AUTHOR) !== 0);
+
+        // and an author cannot take it out again
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json($authors($base));
+        xassert($ps->has_problem());
+        xassert_str_contains($ps->feedback_text_under("authors", ":"), "administrator");
+
+        // the chair can
+        $ps = new PaperStatus($this->u_chair);
+        $ps->save_paper_json($authors($base));
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+        $prow = $conf->checked_paper_by_id($this->pid2);
+        xassert_eqq($prow->conflict_type($bot), 0);
+
+        $conf->qe("delete from PaperConflict where contactId=?", $bot->contactId);
+        $conf->qe("delete from ContactInfo where contactId=?", $bot->contactId);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function test_save_contacts_ignore_empty() {
         $ps = new PaperStatus($this->u_estrin);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
@@ -1684,6 +1835,85 @@ Phil Porras.");
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu");
         xassert_eqq($nprow1->conflict_type($u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
+    }
+
+    /** `parse_qreq` and `parse_json_user` disagree on purpose. Each difference
+     * below is contract rather than accident, so a change to either parser
+     * should have to say which of these it means to alter. */
+    function test_save_contacts_web_and_json_differ() {
+        $nprow = $this->u_estrin->checked_paper_by_id($this->pid2);
+        $before = sorted_conflicts($nprow, TESTSC_CONTACTS);
+        xassert_str_contains($before, "estrin@usc.edu");
+
+        // 1. OMISSION. A web save lists only the rows the form drew, so a
+        // contact it does not mention is untouched; a JSON save is the whole
+        // list, so a contact it does not mention is removed. Use a contact who
+        // is not also an author: an author's contact status has its own rules.
+        $extra = "wjcontact@example.edu";
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) ["id" => $this->pid2,
+            "contacts" => array_merge(explode(" ", $before), [$extra])]);
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+        $nprow = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert_str_contains(sorted_conflicts($nprow, TESTSC_CONTACTS | TESTSC_DISABLED), $extra);
+
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, ["status:submit" => 1, "has_contacts" => 1]), $nprow);
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+        xassert_array_eqq($ps->change_list(), [], true);
+        $nprow = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert_str_contains(sorted_conflicts($nprow, TESTSC_CONTACTS | TESTSC_DISABLED), $extra);
+
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) ["id" => $this->pid2, "contacts" => explode(" ", $before)]);
+        xassert(!$ps->has_problem(), $ps->full_feedback_text());
+        $nprow = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert(!str_contains(sorted_conflicts($nprow, TESTSC_CONTACTS | TESTSC_DISABLED), $extra));
+        xassert_eqq(sorted_conflicts($nprow, TESTSC_CONTACTS), $before);
+
+        // 2. VALIDATION. The two paths now agree, which is worth pinning
+        // precisely because they did not: an address that is well formed but
+        // cannot name a person is refused by both, rather than accepted by the
+        // web path and quietly dropped later. `.invalid` is the case that
+        // matters, since that is where bot addresses live.
+        $ghost = "ghost@nowhere.invalid";
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, ["status:submit" => 1, "has_contacts" => 1,
+            "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1,
+            "contacts:2:email" => $ghost, "contacts:2:active" => 1]), $nprow);
+        xassert($ps->has_problem());
+        $nprow = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert(!str_contains(sorted_conflicts($nprow, TESTSC_CONTACTS | TESTSC_DISABLED), $ghost));
+
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) ["id" => $this->pid2, "contacts" => ["estrin@usc.edu", $ghost]]);
+        xassert($ps->has_problem());
+        xassert_str_contains($ps->full_feedback_text(), "Invalid email address");
+
+        // a malformed address is refused by both, which is why the case above
+        // has to use a well-formed one
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, ["status:submit" => 1, "has_contacts" => 1,
+            "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1,
+            "contacts:2:email" => "nobody@x", "contacts:2:active" => 1]), $nprow);
+        xassert($ps->has_problem());
+
+        // 3. WHERE THE MESSAGE LANDS. A web save can name the row that carries
+        // the bad value; a JSON save has no rows, so it marks the field.
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, ["status:submit" => 1, "has_contacts" => 1,
+            "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1,
+            "contacts:2:email" => "not an email", "contacts:2:active" => 1]), $nprow);
+        xassert($ps->has_problem());
+        xassert_str_contains($ps->feedback_text_at("contacts:2"), "Invalid email address");
+
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) ["id" => $this->pid2, "contacts" => ["estrin@usc.edu", "not an email"]]);
+        xassert($ps->has_problem());
+        xassert_str_contains($ps->feedback_text_at("contacts"), "Invalid email address");
+
+        $nprow = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert_eqq(sorted_conflicts($nprow, TESTSC_CONTACTS), $before);
     }
 
     function test_save_contacts_resolve_primary() {
@@ -2429,7 +2659,7 @@ Phil Porras.");
     function test_implausible_email_no_contact() {
         $bad_email = "implausible@test.invalid";
         xassert(validate_email($bad_email));
-        xassert(!Contact::is_plausible_or_example_email($bad_email));
+        xassert(!Contact::is_plausible_author_email($bad_email, true));
         xassert(!$this->conf->fresh_user_by_email($bad_email));
 
         // implausible email in author list should not create ContactInfo

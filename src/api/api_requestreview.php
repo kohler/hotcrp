@@ -227,6 +227,11 @@ class RequestReview_API {
         ]);
 
         $ml[] = MessageItem::success_at("email", "<0>Requested a review from " . $reviewer->name(NAME_E));
+        if ($reviewer->is_bot()) {
+            // the assignment happened; the mail did not, and saying so here is
+            // cheaper than a chair wondering why nothing arrived
+            $ml[] = MessageItem::inform_at("email", "<0>Bot accounts are not notified by mail.");
+        }
         array_push($ml, ...$mlx);
         return new JsonResult(["ok" => true, "action" => "request", "message_list" => $ml]);
     }
@@ -549,6 +554,8 @@ class RequestReview_API {
         }
         if (!$destu || $destu->is_disabled() || !$destu->has_account_here()) {
             return JsonResult::make_permission_error("email", "<0>That account is not enabled here");
+        } else if ($rrow->is_bot() || $destu->is_bot()) {
+            return JsonResult::make_permission_error("email", "<0>Bot reviews cannot be reassigned");
         }
 
         $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and reviewSubmitted<=0 and timeApprovalRequested<=0",

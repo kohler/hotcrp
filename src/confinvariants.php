@@ -328,12 +328,23 @@ class ConfInvariants {
         }
 
         // rflags is defined correctly
-        $skipf = ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_CONTENT_EDITED | ReviewInfo::RF_AUSEEN | ReviewInfo::RF_AUSEEN_PREVIOUS | ReviewInfo::RF_AUSEEN_LIVE;
+        $skipf = ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_CONTENT_EDITED | ReviewInfo::RF_AUSEEN | ReviewInfo::RF_AUSEEN_PREVIOUS | ReviewInfo::RF_AUSEEN_LIVE | ReviewInfo::RF_BOT_EDITED | ReviewInfo::RF_BOT_EDITED_PREVIOUS | ReviewInfo::RF_BOT;
         $any = $this->invariantq("select paperId, reviewId, rflags, concat(reviewType, ':', reviewModified, ':', timeApprovalRequested, ':', reviewSubmitted, ':', reviewBlind) from PaperReview r
             where (rflags&~?)!=(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(reviewSubmitted>0,4096,0)|if(reviewBlind!=0,65536,0)|if(reviewModified>0 or timeApprovalRequested!=0,1,rflags&1)
             limit 1", $skipf);
         if ($any) {
             $this->invariant_error("rflags", "bad rflags for review #{0}/{1} [{2:x} v {3}]");
+        }
+
+        // RF_BOT agrees with the reviewer's account. The bit is set when the
+        // review row is inserted, so anything that moves a review to another
+        // account has to move it too; this catches one that forgot.
+        $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
+            join ContactInfo c on (c.contactId=r.contactId)
+            where ((r.rflags&?)!=0)!=((c.cflags&?)!=0) limit 1",
+            ReviewInfo::RF_BOT, Contact::CF_BOT);
+        if ($any) {
+            $this->invariant_error("review_rf_bot", "RF_BOT disagrees with the reviewer account for review #{0}/{1}");
         }
 
         return $this;

@@ -443,6 +443,10 @@ class UserStatus extends MessageSet {
             $cj->disabled = true;
         }
 
+        if ($user->is_bot()) {
+            $cj->bot = true;
+        }
+
         if ($user->roles) {
             $cj->roles = self::unparse_roles_json($user->roles);
         }
@@ -651,6 +655,12 @@ class UserStatus extends MessageSet {
             && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email)) {
             $this->error_at("preferred_email", "<0>Invalid email address ‘{$cj->preferred_email}’");
         }
+        // `can_receive_mail` prefers this address, so a plausible one here
+        // would undo what the `bot.invalid` address guarantees
+        if (($cj->preferred_email ?? false)
+            && (($cj->bot ?? false) || ($old_user && $old_user->is_bot()))) {
+            $this->error_at("preferred_email", "<0>Bot accounts have no mailbox");
+        }
 
         // Address
         $address = [];
@@ -724,6 +734,15 @@ class UserStatus extends MessageSet {
         }
         if (isset($cj->collaborators)) {
             $cj->collaborators = $collaborators;
+        }
+
+        // Bot
+        if (isset($cj->bot)) {
+            if (($x = friendly_boolean($cj->bot)) !== null) {
+                $cj->bot = $x;
+            } else {
+                $this->error_at("bot", "<0>Format error [bot]");
+            }
         }
 
         // Disabled
@@ -1083,6 +1102,26 @@ class UserStatus extends MessageSet {
             }
         }
 
+        // bot accounts:
+        // cannot convert to and from bot status
+        if (isset($cj->bot)
+            && $old_user
+            && !!$cj->bot !== $old_user->is_bot()) {
+            $this->error_at("bot", "<0>Accounts cannot change their bot status");
+            return false;
+        }
+
+        // `bot.invalid` is the only acceptable bot account email domain
+        $is_bot = ($cj->bot ?? false) || ($old_user && $old_user->is_bot());
+        if (Contact::is_bot_email($email) !== !!$is_bot) {
+            if ($is_bot) {
+                $this->error_at("email", "<0>Bot account email addresses must use a subdomain of " . Contact::BOT_EMAIL_DOMAIN);
+            } else {
+                $this->error_at("email", "<0>Email addresses at " . Contact::BOT_EMAIL_DOMAIN . " are reserved for bot accounts");
+            }
+            return false;
+        }
+
         // - look up CDB user
         if ($xuser && $xuser->is_cdb_user()) {
             $old_cdb_user = $xuser;
@@ -1145,6 +1184,9 @@ class UserStatus extends MessageSet {
             if ($old_user) {
                 $roles = $this->check_role_change($roles, $old_user);
             }
+        } else if (($cj->bot ?? false) && !$old_user) {
+            // bots default to unlisted PC
+            $roles = Contact::ROLE_UNLISTEDPC;
         }
 
         // errors before this point prevent save
@@ -1156,10 +1198,17 @@ class UserStatus extends MessageSet {
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if (!$old_user) {
+            $cf = Contact::CF_PLACEHOLDER;
+            if (($cj->bot ?? false) && $this->viewer->privChair) {
+                $cf |= Contact::CF_BOT;
+            }
             $create_cj = array_merge((array) $cj, [
-                "email" => $email, "disablement" => Contact::CF_PLACEHOLDER
+                "email" => $email, "disablement" => $cf
             ]);
             $user = Contact::make_keyed($this->conf, $create_cj)->store(0, $actor);
+            if ($user && $user->is_bot()) {
+                $this->diffs["bot"] = true;
+            }
         }
         if (!$user) {
             return false;
@@ -1170,7 +1219,7 @@ class UserStatus extends MessageSet {
         $this->created = !$old_user;
         $this->set_user($user);
         $user->invalidate_cdb_user();
-        $cdb_user = $user->ensure_cdb_user();
+        $cdb_user = $user->is_bot() ? null : $user->ensure_cdb_user();
         $cs = $this->cs();
         $this->jval = $cj;
 
@@ -1723,7 +1772,9 @@ class UserStatus extends MessageSet {
     function print_existing_email() {
         if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
             $link = "<p class=\"nearby\">" . $this->conf->hotlink("Manage email <span class=\"arrow\">→</span>", "manageemail", ["u" => $this->user->email], ["class" => "btn btn-success btn-sm"]) . "</p>";
-        } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
+        } else if ($this->viewer->privChair
+                   && $this->user->is_reviewer()
+                   && !$this->user->is_bot()) {
             $link = "<p class=\"nearby\">" . $this->conf->hotlink("Transfer reviews <span class=\"arrow\">→</span>", "manageemail", ["t" => "transferreview", "u" => $this->user->email], ["class" => "btn btn-primary btn-sm"]) . "</p>";
         } else {
             $link = "";
@@ -2027,7 +2078,8 @@ topics. We use this information to help match papers to reviewers.</p>',
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
         echo '<div class="grid-btn-explanation"><div class="d-flex mf">';
 
-        echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $us->user->is_disabled()]), '</div><p></p>';
+        // a bot is never sent mail, so the button has nothing to do
+        echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $us->user->is_disabled() || $us->user->is_bot()]), '</div><p></p>';
 
         if (!$us->is_editing_authenticated()) {
             $disablement = $us->user->disabled_flags() & ~Contact::CF_PLACEHOLDER;

@@ -355,7 +355,11 @@ class Profile_Page {
         } else if ($this->ustatus->created && $this->ustatus->notified) {
             $ml[] = MessageItem::success("<5>Account {$plink} created and notified");
         } else if ($this->ustatus->created) {
-            $ml[] = MessageItem::success("<5>Account {$plink} created, but not notified");
+            if ($saved_user && $saved_user->is_bot()) {
+                $ml[] = MessageItem::success("<5>Bot account {$plink} created");
+            } else {
+                $ml[] = MessageItem::success("<5>Account {$plink} created, but not notified");
+            }
         } else {
             if ($this->ustatus->linked_secondary) {
                 $ml[] = $this->linked_secondary_warning_note($this->ustatus, $saved_user);

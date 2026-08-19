@@ -3128,6 +3128,269 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!!$p18->review_by_user($lbobert1p));
     }
 
+    /** RF_BOT_EDITED says the current version's PC-visible content came from a
+     * bot; RF_BOT_EDITED_PREVIOUS remembers that some earlier version did.
+     * Neither bit moves on an edit the PC cannot see, in either direction, so
+     * an administrators-only edit never changes who the content is credited to. */
+    function test_bot_edited_rflags() {
+        $conf = $this->conf;
+
+        // set here rather than inherited from an earlier test, so this test
+        // means the same thing when it is run alone
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        // an administrators-only field, so the test can make an edit that
+        // falls below the visibility the bot bits move on
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "t09",
+            "rf/1/name" => "Bot test admin notes",
+            "rf/1/visibility" => "admin",
+            "rf/1/order" => 9
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($conf->review_form()->field("t09")->view_score, VIEWSCORE_REVIEWERONLY);
+
+        // #11 has no seeded review from mgbaker, and nothing else in this class
+        // touches it
+        $reviewer = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $this->u_chair->assign_review(11, $reviewer, REVIEW_PC);
+
+        // the same person, acting as a bot. `set_acting_bot` marks the Contact
+        // object, so this must be a copy: the cached user is shared with every
+        // other test in the process.
+        $botr = $conf->fresh_user_by_email("mgbaker@cs.stanford.edu");
+        $botr->set_acting_bot();
+        xassert($botr->is_acting_bot());
+        xassert(!$reviewer->is_acting_bot());
+
+        // every save below leaves the review a draft, which notifies no one, so
+        // the test stays out of the mail queue
+
+        // a bot writes PC-visible content
+        $rrow = save_review(11, $botr, ["ovemer" => 2, "revexp" => 1, "papsum" => "Bot summary"]);
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED, ReviewInfo::RF_BOT_EDITED);
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED_PREVIOUS, 0);
+
+        // a person rewrites it, and the bot mark moves to PREVIOUS
+        $rrow = save_review(11, $reviewer, ["ovemer" => 3, "papsum" => "Human summary"]);
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED, 0);
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED_PREVIOUS, ReviewInfo::RF_BOT_EDITED_PREVIOUS);
+
+        // a bot edit the PC cannot see does not claim the content
+        $rrow = save_review(11, $botr, ["t09" => "Bot admin note"]);
+        xassert_eqq($rrow->fidval("t09"), "Bot admin note\n");
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED, 0);
+
+        // a bot edit the PC can see does
+        $rrow = save_review(11, $botr, ["papsum" => "Bot summary again"]);
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED, ReviewInfo::RF_BOT_EDITED);
+
+        // and symmetrically, a person's administrators-only edit does not take
+        // the credit back
+        $rrow = save_review(11, $reviewer, ["t09" => "Human admin note"]);
+        xassert_eqq($rrow->fidval("t09"), "Human admin note\n");
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED, ReviewInfo::RF_BOT_EDITED);
+        xassert_eqq($rrow->rflags & ReviewInfo::RF_BOT_EDITED_PREVIOUS, ReviewInfo::RF_BOT_EDITED_PREVIOUS);
+
+        // a save that changes nothing writes no version: the bits are never a
+        // reason on their own to record one
+        $rflags = $rrow->rflags;
+        $review_time = $rrow->reviewTime;
+        $rrow = save_review(11, $reviewer, ["t09" => "Human admin note"]);
+        xassert_eqq($rrow->rflags, $rflags);
+        xassert_eqq($rrow->reviewTime, $review_time);
+
+        // each history row carries the credit of the version it supersedes,
+        // rather than the current version's -- the point of a per-version bit
+        $nbot = $nhuman = 0;
+        $result = $conf->qe("select rflags from PaperReviewHistory where paperId=11 and reviewId=?", $rrow->reviewId);
+        while (($row = $result->fetch_row())) {
+            if ((intval($row[0]) & ReviewInfo::RF_BOT_EDITED) !== 0) {
+                ++$nbot;
+            } else {
+                ++$nhuman;
+            }
+        }
+        $result->close();
+        xassert($nbot > 0);
+        xassert($nhuman > 0);
+
+        // clean up
+        xassert($rrow->delete($this->u_chair));
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1, "rf/1/id" => "t09", "rf/1/delete" => true
+        ]);
+        xassert($sv->execute());
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
+    // A bot has no anonymity interest, so review anonymity does not hide that a
+    // machine wrote a review -- and the marker travels with the name, into
+    // plain text as well as HTML. Everything else still applies: the caller
+    // must be able to read the review, and hold the scope to read reviews.
+    function test_bot_review_identity() {
+        $conf = $this->conf;
+        $bemail = "reviewbot@" . Contact::BOT_EMAIL_DOMAIN;
+        $conf->qe("delete from ContactInfo where email=?", $bemail);
+        $conf->invalidate_caches("users", "pc");
+        $bot = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $bemail, "bot" => true, "name" => "Reviewbot"
+        ]);
+        xassert(!!$bot);
+        xassert($bot->is_bot());
+
+        $rev_open = $conf->setting("rev_open");
+        $au_seerev = $conf->setting("au_seerev");
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->save_refresh_setting("rev_blind", Conf::BLIND_ALWAYS);
+        // set here rather than inherited from an earlier test, so this one
+        // means the same thing run alone
+        $conf->save_refresh_setting("au_seerev", 2);
+        Contact::update_rights();
+
+        // a human reviewer of the same paper, as the control: whatever the bot
+        // gets must be something this one does not
+        $hemail = "humanrev@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $hemail);
+        $conf->invalidate_caches("users", "pc");
+        $human = (new UserStatus($conf->root_user()))->save_user((object) [
+            "email" => $hemail, "name" => "Human Reviewer", "roles" => ["pc"]
+        ]);
+        xassert(!!$human);
+
+        // the bot reviews #17, as a draft to begin with
+        $prow = $conf->checked_paper_by_id(17);
+        $this->u_chair->assign_review(17, $bot, REVIEW_PC);
+        $this->u_chair->assign_review(17, $human, REVIEW_PC);
+        save_review(17, $bot, ["ovemer" => 2, "revexp" => 1, "papsum" => "Bot summary",
+                               "comaut" => "Bot comments"], null, ["quiet" => true]);
+        $conf->invalidate_caches("paper");
+        $prow = $conf->checked_paper_by_id(17);
+        $brow = fresh_review($prow, $bot);
+        xassert(!!$brow);
+        $hrow = fresh_review($prow, $human);
+        xassert(!!$hrow);
+
+        // an author cannot see a draft, so there is no identity to see either
+        $au = $this->u_mjh;
+        xassert(!$au->can_view_review($prow, $brow));
+        xassert(!$au->can_view_review_identity($prow, $brow));
+
+        // RF_BOT is set when the row is inserted and never changes, so what
+        // keeps it true is that nothing moves a review across the boundary --
+        // and a draft is the only kind of review that can be claimed at all.
+        // The destination must be an account the caller is signed in as, so the
+        // reachable case is a chair claiming a bot's draft for themselves; the
+        // other direction cannot be reached, since a bot never appears in a
+        // session.
+        $qreq = (new Qrequest("POST", ["p" => "17", "r" => "{$brow->reviewId}",
+                                       "email" => "chair@_.com"]))
+            ->set_qsession(new MemoryQsession("botclaim", ["u" => "chair@_.com"]));
+        $jr = RequestReview_API::claimreview($this->u_chair, $qreq, $prow);
+        xassert_eqq($jr->content["ok"] ?? null, false);
+        xassert_str_contains(json_encode($jr->content), "Bot reviews cannot be reassigned");
+        xassert_eqq($prow->fresh_review_by_id($brow->reviewId)->contactId, $bot->contactId);
+
+        // Before the human submits theirs: with reviews visible only after
+        // review, a PC member can see that #17 has reviews without being able
+        // to read them. The marker must not leak through search there -- a
+        // reader who may not read the review may not learn a machine wrote it.
+        $viewrev = $conf->setting("viewrev");
+        $viewrevid = $conf->setting("viewrevid");
+        // both: identity visibility is its own setting, and with it left open
+        // this reader could see every reviewer's name anyway
+        $conf->save_refresh_setting("viewrev", Conf::VIEWREV_AFTERREVIEW);
+        $conf->save_refresh_setting("viewrevid", Conf::VIEWREV_AFTERREVIEW);
+        Contact::update_rights();
+        $hu = $conf->checked_user_by_email($hemail);
+        xassert($hu->can_view_review_assignment($prow, $brow));
+        xassert(!$hu->can_view_review($prow, $brow));
+        xassert(!$hu->can_view_review_identity($prow, $brow));
+        xassert_search($hu, "re:ai", "");
+        $conf->save_refresh_setting("viewrev", $viewrev);
+        $conf->save_refresh_setting("viewrevid", $viewrevid);
+        Contact::update_rights();
+
+        // submitted: the author reads it, and reviewing is blind -- so the
+        // human reviewer stays anonymous and the bot does not
+        save_review(17, $bot, ["ovemer" => 2, "revexp" => 1, "papsum" => "Bot summary",
+                               "comaut" => "Bot comments", "ready" => true], null, ["quiet" => true]);
+        save_review(17, $human, ["ovemer" => 2, "revexp" => 1, "papsum" => "Human summary",
+                                 "comaut" => "Human comments", "ready" => true], null, ["quiet" => true]);
+        $conf->invalidate_caches("paper");
+        $prow = $conf->checked_paper_by_id(17);
+        $brow = fresh_review($prow, $bot);
+        $hrow = fresh_review($prow, $human);
+        xassert($au->can_view_review($prow, $brow));
+        xassert($au->can_view_review($prow, $hrow));
+        xassert($au->can_view_review_identity($prow, $brow));
+        xassert(!$au->can_view_review_identity($prow, $hrow));
+
+        // the name carries the mark, in HTML and in the plain text authors
+        // read in mail
+        xassert_str_contains($au->reviewer_html_for($brow), "AI");
+        xassert_str_contains($au->name_text_for($bot), "(AI)");
+        $t = $conf->review_form()->unparse_text($prow, $brow, $au,
+            ReviewForm::UNPARSE_NO_AUTHOR_SEEN);
+        xassert_str_contains($t, "* Reviewer: ");
+        xassert_str_contains($t, "(AI)");
+        // and a human reviewer's name is not marked, so the mark means something
+        xassert(!str_contains($this->u_chair->reviewer_html_for($hrow), "AI"));
+
+        // the account kind is stored on the review, so nothing has to look the
+        // reviewer up to know it
+        xassert_neqq($brow->rflags & ReviewInfo::RF_BOT, 0);
+        xassert_eqq($hrow->rflags & ReviewInfo::RF_BOT, 0);
+
+        // and search reads it: `re:ai` selects exactly the bot reviews
+        xassert_search($this->u_chair, "re:ai", "17");
+        xassert_search($this->u_chair, "re:bot", "17");
+        xassert_search($this->u_chair, "17 AND re:ai>1", "");
+        // an author sees a bot review as one, since identity is not hidden
+        xassert_search($au, "re:ai", "17");
+        // but an author who may not read reviews at all learns nothing from
+        // the search either -- the marker is not a side channel
+        $conf->save_refresh_setting("au_seerev", null);
+        Contact::update_rights();
+        $au2 = $conf->checked_user_by_email($au->email);
+        xassert(!$au2->can_view_review($prow, $brow));
+        xassert_search($au2, "re:ai", "");
+        $conf->save_refresh_setting("au_seerev", 2);
+        Contact::update_rights();
+
+        // the review JSON says so in a form a program can read, since
+        // `reviewer` carries the mark as HTML
+        $pex = new PaperExport($au);
+        $rj = $pex->review_json($prow, $brow);
+        xassert_eqq($rj->reviewer_bot ?? null, true);
+        xassert_eqq(($pex->review_json($prow, $hrow))->reviewer_bot ?? null, null);
+
+        // a token that cannot read reviews still sees nothing
+        $au->set_scope("submission:read");
+        xassert(!$au->can_view_review_identity($prow, $brow));
+        $au->set_scope();
+
+        // the stored bit and the account agree; the invariant is what catches
+        // a path that moves a review and forgets that the bit describes the
+        // reviewer
+        xassert(ConfInvariants::test_all($conf));
+
+        // clean up: #17's other tests count its reviews
+        foreach ([$bot->contactId, $human->contactId] as $cid) {
+            $conf->qe("delete from PaperReview where paperId=17 and contactId=?", $cid);
+            $conf->qe("delete from PaperReviewHistory where paperId=17 and contactId=?", $cid);
+        }
+        $conf->qe("delete from ContactInfo where email?a", [$bemail, $hemail]);
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        $conf->save_refresh_setting("au_seerev", $au_seerev);
+        $conf->invalidate_caches("paper", "users", "pc");
+        Contact::update_rights();
+    }
+
     function test_invariants_last() {
         xassert(ConfInvariants::test_all($this->conf));
     }

@@ -1049,6 +1049,9 @@ class Unit_Tester {
         xassert_eqq(plural_word(2, "this"), "these");
         xassert_eqq(plural_word(2, "this butt"), "these butts");
         xassert_eqq(plural_word(2, "day"), "days");
+        xassert_eqq(plural_word(2, "was"), "were");
+        xassert_eqq(plural_word(2, "does"), "do");
+        xassert_eqq(plural_word(2, "do"), "does");
         xassert_eqq(plural_word(2, "ply"), "plies");
         xassert_eqq(plural_word(2, "worth"), "worths");
         xassert_eqq(plural_word(2, "hutch"), "hutches");

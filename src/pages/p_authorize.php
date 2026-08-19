@@ -3,9 +3,10 @@
 // Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
-use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection, PageCompletion;
-use TokenInfo, TokenScope, Signin_Page, Authorization_Token, ComponentSet, XtParams;
-use MessageItem, MessageSet, FmtArg, SettingParser, UnicodeHelper;
+use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection,
+    MessageItem, MessageSet, FmtArg, UnicodeHelper, ComponentSet, XtParams,
+    PageCompletion, TokenInfo, TokenScope, Authorization_Token, SettingParser,
+    BotContact, Signin_Page;
 
 class Authorize_Page {
     /** @var Conf */
@@ -26,6 +27,8 @@ class Authorize_Page {
      * action that authorizes a bounce to a self-registered `redirect_uri`.
      * @var bool */
     private $authconfirmed = false;
+    /** @var ?list<Contact> */
+    private $_bot_choices;
 
     /** Maximum length of a `state` or `nonce`; RFC 6749 sets no limit,
      * but avoid DoS */
@@ -332,7 +335,70 @@ class Authorize_Page {
         }
     }
 
+    /** Bot accounts this request may authorize a grant for, or `[]`.
+     *
+     * A bot has no session of its own — it cannot sign in — so a grant that
+     * speaks as one is made by a chair on its behalf, from the chair’s own
+     * session slot. Two kinds of client are excluded: a cdb client, because a
+     * bot has no contact-database identity and never gets one, and an
+     * OpenID-only client, because a bot grant exists to carry API access and
+     * there is no person for an `id_token` to name.
+     * @return list<Contact> */
+    private function bot_choices() {
+        if ($this->_bot_choices !== null) {
+            return $this->_bot_choices;
+        }
+        $this->_bot_choices = [];
+        if ($this->client
+            && !$this->client->is_cdb
+            && !$this->client->only_openid
+            && $this->viewer->privChair
+            && !$this->viewer->is_actas_user()
+            && $this->viewer->session_index() >= 0
+            && !$this->viewer->is_bearer_authorized()) {
+            foreach (BotContact::users($this->conf) as $u) {
+                if (!$u->is_disabled())
+                    $this->_bot_choices[] = $u;
+            }
+        }
+        return $this->_bot_choices;
+    }
+
+    /** @param list<Contact> $bots */
+    private function print_form_bots($bots) {
+        $nav = $this->qreq->navigation();
+        $uindex = $this->viewer->session_index();
+        $buttons = [];
+        $top = "";
+        $any_disabled = false;
+        echo '<p class="mb-4">A bot account is driven by a program rather than a person, and it cannot sign in on its own. Authorizing here lets ',
+            $this->client->title_html(),
+            ' act as the account you choose; everything it does is recorded as that account, and its reviews are marked AI.</p>';
+        foreach ($bots as $bot) {
+            $enabled = (new XtParams($this->conf, $bot))->checkf($this->client);
+            $any_disabled = $any_disabled || !$enabled;
+            // `bots=1` rides along so a post that fails its checks comes back
+            // to this list rather than to the account list
+            $url = $nav->base_absolute() . "u/{$uindex}/authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt)
+                . "&authconfirm=1&bots=1&authemail=" . urlencode($this->viewer->email)
+                . "&authbot=" . urlencode($bot->email);
+            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($bot->email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "btn-primary{$top} w-100 flex-grow-1", "disabled" => !$enabled]);
+            $top = " mt-2";
+        }
+        $buttons[] = Ht::link("<span class=\"arrow\">←</span> Back", $this->conf->hoturl("authorize", ["code" => $this->token->salt]),
+            ["class" => "btn{$top} w-100 flex-grow-1"]);
+        if ($any_disabled) {
+            echo MessageSet::feedback_html([MessageItem::warning($this->conf->_("<0>This site limits which users can authenticate with {}", new FmtArg(0, $this->client->title_text(), 0)))]);
+        }
+        echo '<div class="mb-5">', join("", $buttons), '</div>';
+    }
+
     function print_form_main() {
+        $bots = $this->bot_choices();
+        if (!empty($bots) && friendly_boolean($this->qreq->bots)) {
+            $this->print_form_bots($bots);
+            return;
+        }
         $buttons = [];
         $nav = $this->qreq->navigation();
         $top = "";
@@ -340,10 +406,10 @@ class Authorize_Page {
             $this->conf->prefetch_users_by_email(array_values($this->authorized_emails()));
         }
         $any_disabled = false;
-        // `u/{$i}` is a session slot, and slots can be reused between this
+        // `u/{$uindex}` is a session slot, and slots can be reused between this
         // render and the post; name the account too, so the request that comes
         // back is for the account whose button the user pressed
-        foreach ($this->authorized_emails() as $i => $email) {
+        foreach ($this->authorized_emails() as $uindex => $email) {
             if ($this->client) {
                 $user = $this->conf->user_by_email($email)
                     ?? $this->conf->cdb_user_by_email($email);
@@ -353,13 +419,18 @@ class Authorize_Page {
                 $enabled = true;
             }
             $any_disabled = $any_disabled || !$enabled;
-            $url = $nav->base_absolute() . "u/{$i}/authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1&authemail=" . urlencode($email);
+            $url = $nav->base_absolute() . "u/{$uindex}/authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1&authemail=" . urlencode($email);
             $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "btn-primary{$top} w-100 flex-grow-1", "disabled" => !$enabled]);
             $top = " mt-2";
         }
 
         $buttons[] = Ht::link("Use another account", $this->signin_url(),
             ["class" => "btn{$top} w-100 flex-grow-1"]);
+        if (!empty($bots)) {
+            $buttons[] = Ht::link("Sign in as a bot <span class=\"arrow\">→</span>",
+                $this->conf->hoturl("authorize", ["code" => $this->token->salt, "bots" => 1]),
+                ["class" => "btn btn-success mt-2 w-100 flex-grow-1"]);
+        }
         if ($any_disabled) {
             echo MessageSet::feedback_html([MessageItem::warning($this->conf->_("<0>This site limits which users can authenticate with {}", new FmtArg(0, $this->client->title_text(), 0)))]);
         }
@@ -403,8 +474,24 @@ class Authorize_Page {
             $this->print_error_exit("<0>Authentication request failed");
         }
 
+        // A grant may speak as a bot account. The bot has no session, so the
+        // viewer stays the chair who is authorizing on its behalf.
+        $grantee = $this->viewer;
+        if (isset($this->qreq->authbot)) {
+            $bot = $this->conf->user_by_email($this->qreq->authbot);
+            if (!$this->viewer->privChair
+                || !$bot
+                || !$bot->is_bot()
+                || $bot->is_disabled()
+                || $this->client->is_cdb
+                || $this->client->only_openid) {
+                $this->print_error_exit("<0>Authentication request failed");
+            }
+            $grantee = $bot;
+        }
+
         if (isset($this->client->allow_if)
-            && !(new XtParams($this->conf, $this->viewer))->checkf($this->client)) {
+            && !(new XtParams($this->conf, $grantee))->checkf($this->client)) {
             if (!$this->cs) {
                 JsonResult::make_minimal(401, [
                     "error" => "invalid_grant",
@@ -412,7 +499,7 @@ class Authorize_Page {
                 ])->complete();
             }
             $this->conf->feedback_msg(
-                MessageItem::error("<0>User {} cannot authorize access by {}", new FmtArg(0, $this->viewer->email, 0), new FmtArg(1, $this->client->title_text(), 0)),
+                MessageItem::error($grantee !== $this->viewer ? "<0>User {} cannot be authorized to access {}" : "<0>User {} cannot authorize access by {}", new FmtArg(0, $grantee->email, 0), new FmtArg(1, $this->client->title_text(), 0)),
                 MessageItem::inform("<0>This site limits which users can authenticate with {}. You may need to use another account.", new FmtArg(0, $this->client->title_text(), 0))
             );
             Navigation::http_response_code(401);
@@ -428,10 +515,14 @@ class Authorize_Page {
         }
 
         if (!$this->token->data("email")) {
-            $this->token->change_data("email", $this->viewer->email)
+            $this->token->change_data("email", $grantee->email)
                 ->change_data("iat", Conf::$now);
+            if ($grantee !== $this->viewer) {
+                // the grant speaks as the bot, but a person made it: record who
+                $this->token->change_data("authorized_by", $this->viewer->email);
+            }
             // Log every authorization, naming the grant
-            $this->conf->log_for($this->viewer, $this->viewer,
+            $this->conf->log_for($this->viewer, $grantee,
                 "OAuth authorization for " . $this->client->title_text()
                 . " [" . (Authorization_Token::grant_id($this->token) ?? "?") . "]");
             $tokscope = $this->token->data("scope");

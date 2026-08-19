@@ -992,7 +992,7 @@ class Conf {
     // shutdown functions
 
     /** @template T
-     * @param class-string<T> $name
+     * @param class-string<T>|non-empty-string $name
      * @return T */
     function register_shutdown_function($name) {
         if ($this->_shutdown_functions === null) {
@@ -1001,12 +1001,16 @@ class Conf {
         }
         $sf = &$this->_shutdown_functions[$name];
         if ($sf === null) {
-            $sf = new $name($this);
+            if (strpos($name, "::") !== false) {
+                $sf = $name;
+            } else {
+                $sf = new $name($this);
+            }
         }
         return $sf;
     }
 
-    /** @param class-string $name */
+    /** @param non-empty-string $name */
     function call_shutdown_function($name) {
         if (($sf = $this->_shutdown_functions[$name] ?? null)) {
             unset($this->_shutdown_functions[$name]);

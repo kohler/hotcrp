@@ -246,8 +246,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     public $privChair = false;
     /** @var bool */
     private $_root_user = false;
-    /** @var ?int */
-    private $_session_roles;
+    /** @var int */
+    private $_session_roles = 0;
     /** @var ?associative-array<int,int> */
     private $_conflict_types;
     /** @var ?int */
@@ -274,8 +274,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @var ?array<int,bool> */
     public $hidden_papers;
 
-    // $_activated values: 0: no, 1: yes; 2: is actas; 4: is token
-    // higher bits: user index
+    const ACTIVATED_YES = 1;            // is this user activated?
+    const ACTIVATED_ACTAS = 2;          // is this user an actas user?
+    const ACTIVATED_TOKEN = 4;          // is this user using a bearer token?
+    const ACTIVATED_BOT = 8;            // does this user identify as a bot?
+    const ACTIVATED_TYPE_MASK = 0xF;
+    const ACTIVATED_UINDEX_SHIFT = 8;
     /** @var int */
     private $_activated = 0;
     /** @var ?TokenScope */
@@ -311,19 +315,23 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     public $myReviewPermissions;
     public $paperId;
 
-    const CF_UDISABLED = 0x1;
-    const CF_PLACEHOLDER = 0x2;
-    const CF_ROLEDISABLED = 0x4;
-    const CF_DELETED = 0x8;
-    const CF_GDISABLED = 0x10;
-    const CF_UNCONFIRMED = 0x20;
-    const CF_SECURITYLOCK = 0x40;
-    const CF_PRIMARY = 0x80;
-    const CF_NEANONASCII = 0x100;
+    const CF_UDISABLED = 0x1;        // disabled on this conference
+    const CF_PLACEHOLDER = 0x2;      // has never signed in
+    const CF_ROLEDISABLED = 0x4;     // (NOT DB) disabled by disableNonPC
+    const CF_DELETED = 0x8;          // deleted
+    const CF_GDISABLED = 0x10;       // disabled everywhere (in contactdb)
+    const CF_UNCONFIRMED = 0x20;     // email not confirmed
+    const CF_SECURITYLOCK = 0x40;    // security lock
+    // Security lock means no password changes, no new tokens
+    const CF_PRIMARY = 0x80;         // primary account, has linked accounts
+    const CF_NEANONASCII = 0x100;    // name+email+affiliation isn't ASCII
+    const CF_BOT = 0x200;            // bot: driven by a program, not a person
 
-    const CFM_DISABLEMENT = 0x1F;
-    const CFM_DB = ~0x4;
-    const CFM_PLACEHOLDER = 0xA;
+    const CFM_DISABLEMENT = 0x1F;    // effectively disabled:
+                // UDISABLED | PLACEHOLDER | ROLEDISABLED | DELETED | GDISABLED
+    const CFM_DB = ~0x4;             // stored on disk (~ROLEDISABLED)
+    const CFM_PLACEHOLDER = 0xA;     // PLACEHOLDER | DELETED
+                // (used to distinguish true placeholders from deleted users)
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
@@ -542,7 +550,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     private function set_roles_properties() {
         // see also ConfInvariants::generate_cdb_roles
-        $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK)
+        $this->_session_roles = ($this->_session_roles & ~self::ROLE_DBMASK)
             | ($this->roles & self::ROLE_DBMASK);
         $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
         $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
@@ -888,14 +896,19 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     function set_bearer_authorized() {
-        $this->_activated |= 4;
+        $this->_activated |= self::ACTIVATED_TOKEN;
+    }
+
+    function set_acting_bot() {
+        $this->_activated |= self::ACTIVATED_BOT;
     }
 
     /** @param Qrequest $qreq
      * @param bool $signin
      * @return Contact */
     function activate($qreq, $signin, $userindex = 0) {
-        $this->_activated |= 1 | ($userindex << 8);
+        $this->_activated |= self::ACTIVATED_YES
+            | ($userindex << self::ACTIVATED_UINDEX_SHIFT);
 
         // Handle actas requests
         if ($qreq->actas && $signin && $this->email) {
@@ -904,7 +917,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $actasuser = $this->actas_user($actas);
             if ($actasuser !== $this) {
                 $qreq->set_gsession("last_actas", $actasuser->email);
-                $actasuser->_activated |= 2;
+                $actasuser->_activated |= self::ACTIVATED_ACTAS;
                 $actasuser->_admin_base_user = $this;
                 $actasuser->_hoturl_defaults["actas"] = $actasuser->email;
                 return $actasuser->activate($qreq, true, $userindex);
@@ -941,8 +954,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
 
         // maybe auto-create a user
-        if (($this->_activated & 2) === 0 && $this->email) {
-            $this->activate_placeholder(($this->_activated & 7) === 1, $this);
+        if (($this->_activated & self::ACTIVATED_ACTAS) === 0
+            && $this->email) {
+            $this->activate_placeholder(
+                ($this->_activated & self::ACTIVATED_TYPE_MASK) === self::ACTIVATED_YES,
+                $this
+            );
             if ($qreq->csession("trueuser_author_check")) {
                 $qreq->unset_csession("trueuser_author_check");
             }
@@ -1144,7 +1161,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     function update_cdb() {
         if (!$this->conf->contactdb()
             || !$this->has_account_here()
-            || !self::cdb_allows_email($this->email)) {
+            || !self::cdb_allows_email($this->email)
+            || $this->is_bot() /* defense in depth */) {
             return false;
         }
 
@@ -1197,7 +1215,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function is_actas_user() {
-        return ($this->_activated & 3) === 3;
+        $m = self::ACTIVATED_YES | self::ACTIVATED_ACTAS;
+        return ($this->_activated & $m) === $m;
     }
 
     /** @return Contact */
@@ -1207,7 +1226,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function is_bearer_authorized() {
-        return ($this->_activated & 4) === 4;
+        return ($this->_activated & self::ACTIVATED_TOKEN) !== 0;
     }
 
     /** @return bool */
@@ -1244,6 +1263,17 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @return bool */
     function is_deleted() {
         return ($this->cflags & self::CF_DELETED) !== 0;
+    }
+
+    /** @return bool */
+    function is_bot() {
+        return ($this->cflags & self::CF_BOT) !== 0;
+    }
+
+    /** @return bool */
+    function is_acting_bot() {
+        return ($this->cflags & self::CF_BOT) !== 0
+            || ($this->_activated & self::ACTIVATED_BOT) !== 0;
     }
 
     /** @return bool */
@@ -1289,13 +1319,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $disabled |= self::CF_UNCONFIRMED;
         }
         $e = $this->preferredEmail ?? $this->email;
-        return ($this->cflags & $disabled) === 0
+        return ($this->cflags & ($disabled | self::CF_BOT)) === 0
             && self::is_plausible_email($e);
     }
 
     /** @return int */
     function session_index() {
-        return $this->_activated > 0 ? $this->_activated >> 8 : -1;
+        return $this->_activated > 0
+            ? $this->_activated >> self::ACTIVATED_UINDEX_SHIFT
+            : -1;
     }
 
     /** @param Qrequest $qreq
@@ -1526,7 +1558,27 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $n = "<span class=\"taghl\" title=\"{$t}\">{$n}</span>";
         }
 
+        // Marked wherever the name appears, for everyone who sees it: this is
+        // the whole point of the account kind, and it is not conditioned on
+        // roles, tags, or `can_view_user_tags` the way decorations are.
+        if ($u->is_bot()) {
+            $n .= $type === "t" ? self::bot_mark_text() : self::bot_mark_html();
+        }
+
         return $n;
+    }
+
+    /** How a bot account is marked wherever its name appears. “AI” rather than
+     * “bot”: this is what an author reads under a review, and to them “bot” is
+     * jargon at best.
+     * @return string */
+    static function bot_mark_html() {
+        return ' <span class="pcrole need-tooltip" data-tooltip="Written by an AI agent">AI</span>';
+    }
+
+    /** @return string */
+    static function bot_mark_text() {
+        return " (AI)";
     }
 
     /** @param int|Contact|ReviewInfo $x
@@ -1597,24 +1649,47 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             && preg_match('/[@.](test|example(?:|\.com|\.net|\.org|\.edu)|_\.[^@]+)\z/i' , $email);
     }
 
+    /** Domain reserved for bot accounts. `.invalid` is reserved by RFC 2606, so
+     * `is_plausible_email` already rejects it, which is why a bot is unmailable
+     * and invisible to the contact database by address as well as by flag.
+     * @var string */
+    const BOT_EMAIL_DOMAIN = "bot.invalid";
+
+    /** @param string $email
+     * @return bool */
+    static function is_bot_email($email) {
+        $botlen = strlen(self::BOT_EMAIL_DOMAIN);
+        $pos = strlen($email) - $botlen;
+        return $pos > 1
+            && substr_compare($email, self::BOT_EMAIL_DOMAIN, $pos, $botlen, true) === 0
+            && ($email[$pos - 1] === "@" || $email[$pos - 1] === ".");
+    }
+
     /** @param string $email
      * @return bool */
     static function cdb_allows_email($email) {
         return self::is_plausible_email($email);
     }
 
-    /** @param string $email
+    /** Is this email plausibly reachable?
+     * Disallows known example domains.
+     * @param string $email
      * @return bool */
     static function is_plausible_email($email) {
         return validate_email($email)
             && !preg_match('/[@.](?:invalid|test|tld|example(?:|\.com|\.net|\.org|\.edu)|.|_\.[^@]+)\z/i', $email);
     }
 
-    /** @param string $email
+    /** Is this email acceptable in an author list?
+     * Allows example domains, but not `invalid` domains--except for bots,
+     * when $allow_bots is set.
+     * @param string $email
+     * @param bool $allow_bots
      * @return bool */
-    static function is_plausible_or_example_email($email) {
+    static function is_plausible_author_email($email, $allow_bots) {
         return validate_email($email)
-            && !preg_match('/[@.](?:invalid|.)\z/i', $email);
+            && (!preg_match('/[@.](?:invalid|.)\z/i', $email)
+                || ($allow_bots && self::is_bot_email($email)));
     }
 
     /** @param string $email
@@ -2378,7 +2453,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return false;
         }
         // otherwise, success
-        // maybe enqueue CDB update and/or invalidate caches
+        // enqueue CDB update if necessary
         if ($this->cdb_confid !== 0
             && array_key_exists("updateTime", $this->_mod_undo)) {
             $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_PROFILE);
@@ -2403,8 +2478,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             if (($cf0 & ~$cf1 & self::CF_UNCONFIRMED) !== 0) {
                 $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_CONFIRMED);
             }
+            if (($cf1 & self::CF_BOT) !== 0
+                && (($cf0 ^ $cf1) & self::CF_DELETED) !== 0) {
+                BotContact::register_bot_change($this);
+            }
         }
-        // invalidate caches
+        // invalidate user cache
         $this->_mod_undo = null;
         $this->conf->invalidate_user($this, true);
         return true;
@@ -2572,6 +2651,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // look up cdb account
         $cdbu = null;
         if (self::cdb_allows_email($this->email)
+            && !$this->is_bot() /* defense in depth */
             && ($cdb = $this->conf->contactdb())) {
             $cdbu = $this->cdb_user() ?? Contact::make_cdb_email($this->conf, $this->email);
         }
@@ -2636,6 +2716,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // log creation of non-placeholder accounts
         if (($this->cflags & self::CF_PLACEHOLDER) === 0) {
             $this->log_create($actor);
+        }
+
+        // mark creation of bot accounts
+        if (($this->cflags & self::CF_BOT) !== 0) {
+            BotContact::register_bot_change($this);
         }
 
         // if importing a secondary user, automatically import the primary
@@ -2720,9 +2805,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_reset_password() {
+        // unlike mail and the contact database, this does not follow from the
+        // address: an account with no password can otherwise reset one
         if ($this->conf->external_login()
             || $this->security_locked()
-            || $this->is_deleted()) {
+            || $this->is_deleted()
+            || $this->is_bot()) {
             return false;
         }
         list($cdbpw, $localpw) = $this->effective_passwords();
@@ -2773,6 +2861,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     function check_password_info($input) {
         assert(!$this->conf->external_login());
         assert($this->_slice === 0);
+        // a bot has no interactive credentials, whatever is stored
+        if ($this->is_bot()) {
+            return ["ok" => false, "email" => true, "disabled" => true, "bot" => true];
+        }
         $cdbu = $this->cdb_user();
         list($cdbpw, $localpw) = $this->effective_passwords();
 
@@ -3866,7 +3958,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @return bool */
     function can_edit_password(Contact $acct) {
         return !$acct->security_locked()
-            && ((($this->_activated & 7) === 1 /* activated, not actas, not token */
+            && ((($this->_activated & self::ACTIVATED_TYPE_MASK) === self::ACTIVATED_YES /* activated, not actas, not token */
                  && $this->contactId > 0
                  && $this->contactId === $acct->contactId)
                 || $this->can_edit_any_password());
@@ -4963,6 +5055,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             || ($rights->act_author_view()
                 && (!$rbase || $rbase->reviewType > 0)
                 && !$this->conf->is_review_blind(!$rbase || (bool) $rbase->reviewBlind)
+                && $this->can_view_review($prow, $rbase))
+            || ($rbase
+                && $rbase->reviewType > 0
+                && ($rbase->rflags & ReviewInfo::RF_BOT) !== 0
                 && $this->can_view_review($prow, $rbase))) {
             return true;
         }

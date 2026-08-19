@@ -275,6 +275,10 @@ class PaperExport {
             if (!Contact::is_anonymous_email($reviewer->email)) {
                 $rj["reviewer_email"] = $reviewer->email;
             }
+            if ($reviewer->is_bot()) {
+                // machine-readable, since `reviewer` carries the mark as HTML
+                $rj["reviewer_bot"] = true;
+            }
         }
 
         // permissions

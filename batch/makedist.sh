@@ -314,6 +314,7 @@ src/autoassigners/aa_prefconflict.php
 src/autoassigners/aa_review.php
 src/backuppattern.php
 src/banal
+src/botcontact.php
 src/capabilities/cap_authorization.php
 src/capabilities/cap_authorview.php
 src/capabilities/cap_job.php

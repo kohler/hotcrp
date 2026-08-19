@@ -18,15 +18,30 @@ class Developer_UserInfo {
         $this->us = $us;
     }
 
+    /** Whether whoever is looking may hold this account's credentials.
+     *
+     * Normally only the account itself: an administrator must not be able to
+     * mint a credential that speaks as a person. A bot is the exception, and
+     * not because chairs deserve more power — because a bot has no person to
+     * impersonate and no way to sign in and mint one for itself. Someone has to,
+     * and the chair is who the conference already trusts with the account.
+     * @return bool */
+    private function is_token_principal() {
+        // `$us->user` is null while a new account is being requested
+        $u = $this->us->user;
+        return $this->us->is_auth_self()
+            || ($u && $u->is_bot() && $this->us->viewer->privChair);
+    }
+
     function display_if() {
         if ($this->us->is_actas_self()) {
             return "dim";
         }
-        return $this->us->is_auth_self();
+        return $this->is_token_principal();
     }
 
     function allow() {
-        return $this->us->is_auth_self() && !$this->us->user->security_locked();
+        return $this->is_token_principal() && !$this->us->user->security_locked();
     }
 
     function request() {
@@ -154,12 +169,16 @@ class Developer_UserInfo {
     }
 
     function print_bearer_tokens(UserStatus $us) {
-        if (!$us->is_auth_self()) {
+        if (!$this->is_token_principal()) {
             $us->conf->warning_msg('<0>API tokens cannot be edited when acting as another user.');
             return false;
         }
         echo '<p class="w-text">API tokens let you access <a href="https://hotcrp.com/devel/api/">HotCRP’s API</a> programmatically. Supply a token using an HTTP <code>Authorization</code> header, as in “<code>Authorization: Bearer <em>token-name</em></code>”.</p>';
-        $us->conf->warning_msg('<0>Treat tokens like passwords and keep them secret. Anyone who knows your tokens can access this site with your privileges.');
+        if ($us->is_auth_self()) {
+            $us->conf->warning_msg('<0>Treat tokens like passwords and keep them secret. Anyone who knows your tokens can access this site with your privileges.');
+        } else {
+            $us->conf->warning_msg('<0>Treat tokens like passwords and keep them secret. Anyone who knows this bot account’s tokens can act as it on this site. The bot cannot sign in; these tokens are the only way it reaches the site, and the only way to stop it is to delete them.');
+        }
     }
 
     function print_current_bearer_tokens(UserStatus $us) {
@@ -196,7 +215,7 @@ class Developer_UserInfo {
 
     /** @param int $n */
     private function print_bearer_token_deleter(UserStatus $us, TokenInfo $tok, $n) {
-        if (!$us->is_auth_self()
+        if (!$this->is_token_principal()
             || $us->user->security_locked()
             || !$us->has_recent_authentication()
             || !$tok->is_active()) {
@@ -301,7 +320,7 @@ class Developer_UserInfo {
         $name = $g->name ?? $g->client_id;
         echo '<div class="f-i w-text"><div class="f-c">',
             htmlspecialchars($name);
-        if ($us->is_auth_self()
+        if ($this->is_token_principal()
             && !$us->user->security_locked()
             && $us->has_recent_authentication()) {
             echo Ht::hidden("grant/{$n}/id", ($g->is_cdb ? "A." : "L.") . $g->client_id),
@@ -420,7 +439,7 @@ class Developer_UserInfo {
     }
 
     function print_new_bearer_token(UserStatus $us) {
-        if (!$us->is_auth_self()
+        if (!$this->is_token_principal()
             || !$us->has_recent_authentication()) {
             return;
         } else if ($us->user->security_locked()) {
@@ -460,17 +479,31 @@ class Developer_UserInfo {
                 ]));
         }
 
+        $default_scope = self::default_token_scope($us->user);
         $us->print_field("bearer_token/new/scope", "Scope",
-            Ht::entry("bearer_token/new/scope", $us->qreq["bearer_token/new/scope"] ?? "", [
-                "size" => 30, "id" => "bearer_token/new/scope", "data-default-value" => "",
+            Ht::entry("bearer_token/new/scope", $us->qreq["bearer_token/new/scope"] ?? $default_scope, [
+                "size" => 30, "id" => "bearer_token/new/scope",
+                "data-default-value" => $default_scope,
                 "placeholder" => "all"
             ]) . '<div class="f-d">What rights should this token have?<br>Examples: ‘read’, ‘read paper:write’, ‘review:admin#10’, ‘submission:write?q=dec:no’</div>');
 
         $us->cs()->print_end_section();
     }
 
+    /** The scope a new token starts with.
+     *
+     * A person's token defaults to their whole account, which they are watching.
+     * A bot's is a credential nobody watches, held by something that acts on its
+     * own, so it starts at what a reviewing bot needs and the chair widens it
+     * deliberately. This is a default, not a limit.
+     * @param ?Contact $user
+     * @return string */
+    static function default_token_scope($user) {
+        return $user && $user->is_bot() ? "read review:write" : "";
+    }
+
     function request_new_bearer_token(UserStatus $us) {
-        assert($us->is_auth_self());
+        assert($this->is_token_principal());
         $cdbu = $us->user->cdb_user();
         if (!$us->qreq["bearer_token/new/enable"]
             || $us->user->security_locked()
@@ -521,7 +554,7 @@ class Developer_UserInfo {
     }
 
     function request_delete_bearer_tokens(UserStatus $us) {
-        assert($us->is_auth_self());
+        assert($this->is_token_principal());
         if ($us->user->security_locked()) {
             return;
         }

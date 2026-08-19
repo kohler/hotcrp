@@ -139,22 +139,25 @@ class ReviewInfo implements JsonSerializable {
     const RS_APPROVED = 4;
     const RS_COMPLETED = 5;
 
-    const RF_LIVE = 1;
-    const RFM_TYPES = 0xFE;
-    const RF_ACKNOWLEDGED = 0x100;
-    const RF_DRAFTED = 0x200;
-    const RF_DELIVERED = 0x400;
-    const RF_APPROVED = 0x800;
-    const RF_SUBMITTED = 0x1000;
-    const RFM_NONDRAFT = 0x1C00; /* RF_DELIVERED | RF_APPROVED | RF_SUBMITTED */
-    const RFM_NONEMPTY = 0x1F00; /* RF_ACKNOWLEDGED | RF_DRAFTED | RFM_NONDRAFT */
-    const RF_BLIND = 0x10000;
-    const RF_SELF_ASSIGNED = 0x20000;
-    const RF_CONTENT_EDITED = 0x40000;
-    const RF_AUSEEN = 0x80000;
-    const RF_AUSEEN_PREVIOUS = 0x100000;
-    const RF_AUSEEN_LIVE = 0x200000;
-    const RFM_ASSIGN = 0x300FF; /* RF_LIVE | RFM_TYPES | RF_SELF_ASSIGNED | RF_BLIND */
+    const RF_LIVE = 1;                  // review is not a ghost
+    const RFM_TYPES = 0xFE;             // the bit (1 << reviewType) is set
+    const RF_ACKNOWLEDGED = 0x100;      // review request acknowledged (accepted)
+    const RF_DRAFTED = 0x200;           // review has some content
+    const RF_DELIVERED = 0x400;         // review has been delivered for approval
+    const RF_APPROVED = 0x800;          // review has been approved; implies DELIVERED
+    const RF_SUBMITTED = 0x1000;        // review is submitted
+    const RFM_NONDRAFT = 0x1C00;        // DELIVERED | APPROVED | SUBMITTED
+    const RFM_NONEMPTY = 0x1F00;        // ACKNOWLEDGED | DRAFTED | NONDRAFT
+    const RF_BLIND = 0x10000;           // review is blind (overridable by conference)
+    const RF_SELF_ASSIGNED = 0x20000;   // review was self assigned
+    const RF_CONTENT_EDITED = 0x40000;  // review content edited since first entry
+    const RF_AUSEEN = 0x80000;          // review has been seen by author
+    const RF_AUSEEN_PREVIOUS = 0x100000;  // previous version of review has AUSEEN
+    const RF_AUSEEN_LIVE = 0x200000;    // this version was edited while authors could see it
+    const RF_BOT_EDITED = 0x400000;     // this edit was made by a bot
+    const RF_BOT_EDITED_PREVIOUS = 0x800000; // previous version was made by a bot
+    const RF_BOT = 0x1000000;           // the reviewer is a bot user
+    const RFM_ASSIGN = 0x300FF;         // LIVE | TYPES | SELF_ASSIGNED | BLIND
 
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
@@ -457,6 +460,11 @@ class ReviewInfo implements JsonSerializable {
     function is_ghost() {
         $m = $this->conf->time_review_open() ? self::RF_LIVE : self::RFM_NONEMPTY;
         return ($this->rflags & $m) === 0;
+    }
+
+    /** @return bool */
+    function is_bot() {
+        return ($this->rflags & self::RF_BOT) !== 0;
     }
 
     /** @return int */
@@ -939,6 +947,11 @@ class ReviewInfo implements JsonSerializable {
             assert(!isset($diff->_old_prop["reviewTime"]));
             $rt = $inserting ? mt_rand(2000, 1000000) : $this->reviewTime + mt_rand(1, 10000);
             $this->set_prop("reviewTime", $rt);
+        }
+
+        if ($inserting
+            && $this->reviewer()->is_bot()) {
+            $this->set_prop("rflags", $this->rflags | self::RF_BOT);
         }
 
         // construct query

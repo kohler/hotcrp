@@ -90,25 +90,45 @@ class Contacts_PaperOption extends PaperOption {
         $ps->checkpoint_conflict_values();
     }
     /** @param list<Author> $specau */
-    private function apply_parsed_users(PaperValue $ov, $specau) {
+    private function apply_parsed_users(PaperValue $ov, $specau, Contact $user) {
         $curau = self::users_anno($ov);
         $modified = false;
+        $admin = $user->allow_admin($ov->prow);
+        $removed_bot = false;
         foreach ($specau as $sau) {
             $j = self::ca_index($curau, $sau->email);
             $cau = $j !== false ? $curau[$j] : null;
             if (!$cau) {
-                // add new contact
-                if ($sau->conflictType !== 0) {
+                // new contacts must have emails validated
+                if ($sau->conflictType === 0) {
+                    continue;
+                } else if (Contact::is_plausible_author_email($sau->email, $admin)) {
                     $curau[] = $sau;
                     $modified = true;
+                    continue;
                 }
             } else if ($sau->conflictType !== 0) {
                 // requested contact: copy author index, activate placeholder
                 $cau->author_index = $sau->author_index;
                 $modified = $modified || $curau[$j]->is_placeholder();
-            } else {
+                continue;
+            } else if ($admin || !Contact::is_bot_email($sau->email)) {
                 array_splice($curau, $j, 1);
                 $modified = true;
+                continue;
+            }
+            // errors end up here
+            $field = "contacts" . ($sau->author_index ? ":{$sau->author_index}" : "");
+            if ($cau) {
+                if (!$sau->author_index && $removed_bot) {
+                    continue;
+                }
+                $removed_bot = $removed_bot || !$sau->author_index;
+                $ov->append_item(MessageItem::error_at($field, "<0>Only administrators can remove bot contacts"));
+            } else if ($sau->email !== "") {
+                $ov->append_item(MessageItem::error_at($field, "<0>Invalid email address ‘{$sau->email}’"));
+            } else if (!$sau->is_empty()) {
+                $ov->append_item(MessageItem::error_at($field, "<0>Email address required"));
             }
         }
         if (!$modified) {
@@ -127,7 +147,7 @@ class Contacts_PaperOption extends PaperOption {
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $ov = PaperValue::make_force($prow, $this);
         // collect values
-        $specau = $reqau = [];
+        $reqau = [];
         for ($n = 1; isset($qreq["contacts:{$n}:email"]); ++$n) {
             $email = trim($qreq["contacts:{$n}:email"]);
             $name = simplify_whitespace((string) $qreq["contacts:{$n}:name"]);
@@ -138,16 +158,9 @@ class Contacts_PaperOption extends PaperOption {
             $au->conflictType = $active ? CONFLICT_CONTACTAUTHOR : 0;
             $au->author_index = $n;
             $reqau[] = $au;
-            if (validate_email($email)) {
-                $specau[] = $au;
-            } else if ($email !== "") {
-                $ov->append_item(MessageItem::error_at("contacts:{$n}", "<0>Invalid email address ‘{$email}’"));
-            } else if ($name !== "") {
-                $ov->append_item(MessageItem::error_at("contacts:{$n}", "<0>Email address required"));
-            }
         }
         // apply specified values
-        $this->apply_parsed_users($ov, $specau);
+        $this->apply_parsed_users($ov, $reqau, $qreq->user());
         $ov->set_anno("req_users", $reqau);
         return $ov;
     }
@@ -183,18 +196,8 @@ class Contacts_PaperOption extends PaperOption {
         } else {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
-        // check emails
-        $specau = [];
-        foreach ($reqau as $au) {
-            if (Contact::is_plausible_or_example_email($au->email)) {
-                $specau[] = $au;
-            } else if ($au->email !== "") {
-                $ov->error("<0>Invalid email address ‘{$au->email}’");
-            } else {
-                $ov->error("<0>Email address required");
-            }
-        }
         // in JSON save (unlike web save), any unmentioned contacts are cleared
+        $specau = $reqau;
         foreach (self::users_anno($ov) as $au) {
             if (self::ca_index($specau, $au->email) === false) {
                 $specau[] = $aux = Author::make_email($au->email);
@@ -202,7 +205,7 @@ class Contacts_PaperOption extends PaperOption {
             }
         }
         // apply specified values
-        $this->apply_parsed_users($ov, $specau);
+        $this->apply_parsed_users($ov, $specau, $user);
         $ov->set_anno("req_users", $reqau);
         return $ov;
     }

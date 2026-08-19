@@ -850,6 +850,9 @@ p + .nearby {
 	padding-bottom: 0.5em !important;
 	padding-bottom: 0.5rem !important;
 }
+.pl-0 {
+	padding-left: 0 !important;
+}
 .pl-1 {
 	padding-left: 0.25em !important;
 	padding-left: 0.25rem !important;
@@ -2242,6 +2245,10 @@ td.padls, th.padls, div.padls {
 .form-h {
 	margin: 0 0 1em;
 }
+legend > .form-h {
+	padding-bottom: 1em;
+	margin-bottom: 0;
+}
 .form-section {
 	margin-bottom: 3em;
 }
@@ -3495,7 +3502,8 @@ tr.pl_statheadrow > td.plstat, .pl-border-top {
 }
 
 /* other list tables */
-.pl_name, .pl_email, .pl_affiliation, .pl_lastvisit, .pl_papers {
+td.pl.pl_name, td.pl.pl_email, td.pl.pl_affiliation, td.pl.pl_lastvisit,
+td.pl.pl_papers {
 	text-align: left;
 	padding-right: 1em;
 }

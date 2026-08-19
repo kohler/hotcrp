@@ -851,7 +851,7 @@ final class PaperStatus extends MessageSet {
             }
         }
         if (!$this->conf->external_login()
-            && !Contact::is_plausible_or_example_email($au->email)) {
+            && !Contact::is_plausible_author_email($au->email, false)) {
             return null;
         }
         $j = $au->unparse_nea_json();
@@ -1124,6 +1124,12 @@ final class PaperStatus extends MessageSet {
         if (!$this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass))) {
             return false;
         }
+        // Tests often provide a Qrequest without a user; tolerate that.
+        // Otherwise, our user must be the same as the Qrequest’s.
+        if (!$qreq->user()) {
+            $qreq->set_user($this->user);
+        }
+        assert($qreq->user()->contactXid === $this->user->contactXid);
         $this->json_fields = $this->override_json_fields ?? false;
         $pj = (object) [];
 

@@ -25,6 +25,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const HAS_RATINGS = 128;
     const HAS_WORDCOUNT = 256;
     const HAS_FIELD = 512;
+    const HAS_BOT = 1024;
 
     /** @var int */
     private $sensitivity = 0;
@@ -32,6 +33,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     private $review_type = 0;
     /** @var int */
     private $status = 0;
+    /** @var bool */
+    private $bot = false;
     /** @var ?list<int> */
     public $round_list;
     /** @var ?list<int> */
@@ -152,6 +155,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if (($this->sensitivity & self::HAS_FIELD) !== 0) {
             $j["field"] = $this->rfsrch->rf->name;
         }
+        if (($this->sensitivity & self::HAS_BOT) !== 0) {
+            $j["bot"] = "yes";
+        }
         return $j;
     }
 
@@ -164,6 +170,18 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         $this->review_type = $rt;
         $this->sensitivity |= self::HAS_RTYPE;
+        return true;
+    }
+    /** Match reviews by whether a bot wrote them. The account kind is stored on
+     * the review as `RF_BOT`, so this needs no join.
+     * @param string $word
+     * @return bool */
+    function apply_bot($word) {
+        if (strcasecmp($word, "ai") !== 0 && strcasecmp($word, "bot") !== 0) {
+            return false;
+        }
+        $this->bot = true;
+        $this->sensitivity |= self::HAS_BOT;
         return true;
     }
     /** @param string $word
@@ -297,6 +315,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
      * @return bool */
     function apply_review_word($word, $conf) {
         return $this->apply_review_type($word)
+            || $this->apply_bot($word)
             || $this->apply_completeness($word)
             || $this->apply_round($word, $conf);
     }
@@ -410,6 +429,14 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                     && $rrow->reviewStatus !== ReviewInfo::RS_APPROVED)
                 || (($this->status & self::MYREQUEST) !== 0
                     && $rrow->requestedBy != $user->contactId)) {
+                return false;
+            }
+        }
+        if ($this->bot) {
+            // who wrote it is what `can_view_review_identity` governs, and for
+            // a bot that answer does not depend on anonymity
+            if (($rrow->rflags & ReviewInfo::RF_BOT) === 0
+                || !$user->can_view_review_identity($prow, $rrow)) {
                 return false;
             }
         }
