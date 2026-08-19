@@ -14,14 +14,14 @@ class Multiconference {
         if ($confid === null && PHP_SAPI !== "cli") {
             $nav = Navigation::get();
             if (($max = $Opt["multiconferenceAnalyzer"] ?? null)) {
-                if (is_string($max)) {
-                    $confid = self::test_multiconference_analyzer($max, $nav);
-                } else {
+                if (is_array($max)) {
                     foreach ($max as $ma) {
-                        if (($confid = self::test_multiconference_analyzer($ma, $nav))) {
-                            break;
+                        if (self::test_multiconference_analyzer($ma, $nav)) {
+                            return;
                         }
                     }
+                } else if (self::test_multiconference_analyzer($max, $nav)) {
+                    return;
                 }
             } else if ($nav->base_path !== "/") {
                 $slash = strrpos($nav->base_path, "/", -2);
@@ -39,21 +39,30 @@ class Multiconference {
         }
     }
 
-    /** @param string $ma
+    /** @param mixed $ma
      * @param NavigationState $nav
-     * @return ?string */
+     * @return bool */
     static private function test_multiconference_analyzer($ma, $nav) {
-        $sp = strpos($ma, " ");
-        $p = 0;
-        if ($sp === 1 && $ma[0] !== "/") {
-            $t = $ma[0];
-            $p = 2;
-            $sp = strpos($ma, " ", $p);
+        if (is_object($ma)) {
+            $mao = $ma;
+            $t = $ma->type;
+            $match = $ma->match;
+            $p = null;
         } else {
-            $t = "b";
-        }
-        if ($sp === false) {
-            return null;
+            $mao = null;
+            $sp = strpos($ma, " ");
+            $p = 0;
+            if ($sp === 1 && $ma[0] !== "/") {
+                $t = $ma[0];
+                $p = 2;
+                $sp = strpos($ma, " ", $p);
+            } else {
+                $t = "b";
+            }
+            if ($sp === false) {
+                return false;
+            }
+            $match = substr($ma, $p, $sp - $p);
         }
         if ($t === "b") {
             $subject = $nav->base_absolute(true);
@@ -66,16 +75,26 @@ class Multiconference {
         } else if ($t === "a") {
             $subject = $nav->site_absolute(true) . $nav->raw_page . $nav->path;
         } else {
-            return null;
+            return false;
         }
-        if (!preg_match("\1\\A" . substr($ma, $p, $sp - $p) . "\1", $subject, $m)) {
-            return null;
+        if (!preg_match("\1\\A{$match}\1", $subject, $m)) {
+            return false;
         }
-        $confid = substr($ma, $sp + 1);
+        $confid = $mao ? $mao->confid : substr($ma, $sp + 1);
         for ($i = 1; isset($m[$i]); ++$i) {
             $confid = str_replace("\${$i}", $m[$i], $confid);
         }
-        return $confid;
+        if (!preg_match('/\A[a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
+            return false;
+        }
+        global $Opt;
+        $Opt["confid"] = $confid;
+        if ($mao && isset($mao->opts)) {
+            foreach ($mao->opts as $k => $v) {
+                $Opt[$k] = $v;
+            }
+        }
+        return true;
     }
 
 
