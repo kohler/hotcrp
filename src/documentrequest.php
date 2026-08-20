@@ -328,7 +328,12 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     /** @return ?FailureReason
      * @suppress PhanAccessReadOnlyProperty */
     private function perm_view_comment_document() {
-        $doc_crow = $cmtid = null;
+        // check document read scope before checking whether document exists
+        if (!$this->viewer->scope_allows(TokenScope::S_DOC_READ, $this->prow)) {
+            return $this->prow->failure_reason(["scope" => TokenScope::S_DOC_READ]);
+        }
+        // find document
+        $cmtid = $doc = $dcrow = null;
         if (str_starts_with($this->linkid, "cx")
             && !str_ends_with($this->linkid, "response")) {
             $cmtid = stoi(substr($this->linkid, 2));
@@ -336,16 +341,22 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         foreach ($this->prow->viewable_comment_skeletons($this->viewer) as $crow) {
             if ($crow->unparse_html_id() === $this->linkid
                 || $crow->commentId === $cmtid) {
-                $doc_crow = $crow;
+                $doc = $crow->attachments()->document_by_filename($this->attachment);
+                $dcrow = $crow;
                 break;
             }
         }
-        if ($doc_crow
-            && ($xdoc = $doc_crow->attachments()->document_by_filename($this->attachment))) {
-            $this->doc = $xdoc;
-            return null;
+        if (!$doc) {
+            return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
         }
-        return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
+        // documents on author comments are subject to “can read submitted
+        // documents” track
+        if (($dcrow->commentType & CommentInfo::CTM_BYAUTHOR) !== 0
+            && ($whynot = $this->viewer->perm_view_paper($this->prow, true, $this->paperId))) {
+            return $whynot;
+        }
+        $this->doc = $doc;
+        return null;
     }
 
 

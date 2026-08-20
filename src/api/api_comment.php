@@ -693,6 +693,16 @@ class Comment_API extends MessageSet {
         return $docs;
     }
 
+    /** @param list<DocumentInfo> $docs
+     * @return list<int> */
+    static private function document_ids($docs) {
+        $ids = [];
+        foreach ($docs as $doc) {
+            $ids[] = $doc->paperStorageId;
+        }
+        return $ids;
+    }
+
     /** Save the comment described by `$req` onto `$xcrow` (an existing comment or
      * a fresh skeleton from `post_target`).
      * @param array<string,mixed> $req
@@ -726,6 +736,14 @@ class Comment_API extends MessageSet {
         }
         if ($req["text"] === false && !$xcrow->commentId) {
             // deleting a nonexistent comment is a no-op
+            return null;
+        }
+
+        // changing comment documents requires document:write scope
+        if (self::document_ids($req["docs"] ?? []) !== $xcrow->attachment_ids()
+            && !$this->user->scope_allows(TokenScope::S_DOC_WRITE, $this->prow)) {
+            $this->prow->failure_reason(["scope" => TokenScope::S_DOC_WRITE])
+                ->set("expand", true)->append_to($this, null, 2);
             return null;
         }
 

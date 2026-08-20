@@ -2140,6 +2140,159 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // Attaching a file, dropping one, and deleting a comment that holds one
+    // are all document writes, and a token scoped to comments alone does none
+    // of them. Editing a comment's text carries its attachments through, which
+    // is not a write.
+    function test_comment_attachments_need_document_scope() {
+        $fresh = function () {
+            $this->conf->invalidate_caches("paper");
+            return $this->conf->checked_paper_by_id(1);
+        };
+        $post = function ($args, $file = null) use ($fresh) {
+            $qreq = new Qrequest("POST", $args);
+            $qreq->approve_token();
+            if ($file) {
+                $qreq->set_file_content("attachment:1:file", $file, "note.txt", "text/plain");
+            }
+            return call_api("=comment", $this->u_chair, $qreq, $fresh());
+        };
+
+        $j = $post(["c" => "new", "text" => "Holds a file", "attachment:1" => "new"], "Body");
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $docid = $fresh()->fetch_comments("commentId={$cid}")[0]
+            ->attachments()->as_list()[0]->paperStorageId;
+
+        $this->u_chair->set_scope("comment:write");
+
+        // uploading needs document scope
+        $j = $post(["c" => "new", "text" => "Another file", "attachment:1" => "new"], "More");
+        xassert(!$j->ok);
+        xassert_str_contains($j->message_list[0]->message ?? "", "document:write");
+
+        // so does dropping one (a POST that says nothing about attachments
+        // carries them, so the drop has to be explicit, as the form makes it)
+        $j = $post(["c" => $cid, "text" => "Holds a file",
+                    "attachment:1" => "{$docid}", "attachment:1:delete" => 1]);
+        xassert(!$j->ok);
+        xassert_str_contains($j->message_list[0]->message ?? "", "document:write");
+
+        // and so does deleting the comment that holds it
+        $j = $post(["c" => $cid, "delete" => 1]);
+        xassert(!$j->ok);
+        xassert_str_contains($j->message_list[0]->message ?? "", "document:write");
+
+        // editing the text does not: the attachments come through unchanged
+        $j = $post(["c" => $cid, "text" => "Still holds it",
+                    "attachment:1" => "{$docid}"]);
+        xassert($j->ok, $j->message_list[0]->message ?? "");
+        $this->u_chair->set_scope();
+
+        $crow = $fresh()->fetch_comments("commentId={$cid}")[0];
+        xassert_eqq($crow->raw_content(), "Still holds it");
+        xassert_eqq(count($crow->attachments()), 1);
+
+        $this->conf->qe("delete from PaperComment where paperId=1");
+        $this->conf->invalidate_caches("paper");
+        MailChecker::clear();
+    }
+
+    // An author's attachment is how the paper itself reaches reviewers, so a
+    // response or author comment answers to the submission PDF's permission as
+    // well as to document scope. A reviewer's attachment does not: that file is
+    // the reviewer's, and no policy about distributing the submission covers it.
+    function test_response_attachments_follow_submission_pdf_permission() {
+        $conf = $this->conf;
+        $conf->qe("delete from PaperComment where paperId=1");
+        $conf->invalidate_caches("paper");
+
+        // this test states its own preconditions rather than inheriting them
+        // from class order: reviewing open, mgbaker's review submitted, and
+        // comments visible to the PC at all
+        $old_revopen = $conf->setting("rev_open");
+        $old_viewrev = $conf->setting("viewrev");
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->save_refresh_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        $this->ensure_paper1_review($conf->checked_paper_by_id(1));
+        $attach = function ($user, $args, $name) {
+            $conf = $this->conf;
+            $conf->invalidate_caches("paper");
+            $qreq = new Qrequest("POST", $args + ["attachment:1" => "new"]);
+            $qreq->approve_token();
+            $qreq->set_file_content("attachment:1:file", "Body", $name, "text/plain");
+            $j = call_api("=comment", $user, $qreq, $conf->checked_paper_by_id(1));
+            xassert($j->ok, $j->message_list[0]->message ?? "");
+            return (int) $j->comment->cid;
+        };
+        // what the rule keys on is the comment's class, not who typed it
+        $rrd = $conf->response_round_list()[0];
+        $rcid = $attach($this->u_chair,
+            ["response" => $rrd->name, "text" => "Our revision"], "resp.txt");
+        $ccid = $attach($this->u_chair,
+            ["c" => "new", "text" => "Reviewer notes", "visibility" => "au"], "rev.txt");
+
+        $fetch = function ($user, $cid, $name) {
+            $dr = new DocumentRequest(["p" => 1, "dt" => "comment-cx{$cid}",
+                                       "attachment" => $name], $user);
+            return $dr->document();
+        };
+
+        // an assigned reviewer may open the submission, so both come through,
+        // and a track that withholds submission PDFs does not reach them: the
+        // reviewer branch of `can_view_paper` answers before any track does
+        $conf->save_refresh_setting("tracks", 1, ["_" => ["viewpdf" => "+none"]]);
+        $prow = $conf->checked_paper_by_id(1);
+        xassert($this->u_mgbaker->can_view_paper($prow, true));
+        xassert_neqq($fetch($this->u_mgbaker, $rcid, "resp.txt"), null);
+        xassert_neqq($fetch($this->u_mgbaker, $ccid, "rev.txt"), null);
+
+        // the population the rule binds is the PC member who may read the
+        // discussion but not open the paper. Only a conference whose comments
+        // are wider than its PDF permission has one.
+        $prow = $conf->checked_paper_by_id(1);
+        $u = null;
+        foreach ($conf->pc_members() as $xu) {
+            if ($xu->can_view_comment($prow, $prow->fetch_comments("commentId={$rcid}")[0])
+                && !$xu->can_view_paper($prow, true)) {
+                $u = $xu;
+                break;
+            }
+        }
+        xassert_neqq($u, null);
+        if ($u) {
+            // the author's attachment goes with the paper; the other stays
+            xassert_eqq($fetch($u, $rcid, "resp.txt"), null);
+            xassert_neqq($fetch($u, $ccid, "rev.txt"), null);
+            // and it is not merely unfetchable: the comment does not say it is
+            // there, so nothing offers a link that would refuse
+            $rcj = $prow->fetch_comments("commentId={$rcid}")[0]->unparse_json($u);
+            $ccj = $prow->fetch_comments("commentId={$ccid}")[0]->unparse_json($u);
+            xassert_eqq($rcj->docs ?? null, null);
+            xassert_eqq(count($ccj->docs ?? []), 1);
+        }
+        $conf->save_refresh_setting("tracks", null);
+        $prow = $conf->checked_paper_by_id(1);
+        if ($u) {
+            // and with the track gone it comes through
+            xassert($u->can_view_paper($prow, true));
+            xassert_neqq($fetch($u, $rcid, "resp.txt"), null);
+        }
+        $conf->save_refresh_setting("viewrev", $old_viewrev);
+        $conf->save_refresh_setting("rev_open", $old_revopen);
+
+        // document scope covers both, whoever wrote them
+        $this->u_mgbaker->set_scope("comment:read");
+        xassert_eqq($fetch($this->u_mgbaker, $rcid, "resp.txt"), null);
+        xassert_eqq($fetch($this->u_mgbaker, $ccid, "rev.txt"), null);
+        $this->u_mgbaker->set_scope();
+        xassert_neqq($fetch($this->u_mgbaker, $ccid, "rev.txt"), null);
+
+        $conf->qe("delete from PaperComment where paperId=1");
+        $conf->invalidate_caches("paper");
+        MailChecker::clear();
+    }
+
     // A staged attachment change is visible through has_attachments()/
     // attachments() before save (the comment reads as its unsaved version),
     // and abort_prop() reverts it.

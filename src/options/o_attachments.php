@@ -94,7 +94,7 @@ class Attachments_PaperOption extends PaperOption {
                     }
                 }
             }
-            if ($qreq["{$name}:delete"]) {
+            if (friendly_boolean($qreq["{$name}:delete"])) {
                 continue;
             }
             if (DocumentInfo::has_request_for($qreq, $name)) {

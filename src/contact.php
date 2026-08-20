@@ -4660,10 +4660,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if ($opt->id === PaperOption::CONTACTSID) {
             return 2;
         }
+        $override_ec = ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0;
         if (!$opt->on_form()
-            || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
+            || !$opt->test_exists($prow, $override_ec)
             || (!$opt->test_editable($prow) && !$this->can_manage($prow))
-            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))) {
+            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
+            || !$this->scope_allows(TS::S_SUB_WRITE | ($opt->has_document() ? TS::S_DOC_WRITE : 0), $prow)) {
             return 0;
         }
         if ($prow->outcome > 0
@@ -4674,7 +4676,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         } else if ($opt->is_final()) {
             return 0;
         }
-        if (!$opt->test_exists($prow)) {
+        if ($override_ec
+            && !$opt->test_exists($prow)) {
             return $opt->exists_script_expression($prow) ? 1 : 0;
         }
         return 2;

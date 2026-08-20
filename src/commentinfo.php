@@ -669,6 +669,15 @@ class CommentInfo {
         return ($this->commentType & self::CT_HASDOC) !== 0;
     }
 
+    /** @return bool */
+    function has_viewable_attachments(Contact $viewer) {
+        // Assumes $viewer->can_view_comment($this).
+        return $this->has_attachments()
+            && $viewer->scope_allows(TokenScope::S_DOC_READ, $this->prow)
+            && (($this->commentType & self::CTM_BYAUTHOR) === 0
+                || $viewer->can_view_pdf($this->prow));
+    }
+
     /** @return DocumentInfoSet */
     function attachments() {
         // `_docs` holds the staged set when a change is registered (so the
@@ -867,7 +876,7 @@ class CommentInfo {
             // do not include content
         } else if ($viewer->can_view_comment_content($this->prow, $this)) {
             $cj["text"] = $this->content($viewer);
-            if ($this->has_attachments()) {
+            if ($this->has_viewable_attachments($viewer)) {
                 $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
             }
             if (($mentions = $this->data("mentions"))
