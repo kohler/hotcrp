@@ -190,6 +190,22 @@ class Session_API {
         return $j;
     }
 
+    /** @param string $s
+     * @return ?string */
+    static function clean_ftext($s) {
+        // the only formats allowed are <0>, <1>, and clean <5>
+        $fmt = Ftext::format($s);
+        if ($fmt === null) {
+            return "<0>{$s}";
+        } else if ($fmt === 0 || $fmt === 1) {
+            return $s;
+        } else if ($fmt === 5
+                   && ($h = CleanHtml::basic_clean(substr($s, 3))) !== null) {
+            return "<5>{$h}";
+        }
+        return null;
+    }
+
     static function stashmessages(Contact $user, Qrequest $qreq) {
         if (isset($qreq->smsg)
             && (strlen($qreq->smsg) < 10 || strlen($qreq->smsg) > 64 || !ctype_alnum($qreq->smsg))) {
@@ -216,16 +232,16 @@ class Session_API {
                 $ml[] = new MessageItem($status);
                 continue;
             }
-            // If nonempty, only formats <0>, <1>, and clean <5> allowed
-            $fmt = Ftext::format($message);
-            if ($fmt === null) {
-                $ml[] = new MessageItem($status, null, "<0>{$message}");
-            } else if ($fmt === 0 || $fmt === 1) {
-                $ml[] = new MessageItem($status, null, $message);
-            } else if ($fmt === 5
-                       && ($html = CleanHtml::basic_clean(substr($message, 3)))) {
-                $ml[] = new MessageItem($status, null, "<5>{$html}");
+            $message = self::clean_ftext($message);
+            if ($message === null) {
+                continue;
             }
+            $mi = new MessageItem($status, null, $message);
+            // Only string landmarks are relevant
+            if (isset($mx->landmark) && is_string($mx->landmark)) {
+                $mi->landmark = $mx->landmark;
+            }
+            $ml[] = $mi;
         }
         if (empty($ml)) {
             return JsonResult::make_ok()->set("smsg", false);

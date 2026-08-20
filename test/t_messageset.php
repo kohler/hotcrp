@@ -67,6 +67,32 @@ class MessageSet_Tester {
         xassert_eqq($dst->full_feedback_text(), "Field ‘zomm’ is reserved\n");
     }
 
+    function test_landmark_rendering() {
+        // an ordinary landmark names a location: escaped, and set off by a colon
+        $mi = MessageItem::warning("<0>Entry required");
+        $mi->landmark = "<5>weird.txt:39";
+        $t = MessageSet::feedback_html([$mi]);
+        xassert_str_contains($t, "&lt;5&gt;weird.txt:39:");
+        xassert(!str_contains($t, "<5>weird.txt"));
+        xassert_eqq(MessageSet::feedback_text([$mi]), "<5>weird.txt:39: Entry required\n");
+
+        // an arrow landmark on an empty message with context marks up that
+        // context, so it is emphasized and set off by a space
+        $mi = MessageItem::inform_at("q", "");
+        $mi->landmark = "→ expanded from";
+        $mi->context = "ss:outer";
+        $mi->pos1 = 0;
+        $mi->pos2 = 8;
+        $t = MessageSet::feedback_html([$mi]);
+        xassert_str_contains($t, "<span class=\"lineno\">→ <em>expanded from</em></span> ");
+        xassert(!str_contains($t, "expanded from:"));
+
+        // the same landmark without context is just a location
+        $mi2 = MessageItem::warning("<0>Bad search");
+        $mi2->landmark = "→ expanded from";
+        xassert_str_contains(MessageSet::feedback_html([$mi2]), "→ expanded from:");
+    }
+
     function test_under_no_separator() {
         $ms = new MessageSet;
         $ms->error_at("aubergine", "<0>Error");

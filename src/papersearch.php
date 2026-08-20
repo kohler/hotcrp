@@ -60,7 +60,7 @@ class SearchStringContext {
             $mi->context = $context->q;
             $mi->nested_context = true;
             $mi = MessageItem::inform_at($mi->field, "");
-            $mi->landmark = "<5>→ <em>expanded from</em> ";
+            $mi->landmark = "→ expanded from";
             $mi->pos1 = $context->ppos1;
             $mi->pos2 = $context->ppos2;
             $mis[] = $mi;

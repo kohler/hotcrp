@@ -1819,11 +1819,11 @@ function message_list_status(ml, field) {
     return status;
 }
 
-function render_list(ml) {
+function render_list(ml, options) {
     const ul = document.createElement("ul");
     ul.className = "feedback-list";
     for (const mi of ml || []) {
-        append_item(ul, mi);
+        append_item(ul, mi, options);
     }
     return ul;
 }
@@ -1833,7 +1833,7 @@ function maybe_render_list(ml) {
     return ul.firstChild ? ul : null;
 }
 
-function render_alert_onto(elt, ml) {
+function render_alert_onto(elt, ml, options) {
     addClass(elt, "msg");
     elt.className = elt.className.replace(/(?:^| )msg-(?:success|error|warning|info)(?= |$)/, "");
     const status = message_list_status(ml);
@@ -1846,12 +1846,12 @@ function render_alert_onto(elt, ml) {
     } else {
         addClass(elt, "msg-info");
     }
-    elt.replaceChildren(render_list(ml));
+    elt.replaceChildren(render_list(ml, options));
     return elt;
 }
 
-function render_alert(ml) {
-    return render_alert_onto(document.createElement("div"), ml);
+function render_alert(ml, options) {
+    return render_alert_onto(document.createElement("div"), ml, options);
 }
 
 function redundant_item(mi, ul) {
@@ -1862,7 +1862,37 @@ function redundant_item(mi, ul) {
             && ul.getAttribute("data-last-mi") === mi.status + " " + mi.message);
 }
 
-function append_item(ul, mi) {
+function landmark_context_marker(mi) {
+    if ((mi.message == null || mi.message === "")
+        && mi.context
+        && typeof mi.landmark === "string") {
+        return /^(→)\s+(\S.*?)\s*$/.exec(mi.landmark);
+    }
+    return null;
+}
+
+function prepend_landmark(ul, div, mi) {
+    const lm = mi.landmark;
+    if (typeof lm !== "string"
+        || lm === ""
+        || (mi.status === -5 /*MessageSet::INFORM*/
+            && lm === ul.getAttribute("data-last-landmark"))) {
+        return;
+    }
+    const mk = landmark_context_marker(mi), e = $e("span", "lineno");
+    if (mk) {
+        e.append(mk[1], " ", $e("em", null, mk[2]));
+    } else {
+        e.append(lm + ":");
+    }
+    div.prepend(e, " ");
+    if (mi.status !== -5) {
+        ul.setAttribute("data-last-landmark", lm);
+    }
+}
+
+function append_item(ul, mi, options) {
+    const want_landmark = options && options.landmarks;
     let li, div;
     if (!redundant_item(mi, ul)) {
         let sklass = "";
@@ -1879,6 +1909,9 @@ function append_item(ul, mi) {
         }
         li.appendChild(div);
         render_text.ftext_onto(div, mi.message);
+        if (want_landmark && mi.landmark) {
+            prepend_landmark(ul, div, mi);
+        }
         if (!mi.landmark) {
             ul.setAttribute("data-last-mi", mi.status + " " + mi.message);
         } else {
@@ -1893,12 +1926,16 @@ function append_item(ul, mi) {
         if (mi.status > 0)
             sklass += mi.status > 1 ? " is-error" : " is-warning";
         ul.lastChild || ul.appendChild(document.createElement("li"));
-        ul.lastChild.appendChild($e("div", "msg-context",
-            s.substring(0, p1), $e("span", sklass, s.substring(p1, p2)), s.substring(p2)));
+        const ctxe = $e("div", "msg-context",
+            s.substring(0, p1), $e("span", sklass, s.substring(p1, p2)), s.substring(p2));
+        if (want_landmark && mi.landmark && (mi.message == null || mi.message === "")) {
+            prepend_landmark(ul, ctxe, mi);
+        }
+        ul.lastChild.appendChild(ctxe);
     }
 }
 
-function append_item_near(elt, mi) {
+function append_item_near(elt, mi, options) {
     if (elt instanceof RadioNodeList) {
         elt = elt.item(0);
     }
@@ -1927,7 +1964,7 @@ function append_item_near(elt, mi) {
         owner.insertBefore(nfl, fl);
         fl = nfl;
     }
-    append_item(fl, mi);
+    append_item(fl, mi, options);
     return true;
 }
 
@@ -1952,7 +1989,7 @@ function render_list_within(container, ml, options) {
     const gmlist = [], nmap = name_map(container), summary = options && options.summary;
     for (const mi of ml || []) {
         const e = mi.field && nmap[mi.field];
-        if ((e && feedback.append_item_near(e, mi))
+        if ((e && feedback.append_item_near(e, mi, options))
             || summary === false
             || summary === "none"
             || (summary === "fieldless" && mi.field)) {
@@ -1965,7 +2002,8 @@ function render_list_within(container, ml, options) {
         while (context && context.nodeName !== "H2" && context.nodeName !== "H3") {
             context = context.nextElementSibling;
         }
-        container.insertBefore(feedback.render_alert(gmlist), context);
+        const alerte = feedback.render_alert(gmlist, options);
+        context ? context.after(alerte) : container.append(alerte);
     }
 }
 

@@ -1084,17 +1084,10 @@ class MessageSet {
             if ($mi->landmark !== null
                 && $mi->landmark !== ""
                 && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
-                $lmx = $mi->landmark;
-                if (str_starts_with($lmx, "<5>")
-                    && ($clmx = CleanHTML::basic_clean(substr($lmx, 3))) !== null) {
-                    $lmx = $clmx;
+                if (($mk = self::landmark_context_marker($mi))) {
+                    $lmx = htmlspecialchars($mk[0]) . " <em>" . htmlspecialchars($mk[1]) . "</em>";
                 } else {
-                    $lmx = htmlspecialchars($lmx);
-                }
-                if (str_ends_with($lmx, " ")) {
-                    $lmx = rtrim($lmx);
-                } else {
-                    $lmx .= ":";
+                    $lmx = htmlspecialchars($mi->landmark) . ":";
                 }
                 $lm = "<span class=\"lineno\">{$lmx}</span> ";
             } else {
@@ -1173,6 +1166,20 @@ class MessageSet {
         return self::feedback_html($this->message_list());
     }
 
+    /** Match a landmark that marks up context rather than naming a location.
+     * Rendered specially in HTML.
+     * @param MessageItem $mi
+     * @return ?array{string,string} */
+    static private function landmark_context_marker($mi) {
+        if (($mi->message ?? "") === ""
+            && $mi->context !== null
+            && is_string($mi->landmark)
+            && preg_match('/\A(→)\s++(\S.*+)\z/su', $mi->landmark, $m)) {
+            return [$m[1], rtrim($m[2])];
+        }
+        return null;
+    }
+
     /** @param iterable<MessageItem> $message_list
      * @param bool $include_fields
      * @return string */
@@ -1199,7 +1206,9 @@ class MessageSet {
             if ($include_fields && $mi->field !== null) {
                 $mt = "{$mi->field}: {$mt}";
             }
-            if ($mi->landmark !== null && $mi->landmark !== "") {
+            if (($mk = self::landmark_context_marker($mi))) {
+                $mt = "{$mk[0]} {$mk[1]} {$mt}";
+            } else if ($mi->landmark !== null && $mi->landmark !== "") {
                 $mt = "{$mi->landmark}: {$mt}";
             }
             if (!empty($t) && $mi->status === self::INFORM) {
