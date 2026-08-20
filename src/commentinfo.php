@@ -116,9 +116,12 @@ class CommentInfo {
     /** @var array<string,int>
      * @readonly */
     static private $topic_revmap = [
+        "dec" => 0x200 /* CT_TOPIC_DECISION */,
+        "decision" => 0x200 /* CT_TOPIC_DECISION */,
         "paper" => 0x40 /* CT_TOPIC_PAPER */,
         "rev" => 0,
-        "dec" => 0x200 /* CT_TOPIC_DECISION */
+        "reviews" => 0,
+        "submission" => 0x40 /* CT_TOPIC_PAPER */
     ];
 
 
