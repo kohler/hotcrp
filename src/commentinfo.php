@@ -102,12 +102,16 @@ class CommentInfo {
      * @readonly */
     static private $visibility_revmap = [
         "admin" => 0x00000 /* CTVIS_ADMINONLY */,
-        "pc" => 0x10000 /* CTVIS_PCONLY */,
-        "p" => 0x10000 /* CTVIS_PCONLY */,
-        "rev" => 0x20000 /* CTVIS_REVIEWER */,
-        "r" => 0x20000 /* CTVIS_REVIEWER */,
+        "admin_only" => 0x00000 /* CTVIS_ADMINONLY */,
+        "a" => 0x30000 /* CTVIS_AUTHOR */,
         "au" => 0x30000 /* CTVIS_AUTHOR */,
-        "a" => 0x30000 /* CTVIS_AUTHOR */
+        "authors" => 0x30000 /* CTVIS_AUTHOR */,
+        "p" => 0x10000 /* CTVIS_PCONLY */,
+        "pc" => 0x10000 /* CTVIS_PCONLY */,
+        "pc_only" => 0x10000 /* CTVIS_PCONLY */,
+        "r" => 0x20000 /* CTVIS_REVIEWER */,
+        "rev" => 0x20000 /* CTVIS_REVIEWER */,
+        "reviewers" => 0x20000 /* CTVIS_REVIEWER */
     ];
     /** @var array<string,int>
      * @readonly */
@@ -313,7 +317,7 @@ class CommentInfo {
         if (($o = $this->unparse_ordinal()) !== null) {
             return "c{$o}";
         } else if (($rrd = $this->response_round()) !== null) {
-            return $rrd->unnamed ? "response" : "{$rrd->name}response";
+            return $rrd->id_name();
         }
         return "cx{$this->commentId}";
     }
@@ -547,7 +551,7 @@ class CommentInfo {
     }
 
     /** @return ?string */
-    private function unparse_commenter_pseudonym(ContactPermissions $viewer) {
+    function unparse_commenter_pseudonym(ContactPermissions $viewer) {
         if (($this->commentType & self::CTM_BYAUTHOR) !== 0) {
             return "Author";
         } else if (($this->commentType & (self::CTM_VIS | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)

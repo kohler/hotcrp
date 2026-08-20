@@ -101,6 +101,11 @@ class ResponseRound {
     }
 
     /** @return string */
+    function id_name() {
+        return $this->unnamed ? "response" : $this->name . "response";
+    }
+
+    /** @return string */
     function instructions(Conf $conf) {
         $wl = new FmtArg("wordlimit", $this->wordlimit);
         if ($this->instructions !== null) {
