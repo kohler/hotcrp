@@ -93,6 +93,173 @@ class ReviewAPI_Tester {
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
 
+    function test_post_dry_run_if_warning() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        // an unknown field warns, so `if_warning` withholds the save
+        $qreq = TestQreq::post_json(["object" => "review", "OveMer" => 3, "bogus_field" => 1],
+            ["dry_run" => "if_warning"]);
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->change_list, ["s01"]);
+        xassert(!isset($j->review));
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+
+        // the same save without the warning commits
+        $qreq = TestQreq::post_json(["object" => "review", "OveMer" => 3],
+            ["dry_run" => "if_warning"]);
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run ?? null, null);
+        xassert_eqq($j->valid, true);
+        xassert_eqq($j->review->OveMer, 3);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
+        // restore
+        call_api("=review", $this->u_diot, ["r" => "0", "OveMer" => "2", "ready" => "1"], $prow);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_if_warning_error() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        // an error is not a warning to be confirmed: the item is withheld *and*
+        // reported invalid, and the request fails
+        $qreq = TestQreq::post_json(["object" => "review", "OveMer" => 9],
+            ["dry_run" => "if_warning"]);
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run, true);
+        xassert(str_contains(json_encode($j->message_list ?? []), "Invalid value"));
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_dry_run_if_error() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        // a warning is not an error: `if_error` commits despite one
+        $qreq = TestQreq::post_json(["object" => "review", "OveMer" => 3, "bogus_field" => 1],
+            ["dry_run" => "if_error"]);
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run ?? null, null);
+        xassert_eqq($j->valid, true);
+        xassert(str_contains(json_encode($j->message_list ?? []), "unknown field"));
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
+
+        // an error withholds the whole save, which a plain request would have
+        // committed in part
+        $qreq = TestQreq::post_json(["object" => "review", "OveMer" => 1, "RevExp" => 99],
+            ["dry_run" => "if_error"]);
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->dry_run, true);
+        xassert(!isset($j->review));
+        xassert(str_contains(json_encode($j->message_list ?? []), "Invalid value"));
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
+
+        // without the mode, the same request saves what it can
+        $j = call_api("review", $this->u_diot,
+            TestQreq::post_json(["object" => "review", "OveMer" => 1, "RevExp" => 99]), $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->valid, true);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 1);
+        // restore
+        call_api("=review", $this->u_diot, ["r" => "0", "OveMer" => "2", "ready" => "1"], $prow);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
+    function test_post_text_partial_ready_draft() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $u = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+        // start a draft review
+        $qreq = TestQreq::post_json(["object" => "review", "email" => $u->email,
+            "OveMer" => 2, "ready" => false], ["r" => "new"]);
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        $rid = $j->rid;
+        $prow->load_reviews(true);
+        $rrow = $prow->checked_review_by_user($u);
+        xassert($rrow->reviewStatus < ReviewInfo::RS_DELIVERED);
+
+        // its offline form asks for submission by default; upload one that is
+        // still missing a required entry
+        $dl = call_api_result("review", $this->u_chair,
+            TestQreq::get(["p" => 18, "r" => $rid, "format" => "form"]));
+        xassert($dl instanceof Downloader);
+        $text = $dl->content_string();
+        xassert_str_contains($text, "\nReady\n");
+        $qreq = TestQreq::post(["p" => 18, "dry_run" => "if_error"])
+            ->set_file_content("file", $text, "review.txt", "text/plain");
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+
+        // the incomplete form warns rather than erroring, so `if_error` commits
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run ?? null, null);
+        xassert_eqq($j->valid, true);
+        $ml = $j->message_list ?? [];
+        xassert(!empty($ml));
+        foreach ($ml as $mi) {
+            xassert_eqq($mi->status, MessageSet::WARNING);
+        }
+        xassert(str_contains(json_encode($ml), "be submitted until entries"));
+        // and the review is still a draft
+        $prow->load_reviews(true);
+        xassert($prow->checked_review_by_user($u)->reviewStatus < ReviewInfo::RS_DELIVERED);
+
+        // the same shortfall on the web form path is still an error
+        $qreq = TestQreq::post(["p" => 18, "r" => $rid, "ready" => 1, "OveMer" => 2]);
+        $j = call_api("=review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert(str_contains(json_encode($j->message_list ?? []), "be submitted until entries"));
+        $status = 0;
+        foreach ($j->message_list ?? [] as $mi) {
+            $status = max($status, $mi->status);
+        }
+        xassert_eqq($status, MessageSet::ERROR);
+
+        $this->conf->qe("delete from PaperReview where paperId=18 and contactId=?", $u->contactId);
+        $prow->load_reviews(true);
+    }
+
+    function test_post_text_if_warning() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
+        // a draft with no overall merit warns (that entry is required), so
+        // `if_warning` withholds the upload
+        $draft = str_replace(["\nReady\n", "\n2. Weak reject\n"], ["\n\n", "\n\n"], $text);
+        $qreq = TestQreq::post(["p" => 18, "dry_run" => "if_warning"])
+            ->set_file_content("file", $draft, "review18A.txt", "text/plain");
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run, true);
+        xassert_eqq($j->valid, true);
+        $prow->load_reviews(true);
+        $rrow = $prow->checked_review_by_user($this->u_diot);
+        xassert_eq($rrow->fidval("s01"), 2);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+        // a form that warns about nothing commits under `if_warning`
+        $modified = str_replace("2. Weak reject", "3. Weak accept", $text);
+        $qreq = TestQreq::post(["p" => 18, "dry_run" => "if_warning"])
+            ->set_file_content("file", $modified, "review18A.txt", "text/plain");
+        $j = call_api("review", $this->u_diot, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->dry_run ?? null, null);
+        xassert_eqq($j->review->OveMer, 3);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
+        // restore
+        call_api("=review", $this->u_diot, ["r" => "0", "OveMer" => "2", "ready" => "1"], $prow);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
+    }
+
     function test_post_conflict() {
         $prow = $this->conf->checked_paper_by_id(18);
         $rr = $prow->checked_review_by_user($this->u_diot);

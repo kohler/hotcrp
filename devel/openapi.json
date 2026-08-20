@@ -169,9 +169,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks input for errors, but does not save changes",
+                        "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors",
                         "x-order": 2
                     },
                     {
@@ -319,9 +319,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks input for errors, but does not save changes",
+                        "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors",
                         "x-order": 4
                     },
                     {
@@ -738,9 +738,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks input for errors, but does not save changes",
+                        "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors",
                         "x-order": 4
                     },
                     {
@@ -5857,9 +5857,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks the request but does not delete.",
+                        "description": "True checks the request but does not delete; `if_warning` deletes only if there are no errors or warnings, `if_error` only if there are no errors.",
                         "x-order": 1
                     },
                     {
@@ -6051,9 +6051,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks input for errors, but does not save changes.",
+                        "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors.",
                         "x-order": 9
                     },
                     {
@@ -6440,9 +6440,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks every item for errors, but does not save changes.",
+                        "description": "True checks every item for errors, but does not save changes; `if_warning` saves each item only if that item has no errors or warnings, `if_error` only if it has no errors.",
                         "x-order": 4
                     },
                     {
@@ -7660,7 +7660,7 @@
                         "schema": {
                             "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings.",
+                        "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors.",
                         "x-order": 16
                     },
                     {
@@ -7898,7 +7898,7 @@
                         "schema": {
                             "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks the request but does not delete; `if_warning` deletes only if there are no errors or warnings.",
+                        "description": "True checks the request but does not delete; `if_warning` deletes only if there are no errors or warnings, `if_error` only if there are no errors.",
                         "x-order": 3
                     },
                     {
@@ -8144,7 +8144,7 @@
                         "schema": {
                             "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks input for errors, but does not save changes; `if_warning` saves each item only if that item has no errors or warnings.",
+                        "description": "True checks input for errors, but does not save changes; `if_warning` saves each item only if that item has no errors or warnings, `if_error` only if it has no errors.",
                         "x-order": 4
                     },
                     {
@@ -9751,9 +9751,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/components/schemas/dry_run_mode"
                         },
-                        "description": "True checks input for errors, but does not save changes",
+                        "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors",
                         "x-order": 0
                     },
                     {
@@ -11878,11 +11878,12 @@
                     {
                         "type": "string",
                         "enum": [
-                            "if_warning"
+                            "if_warning",
+                            "if_error"
                         ]
                     }
                 ],
-                "description": "Boolean, or `if_warning` to make the dry run conditional on warnings",
+                "description": "Boolean, or `if_warning`/`if_error` to make the dry run conditional on warnings or errors",
                 "examples": [
                     1,
                     "if_warning"

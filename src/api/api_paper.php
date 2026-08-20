@@ -52,6 +52,12 @@ class Paper_API extends MessageSet {
     /** @var bool */
     private $dry_run = false;
     /** @var bool */
+    private $dry_run_if_warning = false;
+    /** @var bool */
+    private $dry_run_if_error = false;
+    /** @var bool */
+    private $dry_run_here = false;
+    /** @var bool */
     private $ignore_unwritable_fields = false;
     /** @var bool */
     private $notify = true;
@@ -186,7 +192,18 @@ class Paper_API extends MessageSet {
     }
 
     private function set_post_param(Qrequest $qreq) {
-        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
+        if (isset($qreq->dry_run)) {
+            if ($qreq->dry_run === "if_warning") {
+                $this->dry_run_if_warning = true;
+            } else if ($qreq->dry_run === "if_error") {
+                $this->dry_run_if_error = true;
+            } else if (($dr = friendly_boolean($qreq->dry_run)) !== null) {
+                $this->dry_run = $dr;
+            } else {
+                JsonResult::make_parameter_error("dry_run")->complete();
+            }
+        }
+        $this->dry_run_here = $this->dry_run;
         $this->ignore_unwritable_fields = friendly_boolean($qreq->ignore_unwritable_fields) ?? false;
         if ($this->user->privChair) {
             if (friendly_boolean($qreq->disable_users)) {
@@ -368,7 +385,16 @@ class Paper_API extends MessageSet {
         $manage = $ps->can_user_manage();
         $ps->set_notify($this->notify || !$manage)
             ->set_notify_authors($this->notify_authors || !$manage);
-        if ($ok && !$this->dry_run) {
+
+        // adjust dry run status
+        $this->dry_run_here = $this->dry_run;
+        if ((($this->dry_run_if_warning && $ps->has_problem())
+             || ($this->dry_run_if_error && $ps->has_error()))
+            && !$ps->has_error_at("if_unmodified_since")) {
+            $this->dry_run_here = true;
+        }
+
+        if ($ok && !$this->dry_run_here) {
             $ok = $ps->execute_save();
         } else {
             $ps->abort_save();
@@ -384,7 +410,7 @@ class Paper_API extends MessageSet {
             }
             $this->append_item($mi);
         }
-        if ($ok && !$this->dry_run) {
+        if ($ok && !$this->dry_run_here) {
             if ($ps->has_change()) {
                 $this->execute_change($ps);
             }
@@ -394,7 +420,7 @@ class Paper_API extends MessageSet {
             $this->papers[] = null;
         }
         $this->status_list[] = new Paper_API_Status(
-            $this->dry_run, $ok, $ps->change_list(true),
+            $this->dry_run_here, $ok, $ps->change_list(true),
             $ps->has_error_at("if_unmodified_since"),
             $ps->saved_pid() ?? "new"
         );
@@ -409,7 +435,7 @@ class Paper_API extends MessageSet {
     }
 
     private function execute_fail() {
-        $this->status_list[] = new Paper_API_Status($this->dry_run);
+        $this->status_list[] = new Paper_API_Status($this->dry_run_here);
         $this->papers[] = null;
     }
 
@@ -516,7 +542,7 @@ class Paper_API extends MessageSet {
         if ($conflict) {
             $this->error_at("if_unmodified_since", $this->conf->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
             $valid = false;
-        } else if ($this->dry_run) {
+        } else if ($this->dry_run_here) {
             $valid = true;
         } else {
             if ($this->notify && $this->notify_authors) {
@@ -527,7 +553,7 @@ class Paper_API extends MessageSet {
             }
             $valid = $prow->delete_from_database($this->user);
         }
-        $this->status_list[] = new Paper_API_Status($this->dry_run, $valid, ["delete"], $conflict, $prow->paperId);
+        $this->status_list[] = new Paper_API_Status($this->dry_run_here, $valid, ["delete"], $conflict, $prow->paperId);
         $this->papers[] = null;
         return $this->post_result();
     }

@@ -369,6 +369,45 @@ class PaperAPI_Tester {
         $this->conf->id_randomizer()->cleanup();
     }
 
+    function test_dry_run_conditional() {
+        $prow = $this->conf->checked_paper_by_id($this->npid);
+        $title = $prow->title;
+        // a paper save is forgiving: a bad field is reported and left alone
+        // while the rest is saved, so `if_error` withholds the whole save
+        $qreq = TestQreq::post_json((object) ["object" => "paper", "pid" => $prow->paperId,
+            "title" => "Conditional dry run", "submission" => (object) ["content_base64" => "!!"]],
+            ["dry_run" => "if_error"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq, $prow);
+        xassert_eqq($jr->dry_run, true);
+        xassert_eqq($jr->paper ?? null, null);
+        $this->conf->invalidate_caches("paper");
+        xassert_eqq($this->conf->checked_paper_by_id($prow->paperId)->title, $title);
+
+        // with no errors, `if_error` commits
+        $qreq = TestQreq::post_json((object) ["object" => "paper", "pid" => $prow->paperId,
+            "title" => "Conditional dry run"], ["dry_run" => "if_error"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq, $prow);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->dry_run ?? null, null);
+        xassert_eqq($jr->change_list, ["title"]);
+        $this->conf->invalidate_caches("paper");
+        xassert_eqq($this->conf->checked_paper_by_id($prow->paperId)->title, "Conditional dry run");
+
+        // an unrecognized mode is a parameter error, not a silent live save
+        $qreq = TestQreq::post_json((object) ["object" => "paper", "pid" => $prow->paperId,
+            "title" => "Should not be saved"], ["dry_run" => "bogus"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq, $prow);
+        xassert_eqq($jr->ok, false);
+        $this->conf->invalidate_caches("paper");
+        xassert_eqq($this->conf->checked_paper_by_id($prow->paperId)->title, "Conditional dry run");
+
+        // restore
+        $qreq = TestQreq::post_json((object) ["object" => "paper", "pid" => $prow->paperId,
+            "title" => $title]);
+        call_api("=paper", $this->u_estrin, $qreq, $prow);
+        $this->conf->invalidate_caches("paper");
+    }
+
     function test_pid_mismatch() {
         $qreq = TestQreq::post_json(["title" => "Foo", "pid" => $this->npid + 1],
             ["p" => 1, "dry_run" => 1]);

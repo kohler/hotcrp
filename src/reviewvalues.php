@@ -1171,14 +1171,17 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        // warn about missing fields
+        // warn about missing fields. Offline forms default to "Ready", so it's
+        // much kinder to users to treat uploading partial forms as a warning
         if ($fmissing) {
-            $status = $want_ready ? self::ERROR : self::WARNING;
+            $draft_upload = $this->text !== null
+                && $oldstatus < ReviewInfo::RS_DELIVERED;
+            $status = $want_ready && !$draft_upload ? self::ERROR : self::WARNING;
             foreach ($fmissing as $f) {
                 $this->rvmsg($status, $f->short_id, $this->conf->_("<0>Entry required"));
             }
-            if ($status === self::ERROR) {
-                $this->rvmsg(self::ERROR, "ready", $this->conf->_("<0>The review can’t be submitted until entries are provided for all required fields."));
+            if ($want_ready) {
+                $this->rvmsg($status, "ready", $this->conf->_("<0>The review can’t be submitted until entries are provided for all required fields."));
             }
         }
 
@@ -1811,20 +1814,26 @@ class ReviewValues extends MessageSet {
             $ml[] = MessageItem::inform($this->conf->_("<0>There were {$errtype} while parsing the uploaded review file."));
         }
         foreach ($this->message_list() as $mi) {
-            if ($mi->field
-                && $mi->message
-                && $mi->status !== MessageSet::INFORM
-                && ($f = $this->rf->fmap[$mi->field] ?? null)) {
-                if ($link_fields) {
-                    $pfx = "<5><a href=\"#{$mi->field}\">{$f->name_html}</a>: ";
-                } else {
-                    $pfx = "<0>{$f->name}: ";
-                }
-                $mi = $mi->with_message(Ftext::concat($pfx, $mi->message));
-            }
-            $ml[] = $mi;
+            $ml[] = $this->decorate_message($mi, $link_fields);
         }
         $this->conf->feedback_msg($ml);
+    }
+
+    /** Prefix a message keyed to a review field with that field's name.
+     * @param MessageItem $mi
+     * @param bool $link_fields
+     * @return MessageItem */
+    function decorate_message($mi, $link_fields = false) {
+        if (!$mi->field
+            || !$mi->message
+            || $mi->status === MessageSet::INFORM
+            || !($f = $this->rf->fmap[$mi->field] ?? null)) {
+            return $mi;
+        }
+        $pfx = $link_fields
+            ? "<5><a href=\"#{$mi->field}\">{$f->name_html}</a>: "
+            : "<0>{$f->name}: ";
+        return $mi->with_message(Ftext::concat($pfx, $mi->message));
     }
 
     function json_report() {

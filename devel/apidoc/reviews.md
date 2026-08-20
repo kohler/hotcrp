@@ -198,8 +198,13 @@ The API also supports form upload using the parameter conventions of the HotCRP
 web application. These conventions are subject to change, and third-party
 applications should prefer JSON.
 
-To test a modification without saving, supply a `dry_run=1` parameter. This will
-test the input but make no visible changes to the database.
+To test a modification without saving, supply a `dry_run=1` parameter. This
+will test the input but make no visible changes to the database. Supply
+`dry_run=if_warning` to save only if the modification produces no warnings, or
+`dry_run=if_error` to save unless it produces an error (some mistakes, such as
+review fields with invalid values, are reported as errors but do not
+ordinarily prevent saving). The response reports `dry_run` when a save was
+withheld.
 
 * scope review:write
 * param ?p pid: Submission to review. Optional when the JSON or text data
@@ -226,7 +231,7 @@ test the input but make no visible changes to the database.
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or text file.
 
     * oneof body
-* param ?dry_run boolean: True checks input for errors, but does not save changes.
+* param ?dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors.
 * param ?override boolean: Administrators only: bypass deadline and other soft checks.
 * param ?if_vtag_match integer: Reject the modification unless the review’s
   current version tag equals this value. `0` matches only a review that does not
@@ -271,13 +276,15 @@ Delete the review on submission `p` selected by `r` (a numeric review ID or a
 display ordinal; an empty `r` addresses the caller’s own review). Only
 administrators may delete reviews.
 
-To test without deleting, supply `dry_run=1`. The edit-conflict preconditions
-`if_vtag_match` and `if_unmodified_since` behave as for [`POST /review`](#post-review).
+To test without deleting, supply `dry_run=1`, or `if_warning` or `if_error` to
+delete only if the request produces no warnings or no errors. The
+edit-conflict preconditions `if_vtag_match` and `if_unmodified_since` behave
+as for [`POST /review`](#post-review).
 
 * scope review:admin
 * param ?r rid: Review to delete: a numeric review ID or display ordinal, or
   empty for the caller’s own review.
-* param ?dry_run boolean: True checks the request but does not delete.
+* param ?dry_run dry_run_mode: True checks the request but does not delete; `if_warning` deletes only if there are no errors or warnings, `if_error` only if there are no errors.
 * param ?if_vtag_match integer: Reject the delete unless the review’s current
   version tag equals this value.
 * param ?if_unmodified_since string: Reject the delete if the review has been
@@ -373,7 +380,9 @@ not roll back the others. The response reports one entry per input review, in
 order, in `status_list`; the parallel `reviews` array holds the resulting
 [review object](#tag-reviews) for each committed item (and `null` for items that
 were invalid or skipped). A `dry_run=1` request validates every item but commits
-nothing.
+nothing; a `dry_run=if_warning` request commits each item that produces no
+warnings, and `dry_run=if_error` each item that produces no errors, leaving
+`null` in `reviews` for the items they withhold.
 
 The `if_vtag_match` and `if_unmodified_since` request parameters set batch-wide
 default preconditions, applied to every item that does not specify its own. In
@@ -393,7 +402,7 @@ particular, `if_vtag_match=0` requires that every saved review be newly created.
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or text file.
 
     * oneof body
-* param ?dry_run boolean: True checks every item for errors, but does not save changes.
+* param ?dry_run dry_run_mode: True checks every item for errors, but does not save changes; `if_warning` saves each item only if that item has no errors or warnings, `if_error` only if it has no errors.
 * param ?override boolean: Administrators only: bypass deadline and other soft checks.
 * param ?if_vtag_match integer: Batch-wide default version-tag precondition,
   overridable by a review object’s own `if_vtag_match`. `if_vtag_match=0`

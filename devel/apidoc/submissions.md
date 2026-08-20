@@ -85,8 +85,13 @@ The API also supports form upload using the parameter conventions of the HotCRP
 web application. These conventions are subject to change, and third-party
 applications should prefer JSON.
 
-To test a modification without saving, supply a `dry_run=1` parameter. This will
-test the uploaded JSON but make no visible changes to the database.
+To test a modification without saving, supply a `dry_run=1` parameter. This
+will test the uploaded JSON but make no visible changes to the database.
+Supply `dry_run=if_warning` to save only if the modification produces no
+warnings, or `dry_run=if_error` to save unless it produces an error (some
+mistakes, such as missing required fields or fields with invalid values, are
+reported as errors but do not ordinarily prevent saving). The response reports
+`dry_run` when a save was withheld.
 
 
 ## ZIP and form uploads
@@ -141,7 +146,7 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
 
     * oneof body
-* param dry_run boolean: True checks input for errors, but does not save changes
+* param dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors
 * param ?if_unmodified_since string: Reject the modification if the submission has
   been modified since this time (a Unix timestamp, or `0`). If set, a submission
   JSON’s `if_unmodified_since` takes precedence over this parameter.
@@ -203,7 +208,7 @@ deletes its reviews and comments too.
 * scope paper:admin
 * param ?if_unmodified_since string: Don’t delete if modified since this time
 * param ?forceShow
-* param ?dry_run boolean: True checks input for errors, but does not save changes
+* param ?dry_run dry_run_mode: True checks the request but does not delete; `if_warning` deletes only if there are no errors or warnings, `if_error` only if there are no errors
 * param ?notify boolean: False disables all email notifications
 
     * default true
@@ -307,7 +312,7 @@ be applied to all papers returned by the `q` search query.
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
 
     * oneof body
-* param dry_run boolean: True checks input for errors, but does not save changes
+* param dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors
 * param ignore_unwritable_fields boolean: True ignores attempts to modify
   unwritable fields.
 * param disable_users boolean: True disables any newly-created users

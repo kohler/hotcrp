@@ -510,9 +510,9 @@
             "dry_run_mode": {
                 "oneOf": [
                     {"type": "boolean"},
-                    {"type": "string", "enum": ["if_warning"]}
+                    {"type": "string", "enum": ["if_warning", "if_error"]}
                 ],
-                "description": "Boolean, or `if_warning` to make the dry run conditional on warnings",
+                "description": "Boolean, or `if_warning`/`if_error` to make the dry run conditional on warnings or errors",
                 "examples": [
                     1,
                     "if_warning"

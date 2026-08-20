@@ -85,6 +85,10 @@ class Review_API extends MessageSet {
     /** @var bool */
     private $dry_run = false;
     /** @var bool */
+    private $dry_run_if_warning = false;
+    /** @var bool */
+    private $dry_run_if_error = false;
+    /** @var bool */
     private $notify = true;
     /** @var bool */
     private $single = false;
@@ -114,6 +118,8 @@ class Review_API extends MessageSet {
     // current-item working state (reset per item)
     /** @var PaperInfo */
     private $prow;
+    /** @var bool */
+    private $dry_run_here = false;
     /** @var int */
     private $status = 200;
     /** @var bool */
@@ -461,20 +467,30 @@ class Review_API extends MessageSet {
             $this->error_at($vtag_conflict ? "if_vtag_match" : "if_unmodified_since",
                 $this->conf->_("<5><strong>Edit conflict</strong>: The review was edited concurrently"));
             $valid = false;
-        } else if ($this->dry_run) {
+        } else if ($this->dry_run_here) {
             $valid = true;
         } else {
             $valid = $rrow->delete($this->user, ["no_rights" => true, "snapshot" => true]);
         }
 
-        $this->status_list[] = new Review_API_Status($this->message_count(), $this->dry_run,
+        $this->status_list[] = new Review_API_Status($this->message_count(), $this->dry_run_here,
             $valid, ["delete"], $conflict, $prow->paperId, $rrow->unparse_ordinal_id());
         $this->reviews[] = null;
         return $this->post_result();
     }
 
     private function set_post_param(Qrequest $qreq) {
-        $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
+        if (isset($qreq->dry_run)) {
+            if ($qreq->dry_run === "if_warning") {
+                $this->dry_run_if_warning = true;
+            } else if ($qreq->dry_run === "if_error") {
+                $this->dry_run_if_error = true;
+            } else if (($dr = friendly_boolean($qreq->dry_run)) !== null) {
+                $this->dry_run = $dr;
+            } else {
+                JsonResult::make_parameter_error("dry_run")->complete();
+            }
+        }
         $this->notify = friendly_boolean($qreq->notify) !== false;
         $this->create_users = friendly_boolean($qreq->create_users);
         if ($this->user->privChair && friendly_boolean($qreq->disable_users)) {
@@ -558,14 +574,13 @@ class Review_API extends MessageSet {
             $rv->clear_req();
         }
         // merge any trailing parse messages (e.g. a garbage warning)
-        foreach ($rv->message_list() as $mi) {
-            $this->append_item($mi);
-        }
+        $this->merge_messages($rv);
         // the single endpoint collapses to one item; the batch endpoint uses the
         // list shape
         $this->single = $prow !== null && $nmatch <= 1;
         if ($nmatch === 0) {
             // record a failure item so the result reports `ok:false`
+            $this->reset_item();
             if ($prow !== null && $nother > 0) {
                 $this->error_at(null, $this->conf->_("<0>Uploaded form was not for this {submission}"));
             } else {
@@ -632,8 +647,18 @@ class Review_API extends MessageSet {
     }
 
 
+    /** Move `$rv`'s messages into the response, with decoration
+     * @param ReviewValues $rv */
+    private function merge_messages($rv) {
+        foreach ($rv->message_list() as $mi) {
+            $this->append_item($rv->decorate_message($mi));
+        }
+        $rv->clear_messages();
+    }
+
     /** Reset the current-item working state before processing an item. */
     private function reset_item() {
+        $this->dry_run_here = $this->dry_run;
         $this->status = 200;
         $this->stale = false;
         $this->ivalid = false;
@@ -750,25 +775,28 @@ class Review_API extends MessageSet {
             || $rv->has_problem_at("if_unmodified_since");
         $this->change_list = $rv->change_list(true);
 
-        if ($prepared && !$this->dry_run) {
+        // `dry_run=if_warning` withholds this item's save if staging it
+        // produced a warning, `dry_run=if_error` if it produced an error; for
+        // error messages, `stale` wins
+        if ((($this->dry_run_if_warning && $rv->has_problem())
+             || ($this->dry_run_if_error && $rv->has_error()))
+            && !$this->stale) {
+            $this->dry_run_here = true;
+        }
+
+        if ($prepared && !$this->dry_run_here) {
             // commit
             $this->ivalid = $rv->execute_save();
         } else {
             // dry run, conflict, or validation failure: revert without saving
             $rv->abort_save();
-            $this->ivalid = $prepared && $this->dry_run;
+            $this->ivalid = $prepared && $this->dry_run_here;
         }
-
-        // merge the engine's messages into the response, then clear them so a
-        // shared parser (multi-review text upload) starts each review fresh
-        foreach ($rv->message_list() as $mi) {
-            $this->append_item($mi);
-        }
-        $rv->clear_messages();
+        $this->merge_messages($rv);
 
         $prow = $this->prow ?? $rv->saved_prow();
         $rid = null;
-        if ($this->ivalid && !$this->dry_run && $rv->reviewId && $prow) {
+        if ($this->ivalid && !$this->dry_run_here && $rv->reviewId && $prow) {
             $rid = $rv->review_ordinal_id;
             $rrow2 = $prow->fresh_review_by_id($rv->reviewId);
             $this->reviews[] = (new PaperExport($this->user))->review_json($prow, $rrow2);
@@ -777,7 +805,7 @@ class Review_API extends MessageSet {
             $this->reviews[] = null;
         }
         $this->status_list[] = new Review_API_Status(
-            $this->message_count(), $this->dry_run,
+            $this->message_count(), $this->dry_run_here,
             $this->ivalid, $this->change_list ?? [],
             $this->stale, $prow ? $prow->paperId : null, $rid
         );
@@ -785,7 +813,7 @@ class Review_API extends MessageSet {
 
     /** Record a per-item resolution failure (no save attempted). */
     private function execute_fail() {
-        $this->status_list[] = new Review_API_Status($this->message_count(), $this->dry_run);
+        $this->status_list[] = new Review_API_Status($this->message_count(), $this->dry_run_here);
         $this->reviews[] = null;
     }
 
@@ -807,8 +835,9 @@ class Review_API extends MessageSet {
         // generate result
         $ok = empty($this->status_list)
             || array_find($this->status_list, function ($x) { return !!$x->valid; });
+        // 400 status only when nothing was valid
         $status = $this->single ? $this->status : 200;
-        if ($this->single && $status === 200 && $this->has_error()) {
+        if ($this->single && $status === 200 && !$ok && $this->has_error()) {
             $status = 400;
         }
         $jr = new JsonResult($status, [

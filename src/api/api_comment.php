@@ -75,6 +75,8 @@ class Comment_API extends MessageSet {
     /** @var bool */
     private $dry_run_if_warning = false;
     /** @var bool */
+    private $dry_run_if_error = false;
+    /** @var bool */
     private $dry_run_here = false;
     /** @var bool */
     private $notify = true;
@@ -259,6 +261,8 @@ class Comment_API extends MessageSet {
         if (isset($qreq->dry_run)) {
             if ($qreq->dry_run === "if_warning") {
                 $this->dry_run_if_warning = true;
+            } else if ($qreq->dry_run === "if_error") {
+                $this->dry_run_if_error = true;
             } else if (($dr = friendly_boolean($qreq->dry_run)) !== null) {
                 $this->dry_run = $dr;
             } else {
@@ -769,9 +773,9 @@ class Comment_API extends MessageSet {
         foreach ($cs->message_list() as $mi) {
             $this->append_item($mi);
         }
-        if ($this->dry_run_if_warning
-            && $this->has_problem_since($this->item_message_count)
-            && !$this->stale /* for error messages, `stale` should win over `dry_run_if_warning` */) {
+        if ((($this->dry_run_if_warning && $this->has_problem_since($this->item_message_count))
+             || ($this->dry_run_if_error && $this->has_error_since($this->item_message_count)))
+            && !$this->stale /* for error messages, `stale` should win */) {
             $this->dry_run_here = true;
         }
 

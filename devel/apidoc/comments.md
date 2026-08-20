@@ -115,8 +115,9 @@ deletes an existing one (it is treated as `delete=1`).
 
 To test a modification without saving, supply a `dry_run=1` parameter. This will
 test the uploaded JSON but make no visible changes to the database. Supply
-`dry_run=if_warning` to save only if the modification produces no warnings; the
-response reports `dry_run` when a save was withheld.
+`dry_run=if_warning` to save only if the modification produces no warnings, or
+`dry_run=if_error` to save unless it produces an error; the response reports
+`dry_run` when a save was withheld.
 
 
 ## Concurrency
@@ -178,7 +179,7 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 * param ?=:attachment string: Structured attachment fields, `attachment:<n>` (see above).
 * param ?review_token string: Review token authorizing the edit, when acting through one.
 * param ?if_unmodified_since string: Reject the edit if the comment has been modified since this time (a Unix timestamp, matching the comment’s `modified_at`, or `0`). See [Concurrency](#tag-comments).
-* param ?dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings.
+* param ?dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors.
 * param ?notify boolean: False disables all email notifications for the change (mention and follower notifications). Ignored unless the caller administers the submission.
 
     * default true
@@ -219,7 +220,7 @@ rules.
 * param ?if_unmodified_since string: Reject the delete if the comment has been
   modified since this time (a Unix timestamp, matching the comment’s
   `modified_at`, or `0`).
-* param ?dry_run dry_run_mode: True checks the request but does not delete; `if_warning` deletes only if there are no errors or warnings.
+* param ?dry_run dry_run_mode: True checks the request but does not delete; `if_warning` deletes only if there are no errors or warnings, `if_error` only if there are no errors.
 * param ?notify boolean: False disables email notifications. Ignored unless the caller administers the submission.
 
     * default true
@@ -307,7 +308,7 @@ to the integer index of the item they concern.
 * param ?upload upload_token: An [upload token](#post-upload) for a previously-uploaded JSON or ZIP file.
 
     * oneof body
-* param ?dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves each item only if that item has no errors or warnings.
+* param ?dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves each item only if that item has no errors or warnings, `if_error` only if it has no errors.
 * param ?notify boolean: False disables notifications; honored per item only when the caller administers that submission.
 
     * default true
