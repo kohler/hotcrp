@@ -2364,6 +2364,92 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // Comments keep no version history, so the type bits are the whole record
+    // of who wrote what: `CT_BOT` describes the version you are reading,
+    // `CT_BOT_PREVIOUS` remembers that an earlier one was a bot's.
+    function test_comment_bot_provenance() {
+        $conf = $this->conf;
+        $conf->qe("delete from PaperComment where paperId=1");
+        $conf->invalidate_caches("paper");
+
+        $conf->qe("insert into ContactInfo set email=?, firstName=?, lastName=?, password=?, cflags=?, roles=?",
+                  "provenance@bot.invalid", "Provenance", "Bot", " unset",
+                  Contact::CF_BOT, Contact::ROLE_PC);
+        $conf->invalidate_caches("users", "pc");
+        $bot = $conf->checked_user_by_email("provenance@bot.invalid");
+        xassert($bot->is_bot());
+
+        $save = function ($user, $crow, $text) {
+            $cs = new CommentStatus($user);
+            xassert($cs->prepare_save($crow, ["text" => $text, "visibility" => "pc",
+                                              "docs" => $crow->attachments()->as_list()]),
+                    $cs->full_feedback_text());
+            xassert($cs->execute_save(), $cs->full_feedback_text());
+            $this->conf->invalidate_caches("paper");
+            $cid = $crow->commentId;
+            return $this->conf->checked_paper_by_id(1)->fetch_comments("commentId={$cid}")[0];
+        };
+        $bits = function ($crow) {
+            return [($crow->commentType & CommentInfo::CT_BOT) !== 0,
+                    ($crow->commentType & CommentInfo::CT_BOT_PREVIOUS) !== 0];
+        };
+
+        // a bot writes it: this version is a bot's, and there is no earlier one
+        $prow = $conf->checked_paper_by_id(1);
+        $crow = $save($bot, CommentInfo::make_new_template($bot, $prow), "Bot wrote this");
+        xassert_eqq($bits($crow), [true, false]);
+
+        // a person edits it: the version is theirs, the bot is remembered
+        $crow = $save($this->u_chair, $crow, "Chair edited it");
+        xassert_eqq($bits($crow), [false, true]);
+
+        // the person edits again: the memory does not fade
+        $crow = $save($this->u_chair, $crow, "Chair edited it twice");
+        xassert_eqq($bits($crow), [false, true]);
+
+        // the bot edits again: both, since a previous version was a bot's too
+        $crow = $save($bot, $crow, "Bot edited it again");
+        xassert_eqq($bits($crow), [true, true]);
+
+        // and the bits survive the round trip through the database
+        $conf->invalidate_caches("paper");
+        $fresh = $conf->checked_paper_by_id(1)->fetch_comments("commentId={$crow->commentId}")[0];
+        xassert_eqq($bits($fresh), [true, true]);
+
+        // `fix_type` rebuilds a response's type from scratch, so the bits have
+        // to be named there or provenance is lost on the paths that matter
+        // most: an agent writing on the authors' behalf
+        $rrd = $conf->response_round_list()[0];
+        $rcrow = $save($bot,
+            CommentInfo::make_response_template($rrd, $conf->checked_paper_by_id(1)),
+            "Bot drafted the response");
+        xassert(($rcrow->commentType & CommentInfo::CT_RESPONSE) !== 0);
+        xassert_eqq($bits($rcrow), [true, false]);
+        $rcrow = $save($this->u_chair, $rcrow, "Chair revised the response");
+        xassert_eqq($bits($rcrow), [false, true]);
+
+        // and `fix_type` keeps them when it normalizes a type, so a caller that
+        // writes back what `requested_type` returns does not drop provenance
+        foreach ([$rcrow, $crow] as $xcrow) {
+            $t = $xcrow->commentType | CommentInfo::CTM_BOT;
+            xassert_eqq($xcrow->fix_type($t) & CommentInfo::CTM_BOT,
+                        CommentInfo::CTM_BOT);
+            xassert_eqq($xcrow->requested_type(["text" => "x"]) & CommentInfo::CT_BOT_PREVIOUS,
+                        $xcrow->commentType & CommentInfo::CT_BOT_PREVIOUS);
+        }
+
+        // a comment a person wrote alone carries neither bit
+        $crow2 = $save($this->u_chair,
+            CommentInfo::make_new_template($this->u_chair, $conf->checked_paper_by_id(1)),
+            "Person wrote this");
+        xassert_eqq(($crow2->commentType & CommentInfo::CTM_BOT), 0);
+
+        $conf->qe("delete from PaperComment where paperId=1");
+        $conf->qe("delete from ContactInfo where email=?", "provenance@bot.invalid");
+        $conf->invalidate_caches("paper", "users", "pc");
+        MailChecker::clear();
+    }
+
     // A staged attachment change is visible through has_attachments()/
     // attachments() before save (the comment reads as its unsaved version),
     // and abort_prop() reverts it.

@@ -139,6 +139,16 @@ final class CommentStatus extends MessageSet {
         $ctype = $crow->requested_type($req) & CommentInfo::CT_DBMASK;
         $is_response = ($ctype & CommentInfo::CT_RESPONSE) !== 0;
 
+        // bot provenance
+        if ($user->is_acting_bot()) {
+            $ctype |= CommentInfo::CT_BOT;
+        } else {
+            $ctype &= ~CommentInfo::CT_BOT;
+        }
+        if (($old_ctype & CommentInfo::CTM_BOT) !== 0) {
+            $ctype |= CommentInfo::CT_BOT_PREVIOUS;
+        }
+
         // tags
         if (!$is_response
             && isset($req["tags"])

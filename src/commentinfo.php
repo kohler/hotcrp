@@ -76,6 +76,9 @@ class CommentInfo {
     const CT_BYADMINISTRATOR = 0x100;
     const CT_TOPIC_DECISION = 0x200;
     const CT_BYMETAREVIEWER = 0x400;
+    const CT_BOT = 0x800;           // this version was written by a bot
+    const CT_BOT_PREVIOUS = 0x1000; // a previous version was written by a bot
+    const CTM_BOT = 0x1800;         // CT_BT | CT_BOT_PREVIOUS
     const CT_FROZEN = 0x4000;
     const CT_SUBMIT = 0x8000; // only used internally, not in database
     const CTVIS_ADMINONLY = 0x00000;
@@ -207,11 +210,11 @@ class CommentInfo {
             return self::CT_RESPONSE
                 | self::CTVIS_AUTHOR
                 | ($this->prow->blind ? self::CT_BLIND : 0)
-                | ($ctype & (self::CT_DRAFT | self::CT_SUBMIT));
+                | ($ctype & (self::CT_DRAFT | self::CT_SUBMIT | self::CTM_BOT));
         } else if (($ctype & self::CTM_BYAUTHOR) !== 0) {
             return self::CT_BYAUTHOR
                 | ($this->prow->blind ? self::CT_BLIND : 0)
-                | ($ctype & (self::CTM_TOPIC | self::CTM_VIS | self::CT_SUBMIT));
+                | ($ctype & (self::CTM_TOPIC | self::CTM_VIS | self::CT_SUBMIT | self::CTM_BOT));
         }
         $rb = $this->conf->review_blindness();
         if ($rb === Conf::BLIND_NEVER) {
