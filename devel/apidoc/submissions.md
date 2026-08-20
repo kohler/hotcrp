@@ -41,6 +41,10 @@ instance, about permission errors or nonexistent submissions—are returned in
 
 * scope submeta:read
 * param ?forceShow
+* param ?word_limit =soft|hard: Which word limit applies to long text fields.
+  `soft` (the default) returns each field cut at its word limit; `hard` returns
+  the full text, cut only at the hard word limit (if any). Fields over a limit
+  are named in the response’s `overlong` and `truncated` keys.
 * param ?download boolean: True returns the bare submission object as a file
   (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?paper paper: The requested submission object.
@@ -193,9 +197,10 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
 
 > Delete submission
 
-Delete the submission specified by `p`, a submission ID.
+Delete the submission specified by `p`, a submission ID. Deleting a submission
+deletes its reviews and comments too.
 
-* scope submeta:admin
+* scope paper:admin
 * param ?if_unmodified_since string: Don’t delete if modified since this time
 * param ?forceShow
 * param ?dry_run boolean: True checks input for errors, but does not save changes
@@ -252,6 +257,10 @@ listed in a query, supply a `warn_missing=1` parameter.
 
     * group Search modifiers
 * param warn_missing boolean: Get warnings for missing submissions
+* param ?word_limit =soft|hard: Which word limit applies to long text fields.
+  `soft` (the default) returns each field cut at its word limit; `hard` returns
+  the full text, cut only at the hard word limit (if any). Fields over a limit
+  are named in the response’s `overlong` and `truncated` keys.
 * param ?download boolean: True returns a bare array of submission objects as a
   file (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?papers [paper]: The matching submission objects.

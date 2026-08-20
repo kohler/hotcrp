@@ -56,6 +56,79 @@ class PaperAPI_Tester {
         return $a;
     }
 
+    /** Long text fields are served as a reader sees them. `word_limit=hard`
+     * asks for what the page shows behind “Show more”, and stops at the hard
+     * limit, past which HotCRP displays nothing to anyone. */
+    function test_get_paper_word_limit() {
+        $conf = $this->conf;
+        $options = $conf->setting_json("options");
+        $options[] = (object) ["id" => 6, "name" => "Notes", "type" => "text",
+                               "order" => 9, "wordlimit" => 10, "hard_wordlimit" => 20];
+        $conf->save_setting("options", 1, json_encode($options));
+        $conf->invalidate_caches("options");
+
+        $words = [];
+        for ($i = 1; $i <= 30; ++$i) {
+            $words[] = "w{$i}";
+        }
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => "new",
+                "title" => "Word limit paper", "abstract" => "Abstract",
+                "authors" => [["name" => "Puneet Sharma", "email" => "puneet@catarina.usc.edu"]],
+                "Notes" => join(" ", $words), "status" => "draft"]));
+        xassert_eqq($jr->ok, true, $jr->message_list[0]->message ?? "");
+        $pid = $jr->paper->pid;
+
+        $get = function ($args) use ($pid) {
+            return call_api("paper", $this->u_estrin, TestQreq::get(["p" => $pid] + $args));
+        };
+
+        // by default the field is cut at its word limit, and says so
+        $jr = $get([]);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count_words($jr->paper->Notes ?? ""), 10);
+        xassert_eqq(($jr->paper->overlong ?? [])["Notes"] ?? null, true);
+        xassert_eqq(($jr->paper->truncated ?? [])["Notes"] ?? null, "soft");
+
+        // `hard` is the “Show more” view, and stops at the hard limit
+        $jr = $get(["word_limit" => "hard"]);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count_words($jr->paper->Notes ?? ""), 20);
+        xassert_eqq(($jr->paper->overlong ?? [])["Notes"] ?? null, true);
+        xassert_eqq(($jr->paper->truncated ?? [])["Notes"] ?? null, "hard");
+        xassert(!str_contains($jr->paper->Notes ?? "", "w21"));
+
+        // `soft` is the default spelled out
+        $jr = $get(["word_limit" => "soft"]);
+        xassert_eqq(count_words($jr->paper->Notes ?? ""), 10);
+
+        // a field under its limit says nothing at all
+        xassert_eqq(($jr->paper->overlong ?? [])["title"] ?? null, null);
+        xassert_eqq(($jr->paper->truncated ?? [])["title"] ?? null, null);
+
+        // an unknown value is refused rather than silently defaulted
+        $jr = $get(["word_limit" => "none"]);
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains($jr->message_list[0]->field ?? "", "word_limit");
+
+        // and the multi-paper endpoint takes it too
+        $jr = call_api("papers", $this->u_estrin,
+            TestQreq::get(["q" => "Word limit paper", "word_limit" => "hard"]));
+        xassert_eqq($jr->ok, true);
+        $found = false;
+        foreach ($jr->papers ?? [] as $pj) {
+            if ($pj->pid === $pid) {
+                $found = true;
+                xassert_eqq(count_words($pj->Notes ?? ""), 20);
+                xassert_eqq(($pj->truncated ?? [])["Notes"] ?? null, "hard");
+            }
+        }
+        xassert($found);
+
+        TestRunner::reset_options();
+        $conf->invalidate_caches("options", "paper");
+    }
+
     /** A field the caller may see but not write is no longer dropped in
      * silence: the API reports it, attributed to the field, and writes nothing
      * for it. A browser posts every field it rendered, including read-only

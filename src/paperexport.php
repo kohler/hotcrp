@@ -17,6 +17,9 @@ class PaperExport {
     public $include_content = false;
     /** @var bool
      * @readonly */
+    public $ignore_soft_word_limits = false;
+    /** @var bool
+     * @readonly */
     public $include_permissions = true;
     /** @var bool
      * @readonly */
@@ -50,6 +53,14 @@ class PaperExport {
      * @suppress PhanAccessReadOnlyProperty */
     function set_include_content($x) {
         $this->include_content = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_ignore_soft_word_limits($x) {
+        $this->ignore_soft_word_limits = $x;
         return $this;
     }
 
@@ -164,6 +175,7 @@ class PaperExport {
         if (($sr = $prow->submission_round()) && !$sr->unnamed) {
             $pj->submission_class = $sr->tag;
         }
+        $overlong = $truncated = [];
 
         foreach ($prow->form_fields() as $opt) {
             if (!$this->viewer->can_view_option($prow, $opt)) {
@@ -174,11 +186,29 @@ class PaperExport {
             if ($oj === null) {
                 continue;
             }
-            $pj->{$opt->json_key()} = $oj;
+            $key = $opt->json_key();
+            if (is_string($oj)
+                && ($tt = $opt->json_value_truncate($oj, $this))) {
+                if ($tt->overlong) {
+                    $overlong[$key] = true;
+                }
+                if ($tt->truncation !== null) {
+                    $truncated[$key] = $tt->truncation_band;
+                    $oj = $tt->truncation;
+                }
+            }
+            $pj->{$key} = $oj;
         }
 
         $this->apply_paper_status($prow, $pj);
         $this->apply_paper_tags($prow, $pj);
+
+        if (!empty($overlong)) {
+            $pj->overlong = $overlong;
+        }
+        if (!empty($truncated)) {
+            $pj->truncated = $truncated;
+        }
         return $pj;
     }
 

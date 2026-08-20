@@ -198,18 +198,15 @@ class FieldRender {
         if ($hwl > 0 && ($wl <= 0 || $wl > $hwl)) {
             $wl = $hwl;
         }
-        if ($wl <= 0 || ($wc = count_words($text)) <= $wl) {
+        $soft = Text::apply_wordlimit($text, $wl, $hwl, false);
+        if (!$soft->overlong) {
             return ["", $text];
         }
-        if ($hwl > 0 && $wc > $hwl) {
-            list($prefix, ) = count_words_split($text, $hwl);
-            $text = rtrim($prefix) . "… ✖";
+        if ($hwl > 0 && $soft->word_count > $hwl) {
+            $hard = $wl === $hwl ? $soft : Text::apply_wordlimit($text, $hwl, $hwl, false);
+            $text = rtrim($hard->truncation) . "… ✖";
         }
-        if ($wl > 0 && $wc > $wl && ($hwl <= 0 || $wl < $hwl)) {
-            list($prefix, ) = count_words_split($text, $wl);
-            return [$prefix, $text];
-        }
-        return ["", $text];
+        return [$wl === $hwl ? "" : $soft->truncation, $text];
     }
 
     /** @param string $ss
@@ -236,7 +233,8 @@ class FieldRender {
     function apply_wordlimit($wl = 0, $hwl = 0) {
         if ($this->value === null
             || $this->value === ""
-            || $this->value_format === 5) {
+            || $this->value_format === 5
+            || ($wl <= 0 && $hwl <= 0)) {
             return;
         }
         list($ss, $ls) = self::split_wordlimit($this->value, $wl ?? 0, $hwl ?? 0);

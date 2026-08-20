@@ -18,7 +18,7 @@ class Abstract_PaperOption extends Text_PaperOption {
                 || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        return $this->value_string($ov);
+        return (string) $ov->data();
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         if (!$ov->equals($ov->prow->base_option($this->id))) {
@@ -42,11 +42,12 @@ class Abstract_PaperOption extends Text_PaperOption {
         if ($fr->want(FieldRender::CFPAGE)) {
             $fr->table->render_abstract($fr, $ov);
         } else {
-            $text = $this->value_string($ov);
+            $text = (string) $ov->data();
             if ($text !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();
                 $fr->value_long = true;
+                $fr->apply_wordlimit($this->wordlimit, $this->hard_wordlimit);
             } else if ($this->required && $fr->verbose()) {
                 $fr->set_text("[No abstract]");
             }

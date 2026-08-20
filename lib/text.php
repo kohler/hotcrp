@@ -2,6 +2,18 @@
 // text.php -- HotCRP text helper functions
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
+class TextTruncation {
+    /** @var int */
+    public $word_count;
+    /** @var bool */
+    public $overlong;
+    /** @var ?string */
+    public $truncation;
+    /** Limit of truncation.
+     * @var null|'soft'|'hard' */
+    public $truncation_band;
+}
+
 class TextPregexes {
     /** @var ?string */
     public $preg_raw;
@@ -599,5 +611,30 @@ class Text {
             }
             return substr($a, 0, $apx) . substr($b, $bpx);
         }
+    }
+
+    /** @param string $text
+     * @param int $wordlimit
+     * @param ?int $hard_wordlimit
+     * @param bool $allow_over_soft
+     * @return TextTruncation */
+    static function apply_wordlimit($text, $wordlimit, $hard_wordlimit = null,
+                                    $allow_over_soft = false) {
+        if (($hard_wordlimit ?? 0) > 0
+            && ($wordlimit <= 0 || $wordlimit > $hard_wordlimit)) {
+            $wordlimit = $hard_wordlimit;
+        }
+        $tt = new TextTruncation;
+        $tt->word_count = count_words($text);
+        $tt->overlong = $wordlimit > 0 && $tt->word_count > $wordlimit;
+        if ($tt->overlong
+            && (!$allow_over_soft
+                || (($hard_wordlimit ?? 0) > 0
+                    && $tt->word_count > $hard_wordlimit))) {
+            $cut = $allow_over_soft ? $hard_wordlimit : $wordlimit;
+            $tt->truncation_band = $cut === $hard_wordlimit ? "hard" : "soft";
+            [$tt->truncation, ] = count_words_split($text, $cut);
+        }
+        return $tt;
     }
 }

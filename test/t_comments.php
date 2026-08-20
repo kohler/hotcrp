@@ -2293,6 +2293,77 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // `unparse_text` is the mail rendering. A response longer than its round's
+    // word limit is cut there with a marker saying whether the rest is on the
+    // website; past the hard limit there is no rest, and the text is cut even
+    // when the caller did not ask for truncation.
+    function test_response_unparse_text_word_limits() {
+        $conf = $this->conf;
+        $conf->qe("delete from PaperComment where paperId=1");
+        $conf->invalidate_caches("paper");
+        $rrd = $conf->response_round_list()[0];
+        $old_wl = $rrd->wordlimit;
+        $old_hwl = $rrd->hard_wordlimit;
+
+        $words = [];
+        for ($i = 1; $i <= 30; ++$i) {
+            $words[] = "w{$i}";
+        }
+        $prow = $conf->checked_paper_by_id(1);
+        $tmpl = CommentInfo::make_response_template($rrd, $prow);
+        $cs = new CommentStatus($this->u_chair);
+        xassert($cs->prepare_save($tmpl, ["text" => join(" ", $words), "submit" => true]),
+                $cs->full_feedback_text());
+        xassert($cs->execute_save(), $cs->full_feedback_text());
+        $conf->invalidate_caches("paper");
+        $crow = ($conf->checked_paper_by_id(1)->all_comments())[0];
+
+        $render = function ($wl, $hwl, $truncate) use ($crow, $rrd) {
+            $rrd->wordlimit = $wl;
+            $rrd->hard_wordlimit = $hwl;
+            return $crow->unparse_text($this->u_chair,
+                $truncate ? ReviewForm::UNPARSE_TRUNCATE : 0);
+        };
+
+        // the header counts the words the author wrote, not the words sent
+        $t = $render(10, 0, true);
+        xassert_str_contains($t, "(30 words)");
+        xassert_str_contains($t, "w10");
+        xassert(!str_contains($t, "w11"));
+        xassert_str_contains($t, "more available on website");
+
+        // when the limits coincide there is nothing on the website either
+        $t = $render(10, 10, true);
+        xassert_str_contains($t, "w10");
+        xassert(!str_contains($t, "w11"));
+        xassert_str_contains($t, "Truncated for length");
+        xassert(!str_contains($t, "more available on website"));
+
+        // without a truncation request the soft limit does not apply...
+        $t = $render(10, 0, false);
+        xassert_str_contains($t, "w30");
+        xassert(!str_contains($t, "Truncated for length"));
+
+        // ...but the hard limit still does, since nobody is shown past it
+        $t = $render(10, 20, false);
+        xassert_str_contains($t, "w20");
+        xassert(!str_contains($t, "w21"));
+        xassert_str_contains($t, "Truncated for length");
+        xassert(!str_contains($t, "more available on website"));
+
+        // a response under its limit is rendered whole and unmarked
+        $t = $render(50, 0, true);
+        xassert_str_contains($t, "w30");
+        xassert(!str_contains($t, "Truncated for length"));
+        xassert(!str_contains($t, "more available on website"));
+
+        $rrd->wordlimit = $old_wl;
+        $rrd->hard_wordlimit = $old_hwl;
+        $conf->qe("delete from PaperComment where paperId=1");
+        $conf->invalidate_caches("paper");
+        MailChecker::clear();
+    }
+
     // A staged attachment change is visible through has_attachments()/
     // attachments() before save (the comment reads as its unsaved version),
     // and abort_prop() reverts it.

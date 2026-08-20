@@ -1485,6 +1485,20 @@
                     },
                     "status": {
                         "$ref": "#/components/schemas/paper_status"
+                    },
+                    "overlong": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "const": true
+                        },
+                        "description": "Fields whose text is longer than the field's word limit, whether or not this response truncated them."
+                    },
+                    "truncated": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "enum": ["soft", "hard"]
+                        },
+                        "description": "Fields whose text was truncated in this response. `soft` means the rest is available with `word_limit=hard`; `hard` means the rest is past the field's hard word limit, which HotCRP displays to no one."
                     }
                 }
             },
@@ -1593,12 +1607,32 @@
                     "text": {
                         "type": "string"
                     },
+                    "word_count": {
+                        "type": "integer"
+                    },
+                    "overlong": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "text": {
+                                "const": true
+                            }
+                        },
+                        "description": "Present when the comment's text is longer than its response round's word limit, whether or not this response truncated it."
+                    },
+                    "truncated": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "text": {
+                                "enum": ["soft", "hard"]
+                            }
+                        },
+                        "description": "Present when the text was truncated in this response. `soft` means the rest is available with `word_limit=hard`; `hard` means the rest is past the round's hard word limit, which HotCRP displays to no one."
+                    },
                     "docs": {
                         "type": "array",
                         "items": {}
-                    },
-                    "word_count": {
-                        "type": "integer"
                     }
                 },
                 "description": "Comment representation"

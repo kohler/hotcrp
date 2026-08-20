@@ -47,6 +47,8 @@ class Paper_API extends MessageSet {
     /** @var Contact
      * @readonly */
     public $user;
+    /** @var PaperExport */
+    private $pex;
     /** @var bool */
     private $dry_run = false;
     /** @var bool */
@@ -79,17 +81,25 @@ class Paper_API extends MessageSet {
     const PIDFLAG_IGNORE_PID = 1;
     const PIDFLAG_MATCH_TITLE = 2;
 
-    function __construct(Contact $user) {
+    function __construct(Contact $user, Qrequest $qreq) {
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->pex = new PaperExport($user);
+        if (isset($qreq->word_limit)) {
+            if ($qreq->word_limit === "hard") {
+                $this->pex->set_ignore_soft_word_limits(true);
+            } else if ($qreq->word_limit !== "soft") {
+                JsonResult::make_parameter_error("word_limit")->complete();
+            }
+        }
     }
 
     /** @return JsonResult */
-    static private function run_get_one(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        $pj = (new PaperExport($user))->paper_json($prow);
+    private function run_get_one(Qrequest $qreq, PaperInfo $prow) {
+        $pj = $this->pex->paper_json($prow);
         assert(!!$pj);
         if (friendly_boolean($qreq->download)) {
-            return APIHelpers::make_json_download($user->conf, $pj, "paper{$prow->paperId}");
+            return APIHelpers::make_json_download($this->conf, $pj, "paper{$prow->paperId}");
         }
         return new JsonResult(["ok" => true, "paper" => $pj]);
     }
@@ -111,21 +121,20 @@ class Paper_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    static private function run_get_multi(Contact $user, Qrequest $qreq) {
+    private function run_get_multi(Qrequest $qreq) {
         if (!isset($qreq->q)) {
             return JsonResult::make_missing_error("q");
         }
-        list($srch, $prows) = self::make_search($user, $qreq);
 
-        $pex = new PaperExport($user);
+        list($srch, $prows) = self::make_search($this->user, $qreq);
         $pjs = [];
         foreach ($prows as $prow) {
-            if (($pj = $pex->paper_json($prow)))
+            if (($pj = $this->pex->paper_json($prow)))
                 $pjs[] = $pj;
         }
 
         if (friendly_boolean($qreq->download)) {
-            return APIHelpers::make_json_download($user->conf, $pjs, "papers");
+            return APIHelpers::make_json_download($this->conf, $pjs, "papers");
         }
         return new JsonResult([
             "ok" => true,
@@ -379,8 +388,7 @@ class Paper_API extends MessageSet {
             if ($ps->has_change()) {
                 $this->execute_change($ps);
             }
-            $this->papers[] = (new PaperExport($this->user))
-                ->paper_json($ps->saved_prow());
+            $this->papers[] = $this->pex->paper_json($ps->saved_prow());
             ++$this->npapers;
         } else {
             $this->papers[] = null;
@@ -532,16 +540,17 @@ class Paper_API extends MessageSet {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         try {
+            $papi = new Paper_API($user, $qreq);
             if ($qreq->is_getlike()) {
                 if ($mode === DocumentLocator::M_ONE) {
-                    $jr = self::run_get_one($user, $qreq, $prow);
+                    $jr = $papi->run_get_one($qreq, $prow);
                 } else {
-                    $jr = self::run_get_multi($user, $qreq);
+                    $jr = $papi->run_get_multi($qreq);
                 }
             } else if ($qreq->method() === "DELETE") {
-                $jr = (new Paper_API($user))->run_delete($qreq, $prow);
+                $jr = $papi->run_delete($qreq, $prow);
             } else {
-                $jr = (new Paper_API($user))->run_post($qreq, $prow, $mode);
+                $jr = $papi->run_post($qreq, $prow, $mode);
             }
         } catch (JsonCompletion $jc) {
             $jr = $jc->result;

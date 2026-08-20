@@ -728,6 +728,11 @@ class PaperOption implements JsonSerializable {
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         return null;
     }
+    /** @param string $jv
+     * @return ?TextTruncation */
+    function json_value_truncate($jv, PaperExport $pex) {
+        return null;
+    }
 
     /** @return bool */
     function value_check_required(PaperValue $ov) {
@@ -1847,20 +1852,12 @@ class Text_PaperOption extends PaperOption {
         }
     }
 
-    final function value_string(?PaperValue $ov) {
-        $s = $ov ? (string) $ov->data() : "";
-        if ($this->hard_wordlimit > 0 && strlen($s) > $this->hard_wordlimit) {
-            list($s, ) = count_words_split($s, $this->hard_wordlimit);
-        }
-        return $s;
-    }
-
     function value_present(PaperValue $ov) {
         return (string) $ov->data() !== "";
     }
     function value_compare($av, $bv) {
-        $av = $this->value_string($av);
-        $bv = $this->value_string($bv);
+        $av = (string) $av->data();
+        $bv = (string) $bv->data();
         if ($av === "" || $bv === "") {
             return ($av === "" ? 1 : 0) <=> ($bv === "" ? 1 : 0);
         }
@@ -1890,8 +1887,14 @@ class Text_PaperOption extends PaperOption {
         }
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
-        $s = $this->value_string($ov);
+        $s = (string) $ov->data();
         return $s === "" ? null : $s;
+    }
+    function json_value_truncate($jv, PaperExport $pex) {
+        if ($this->wordlimit <= 0) {
+            return null;
+        }
+        return Text::apply_wordlimit($jv, $this->wordlimit, $this->hard_wordlimit, $pex->ignore_soft_word_limits);
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
@@ -1916,9 +1919,7 @@ class Text_PaperOption extends PaperOption {
         $fr->value = $d;
         $fr->value_format = $ov->prow->format_of($d);
         $fr->value_long = true;
-        if ($this->wordlimit > 0) {
-            $fr->apply_wordlimit($this->wordlimit, $this->hard_wordlimit);
-        }
+        $fr->apply_wordlimit($this->wordlimit, $this->hard_wordlimit);
     }
 
     function search_examples(Contact $viewer, $venue) {

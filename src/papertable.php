@@ -949,12 +949,12 @@ class PaperTable {
         $fr->value_format = 5;
         $o = $ov->option;
 
-        $text = $o->value_string($ov);
+        $text = (string) $ov->data();
         if (trim($text) === "") {
             if (!$o->test_required($this->prow)) {
                 return;
             }
-            $html = "[No abstract]";
+            $text = "[No abstract]";
         }
         $extra = [];
         if ($this->_allow_collapse["abstract"] ?? false) {

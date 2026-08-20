@@ -882,7 +882,21 @@ class CommentInfo {
         if ($no_content) {
             // do not include content
         } else if ($viewer->can_view_comment_content($this->prow, $this)) {
-            $cj["text"] = $this->content($viewer);
+            $ctext = $this->content($viewer);
+            if (($rrd = $this->response_round())
+                && $rrd->wordlimit > 0) {
+                $truncation = Text::apply_wordlimit($ctext, $rrd->wordlimit, $rrd->hard_wordlimit, true);
+                $cj["text"] = $truncation->truncation ?? $ctext;
+                $cj["word_count"] = $truncation->word_count;
+                if ($truncation->overlong) {
+                    $cj["overlong"] = ["text" => true];
+                }
+                if ($truncation->truncation !== null) {
+                    $cj["truncated"] = ["text" => $truncation->truncation_band];
+                }
+            } else {
+                $cj["text"] = $ctext;
+            }
             if ($this->has_viewable_attachments($viewer)) {
                 $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
             }
@@ -890,7 +904,7 @@ class CommentInfo {
                 && ($my_mentions = $this->make_my_mentions($viewer, $mentions))) {
                 $cj["my_mentions"] = $my_mentions;
             }
-        } else {
+        } else if ($this->is_response() && $viewer->is_admin($this->prow)) {
             $cj["word_count"] = count_words($this->raw_content());
         }
 
@@ -925,15 +939,13 @@ class CommentInfo {
         }
         $ctext = $this->content($viewer);
         if ($rrd && $rrd->wordlimit > 0) {
-            $nwords = count_words($ctext);
-            $x .= " (" . plural($nwords, "word") . ")";
-            if ($nwords > $rrd->wordlimit
-                && ($flags & ReviewForm::UNPARSE_TRUNCATE) !== 0) {
-                list($ctext, $overflow) = count_words_split($ctext, $rrd->wordlimit);
-                if ($rrd->wordlimit === $rrd->hard_wordlimit) {
-                    $ctext = rtrim($ctext) . "…\n- - - - - - - - - - - - - - Truncated for length - - - - - - - - - - - - - -\n";
+            $truncation = Text::apply_wordlimit($ctext, $rrd->wordlimit, $rrd->hard_wordlimit, ($flags & ReviewForm::UNPARSE_TRUNCATE) === 0);
+            $x .= " (" . plural($truncation->word_count, "word") . ")";
+            if ($truncation->truncation !== null) {
+                if ($truncation->truncation_band === "hard") {
+                    $ctext = rtrim($truncation->truncation) . "…\n- - - - - - - - - - - - - - Truncated for length - - - - - - - - - - - - - -\n";
                 } else {
-                    $ctext = rtrim($ctext) . "…\n- - - - - - - Truncated for length, more available on website - - - - - - -\n";
+                    $ctext = rtrim($truncation->truncation) . "…\n- - - - - - - Truncated for length, more available on website - - - - - - -\n";
                 }
             }
         }
