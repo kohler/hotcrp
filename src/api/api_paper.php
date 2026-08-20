@@ -50,6 +50,8 @@ class Paper_API extends MessageSet {
     /** @var bool */
     private $dry_run = false;
     /** @var bool */
+    private $ignore_unwritable_fields = false;
+    /** @var bool */
     private $notify = true;
     /** @var bool */
     private $notify_authors = true;
@@ -176,6 +178,7 @@ class Paper_API extends MessageSet {
 
     private function set_post_param(Qrequest $qreq) {
         $this->dry_run = friendly_boolean($qreq->dry_run) ?? false;
+        $this->ignore_unwritable_fields = friendly_boolean($qreq->ignore_unwritable_fields) ?? false;
         if ($this->user->privChair) {
             if (friendly_boolean($qreq->disable_users)) {
                 $this->disable_users = true;
@@ -339,6 +342,7 @@ class Paper_API extends MessageSet {
     /** @return PaperStatus */
     private function paper_status() {
         return (new PaperStatus($this->user))
+            ->set_ignore_unwritable_fields($this->ignore_unwritable_fields)
             ->set_disable_users($this->disable_users)
             ->set_notify_reason($this->notify_reason)
             ->set_any_content_file(true)

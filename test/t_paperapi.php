@@ -56,6 +56,106 @@ class PaperAPI_Tester {
         return $a;
     }
 
+    /** A field the caller may see but not write is no longer dropped in
+     * silence: the API reports it, attributed to the field, and writes nothing
+     * for it. A browser posts every field it rendered, including read-only
+     * ones, so the form path keeps ignoring them — that is what
+     * `set_ignore_unwritable_fields` selects. */
+    function test_save_unwritable_field_is_reported() {
+        $conf = $this->conf;
+        $options = $conf->setting_json("options");
+        $options[] = (object) ["id" => 5, "name" => "Locked", "type" => "numeric",
+                               "order" => 8, "editable_if" => "NONE"];
+        $conf->save_setting("options", 1, json_encode($options));
+        $conf->invalidate_caches("options");
+
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => "new",
+                "title" => "Unwritable field paper", "abstract" => "Abstract",
+                "authors" => [["name" => "Puneet Sharma", "email" => "puneet@catarina.usc.edu"]],
+                "status" => "draft"]));
+        xassert_eqq($jr->ok, true);
+        $pid = $jr->paper->pid;
+
+        // an administrator may write it, so there is a value to leave alone
+        $jr = call_api("=paper", $this->u_chair,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => $pid, "Locked" => 5]));
+        xassert_eqq([$jr->ok, $jr->paper->Locked ?? null], [true, 5]);
+
+        $locked = function () use ($conf, $pid) {
+            $conf->invalidate_caches("paper");
+            $ov = $conf->checked_paper_by_id($pid)->option(5);
+            return $ov ? $ov->value : null;
+        };
+        $modify_message = function ($jr) {
+            foreach ($jr->message_list ?? [] as $mi) {
+                if (str_contains($mi->message ?? "", "allowed to edit"))
+                    return $mi;
+            }
+            return null;
+        };
+
+        // the author may not write it, and is told which field rather than
+        // left to infer it from an absence
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => $pid, "Locked" => 6]));
+        $mi = $modify_message($jr);
+        xassert_neqq($mi, null);
+        if ($mi) {
+            // the catalog's `field:edit` wording, so it names the field and
+            // takes the conference's word for a submission
+            xassert_eqq($mi->message, "<0>You aren’t allowed to edit the Locked field for submission #{$pid}");
+            xassert_eqq($mi->field, "Locked");
+            xassert_eqq($mi->status, MessageSet::ESTOP);
+        }
+        xassert_eqq($jr->change_list, []);
+        xassert_eqq($locked(), 5);
+
+        // echoing the field back unchanged is what a round-trip does, so it
+        // says nothing: a client that GETs a paper and PUTs it whole is not
+        // scolded for every field it may not edit
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => $pid,
+                                          "title" => "Renamed", "Locked" => 5]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($modify_message($jr), null);
+        xassert_eqq($conf->checked_paper_by_id($pid)->title, "Renamed");
+
+        // the refusal stops the whole request: a save that cannot do what was
+        // asked does none of it, rather than leaving the caller to work out
+        // which half landed
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => $pid,
+                                          "title" => "Renamed again", "Locked" => 6]));
+        xassert_neqq($modify_message($jr), null);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($conf->checked_paper_by_id($pid)->title, "Renamed");
+        xassert_eqq($locked(), 5);
+
+        // a caller that means to post a whole paper it only partly owns asks
+        // for the lenient reading, and gets the form path's behavior
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => $pid,
+                                          "title" => "Renamed again", "Locked" => 6],
+                                ["ignore_unwritable_fields" => 1]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($modify_message($jr), null);
+        xassert_eqq($conf->checked_paper_by_id($pid)->title, "Renamed again");
+        xassert_eqq($locked(), 5);
+
+        // the form path still drops it quietly, which is what lets a browser
+        // post the fields it rendered read-only
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json(json_decode("{\"pid\":{$pid},\"Locked\":7}")));
+        foreach ($ps->message_list() as $mi) {
+            xassert(!str_contains($mi->message, "allowed to edit"));
+        }
+        xassert_eqq($locked(), 5);
+
+        TestRunner::reset_options();
+        $conf->invalidate_caches("options", "paper");
+    }
+
     function test_save_submit_new_paper() {
         $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);

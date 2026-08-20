@@ -141,6 +141,8 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
 * param ?if_unmodified_since string: Reject the modification if the submission has
   been modified since this time (a Unix timestamp, or `0`). If set, a submission
   JSON’s `if_unmodified_since` takes precedence over this parameter.
+* param ignore_unwritable_fields boolean: True ignores attempts to modify
+  unwritable fields.
 * param disable_users boolean: True disables any newly-created users.
 
     When an administrator creates submissions on behalf of other people, HotCRP
@@ -297,6 +299,8 @@ be applied to all papers returned by the `q` search query.
 
     * oneof body
 * param dry_run boolean: True checks input for errors, but does not save changes
+* param ignore_unwritable_fields boolean: True ignores attempts to modify
+  unwritable fields.
 * param disable_users boolean: True disables any newly-created users
 
     * badge siteadmin

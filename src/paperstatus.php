@@ -25,6 +25,8 @@ final class PaperStatus extends MessageSet {
     /** @var bool */
     private $ignore_errors = false;
     /** @var bool */
+    private $ignore_unwritable_fields = true;
+    /** @var bool */
     private $disable_users = false;
     /** @var bool
      * @readonly */
@@ -119,6 +121,13 @@ final class PaperStatus extends MessageSet {
      * @return $this */
     function set_ignore_errors($x) {
         $this->ignore_errors = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_ignore_unwritable_fields($x) {
+        $this->ignore_unwritable_fields = $x;
         return $this;
     }
 
@@ -237,7 +246,7 @@ final class PaperStatus extends MessageSet {
     /** @param string $key
      * @return MessageItem */
     function syntax_error_at($key) {
-        return $this->error_at($key, "<0>Validation error [{$key}]");
+        return $this->estop_at($key, "<0>Validation error [{$key}]");
     }
 
     /** @param PaperValue $ov */
@@ -586,12 +595,13 @@ final class PaperStatus extends MessageSet {
 
     /** @param PaperOption $opt */
     private function _check_field($pj, $opt) {
-        if (!$this->user->can_edit_option($this->prow, $opt)
-            && (!$this->user->is_root_user()
-                || !isset($pj->{$opt->json_key()}))) {
+        $oj = $pj->{$opt->json_key()} ?? null;
+        $editable = $this->user->can_edit_option($this->prow, $opt)
+            || ($this->user->is_root_user() && $oj !== null);
+        if (!$editable
+            && ($oj === null || $this->ignore_unwritable_fields)) {
             return;
         }
-        $oj = $pj->{$opt->json_key()} ?? null;
         if ($oj === null) {
             $ov = null;
         } else if ($oj instanceof PaperValue) {
@@ -599,6 +609,13 @@ final class PaperStatus extends MessageSet {
             $ov = $oj;
         } else {
             $ov = $opt->parse_json_user($this->prow, $oj, $this->user);
+        }
+        if (!$editable) {
+            if ($ov && !$ov->equals($this->prow->force_option($opt))) {
+                $this->prow->failure_reason(["permission" => "field:edit", "option" => $opt])
+                    ->append_to($this, $this->option_key($opt), MessageSet::ESTOP);
+            }
+            return;
         }
         if ($ov !== null) {
             $opt->value_check($ov, $this->user);
