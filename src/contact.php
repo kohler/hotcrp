@@ -4724,7 +4724,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @return bool */
     function can_view_some_option(PaperOption $opt) {
         if (($opt->is_final() && !$this->can_view_some_decision())
-            || !$opt->test_can_exist()) {
+            || !$opt->test_can_exist()
+            || !$this->scope_allows_some(TS::S_SUB_READ | ($opt->has_document() ? TS::S_DOC_READ : 0))) {
             return false;
         }
         $oview = $opt->visibility();
