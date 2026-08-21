@@ -21,34 +21,6 @@ function $$list(ids) {
     return l;
 }
 
-if (!window.JSON || !window.JSON.parse) {
-    window.JSON = {parse: $.parseJSON};
-}
-
-if (typeof Object.assign !== "function") {
-    Object.defineProperty(Object, "assign", {
-        value: function assign(target /* , ... */) {
-            var d = Object(target), i, s, k, hop = Object.prototype.hasOwnProperty;
-            for (i = 1; i < arguments.length; ++i) {
-                s = arguments[i];
-                if (s !== null && s !== undefined) {
-                    for (k in s)
-                        if (hop.call(s, k))
-                            d[k] = s[k];
-                }
-            }
-            return d;
-        }, writable: true, configurable: true
-    });
-}
-if (typeof Object.setPrototypeOf !== "function") {
-    Object.defineProperty(Object, "setPrototypeOf", {
-        value: function setPrototypeOf(obj, proto) {
-            obj && typeof obj === "object" && (obj.__proto__ = proto);
-            return obj;
-        }, writable: true, configurable: true
-    });
-}
 if (!String.prototype.trimStart) {
     Object.defineProperty(String.prototype, "trimStart", {
         value: function () {
@@ -63,48 +35,9 @@ if (!String.prototype.trimEnd) {
         }, writable: true, configurable: true
     });
 }
-if (!String.prototype.startsWith) {
-    Object.defineProperty(String.prototype, "startsWith", {
-        value: function startsWith(search, pos) {
-            pos = pos > 0 ? pos|0 : 0;
-            return this.length >= pos + search.length
-                && this.substring(pos, pos + search.length) === search;
-        }, writable: true, configurable: true
-    });
-}
-if (!String.prototype.endsWith) {
-    Object.defineProperty(String.prototype, "endsWith", {
-        value: function endsWith(search, this_len) {
-            if (this_len === undefined || this_len > this.length) {
-                this_len = this.length;
-            }
-            return this_len >= search.length
-                && this.substring(this_len - search.length, this_len) === search;
-        }, writable: true, configurable: true
-    });
-}
-if (!String.prototype.repeat) {
-    Object.defineProperty(String.prototype, "repeat", {
-        value: function repeat(count) {
-            var str = "" + this;
-            count = count > 0 ? count|0 : 0;
-            if (str.length === 0 || count === 0) {
-                return "";
-            }
-            var len = str.length * count;
-            count = Math.floor(Math.log(count) / Math.log(2));
-            while (count) {
-                str += str;
-                --count;
-            }
-            return str + str.substring(0, len - str.length);
-        }, writable: true, configurable: true
-    });
-}
 
 var hasClass, addClass, removeClass, toggleClass, classList;
-if ("classList" in document.createElement("span")
-    && !document.documentMode) {
+if ("classList" in document.createElement("span")) {
     hasClass = function (e, k) {
         var l = e.classList;
         return l && l.contains(k);
@@ -146,25 +79,10 @@ hotcrp.classes = {
     toggle: toggleClass
 };
 
-if (!Element.prototype.closest) {
-    Element.prototype.closest = function (s) {
-        return $(this).closest(s)[0];
-    };
-}
-if (!Document.prototype.querySelector) {
-    Document.prototype.querySelector = function (s) {
-        return $(s)[0] || null;
-    };
-}
-if (!Element.prototype.querySelector) {
-    Element.prototype.querySelector = function (s) {
-        return $(this).find(s)[0] || null;
-    };
-}
 if (!Element.prototype.append) {
     Element.prototype.append = function () {
-        for (var i = 0; i !== arguments.length; ++i) {
-            var e = arguments[i];
+        for (let i = 0; i !== arguments.length; ++i) {
+            let e = arguments[i];
             if (typeof e === "string")
                 e = document.createTextNode(e);
             this.appendChild(e);
@@ -173,8 +91,8 @@ if (!Element.prototype.append) {
 }
 if (!Element.prototype.prepend) {
     Element.prototype.prepend = function () {
-        for (var i = arguments.length; i !== 0; --i) {
-            var e = arguments[i - 1];
+        for (let i = arguments.length; i !== 0; --i) {
+            let e = arguments[i - 1];
             if (typeof e === "string")
                 e = document.createTextNode(e);
             this.insertBefore(e, this.firstChild);
@@ -183,20 +101,19 @@ if (!Element.prototype.prepend) {
 }
 if (!Element.prototype.replaceChildren) {
     Element.prototype.replaceChildren = function () {
-        var i;
         while (this.lastChild) {
             this.removeChild(this.lastChild);
         }
-        for (i = 0; i !== arguments.length; ++i) {
+        for (let i = 0; i !== arguments.length; ++i) {
             this.append(arguments[i]);
         }
     };
 }
 if (!Element.prototype.after) {
     Element.prototype.after = function () {
-        var p = this.parentNode, n = this.nextSibling;
-        for (var i = 0; i !== arguments.length; ++i) {
-            var e = arguments[i];
+        const p = this.parentNode, n = this.nextSibling;
+        for (let i = 0; i !== arguments.length; ++i) {
+            let e = arguments[i];
             if (typeof e === "string")
                 e = document.createTextNode(e);
             p.insertBefore(e, n);
@@ -205,9 +122,9 @@ if (!Element.prototype.after) {
 }
 if (!Element.prototype.before) {
     Element.prototype.before = function () {
-        var p = this.parentNode;
-        for (var i = 0; i !== arguments.length; ++i) {
-            var e = arguments[i];
+        const p = this.parentNode;
+        for (let i = 0; i !== arguments.length; ++i) {
+            let e = arguments[i];
             if (typeof e === "string")
                 e = document.createTextNode(e);
             p.insertBefore(e, this);
@@ -252,7 +169,7 @@ if (!window.customElements) {
 
 
 function lower_bound_index(a, v) {
-    var l = 0, r = a.length;
+    let l = 0, r = a.length;
     while (l < r) {
         var m = (l + r) >> 1;
         if (a[m] < v) {
@@ -1116,59 +1033,25 @@ Object.assign(hotcrp.text, {
 
 // events
 var event_key = (function () {
-const key_map = {
-        "Spacebar": " ", "Esc": "Escape", "Left": "ArrowLeft",
-        "Right": "ArrowRight", "Up": "ArrowUp", "Down": "ArrowDown"
-    },
-    charCode_map = {"9": "Tab", "13": "Enter", "27": "Escape"},
-    keyCode_map = {
-        "9": "Tab", "13": "Enter", "16": "ShiftLeft", "17": "ControlLeft",
-        "18": "AltLeft", "20": "CapsLock", "27": "Escape", "33": "PageUp",
-        "34": "PageDown", "37": "ArrowLeft", "38": "ArrowUp", "39": "ArrowRight",
-        "40": "ArrowDown", "91": "OSLeft", "92": "OSRight", "93": "OSRight",
-        "224": "OSLeft", "225": "AltRight"
-    },
-    nonprintable_map = {
-        "Alt": 2,
-        "AltLeft": 2,
-        "AltRight": 2,
-        "CapsLock": 2,
-        "Control": 2,
-        "ControlLeft": 2,
-        "ControlRight": 2,
-        "Meta": 2,
-        "OSLeft": 2,
-        "OSRight": 2,
-        "Shift": 2,
-        "ShiftLeft": 2,
-        "ShiftRight": 2,
-        "ArrowLeft": 1,
-        "ArrowRight": 1,
-        "ArrowUp": 1,
-        "ArrowDown": 1,
-        "Backspace": 1,
-        "Enter": 1,
-        "Escape": 1,
-        "PageUp": 1,
-        "PageDown": 1,
-        "Tab": 1
-    };
+const nonprintable_map = {
+    "Alt": 2,
+    "CapsLock": 2,
+    "Control": 2,
+    "Meta": 2,
+    "Shift": 2,
+    "ArrowLeft": 1,
+    "ArrowRight": 1,
+    "ArrowUp": 1,
+    "ArrowDown": 1,
+    "Backspace": 1,
+    "Enter": 1,
+    "Escape": 1,
+    "PageUp": 1,
+    "PageDown": 1,
+    "Tab": 1
+};
 function event_key(evt) {
-    var x;
-    if (typeof evt === "string") {
-        return evt;
-    } else if ((x = evt.key) != null) {
-        return key_map[x] || x;
-    } else if ((x = evt.charCode)) {
-        return charCode_map[x] || String.fromCharCode(x);
-    } else if ((x = evt.keyCode)) {
-        if (keyCode_map[x]) {
-            return keyCode_map[x];
-        } else if ((x >= 48 && x <= 57) || (x >= 65 && x <= 90)) {
-            return String.fromCharCode(x);
-        }
-    }
-    return "";
+    return typeof evt === "string" ? evt : evt.key ?? "";
 }
 event_key.printable = function (evt) {
     return !nonprintable_map[event_key(evt)]
@@ -1283,7 +1166,7 @@ function realws(is_session, key, value) {
     }
 }
 try {
-    if (window.localStorage && window.JSON) {
+    if (window.localStorage) {
         ws = realws;
     }
 } catch (err) {
@@ -1608,26 +1491,7 @@ function make_URL(url, loc) {
 }
 
 function url_absolute(url, loc) {
-    loc = loc || window.location.href;
-    if (window.URL) {
-        return make_URL(url, loc).href;
-    }
-    var x = "", m;
-    if (!/^\w+:\/\//.test(url)
-        && (m = loc.match(/^(\w+:)/)))
-        x = m[1];
-    if (x && !/^\/\//.test(url)
-        && (m = loc.match(/^\w+:(\/\/[^/]+)/)))
-        x += m[1];
-    if (x && !/^\//.test(url)
-        && (m = loc.match(/^\w+:\/\/[^/]+(\/[^?#]*)/))) {
-        x = (x + m[1]).replace(/\/[^/]+$/, "/");
-        while (url.substring(0, 3) === "../") {
-            x = x.replace(/\/[^/]*\/$/, "/");
-            url = url.substring(3);
-        }
-    }
-    return x + url;
+    return make_URL(url, loc || window.location.href).href;
 }
 
 function hoturl_absolute_base() {
@@ -2304,22 +2168,23 @@ handle_ui.on("js-reload", function () {
 });
 
 var focus_at = (function () {
-var ever_focused;
+let ever_focused;
 return function (felt) {
-    if (felt.jquery)
+    if (felt.jquery) {
         felt = felt[0];
+    }
     felt.focus();
-    if (!ever_focused && window.WeakMap)
-        ever_focused = new WeakMap;
-    if (ever_focused && !ever_focused.has(felt)) {
-        ever_focused.set(felt, true);
-        if (felt.select && hasClass(felt, "want-select"))
-            felt.select();
-        else if (felt.setSelectionRange) {
-            try {
-                felt.setSelectionRange(felt.value.length, felt.value.length);
-            } catch (e) { // ignore errors
-            }
+    ever_focused = ever_focused || new WeakMap;
+    if (ever_focused.has(felt)) {
+        return;
+    }
+    ever_focused.set(felt, true);
+    if (felt.select && hasClass(felt, "want-select"))
+        felt.select();
+    else if (felt.setSelectionRange) {
+        try {
+            felt.setSelectionRange(felt.value.length, felt.value.length);
+        } catch (e) { // ignore errors
         }
     }
 };
@@ -5074,25 +4939,20 @@ handle_ui.on("js-click-child", function (evt) {
 
 // history
 
-var push_history_state;
-if ("pushState" in window.history) {
-    push_history_state = function (href) {
-        var state;
-        if (!history.state || !href) {
-            state = {href: location.href};
-            $(document).trigger("collectState", [state]);
-            history.replaceState(state, "", state.href);
-        }
-        if (href) {
-            state = {href: href};
-            $(document).trigger("collectState", [state]);
-            history.pushState(state, "", state.href);
-        }
-        push_history_state.ever = true;
-        return true;
-    };
-} else {
-    push_history_state = function () { return false; };
+function push_history_state(href) {
+    var state;
+    if (!history.state || !href) {
+        state = {href: location.href};
+        $(document).trigger("collectState", [state]);
+        history.replaceState(state, "", state.href);
+    }
+    if (href) {
+        state = {href: href};
+        $(document).trigger("collectState", [state]);
+        history.pushState(state, "", state.href);
+    }
+    push_history_state.ever = true;
+    return true;
 }
 push_history_state.ever = false;
 
@@ -6491,13 +6351,11 @@ function observer_fn(entries) {
     }
 }
 function initialize() {
-    observer = linkmap = null;
+    observer = null;
     if (window.IntersectionObserver) {
         observer = new IntersectionObserver(observer_fn, {rootMargin: "-32px 0px"});
     }
-    if (window.WeakMap) {
-        linkmap = new WeakMap;
-    }
+    linkmap = new WeakMap;
     pslcard = document.querySelector(".s-psl");
 }
 function fe(idelt) {
@@ -8308,14 +8166,10 @@ function cmt_save(elt, action, really) {
     }
     const url = hoturl("=api/comment", arg),
         callback = cmt_save_callback(cj);
-    if (window.FormData) {
-        $.ajax(url, {
-            method: "POST", data: new FormData(form), success: callback,
-            processData: false, contentType: false, timeout: 120000
-        });
-    } else {
-        $.post(url, $(form).serialize(), callback);
-    }
+    $.ajax(url, {
+        method: "POST", data: new FormData(form), success: callback,
+        processData: false, contentType: false, timeout: 120000
+    });
 }
 
 function cmt_keydown(evt) {
@@ -12955,7 +12809,7 @@ return function (classes, type) {
             pelt.appendChild($svg("path", {d: dxs[i], fill: dxs[i + 1]}));
         }
         svgdef.appendChild(pelt);
-    } else if (window.btoa) {
+    } else {
         const t = [`<svg xmlns="${svgns}" width="${size}" height="${size}">`];
         for (let i = 0; i !== dxs.length; i += 2) {
             t.push(`<path d="${dxs[i]}" fill="${dxs[i + 1]}"></path>`);
@@ -13278,7 +13132,6 @@ handle_ui.on("document-uploader", function (event) {
             return false;
         }
         return file
-            && window.FormData
             && blob_limit > 0
             && file.size >= Math.min(0.45 * upload_limit, 4 << 20);
     }
@@ -15214,7 +15067,7 @@ handle_ui.on("js-submit-list", function (evt) {
     // Keep track of both string versions and numeric versions
     // (numeric versions for possible session list encoding).
     const allval = [];
-    let allnumval = [], chkval = [], chknumval = [], isdefault = false;
+    let allnumval = [], chkval = [], chknumval = [];
     for (e of table.querySelectorAll("input.js-selector")) {
         const v = e.value, checked = e.checked;
         allval.push(v);
@@ -15231,7 +15084,6 @@ handle_ui.on("js-submit-list", function (evt) {
         if (fnbutton && hasClass(fnbutton, "can-submit-all")) {
             chkval = allval;
             chknumval = allnumval;
-            isdefault = true;
         } else {
             alert("Select one or more rows first.");
             return;
@@ -15280,9 +15132,6 @@ handle_ui.on("js-submit-list", function (evt) {
     // set papers
     if (chktxt) {
         bgform.appendChild(hidden_input("p", chktxt));
-    }
-    if (isdefault) {
-        bgform.appendChild(hidden_input("pdefault", "yes"));
     }
     if (form.elements.forceShow && form.elements.forceShow.value !== "") {
         bgform.appendChild(hidden_input("forceShow", form.elements.forceShow.value));
@@ -16236,18 +16085,10 @@ $(function () {
         err.push(locator(this));
         elt.push(this);
     });
-    if (document.documentMode || window.attachEvent) {
-        var msg = $('<div class="msg msg-error"></div>').appendTo("#h-messages");
-        feedback.append_item_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
-        feedback.append_item_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5 /*MessageSet::INFORM*/});
-        err.push("Internet Explorer");
-    }
     if (err.length > 0) {
-        if (window.console) {
-            console.log(err.join("\n"));
-            for (var i = 0; i !== elt.length; ++i) {
-                console.log(elt[i]);
-            }
+        console.log(err.join("\n"));
+        for (var i = 0; i !== elt.length; ++i) {
+            console.log(elt[i]);
         }
         log_jserror(err.join("\n"));
     }
