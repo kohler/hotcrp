@@ -755,9 +755,11 @@ class CommentInfo {
         return $docs;
     }
 
-    /** @param bool $no_content
+    const UNPARSE_NO_CONTENT = 1;
+    const UNPARSE_HARD_LIMIT = 2;
+    /** @param int $flags
      * @return ?object */
-    function unparse_json(Contact $viewer, $no_content = false) {
+    function unparse_json(Contact $viewer, $flags = 0) {
         if ($this->commentId !== 0
             && !$viewer->can_view_comment($this->prow, $this, true)) {
             return null;
@@ -882,13 +884,13 @@ class CommentInfo {
         }
 
         // content
-        if ($no_content) {
+        if (($flags & self::UNPARSE_NO_CONTENT) !== 0) {
             // do not include content
         } else if ($viewer->can_view_comment_content($this->prow, $this)) {
             $ctext = $this->content($viewer);
             if (($rrd = $this->response_round())
                 && $rrd->wordlimit > 0) {
-                $truncation = Text::apply_wordlimit($ctext, $rrd->wordlimit, $rrd->hard_wordlimit, true);
+                $truncation = Text::apply_wordlimit($ctext, $rrd->wordlimit, $rrd->hard_wordlimit, ($flags & self::UNPARSE_HARD_LIMIT) !== 0);
                 $cj["text"] = $truncation->truncation ?? $ctext;
                 $cj["word_count"] = $truncation->word_count;
                 if ($truncation->overlong) {

@@ -379,7 +379,7 @@ class Paper_Page {
                     && ($crow->commentType & CommentInfo::CT_RESPONSE) != 0
                     && $preferred_resp_round
                     && $crow->commentRound === $preferred_resp_round->id)) {
-                $j = $crow->unparse_json($this->user);
+                $j = $crow->unparse_json($this->user, 0);
             }
         }
         if (!$j) {

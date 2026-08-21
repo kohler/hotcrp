@@ -159,26 +159,35 @@ class Review_API extends MessageSet {
         $user = $this->user;
         if (!isset($qreq->p)) {
             return JsonResult::make_missing_error("p");
-        } else if (!isset($qreq->r)) {
+        }
+        [$fmt, ] = self::parse_get_format($qreq, false);
+        if (!isset($qreq->r) && $fmt !== "form") {
             return JsonResult::make_missing_error("r");
         }
         $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
         if (!$prow || $fr) {
             return Conf::paper_error_json_result($fr);
         }
-        // the single endpoint has no ZIP formats, so the container is never set
-        list($fmt, ) = self::parse_get_format($qreq, false);
 
-        $rloc = $prow->parse_ordinal_id($qreq->r);
-        if ($rloc === false || $rloc === 0) {
-            return JsonResult::make_parameter_error("r");
-        } else if ($rloc < 0) {
-            $rrow = $prow->review_by_ordinal(-$rloc);
+        if (isset($qreq->r)) {
+            $rloc = $prow->parse_ordinal_id($qreq->r);
+            if ($rloc === false || $rloc === 0) {
+                return JsonResult::make_parameter_error("r");
+            } else if ($rloc < 0) {
+                $rrow = $prow->review_by_ordinal(-$rloc);
+            } else {
+                $rrow = $prow->review_by_id($rloc);
+            }
         } else {
-            $rrow = $prow->review_by_id($rloc);
+            $rrow = $prow->review_by_user($user)
+                ?? ReviewInfo::make_blank($prow, $user);
         }
-        $fr = $user->perm_view_review($prow, $rrow);
-        if (!$rrow || $fr) {
+        if (!$rrow || $rrow->reviewId) {
+            $fr = $user->perm_view_review($prow, $rrow);
+        } else {
+            $fr = $user->perm_create_review($prow, $user);
+        }
+        if ($fr || !$rrow) {
             $fr = $fr ?? $prow->failure_reason(["reviewNonexistent" => true]);
             return new JsonResult($fr->response_code(), [
                 "ok" => false, "message_list" => $fr->message_list(null, 2)
@@ -212,18 +221,19 @@ class Review_API extends MessageSet {
             $srch = null;
             $prows = PaperInfoSet::make_singleton($prow);
         } else {
-            list($srch, $prows) = Paper_API::make_search($user, $qreq);
+            [$srch, $prows] = Paper_API::make_search($user, $qreq);
             $this->append_list($srch->message_list_with_default_field("q"));
         }
 
         if (isset($qreq->rq) && isset($qreq->u)) {
             JsonResult::make_parameter_error("rq", "<0>Supply at most one of `rq` and `u`")->complete();
         }
-        list($fmt, $zip) = self::parse_get_format($qreq, true);
+        [$fmt, $zip] = self::parse_get_format($qreq, true);
 
-        $rst = null;
+        $rst = $u = null;
         if (isset($qreq->u)) {
-            if (($u = $this->conf->user_by_email($qreq->u))) {
+            $u = $qreq->u === "me" ? $user : $this->conf->user_by_email($qreq->u);
+            if ($u) {
                 $rsm = new ReviewSearchMatcher;
                 $rsm->add_contact($u->contactId);
                 $rst = new Review_SearchTerm($user, $rsm);
@@ -237,13 +247,22 @@ class Review_API extends MessageSet {
             $srch = new PaperSearch($user, ["q" => $qreq->rq]);
             $rst = $srch->main_term(); // generates the messages collected next
             $this->append_list($srch->message_list_with_default_field("rq"));
+        } else if ($fmt === "form") {
+            $u = $user;
         }
 
         $rrows = [];
         foreach ($prows as $xprow) {
+            $got = count($rrows);
             foreach ($xprow->viewable_reviews_as_display($user) as $rrow) {
                 if (!$rst || $rst->test($xprow, $rrow))
                     $rrows[] = $rrow;
+            }
+            if ($fmt === "form"
+                && $got === count($rrows)
+                && $u
+                && $user->can_create_review($xprow, $u)) {
+                $rrows[] = ReviewInfo::make_blank($xprow, $u);
             }
         }
 
@@ -264,6 +283,20 @@ class Review_API extends MessageSet {
             "message_list" => $this->message_list(),
             "reviews" => $rjs
         ]);
+    }
+
+    /** @param ReviewInfo $rrow
+     * @param bool $full
+     * @param bool $isform
+     * @return string */
+    private function download_filename($rrow, $full, $isform) {
+        $fn = $full ? $this->conf->download_prefix . "review" : "review";
+        if ($isform && $rrow->contactId === $this->user->contactId) {
+            $fn .= $rrow->prow->paperId;
+        } else {
+            $fn .= $rrow->unparse_ordinal_id();
+        }
+        return $full ? $fn . ".txt" : $fn;
     }
 
     /** Render `$rrows` as a text download rather than JSON.
@@ -292,8 +325,7 @@ class Review_API extends MessageSet {
                 $t = $isform
                     ? $rf->text_form_header(false) . $rf->text_form($rrow->prow, $rrow, $user) . "\n"
                     : $rf->unparse_text($rrow->prow, $rrow, $user);
-                $fn = $conf->download_prefix . "review" . $rrow->unparse_ordinal_id() . ".txt";
-                if (($doc = $dset->add_string_as($t, $fn))
+                if (($doc = $dset->add_string_as($t, $this->download_filename($rrow, true, $isform)))
                     && ($time = $rrow->mtime($user)) > 0) {
                     $doc->set_timestamp($time);
                 }
@@ -336,7 +368,7 @@ class Review_API extends MessageSet {
         }
 
         $base = count($rrows) === 1
-            ? "review" . $rrows[0]->unparse_ordinal_id()
+            ? $this->download_filename($rrows[0], false, $isform)
             : "reviews";
         // Validate by content ETag; the rendering also depends on the
         // selection, on what this caller may see, and on the review form, so no
@@ -417,7 +449,7 @@ class Review_API extends MessageSet {
 
         // a JSON object is one review; a JSON array is a batch (reviews have no
         // search-match mode)
-        list($jp, $jmode) = $docloc->parse_json_request($qreq, $mode & ~DocumentLocator::M_MATCH);
+        [$jp, $jmode] = $docloc->parse_json_request($qreq, $mode & ~DocumentLocator::M_MATCH);
         if ($jmode === DocumentLocator::M_ONE) {
             return $this->run_post_single_json($prow, $jp);
         }
@@ -443,7 +475,7 @@ class Review_API extends MessageSet {
         }
 
         // resolve the target review; empty/`0` addresses the caller's own review
-        list($ok, $rrow) = $this->post_target(isset($qreq->r) ? (string) $qreq->r : "");
+        [$ok, $rrow] = $this->post_target(isset($qreq->r) ? (string) $qreq->r : "");
         if ($ok && !$rrow) {
             $rrow = $prow->review_by_user($this->user);
             if (!$rrow) {
@@ -636,7 +668,7 @@ class Review_API extends MessageSet {
         $rv->parse_json($jp);
         // the URL `r` selects the target review; a body `rid` (now in the
         // request) is reconciled against it by prepare_save
-        list($ok, $rrow) = $this->post_target($this->qreq_r);
+        [$ok, $rrow] = $this->post_target($this->qreq_r);
         if (!$ok) {
             $this->execute_fail();
         } else {
@@ -672,7 +704,7 @@ class Review_API extends MessageSet {
      * @param ReviewValues $rv
      * @param ?string $r */
     private function save_item($rv, $r) {
-        list($ok, $rrow) = $this->post_target($r);
+        [$ok, $rrow] = $this->post_target($r);
         if (!$ok) {
             $this->execute_fail();
             return;

@@ -71,6 +71,13 @@ may not see it, an error is returned.
   from the response, returning only metadata. Defaults to `true`.
 
     * default true
+* param ?word_limit =soft|hard: Which word limit applies to responses with
+  word limits. `soft` (the default) returns the response cut at its word
+  limit; `hard` returns the response cut at the hard word limit (if any).
+  Fields over a limit are named in the response’s `overlong` and `truncated`
+  keys.
+
+    * default soft
 * response ?comment comment: The requested comment.
 * badge featured
 
@@ -166,10 +173,10 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
     * default new
 * param ?=text string: The comment body. Required unless `delete=1`.
 * param ?delete boolean: Set to `1` to delete the selected comment.
-* param ?visibility comment_visibility: Who can see the comment: `admin`, `pc`, `rev` (default), or `au`.
+* param ?visibility comment_visibility: Who can see the comment: `admin`, `pc`, `rev`, or `au`.
 
     * default rev
-* param ?topic comment_topic: The comment thread: `rev` (default), `paper`, or `dec`.
+* param ?topic comment_topic: The comment thread: `rev`, `paper`, or `dec`.
 
     * default rev
 * param ?=tags string: Space-separated tags for the comment (ordinary comments only).
@@ -184,6 +191,10 @@ To upload multiple attachments, number them sequentially (`attachment:2`,
 
     * default true
     * badge admin
+* param ?word_limit =soft|hard: Which word limit applies to returned comment
+  renderings.
+
+    * default hard
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?+valid boolean: True if and only if the modification was valid.
 
@@ -230,7 +241,6 @@ rules.
 * response ?+change_list [string]: Always `["delete"]`.
 * response ?conflict boolean: True when the delete was rejected by a concurrency check (see [Concurrency](#tag-comments)).
 * badge featured
-* badge featured
 
 
 # get /comments
@@ -259,6 +269,10 @@ an error.
   from each returned comment, returning only metadata. Defaults to `true`.
 
     * default true
+* param ?word_limit =soft|hard: Which word limit applies to returned comment
+  renderings.
+
+    * default soft
 * response ?comments [comment]: The matching comment objects.
 * badge featured
 
@@ -313,6 +327,10 @@ to the integer index of the item they concern.
 
     * default true
 * param ?if_unmodified_since string: A batch-wide default precondition, overridable by a comment object’s own `if_unmodified_since`.
+* param ?word_limit =soft|hard: Which word limit applies to returned comment
+  renderings.
+
+    * default hard
 * response ?+status_list [comment_update_status]: Per-comment results, one entry per input object (same length and order as the input). Entry *i* reports `valid`, `change_list`, `pid`, and `cid`, plus `conflict` for an edit-conflict rejection.
 * response ?comments [comment]: The saved comments, one per input object (`null` for an item that was not saved). Omitted entirely for `dry_run=1`; for `dry_run=if_warning` it is present, with `null` for each withheld item.
 * badge featured

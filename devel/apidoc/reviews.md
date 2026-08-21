@@ -73,25 +73,27 @@ rendering instead:
 * `text` returns the reviews as text, in the format produced by the “Reviews”
   download on a submission list.
 * `form` returns the reviews as **offline review forms**, the same format
-  produced by the “Review forms” download—and accepted back by
-  [`review` POST](#post-review) and [`reviews` POST](#post-reviews). Fetching a
-  form requires only permission to view the review; whether the form can be
-  uploaded again is decided when it is uploaded.
+  produced by the “Review forms” download and accepted back by [POST
+  `review`](#post-review) and [`reviews`](#post-reviews). Though this format
+  is intended for editing, you can fetch forms for reviews you can’t edit.
 
 [`reviews`](#get-reviews) additionally accepts `textzip` and `formzip`, which
-return the same renderings packaged as a ZIP archive with one file per review,
-named for the review’s ordinal ID (for instance `review18A.txt`).
+return the same renderings packaged as a ZIP archive with one file per review.
+The files are named with review ordinals (`review18A.txt` or
+`review18r193.txt`) or, for the caller’s own review forms, submission IDs
+(`review18.txt`).
 
-A non-`json` format returns the rendering as the raw response body, without any
-JSON wrapper: `text/plain` for `text` and `form`, `application/zip` for the ZIP
-formats. Errors are still reported as JSON objects with `ok` set to `false`, so
-check the response’s `Content-Type` or status code. An empty selection yields an
-empty download, just as `format=json` yields an empty `reviews` array.
+The `json` and `text` formats return existing reviews, but the `form` format
+will synthesize blank review forms when possible. [`review`](#get-review) does
+so when `r` is omitted, and [`reviews`](#get-reviews) does so for selected
+submissions with no review by the selected reviewer. Either way the caller
+must be allowed to create that review.
 
-A rendering has no `message_list`, so the search diagnostics `format=json` would
-report are carried into the download instead: `text` prefixes them, `form`
-includes them as `==-==` comment lines, and the ZIP formats collect them in a
-`README-warnings.txt` member.
+A non-`json` format returns the rendering as the raw response body, without
+any JSON wrapper: `text/plain` for `text` and `form`, `application/zip` for
+the ZIP formats. Warnings are included in the text, or, for ZIP formats, in a
+`README-warnings.txt` file. Errors are still reported as JSON objects with
+`ok` set to `false`.
 
 Renderings are conditionally requestable through `ETag` and `If-None-Match`.
 Date-based conditions are ignored, since a rendering depends on more than the
@@ -112,11 +114,7 @@ client can download an object, edit it, and upload it again:
 
 The non-`json` formats are already bare files, so they are attachments by
 default; `download=0` requests them inline instead, which is useful for reading
-a review in a browser tab. Conversely `format=json` is enveloped and inline by
-default.
-
-Because a bare payload has no `message_list`, `download=1` discards search
-diagnostics. Errors still arrive in the usual envelope.
+a review in a browser tab.
 
 
 # get /{p}/review
@@ -130,7 +128,9 @@ not see it, a `403`.
 
 * scope review:read
 * param p pid
-* param r rid: Review to return, as a numeric review ID or a display ordinal (`A`).
+* param ?r rid: Review to return, as a numeric review ID or a display ordinal
+  (`A`). May be omitted with `format=form` to request the caller’s own review
+  form.
 * param ?format =json|text|form
 
     How to render the review (see [Response formats](#tag-reviews)). `json` (the
@@ -312,12 +312,17 @@ diagnostics, if any, are reported in `message_list`.
 The optional `rq` and `u` parameters filter which *reviews* are returned (not
 which submissions are searched). Supply at most one of them:
 
-* `u` returns only reviews written by the user with that email.
+* `u` returns only reviews written by the user with that email; `u=me` names
+  the caller.
 * `rq` is a review search expression (the same syntax as a `re:` search), and
   returns only matching reviews.
 
 `reviewer` is a *search* parameter, like `q` and `t`: it sets the perspective the
 submission search uses. It does not restrict which reviews are returned.
+
+When `format=form` or `formzip` and `rq` is not set, then `u` defaults to
+`me`, and a selected submission that has no corresponding review yields a
+blank form for that submission.
 
 * scope review:read
 * param ?q search_string: Search selecting submissions whose reviews to return. Required unless `p` is given.
@@ -332,7 +337,8 @@ submission search uses. It does not restrict which reviews are returned.
 * param ?rq string: Review search expression limiting which reviews are returned.
 
     * oneof review_query
-* param ?u email: Return only reviews written by this user.
+* param ?u email: Return only reviews written by this user; `me` names the
+  caller.
 
     * oneof review_query
 * param ?format =json|text|form|textzip|formzip

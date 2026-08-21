@@ -45,6 +45,8 @@ instance, about permission errors or nonexistent submissions—are returned in
   `soft` (the default) returns each field cut at its word limit; `hard` returns
   the full text, cut only at the hard word limit (if any). Fields over a limit
   are named in the response’s `overlong` and `truncated` keys.
+
+    * default soft
 * param ?download boolean: True returns the bare submission object as a file
   (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?paper paper: The requested submission object.
@@ -263,9 +265,8 @@ listed in a query, supply a `warn_missing=1` parameter.
     * group Search modifiers
 * param warn_missing boolean: Get warnings for missing submissions
 * param ?word_limit =soft|hard: Which word limit applies to long text fields.
-  `soft` (the default) returns each field cut at its word limit; `hard` returns
-  the full text, cut only at the hard word limit (if any). Fields over a limit
-  are named in the response’s `overlong` and `truncated` keys.
+
+    * default soft
 * param ?download boolean: True returns a bare array of submission objects as a
   file (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?papers [paper]: The matching submission objects.

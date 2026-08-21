@@ -8297,7 +8297,7 @@ function cmt_save(elt, action, really) {
         if (this.files.length === 0)
             this.disabled = true;
     });
-    var arg = {p: siteinfo.paperid, c: cj.cid || "new"};
+    var arg = {p: siteinfo.paperid, c: cj.cid || "new", word_limit: "hard"};
     really && (arg.override = 1);
     siteinfo.want_override_conflict && (arg.forceShow = 1);
     action === "delete" && (arg.delete = 1);

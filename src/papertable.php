@@ -3110,6 +3110,7 @@ class PaperTable {
         $s = "";
         $ncmt = 0;
         $pex = new PaperExport($this->user);
+        $pex->set_ignore_soft_word_limits(true);
         foreach ($rcs as $rc) {
             if (isset($rc->reviewId)) {
                 $rcj = $pex->review_json($this->prow, $rc);
@@ -3121,7 +3122,7 @@ class PaperTable {
                 $s .= "hotcrp.add_review(" . json_encode_browser($rcj) . ");\n";
             } else {
                 ++$ncmt;
-                $rcj = $rc->unparse_json($this->user);
+                $rcj = $pex->comment_json($this->prow, $rc);
                 $s .= "hotcrp.add_comment(" . json_encode_browser($rcj) . ");\n";
             }
         }
@@ -3145,7 +3146,7 @@ class PaperTable {
             }
             foreach ($cs as $crow) {
                 ++$ncmt;
-                $s .= "hotcrp.add_comment(" . json_encode_browser($crow->unparse_json($this->user)) . ");\n";
+                $s .= "hotcrp.add_comment(" . json_encode_browser($pex->comment_json($this->prow, $crow)) . ");\n";
             }
         }
 

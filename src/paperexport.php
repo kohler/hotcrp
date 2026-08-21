@@ -14,7 +14,7 @@ class PaperExport {
     public $include_docids = false;
     /** @var bool
      * @readonly */
-    public $include_content = false;
+    public $include_document_content = false;
     /** @var bool
      * @readonly */
     public $ignore_soft_word_limits = false;
@@ -27,6 +27,9 @@ class PaperExport {
     /** @var bool
      * @readonly */
     public $override_ratings = false;
+    /** @var bool
+     * @readonly */
+    public $include_comment_content = true;
     /** @var list<callable> */
     private $_on_document_export = [];
 
@@ -51,8 +54,8 @@ class PaperExport {
     /** @param bool $x
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_include_content($x) {
-        $this->include_content = $x;
+    function set_include_document_content($x) {
+        $this->include_document_content = $x;
         return $this;
     }
 
@@ -85,6 +88,14 @@ class PaperExport {
      * @suppress PhanAccessReadOnlyProperty */
     function set_override_ratings($x) {
         $this->override_ratings = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_include_comment_content($x) {
+        $this->include_comment_content = $x;
         return $this;
     }
 
@@ -121,7 +132,7 @@ class PaperExport {
         if ($doc->filename) {
             $d->filename = $doc->filename;
         }
-        if ($this->include_content
+        if ($this->include_document_content
             && ($content = $doc->content()) !== false) {
             $d->content_base64 = base64_encode($content);
         }
@@ -431,5 +442,13 @@ class PaperExport {
             }
         }
         return (object) $rj;
+    }
+
+    /** @return ?object */
+    function comment_json(PaperInfo $prow, CommentInfo $crow) {
+        // XXX should move unparsing code from CommentInfo here eventually
+        $fl = ($this->include_comment_content ? 0 : CommentInfo::UNPARSE_NO_CONTENT)
+            | ($this->ignore_soft_word_limits ? CommentInfo::UNPARSE_HARD_LIMIT : 0);
+        return $crow->unparse_json($this->viewer, $fl);
     }
 }

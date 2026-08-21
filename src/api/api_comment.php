@@ -68,6 +68,8 @@ class Comment_API extends MessageSet {
     private $qreq_rrd;
     /** @var ?string */
     private $qreq_review_token;
+    /** @var PaperExport */
+    private $pex;
 
     // request-global configuration
     /** @var bool */
@@ -158,6 +160,14 @@ class Comment_API extends MessageSet {
             }
         }
         $this->qreq_review_token = $qreq->review_token;
+        $this->pex = new PaperExport($user);
+        if (($qreq->word_limit ?? "soft") === "soft") {
+            $this->pex->set_ignore_soft_word_limits(false);
+        } else if ($qreq->word_limit === "hard") {
+            $this->pex->set_ignore_soft_word_limits(true);
+        } else {
+            JsonResult::make_parameter_error("word_limit")->complete();
+        }
     }
 
     /** Set a function to be called before trying to save a comment (use in tests).
@@ -173,6 +183,9 @@ class Comment_API extends MessageSet {
         // a GET with no `c`/`response` behaves like `GET /comments` (backward compat)
         if ($this->qreq_cid === null && $this->qreq_rrd === null) {
             return $this->run_get_multi($qreq, $prow);
+        }
+        if (friendly_boolean($qreq->content) === false) {
+            $this->pex->set_include_comment_content(false);
         }
         // find comment; a `cid`/`response` mismatch reads as “not found” for GET
         $this->prow = $prow;
@@ -195,13 +208,14 @@ class Comment_API extends MessageSet {
             return JsonResult::make_not_found_error("c", "<0>Comment not found");
         }
         // export and return
-        $no_content = friendly_boolean($qreq->content) === false;
-        return new JsonResult(["ok" => true, "comment" => $crow->unparse_json($this->user, $no_content)]);
+        return new JsonResult(["ok" => true, "comment" => $this->pex->comment_json($prow, $crow)]);
     }
 
     /** @return JsonResult */
     private function run_get_multi(Qrequest $qreq, ?PaperInfo $prow) {
-        $no_content = friendly_boolean($qreq->content) === false;
+        if (friendly_boolean($qreq->content) === false) {
+            $this->pex->set_include_comment_content(false);
+        }
         if (isset($qreq->q)) {
             if ($prow) {
                 return JsonResult::make_parameter_error("p", "<0>Parameter conflict with `q`");
@@ -219,7 +233,7 @@ class Comment_API extends MessageSet {
             foreach ($prow->viewable_comments($this->user) as $crow) {
                 if (!$this->qreq_rrd
                     || ($crow->is_response() && $crow->commentRound === $this->qreq_rrd->id)) {
-                    $comments[] = $crow->unparse_json($this->user, $no_content);
+                    $comments[] = $this->pex->comment_json($prow, $crow);
                 }
             }
         }
@@ -236,6 +250,9 @@ class Comment_API extends MessageSet {
     function run_post(Qrequest $qreq, ?PaperInfo $prow, $mode) {
         // set parameters
         $this->set_post_param($qreq);
+        if (!isset($qreq->word_limit)) {
+            $this->pex->set_ignore_soft_word_limits(true);
+        }
         $this->docloc = new DocumentLocator;
 
         // check Content-Type
@@ -581,7 +598,7 @@ class Comment_API extends MessageSet {
 
         $cid = $crow && $crow->commentId > 0 ? $crow->commentId : null;
         if ($cid !== null && !$this->dry_run_here) {
-            $this->comments[] = $crow->unparse_json($this->user);
+            $this->comments[] = $this->pex->comment_json($crow->prow, $crow);
             ++$this->ncomments;
         } else {
             $this->comments[] = null;
