@@ -26,7 +26,7 @@
     {   "name": "events", "get": true, "session": false, "function": "Events_API::run"   },
     {   "name": "follow", "post": true, "paper": true, "xxx": true, "function": "Follow_API::run"   },
     {   "name": "formatcheck", "get": true, "session": false, "function": "FormatCheck_API::run"   },
-    {   "name": "graphdata", "get": true, "session": false, "function": "GraphData_API::graphdata"   },
+    {   "name": "graphdata", "get": true, "session": false, "allow_if": "pc", "function": "GraphData_API::graphdata"   },
     {   "name": "job", "get": true, "auth": false, "session": false, "function": "Job_API::job"   },
     {   "name": "jserror", "post": true, "auth": false, "session": false, "function": "Error_API::jserror"   },
     {   "name": "lead", "get": true, "post": true, "paper": true, "function": "PaperPC_API::lead_api"   },
