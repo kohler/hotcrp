@@ -20,7 +20,7 @@ class PageCount_Fexpr extends Fexpr {
         return SearchTerm::ABOUT_SUB;
     }
     function compile(FormulaCompiler $state) {
-        $doc = $state->_add_primary_document();
+        $doc = $state->prow_primary_document();
         return "({$doc} ? {$doc}->npages(\$formula->info[{$this->chkindex}]) : null)";
     }
 }

@@ -3,16 +3,25 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ReviewSearchMatcher extends ContactCountMatcher {
-    // `status` bits
-    const COMPLETE = 1;
-    const INCOMPLETE = 2;
-    const INPROGRESS = 4;
-    const NOTSTARTED = 8;
-    const NOTACKNOWLEDGED = 16;
-    const PENDINGAPPROVAL = 32;
-    const MYREQUEST = 128;
-    const APPROVED = 256;
-    const SUBMITTED = 512;
+    // `status` bits (completeness_mask()). Review must be:
+    const COMPLETE = 1;             // complete (value must be 1)
+    const INCOMPLETE = 2;           // incomplete (value must be 2)
+    const INPROGRESS = 4;           // in progress
+    const NOTSTARTED = 8;           // possibly accepted, but not otherwise modified
+    const NOTACKNOWLEDGED = 16;     // not accepted or drafted
+    const PENDINGAPPROVAL = 32;     // submitted pending approval
+    const MYREQUEST = 128;          // I requested it
+    const APPROVED = 256;           // approved (but not submitted)
+    const SUBMITTED = 512;          // submitted (= authors will likely see it eventually)
+
+    static private $status_completeness_antirequirements = [
+        /* RS_EMPTY */          self::COMPLETE | self::INPROGRESS | self::PENDINGAPPROVAL | self::APPROVED | self::SUBMITTED,
+        /* RS_ACKNOWLEDGED */   self::COMPLETE | self::INPROGRESS | self::NOTACKNOWLEDGED | self::PENDINGAPPROVAL | self::APPROVED | self::SUBMITTED,
+        /* RS_DRAFTED */        self::COMPLETE | self::NOTSTARTED | self::NOTACKNOWLEDGED | self::PENDINGAPPROVAL | self::APPROVED | self::SUBMITTED,
+        /* RS_DELIVERED */      self::COMPLETE | self::NOTSTARTED | self::NOTACKNOWLEDGED | self::APPROVED | self::SUBMITTED,
+        /* RS_APPROVED */       self::INCOMPLETE | self::INPROGRESS | self::NOTSTARTED | self::NOTACKNOWLEDGED | self::PENDINGAPPROVAL | self::SUBMITTED,
+        /* RS_COMPLETED */      self::INCOMPLETE | self::INPROGRESS | self::NOTSTARTED | self::NOTACKNOWLEDGED | self::PENDINGAPPROVAL | self::APPROVED
+    ];
 
     // `sensitivity` bits
     const HAS_COUNT = 1;
@@ -109,6 +118,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     /** @return int */
     function review_type() {
         return $this->review_type;
+    }
+    /** @return int */
+    function completeness_mask() {
+        return $this->status;
     }
     /** @return ?ReviewFieldSearch<ReviewField> */
     function field_search() {
@@ -408,29 +421,19 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $this->rfsrch->prepare();
         }
     }
+
+    /** @param int $status
+     * @return bool */
+    static function test_status($status, ReviewInfo $rrow, Contact $user) {
+        return (self::$status_completeness_antirequirements[$rrow->reviewStatus] & $status) === 0
+            && (($status & self::INCOMPLETE) === 0 || $rrow->reviewNeedsSubmit)
+            && (($status & self::MYREQUEST) === 0 || $rrow->requestedBy === $user->contactId);
+    }
+    /** @return bool */
     function test_review(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
-        if ($this->status !== 0) {
-            if ((($this->status & self::COMPLETE) !== 0
-                 && $rrow->reviewStatus < ReviewInfo::RS_APPROVED)
-                || (($this->status & self::SUBMITTED) !== 0
-                    && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
-                || (($this->status & self::INCOMPLETE) !== 0
-                    && !$rrow->reviewNeedsSubmit)
-                || (($this->status & self::INPROGRESS) !== 0
-                    && $rrow->reviewStatus !== ReviewInfo::RS_DRAFTED
-                    && $rrow->reviewStatus !== ReviewInfo::RS_DELIVERED)
-                || (($this->status & self::NOTACKNOWLEDGED) !== 0
-                    && $rrow->reviewStatus >= ReviewInfo::RS_ACKNOWLEDGED)
-                || (($this->status & self::NOTSTARTED) !== 0
-                    && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED)
-                || (($this->status & self::PENDINGAPPROVAL) !== 0
-                    && $rrow->reviewStatus !== ReviewInfo::RS_DELIVERED)
-                || (($this->status & self::APPROVED) !== 0
-                    && $rrow->reviewStatus !== ReviewInfo::RS_APPROVED)
-                || (($this->status & self::MYREQUEST) !== 0
-                    && $rrow->requestedBy != $user->contactId)) {
-                return false;
-            }
+        if ($this->status !== 0
+            && !self::test_status($this->status, $rrow, $user)) {
+            return false;
         }
         if ($this->bot) {
             // who wrote it is what `can_view_review_identity` governs, and for

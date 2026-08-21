@@ -7,6 +7,6 @@ class Now_Fexpr extends Fexpr {
         $this->set_format($ff->kwdef->is_time ? Fexpr::FTIME : Fexpr::FDATE);
     }
     function compile(FormulaCompiler $state) {
-        return $state->_add_now();
+        return $state->g_now();
     }
 }

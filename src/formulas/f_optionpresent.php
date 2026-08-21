@@ -20,7 +20,7 @@ class OptionPresent_Fexpr extends Fexpr {
         $id = $this->option->id;
         $ovp = "\$optpresent" . ($id < 0 ? "m" . -$id : $id);
         if ($state->ensure_defined($ovp)) {
-            $ovv = $state->_add_option_value($this->option);
+            $ovv = $state->prow_option_value($this->option);
             $state->gstmt[] = "{$ovp} = {$ovv} && {$ovv}->option->value_present({$ovv});";
         }
         return $ovp;

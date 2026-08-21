@@ -16,16 +16,16 @@ class Conflict_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         // XXX the actual search is different
-        $idx = $state->loop_cid();
         if ($state->index_type === Fexpr::IDX_MY) {
-            $rt = $state->_prow() . "->has_conflict($idx)";
-        } else {
-            $rt = "((" . $state->_add_conflict_types() . "[" . $idx . "] ?? 0) > "
-                . CONFLICT_MAXUNCONFLICTED . ")";
-            if ($this->ispc) {
-                $rt = "(" . $state->_add_pc() . "[" . $idx . "] ?? false ? $rt : null)";
-            }
+            return $state->_prow() . "->has_conflict(\$user->contactId)";
         }
-        return $rt;
+        $uid = $state->current_uid();
+        $ctmap = $state->prow_viewable_conflict_types();
+        $x = "({$uid} && ({$ctmap}[{$uid}] ?? 0) > " . CONFLICT_MAXUNCONFLICTED . ")";
+        if ($this->ispc) {
+            $pcmap = $state->g_viewable_pc();
+            $x = "(isset({$pcmap}[{$uid}]) ? {$x} : null)";
+        }
+        return $x;
     }
 }

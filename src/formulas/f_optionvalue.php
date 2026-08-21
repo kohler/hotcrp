@@ -20,7 +20,7 @@ class OptionValue_Fexpr extends Fexpr {
         $id = $this->option->id;
         $oval = "\$optvalue" . ($id < 0 ? "m" . -$id : $id);
         if ($state->ensure_defined($oval)) {
-            $ovv = $state->_add_option_value($this->option);
+            $ovv = $state->prow_option_value($this->option);
             $state->gstmt[] = "{$oval} = {$ovv} ? {$ovv}->value : null;";
         }
         return $oval;

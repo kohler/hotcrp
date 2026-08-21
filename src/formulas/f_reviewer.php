@@ -20,7 +20,6 @@ class Reviewer_Fexpr extends Fexpr {
         return Fexpr::IDX_REVIEW;
     }
     function compile(FormulaCompiler $state) {
-        $state->queryOptions["reviewSignatures"] = true;
-        return $state->review_identity_loop_cid();
+        return $state->current_uid();
     }
 }

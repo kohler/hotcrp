@@ -67,8 +67,8 @@ class CustomBannerParam {
             if (!$this->srch->test($prow)) {
                 continue;
             }
-            foreach ($this->formula->eval_indexer($prow) as $rrow) {
-                $values[] = $this->formula->eval_extractor($prow, $rrow);
+            foreach ($this->formula->eval_indexer($prow) as $fidx) {
+                $values[] = $this->formula->eval_extractor($prow, $fidx);
             }
         }
         return new FmtArg($this->name, $this->formula->eval_combiner($values), 0);

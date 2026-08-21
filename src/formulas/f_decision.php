@@ -16,6 +16,6 @@ class Decision_Fexpr extends Fexpr {
         return SearchTerm::ABOUT_SUB;
     }
     function compile(FormulaCompiler $state) {
-        return $state->_add_decision();
+        return $state->prow_decision();
     }
 }

@@ -326,17 +326,44 @@ class FormulaParser {
      * @return ?Fexpr */
     private function _reviewer_base($t) {
         $t = strtolower($t);
-        if (preg_match('/\A(?:|r|re|rev|review)type\z/i', $t)) {
-            return Revtype_Fexpr::make($this->user);
-        } else if (preg_match('/\A(?:|r|re|rev|review)round\z/i', $t)) {
-            return ReviewRound_Fexpr::make($this->user);
-        } else if (preg_match('/\A(?:|r|re|rev)reviewer\z/i', $t)) {
+        $len = strlen($t);
+        if (str_ends_with($t, "type")) {
+            if ($len === 4 || in_array($t, ["rtype", "retype", "revtype", "reviewtype"], true)) {
+                return Revtype_Fexpr::make($this->user);
+            }
+        } else if (str_ends_with($t, "round")) {
+            if ($len === 5 || in_array($t, ["rround", "reround", "revround", "reviewround"], true)) {
+                return ReviewRound_Fexpr::make($this->user);
+            }
+        } else if ($t === "reviewer") {
             if (!$this->user->can_view_some_review_identity()) {
                 return Fexpr::cnever();
             }
             return new Reviewer_Fexpr;
-        } else if (preg_match('/\A(?:|r|re|rev|review)(?:|au)words\z/i', $t)) {
-            return ReviewWordCount_Fexpr::make($this->user);
+        } else if (str_ends_with($t, "auwords")) {
+            if ($len === 7 || in_array($t, ["rauwords", "reauwords", "revauwords", "reviewauwords"], true)) {
+                return ReviewWordCount_Fexpr::make($this->user);
+            }
+        } else if (str_ends_with($t, "words")) {
+            if ($len === 5 || in_array($t, ["rwords", "rewords", "revwords", "reviewwords"], true)) {
+                return ReviewWordCount_Fexpr::make($this->user);
+            }
+        } else if ($t !== "") {
+            if ($t[0] === "c") {
+                $completeness = ReviewSearchMatcher::COMPLETE;
+                $t = substr($t, 1);
+            } else if ($t[0] === "i") {
+                $completeness = ReviewSearchMatcher::INCOMPLETE;
+                $t = substr($t, 1);
+            } else if ($t[0] === "p") {
+                $completeness = ReviewSearchMatcher::INPROGRESS;
+                $t = substr($t, 1);
+            } else {
+                $completeness = 0;
+            }
+            if (in_array($t, ["re", "rev", "review"], true)) {
+                return new ReviewStatus_Fexpr($completeness);
+            }
         }
         return null;
     }
@@ -348,20 +375,29 @@ class FormulaParser {
         $rsm = new ReviewSearchMatcher;
         $t = $this->str;
         $len = strlen($t);
+        $completeness = 0;
+        if (($had_revexists = $e0 instanceof ReviewStatus_Fexpr)) {
+            $completeness = $e0->status;
+            $e0 = null;
+        }
         while ($this->pos !== $len) {
-            if (!preg_match('/\G:((?:"[^"]*(?:"|\z)|~*[-A-Za-z0-9_.\#@]+(?!\s*\())+)/si', $t, $m, 0, $this->pos)
-                || preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])) {
+            if (!preg_match('/\G:((?:"[^"]*(?:"|\z)|~*[-A-Za-z0-9_.\#@]+(?!\s*\())+)/si', $t, $m, 0, $this->pos)) {
                 break;
             }
-            if (preg_match('/\A(?:type|round|reviewer|words|auwords)\z/i', $m[1])) {
+            $lcword = strtolower($m[1]);
+            if (in_array($lcword, ["null", "false", "true", "pid", "paperid"], true)) {
+                break;
+            }
+            if (in_array($lcword, ["type", "round", "reviewer", "words", "auwords"], true)) {
                 if ($e0) {
                     break;
                 }
                 $e0 = $this->_reviewer_base($m[1]);
             } else if ($rsm->apply_review_type($m[1])
-                       || $rsm->apply_round($m[1], $this->conf)) {
+                       || $rsm->apply_round($m[1], $this->conf)
+                       || $rsm->apply_completeness($m[1])) {
                 // nothing
-            } else if ($m[1] === "pc") {
+            } else if ($lcword === "pc") {
                 $es[] = new Inequality_Fexpr(">=", Revtype_Fexpr::make($this->user), new Constant_Fexpr(REVIEW_PC, Fexpr::FREVTYPE));
             } else {
                 if (strpos($m[1], "\"") !== false) {
@@ -379,16 +415,21 @@ class FormulaParser {
         if ($rsm->round_list !== null) {
             $es[] = new In_Fexpr(ReviewRound_Fexpr::make($this->user), $rsm->round_list);
         }
+        if ($completeness || $rsm->completeness_mask() !== 0) {
+            $es[] = new ReviewStatus_Fexpr($completeness | $rsm->completeness_mask());
+        }
 
         $e1 = empty($es) ? null : $es[0];
         for ($i = 1; $i < count($es); ++$i) {
             $e1 = new And_Fexpr($e1, $es[$i]);
         }
 
-        if ($e0 && $e1) {
-            return new Ternary_Fexpr($e1, $e0, Fexpr::cnull());
+        if (!$e0 || !$e1) {
+            return $e0 ?? $e1;
+        } else if ($e0->format() === Fexpr::FBOOL) {
+            return new And_Fexpr($e0, $e1);
         }
-        return $e0 ?? $e1;
+        return new Ternary_Fexpr($e1, $e0, Fexpr::cnull());
     }
 
     /** @param string &$field
@@ -622,11 +663,19 @@ class FormulaParser {
             $this->pos += strlen($m[0]);
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
         } else if ($ch === "r"
-                   && preg_match('/\G(?:(?:r|re|rev|review)(?:type|round|words|auwords|)|round|reviewer)(?=[:\#])/is', $t, $m, 0, $this->pos)) {
+                   && preg_match('/\G(?:r(?:|e|ev|eview)(?:|type|round|words|auwords)|round|reviewer)(?=[:\#])/is', $t, $m, 0, $this->pos)) {
             $this->pos += strlen($m[0]);
             $e = $this->_reviewer_decoration($this->_reviewer_base($m[0]));
         } else if ($ch === "r"
-                   && preg_match('/\G((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer|re|rev|review)\b\s*(?!\()/is', $t, $m, 0, $this->pos)) {
+                   && preg_match('/\G(r(?:|e|ev|eview)(?:|type|round|words|auwords)|round|reviewer)\b\s*(?![\(\s])/is', $t, $m, 0, $this->pos)) {
+            $this->pos += strlen($m[0]);
+            $e = $this->_reviewer_base($m[1]);
+        } else if (($ch === "i" || $ch === "c" || $ch === "p")
+                   && preg_match('/\G[icp]re(?:|v|view)(?=[:\#])/is', $t, $m, 0, $this->pos)) {
+            $this->pos += strlen($m[0]);
+            $e = $this->_reviewer_decoration($this->_reviewer_base($m[0]));
+        } else if (($ch === "i" || $ch === "c" || $ch === "p")
+                   && preg_match('/\G([icp]re(?:|v|view))\b\s*(?![\(\s])/is', $t, $m, 0, $this->pos)) {
             $this->pos += strlen($m[0]);
             $e = $this->_reviewer_base($m[1]);
         } else if ($ch === "l"

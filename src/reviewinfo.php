@@ -132,6 +132,8 @@ class ReviewInfo implements JsonSerializable {
 
     const VIEWSCORE_RECOMPUTE = -100;
 
+    // $reviewStatus values;
+    // also used in ReviewSearchMatcher::$status_completeness_antirequirements
     const RS_EMPTY = 0;
     const RS_ACKNOWLEDGED = 1;
     const RS_DRAFTED = 2;
@@ -475,17 +477,16 @@ class ReviewInfo implements JsonSerializable {
             return self::RS_COMPLETED;
         } else if ($this->reviewType === REVIEW_EXTERNAL
                    && $this->timeApprovalRequested !== 0) {
-            if ($this->timeApprovalRequested > 0) {
-                return self::RS_DELIVERED;
-            } else {
+            if ($this->timeApprovalRequested < 0) {
                 return self::RS_APPROVED;
             }
-        } else if ($this->reviewModified === 0) {
-            return self::RS_EMPTY;
-        } else if ($this->reviewModified === 1) {
+            return self::RS_DELIVERED;
+        } else if ($this->reviewModified > 1) {
+            return self::RS_DRAFTED;
+        } else if ($this->reviewModified > 0) {
             return self::RS_ACKNOWLEDGED;
         }
-        return self::RS_DRAFTED;
+        return self::RS_EMPTY;
     }
 
     /** @param int $rflags

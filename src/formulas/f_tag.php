@@ -105,12 +105,12 @@ class Tag_Fexpr extends Fexpr {
             return $this->_compile_complex($state);
         }
         if (str_starts_with($this->tag, "_~")) {
-            $str = "\" \"." . $state->loop_cid() . "."
+            $str = "\" \"." . $state->current_uid() . "."
                 . json_encode(substr($tag, strpos($tag, "~")) . "#");
         } else {
             $str = json_encode(" {$tag}#");
         }
-        $tags = $state->_add_tags();
+        $tags = $state->prow_tags();
         $jvalue = json_encode($this->isvalue);
         return "Tag_Fexpr::tag_value({$tags},{$str},{$jvalue})";
     }
@@ -120,12 +120,12 @@ class Tag_Fexpr extends Fexpr {
         if (str_starts_with($this->tag, "_~")) {
             assert(strpos($regex, "|") === false
                    && str_starts_with($regex, "{ {$state->user->contactId}~"));
-            $regex = "\"{ \"." . $state->loop_cid() . "."
+            $regex = "\"{ \"." . $state->current_uid() . "."
                 . json_encode(substr($regex, strlen((string) $state->user->contactId) + 2));
         } else {
             $regex = json_encode($regex);
         }
-        $tags = $state->_add_tags();
+        $tags = $state->prow_tags();
         $jvalue = json_encode($this->isvalue);
         return "Tag_Fexpr::tag_regex_value({$tags},{$regex},{$jvalue})";
     }

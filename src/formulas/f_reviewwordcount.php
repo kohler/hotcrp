@@ -20,9 +20,9 @@ class ReviewWordCount_Fexpr extends Fexpr {
             && VIEWSCORE_REVIEWER <= $state->user->permissive_view_score_bound()) {
             return "null";
         }
-        $state->_ensure_review_word_counts();
-        $rrow = $state->_rrow();
-        $rrow_vsb = $state->_rrow_view_score_bound(true);
+        $state->ensure_review_word_counts();
+        $rrow = $state->current_rrow();
+        $rrow_vsb = $state->current_rrow_view_score_bound(true);
         return "(" . VIEWSCORE_AUTHORDEC . " > {$rrow_vsb} ? {$rrow}->reviewWordCount : null)";
     }
 }

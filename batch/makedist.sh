@@ -373,6 +373,7 @@ src/formulas/f_realnumberoption.php
 src/formulas/f_reviewer.php
 src/formulas/f_reviewermatch.php
 src/formulas/f_reviewround.php
+src/formulas/f_reviewstatus.php
 src/formulas/f_reviewwordcount.php
 src/formulas/f_revtype.php
 src/formulas/f_search.php

@@ -3,41 +3,57 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class TopicScore_PaperColumn extends PaperColumn {
+    /** @var Topics_PaperOption */
+    private $opt;
     /** @var Contact */
-    private $contact;
+    private $user;
     /** @var ScoreInfo */
     private $statistics;
+    /** @var ContactInfo */
+    private $observer;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+        $this->opt = $conf->option_by_id(PaperOption::TOPICSID);
         if (isset($cj->user)) {
-            $this->contact = $conf->pc_member_by_email($cj->user);
+            $this->user = $conf->pc_member_by_email($cj->user);
         }
         $this->statistics = new ScoreInfo;
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ?? $pl->reviewer_user();
+        $this->user = $this->user ?? $pl->reviewer_user();
         if (!$pl->conf->has_topics()
             || !$pl->user->isPC
-            || ($this->contact->contactId !== $pl->user->contactId
-                && !$pl->user->is_manager())) {
+            || !$pl->user->can_view_some_option($this->opt)) {
             return false;
+        }
+        if ($pl->user->contactId !== $this->user->contactId
+            && !$pl->user->privChair) {
+            $this->observer = $pl->user;
         }
         $pl->qopts["topics"] = 1;
         return true;
     }
+    private function value(PaperInfo $row) {
+        if ((!$this->observer
+             || $this->observer->allow_view_preference($row))
+            && $this->opt->test_exists($row)) {
+            return $row->topic_interest_score($this->user);
+        }
+        return null;
+    }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $a->topic_interest_score($this->contact) <=> $b->topic_interest_score($this->contact);
+        return ($this->value($a) ?? -10000) <=> ($this->value($b) ?? -10000);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $v = $row->topic_interest_score($this->contact);
+        $v = $this->value($row);
         $this->statistics->add_overriding($v, $pl->overriding);
-        return self::unparse_value($v);
+        return $v !== null ? self::unparse_value($v) : "";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return (string) $row->topic_interest_score($this->contact);
+        return (string) $this->value($this->user);
     }
     function json(PaperList $pl, PaperInfo $row) {
-        return $row->topic_interest_score($this->contact);
+        return $this->value($this->user);
     }
     function has_statistics() {
         return true;

@@ -5,6 +5,8 @@
 class Topic_Fexpr extends Fexpr {
     /** @var true|array<int> */
     private $match;
+    /** @var int */
+    private $topic_idx = -1;
     function __construct(FormulaCall $ff) {
         parent::__construct($ff);
         if ($ff->modifier === null || $ff->modifier === [-1]) {
@@ -15,6 +17,10 @@ class Topic_Fexpr extends Fexpr {
             if (count($this->match) <= 1 || $this->match[0] === 0) {
                 $this->set_format(Fexpr::FBOOL);
             }
+        }
+        $opt = $ff->conf->option_by_id(PaperOption::TOPICSID);
+        if (!$opt->always_visible()) {
+            $this->topic_idx = $ff->formula->register_info($opt);
         }
     }
     static function parse_modifier(FormulaCall $ff, $arg) {
@@ -37,6 +43,9 @@ class Topic_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $state->queryOptions["topics"] = true;
         $texpr = $state->_prow() . "->topic_list()";
+        if ($this->topic_idx >= 0) {
+            $texpr = "(\$user->can_view_option(\$prow, \$formula->info[{$this->topic_idx}]) ? {$texpr} : [])";
+        }
         if ($this->match === true) {
             return "count({$texpr})";
         } else if ($this->match === []) {
@@ -48,8 +57,7 @@ class Topic_Fexpr extends Fexpr {
             return "empty({$texpr})";
         } else if (count($ts) === 1) {
             return ($none ? "!" : "") . "in_array({$ts[0]}, {$texpr}, true)";
-        } else {
-            return ($none ? "empty" : "count") . "(array_intersect({$texpr}," . json_encode($ts) . "))";
         }
+        return ($none ? "empty" : "count") . "(array_intersect({$texpr}," . json_encode($ts) . "))";
     }
 }

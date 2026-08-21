@@ -425,6 +425,33 @@ class Formulas_Tester {
         xassert_eqq($f->eval($p19, null), false);
     }
 
+    function test_all_aggregate_counts_valueless_elements() {
+        // `all` counts an element with no value against the result: most PC
+        // members express no preference, so `all.pc(pref > 0)` is false. That
+        // must not depend on where the valueless elements fall in the loop --
+        // an accumulator that stays null until the first element with a value
+        // silently skips every null ahead of it.
+        $conf = $this->conf;
+        $cids = array_keys($conf->viewable_pc_members($this->u_chair));
+        xassert_gt(count($cids), 2);
+        $vs = [];
+        foreach ([$cids[0], $cids[count($cids) - 1]] as $cid) {
+            $conf->qe("delete from PaperReviewPreference where paperId=1");
+            $conf->qe("insert into PaperReviewPreference set paperId=1, contactId=?, preference=5", $cid);
+            $p1 = $conf->checked_paper_by_id(1, $this->u_chair);
+            $vs[] = $this->formula_as($this->u_chair, "all.pc(pref > 0)")->eval($p1, null);
+        }
+        // sole preference first in the loop, then last: same answer
+        xassert_eqq($vs[0], $vs[1]);
+        xassert_eqq($vs[0], false);
+
+        // ...while over the preference collection every element has a value
+        $p1 = $conf->checked_paper_by_id(1, $this->u_chair);
+        xassert_eqq($this->formula_as($this->u_chair, "all.pref(pref > 0)")->eval($p1, null), true);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
     function test_sum_aggregate() {
         $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
         // Paper 19 scores: 4, 5, 3 => sum 12
@@ -456,6 +483,49 @@ class Formulas_Tester {
         xassert($f->ok());
         xassert_eqq($f->eval($p21, null), null);
         xassert_eqq($this->formula("count(ovemer)")->prepare()->eval($p21, null), 0);
+    }
+
+    function test_my_review_values() {
+        // `my(X)` compiles the IDX_MY path, which resolves the viewer's own
+        // review row directly rather than by iterating the review collection.
+        $conf = $this->conf;
+        $p19 = $conf->checked_paper_by_id(19, $this->u_lixia);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(re)")->eval($p19, null), true);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(cre)")->eval($p19, null), true);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(revround)")->eval($p19, null), 0);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(rewords)")->eval($p19, null), 0);
+
+        // With no review of one's own the result is null, not some other
+        // reviewer's value: paper 19 has three reviews, none of them the
+        // chair's, and paper 21 has none at all.
+        $p19c = $conf->checked_paper_by_id(19, $this->u_chair);
+        xassert_eqq($this->formula_as($this->u_chair, "my(re)")->eval($p19c, null), false);
+        xassert_eqq($this->formula_as($this->u_chair, "my(rewords)")->eval($p19c, null), null);
+        $p21 = $conf->checked_paper_by_id(21, $this->u_lixia);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(re)")->eval($p21, null), false);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(revround)")->eval($p21, null), null);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(rewords)")->eval($p21, null), null);
+    }
+
+    function test_my_preference() {
+        // `my(pref)` is the viewer's own preference, so it needs neither
+        // aggregate nor individual preference rights.
+        $conf = $this->conf;
+        $this->seed_paper1_preferences();     // lixia 5, estrin 4
+        $u_estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p1l = $conf->checked_paper_by_id(1, $this->u_lixia);
+        $p1e = $conf->checked_paper_by_id(1, $u_estrin);
+        $p1m = $conf->checked_paper_by_id(1, $u_marina);
+        xassert_eqq($this->formula_as($this->u_lixia, "my(pref)")->eval($p1l, null), 5);
+        // ...including for a PC member conflicted with the paper, who has no
+        // aggregate preference right at all
+        xassert(!$u_estrin->can_view_preference($p1e, true));
+        xassert_eqq($this->formula_as($u_estrin, "my(pref)")->eval($p1e, null), 4);
+        // ...and 0 for someone who expressed none
+        xassert_eqq($this->formula_as($u_marina, "my(pref)")->eval($p1m, null), 0);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
     }
 
     function test_colon_reviewer_decoration() {
@@ -1192,4 +1262,559 @@ class Formulas_Tester {
 
         $conf->save_refresh_setting("au_seerev", $old_ausr);
     }
+
+    /** @param list<string> $ids
+     * @return list<string> */
+    static private function ordinal_ids($ids) {
+        $x = [];
+        foreach ($ids as $id) {
+            if (!ctype_digit($id)) {
+                $x[] = $id;
+            }
+        }
+        sort($x);
+        return $x;
+    }
+
+    /** @param Contact $user
+     * @param string $fx
+     * @param string $fy
+     * @param string $q
+     * @return list<string> */
+    private function graph_point_ids($user, $fx, $fy, $q) {
+        $fg = new FormulaGraph($user, "scatter", $fx, $fy);
+        $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
+        xassert(!$fg->has_error());
+        $ids = [];
+        foreach ($fg->graph_json([])["data"] as $points) {
+            foreach ($points as $pt) {
+                $ids[] = (string) $pt->id;
+            }
+        }
+        return $ids;
+    }
+
+    function test_graph_hides_review_ids_from_unprivileged() {
+        // A review-indexed scatterplot plots one point per review and labels it
+        // with the review's ordinal; a PC-indexed one plots one point per PC
+        // member, and those points are people, not reviews. Neither may tell a
+        // viewer who cannot see a paper's reviews how many there are or --
+        // since the points arrive in pc_members() order -- who wrote them.
+        $conf = $this->conf;
+        $p19 = $conf->checked_paper_by_id(19);
+
+        // control: the chair's review-indexed plot is labeled, so the ordinals
+        // exist and the labeling path is live
+        xassert_eqq(count($p19->viewable_reviews_as_display($this->u_chair)), 3);
+        xassert_eqq($this->graph_point_ids($this->u_chair, "ovemer", "ovemer", "19"),
+                    ["19A", "19B", "19C"]);
+        // ...while the same plot is empty for a non-PC author of paper 19
+        $u_suvo = $conf->checked_user_by_email("suvo@cs.stanford.edu");
+        xassert(!$u_suvo->isPC);
+        xassert_ge($p19->conflict_type($u_suvo), CONFLICT_AUTHOR);
+        xassert_eqq(count($p19->viewable_reviews_as_display($u_suvo)), 0);
+        xassert_eqq($this->graph_point_ids($u_suvo, "ovemer", "ovemer", "19"), []);
+
+        // `conf` is PC-indexed and uncensored, so it plots a point per PC
+        // member for any viewer. No point may carry a review ordinal: not for
+        // an author...
+        $ids = $this->graph_point_ids($u_suvo, "conf", "conf", "19");
+        xassert(count($ids) > 0);
+        xassert_eqq(self::ordinal_ids($ids), []);
+
+        // ...not for a conflicted PC member who is not an administrator...
+        xassert_assign($this->u_chair, "paper,action,user\n19,conflict,marina@poema.ru\n");
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        xassert(!$u_marina->privChair);
+        $ids = $this->graph_point_ids($u_marina, "conf", "conf", "19");
+        xassert(count($ids) > 0);
+        xassert_eqq(self::ordinal_ids($ids), []);
+        xassert_assign($this->u_chair, "paper,action,user\n19,noconflict,marina@poema.ru\n");
+
+        // ...and not for the chair either, who may see every review: a
+        // person-indexed point is not a review, whatever the viewer may read.
+        $ids = $this->graph_point_ids($this->u_chair, "conf", "conf", "19");
+        xassert(count($ids) > 0);
+        xassert_eqq(self::ordinal_ids($ids), []);
+    }
+
+    /** @param list<string> $qs
+     * @return array{list,?array} */
+    private function graph_axis_buckets(Contact $user, $fx, $qs) {
+        $fg = new FormulaGraph($user, "bars", $fx, "");
+        foreach ($qs as $i => $q) {
+            $fg->add_dataset(new FormulaGraphDataset($q, "all", "", (string) ($i + 1)));
+        }
+        xassert(!$fg->has_error());
+        $j = $fg->graph_json([]);
+        $buckets = [];
+        foreach ($j["data"] as $bar) {
+            $buckets[] = [$bar->x, $bar->ids];
+        }
+        return [$buckets, $j["x"]["scale"]->range ?? null];
+    }
+
+    function test_graph_tag_and_query_axes() {
+        // `tag` and `query` name an axis rather than a formula: each compiles
+        // to a constant whose format has nothing to do with the axis's own
+        // units, so the "same units" check must not be applied to it.
+        $conf = $this->conf;
+
+        // one bar per tag, holding the papers that carry it
+        [$buckets, $range] = $this->graph_axis_buckets($this->u_chair, "tag", ["19 20"]);
+        xassert_eqq($range, ["scored", "testtag"]);
+        xassert_eqq($buckets, [[0, [19, 20]], [1, [19, 20]]]);
+
+        // one bar per dataset search, holding that search's papers
+        [$buckets, $range] = $this->graph_axis_buckets($this->u_chair, "query", ["19", "20"]);
+        xassert_eqq($range, ["19", "20"]);
+        xassert_eqq($buckets, [[0, [19]], [1, [20]]]);
+
+        // Neither axis escapes the usual gates: a non-PC author sees no tags
+        // at all, and only their own paper in a search.
+        $u_van = $conf->checked_user_by_email("van@ee.lbl.gov");
+        xassert(!$u_van->isPC);
+        [$buckets, $range] = $this->graph_axis_buckets($u_van, "tag", ["19 20"]);
+        xassert_eqq($range, []);
+        xassert_eqq($buckets, []);
+        [$buckets, ] = $this->graph_axis_buckets($u_van, "query", ["19", "20"]);
+        xassert_eqq($buckets, []);
+    }
+
+    /** @param Contact $user
+     * @param string $fx
+     * @param string $q
+     * @return list<array{mixed,list<int|string>}> */
+    private function graph_bar_buckets($user, $fx, $q) {
+        // an empty Y axis makes this a `sum(1)` bar chart, so each bar's `ids`
+        // list names the data that landed in the bucket
+        $fg = new FormulaGraph($user, "bars", $fx, "");
+        $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
+        xassert(!$fg->has_error());
+        $buckets = [];
+        foreach ($fg->graph_json([])["data"] as $bar) {
+            $buckets[] = [$bar->x, $bar->ids];
+        }
+        return $buckets;
+    }
+
+    function test_graph_bar_ids_carry_review_ordinals() {
+        // A review-indexed bar chart buckets one datum per review, so the ids
+        // that identify a bucket's contents name reviews, not just papers.
+        // Papers 19 and 20 have OveMer 4/5/3 and 2/5.
+        xassert_eqq($this->graph_bar_buckets($this->u_chair, "ovemer", "19 20"), [
+            [2, ["20A"]], [3, ["19C"]], [4, ["19A"]], [5, ["19B", "20B"]]
+        ]);
+
+        // A PC-indexed bar chart buckets one datum per PC member. Those data
+        // are people, not reviews, so their ids stay paper ids -- this is the
+        // rule that keeps review ordinals out of a chart indexed by person.
+        $buckets = $this->graph_bar_buckets($this->u_chair, "pcconf", "19");
+        xassert_eqq(count($buckets), 1);
+        xassert_eqq(self::ordinal_ids(array_map("strval", $buckets[0][1])), []);
+
+        // an author of paper 19 cannot see its scores, so the review-indexed
+        // chart has nothing to bucket
+        $u_suvo = $this->conf->checked_user_by_email("suvo@cs.stanford.edu");
+        xassert_eqq($this->graph_bar_buckets($u_suvo, "ovemer", "19"), []);
+    }
+
+    /** @param Contact $user
+     * @param string $fx
+     * @param string $q
+     * @return list<mixed> */
+    private function graph_cdf_values($user, $fx, $q) {
+        $fg = new FormulaGraph($user, "cdf", $fx, "");
+        $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
+        xassert(!$fg->has_error());
+        $vs = [];
+        foreach ($fg->graph_json([])["data"] as $d) {
+            foreach ($d->d as $v) {
+                $vs[] = $v;
+            }
+        }
+        sort($vs);
+        return $vs;
+    }
+
+    function test_graph_cdf_respects_review_visibility() {
+        // The CDF path indexes by review just as the scatter path does. Whether
+        // a review contributes its score must follow can_view_review, not
+        // can_view_review_identity: an anonymous review still has a score.
+        $conf = $this->conf;
+        $old_ausr = $conf->setting("au_seerev");
+        $conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
+
+        // lixia's review of paper 17 was submitted by
+        // test_review_meta_hidden_from_pc_author; mjh, a PC member, is a
+        // contact author of that paper, so may read the review but not
+        // identify its author
+        $p17 = $conf->checked_paper_by_id(17, $this->u_mjh);
+        $rrow = $p17->fresh_review_by_user($this->u_lixia);
+        xassert($this->u_mjh->can_view_review($p17, $rrow));
+        xassert(!$this->u_mjh->can_view_review_identity($p17, $rrow));
+
+        // control: the score is there
+        xassert_eqq($this->graph_cdf_values($this->u_chair, "ovemer", "17"), [4]);
+        // and blind reviewing does not remove it from the author's own CDF
+        xassert_eqq($this->graph_cdf_values($this->u_mjh, "ovemer", "17"), [4]);
+
+        // a conflicted PC member, who may not read the review at all,
+        // contributes nothing
+        xassert_assign($this->u_chair, "paper,action,user\n17,conflict,marina@poema.ru\n");
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        xassert_eqq($this->graph_cdf_values($u_marina, "ovemer", "17"), []);
+        xassert_assign($this->u_chair, "paper,action,user\n17,noconflict,marina@poema.ru\n");
+
+        $conf->save_refresh_setting("au_seerev", $old_ausr);
+    }
+
+
+    /** @param Contact $user
+     * @param string $fx
+     * @param string $fy
+     * @param string $q
+     * @return array<int|string,mixed> */
+    private function graph_bar_values($user, $fx, $fy, $q) {
+        $fg = new FormulaGraph($user, "bars", $fx, $fy);
+        $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
+        xassert(!$fg->has_error());
+        $bars = [];
+        foreach ($fg->graph_json([])["data"] as $bar) {
+            $bars[$bar->x] = $bar->y;
+        }
+        return $bars;
+    }
+
+    function test_graph_bar_with_boolean_y_axis() {
+        // A bar chart whose Y axis is boolean is rewritten to `sum(...)`, and
+        // the rewritten formula must be able to answer `extractor_indexed()`
+        // before the data pass prepares it. The X axis must be unindexed, or
+        // `_indexed()` short-circuits before it consults Y.
+        $p1 = $this->conf->checked_paper_by_id(1);
+        $nconf = 0;
+        foreach ($this->conf->pc_members() as $p) {
+            if ($p1->has_conflict($p)) {
+                ++$nconf;
+            }
+        }
+        xassert_gt($nconf, 0);
+
+        xassert_eqq($this->graph_bar_values($this->u_chair, "pid", "conf", "1 19"),
+                    [1 => $nconf, 19 => 0]);
+    }
+
+
+    function test_graph_bar_respects_review_visibility() {
+        // The bar path evaluates Y through an extractor compiled against the
+        // external index type. A stale extractor resolves reviews the strict
+        // way, so an identity-blind viewer's review drops out of the aggregate
+        // while the same review still reaches the CDF and scatter paths.
+        $conf = $this->conf;
+        $old_ausr = $conf->setting("au_seerev");
+        $conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
+
+        // mjh is a PC member and a contact author of paper 17, so he may read
+        // lixia's review but not identify her (test_review_meta_hidden_from_pc_author
+        // submits that review)
+        $p17 = $conf->checked_paper_by_id(17, $this->u_mjh);
+        $rrow = $p17->fresh_review_by_user($this->u_lixia);
+        xassert($this->u_mjh->can_view_review($p17, $rrow));
+        xassert(!$this->u_mjh->can_view_review_identity($p17, $rrow));
+
+        // the score reaches the bar aggregate for both viewers...
+        xassert_eqq($this->graph_bar_values($this->u_chair, "pid", "avg(ovemer)", "17"), [17 => 4.0]);
+        xassert_eqq($this->graph_bar_values($this->u_mjh, "pid", "avg(ovemer)", "17"), [17 => 4.0]);
+        // ...and agrees with the other two data paths
+        xassert_eqq($this->graph_cdf_values($this->u_mjh, "ovemer", "17"), [4]);
+        xassert_eqq($this->graph_point_ids($this->u_mjh, "ovemer", "ovemer", "17"), ["17A"]);
+
+        $conf->save_refresh_setting("au_seerev", $old_ausr);
+    }
+
+
+    function test_pref_aggregate_hides_individual_preferences() {
+        // `can_view_preference` splits two ways: any unconflicted PC member may
+        // compute *aggregate* preference statistics, but only an administrator
+        // may see who holds which preference. An aggregate that carries the
+        // loop's contact id out of the loop -- `argmax(reviewer, pref)` -- must
+        // not bridge the two.
+        $conf = $this->conf;
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+        $prefs = ["lixia@cs.ucla.edu" => 5, "mgbaker@cs.stanford.edu" => -7,
+                  "jj@cse.ucsc.edu" => 3, "estrin@usc.edu" => 4];
+        foreach ($prefs as $email => $pv) {
+            $conf->qe("insert into PaperReviewPreference set paperId=1, contactId=?, preference=?",
+                $conf->checked_user_by_email($email)->contactId, $pv);
+        }
+
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p1 = $conf->checked_paper_by_id(1, $u_marina);
+        xassert($u_marina->isPC && !$u_marina->privChair);
+        xassert(!$p1->has_conflict($u_marina));
+        xassert($u_marina->can_view_preference($p1, true));    // aggregates: yes
+        xassert(!$u_marina->can_view_preference($p1, false));  // individuals: no
+
+        // the chair may attribute a preference to a person...
+        $lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert_eqq($this->formula_as($this->u_chair, "argmax.pc(reviewer, pref)")->eval($p1, null),
+                    $lixia->contactId);
+        // ...an ordinary PC member may not, in either direction
+        xassert_eqq($this->formula_as($u_marina, "argmax.pc(reviewer, pref)")->eval($p1, null), null);
+        xassert_eqq($this->formula_as($u_marina, "argmin.pc(reviewer, pref)")->eval($p1, null), null);
+        // ...though the aggregates themselves still work for them
+        xassert_eqq($this->formula_as($u_marina, "max(pref)")->eval($p1, null), 5);
+        xassert_eqq($this->formula_as($u_marina, "min(pref)")->eval($p1, null), -7);
+        xassert_eqq($this->formula_as($u_marina, "count(pref)")->eval($p1, null), 4);
+        xassert_eqq($this->formula_as($u_marina, "max.pc(pref)")->eval($p1, null), 5);
+        xassert_eqq($this->formula_as($u_marina, "min.pc(pref)")->eval($p1, null), -7);
+        xassert_eqq($this->formula_as($u_marina, "count.pc(pref)")->eval($p1, null), 4);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
+
+    function test_topicscore_respects_column_visibility() {
+        // Topicscore_PaperColumn shows another user's topic score only to a
+        // manager. The formula must agree -- and because a per-person score
+        // partitions the PC, it must also mark the loop as identifying, or an
+        // ordinary PC member can select a single person out of an aggregate
+        // and read that person's review preference.
+        $conf = $this->conf;
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $u_lixia = $this->u_lixia;
+        xassert($u_marina->isPC && !$u_marina->is_manager());
+
+        $old_has_topics = $conf->setting("has_topics");
+        $conf->qe("insert into TopicArea set topicName='Formula Test Topic'");
+        $topicid = $conf->dblink->insert_id;
+        $conf->qe("insert into PaperTopic set paperId=1, topicId=?", $topicid);
+        $conf->qe("insert into TopicInterest set contactId=?, topicId=?, interest=2", $u_lixia->contactId, $topicid);
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+        $conf->qe("insert into PaperReviewPreference set paperId=1, contactId=?, preference=5", $u_lixia->contactId);
+        $conf->save_refresh_setting("has_topics", 1);
+
+        $p1c = $conf->checked_paper_by_id(1, $this->u_chair);
+        $p1m = $conf->checked_paper_by_id(1, $u_marina);
+        $lixia_ts = $p1c->topic_interest_score($u_lixia);
+        xassert_gt($lixia_ts, 0);
+        xassert_eqq($p1c->topic_interest_score($u_marina), 0);
+
+        // a manager sees another PC member's topic score; an ordinary PC
+        // member sees only their own
+        xassert_eqq($this->formula_as($this->u_chair, "max.pc(topicscore)")->eval($p1c, null), $lixia_ts);
+        xassert_eqq($this->formula_as($u_marina, "max.pc(topicscore)")->eval($p1m, null), 0);
+
+        // and the score cannot be used to pick one person out of the
+        // preference aggregate
+        $sel = "max.pc(topicscore == {$lixia_ts} ? pref : null)";
+        xassert_eqq($this->formula_as($this->u_chair, $sel)->eval($p1c, null), 5);
+        xassert_eqq($this->formula_as($u_marina, $sel)->eval($p1m, null), null);
+        // ...though the aggregate itself still works
+        xassert_eqq($this->formula_as($u_marina, "max.pc(pref)")->eval($p1m, null), 5);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+        $conf->qe("delete from TopicInterest where topicId=?", $topicid);
+        $conf->qe("delete from PaperTopic where topicId=?", $topicid);
+        $conf->qe("delete from TopicArea where topicId=?", $topicid);
+        $conf->save_refresh_setting("has_topics", $old_has_topics);
+    }
+
+
+    /** Seed distinct review preferences on paper 1, including one from a PC
+     * member who is conflicted with the paper.
+     * @return array<string,int> */
+    private function seed_paper1_preferences() {
+        $prefs = ["lixia@cs.ucla.edu" => 5, "mgbaker@cs.stanford.edu" => -7,
+                  "jj@cse.ucsc.edu" => 3, "estrin@usc.edu" => 4];
+        $this->conf->qe("delete from PaperReviewPreference where paperId=1");
+        foreach ($prefs as $email => $pv) {
+            $this->conf->qe("insert into PaperReviewPreference set paperId=1, contactId=?, preference=?",
+                $this->conf->checked_user_by_email($email)->contactId, $pv);
+        }
+        return $prefs;
+    }
+
+    function test_pref_aggregate_requires_unconflicted_pc() {
+        // Aggregate preference access is `can_view_preference($prow, true)`,
+        // which requires an *unconflicted* PC member. A conflicted PC member
+        // must see only their own preference, however the aggregate is spelled.
+        $conf = $this->conf;
+        $this->seed_paper1_preferences();
+
+        $u_estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        $p1e = $conf->checked_paper_by_id(1, $u_estrin);
+        xassert($u_estrin->isPC);
+        xassert($p1e->has_conflict($u_estrin));
+        xassert(!$u_estrin->can_view_preference($p1e, true));
+        xassert(!$u_estrin->can_view_preference($p1e, false));
+
+        // control: an unconflicted PC member sees the whole distribution
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p1m = $conf->checked_paper_by_id(1, $u_marina);
+        xassert($u_marina->can_view_preference($p1m, true));
+        xassert_eqq($this->formula_as($u_marina, "max.pref(pref)")->eval($p1m, null), 5);
+        xassert_eqq($this->formula_as($u_marina, "count.pref(1)")->eval($p1m, null), 4);
+
+        // the conflicted PC member sees only their own preference of 4
+        xassert_eqq($this->formula_as($u_estrin, "max.pref(pref)")->eval($p1e, null), 4);
+        xassert_eqq($this->formula_as($u_estrin, "min.pref(pref)")->eval($p1e, null), 4);
+        xassert_eqq($this->formula_as($u_estrin, "count.pref(1)")->eval($p1e, null), 1);
+        xassert_eqq($this->formula_as($u_estrin, "max.pc(pref)")->eval($p1e, null), 4);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
+    function test_pref_aggregate_hides_membership() {
+        // Aggregate rights cover the preference multiset and its size. They do
+        // not cover *whose* preference it is: an ordinary PC member must not be
+        // able to learn which PC members expressed a preference, even without
+        // reading any preference value.
+        $conf = $this->conf;
+        $this->seed_paper1_preferences();
+        $old_pcconfvis = $conf->setting("sub_pcconfvis");
+        $conf->save_refresh_setting("sub_pcconfvis", 2);   // conflicts visible to all PC
+
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $u_lixia = $this->u_lixia;                                     // has a preference (5)
+        $u_vera = $conf->checked_user_by_email("vera@bombay.com");     // has none
+        $p1m = $conf->checked_paper_by_id(1, $u_marina);
+        $p1c = $conf->checked_paper_by_id(1, $this->u_chair);
+        xassert($u_marina->can_view_preference($p1m, true));
+        xassert(!$u_marina->can_view_preference($p1m, false));
+        xassert($u_marina->can_view_conflicts($p1m));
+
+        // control: the aggregate itself still works for marina...
+        xassert_eqq($this->formula_as($u_marina, "max.pref(pref)")->eval($p1m, null), 5);
+        xassert_eqq($this->formula_as($u_marina, "count.pref(1)")->eval($p1m, null), 4);
+        // ...and an administrator may attribute preferences to people
+        xassert_eqq($this->formula_as($this->u_chair, "argmax.pref(reviewer, pref)")->eval($p1c, null),
+                    $u_lixia->contactId);
+        xassert_eqq($this->formula_as($this->u_chair, "count.pref(reviewer == {$u_lixia->contactId})")->eval($p1c, null), 1);
+        xassert_eqq($this->formula_as($this->u_chair, "max.pref(conf ? pref : null)")->eval($p1c, null), 4);
+
+        // marina may not, in any spelling: not by naming the extreme...
+        xassert_eqq($this->formula_as($u_marina, "argmax.pref(reviewer, pref)")->eval($p1m, null), null);
+        xassert_eqq($this->formula_as($u_marina, "argmin.pref(reviewer, pref)")->eval($p1m, null), null);
+        xassert_eqq($this->formula_as($u_marina, "argmax.pref(reviewer, 1)")->eval($p1m, null), null);
+        // ...not by testing membership, which needs no preference value at all...
+        xassert_eqq($this->formula_as($u_marina, "count.pref(reviewer == {$u_lixia->contactId})")->eval($p1m, null), 0);
+        xassert_eqq($this->formula_as($u_marina, "count.pref(reviewer == {$u_vera->contactId})")->eval($p1m, null), 0);
+        // ...and not by selecting a subpopulation with another per-person value
+        xassert_eqq($this->formula_as($u_marina, "max.pref(conf ? pref : null)")->eval($p1m, null), null);
+        xassert_eqq($this->formula_as($u_marina, "count.pref(conf)")->eval($p1m, null), 0);
+
+        $conf->save_refresh_setting("sub_pcconfvis", $old_pcconfvis);
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
+    function test_pref_aggregate_pc_relaxes_when_pref_controls_null() {
+        // `AGG.pc(body)` may iterate the preference collection instead of the
+        // PC when a null preference nulls the whole body: the two populations
+        // then agree, so the rewrite cannot change an answer -- and it gives an
+        // ordinary PC member the aggregate that is theirs by right.
+        $conf = $this->conf;
+        $this->seed_paper1_preferences();   // lixia 5, mgbaker -7, jj 3, estrin 4
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p1c = $conf->checked_paper_by_id(1, $this->u_chair);
+        $p1m = $conf->checked_paper_by_id(1, $u_marina);
+        xassert($u_marina->can_view_preference($p1m, true));
+        xassert(!$u_marina->can_view_preference($p1m, false));
+
+        // The relaxation fires only where the populations agree, so `.pc` and
+        // `.pref` must give the same answer for every such body -- to a viewer
+        // who sees every preference as much as to one who sees none.
+        $pairs = [["max.pc(pref * 2)", "max.pref(pref * 2)"],
+                  ["min.pc(pref + 1)", "min.pref(pref + 1)"],
+                  ["count.pc(pref == 5)", "count.pref(pref == 5)"],
+                  ["sum.pc(pref > 0)", "sum.pref(pref > 0)"],
+                  ["avg.pc(round(pref))", "avg.pref(round(pref))"],
+                  ["max.pc(greatest(pref, 0))", "max.pref(greatest(pref, 0))"],
+                  ["max.pc(sqrt(pref))", "max.pref(sqrt(pref))"],
+                  ["argmax.pc(1, pref)", "argmax.pref(1, pref)"]];
+        foreach ($pairs as $pr) {
+            xassert_eqq($this->formula_as($this->u_chair, $pr[0])->eval($p1c, null),
+                        $this->formula_as($this->u_chair, $pr[1])->eval($p1c, null));
+            xassert_eqq($this->formula_as($u_marina, $pr[0])->eval($p1m, null),
+                        $this->formula_as($u_marina, $pr[1])->eval($p1m, null));
+        }
+
+        // ...and those answers are the real aggregate, not a vacuous null:
+        // `max.pc(pref * 2)` used to be null for an ordinary PC member, since
+        // only a literal `pref` reached the preference collection.
+        xassert_eqq($this->formula_as($u_marina, "max.pc(pref * 2)")->eval($p1m, null), 10);
+        xassert_eqq($this->formula_as($u_marina, "min.pc(pref + 1)")->eval($p1m, null), -6);
+        xassert_eqq($this->formula_as($u_marina, "count.pc(pref == 5)")->eval($p1m, null), 1);
+        xassert_eqq($this->formula_as($u_marina, "sum.pc(pref > 0)")->eval($p1m, null), 3);
+        xassert_eqq($this->formula_as($u_marina, "avg.pc(round(pref))")->eval($p1m, null), 1.25);
+
+        // A body that names a second collection is not a pure preference body,
+        // so it keeps the PC population -- and with it the *individual*
+        // preference gate, which is what stops a selector from bridging.
+        xassert_eqq($this->formula_as($this->u_chair, "count.pc(pref == 5 || conf)")->eval($p1c, null), 5);
+        xassert_eqq($this->formula_as($u_marina, "count.pc(pref == 5 || conf)")->eval($p1m, null), 0);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
+    function test_pref_aggregate_pc_keeps_pc_when_pref_absorbed() {
+        // When a null preference does *not* null the body -- the body supplies
+        // a value for the members who expressed none -- `.pc` must iterate the
+        // whole PC. Rewriting to `.pref` would silently drop those members.
+        $conf = $this->conf;
+        $this->seed_paper1_preferences();
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p1c = $conf->checked_paper_by_id(1, $this->u_chair);
+        $p1m = $conf->checked_paper_by_id(1, $u_marina);
+        $npc = count($conf->viewable_pc_members($this->u_chair));
+        xassert_gt($npc, 4);
+        xassert_eqq(count($conf->viewable_pc_members($u_marina)), $npc);
+
+        // one datum per PC member, not one per preference
+        foreach (["count.pc(coalesce(pref, 2))", "count.pc(pref ? 1 : 0)",
+                  "count.pc(-pref)", "count.pc(isnull(pref) ? 1 : 0)"] as $expr) {
+            xassert_eqq($this->formula_as($this->u_chair, $expr)->eval($p1c, null), $npc);
+            xassert_eqq($this->formula_as($u_marina, $expr)->eval($p1m, null), $npc);
+        }
+        // ...while the `.pref` spelling still names the smaller population
+        xassert_eqq($this->formula_as($this->u_chair, "count.pref(coalesce(pref, 2))")->eval($p1c, null), 4);
+        xassert_eqq($this->formula_as($u_marina, "count.pref(coalesce(pref, 2))")->eval($p1m, null), 4);
+
+        // The PC population applies the *individual* preference gate, so these
+        // bodies tell an ordinary PC member only that they may see nothing.
+        xassert_eqq($this->formula_as($this->u_chair, "max.pc(coalesce(pref, 2))")->eval($p1c, null), 5);
+        xassert_eqq($this->formula_as($u_marina, "max.pc(coalesce(pref, 2))")->eval($p1m, null), 2);
+        xassert_eqq($this->formula_as($this->u_chair, "count.pc(!pref)")->eval($p1c, null), $npc - 4);
+        xassert_eqq($this->formula_as($u_marina, "count.pc(!pref)")->eval($p1m, null), $npc);
+        xassert_eqq($this->formula_as($this->u_chair, "sum.pc(isnull(pref))")->eval($p1c, null), 4);
+        xassert_eqq($this->formula_as($u_marina, "sum.pc(isnull(pref))")->eval($p1m, null), 0);
+
+        // `all` is never rewritten, whatever its body: a valueless element
+        // counts against it, so the two populations give different answers.
+        xassert_eqq($this->formula_as($this->u_chair, "all.pc(pref)")->eval($p1c, null), false);
+        xassert_eqq($this->formula_as($this->u_chair, "all.pref(pref)")->eval($p1c, null), true);
+        xassert_eqq($this->formula_as($u_marina, "all.pref(pref)")->eval($p1m, null), true);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
+    function test_aggregate_pc_collection_not_discarded() {
+        // `.pc` means "over the PC" even when the body mentions no one in
+        // particular; the `.pc` -> `.pref` convenience must not fire on an
+        // expression that has no preference in it.
+        $conf = $this->conf;
+        $npc = count($conf->viewable_pc_members($this->u_chair));
+        xassert_gt($npc, 1);
+        $p1c = $conf->checked_paper_by_id(1, $this->u_chair);
+        xassert_eqq($this->formula_as($this->u_chair, "count.pc(1)")->eval($p1c, null), $npc);
+        xassert_eqq($this->formula_as($this->u_chair, "count.pc(true)")->eval($p1c, null), $npc);
+        xassert_eqq($this->formula_as($this->u_chair, "count.pc(pid)")->eval($p1c, null), $npc);
+
+        // ...while an aggregate that *is* about preferences still routes to
+        // the preference collection
+        $this->seed_paper1_preferences();
+        xassert_eqq($this->formula_as($this->u_chair, "count.pc(pref)")->eval($p1c, null), 4);
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
 }

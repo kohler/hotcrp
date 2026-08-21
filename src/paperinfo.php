@@ -1618,6 +1618,15 @@ class PaperInfo {
         return $ct;
     }
 
+    /** @return associative-array<int,int> */
+    function viewable_conflict_types(Contact $viewer) {
+        if ($viewer->can_view_conflicts($this)) {
+            return $this->conflict_types();
+        }
+        $ct = $this->conflict_type($viewer->contactId);
+        return $ct ? [$viewer->contactId => $ct] : [];
+    }
+
     /** @param ContactPermissions|int $c
      * @return int */
     function conflict_type($c) {

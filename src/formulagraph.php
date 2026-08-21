@@ -392,13 +392,16 @@ class FormulaGraph extends MessageSet {
                 && !self::check_data_type($fx_data, $f)) {
                 $this->error_at("x", $this->conf->_("<0>Formula incompatible with data type ‘{}’", self::unparse_data_type($fx_data)));
             }
-            if ($i === 0 && $this->_fx_type === 0) {
-                $this->_fx_type = $f->format();
-            }
-            if (($this->_fx_type !== 0
-                 && $this->_fx_type !== $f->format())
-                || ($this->_fx_type === Fexpr::FREVIEWFIELD
-                    && $this->fxs[0]->format_detail() !== $f->format_detail())) {
+            if ($i === 0) {
+                // an `_fx_type` set here was chosen for the axis, not derived
+                // from the formula: `tag` and `query` compile to a constant
+                if ($this->_fx_type === 0) {
+                    $this->_fx_type = $f->format();
+                }
+            } else if (($this->_fx_type !== 0
+                        && $this->_fx_type !== $f->format())
+                       || ($this->_fx_type === Fexpr::FREVIEWFIELD
+                           && $this->fxs[0]->format_detail() !== $f->format_detail())) {
                 $this->error_at("x", "<0>X axis formulas must all use the same units");
                 $this->_fx_type = 0;
             }
@@ -444,7 +447,8 @@ class FormulaGraph extends MessageSet {
             && !$this->has_error()) {
             if ($this->fy->format() === Fexpr::FBOOL) {
                 $this->fy = Formula::make_indexed($this->user, "sum({$fy})");
-            } else if (!$this->fy->support_combiner()) {
+            }
+            if (!$this->fy->support_combiner()) {
                 $this->error_at("y", "<0>Y axis formula cannot be used for this chart");
                 $this->inform_at("y", "<0>Try an aggregate function like ‘sum({$fy})’.");
                 $this->fy = Formula::make_indexed($this->user, "sum(0)");
@@ -579,13 +583,13 @@ class FormulaGraph extends MessageSet {
         return $queries;
     }
 
-    /** @param bool $reviewf
+    /** @param int $index_type
      * @return bool */
-    private function _compile_xorder_function($reviewf) {
+    private function _compile_xorder_function($index_type) {
         if (!$this->fxorder) {
             return false;
         }
-        if ($reviewf) {
+        if ($index_type) {
             $this->fxorder->prepare_extractor();
         } else {
             $this->fxorder->prepare_json();
@@ -594,13 +598,13 @@ class FormulaGraph extends MessageSet {
     }
 
     /** @param list $order_data
-     * @bool $reviewf */
-    private function _resolve_xorder_data($order_data, $reviewf) {
+     * @param int $index_type */
+    private function _resolve_xorder_data($order_data, $index_type) {
         if (!$this->fxorder) {
             return null;
         }
         $this->_xorder_data = [];
-        if ($reviewf) {
+        if ($index_type) {
             foreach ($order_data as $x => $vs) {
                 $v = $this->fxorder->eval_combiner($vs);
                 $this->_xorder_data[] = new Order_GraphData($x, $v);
@@ -612,17 +616,44 @@ class FormulaGraph extends MessageSet {
         }
     }
 
+    /** @return bool */
+    private function _indexed(Formula $fx) {
+        return $fx->indexed()
+            || $this->fy->indexed()
+            || ($this->fxorder && $this->fxorder->indexed())
+            || ($this->_fx_combine && $this->fy->extractor_indexed());
+    }
+
+    /** @return int */
+    private function _set_index_type(Formula $fx) {
+        if (!$this->_indexed($fx)) {
+            return 0;
+        }
+        $index_type = Formula::combine_index_types(
+            $this->user,
+            $fx->index_type(),
+            $this->fy->index_type(),
+            $this->fxorder ? $this->fxorder->index_type() : 0
+        );
+        assert($index_type !== 0);
+        $fx->set_external_index_type($index_type);
+        $this->fy->set_external_index_type($index_type);
+        $this->fxorder && $this->fxorder->set_external_index_type($index_type);
+        $fx->prepare_indexer();
+        return $index_type;
+    }
+
     /** @param Formula $fx
      * @return list<CDF_GraphData> */
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
+        $index_type = $this->_set_index_type($fx);
         $fx->prepare_json();
-        $reviewf = $fx->indexed() ? $fx->prepare_indexer() : null;
-        $want_order = $this->_compile_xorder_function(!!$reviewf);
+        $want_order = $this->_compile_xorder_function($index_type);
         $order_data = [];
 
         $data = [];
         foreach ($rowset as $prow) {
-            $revs = $reviewf ? $reviewf->eval_indexer($prow) : [null];
+            $revs = $index_type ? $fx->eval_indexer($prow) : [null];
             $queries = $this->papermap[$prow->paperId];
             foreach ($revs as $rcid) {
                 if (($x = $fx->eval_json($prow, $rcid)) === null) {
@@ -631,8 +662,9 @@ class FormulaGraph extends MessageSet {
                 if ($this->_x_bool && !is_bool($x)) {
                     $this->_x_bool = false;
                 }
-                if ($rcid) {
-                    $queries = $this->_filter_queries($prow, $prow->review_by_user($rcid));
+                if ($index_type) {
+                    $rrow = $fx->indexer_to_rrow($prow, $rcid);
+                    $queries = $this->_filter_queries($prow, $rrow);
                 }
                 if ($this->_fx_type === Fexpr::FSEARCH) {
                     foreach ($queries as $q) {
@@ -644,7 +676,7 @@ class FormulaGraph extends MessageSet {
                     }
                 }
                 if ($want_order) {
-                    $order_data[$x][] = $reviewf
+                    $order_data[$x][] = $index_type
                         ? $this->fxorder->eval_extractor($prow, $rcid)
                         : $this->fxorder->eval_json($prow, $rcid);
                 }
@@ -670,7 +702,7 @@ class FormulaGraph extends MessageSet {
             }
             $result[] = $d;
         }
-        $this->_resolve_xorder_data($order_data, !!$reviewf);
+        $this->_resolve_xorder_data($order_data, $index_type);
         return $result;
     }
 
@@ -764,51 +796,28 @@ class FormulaGraph extends MessageSet {
         return $r;
     }
 
-    /** @return bool */
-    private function _indexed() {
-        return $this->fx->indexed()
-            || $this->fy->indexed()
-            || ($this->fxorder && $this->fxorder->indexed())
-            || ($this->_fx_combine && $this->fy->extractor_indexed());
-    }
-
-    /** @return int */
-    private function _index_type() {
-        return Formula::combine_index_types(
-            $this->fx->index_type(),
-            $this->fxorder ? $this->fxorder->index_type() : 0,
-            $this->fy->index_type()
-        );
-    }
-
     private function _scatter_data(PaperInfoSet $rowset) {
         if ($this->fx->format() === Fexpr::FREVIEWER
             && ($this->type & self::BOXPLOT) !== 0) {
             $this->_prepare_reviewer_color($this->user);
         }
 
+        $index_type = $this->_set_index_type($this->fx);
+        $review_id = ($index_type & Fexpr::IDXM_REVIEW) === $index_type
+            && $this->fx->indexed()
+            && $this->fy->indexed();
+        $want_rrow = $review_id || $this->_fx_type === Fexpr::FSEARCH;
+
         $this->fx->prepare_json();
         $this->fy->prepare_json();
-
-        $reviewf = null;
-        $review_id = false;
-        if ($this->_indexed()) {
-            $index_type = $this->_index_type();
-            $reviewf = $this->fx->prepare_indexer($index_type);
-            $review_id = $this->fx->indexed()
-                && $this->fy->indexed()
-                && ($index_type & Fexpr::IDX_PC) !== 0;
-        }
-
-        $want_order = $this->_compile_xorder_function(!!$reviewf);
+        $want_order = $this->_compile_xorder_function($index_type);
         $order_data = [];
         $this->_scatter_data = [];
 
         foreach ($rowset as $prow) {
             $ps = $this->_paper_style($prow);
-            $revs = $reviewf ? $reviewf->eval_indexer($prow) : [null];
+            $revs = $index_type ? $this->fx->eval_indexer($prow) : [null];
             foreach ($revs as $rcid) {
-                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
                 $x = $this->fx->eval_json($prow, $rcid);
                 $y = $this->fy->eval_json($prow, $rcid);
                 if ($x === null || $y === null) {
@@ -821,8 +830,9 @@ class FormulaGraph extends MessageSet {
                 if ($this->_y_bool && !is_bool($y)) {
                     $this->_y_bool = false;
                 }
+                $rrow = $want_rrow ? $this->fx->indexer_to_rrow($prow, $rcid) : null;
                 $id = $prow->paperId;
-                if ($review_id && $rrow && $rrow->reviewOrdinal) {
+                if ($rrow && $review_id && $rrow->reviewOrdinal) {
                     $id .= unparse_latin_ordinal($rrow->reviewOrdinal);
                 }
                 if ($ps === self::REVIEWER_COLOR) {
@@ -852,14 +862,14 @@ class FormulaGraph extends MessageSet {
                     $sdata[] = new Scatter_GraphData($xv, $y, $id);
                 }
                 if ($want_order) {
-                    $order_data[$x][] = $reviewf
+                    $order_data[$x][] = $index_type
                         ? $this->fxorder->eval_extractor($prow, $rcid)
                         : $this->fxorder->eval_json($prow, $rcid);
                 }
             }
         }
 
-        $this->_resolve_xorder_data($order_data, !!$reviewf);
+        $this->_resolve_xorder_data($order_data, $index_type);
     }
 
     private function _combine_data(PaperInfoSet $rowset) {
@@ -867,34 +877,30 @@ class FormulaGraph extends MessageSet {
             $this->_prepare_reviewer_color($this->user);
         }
 
+        $index_type = $this->_set_index_type($this->fx);
+        $review_id = ($index_type & Fexpr::IDXM_REVIEW) === $index_type
+            && $this->fx->indexed();
+
         $this->fx->prepare_json();
         $this->fy->prepare_extractor();
-        $index_type = $this->_indexed() ? $this->_index_type() : 0;
-        $reviewf = null;
-        if ($index_type !== 0) {
-            $reviewf = $this->fx->prepare_indexer($index_type);
-        }
         $order_data = null;
         if ($this->fxorder) {
             $order_data = [];
             $this->fxorder->prepare_extractor();
         }
-        $review_id = $this->fx->indexed()
-            && $this->fy->indexed()
-            && ($index_type & Fexpr::IDX_PC) === 0;
 
         $data = [];
         foreach ($rowset as $prow) {
             $queries = $this->papermap[$prow->paperId];
             $ps = $this->_paper_style($prow);
-            $revs = $reviewf ? $reviewf->eval_indexer($prow) : [null];
+            $revs = $index_type ? $this->fx->eval_indexer($prow) : [null];
             foreach ($revs as $rcid) {
                 $x = $this->fx->eval_json($prow, $rcid);
                 if ($x === null) {
                     continue;
                 }
-                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
-                if ($rrow) {
+                $rrow = $this->fx->indexer_to_rrow($prow, $rcid);
+                if ($index_type) {
                     $queries = $this->_filter_queries($prow, $rrow);
                 }
                 if ($ps === self::REVIEWER_COLOR) {
@@ -949,7 +955,7 @@ class FormulaGraph extends MessageSet {
                      && (!$is_sum || $d0->style == $s)
                      && $d0->sx == $q);
             $y = $this->fy->eval_combiner($ys);
-            if ($reviewf && !$this->fx->indexed()) {
+            if ($index_type && !$this->fx->indexed()) {
                 $ids = array_values(array_unique($ids));
             }
             $this->_bar_data[] = new Bar_GraphData($x, $y, $ids, $s, $q);
@@ -1134,7 +1140,7 @@ class FormulaGraph extends MessageSet {
         }
         $fx = $this->fx->expression;
         $fy = $this->fy->expression;
-        if ($this->_indexed()) {
+        if ($this->_indexed($this->fx)) {
             $this->warning_at(null, "<0>No review has values for both ‘{$fx}’ and ‘{$fy}’");
             if ($this->fx->indexed() && $this->fy->indexed()) {
                 $this->inform_at(null, "<0>Try ‘avg({$fx})’ and ‘avg({$fy})’ to compare per-submission averages.");
