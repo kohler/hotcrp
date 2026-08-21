@@ -159,7 +159,7 @@
   {
     "name": "searchaction", "get": true, "post": true,
     "tags": ["Search"],
-    "parameters": "?action q ?t ?qt ?sort ?scoresort ?reviewer ?report ?p"
+    "parameters": "?action q ?t ?qt ?sort ?scoresort ?reviewer ?report ?p ?format"
   },
   {
     "name": "graphdata", "get": true,
@@ -295,8 +295,8 @@
   {
     "name": "comment", "post": true,
     "tags": ["Comments"],
-    "parameters": "c ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete",
-    "response": "?conflict ?cid ?comment",
+    "parameters": "c ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete ?dry_run ?=ready",
+    "response": "?conflict ?cid ?comment ?valid ?dry_run ?change_list",
     "response_info": {"comment": "comment"}
   },
   {
