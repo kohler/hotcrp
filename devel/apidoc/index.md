@@ -52,15 +52,15 @@ empty string for false; the values `on`/`yes` and `off`/`no` are also
 accepted. For example, `dry_run=1` and `dry_run=true` are equivalent.
 
 **Integer** and **number** parameters are written in decimal, such as `p=10`.
-**String** parameters are sent literally; an enumerated parameter is a string
+**String** parameters are sent literally. Enumerated parameters are strings
 restricted to a fixed set of values.
 
 More complex inputs use other encodings. Some requests group parameters into
 logical objects using structured keys, such as `named_search/1/q`; others define
 an object using JSON, supplied either as the request body or as a JSON-valued
-parameter such as `json`. Use `multipart/form-data` encoding for requests that
-include uploaded files; since servers limit upload size, you may need the upload
-API to send a large file before processing it with another call.
+parameter. Use `multipart/form-data` encoding for requests that include uploaded
+files. Since servers limit upload size, you may need the [upload
+API](#post-upload) to send a large file before processing it with another call.
 
 
 ## Common parameters

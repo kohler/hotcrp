@@ -2078,11 +2078,29 @@ Usage: php batch/apispec.php")
         return [$conf, $arg];
     }
 
+    /** @param mixed $fn
+     * @return bool
+     * Mirrors the filename test in `expand_json_includes_callback`. */
+    static private function is_include_filename($fn) {
+        $l = is_string($fn) ? strlen($fn) : 0;
+        return $l !== 0
+            && $fn[0] !== "{"
+            && ($fn[0] !== "[" || ($fn[$l-1] !== "]" && !ctype_space($fn[$l-1])))
+            && !ctype_space($fn[0])
+            && strpos($fn, "::") === false;
+    }
+
     static private function add_expanded_includes($opt, &$cmd) {
         if (!$opt) {
             return;
         }
         foreach (is_array($opt) ? $opt : [$opt] as $fn) {
+            if (is_string($fn) && str_starts_with($fn, "@")) {
+                $fn = substr($fn, 1);
+            } else if (!self::is_include_filename($fn)) {
+                // inline JSON or a function reference: nothing to watch
+                continue;
+            }
             if (str_starts_with($fn, "?")) {
                 $fn = substr($fn, 1);
             }
@@ -2098,7 +2116,7 @@ Usage: php batch/apispec.php")
     static function run_args($argv) {
         list($conf, $arg) = self::parse_args($argv);
 
-        // handle non-watch
+        // handle non-watch (normal case)
         if (!isset($arg["w"])) {
             $apispec = new APISpec_Batch($conf, $arg);
             exit($apispec->run());

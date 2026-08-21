@@ -165,7 +165,7 @@
   {
     "name": "searchaction", "get": true, "post": true,
     "tags": ["Search"],
-    "parameters": "action q ?t ?qt ?sort ?scoresort ?reviewer ?report ?*p ?format ?<pdefault"
+    "parameters": "action q ?t ?qt ?sort ?scoresort ?reviewer ?report ?*p ?format"
   },
   {
     "name": "graphdata", "get": true,
