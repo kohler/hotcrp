@@ -394,18 +394,30 @@ Ready\n";
         return join("", $t);
     }
 
+    /** @param ReviewInfo $rrow
+     * @param Contact $user
+     * @return ?FailureReasons */
+    private function _override_reason($rrow, $user) {
+        if ($this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
+            return null;
+        }
+        $fr = $rrow->prow->failure_reason();
+        $fr["deadline"] = $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard";
+        $fr["reviewRound"] = $rrow->reviewRound;
+        $fr["confirmOverride"] = true;
+        return $fr;
+    }
+
     /** @param PaperInfo $prow
-     * @param ?ReviewInfo $rrow
+     * @param ReviewInfo $rrow
      * @param Contact $user */
     private function _print_review_actions($prow, $rrow, $user) {
         $buttons = [];
 
-        $submitted = $rrow && $rrow->reviewStatus === ReviewInfo::RS_COMPLETED;
+        $submitted = $rrow->reviewStatus === ReviewInfo::RS_COMPLETED;
         $disabled = !$user->can_clickthrough("review", $prow);
-        $my_review = !$rrow || $user->is_my_review($rrow);
-        $pc_deadline = $user->act_pc($prow) || $user->allow_admin($prow);
-        if (!$this->conf->time_review($rrow ? $rrow->reviewRound : null, $rrow ? $rrow->reviewType : $pc_deadline, true)) {
-            $whyNot = new FailureReason($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"), "confirmOverride" => true]);
+        $my_review = $user->is_my_review($rrow);
+        if (($whyNot = $this->_override_reason($rrow, $user))) {
             $override_text = $whyNot->unparse_html();
             if (!$submitted) {
                 $buttons[] = [Ht::button("Submit review", ["class" => "btn-primary js-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
@@ -413,7 +425,7 @@ Ready\n";
             } else {
                 $buttons[] = [Ht::button("Save changes", ["class" => "btn-primary js-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
             }
-        } else if (!$submitted && $rrow && $rrow->subject_to_approval()) {
+        } else if (!$submitted && $rrow->subject_to_approval()) {
             assert($rrow->reviewStatus <= ReviewInfo::RS_APPROVED);
             if ($rrow->reviewStatus === ReviewInfo::RS_APPROVED) {
                 $buttons[] = Ht::submit("update", "Update approved review", ["class" => "btn-primary js-savereview need-clickthrough-enable", "disabled" => $disabled]);
@@ -456,7 +468,7 @@ Ready\n";
         }
         $buttons[] = Ht::submit("cancel", "Cancel");
 
-        if ($rrow && $user->allow_admin($prow)) {
+        if ($user->allow_admin($prow)) {
             $buttons[] = "";
             if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
                 $buttons[] = [Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)"];

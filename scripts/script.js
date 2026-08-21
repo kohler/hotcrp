@@ -14662,7 +14662,7 @@ handle_ui.on("js-approve-review", function (evt) {
 });
 
 handle_ui.on("js-offline-review", function () {
-    const rform = this.form, pid = this.closest(".pcard").getAttribute("data-pid"),
+    const self = this, pid = this.closest(".pcard").getAttribute("data-pid"),
         durl = this.getAttribute("data-download-url"),
         filee = $e("input", {type: "file", name: "file", accept: "text/plain", hidden: true}),
         uploade = $e("button", {type: "submit", name: "upload", value: 1, class: "btn-primary"}, "Upload form");
@@ -14673,17 +14673,11 @@ handle_ui.on("js-offline-review", function () {
         return (filee.files || []).length !== 0;
     }
 
-    // the file input appears only once it holds the form being uploaded
-    function refile() {
-        filee.hidden = !has_file();
-    }
-
     // choosing a form is the reviewer's confirmation: upload it right away. A
     // new file has not had its errors shown yet, so it gets the careful attempt
     function change_file() {
         dry_run = true;
         uploade.replaceChildren("Upload form");
-        refile();
         has_file() && upload();
     }
 
@@ -14693,7 +14687,7 @@ handle_ui.on("js-offline-review", function () {
         if (data.ok && !data.dry_run) {
             // an upload that went through often has something to say (a warning
             // about a draft, say); carry it over the reload
-            addClass(rform, "submitting");
+            addClass(self.form, "submitting");
             redirect_with_messages(".reload", data.message_list);
             return;
         }
@@ -14705,17 +14699,18 @@ handle_ui.on("js-offline-review", function () {
             dry_run = false;
             uploade.replaceChildren("Upload form anyway");
             addClass(uploade, "btn-highlight");
+            filee.hidden = false;
         } else {
             // nothing was uploaded, so start over with a new file
             filee.value = "";
-            refile();
+            filee.hidden = true;
         }
     }
 
     function upload() {
         const arg = {p: pid};
         siteinfo.want_override_conflict && (arg.forceShow = 1);
-        dry_run && (arg.dry_run = "if_error");
+        dry_run ? (arg.dry_run = "if_error") : (arg.override = 1);
         $pu.find("button").prop("disabled", true);
         $.ajax(hoturl("=api/review", arg), {
             method: "POST", data: new FormData($pu.form()), success: done,
@@ -14737,7 +14732,7 @@ handle_ui.on("js-offline-review", function () {
         has_file() && upload();
     }
 
-    $pu = $popup({near: this, className: "modal-dialog-w40", "aria-label": "Offline reviewing"})
+    $pu = $popup({near: self, className: "modal-dialog-w40", "aria-label": "Offline reviewing"})
         .append($e("h2", null, "Offline reviewing"),
             $e("p", "w-text",
                 $e("a", {href: durl, class: "js-download-review-form"}, "Download this review form as text"),

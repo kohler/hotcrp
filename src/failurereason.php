@@ -175,7 +175,7 @@ class FailureReason extends Exception
             $start = 1;
         }
 
-        if ($dn === "extrev_chairreq") {
+        if ($dn !== "extrev_chairreq") {
             $dn = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
         }
         $end = $this->conf->setting($dn);

@@ -1150,7 +1150,7 @@ class ReviewValues extends MessageSet {
                        && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
                 $this->clear_messages_since($before_msgcount);
                 $this->rvmsg(self::ERROR, null, "<5>The " . $this->conf->hotlink("deadline", "deadlines") . " for editing this review has passed");
-                $this->rvmsg(self::INFORM, null, "<0>Select “Override deadlines” and try again if you need to override the deadline.");
+                $this->rvmsg(self::INFORM, "override", "<0>You may override this deadline if needed.");
                 return false;
             }
         }
