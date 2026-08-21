@@ -263,6 +263,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->rflags = self::RF_LIVE | (1 << $rrow->reviewType) | ($rrow->reviewBlind ? self::RF_BLIND : 0);
         $rrow->reviewStatus = self::RS_EMPTY;
         $rrow->fields = $rrow->conf->review_form()->order_array(null);
+        $rrow->_reviewer = $user;
         return $rrow;
     }
 
