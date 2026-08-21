@@ -27,6 +27,10 @@ class ReviewValues extends MessageSet {
     private $reviewer;
     /** @var bool */
     private $require_reviewer = false;
+    /** @var ?int */
+    private $expected_pid;
+    /** @var bool */
+    private $link_message_fields = false;
 
     // current request
     /** @var array<string,mixed> */
@@ -159,6 +163,21 @@ class ReviewValues extends MessageSet {
         return $this;
     }
 
+    /** Expected PID; on match, elide PID from text error messages
+     * @param ?int $pid
+     * @return $this */
+    function set_expected_pid($pid) {
+        $this->expected_pid = $pid;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_link_message_fields($x) {
+        $this->link_message_fields = $x;
+        return $this;
+    }
+
     /** @param string $text
      * @param ?string $filename
      * @return $this */
@@ -229,7 +248,8 @@ class ReviewValues extends MessageSet {
         $mi = $this->append_item(new MessageItem($status, $field, $msg, ...$args));
         if ($this->filename) {
             $mi->landmark = "{$this->filename}:{$lineno}";
-            if (($pid = $this->req_pid()) > 0) {
+            if (($pid = $this->req_pid()) > 0
+                && $pid !== $this->expected_pid) {
                 $mi->landmark .= " (" . $this->conf->_("{submission} #{}", $pid) . ")";
             }
         }
@@ -1797,9 +1817,8 @@ class ReviewValues extends MessageSet {
         return MessageSet::SUCCESS;
     }
 
-    /** @param bool $link_fields
-     * @return void */
-    function report($link_fields = false) {
+    /** @return void */
+    function report() {
         $this->finished || $this->finish();
         if ($this->finished >= 3) {
             return;
@@ -1814,23 +1833,22 @@ class ReviewValues extends MessageSet {
             $ml[] = MessageItem::inform($this->conf->_("<0>There were {$errtype} while parsing the uploaded review file."));
         }
         foreach ($this->message_list() as $mi) {
-            $ml[] = $this->decorate_message($mi, $link_fields);
+            $ml[] = $this->decorate_message($mi);
         }
         $this->conf->feedback_msg($ml);
     }
 
     /** Prefix a message keyed to a review field with that field's name.
      * @param MessageItem $mi
-     * @param bool $link_fields
      * @return MessageItem */
-    function decorate_message($mi, $link_fields = false) {
+    function decorate_message($mi) {
         if (!$mi->field
             || !$mi->message
             || $mi->status === MessageSet::INFORM
             || !($f = $this->rf->fmap[$mi->field] ?? null)) {
             return $mi;
         }
-        $pfx = $link_fields
+        $pfx = $this->link_message_fields
             ? "<5><a href=\"#{$mi->field}\">{$f->name_html}</a>: "
             : "<0>{$f->name}: ";
         return $mi->with_message(Ftext::concat($pfx, $mi->message));

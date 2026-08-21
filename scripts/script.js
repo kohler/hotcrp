@@ -14662,11 +14662,14 @@ handle_ui.on("js-approve-review", function (evt) {
 });
 
 handle_ui.on("js-offline-review", function () {
-    const self = this, pid = this.closest(".pcard").getAttribute("data-pid"),
-        durl = this.getAttribute("data-download-url"),
+    const self = this, pid = self.form.getAttribute("data-pid"),
+        rid = self.form.getAttribute("data-rid"),
+        args1 = {p: pid},
         filee = $e("input", {type: "file", name: "file", accept: "text/plain", hidden: true}),
         uploade = $e("button", {type: "submit", name: "upload", value: 1, class: "btn-primary"}, "Upload form");
     let $pu, dry_run = true;
+    (rid != "") && (args1.r = rid);
+    self.hasAttribute("data-force") && (args1.forceShow = 1);
 
     /** @return {boolean} */
     function has_file() {
@@ -14708,9 +14711,9 @@ handle_ui.on("js-offline-review", function () {
     }
 
     function upload() {
-        const arg = {p: pid};
-        siteinfo.want_override_conflict && (arg.forceShow = 1);
+        const arg = Object.assign({}, args1);
         dry_run ? (arg.dry_run = "if_error") : (arg.override = 1);
+        arg.link_fields = 1;
         $pu.find("button").prop("disabled", true);
         $.ajax(hoturl("=api/review", arg), {
             method: "POST", data: new FormData($pu.form()), success: done,
@@ -14735,7 +14738,7 @@ handle_ui.on("js-offline-review", function () {
     $pu = $popup({near: self, className: "modal-dialog-w40", "aria-label": "Offline reviewing"})
         .append($e("h2", null, "Offline reviewing"),
             $e("p", "w-text",
-                $e("a", {href: durl, class: "js-download-review-form"}, "Download this review form as text"),
+                $e("a", {href: hoturl("api/review", Object.assign({}, args1, {format: "form"})), class: "js-download-review-form"}, "Download this review form as text"),
                 ", fill it out offline, then upload it here. ",
                 $e("a", {href: hoturl("offline")}, "Offline reviewing"),
                 " handles many forms at once."),

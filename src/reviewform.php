@@ -500,7 +500,10 @@ Ready\n";
             Ht::form($this->conf->hoturl("=review", $rlink1 + ["m" => "re"] + $rlink2), [
                 "id" => "f-review",
                 "class" => "need-unload-protection need-diff-check",
-                "data-differs-toggle" => "review-alert"
+                "data-differs-toggle" => "review-alert",
+                "data-pid" => $prow->paperId,
+                "data-rid" => $rrow->reviewId ? $reviewOrdinal : null,
+                "data-force" => $viewer->is_override_conflict() ? true : null
             ]),
             Ht::hidden_default_submit("default", "");
         if ($rrow->reviewId) {
@@ -556,10 +559,7 @@ Ready\n";
             echo '<span class="barsep">·</span>';
         }
         echo $revtime,
-            Ht::button("Review offline", [
-                "class" => "ui js-offline-review btn ml-4",
-                "data-download-url" => $this->conf->hoturl("api/review", $rlink1 + ["format" => "form", "download" => 1] + $rlink2)
-            ]),
+            Ht::button("Review offline", ["class" => "ui js-offline-review btn ml-4"]),
             '</div>';
 
         echo '<hr class="c"></div>', "\n";

@@ -120,6 +120,7 @@ class Review_Page {
 
     function handle_update() {
         $rv = new ReviewValues($this->user);
+        $rv->set_link_message_fields(true);
         if ($rv->parse_qreq($this->qreq)
             && $rv->check_and_save($this->prow, $this->rrow)) {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
@@ -184,6 +185,7 @@ class Review_Page {
         }
 
         $rv = new ReviewValues($this->user);
+        $rv->set_link_message_fields(true);
         $my_rrow = $this->prow->review_by_user($this->user);
         $want_rid = $this->rrow->unparse_ordinal_id();
         if ($rv->parse_qreq($this->qreq)

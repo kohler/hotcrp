@@ -80,6 +80,9 @@ class Review_API extends MessageSet {
     /** @var Contact
      * @readonly */
     public $user;
+    /** @var int
+     * @readonly */
+    public $mode;
 
     // request-global configuration
     /** @var bool */
@@ -106,6 +109,8 @@ class Review_API extends MessageSet {
     private $qreq_reviewer;
     /** @var bool */
     private $qreq_reviewer_none = false;
+    /** @var bool */
+    private $link_fields = false;
 
     // per-item accumulators (mirror Comment_API/Paper_API)
     /** @var list<Review_API_Status> */
@@ -130,9 +135,11 @@ class Review_API extends MessageSet {
     private $change_list;
 
 
-    function __construct(Contact $user) {
+    /** @param 1|2|4 $mode */
+    function __construct(Contact $user, $mode) {
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->mode = $mode;
     }
 
     /** Parse the `format` request parameter, which selects how a GET renders
@@ -387,14 +394,13 @@ class Review_API extends MessageSet {
      * a cross-paper batch. The paper comes from the URL `p` or, for JSON/text,
      * from the body (these endpoints are not `paper:true`, so an absent `p` is
      * not rejected up front).
-     * @param 1|2|4 $mode
      * @return JsonResult */
-    private function run_post(Qrequest $qreq, ?PaperInfo $prow, $mode) {
+    private function run_post(Qrequest $qreq, ?PaperInfo $prow) {
         // an explicit but unresolvable `p` is a hard error
         if (!$prow && isset($qreq->p)) {
             return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
         }
-        $one = ($mode & DocumentLocator::M_ONE) !== 0;
+        $one = ($this->mode & DocumentLocator::M_ONE) !== 0;
 
         $this->set_post_param($qreq);
         $this->qreq_r = isset($qreq->r) ? (string) $qreq->r : null;
@@ -449,7 +455,7 @@ class Review_API extends MessageSet {
 
         // a JSON object is one review; a JSON array is a batch (reviews have no
         // search-match mode)
-        [$jp, $jmode] = $docloc->parse_json_request($qreq, $mode & ~DocumentLocator::M_MATCH);
+        [$jp, $jmode] = $docloc->parse_json_request($qreq, $this->mode & ~DocumentLocator::M_MATCH);
         if ($jmode === DocumentLocator::M_ONE) {
             return $this->run_post_single_json($prow, $jp);
         }
@@ -543,6 +549,9 @@ class Review_API extends MessageSet {
             }
             $this->if_unmodified_since = $t;
         }
+        if (($this->mode & DocumentLocator::M_ONE) !== 0) {
+            $this->link_fields = friendly_boolean($qreq->link_fields) === true;
+        }
     }
 
     /** Naming an unknown reviewer creates their account, as an assignment does;
@@ -557,7 +566,9 @@ class Review_API extends MessageSet {
             ->set_reviewer($this->qreq_reviewer)
             ->set_require_reviewer($this->qreq_reviewer_none)
             ->set_create_users($this->create_users ?? $deliberate_reviewer)
-            ->set_disable_users($this->disable_users);
+            ->set_disable_users($this->disable_users)
+            ->set_expected_pid($this->prow && ($this->mode & DocumentLocator::M_ONE) !== 0 ? $this->prow->paperId : null)
+            ->set_link_message_fields($this->link_fields);
     }
 
     /** Save one review from a plain form POST on `$prow`, or — when the form
@@ -906,7 +917,7 @@ class Review_API extends MessageSet {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         try {
-            $rapi = new Review_API($user);
+            $rapi = new Review_API($user, $mode);
             if ($qreq->is_getlike()) {
                 if ($mode === DocumentLocator::M_ONE) {
                     $jr = $rapi->run_get_one($qreq, $prow);
@@ -916,7 +927,7 @@ class Review_API extends MessageSet {
             } else if ($qreq->method() === "DELETE") {
                 $jr = $rapi->run_delete($qreq, $prow);
             } else {
-                $jr = $rapi->run_post($qreq, $prow, $mode);
+                $jr = $rapi->run_post($qreq, $prow);
             }
         } catch (JsonCompletion $jc) {
             $jr = $jc->result;

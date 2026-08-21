@@ -3900,6 +3900,7 @@ div.bigid {
 }
 span.lineno {
 	font-variant-numeric: tabular-nums;
+	font-size: 92%;
 }
 
 hr {

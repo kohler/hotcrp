@@ -84,7 +84,7 @@ class MessageSet_Tester {
         $mi->pos1 = 0;
         $mi->pos2 = 8;
         $t = MessageSet::feedback_html([$mi]);
-        xassert_str_contains($t, "<span class=\"lineno\">→ <em>expanded from</em></span> ");
+        xassert_str_contains($t, "→ <em>expanded from</em>");
         xassert(!str_contains($t, "expanded from:"));
 
         // the same landmark without context is just a location

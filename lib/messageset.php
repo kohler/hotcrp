@@ -1085,11 +1085,10 @@ class MessageSet {
                 && $mi->landmark !== ""
                 && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
                 if (($mk = self::landmark_context_marker($mi))) {
-                    $lmx = htmlspecialchars($mk[0]) . " <em>" . htmlspecialchars($mk[1]) . "</em>";
+                    $lm = htmlspecialchars($mk[0]) . " <em>" . htmlspecialchars($mk[1]) . "</em>";
                 } else {
-                    $lmx = htmlspecialchars($mi->landmark) . ":";
+                    $lm = "<span class=\"lineno\">" . htmlspecialchars($mi->landmark) . ":</span> ";
                 }
-                $lm = "<span class=\"lineno\">{$lmx}</span> ";
             } else {
                 $lm = "";
             }
