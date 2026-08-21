@@ -536,29 +536,21 @@ Ready\n";
             $ttitle = $this->conf->unparse_time($rrow->reviewModified);
             $revtime = "<time class=\"revtime\" datetime=\"{$tattr}\" data-ts=\"{$rrow->reviewModified}\" title=\"{$ttitle}\">{$ttext}</time>";
         }
-        if ($revname || $revtime) {
-            echo '<div class="revthead">';
-            if ($revname) {
-                echo '<address class="revname">', $revname, '</address>';
-            }
-            if ($revname && $revtime) {
-                echo '<span class="barsep">·</span>';
-            }
-            echo $revtime, '</div>';
+        echo '<div class="revthead">';
+        if ($revname) {
+            echo '<address class="revname">', $revname, '</address>';
         }
+        if ($revname && $revtime) {
+            echo '<span class="barsep">·</span>';
+        }
+        echo $revtime,
+            Ht::button("Review offline", [
+                "class" => "ui js-offline-review btn ml-4",
+                "data-download-url" => $this->conf->hoturl("api/review", $rlink1 + ["format" => "form", "download" => 1] + $rlink2)
+            ]),
+            '</div>';
 
-        // download?
-        echo '<hr class="c">';
-        echo "<table class=\"revoff\"><tr>
-      <td><strong>Offline reviewing</strong> &nbsp;</td>
-      <td>Upload form: &nbsp; <input class=\"ignore-diff\" type=\"file\" name=\"file\" accept=\"text/plain\" size=\"24\">
-      &nbsp; ", Ht::submit("upload", "Go"), "</td>
-    </tr><tr>
-      <td></td>
-      <td>", $this->conf->hotlink("Download form", "review", $rlink1 + ["m" => "re", "download" => 1] + $rlink2), "
-      <span class=\"barsep\">·</span>
-      <span class=\"hint\"><strong>Tip:</strong> Use ", $this->conf->hotlink("Search", "search"), " or ", $this->conf->hotlink("Offline reviewing", "offline"), " to download or upload many forms at once.</span></td>
-    </tr></table></div>\n";
+        echo '<hr class="c"></div>', "\n";
 
         if (!empty($rrow->message_list)) {
             echo '<div class="revcard-feedback">',

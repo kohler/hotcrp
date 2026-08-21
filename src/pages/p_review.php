@@ -132,41 +132,6 @@ class Review_Page {
         $this->reload_prow();
     }
 
-    function handle_upload_form() {
-        if (!$this->qreq->has_file("file")) {
-            $this->conf->error_msg("<0>File upload required");
-            return;
-        }
-        $rv = (new ReviewValues($this->user))
-            ->set_text($this->qreq->file_content("file"), $this->qreq->file_filename("file"));
-        $match = $other = false;
-        $override = friendly_boolean($this->qreq->override) ?? false;
-        while ($rv->set_req_override($override)->parse_text()) {
-            if ($rv->req_pid() === $this->prow->paperId) {
-                $match = true;
-                if ($rv->check_and_save($this->prow, $this->rrow)) {
-                    $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
-                }
-            } else {
-                $other = true;
-            }
-            $rv->clear_req();
-        }
-        if (!$match && !$other) {
-            $rv->error_at(null, "<0>Uploaded file had no valid review forms");
-        } else if (!$match) {
-            $rv->error_at(null, "<0>Uploaded form was not for this {submission}");
-        } else if ($other) {
-            $rv->warning_at(null, "<0>Reviews for other {submissions} ignored");
-            $rv->inform_at(null, "<5>Upload multiple-review files " . $this->conf->hotlink("here", "offline") . ".");
-        }
-        $rv->report(true);
-        if (!$rv->has_error()) {
-            $this->qreq->redirect_self();
-        }
-        $this->reload_prow();
-    }
-
     function handle_download_form() {
         $filename = "review-" . ($this->rrow ? $this->rrow->unparse_ordinal_id() : $this->prow->paperId);
         $rf = $this->conf->review_form();
@@ -278,8 +243,6 @@ class Review_Page {
             $this->handle_update();
         } else if ($qreq->adoptreview) {
             $this->handle_adopt();
-        } else if ($qreq->upload) {
-            $this->handle_upload_form();
         } else if ($qreq->unsubmitreview) {
             $this->handle_unsubmit();
         } else if ($qreq->deletereview) {
@@ -382,11 +345,7 @@ class Review_Page {
             $qreq->m = $qreq->mode;
         }
         if ($qreq->post && $qreq->default) {
-            if ($qreq->has_file("file")) {
-                $qreq->upload = 1;
-            } else {
-                $qreq->update = 1;
-            }
+            $qreq->update = 1;
         }
         if ($user->is_reviewer()) {
             $qreq->open_session();

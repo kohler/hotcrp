@@ -4868,10 +4868,6 @@ fieldset.s-sf > legend {
 	padding-left: 1em;
 	color: var(--dim-fg);
 }
-.revoff {
-	margin: 0.2em 0 0.5em 0;
-	font-size: smaller;
-}
 .revscore, .revnoscore {
 	margin-bottom: 0;
 }
