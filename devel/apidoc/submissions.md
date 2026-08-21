@@ -224,6 +224,7 @@ deletes its reviews and comments too.
 * response change_list [string]: Always `["delete"]`.
 * response ?conflict boolean: True when the delete was rejected by the
   `if_unmodified_since` edit-conflict check.
+* response ?pid pid: The deleted submission’s ID.
 * badge featured
 * badge admin
 

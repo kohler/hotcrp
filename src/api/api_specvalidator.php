@@ -14,17 +14,21 @@ class SpecValidator_API {
     /** @var ?mixed */
     private $response;
 
-    const F_REQUIRED = 0x01;     // '!'; '?' means not required
-    const F_POST = 0x02;         // '+' (implies QUERY if given in request)
-    const F_QUERY = 0x04;
-    const F_BODY = 0x08;         // '='
-    const F_FILE = 0x10;         // '@'
-    const F_SUFFIX = 0x20;       // ':'
+    const F_REQUIRED = 0x01;     // '!': param is required ('?' means optional)
+    const F_POST = 0x02;         // '+': param is POST-only, in query
+    const F_QUERY = 0x04;        // param is in query
+    const F_BODY = 0x08;         // '=': param is in body
+    const F_FILE = 0x10;         // '@': param is attachment
+    const F_SUFFIX = 0x20;       // ':': suffixes of this param are allowed
     const F_PRESENT = 0x40;
-    const F_DEPRECATED = 0x80;   // '<'
+    const F_DEPRECATED = 0x80;   // '<': param is deprecated
+    // parameters accepted by every endpoint, in any location
+    const UNIVERSAL_PARAMS = ["post", "base", "fn", "forceShow", "cap", "actas",
+                              "smsg", "pretty", "_", ":method:", "apiKey"];
     const FM_BODYQUERY = 0x0C;
     const FM_QUERYPOST = 0x06;
     const FM_LOCATION = 0x1C;
+    // '*': param can occur anywhere; if last, any params/responses allowed
 
     /** @param string $fn
      * @param object $uf */
@@ -103,19 +107,23 @@ class SpecValidator_API {
             }
         }
 
-        $param = [];
         foreach (array_keys($_GET) as $n) {
-            if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_", ":method:", "apiKey"], true)
-                    && ($n !== "p" || !($this->uf->paper ?? false))) {
-                    $this->error("query param `{$n}` unknown");
-                }
+            $t = self::lookup_type($n, $known, $has_suffix);
+            if ($this->ignorable_param($n)) {
+                continue;
+            }
+            if ($t === null) {
+                $this->error("query param `{$n}` unknown");
             } else if (($t & self::F_QUERY) === 0) {
                 $this->error("query param `{$n}` should be in body");
             }
         }
         foreach (array_keys($_POST) as $n) {
-            if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
+            $t = self::lookup_type($n, $known, $has_suffix);
+            if ($this->ignorable_param($n)) {
+                continue;
+            }
+            if ($t === null) {
                 $this->error("body param `{$n}` unknown");
             } else if (!isset($_GET[$n])
                        && ($t & self::F_BODY) === 0
@@ -124,8 +132,11 @@ class SpecValidator_API {
             }
         }
         foreach (array_keys($_FILES) as $n) {
-            if (($t = self::lookup_type($n, $known, $has_suffix)) === null
-                || ($t & (self::F_FILE | self::F_BODY)) === 0) {
+            $t = self::lookup_type($n, $known, $has_suffix);
+            if ($this->ignorable_param($n)) {
+                continue;
+            }
+            if ($t === null || ($t & (self::F_FILE | self::F_BODY)) === 0) {
                 $this->error("file param `{$n}` unknown");
             }
         }
@@ -135,6 +146,15 @@ class SpecValidator_API {
                 $this->error("required {$type} `{$n}` missing");
             }
         }
+    }
+
+    /** A universal parameter is accepted anywhere, in any location; `p` is
+     * likewise implicit on paper-scoped endpoints.
+     * @param string $n
+     * @return bool */
+    private function ignorable_param($n) {
+        return in_array($n, self::UNIVERSAL_PARAMS, true)
+            || ($n === "p" && ($this->uf->paper ?? false));
     }
 
     function response($jr) {

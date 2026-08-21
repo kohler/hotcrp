@@ -5,17 +5,18 @@
   },
   {
     "name": "paper", "get": true, "merge": true,
-    "parameters": "p ?forceShow",
+    "parameters": "p ?forceShow ?word_limit ?download",
     "response": "?paper"
   },
   {
     "name": "paper", "post": true, "merge": true,
     "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?=json ?forceShow *",
-    "response": "?+dry_run +change_list +valid ?+pid ?paper"
+    "response": "?+dry_run +change_list +valid ?conflict ?+pid ?paper"
   },
   {
     "name": "paper", "delete": true, "paper": true, "merge": true,
-    "parameters": "p ?dry_run ?notify ?notify_authors ?reason ?forceShow"
+    "parameters": "p ?dry_run ?if_unmodified_since ?notify ?notify_authors ?reason ?forceShow",
+    "response": "change_list valid ?conflict ?pid ?dry_run"
   },
 
   {
@@ -24,19 +25,24 @@
   },
   {
     "name": "papers", "get": true, "merge": true,
-    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?warn_missing ?forceShow",
+    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?warn_missing ?word_limit ?download ?forceShow",
     "response": "?papers"
   },
   {
     "name": "papers", "post": true, "merge": true,
-    "parameters": "?q ?t ?qt ?sort ?scoresort ?reviewer ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+json ?forceShow",
+    "parameters": "?q ?t ?qt ?sort ?scoresort ?reviewer ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+ignore_unwritable_fields ?+if_unmodified_since ?+word_limit ?+upload ?+json ?forceShow",
     "response": "?papers ?<dry_run ?status_list"
   },
 
   {
     "name": "share", "get": true, "post": true, "delete": true,
     "tags": ["Submissions"],
-    "parameters": "+share ?+expires_in"
+    "parameters": "+share ?+expires_in",
+    "response": "token"
+  },
+  {
+    "name": "share", "get": true, "post": true, "merge": true,
+    "response": "token ?token_type ?expires_at ?url"
   },
 
   {
@@ -62,7 +68,7 @@
     "name": "formatcheck", "get": true,
     "tags": ["Documents"],
     "parameters": "?doc ?p ?dt ?file ?hash ?docid ?<at ?<attachment ?soft ?detail",
-    "response": "npages nwords problem_fields has_error docid"
+    "response": "npages nwords problem_fields has_error docid ?npages_detail"
   },
   {
     "name": "archivecontents", "get": true,
@@ -73,7 +79,7 @@
   {
     "name": "upload", "post": true,
     "tags": ["Documents"],
-    "parameters": "?p ?dt ?<dtype ?start ?temp ?offset ?size ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
+    "parameters": "?p ?dt ?<dtype ?start ?temp ?offset ?size ?length ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
     "response": "token ?dt ?filename ?mimetype ?size ?ranges ?hash ?crc32 ?progress_value ?progress_max"
   },
 
@@ -148,7 +154,7 @@
   {
     "name": "search", "get": true,
     "tags": ["Search"],
-    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?search ?session",
+    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?session ?<qa ?<qo ?<qx",
     "response": "ids groups search_params ?hotlist ?fields ?papers ?statistics"
   },
   {
@@ -159,7 +165,7 @@
   {
     "name": "searchaction", "get": true, "post": true,
     "tags": ["Search"],
-    "parameters": "?action q ?t ?qt ?sort ?scoresort ?reviewer ?report ?p ?format"
+    "parameters": "action q ?t ?qt ?sort ?scoresort ?reviewer ?report ?*p ?format ?<pdefault"
   },
   {
     "name": "graphdata", "get": true,
@@ -237,16 +243,43 @@
     "response": "value pref ?prefexp ?topic_score"
   },
   {
-    "name": "review", "get": true, "post": true, "delete": true, "merge": true,
+    "name": "review", "get": true, "post": true, "delete": true,
     "tags": ["Reviews"]
+  },
+  {
+    "name": "review", "get": true, "merge": true,
+    "parameters": "p ?r ?format ?download",
+    "response": "review"
+  },
+  {
+    "name": "review", "post": true, "merge": true,
+    "parameters": "?p ?r ?u ?=json ?upload ?dry_run ?override ?if_vtag_match ?if_unmodified_since ?notify ?create_users ?disable_users ?link_fields *",
+    "response": "valid change_list ?conflict ?rid ?dry_run ?review"
+  },
+  {
+    "name": "review", "delete": true, "merge": true,
+    "parameters": "p ?r ?dry_run ?if_vtag_match ?if_unmodified_since",
+    "response": "valid change_list ?conflict ?rid ?dry_run"
   },
   {
     "name": "reviews", "get": true, "post": true,
     "tags": ["Reviews"]
   },
   {
+    "name": "reviews", "get": true, "merge": true,
+    "parameters": "?q ?t ?qt ?sort ?scoresort ?reviewer ?p ?rq ?u ?format ?download ?warn_missing",
+    "response": "reviews"
+  },
+  {
+    "name": "reviews", "post": true, "merge": true,
+    "parameters": "?=json ?upload ?dry_run ?override ?if_vtag_match ?if_unmodified_since ?notify ?create_users ?disable_users",
+    "response": "status_list ?<dry_run ?reviews"
+  },
+  {
     "name": "reviewhistory", "get": true, "merge": true,
-    "tags": ["Reviews"]
+    "tags": ["Reviews"],
+    "parameters": "p r ?expand",
+    "response": "pid rid versions"
   },
   {
     "name": "acceptreview", "post": true,
@@ -269,7 +302,8 @@
   {
     "name": "requestreview", "post": true,
     "tags": ["Reviews"],
-    "parameters": "?round =email ?=given_name ?=family_name ?=name ?=affiliation ?=override ?=reason"
+    "parameters": "?round =email ?=given_name ?=family_name ?=name ?=affiliation ?=override ?=reason ?<=firstName ?<=lastName",
+    "response": "action ?review_token"
   },
   {
     "name": "reviewrating", "get": true, "post": true,
@@ -288,31 +322,36 @@
   {
     "name": "comment", "get": true,
     "tags": ["Comments"],
-    "parameters": "c ?content",
+    "parameters": "p ?c ?response ?content ?word_limit",
     "response": "?comment",
     "response_info": {"comment": "comment"}
   },
   {
     "name": "comment", "post": true,
     "tags": ["Comments"],
-    "parameters": "c ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete ?dry_run ?=ready",
-    "response": "?conflict ?cid ?comment ?valid ?dry_run ?change_list",
+    "parameters": "p ?c ?=json ?upload ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=draft ?=blind ?=response ?=review_token ?delete ?dry_run ?if_unmodified_since ?notify ?word_limit ?<=ready",
+    "response": "valid change_list ?conflict ?cid ?dry_run ?comment",
     "response_info": {"comment": "comment"}
   },
   {
     "name": "comment", "delete": true,
-    "tags": ["Comments"]
+    "tags": ["Comments"],
+    "parameters": "p ?c ?response ?dry_run ?if_unmodified_since ?notify",
+    "response": "valid change_list ?conflict ?dry_run"
   },
   {
     "name": "comments", "get": true,
     "tags": ["Comments"],
-    "parameters": "?q ?t ?p ?warn_missing ?content",
+    "parameters": "?q ?t ?qt ?sort ?scoresort ?reviewer ?p ?response ?warn_missing ?content ?word_limit",
     "response": "comments",
     "response_info": {"comments": "[comment]"}
   },
   {
     "name": "comments", "post": true,
-    "tags": ["Comments"]
+    "tags": ["Comments"],
+    "parameters": "?=json ?upload ?dry_run ?if_unmodified_since ?notify ?word_limit",
+    "response": "status_list ?<dry_run ?comments",
+    "response_info": {"comments": "[comment]"}
   },
   {
     "name": "mentioncompletion", "get": true,
@@ -374,7 +413,7 @@
   {
     "name": "settings", "get": true, "post": true,
     "tags": ["Settings"],
-    "parameters": "?+dry_run ?=settings ?+filename ?filter ?exclude ?reset",
+    "parameters": "?+dry_run ?=settings ?+filename ?filter ?exclude ?reset ?download",
     "response": "?+dry_run +valid +change_list settings"
   },
   {
@@ -420,7 +459,7 @@
   {
     "name": "jserror", "post": true,
     "tags": ["Session"],
-    "parameters": "=error ?=url ?=lineno ?=colno ?=stack"
+    "parameters": "=error ?=url ?=lineno ?=colno ?=stack ?=detail"
   },
   {
     "name": "oauthregister", "post": true,

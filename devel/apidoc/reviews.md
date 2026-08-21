@@ -214,11 +214,6 @@ withheld.
 * param ?u email: Reviewer whose review to create or modify; defaults to the
   caller. Naming another user requires administrator privilege, and must agree
   with any reviewer named by `r` or by the data.
-* param ?create_users boolean: False refuses to create an account for a reviewer
-  who does not have one. Defaults to true, except for offline review forms.
-* param ?disable_users boolean: True disables any newly-created users.
-
-    * badge admin
 * body application/json review: A [review object](#tag-reviews) sent as a raw JSON body.
 
     * oneof body
@@ -242,6 +237,12 @@ withheld.
 
     * default true
     * badge admin
+* param ?create_users boolean: False refuses to create an account for a reviewer
+  who does not have one. Defaults to true, except for offline review forms.
+* param ?disable_users boolean: True disables any newly-created users.
+
+    * badge admin
+* param ?link_fields boolean: True means warnings contain fragment links to review fields.
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?+valid boolean: True if and only if the modification was valid.
 
@@ -381,14 +382,14 @@ submissions. The modification may be supplied as:
    sections. Every section is applied to the submission it names; there is no
    single-submission restriction.
 
-Each review is processed independently and best-effort: one item’s failure does
-not roll back the others. The response reports one entry per input review, in
-order, in `status_list`; the parallel `reviews` array holds the resulting
-[review object](#tag-reviews) for each committed item (and `null` for items that
-were invalid or skipped). A `dry_run=1` request validates every item but commits
+Each review is processed independently: one item’s failure does not roll back
+the others. The response reports one entry per input review, in order, in
+`status_list`; the parallel `reviews` array holds the resulting [review
+object](#tag-reviews) for each committed item (and `null` for items that were
+invalid or skipped). A `dry_run=1` request validates every item but commits
 nothing; a `dry_run=if_warning` request commits each item that produces no
-warnings, and `dry_run=if_error` each item that produces no errors, leaving
-`null` in `reviews` for the items they withhold.
+warnings or errors, and `dry_run=if_error` each item that produces no errors,
+leaving `null` in `reviews` for the items they withhold.
 
 The `if_vtag_match` and `if_unmodified_since` request parameters set batch-wide
 default preconditions, applied to every item that does not specify its own. In
@@ -419,6 +420,11 @@ particular, `if_vtag_match=0` requires that every saved review be newly created.
 * param ?notify boolean: False disables email notifications.
 
     * default true
+    * badge admin
+* param ?create_users boolean: False refuses to create an account for a reviewer
+  who does not have one. Defaults to true, except for offline review forms.
+* param ?disable_users boolean: True disables any newly-created users.
+
     * badge admin
 * response ?+status_list [review_update_status]: Per-review results, one entry per
   input object (same length and order as the input). Entry *i* reports `valid`,

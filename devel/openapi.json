@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2026-08-20",
+        "version": "2026-08-21",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\nParameters may be provided in the query string or (for non-GET requests) the\nrequest body. In most cases, the request body should have Content-Type\n`application/x-www-form-urlencoded` or `multipart/form-data`; exceptions are\ndocumented.\n\nResponses are formatted as JSON. Every response has an `ok` field, which is\n`true` if the request passed initial validation and `false` otherwise. Typically\n`\"ok\": false` indicates a serious error, such as a missing or malformatted\nparameter or a permission problem. `\"ok\": true` does not necessarily mean that\nthe request fully succeeded. Messages about the request, if any, are expressed\nin a [`message_list` field](#overview-message-lists); a successful response may\nstill carry errors and warnings there.\n\nOperations marked with a yellow star (<span class=\"featured-star\nfeatured-star-op\" title=\"Featured\" aria-label=\"Featured\">★</span>) are\n**featured**: the parts of the API most useful to external integrations, which\nwe aim to keep stable and well documented. When several endpoints can accomplish\na task, the featured one is usually the best choice. Other API endpoints may be\nunstable or may be intended to serve HotCRP’s own web client.\n\nExternal applications should [authenticate](#authentication) to HotCRP’s API\nusing bearer tokens obtained using Account settings > Developer.\n\n\n## Parameter types\n\n**Boolean** parameters accept `1` or `true` for true and `0` or `false` or the\nempty string for false; the values `on`/`yes` and `off`/`no` are also\naccepted. For example, `dry_run=1` and `dry_run=true` are equivalent.\n\n**Integer** and **number** parameters are written in decimal, such as `p=10`.\n**String** parameters are sent literally; an enumerated parameter is a string\nrestricted to a fixed set of values.\n\nMore complex inputs use other encodings. Some requests group parameters into\nlogical objects using structured keys, such as `named_search/1/q`; others define\nan object using JSON, supplied either as the request body or as a JSON-valued\nparameter such as `json`. Use `multipart/form-data` encoding for requests that\ninclude uploaded files; since servers limit upload size, you may need the upload\nAPI to send a large file before processing it with another call.\n\n\n## Common parameters\n\n**`p`**: The `p` parameter defines a submission ID. It can appear either in the\nquery string or immediately following `api/` in the query path:\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a positive\ndecimal integer, but some API calls accept `p=new` when defining a new\nsubmission.\n\n**`forceShow`**: HotCRP site administrators and track managers can administer\nsubmissions with which they are conflicted. For instance, when viewing a\nconflicted submission in the web UI, they see the conflicted view, but selecting\n“Override conflict” shows them a full administrator view. Conflict overriding\ncan affect many aspects of site behavior, including search order, visible tags,\nand whether modifications are accepted. The `forceShow` boolean API parameter\ndetermines whether conflicts should be overridden when that is possible. It\ndefaults to `true`, so administrators override their conflicts by default; pass\n`forceShow=false` to respect conflicts instead.\n\n**`actas`**: HotCRP site administrators can assume other users’ identities,\nallowing them to check how the site appears to users with less authority.\nThe `actas` parameter implements this in the API. Site administrators can set\n`actas` to an email address or numeric user ID; the API call will execute with\nthe named user’s privileges.\n\n**`:method:`**: The `:method:` parameter overrides the request’s HTTP method.\nSetting `:method:=GET` on a `POST` request makes HotCRP process it with `GET`\nsemantics. The parameter must appear in the URL query string, not the request\nbody, and `GET` is its only meaningful value. Use this for read requests whose\nparameters are too large to fit within a URL’s length limit: send the parameters\nin a `POST` body while still getting `GET` behavior.\n\n**`q` and search modifiers**: Many endpoints act on a set of submissions chosen\nby a search rather than by a single `p`. These share a family of search\nparameters: `q` (the search expression), `t` (the search scope—the collection of\nsubmissions to search), and the modifiers `qt`, `sort`, `scoresort`, and\n`reviewer`. They mean the same thing everywhere they appear—for example in\n[`/papers`](#get-papers), [`/reviews`](#get-reviews), and\n[`/assign`](#post-assign). See [Search](#tag-search) for the search-string\nsyntax and the full meaning of each parameter.\n\n**`pretty`**: HotCRP APIs generally pretty-print JSON results, unless (as for\n[`/graphdata`](#get-graphdata)) pretty-printing would overly expand the result.\nSet `pretty=0` to turn off pretty printing or `pretty=1` to explicitly request\nit.\n\n\n## Message lists\n\nThe **`message_list`** response field holds an array of diagnostics about a\nrequest, such as why it failed, which field was invalid, or a note about what\nchanged. It can appear on successful or unsuccessful responses and may be empty.\nThe messages appear in display order.\n\nEach entry is a **message object** whose only required field is `status`, an\ninteger that classifies the message:\n\n- `2` or `3`—an **error**; the request was rejected or could not be fully\n  processed. (`3` marks an especially serious error.)\n- `1`—a **warning**.\n- `0`—a **plain** informational message.\n- `-3`—a **success** message.\n- `-5`—an **informational note** about the preceding non-informational message\n  (rendered indented).\n- other **negative** values—notes that are not full errors, but that should be\n  rendered with highlights.\n\nA message object may also have these fields:\n\n- `message`—the human-readable text, as a **formatted-text string**: a leading\n  format sigil gives the encoding, with `<0>` for plain text, `<1>` for\n  Markdown, and `<5>` for HTML. For example, `\"<0>Entry required\"` is the plain\n  text “Entry required”. The field may be absent or empty, since a message\n  object can carry only a field status.\n- `field`—when present, names the request parameter or submission field the\n  message is about (such as `title` or `abstract`), letting a client attach the\n  diagnostic to the corresponding input or highlight that input.\n- `pos1`, `pos2`, `context`—locate the message within the text it concerns. A\n  message carries **either** `pos1` and `pos2` (byte offsets of a span in the\n  UTF-8-encoded value of `field`) **or** a `context` array `[\"…excerpt…\", pos1,\n  pos2]` that bundles an excerpt of that text with the span’s byte offsets into\n  the excerpt. These let the web client underline the exact problem text.\n\nFor example, an unsuccessful submission update might return:\n\n```json\n{\n    \"ok\": false,\n    \"message_list\": [\n        {\n            \"status\": 2,\n            \"field\": \"abstract\",\n            \"message\": \"<0>Entry required to complete submission\"\n        },\n        {\n            \"status\": 1,\n            \"field\": \"other_topics\",\n            \"message\": \"<0>Please avoid superlatives\",\n            \"context\": [\"Extremely interesting ideas\", 0, 9]\n        },\n        {\n            \"status\": 2,\n            \"message\": \"<0>Submission not saved\"\n        }\n    ]\n}\n```\n\n\n## User rights\n\nTwo terms describe administrative authority in this documentation, and they are\nnot interchangeable.\n\nA **site administrator** has site-wide authority over the whole conference.\nChairs and sysadmins are site administrators; they can act on every submission,\nthe review process, and conference settings. Endpoints restricted to this\nauthority are badged **Site admin only**.\n\nA **submission administrator** has administrative authority over a particular\nsubmission or a subset of submissions. For example, a track manager has\nadministrative authority over a track, and each submission can have an\nexplicit manager assigned from the PC. For most submissions, site\nadministrators are also submission administrators (there are exceptions\ninvolving track rights and conflicts), but a submission manager is not\nnecessarily a site administrator. Endpoints that require administrative\nauthority over specific submissions, but do not require broad site\nadministration rights, are badged **Admin only** or **Track manager only**.\n"
     },
@@ -254,6 +254,10 @@
                                         "conflict": {
                                             "type": "boolean",
                                             "description": "True when the delete was rejected by the\n`if_unmodified_since` edit-conflict check."
+                                        },
+                                        "pid": {
+                                            "$ref": "#/components/schemas/pid",
+                                            "description": "The deleted submission’s ID."
                                         }
                                     }
                                 }
@@ -748,7 +752,7 @@
                     {
                         "name": "ignore_unwritable_fields",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "type": "boolean"
                         },
@@ -858,8 +862,22 @@
                         "x-order": 16
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow",
+                        "name": "if_unmodified_since",
+                        "in": "query",
+                        "required": false,
+                        "schema": {},
                         "x-order": 17
+                    },
+                    {
+                        "name": "word_limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {},
+                        "x-order": 18
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 19
                     }
                 ],
                 "requestBody": {
@@ -2240,18 +2258,11 @@
                         "x-order": 11
                     },
                     {
-                        "name": "search",
-                        "in": "query",
-                        "required": false,
-                        "schema": {},
-                        "x-order": 12
-                    },
-                    {
                         "name": "session",
                         "in": "query",
                         "required": false,
                         "schema": {},
-                        "x-order": 13
+                        "x-order": 12
                     }
                 ],
                 "responses": {
@@ -2425,7 +2436,7 @@
                     {
                         "name": "action",
                         "in": "query",
-                        "required": false,
+                        "required": true,
                         "schema": {
                             "type": "string"
                         },
@@ -2481,6 +2492,13 @@
                         "required": false,
                         "schema": {},
                         "x-order": 9
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {},
+                        "x-order": 10
                     }
                 ],
                 "responses": {
@@ -2547,7 +2565,7 @@
                     {
                         "name": "action",
                         "in": "query",
-                        "required": false,
+                        "required": true,
                         "schema": {
                             "type": "string"
                         },
@@ -2603,6 +2621,13 @@
                         "required": false,
                         "schema": {},
                         "x-order": 9
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {},
+                        "x-order": 10
                     }
                 ],
                 "responses": {
@@ -6010,31 +6035,6 @@
                         "x-order": 2
                     },
                     {
-                        "name": "create_users",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "False refuses to create an account for a reviewer\nwho does not have one. Defaults to true, except for offline review forms.",
-                        "x-order": 3
-                    },
-                    {
-                        "name": "disable_users",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "True disables any newly-created users.",
-                        "x-badges": [
-                            {
-                                "name": "Admin only"
-                            }
-                        ],
-                        "x-order": 4
-                    },
-                    {
                         "name": "upload",
                         "in": "query",
                         "required": false,
@@ -6046,7 +6046,7 @@
                             "group": "body",
                             "element": "upload"
                         },
-                        "x-order": 8
+                        "x-order": 6
                     },
                     {
                         "name": "dry_run",
@@ -6056,7 +6056,7 @@
                             "$ref": "#/components/schemas/dry_run_mode"
                         },
                         "description": "True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors.",
-                        "x-order": 9
+                        "x-order": 7
                     },
                     {
                         "name": "override",
@@ -6066,7 +6066,7 @@
                             "type": "boolean"
                         },
                         "description": "Administrators only: bypass deadline and other soft checks.",
-                        "x-order": 10
+                        "x-order": 8
                     },
                     {
                         "name": "if_vtag_match",
@@ -6076,7 +6076,7 @@
                             "type": "integer"
                         },
                         "description": "Reject the modification unless the review’s\ncurrent version tag equals this value. `0` matches only a review that does not\nyet exist, so `r=new` implies `if_vtag_match=0`.",
-                        "x-order": 11
+                        "x-order": 9
                     },
                     {
                         "name": "if_unmodified_since",
@@ -6086,7 +6086,7 @@
                             "type": "string"
                         },
                         "description": "Reject the modification if the review has\nbeen modified since this time (a Unix timestamp, or `0`).",
-                        "x-order": 12
+                        "x-order": 10
                     },
                     {
                         "name": "notify",
@@ -6102,7 +6102,42 @@
                                 "name": "Admin only"
                             }
                         ],
+                        "x-order": 11
+                    },
+                    {
+                        "name": "create_users",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False refuses to create an account for a reviewer\nwho does not have one. Defaults to true, except for offline review forms.",
+                        "x-order": 12
+                    },
+                    {
+                        "name": "disable_users",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True disables any newly-created users.",
+                        "x-badges": [
+                            {
+                                "name": "Admin only"
+                            }
+                        ],
                         "x-order": 13
+                    },
+                    {
+                        "name": "link_fields",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True means warnings contain fragment links to review fields.",
+                        "x-order": 14
                     }
                 ],
                 "requestBody": {
@@ -6119,9 +6154,10 @@
                                             "group": "body",
                                             "element": "json"
                                         },
-                                        "x-order": 7
+                                        "x-order": 5
                                     }
-                                }
+                                },
+                                "additionalProperties": true
                             }
                         },
                         "application/json": {
@@ -6133,7 +6169,7 @@
                                 "group": "body",
                                 "element": "application/json"
                             },
-                            "x-order": 5
+                            "x-order": 3
                         },
                         "text/plain": {
                             "schema": {
@@ -6144,7 +6180,7 @@
                                 "group": "body",
                                 "element": "text/plain"
                             },
-                            "x-order": 6
+                            "x-order": 4
                         }
                     }
                 },
@@ -6348,6 +6384,25 @@
                     {
                         "$ref": "#/components/parameters/forceShow",
                         "x-order": 8
+                    },
+                    {
+                        "$ref": "#/components/parameters/qt",
+                        "x-order": 9
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort",
+                        "x-order": 10
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort",
+                        "x-order": 11
+                    },
+                    {
+                        "name": "warn_missing",
+                        "in": "query",
+                        "required": false,
+                        "schema": {},
+                        "x-order": 12
                     }
                 ],
                 "responses": {
@@ -6398,7 +6453,7 @@
             },
             "post": {
                 "summary": "Create or modify multiple reviews",
-                "description": "Create or modify many reviews in one request. Unlike [`review`\nPOST](#post-review), this endpoint is not tied to a single submission: each\nreview names its own submission, and the batch may span any number of\nsubmissions. The modification may be supplied as:\n\n1. A JSON array of [review objects](#tag-reviews) (as a raw `application/json`\n   body, in the `json` form field, or via an [upload token](#post-upload)). Each\n   object names its submission with `pid` and, optionally, its review with `rid`\n   (`\"rid\": \"new\"` requires a freshly-created review). An object may also carry\n   its own `if_vtag_match` or `if_unmodified_since` precondition to guard that\n   item’s edit (see [`review` POST](#post-review)).\n2. An offline review form in plain text (a `text/plain` body, a `file` upload,\n   or an [upload token](#post-upload)) containing one or more `==+== Paper`\n   sections. Every section is applied to the submission it names; there is no\n   single-submission restriction.\n\nEach review is processed independently and best-effort: one item’s failure does\nnot roll back the others. The response reports one entry per input review, in\norder, in `status_list`; the parallel `reviews` array holds the resulting\n[review object](#tag-reviews) for each committed item (and `null` for items that\nwere invalid or skipped). A `dry_run=1` request validates every item but commits\nnothing; a `dry_run=if_warning` request commits each item that produces no\nwarnings, and `dry_run=if_error` each item that produces no errors, leaving\n`null` in `reviews` for the items they withhold.\n\nThe `if_vtag_match` and `if_unmodified_since` request parameters set batch-wide\ndefault preconditions, applied to every item that does not specify its own. In\nparticular, `if_vtag_match=0` requires that every saved review be newly created.\n",
+                "description": "Create or modify many reviews in one request. Unlike [`review`\nPOST](#post-review), this endpoint is not tied to a single submission: each\nreview names its own submission, and the batch may span any number of\nsubmissions. The modification may be supplied as:\n\n1. A JSON array of [review objects](#tag-reviews) (as a raw `application/json`\n   body, in the `json` form field, or via an [upload token](#post-upload)). Each\n   object names its submission with `pid` and, optionally, its review with `rid`\n   (`\"rid\": \"new\"` requires a freshly-created review). An object may also carry\n   its own `if_vtag_match` or `if_unmodified_since` precondition to guard that\n   item’s edit (see [`review` POST](#post-review)).\n2. An offline review form in plain text (a `text/plain` body, a `file` upload,\n   or an [upload token](#post-upload)) containing one or more `==+== Paper`\n   sections. Every section is applied to the submission it names; there is no\n   single-submission restriction.\n\nEach review is processed independently: one item’s failure does not roll back\nthe others. The response reports one entry per input review, in order, in\n`status_list`; the parallel `reviews` array holds the resulting [review\nobject](#tag-reviews) for each committed item (and `null` for items that were\ninvalid or skipped). A `dry_run=1` request validates every item but commits\nnothing; a `dry_run=if_warning` request commits each item that produces no\nwarnings or errors, and `dry_run=if_error` each item that produces no errors,\nleaving `null` in `reviews` for the items they withhold.\n\nThe `if_vtag_match` and `if_unmodified_since` request parameters set batch-wide\ndefault preconditions, applied to every item that does not specify its own. In\nparticular, `if_vtag_match=0` requires that every saved review be newly created.\n",
                 "operationId": "reviews-post",
                 "x-order": 30,
                 "tags": [
@@ -6492,6 +6547,31 @@
                             }
                         ],
                         "x-order": 8
+                    },
+                    {
+                        "name": "create_users",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False refuses to create an account for a reviewer\nwho does not have one. Defaults to true, except for offline review forms.",
+                        "x-order": 9
+                    },
+                    {
+                        "name": "disable_users",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True disables any newly-created users.",
+                        "x-badges": [
+                            {
+                                "name": "Admin only"
+                            }
+                        ],
+                        "x-order": 10
                     }
                 ],
                 "requestBody": {
@@ -7512,7 +7592,7 @@
                     {
                         "name": "c",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "type": "string"
                         },
@@ -7896,7 +7976,7 @@
                     {
                         "name": "c",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "type": "string"
                         },
@@ -8095,11 +8175,34 @@
                         "x-order": 4
                     },
                     {
+                        "$ref": "#/components/parameters/qt",
+                        "x-order": 5
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort",
+                        "x-order": 6
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort",
+                        "x-order": 7
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer",
+                        "x-order": 8
+                    },
+                    {
+                        "name": "response",
+                        "in": "query",
+                        "required": false,
+                        "schema": {},
+                        "x-order": 9
+                    },
+                    {
                         "name": "warn_missing",
                         "in": "query",
                         "required": false,
                         "schema": {},
-                        "x-order": 5
+                        "x-order": 10
                     }
                 ],
                 "responses": {
@@ -9856,6 +9959,13 @@
                         },
                         "description": "File name for `settings` object (for error messages)",
                         "x-order": 5
+                    },
+                    {
+                        "name": "download",
+                        "in": "query",
+                        "required": false,
+                        "schema": {},
+                        "x-order": 6
                     }
                 ],
                 "requestBody": {

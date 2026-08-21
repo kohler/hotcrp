@@ -7727,7 +7727,6 @@ function cmt_render_form(cj) {
         btnbox = $e("div", "btnbox"),
         eform = $e("form", "s-comment-form");
     cj.review_token && eform.append(hidden_input("review_token", cj.review_token));
-    cj.by_author && eform.append(hidden_input("by_author", 1));
     cj.response && eform.append(hidden_input("response", cj.response));
 
     const fmt = render_text.format(cj.format),
@@ -7876,6 +7875,7 @@ function cmt_hint(text, warning) {
 
 function cmt_visibility_change() {
     const form = this.closest("form"),
+        cj = cj_find(this),
         vis = form.elements.visibility,
         topic = form.elements.topic,
         is_paper = topic && topic.value === "paper" && (!vis || vis.value !== "admin"),
@@ -7884,7 +7884,7 @@ function cmt_visibility_change() {
         m = [];
     let aunotify = false;
 
-    if (vis && vis.type === "select-one" && !form.elements.by_author) {
+    if (vis && vis.type === "select-one" && !cj.by_author) {
         vis.firstChild.textContent = would_auvis
             ? "authors and reviewers" : "authors (eventually) and reviewers";
         if (vis.value === "au") {
