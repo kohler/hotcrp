@@ -1069,6 +1069,8 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
         const vd = {
             "0": xs(d[0]),
             "1": ys(d[1]),
+            d0: d[0],
+            d1: d[1],
             data: [d],
             cc: d[3],
             next: null,
@@ -1083,7 +1085,13 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
         if (vp) {
             const dx = Math.abs(vp[0] - vd[0]),
                 dy = Math.abs(vp[1] - vd[1]);
-            if (dx > 2 || dy > 2 || dx * dx + dy * dy > 4) {
+            // group points within 2px of display space,
+            // and within 1 of each coordinate
+            if (dx > 2
+                || dy > 2
+                || Math.abs(d[0] - vp.d0) >= 1
+                || Math.abs(d[1] - vp.d1) >= 1
+                || dx * dx + dy * dy > 4) {
                 vp = null;
             }
         }
