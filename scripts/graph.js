@@ -21,14 +21,14 @@ const PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
     s: 4, S: 4, q: 4, Q: 4, t: 2, T: 2, a: 7, A: 7, b: 1, B: 1
 };
-let normalized_path_cache = {}, normalized_path_cache_size = 0;
+const normalized_path_cache = new Map();
 
 function svg_path_number_of_items(s) {
     if (s instanceof SVGPathElement) {
         s = s.getAttribute("d");
     }
-    if (normalized_path_cache[s]) {
-        return normalized_path_cache[s].length;
+    if (normalized_path_cache.has(s)) {
+        return normalized_path_cache.get(s).length;
     } else {
         return s.replace(/[^A-DF-Za-df-z]+/g, "").length;
     }
@@ -69,8 +69,8 @@ function normalize_svg_path(s) {
     if (s instanceof SVGPathElement) {
         s = s.getAttribute("d");
     }
-    if (normalized_path_cache[s]) {
-        return normalized_path_cache[s];
+    if (normalized_path_cache.has(s)) {
+        return normalized_path_cache.get(s);
     }
 
     let res = [],
@@ -179,12 +179,10 @@ function normalize_svg_path(s) {
         cy = a[a.length - 1];
     }
 
-    if (normalized_path_cache_size >= 1000) {
-        normalized_path_cache = {};
-        normalized_path_cache_size = 0;
+    if (normalized_path_cache.size >= 1000) {
+        normalized_path_cache.clear();
     }
-    normalized_path_cache[s] = res;
-    ++normalized_path_cache_size;
+    normalized_path_cache.set(s, res);
     return res;
 }
 
@@ -536,7 +534,10 @@ const default_axisinfo = {
     make_axis: numeric_make_axis,
     rewrite: function () {},
     render_onto: function (e, value) {
-        e.append(this.scale.tickFormat()(value));
+        const d = this.scale.domain(), r = this.scale.range(),
+            p = d3.precisionFixed(Math.abs(d[1] - d[0]) / Math.min(Math.abs(r[1] - r[0]), 300)),
+            v = d3.format(`,.${p}f`)(value);
+        e.append(v.replace(/\.0+$/, ""));
     },
     search: function () { return null; }
 };
@@ -685,7 +686,7 @@ function score_axisinfo(rf) {
             this.selectAll("g.tick text").each(function () {
                 const d = d3.select(this), v = +d.text();
                 d.attr("class", "sv");
-                d.attr("fill", rf.color(v));
+                d.style("fill", rf.color(v));
                 if (!rf.default_numeric && v) {
                     let vt = rf.unparse_symbol(v);
                     if (typeof vt === "number") {
@@ -860,7 +861,7 @@ function graph_cdf(element, args) {
         var p = svg.append("path").attr("data-index", i)
             .datum(d)
             .attr("class", "gcdf" + (cl ? " " + cl : ""))
-            .attr("stroke", ensure_pattern(series[i].className, "gcdf"))
+            .style("stroke", ensure_pattern(series[i].className, "gcdf"))
             .attr("d", line);
         if (series[i].dashpattern)
             p.attr("stroke-dasharray", series[i].dashpattern.join(","));
@@ -912,7 +913,7 @@ function graph_cdf(element, args) {
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             if (args.cdf_tooltip_position) {
                 const f = $frag();
-                hovered_series.label && f.append(hovered_series.label + " ");
+                hovered_series.label && f.append(hovered_series.label + ": ");
                 args.x.axisinfo.render_onto.call(args.x, f, x.invert(p[0]), true);
                 f.append(", ");
                 args.y.axisinfo.render_onto.call(args.y, f, y.invert(p[1]), true);
@@ -1940,7 +1941,8 @@ function graph_boxplot(element, args) {
             .data(outliers.data)
             .enter()
               .append("circle")
-              .attr("class", function (d) { return "gbox outlier " + d[3]; }));
+              .attr("class", function (d) { return "gbox outlier " + d.cc; })
+              .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
     draw_axes(svg, axes[0], axes[1], args);
 

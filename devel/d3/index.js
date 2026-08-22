@@ -4,6 +4,7 @@ export * from "d3-quadtree";
 export * from "d3-array";
 export * from "d3-scale";
 export * from "d3-force";
+export { format, precisionFixed } from "d3-format";
 export * from "d3-drag";
 export { line, arc } from "d3-shape";
 

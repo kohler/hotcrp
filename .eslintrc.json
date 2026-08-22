@@ -8,9 +8,10 @@
         "ecmaVersion": "latest"
     },
     "globals": {
+        "Map": "readonly",
         "Set": "readonly",
-        "WeakMap": "readonly",
-        "Promise": "readonly"
+        "Promise": "readonly",
+        "WeakMap": "readonly"
     },
     "rules": {
         "no-empty": 0,

@@ -7256,9 +7256,8 @@ Checkbox_ReviewField.prototype.unparse_symbol = function (val) {
         return "½✓";
     } else if (val < 0.875) {
         return "¾✓";
-    } else {
-        return "✓";
     }
+    return "✓";
 };
 
 Checkbox_ReviewField.prototype.render_in = function (fv, rrow, fe) {
@@ -7307,14 +7306,14 @@ Checkboxes_ReviewField.prototype.render_in = function (fv, rrow, fe) {
 
 
 hotcrp.make_review_field = function (fj) {
-    if (fj.type === "radio" || fj.type === "dropdown")
+    if (fj.type === "radio" || fj.type === "dropdown") {
         return new Score_ReviewField(fj);
-    else if (fj.type === "checkbox")
+    } else if (fj.type === "checkbox") {
         return new Checkbox_ReviewField(fj);
-    else if (fj.type === "checkboxes")
+    } else if (fj.type === "checkboxes") {
         return new Checkboxes_ReviewField(fj);
-    else
-        return new ReviewField(fj);
+    }
+    return new ReviewField(fj);
 };
 
 hotcrp.set_review_form = function (rfj) {
@@ -12501,20 +12500,20 @@ hotcrp.update_tag_decoration = function ($title, html) {
 
 /* pattern fill functions */
 var ensure_pattern = (function () {
-let fmap = {},
-    knownmap = {
-        "tag-white": true, "tag-red": true, "tag-orange": true, "tag-yellow": true,
-        "tag-green": true, "tag-blue": true, "tag-purple": true, "tag-gray": true,
-        "badge-white": true, "badge-red": true, "badge-orange": true, "badge-yellow": true,
-        "badge-green": true, "badge-blue": true, "badge-purple": true, "badge-gray": true,
-        "badge-pink": true
-    },
+let fmap = new Map(),
+    knownmap = new Set([
+        "tag-white", "tag-red", "tag-orange", "tag-yellow",
+        "tag-green", "tag-blue", "tag-purple", "tag-gray",
+        "badge-white", "badge-red", "badge-orange", "badge-yellow",
+        "badge-green", "badge-blue", "badge-purple", "badge-gray",
+        "badge-pink"
+    ]),
     params = {
-        "": {prefix: "", size: 34, incr: 8, type: 0},
-        "gdot": {prefix: "gdot ", size: 12, incr: 3, type: 1},
-        "glab": {prefix: "glab ", size: 20, incr: 6, type: 1},
-        "gcdf": {prefix: "gcdf ", size: 12, incr: 3, type: 1},
-        "badge": {prefix: "badge ", size: 12, incr: 3, type: 2}
+        "": {prefix: "", size: 34, incr: 8, need_scheme: true},
+        "gdot": {prefix: "gdot ", size: 12, incr: 3, graph: true},
+        "glab": {prefix: "glab ", size: 20, incr: 6, graph: true},
+        "gcdf": {prefix: "gcdf ", size: 12, incr: 3, graph: true, cdf: true},
+        "badge": {prefix: "badge ", size: 12, incr: 3}
     },
     stylesheet = null,
     svgdef = null,
@@ -12575,14 +12574,16 @@ function color_compare(a, b) {
     }
     return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
 }
-const class_analyses = {tagbg: null, badge: null};
+const class_analyses = new Map([["tagbg", null], ["badge", null]]);
 function analyze_class(k) {
-    if (k in class_analyses) {
-        return class_analyses[k];
+    if (class_analyses.has(k)) {
+        return class_analyses.get(k);
     }
-    function set(type, c) {
-        type && (c.type = type);
-        return (class_analyses[k] = type ? c : null);
+    function set(type, ka) {
+        type && (ka.type = type);
+        const v = type ? ka : null;
+        class_analyses.set(k, v);
+        return v;
     }
     let m;
     if (k.startsWith("tag-rgb-")
@@ -12625,50 +12626,58 @@ function analyze_class(k) {
             if (Math.min(c.r, c.g, c.b) > 200)
                 rules.push("border: 1px solid #333333;", "padding: 1px 0.2em 2px;");
         }
-        ensure_stylesheet().insertRule(".".concat(k, " { ", rules.join(" "), " }"), 0);
+        ensure_stylesheet().insertRule(`.${k} { ${rules.join(" ")} }`, 0);
         if (c.l >= 0.3) {
-            ensure_stylesheet().insertRule("a.".concat(k, ":hover { color: #c45500; border-color: #c45500; }"), 0);
+            ensure_stylesheet().insertRule(`a.${k}:hover { color: #c45500; border-color: #c45500; }`, 0);
         }
         return set("badge", c);
     }
-    const c = probe_bg(k, "");
-    return c ? set("bg", c) : set();
-}
-function probe_bg(k, scheme) {
-    if (testdiv === null) {
-        testdiv = document.createElement("div");
-        testdiv.style.display = "none";
-        document.body.appendChild(testdiv);
+    if ((m = probe(k, "", false))) {
+        return set("bg", m);
     }
-    testdiv.className = k.startsWith("tag-") ? k + " tagbg" : k;
+    if ((m = probe(k, "", true))) {
+        return set("fg", m);
+    }
+    return set();
+}
+function probe(k, scheme, fg) {
+    if (testdiv === null) {
+        const e = document.createElement("div");
+        e.style.display = "none";
+        e.style.color = "transparent";
+        document.body.appendChild(e);
+        e.appendChild((testdiv = document.createElement("div")));
+    }
+    testdiv.className = !fg && k.startsWith("tag-") ? k + " tagbg" : k;
     testdiv.style.colorScheme = scheme;
-    const value = window.getComputedStyle(testdiv).backgroundColor,
+    const value = window.getComputedStyle(testdiv)[fg ? "color" : "backgroundColor"],
         m = value.match(/^rgba?\(([\d.]+), ([\d.]+), ([\d.]+)(?:, ([\d.]+))?\)$/);
     if (m && (m[4] === undefined || +m[4] > 0)) {
         return make_color(k, +m[1], +m[2], +m[3], m[4] === undefined ? 1.0 : +m[4]);
     }
     return null;
 }
-function light_color(color) {
-    // graph fills and strokes are always light-scheme
-    if (color.light === null) {
-        const c = /-rgb-/.test(color.k) ? null : probe_bg(color.k, "light");
-        color.light = c !== null
-            && (c.r !== color.r || c.g !== color.g || c.b !== color.b || c.a !== color.a)
-            ? c : color;
+function light_color(ka) {
+    // since graph entities are often semi-transparent, they look better under
+    // light color-scheme
+    if (ka.light === null) {
+        ka.light = ka;
+        const lka = !ka.k.includes("-rgb-") && probe(ka.k, "light", ka.type === "fg");
+        if (lka && (lka.r !== ka.r || lka.g !== ka.g || lka.b !== ka.b || lka.a !== ka.a))
+            ka.light = lka;
     }
-    return color.light;
+    return ka.light;
 }
-function bgcolor(color) {
-    return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
+function bgcolor(ka) {
+    return `rgba(${ka.r}, ${ka.g}, ${ka.b}, ${ka.a})`;
 }
-function gfillcolor(color) {
-    if (color.gfill !== null) {
-        return color.gfill;
+function gfillcolor(ka) {
+    if (ka.gfill !== null) {
+        return ka.gfill;
     }
-    let r = color.r / 255,
-        g = color.g / 255,
-        b = color.b / 255,
+    let r = ka.r / 255,
+        g = ka.g / 255,
+        b = ka.b / 255,
         min = Math.min(r, g, b),
         a, d;
     if (min < 0.3) {
@@ -12679,35 +12688,39 @@ function gfillcolor(color) {
         b = d + a * b;
         min = 0.3;
     }
-    a = Math.max(0.2 + (color.l < 0.9 ? 0 : 4 * (color.l - 0.9)), 1 - min);
+    a = Math.max(0.2 + (ka.l < 0.9 ? 0 : 4 * (ka.l - 0.9)), 1 - min);
     d = 1 - a;
     r = Math.floor(255.5 * (r - d) / a);
     g = Math.floor(255.5 * (g - d) / a);
     b = Math.floor(255.5 * (b - d) / a);
-    color.gfill = [r, g, b, a];
-    return color.gfill;
+    return (ka.gfill = [r, g, b, a]);
 }
-function fillcolor(color) {
-    const gf = gfillcolor(color);
+function fillcolor(ka) {
+    const gf = gfillcolor(ka);
     return `rgba(${gf[0]}, ${gf[1]}, ${gf[2]}, ${gf[3]})`;
 }
-function strokecolor(color) {
-    let gf = gfillcolor(color);
-    if (color.l > 0.75) {
-        const f = 0.75 / color.l;
+function strokecolor(ka) {
+    let gf = gfillcolor(ka);
+    if (ka.l > 0.75) {
+        const f = 0.75 / ka.l;
         gf = [gf[0] * f, gf[1] * f, gf[2] * f, gf[3]];
     }
     return `rgba(${gf[0]}, ${gf[1]}, ${gf[2]}, 0.8)`;
 }
-function paramcolor(param, color) {
-    return param.type === 1 ? fillcolor(light_color(color)) : bgcolor(color);
+function paramcolor(param, ka) {
+    if (param.cdf) {
+        return strokecolor(light_color(ka));
+    } else if (param.graph) {
+        return fillcolor(light_color(ka));
+    }
+    return bgcolor(ka);
 }
-function ensure_graph_rules(color) {
-    if (!color.has_graph) {
-        const stylesheet = ensure_stylesheet(), k = color.k, lc = light_color(color);
-        stylesheet.insertRule(`.gcdf.${k}, .gdot.${k}, .gbar.${k}, .gbox.${k} { stroke: ${strokecolor(lc)}; }`, 0);
-        stylesheet.insertRule(`.gdot.${k}, .gbar.${k}, .gbox.${k}, .glab.${k} { fill: ${fillcolor(lc)}; }`, 0);
-        color.has_graph = true;
+function ensure_graph_rules(ka) {
+    if (!ka.has_graph) {
+        ka.has_graph = true;
+        const stylesheet = ensure_stylesheet(), k = ka.k, lka = light_color(ka);
+        stylesheet.insertRule(`.gcdf.${k}, .gdot.${k}, .gbar.${k}, .gbox.${k} { stroke: ${strokecolor(lka)}; }`, 0);
+        stylesheet.insertRule(`.gdot.${k}, .gbar.${k}, .gbox.${k}, .glab.${k} { fill: ${fillcolor(lka)}; }`, 0);
     }
 }
 function compute_scheme(colors, dots) {
@@ -12715,8 +12728,8 @@ function compute_scheme(colors, dots) {
     const darea = dots.length ? (dots.length === 1 ? 8 : 16) * 0.0276 : 0;
     let lbar = 0, mixed = false;
     if (colors.length) {
-        for (const c of colors) {
-            lbar += c.l;
+        for (const ka of colors) {
+            lbar += ka.l;
         }
         lbar = (1 - darea) * (lbar / colors.length);
     } else {
@@ -12742,20 +12755,22 @@ function compute_scheme(colors, dots) {
 }
 return function (classes, type) {
     if (!classes
-        || (type === "" && classes.endsWith(" tagbg") && knownmap[classes.slice(0, -6)]))
+        || (type === "" && classes.endsWith(" tagbg") && knownmap.has(classes.slice(0, -6)))) {
         return null;
+    }
     // quick check on classes in input order
     const param = params[type || ""] || params[""],
         index = param.prefix + classes;
-    if (index in fmap)
-        return fmap[index];
+    if (fmap.has(index)) {
+        return fmap.get(index);
+    }
     // canonicalize classes, sort by color and luminance
     const xtags = classes.split(/\s+/), colors = [], dots = [];
     for (const k of xtags) {
         const ka = analyze_class(k);
-        if (ka && ka.type === "bg" && colors.indexOf(ka) < 0) {
+        if (ka && (ka.type === "bg" || ka.type === "fg") && colors.indexOf(ka) < 0) {
             colors.push(ka);
-            param.type === 1 && ensure_graph_rules(ka);
+            param.graph && ensure_graph_rules(ka);
         } else if (ka && ka.type === "dot" && dots.indexOf(ka) < 0) {
             dots.push(ka);
         }
@@ -12771,19 +12786,20 @@ return function (classes, type) {
         tags.push(c.k);
     }
     const cindex = param.prefix + tags.join(" ");
-    if (cindex in fmap || (tags.length < 2 && dots.length === 0)) {
-        fmap[index] = fmap[cindex] || null;
-        return fmap[index];
+    if (fmap.has(cindex) || (tags.length < 2 && dots.length === 0)) {
+        const rv = fmap.get(cindex) || null;
+        fmap.set(index, rv);
+        return rv;
     }
     // create pattern
     const id = "svgpat__" + cindex.replace(/\s+/g, "__"),
         size = param.size + Math.max(0, colors.length - 2) * param.incr,
         sw = size / colors.length,
         svgns = "http://www.w3.org/2000/svg",
-        pathsfx = " 0l".concat(-size, " ", size, "l", sw, " 0l", size, " ", -size, "z"),
+        pathsfx = ` 0l${-size} ${size}l${sw} 0l${size} ${-size}z`,
         dxs = [];
     for (let i = 0; i !== colors.length; ++i) {
-        dxs.push("M".concat(sw * i, pathsfx, "M", sw * i + size, pathsfx), paramcolor(param, colors[i]));
+        dxs.push(`M${sw * i}${pathsfx}M${sw * i + size}${pathsfx}`, paramcolor(param, colors[i]));
     }
     if (dots.length > 0) {
         const d = size * 0.125, r = d * 0.75, pds = [],
@@ -12797,7 +12813,7 @@ return function (classes, type) {
             dxs.push(pds[i], paramcolor(param, dots[i]));
         }
     }
-    if (param.type === 1) {
+    if (param.graph) {
         if (svgdef === null) {
             svgdef = $svg("defs");
             let svg = $svg("svg", {width: 0, height: 0}, svgdef);
@@ -12815,11 +12831,13 @@ return function (classes, type) {
             t.push(`<path d="${dxs[i]}" fill="${dxs[i + 1]}"></path>`);
         }
         t.push('</svg>');
-        const extra = param.type === 0 ? compute_scheme(colors, dots) : "";
-        ensure_stylesheet().insertRule(".".concat(tags.join("."), " { background-image: url(data:image/svg+xml;base64,", btoa(t.join("")), ");", extra, " }"), 0);
+        const extra = param.need_scheme ? compute_scheme(colors, dots) : "";
+        ensure_stylesheet().insertRule(`.${tags.join(".")} { background-image: url(data:image/svg+xml;base64,${btoa(t.join(""))});${extra} }`, 0);
     }
-    fmap[index] = fmap[cindex] = "url(#" + id + ")";
-    return fmap[index];
+    const rv = "url(#" + id + ")";
+    fmap.set(cindex, rv);
+    fmap.set(index, rv);
+    return rv;
 };
 })();
 
@@ -15504,26 +15522,23 @@ function make_fm9(n, max, flip, categorical) {
         return function (i) {
             return Math.round(+i - 1) % max + 1;
         };
-    } else {
-        var f = (max - 1) / (n - 1);
-        if (flip) {
-            return function (i) {
-                return Math.max(Math.min(Math.round((n - i) * f) + 1, max), 1);
-            };
-        } else {
-            return function (i) {
-                return Math.max(Math.min(Math.round((+i - 1) * f) + 1, max), 1);
-            };
-        }
     }
+    const f = (max - 1) / (n - 1);
+    if (flip) {
+        return function (i) {
+            return Math.max(Math.min(Math.round((n - i) * f) + 1, max), 1);
+        };
+    }
+    return function (i) {
+        return Math.max(Math.min(Math.round((+i - 1) * f) + 1, max), 1);
+    };
 }
 
-function rgb_array_for(svx) {
+function rgb_array_for(svx, color_scheme) {
     if (!sccolor[svx]) {
         var sp = document.createElement("span"), st, m;
         sp.className = "svb hidden " + svx;
-        // graphs use light-scheme score colors in every theme
-        sp.style.colorScheme = "light";
+        sp.style.colorScheme = color_scheme || "";
         document.body.appendChild(sp);
         sccolor[svx] = [0, 0, 0];
         st = window.getComputedStyle(sp).color;
@@ -15540,15 +15555,15 @@ return function (n, scheme, flip) {
         svk = sci[2] || scheme;
     if (svk !== "sv")
         svk = "sv-" + svk;
-    function rgb_array(val) {
-        return rgb_array_for(svk + fm9(val));
+    function rgb_array(val, color_scheme) {
+        return rgb_array_for(svk + fm9(val), color_scheme);
     }
     return {
         categorical: (sci[0] & 2) !== 0,
         max: sci[1],
         rgb_array: rgb_array,
-        color: function (val) {
-            var x = rgb_array(val);
+        color: function (val, color_scheme) {
+            const x = rgb_array(val, color_scheme);
             return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
         },
         className: function (val) {
@@ -15623,7 +15638,7 @@ function scorechart1_s1(sc) {
         gray = color_unparse(graycolor);
 
     var svg = $svg("svg", {class: "scorechart-s1", width: cwidth, height: cheight},
-        $svg("path", {stroke: gray, fill: "none", d: "M0.5 ".concat(cheight - blockfull - 1, "v", blockfull + 0.5, "h", cwidth - 1, "v", -(blockfull + 0.5))}));
+        $svg("path", {stroke: gray, fill: "none", d: `M0.5 ${cheight - blockfull - 1}v${blockfull + 0.5}h${cwidth - 1}v${-(blockfull + 0.5)}`}));
 
     if (!anal.v[anal.flip ? n - 1 : 0]) {
         svg.appendChild($svg("text", {x: blockpad, y: cheight - 2, fill: gray}, anal.lo));
@@ -15633,7 +15648,7 @@ function scorechart1_s1(sc) {
     }
 
     function rectd(x, y) {
-        return 'M'.concat(blockfull * x + blockpad, ' ', cheight - 1 - blockfull * y, 'h', blocksize + 1, 'v', blocksize + 1, 'h', -(blocksize + 1), 'z');
+        return `M${blockfull * x + blockpad} ${cheight - 1 - blockfull * y}h${blocksize + 1}v${blocksize + 1}h${-(blocksize + 1)}z`;
     }
 
     for (var x = 0; x < n; ++x) {

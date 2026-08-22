@@ -1,6 +1,6 @@
 {
   "name": "d3-hotcrp",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "scripts": {
     "prepare": "rollup -c"
   },
