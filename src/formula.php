@@ -2478,7 +2478,7 @@ final class Formula implements JsonSerializable {
             return $index;
         } else if ($this->_external_index_type === Fexpr::IDX_PREF) {
             [$uid, $pref] = $index;
-            assert($pref instanceof ReviewPreference);
+            assert($pref instanceof PaperReviewPreference);
             return $this->user->can_view_preference($prow)
                 ? $prow->review_by_user($uid)
                 : null;

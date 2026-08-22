@@ -1533,6 +1533,56 @@ class Formulas_Tester {
     }
 
 
+    function test_graph_pref_dataset_filtering() {
+        // A preference-indexed graph splits its data across datasets like any
+        // other graph. `_filter_queries` must resolve each preference element
+        // to its preferrer's review -- via `Formula::indexer_to_rrow` -- so a
+        // per-review dataset search can refine which preferences it contains.
+        // Regression: the element arrives as a `[cid, preference]` pair, so a
+        // raw `review_by_user()` saw an array, every review lookup returned
+        // null, and every dataset matched every preference.
+        $conf = $this->conf;
+        // Reviews on paper 19 score 4 (lixia), 5 (mjh), 3 (floyd); give each of
+        // those reviewers a preference on the same paper. (Created here so the
+        // test stands alone, not only after test_setup_reviews.)
+        save_review(19, $this->u_lixia, ["ovemer" => 4, "revexp" => 2, "ready" => true]);
+        save_review(19, $this->u_mjh, ["ovemer" => 5, "revexp" => 3, "ready" => true]);
+        save_review(19, $this->u_floyd, ["ovemer" => 3, "revexp" => 1, "ready" => true]);
+        $conf->qe("delete from PaperReviewPreference where paperId=19");
+        foreach (["lixia@cs.ucla.edu" => 1, "mjh@isi.edu" => 2, "floyd@ee.lbl.gov" => 3] as $email => $pv) {
+            $conf->qe("insert into PaperReviewPreference set paperId=19, contactId=?, preference=?",
+                $conf->checked_user_by_email($email)->contactId, $pv);
+        }
+
+        // total preference count per dataset group (bar `sx`)
+        $totals = function ($q1, $q2) {
+            $fg = new FormulaGraph($this->u_chair, "bars", "pref", "sum(1)");
+            $fg->add_dataset(new FormulaGraphDataset($q1, null, "", "1"));
+            $fg->add_dataset(new FormulaGraphDataset($q2, null, "", "2"));
+            xassert(!$fg->has_error());
+            $t = [];
+            foreach ($fg->graph_json([])["data"] as $bar) {
+                $sx = $bar->sx ?? 0;
+                $t[$sx] = ($t[$sx] ?? 0) + $bar->y;
+            }
+            ksort($t);
+            return array_values($t);
+        };
+
+        // dataset 1 holds every preference on paper 19; dataset 2 restricts to
+        // preferences whose preferrer's review scores 5 -- mjh alone. Under the
+        // bug both datasets held all three.
+        xassert_eqq($totals("19", "19 ovemer:5"), [3, 1]);
+
+        // and two disjoint papers partition their preferences by paper
+        $conf->qe("delete from PaperReviewPreference where paperId=20");
+        $conf->qe("insert into PaperReviewPreference set paperId=20, contactId=?, preference=9",
+            $conf->checked_user_by_email("lixia@cs.ucla.edu")->contactId);
+        xassert_eqq($totals("19", "20"), [3, 1]);
+
+        $conf->qe("delete from PaperReviewPreference where paperId in (19, 20)");
+    }
+
     function test_pref_aggregate_hides_individual_preferences() {
         // `can_view_preference` splits two ways: any unconflicted PC member may
         // compute *aggregate* preference statistics, but only an administrator
