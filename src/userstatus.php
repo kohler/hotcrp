@@ -979,7 +979,7 @@ class UserStatus extends MessageSet {
 
     /** @return bool */
     static function check_pc_tag($base) {
-        return !preg_match('/\A(?:any|all|none|enabled|disabled|pc|listedpc|unlistedpc|chair|admin|sysadmin)\z/i', $base);
+        return !preg_match('/\A(?:any|all|none|enabled|disabled|pc|listedpc|unlistedpc|chair|admin|sysadmin|bot)\z/i', $base);
     }
 
 

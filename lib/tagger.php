@@ -59,7 +59,7 @@ class TagInfo {
     const TF_IS_PATTERN = 0x200000;   // this entry is pattern
 
     const TFM_VOTES = 0x3000;
-    const TFM_DECORATION = 0xE0000;
+    const TFM_DECORATION = 0xE0000;   // STYLE, BADGE, EMOJI
     const TFM_NOT_CHAIR_HIDDEN = 0x3E0; // bits forced off by TF_CHAIR_HIDDEN:
                                       // OTHER_PRIVATE, PC_PUBLIC, PC,
                                       // ADMIN_PUBLIC, HIDDEN
@@ -95,9 +95,11 @@ class TagInfo {
         $this->flags = $flags | $tagmap->all_flags;
         if (($ks = $tagmap->known_style($tag)) !== null) {
             $this->styles[] = $ks;
+            $this->flags |= self::TF_STYLE;
         } else if (str_starts_with($tag, ":")
                    && ($e = $tagmap->check_emoji_code(strtolower($tag))) !== false) {
             $this->emoji[] = $e;
+            $this->flags |= self::TF_EMOJI;
         }
         if ($tag[0] === "~") {
             if ($tag[1] === "~") {
@@ -579,7 +581,7 @@ class TagMap {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->flags = TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_PC;
+        $this->flags = TagInfo::TF_CHAIR_HIDDEN | TagInfo::TF_PC | TagInfo::TF_STYLE | TagInfo::TF_EMOJI;
         $this->all_flags = TagInfo::TF_PC;
 
         // RGB colors taken from style.css
@@ -1528,9 +1530,10 @@ class TagMap {
         if ($conf->setting("has_colontag")) {
             $map->flags |= TagInfo::TF_EMOJI;
         }
-        if (($t = $map->find("pc"))
-            && ($t->styles || $t->badge || $t->emoji)) {
-            $map->has_role_decoration = true;
+        foreach (["pc", "listedpc", "unlistedpc", "bot"] as $t) {
+            if ($map->find_having($t, TagInfo::TFM_DECORATION)) {
+                $map->has_role_decoration = true;
+            }
         }
         return $map;
     }

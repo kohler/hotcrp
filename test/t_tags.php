@@ -912,6 +912,12 @@ class Tags_Tester {
         $this->clear_vote_tags("vother");
     }
 
+    function test_find_having() {
+        $dt = $this->conf->tags();
+        xassert_neqq($dt->find_having("red", TagInfo::TF_STYLE), null);
+        xassert_neqq($dt->find_having(":+1:", TagInfo::TF_EMOJI), null);
+    }
+
     /** @suppress PhanDeprecatedClassConstant */
     function test_flag_values() {
         xassert_eqq(Track::FM_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));

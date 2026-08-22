@@ -266,12 +266,21 @@ class Users_Page {
         foreach (preg_split('/[\s,;]+/', (string) $this->qreq->tag) as $t) {
             if ($t === "") {
                 continue;
-            } else if (!($t = $tagger->check($t, $flags))) {
+            }
+            if (($t[0] === "-" && $tagfn !== "s")
+                || ($t[0] === "+" && $tagfn !== "d")) {
+                $pfx = $t[0];
+                $t = substr($t, 1);
+            }
+            if (!($t = $tagger->check($t, $flags))) {
                 $ms->error_at(null, $tagger->error_ftext());
-            } else if (!UserStatus::check_pc_tag(Tagger::tv_tag($t))) {
-                $ms->error_at(null, $this->conf->_("<0>User tag ‘{}’ reserved", Tagger::tv_tag($t)));
+                continue;
+            }
+            [$tag, $value] = Tagger::unpack($t);
+            if (UserStatus::check_pc_tag($tag)) {
+                $t1[] = [$pfx, $tag, $value];
             } else {
-                $t1[] = $t;
+                $ms->error_at(null, $this->conf->_("<0>User tag ‘{}’ reserved", $tag));
             }
         }
         if ($ms->has_error()) {
@@ -288,9 +297,8 @@ class Users_Page {
         Conf::$no_invalidate_caches = true;
         $tests = ["contactId?a"];
         if ($tagfn === "s") {
-            foreach ($t1 as $t) {
-                list($tag, $index) = Tagger::unpack($t);
-                $x = $this->conf->dblink->real_escape_string(Dbl::escape_like($tag));
+            foreach ($t1 as $ptv) {
+                $x = $this->conf->dblink->real_escape_string(Dbl::escape_like($ptv[1]));
                 $tests[] = "contactTags like " . Dbl::utf8ci($this->conf->dblink, "'% {$x}#%'");
             }
         }
@@ -302,14 +310,15 @@ class Users_Page {
         while (($u = Contact::fetch($result, $this->conf))) {
             $us->start_update();
             $us->set_user($u);
-            foreach ($t1 as $t) {
+            foreach ($t1 as $ptv) {
                 if ($tagfn === "s"
-                    || $tagfn === "d") {
-                    $us->jval->change_tags[] = "-" . Tagger::tv_tag($t);
+                    || $tagfn === "d"
+                    || $ptv[0] === "-") {
+                    $us->jval->change_tags[] = "-" . $ptv[1];
                 }
                 if (($tagfn === "s" && in_array($u->contactId, $this->papersel, true))
-                    || $tagfn === "a") {
-                    $us->jval->change_tags[] = $t;
+                    || ($tagfn === "a" && $ptv[0] !== "-")) {
+                    $us->jval->change_tags[] = $ptv[1] . "#" . $ptv[2];
                 }
             }
             $us->execute_update();

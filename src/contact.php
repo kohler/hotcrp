@@ -5,11 +5,14 @@
 use TokenScope as TS, PaperContactInfo as PCI;
 
 class ContactDecorations {
-    /** @var string */
+    /** Color classes for this reviewer
+     * @var string */
     public $rn_classes;
-    /** @var ?string */
+    /** All color classes for this reviewer, including e.g. `dim` if disabled
+     * @var ?string */
     public $ra_classes;
-    /** @var string */
+    /** Decorations for this reviewer, including role badges
+     * @var string */
     public $decorations;
 
     /** @param string $rn_classes
@@ -1453,6 +1456,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
 
         if (!$this->can_view_user_tags()) {
+            // NB also allows viewing PC and unlisted PC
             if ($u->contactXid === $this->contactXid) {
                 return new ContactDecorations("my-mention", null, "");
             }
@@ -1462,32 +1466,31 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $fl = $this->_name_decorations_flags;
         if ($fl === null) {
             $dt = $this->conf->tags();
-            $test = ($dt->has_role_decoration ? " pc#0" : "") . " dim#0";
+            $test = ($dt->has_role_decoration ? " pc#0 listedpc#0 unlistedpc#0 bot#0" : "") . " dim#0";
             $test = $dt->censor(TagMap::CENSOR_VIEW, $test, $this, null);
-            $this->_name_decorations_flags = $fl = (str_contains($test, "pc") ? 1 : 0)
-                | (str_contains($test, "dim") ? 2 : 0);
+            $this->_name_decorations_flags = $fl =
+                ($test !== "" && $test !== " dim#0" ? self::CTFLAG_ROLES : 0)
+                | (str_contains($test, "dim") ? self::CTFLAG_DISABLED : 0);
         }
-        $pc = ($fl & 1) !== 0 && ($u->roles & self::ROLE_PC) !== 0;
-        $disabled = ($fl & 2) !== 0 && $u->disabled_flags() !== 0;
+        if (($fl & self::CTFLAG_ROLES) !== 0
+            && ($u->roles & self::ROLE_ANYPC) === 0
+            && ($u->cflags & self::CF_BOT) === 0) {
+            $fl &= ~self::CTFLAG_ROLES;
+        }
+        if (($fl & self::CTFLAG_DISABLED) !== 0
+            && $u->disabled_flags() === 0) {
+            $fl &= ~self::CTFLAG_DISABLED;
+        }
         if ($u->contactTags === null
-            && !$pc
-            && !$disabled
-            && $uid !== $this->contactId) {
+            && $uid !== $this->contactId
+            && $fl === 0) {
             return null;
         }
 
         $dt = $this->conf->tags();
-        if ($u->contactTags !== null) {
-            $aut = $dt->censor(TagMap::CENSOR_VIEW, $u->contactTags, $this, null);
-        } else {
-            $aut = "";
-        }
-        if ($pc) {
-            $aut .= " pc#0";
-        }
-
+        $aut = $u->viewable_tags($this, $fl & self::CTFLAG_ROLES);
         $cc_rn = $aut !== "" ? $dt->color_classes($aut) : "";
-        if ($disabled) {
+        if ($fl & self::CTFLAG_DISABLED) {
             $cc_ra = $cc_rn !== "" ? "{$cc_rn} tag-dim" : "tag-dim";
         } else {
             $cc_ra = $cc_rn;
@@ -1783,12 +1786,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @param string $t
      * @return bool */
     function has_tag($t) {
-        if (strlen($t) === 2 && strcasecmp($t, "pc") === 0) {
-            return ($this->roles & Contact::ROLE_ANYPC) !== 0;
-        } else if (strlen($t) === 8 && strcasecmp($t, "listedpc") === 0) {
-            return ($this->roles & Contact::ROLE_PC) !== 0;
-        } else if (strlen($t) === 10 && strcasecmp($t, "unlistedpc") === 0) {
-            return ($this->roles & Contact::ROLE_UNLISTEDPC) !== 0;
+        $len = strlen($t);
+        if ($len === 2 && strcasecmp($t, "pc") === 0) {
+            return ($this->roles & self::ROLE_ANYPC) !== 0;
+        } else if ($len === 8 && strcasecmp($t, "listedpc") === 0) {
+            return ($this->roles & self::ROLE_PC) !== 0;
+        } else if ($len === 10 && strcasecmp($t, "unlistedpc") === 0) {
+            return ($this->roles & self::ROLE_UNLISTEDPC) !== 0;
+        } else if ($len === 3 && strcasecmp($t, "bot") === 0) {
+            return ($this->cflags & self::CF_BOT) !== 0;
         }
         if ($this->contactTags === false) {
             trigger_error("Contact {$this->email} contactTags missing\n" . debug_string_backtrace());
@@ -1801,15 +1807,18 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @param string $t
      * @return ?float */
     function tag_value($t) {
-        if (strlen($t) === 2 && strcasecmp($t, "pc") === 0) {
-            return ($this->roles & Contact::ROLE_ANYPC) !== 0 ? 0.0 : null;
-        } else if (strlen($t) === 8 && strcasecmp($t, "listedpc") === 0) {
-            return ($this->roles & Contact::ROLE_PC) !== 0 ? 0.0 : null;
-        } else if (strlen($t) === 10 && strcasecmp($t, "unlistedpc") === 0) {
-            return ($this->roles & Contact::ROLE_UNLISTEDPC) !== 0 ? 0.0 : null;
+        $len = strlen($t);
+        if ($len === 2 && strcasecmp($t, "pc") === 0) {
+            return ($this->roles & self::ROLE_ANYPC) !== 0 ? 0.0 : null;
+        } else if ($len === 8 && strcasecmp($t, "listedpc") === 0) {
+            return ($this->roles & self::ROLE_PC) !== 0 ? 0.0 : null;
+        } else if ($len === 10 && strcasecmp($t, "unlistedpc") === 0) {
+            return ($this->roles & self::ROLE_UNLISTEDPC) !== 0 ? 0.0 : null;
+        } else if ($len === 3 && strcasecmp($t, "bot") === 0) {
+            return ($this->cflags & self::CF_BOT) !== 0 ? 0.0 : null;
         } else if ($this->contactTags
                    && ($p = stripos($this->contactTags, " {$t}#")) !== false) {
-            return (float) substr($this->contactTags, $p + strlen($t) + 2);
+            return (float) substr($this->contactTags, $p + $len + 2);
         }
         return null;
     }
@@ -1823,15 +1832,22 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     static function all_user_tags_for($x, $ctflags) {
         // See also _name_decorations, which depends on the tags used for roles
         // and disablement
-        $tags = $x->contactTags ?? "";
-        if (($ctflags & self::CTFLAG_ROLES) !== 0
-            && ($x->roles & self::ROLE_ANYPC) !== 0) {
-            $rtag = ($x->roles & self::ROLE_PC) !== 0 ? "listedpc" : "unlistedpc";
-            $tags = " pc#0 {$rtag}#0{$tags}";
+        $tags = "";
+        if (($ctflags & self::CTFLAG_ROLES) !== 0) {
+            if (($x->roles & self::ROLE_ANYPC) !== 0) {
+                $rtag = ($x->roles & self::ROLE_PC) !== 0 ? "listedpc" : "unlistedpc";
+                $tags = " pc#0 {$rtag}#0";
+            }
+            if (($x->cflags & self::CF_BOT) !== 0) {
+                $tags .= " bot#0";
+            }
+        }
+        if (($x->contactTags ?? "") !== "") {
+            $tags .= $x->contactTags;
         }
         if (($ctflags & self::CTFLAG_DISABLED) !== 0
             && $x->disabled_flags() !== 0) {
-            $tags = "{$tags} dim#0";
+            $tags .= " dim#0";
         }
         return $tags;
     }

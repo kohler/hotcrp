@@ -1010,11 +1010,10 @@ class ContactList {
                 . join(", ", $t) . '</div>';
         case self::FIELD_TAGS:
             if ($this->user->isPC
-                && ($tags = $row->viewable_tags($this->user))) {
+                && ($tags = $row->viewable_tags($this->user, 0))) {
                 $x = [];
                 foreach (Tagger::split($tags) as $t) {
-                    if ($t !== "pc#0")
-                        $x[] = $this->conf->hotlink($this->tagger->unparse_hashed($t), "users", ["t" => "#" . Tagger::tv_tag($t)], ["class" => "q nw"]);
+                    $x[] = $this->conf->hotlink($this->tagger->unparse_hashed($t), "users", ["t" => "#" . Tagger::tv_tag($t)], ["class" => "q nw"]);
                 }
                 return join(" ", $x);
             } else {
