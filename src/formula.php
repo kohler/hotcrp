@@ -63,12 +63,13 @@ abstract class Fexpr implements JsonSerializable {
     const FDATEDELTA = 16;
     const FTIMEDELTA = 17;
     const FSUBFIELD = 18;
+    const FPID = 19;
 
     const FORMAT_DESCRIPTIONS = [
         "unknown", "null", "error", "number", "bool",
         "review round", "review type", "decision", "expertise", "reviewer",
         "review field", "tag", "search", "tag value", "date",
-        "time", "duration", "duration", "submission field"
+        "time", "duration", "duration", "submission field", "paper"
     ];
 
     /** @param list<Fexpr> $args */
@@ -126,6 +127,7 @@ abstract class Fexpr implements JsonSerializable {
     /** @return bool */
     final function nonnullable_format() {
         return $this->_format === self::FNUMERIC
+            || $this->_format === self::FPID
             || $this->_format === self::FBOOL;
     }
 
@@ -203,8 +205,8 @@ abstract class Fexpr implements JsonSerializable {
         $nonnull = !empty($inferred);
         foreach ($inferred ?? [] as $fe) {
             $nonnull = $nonnull && $fe->nonnull_format();
-            if ($fe->format() < Fexpr::FNUMERIC) {
-                /* ignore it */
+            if ($fe->format() < Fexpr::FNUMERIC || $fe->format() === Fexpr::FPID) {
+                /* treat as plain numeric: any operation devolves FPID */
             } else if (!$commonf) {
                 $commonf = $fe;
             } else if ($commonf->_format !== $fe->_format
@@ -236,7 +238,7 @@ abstract class Fexpr implements JsonSerializable {
     /** @return ?list<Fexpr> */
     static function inferred_numeric_format(Fexpr $fexpr) {
         $f = $fexpr->format();
-        if ($f === self::FBOOL || $f === self::FTAGVALUE) {
+        if ($f === self::FBOOL || $f === self::FTAGVALUE || $f === self::FPID) {
             return null;
         }
         return [$fexpr];
@@ -1243,6 +1245,13 @@ class Wavg_Fexpr extends Aggregate_Fexpr {
 }
 
 class Pid_Fexpr extends Fexpr {
+    /** @var Conf */
+    private $conf;
+    function __construct(FormulaCall $ff) {
+        parent::__construct("pid");
+        $this->set_format(Fexpr::FPID);
+        $this->conf = $ff->conf;
+    }
     function compile(FormulaCompiler $state) {
         return $state->_prow() . '->paperId';
     }
@@ -1250,12 +1259,7 @@ class Pid_Fexpr extends Fexpr {
         return SearchTerm::ABOUT_SUB;
     }
     function collect_range_anno(&$ranges) {
-        if (Conf::$main) {
-            $t = Conf::$main->_("{Submission} ID");
-        } else {
-            $t = "Submission ID";
-        }
-        $this->record_range_anno($ranges, $t);
+        $this->record_range_anno($ranges, $this->conf->snouns[2] . " ID");
     }
 }
 
@@ -2280,7 +2284,8 @@ final class Formula implements JsonSerializable {
         return $this->_format === Fexpr::FNULL
             || $this->_format === Fexpr::FNUMERIC
             || ($this->_format === Fexpr::FREVIEWFIELD
-                && $this->_format_detail->is_numeric());
+                && $this->_format_detail->is_numeric())
+            || $this->_format === Fexpr::FPID;
     }
 
     /** @return PaperOption */
@@ -2615,7 +2620,8 @@ final class Formula implements JsonSerializable {
         }
         if (!$this->ok()) {
             $this->_value_format = Null_ValueFormat::main();
-        } else if ($this->_format <= Fexpr::FNUMERIC) {
+        } else if ($this->_format <= Fexpr::FNUMERIC
+                   || $this->_format === Fexpr::FPID) {
             $this->_value_format = Numeric_ValueFormat::main();
         } else if ($this->_format === Fexpr::FBOOL) {
             $this->_value_format = Bool_ValueFormat::main();
