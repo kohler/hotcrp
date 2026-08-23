@@ -469,11 +469,9 @@ class XtParams {
             $this->user = $this->user ?? $this->conf->root_user();
             if (isset($fxt->expand_function)) {
                 $r = call_user_func($fxt->expand_function, $name, $this, $fxt, $m);
+                $r = is_object($r) ? [$r] : $r;
             } else {
-                $r = (object) ["name" => $name, "match_data" => $m];
-            }
-            if (is_object($r)) {
-                $r = [$r];
+                $r = [(object) ["name" => $name, "match_data" => $m]];
             }
             foreach ($r ? : [] as $xt) {
                 self::xt_combine($xt, $fxt);

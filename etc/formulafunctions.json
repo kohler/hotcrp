@@ -9,6 +9,8 @@
     {"name": "wavg", "args": true, "function": "Wavg_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},
     {"name": "median", "args": 1, "function": "Quantile_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},
     {"name": "quantile", "args": 2, "function": "Quantile_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},
+    {"name": "percentile", "args": 2, "function": "Quantile_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},
+    {"match": "p(?:100(?:\\.0*+)?+|0(?:\\.0*+)?+|[1-9][0-9]?+(?:\\.[0-9]*+)?+)", "args": 1, "function": "Quantile_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},
     {"name": "count", "args": 1, "function": "Count_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},
     {"name": "min", "args": true, "function": "Extremum_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},
     {"name": "max", "args": true, "function": "Extremum_Fexpr::make", "parse_modifier_function": "Aggregate_Fexpr::parse_modifier"},

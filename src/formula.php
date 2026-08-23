@@ -1023,18 +1023,30 @@ class Variance_Fexpr extends Aggregate_Fexpr {
 }
 
 class Quantile_Fexpr extends Aggregate_Fexpr {
+    /** @var ?float */
+    private $quantile;
+    /** @var bool */
+    private $is_percent;
     /** @var int */
     private $varg = 0;
-    function __construct($fn, array $values, ?int $index_type) {
+    function __construct($fn, ?float $quantile, array $values, ?int $index_type) {
         parent::__construct($fn, $values, $index_type);
+        $this->quantile = $quantile;
+        $this->is_percent = $fn === "percentile";
     }
     static function make(FormulaCall $ff) {
-        return $ff->check_nargs($ff->name === "median" ? 1 : 2)
-            ? new Quantile_Fexpr($ff->name, $ff->args, $ff->index_type)
+        $quantile = null;
+        if ($ff->name === "median") {
+            $quantile = 0.5;
+        } else if (isset($ff->kwdef->match_data)) {
+            $quantile = floatval(substr($ff->name, 1)) / 100;
+        }
+        return $ff->check_nargs($quantile !== null ? 1 : 2)
+            ? new Quantile_Fexpr($ff->name, $quantile, $ff->args, $ff->index_type)
             : null;
     }
     function typecheck(Formula $formula) {
-        if ($this->op !== "median"
+        if ($this->quantile === null
             && $this->args[0]->inferred_index() === 0
             && $this->args[1]->inferred_index() !== 0) {
             $this->varg = 1;
@@ -1063,10 +1075,13 @@ class Quantile_Fexpr extends Aggregate_Fexpr {
         return $v;
     }
     function compile(FormulaCompiler $state) {
-        if ($this->op === "median") {
-            $q = "0.5";
+        if ($this->quantile !== null) {
+            $q = "{$this->quantile}";
         } else {
             $q = $state->ltemp($this->args[1 - $this->varg]->compile($state));
+            if ($this->is_percent) {
+                $q = "({$q} / 100)";
+            }
             if ($this->compiled_relation("<") === ">") {
                 $q = "1 - {$q}";
             }

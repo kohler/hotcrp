@@ -189,11 +189,13 @@ class Conf {
     private $_xtbuild_factories;
 
     /** @var ?array<string,list<object>> */
-    private $_formula_functions;
-    /** @var ?array<string,list<object>> */
     private $_search_keyword_base;
     /** @var ?list<object> */
     private $_search_keyword_factories;
+    /** @var ?array<string,list<object>> */
+    private $_formula_function_base;
+    /** @var ?list<object> */
+    private $_formula_function_factories;
     /** @var ?array<string,list<object>> */
     private $_assignment_parsers;
     /** @var ?array<string,list<object>> */
@@ -466,7 +468,8 @@ class Conf {
         $this->_formatspec_cache = [];
         $this->_abbrev_matcher = null;
         $this->_tag_map = null;
-        $this->_formula_functions = null;
+        $this->_search_keyword_base = null;
+        $this->_formula_function_base = null;
         $this->_assignment_parsers = null;
         $this->_decision_set = null;
         $this->_topic_set = null;
@@ -3293,7 +3296,8 @@ class Conf {
             $this->_tag_map = null;
         }
         if ($all) {
-            $this->_formula_functions = null;
+            $this->_search_keyword_base = null;
+            $this->_formula_function_base = null;
             $this->_assignment_parsers = null;
             Contact::update_rights();
         }
@@ -5921,13 +5925,14 @@ class Conf {
 
     /** @return ?object */
     function formula_function($fname, Contact $user) {
-        if ($this->_formula_functions === null) {
-            list($this->_formula_functions, $unused) =
+        if ($this->_formula_function_base === null) {
+            list($this->_formula_function_base, $this->_formula_function_factories) =
                 $this->_xtbuild(["etc/formulafunctions.json"], "formulaFunctions");
         }
         $xtp = new XtParams($this, $user);
-        $uf = $xtp->search_name($this->_formula_functions, $fname);
-        return self::xt_resolve_require($uf);
+        $uf = $xtp->search_name($this->_formula_function_base, $fname);
+        $ufs = $xtp->search_factories($this->_formula_function_factories, $fname, $uf);
+        return self::xt_resolve_require($ufs[0]);
     }
 
 
