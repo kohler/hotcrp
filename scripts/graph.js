@@ -17,6 +17,12 @@ const $$ = hotcrp.$$,
     strftime = hotcrp.text.strftime;
 
 let BOTTOM_MARGIN = 37;
+// A box needs at least this many points to draw interpolated quartiles and
+// 1.5*IQR whiskers; with fewer it would span min..max instead. Set to 1 so we
+// always interpolate, matching the data table's quantile columns. Raise it (was
+// 4) to restore min..max boxes for small samples, where interpolated quartiles
+// land between the few actual values and can read as misleadingly precise.
+const BOXPLOT_IQR_MIN_N = 1;
 const PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
     s: 4, S: 4, q: 4, Q: 4, t: 2, T: 2, a: 7, A: 7, b: 1, B: 1
@@ -301,7 +307,7 @@ function expand_extent(e, args) {
     let l = e[0], h = e[1];
     if (l > 0 && l < h / 11) {
         l = 0;
-    } else if (l > 0 && args.axisinfo.discrete) {
+    } else if (l > 0 && args.discrete) {
         l -= 0.5;
     }
     if (h - l < 10) {
@@ -311,7 +317,7 @@ function expand_extent(e, args) {
         }
         h += delta;
     }
-    if (args.axisinfo.discrete) {
+    if (args.discrete) {
         h += 0.5;
     }
     return [l, h];
@@ -381,8 +387,8 @@ function draw_axes(svg, xAxis, yAxis, args) {
             }));
     });*/
 
-    args.x.axisinfo.rewrite.call(xaxe, svg);
-    args.y.axisinfo.rewrite.call(yaxe, svg);
+    args.x.rewrite_ticks(xaxe, svg);
+    args.y.rewrite_ticks(yaxe, svg);
 }
 
 function draw_annotations(svg, args) {
@@ -512,67 +518,85 @@ function basic_make_axis(side, args, scale) {
     const dimen = side === "x" ? args.plotWidth : args.plotHeight;
     scale.range(!this.flip === (side === "y") ? [dimen, 0] : [0, dimen]);
     const ax = side === "x" ? d3.axisBottom(scale) : d3.axisLeft(scale);
-    if (this.tickFormat) {
-        ax.tickFormat(this.tickFormat);
-    }
     this.scale = scale;
     this.axis = ax;
     return ax;
 }
 
+const default_value_format = d3.format(",.4~f");
+
 function numeric_make_axis(side, args, scale) {
     const ax = basic_make_axis.call(this, side, args, scale),
-        tf = scale.tickFormat();
-    this.tickLength = 0;
-    for (const v of scale.ticks()) {
-        this.tickLength = Math.max(this.tickLength, tf(v).replace(/,/g, "").length);
+        domain = scale.domain();
+    if (Math.abs(domain[1] - domain[0]) < 0.01
+        && this.value_format === default_value_format) {
+        this.value_format = d3.format(",~f");
     }
+    ax.tickFormat(this.value_format);
     return ax;
 }
 
-const default_axisinfo = {
+const default_axis_class = {
+    scale_class: null,
     make_axis: numeric_make_axis,
-    rewrite: function () {},
-    render_onto: function (e, value) {
-        const d = this.scale.domain(), r = this.scale.range(),
-            p = d3.precisionFixed(Math.abs(d[1] - d[0]) / Math.min(Math.abs(r[1] - r[0]), 300)),
-            v = d3.format(`,.${p}f`)(value);
-        e.append(v.replace(/\.0+$/, ""));
+    value_format: default_value_format,
+    color_classes: () => null,
+    value_search: () => null,
+    value_render: function (e, v) {
+        e.append(this.value_format(v));
     },
-    search: function () { return null; }
+    rewrite_ticks: function () {},
+    tickLength: function () {
+        let l = 0;
+        for (const v of this.scale.ticks()) {
+            l = Math.max(l, this.value_format(v).length);
+        }
+        return l;
+    },
+    discrete: false,
+    left_justify: false,
+    projection: null
 };
 
-function ordinal_axisinfo(map) {
-    const want_tilt = Object.values(map).length > 30
-            || d3.max(Object.keys(map).map(function (k) { return mtext(k).length; })) > 4,
-        want_mclasses = Object.keys(map).some(function (k) { return mclasses(k); });
+function ordinal_axis_class(ax) {
+    // `ticks` is a list of {value, text, color_classes?, search?} in display
+    // order; data values are mapped to display positions by `projection`
+    // and `project_data` before rendering
+    const projection = new Map(), ticks = ax.ticks;
+    ticks.forEach(function (t, i) {
+        projection.set(t.value, i + 1);
+    });
+    const want_tilt = ax.orientation === "x"
+        && (ticks.length > 30
+            || d3.max(ticks.map(function (t) { return (t.text || "").length; })) > 4),
+        want_mclasses = ticks.some(function (t) { return t.color_classes; });
 
-    function mtext(value) {
-        const m = map[value];
-        return m && typeof m === "object" ? m.text : m;
+    function mtext(pos) {
+        const t = ticks[pos - 1];
+        return t ? t.text : "";
     }
-    function mclasses(value) {
-        const m = map[value];
-        return (m && typeof m === "object" && m.color_classes) || "";
+    function mclasses(pos) {
+        const t = ticks[pos - 1];
+        return (t && t.color_classes) || "";
     }
 
-    function rewrite() {
+    function rewrite_ticks(axe) {
         if (!want_tilt && !want_mclasses) {
             return;
         }
 
-        let max_width = get_max_tick_width(this);
+        let max_width = get_max_tick_width(axe);
         if (max_width > 100) { // shrink font
-            this.attr("class", function () {
+            axe.attr("class", function () {
                 return this.getAttribute("class") + " widelabel";
             });
-            max_width = get_max_tick_width(this);
+            max_width = get_max_tick_width(axe);
         }
-        const example_height = get_sample_tick_height(this);
+        const example_height = get_sample_tick_height(axe);
 
         // apply offset first (so `mclasses` rects include offset)
         if (want_tilt) {
-            this.selectAll("g.tick text")
+            axe.selectAll("g.tick text")
                 .attr("text-anchor", "end")
                 .attr("dx", "-9px")
                 .attr("dy", "2px");
@@ -580,7 +604,7 @@ function ordinal_axisinfo(map) {
 
         // apply classes by adding them and adding background rects
         if (want_mclasses) {
-            this.selectAll("g.tick text").filter(mclasses).each(function (i) {
+            axe.selectAll("g.tick text").filter(mclasses).each(function (i) {
                 const c = mclasses(i);
                 d3.select(this).attr("class", c + " taghh");
                 if (/\btagbg\b/.test(c)) {
@@ -596,24 +620,33 @@ function ordinal_axisinfo(map) {
 
         // apply tilt rotation, enlarge container if necessary
         if (want_tilt) {
-            this.selectAll("g.tick text, g.tick rect")
+            axe.selectAll("g.tick text, g.tick rect")
                 .attr("transform", "rotate(-65)");
             max_width = max_width * Math.sin(1.13446) + 20; // 65 degrees in radians
-            if (max_width > BOTTOM_MARGIN && this.classed("x-axis")) {
+            if (max_width > BOTTOM_MARGIN && ax.orientation === "x") {
                 const delta = max_width - BOTTOM_MARGIN,
-                    container = $(this.node()).closest("svg");
+                    container = $(axe.node()).closest("svg");
                 container.attr("height", +container.attr("height") + delta);
-                this.select(".label")
+                axe.select(".label")
                     .attr("y", function () { return +this.getAttribute("y") + delta; });
             }
         }
 
         // prevent label overlap
         if (want_tilt) {
-            const total_height = Object.values(map).length * (example_height * Math.cos(1.13446) + 8),
-                alternation = Math.ceil(total_height / this.node().getBBox().width - 0.1);
+            const total_height = ticks.length * (example_height * Math.cos(1.13446) + 8),
+                alternation = Math.ceil(total_height / axe.node().getBBox().width - 0.1);
             if (alternation > 1) {
-                this.selectAll("g.tick").each(function (i) {
+                axe.selectAll("g.tick").each(function (i) {
+                    if (i % alternation != 1)
+                        d3.select(this).style("display", "none");
+                });
+            }
+        } else if (ax.orientation === "y") {
+            const total_height = ticks.length * (example_height + 4),
+                alternation = Math.ceil(total_height / axe.node().getBBox().height - 0.1);
+            if (alternation > 1) {
+                axe.selectAll("g.tick").each(function (i) {
                     if (i % alternation != 1)
                         d3.select(this).style("display", "none");
                 });
@@ -622,25 +655,24 @@ function ordinal_axisinfo(map) {
     }
 
     return {
+        scale_class: "ordinal",
         make_axis: function (side, args, scale) {
             const domain = scale.domain(),
                 count = Math.floor(domain[1]) - Math.ceil(domain[0]) + 1,
                 ax = basic_make_axis.call(this, side, args, scale);
             ax.ticks(count).tickFormat(mtext);
-            this.tickLength = 1;
-            for (const v of scale.ticks(count)) {
-                const m = mtext(v);
-                if (m) {
-                    this.tickLength = Math.max(this.tickLength, m.length);
-                }
-            }
             return ax;
         },
-        rewrite: rewrite,
-        render_onto: function (e, value, include_numeric) {
-            const fvalue = Math.round(value);
-            if (Math.abs(value - fvalue) <= 0.05 && map[fvalue]) {
-                e.append(mtext(fvalue));
+        value_format: mtext,
+        color_classes: mclasses,
+        value_search: function (pos) {
+            const t = ticks[pos - 1];
+            return (t && t.search) || null;
+        },
+        value_render: function (e, value, include_numeric) {
+            const fvalue = Math.round(value), t = ticks[fvalue - 1];
+            if (Math.abs(value - fvalue) <= 0.05 && t) {
+                e.append(t.color_classes ? $e("span", t.color_classes + " taghh", t.text) : t.text);
                 if (include_numeric
                     && value !== fvalue
                     && typeof value === "number") {
@@ -648,72 +680,65 @@ function ordinal_axisinfo(map) {
                 }
             }
         },
-        search: function (value) {
-            const m = map[value];
-            return (m && typeof m === "object" && m.search) || null;
-        },
-        type: "ordinal",
+        rewrite_ticks: rewrite_ticks,
         discrete: true,
-        map: map
+        projection: projection,
+        left_justify: ax.left_justify ?? true
     };
 }
 
-function score_axisinfo(rf) {
-    let myfmt;
+const score_format = d3.format(",.2~f");
+
+function score_axis_class(rf) {
+    let numeric_format = score_format;
+    function value_format(v) {
+        let vt = rf.unparse_symbol(v);
+        return typeof vt === "number" ? numeric_format(v) : v;
+    }
     return {
+        scale_class: "review_field",
         make_axis: function (side, args, scale) {
             const domain = scale.domain();
             let count = Math.floor(domain[1] * 2) - Math.ceil(domain[0] * 2) + 1;
             if (count > 11) {
                 count = Math.floor(domain[1]) - Math.ceil(domain[0]) + 1;
             }
+            if (Math.abs(domain[1] - domain[0]) < 0.1) {
+                numeric_format = d3.format(",~f");
+            }
             const ax = basic_make_axis.call(this, side, args, scale);
             if (!rf.default_numeric) {
                 ax.ticks(count);
             }
-            this.tickLength = 1;
-            myfmt = scale.tickFormat();
-            for (const v of scale.ticks()) {
-                let vt = rf.unparse_symbol(v);
-                if (typeof vt === "number") {
-                    vt = myfmt(vt);
-                }
-                this.tickLength = Math.max(this.tickLength, vt.length);
-            }
+            ax.tickFormat(value_format);
             return ax;
         },
-        rewrite: function () {
-            this.selectAll("g.tick text").each(function () {
-                const d = d3.select(this), v = +d.text();
-                d.attr("class", "sv");
-                d.style("fill", rf.color(v));
-                if (!rf.default_numeric && v) {
-                    let vt = rf.unparse_symbol(v);
-                    if (typeof vt === "number") {
-                        vt = myfmt(vt);
-                    }
-                    d.text(vt);
-                }
-            });
+        value_format: value_format,
+        color_classes: function (v) {
+            const k = rf.className(v);
+            return k ? "sv " + k : null;
         },
-        render_onto: function (e, value, include_numeric) {
-            const k = rf.className(value);
-            let vt = rf.unparse_symbol(value);
-            if (typeof vt === "number") {
-                vt = vt.toFixed(2).replace(/\.00$/, "");
-            }
+        value_render: function (e, v, include_numeric) {
+            let vt = value_format(v);
+            const k = rf.className(v);
             e.append(k ? $e("span", "sv " + k, vt) : vt);
             if (include_numeric
                 && !rf.default_numeric
-                && value !== Math.round(value * 2) / 2) {
-                e.append(" (" + value.toFixed(2).replace(/\.00$/, "") + ")");
+                && v !== Math.round(v * 2) / 2) {
+                e.append(" (" + numeric_format(v) + ")");
             }
         },
-        type: "review_field"
+        rewrite_ticks: function (axe) {
+            axe.selectAll("g.tick text").each(function () {
+                const d = d3.select(this), v = +d.text();
+                d.attr("class", "sv " + rf.className(v));
+                d.style("fill", rf.color(v));
+            });
+        }
     };
 }
 
-function time_axisinfo() {
+function time_axis_class() {
     function format(value) {
         if (value < 1000000000) {
             value = Math.round(value / 8640) / 10;
@@ -737,6 +762,7 @@ function time_axisinfo() {
         }
     }
     return {
+        scale_class: "time",
         make_axis: function (side, args, scale) {
             const ax = basic_make_axis.call(this, side, args, scale),
                 domain = scale.domain(),
@@ -748,45 +774,78 @@ function time_axisinfo() {
                 ax.tickValues(fit_ticks(nscale, is_duration, range).map(function (value) {
                     return value * 86400;
                 }));
-                this.tickLength = Math.ceil(Math.log10(domain[1]));
             } else {
                 const ddomain = [new Date(domain[0] * 1000), new Date(domain[1] * 1000)],
                     nscale = d3.scaleTime().domain(ddomain).range(range);
                 ax.tickValues(fit_ticks(nscale, is_duration, range).map(function (value) {
                     return value.getTime() / 1000;
                 }));
-                this.tickLength = 10;
             }
             ax.tickFormat(format);
             return ax;
         },
-        render_onto: function (e, value) {
-            e.append(format(value));
-        },
-        type: "time"
+        value_format: format,
+        left_justify: true
     };
 }
 
-function make_axisinfo(scale) {
-    if (scale && scale.type === "ordinal") {
-        scale = ordinal_axisinfo(scale.range);
-    } else if (scale && scale.type === "review_field") {
-        scale = score_axisinfo(hotcrp.make_review_field(scale.review_field));
-    } else if (scale && scale.type === "time") {
-        scale = time_axisinfo();
-    } else {
-        scale = {type: scale ? scale.type : null};
+// Paper IDs: rendered as "#NNN" with no thousands separator.
+function pid_axis_class() {
+    function format(value) {
+        return "#" + Math.round(value);
     }
-    return $.extend({}, default_axisinfo, scale);
+    return {
+        make_axis: function (side, args, scale) {
+            const ax = basic_make_axis.call(this, side, args, scale);
+            ax.tickFormat(format);
+            return ax;
+        },
+        value_format: format,
+        value_render: function (e, value) {
+            e.append(format(value));
+        }
+    };
+}
+
+function instantiate_axis(ax) {
+    // `ax` is a server FormulaGraphAxis JSON ({scale_class, ticks?, order?,
+    // review_field?, ...}).
+    const sc = ax && ax.scale_class;
+    let info;
+    if (ax && ax.ticks) {
+        info = ordinal_axis_class(ax);
+    } else if (sc === "review_field") {
+        info = score_axis_class(hotcrp.make_review_field(ax.review_field));
+    } else if (sc === "time") {
+        info = time_axis_class();
+    } else if (sc === "pid") {
+        info = pid_axis_class();
+    } else {
+        info = {scale_class: sc || null};
+    }
+    const ax1 = Object.assign({}, ax, default_axis_class, info);
+    if (!ax || !ax.order) {
+        return ax1;
+    }
+    info = ordinal_axis_class({
+        orientation: ax1.orientation,
+        ticks: ax1.order.map(v => ({
+            value: v, text: ax1.value_format(v),
+            color_classes: ax1.color_classes(v)
+        })),
+        left_justify: ax1.left_justify ?? false
+    });
+    return Object.assign({}, ax, default_axis_class, info);
 }
 
 function make_axis_pair(args, x, y) {
     const axes = [
-        args.x.axisinfo.make_axis.call(args.x, "x", args, x),
-        args.y.axisinfo.make_axis.call(args.y, "y", args, y)
+        args.x.make_axis("x", args, x),
+        args.y.make_axis("y", args, y)
     ];
-    if (args.y.tickLength > 0 && args.marginLeftDefault) {
-        args.marginLeft = 10 * Math.max(args.y.tickLength, 1.5) + 6;
+    const y_tickLength = args.y.tickLength();
+    if (y_tickLength > 0 && args.marginLeftDefault) {
+        args.marginLeft = 10 * Math.max(y_tickLength, 1.5) + 6;
         args.plotWidth = args.width - args.marginLeft - args.marginRight;
         x.range(args.x.flip ? [args.plotWidth, 0] : [0, args.plotWidth]);
     }
@@ -809,7 +868,7 @@ function render_position(aa, p, prefix) {
     if (prefix || aa.label) {
         e.append((prefix || "") + (aa.label ? aa.label + " " : ""));
     }
-    aa.axisinfo.render_onto.call(aa, e, p, true);
+    aa.value_render(e, p, true);
     return e;
 }
 
@@ -832,7 +891,7 @@ function graph_cdf(element, args) {
     });
     const data = series.map(function (d) {
         d = d.d ? d.d : d;
-        return d.cdf ? d : seq_to_cdf(d, args.x.flip, args.y.raw);
+        return d.cdf ? d : seq_to_cdf(d, args.x.flip, !args.y.fraction);
     });
 
     // axis domains
@@ -914,9 +973,9 @@ function graph_cdf(element, args) {
             if (args.cdf_tooltip_position) {
                 const f = $frag();
                 hovered_series.label && f.append(hovered_series.label + ": ");
-                args.x.axisinfo.render_onto.call(args.x, f, x.invert(p[0]), true);
+                args.x.value_render(f, x.invert(p[0]), true);
                 f.append(", ");
-                args.y.axisinfo.render_onto.call(args.y, f, y.invert(p[1]), true);
+                args.y.value_render(f, y.invert(p[1]), true);
                 hubble.replace_content(f);
             } else {
                 hubble.text(hovered_series.label);
@@ -980,7 +1039,7 @@ function procrastination_filter(revdata) {
     }
 
     args.x.label = "Date";
-    args.x.scale = {"type": "time"};
+    args.x.scale_class = "time";
     args.y.label = "Fraction of assignments completed";
     args.annotations = [];
     for (const dl of revdata.deadlines) {
@@ -1158,38 +1217,52 @@ function ungroup_data(data) {
     return d3.merge(Object.values(data));
 }
 
-function remap_scatter_data(data, rv, map) {
-    if (!rv.x || !rv.x.reordered || rv.x.axisinfo.type !== "ordinal") {
-        return;
-    }
-    const ov2ok = {};
-    for (let k in map) {
-        if (typeof map[k] === "string")
-            ov2ok[map[k]] = +k;
-        else
-            ov2ok[map[k].id] = +k;
-    }
-    const ik2ok = {}, inmap = rv.x.axisinfo.range;
-    for (let k in inmap) {
-        if (typeof inmap[k] === "string") {
-            if (ov2ok[inmap[k]] != null)
-                ik2ok[k] = ov2ok[inmap[k]];
-        } else {
-            if (ov2ok[inmap[k].id] != null)
-                ik2ok[k] = ov2ok[inmap[k].id];
+function project_axis(data, type, col, projection) {
+    if (type === "cdf") {
+        for (const s of data) {
+            const dv = s.d;
+            let n = dv.length;
+            for (let i = 0; i !== n; ) {
+                const nv = projection.get(dv[i]);
+                if (nv == null) {
+                    dv[i] = dv[n - 1];
+                    dv.pop();
+                    --n;
+                } else {
+                    dv[i] = nv;
+                    ++i;
+                }
+            }
+        }
+    } else if (type === "style_xyi") {
+        for (const g of Object.values(data)) {
+            project_axis(g, "xyi", col, projection);
+        }
+    } else {
+        let n = data.length;
+        for (let i = 0; i !== n; ) {
+            const nv = projection.get(data[i][col]);
+            if (nv == null) {
+                data[i] = data[n - 1];
+                data.pop();
+                --n;
+            } else {
+                data[i][col] = nv;
+                ++i;
+            }
         }
     }
-    let n = data.length;
-    for (let i = 0; i !== n; ) {
-        let x = ik2ok[data[i][0]];
-        if (x != null) {
-            data[i][0] = x;
-            ++i;
-        } else {
-            data[i] = data[n - 1];
-            data.pop();
-            --n;
-        }
+}
+
+// Rewrite `args.data` in place, mapping each ordinal axis's identities to
+// positions. Runs once per graph before rendering; highlight refreshes call
+// project_axis() directly against the original axisinfo.
+function project_data(args, axes) {
+    if (axes.x.projection) {
+        project_axis(args.data, args.data_format, 0, axes.x.projection);
+    }
+    if (axes.y.projection) {
+        project_axis(args.data, args.data_format, 1, axes.y.projection);
     }
 }
 
@@ -1538,7 +1611,7 @@ function graph_dot(element, args) {
             .on("click", mouseclick);
     }
 
-    let titles = null, hovering = null;
+    let titles = null;
 
     function make_tooltip(p) {
         const a = [
@@ -1671,7 +1744,7 @@ function graph_bars(element, args) {
     const svg = this,
         bdata = data_to_barchart(args.data, args.y);
 
-    const ystart = args.y.axisinfo.type === "review_field" ? 0.75 : 0,
+    const ystart = args.y.scale_class === "review_field" ? 0.75 : 0,
         xe = d3.extent(bdata, proj0),
         ge = d3.extent(bdata, function (d) { return d.sx || 0; }),
         ye = [d3.min(bdata, function (d) { return Math.max(d.yoff, ystart); }),
@@ -1821,7 +1894,7 @@ function data_to_boxplot(data, septags) {
 
     data.map(function (d) {
         const l = d.ys.length, med = d3.quantile(d.ys, 0.5);
-        if (l < 4) {
+        if (l < BOXPLOT_IQR_MIN_N) {
             d.qnt = [d.ys[0], d.ys[0], med, d.ys[l-1], d.ys[l-1]];
         } else {
             const q1 = d3.quantile(d.ys, 0.25),
@@ -1978,8 +2051,7 @@ function graph_boxplot(element, args) {
     }
 
     function make_tooltip(p) {
-        const yformat = args.y.axisinfo.render_onto,
-            posd = p.qnt ? p : p.data[0],
+        const posd = p.qnt ? p : p.data[0],
             pe = $e("p", null, render_position(args.x, posd[0]), ", ");
         let ids;
         if (p.qnt) {
@@ -1987,7 +2059,7 @@ function graph_boxplot(element, args) {
             ids = [];
             for (let i = 0; i !== p.ys.length; ++i) {
                 const rest = $frag(" (");
-                yformat.call(args.y, rest, p.ys[i]);
+                args.y.value_render(rest, p.ys[i]);
                 rest.append(")");
                 ids.push({id: p.ids[i], rest: rest});
             }
@@ -2033,7 +2105,7 @@ function graph_boxplot(element, args) {
             clicker(null, event);
         } else if (!hoverer.data.qnt) {
             clicker(gqdata_ids(hoverer.data), event);
-        } else if ((s = args.x.axisinfo.search(hoverer.data[0]))) {
+        } else if ((s = args.x.value_search(hoverer.data[0]))) {
             clicker_go(hoturl("search", {q: s}), event);
         } else {
             clicker(hoverer.data.ids, event);
@@ -2054,10 +2126,8 @@ function graph_boxplot(element, args) {
             if (!rv.ok) {
                 return;
             }
+            project_data(rv, args);
             const data = ungroup_data(rv.data);
-            if (args.x.reordered && args.x.axisinfo.map) {
-                remap_scatter_data(data, rv, args.x.axisinfo.map);
-            }
             const gq = grouped_quadtree(data, x, y, 4);
             scatter_create(svg, gq.data, "gscatter");
             scatter_highlight(svg, gq.data, "gscatter");
@@ -2098,18 +2168,26 @@ function make_rotate_ticks(angle) {
 }
 
 handle_ui.on("js-hotgraph-highlight", function () {
-    const s = $.trim(this.value);
-    let pids = null;
-    if (s === "") {
-        pids = [];
-    } else if (/^[1-9][0-9]*$/.test(s)) {
-        pids = [+s];
+    const s = $.trim(this.value),
+        $g = $(this).closest(".has-hotgraph").find(".hotgraph");
+    function fire(ids) {
+        const e = $.Event("hotgraphhighlight");
+        e.ok = true;
+        e.q = s;
+        e.ids = ids;
+        $g.trigger(e);
     }
-    const e = $.Event("hotgraphhighlight");
-    e.ok = true;
-    e.q = s;
-    e.ids = pids;
-    $(this).closest(".has-hotgraph").find(".hotgraph").trigger(e);
+    // Resolve the query to a pid list once, so every listener (graph marks and
+    // data table) consumes the same resolved ids rather than each searching.
+    if (s === "") {
+        fire([]);
+    } else if (/^[1-9][0-9]*$/.test(s)) {
+        fire([+s]);
+    } else {
+        $.getJSON(hoturl("api/search", {q: s, forceShow: 1}), null, function (data) {
+            fire(data && data.ids ? data.ids : []);
+        });
+    }
 });
 
 const graphers = {
@@ -2125,7 +2203,6 @@ const graphers = {
 };
 
 function make_args(element, args) {
-    args = $.extend({}, args);
     const mns = ["marginTop", "marginRight", "marginBottom", "marginLeft"],
         m = args.margin || [null, null, null, null],
         mdefaults = [24, 20, BOTTOM_MARGIN, 50];
@@ -2149,10 +2226,12 @@ function make_args(element, args) {
     }
     args.plotWidth = args.width - args.marginLeft - args.marginRight;
     args.plotHeight = args.height - args.marginTop - args.marginBottom;
-    args.x = $.extend({}, args.x || {});
-    args.y = $.extend({}, args.y || {});
-    args.x.axisinfo = make_axisinfo(args.x.scale);
-    args.y.axisinfo = make_axisinfo(args.y.scale);
+    args.x = instantiate_axis(args.x || {});
+    args.y = instantiate_axis(args.y || {});
+    if (args.xorder) {
+        args.xorder = instantiate_axis(args.xorder);
+    }
+    project_data(args, args);
     // Other arguments:
     // args.interactive: Set to false to disable pointer interaction
     return args;

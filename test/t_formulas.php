@@ -957,17 +957,17 @@ class Formulas_Tester {
 
     function test_graph_type_prefix() {
         foreach (["dot", "dots", "dotplot"] as $s) {
-            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::DOT, $s]);
+            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::GT_DOT, $s]);
         }
         foreach (["ldot", "ldots", "ldotplot", "dotlabel", "dotlabels",
                   "dotlabelplot", "numdot", "numdots", "numdotplot"] as $s) {
-            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::LDOT, $s]);
+            xassert_eqq(FormulaGraph::graph_type_prefix($s), [FormulaGraph::GTS_LDOT, $s]);
         }
         // `ldot` is a distinct type, but shares DOT's bit so that everything
         // keyed on DOT (highlighting, for one) applies to it too
-        xassert_neqq(FormulaGraph::LDOT, FormulaGraph::DOT);
-        xassert(FormulaGraph::LDOT & FormulaGraph::DOT);
-        xassert_eqq(FormulaGraph::LDOT & (FormulaGraph::CDF | FormulaGraph::BARCHART | FormulaGraph::BOXPLOT | FormulaGraph::SCATTER), 0);
+        xassert_neqq(FormulaGraph::GTS_LDOT, FormulaGraph::GT_DOT);
+        xassert(FormulaGraph::GTS_LDOT & FormulaGraph::GT_DOT);
+        xassert_eqq(FormulaGraph::GTS_LDOT & (FormulaGraph::GT_CDF | FormulaGraph::GT_BARCHART | FormulaGraph::GT_BOXPLOT | FormulaGraph::GT_SCATTER), 0);
         xassert_eqq(FormulaGraph::graph_type_prefix("ldotty"), null);
         xassert_eqq(FormulaGraph::graph_type_prefix("numdotty"), null);
     }
@@ -1351,7 +1351,10 @@ class Formulas_Tester {
         foreach ($j["data"] as $bar) {
             $buckets[] = [$bar->x, $bar->ids];
         }
-        return [$buckets, $j["x"]["scale"]->range ?? null];
+        $range = $j["x"]->ticks
+            ? array_map(function ($t) { return $t->text; }, $j["x"]->ticks)
+            : null;
+        return [$buckets, $range];
     }
 
     function test_graph_tag_and_query_axes() {
@@ -1363,7 +1366,7 @@ class Formulas_Tester {
         // one bar per tag, holding the papers that carry it
         [$buckets, $range] = $this->graph_axis_buckets($this->u_chair, "tag", ["19 20"]);
         xassert_eqq($range, ["scored", "testtag"]);
-        xassert_eqq($buckets, [[0, [19, 20]], [1, [19, 20]]]);
+        xassert_eqq($buckets, [["scored", [19, 20]], ["testtag", [19, 20]]]);
 
         // one bar per dataset search, holding that search's papers
         [$buckets, $range] = $this->graph_axis_buckets($this->u_chair, "query", ["19", "20"]);
@@ -1375,7 +1378,7 @@ class Formulas_Tester {
         $u_van = $conf->checked_user_by_email("van@ee.lbl.gov");
         xassert(!$u_van->isPC);
         [$buckets, $range] = $this->graph_axis_buckets($u_van, "tag", ["19 20"]);
-        xassert_eqq($range, []);
+        xassert_eqq($range, null);
         xassert_eqq($buckets, []);
         [$buckets, ] = $this->graph_axis_buckets($u_van, "query", ["19", "20"]);
         xassert_eqq($buckets, []);
@@ -1435,6 +1438,70 @@ class Formulas_Tester {
         }
         sort($vs);
         return $vs;
+    }
+
+    /** @return array<string,list<int|float>> label => sorted values */
+    private function multicdf_lines(Contact $user, $fx, $split, $q) {
+        $fg = new FormulaGraph($user, null, $fx, "multicdf {$split}");
+        $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
+        xassert(!$fg->has_error());
+        xassert_eqq($fg->type_json(), "cdf");
+        $lines = [];
+        foreach ($fg->graph_json([])["data"] as $d) {
+            $vs = $d->d;
+            sort($vs);
+            $lines[$d->label] = $vs;
+        }
+        return $lines;
+    }
+
+    function test_graph_multicdf_splits_by_formula() {
+        // `multicdf <formula>` draws one CDF line per value of the split
+        // formula (per dataset), the way a plain cdf draws one line per
+        // dataset. The split formula rides in the Y field.
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        // give lixia and mjh known overall-merit scores on papers 19 and 20
+        // (test_setup_reviews may also have left a third reviewer on 19; the
+        // assertions below name the two we control rather than a total count)
+        save_review(19, $this->u_lixia, ["ovemer" => 4, "revexp" => 2, "ready" => true]);
+        save_review(19, $this->u_mjh, ["ovemer" => 5, "revexp" => 3, "ready" => true]);
+        save_review(20, $this->u_lixia, ["ovemer" => 2, "revexp" => 1, "ready" => true]);
+        save_review(20, $this->u_mjh, ["ovemer" => 5, "revexp" => 3, "ready" => true]);
+
+        // one line per reviewer, each holding that reviewer's scores
+        $lines = $this->multicdf_lines($this->u_chair, "ovemer", "reviewer", "19 20");
+        xassert_ge(count($lines), 2);
+        xassert_eqq($lines[$this->u_chair->name_text_for($this->u_lixia)], [2, 4]);
+        xassert_eqq($lines[$this->u_chair->name_text_for($this->u_mjh)], [5, 5]);
+
+        // The y axis is the cumulative fraction, exactly as a plain cdf -- the
+        // split formula must not turn it into a (reviewer) ordinal axis with
+        // blank ticks. So the y axis carries no scale.
+        $fg = new FormulaGraph($this->u_chair, null, "ovemer", "multicdf reviewer");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        $yj = $fg->graph_json([])["y"];
+        xassert_eqq($yj->label, "CDF of reviews");
+        xassert_eqq($yj->scale_class, "linear");
+
+        // splitting preferences by reviewer needs to attribute them, so it
+        // follows individual preference access: it works for the chair and
+        // gives an aggregate-only PC member nothing.
+        $conf->qe("delete from PaperReviewPreference where paperId in (19, 20)");
+        foreach ([19 => 3, 20 => 7] as $pid => $pv) {
+            $conf->qe("insert into PaperReviewPreference set paperId=?, contactId=?, preference=?",
+                $pid, $this->u_lixia->contactId, $pv);
+        }
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p19m = $conf->checked_paper_by_id(19, $u_marina);
+        xassert($u_marina->can_view_preference($p19m, true));    // aggregate: yes
+        xassert(!$u_marina->can_view_preference($p19m, false));  // individual: no
+
+        $clines = $this->multicdf_lines($this->u_chair, "pref", "reviewer", "19 20");
+        xassert_eqq($clines[$this->u_chair->name_text_for($this->u_lixia)], [3, 7]);
+        xassert_eqq($this->multicdf_lines($u_marina, "pref", "reviewer", "19 20"), []);
+
+        $conf->qe("delete from PaperReviewPreference where paperId in (19, 20)");
     }
 
     function test_graph_cdf_respects_review_visibility() {

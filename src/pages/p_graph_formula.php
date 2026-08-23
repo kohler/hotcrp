@@ -57,22 +57,27 @@ class Graph_Formula_Page {
 
         if ($fg->fx_format() === Fexpr::FSEARCH) {
             $h2 = "";
-        } else if ($fg->type === FormulaGraph::OGIVE) {
+        } else if ($fg->type === FormulaGraph::GTS_OGIVE) {
             $h2 = "Cumulative frequency of {$xhtml}";
-        } else if ($fg->type & FormulaGraph::CDF) {
+        } else if ($fg->type === FormulaGraph::GTS_MULTICDF) {
+            $h2 = "{$xhtml} CDF by " . $fg->fy->annotated_expression_h();
+        } else if ($fg->type & FormulaGraph::GT_CDF) {
             $h2 = "{$xhtml} CDF";
-        } else if (($fg->type & FormulaGraph::BARCHART)
+        } else if (($fg->type & FormulaGraph::GT_BARCHART)
                    && $fg->fy->expression === "sum(1)") {
             $h2 = $xhtml;
-        } else if ($fg->type & FormulaGraph::BARCHART) {
+        } else if ($fg->type & FormulaGraph::GT_BARCHART) {
             $h2 = $fg->fy->annotated_expression_h() . " by {$xhtml}";
         } else {
             $h2 = $fg->fy->annotated_expression_h() . " vs. {$xhtml}";
         }
-        $highlightable = ($fg->type & (FormulaGraph::SCATTER | FormulaGraph::DOT | FormulaGraph::BOXPLOT)) !== 0;
+        if ($h2 !== "" && $fg->fxorder) {
+            $h2 .= " ordered by " . $fg->fxorder->annotated_expression_h();
+        }
+        $highlightable = ($fg->type & (FormulaGraph::GT_SCATTER | FormulaGraph::GT_DOT | FormulaGraph::GT_BOXPLOT)) !== 0;
 
         $attr = [];
-        if (!($fg->type & FormulaGraph::CDF)) {
+        if (!($fg->type & FormulaGraph::GT_CDF)) {
             $attr["data-graph-fx"] = $fg->fx->expression;
             $attr["data-graph-fy"] = $fg->fy->expression;
         }

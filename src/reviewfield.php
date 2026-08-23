@@ -424,6 +424,12 @@ abstract class ReviewField implements JsonSerializable {
     }
 
     /** @param int|float|string $fval
+     * @return ?string */
+    function value_class($fval) {
+        return null;
+    }
+
+    /** @param int|float|string $fval
      * @return string */
     function unparse_search($fval) {
         return "";
@@ -674,9 +680,8 @@ abstract class Discrete_ReviewField extends ReviewField {
         }
         if ($sclass === "sv") {
             return "sv sv{$x}";
-        } else {
-            return "sv sv-{$sclass}{$x}";
         }
+        return "sv sv-{$sclass}{$x}";
     }
 
     function export_json($style) {

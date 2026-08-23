@@ -37,6 +37,11 @@ abstract class ValueFormat {
         return $this->vhtml($x);
     }
 
+    /** @return ?string */
+    function color_classes($x) {
+        return null;
+    }
+
     /** @return ValueFormat */
     function difference_format() {
         return $this;
@@ -213,17 +218,19 @@ class User_ValueFormat extends ValueFormat {
     }
 
     function vtext($x) {
-        if ($x <= 0 || (int) $x != $x) {
-            return "";
-        }
-        return $this->user->name_text_for((int) $x);
+        $v = (int) $x;
+        return $v > 0 && $v == $x ? $this->user->name_text_for($v) : "";
     }
 
     function vhtml($x) {
-        if ($x <= 0 || (int) $x != $x) {
-            return "";
-        }
-        return $this->user->reviewer_html_for((int) $x);
+        $v = (int) $x;
+        return $v > 0 && $v == $x ? $this->user->reviewer_html_for($v) : "";
+    }
+
+    function color_classes($x) {
+        $v = (int) $x;
+        $u = $v > 0 && $v == $x ? $this->user->conf->user_by_id($v) : null;
+        return $u ? $u->viewable_color_classes($this->user) : null;
     }
 
     function difference_format() {
@@ -249,6 +256,10 @@ class ReviewField_ValueFormat extends ValueFormat {
 
     function vhtml($x) {
         return $this->rf->unparse_span_html($x);
+    }
+
+    function color_classes($x) {
+        return $this->rf->value_class($x);
     }
 
     function difference_format() {
