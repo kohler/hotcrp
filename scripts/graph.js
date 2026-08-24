@@ -2,7 +2,7 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 /* global hotcrp, siteinfo */
-hotcrp.graph = (function ($, d3) {
+hotcrp.graph = (function (d3) {
 const $$ = hotcrp.$$,
     $e = hotcrp.$e,
     $frag = hotcrp.$frag,
@@ -16,9 +16,17 @@ const $$ = hotcrp.$$,
     log_jserror = hotcrp.log_jserror,
     make_bubble = hotcrp.make_bubble,
     removeClass = hotcrp.classes.remove,
-    strftime = hotcrp.text.strftime;
+    strftime = hotcrp.text.strftime,
+    tooltip = hotcrp.tooltip;
 
 // Layout constants
+
+// Shape of the graph box when neither the container's CSS nor `args` names
+// one. 16:9 is what the flat 540px default amounted to at the graph page's
+// 960px width, so this keeps that box and starts scaling narrower ones.
+const DEFAULT_ASPECT_RATIO = 16 / 9;
+// Floor below which the derived plot rectangle stops meaning anything
+const MIN_BOX_WIDTH = 120, MIN_BOX_HEIGHT = 80;
 
 // Insets are distances from graph box edges to the marks that show there:
 // top of Y-axis label, right end of X-axis line or of a tick label
@@ -28,6 +36,19 @@ const $$ = hotcrp.$$,
 const INSET_TOP = 6, INSET_RIGHT = 8, INSET_BOTTOM = 6, INSET_LEFT = 8;
 // Gap between an axis label and the tick labels it sits next to
 const LABEL_GAP = 4;
+// How far outside the plot rectangle marks may still draw; see `make_axis_pair`
+const PLOT_CLIP_MARGIN = 6;
+// One press of a zoom button changes the window by this factor
+const ZOOM_STEP = 1.5;
+// A graph zooms in until it shows this fraction of its full extent
+const ZOOM_MIN_FRACTION = 0.001;
+// Pointer travel, in pixels, that turns a click into a pan
+const PAN_THRESHOLD = 3;
+// How the graph follows its container. A render at or under the frame budget
+// is cheap enough to repeat every frame while the container is being dragged;
+// a slower one waits for the box to settle instead. Box changes under the
+// threshold are not worth a redraw.
+const RESIZE_FRAME_BUDGET = 12, RESIZE_DEBOUNCE = 150, RESIZE_THRESHOLD = 2;
 // Hard ceiling on tick label width, in pixels, applied whether or not the
 // dimension it extends into can grow — a growable box otherwise lets one
 // pathological label set the size for everything.
@@ -71,6 +92,19 @@ function tilted_label_depth(width, descent) {
 function tilted_label_width(depth, descent) {
     return (depth - (X_TICK_TILT_DY + descent) * COSINE_TILT_RADIANS)
         * SINE_TILT_RADIANS_INVERSE - X_TICK_TILT_DX;
+}
+
+
+/** GET `url` and hand the parsed JSON to `callback`. A failure is dropped, as
+ * it was when this went through jQuery: every caller decorates a graph that
+ * is already drawn, so there is nothing to fall back to and nothing to undo.
+ * @param {string} url
+ * @param {function(Object)} callback */
+function api_get(url, callback) {
+    fetch(url, {credentials: "same-origin"})
+        .then(res => res.json())
+        .then(callback)
+        .catch(() => undefined);
 }
 
 
@@ -380,18 +414,17 @@ function expand_extent(e, args) {
 /** Emit one laid-out axis into `g`. `layout_axis` has already chosen the
  * ticks, their positions, their possibly-shortened text, and whether they
  * tilt; this only draws them.
+ * @param {object} view
  * @param {*} g
- * @param {object} axis
- * @param {string} side
- * @param {object} args */
-function draw_axis(g, axis, side, args) {
-    const lay = axis.layout, xside = side === "x";
+ * @param {string} side */
+function draw_axis(view, g, side) {
+    const axis = view[side], lay = axis.layout, xside = side === "x";
     if (lay.widelabel) {
         g.attr("class", g.attr("class") + " widelabel");
     }
     // the X axis draws a baseline; the Y axis never has
     if (xside) {
-        g.append("path").attr("d", "M0,0H" + args.plotWidth);
+        g.append("path").attr("d", "M0,0H" + view.plotWidth);
     }
     for (const t of lay.ticks) {
         const tg = g.append("g").attr("class", "tick")
@@ -431,6 +464,9 @@ function draw_axis(g, axis, side, args) {
         if (lay.tilt) {
             tg.selectAll("text, rect").attr("transform", `rotate(${-TILT_DEGREES})`);
         }
+        if (t.opacity != null) {
+            tg.selectAll("text, rect").attr("opacity", t.opacity);
+        }
     }
 }
 
@@ -441,29 +477,29 @@ function draw_axis(g, axis, side, args) {
  * by the same amount, so the two agree however the edge was arrived at.
  * @param {object} args
  * @return {number} */
-function y_head_room(args) {
-    const h = args.labelMetrics.height;
-    return Math.ceil(h / 2) + (args.y.label ? Math.ceil(h) + LABEL_GAP : 0);
+function y_head_room(view) {
+    const h = view.labelMetrics.height;
+    return Math.ceil(h / 2) + (view.args.y.label ? Math.ceil(h) + LABEL_GAP : 0);
 }
 
 /** @param {*} svg
- * @param {object} args */
-function draw_axes(svg, args) {
-    const parent = d3.select(svg.node().parentElement);
+ * @param {object} view */
+function draw_axes(svg, view) {
+    const parent = d3.select(svg.node().ownerSVGElement);
 
     const xaxe = parent.append("g")
         .attr("class", "hg-axis hg-axis-x")
-        .attr("transform", `translate(${args.plotLeft},${args.plotBottom})`);
-    draw_axis(xaxe, args.x, "x", args);
-    if (args.x.label) {
+        .attr("transform", `translate(${view.left},${view.bottom})`);
+    draw_axis(view, xaxe, "x");
+    if (view.args.x.label) {
         xaxe.append("text")
             .attr("class", "label")
-            .attr("x", args.plotWidth)
-            .attr("y", args.height - args.plotBottom - args.insetBottom
-                - args.labelMetrics.descent)
+            .attr("x", view.plotWidth)
+            .attr("y", view.fullHeight - view.bottom - view.args.insetBottom
+                - view.labelMetrics.descent)
             .attr("text-anchor", "end")
             .attr("pointer-events", "none")
-            .text(args.x.label)
+            .text(view.args.x.label)
             .append("tspan")
             .attr("class", "arrow")
             .text(" \u2192");
@@ -471,9 +507,9 @@ function draw_axes(svg, args) {
 
     const yaxe = parent.append("g")
         .attr("class", "hg-axis hg-axis-y")
-        .attr("transform", `translate(${args.plotLeft},${args.plotTop})`);
-    draw_axis(yaxe, args.y, "y", args);
-    if (args.y.label) {
+        .attr("transform", `translate(${view.left},${view.top})`);
+    draw_axis(view, yaxe, "y");
+    if (view.args.y.label) {
         const uparrow = d3.create("svg:tspan")
             .attr("class", "arrow")
             .text("\u2191 ");
@@ -484,29 +520,29 @@ function draw_axes(svg, args) {
         // pinned it follows the plot.
         yaxe.append("text")
             .attr("class", "label")
-            .attr("x", Math.max(-args.y.layout.ink, args.insetLeft - args.plotLeft))
-            .attr("y", args.labelMetrics.ascent - y_head_room(args))
+            .attr("x", Math.max(-view.y.layout.ink, view.args.insetLeft - view.left))
+            .attr("y", view.labelMetrics.ascent - y_head_room(view))
             .attr("text-anchor", "start")
             .attr("pointer-events", "none")
-            .text(args.y.label)
+            .text(view.args.y.label)
             .each(function () {
                 this.insertBefore(uparrow.node(), this.firstChild);
             });
     }
 
-    place_x_axis_label(xaxe, args);
+    place_x_axis_label(xaxe, view);
 }
 
-function draw_annotations(svg, args) {
-    for (const anno of args.annotations || []) {
+function draw_annotations(svg, view) {
+    for (const anno of view.args.annotations || []) {
         if (anno.type === "xline") {
-            const x = args.x.scale(anno.x);
+            const x = view.x.scale(anno.x);
             svg.append("line")
                 .attr("class", "gxline")
                 .attr("x1", x)
-                .attr("y1", args.y.scale(args.y.scale.domain()[0]))
+                .attr("y1", view.y.scale(view.y.scale.domain()[0]))
                 .attr("x2", x)
-                .attr("y2", args.y.scale(args.y.scale.domain()[1]));
+                .attr("y2", view.y.scale(view.y.scale.domain()[1]));
         }
     }
 }
@@ -851,9 +887,6 @@ function instantiate_axis(ax) {
  * Ticks that would reach further are dropped, down to the last one, which an
  * axis keeps regardless. `axis.layout.overhang` reports how far the survivors
  * actually reach.
- *
- * Deliberately knows nothing about `expandable`: it reports what the ticks
- * need, and `make_axis_pair` decides whether to grow the box or clamp.
  * @param {object} axis
  * @param {string} side
  * @param {object} args
@@ -862,18 +895,18 @@ function instantiate_axis(ax) {
  * @param {number} cap
  * @param {number} [overhang_cap]
  * @return {number} */
-function layout_axis(axis, side, args, scale, length, cap, overhang_cap) {
-    const xside = side === "x";
+function layout_axis(view, side, scale, length, cap, overhang_cap) {
+    const xside = side === "x", axis = view.args[side], vaxis = view[side];
     scale.range(!axis.flip === !xside ? [length, 0] : [0, length]);
-    axis.scale = scale;
+    vaxis.scale = scale;
 
     const values = axis.tick_values(scale),
         texts = values.map(v => axis.value_format(v));
     let widelabel = false,
-        m = measure_texts(args.svg, texts, false);
+        m = measure_texts(view.svg, texts, false);
     if (d3.max(m.widths) > 100) { // shrink the font before anything else
         widelabel = true;
-        m = measure_texts(args.svg, texts, true);
+        m = measure_texts(view.svg, texts, true);
     }
     const tilt = xside && !!axis.want_tilt;
 
@@ -925,7 +958,7 @@ function layout_axis(axis, side, args, scale, length, cap, overhang_cap) {
         textcap = Infinity; // upright X labels collide sideways, and thinning
                             // has already spaced them out
     }
-    truncate_ticks(args.svg, out, Math.min(textcap, MAX_LABEL_WIDTH), widelabel);
+    truncate_ticks(view.svg, out, Math.min(textcap, MAX_LABEL_WIDTH), widelabel);
 
     // How far the labels reach past the end of the axis, once any that
     // exceed the allowance are gone. Only upright X labels do: a tilted one
@@ -939,7 +972,7 @@ function layout_axis(axis, side, args, scale, length, cap, overhang_cap) {
             // it; with one tick left there is nothing for thinning to change,
             // so granting the room it asks for cannot start a cycle
             if (over > room && out.length > 1) {
-                out.splice(i, 1);
+                out[i].opacity = Math.max(1 - 2 * (over - room) / out[i].width, 0);
             } else if (over > overhang) {
                 overhang = over;
             }
@@ -950,27 +983,25 @@ function layout_axis(axis, side, args, scale, length, cap, overhang_cap) {
         ink = !xside ? Math.ceil(maxw) + Y_TICK_TEXT_OFFSET
             : (tilt ? tilted_label_depth(maxw, m.descent)
                : X_TICK_TEXT_OFFSET + m.height);
-    axis.layout = {ticks: out, tilt: tilt, widelabel: widelabel,
+    vaxis.layout = {ticks: out, tilt: tilt, widelabel: widelabel,
         ascent: m.ascent, ink: ink, overhang: Math.ceil(overhang)};
     return ink;
 }
 
 /** Lay out both axes and settle the plot rectangle.
  *
- * In unexpandable plots, edges derived from insets are interdependent -- a
- * wider left margin narrows the plot, which thins the X ticks, which can
- * shorten the bottom margin and move the label the right edge makes room for,
- * which lengthens the plot, which un-thins the Y ticks, which widens the left
- * margin again -- so we can go for a couple rounds.
- * @param {object} args
+ * In unexpandable plots each edge depends on the others through the ticks
+ * they leave room for, so the layout iterates until it settles.
+ * @param {object} view
  * @param {*} x
  * @param {*} y */
-function make_axis_pair(args, x, y) {
+function make_axis_pair(view, x, y) {
+    const args = view.args;
     // both axis labels render in the axis font, so any string measures it
-    args.labelMetrics = measure_texts(args.svg, [args.x.label || args.y.label || "0"]);
-    const lm = args.labelMetrics,
-        grow = args.expandable === "height",
-        base_height = args.height,
+    view.labelMetrics = measure_texts(view.svg, [args.x.label || args.y.label || "0"]);
+    const lm = view.labelMetrics,
+        grow = view.expandable === "height",
+        base_height = view.box[1],
         lheight = Math.ceil(lm.height),
         // the X axis label claims a band of its own below the tick labels
         // unless they tilt, in which case it tucks in beside the shorter ones
@@ -983,24 +1014,25 @@ function make_axis_pair(args, x, y) {
         pin_bottom = args.plotBottom, pin_left = args.plotLeft,
         // how far tick ink may reach from each axis line. A pin is a hard
         // limit on its side; an unpinned side gets the policy fraction.
-        ycap = (pin_left ?? Math.floor(args.width * MAX_Y_LABEL_WIDTH_FRACTION))
+        ycap = (pin_left ?? Math.floor(view.box[1] * MAX_Y_LABEL_WIDTH_FRACTION))
             - args.insetLeft,
         xroom = grow ? Infinity
             : (pin_bottom != null ? base_height - pin_bottom
                : Math.floor(base_height * MAX_X_LABEL_HEIGHT_FRACTION)),
         xcap = xroom - args.insetBottom - label_room,
-        top = pin_top ?? args.insetTop + y_head_room(args);
+        top = pin_top ?? args.insetTop + y_head_room(view);
     let left = pin_left ?? 0,
-        right = pin_right ?? args.width - args.insetRight,
+        right = pin_right ?? view.box[0] - args.insetRight,
         bmargin = nominal_bottom, settled = false,
         // Room granted past the end of the X axis for a label that overhangs
         // it, and the allowance `layout_axis` enforces. The room only grows
-        // while the allowance is open, because giving room back widens the
-        // plot, which can bring the wide label back and start the cycle over.
-        // So the first round that asks for less closes the allowance at that
-        // smaller figure, and from then on a label that will not fit it is
-        // dropped rather than accommodated.
-        overhang = 0, overhang_cap = Infinity;
+        // while the allowance is open: the first round that asks for less
+        // closes it at that figure, so giving room back cannot widen the plot
+        // and bring the wide label round again.
+        //
+        // A zoomed view does not negotiate. Its window is fixed, so the plot
+        // rect showing it stays put, and a label that overhangs is dropped.
+        overhang = 0, overhang_cap = view.window ? 0 : Infinity;
 
     /** @param {number} b - bottom margin
      * @return {number} Y of the X axis line */
@@ -1008,14 +1040,12 @@ function make_axis_pair(args, x, y) {
         return pin_bottom ?? (grow ? base_height - nominal_bottom : base_height - b);
     }
     function lay_out() {
-        args.plotHeight = plot_bottom(bmargin) - top;
-        const yink = layout_axis(args.y, "y", args, y, args.plotHeight, ycap),
-            nleft = pin_left ?? args.insetLeft + Math.min(yink, ycap);
-        args.plotWidth = right - nleft;
-        const nbmargin = Math.ceil(Math.min(
-            layout_axis(args.x, "x", args, x, args.plotWidth, xcap, overhang_cap)
-                + args.insetBottom + label_room, xroom)),
-            need = args.x.layout.overhang;
+        const yink = layout_axis(view, "y", y, plot_bottom(bmargin) - top, ycap),
+            nleft = pin_left ?? args.insetLeft + Math.min(yink, ycap),
+            nbmargin = Math.ceil(Math.min(xroom,
+                layout_axis(view, "x", x, right - nleft, xcap, overhang_cap)
+                    + args.insetBottom + label_room)),
+            need = view.x.layout.overhang;
         if (need > overhang) {
             overhang = need;
         } else if (need < overhang) {
@@ -1023,7 +1053,7 @@ function make_axis_pair(args, x, y) {
         }
         // the right inset measures to the rightmost ink, which is the end of
         // the axis line unless a tick label overhangs it
-        const nright = pin_right ?? args.width - args.insetRight - overhang;
+        const nright = pin_right ?? view.box[0] - args.insetRight - overhang;
         settled = nleft === left && nbmargin === bmargin && nright === right;
         left = nleft;
         bmargin = nbmargin;
@@ -1040,15 +1070,24 @@ function make_axis_pair(args, x, y) {
         lay_out(); // one consistent pass at whatever it converged on
     }
 
-    args.plotLeft = left;
-    args.plotTop = top;
-    args.plotRight = right;
-    args.plotBottom = plot_bottom(bmargin);
-    args.plotWidth = right - left;
-    args.plotHeight = args.plotBottom - top;
-    args.height = grow ? args.plotBottom + bmargin : base_height;
-    d3.select(args.svg.node().parentElement).attr("height", args.height);
-    args.svg.attr("transform", `translate(${left},${top})`);
+    const bottom = plot_bottom(bmargin);
+    view.left = left;
+    view.top = top;
+    view.right = right;
+    view.bottom = bottom;
+    view.plotWidth = right - left;
+    view.plotHeight = bottom - top;
+    view.fullHeight = grow ? bottom + bmargin : base_height;
+    d3.select(view.svg.node().ownerSVGElement).attr("height", view.fullHeight);
+    const tr = `translate(${left},${top})`;
+    view.svg.attr("transform", tr);
+    view.overlay.attr("transform", tr);
+    // Marks at the edge of the domain hang over it by their own radius, so
+    // the clip keeps that much of the surround: a zoomed edge then looks like
+    // an unzoomed one, while marks well outside the window stay hidden.
+    view.clip.attr("x", left - PLOT_CLIP_MARGIN).attr("y", top - PLOT_CLIP_MARGIN)
+        .attr("width", view.plotWidth + 2 * PLOT_CLIP_MARGIN)
+        .attr("height", view.plotHeight + 2 * PLOT_CLIP_MARGIN);
 }
 
 function make_linear_scale(argextent, e) {
@@ -1073,17 +1112,11 @@ function render_position(aa, p, prefix) {
 
 // args: {data: [{d: [ARRAY], label: STRING, className: STRING}],
 //        x/y: {label: STRING, tickFormat: STRING}}
-function graph_cdf(element, args) {
-    const svg = this;
+function graph_cdf(element, view) {
+    const svg = this, args = view.args;
 
     // massage data
     let series = args.data;
-    if (!series.length) {
-        series = Object.values(series);
-        series.sort(function (a, b) {
-            return d3.ascending(a.priority || 0, b.priority || 0);
-        });
-    }
     series = series.filter(function (d) {
         return (d.d ? d.d : d).length > 0;
     });
@@ -1100,11 +1133,11 @@ function graph_cdf(element, args) {
     }, [Infinity, -Infinity]);
     xdomain = [xdomain[0] - (xdomain[1] - xdomain[0]) / 32,
                xdomain[1] + (xdomain[1] - xdomain[0]) / 32];
-    const x = make_linear_scale(args.x.extent, xdomain),
-        y = make_linear_scale(args.y.extent, [0, Math.ceil(d3.max(data, function (d) {
+    const x = make_linear_scale(view.x.extent, xdomain),
+        y = make_linear_scale(view.y.extent, [0, Math.ceil(d3.max(data, function (d) {
                 return d[d.length - 1][1];
             }) * 10) / 10]);
-    make_axis_pair(args, x, y);
+    make_axis_pair(view, x, y);
 
     // lines
     const line = d3.line().x(function (d) {return x(d[0]);})
@@ -1129,14 +1162,14 @@ function graph_cdf(element, args) {
     const hovers = svg.selectAll(".gcdf-hover0, .gcdf-hover1");
     hovers.style("display", "none");
 
-    draw_axes(svg, args);
-    draw_annotations(svg, args);
+    draw_axes(svg, view);
+    draw_annotations(svg, view);
 
     if (args.interactive !== false) {
-        svg.append("rect")
-            .attr("x", -args.plotLeft)
-            .attr("width", args.plotWidth + args.plotLeft)
-            .attr("height", args.height - args.plotTop)
+        view.overlay.append("rect")
+            .attr("x", -view.left)
+            .attr("width", view.right)
+            .attr("height", view.fullHeight - view.top)
             .attr("fill", "none")
             .attr("pointer-events", "all")
             .on("mouseover", mousemoved)
@@ -1179,7 +1212,7 @@ function graph_cdf(element, args) {
                 hubble.text(hovered_series.label);
             }
             hubble.anchor(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "e" : "s")
-                .at(p[0] + args.plotLeft, p[1], this);
+                .at(p[0] + view.left, p[1], this);
         } else if (hubble) {
             hubble = hubble.remove() && null;
         }
@@ -1208,7 +1241,9 @@ function procrastination_seq(ri) {
 }
 
 function procrastination_filter(revdata) {
-    const args = {gtype: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip-s"};
+    const args = Object.assign({}, revdata,
+        {gtype: "cdf", data: [], data_format: "cdf",
+         tooltip_class: "graphtip-s"});
 
     // collect data
     const alldata = [];
@@ -1226,25 +1261,29 @@ function procrastination_filter(revdata) {
         u && u.color_classes && (d.className += " " + u.color_classes);
         Array.prototype.push.apply(alldata, d.d);
         if (cid !== "conflicts") {
-            args.data[cid] = d;
+            args.data.push(d);
         }
     }
-    args.data.all = {d: alldata, className: "gcdf-cumulative", priority: 2};
+    args.data.push({d: alldata, className: "gcdf-cumulative", priority: 2});
+    args.data.sort(function (a, b) {
+        return d3.ascending(a.priority || 0, b.priority || 0);
+    });
 
     // make cdfs
-    for (const i in args.data) {
-        args.data[i].d = seq_to_cdf(procrastination_seq(args.data[i].d));
+    for (const ds of args.data) {
+        ds.d = seq_to_cdf(procrastination_seq(ds.d));
     }
 
-    args.x.label = "Date";
-    args.x.scale_class = "time";
-    args.y.label = "Fraction of assignments completed";
+    args.x = {label: "Date", scale_class: "time"};
+    args.y = {label: "Fraction of assignments completed"};
     args.annotations = [];
+    revdata.deadlines.sort();
+    let last_deadline = 0;
     for (const dl of revdata.deadlines) {
-        if (!dl) {
-            continue;
+        if (dl > last_deadline) {
+            last_deadline = dl;
+            args.annotations.push({type: "xline", x: dl});
         }
-        args.annotations.push({type: "xline", x: dl});
     }
     return args;
 }
@@ -1404,7 +1443,7 @@ function gqdata_ids(gqp, want_cc) {
 }
 
 function ungroup_data(data) {
-    if ($.isArray(data)) {
+    if (Array.isArray(data)) {
         return data;
     }
     for (const style in data) {
@@ -1557,14 +1596,14 @@ function scatter_union(p) {
 }
 
 function make_hover_interactor(svg, hovers, identity) {
-    let data = null, over = null;
+    let data = null, over = null, owner = svg.node().closest("svg");
     function mouseout() {
         hovers.style("display", "none");
         if (self.bubble) {
             self.bubble.remove();
         }
         self.data = self.bubble = data = over = null;
-        svg.style("cursor", null);
+        owner.style.cursor = "";
     }
     const self = {
         data: null,
@@ -1579,7 +1618,7 @@ function make_hover_interactor(svg, hovers, identity) {
             }
             self.data = data = d;
             self.bubble = self.bubble || make_bubble({class: "graphtip", "pointer-events": "none"});
-            svg.style("cursor", "pointer");
+            owner.style.cursor = "pointer";
             return true;
         },
         mouseout: mouseout,
@@ -1598,14 +1637,15 @@ function make_hover_interactor(svg, hovers, identity) {
     return self;
 }
 
-function graph_scatter(element, args) {
-    const svg = this;
+function graph_scatter(element, view) {
+    const svg = this, args = view.args;
     let data = ungroup_data(args.data);
-    const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
-        y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y));
-    make_axis_pair(args, x, y);
+    const x = make_linear_scale(view.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
+        y = make_linear_scale(view.y.extent, expand_extent(d3.extent(data, proj1), args.y));
+    make_axis_pair(view, x, y);
 
-    $(element).on("hotgraphhighlight", highlight);
+    element.addEventListener("hotgraphhighlight", ev => highlight(ev.detail),
+        {signal: view.signal});
 
     const gq = grouped_quadtree(data, x, y, 4, args.data_format === "xyis");
     data = null;
@@ -1615,14 +1655,14 @@ function graph_scatter(element, args) {
     const hovers = svg.selectAll(".gdot-hover").style("display", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    draw_axes(svg, args);
-    draw_annotations(svg, args);
+    draw_axes(svg, view);
+    draw_annotations(svg, view);
 
     if (args.interactive !== false) {
-        svg.append("rect")
-            .attr("x", -args.plotLeft)
-            .attr("width", args.plotWidth + args.plotLeft)
-            .attr("height", args.height - args.plotTop)
+        view.overlay.append("rect")
+            .attr("x", -view.left)
+            .attr("width", view.right)
+            .attr("height", view.fullHeight - view.top)
             .attr("fill", "none")
             .attr("pointer-events", "all")
             .on("mouseover", mousemoved)
@@ -1657,19 +1697,21 @@ function graph_scatter(element, args) {
         clicker(hoverer.data ? gqdata_ids(hoverer.data) : null, event);
     }
 
-    function highlight(event) {
-        if (!event.ids) {
-            if (event.q && event.ok) {
-                $.getJSON(hoturl("api/search", {q: event.q, forceShow: 1}), null, highlight);
+    // `hl` is {ok, q, ids}: either the detail of a highlight event or the
+    // search response that resolves one, which have the same shape
+    function highlight(hl) {
+        if (!hl.ids) {
+            if (hl.q && hl.ok) {
+                api_get(hoturl("api/search", {q: hl.q, forceShow: 1}), highlight);
             }
             return;
         }
         hoverer.mouseout();
         let myd = [];
-        if (event.ids.length) {
+        if (hl.ids.length) {
             myd = gq.data.filter(function (pd) {
                 for (const d of pd.data) {
-                    if (event.ids.indexOf(id2pid(d[2])) >= 0) {
+                    if (hl.ids.indexOf(id2pid(d[2])) >= 0) {
                         return true;
                     }
                 }
@@ -1734,7 +1776,7 @@ function data_pidcode(data) {
 }
 
 function load_titles(titles, pidcode, success) {
-    $.getJSON(hoturl("api/search", {q: "pidcode:" + pidcode, f: "title", format: "json", forceShow: 1}), null,
+    api_get(hoturl("api/search", {q: "pidcode:" + pidcode, f: "title", format: "json", forceShow: 1}),
         function (d) {
             for (const pd of d.papers || []) {
                 titles[pd.pid] = pd.title;
@@ -1743,13 +1785,13 @@ function load_titles(titles, pidcode, success) {
         });
 }
 
-function graph_dot(element, args) {
-    const svg = this;
+function graph_dot(element, view) {
+    const svg = this, args = view.args;
     let data = ungroup_data(args.data);
     const pidcode = data_pidcode(data),
-        x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
-        y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y));
-    make_axis_pair(args, x, y);
+        x = make_linear_scale(view.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
+        y = make_linear_scale(view.y.extent, expand_extent(d3.extent(data, proj1), args.y));
+    make_axis_pair(view, x, y);
     data = data.map(d => {
         const xv = x(d[0]), yv = y(d[1]);
         return {"0": d[0], "1": d[1], x: xv, x0: xv, y: yv, y0: yv, id: d[2], cc: d[3], r: DOT_RADIUS};
@@ -1766,7 +1808,8 @@ function graph_dot(element, args) {
         .stop();
     sim.tick(Math.ceil(Math.log(sim.alphaMin()) / Math.log(1 - sim.alphaDecay())));
 
-    $(element).on("hotgraphhighlight", highlight);
+    element.addEventListener("hotgraphhighlight", ev => highlight(ev.detail),
+        {signal: view.signal});
 
     svg.append("circle").attr("class", "gdot gdot-hover");
     const hovers = svg.selectAll(".gdot-hover")
@@ -1774,8 +1817,8 @@ function graph_dot(element, args) {
             .style("display", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    draw_axes(svg, args);
-    draw_annotations(svg, args);
+    draw_axes(svg, view);
+    draw_annotations(svg, view);
 
     // A labeled dot is two elements sharing one position, so group them and
     // place the group; a plain dot is just the circle and needs no wrapper.
@@ -1816,8 +1859,10 @@ function graph_dot(element, args) {
             $e("p", null, render_position(args.x, p[0]), ", ", render_position(args.y, p[1])),
             render_pid_p([p], p.cc)
         ];
-        if (titles && titles[p.id]) {
-            a[1].append(" " + titles[p.id]);
+        // `titles` is keyed by paper, `p.id` may name a review on one
+        const title = titles && titles[id2pid(p.id)];
+        if (title) {
+            a[1].append(" " + title);
         }
         return a;
     }
@@ -1851,18 +1896,19 @@ function graph_dot(element, args) {
         clicker(p ? p.id : null, event);
     }
 
-    function highlight(event) {
-        if (!event.ids) {
-            if (event.q && event.ok) {
-                $.getJSON(hoturl("api/search", {q: event.q, forceShow: 1}), null, highlight);
+    // see `graph_scatter`
+    function highlight(hl) {
+        if (!hl.ids) {
+            if (hl.q && hl.ok) {
+                api_get(hoturl("api/search", {q: hl.q, forceShow: 1}), highlight);
             }
             return;
         }
         hoverer.mouseout();
         let myd = [];
-        if (event.ids.length) {
+        if (hl.ids.length) {
             myd = data.filter(function (d) {
-                return event.ids.indexOf(id2pid(d.id)) >= 0;
+                return hl.ids.indexOf(id2pid(d.id)) >= 0;
             });
         }
         dot_highlight(svg, myd);
@@ -1938,8 +1984,8 @@ function data_to_barchart(data, yaxis) {
     return ndata;
 }
 
-function graph_bars(element, args) {
-    const svg = this,
+function graph_bars(element, view) {
+    const svg = this, args = view.args,
         bdata = data_to_barchart(args.data, args.y);
 
     const ystart = args.y.scale_class === "review_field" ? 0.75 : 0,
@@ -1951,12 +1997,12 @@ function graph_bars(element, args) {
             const delta = i ? d[0] - bdata[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = make_linear_scale(args.x.extent, expand_extent(xe, args.x)),
-        y = make_linear_scale(args.y.extent, ye);
-    make_axis_pair(args, x, y);
+        x = make_linear_scale(view.x.extent, expand_extent(xe, args.x)),
+        y = make_linear_scale(view.y.extent, ye);
+    make_axis_pair(view, x, y);
 
     const dpr = window.devicePixelRatio || 1;
-    let barwidth = args.plotWidth / 20;
+    let barwidth = view.plotWidth / 20;
     if (deltae[0] != Infinity) {
         barwidth = Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])));
     }
@@ -1984,7 +2030,7 @@ function graph_bars(element, args) {
             })
             .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
-    draw_axes(svg, args);
+    draw_axes(svg, view);
 
     svg.append("path").attr("class", "gbar gbar-hover0");
     svg.append("path").attr("class", "gbar gbar-hover1");
@@ -2112,8 +2158,9 @@ function data_to_boxplot(data, septags) {
     return data;
 }
 
-function graph_boxplot(element, args) {
-    const data = data_to_boxplot(args.data, !!args.y.fraction, true),
+function graph_boxplot(element, view) {
+    const args = view.args,
+        data = data_to_boxplot(args.data, !!args.y.fraction, true),
         svg = this;
 
     const xe = d3.extent(data, proj0),
@@ -2123,11 +2170,11 @@ function graph_boxplot(element, args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = make_linear_scale(args.x.extent, expand_extent(xe, args.x)),
-        y = make_linear_scale(args.y.extent, expand_extent(ye, args.y));
-    make_axis_pair(args, x, y);
+        x = make_linear_scale(view.x.extent, expand_extent(xe, args.x)),
+        y = make_linear_scale(view.y.extent, expand_extent(ye, args.y));
+    make_axis_pair(view, x, y);
 
-    let barwidth = args.plotWidth / 80;
+    let barwidth = view.plotWidth / 80;
     if (deltae[0] != Infinity) {
         barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 6);
     }
@@ -2215,7 +2262,7 @@ function graph_boxplot(element, args) {
               .attr("class", function (d) { return "gbox outlier " + d.cc; })
               .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
-    draw_axes(svg, args);
+    draw_axes(svg, view);
 
     svg.append("line").attr("class", "gbox whiskerl gbox-hover");
     svg.append("line").attr("class", "gbox whiskerh gbox-hover");
@@ -2228,10 +2275,12 @@ function graph_boxplot(element, args) {
             .style("ponter-events", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    $(element).on("hotgraphhighlight", highlight);
+    element.addEventListener("hotgraphhighlight", ev => highlight(ev.detail),
+        {signal: view.signal});
 
     if (args.interactive !== false) {
-        element.addEventListener("mouseout", hoverer.mouseout_soon, false);
+        element.addEventListener("mouseout", hoverer.mouseout_soon,
+            {signal: view.signal});
 
         element.addEventListener("mouseover", function (event) {
             if (hasClass(event.target, "outlier")
@@ -2239,13 +2288,13 @@ function graph_boxplot(element, args) {
                 mouseover_outlier.call(event.target);
             else if (hasClass(event.target, "gbox"))
                 mouseover.call(event.target);
-        }, false);
+        }, {signal: view.signal});
 
         element.addEventListener("click", function (event) {
             if (hasClass(event.target, "gbox")
                 || hasClass(event.target, "gscatter"))
                 mouseclick.call(event.target, event);
-        }, false);
+        }, {signal: view.signal});
     }
 
     function make_tooltip(p) {
@@ -2310,38 +2359,56 @@ function graph_boxplot(element, args) {
         }
     }
 
-    function highlight(event) {
+    // see `graph_scatter`
+    function highlight(hl) {
+        if (!hl.ids) {
+            if (hl.q && hl.ok) {
+                api_get(hoturl("api/search", {q: hl.q, forceShow: 1}), highlight);
+            }
+            return;
+        }
         hoverer.mouseout();
-        if (event.ids && !event.ids.length) {
+        // A box keeps the points it summarizes, so what to highlight is here
+        // already. Marks group at the outliers' radius, since they are drawn
+        // in the same language.
+        const pts = [];
+        for (const d of data) {
+            for (let i = 0; i !== d.ys.length; ++i) {
+                if (hl.ids.indexOf(id2pid(d.ids[i])) >= 0) {
+                    pts.push([d[0], d.ys[i], d.ids[i], d.cc]);
+                }
+            }
+        }
+        if (!pts.length) {
             svg.selectAll(".gscatter").remove();
             return;
         }
-        $.getJSON(hoturl("api/graphdata"), {
-            x: element.getAttribute("data-graph-fx"),
-            y: element.getAttribute("data-graph-fy"),
-            q: event.q
-        }, function (rv) {
-            if (!rv.ok) {
-                return;
-            }
-            project_data(rv, args);
-            const data = ungroup_data(rv.data);
-            const gq = grouped_quadtree(data, x, y, 4);
-            scatter_create(svg, gq.data, "gscatter");
-            scatter_highlight(svg, gq.data, "gscatter");
-        });
+        const gq = grouped_quadtree(pts, x, y, 2);
+        scatter_create(svg, gq.data, "gscatter");
+        scatter_highlight(svg, gq.data, "gscatter");
     }
 }
 
+/** Tell a graph which of its marks to highlight.
+ * @param {*} target - the graph, or anything inside it
+ * @param {string} q
+ * @param {list<number>} ids */
+function fire_highlight(target, q, ids) {
+    target && target.dispatchEvent(new CustomEvent("hotgraphhighlight",
+        {bubbles: true, detail: {ok: true, q: q, ids: ids}}));
+}
+
 handle_ui.on("js-hotgraph-highlight", function () {
-    const s = $.trim(this.value),
-        $g = $(this).closest(".has-hotgraph").find(".hotgraph");
+    const s = this.value.trim(),
+        box = this.closest(".has-hotgraph"),
+        g = box && box.querySelector(".hotgraph"),
+        view = graph_view_near(this);
     function fire(ids) {
-        const e = $.Event("hotgraphhighlight");
-        e.ok = true;
-        e.q = s;
-        e.ids = ids;
-        $g.trigger(e);
+        if (view) {
+            // remembered, so a graph drawn again comes back highlighted
+            view.highlight = s === "" ? null : {q: s, ids: ids};
+        }
+        fire_highlight(g, s, ids);
     }
     // Resolve the query to a pid list once, so every listener (graph marks and
     // data table) consumes the same resolved ids rather than each searching.
@@ -2350,7 +2417,7 @@ handle_ui.on("js-hotgraph-highlight", function () {
     } else if (/^[1-9][0-9]*$/.test(s)) {
         fire([+s]);
     } else {
-        $.getJSON(hoturl("api/search", {q: s, forceShow: 1}), null, function (data) {
+        api_get(hoturl("api/search", {q: s, forceShow: 1}), function (data) {
             fire(data && data.ids ? data.ids : []);
         });
     }
@@ -2359,25 +2426,31 @@ handle_ui.on("js-hotgraph-highlight", function () {
 /** A graph that could not be computed
  * @param {Element} element
  * @param {object} args */
-function graph_blank(element, args) {
+function graph_blank(element, view) {
     const svg = this;
-    args.x.tick_values = args.y.tick_values = () => [];
-    make_axis_pair(args, d3.scaleLinear().domain([0, 1]),
+    make_axis_pair(view, d3.scaleLinear().domain([0, 1]),
         d3.scaleLinear().domain([0, 1]));
-    draw_axes(svg, args);
+    draw_axes(svg, view);
 }
 
+function graph_blank_prepare(args) {
+    args.x.tick_values = args.y.tick_values = () => [];
+}
+
+// `zoom` names the axes a graph type zooms and pans; both unless it says
+// otherwise. A bar chart or a CDF measures its Y axis off its X axis -- counts
+// and fractions of what the X axis shows -- so only X is the reader's to move.
 const graphers = {
-    procrastination: {filter: true, function: procrastination_filter},
+    procrastination: {prepare_function: procrastination_filter},
     scatter: {function: graph_scatter},
     dot: {function: graph_dot},
     ldot: {function: graph_dot},
-    cdf: {function: graph_cdf},
-    cumfreq: {function: graph_cdf},
-    bar: {function: graph_bars},
-    fraction: {function: graph_bars},
+    cdf: {function: graph_cdf, zoom: "x"},
+    cumfreq: {function: graph_cdf, zoom: "x"},
+    bar: {function: graph_bars, zoom: "x"},
+    fraction: {function: graph_bars, zoom: "x"},
     box: {function: graph_boxplot},
-    blank: {function: graph_blank, blank: true}
+    blank: {prepare_function: graph_blank_prepare, function: graph_blank, blank: true}
 };
 
 /** `expandable` names the dimensions of the graph box that may grow to fit
@@ -2389,19 +2462,17 @@ function normalize_expandable(e) {
     return e == null || e === true || e === "height" ? "height" : false;
 }
 
-/** Move the X axis label up to sit just under the tick labels it is actually
- * beside. `draw_axes` places it against the bottom inset line, which the
- * deepest tick label *anywhere* on the axis sets; a tilted label's depth below
- * the axis is its own text width, so wherever the nearby labels are shorter —
- * and the label is right-anchored, so that is most of the time — that leaves a
- * gap. Overlapping nothing, the label follows the deepest label on the axis,
- * which matters when a pinned bottom edge leaves the margin deeper than the
- * ticks need. Only ever moves the label up, so it cannot leave the box.
+/** Move the X axis label up to sit just under the tick labels it is beside.
+ * `draw_axes` places it against the bottom of the box, which the deepest
+ * label anywhere on the axis sets; tilted labels near the right-anchored
+ * label are usually shorter, leaving a gap. With nothing beside it the label
+ * follows the deepest label on the axis. Only ever moves up, so it cannot
+ * leave the box.
  * @param {*} xaxe
- * @param {object} args */
-function place_x_axis_label(xaxe, args) {
+ * @param {object} view */
+function place_x_axis_label(xaxe, view) {
     const lab = xaxe.select("text.label");
-    if (!args.x.label || lab.empty()) {
+    if (!view.args.x.label || lab.empty()) {
         return;
     }
     const lr = lab.node().getBoundingClientRect(),
@@ -2433,11 +2504,9 @@ function place_x_axis_label(xaxe, args) {
  * same way, and they live inside the graph's own SVG so `smaller` resolves
  * against the same parent.
  *
- * Every node is created before any is measured: a `getComputedTextLength`
- * that follows a write forces its own layout, so writing and reading one
- * string at a time costs a flush apiece. `visibility: hidden` keeps layout
- * while skipping paint. Together, 253 reviewer names measure in ~2ms rather
- * than ~10ms.
+ * Every node is created before any is measured, so the measurements cost one
+ * layout flush rather than one apiece; `visibility: hidden` keeps layout while
+ * skipping paint.
  * @param {*} svg
  * @param {list<string>} texts
  * @param {boolean} [widelabel]
@@ -2466,9 +2535,8 @@ function measure_texts(svg, texts, widelabel) {
  * and keeping the full string for a `<title>`.
  *
  * Character count gives a good first guess at how much fits, so start there
- * and shrink until it does. Each round measures every outstanding candidate in
- * one batch, which is what keeps this off the per-string layout-flush path — a
- * per-label binary search would be a flush per step per label.
+ * and shrink until it does, measuring each round's outstanding candidates in
+ * one batch.
  * @param {*} svg
  * @param {list<object>} ticks
  * @param {number} maxwidth
@@ -2498,13 +2566,627 @@ function truncate_ticks(svg, ticks, maxwidth, widelabel) {
     }
 }
 
+/** Width-to-height ratio named by `v`, or null if it names none. Accepts a
+ * number or the CSS `aspect-ratio` spellings -- `auto`, `<w>`, `<w> / <h>`,
+ * `auto <w> / <h>`. A non-replaced element takes the ratio wherever one
+ * appears, so `auto` matters only in that it carries none.
+ * @param {null|number|string} v
+ * @return {?number} */
+function parse_aspect_ratio(v) {
+    if (typeof v === "number") {
+        return v > 0 ? v : null;
+    } else if (typeof v !== "string") {
+        return null;
+    }
+    const m = v.match(/([\d.]+)(?:\s*\/\s*([\d.]+))?\s*$/);
+    if (!m) {
+        return null;
+    }
+    const w = parseFloat(m[1]), h = m[2] === undefined ? 1 : parseFloat(m[2]);
+    return w > 0 && h > 0 ? w / h : null;
+}
+
+/** Pixels named by the CSS length `v`, or null if it names none: `auto`,
+ * `none`, any keyword, or a percentage. Computed values reach here already in
+ * px, percentages excepted; a percentage height resolves against a containing
+ * block the graph generally sizes itself, so honoring one would feed this
+ * graph's output back into its input. Use `vh` or `maxHeight: "viewport"`.
+ * @param {null|number|string} v
+ * @return {?number} */
+function css_length(v) {
+    if (typeof v === "number") {
+        return isFinite(v) ? v : null;
+    } else if (typeof v !== "string" || v.endsWith("%")) {
+        return null;
+    }
+    const n = parseFloat(v);
+    return isFinite(n) ? n : null;
+}
+
+/** Whether `element` has a box to draw in at all. False when it is
+ * `display: none`, detached, or collapsed to nothing.
+ * @param {Element} element
+ * @return {boolean} */
+function has_box(element) {
+    return element.getBoundingClientRect().width > 0;
+}
+
+/** Derive the graph box from its container, returning view.box = [width, height].
+ *
+ * Width is read from the container. Height cannot be: the `<svg>` is the
+ * container's only block child, so its computed height is whatever we drew
+ * last time. The CSS sizing algorithm is re-run here instead, over a ratio and
+ * limits taken from the container's own CSS and overridable through `args`.
+ * `min-height` wins over `max-height`, as in CSS.
+ *
+ * The limits size the box; they do not cap `expandable`, which grows past them
+ * so deep tick labels hang below the box rather than squashing the plot.
+ * @param {Element} element
+ * @param {object} args */
+function compute_box(element, args) {
+    const cs = window.getComputedStyle(element),
+        // CSS lengths measure the box `box-sizing` names; ours is the content
+        // box, which is what the `<svg>` fills
+        fy = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+            + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth),
+        fx = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+            + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth),
+        border_box = cs.boxSizing === "border-box",
+        d = border_box ? fy : 0,
+        // the border box less its frame
+        width = Math.max(element.getBoundingClientRect().width - fx,
+            MIN_BOX_WIDTH);
+
+    /** @param {*} av - the `args` override
+     * @param {string} cv - the container's computed value
+     * @return {?number} */
+    function limit(av, cv) {
+        if (av == null) {
+            const n = css_length(cv);
+            return n === null ? null : n - d;
+        } else if (av === "viewport") {
+            // put the box bottom on the fold: the element's top in *document*
+            // coordinates, so scrolling does not resize the graph, against the
+            // layout viewport, which a mobile URL bar does not shift
+            return document.documentElement.clientHeight
+                - (element.getBoundingClientRect().top + window.scrollY) - fy;
+        }
+        return css_length(av);
+    }
+
+    let height = args.height;
+    if (height == null) {
+        const ratio = parse_aspect_ratio(args.aspectRatio ?? cs.aspectRatio)
+            ?? DEFAULT_ASPECT_RATIO;
+        height = (border_box ? width + fx : width) / ratio - d;
+    }
+    height = Math.round(Math.max(
+        limit(args.minHeight, cs.minHeight) ?? 0, MIN_BOX_HEIGHT,
+        Math.min(height, limit(args.maxHeight, cs.maxHeight) ?? Infinity)));
+    return [width, height];
+}
+
+/* zoom and pan */
+
+// One per graph, keyed by the element the graph was drawn into. A view holds
+// the arguments as the caller gave them, since every stage of drawing edits
+// what it is handed -- `project_data` rewrites `data` in place, the graphers
+// sort and annotate it -- so a redraw has to start from a copy.
+const graph_views = new WeakMap();
+let clip_counter = 0;
+
+/** @param {Element} e - an element beside or inside a graph
+ * @return {?object} */
+function graph_view_near(e) {
+    const box = e.closest(".has-hotgraph"),
+        g = box && box.querySelector(".hotgraph");
+    return g ? graph_views.get(g.parentElement) : null;
+}
+
+/** Hold `w` inside `home`, no wider than `home` and no narrower than a
+ * thousandth of it, keeping its center where it can.
+ * @param {[number,number]} w
+ * @param {[number,number]} home
+ * @return {[number,number]} */
+function clamp_axis_window(w, home) {
+    const hspan = home[1] - home[0];
+    if (hspan <= 0) {
+        return home.slice();
+    }
+    const mid = (w[0] + w[1]) / 2,
+        span = Math.min(Math.max(w[1] - w[0], hspan * ZOOM_MIN_FRACTION), hspan);
+    return slide_axis_window([mid - span / 2, mid + span / 2], home);
+}
+
+/** Zoom one axis's window by `factor` about its center.
+ * @param {[number,number]} w
+ * @param {[number,number]} home
+ * @param {number} factor
+ * @return {[number,number]} */
+function zoom_axis_window(w, home, factor) {
+    const mid = (w[0] + w[1]) / 2, half = (w[1] - w[0]) * factor / 2;
+    return clamp_axis_window([mid - half, mid + half], home);
+}
+
+/** Move `w` inside `home` without changing its span.
+ * @param {[number,number]} w
+ * @param {[number,number]} home
+ * @return {[number,number]} */
+function slide_axis_window(w, home) {
+    const span = Math.min(w[1] - w[0], home[1] - home[0]);
+    let lo = Math.max(w[0], home[0]);
+    if (lo + span > home[1]) {
+        lo = home[1] - span;
+    }
+    return [lo, lo + span];
+}
+
+/** The window an axis shows once its plot has been scaled by `k` about the
+ * pixel `a` and that pixel has moved to `b` -- a drag where `k` is 1, a pinch
+ * otherwise. `p0` and `p1` are the pixels at the ends of the axis.
+ * @param {*} scale
+ * @param {number} p0
+ * @param {number} p1
+ * @param {{k: [number,number], a: [number,number], b: [number,number]}} g
+ * @param {number} i - 0 for the X axis, 1 for the Y
+ * @param {[number,number]} home
+ * @return {[number,number]} */
+function gesture_axis_window(scale, p0, p1, g, i, home) {
+    const v0 = scale.invert((p0 - g.b[i]) / g.k[i] + g.a[i]),
+        v1 = scale.invert((p1 - g.b[i]) / g.k[i] + g.a[i]);
+    return clamp_axis_window(v0 < v1 ? [v0, v1] : [v1, v0], home);
+}
+
+/** @param {object} view
+ * @param {string} axis
+ * @return {boolean} */
+function zooms_axis(view, axis) {
+    return view.zoom_axes.indexOf(axis) >= 0;
+}
+
+/** @param {object} view
+ * @param {number} factor
+ * @return {{x: [number,number], y: [number,number]}} */
+function zoomed_window(view, factor) {
+    return {
+        x: zooms_axis(view, "x")
+            ? zoom_axis_window(view.window.x, view.home.x, factor)
+            : view.window.x.slice(),
+        y: zooms_axis(view, "y")
+            ? zoom_axis_window(view.window.y, view.home.y, factor)
+            : view.window.y.slice()
+    };
+}
+
+/** Compare to within rounding: a window that has been through
+ * `zoom_axis_window` and back does not land on exactly the same endpoints.
+ * @param {list<number>} a
+ * @param {list<number>} b
+ * @return {boolean} */
+function same_axis_window(a, b) {
+    const eps = Math.abs(b[1] - b[0]) * 1e-9;
+    return Math.abs(a[0] - b[0]) <= eps && Math.abs(a[1] - b[1]) <= eps;
+}
+
+/** @param {{x: list<number>, y: list<number>}} w1
+ * @param {{x: list<number>, y: list<number>}} w2
+ * @return {boolean} */
+function same_window(w1, w2) {
+    return same_axis_window(w1.x, w2.x) && same_axis_window(w1.y, w2.y);
+}
+
+/** @param {object} view */
+function update_zoom_buttons(view) {
+    const box = view.element.closest(".has-hotgraph");
+    for (const b of box ? box.querySelectorAll(".js-hotgraph-zoom") : []) {
+        const factor = hasClass(b, "zoom-out") ? ZOOM_STEP : 1 / ZOOM_STEP;
+        b.disabled = !view.window
+            || same_window(zoomed_window(view, factor), view.window);
+    }
+}
+
+/** Pixels the marks must move for `to` to show what `from` showed. A pan of a
+ * linear scale is a translation, so this is exact -- and it is the pointer's
+ * travel except where the window ran into the end of the graph.
+ * @param {*} from
+ * @param {*} to
+ * @return {number} */
+function scale_shift(from, to) {
+    const v = from.domain()[0];
+    return to(v) - from(v);
+}
+
+// A gesture that has not moved anything yet
+const NO_GESTURE = {k: [1, 1], a: [0, 0], b: [0, 0]};
+
+/** Show the marks and the pointer targets under gesture `g`. Scaling them is
+ * what a pinch looks like in flight; the drawing that follows puts the marks
+ * back at their own size.
+ * @param {object} view
+ * @param {{k: [number,number], a: [number,number], b: [number,number]}} g */
+function place_marks(view, g) {
+    const args = view.args, s = view.mark_shift,
+        tx = view.left + g.k[0] * (s[0] - g.a[0]) + g.b[0],
+        ty = view.top + g.k[1] * (s[1] - g.a[1]) + g.b[1],
+        tr = `translate(${tx},${ty})`
+            + (g.k[0] === 1 && g.k[1] === 1 ? "" : ` scale(${g.k[0]},${g.k[1]})`);
+    view.svg.attr("transform", tr);
+    view.overlay.attr("transform", tr);
+}
+
+/** Re-tick both axes for `w` and draw them again, leaving the marks alone.
+ * `make_axis_pair` reads the plot edges it wrote last time as pins, so a
+ * redraw holds the frame still unless the caller clears them first.
+ * @param {object} view
+ * @param {{x: list<number>, y: list<number>}} w */
+function redraw_axes(view, w) {
+    d3.select(view.svg.node().ownerSVGElement).selectAll("g.hg-axis").remove();
+    make_axis_pair(view, d3.scaleLinear().domain(w.x), d3.scaleLinear().domain(w.y));
+    draw_axes(view.svg, view);
+}
+
+/** Slide or pinch the plot, re-ticking the axes as it goes, then draw the
+ * marks where they land. The marks ride a transform during the gesture rather
+ * than being redrawn per frame -- a dot plot would have to re-run its
+ * collision simulation, a CDF to re-path every series.
+ *
+ * A mouse drags with its button down; a touch takes two fingers, pinching to
+ * zoom and sliding to pan, which leaves one finger free to scroll the page.
+ * @param {object} view */
+function enable_pan(view) {
+    const args = view.args, svg = view.svg.node().ownerSVGElement;
+    let base = null, active = false, at = NO_GESTURE, pending = false, frame = 0,
+        expandable = null, mouse_start = null, pinch_start = null;
+
+    /** A gesture scaling by `k` about plot point `a` and moving it to `b`,
+     * with any axis this graph does not zoom held still.
+     * @param {number} k
+     * @param {[number,number]} a
+     * @param {[number,number]} b
+     * @return {object} */
+    function gesture(k, a, b) {
+        const zx = zooms_axis(view, "x"), zy = zooms_axis(view, "y");
+        return {k: [zx ? k : 1, zy ? k : 1], a: a,
+            b: [zx ? b[0] : a[0], zy ? b[1] : a[1]]};
+    }
+    /** @param {object} g
+     * @return {{x: list<number>, y: list<number>}} */
+    function window_at(g) {
+        return {
+            x: gesture_axis_window(base.x, 0, view.plotWidth, g, 0, view.home.x),
+            y: gesture_axis_window(base.y, view.plotHeight, 0, g, 1, view.home.y)
+        };
+    }
+    function draw_frame() {
+        pending = false;
+        redraw_axes(view, window_at(at));
+        place_marks(view, at);
+    }
+    /** @param {object} g */
+    function update(g) {
+        at = g;
+        if (!pending) {
+            pending = true;
+            frame = requestAnimationFrame(draw_frame);
+        }
+    }
+    function begin() {
+        base = {x: view.x.scale.copy(), y: view.y.scale.copy(), window: view.window};
+        // a growable box would otherwise resize as the tick labels change
+        expandable = view.expandable;
+        view.expandable = false;
+        at = NO_GESTURE;
+        active = true;
+        // a resize now would destroy the <svg> this gesture started on while
+        // the handlers below still hold its `args` and scales
+        view.gesturing = true;
+        addClass(svg, "panning");
+        // the pointer is about to leave whatever it was over without a
+        // mouseout, so nothing else will take this down
+        tooltip.close();
+    }
+    function finish() {
+        if (pending) {
+            cancelAnimationFrame(frame);
+            pending = false;
+        }
+        removeClass(svg, "panning");
+        view.expandable = expandable;
+        active = false;
+        view.gesturing = false;
+        const g = at, slid = g.k[0] === 1 && g.k[1] === 1;
+        if (slid && g.a[0] === g.b[0] && g.a[1] === g.b[1]) {
+            flush_resize(view);
+            return; // nothing moved
+        }
+        view.panned = true;
+        view.window = window_at(g);
+        // The frame stood still for the gesture; now let the axes take the
+        // room their new labels need. A slide leaves the marks where the new
+        // window wants them -- panning a linear scale is a translation -- so
+        // they need drawing again only if the frame moved out from under them.
+        // A pinch changes their size, so they always do.
+        const frame0 = [view.top, view.right, view.bottom, view.left];
+        redraw_axes(view, view.window);
+        if (slid
+            && frame0[0] === view.top
+            && frame0[1] === view.right
+            && frame0[2] === view.bottom
+            && frame0[3] === view.left) {
+            // measured from where the gesture began, not from the last frame
+            view.mark_shift = [
+                view.mark_shift[0] + scale_shift(base.x, view.x.scale),
+                view.mark_shift[1] + scale_shift(base.y, view.y.scale)
+            ];
+            place_marks(view, NO_GESTURE);
+        } else {
+            render_view(view);
+        }
+        flush_resize(view);
+    }
+
+    function mousemove(evt) {
+        const d = [evt.clientX - mouse_start[0], evt.clientY - mouse_start[1]];
+        if (!active && Math.abs(d[0]) + Math.abs(d[1]) < PAN_THRESHOLD) {
+            return;
+        }
+        if (!active) {
+            begin();
+        }
+        update(gesture(1, [0, 0], d));
+    }
+    function mouseup() {
+        document.removeEventListener("mousemove", mousemove);
+        document.removeEventListener("mouseup", mouseup);
+        if (active) {
+            finish();
+        }
+    }
+
+    /** Where two fingers are, as a plot-pixel midpoint and a spread.
+     * @param {TouchEvent} evt
+     * @return {{m: [number,number], d: number}} */
+    function two_touches(evt) {
+        const r = svg.getBoundingClientRect(),
+            t0 = evt.touches[0], t1 = evt.touches[1];
+        return {
+            m: [(t0.clientX + t1.clientX) / 2 - r.left - view.left,
+                (t0.clientY + t1.clientY) / 2 - r.top - view.top],
+            d: Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY)
+        };
+    }
+    function touchmove(evt) {
+        if (!active || evt.touches.length !== 2) {
+            return;
+        }
+        evt.preventDefault(); // the page is not scrolling with two fingers here
+        const t = two_touches(evt);
+        update(gesture(pinch_start.d > 0 ? t.d / pinch_start.d : 1,
+            pinch_start.m, t.m));
+    }
+    function touchend(evt) {
+        if (evt.touches.length >= 2) {
+            return;
+        }
+        svg.removeEventListener("touchmove", touchmove);
+        svg.removeEventListener("touchend", touchend);
+        svg.removeEventListener("touchcancel", touchend);
+        if (active) {
+            finish();
+        }
+    }
+
+    addClass(svg, "pannable");
+    svg.addEventListener("mousedown", function (evt) {
+        if (evt.button !== 0) {
+            return;
+        }
+        mouse_start = [evt.clientX, evt.clientY];
+        active = view.panned = false;
+        document.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        evt.preventDefault(); // no text selection, no native image drag
+    });
+    svg.addEventListener("touchstart", function (evt) {
+        if (evt.touches.length !== 2) {
+            return;
+        }
+        evt.preventDefault();
+        pinch_start = two_touches(evt);
+        view.panned = false;
+        begin();
+        svg.addEventListener("touchmove", touchmove, {passive: false});
+        svg.addEventListener("touchend", touchend);
+        svg.addEventListener("touchcancel", touchend);
+    }, {passive: false});
+}
+
+/** Draw a graph, or draw it again after its window changed.
+ * @param {object} view
+ * @return {*} */
+function render_view(view) {
+    const element = view.element, t0 = performance.now();
+    if (!has_box(element)) {
+        // Hidden, folded away, or detached. Drawing now would trade a good
+        // graph for a degenerate one, so keep what is there and wait for a
+        // box -- which is also how a graph first drawn inside a hidden panel
+        // comes out right once the panel opens.
+        view.resize_stale = true;
+        return null;
+    }
+    // after the filters, which build their own axes
+    if (view.window) {
+        (view.x = view.x || {}).extent = view.window.x.slice();
+        (view.y = view.y || {}).extent = view.window.y.slice();
+    }
+    // The old drawing's handlers and tooltip go with it. Handlers bound to
+    // the container outlive the <svg> they belong to, so every render gets a
+    // signal that the next one aborts.
+    view.abort && view.abort.abort();
+    view.abort = new AbortController();
+    view.signal = view.abort.signal;
+    for (const t of document.querySelectorAll(".graphtip")) {
+        t.remove();
+    }
+    element.replaceChildren();
+
+    // the box `size_box` derived, before `make_axis_pair` grows it: that is
+    // what `check_resize` recomputes to decide whether anything moved
+    view.box = compute_box(element, view.args);
+    view.resize_stale = false;
+    const svg = d3.select(element).append("svg")
+            .attr("class", "hotgraph")
+            .attr("width", view.box[0])
+            .attr("height", view.box[1]),
+        clipid = `hg-clip-${++clip_counter}`;
+    view.clip = svg.append("clipPath").attr("id", clipid).append("rect");
+    view.svg = svg.append("g").attr("clip-path", `url(#${clipid})`).append("g");
+    // pointer targets cover the margins, so they sit outside the clip
+    view.overlay = svg.append("g");
+
+    const g = graphers[view.args.gtype],
+        result = g["function"].call(view.svg, element, view);
+
+    view.zoom_axes = g.zoom ?? "xy";
+    if (view.highlight) {
+        fire_highlight(element, view.highlight.q, view.highlight.ids);
+    }
+    if (!g.blank) {
+        view.window = view.window
+            || {x: view.x.scale.domain().slice(), y: view.y.scale.domain().slice()};
+        view.home = view.home || {x: view.window.x.slice(), y: view.window.y.slice()};
+        view.mark_shift = [0, 0];
+        if (view.args.interactive !== false) {
+            enable_pan(view);
+        }
+    }
+    update_zoom_buttons(view);
+    view.render_ms = performance.now() - t0;
+    return result;
+}
+
+/* auto-resize */
+
+// One observer for every graph. A `ResizeObserver` holds its targets strongly,
+// so one per graph would pin the container, its view, and its data for the
+// life of the page; `check_element_resize` sweeps as it goes instead.
+let resize_observer = null;
+const resize_elements = new Set();
+
+/** Redraw `view` if the box its container now implies differs from the one it
+ * drew. The observer and the window listener are only hints; this is the test.
+ *
+ * It compares the *derived* box, never the observed one: the container's
+ * height is this graph's own output, while what the box derives from -- the
+ * width, the container's CSS in px, the viewport, the element's top -- this
+ * graph does not affect.
+ * @param {object} view */
+function check_resize(view) {
+    if (!has_box(view.element)) {
+        view.resize_stale = true;
+        return;
+    }
+    const b = compute_box(view.element, view.args);
+    // `view.box` is null when nothing has been drawn yet: a graph first
+    // rendered without a box, only now getting one
+    if (!view.resize_stale
+        && view.box
+        && Math.abs(b[0] - view.box[0]) < RESIZE_THRESHOLD
+        && Math.abs(b[1] - view.box[1]) < RESIZE_THRESHOLD) {
+        return;
+    }
+    schedule_resize(view);
+}
+
+/** Draw `view` again for its new box: on the next frame if the last render was
+ * cheap enough to keep up with a drag, once the box settles if it was not.
+ * Never synchronously, which is what raises "ResizeObserver loop completed
+ * with undelivered notifications".
+ * @param {object} view */
+function schedule_resize(view) {
+    if (view.gesturing) {
+        // the drag handlers hold the `args` and the scales this would replace
+        view.resize_wanted = true;
+    } else if (view.render_ms <= RESIZE_FRAME_BUDGET) {
+        view.resize_frame = view.resize_frame
+            || requestAnimationFrame(() => resize_view(view));
+    } else {
+        view.resize_timer && clearTimeout(view.resize_timer);
+        view.resize_timer = setTimeout(() => resize_view(view), RESIZE_DEBOUNCE);
+    }
+}
+
+/** @param {object} view */
+function resize_view(view) {
+    view.resize_frame = view.resize_timer = 0;
+    if (view.gesturing) {
+        view.resize_wanted = true;
+    } else {
+        render_view(view); // no-ops, and stays stale, if the box went away
+    }
+}
+
+/** Act on a resize that arrived while a gesture was in flight. The gesture may
+ * have ended in a redraw that already covers it, which the box test sees.
+ * @param {object} view */
+function flush_resize(view) {
+    if (view.resize_wanted) {
+        view.resize_wanted = false;
+        check_resize(view);
+    }
+}
+
+/** @param {Element} e */
+function check_element_resize(e) {
+    const view = graph_views.get(e);
+    if (!view || !e.isConnected) {
+        resize_elements.delete(e);
+        resize_observer.unobserve(e);
+    } else {
+        check_resize(view);
+    }
+}
+
+/** Follow `view`'s container.
+ * @param {object} view */
+function observe_resize(view) {
+    if (!window.ResizeObserver) {
+        return;
+    }
+    if (!resize_observer) {
+        resize_observer = new ResizeObserver(function (entries) {
+            for (const entry of entries) {
+                check_element_resize(entry.target);
+            }
+        });
+        // `vh` lengths and `maxHeight: "viewport"` follow the window, and a
+        // window that gets shorter without getting narrower changes no
+        // container's box, so the observer alone would never hear about it
+        window.addEventListener("resize", function () {
+            for (const e of resize_elements) {
+                check_element_resize(e);
+            }
+        });
+    }
+    resize_elements.add(view.element);
+    resize_observer.observe(view.element);
+}
+
+handle_ui.on("js-hotgraph-zoom", function () {
+    const view = graph_view_near(this);
+    if (!view || !view.window) {
+        return;
+    }
+    const w = zoomed_window(view, hasClass(this, "zoom-out") ? ZOOM_STEP : 1 / ZOOM_STEP);
+    if (!same_window(w, view.window)) {
+        view.window = w;
+        render_view(view);
+    }
+});
+
 // `make_axis_pair` derives the plot rectangle from the measured ticks and
 // labels plus the insets, except on any edge the caller pins.
-function make_args(element, args) {
-    args.width = $(element).width();
-    if (args.height == null) {
-        args.height = 540;
-    }
+function normalize_args(args) {
     args.expandable = normalize_expandable(args.expandable);
     args.insetTop = args.insetTop ?? INSET_TOP;
     args.insetRight = args.insetRight ?? INSET_RIGHT;
@@ -2517,9 +3199,15 @@ function make_args(element, args) {
     }
     project_data(args, args);
     // Other arguments:
-    // args.height: box height; grows if `expandable` allows it
+    // args.aspectRatio: box width divided by height, as in CSS; overrides the
+    //   container's `aspect-ratio`, whose `auto` means DEFAULT_ASPECT_RATIO
+    // args.height: box height, used instead of the ratio; still clamped
+    // args.minHeight, args.maxHeight: clamp the box, overriding the
+    //   container's; min wins, as in CSS, and neither caps `expandable`.
+    //   `maxHeight: "viewport"` keeps the box bottom above the fold.
     // args.expandable: false or "height" (see `normalize_expandable`)
     // args.interactive: Set to false to disable pointer interaction
+    // args.autoresize: Set to false to stop following the container's box
     // args.insetTop, args.insetRight, args.insetBottom, args.insetLeft:
     //   override the INSET_* defaults for this graph
     // args.plotTop, args.plotRight, args.plotBottom, args.plotLeft: pin an
@@ -2527,39 +3215,61 @@ function make_args(element, args) {
     //   graphs can share one plotting area; a pin supersedes its inset, and
     //   the ink that inset located follows the plot edge instead. See
     //   `make_axis_pair`.
-    return args;
 }
 
 function make_graph(selector, args) {
-    const element = $(selector)[0];
+    const element = typeof selector === "string"
+        ? document.querySelector(selector) : selector;
     if (!element) {
         return null;
     }
     if (!d3) {
         const erre = $e("div", "msg-error");
         feedback.append_item_near(erre, {message: "<0>Graphs are not supported on this browser", status: 2});
-        if (document.documentMode) {
-            feedback.append_item_near(erre, {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5 /*MessageSet::INFORM*/});
-        }
         element.append(erre);
         return null;
     }
+
+    // build args
     let g = graphers[args.gtype];
-    while (g && g.filter) {
-        args = g["function"](args);
+    while (g && g.prepare_function) {
+        const vargs = g.prepare_function(args);
+        if (!vargs || vargs === args) {
+            break;
+        }
+        args = vargs;
         g = graphers[args.gtype];
     }
     if (!g) {
         return null;
     }
-    args = make_args(element, args);
-    args.svg = d3.select(element).append("svg")
-        .attr("class", "hotgraph")
-        .attr("width", args.width)
-        .attr("height", args.height)
-      .append("g");
-    return g["function"].call(args.svg, element, args);
-};
+    normalize_args(args);
+
+    // build view
+    const view = {
+        element: element, args: Object.freeze(args),
+        x: {}, y: {}, expandable: args.expandable,
+        window: null, home: null,
+        panned: false, mark_shift: [0, 0], highlight: null,
+        box: null, abort: null, render_ms: 0, gesturing: false,
+        resize_stale: false, resize_wanted: false,
+        resize_frame: 0, resize_timer: 0
+    };
+    graph_views.set(element, view);
+    // a pan ends over the redrawn graph; that click is not the user's
+    element.addEventListener("click", function (evt) {
+        if (view.panned) {
+            view.panned = false;
+            evt.stopPropagation();
+            evt.preventDefault();
+        }
+    }, true);
+    const result = render_view(view);
+    if (args.autoresize !== false) {
+        observe_resize(view);
+    }
+    return result;
+}
 
 return make_graph;
-})(jQuery, window.d3);
+})(window.d3);

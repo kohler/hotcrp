@@ -7,14 +7,26 @@ class Graph_Page {
      * @param ?string $h2
      * @param array $attr */
     static function print_graph($searchable, $h2, $attr) {
-        echo '<div class="has-hotgraph" style="max-width:960px;margin-bottom:4em">';
-        if ($searchable) {
-            echo Ht::entry("q", "", ["placeholder" => "Find on graph", "class" => "uii js-hotgraph-highlight papersearch float-right need-autogrow need-suggest", "spellcheck" => false]);
-        }
+        // The head is a flex row so the controls have a box of their own,
+        // whether or not there is a title: floated beside an absent <h2> they
+        // would fall inside #hotgraph, and the graph sizes itself from that
+        // element's top.
+        echo '<div class="has-hotgraph" style="margin-bottom:4em">',
+            '<div class="hotgraph-head">';
         if ($h2) {
-            echo "<h2>", $h2, "</h2>\n";
+            echo "<h2>", $h2, "</h2>";
         }
-        echo '<div', Ht::extra(["id" => "hotgraph", "class" => "clearfix"] + $attr),
+        Icons::stash_defs("zoom_in", "zoom_out");
+        echo '<div class="hotgraph-head-controls">';
+        echo '<div class="hotgraph-zoom btnbox">',
+            Ht::button(Icons::ui_use("zoom_in"), ["class" => "btn-licon ui js-hotgraph-zoom zoom-in need-tooltip", "aria-label" => "Zoom in"]),
+            Ht::button(Icons::ui_use("zoom_out"), ["class" => "btn-licon ui js-hotgraph-zoom zoom-out need-tooltip", "aria-label" => "Zoom out"]),
+            "</div>";
+        if ($searchable) {
+            echo Ht::entry("q", "", ["placeholder" => "Find on graph", "class" => "uii js-hotgraph-highlight papersearch need-autogrow need-suggest", "spellcheck" => false]);
+        }
+        echo "</div></div>\n",
+            '<div', Ht::extra(["id" => "hotgraph"] + $attr),
             "></div></div>\n";
     }
 

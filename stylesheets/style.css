@@ -5975,6 +5975,46 @@ th.pl_logaction {
 .hg-axis text {
 	fill: currentColor;
 }
+#hotgraph {
+	min-height: 240px;
+}
+svg.hotgraph.pannable {
+	cursor: grab;
+	/* one finger scrolls the page, two pinch and pan the graph */
+	touch-action: pan-y;
+}
+/* a mark is something to point at, not something to drag by */
+.hotgraph .gcdf, .hotgraph .gdot, .hotgraph .gbar, .hotgraph .gbox,
+.hotgraph .gdot-label, .hotgraph .gdot-hover, .hotgraph .gbar-hover0,
+.hotgraph .gbox-hover {
+	cursor: default;
+}
+svg.hotgraph.panning {
+	cursor: grabbing;
+}
+/* Baseline alignment sits the controls on the title's baseline, so the <h2>
+   can keep its own bottom margin without pushing them down. */
+.hotgraph-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+.hotgraph-head > h2 {
+	margin-top: 0;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.hotgraph-head-controls {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-left: auto;
+}
+.hotgraph-zoom {
+	margin-left: 0.5rem;
+}
 .widelabel > .tick {
 	font-size: smaller;
 }

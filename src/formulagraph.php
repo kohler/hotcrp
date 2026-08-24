@@ -1263,6 +1263,7 @@ class FormulaGraph extends MessageSet {
 
         $this->fx->prepare_json();
         $this->fy->prepare_extractor();
+        assert($this->fy->support_combiner());
         $order_data = null;
         if ($this->fxorder) {
             $order_data = [];

@@ -6,9 +6,11 @@ class Graph_Procrastination_Page {
     static function go(Contact $user, Qrequest $qreq) {
         Graph_Page::print_graph(false, null, []);
         $rt = new ReviewTimes($user);
+        $gj = $rt->json();
+        $gj->maxHeight = "viewport"; // fill down to the fold, no further
         echo Ht::unstash(), Ht::script_open(),
             '$(function () { hotcrp.graph("#hotgraph", ',
-            json_encode_browser($rt->json()),
+            json_encode_browser($gj),
             ") });</script>\n";
     }
 }

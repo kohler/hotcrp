@@ -44,7 +44,8 @@ class Graph_Formula_Page {
 
         // compute the graph before printing messages: an empty graph
         // reports why it is empty
-        $gj = $fg->graph_json();
+        // fill down to the fold, no further
+        $gj = $fg->graph_json(["maxHeight" => "viewport"]);
 
         if ($fg->has_message()) {
             echo Ht::msg(MessageSet::feedback_html($fg->decorated_message_list()), $fg->problem_status());
@@ -76,12 +77,7 @@ class Graph_Formula_Page {
         }
         $highlightable = ($fg->gtype & (FormulaGraph::GT_SCATTER | FormulaGraph::GT_DOT | FormulaGraph::GT_BOXPLOT)) !== 0;
 
-        $attr = [];
-        if (!($fg->gtype & FormulaGraph::GT_CDF)) {
-            $attr["data-graph-fx"] = $fg->fx->expression;
-            $attr["data-graph-fy"] = $fg->fy->expression;
-        }
-        Graph_Page::print_graph($highlightable, $h2, $attr);
+        Graph_Page::print_graph($highlightable, $h2, []);
 
         echo Ht::unstash(), Ht::script_open(),
             '$(function () { hotcrp.graph("#hotgraph", ',
