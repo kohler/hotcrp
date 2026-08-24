@@ -427,6 +427,7 @@ class FormulaGraph extends MessageSet {
     const GT_BARCHART = 0x04;       // barchart
     const GT_BOXPLOT = 0x08;        // boxplot (median+mean, whiskers)
     const GT_DOT = 0x10;            // dot plot (one mark per data point, perturbed to not overlap)
+    const GT_BLANK = 0x20;          // nothing
     // subtypes: one GT_ bit + uniqueifier
     const GTS_FBARCHART = 0x10004;  // fractional barchart
     const GTS_OGIVE = 0x10002;      // like CDF but Y axis is count, not fraction
@@ -711,6 +712,11 @@ class FormulaGraph extends MessageSet {
                 $this->inform_at("y", "<0>Try an aggregate function like ‘sum({$fy})’.");
                 $this->fy = Formula::make_indexed($this->user, "sum(0)");
             }
+        }
+
+        if ($this->has_error()) {
+            $this->gtype = self::GT_BLANK;
+            $this->_fx_combine = false;
         }
     }
 
@@ -1365,6 +1371,37 @@ class FormulaGraph extends MessageSet {
         return "style_xyi";
     }
 
+    private function _assign_data() {
+        if ($this->gtype === self::GT_BLANK) {
+            $this->_scatter_data(new PaperInfoSet($this->conf));
+            return;
+        }
+
+        // load data
+        $paperIds = array_keys($this->papermap);
+        $queryOptions = ["paperId" => $paperIds, "tags" => true];
+        foreach ($this->fxs as $f) {
+            $f->add_query_options($queryOptions);
+        }
+        $this->fy->add_query_options($queryOptions);
+        if (($this->fx && $this->fx->indexed()) || $this->fy->indexed()) {
+            $queryOptions["reviewSignatures"] = true;
+        }
+
+        $rowset = $this->conf->paper_set($queryOptions, $this->user);
+        $rowset->apply_filter(function ($prow) {
+            return $this->user->can_view_paper($prow);
+        });
+
+        if ($this->gtype & self::GT_CDF) {
+            $this->_cdf_data($rowset);
+        } else if ($this->_fx_combine) {
+            $this->_combine_data($rowset);
+        } else {
+            $this->_scatter_data($rowset);
+        }
+    }
+
     /** Explain why the graph will render nothing, if it will.
      *
      * The confusing case is a scatterplot whose axes each have values, but
@@ -1400,33 +1437,11 @@ class FormulaGraph extends MessageSet {
         }
     }
 
-    private function data() {
+    private function _data() {
         if ($this->_cdf_data === null
             && $this->_bar_data === null
             && $this->_scatter_data === null) {
-            // load data
-            $paperIds = array_keys($this->papermap);
-            $queryOptions = ["paperId" => $paperIds, "tags" => true];
-            foreach ($this->fxs as $f) {
-                $f->add_query_options($queryOptions);
-            }
-            $this->fy->add_query_options($queryOptions);
-            if (($this->fx && $this->fx->indexed()) || $this->fy->indexed()) {
-                $queryOptions["reviewSignatures"] = true;
-            }
-
-            $rowset = $this->conf->paper_set($queryOptions, $this->user);
-            $rowset->apply_filter(function ($prow) {
-                return $this->user->can_view_paper($prow);
-            });
-
-            if ($this->gtype & self::GT_CDF) {
-                $this->_cdf_data($rowset);
-            } else if ($this->_fx_combine) {
-                $this->_combine_data($rowset);
-            } else {
-                $this->_scatter_data($rowset);
-            }
+            $this->_assign_data();
             $this->_check_empty_data();
         }
         if ($this->gtype & self::GT_CDF) {
@@ -1478,7 +1493,8 @@ class FormulaGraph extends MessageSet {
             self::GT_BARCHART => "bar",
             self::GTS_FBARCHART => "fraction",
             self::GT_BOXPLOT => "box",
-            self::GTS_MULTICDF => "cdf"
+            self::GTS_MULTICDF => "cdf",
+            self::GT_BLANK => "blank"
         ];
         return $tj[$this->gtype] ?? null;
     }
@@ -1486,7 +1502,7 @@ class FormulaGraph extends MessageSet {
     function graph_json($j = []) {
         $j["gtype"] = $this->gtype_json();
         $j["data_format"] = $this->data_format();
-        $j["data"] = $this->data();
+        $j["data"] = $this->_data();
         $j["x"] = $this->axis_json($this->_x_axis);
         $j["y"] = $this->axis_json($this->_y_axis);
         if ($this->_series_axis) {

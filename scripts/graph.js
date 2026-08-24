@@ -2356,6 +2356,17 @@ handle_ui.on("js-hotgraph-highlight", function () {
     }
 });
 
+/** A graph that could not be computed
+ * @param {Element} element
+ * @param {object} args */
+function graph_blank(element, args) {
+    const svg = this;
+    args.x.tick_values = args.y.tick_values = () => [];
+    make_axis_pair(args, d3.scaleLinear().domain([0, 1]),
+        d3.scaleLinear().domain([0, 1]));
+    draw_axes(svg, args);
+}
+
 const graphers = {
     procrastination: {filter: true, function: procrastination_filter},
     scatter: {function: graph_scatter},
@@ -2365,7 +2376,8 @@ const graphers = {
     cumfreq: {function: graph_cdf},
     bar: {function: graph_bars},
     fraction: {function: graph_bars},
-    box: {function: graph_boxplot}
+    box: {function: graph_boxplot},
+    blank: {function: graph_blank, blank: true}
 };
 
 /** `expandable` names the dimensions of the graph box that may grow to fit
