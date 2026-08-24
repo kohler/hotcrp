@@ -5979,6 +5979,190 @@ th.pl_logaction {
 	font-size: smaller;
 }
 
+/* graph examples */
+.graph-example-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	columns: 20em 2;
+}
+.graph-example-list > li {
+	break-inside: avoid;
+	margin-bottom: 0.6em;
+}
+
+/* graphing wizard */
+.graph-wizard-modal {
+	width: 62rem;
+}
+.graph-wizard {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.5rem;
+}
+.graph-wizard-main {
+	flex: 1 1 26rem;
+	min-width: 0;
+}
+.graph-wizard-side {
+	flex: 1 1 24rem;
+	min-width: 0;
+}
+.graph-wizard-title {
+	margin-top: 0;
+}
+.graph-wizard-side-title {
+	margin-top: 0;
+	font-size: smaller;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--dim-fg);
+}
+/* like .tllx/.tll, but flipped: the tabs sit above their panel. The rule
+   line is drawn per-tab rather than on the container, so it breaks at the
+   active tab, which loses its panel-side border and rounding. */
+.graph-wizard-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	margin-bottom: 1em;
+}
+.graph-wizard-tabs::before, .graph-wizard-tabs::after {
+	display: inline-block;
+	border-bottom: 2px solid var(--tablink-border);
+	content: "";
+}
+.graph-wizard-tabs::before {
+	width: 7px;
+}
+.graph-wizard-tabs::after {
+	flex-grow: 1;
+}
+.graph-wizard-tab {
+	background: none;
+	border: 0;
+	border-bottom: 2px solid var(--tablink-border);
+	border-radius: 5px 5px 0 0;
+	padding: 0.25em 0.75em 2px 0.75em;
+	font-size: smaller;
+	cursor: pointer;
+}
+.graph-wizard-tab.active {
+	background: var(--tablink-active-bg);
+	padding-bottom: 4px;
+	border: 2px solid var(--tablink-border);
+	border-bottom: 0;
+	font-weight: bold;
+}
+.graph-wizard-panel {
+	min-height: 20rem;
+}
+
+.graph-wizard-types {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.5rem;
+}
+.graph-wizard-type {
+	display: block;
+	border: 1px solid var(--fieldset-option-border);
+	border-radius: 4px;
+	padding: 0.25rem;
+	text-align: center;
+	cursor: pointer;
+}
+.graph-wizard-type:hover {
+	border-color: var(--fieldset-option-hover-border);
+}
+/* the selected tile follows .grid-option.active */
+.graph-wizard-type.active {
+	border-color: blue;
+	border-color: AccentColor;
+	box-shadow: 0 0 0 2px blue;
+	box-shadow: 0 0 0 2px AccentColor;
+}
+.graph-wizard-type:focus-within {
+	outline: 1px dotted var(--fieldset-option-hover-border);
+}
+.graph-wizard-type-radio {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+.graph-wizard-type-title {
+	display: block;
+	font-size: smaller;
+	line-height: 1.15;
+}
+.graph-wizard-icon {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+.graph-wizard-type-hint {
+	font-size: smaller;
+	color: var(--dim-fg);
+	min-height: 3em;
+}
+
+.graph-wizard-axis {
+	margin-bottom: 1em;
+}
+.graph-wizard-axis-label {
+	display: block;
+	font-weight: bold;
+	font-size: smaller;
+}
+.graph-wizard-axis-menus {
+	display: flex;
+	gap: 0.5em;
+	margin-bottom: 0.25em;
+}
+.graph-wizard-axis-menus > select {
+	flex: 1 1 0;
+	min-width: 0;
+}
+.graph-wizard-expr {
+	width: 100%;
+	font-family: monospace;
+}
+
+.graph-wizard-dataset {
+	display: flex;
+	gap: 0.5em;
+	align-items: center;
+	margin-bottom: 0.5em;
+}
+.graph-wizard-search {
+	flex: 1 1 0;
+	min-width: 0;
+}
+.graph-wizard-remove {
+	background: none;
+	border: 0;
+	cursor: pointer;
+	color: var(--dim-fg);
+}
+.graph-wizard-remove:hover {
+	color: var(--error-fg);
+}
+
+.graph-wizard-preview {
+	border: 1px solid var(--input-border);
+	border-radius: 4px;
+	background: var(--paper);
+	min-height: 18rem;
+}
+/* the preview is not the graph: clicking a point would navigate away */
+.graph-wizard-preview svg {
+	pointer-events: none;
+}
+.graph-wizard-status:not(:empty) {
+	margin-bottom: 0.5em;
+}
+
 @media print {
 .no-print {
 	display: none !important;

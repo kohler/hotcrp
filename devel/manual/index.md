@@ -14,6 +14,7 @@ configuring features inaccessible through the public settings UI.
 
 ## Specific pages
 
+* [**Formula graphs**](./graphs.md): How `/graph` works, and the graphing wizard
 * [**Configuring OAuth authentication**](./oauth.md)
 
 ## Command-line scripts

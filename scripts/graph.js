@@ -6,6 +6,7 @@ hotcrp.graph = (function ($, d3) {
 const $$ = hotcrp.$$,
     $e = hotcrp.$e,
     $frag = hotcrp.$frag,
+    $popup = hotcrp.$popup,
     $svg = hotcrp.$svg,
     addClass = hotcrp.classes.add,
     ensure_pattern = hotcrp.ensure_pattern,
@@ -2547,6 +2548,662 @@ function make_graph(selector, args) {
         .attr("height", args.height)
       .append("g");
     return g["function"].call(args.svg, element, args);
+}
+
+
+/* graphing wizard */
+
+/** @param {...Element} marks */
+function wiz_icon(...marks) {
+    return $svg("svg", {class: "graph-wizard-icon", viewBox: "0 0 100 68",
+            preserveAspectRatio: "xMidYMid meet", "aria-hidden": "true"},
+        ...marks,
+        $svg("path", {class: "hg-axis", d: "M4 64H96M4 52h4M4 40h4M4 28h4M4 16h4"}));
+}
+
+/** @param {list<[number,number,number]>} pts
+ * @param {string} [klass] */
+function wiz_dots(pts, klass) {
+    return pts.map(function (p) {
+        return $svg("circle", {class: klass || "gdot", cx: p[0], cy: p[1], r: p[2]});
+    });
+}
+
+/** @param {list<[number,number,number,number]>} rects
+ * @param {string} [klass] */
+function wiz_bars(rects, klass) {
+    return rects.map(function (r) {
+        return $svg("rect", {class: klass || "gbar", x: r[0], y: r[1], width: r[2], height: r[3]});
+    });
+}
+
+/** Box-and-whisker glyph; arguments are SVG y coordinates, so smaller is larger.
+ * @param {number} cx
+ * @param {[number,number,number,number,number]} q -- hi, q3, median, q1, lo */
+function wiz_box(cx, q) {
+    const l = cx - 7, r = cx + 7;
+    return $svg("path", {class: "gbox", d: `M${l} ${q[1]}H${r}V${q[3]}H${l}Z M${l} ${q[2]}H${r} M${cx} ${q[1]}V${q[0]} M${cx} ${q[3]}V${q[4]}`});
+}
+
+const WIZ_TYPES = [
+    {
+        name: "scatter", title: "Scatter plot",
+        hint: "One mark per position, sized to the count of matching data.",
+        icon: () => wiz_icon(...wiz_dots([[25, 50, 3], [36, 43, 6], [48, 47, 4.5],
+            [59, 33, 8], [72, 28, 5], [84, 36, 3.5]]))
+    }, {
+        name: "dot", title: "Dot plot",
+        hint: "One mark per datum, perturbed to avoid overlapping.",
+        icon: () => wiz_icon(...wiz_dots([[24, 50, 2.6], [31, 42, 2.6], [36, 52, 2.6],
+            [44, 38, 2.6], [52, 44, 2.6], [58, 30, 2.6], [67, 35, 2.6], [75, 22, 2.6],
+            [84, 28, 2.6]]))
+    }, {
+        name: "numdot", title: "Labeled dot plot",
+        hint: "Dot plot labeled with submission or review ID.",
+        icon: function () {
+            const marks = [];
+            for (const p of [[26, 48, "3"], [46, 37, "8"], [66, 43, "5"], [85, 26, "2"]]) {
+                marks.push($svg("circle", {class: "gdot", cx: p[0], cy: p[1], r: 8}),
+                    $svg("text", {class: "gdot-label", x: p[0], y: p[1] + 3.5}, p[2]));
+            }
+            return wiz_icon(...marks);
+        }
+    }, {
+        name: "bar", title: "Bar chart",
+        hint: "A bar per X value, showing how many points it has—or a total you choose.",
+        icon: () => wiz_icon(...wiz_bars([[19, 44, 11, 20], [33, 30, 11, 34],
+            [47, 22, 11, 42], [61, 36, 11, 28], [75, 49, 11, 15]]))
+    }, {
+        name: "fraction", title: "Fraction chart",
+        hint: "Equal-height bars showing how each X value divides among the series.",
+        y: false,
+        icon: () => wiz_icon(
+            ...wiz_bars([[20, 12, 13, 24], [37, 12, 13, 18], [54, 12, 13, 30], [71, 12, 13, 14]]),
+            ...wiz_bars([[20, 36, 13, 24], [37, 30, 13, 30], [54, 42, 13, 18], [71, 26, 13, 34]], "gbar color1"))
+    }, {
+        name: "box", title: "Box plot",
+        hint: "The spread of Y values at each X value: median, quartiles, and range.",
+        icon: () => wiz_icon(wiz_box(26, [28, 34, 40, 46, 52]), wiz_box(45, [20, 28, 33, 40, 47]),
+            wiz_box(64, [24, 32, 38, 44, 50]), wiz_box(83, [13, 20, 25, 32, 40]))
+    }, {
+        name: "cdf", title: "Cumulative fraction",
+        hint: "The fraction of points at or below each X value. Good for comparing series.",
+        y: false, multix: true,
+        icon: () => wiz_icon(
+            $svg("path", {class: "gcdf", d: "M8 64H16V58H28V52H40V38H50V28H64V19H73V13H80V11H96"}))
+    }, {
+        name: "cumfreq", title: "Cumulative count",
+        hint: "A running count of points at or below each X value.",
+        y: false, multix: true,
+        icon: () => wiz_icon(
+            $svg("path", {class: "gcdf", d: "M8 64H16V58H28V52H40V38H50V28H64V19H73V13H80V11H96"}),
+            $svg("path", {class: "gcdf color1", d: "M16 51H26V43H38V39H50V25H62V21H74V13H92"}))
+    }
+];
+
+const WIZ_TYPE_MAP = {};
+for (const t of WIZ_TYPES) {
+    WIZ_TYPE_MAP[t.name] = t;
+}
+
+// Y axis summaries offered next to each axis quantity. The empty summary
+// graphs one point per review; the others reduce a submission’s reviews
+// to a single number.
+const WIZ_SUMMARIES = [
+    ["", "Each review"], ["avg", "Average"], ["median", "Median"],
+    ["max", "Maximum"], ["min", "Minimum"], ["sum", "Sum"], ["count", "Count"],
+    ["stddev", "Standard deviation"], ["var", "Variance"]
+];
+
+const WIZ_STYLES = [
+    ["default", "By tag"], ["plain", "Plain"], ["tag-red", "Red"],
+    ["tag-orange", "Orange"], ["tag-yellow", "Yellow"], ["tag-green", "Green"],
+    ["tag-blue", "Blue"], ["tag-purple", "Purple"], ["tag-gray", "Gray"]
+];
+
+// These mirror FormulaGraph::graph_type_prefix and ::data_type_prefix.
+const WIZ_GTYPE_RE = /^\s*(?:(cdf)|(ogive|cumfreq|cumulativefrequency)|(count|barchart|bars|bar)|(stack|fraction)|(boxplot|box)|(scatterplot|scatter)|(numdotplot|numdots|numdot|ldotplot|ldots|ldot|dotlabelplot|dotlabels|dotlabel)|(dotplot|dots|dot))(?![-\w])\s*/i,
+    WIZ_GTYPE_NAMES = [null, "cdf", "cumfreq", "bar", "fraction", "box", "scatter", "numdot", "dot"],
+    WIZ_DATA_RE = /^\s*(paper|review)(\s+|(?=\())(?=[-+.\w([])/i;
+
+/** @param {string} s
+ * @return {?{gtype: string, rest: string}} */
+function wiz_strip_gtype(s) {
+    const m = WIZ_GTYPE_RE.exec(s);
+    for (let i = 1; m && i !== WIZ_GTYPE_NAMES.length; ++i) {
+        if (m[i])
+            return {gtype: WIZ_GTYPE_NAMES[i], rest: s.substring(m[0].length)};
+    }
+    return null;
+}
+
+/** @param {string} s
+ * @return {?{data: string, rest: string}} */
+function wiz_strip_data(s) {
+    const m = WIZ_DATA_RE.exec(s);
+    return m ? {data: m[1].toLowerCase(), rest: s.substring(m[0].length)} : null;
+}
+
+/** @param {string} s */
+function wiz_balanced(s) {
+    let depth = 0;
+    for (const ch of s) {
+        if (ch === "(") {
+            ++depth;
+        } else if (ch === ")" && --depth < 0) {
+            return false;
+        }
+    }
+    return depth === 0;
+}
+
+/** Split `avg(OveMer)` into `["avg", "OveMer"]`.
+ * @param {string} expr
+ * @return {[string, string]} */
+function wiz_split_summary(expr) {
+    const m = /^([A-Za-z_]+)\s*\((.*)\)$/.exec(expr.trim());
+    if (m
+        && WIZ_SUMMARIES.some(s => s[0] === m[1].toLowerCase())
+        && wiz_balanced(m[2])) {
+        return [m[1].toLowerCase(), m[2].trim()];
+    }
+    return ["", expr.trim()];
+}
+
+let wiz_catalog = [];
+
+/** @param {string} expr
+ * @return {?object} */
+function wiz_find_quantity(expr) {
+    for (const g of wiz_catalog) {
+        for (const q of g.quantities) {
+            if (q.expr === expr)
+                return q;
+        }
+    }
+    return null;
+}
+
+/** One axis: a quantity menu, a summary menu, and the formula that they build.
+ * The formula entry is authoritative; the menus resync from whatever it holds.
+ * @param {object} wiz
+ * @param {string} which -- "x" or "y" */
+function wiz_make_axis(wiz, which) {
+    const upper = which.toUpperCase(),
+        id = "graph-wizard-" + which,
+        qsel = $e("select", {class: "graph-wizard-quantity", "aria-label": upper + " axis quantity"}),
+        ssel = $e("select", {class: "graph-wizard-summary", "aria-label": upper + " axis summary"}),
+        entry = $e("input", {type: "text", name: which, id: id,
+            class: "graph-wizard-expr ignore-diff",
+            spellcheck: "false", autocomplete: "off"}),
+        hint = $e("div", "f-d graph-wizard-axis-hint");
+
+    qsel.append($e("option", {value: ""}, "Custom formula…"));
+    for (const g of wiz_catalog) {
+        const og = $e("optgroup", {label: g.title});
+        for (const q of g.quantities) {
+            if (which === "x" || !q.special)
+                og.append($e("option", {value: q.expr}, q.title));
+        }
+        og.firstChild && qsel.append(og);
+    }
+    for (const s of WIZ_SUMMARIES) {
+        ssel.append($e("option", {value: s[0]}, s[1]));
+    }
+
+    const element = $e("div", "f-i graph-wizard-axis",
+        $e("label", {for: id}, upper + " axis"),
+        $e("div", "graph-wizard-axis-menus", qsel, ssel),
+        entry, hint);
+
+    const self = {
+        element: element,
+        /** @return {string} */
+        value: function () {
+            return entry.value.trim();
+        },
+        /** @param {string} s */
+        set_value: function (s) {
+            entry.value = s;
+            self.resync();
+        },
+        /** @return {?object} */
+        quantity: function () {
+            const q = wiz_find_quantity(wiz_split_summary(entry.value)[1]);
+            return q && !q.special ? q : null;
+        },
+        /** Data level of the current expression, or null if the wizard can’t tell.
+         * @return {?string} */
+        level: function () {
+            const parts = wiz_split_summary(entry.value),
+                q = wiz_find_quantity(parts[1]);
+            if (!q || q.special) {
+                return null;
+            }
+            return q.indexed && parts[0] === "" ? "review" : "paper";
+        },
+        /** Set the menus from the formula entry. */
+        resync: function () {
+            const parts = wiz_split_summary(entry.value),
+                q = wiz_find_quantity(parts[1]);
+            qsel.value = q ? q.expr : "";
+            ssel.value = q ? parts[0] : "";
+            ssel.disabled = !q || !q.indexed;
+            if (ssel.disabled) {
+                ssel.value = "";
+            }
+        },
+        /** @param {boolean} on
+         * @param {string} [why] */
+        show: function (on, why) {
+            element.hidden = !on;
+            entry.disabled = !on;
+            hint.textContent = why || "";
+        }
+    };
+
+    function compose() {
+        const q = qsel.value, s = ssel.disabled ? "" : ssel.value;
+        entry.value = q === "" ? "" : (s === "" ? q : s + "(" + q + ")");
+        wiz.changed();
+    }
+    $(qsel).on("change", function () {
+        const q = wiz_find_quantity(qsel.value);
+        ssel.disabled = !q || !q.indexed;
+        // a bar chart’s Y axis must aggregate, so pick a summary by default
+        if (!ssel.disabled && which === "y" && wiz.gtype === "bar" && ssel.value === "") {
+            ssel.value = "avg";
+        }
+        compose();
+    });
+    $(ssel).on("change", compose);
+    $(entry).on("input change", function () {
+        self.resync();
+        wiz.changed();
+    });
+    return self;
+}
+
+/** @param {object} wiz
+ * @return {Element} */
+function wiz_make_dataset_panel(wiz) {
+    const rows = $e("div", "graph-wizard-datasets"),
+        panel = $e("div", null, rows,
+            $e("button", {type: "button", class: "graph-wizard-add"}, "Add series"));
+
+    function add_row(ds, i) {
+        const qe = $e("input", {type: "text", name: "q" + (i + 1), value: ds.q,
+                class: "graph-wizard-search papersearch need-suggest ignore-diff",
+                placeholder: i === 0 ? "All submissions" : "Search",
+                spellcheck: "false", autocomplete: "off", "aria-label": "Series search"}),
+            se = $e("select", {class: "graph-wizard-style", "aria-label": "Series style"}),
+            row = $e("div", "graph-wizard-dataset", qe, se,
+                $e("button", {type: "button", class: "graph-wizard-remove", "aria-label": "Remove series"}, "✕"));
+        for (const s of WIZ_STYLES) {
+            se.append($e("option", {value: s[0]}, s[1]));
+        }
+        se.value = ds.s || "default";
+        rows.append(row);
+        $(row).awaken();
+    }
+
+    function read() {
+        wiz.datasets = $(rows).find(".graph-wizard-dataset").map(function () {
+            return {q: $(this).find(".graph-wizard-search")[0].value,
+                s: $(this).find(".graph-wizard-style")[0].value};
+        }).get();
+    }
+
+    function rebuild() {
+        rows.replaceChildren();
+        wiz.datasets.forEach(add_row);
+    }
+
+    $(panel).on("click", ".graph-wizard-add", function () {
+        read();
+        wiz.datasets.push({q: "", s: "default"});
+        rebuild();
+        $(rows).find(".graph-wizard-search").last().focus();
+        wiz.changed();
+    });
+    $(panel).on("click", ".graph-wizard-remove", function () {
+        read();
+        const i = $(rows).find(".graph-wizard-dataset").index($(this).closest(".graph-wizard-dataset"));
+        wiz.datasets.splice(i, 1);
+        if (wiz.datasets.length === 0) {
+            wiz.datasets.push({q: "", s: "default"});
+        }
+        rebuild();
+        wiz.changed();
+    });
+    $(panel).on("input change", ".graph-wizard-search, .graph-wizard-style", function () {
+        read();
+        wiz.changed();
+    });
+
+    rebuild();
+    return panel;
+}
+
+/** Read the graph page’s form into wizard state. The X, Y, and series fields
+ * are form inputs; the graph type and the rest come from data attributes,
+ * since the plain form encodes them in the Y expression.
+ * @param {?HTMLFormElement} form */
+function wiz_state(form) {
+    const st = {gtype: "scatter", data: "", x: "", y: "", xorder: "", t: "", datasets: []},
+        els = form ? form.elements : {};
+    st.x = (els.x && els.x.value) || "";
+    st.y = (els.y && els.y.value) || "";
+    st.xorder = (form && form.getAttribute("data-graph-xorder")) || "";
+    st.t = (form && form.getAttribute("data-graph-t")) || "";
+
+    // the plain form lets you write the type into Y, as in `box OveMer`; the
+    // wizard keeps the two apart, so always split the prefix off
+    const ysplit = wiz_strip_gtype(st.y);
+    if (ysplit) {
+        st.y = ysplit.rest;
+    }
+    const gattr = form && form.getAttribute("data-graph-gtype"),
+        g = (gattr && wiz_strip_gtype(gattr)) || ysplit;
+    if (g && WIZ_TYPE_MAP[g.gtype]) {
+        st.gtype = g.gtype;
+    }
+
+    for (const k of ["x", "y"]) {
+        const d = wiz_strip_data(st[k]);
+        if (d) {
+            st.data = d.data;
+            st[k] = d.rest;
+        }
+    }
+
+    for (let i = 1; els["q" + i]; ++i) {
+        st.datasets.push({q: els["q" + i].value,
+            s: (els["s" + i] && els["s" + i].value) || "default"});
+    }
+    if (st.datasets.length === 0) {
+        st.datasets.push({q: "", s: "default"});
+    }
+    return st;
+}
+
+/** Request parameters describing the graph the wizard currently specifies.
+ * @param {object} wiz
+ * @return {object} */
+function wiz_params(wiz) {
+    const t = WIZ_TYPE_MAP[wiz.gtype], p = {gtype: wiz.gtype};
+    let x = wiz.xaxis.value();
+    // the `paper`/`review` prefix asserts a data level, so only add it where
+    // the wizard knows the assertion holds
+    if (wiz.data && wiz.data === wiz.xaxis.level()) {
+        x = wiz.data + " " + x;
+    }
+    p.x = x;
+    p.y = t.y === false ? "" : wiz.yaxis.value();
+    if (wiz.xorder) {
+        p.xorder = wiz.xorder;
+    }
+    if (wiz.t) {
+        p.t = wiz.t;
+    }
+    wiz.datasets.forEach(function (ds, i) {
+        p["q" + (i + 1)] = ds.q;
+        p["s" + (i + 1)] = ds.s;
+    });
+    return p;
+}
+
+// The preview redraws on every keystroke, so a large conference can make it
+// both unreadable and slow: `graph_dot` runs a d3 force simulation over every
+// mark, which is superlinear and, once the marks don't fit, pushes them
+// outside the plot area. Thin the data instead.
+//
+// Only `style_xyi` (scatter, dot, ldot, box) is sampled. `xyis` (bar,
+// fraction) is already aggregated per X value, and a `cdf`'s Y axis may be a
+// raw count, so dropping points from either would misstate the graph rather
+// than thin it.
+const PREVIEW_MARK_LIMIT = 300;
+
+/** @param {object} args
+ * @return {?{data: object, n: number, total: number}} */
+function preview_sample(args) {
+    if (args.data_format !== "style_xyi" || !args.data) {
+        return null;
+    }
+    let total = 0;
+    for (const k in args.data) {
+        total += args.data[k].length;
+    }
+    if (total <= PREVIEW_MARK_LIMIT) {
+        return null;
+    }
+    // Take a fixed stride rather than a random sample: the preview must not
+    // reshuffle itself between two refreshes of the same graph. The stride is
+    // shared across series, so they keep their relative weights.
+    const stride = total / PREVIEW_MARK_LIMIT, data = {};
+    let n = 0;
+    for (const k in args.data) {
+        const a = args.data[k], b = [];
+        for (let i = 0; i < a.length; i += stride) {
+            b.push(a[Math.floor(i)]);
+        }
+        if (b.length !== 0) {
+            data[k] = b;
+            n += b.length;
+        }
+    }
+    return {data: data, n: n, total: total};
+}
+
+function graph_wizard(form) {
+    const wiz = wiz_state(form);
+
+    const $pu = $popup({className: "modal-dialog-wide graph-wizard-modal"}),
+        tabse = $e("div", {class: "graph-wizard-tabs", role: "tablist"}),
+        panelse = $e("div", "graph-wizard-panels"),
+        typehint = $e("p", "graph-wizard-type-hint"),
+        typese = $e("div", "graph-wizard-types"),
+        preview = $e("div", "graph-wizard-preview"),
+        previewnote = $e("div", "f-d graph-wizard-preview-note"),
+        status = $e("div", "graph-wizard-status"),
+        backb = $e("button", {type: "button", name: "back", class: "float-left"}, "← Back"),
+        nextb = $e("button", {type: "button", name: "next", class: "float-left"}, "Next →"),
+        graphb = $e("button", {type: "button", name: "graph", class: "btn-primary"}, "Graph");
+    let panel = 0, seq = 0, timer = null;
+
+    // panel 1: graph type
+    for (const t of WIZ_TYPES) {
+        typese.append($e("label", {class: "graph-wizard-type", title: t.hint},
+            $e("input", {type: "radio", name: "gtype", value: t.name,
+                class: "graph-wizard-type-radio ignore-diff"}),
+            t.icon(),
+            $e("span", "graph-wizard-type-title", t.title)));
+    }
+
+    // panel 2: axes
+    const datasel = $e("select", {name: "data", id: "graph-wizard-data", class: "ignore-diff"},
+        $e("option", {value: ""}, "Automatic"),
+        $e("option", {value: "paper"}, "One point per submission"),
+        $e("option", {value: "review"}, "One point per review"));
+    wiz.xaxis = wiz_make_axis(wiz, "x");
+    wiz.yaxis = wiz_make_axis(wiz, "y");
+    const xordere = $e("input", {type: "text", name: "xorder", id: "graph-wizard-xorder",
+        class: "graph-wizard-expr ignore-diff", spellcheck: "false", autocomplete: "off"});
+    const axespanel = $e("div", null,
+        $e("div", "f-i graph-wizard-axis",
+            $e("label", {for: "graph-wizard-data"}, "Data points"),
+            datasel,
+            $e("div", "f-d", "What each mark on the graph stands for")),
+        wiz.xaxis.element, wiz.yaxis.element);
+
+    // panel 4: advanced
+    const advancedpanel = $e("div", null,
+        $e("div", "f-i graph-wizard-axis",
+            $e("label", {for: "graph-wizard-xorder"}, "X axis order"),
+            xordere,
+            $e("div", "f-d", "Optional formula that sorts the X axis")));
+
+    const PANELS = [
+        {title: "Graph type", element: $e("div", null, typese, typehint)},
+        {title: "Axes", element: axespanel},
+        {title: "Series", element: wiz_make_dataset_panel(wiz)},
+        {title: "Advanced", element: advancedpanel}
+    ];
+    PANELS.forEach(function (p, i) {
+        p.tab = $e("button", {type: "button", role: "tab", class: "graph-wizard-tab",
+            id: "graph-wizard-tab-" + i, "aria-controls": "graph-wizard-panel-" + i,
+            "aria-selected": "false"}, p.title);
+        addClass(p.element, "graph-wizard-panel");
+        p.element.setAttribute("role", "tabpanel");
+        p.element.setAttribute("id", "graph-wizard-panel-" + i);
+        p.element.setAttribute("aria-labelledby", "graph-wizard-tab-" + i);
+        p.element.hidden = true;
+        tabse.append(p.tab);
+        panelse.append(p.element);
+    });
+
+    /** @param {number} i
+     * @param {boolean} [focus] */
+    function select_panel(i, focus) {
+        panel = i;
+        PANELS.forEach(function (p, j) {
+            p.element.hidden = j !== i;
+            p.tab.setAttribute("aria-selected", j === i ? "true" : "false");
+            (j === i ? addClass : removeClass)(p.tab, "active");
+        });
+        backb.disabled = i === 0;
+        nextb.disabled = i === PANELS.length - 1;
+        focus && hotcrp.focus_within(PANELS[i].element);
+    }
+
+    /** @param {?list<object>} ml */
+    function show_messages(ml) {
+        // place field messages next to their inputs, which may be on a
+        // hidden panel, and repeat the whole list beside the preview
+        $pu.show_errors(ml, {summary: false});
+        status.replaceChildren(ml && ml.length ? feedback.render_alert(ml) : "");
+    }
+
+    function render_preview(data) {
+        preview.replaceChildren();
+        show_messages(data.message_list);
+        if (data.ok === false) {
+            previewnote.replaceChildren();
+            return;
+        }
+        const sample = preview_sample(data);
+        previewnote.replaceChildren(sample
+            ? "Sampled ".concat(sample.n.toLocaleString(), " of ",
+                sample.total.toLocaleString(), " marks")
+            : "");
+        // the preview lives in a fixed panel, so the box must not grow to fit
+        // tick labels; they are truncated instead
+        const width = Math.max(preview.clientWidth || 0, 240);
+        make_graph(preview, $.extend({}, data, {
+            data: sample ? sample.data : data.data,
+            height: Math.round(width * 0.72),
+            expandable: false
+        }));
+    }
+
+    function load_preview() {
+        const p = wiz_params(wiz), myseq = ++seq;
+        if (p.x === "") {
+            preview.replaceChildren();
+            show_messages([{message: "<0>Choose an X axis to see a preview", status: -4 /*MessageSet::MARKED_NOTE*/}]);
+            return;
+        }
+        $.get(hoturl("api/graphdata", p), function (data) {
+            if (myseq !== seq) {
+                return;
+            }
+            if (data) {
+                render_preview(data);
+            } else {
+                show_messages([{message: "<0>Could not load the graph", status: 2}]);
+            }
+        });
+    }
+
+    wiz.changed = function () {
+        wiz.data = datasel.value;
+        wiz.xorder = xordere.value.trim();
+        const t = WIZ_TYPE_MAP[wiz.gtype];
+        wiz.xaxis.show(true, t.multix ? "Formula, or several separated by “;”" : "Formula, “search”, or “tag”");
+        wiz.yaxis.show(t.y !== false,
+            wiz.gtype === "bar" ? "Formula to total; leave empty to count points" : "Formula");
+        typehint.textContent = t.hint;
+        timer && clearTimeout(timer);
+        timer = setTimeout(load_preview, 300);
+    };
+
+    $(typese).on("change", ".graph-wizard-type-radio", function () {
+        wiz.gtype = this.value;
+        $(typese).find(".graph-wizard-type").each(function () {
+            (this.querySelector(":checked") ? addClass : removeClass)(this, "active");
+        });
+        wiz.changed();
+    });
+    $(tabse).on("click", ".graph-wizard-tab", function () {
+        select_panel(PANELS.findIndex(p => p.tab === this), true);
+    });
+    $(backb).on("click", () => select_panel(panel - 1, true));
+    $(nextb).on("click", () => select_panel(panel + 1, true));
+    $(datasel).on("change", function () {
+        // switching data level only makes sense together with the summaries
+        for (const ax of [wiz.xaxis, wiz.yaxis]) {
+            const q = ax.quantity();
+            if (q && q.indexed) {
+                const parts = wiz_split_summary(ax.value());
+                if (this.value === "review") {
+                    ax.set_value(q.expr);
+                } else if (this.value === "paper" && parts[0] === "") {
+                    ax.set_value("avg(" + q.expr + ")");
+                }
+            }
+        }
+        wiz.changed();
+    });
+    $(xordere).on("input change", () => wiz.changed());
+
+    $pu.append($e("h2", "graph-wizard-title", "Graphing wizard"),
+        $e("div", "graph-wizard",
+            $e("div", "graph-wizard-main", tabse, panelse),
+            $e("div", "graph-wizard-side",
+                $e("h3", "graph-wizard-side-title", "Preview"), status, preview,
+                previewnote)))
+        .append_actions(graphb, "Cancel", backb, nextb);
+
+    function go() {
+        window.location = hoturl("graph", $.extend({group: "formula"}, wiz_params(wiz)));
+    }
+    $(graphb).on("click", go);
+    $pu.on("submit", function (evt) {
+        evt.preventDefault();
+        go();
+    });
+
+    // fill in initial state; the graph type goes last because selecting it
+    // refreshes everything else
+    datasel.value = wiz.data;
+    wiz.xaxis.set_value(wiz.x);
+    wiz.yaxis.set_value(wiz.y);
+    xordere.value = wiz.xorder;
+    $(typese).find(".graph-wizard-type-radio[value=" + wiz.gtype + "]").prop("checked", true).trigger("change");
+    select_panel(0);
+
+    $pu.show();
+    return $pu;
+}
+
+handle_ui.on("js-graph-wizard", function () {
+    graph_wizard(this.form || $$("f-graph"));
+});
+
+make_graph.wizard = graph_wizard;
+/** @param {list<object>} catalog */
+make_graph.set_catalog = function (catalog) {
+    wiz_catalog = catalog;
 };
 
 return make_graph;

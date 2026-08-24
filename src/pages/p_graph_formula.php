@@ -92,7 +92,13 @@ class Graph_Formula_Page {
     /** @param MessageSet $fgm
      * @param list<FormulaGraphDataset> $datasets */
     private function print_ui($fgm, $datasets) {
-        echo $this->conf->hotform("graph", ["group" => "formula"], ["method" => "get"]);
+        // the wizard needs the request parameters that aren’t form fields
+        echo $this->conf->hotform("graph", ["group" => "formula"], [
+            "method" => "get", "id" => "f-graph",
+            "data-graph-gtype" => $fgm instanceof FormulaGraph ? $fgm->gtype_json() : null,
+            "data-graph-xorder" => (string) $this->qreq->xorder,
+            "data-graph-t" => (string) $this->qreq->t
+        ]);
 
         // X axis
         echo '<div class="f-mcol">',
@@ -122,8 +128,29 @@ class Graph_Formula_Page {
         echo '</template>',
             Ht::button("Add series", ["class" => "ui row-order-append", "data-rowset" => "graph-datasets"]),
             '</div>',
-            Ht::submit("Graph", ["class" => 'btn-primary']),
+            Ht::submit("Graph", ["class" => "btn-primary"]),
+            Ht::button("Graphing wizard", ["class" => "ui js-graph-wizard ml-3"]),
             '</form>';
+
+        $catalog = new FormulaGraphCatalog($this->user);
+        echo Ht::unstash(), Ht::script_open(),
+            "hotcrp.graph.set_catalog(", json_encode_browser($catalog->quantity_groups()), ");</script>\n";
+        $this->print_examples($catalog);
+    }
+
+    /** @param FormulaGraphCatalog $catalog */
+    private function print_examples($catalog) {
+        $exs = $catalog->examples();
+        if (empty($exs)) {
+            return;
+        }
+        echo '<div class="graph-examples mt-5"><h3>Examples</h3><ul class="graph-example-list">';
+        foreach ($exs as $ex) {
+            echo '<li>',
+                $this->conf->hotlink(htmlspecialchars($ex->title), "graph", ["group" => "formula"] + $ex->param),
+                '<div class="hint">', htmlspecialchars($ex->hint), "</div></li>\n";
+        }
+        echo "</ul></div>\n";
     }
 
     static function go(Contact $user, Qrequest $qreq, $gx, $gj) {
