@@ -2594,9 +2594,14 @@ const WIZ_TYPES = [
     }, {
         name: "dot", title: "Dot plot",
         hint: "One mark per datum, perturbed to avoid overlapping.",
-        icon: () => wiz_icon(...wiz_dots([[24, 50, 2.6], [31, 42, 2.6], [36, 52, 2.6],
-            [44, 38, 2.6], [52, 44, 2.6], [58, 30, 2.6], [67, 35, 2.6], [75, 22, 2.6],
-            [84, 28, 2.6]]))
+        // equal dots in clumps, the way the collision force packs them, with
+        // several clumps at one X the way repeated values arrive
+        icon: () => wiz_icon(...wiz_dots([
+            [16.6, 54.4, 2.6], [22.2, 53.8, 2.6], [19.4, 43, 2.6],
+            [37.6, 38.6, 2.6], [42, 21.4, 2.6],
+            [58.4, 52, 2.6], [64, 51.4, 2.6],
+            [59.6, 37.4, 2.6], [66.2, 36.8, 2.6], [63.4, 31, 2.6],
+            [80, 45.6, 2.6], [85.6, 47, 2.6], [83.2, 26.6, 2.6]]))
     }, {
         name: "numdot", title: "Labeled dot plot",
         hint: "Dot plot labeled with submission or review ID.",
@@ -2637,7 +2642,7 @@ const WIZ_TYPES = [
         y: false, multix: true,
         icon: () => wiz_icon(
             $svg("path", {class: "gcdf", d: "M8 64H16V58H28V52H40V38H50V28H64V19H73V13H80V11H96"}),
-            $svg("path", {class: "gcdf color1", d: "M16 51H26V43H38V39H50V25H62V21H74V13H92"}))
+            $svg("path", {class: "gcdf color1", d: "M8 64H18V60H30V56H42V48H54V42H68V36H82V32H96"}))
     }
 ];
 
@@ -2957,30 +2962,26 @@ function wiz_params(wiz) {
 // both unreadable and slow: `graph_dot` runs a d3 force simulation over every
 // mark, which is superlinear and, once the marks don't fit, pushes them
 // outside the plot area. Thin the data instead.
-//
-// Only `style_xyi` (scatter, dot, ldot, box) is sampled. `xyis` (bar,
-// fraction) is already aggregated per X value, and a `cdf`'s Y axis may be a
-// raw count, so dropping points from either would misstate the graph rather
-// than thin it.
-const PREVIEW_MARK_LIMIT = 300;
+const PREVIEW_DOT_MARK_LIMIT = 300, PREVIEW_LDOT_MARK_LIMIT = 100;
 
 /** @param {object} args
  * @return {?{data: object, n: number, total: number}} */
 function preview_sample(args) {
-    if (args.data_format !== "style_xyi" || !args.data) {
+    if ((args.gtype !== "dot" && args.gtype !== "ldot") || !args.data) {
         return null;
     }
     let total = 0;
     for (const k in args.data) {
         total += args.data[k].length;
     }
-    if (total <= PREVIEW_MARK_LIMIT) {
+    const limit = args.gtype === "dot" ? PREVIEW_DOT_MARK_LIMIT : PREVIEW_LDOT_MARK_LIMIT;
+    if (total <= limit) {
         return null;
     }
     // Take a fixed stride rather than a random sample: the preview must not
     // reshuffle itself between two refreshes of the same graph. The stride is
     // shared across series, so they keep their relative weights.
-    const stride = total / PREVIEW_MARK_LIMIT, data = {};
+    const stride = total / limit, data = {};
     let n = 0;
     for (const k in args.data) {
         const a = args.data[k], b = [];
