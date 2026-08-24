@@ -271,6 +271,8 @@ class Users_Page {
                 || ($t[0] === "+" && $tagfn !== "d")) {
                 $pfx = $t[0];
                 $t = substr($t, 1);
+            } else {
+                $pfx = "";
             }
             if (!($t = $tagger->check($t, $flags))) {
                 $ms->error_at(null, $tagger->error_ftext());
