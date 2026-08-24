@@ -4967,7 +4967,7 @@ class Conf {
         }
 
         // favicon
-        $favicon = $this->opt("favicon") ?? "images/review48.png";
+        $favicon = $this->opt("favicon") ?? "images/review48.svg";
         if ($favicon) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
                 if (substr($favicon, 0, 7) === "images/") {

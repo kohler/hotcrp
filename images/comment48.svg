@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+<defs>
+<path id="cm-bubble" d="M15.41 35.03 12.24 43.2 23.61 36.28A20.98 14.27 0 1 0 15.41 35.03Z"/>
+<radialGradient id="cm-fill" gradientUnits="userSpaceOnUse" cx="22.8" cy="36.78" r="25" gradientTransform="matrix(1 0 0 1.1045 0 -3.844)">
+ <stop offset="0" stop-color="#fff"/><stop offset=".167" stop-color="#f6f5f2"/>
+ <stop offset=".333" stop-color="#ebe9e2"/><stop offset=".5" stop-color="#e1dcd2"/>
+ <stop offset=".667" stop-color="#d2d0c3"/><stop offset=".833" stop-color="#bdbaa8"/>
+ <stop offset="1" stop-color="#a7a994"/>
+</radialGradient>
+<radialGradient id="cm-gloss" gradientUnits="userSpaceOnUse" cx="22.15" cy="10.4" r="80" gradientTransform="matrix(1 0 0 .19 0 8.424)">
+ <stop offset="0" stop-color="#fff" stop-opacity=".93"/><stop offset=".15" stop-color="#fff" stop-opacity=".855"/>
+ <stop offset=".3" stop-color="#fff" stop-opacity=".762"/><stop offset=".45" stop-color="#fff" stop-opacity=".66"/>
+ <stop offset=".525" stop-color="#fff" stop-opacity=".61"/><stop offset=".675" stop-color="#fff" stop-opacity=".46"/>
+ <stop offset=".825" stop-color="#fff" stop-opacity=".28"/><stop offset=".95" stop-color="#fff" stop-opacity=".02"/>
+ <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+</radialGradient>
+<linearGradient id="cm-edge" gradientUnits="userSpaceOnUse" x1="2" y1="0" x2="46" y2="0">
+ <stop offset="0" stop-color="#5c6049"/><stop offset=".27" stop-color="#676b5f"/><stop offset="1" stop-color="#2c3528"/>
+</linearGradient>
+</defs>
+<use href="#cm-bubble" fill="url(#cm-fill)"/>
+<ellipse cx="24.07" cy="18.48" rx="15.94" ry="8.69" fill="url(#cm-gloss)"/>
+<use href="#cm-bubble" fill="none" stroke="url(#cm-edge)" stroke-width="1.11" stroke-linejoin="round"/>
+</svg>

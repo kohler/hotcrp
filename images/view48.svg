@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+<defs>
+<linearGradient id="vw-page" gradientUnits="userSpaceOnUse" x1="4.36" y1="19.87" x2="9.43" y2="47.82">
+ <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b9b9b9"/>
+</linearGradient>
+<radialGradient id="vw-glow" gradientUnits="userSpaceOnUse" cx="24.04" cy="27.12" r="11.4">
+ <stop offset="0" stop-color="#fffd00" stop-opacity=".45"/><stop offset=".491" stop-color="#fffd00" stop-opacity=".815"/>
+ <stop offset=".57" stop-color="#fffd00" stop-opacity=".693"/><stop offset=".658" stop-color="#fffd00" stop-opacity=".573"/>
+ <stop offset=".746" stop-color="#fffd00" stop-opacity=".435"/><stop offset=".833" stop-color="#fffd00" stop-opacity=".309"/>
+ <stop offset=".921" stop-color="#fffd00" stop-opacity=".178"/><stop offset=".99" stop-color="#fffd00" stop-opacity=".028"/>
+ <stop offset="1" stop-color="#fffd00" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<path d="M15.49 11.32 45.72 14.46 37.39 47.96 4.72 44.59Z" fill="#000" fill-opacity=".089"/>
+<path d="M14.3 9.95 43.64 12.99 35.53 45.6 3.81 42.33Z" fill="#fff" stroke="#919191" stroke-width=".91"/>
+<path d="M16.7 13.11 39.6 15.48 33.04 41.89 8.2 39.33Z" fill="url(#vw-page)"/>
+<circle cx="24.04" cy="27.12" r="11.4" fill="url(#vw-glow)"/>
+<path d="M24.21 19.36 26.83 23.65 31.72 24.82 28.45 28.64 28.85 33.65 24.21 31.72 19.57 33.65 19.97 28.64 16.7 24.82 21.59 23.65Z" fill="#fff"/>
+</svg>

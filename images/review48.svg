@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+<defs>
+<linearGradient id="rv-page" gradientUnits="userSpaceOnUse" x1="12.59" y1="20.86" x2="18.41" y2="46.27">
+ <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b9b9b9"/>
+</linearGradient>
+<radialGradient id="rv-fill" gradientUnits="userSpaceOnUse" cx="19.02" cy="23.82" r="22">
+ <stop offset="0" stop-color="#ffced2"/><stop offset=".091" stop-color="#ffcbca"/>
+ <stop offset=".182" stop-color="#ffc6c1"/><stop offset=".273" stop-color="#ffbfb9"/>
+ <stop offset=".364" stop-color="#feb6b1"/><stop offset=".455" stop-color="#fbada8"/>
+ <stop offset=".545" stop-color="#f9a2a0"/><stop offset=".636" stop-color="#f69697"/>
+ <stop offset=".727" stop-color="#f2898f"/><stop offset=".818" stop-color="#ed7b87"/>
+ <stop offset=".909" stop-color="#e86c7e"/><stop offset="1" stop-color="#e25d76"/>
+</radialGradient>
+<radialGradient id="rv-gloss" gradientUnits="userSpaceOnUse" cx="18.53" cy="5.15" r="12.43" gradientTransform="matrix(1.7259 0 0 1 -13.45 0)">
+ <stop offset="0" stop-color="#fff" stop-opacity=".698"/><stop offset=".144" stop-color="#fff" stop-opacity=".678"/>
+ <stop offset=".288" stop-color="#fff" stop-opacity=".6"/><stop offset=".433" stop-color="#fff" stop-opacity=".49"/>
+ <stop offset=".577" stop-color="#fff" stop-opacity=".39"/><stop offset=".721" stop-color="#fff" stop-opacity=".276"/>
+ <stop offset=".865" stop-color="#fff" stop-opacity=".098"/><stop offset=".981" stop-color="#fff" stop-opacity="0"/>
+</radialGradient>
+<linearGradient id="rv-edge" gradientUnits="userSpaceOnUse" x1="2.85" y1="0" x2="39.14" y2=".56">
+ <stop offset="0" stop-color="#9c0026"/><stop offset="1" stop-color="#d02d65"/>
+</linearGradient>
+</defs>
+<path d="M16.73 11.44 47.01 14.46 38.88 47.91 6.15 44.59Z" fill="#000" fill-opacity=".098"/>
+<path d="M15.62 10.06 45.03 13 37.11 45.58 5.31 42.35Z" fill="#fff" stroke="#919191" stroke-width=".88"/>
+<path d="M18.04 13.22 40.99 15.52 34.59 41.86 9.7 39.33Z" fill="url(#rv-page)"/>
+<path d="M18.55 24.9 27.03 30.06 24.92 23.92A16.09 10.97 0 1 0 18.55 24.9Z" fill="url(#rv-fill)" stroke="url(#rv-edge)" stroke-width=".8" stroke-linejoin="round"/>
+<ellipse cx="18.19" cy="11.02" rx="12.42" ry="6.4" fill="url(#rv-gloss)"/>
+</svg>

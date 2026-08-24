@@ -630,7 +630,7 @@ Ready\n";
         $barsep = ' <span class="barsep">·</span> ';
         $a = '<a href="' . Ht::escape_attr($prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()])) . '"';
         $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
-            . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
+            . Ht::img("review48.svg", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . "</a></td>"
             . "<td class=\"pl_eventid pl_rowclick\">{$a} class=\"pnum\">#{$prow->paperId}</a></td>"
             . "<td class=\"pl_eventdesc pl_rowclick\"><small>{$a} class=\"ptitle\">"
