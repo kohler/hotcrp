@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+<defs>
+<path id="ed-pencil" d="M29.04 .11Q33.38 .13 36.23 3.44L25.33 27.41 17.99 34.01 18.15 24.16Z"/>
+<linearGradient id="ed-paper" gradientUnits="userSpaceOnUse" x1="1.6" y1="22.1" x2="6.7" y2="47.6">
+ <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b9b9b9"/>
+</linearGradient>
+<linearGradient id="ed-body" gradientUnits="userSpaceOnUse" x1="32.64" y1="1.74" x2="18.02" y2="34.02">
+ <stop offset="0" stop-color="#fceaca"/><stop offset=".745" stop-color="#f9e2c2"/><stop offset=".782" stop-color="#ffe9cf"/>
+</linearGradient>
+<linearGradient id="ed-facets" gradientUnits="userSpaceOnUse" x1="24.14" y1="10.93" x2="31.34" y2="14.2">
+ <stop offset="0" stop-color="#ffff12"/><stop offset=".3" stop-color="#ffde11"/>
+ <stop offset=".6" stop-color="#ffb616"/><stop offset="1" stop-color="#ffa261"/>
+</linearGradient>
+<linearGradient id="ed-fade" gradientUnits="userSpaceOnUse" x1="29.51" y1="8.65" x2="21.75" y2="25.79">
+ <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".562"/>
+</linearGradient>
+<linearGradient id="ed-edge" gradientUnits="userSpaceOnUse" x1="24.14" y1="10.93" x2="31.34" y2="14.2">
+ <stop offset="0" stop-color="#ec8c31"/><stop offset="1" stop-color="#b85214"/>
+</linearGradient>
+</defs>
+<path d="M13.95 11.27 44.14 14.49 35.91 47.89 3.3 44.56Z" fill="#000" fill-opacity=".092"/>
+<path d="M12.78 9.91 42.12 13.04 34.1 45.59 2.39 42.36Z" fill="#fff" stroke="#919191" stroke-width=".87"/>
+<path d="M15.14 13.09 38.12 15.55 31.64 41.86 6.74 39.32Z" fill="url(#ed-paper)"/>
+<path d="M42.22 18.78Q46.8 20.58 47.7 24.27L29.1 33.8 17.99 34.01 25.73 27.23Z" fill="#000033" fill-opacity=".098"/>
+<use href="#ed-pencil" fill="url(#ed-body)"/>
+<path d="M28.08 2.23 35.3 5.51 25.33 27.41 18.15 24.16Z" fill="url(#ed-facets)"/>
+<path d="M28.08 2.23 35.3 5.51 25.33 27.41 18.15 24.16Z" fill="url(#ed-fade)"/>
+<path d="M18.07 29.23 17.99 34.01 21.56 30.81Z" fill="#6c646c"/>
+<path d="M29.04 .11Q33.38 .13 36.23 3.44L25.33 27.41 17.99 34.01 18.15 24.16ZM29.23 1.2C29.99 .27 35.48 2.81 35.3 4.01L24.77 27.15 18.45 33.01 18.71 24.41Z" fill="url(#ed-edge)" fill-rule="evenodd"/>
+</svg>

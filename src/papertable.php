@@ -2433,7 +2433,7 @@ class PaperTable {
                 $arg["forceShow"] = 1;
             }
             $tx[] = $this->_mode_nav_link(
-                "Edit", "edit48.png", $this->conf->hoturl("paper", $arg),
+                "Edit", "edit48.svg", $this->conf->hoturl("paper", $arg),
                 $this->mode === "edit", $allow || isset($arg["forceShow"])
             );
         }
@@ -2443,7 +2443,7 @@ class PaperTable {
                 $arg["forceShow"] = 1;
             }
             $tx[] = $this->_mode_nav_link(
-                "Review", "review48.png", $this->conf->hoturl("review", $arg),
+                "Review", "review48.svg", $this->conf->hoturl("review", $arg),
                 $this->mode === "re" && (!$this->editrrow || $this->user->is_my_review($this->editrrow)), $allow
             );
         }
@@ -2454,7 +2454,7 @@ class PaperTable {
                 $arg["forceShow"] = 1;
             }
             $tx[] = $this->_mode_nav_link(
-                $name, "assign48.png", $this->conf->hoturl("assign", $arg),
+                $name, "assign48.svg", $this->conf->hoturl("assign", $arg),
                 $this->mode === "assign", $allow
             );
         }
@@ -2462,7 +2462,7 @@ class PaperTable {
             || $this->qreq->page() !== "paper"
             || ($this->mode !== "p" && $this->prow->paperId > 0)) {
             array_unshift($tx, $this->_mode_nav_link(
-                "Main", "view48.png",
+                "Main", "view48.svg",
                 $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]),
                 $this->mode === "p" && $this->qreq->page() === "paper", true
             ));
@@ -2935,7 +2935,7 @@ class PaperTable {
         if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
             && $this->mode !== "p") {
             $this->allreviewslink = true;
-            $t[] = Ht::link(Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u>", $prow->hoturl([]), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("view48.svg", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u>", $prow->hoturl([]), ["class" => "noul revlink"]);
         }
 
         // edit paper
@@ -2943,7 +2943,7 @@ class PaperTable {
             && $prow->has_author($this->user)
             && !$this->user->is_admin($prow)) {
             $es = $this->conf->_c5("paper_edit", "<0>Edit {submission}");
-            $t[] = Ht::link(Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u>", $prow->hoturl(["m" => "edit"]), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("edit48.svg", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u>", $prow->hoturl(["m" => "edit"]), ["class" => "noul revlink"]);
         }
 
         // edit review
@@ -2954,20 +2954,20 @@ class PaperTable {
         } else if ($myrr) {
             $a = '<a href="' . Ht::escape_attr($prow->reviewurl(["r" => $myrr->unparse_ordinal_id()])) . '" class="noul revlink">';
             if ($this->user->can_edit_review($prow, $myrr)) {
-                $x = Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u>";
+                $x = Ht::img("review48.svg", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u>";
             } else {
-                $x = Ht::img("review48.png", "[Your review]", $dlimgjs) . "&nbsp;<u><b>Your review</b></u>";
+                $x = Ht::img("review48.svg", "[Your review]", $dlimgjs) . "&nbsp;<u><b>Your review</b></u>";
             }
             $t[] = Ht::link($x, $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()]), ["class" => "noul revlink"]);
         } else if ($this->user->can_edit_some_review($prow)) {
-            $t[] = Ht::link(Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u>", $prow->reviewurl(["m" => "re"]), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("review48.svg", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u>", $prow->reviewurl(["m" => "re"]), ["class" => "noul revlink"]);
         }
 
         // review assignments
         if ($this->mode !== "assign"
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
-            $t[] = Ht::link(Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u>", $this->conf->hoturl("assign", ["p" => $prow->paperId]), ["class" => "noul revlink"]);
+            $t[] = Ht::link(Ht::img("assign48.svg", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u>", $this->conf->hoturl("assign", ["p" => $prow->paperId]), ["class" => "noul revlink"]);
         }
 
         // new comment
@@ -2975,7 +2975,7 @@ class PaperTable {
         if (!$this->allreviewslink
             && !$nocmt
             && $this->user->new_comment_flags($prow) !== 0) {
-            $img = Ht::img("comment48.png", "[Add comment]", $dlimgjs);
+            $img = Ht::img("comment48.svg", "[Add comment]", $dlimgjs);
             $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#cnew\">{$img} <u>Add comment</u></a>";
             $any_comments = true;
         }
@@ -2994,7 +2994,7 @@ class PaperTable {
                         $what = "Add";
                     }
                     $title_prefix = $rrd->unnamed ? "" : "{$rrd->name} ";
-                    $img = Ht::img("comment48.png", "[{$what} response]", $dlimgjs);
+                    $img = Ht::img("comment48.svg", "[{$what} response]", $dlimgjs);
                     $uk = $author_view ? ' class="font-weight-bold"' : '';
                     $cid = $cr->unparse_html_id();
                     $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#{$cid}\">{$img} <u{$uk}>{$what} {$title_prefix}response</u></a>";
@@ -3275,7 +3275,7 @@ class PaperTable {
         // intended for pages like review editing where we need a link back
         $title = count($this->viewable_rrows) > 1 ? "All reviews" : "Main";
         echo '<div class="pcard notecard"><p class="sd">',
-            Ht::link(Ht::img("view48.png", "[{$title}]", ["class" => "dlimg", "width" => 24, "height" => 24]) . "&nbsp;<u>{$title}</u>", $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]), ["class" => "noul revlink"]),
+            Ht::link(Ht::img("view48.svg", "[{$title}]", ["class" => "dlimg", "width" => 24, "height" => 24]) . "&nbsp;<u>{$title}</u>", $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]), ["class" => "noul revlink"]),
             "</p></div>\n";
     }
 

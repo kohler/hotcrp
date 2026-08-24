@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 96 96">
+<defs>
+<style>
+:root { color-scheme: light dark; }
+/* In dark mode the plus needs a brighter, purpler blue and a darker edge, so
+   it separates from the blue figures. Browsers without `light-dark()` drop
+   these rules and render the light palette from the presentation attributes. */
+#as-plus1 stop:nth-child(1) { stop-color: light-dark(#0b1285, #6a45e2); }
+#as-plus1 stop:nth-child(2) { stop-color: light-dark(#060cb0, #7a52ff); }
+#as-plus1 stop:nth-child(3) { stop-color: light-dark(#1808ff, #ab90ff); }
+#as-plus3 stop:nth-child(1) { stop-color: light-dark(#e4e4ff, #d5c9f2); }
+#as-plus3 stop:nth-child(2), #as-plus3 stop:nth-child(3) { stop-color: light-dark(#c3c3e3, #a999ce); }
+.as-plus-edge { stroke: light-dark(#6c7bac, #2a1a52); }
+</style>
+<clipPath id="as-border" clipPathUnits="userSpaceOnUse"><path d="M 3.86 70.89 C 2.75 69.09 2.41 66.55 2.98 63.5 C 3.99 58.19 7.78 50.64 15.04 40.24 C 14.71 39.95 14.39 39.65 14.08 39.35 C 10.67 35.94 8.48 31.05 8.48 25.83 C 8.48 20.61 10.67 15.72 14.08 12.31 C 17.49 8.9 22.38 6.71 27.6 6.71 C 32.82 6.71 37.71 8.9 41.12 12.31 C 43.07 14.26 44.62 16.7 45.59 19.4 C 47.44 18.83 49.4 18.51 51.4 18.48 L 51.4 16.73 C 51.42 16 51.64 15.28 52.06 14.86 C 52.48 14.44 53.2 14.22 53.93 14.2 L 64.12 14.2 C 64.64 14.22 64.86 14.13 65.07 13.92 C 65.28 13.71 65.37 13.5 65.35 12.98 L 65.35 3.44 C 65.37 2.71 65.59 1.99 66.01 1.58 C 66.42 1.17 67.15 0.94 67.87 0.92 L 77.49 0.92 C 78.22 0.94 78.94 1.16 79.35 1.58 C 79.76 1.99 79.99 2.72 80.01 3.44 L 80.01 12.98 C 79.99 13.5 80.08 13.71 80.29 13.92 C 80.5 14.13 80.72 14.21 81.24 14.2 L 91.43 14.2 C 92.16 14.22 92.88 14.45 93.29 14.86 C 93.7 15.28 93.93 16 93.95 16.73 L 93.95 27.66 C 93.93 28.39 93.71 29.11 93.29 29.52 C 92.88 29.93 92.15 30.16 91.43 30.18 L 81.24 30.18 C 80.72 30.16 80.5 30.25 80.29 30.46 C 80.08 30.67 79.99 30.89 80.01 31.41 L 80.01 40.94 C 79.99 41.67 79.77 42.39 79.35 42.81 C 78.94 43.23 78.21 43.45 77.49 43.47 L 71.93 43.47 C 71.08 47.47 69.06 51.1 66.31 53.85 C 65.98 54.18 65.63 54.51 65.27 54.82 C 73.13 66.08 77.23 74.25 78.32 80 C 78.95 83.3 78.57 86.05 77.37 88 C 76.16 89.96 73.98 91.32 71.36 92.08 C 57.01 96.14 46.32 96.14 31.97 92.08 C 29.35 91.32 27.17 89.96 25.96 88 C 24.76 86.05 24.39 83.3 25.01 80 C 25.16 79.2 25.37 78.35 25.64 77.45 C 20.5 77.26 15.29 76.34 9.41 74.67 L 3.86 70.89 Z"/></clipPath>
+<radialGradient id="as-head" gradientUnits="userSpaceOnUse" cx="0" cy="17.7" r="24.9" gradientTransform="matrix(1 0 0 .8725 0 2.257)"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#b4e0f9"/><stop offset="1" stop-color="#569de4"/></radialGradient>
+<radialGradient id="as-hgloss" gradientUnits="userSpaceOnUse" cx="0" cy="-17.65" r="33.86" gradientTransform="matrix(1 0 0 .595 0 -7.15)">
+<stop offset="0" stop-color="#ffffff" stop-opacity=".91"/>
+<stop offset=".673" stop-color="#9cc6f0" stop-opacity=".91"/>
+<stop offset="1" stop-color="#8ec5f1" stop-opacity=".5"/></radialGradient>
+<radialGradient id="as-gloss" cx=".5" cy=".5" r=".5">
+<stop offset="0" stop-color="#ffffff" stop-opacity="1"/><stop offset=".55" stop-color="#ffffff" stop-opacity=".75"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="as-body" gradientUnits="userSpaceOnUse" x1="0" y1="20.27" x2="0" y2="58.2"><stop offset="0" stop-color="#9fc8ef"/><stop offset=".264" stop-color="#48a1ea"/><stop offset="1" stop-color="#e6ffff"/></linearGradient>
+<linearGradient id="as-edge" gradientUnits="userSpaceOnUse" x1="-27.4" y1="0" x2="27.4" y2="0">
+<stop offset="0" stop-color="#004ac0"/><stop offset="1" stop-color="#004bcb"/></linearGradient>
+<linearGradient id="as-edge2" gradientUnits="userSpaceOnUse" x1="-27.4" y1="0" x2="27.4" y2="0">
+<stop offset="0" stop-color="#1c64ae"/><stop offset="1" stop-color="#649de7"/></linearGradient>
+<path id="as-plus-p" d="M 66 3.44 Q 66 1.57 67.87 1.57 L 77.49 1.57 Q 79.36 1.57 79.36 3.44 L 79.36 12.98 Q 79.36 14.85 81.24 14.85 L 91.43 14.85 Q 93.3 14.85 93.3 16.73 L 93.3 27.66 Q 93.3 29.53 91.43 29.53 L 81.24 29.53 Q 79.36 29.53 79.36 31.41 L 79.36 40.94 Q 79.36 42.82 77.49 42.82 L 67.87 42.82 Q 66 42.82 66 40.94 L 66 31.41 Q 66 29.53 64.12 29.53 L 53.93 29.53 Q 52.05 29.53 52.05 27.66 L 52.05 16.73 Q 52.05 14.85 53.93 14.85 L 64.12 14.85 Q 66 14.85 66 12.98 Z"/>
+<radialGradient id="as-plus-lo" gradientUnits="userSpaceOnUse" cx="79.36" cy="42.82" r="15.12">
+<stop offset="0" stop-color="#aaaaee" stop-opacity="1"/>
+<stop offset="1" stop-color="#aaaaee" stop-opacity="0"/></radialGradient>
+<radialGradient id="as-plus1" gradientUnits="userSpaceOnUse" cx="64.66" cy="31.19" r="48" gradientTransform="matrix(1 0 0 .595 0 12.633)">
+<stop offset="0" stop-color="#0b1285"/><stop offset=".45" stop-color="#060cb0"/><stop offset="1" stop-color="#1808ff"/></radialGradient>
+<radialGradient id="as-plus3" gradientUnits="userSpaceOnUse" cx="55.95" cy="-2.32" r="32" gradientTransform="matrix(1 0 0 .8988 0 -.235)">
+<stop offset="0" stop-color="#e4e4ff" stop-opacity="1"/>
+<stop offset=".7" stop-color="#c3c3e3" stop-opacity=".725"/>
+<stop offset="1" stop-color="#c3c3e3" stop-opacity="0"/></radialGradient>
+<clipPath id="as-headclip"><circle cx="0" cy="0" r="18.45"/></clipPath>
+<g id="as-person" stroke-width="1.67" stroke-linejoin="round">
+<path d="M -9.19 11.12 C -27.45 36.08 -27.45 45.79 -18.11 48.44 C -4.86 52.2 4.86 52.2 18.11 48.44 C 27.45 45.79 27.45 36.08 9.19 11.12 Z" fill="url(#as-body)"/>
+<ellipse cx="0" cy="45.25" rx="25.52" ry="31.73" fill="url(#as-gloss)" opacity=".52" stroke="none"/>
+<circle cx="0" cy="0" r="18.45" fill="url(#as-head)" stroke="none"/>
+<ellipse cx="0" cy="-7.58" rx="15.27" ry="10.07" fill="url(#as-hgloss)" opacity=".993" stroke="none" clip-path="url(#as-headclip)"/>
+<circle cx="0" cy="0" r="18.45" fill="none"/>
+</g>
+</defs>
+<g clip-path="url(#as-border)">
+<use href="#as-person" stroke="url(#as-edge)" opacity=".68" transform="translate(27.6 25.83) scale(.9915)"/>
+<use href="#as-person" stroke="url(#as-edge2)" transform="translate(51.67 39.2) scale(1.074)"/>
+<use href="#as-plus-p" fill="url(#as-plus1)"/>
+<use href="#as-plus-p" fill="url(#as-plus-lo)"/>
+<use href="#as-plus-p" fill="url(#as-plus3)"/>
+<use href="#as-plus-p" class="as-plus-edge" fill="none" stroke="#6c7bac" stroke-width="1.3" stroke-linejoin="round"/>
+</g>
+</svg>

@@ -148,7 +148,7 @@ $Opt["emailSender"] = null;
 
 // DISPLAY CUSTOMIZATION OPTIONS
 //
-//   favicon         Link to favicon. Default is images/review24.png.
+//   favicon         Link to favicon. Default is images/review48.svg.
 //   stylesheets     Array of additional stylesheet filenames/URIs to be
 //                   included after "style.css". Example: ["x.css"].
 //   fontScript      HTML added to <head> before stylesheets.

@@ -648,12 +648,12 @@ devel/hotcrp.vim
 
 images/.htaccess
 images/_.gif
-images/assign48.png
+images/assign48.svg
 images/buzzer.mp3
 images/check.png
-images/comment48.png
+images/comment48.svg
 images/cross.png
-images/edit48.png
+images/edit48.svg
 images/exassignone.png
 images/exsearchaction.png
 images/extagcolors.png
@@ -682,12 +682,10 @@ images/postscript24.png
 images/postscriptf.png
 images/postscriptf24.png
 images/quicksearchex.png
-images/review24.png
-images/review48.png
-images/stophand45.png
+images/review48.svg
 images/txt.png
 images/txt24.png
-images/view48.png
+images/view48.svg
 images/viewas.png
 
 scripts/.htaccess

@@ -4978,7 +4978,7 @@ class Conf {
         }
 
         // favicon
-        $favicon = $this->opt("favicon") ?? "images/review48.png";
+        $favicon = $this->opt("favicon") ?? "images/review48.svg";
         if ($favicon) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
                 if (substr($favicon, 0, 7) === "images/") {
@@ -4988,7 +4988,9 @@ class Conf {
                 }
             }
             $favicon = htmlspecialchars($favicon);
-            if (substr($favicon, -4) == ".png") {
+            if (substr($favicon, -4) == ".svg") {
+                echo "<link rel=\"icon\" type=\"image/svg+xml\" href=\"{$favicon}\">\n";
+            } else if (substr($favicon, -4) == ".png") {
                 echo "<link rel=\"icon\" type=\"image/png\" href=\"{$favicon}\">\n";
             } else if (substr($favicon, -4) == ".ico") {
                 echo "<link rel=\"shortcut icon\" href=\"{$favicon}\">\n";
