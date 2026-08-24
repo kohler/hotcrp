@@ -2,7 +2,7 @@
 // formula.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
-final class FormulaRangeAnno {
+final class FormulaRangeAnno implements JsonSerializable {
     /** @var int */
     public $pos1;
     /** @var int */
@@ -14,6 +14,11 @@ final class FormulaRangeAnno {
         $this->pos1 = $pos1;
         $this->pos2 = $pos2;
         $this->description = $description;
+    }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        return (array) $this;
     }
 }
 
@@ -2179,13 +2184,19 @@ final class Formula implements JsonSerializable {
     }
 
 
-    /** @return string */
-    function annotated_expression_h() {
+    /** @return list<FormulaRangeAnno> */
+    function expression_annotations() {
         $ranges = [];
         $this->_fexpr->collect_range_anno($ranges);
         usort($ranges, function ($a, $b) {
             return ($a->pos1 <=> $b->pos1) ? : ($b->pos2 <=> $a->pos2);
         });
+        return $ranges;
+    }
+
+    /** @return string */
+    function annotated_expression_h() {
+        $ranges = $this->expression_annotations();
         $pos1 = 0;
         $x = "";
         for ($i = 0; $i < count($ranges); ++$i) {

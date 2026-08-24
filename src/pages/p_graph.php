@@ -14,16 +14,8 @@ class Graph_Page {
         if ($h2) {
             echo "<h2>", $h2, "</h2>\n";
         }
-        echo '<div';
-        $attr = ["id" => "hotgraph", "class" => "hotgraph c"] + $attr;
-        foreach ($attr as $k => $v) {
-            if ($v === "") {
-                echo ' ', $k;
-            } else if ($v !== null) {
-                echo ' ', $k, '="', htmlspecialchars($v), '"';
-            }
-        }
-        echo "></div></div>\n";
+        echo '<div', Ht::extra(["id" => "hotgraph", "class" => "clearfix"] + $attr),
+            "></div></div>\n";
     }
 
     static function gj_group($gj) {

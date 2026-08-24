@@ -980,7 +980,7 @@ class Formulas_Tester {
             $fg = new FormulaGraph($this->u_chair, $st[0], "pid", "pid");
             $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
             $j = $fg->graph_json([]);
-            xassert_eqq($j["type"], $st[1]);
+            xassert_eqq($j["gtype"], $st[1]);
             xassert_eqq($j["data_format"], "style_xyi");
             $n = 0;
             array_walk_recursive($j["data"], function () use (&$n) { ++$n; });
@@ -990,7 +990,7 @@ class Formulas_Tester {
         // the type may also arrive as a prefix on the Y axis formula
         $fg = new FormulaGraph($this->u_chair, null, "pid", "ldot pid");
         $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
-        xassert_eqq($fg->graph_json([])["type"], "ldot");
+        xassert_eqq($fg->graph_json([])["gtype"], "ldot");
         xassert_eqq($fg->fy->expression, "pid");
     }
 
@@ -1445,7 +1445,7 @@ class Formulas_Tester {
         $fg = new FormulaGraph($user, null, $fx, "multicdf {$split}");
         $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
         xassert(!$fg->has_error());
-        xassert_eqq($fg->type_json(), "cdf");
+        xassert_eqq($fg->gtype_json(), "cdf");
         $lines = [];
         foreach ($fg->graph_json([])["data"] as $d) {
             $vs = $d->d;

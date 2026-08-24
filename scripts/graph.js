@@ -7,6 +7,7 @@ const $$ = hotcrp.$$,
     $e = hotcrp.$e,
     $frag = hotcrp.$frag,
     $svg = hotcrp.$svg,
+    addClass = hotcrp.classes.add,
     ensure_pattern = hotcrp.ensure_pattern,
     feedback = hotcrp.feedback,
     handle_ui = hotcrp.handle_ui,
@@ -14,15 +15,67 @@ const $$ = hotcrp.$$,
     hoturl = hotcrp.hoturl,
     log_jserror = hotcrp.log_jserror,
     make_bubble = hotcrp.make_bubble,
+    removeClass = hotcrp.classes.remove,
     strftime = hotcrp.text.strftime;
 
-let BOTTOM_MARGIN = 37;
+// Layout constants
+
+// Insets are distances from graph box edges to the marks that show there:
+// top of Y-axis label, right end of X-axis line or of a tick label
+// overhanging it, bottom of deepest X-tick label or X-axis label, left edge
+// of Y-tick labels. Unless overridden by plotLeft/Right/Top/Bottom/Width/
+// Height, the plot rectangle is derived from insets. These are the defaults.
+const INSET_TOP = 6, INSET_RIGHT = 8, INSET_BOTTOM = 6, INSET_LEFT = 8;
+// Gap between an axis label and the tick labels it sits next to
+const LABEL_GAP = 4;
+// Hard ceiling on tick label width, in pixels, applied whether or not the
+// dimension it extends into can grow — a growable box otherwise lets one
+// pathological label set the size for everything.
+const MAX_LABEL_WIDTH = 180;
+// Fraction of the graph box that an axis's tick labels may occupy
+const MAX_X_LABEL_HEIGHT_FRACTION = 0.28;
+const MAX_Y_LABEL_WIDTH_FRACTION = 0.25;
+// Where tick text sits relative to the axis line. d3's axisLeft puts Y tick
+// text at -(tickSize + tickPadding) = -9; the X axis matches. A tilted X tick
+// label hangs from (-X_TICK_TILT_DX, X_TICK_TILT_DY) instead.
+const Y_TICK_TEXT_OFFSET = 9, X_TICK_TEXT_OFFSET = 9;
+const X_TICK_TILT_DX = 9, X_TICK_TILT_DY = 2;
+// Length of a tick mark, on either axis
+const TICK_SIZE = 6;
+// X tick labels are tilted by this much when they don't fit horizontally.
+const TILT_DEGREES = 65;
+const TILT_RADIANS = TILT_DEGREES * Math.PI / 180;
+const SINE_TILT_RADIANS = Math.sin(TILT_RADIANS);
+const SINE_TILT_RADIANS_INVERSE = 1 / SINE_TILT_RADIANS;
+const COSINE_TILT_RADIANS = Math.cos(TILT_RADIANS);
 // A box needs at least this many points to draw interpolated quartiles and
-// 1.5*IQR whiskers; with fewer it would span min..max instead. Set to 1 so we
-// always interpolate, matching the data table's quantile columns. Raise it (was
-// 4) to restore min..max boxes for small samples, where interpolated quartiles
-// land between the few actual values and can read as misleadingly precise.
+// 1.5*IQR whiskers; formerly 4
 const BOXPLOT_IQR_MIN_N = 1;
+
+/** Depth below the axis line of the lowest ink in a tilted tick label `width`
+ * px wide whose font drops `descent` px below the baseline. The label hangs
+ * from (-X_TICK_TILT_DX, X_TICK_TILT_DY) and runs up and to the left, so its
+ * far end is its lowest point.
+ * @param {number} width
+ * @param {number} descent
+ * @return {number} */
+function tilted_label_depth(width, descent) {
+    return (X_TICK_TILT_DX + width) * SINE_TILT_RADIANS
+        + (X_TICK_TILT_DY + descent) * COSINE_TILT_RADIANS;
+}
+
+/** Inverse of `tilted_label_depth`: the text width that fits in `depth`.
+ * @param {number} depth
+ * @param {number} descent
+ * @return {number} */
+function tilted_label_width(depth, descent) {
+    return (depth - (X_TICK_TILT_DY + descent) * COSINE_TILT_RADIANS)
+        * SINE_TILT_RADIANS_INVERSE - X_TICK_TILT_DX;
+}
+
+
+// Path normalization (for pathNodeMayBeNearer/closestPoint)
+
 const PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
     s: 4, S: 4, q: 4, Q: 4, t: 2, T: 2, a: 7, A: 7, b: 1, B: 1
@@ -324,53 +377,115 @@ function expand_extent(e, args) {
 }
 
 
-function draw_axes(svg, xAxis, yAxis, args) {
+/** Emit one laid-out axis into `g`. `layout_axis` has already chosen the
+ * ticks, their positions, their possibly-shortened text, and whether they
+ * tilt; this only draws them.
+ * @param {*} g
+ * @param {object} axis
+ * @param {string} side
+ * @param {object} args */
+function draw_axis(g, axis, side, args) {
+    const lay = axis.layout, xside = side === "x";
+    if (lay.widelabel) {
+        g.attr("class", g.attr("class") + " widelabel");
+    }
+    // the X axis draws a baseline; the Y axis never has
+    if (xside) {
+        g.append("path").attr("d", "M0,0H" + args.plotWidth);
+    }
+    for (const t of lay.ticks) {
+        const tg = g.append("g").attr("class", "tick")
+            .attr("transform", xside ? "translate(" + t.pos + ",0)"
+                : "translate(0," + t.pos + ")");
+        tg.append("line").attr(xside ? "y2" : "x2", xside ? TICK_SIZE : -TICK_SIZE);
+        const txt = tg.append("text").text(t.text);
+        if (!xside) {
+            txt.attr("text-anchor", "end")
+                .attr("x", -Y_TICK_TEXT_OFFSET).attr("dy", "0.32em");
+        } else if (lay.tilt) {
+            txt.attr("text-anchor", "end")
+                .attr("dx", -X_TICK_TILT_DX).attr("dy", X_TICK_TILT_DY);
+        } else {
+            // baseline one ascent down, so the ink starts exactly
+            // `X_TICK_TEXT_OFFSET` below the axis line
+            txt.attr("text-anchor", "middle")
+                .attr("y", X_TICK_TEXT_OFFSET + lay.ascent);
+        }
+        if (t.classes) {
+            txt.attr("class", t.classes);
+        }
+        if (t.fill) {
+            txt.style("fill", t.fill);
+        }
+        if (t.bg) {
+            const b = txt.node().getBBox();
+            tg.insert("rect", "text")
+                .attr("x", b.x - 3).attr("y", b.y)
+                .attr("width", b.width + 6).attr("height", b.height + 1)
+                .attr("class", "glab " + t.bg)
+                .style("fill", ensure_pattern(t.bg, "glab"));
+        }
+        if (t.text !== t.full) {
+            txt.append("title").text(t.full);
+        }
+        if (lay.tilt) {
+            tg.selectAll("text, rect").attr("transform", `rotate(${-TILT_DEGREES})`);
+        }
+    }
+}
+
+/** Space claimed above the plot's top edge: the top half of the topmost Y
+ * tick label, which is centered on that edge, plus the Y axis label and its
+ * gap where there is one. `make_axis_pair` sets a derived top edge one inset
+ * below the box top plus this much; `draw_axes` hangs the label from the edge
+ * by the same amount, so the two agree however the edge was arrived at.
+ * @param {object} args
+ * @return {number} */
+function y_head_room(args) {
+    const h = args.labelMetrics.height;
+    return Math.ceil(h / 2) + (args.y.label ? Math.ceil(h) + LABEL_GAP : 0);
+}
+
+/** @param {*} svg
+ * @param {object} args */
+function draw_axes(svg, args) {
     const parent = d3.select(svg.node().parentElement);
 
     const xaxe = parent.append("g")
-        .attr("class", "x-axis")
-        .attr("transform", `translate(${args.marginLeft},${args.marginTop+args.plotHeight})`)
-        .call(xAxis)
-        .attr("font-family", null)
-        .attr("font-size", null)
-        .attr("fill", null)
-        .call(make_rotate_ticks(args.x.tickRotation));
+        .attr("class", "hg-axis hg-axis-x")
+        .attr("transform", `translate(${args.plotLeft},${args.plotBottom})`);
+    draw_axis(xaxe, args.x, "x", args);
     if (args.x.label) {
         xaxe.append("text")
             .attr("class", "label")
             .attr("x", args.plotWidth)
-            .attr("y", args.marginBottom - 3)
+            .attr("y", args.height - args.plotBottom - args.insetBottom
+                - args.labelMetrics.descent)
             .attr("text-anchor", "end")
             .attr("pointer-events", "none")
             .text(args.x.label)
             .append("tspan")
             .attr("class", "arrow")
-            .text(" →");
+            .text(" \u2192");
     }
-    xaxe.select(".domain").each(function () {
-        const d = this.getAttribute("d");
-        this.setAttribute("d", d.replace(/^M([^A-Z]*),([^A-Z]*)V0H([^A-Z]*)V([^A-Z]*)$/,
-            function (m, x1, y1, x2, y2) {
-                return y1 === y2 ? "M".concat(x1, ",0H", x2) : m;
-            }));
-    });
 
     const yaxe = parent.append("g")
-        .attr("class", "y-axis")
-        .attr("transform", `translate(${args.marginLeft},${args.marginTop})`)
-        .call(yAxis)
-        .attr("font-family", null)
-        .attr("font-size", null)
-        .attr("fill", null)
-        .call(make_rotate_ticks(args.y.tickRotation));
+        .attr("class", "hg-axis hg-axis-y")
+        .attr("transform", `translate(${args.plotLeft},${args.plotTop})`);
+    draw_axis(yaxe, args.y, "y", args);
     if (args.y.label) {
         const uparrow = d3.create("svg:tspan")
             .attr("class", "arrow")
-            .text("↑ ");
+            .text("\u2191 ");
+        // Placed against the plot, not the box: left-aligned with the leftmost
+        // tick ink but never past the box's left inset, and hung from the
+        // plot's top edge by `y_head_room`. Where those edges are derived the
+        // label lands exactly on the top and left inset lines; where they are
+        // pinned it follows the plot.
         yaxe.append("text")
             .attr("class", "label")
-            .attr("x", -args.marginLeft)
-            .attr("y", -14)
+            .attr("x", Math.max(-args.y.layout.ink, args.insetLeft - args.plotLeft))
+            .attr("y", args.labelMetrics.ascent - y_head_room(args))
             .attr("text-anchor", "start")
             .attr("pointer-events", "none")
             .text(args.y.label)
@@ -378,17 +493,8 @@ function draw_axes(svg, xAxis, yAxis, args) {
                 this.insertBefore(uparrow.node(), this.firstChild);
             });
     }
-    yaxe.select(".domain").remove();
-    /*args.y.axisinfo.discrete && yaxe.select(".domain").each(function () {
-        var d = this.getAttribute("d");
-        this.setAttribute("d", d.replace(/^M([^A-Z]*),([^A-Z]*)H0V([^A-Z]*)H([^A-Z]*)$/,
-            function (m, x1, y1, y2, x2) {
-                return x1 === x2 ? "M0,".concat(y1, "V", y2) : m;
-            }));
-    });*/
 
-    args.x.rewrite_ticks(xaxe, svg);
-    args.y.rewrite_ticks(yaxe, svg);
+    place_x_axis_label(xaxe, args);
 }
 
 function draw_annotations(svg, args) {
@@ -514,44 +620,28 @@ function clicker_go(url, event) {
     }
 }
 
-function basic_make_axis(side, args, scale) {
-    const dimen = side === "x" ? args.plotWidth : args.plotHeight;
-    scale.range(!this.flip === (side === "y") ? [dimen, 0] : [0, dimen]);
-    const ax = side === "x" ? d3.axisBottom(scale) : d3.axisLeft(scale);
-    this.scale = scale;
-    this.axis = ax;
-    return ax;
-}
-
 const default_value_format = d3.format(",.4~f");
 
-function numeric_make_axis(side, args, scale) {
-    const ax = basic_make_axis.call(this, side, args, scale),
-        domain = scale.domain();
-    if (Math.abs(domain[1] - domain[0]) < 0.01
-        && this.value_format === default_value_format) {
-        this.value_format = d3.format(",~f");
-    }
-    ax.tickFormat(this.value_format);
-    return ax;
-}
-
+// An axis class supplies `tick_values(scale)` (which values get ticks, at the
+// range the scale has just been given), `value_format(v)` (their text), and
+// optionally `tick_decoration(v)` (classes, fill, background). Everything
+// else — measuring, thinning, shortening, positioning, drawing — is generic
+// and lives in `layout_axis` / `draw_axis`.
 const default_axis_class = {
     scale_class: null,
-    make_axis: numeric_make_axis,
+    tick_values: function (scale) {
+        const domain = scale.domain();
+        if (Math.abs(domain[1] - domain[0]) < 0.01
+            && this.value_format === default_value_format) {
+            this.value_format = d3.format(",~f");
+        }
+        return scale.ticks();
+    },
     value_format: default_value_format,
     color_classes: () => null,
     value_search: () => null,
     value_render: function (e, v) {
         e.append(this.value_format(v));
-    },
-    rewrite_ticks: function () {},
-    tickLength: function () {
-        let l = 0;
-        for (const v of this.scale.ticks()) {
-            l = Math.max(l, this.value_format(v).length);
-        }
-        return l;
     },
     discrete: false,
     left_justify: false,
@@ -580,89 +670,20 @@ function ordinal_axis_class(ax) {
         return (t && t.color_classes) || "";
     }
 
-    function rewrite_ticks(axe) {
-        if (!want_tilt && !want_mclasses) {
-            return;
-        }
-
-        let max_width = get_max_tick_width(axe);
-        if (max_width > 100) { // shrink font
-            axe.attr("class", function () {
-                return this.getAttribute("class") + " widelabel";
-            });
-            max_width = get_max_tick_width(axe);
-        }
-        const example_height = get_sample_tick_height(axe);
-
-        // apply offset first (so `mclasses` rects include offset)
-        if (want_tilt) {
-            axe.selectAll("g.tick text")
-                .attr("text-anchor", "end")
-                .attr("dx", "-9px")
-                .attr("dy", "2px");
-        }
-
-        // apply classes by adding them and adding background rects
-        if (want_mclasses) {
-            axe.selectAll("g.tick text").filter(mclasses).each(function (i) {
-                const c = mclasses(i);
-                d3.select(this).attr("class", c + " taghh");
-                if (/\btagbg\b/.test(c)) {
-                    const b = this.getBBox();
-                    d3.select(this.parentNode).insert("rect", "text")
-                        .attr("x", b.x - 3).attr("y", b.y)
-                        .attr("width", b.width + 6).attr("height", b.height + 1)
-                        .attr("class", "glab " + c)
-                        .style("fill", ensure_pattern(c, "glab"));
-                }
-            });
-        }
-
-        // apply tilt rotation, enlarge container if necessary
-        if (want_tilt) {
-            axe.selectAll("g.tick text, g.tick rect")
-                .attr("transform", "rotate(-65)");
-            max_width = max_width * Math.sin(1.13446) + 20; // 65 degrees in radians
-            if (max_width > BOTTOM_MARGIN && ax.orientation === "x") {
-                const delta = max_width - BOTTOM_MARGIN,
-                    container = $(axe.node()).closest("svg");
-                container.attr("height", +container.attr("height") + delta);
-                axe.select(".label")
-                    .attr("y", function () { return +this.getAttribute("y") + delta; });
-            }
-        }
-
-        // prevent label overlap
-        if (want_tilt) {
-            const total_height = ticks.length * (example_height * Math.cos(1.13446) + 8),
-                alternation = Math.ceil(total_height / axe.node().getBBox().width - 0.1);
-            if (alternation > 1) {
-                axe.selectAll("g.tick").each(function (i) {
-                    if (i % alternation != 1)
-                        d3.select(this).style("display", "none");
-                });
-            }
-        } else if (ax.orientation === "y") {
-            const total_height = ticks.length * (example_height + 4),
-                alternation = Math.ceil(total_height / axe.node().getBBox().height - 0.1);
-            if (alternation > 1) {
-                axe.selectAll("g.tick").each(function (i) {
-                    if (i % alternation != 1)
-                        d3.select(this).style("display", "none");
-                });
-            }
-        }
-    }
-
     return {
         scale_class: "ordinal",
-        make_axis: function (side, args, scale) {
-            const domain = scale.domain(),
-                count = Math.floor(domain[1]) - Math.ceil(domain[0]) + 1,
-                ax = basic_make_axis.call(this, side, args, scale);
-            ax.ticks(count).tickFormat(mtext);
-            return ax;
+        // One tick per ordinal entry. `scale.ticks(n)` used to be asked for
+        // these, but it returns "nice" values, so positions between entries
+        // could come back and render as blank ticks.
+        tick_values: function () {
+            return ticks.map((t, i) => i + 1);
         },
+        want_tilt: want_tilt,
+        tick_decoration: want_mclasses ? function (pos) {
+            const c = mclasses(pos);
+            return c ? {classes: c + " taghh",
+                        bg: /\btagbg\b/.test(c) ? c : null} : null;
+        } : null,
         value_format: mtext,
         color_classes: mclasses,
         value_search: function (pos) {
@@ -680,7 +701,6 @@ function ordinal_axis_class(ax) {
                 }
             }
         },
-        rewrite_ticks: rewrite_ticks,
         discrete: true,
         projection: projection,
         left_justify: ax.left_justify ?? true
@@ -697,7 +717,7 @@ function score_axis_class(rf) {
     }
     return {
         scale_class: "review_field",
-        make_axis: function (side, args, scale) {
+        tick_values: function (scale) {
             const domain = scale.domain();
             let count = Math.floor(domain[1] * 2) - Math.ceil(domain[0] * 2) + 1;
             if (count > 11) {
@@ -706,12 +726,10 @@ function score_axis_class(rf) {
             if (Math.abs(domain[1] - domain[0]) < 0.1) {
                 numeric_format = d3.format(",~f");
             }
-            const ax = basic_make_axis.call(this, side, args, scale);
-            if (!rf.default_numeric) {
-                ax.ticks(count);
-            }
-            ax.tickFormat(value_format);
-            return ax;
+            return rf.default_numeric ? scale.ticks() : scale.ticks(count);
+        },
+        tick_decoration: function (v) {
+            return {classes: "sv " + rf.className(v), fill: rf.color(v)};
         },
         value_format: value_format,
         color_classes: function (v) {
@@ -728,13 +746,6 @@ function score_axis_class(rf) {
                 e.append(" (" + numeric_format(v) + ")");
             }
         },
-        rewrite_ticks: function (axe) {
-            axe.selectAll("g.tick text").each(function () {
-                const d = d3.select(this), v = +d.text();
-                d.attr("class", "sv " + rf.className(v));
-                d.style("fill", rf.color(v));
-            });
-        }
     };
 }
 
@@ -763,26 +774,22 @@ function time_axis_class() {
     }
     return {
         scale_class: "time",
-        make_axis: function (side, args, scale) {
-            const ax = basic_make_axis.call(this, side, args, scale),
-                domain = scale.domain(),
+        tick_values: function (scale) {
+            const domain = scale.domain(),
                 is_duration = Math.min(domain[0], domain[1]) < 1000000000,
                 range = scale.range();
             if (is_duration) {
                 const ddomain = [domain[0] / 86400, domain[1] / 86400],
                     nscale = d3.scaleLinear().domain(ddomain).range(range);
-                ax.tickValues(fit_ticks(nscale, is_duration, range).map(function (value) {
+                return fit_ticks(nscale, is_duration, range).map(function (value) {
                     return value * 86400;
-                }));
-            } else {
-                const ddomain = [new Date(domain[0] * 1000), new Date(domain[1] * 1000)],
-                    nscale = d3.scaleTime().domain(ddomain).range(range);
-                ax.tickValues(fit_ticks(nscale, is_duration, range).map(function (value) {
-                    return value.getTime() / 1000;
-                }));
+                });
             }
-            ax.tickFormat(format);
-            return ax;
+            const ddomain = [new Date(domain[0] * 1000), new Date(domain[1] * 1000)],
+                nscale = d3.scaleTime().domain(ddomain).range(range);
+            return fit_ticks(nscale, is_duration, range).map(function (value) {
+                return value.getTime() / 1000;
+            });
         },
         value_format: format,
         left_justify: true
@@ -795,11 +802,6 @@ function pid_axis_class() {
         return "#" + Math.round(value);
     }
     return {
-        make_axis: function (side, args, scale) {
-            const ax = basic_make_axis.call(this, side, args, scale);
-            ax.tickFormat(format);
-            return ax;
-        },
         value_format: format,
         value_render: function (e, value) {
             e.append(format(value));
@@ -838,19 +840,215 @@ function instantiate_axis(ax) {
     return Object.assign({}, ax, default_axis_class, info);
 }
 
-function make_axis_pair(args, x, y) {
-    const axes = [
-        args.x.make_axis("x", args, x),
-        args.y.make_axis("y", args, y)
-    ];
-    const y_tickLength = args.y.tickLength();
-    if (y_tickLength > 0 && args.marginLeftDefault) {
-        args.marginLeft = 10 * Math.max(y_tickLength, 1.5) + 6;
-        args.plotWidth = args.width - args.marginLeft - args.marginRight;
-        x.range(args.x.flip ? [args.plotWidth, 0] : [0, args.plotWidth]);
+/** Choose and place the ticks for one axis at `length` px along it, shorten
+ * any whose ink would reach more than `cap` px across it, and record the
+ * result on the axis. Returns how far the tick ink actually reaches across
+ * from the axis line — left of a Y axis, below an X axis. The caller adds the
+ * inset that keeps that ink off the edge of the box.
+ *
+ * An upright X tick label is centered on its tick, so one near the end of the
+ * axis reaches past it; `overhang_cap` is how far past a label may reach.
+ * Ticks that would reach further are dropped, down to the last one, which an
+ * axis keeps regardless. `axis.layout.overhang` reports how far the survivors
+ * actually reach.
+ *
+ * Deliberately knows nothing about `expandable`: it reports what the ticks
+ * need, and `make_axis_pair` decides whether to grow the box or clamp.
+ * @param {object} axis
+ * @param {string} side
+ * @param {object} args
+ * @param {*} scale
+ * @param {number} length
+ * @param {number} cap
+ * @param {number} [overhang_cap]
+ * @return {number} */
+function layout_axis(axis, side, args, scale, length, cap, overhang_cap) {
+    const xside = side === "x";
+    scale.range(!axis.flip === !xside ? [length, 0] : [0, length]);
+    axis.scale = scale;
+
+    const values = axis.tick_values(scale),
+        texts = values.map(v => axis.value_format(v));
+    let widelabel = false,
+        m = measure_texts(args.svg, texts, false);
+    if (d3.max(m.widths) > 100) { // shrink the font before anything else
+        widelabel = true;
+        m = measure_texts(args.svg, texts, true);
     }
-    args.svg.attr("transform", "translate(".concat(args.marginLeft, ",", args.marginTop, ")"));
-    return axes;
+    const tilt = xside && !!axis.want_tilt;
+
+    // Thin ticks that would collide along the axis. This has to happen before
+    // the breadth is taken, or the margin reserves room for labels that are
+    // then hidden.
+    // `slack` is how much of a tick's room may be given up before thinning;
+    // crowding a line of text vertically still reads, two labels running into
+    // each other does not, so upright labels get none
+    let per_tick, slack = 0.1;
+    if (tilt) {
+        per_tick = m.height * COSINE_TILT_RADIANS + 8;
+    } else if (xside) {
+        // upright labels run along the axis, so the widest one sets the room
+        // every tick needs; each is centered on its tick, so neighbors stay
+        // 8px apart even where two of that width meet
+        per_tick = (d3.max(m.widths) || 0) + 8;
+        slack = 0;
+    } else {
+        per_tick = m.height + 4;
+    }
+    const alternation =
+        Math.max(1, Math.ceil(values.length * per_tick / length - slack));
+
+    const out = [];
+    for (let i = 0; i !== values.length; ++i) {
+        if (alternation > 1 && i % alternation !== 1) {
+            continue;
+        }
+        const t = {value: values[i], pos: scale(values[i]), full: texts[i],
+                text: texts[i], width: m.widths[i]},
+            dec = axis.tick_decoration && axis.tick_decoration(values[i]);
+        if (dec) {
+            t.classes = dec.classes;
+            t.fill = dec.fill;
+            t.bg = dec.bg;
+        }
+        out.push(t);
+    }
+
+    // only the survivors have to fit. A tilted label's breadth is its text
+    // width projected onto the cross axis, so the cap inverts through the tilt
+    let textcap;
+    if (!xside) {
+        textcap = cap - Y_TICK_TEXT_OFFSET;
+    } else if (tilt) {
+        textcap = tilted_label_width(cap, m.descent);
+    } else {
+        textcap = Infinity; // upright X labels collide sideways, and thinning
+                            // has already spaced them out
+    }
+    truncate_ticks(args.svg, out, Math.min(textcap, MAX_LABEL_WIDTH), widelabel);
+
+    // How far the labels reach past the end of the axis, once any that
+    // exceed the allowance are gone. Only upright X labels do: a tilted one
+    // runs up and to the left, and a Y label's width is its axis's business.
+    let overhang = 0;
+    if (xside && !tilt) {
+        const room = overhang_cap ?? Infinity;
+        for (let i = out.length - 1; i >= 0; --i) {
+            const over = out[i].pos + out[i].width / 2 - length;
+            // an axis keeps its last label even where there is no room for
+            // it; with one tick left there is nothing for thinning to change,
+            // so granting the room it asks for cannot start a cycle
+            if (over > room && out.length > 1) {
+                out.splice(i, 1);
+            } else if (over > overhang) {
+                overhang = over;
+            }
+        }
+    }
+
+    const maxw = out.length === 0 ? 0 : Math.max(...out.map(t => t.width)),
+        ink = !xside ? Math.ceil(maxw) + Y_TICK_TEXT_OFFSET
+            : (tilt ? tilted_label_depth(maxw, m.descent)
+               : X_TICK_TEXT_OFFSET + m.height);
+    axis.layout = {ticks: out, tilt: tilt, widelabel: widelabel,
+        ascent: m.ascent, ink: ink, overhang: Math.ceil(overhang)};
+    return ink;
+}
+
+/** Lay out both axes and settle the plot rectangle.
+ *
+ * In unexpandable plots, edges derived from insets are interdependent -- a
+ * wider left margin narrows the plot, which thins the X ticks, which can
+ * shorten the bottom margin and move the label the right edge makes room for,
+ * which lengthens the plot, which un-thins the Y ticks, which widens the left
+ * margin again -- so we can go for a couple rounds.
+ * @param {object} args
+ * @param {*} x
+ * @param {*} y */
+function make_axis_pair(args, x, y) {
+    // both axis labels render in the axis font, so any string measures it
+    args.labelMetrics = measure_texts(args.svg, [args.x.label || args.y.label || "0"]);
+    const lm = args.labelMetrics,
+        grow = args.expandable === "height",
+        base_height = args.height,
+        lheight = Math.ceil(lm.height),
+        // the X axis label claims a band of its own below the tick labels
+        // unless they tilt, in which case it tucks in beside the shorter ones
+        label_room = args.x.label && !args.x.want_tilt ? lheight + LABEL_GAP : 0,
+        // a growable box keeps the plot height it would have with upright tick
+        // labels; anything deeper makes the box taller instead of the plot
+        // shorter
+        nominal_bottom = args.insetBottom + X_TICK_TEXT_OFFSET + lheight + label_room,
+        pin_top = args.plotTop, pin_right = args.plotRight,
+        pin_bottom = args.plotBottom, pin_left = args.plotLeft,
+        // how far tick ink may reach from each axis line. A pin is a hard
+        // limit on its side; an unpinned side gets the policy fraction.
+        ycap = (pin_left ?? Math.floor(args.width * MAX_Y_LABEL_WIDTH_FRACTION))
+            - args.insetLeft,
+        xroom = grow ? Infinity
+            : (pin_bottom != null ? base_height - pin_bottom
+               : Math.floor(base_height * MAX_X_LABEL_HEIGHT_FRACTION)),
+        xcap = xroom - args.insetBottom - label_room,
+        top = pin_top ?? args.insetTop + y_head_room(args);
+    let left = pin_left ?? 0,
+        right = pin_right ?? args.width - args.insetRight,
+        bmargin = nominal_bottom, settled = false,
+        // Room granted past the end of the X axis for a label that overhangs
+        // it, and the allowance `layout_axis` enforces. The room only grows
+        // while the allowance is open, because giving room back widens the
+        // plot, which can bring the wide label back and start the cycle over.
+        // So the first round that asks for less closes the allowance at that
+        // smaller figure, and from then on a label that will not fit it is
+        // dropped rather than accommodated.
+        overhang = 0, overhang_cap = Infinity;
+
+    /** @param {number} b - bottom margin
+     * @return {number} Y of the X axis line */
+    function plot_bottom(b) {
+        return pin_bottom ?? (grow ? base_height - nominal_bottom : base_height - b);
+    }
+    function lay_out() {
+        args.plotHeight = plot_bottom(bmargin) - top;
+        const yink = layout_axis(args.y, "y", args, y, args.plotHeight, ycap),
+            nleft = pin_left ?? args.insetLeft + Math.min(yink, ycap);
+        args.plotWidth = right - nleft;
+        const nbmargin = Math.ceil(Math.min(
+            layout_axis(args.x, "x", args, x, args.plotWidth, xcap, overhang_cap)
+                + args.insetBottom + label_room, xroom)),
+            need = args.x.layout.overhang;
+        if (need > overhang) {
+            overhang = need;
+        } else if (need < overhang) {
+            overhang = overhang_cap = need;
+        }
+        // the right inset measures to the rightmost ink, which is the end of
+        // the axis line unless a tick label overhangs it
+        const nright = pin_right ?? args.width - args.insetRight - overhang;
+        settled = nleft === left && nbmargin === bmargin && nright === right;
+        left = nleft;
+        bmargin = nbmargin;
+        right = nright;
+    }
+
+    for (let round = 0; round !== 3 && !settled; ++round) {
+        lay_out();
+    }
+    if (!settled) {
+        // no more room is on offer, so this pass drops whatever does not fit
+        // and cannot ask for more
+        overhang_cap = overhang;
+        lay_out(); // one consistent pass at whatever it converged on
+    }
+
+    args.plotLeft = left;
+    args.plotTop = top;
+    args.plotRight = right;
+    args.plotBottom = plot_bottom(bmargin);
+    args.plotWidth = right - left;
+    args.plotHeight = args.plotBottom - top;
+    args.height = grow ? args.plotBottom + bmargin : base_height;
+    d3.select(args.svg.node().parentElement).attr("height", args.height);
+    args.svg.attr("transform", `translate(${left},${top})`);
 }
 
 function make_linear_scale(argextent, e) {
@@ -905,8 +1103,8 @@ function graph_cdf(element, args) {
     const x = make_linear_scale(args.x.extent, xdomain),
         y = make_linear_scale(args.y.extent, [0, Math.ceil(d3.max(data, function (d) {
                 return d[d.length - 1][1];
-            }) * 10) / 10]),
-        axes = make_axis_pair(args, x, y);
+            }) * 10) / 10]);
+    make_axis_pair(args, x, y);
 
     // lines
     const line = d3.line().x(function (d) {return x(d[0]);})
@@ -931,14 +1129,14 @@ function graph_cdf(element, args) {
     const hovers = svg.selectAll(".gcdf-hover0, .gcdf-hover1");
     hovers.style("display", "none");
 
-    draw_axes(svg, axes[0], axes[1], args);
+    draw_axes(svg, args);
     draw_annotations(svg, args);
 
     if (args.interactive !== false) {
         svg.append("rect")
-            .attr("x", -args.marginLeft)
-            .attr("width", args.plotWidth + args.marginLeft)
-            .attr("height", args.plotHeight + args.marginBottom)
+            .attr("x", -args.plotLeft)
+            .attr("width", args.plotWidth + args.plotLeft)
+            .attr("height", args.height - args.plotTop)
             .attr("fill", "none")
             .attr("pointer-events", "all")
             .on("mouseover", mousemoved)
@@ -981,7 +1179,7 @@ function graph_cdf(element, args) {
                 hubble.text(hovered_series.label);
             }
             hubble.anchor(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "e" : "s")
-                .at(p[0] + args.marginLeft, p[1], this);
+                .at(p[0] + args.plotLeft, p[1], this);
         } else if (hubble) {
             hubble = hubble.remove() && null;
         }
@@ -1010,7 +1208,7 @@ function procrastination_seq(ri) {
 }
 
 function procrastination_filter(revdata) {
-    const args = {type: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip-s"};
+    const args = {gtype: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip-s"};
 
     // collect data
     const alldata = [];
@@ -1404,8 +1602,8 @@ function graph_scatter(element, args) {
     const svg = this;
     let data = ungroup_data(args.data);
     const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
-        y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y)),
-        axes = make_axis_pair(args, x, y);
+        y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y));
+    make_axis_pair(args, x, y);
 
     $(element).on("hotgraphhighlight", highlight);
 
@@ -1417,14 +1615,14 @@ function graph_scatter(element, args) {
     const hovers = svg.selectAll(".gdot-hover").style("display", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    draw_axes(svg, axes[0], axes[1], args);
+    draw_axes(svg, args);
     draw_annotations(svg, args);
 
     if (args.interactive !== false) {
         svg.append("rect")
-            .attr("x", -args.marginLeft)
-            .attr("width", args.plotWidth + args.marginLeft)
-            .attr("height", args.plotHeight + args.marginBottom)
+            .attr("x", -args.plotLeft)
+            .attr("width", args.plotWidth + args.plotLeft)
+            .attr("height", args.height - args.plotTop)
             .attr("fill", "none")
             .attr("pointer-events", "all")
             .on("mouseover", mousemoved)
@@ -1550,13 +1748,13 @@ function graph_dot(element, args) {
     let data = ungroup_data(args.data);
     const pidcode = data_pidcode(data),
         x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
-        y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y)),
-        axes = make_axis_pair(args, x, y);
+        y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y));
+    make_axis_pair(args, x, y);
     data = data.map(d => {
         const xv = x(d[0]), yv = y(d[1]);
         return {"0": d[0], "1": d[1], x: xv, x0: xv, y: yv, y0: yv, id: d[2], cc: d[3], r: DOT_RADIUS};
     });
-    const labeled = args.type === "ldot";
+    const labeled = args.gtype === "ldot";
     if (labeled) {
         assign_dot_labels(svg, data);
     }
@@ -1576,7 +1774,7 @@ function graph_dot(element, args) {
             .style("display", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    draw_axes(svg, axes[0], axes[1], args);
+    draw_axes(svg, args);
     draw_annotations(svg, args);
 
     // A labeled dot is two elements sharing one position, so group them and
@@ -1754,8 +1952,8 @@ function graph_bars(element, args) {
             return delta || Infinity;
         }),
         x = make_linear_scale(args.x.extent, expand_extent(xe, args.x)),
-        y = make_linear_scale(args.y.extent, ye),
-        axes = make_axis_pair(args, x, y);
+        y = make_linear_scale(args.y.extent, ye);
+    make_axis_pair(args, x, y);
 
     const dpr = window.devicePixelRatio || 1;
     let barwidth = args.plotWidth / 20;
@@ -1786,7 +1984,7 @@ function graph_bars(element, args) {
             })
             .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
-    draw_axes(svg, axes[0], axes[1], args);
+    draw_axes(svg, args);
 
     svg.append("path").attr("class", "gbar gbar-hover0");
     svg.append("path").attr("class", "gbar gbar-hover1");
@@ -1926,8 +2124,8 @@ function graph_boxplot(element, args) {
             return delta || Infinity;
         }),
         x = make_linear_scale(args.x.extent, expand_extent(xe, args.x)),
-        y = make_linear_scale(args.y.extent, expand_extent(ye, args.y)),
-        axes = make_axis_pair(args, x, y);
+        y = make_linear_scale(args.y.extent, expand_extent(ye, args.y));
+    make_axis_pair(args, x, y);
 
     let barwidth = args.plotWidth / 80;
     if (deltae[0] != Infinity) {
@@ -2017,7 +2215,7 @@ function graph_boxplot(element, args) {
               .attr("class", function (d) { return "gbox outlier " + d.cc; })
               .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
-    draw_axes(svg, axes[0], axes[1], args);
+    draw_axes(svg, args);
 
     svg.append("line").attr("class", "gbox whiskerl gbox-hover");
     svg.append("line").attr("class", "gbox whiskerh gbox-hover");
@@ -2135,38 +2333,6 @@ function graph_boxplot(element, args) {
     }
 }
 
-function get_max_tick_width(axis) {
-    return d3.max($(axis.selectAll("g.tick text").nodes()).map(function () {
-        if (this.getBoundingClientRect) {
-            const r = this.getBoundingClientRect();
-            return r.right - r.left;
-        }
-        return $(this).width();
-    }));
-}
-
-function get_sample_tick_height(axis) {
-    return d3.quantile($(axis.selectAll("g.tick text").nodes()).map(function () {
-        if (this.getBoundingClientRect) {
-            const r = this.getBoundingClientRect();
-            return r.bottom - r.top;
-        }
-        return $(this).height();
-    }), 0.5);
-}
-
-function make_rotate_ticks(angle) {
-    if (!angle) {
-        return function () {};
-    }
-    return function (axis) {
-        axis.selectAll("text")
-            .attr("x", 0).attr("y", 0).attr("dy", "-.71em")
-            .attr("transform", "rotate(" + angle + ")")
-            .attr("text-anchor", "middle");
-    };
-}
-
 handle_ui.on("js-hotgraph-highlight", function () {
     const s = $.trim(this.value),
         $g = $(this).closest(".has-hotgraph").find(".hotgraph");
@@ -2202,30 +2368,136 @@ const graphers = {
     box: {function: graph_boxplot}
 };
 
+/** `expandable` names the dimensions of the graph box that may grow to fit
+ * tick labels. Only height growth is implemented, so "width" degrades to
+ * false and true to "height".
+ * @param {null|boolean|string} e
+ * @return {false|"height"} */
+function normalize_expandable(e) {
+    return e == null || e === true || e === "height" ? "height" : false;
+}
+
+/** Move the X axis label up to sit just under the tick labels it is actually
+ * beside. `draw_axes` places it against the bottom inset line, which the
+ * deepest tick label *anywhere* on the axis sets; a tilted label's depth below
+ * the axis is its own text width, so wherever the nearby labels are shorter —
+ * and the label is right-anchored, so that is most of the time — that leaves a
+ * gap. Overlapping nothing, the label follows the deepest label on the axis,
+ * which matters when a pinned bottom edge leaves the margin deeper than the
+ * ticks need. Only ever moves the label up, so it cannot leave the box.
+ * @param {*} xaxe
+ * @param {object} args */
+function place_x_axis_label(xaxe, args) {
+    const lab = xaxe.select("text.label");
+    if (!args.x.label || lab.empty()) {
+        return;
+    }
+    const lr = lab.node().getBoundingClientRect(),
+        axr = xaxe.select("path").node().getBoundingClientRect();
+    let beside = null, deepest = axr.bottom + TICK_SIZE;
+    xaxe.selectAll("g.tick").each(function () {
+        const t = this.style.display === "none" ? null : this.querySelector("text");
+        if (!t) {
+            return;
+        }
+        const r = t.getBoundingClientRect();
+        if (r.height > 0) {
+            deepest = Math.max(deepest, r.bottom);
+            if (r.right > lr.left && r.left < lr.right) {
+                beside = beside === null ? r.bottom : Math.max(beside, r.bottom);
+            }
+        }
+    });
+    const shift = Math.min(0, (beside ?? deepest) + LABEL_GAP - lr.top);
+    if (shift < 0) {
+        lab.attr("y", +lab.attr("y") + shift);
+    }
+}
+
+/** Measure `texts` as the axis will render them, returning each width and the
+ * common line height. The scratch nodes mirror the real structure
+ * (`g.hg-axis[.widelabel] > g.tick > text`) so that `hg-axis`'s relative
+ * `font-size: smaller` and the `.widelabel > .tick` shrink both resolve the
+ * same way, and they live inside the graph's own SVG so `smaller` resolves
+ * against the same parent.
+ *
+ * Every node is created before any is measured: a `getComputedTextLength`
+ * that follows a write forces its own layout, so writing and reading one
+ * string at a time costs a flush apiece. `visibility: hidden` keeps layout
+ * while skipping paint. Together, 253 reviewer names measure in ~2ms rather
+ * than ~10ms.
+ * @param {*} svg
+ * @param {list<string>} texts
+ * @param {boolean} [widelabel]
+ * @return {{widths: list<number>, height: number, ascent: number, descent: number}} */
+function measure_texts(svg, texts, widelabel) {
+    if (texts.length === 0) {
+        return {widths: [], height: 0, ascent: 0, descent: 0};
+    }
+    const g = $svg("g", {class: "hg-axis" + (widelabel ? " widelabel" : ""),
+            transform: "translate(-10000,-10000)"}),
+        nodes = texts.map(function (t) {
+            const e = $svg("text", null, t);
+            g.append($svg("g", "tick", e));
+            return e;
+        });
+    g.style.visibility = "hidden";
+    svg.node().appendChild(g);
+    const widths = nodes.map(e => e.getComputedTextLength()),
+        box = nodes[0].getBBox();
+    g.remove();
+    return {widths: widths, height: box.height,
+        ascent: -box.y, descent: box.y + box.height};
+}
+
+/** Shorten every tick in `ticks` wider than `maxwidth`, appending an ellipsis
+ * and keeping the full string for a `<title>`.
+ *
+ * Character count gives a good first guess at how much fits, so start there
+ * and shrink until it does. Each round measures every outstanding candidate in
+ * one batch, which is what keeps this off the per-string layout-flush path — a
+ * per-label binary search would be a flush per step per label.
+ * @param {*} svg
+ * @param {list<object>} ticks
+ * @param {number} maxwidth
+ * @param {boolean} widelabel */
+function truncate_ticks(svg, ticks, maxwidth, widelabel) {
+    if (!(maxwidth > 0)) {
+        return;
+    }
+    let pending = ticks.filter(t => t.width > maxwidth);
+    for (const t of pending) {
+        t.n = Math.max(0, Math.floor(t.full.length * maxwidth / t.width) - 1);
+    }
+    for (let round = 0; round < 8 && pending.length !== 0; ++round) {
+        const cand = pending.map(t => t.full.substring(0, t.n) + "\u2026"),
+            m = measure_texts(svg, cand, widelabel),
+            next = [];
+        for (let i = 0; i !== pending.length; ++i) {
+            const t = pending[i];
+            t.text = cand[i];
+            t.width = m.widths[i];
+            if (t.width > maxwidth && t.n > 0) {
+                t.n -= 1;
+                next.push(t);
+            }
+        }
+        pending = next;
+    }
+}
+
+// `make_axis_pair` derives the plot rectangle from the measured ticks and
+// labels plus the insets, except on any edge the caller pins.
 function make_args(element, args) {
-    const mns = ["marginTop", "marginRight", "marginBottom", "marginLeft"],
-        m = args.margin || [null, null, null, null],
-        mdefaults = [24, 20, BOTTOM_MARGIN, 50];
-    for (let i = 0; i < 4; ++i) {
-        const mn = mns[i];
-        if (args[mn] == null) {
-            args[mn] = m[i];
-        }
-        if (args[mn] == null) {
-            args[mn] = mdefaults[i];
-            args[mn + "Default"] = true;
-        }
-    }
-    if (args.width == null) {
-        args.width = $(element).width();
-        args.widthDefault = true;
-    }
+    args.width = $(element).width();
     if (args.height == null) {
         args.height = 540;
-        args.heightDefault = true;
     }
-    args.plotWidth = args.width - args.marginLeft - args.marginRight;
-    args.plotHeight = args.height - args.marginTop - args.marginBottom;
+    args.expandable = normalize_expandable(args.expandable);
+    args.insetTop = args.insetTop ?? INSET_TOP;
+    args.insetRight = args.insetRight ?? INSET_RIGHT;
+    args.insetBottom = args.insetBottom ?? INSET_BOTTOM;
+    args.insetLeft = args.insetLeft ?? INSET_LEFT;
     args.x = instantiate_axis(args.x || {});
     args.y = instantiate_axis(args.y || {});
     if (args.xorder) {
@@ -2233,11 +2505,20 @@ function make_args(element, args) {
     }
     project_data(args, args);
     // Other arguments:
+    // args.height: box height; grows if `expandable` allows it
+    // args.expandable: false or "height" (see `normalize_expandable`)
     // args.interactive: Set to false to disable pointer interaction
+    // args.insetTop, args.insetRight, args.insetBottom, args.insetLeft:
+    //   override the INSET_* defaults for this graph
+    // args.plotTop, args.plotRight, args.plotBottom, args.plotLeft: pin an
+    //   edge of the plot rectangle, in box coordinates, so that a grid of
+    //   graphs can share one plotting area; a pin supersedes its inset, and
+    //   the ink that inset located follows the plot edge instead. See
+    //   `make_axis_pair`.
     return args;
 }
 
-return function (selector, args) {
+function make_graph(selector, args) {
     const element = $(selector)[0];
     if (!element) {
         return null;
@@ -2251,19 +2532,22 @@ return function (selector, args) {
         element.append(erre);
         return null;
     }
-    let g = graphers[args.type];
+    let g = graphers[args.gtype];
     while (g && g.filter) {
         args = g["function"](args);
-        g = graphers[args.type];
+        g = graphers[args.gtype];
     }
     if (!g) {
         return null;
     }
     args = make_args(element, args);
     args.svg = d3.select(element).append("svg")
+        .attr("class", "hotgraph")
         .attr("width", args.width)
         .attr("height", args.height)
       .append("g");
     return g["function"].call(args.svg, element, args);
 };
+
+return make_graph;
 })(jQuery, window.d3);

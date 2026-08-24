@@ -57,16 +57,16 @@ class Graph_Formula_Page {
 
         if ($fg->fx_format() === Fexpr::FSEARCH) {
             $h2 = "";
-        } else if ($fg->type === FormulaGraph::GTS_OGIVE) {
+        } else if ($fg->gtype === FormulaGraph::GTS_OGIVE) {
             $h2 = "Cumulative frequency of {$xhtml}";
-        } else if ($fg->type === FormulaGraph::GTS_MULTICDF) {
+        } else if ($fg->gtype === FormulaGraph::GTS_MULTICDF) {
             $h2 = "{$xhtml} CDF by " . $fg->fy->annotated_expression_h();
-        } else if ($fg->type & FormulaGraph::GT_CDF) {
+        } else if ($fg->gtype & FormulaGraph::GT_CDF) {
             $h2 = "{$xhtml} CDF";
-        } else if (($fg->type & FormulaGraph::GT_BARCHART)
+        } else if (($fg->gtype & FormulaGraph::GT_BARCHART)
                    && $fg->fy->expression === "sum(1)") {
             $h2 = $xhtml;
-        } else if ($fg->type & FormulaGraph::GT_BARCHART) {
+        } else if ($fg->gtype & FormulaGraph::GT_BARCHART) {
             $h2 = $fg->fy->annotated_expression_h() . " by {$xhtml}";
         } else {
             $h2 = $fg->fy->annotated_expression_h() . " vs. {$xhtml}";
@@ -74,10 +74,10 @@ class Graph_Formula_Page {
         if ($h2 !== "" && $fg->fxorder) {
             $h2 .= " ordered by " . $fg->fxorder->annotated_expression_h();
         }
-        $highlightable = ($fg->type & (FormulaGraph::GT_SCATTER | FormulaGraph::GT_DOT | FormulaGraph::GT_BOXPLOT)) !== 0;
+        $highlightable = ($fg->gtype & (FormulaGraph::GT_SCATTER | FormulaGraph::GT_DOT | FormulaGraph::GT_BOXPLOT)) !== 0;
 
         $attr = [];
-        if (!($fg->type & FormulaGraph::GT_CDF)) {
+        if (!($fg->gtype & FormulaGraph::GT_CDF)) {
             $attr["data-graph-fx"] = $fg->fx->expression;
             $attr["data-graph-fy"] = $fg->fy->expression;
         }
@@ -112,7 +112,7 @@ class Graph_Formula_Page {
             '</div>';
         // Series
         echo '<div class="', $fgm->control_class("q1", "f-i"), '">',
-            '<label for="q1">Data sets</label>',
+            '<label for="q1">Series</label>',
             '<div id="graph-datasets" class="js-row-order" data-min-rows="1" data-row-template="formula-dataset-template">';
         foreach ($datasets as $i => $ds) {
             $this->echo_formulas_qrow($i + 1, $ds, $fgm);
@@ -120,7 +120,7 @@ class Graph_Formula_Page {
         echo '</div><template id="formula-dataset-template" class="hidden">';
         $this->echo_formulas_qrow('$', new FormulaGraphDataset("ALL", null, "by-tag", '$'), $fgm);
         echo '</template>',
-            Ht::button("Add data set", ["class" => "ui row-order-append", "data-rowset" => "graph-datasets"]),
+            Ht::button("Add series", ["class" => "ui row-order-append", "data-rowset" => "graph-datasets"]),
             '</div>',
             Ht::submit("Graph", ["class" => 'btn-primary']),
             '</form>';

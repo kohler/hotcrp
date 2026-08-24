@@ -50,6 +50,8 @@ class FormulaGraphAxis implements JsonSerializable {
     public $left_justify = false;
 
     // not part of export
+    /** @var ?Formula */
+    private $_formula;
     /** @var int  Fexpr format code */
     public $format_code;
     /** @var mixed */
@@ -60,12 +62,13 @@ class FormulaGraphAxis implements JsonSerializable {
     public $seen = [];
 
     /** @param string $orientation
-     * @param int|Fexpr $format */
+     * @param int|Formula $format */
     function __construct($orientation, $format) {
         $this->orientation = $orientation;
         if (is_int($format)) {
             $this->format_code = $format;
         } else {
+            $this->_formula = $format;
             $this->format_code = $format->format();
             $this->format_detail = $format->format_detail();
         }
@@ -237,6 +240,12 @@ class FormulaGraphAxis implements JsonSerializable {
         }
         if ($this->order_values !== null) {
             $j["order_values"] = $this->order_values;
+        }
+        if ($this->_formula) {
+            $j["expression"] = $this->_formula->expression;
+            if (($anno = $this->_formula->expression_annotations())) {
+                $j["expression_annotations"] = $anno;
+            }
         }
         return $j;
     }
@@ -436,8 +445,9 @@ class FormulaGraph extends MessageSet {
     /** @var Contact
      * @readonly */
     public $user;
-    /** @var int */
-    public $type = 0;
+    /** @var int
+     * @readonly */
+    public $gtype = 0;
     /** @var Formula */
     public $fx;
     /** @var list<Formula> */
@@ -558,15 +568,15 @@ class FormulaGraph extends MessageSet {
         if ($gtype !== null && trim($gtype) !== "") {
             $gtx = self::graph_type_prefix($gtype);
             if ($gtx && $gtx[1] === $gtype) {
-                $this->type = $gtx[0];
+                $this->gtype = $gtx[0];
             } else {
                 $this->error_at("gtype", "<0>Graph type not found");
             }
         } else if (($gtx = self::graph_type_prefix($fy))) {
-            $this->type = $gtx[0];
+            $this->gtype = $gtx[0];
             $fy = substr($fy, strlen($gtx[1]));
         } else {
-            $this->type = self::GT_SCATTER;
+            $this->gtype = self::GT_SCATTER;
         }
 
         // `paper`/`review` prefix
@@ -581,19 +591,19 @@ class FormulaGraph extends MessageSet {
         }
 
         // correct Y axis expression
-        if ($this->type === self::GTS_MULTICDF) {
+        if ($this->gtype === self::GTS_MULTICDF) {
             if (trim($fy) === "") {
                 $this->warning_at("y", "<0>Formula required");
                 $fy = "0";
             }
-        } else if (($this->type & self::GT_CDF) !== 0) {
+        } else if (($this->gtype & self::GT_CDF) !== 0) {
             $fy = "0";
-        } else if ($this->type === self::GT_BARCHART) {
+        } else if ($this->gtype === self::GT_BARCHART) {
             $this->_fx_combine = true;
             if (trim($fy) === "") {
                 $fy = "sum(1)";
             }
-        } else if ($this->type === self::GTS_FBARCHART) {
+        } else if ($this->gtype === self::GTS_FBARCHART) {
             $this->_fx_combine = true;
             $fy = "sum(1)";
         }
@@ -616,7 +626,7 @@ class FormulaGraph extends MessageSet {
         } else if (strcasecmp($fx, "tag") === 0) {
             $this->fxs[] = Formula::make_indexed($this->user, "0");
             $this->_fx_type = Fexpr::FTAG;
-        } else if (($this->type & self::GT_CDF) === 0) {
+        } else if (($this->gtype & self::GT_CDF) === 0) {
             $this->fxs[] = Formula::make_indexed($this->user, $fx);
             $this->fx_annotatable = true;
         } else {
@@ -673,20 +683,20 @@ class FormulaGraph extends MessageSet {
             && $this->fxs[0]->indexed()) {
             $fx_data = self::DATA_REVIEW;
         }
-        if ($this->type === self::GT_SCATTER
+        if ($this->gtype === self::GT_SCATTER
             && $fx_data === self::DATA_REVIEW
             && $fy_data === 0
             && $this->fy->support_combiner()) {
             $fy_data = self::DATA_REVIEW;
         }
-        if ($this->type === self::GT_SCATTER
+        if ($this->gtype === self::GT_SCATTER
             && $fx_data === self::DATA_REVIEW
             && $fy_data === self::DATA_REVIEW) {
             $this->_fx_combine = true;
         }
 
         // check types
-        if (($this->type & self::GT_CDF) !== 0
+        if (($this->gtype & self::GT_CDF) !== 0
             && $this->_fx_type === Fexpr::FTAG) {
             $this->error_at("y", "<0>CDFs by tag don’t make sense");
         }
@@ -908,7 +918,7 @@ class FormulaGraph extends MessageSet {
         $index_type = $this->_set_index_type($fx);
         $fx->prepare_json();
         $account_x = $this->_x_axis->accountant();
-        $multi = $this->type === self::GTS_MULTICDF;
+        $multi = $this->gtype === self::GTS_MULTICDF;
         if ($multi) {
             $this->fy->prepare_json();
             $account_series = $this->_series_axis->accountant();
@@ -1078,7 +1088,7 @@ class FormulaGraph extends MessageSet {
         // compute axes
         $this->_x_axis = new FormulaGraphAxis("x", $this->fxs[0]);
         $this->_y_axis = new FormulaGraphAxis("y", Fexpr::FNUMERIC);
-        if ($this->type === self::GTS_MULTICDF) {
+        if ($this->gtype === self::GTS_MULTICDF) {
             $this->_series_axis = new FormulaGraphAxis("series", $this->fy);
         }
 
@@ -1151,7 +1161,7 @@ class FormulaGraph extends MessageSet {
 
     private function _scatter_data(PaperInfoSet $rowset) {
         if ($this->fx->format() === Fexpr::FREVIEWER
-            && ($this->type & self::GT_BOXPLOT) !== 0) {
+            && ($this->gtype & self::GT_BOXPLOT) !== 0) {
             $this->_prepare_reviewer_color($this->user);
         }
 
@@ -1347,7 +1357,7 @@ class FormulaGraph extends MessageSet {
 
     /** @return string */
     private function data_format() {
-        if ($this->type & self::GT_CDF) {
+        if ($this->gtype & self::GT_CDF) {
             return "cdf";
         } else if ($this->_fx_combine) {
             return "xyis";
@@ -1364,7 +1374,7 @@ class FormulaGraph extends MessageSet {
         if ($this->has_error()) {
             return;
         }
-        if ($this->type & self::GT_CDF) {
+        if ($this->gtype & self::GT_CDF) {
             $empty = empty($this->_cdf_data);
         } else if ($this->_fx_combine) {
             $empty = empty($this->_bar_data);
@@ -1410,7 +1420,7 @@ class FormulaGraph extends MessageSet {
                 return $this->user->can_view_paper($prow);
             });
 
-            if ($this->type & self::GT_CDF) {
+            if ($this->gtype & self::GT_CDF) {
                 $this->_cdf_data($rowset);
             } else if ($this->_fx_combine) {
                 $this->_combine_data($rowset);
@@ -1419,7 +1429,7 @@ class FormulaGraph extends MessageSet {
             }
             $this->_check_empty_data();
         }
-        if ($this->type & self::GT_CDF) {
+        if ($this->gtype & self::GT_CDF) {
             return $this->_cdf_data;
         } else if ($this->_fx_combine) {
             return $this->_bar_data;
@@ -1436,15 +1446,15 @@ class FormulaGraph extends MessageSet {
                 : $this->conf->snouns[1];
             if ($axis === "x") {
                 $ax->label = $this->fx_expression;
-            } else if ($this->type === self::GTS_FBARCHART) {
+            } else if ($this->gtype === self::GTS_FBARCHART) {
                 $ax->label = "fraction of {$counttype}";
                 $ax->fraction = true;
-            } else if ($this->type === self::GT_BARCHART
+            } else if ($this->gtype === self::GT_BARCHART
                        && $this->fy->expression === "sum(1)") {
                 $ax->label = "# {$counttype}";
-            } else if ($this->type === self::GTS_OGIVE) {
+            } else if ($this->gtype === self::GTS_OGIVE) {
                 $ax->label = "Cumulative count of {$counttype}";
-            } else if ($this->type & self::GT_CDF) {
+            } else if ($this->gtype & self::GT_CDF) {
                 $ax->label = "CDF of {$counttype}";
                 $ax->fraction = true;
             } else {
@@ -1458,7 +1468,7 @@ class FormulaGraph extends MessageSet {
         return $ax;
     }
 
-    function type_json() {
+    function gtype_json() {
         $tj = [
             self::GT_SCATTER => "scatter",
             self::GT_DOT => "dot",
@@ -1470,11 +1480,11 @@ class FormulaGraph extends MessageSet {
             self::GT_BOXPLOT => "box",
             self::GTS_MULTICDF => "cdf"
         ];
-        return $tj[$this->type] ?? null;
+        return $tj[$this->gtype] ?? null;
     }
 
     function graph_json($j = []) {
-        $j["type"] = $this->type_json();
+        $j["gtype"] = $this->gtype_json();
         $j["data_format"] = $this->data_format();
         $j["data"] = $this->data();
         $j["x"] = $this->axis_json($this->_x_axis);
@@ -1490,16 +1500,16 @@ class FormulaGraph extends MessageSet {
             $xoa->complete($this->conf, $this->user);
             $j["xorder"] = $xoa;
         }
-        if ($this->type & self::GT_DOT) {
+        if ($this->gtype & self::GT_DOT) {
             $j["mark_object_type"] = $this->index_type() ? "review" : "paper";
         } else if ($this->_fx_type === Fexpr::FREVIEWER
                    && ($this->_fx_combine
-                       || ($this->type & self::GT_BOXPLOT))) {
+                       || ($this->gtype & self::GT_BOXPLOT))) {
             $j["mark_object_type"] = "user";
         } else if ($this->_fx_type === Fexpr::FPID) {
             $j["mark_object_type"] = "paper";
         }
-        if ($this->type & self::GT_CDF) {
+        if ($this->gtype & self::GT_CDF) {
             $j["cdf_tooltip_position"] = true;
         }
         return $j;

@@ -53,20 +53,21 @@ class SearchStringContext {
      * @param string $base
      * @return list<MessageItem> */
     static function expand($mi, $pos1, $pos2, $context, $base) {
-        $mi->pos1 = $pos1;
-        $mi->pos2 = $pos2;
+        $ssc = new SearchStringContext($base, $pos1, $pos2, $context);
         $mis = [$mi];
-        while ($context) {
-            $mi->context = $context->q;
+        while ($ssc->q !== "" || $ssc->parent) {
+            $mi->pos1 = $ssc->ppos1;
+            $mi->pos2 = $ssc->ppos2;
+            $mi->context = $ssc->q ? : "<empty>";
+            if (!$ssc->parent) {
+                break;
+            }
             $mi->nested_context = true;
             $mi = MessageItem::inform_at($mi->field, "");
             $mi->landmark = "→ expanded from";
-            $mi->pos1 = $context->ppos1;
-            $mi->pos2 = $context->ppos2;
             $mis[] = $mi;
-            $context = $context->parent;
+            $ssc = $ssc->parent;
         }
-        $mi->context = $base;
         return $mis;
     }
 }

@@ -142,6 +142,6 @@ class ReviewTimes {
             }
         }
 
-        return (object) ["type" => "procrastination", "reviews" => $this->r, "deadlines" => $this->dl, "users" => $users];
+        return (object) ["gtype" => "procrastination", "reviews" => $this->r, "deadlines" => $this->dl, "users" => $users];
     }
 }

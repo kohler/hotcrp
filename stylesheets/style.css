@@ -5964,19 +5964,19 @@ th.pl_logaction {
 	fill: none;
 	pointer-events: none;
 }
-.hotgraph .x-axis, .hotgraph .y-axis {
+.hg-axis {
 	font-size: smaller;
 }
-.widelabel > .tick {
-	font-size: smaller;
-}
-.x-axis path, .x-axis line, .y-axis path, .y-axis line {
+.hg-axis path, .hg-axis line, path.hg-axis {
 	fill: none;
 	stroke: currentColor;
 	shape-rendering: crispEdges;
 }
-.x-axis text, .y-axis text {
+.hg-axis text {
 	fill: currentColor;
+}
+.widelabel > .tick {
+	font-size: smaller;
 }
 
 @media print {
