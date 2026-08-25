@@ -40,10 +40,16 @@ const LABEL_GAP = 4;
 const PLOT_CLIP_MARGIN = 6;
 // One press of a zoom button changes the window by this factor
 const ZOOM_STEP = 1.5;
+// Zoom per pixel of ctrl-wheel travel, and the most one event may zoom: a
+// trackpad pinch arrives as a stream of small deltas, a mouse wheel as one
+// large one, and neither should outrun a press of the zoom button.
+const WHEEL_ZOOM_RATE = 0.01;
 // A graph zooms in until it shows this fraction of its full extent
 const ZOOM_MIN_FRACTION = 0.001;
 // Pointer travel, in pixels, that turns a click into a pan
 const PAN_THRESHOLD = 3;
+// Fractional change in finger spread that still counts as a slide, not a pinch
+const PINCH_SLACK = 0.08;
 // How the graph follows its container. A render at or under the frame budget
 // is cheap enough to repeat every frame while the container is being dragged;
 // a slower one waits for the box to settle instead. Box changes under the
@@ -570,6 +576,22 @@ function id2pid(id) {
     return id;
 }
 
+/** The ids in `id`, which is either one id or a list of them: a mark that
+ * combines several papers carries all of theirs.
+ * @param {*} id
+ * @return {list} */
+function id_list(id) {
+    return Array.isArray(id) ? id : [id];
+}
+
+/** Whether `id` -- one id or a list of them -- names a paper in `pids`.
+ * @param {*} id
+ * @param {list<number>} pids
+ * @return {boolean} */
+function id_in_pids(id, pids) {
+    return id_list(id).some(i => pids.indexOf(id2pid(i)) >= 0);
+}
+
 function pid_sorter(a, b) {
     if (typeof a === "object") {
         a = a.id || a[2];
@@ -646,6 +668,30 @@ function make_reviewer_clicker(email) {
     return function (event) {
         clicker_go(hoturl("search", {q: "re:" + email}), event);
     };
+}
+
+// Live, so a tablet that gains a trackpad is a hovering device from then on
+const HOVERLESS = window.matchMedia("(hover: none)");
+
+/** True where a pointer cannot hover, so a tap must stand in for it: the first
+ * tap on a mark shows what a hover would, and only a second one follows it.
+ * @return {boolean} */
+function no_hover() {
+    return HOVERLESS.matches;
+}
+
+// Every class `bubble_attr` can hand out: a bubble outlives the <svg> it
+// points at, so a redraw has to find them all
+const GRAPH_BUBBLES = ".graphtip, .graphtip-s";
+
+/** Attributes for a tooltip bubble. A hovering pointer must not land on the
+ * bubble it just raised; a tapping one has nothing to lose, and gets a bubble
+ * whose links it can reach.
+ * @param {string} [klass]
+ * @return {object} */
+function bubble_attr(klass) {
+    return {class: klass || "graphtip",
+        "pointer-events": no_hover() ? null : "none"};
 }
 
 function clicker_go(url, event) {
@@ -1178,7 +1224,7 @@ function graph_cdf(element, view) {
             .on("click", mouseclick);
     }
 
-    var hovered_path, hovered_series, hubble;
+    var hovered_path, hovered_series, hubble, armed;
     function mousemoved(event) {
         var m = d3.pointer(event), p = {distance: 16};
         m.clientX = event.clientX;
@@ -1199,7 +1245,7 @@ function graph_cdf(element, view) {
             hovered_path = p.pathNode;
         }
         if (hovered_series && (hovered_series.label || args.cdf_tooltip_position)) {
-            hubble = hubble || make_bubble({class: args.tooltip_class || "graphtip", "pointer-events": "none"});
+            hubble = hubble || make_bubble(bubble_attr(args.tooltip_class));
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             if (args.cdf_tooltip_position) {
                 const f = $frag();
@@ -1221,12 +1267,18 @@ function graph_cdf(element, view) {
     function mouseout() {
         hovers.style("display", "none");
         hubble && hubble.remove();
-        hovered_path = hovered_series = hubble = null;
+        hovered_path = hovered_series = hubble = armed = null;
     }
 
     function mouseclick(evt) {
-        if (hovered_series && hovered_series.click)
-            hovered_series.click.call(this, evt);
+        if (!hovered_series || !hovered_series.click) {
+            return;
+        }
+        if (no_hover() && armed !== hovered_series) {
+            armed = hovered_series; // this tap only shows what a hover would
+            return;
+        }
+        hovered_series.click.call(this, evt);
     }
 }
 
@@ -1429,7 +1481,7 @@ function gqdata_ids(gqp, want_cc) {
     const a = [], cch = gqp.cc;
     for (; gqp; gqp = gqp.next) {
         for (const d of gqp.data) {
-            const ids = typeof d[2] === "object" ? d[2] : [d[2]];
+            const ids = id_list(d[2]);
             if (want_cc && cch !== d[3]) {
                 for (const id of ids) {
                     a.push({id: id, cc: d[3]});
@@ -1596,18 +1648,29 @@ function scatter_union(p) {
 }
 
 function make_hover_interactor(svg, hovers, identity) {
-    let data = null, over = null, owner = svg.node().closest("svg");
+    let data = null, over = null, armed = null, owner = svg.node().closest("svg");
     function mouseout() {
         hovers.style("display", "none");
         if (self.bubble) {
             self.bubble.remove();
         }
-        self.data = self.bubble = data = over = null;
+        self.data = self.bubble = data = over = armed = null;
         owner.style.cursor = "";
     }
     const self = {
         data: null,
         bubble: null,
+        /** Whether a click should only show what a hover would. Where a tap
+         * stands in for a hover it has to serve as both, so the tap that
+         * raises a mark's bubble does not also follow it.
+         * @return {boolean} */
+        tap_defers: function () {
+            if (!data || !no_hover() || armed === data) {
+                return false;
+            }
+            armed = data;
+            return true;
+        },
         move: function (d) {
             if (!d && data) {
                 mouseout();
@@ -1617,7 +1680,7 @@ function make_hover_interactor(svg, hovers, identity) {
                 return false;
             }
             self.data = data = d;
-            self.bubble = self.bubble || make_bubble({class: "graphtip", "pointer-events": "none"});
+            self.bubble = self.bubble || make_bubble(bubble_attr());
             owner.style.cursor = "pointer";
             return true;
         },
@@ -1694,6 +1757,9 @@ function graph_scatter(element, view) {
     }
 
     function mouseclick(event) {
+        if (hoverer.tap_defers()) {
+            return;
+        }
         clicker(hoverer.data ? gqdata_ids(hoverer.data) : null, event);
     }
 
@@ -1710,12 +1776,7 @@ function graph_scatter(element, view) {
         let myd = [];
         if (hl.ids.length) {
             myd = gq.data.filter(function (pd) {
-                for (const d of pd.data) {
-                    if (hl.ids.indexOf(id2pid(d[2])) >= 0) {
-                        return true;
-                    }
-                }
-                return false;
+                return pd.data.some(d => id_in_pids(d[2], hl.ids));
             });
         }
         scatter_highlight(svg, myd);
@@ -1766,11 +1827,7 @@ function assign_dot_labels(svg, data) {
 function data_pidcode(data) {
     const p = [];
     for (const d of data) {
-        if (typeof d[2] === "object") {
-            p.push(...d[2]);
-        } else {
-            p.push(d[2]);
-        }
+        p.push(...id_list(d[2]));
     }
     return hotcrp.pidcode(p);
 }
@@ -1892,6 +1949,9 @@ function graph_dot(element, view) {
     }
 
     function mouseclick(event) {
+        if (hoverer.tap_defers()) {
+            return;
+        }
         const p = d3.select(this).datum();
         clicker(p ? p.id : null, event);
     }
@@ -1907,9 +1967,7 @@ function graph_dot(element, view) {
         hoverer.mouseout();
         let myd = [];
         if (hl.ids.length) {
-            myd = data.filter(function (d) {
-                return hl.ids.indexOf(id2pid(d.id)) >= 0;
-            });
+            myd = data.filter(d => id_in_pids(d.id, hl.ids));
         }
         dot_highlight(svg, myd);
     }
@@ -2096,6 +2154,9 @@ function graph_bars(element, view) {
     }
 
     function mouseclick(event) {
+        if (hoverer.tap_defers()) {
+            return;
+        }
         clicker(hoverer.data ? hoverer.data.ids : null, event);
     }
 }
@@ -2348,6 +2409,9 @@ function graph_boxplot(element, view) {
 
     function mouseclick(event) {
         let s;
+        if (hoverer.tap_defers()) {
+            return;
+        }
         if (!hoverer.data) {
             clicker(null, event);
         } else if (!hoverer.data.qnt) {
@@ -2374,7 +2438,7 @@ function graph_boxplot(element, view) {
         const pts = [];
         for (const d of data) {
             for (let i = 0; i !== d.ys.length; ++i) {
-                if (hl.ids.indexOf(id2pid(d.ids[i])) >= 0) {
+                if (id_in_pids(d.ids[i], hl.ids)) {
                     pts.push([d[0], d.ys[i], d.ids[i], d.cc]);
                 }
             }
@@ -2805,7 +2869,7 @@ const NO_GESTURE = {k: [1, 1], a: [0, 0], b: [0, 0]};
  * @param {object} view
  * @param {{k: [number,number], a: [number,number], b: [number,number]}} g */
 function place_marks(view, g) {
-    const args = view.args, s = view.mark_shift,
+    const s = view.mark_shift,
         tx = view.left + g.k[0] * (s[0] - g.a[0]) + g.b[0],
         ty = view.top + g.k[1] * (s[1] - g.a[1]) + g.b[1],
         tr = `translate(${tx},${ty})`
@@ -2834,9 +2898,10 @@ function redraw_axes(view, w) {
  * zoom and sliding to pan, which leaves one finger free to scroll the page.
  * @param {object} view */
 function enable_pan(view) {
-    const args = view.args, svg = view.svg.node().ownerSVGElement;
+    const svg = view.svg.node().ownerSVGElement;
     let base = null, active = false, at = NO_GESTURE, pending = false, frame = 0,
-        expandable = null, mouse_start = null, pinch_start = null;
+        expandable = null, mouse_start = null, touch_start = null, pinch_start = null,
+        wheel_frame = 0;
 
     /** A gesture scaling by `k` about plot point `a` and moving it to `b`,
      * with any axis this graph does not zoom held still.
@@ -2870,12 +2935,18 @@ function enable_pan(view) {
             frame = requestAnimationFrame(draw_frame);
         }
     }
+    /** Start a gesture, or re-baseline the one in progress when a finger
+     * joins or leaves: `base` is whatever is on screen now, so the movement
+     * already applied stays applied. */
     function begin() {
         base = {x: view.x.scale.copy(), y: view.y.scale.copy(), window: view.window};
+        at = NO_GESTURE;
+        if (active) {
+            return;
+        }
         // a growable box would otherwise resize as the tick labels change
         expandable = view.expandable;
         view.expandable = false;
-        at = NO_GESTURE;
         active = true;
         // a resize now would destroy the <svg> this gesture started on while
         // the handlers below still hold its `args` and scales
@@ -2956,16 +3027,41 @@ function enable_pan(view) {
         };
     }
     function touchmove(evt) {
-        if (!active || evt.touches.length !== 2) {
-            return;
+        if (evt.touches.length === 1) {
+            // `touch-action: pan-y` keeps up and down for the page, so a
+            // finger takes the gesture only by going clearly sideways. Once it
+            // has, the first `preventDefault` claims the rest of the sequence
+            // and the graph follows the finger in both directions.
+            const t = evt.touches[0],
+                d = [t.clientX - touch_start[0], t.clientY - touch_start[1]];
+            if (!active
+                && (Math.abs(d[0]) < PAN_THRESHOLD
+                    || Math.abs(d[0]) <= Math.abs(d[1]))) {
+                return;
+            }
+            if (!active) {
+                begin();
+            }
+            evt.preventDefault();
+            update(gesture(1, [0, 0], d));
+        } else if (active && evt.touches.length === 2) {
+            evt.preventDefault(); // the page is not scrolling with two fingers here
+            const t = two_touches(evt),
+                // fingers cannot hold a distance while they slide, so ignore
+                // the wobble and let a two-finger slide pan without zooming
+                k = pinch_start.d > 0 ? t.d / pinch_start.d : 1;
+            update(gesture(Math.abs(k - 1) < PINCH_SLACK ? 1 : k,
+                pinch_start.m, t.m));
         }
-        evt.preventDefault(); // the page is not scrolling with two fingers here
-        const t = two_touches(evt);
-        update(gesture(pinch_start.d > 0 ? t.d / pinch_start.d : 1,
-            pinch_start.m, t.m));
     }
     function touchend(evt) {
-        if (evt.touches.length >= 2) {
+        if (evt.touches.length === 1) {
+            // a pinch became a one-finger slide; carry on from where it is
+            const t = evt.touches[0];
+            touch_start = [t.clientX, t.clientY];
+            active && begin();
+            return;
+        } else if (evt.touches.length >= 2) {
             return;
         }
         svg.removeEventListener("touchmove", touchmove);
@@ -2976,7 +3072,41 @@ function enable_pan(view) {
         }
     }
 
+    /** Zoom about the pointer by `k`, keeping what is under it in place. */
+    function zoom_at(k, a) {
+        const g = gesture(k, a, a),
+            w = {
+                x: gesture_axis_window(view.x.scale, 0, view.plotWidth, g, 0, view.home.x),
+                y: gesture_axis_window(view.y.scale, view.plotHeight, 0, g, 1, view.home.y)
+            };
+        if (same_window(w, view.window)) {
+            return;
+        }
+        view.window = w;
+        if (!wheel_frame) {
+            wheel_frame = requestAnimationFrame(function () {
+                wheel_frame = 0;
+                render_view(view);
+            });
+        }
+    }
+
     addClass(svg, "pannable");
+    // A trackpad pinch reaches the page as a wheel with `ctrlKey`, which the
+    // browser would otherwise take for its own zoom.
+    svg.addEventListener("wheel", function (evt) {
+        if (!evt.ctrlKey || active || !view.window) {
+            return; // a plain wheel still scrolls the page
+        }
+        evt.preventDefault();
+        tooltip.close(); // as a gesture does; the graph is moving under it
+        const dy = evt.deltaY * (evt.deltaMode === 1 ? 16 : evt.deltaMode === 2 ? 400 : 1),
+            k = Math.min(ZOOM_STEP, Math.max(1 / ZOOM_STEP,
+                Math.exp(-dy * WHEEL_ZOOM_RATE))),
+            r = svg.getBoundingClientRect();
+        zoom_at(k, [evt.clientX - r.left - view.left,
+            evt.clientY - r.top - view.top]);
+    }, {passive: false});
     svg.addEventListener("mousedown", function (evt) {
         if (evt.button !== 0) {
             return;
@@ -2988,13 +3118,20 @@ function enable_pan(view) {
         evt.preventDefault(); // no text selection, no native image drag
     });
     svg.addEventListener("touchstart", function (evt) {
-        if (evt.touches.length !== 2) {
+        if (evt.touches.length === 1) {
+            // no `preventDefault`: the page must stay free to scroll until a
+            // finger has committed to going sideways
+            const t = evt.touches[0];
+            touch_start = [t.clientX, t.clientY];
+            active = view.panned = false;
+        } else if (evt.touches.length === 2) {
+            evt.preventDefault();
+            pinch_start = two_touches(evt);
+            view.panned = false;
+            begin(); // re-baselines if a finger just joined a slide
+        } else {
             return;
         }
-        evt.preventDefault();
-        pinch_start = two_touches(evt);
-        view.panned = false;
-        begin();
         svg.addEventListener("touchmove", touchmove, {passive: false});
         svg.addEventListener("touchend", touchend);
         svg.addEventListener("touchcancel", touchend);
@@ -3025,7 +3162,7 @@ function render_view(view) {
     view.abort && view.abort.abort();
     view.abort = new AbortController();
     view.signal = view.abort.signal;
-    for (const t of document.querySelectorAll(".graphtip")) {
+    for (const t of document.querySelectorAll(GRAPH_BUBBLES)) {
         t.remove();
     }
     element.replaceChildren();

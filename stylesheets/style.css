@@ -5978,9 +5978,13 @@ th.pl_logaction {
 #hotgraph {
 	min-height: 240px;
 }
+@media screen and (max-width: 900px) and (max-height: 450px) {
+#hotgraph {
+	min-height: 80vh;
+}
+}
 svg.hotgraph.pannable {
 	cursor: grab;
-	/* one finger scrolls the page, two pinch and pan the graph */
 	touch-action: pan-y;
 }
 /* a mark is something to point at, not something to drag by */
@@ -5991,9 +5995,8 @@ svg.hotgraph.pannable {
 }
 svg.hotgraph.panning {
 	cursor: grabbing;
+	touch-action: none;
 }
-/* Baseline alignment sits the controls on the title's baseline, so the <h2>
-   can keep its own bottom margin without pushing them down. */
 .hotgraph-head {
 	display: flex;
 	flex-wrap: wrap;
