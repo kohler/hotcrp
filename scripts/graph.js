@@ -2898,7 +2898,13 @@ function redraw_axes(view, w) {
  * zoom and sliding to pan, which leaves one finger free to scroll the page.
  * @param {object} view */
 function enable_pan(view) {
-    const svg = view.svg.node().ownerSVGElement;
+    // Handlers live on the container, which persists: the <svg> is replaced on
+    // every render, including the renders a gesture drives.
+    const target = view.element;
+    /** @return {Element} the <svg> now drawn */
+    function svgn() {
+        return view.svg.node().ownerSVGElement;
+    }
     let base = null, active = false, at = NO_GESTURE, pending = false, frame = 0,
         expandable = null, mouse_start = null, touch_start = null, pinch_start = null,
         wheel_frame = 0;
@@ -2924,8 +2930,18 @@ function enable_pan(view) {
     }
     function draw_frame() {
         pending = false;
-        redraw_axes(view, window_at(at));
-        place_marks(view, at);
+        const w = window_at(at);
+        if (at.k[0] === 1 && at.k[1] === 1) {
+            // a slide moves the marks without changing them, so let them ride
+            // a translation rather than paying to draw them again
+            redraw_axes(view, w);
+            place_marks(view, at);
+        } else {
+            // a pinch changes their size: stretching what is drawn would
+            // thicken every stroke, so draw the frame properly instead
+            view.window = w;
+            render_view(view);
+        }
     }
     /** @param {object} g */
     function update(g) {
@@ -2948,7 +2964,7 @@ function enable_pan(view) {
         // a resize now would destroy the <svg> this gesture started on while
         // the handlers below still hold its `args` and scales
         view.gesturing = true;
-        addClass(svg, "panning");
+        addClass(svgn(), "panning");
         // the pointer is about to leave whatever it was over without a
         // mouseout, so nothing else will take this down
         tooltip.close();
@@ -2958,7 +2974,7 @@ function enable_pan(view) {
             cancelAnimationFrame(frame);
             pending = false;
         }
-        removeClass(svg, "panning");
+        removeClass(svgn(), "panning");
         view.expandable = expandable;
         active = false;
         view.gesturing = false;
@@ -3015,7 +3031,7 @@ function enable_pan(view) {
      * @param {TouchEvent} evt
      * @return {{m: [number,number], d: number}} */
     function two_touches(evt) {
-        const r = svg.getBoundingClientRect(),
+        const r = svgn().getBoundingClientRect(),
             t0 = evt.touches[0], t1 = evt.touches[1];
         return {
             m: [(t0.clientX + t1.clientX) / 2 - r.left - view.left,
@@ -3061,9 +3077,9 @@ function enable_pan(view) {
         } else if (evt.touches.length >= 2) {
             return;
         }
-        svg.removeEventListener("touchmove", touchmove);
-        svg.removeEventListener("touchend", touchend);
-        svg.removeEventListener("touchcancel", touchend);
+        target.removeEventListener("touchmove", touchmove);
+        target.removeEventListener("touchend", touchend);
+        target.removeEventListener("touchcancel", touchend);
         if (active) {
             finish();
         }
@@ -3088,10 +3104,9 @@ function enable_pan(view) {
         }
     }
 
-    addClass(svg, "pannable");
     // A trackpad pinch reaches the page as a wheel with `ctrlKey`, which the
     // browser would otherwise take for its own zoom.
-    svg.addEventListener("wheel", function (evt) {
+    target.addEventListener("wheel", function (evt) {
         if (!evt.ctrlKey || active || !view.window) {
             return; // a plain wheel still scrolls the page
         }
@@ -3100,11 +3115,11 @@ function enable_pan(view) {
         const dy = evt.deltaY * (evt.deltaMode === 1 ? 16 : evt.deltaMode === 2 ? 400 : 1),
             k = Math.min(ZOOM_STEP, Math.max(1 / ZOOM_STEP,
                 Math.exp(-dy * WHEEL_ZOOM_RATE))),
-            r = svg.getBoundingClientRect();
+            r = svgn().getBoundingClientRect();
         zoom_at(k, [evt.clientX - r.left - view.left,
             evt.clientY - r.top - view.top]);
     }, {passive: false});
-    svg.addEventListener("mousedown", function (evt) {
+    target.addEventListener("mousedown", function (evt) {
         if (evt.button !== 0) {
             return;
         }
@@ -3114,7 +3129,7 @@ function enable_pan(view) {
         document.addEventListener("mouseup", mouseup);
         evt.preventDefault(); // no text selection, no native image drag
     });
-    svg.addEventListener("touchstart", function (evt) {
+    target.addEventListener("touchstart", function (evt) {
         if (evt.touches.length === 1) {
             // no `preventDefault`: the page must stay free to scroll until a
             // finger has committed to going sideways
@@ -3130,9 +3145,9 @@ function enable_pan(view) {
         } else {
             return;
         }
-        svg.addEventListener("touchmove", touchmove, {passive: false});
-        svg.addEventListener("touchend", touchend);
-        svg.addEventListener("touchcancel", touchend);
+        target.addEventListener("touchmove", touchmove, {passive: false});
+        target.addEventListener("touchend", touchend);
+        target.addEventListener("touchcancel", touchend);
     }, {passive: false});
 }
 
@@ -3170,7 +3185,11 @@ function render_view(view) {
     view.box = compute_box(element, view.args);
     view.resize_stale = false;
     const svg = d3.select(element).append("svg")
-            .attr("class", "hotgraph")
+            // the gesture handlers outlive any one <svg>, so each new one is
+            // marked with the state they are in
+            .attr("class", "hotgraph"
+                + (view.args.interactive === false ? "" : " pannable")
+                + (view.gesturing ? " panning" : ""))
             .attr("width", view.box[0])
             .attr("height", view.box[1]),
         clipid = `hg-clip-${++clip_counter}`;
@@ -3191,7 +3210,10 @@ function render_view(view) {
             || {x: view.x.scale.domain().slice(), y: view.y.scale.domain().slice()};
         view.home = view.home || {x: view.window.x.slice(), y: view.window.y.slice()};
         view.mark_shift = [0, 0];
-        if (view.args.interactive !== false) {
+        // once per view, not per render: a gesture may redraw the graph under
+        // itself, and its handlers have to outlive the <svg> they started on
+        if (view.args.interactive !== false && !view.pan_enabled) {
+            view.pan_enabled = true;
             enable_pan(view);
         }
     }
