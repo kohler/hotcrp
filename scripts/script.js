@@ -231,7 +231,7 @@ function HPromise(executor) {
     }
 }
 HPromise.prototype._resolver = function (state) {
-    var self = this;
+    const self = this;
     return function (value) {
         if (self.state === -1) {
             self.state = state;
@@ -241,20 +241,20 @@ HPromise.prototype._resolver = function (state) {
     };
 };
 HPromise.prototype.then = function (yes, no) {
-    var next = new HPromise;
+    const next = new HPromise;
     this.c.push([no, yes, next]);
-    if (this.state === 0 || this.state === 1)
+    if (this.state === 0 || this.state === 1) {
         this._resolve();
+    }
     return next;
 };
 HPromise.prototype._resolve = function () {
-    var i, x, ss = this.state, s, v, f;
+    const ss = this.state;
     this.state = 2;
-    for (i in this.c) {
-        x = this.c[i];
-        s = ss;
-        v = this.value;
-        f = x[s];
+    for (const i in this.c) {
+        const x = this.c[i];
+        let s = ss, v = this.value;
+        const f = x[s];
         if ($.isFunction(f)) {
             try {
                 v = f(v);
@@ -268,14 +268,17 @@ HPromise.prototype._resolve = function () {
     this.c = [];
     this.state = ss;
 };
+HPromise.prototype.ready = function () {
+    return this.state === 0 || this.state === 1;
+};
 HPromise.resolve = function (value) {
-    var p = new HPromise;
+    const p = new HPromise;
     p.value = value;
     p.state = 1;
     return p;
 };
 HPromise.reject = function (reason) {
-    var p = new HPromise;
+    const p = new HPromise;
     p.value = reason;
     p.state = 0;
     return p;
@@ -8682,13 +8685,10 @@ hotcrp.shortcut = function (top_elt) {
 var demand_load = {};
 
 demand_load.make = function (executor) {
-    var promise;
+    let promise;
     return function (value) {
         if (!promise) {
-            if (value != null)
-                promise = HPromise.resolve(value);
-            else
-                promise = new HPromise(executor);
+            promise = value != null ? HPromise.resolve(value) : new HPromise(executor);
         }
         return promise;
     };
@@ -8741,12 +8741,13 @@ demand_load.search_completion = demand_load.make(function (resolve) {
 });
 
 demand_load.alltag_info = demand_load.make(function (resolve) {
-    if (siteinfo.user.is_pclike)
+    if (siteinfo.user.is_pclike) {
         $.get(hoturl("api/alltags"), null, function (v) {
             resolve(v && v.tags ? v : {tags: []});
         });
-    else
+    } else {
         resolve({tags: []});
+    }
 });
 
 demand_load.tags = demand_load.make(function (resolve) {

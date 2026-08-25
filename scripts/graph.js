@@ -488,14 +488,17 @@ function y_head_room(view) {
     return Math.ceil(h / 2) + (view.args.y.label ? Math.ceil(h) + LABEL_GAP : 0);
 }
 
-/** @param {*} svg
+/** @param {*} parent
  * @param {object} view */
-function draw_axes(svg, view) {
-    const parent = d3.select(svg.node().ownerSVGElement);
-
-    const xaxe = parent.append("g")
-        .attr("class", "hg-axis hg-axis-x")
-        .attr("transform", `translate(${view.left},${view.bottom})`);
+function draw_axes(parent, view) {
+    let xaxe = parent.selectChild(".hg-axis-x");
+    if (xaxe.empty()) {
+        xaxe = parent.append("g")
+            .attr("class", "hg-axis hg-axis-x");
+    } else {
+        xaxe.node().replaceChildren();
+    }
+    xaxe.attr("transform", `translate(${view.left},${view.bottom})`);
     draw_axis(view, xaxe, "x");
     if (view.args.x.label) {
         xaxe.append("text")
@@ -511,9 +514,14 @@ function draw_axes(svg, view) {
             .text(" \u2192");
     }
 
-    const yaxe = parent.append("g")
-        .attr("class", "hg-axis hg-axis-y")
-        .attr("transform", `translate(${view.left},${view.top})`);
+    let yaxe = parent.selectChild(".hg-axis-y");
+    if (yaxe.empty()) {
+        yaxe = parent.append("g")
+            .attr("class", "hg-axis hg-axis-y");
+    } else {
+        yaxe.node().replaceChildren();
+    }
+    yaxe.attr("transform", `translate(${view.left},${view.top})`);
     draw_axis(view, yaxe, "y");
     if (view.args.y.label) {
         const uparrow = d3.create("svg:tspan")
@@ -539,11 +547,11 @@ function draw_axes(svg, view) {
     place_x_axis_label(xaxe, view);
 }
 
-function draw_annotations(svg, view) {
+function draw_annotations(canvas, view) {
     for (const anno of view.args.annotations || []) {
         if (anno.type === "xline") {
             const x = view.x.scale(anno.x);
-            svg.append("line")
+            canvas.append("line")
                 .attr("class", "gxline")
                 .attr("x1", x)
                 .attr("y1", view.y.scale(view.y.scale.domain()[0]))
@@ -603,9 +611,17 @@ function pid_sorter(a, b) {
     return d ? d : (a < b ? -1 : (a == b ? 0 : 1));
 }
 
+const RENDER_PID_BOUND = 40;
+
 function render_pid_p(ps, cc) {
+    if (ps.length > RENDER_PID_BOUND) {
+        return $e("p", null, $e("span", "sb", `${ps.length} matches`));
+    }
     ps.sort(pid_sorter);
     const e = $e("p");
+    if (ps.length > 3) {
+        e.append($e("span", "sb", `${ps.length} matches`), ": ");
+    }
     for (let i = 0; i !== ps.length; ++i) {
         let p = ps[i], cx = cc, rest = "";
         if (typeof p === "object") {
@@ -722,8 +738,8 @@ const default_axis_class = {
     value_format: default_value_format,
     color_classes: () => null,
     value_search: () => null,
-    value_render: function (e, v) {
-        e.append(this.value_format(v));
+    value_render: function (v) {
+        return this.value_format(v);
     },
     discrete: false,
     left_justify: false,
@@ -772,16 +788,21 @@ function ordinal_axis_class(ax) {
             const t = ticks[pos - 1];
             return (t && t.search) || null;
         },
-        value_render: function (e, value, include_numeric) {
+        value_render: function (value, include_numeric) {
             const fvalue = Math.round(value), t = ticks[fvalue - 1];
-            if (Math.abs(value - fvalue) <= 0.05 && t) {
-                e.append(t.color_classes ? $e("span", t.color_classes + " taghh", t.text) : t.text);
-                if (include_numeric
-                    && value !== fvalue
-                    && typeof value === "number") {
-                    e.append(" (" + value.toFixed(2) + ")");
-                }
+            if (Math.abs(value - fvalue) > 0.05 || !t) {
+                return "";
             }
+            const base = t.color_classes
+                ? $e("span", t.color_classes + " taghh", t.text)
+                : t.text;
+            if (include_numeric
+                && value !== fvalue
+                && typeof value === "number") {
+                const post = " (" + value.toFixed(2) + ")";
+                return t.color_classes ? $frag(base, post) : base + post;
+            }
+            return base;
         },
         discrete: true,
         projection: projection,
@@ -818,15 +839,17 @@ function score_axis_class(rf) {
             const k = rf.className(v);
             return k ? "sv " + k : null;
         },
-        value_render: function (e, v, include_numeric) {
-            let vt = value_format(v);
-            const k = rf.className(v);
-            e.append(k ? $e("span", "sv " + k, vt) : vt);
+        value_render: function (v, include_numeric) {
+            const vt = value_format(v),
+                k = rf.className(v),
+                base = k ? $e("span", "sv " + k, vt) : vt;
             if (include_numeric
                 && !rf.default_numeric
                 && v !== Math.round(v * 2) / 2) {
-                e.append(" (" + numeric_format(v) + ")");
+                const post = " (" + numeric_format(v) + ")";
+                return k ? $frag(base, post) : base + post;
             }
+            return base;
         },
     };
 }
@@ -881,13 +904,14 @@ function time_axis_class() {
 // Paper IDs: rendered as "#NNN" with no thousands separator.
 function pid_axis_class() {
     function format(value) {
+        if ((value | 0) != value) {
+            return "";
+        }
         return "#" + Math.round(value);
     }
     return {
         value_format: format,
-        value_render: function (e, value) {
-            e.append(format(value));
-        }
+        value_render: format
     };
 }
 
@@ -949,10 +973,10 @@ function layout_axis(view, side, scale, length, cap, overhang_cap) {
     const values = axis.tick_values(scale),
         texts = values.map(v => axis.value_format(v));
     let widelabel = false,
-        m = measure_texts(view.svg, texts, false);
+        m = measure_texts(view.canvas, texts, false);
     if (d3.max(m.widths) > 100) { // shrink the font before anything else
         widelabel = true;
-        m = measure_texts(view.svg, texts, true);
+        m = measure_texts(view.canvas, texts, true);
     }
     const tilt = xside && !!axis.want_tilt;
 
@@ -982,8 +1006,10 @@ function layout_axis(view, side, scale, length, cap, overhang_cap) {
         if (alternation > 1 && i % alternation !== 1) {
             continue;
         }
-        const t = {value: values[i], pos: scale(values[i]), full: texts[i],
-                text: texts[i], width: m.widths[i]},
+        const t = {
+                value: values[i], pos: scale(values[i]), full: texts[i],
+                text: texts[i], width: m.widths[i]
+            },
             dec = axis.tick_decoration && axis.tick_decoration(values[i]);
         if (dec) {
             t.classes = dec.classes;
@@ -1004,7 +1030,7 @@ function layout_axis(view, side, scale, length, cap, overhang_cap) {
         textcap = Infinity; // upright X labels collide sideways, and thinning
                             // has already spaced them out
     }
-    truncate_ticks(view.svg, out, Math.min(textcap, MAX_LABEL_WIDTH), widelabel);
+    truncate_ticks(view.canvas, out, Math.min(textcap, MAX_LABEL_WIDTH), widelabel);
 
     // How far the labels reach past the end of the axis, once any that
     // exceed the allowance are gone. Only upright X labels do: a tilted one
@@ -1029,8 +1055,10 @@ function layout_axis(view, side, scale, length, cap, overhang_cap) {
         ink = !xside ? Math.ceil(maxw) + Y_TICK_TEXT_OFFSET
             : (tilt ? tilted_label_depth(maxw, m.descent)
                : X_TICK_TEXT_OFFSET + m.height);
-    vaxis.layout = {ticks: out, tilt: tilt, widelabel: widelabel,
-        ascent: m.ascent, ink: ink, overhang: Math.ceil(overhang)};
+    vaxis.layout = {
+        ticks: out, tilt: tilt, widelabel: widelabel,
+        ascent: m.ascent, ink: ink, overhang: Math.ceil(overhang)
+    };
     return ink;
 }
 
@@ -1044,7 +1072,7 @@ function layout_axis(view, side, scale, length, cap, overhang_cap) {
 function make_axis_pair(view, x, y) {
     const args = view.args;
     // both axis labels render in the axis font, so any string measures it
-    view.labelMetrics = measure_texts(view.svg, [args.x.label || args.y.label || "0"]);
+    view.labelMetrics = measure_texts(view.canvas, [args.x.label || args.y.label || "0"]);
     const lm = view.labelMetrics,
         grow = view.expandable === "height",
         base_height = view.box[1],
@@ -1062,8 +1090,10 @@ function make_axis_pair(view, x, y) {
         // limit on its side; an unpinned side gets the policy fraction.
         ycap = (pin_left ?? Math.floor(view.box[1] * MAX_Y_LABEL_WIDTH_FRACTION))
             - args.insetLeft,
-        xroom = grow ? Infinity
-            : (pin_bottom != null ? base_height - pin_bottom
+        xroom = grow
+            ? Infinity
+            : (pin_bottom != null
+               ? base_height - pin_bottom
                : Math.floor(base_height * MAX_X_LABEL_HEIGHT_FRACTION)),
         xcap = xroom - args.insetBottom - label_room,
         top = pin_top ?? args.insetTop + y_head_room(view);
@@ -1124,14 +1154,15 @@ function make_axis_pair(view, x, y) {
     view.plotWidth = right - left;
     view.plotHeight = bottom - top;
     view.fullHeight = grow ? bottom + bmargin : base_height;
-    d3.select(view.svg.node().ownerSVGElement).attr("height", view.fullHeight);
+    view.owner.attr("height", view.fullHeight);
     const tr = `translate(${left},${top})`;
-    view.svg.attr("transform", tr);
-    view.overlay.attr("transform", tr);
+    view.canvas.attr("transform", tr);
+    view.overlay && view.overlay.attr("transform", tr);
     // Marks at the edge of the domain hang over it by their own radius, so
     // the clip keeps that much of the surround: a zoomed edge then looks like
     // an unzoomed one, while marks well outside the window stay hidden.
-    view.clip.attr("x", left - PLOT_CLIP_MARGIN).attr("y", top - PLOT_CLIP_MARGIN)
+    view.clip.attr("x", left - PLOT_CLIP_MARGIN)
+        .attr("y", top - PLOT_CLIP_MARGIN)
         .attr("width", view.plotWidth + 2 * PLOT_CLIP_MARGIN)
         .attr("height", view.plotHeight + 2 * PLOT_CLIP_MARGIN);
 }
@@ -1151,49 +1182,52 @@ function render_position(aa, p, prefix) {
     if (prefix || aa.label) {
         e.append((prefix || "") + (aa.label ? aa.label + " " : ""));
     }
-    aa.value_render(e, p, true);
+    e.append(aa.value_render(p, true));
     return e;
 }
 
 
 // args: {data: [{d: [ARRAY], label: STRING, className: STRING}],
 //        x/y: {label: STRING, tickFormat: STRING}}
-function graph_cdf(element, view) {
-    const svg = this, args = view.args;
-
+function graph_cdf_prepare(args) {
     // massage data
     let series = args.data;
     series = series.filter(function (d) {
         return (d.d ? d.d : d).length > 0;
     });
-    const data = series.map(function (d) {
+    const gdata = series.map(function (d) {
         d = d.d ? d.d : d;
         return d.cdf ? d : seq_to_cdf(d, args.x.flip, !args.y.fraction);
     });
 
     // axis domains
-    let xdomain = data.reduce(function (e, d) {
-        e[0] = Math.min(e[0], d[0][0], d[d.length - 1][0]);
-        e[1] = Math.max(e[1], d[0][0], d[d.length - 1][0]);
-        return e;
-    }, [Infinity, -Infinity]);
-    xdomain = [xdomain[0] - (xdomain[1] - xdomain[0]) / 32,
-               xdomain[1] + (xdomain[1] - xdomain[0]) / 32];
-    const x = make_linear_scale(view.x.extent, xdomain),
-        y = make_linear_scale(view.y.extent, [0, Math.ceil(d3.max(data, function (d) {
-                return d[d.length - 1][1];
-            }) * 10) / 10]);
-    make_axis_pair(view, x, y);
+    const xd = gdata.reduce(function (e, d) {
+            e[0] = Math.min(e[0], d[0][0], d[d.length - 1][0]);
+            e[1] = Math.max(e[1], d[0][0], d[d.length - 1][0]);
+            return e;
+        }, [Infinity, -Infinity]),
+        xdwidth = (xd[1] - xd[0]) / 32,
+        ytop = Math.ceil(d3.max(gdata, d => d[d.length - 1][1]) * 10) / 10;
+
+    args.series = series;
+    args.gdata = gdata;
+    args.x_extent = [xd[0] - xdwidth, xd[1] + xdwidth];
+    args.y_extent = [0, ytop];
+}
+
+function graph_cdf(element, view) {
+    const svg = this, args = view.args, x = view.x, y = view.y,
+        series = args.series, gdata = args.gdata;
 
     // lines
     const line = d3.line().x(function (d) {return x(d[0]);})
         .y(function (d) {return y(d[1]);});
 
     // CDF lines
-    data.forEach(function (d, i) {
+    gdata.forEach(function (d, i) {
         var cl = series[i].className;
-        if (d[d.length - 1][0] != xdomain[args.x.flip ? 0 : 1])
-            d.push([xdomain[args.x.flip ? 0 : 1], d[d.length - 1][1]]);
+        if (d[d.length - 1][0] != args.x_extent[args.x.flip ? 0 : 1])
+            d.push([args.x_extent[args.x.flip ? 0 : 1], d[d.length - 1][1]]);
         var p = svg.append("path").attr("data-index", i)
             .datum(d)
             .attr("class", "gcdf" + (cl ? " " + cl : ""))
@@ -1208,28 +1242,17 @@ function graph_cdf(element, view) {
     const hovers = svg.selectAll(".gcdf-hover0, .gcdf-hover1");
     hovers.style("display", "none");
 
-    draw_axes(svg, view);
-    draw_annotations(svg, view);
-
-    if (args.interactive !== false) {
-        view.overlay.append("rect")
-            .attr("x", -view.left)
-            .attr("width", view.right)
-            .attr("height", view.fullHeight - view.top)
-            .attr("fill", "none")
-            .attr("pointer-events", "all")
-            .on("mouseover", mousemoved)
-            .on("mousemove", mousemoved)
-            .on("mouseout", mouseout)
-            .on("click", mouseclick);
-    }
+    view_listen(view, "mouseover", mousemoved);
+    view_listen(view, "mousemove", mousemoved);
+    view_listen(view, "mouseout", mouseout);
+    view_listen(view, "click", mouseclick);
 
     var hovered_path, hovered_series, hubble, armed;
     function mousemoved(event) {
         var m = d3.pointer(event), p = {distance: 16};
         m.clientX = event.clientX;
         m.clientY = event.clientY;
-        for (var i in data) {
+        for (var i in gdata) {
             if (series[i].label || args.cdf_tooltip_position)
                 p = closestPoint(svg.select("[data-index='" + i + "']").node(), m, p);
         }
@@ -1237,7 +1260,7 @@ function graph_cdf(element, view) {
             if (p.pathNode) {
                 i = p.pathNode.getAttribute("data-index");
                 hovered_series = series[i];
-                hovers.datum(data[i]).attr("d", line).style("display", null);
+                hovers.datum(gdata[i]).attr("d", line).style("display", null);
             } else {
                 hovered_series = null;
                 hovers.style("display", "none");
@@ -1250,9 +1273,8 @@ function graph_cdf(element, view) {
             if (args.cdf_tooltip_position) {
                 const f = $frag();
                 hovered_series.label && f.append(hovered_series.label + ": ");
-                args.x.value_render(f, x.invert(p[0]), true);
-                f.append(", ");
-                args.y.value_render(f, y.invert(p[1]), true);
+                f.append(args.x.value_render(x.invert(p[0]), true), ", ",
+                         args.y.value_render(y.invert(p[1]), true));
                 hubble.replace_content(f);
             } else {
                 hubble.text(hovered_series.label);
@@ -1292,7 +1314,7 @@ function procrastination_seq(ri) {
     return seq;
 }
 
-function procrastination_filter(revdata) {
+function procrastination_transform(revdata) {
     const args = Object.assign({}, revdata,
         {gtype: "cdf", data: [], data_format: "cdf",
          tooltip_class: "graphtip-s"});
@@ -1343,50 +1365,53 @@ function procrastination_filter(revdata) {
 
 /* grouped quadtree */
 // mark bounds of each node
-function grouped_quadtree_mark_bounds(q, rf, ordinalf) {
-    //ordinalf = ordinalf || (function () { var m = 0; return function () { return ++m; }; })();
-    //q.ordinal = ordinalf();
-
-    let b, p, i, n, ps;
-    if (!q.length) {
-        for (p = q.data, ps = []; p; p = p.next) {
-            ps.push(p);
-        }
-        ps.sort(function (a, b) { return d3.ascending(a.n, b.n); });
-        for (i = n = 0; i < ps.length; ++i) {
-            ps[i].r0 = i ? ps[i-1].r : 0;
-            n += ps[i].n;
-            ps[i].r = rf(n);
-        }
-        q.maxr = ps[ps.length - 1].r;
-        p = q.data;
-        b = [p[1] - q.maxr, p[0] + q.maxr, p[1] + q.maxr, p[0] - q.maxr];
-    } else {
-        b = [Infinity, -Infinity, -Infinity, Infinity];
-        for (i = 0; i < 4; ++i)
-            if ((p = q[i])) {
-                grouped_quadtree_mark_bounds(p, rf, ordinalf);
+function grouped_quadtree_mark_bounds(q, rf) {
+    if (q.length) {
+        const b = q.bounds = [Infinity, -Infinity, -Infinity, Infinity];
+        for (let i = 0; i < 4; ++i) {
+            const p = q[i];
+            if (p) {
+                grouped_quadtree_mark_bounds(p, rf);
                 b[0] = Math.min(b[0], p.bounds[0]);
                 b[1] = Math.max(b[1], p.bounds[1]);
                 b[2] = Math.max(b[2], p.bounds[2]);
                 b[3] = Math.min(b[3], p.bounds[3]);
             }
+        }
+        return;
     }
-    q.bounds = b;
+
+    const ps = [];
+    for (let p = q.data; p; p = p.next) {
+        ps.push(p);
+    }
+    ps.sort((a, b) => d3.ascending(a.n, b.n));
+    let maxr = 0;
+    for (let i = 0, n = 0; i < ps.length; ++i) {
+        ps[i].r0 = i ? ps[i-1].r : 0;
+        n += ps[i].n;
+        rf && (ps[i].r = rf(n));
+        maxr = Math.max(maxr, ps[i].r);
+    }
+    q.maxr = maxr;
+    const p = q.data;
+    q.bounds = [p[1] - q.maxr, p[0] + q.maxr, p[1] + q.maxr, p[0] - q.maxr];
 }
 
 function grouped_quadtree_gfind(point, min_distance) {
-    var closest = null;
-    if (min_distance == null)
+    let closest = null;
+    if (min_distance == null) {
         min_distance = Infinity;
+    }
     function visitor(node) {
         if (node.bounds[0] > point[1] + min_distance
             || node.bounds[1] < point[0] - min_distance
             || node.bounds[2] < point[1] - min_distance
-            || node.bounds[3] > point[0] + min_distance)
+            || node.bounds[3] > point[0] + min_distance) {
             return true;
-        if (node.length)
+        } else if (node.length) {
             return;
+        }
         let p = node.data;
         const dx = p[0] - point[0], dy = p[1] - point[1];
         if (Math.abs(dx) - node.maxr < min_distance
@@ -1394,8 +1419,10 @@ function grouped_quadtree_gfind(point, min_distance) {
             const dd = Math.sqrt(dx * dx + dy * dy);
             for (; p; p = p.next) {
                 const d = Math.max(dd - p.r, 0);
-                if (d < min_distance || (d == 0 && p.r < closest.r))
-                    closest = p, min_distance = d;
+                if (d < min_distance || (d == 0 && p.r < closest.r)) {
+                    closest = p;
+                    min_distance = d;
+                }
             }
         }
     }
@@ -1403,34 +1430,37 @@ function grouped_quadtree_gfind(point, min_distance) {
     return closest;
 }
 
-function grouped_quadtree(data, xs, ys, rf, expand) {
+function grouped_quadtree(data, xs, ys, args) {
+    args = args || {};
     function make_extent() {
         const xe = xs.range(), ye = ys.range();
         return [[Math.min(xe[0], xe[1]), Math.min(ye[0], ye[1])],
                 [Math.max(xe[0], xe[1]), Math.max(ye[0], ye[1])]];
     }
-    const q = d3.quadtree().extent(make_extent()), nd = [];
+    const q = d3.quadtree().extent(make_extent()), nd = [],
+        merge = args.merge ?? true,
+        expand = args.expand ?? false,
+        px = args.x ?? (d => xs(d[0])),
+        py = args.y ?? (d => ys(d[1]));
 
     for (const d of data) {
         if (d[0] == null || d[1] == null) {
             continue;
         }
         const vd = {
-            "0": xs(d[0]),
-            "1": ys(d[1]),
-            d0: d[0],
-            d1: d[1],
-            data: [d],
+            "0": px(d),
+            "1": py(d),
+            source: d,
+            more_sources: null,
             cc: d[3],
             next: null,
             head: null,
             n: expand ? d[2].length : 1,
-            i: nd.length,
             r0: null,
-            r: null,
+            r: d.r,
             ur: null
         };
-        let vp = q.find(vd[0], vd[1]);
+        let vp = merge ? q.find(vd[0], vd[1]) : null;
         if (vp) {
             const dx = Math.abs(vp[0] - vd[0]),
                 dy = Math.abs(vp[1] - vd[1]);
@@ -1438,8 +1468,8 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
             // and within 1 of each coordinate
             if (dx > 2
                 || dy > 2
-                || Math.abs(d[0] - vp.d0) >= 1
-                || Math.abs(d[1] - vp.d1) >= 1
+                || Math.abs(d[0] - vp.source[0]) >= 1
+                || Math.abs(d[1] - vp.source[1]) >= 1
                 || dx * dx + dy * dy > 4) {
                 vp = null;
             }
@@ -1448,7 +1478,8 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
             vp = vp.next;
         }
         if (vp && vp.cc == vd.cc) {
-            vp.data.push(d);
+            vp.more_sources = vp.more_sources || [];
+            vp.more_sources.push(d);
             vp.n += vd.n;
         } else {
             if (vp) {
@@ -1461,12 +1492,9 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
         }
     }
 
-    if (rf == null) {
-        rf = Math.sqrt;
-    } else if (typeof rf === "number") {
-        rf = (function (f) {
-            return function (n) { return Math.sqrt(n) * f; };
-        })(rf);
+    let rf = null;
+    if (typeof args.radius_scale === "number") {
+        rf = (scale => (n => scale * Math.sqrt(n)))(args.radius_scale);
     }
     if (q.root()) {
         grouped_quadtree_mark_bounds(q.root(), rf);
@@ -1477,10 +1505,19 @@ function grouped_quadtree(data, xs, ys, rf, expand) {
     return {data: nd, quadtree: q};
 }
 
+/** What one quadtree node stands for: the datum it was made from, plus any
+ * merged into it. Not those of the nodes stacked behind it, which are their
+ * own marks.
+ * @param {object} gqp
+ * @return {list} */
+function gqdata_sources(gqp) {
+    return gqp.more_sources ? [gqp.source, ...gqp.more_sources] : [gqp.source];
+}
+
 function gqdata_ids(gqp, want_cc) {
     const a = [], cch = gqp.cc;
     for (; gqp; gqp = gqp.next) {
-        for (const d of gqp.data) {
+        for (const d of gqdata_sources(gqp)) {
             const ids = id_list(d[2]);
             if (want_cc && cch !== d[3]) {
                 for (const id of ids) {
@@ -1506,8 +1543,66 @@ function ungroup_data(data) {
     return d3.merge(Object.values(data));
 }
 
-function project_axis(data, type, col, projection) {
-    if (type === "cdf") {
+function data_extent(data, data_format, proj) {
+    const es = [];
+    if (data_format === "cdf") {
+        for (const cdfi of data) {
+            es.push(d3.extent(cdfi.d, proj));
+        }
+    } else if (data_format === "style_xyi") {
+        for (const series of Object.values(data)) {
+            es.push(d3.extent(series, proj));
+        }
+    } else {
+        es.push(d3.extent(data, proj));
+    }
+    const e = [Infinity, -Infinity];
+    for (const ee of es) {
+        e[0] = Math.min(e[0], ee[0]);
+        e[1] = Math.max(e[1], ee[1]);
+    }
+    return e;
+}
+
+function data_collect_pids(s, data, data_format) {
+    if (data_format === "cdf") {
+        for (const cdfi of data) {
+            data_collect_pids(s, cdfi.d, "xyis");
+        }
+    } else if (data_format === "style_xyi") {
+        for (const series of Object.values(data)) {
+            data_collect_pids(s, series, "xyis");
+        }
+    } else {
+        for (const d of data) {
+            for (const id of id_list(d[2])) {
+                s.add(id2pid(id));
+            }
+        }
+    }
+}
+
+function args_load_titles(args, resolve) {
+    const tm = new Map;
+    if (args.id_format !== "pid" && args.id_format !== "rid") {
+        resolve(tm);
+        return;
+    }
+    const s = new Set;
+    data_collect_pids(s, args.data, args.data_format);
+    const a = [...s];
+    a.sort();
+    api_get(hoturl("api/search", {q: "pidcode:" + hotcrp.pidcode(a), f: "title", format: "json", forceShow: 1}),
+        function (d) {
+            for (const pd of d.papers || []) {
+                tm.set(pd.pid, pd.title);
+            }
+            resolve(tm);
+        });
+}
+
+function project_axis(data, data_format, col, projection) {
+    if (data_format === "cdf") {
         for (const s of data) {
             const dv = s.d;
             let n = dv.length;
@@ -1523,7 +1618,7 @@ function project_axis(data, type, col, projection) {
                 }
             }
         }
-    } else if (type === "style_xyi") {
+    } else if (data_format === "style_xyi") {
         for (const g of Object.values(data)) {
             project_axis(g, "xyi", col, projection);
         }
@@ -1576,8 +1671,9 @@ function scatter_key(d) {
 
 function scatter_create(svg, gqdata, klass) {
     let sel = svg.selectAll(".gdot");
-    if (klass)
+    if (klass) {
         sel = sel.filter("." + klass);
+    }
     sel = sel.data(gqdata, scatter_key);
     sel.exit().remove();
     const pathklass = "gdot" + (klass ? " " + klass : "");
@@ -1647,30 +1743,48 @@ function scatter_union(p) {
     return p;
 }
 
+/** The part of `node` that lies inside the plot, in document coordinates, for
+ * a bubble to anchor to. A mark is drawn wherever its data falls, which in a
+ * zoomed window can be far outside the plot -- a box whose quartiles straddle
+ * the window reaches off the screen -- and the clip that hides the rest does
+ * not move the geometry. Anchoring to the whole mark would put the bubble
+ * where the mark is, not where the reader can see it.
+ * @param {object} view
+ * @param {Element} node
+ * @return {object} */
+function visible_geometry(view, node) {
+    const g = $(node).geometry(true),
+        r = view.owner.node().getBoundingClientRect(),
+        dx = r.left + window.scrollX, dy = r.top + window.scrollY;
+    return {
+        left: Math.max(g.left, dx + view.left),
+        right: Math.min(g.right, dx + view.right),
+        top: Math.max(g.top, dy + view.top),
+        bottom: Math.min(g.bottom, dy + view.bottom)
+    };
+}
+
 function make_hover_interactor(svg, hovers, identity) {
-    let data = null, over = null, armed = null, owner = svg.node().closest("svg");
+    let data = null, over = null, armed = null, delay = null,
+        owner = svg.node().closest("svg");
+    function undelay() {
+        if (delay) {
+            clearTimeout(delay);
+            delay = null;
+        }
+    }
     function mouseout() {
         hovers.style("display", "none");
         if (self.bubble) {
             self.bubble.remove();
         }
         self.data = self.bubble = data = over = armed = null;
+        undelay();
         owner.style.cursor = "";
     }
     const self = {
         data: null,
         bubble: null,
-        /** Whether a click should only show what a hover would. Where a tap
-         * stands in for a hover it has to serve as both, so the tap that
-         * raises a mark's bubble does not also follow it.
-         * @return {boolean} */
-        tap_defers: function () {
-            if (!data || !no_hover() || armed === data) {
-                return false;
-            }
-            armed = data;
-            return true;
-        },
         move: function (d) {
             if (!d && data) {
                 mouseout();
@@ -1682,60 +1796,74 @@ function make_hover_interactor(svg, hovers, identity) {
             self.data = data = d;
             self.bubble = self.bubble || make_bubble(bubble_attr());
             owner.style.cursor = "pointer";
+            undelay();
             return true;
         },
         mouseout: mouseout,
         mouseout_soon: function () {
-            if (!data) {
+            if (!data || delay) {
                 return;
             }
             const kill = data;
             over = null;
-            setTimeout(function () {
-                if (data === kill && !over)
+            delay = setTimeout(function () {
+                delay = null;
+                if (data === kill && !over) {
                     mouseout();
+                }
             }, 10);
+        },
+        /** Whether a click should only show what a hover would. Where a tap
+         * stands in for a hover it has to serve as both, so the tap that
+         * raises a mark's bubble does not also follow it.
+         * @return {boolean} */
+        tap_defers: function () {
+            if (!data || !no_hover() || armed === data) {
+                return false;
+            }
+            armed = data;
+            return true;
         }
     };
     return self;
 }
 
+/** Bind `f` to the overlay for the life of this render. The overlay outlives
+ * the render, but these handlers hold that render's marks, so the next one
+ * takes them down with `view.signal`.
+ * @param {object} view
+ * @param {string} eventType
+ * @param {function(Event)} f
+ * @param {boolean|Object=} options */
+function view_listen(view, eventType, f, options) {
+    if (view.overlay) {
+        options = Object.assign({},
+            typeof options === "object" ? options : {capture: !!options},
+            {signal: view.signal});
+        view.overlay.node().addEventListener(eventType, f, options);
+    }
+}
+
 function graph_scatter(element, view) {
-    const svg = this, args = view.args;
-    let data = ungroup_data(args.data);
-    const x = make_linear_scale(view.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
-        y = make_linear_scale(view.y.extent, expand_extent(d3.extent(data, proj1), args.y));
-    make_axis_pair(view, x, y);
+    const svg = this, args = view.args, x = view.x, y = view.y;
 
     element.addEventListener("hotgraphhighlight", ev => highlight(ev.detail),
         {signal: view.signal});
 
-    const gq = grouped_quadtree(data, x, y, 4, args.data_format === "xyis");
-    data = null;
+    const gq = grouped_quadtree(ungroup_data(args.data), x, y, {radius_scale: 4, expand: args.data_format === "xyis"});
     scatter_create(svg, gq.data);
 
     svg.append("path").attr("class", "gdot gdot-hover");
     const hovers = svg.selectAll(".gdot-hover").style("display", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    draw_axes(svg, view);
-    draw_annotations(svg, view);
-
-    if (args.interactive !== false) {
-        view.overlay.append("rect")
-            .attr("x", -view.left)
-            .attr("width", view.right)
-            .attr("height", view.fullHeight - view.top)
-            .attr("fill", "none")
-            .attr("pointer-events", "all")
-            .on("mouseover", mousemoved)
-            .on("mousemove", mousemoved)
-            .on("mouseout", hoverer.mouseout_soon)
-            .on("click", mouseclick);
-    }
+    view_listen(view, "mouseover", mousemoved);
+    view_listen(view, "mousemove", mousemoved);
+    view_listen(view, "mouseout", hoverer.mouseout_soon);
+    view_listen(view, "click", mouseclick);
 
     function make_tooltip(p) {
-        const pinstance = p.data[0];
+        const pinstance = p.source;
         return [
             $e("p", null, render_position(args.x, pinstance[0]), ", ", render_position(args.y, pinstance[1])),
             render_pid_p(gqdata_ids(p, true), p.cc)
@@ -1776,7 +1904,7 @@ function graph_scatter(element, view) {
         let myd = [];
         if (hl.ids.length) {
             myd = gq.data.filter(function (pd) {
-                return pd.data.some(d => id_in_pids(d[2], hl.ids));
+                return gqdata_sources(pd).some(d => id_in_pids(d[2], hl.ids));
             });
         }
         scatter_highlight(svg, myd);
@@ -1784,6 +1912,8 @@ function graph_scatter(element, view) {
 }
 
 const DOT_RADIUS = 5;
+const DOT_HOVER_SLOP = 4;
+const DOT_LABEL_MAX = 6;
 
 function dot_highlight(svg, data, klass) {
     highlight_update(svg, data, d => d.id, klass)
@@ -1791,8 +1921,6 @@ function dot_highlight(svg, data, klass) {
         .attr("cy", projy)
         .attr("r", d => d.r - 0.5);
 }
-
-const DOT_LABEL_MAX = 6;
 
 function dot_label_class(d) {
     // longer labels get their own class, so CSS can condense them further;
@@ -1824,46 +1952,26 @@ function assign_dot_labels(svg, data) {
     }
 }
 
-function data_pidcode(data) {
-    const p = [];
-    for (const d of data) {
-        p.push(...id_list(d[2]));
-    }
-    return hotcrp.pidcode(p);
-}
-
-function load_titles(titles, pidcode, success) {
-    api_get(hoturl("api/search", {q: "pidcode:" + pidcode, f: "title", format: "json", forceShow: 1}),
-        function (d) {
-            for (const pd of d.papers || []) {
-                titles[pd.pid] = pd.title;
-            }
-            success();
-        });
-}
-
 function graph_dot(element, view) {
-    const svg = this, args = view.args;
-    let data = ungroup_data(args.data);
-    const pidcode = data_pidcode(data),
-        x = make_linear_scale(view.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
-        y = make_linear_scale(view.y.extent, expand_extent(d3.extent(data, proj1), args.y));
-    make_axis_pair(view, x, y);
-    data = data.map(d => {
+    const svg = this, args = view.args, x = view.x, y = view.y;
+    let gdata = ungroup_data(args.data);
+    gdata = gdata.map(d => {
         const xv = x(d[0]), yv = y(d[1]);
         return {"0": d[0], "1": d[1], x: xv, x0: xv, y: yv, y0: yv, id: d[2], cc: d[3], r: DOT_RADIUS};
     });
     const labeled = args.gtype === "ldot";
     if (labeled) {
-        assign_dot_labels(svg, data);
+        assign_dot_labels(svg, gdata);
     }
 
-    const sim = d3.forceSimulation(data)
+    const sim = d3.forceSimulation(gdata)
         .force("collide", d3.forceCollide(d => d.r + 1))
         .force("x", d3.forceX(d => d.x0).strength(0.05))
         .force("y", d3.forceY(d => d.y0).strength(0.05))
         .stop();
     sim.tick(Math.ceil(Math.log(sim.alphaMin()) / Math.log(1 - sim.alphaDecay())));
+
+    const gq = grouped_quadtree(gdata, x, y, {merge: false, x: projx, y: projy});
 
     element.addEventListener("hotgraphhighlight", ev => highlight(ev.detail),
         {signal: view.signal});
@@ -1874,17 +1982,18 @@ function graph_dot(element, view) {
             .style("display", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
-    draw_axes(svg, view);
-    draw_annotations(svg, view);
+    view_listen(view, "mouseover", mousemoved);
+    view_listen(view, "mousemove", mousemoved);
+    view_listen(view, "mouseout", hoverer.mouseout_soon);
+    view_listen(view, "click", mouseclick);
 
     // A labeled dot is two elements sharing one position, so group them and
     // place the group; a plain dot is just the circle and needs no wrapper.
     const enter = svg.selectAll(labeled ? ".gdot-g" : ".gdot:not(.gdot-hover)")
-        .data(data)
+        .data(gdata)
         .enter();
-    let target;
     if (labeled) {
-        target = enter.append("g")
+        const target = enter.append("g")
             .attr("class", d => "gdot-g" + (d.cc ? " " + d.cc : ""))
             .attr("transform", d => "translate(" + projx(d) + "," + projy(d) + ")");
         target.append("circle")
@@ -1896,20 +2005,13 @@ function graph_dot(element, view) {
             .attr("dy", "0.35em")
             .text(d => d.label);
     } else {
-        target = enter.append("circle")
+        enter.append("circle")
             .attr("cx", projx)
             .attr("cy", projy)
             .attr("r", d => d.r)
             .attr("class", d => "gdot" + (d.cc ? " " + d.cc : ""))
             .style("fill", d => ensure_pattern(d.cc, "gdot"));
     }
-    if (args.interactive !== false) {
-        target.on("mouseover", mouseover)
-            .on("mouseout", hoverer.mouseout_soon)
-            .on("click", mouseclick);
-    }
-
-    let titles = null;
 
     function make_tooltip(p) {
         const a = [
@@ -1917,9 +2019,11 @@ function graph_dot(element, view) {
             render_pid_p([p], p.cc)
         ];
         // `titles` is keyed by paper, `p.id` may name a review on one
-        const title = titles && titles[id2pid(p.id)];
-        if (title) {
-            a[1].append(" " + title);
+        if (args.titles().ready()) {
+            args.titles().then(tm => {
+                const title = tm.get(id2pid(p.id));
+                title && a[1].append(" " + title);
+            });
         }
         return a;
     }
@@ -1932,7 +2036,9 @@ function graph_dot(element, view) {
         }
     }
 
-    function mouseover(event, p) {
+    function mousemoved(event) {
+        const m = d3.pointer(event), near = gq.quadtree.gfind(m, DOT_HOVER_SLOP),
+            p = near ? near.source : null;
         if (!hoverer.move(p)) {
             return;
         }
@@ -1942,9 +2048,8 @@ function graph_dot(element, view) {
             .attr("r", d => d.r)
             .style("display", null);
         show_bubble();
-        if (titles === null) {
-            titles = [];
-            load_titles(titles, pidcode, show_bubble);
+        if (!args.titles().ready()) {
+            args.titles().then(show_bubble);
         }
     }
 
@@ -1952,7 +2057,7 @@ function graph_dot(element, view) {
         if (hoverer.tap_defers()) {
             return;
         }
-        const p = d3.select(this).datum();
+        const p = hoverer.data;
         clicker(p ? p.id : null, event);
     }
 
@@ -1967,7 +2072,7 @@ function graph_dot(element, view) {
         hoverer.mouseout();
         let myd = [];
         if (hl.ids.length) {
-            myd = data.filter(d => id_in_pids(d.id, hl.ids));
+            myd = gdata.filter(d => id_in_pids(d.id, hl.ids));
         }
         dot_highlight(svg, myd);
     }
@@ -2042,33 +2147,39 @@ function data_to_barchart(data, yaxis) {
     return ndata;
 }
 
-function graph_bars(element, view) {
-    const svg = this, args = view.args,
-        bdata = data_to_barchart(args.data, args.y);
-
-    const ystart = args.y.scale_class === "review_field" ? 0.75 : 0,
+function graph_bars_prepare(args) {
+    const bdata = data_to_barchart(args.data, args.y),
+        ystart = args.y.scale_class === "review_field" ? 0.75 : 0,
         xe = d3.extent(bdata, proj0),
-        ge = d3.extent(bdata, function (d) { return d.sx || 0; }),
-        ye = [d3.min(bdata, function (d) { return Math.max(d.yoff, ystart); }),
-              d3.max(bdata, function (d) { return d.yoff + d[1]; })],
-        deltae = d3.extent(bdata, function (d, i) {
+        ge = d3.extent(bdata, d => d.sx || 0),
+        ye = [d3.min(bdata, d => Math.max(d.yoff, ystart)),
+              d3.max(bdata, d => d.yoff + d[1])],
+        deltae = d3.extent(bdata, (d, i) => {
             const delta = i ? d[0] - bdata[i-1][0] : 0;
             return delta || Infinity;
-        }),
-        x = make_linear_scale(view.x.extent, expand_extent(xe, args.x)),
-        y = make_linear_scale(view.y.extent, ye);
-    make_axis_pair(view, x, y);
+        });
+    args.bdata = bdata;
+    args.x_extent = expand_extent(xe, args.x);
+    args.y_extent = ye;
+    args.group_extent = ge[1];
+    args.delta_extent = deltae[0];
+}
+
+function graph_bars(element, view) {
+    const svg = this, args = view.args, bdata = args.bdata,
+        ystart = args.y.scale_class === "review_field" ? 0.75 : 0,
+        x = view.x, y = view.y;
 
     const dpr = window.devicePixelRatio || 1;
     let barwidth = view.plotWidth / 20;
-    if (deltae[0] != Infinity) {
-        barwidth = Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])));
+    if (args.delta_extent != Infinity) {
+        barwidth = Math.min(barwidth, Math.abs(x(args.x_extent[0] + args.delta_extent) - x(args.x_extent[0])));
     }
     barwidth = Math.max(5, barwidth);
-    if (ge[1]) {
-        barwidth = Math.floor((barwidth - 3) * dpr) / (dpr * (ge[1] + 1));
+    if (args.group_extent) {
+        barwidth = Math.floor((barwidth - 3) * dpr) / (dpr * (args.group_extent + 1));
     }
-    const gdelta = -(ge[1] + 1) * barwidth / 2;
+    const gdelta = -(args.group_extent + 1) * barwidth / 2;
 
     function place(sel, close) {
         close = close || "";
@@ -2088,8 +2199,6 @@ function graph_bars(element, view) {
             })
             .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
-    draw_axes(svg, view);
-
     svg.append("path").attr("class", "gbar gbar-hover0");
     svg.append("path").attr("class", "gbar gbar-hover1");
     const hovers = svg.selectAll(".gbar-hover0, .gbar-hover1")
@@ -2099,11 +2208,44 @@ function graph_bars(element, view) {
             return d1.i0 === d2.i0;
         });
 
-    if (args.interactive !== false) {
-        svg.selectAll(".gbar")
-            .on("mouseover", mouseover)
-            .on("mouseout", hoverer.mouseout_soon)
-            .on("click", mouseclick);
+    // A bar is a rectangle, so hit testing indexes them by left edge -- which
+    // orders them by right edge too, the width being common -- finds the
+    // column by bisection, and picks the segment stacked there by its span.
+    const brs = bdata.map(function (d) {
+        const x0 = x(d[0]) + gdelta + (d.sx ? barwidth * d.sx : 0),
+            ya = y(Math.max(d.yoff, ystart)), yb = y(d.yoff + d[1]);
+        return {d: d, x0: x0, x1: x0 + barwidth,
+            y0: Math.min(ya, yb), y1: Math.max(ya, yb)};
+    }).sort((a, b) => a.x0 - b.x0);
+
+    /** The bar `m` points at, or null.
+     * @param {[number,number]} m
+     * @return {?object} */
+    function bar_at(m) {
+        let lo = 0, hi = brs.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            brs[mid].x1 + DOT_HOVER_SLOP < m[0] ? lo = mid + 1 : hi = mid;
+        }
+        for (let i = lo;
+             i !== brs.length && brs[i].x0 - DOT_HOVER_SLOP <= m[0];
+             ++i) {
+            if (m[1] >= brs[i].y0 - DOT_HOVER_SLOP
+                && m[1] <= brs[i].y1 + DOT_HOVER_SLOP) {
+                return brs[i].d;
+            }
+        }
+        return null;
+    }
+
+    view_listen(view, "mouseover", mousemoved);
+    view_listen(view, "mousemove", mousemoved);
+    view_listen(view, "mouseout", hoverer.mouseout_soon);
+    view_listen(view, "click", mouseclick);
+
+    function mousemoved(event) {
+        const b = bar_at(d3.pointer(event));
+        b ? hover_bar(b) : hoverer.mouseout_soon();
     }
 
     function make_tooltip(p) {
@@ -2141,8 +2283,7 @@ function graph_bars(element, view) {
         return hd;
     }
 
-    function mouseover() {
-        const p = d3.select(this).data()[0];
+    function hover_bar(p) {
         if (!hoverer.move(p)) {
             return;
         }
@@ -2150,7 +2291,7 @@ function graph_bars(element, view) {
         place(hovers.datum(hoverer.data), "Z").style("display", null);
         hoverer.bubble.replace_content(...make_tooltip(hoverer.data))
             .anchor("h")
-            .near(hovers.node());
+            .near(visible_geometry(view, hovers.node()));
     }
 
     function mouseclick(event) {
@@ -2219,32 +2360,34 @@ function data_to_boxplot(data, septags) {
     return data;
 }
 
-function graph_boxplot(element, view) {
-    const args = view.args,
-        data = data_to_boxplot(args.data, !!args.y.fraction, true),
-        svg = this;
-
-    const xe = d3.extent(data, proj0),
-        ye = [d3.min(data, function (d) { return d.ymin; }),
-              d3.max(data, function (d) { return d.ymax; })],
-        deltae = d3.extent(data, function (d, i) {
-            var delta = i ? d[0] - data[i-1][0] : 0;
+function graph_boxplot_prepare(args) {
+    const bdata = data_to_boxplot(args.data, !!args.y.fraction, true),
+        xe = d3.extent(bdata, proj0),
+        ye = [d3.min(bdata, d => d.ymin), d3.max(bdata, d => d.ymax)],
+        deltae = d3.extent(bdata, (d, i) => {
+            const delta = i ? d[0] - bdata[i-1][0] : 0;
             return delta || Infinity;
-        }),
-        x = make_linear_scale(view.x.extent, expand_extent(xe, args.x)),
-        y = make_linear_scale(view.y.extent, expand_extent(ye, args.y));
-    make_axis_pair(view, x, y);
+        });
+    args.bdata = bdata;
+    args.x_extent = expand_extent(xe, args.x);
+    args.y_extent = expand_extent(ye, args.y);
+    args.delta_extent = deltae[0];
+}
+
+function graph_boxplot(element, view) {
+    const args = view.args, svg = this, bdata = args.bdata,
+        x = view.x, y = view.y;
 
     let barwidth = view.plotWidth / 80;
-    if (deltae[0] != Infinity) {
-        barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 6);
+    if (args.delta_extent != Infinity) {
+        barwidth = Math.max(Math.min(barwidth, Math.abs(x(args.x_extent[0] + args.delta_extent) - x(args.x_extent[0])) * 0.5), 6);
     }
 
     function place_whisker(l, sel) {
-        sel.attr("x1", function (d) { return x(d[0]); })
-            .attr("x2", function (d) { return x(d[0]); })
-            .attr("y1", function (d) { return y(d.qnt[l]); })
-            .attr("y2", function (d) { return y(d.qnt[l + 1]); });
+        sel.attr("x1", d => x(d[0]))
+            .attr("x2", d => x(d[0]))
+            .attr("y1", d => y(d.qnt[l]))
+            .attr("y2", d => y(d.qnt[l + 1]));
     }
 
     function place_box(sel) {
@@ -2268,15 +2411,15 @@ function graph_boxplot(element, view) {
     }
 
     function place_median(sel) {
-        sel.attr("x1", function (d) { return x(d[0]) - barwidth / 2; })
-            .attr("x2", function (d) { return x(d[0]) + barwidth / 2; })
-            .attr("y1", function (d) { return y(d.qnt[2]); })
-            .attr("y2", function (d) { return y(d.qnt[2]); });
+        sel.attr("x1", d => x(d[0]) - barwidth / 2)
+            .attr("x2", d => x(d[0]) + barwidth / 2)
+            .attr("y1", d => y(d.qnt[2]))
+            .attr("y2", d => y(d.qnt[2]));
     }
 
     function place_outlier(sel) {
         sel.attr("cx", proj0).attr("cy", proj1)
-            .attr("r", function (d) { return d.r; });
+            .attr("r", d => d.r);
     }
 
     function place_mean(sel) {
@@ -2284,7 +2427,7 @@ function graph_boxplot(element, view) {
             .attr("d", "M2.2,0L0,2.2L-2.2,0L0,-2.2Z");
     }
 
-    const nonoutliers = data.filter(function (d) { return d.ys.length > 1; });
+    const nonoutliers = bdata.filter(function (d) { return d.ys.length > 1; });
 
     place_whisker(0, svg.selectAll(".gbox.whiskerl").data(nonoutliers)
             .enter().append("line")
@@ -2307,7 +2450,7 @@ function graph_boxplot(element, view) {
             .enter().append("path")
             .attr("class", function (d) { return "gbox mean " + d.cc; }));
 
-    let outliers = d3.merge(data.map(function (d) {
+    let outliers = d3.merge(bdata.map(function (d) {
         const nd = [], len = d.ys.length;
         for (let i = 0; i < len; ++i) {
             if (d.ys[i] < d.qnt[0] || d.ys[i] > d.qnt[4] || len <= 1)
@@ -2315,15 +2458,13 @@ function graph_boxplot(element, view) {
         }
         return nd;
     }));
-    outliers = grouped_quadtree(outliers, x, y, 2);
+    outliers = grouped_quadtree(outliers, x, y, {radius_scale: 2});
     place_outlier(svg.selectAll(".gbox.outlier")
             .data(outliers.data)
             .enter()
               .append("circle")
               .attr("class", function (d) { return "gbox outlier " + d.cc; })
               .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
-
-    draw_axes(svg, view);
 
     svg.append("line").attr("class", "gbox whiskerl gbox-hover");
     svg.append("line").attr("class", "gbox whiskerh gbox-hover");
@@ -2339,37 +2480,74 @@ function graph_boxplot(element, view) {
     element.addEventListener("hotgraphhighlight", ev => highlight(ev.detail),
         {signal: view.signal});
 
-    if (args.interactive !== false) {
-        element.addEventListener("mouseout", hoverer.mouseout_soon,
-            {signal: view.signal});
+    // Boxes are one to an x, so their columns are indexed by pixel position
+    // and searched by bisection. `bxs` is sorted because a flipped axis draws
+    // them right to left.
+    const bxs = nonoutliers.map((d, i) => [x(d[0]), i])
+        .sort((a, b) => a[0] - b[0]);
+    // highlight marks, when there are any; they are drawn over everything
+    let hlq = null;
 
-        element.addEventListener("mouseover", function (event) {
-            if (hasClass(event.target, "outlier")
-                || hasClass(event.target, "gscatter"))
-                mouseover_outlier.call(event.target);
-            else if (hasClass(event.target, "gbox"))
-                mouseover.call(event.target);
-        }, {signal: view.signal});
-
-        element.addEventListener("click", function (event) {
-            if (hasClass(event.target, "gbox")
-                || hasClass(event.target, "gscatter"))
-                mouseclick.call(event.target, event);
-        }, {signal: view.signal});
+    /** The box `m` points at, or null. A column is as wide as its box and as
+     * tall as its whiskers reach, so the thin marks -- whiskers, median, mean
+     * -- are as easy to point at as the box itself.
+     * @param {[number,number]} m
+     * @return {?object} */
+    function box_at(m) {
+        let lo = 0, hi = bxs.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            bxs[mid][0] < m[0] ? lo = mid + 1 : hi = mid;
+        }
+        for (const i of [lo - 1, lo]) {
+            if (i < 0 || i >= bxs.length
+                || Math.abs(bxs[i][0] - m[0]) > barwidth / 2 + DOT_HOVER_SLOP) {
+                continue;
+            }
+            const d = nonoutliers[bxs[i][1]],
+                y0 = y(d.qnt[0]), y4 = y(d.qnt[4]);
+            if (m[1] >= Math.min(y0, y4) - DOT_HOVER_SLOP
+                && m[1] <= Math.max(y0, y4) + DOT_HOVER_SLOP) {
+                return d;
+            }
+        }
+        return null;
     }
 
+    function mousemoved(event) {
+        const m = d3.pointer(event),
+            p = (hlq && hlq.quadtree.gfind(m, DOT_HOVER_SLOP))
+                || outliers.quadtree.gfind(m, DOT_HOVER_SLOP),
+            b = p ? null : box_at(m);
+        if (p) {
+            hover_point(p);
+        } else if (b) {
+            hover_box(b);
+        } else {
+            hoverer.mouseout_soon();
+        }
+    }
+
+    view_listen(view, "mouseover", mousemoved);
+    view_listen(view, "mousemove", mousemoved);
+    view_listen(view, "mouseout", hoverer.mouseout_soon);
+    view_listen(view, "click", mouseclick);
+
     function make_tooltip(p) {
-        const posd = p.qnt ? p : p.data[0],
+        const posd = p.qnt ? p : p.source,
             pe = $e("p", null, render_position(args.x, posd[0]), ", ");
         let ids;
         if (p.qnt) {
             pe.append(render_position(args.y, p.qnt[2], "median "));
-            ids = [];
-            for (let i = 0; i !== p.ys.length; ++i) {
-                const rest = $frag(" (");
-                args.y.value_render(rest, p.ys[i]);
-                rest.append(")");
-                ids.push({id: p.ids[i], rest: rest});
+            if (p.ys.length > RENDER_PID_BOUND) {
+                ids = p.ids;
+            } else {
+                ids = [];
+                for (let i = 0; i !== p.ys.length; ++i) {
+                    const base = args.y.value_render(p.ys[i]),
+                        rest = typeof base === "string" ? ` (${base})` : $frag(" (", base, ")");
+                    ids.push({id: p.ids[i], rest: rest});
+                }
             }
         } else {
             pe.append(render_position(args.y, posd[1]));
@@ -2378,8 +2556,7 @@ function graph_boxplot(element, view) {
         return [pe, render_pid_p(ids, p.cc)];
     }
 
-    function mouseover() {
-        const p = d3.select(this).data()[0];
+    function hover_box(p) {
         if (!hoverer.move(p)) {
             return;
         }
@@ -2392,11 +2569,10 @@ function graph_boxplot(element, view) {
         place_mean(hovers.filter(".mean"));
         hoverer.bubble.replace_content(...make_tooltip(p))
             .anchor("h")
-            .near(hovers.filter(".box").node());
+            .near(visible_geometry(view, hovers.filter(".box").node()));
     }
 
-    function mouseover_outlier() {
-        const po = d3.select(this).data()[0];
+    function hover_point(po) {
         if (!hoverer.move(po)) {
             return;
         }
@@ -2404,7 +2580,7 @@ function graph_boxplot(element, view) {
         place_outlier(hovers.filter(".outlier").style("display", null).datum(po));
         hoverer.bubble.replace_content(...make_tooltip(po))
             .anchor("h")
-            .near(hovers.filter(".outlier").node());
+            .near(visible_geometry(view, hovers.filter(".outlier").node()));
     }
 
     function mouseclick(event) {
@@ -2436,7 +2612,7 @@ function graph_boxplot(element, view) {
         // already. Marks group at the outliers' radius, since they are drawn
         // in the same language.
         const pts = [];
-        for (const d of data) {
+        for (const d of bdata) {
             for (let i = 0; i !== d.ys.length; ++i) {
                 if (id_in_pids(d.ids[i], hl.ids)) {
                     pts.push([d[0], d.ys[i], d.ids[i], d.cc]);
@@ -2444,12 +2620,13 @@ function graph_boxplot(element, view) {
             }
         }
         if (!pts.length) {
+            hlq = null;
             svg.selectAll(".gscatter").remove();
             return;
         }
-        const gq = grouped_quadtree(pts, x, y, 2);
-        scatter_create(svg, gq.data, "gscatter");
-        scatter_highlight(svg, gq.data, "gscatter");
+        hlq = grouped_quadtree(pts, x, y, {radius_scale: 3});
+        scatter_create(svg, hlq.data, "gscatter");
+        scatter_highlight(svg, hlq.data, "gscatter");
     }
 }
 
@@ -2487,34 +2664,61 @@ handle_ui.on("js-hotgraph-highlight", function () {
     }
 });
 
-/** A graph that could not be computed
- * @param {Element} element
- * @param {object} args */
-function graph_blank(element, view) {
-    const svg = this;
-    make_axis_pair(view, d3.scaleLinear().domain([0, 1]),
-        d3.scaleLinear().domain([0, 1]));
-    draw_axes(svg, view);
-}
-
 function graph_blank_prepare(args) {
     args.x.tick_values = args.y.tick_values = () => [];
+    args.x_extent = args.y_extent = [0, 1];
+}
+
+/** A graph that could not be computed */
+function graph_blank() {
 }
 
 // `zoom` names the axes a graph type zooms and pans; both unless it says
 // otherwise. A bar chart or a CDF measures its Y axis off its X axis -- counts
 // and fractions of what the X axis shows -- so only X is the reader's to move.
 const graphers = {
-    procrastination: {prepare_function: procrastination_filter},
-    scatter: {function: graph_scatter},
-    dot: {function: graph_dot},
-    ldot: {function: graph_dot},
-    cdf: {function: graph_cdf, zoom: "x"},
-    cumfreq: {function: graph_cdf, zoom: "x"},
-    bar: {function: graph_bars, zoom: "x"},
-    fraction: {function: graph_bars, zoom: "x"},
-    box: {function: graph_boxplot},
-    blank: {prepare_function: graph_blank_prepare, function: graph_blank, blank: true}
+    procrastination: {
+        transform_function: procrastination_transform
+    },
+    scatter: {
+        function: graph_scatter
+    },
+    dot: {
+        function: graph_dot
+    },
+    ldot: {
+        function: graph_dot
+    },
+    cdf: {
+        prepare_function: graph_cdf_prepare,
+        function: graph_cdf,
+        zoom: "x"
+    },
+    cdffreq: {
+        prepare_function: graph_cdf_prepare,
+        function: graph_cdf,
+        zoom: "x"
+    },
+    bar: {
+        prepare_function: graph_bars_prepare,
+        function: graph_bars,
+        zoom: "x"
+    },
+    fraction: {
+        prepare_function: graph_bars_prepare,
+        function: graph_bars,
+        zoom: "x"
+    },
+    box: {
+        prepare_function: graph_boxplot_prepare,
+        function: graph_boxplot,
+        zoom: "x"
+    },
+    blank: {
+        prepare_function: graph_blank_prepare,
+        function: graph_blank,
+        blank: true
+    }
 };
 
 /** `expandable` names the dimensions of the graph box that may grow to fit
@@ -2530,8 +2734,9 @@ function normalize_expandable(e) {
  * `draw_axes` places it against the bottom of the box, which the deepest
  * label anywhere on the axis sets; tilted labels near the right-anchored
  * label are usually shorter, leaving a gap. With nothing beside it the label
- * follows the deepest label on the axis. Only ever moves up, so it cannot
- * leave the box.
+ * follows the deepest label on the axis. It never rises above where horizontal
+ * tick labels would have put it, and only ever moves up, so it cannot leave
+ * the box.
  * @param {*} xaxe
  * @param {object} view */
 function place_x_axis_label(xaxe, view) {
@@ -2540,8 +2745,13 @@ function place_x_axis_label(xaxe, view) {
         return;
     }
     const lr = lab.node().getBoundingClientRect(),
-        axr = xaxe.select("path").node().getBoundingClientRect();
-    let beside = null, deepest = axr.bottom + TICK_SIZE;
+        axr = xaxe.select("path").node().getBoundingClientRect(),
+        // A tilted neighbor can be short enough to end near the axis. The
+        // label still keeps the room a horizontal tick label would have taken:
+        // its ink starts `X_TICK_TEXT_OFFSET` below the line and runs a line
+        // deep, and `LABEL_GAP` below that is where any neighbor puts it.
+        floor = axr.bottom + X_TICK_TEXT_OFFSET + view.labelMetrics.height;
+    let beside = null, deepest = floor;
     xaxe.selectAll("g.tick").each(function () {
         const t = this.style.display === "none" ? null : this.querySelector("text");
         if (!t) {
@@ -2555,7 +2765,7 @@ function place_x_axis_label(xaxe, view) {
             }
         }
     });
-    const shift = Math.min(0, (beside ?? deepest) + LABEL_GAP - lr.top);
+    const shift = Math.min(0, Math.max(beside ?? deepest, floor) + LABEL_GAP - lr.top);
     if (shift < 0) {
         lab.attr("y", +lab.attr("y") + shift);
     }
@@ -2576,20 +2786,28 @@ function place_x_axis_label(xaxe, view) {
  * @param {boolean} [widelabel]
  * @return {{widths: list<number>, height: number, ascent: number, descent: number}} */
 function measure_texts(svg, texts, widelabel) {
-    if (texts.length === 0) {
-        return {widths: [], height: 0, ascent: 0, descent: 0};
-    }
     const g = $svg("g", {class: "hg-axis" + (widelabel ? " widelabel" : ""),
             transform: "translate(-10000,-10000)"}),
         nodes = texts.map(function (t) {
             const e = $svg("text", null, t);
             g.append($svg("g", "tick", e));
             return e;
-        });
+        }),
+        // An axis may label only some of its ticks, or none of them. The line
+        // metrics belong to the font, so a blank label must not shrink them.
+        sample = $svg("text", null, "0");
+    g.append($svg("g", "tick", sample));
     g.style.visibility = "hidden";
     svg.node().appendChild(g);
-    const widths = nodes.map(e => e.getComputedTextLength()),
-        box = nodes[0].getBBox();
+    const widths = nodes.map(e => e.getComputedTextLength());
+    let inked = sample;
+    for (let i = 0; i !== nodes.length; ++i) {
+        if (texts[i] !== "") {
+            inked = nodes[i];
+            break;
+        }
+    }
+    const box = inked.getBBox();
     g.remove();
     return {widths: widths, height: box.height,
         ascent: -box.y, descent: box.y + box.height};
@@ -2863,9 +3081,37 @@ function scale_shift(from, to) {
 // A gesture that has not moved anything yet
 const NO_GESTURE = {k: [1, 1], a: [0, 0], b: [0, 0]};
 
-/** Show the marks and the pointer targets under gesture `g`. Scaling them is
- * what a pinch looks like in flight; the drawing that follows puts the marks
- * back at their own size.
+/** Lay the overlay's pointer target over the plot, where the overlay's own
+ * transform is `translate(tx,ty) scale(kx,ky)`. The overlay rides the marks so
+ * that a pointer arrives in the coordinates they were drawn in; the target has
+ * to undo that ride, or a pan walks it off the plot and the marks underneath
+ * start taking the pointer themselves.
+ * @param {object} view
+ * @param {number} tx
+ * @param {number} ty
+ * @param {number} kx
+ * @param {number} ky */
+function place_overlay_rect(view, tx, ty, kx, ky) {
+    if (!view.overlay) {
+        return;
+    }
+    let rect = view.overlay.selectChild("rect");
+    if (rect.empty()) {
+        rect = view.overlay.append("rect");
+    }
+    // covers the margins the axes are drawn in, so it sits outside the clip
+    rect.attr("x", -tx / kx)
+        .attr("y", (view.top - ty) / ky)
+        .attr("width", view.right / kx)
+        .attr("height", (view.fullHeight - view.top) / ky)
+        .attr("fill", "none")
+        .attr("pointer-events", "all");
+}
+
+/** Show the marks and the pointer targets under gesture `g`. A slide rides
+ * this transform for the whole gesture; a pinch only scales through it when
+ * redrawing every frame would be too slow, and the drawing that follows puts
+ * the marks back at their own size.
  * @param {object} view
  * @param {{k: [number,number], a: [number,number], b: [number,number]}} g */
 function place_marks(view, g) {
@@ -2874,8 +3120,11 @@ function place_marks(view, g) {
         ty = view.top + g.k[1] * (s[1] - g.a[1]) + g.b[1],
         tr = `translate(${tx},${ty})`
             + (g.k[0] === 1 && g.k[1] === 1 ? "" : ` scale(${g.k[0]},${g.k[1]})`);
-    view.svg.attr("transform", tr);
-    view.overlay.attr("transform", tr);
+    view.canvas.attr("transform", tr);
+    if (view.overlay) {
+        view.overlay.attr("transform", tr);
+        place_overlay_rect(view, tx, ty, g.k[0], g.k[1]);
+    }
 }
 
 /** Re-tick both axes for `w` and draw them again, leaving the marks alone.
@@ -2884,24 +3133,26 @@ function place_marks(view, g) {
  * @param {object} view
  * @param {{x: list<number>, y: list<number>}} w */
 function redraw_axes(view, w) {
-    d3.select(view.svg.node().ownerSVGElement).selectAll("g.hg-axis").remove();
     make_axis_pair(view, d3.scaleLinear().domain(w.x), d3.scaleLinear().domain(w.y));
-    draw_axes(view.svg, view);
+    draw_axes(view.owner, view);
 }
 
 /** Slide or pinch the plot, re-ticking the axes as it goes, then draw the
- * marks where they land. The marks ride a transform during the gesture rather
- * than being redrawn per frame -- a dot plot would have to re-run its
- * collision simulation, a CDF to re-path every series.
+ * marks where they land. A slide rides a transform rather than redrawing per
+ * frame -- a dot plot would have to re-run its collision simulation, a CDF to
+ * re-path every series -- while a pinch redraws, since a scaled mark is the
+ * wrong size. Redrawing mid-gesture is safe because the <svg> and the overlay
+ * the pointer is on outlive a render; the axes are `pointer-events: none` so
+ * that a gesture never starts on ink a render replaces.
  *
  * A mouse drags with its button down; a touch takes two fingers, pinching to
  * zoom and sliding to pan, which leaves one finger free to scroll the page.
  * @param {object} view */
 function enable_pan(view) {
-    const svg = view.svg.node().ownerSVGElement;
+    const svg = view.owner.node();
     let base = null, active = false, at = NO_GESTURE, pending = false, frame = 0,
         expandable = null, mouse_start = null, touch_start = null, pinch_start = null,
-        wheel_frame = 0;
+        wheel_frame = 0, redrawing = false;
 
     /** A gesture scaling by `k` about plot point `a` and moving it to `b`,
      * with any axis this graph does not zoom held still.
@@ -2924,12 +3175,25 @@ function enable_pan(view) {
     }
     function draw_frame() {
         pending = false;
-        redraw_axes(view, window_at(at));
-        place_marks(view, at);
+        const w = window_at(at);
+        if (redrawing) {
+            view.window = w;
+            render_view(view);
+        } else {
+            redraw_axes(view, w);
+            place_marks(view, at);
+        }
     }
     /** @param {object} g */
     function update(g) {
         at = g;
+        // A pinch riding a transform swells every mark and thickens every
+        // stroke, so draw them at their own size instead, as a wheel zoom
+        // does. A slide keeps the transform: panning a linear scale is exactly
+        // a translation, and redrawing would buy nothing. Once a gesture
+        // redraws it keeps redrawing -- the marks on screen are then the new
+        // window's, which a transform measured from `base` would move twice.
+        redrawing = redrawing || g.k[0] !== 1 || g.k[1] !== 1;
         if (!pending) {
             pending = true;
             frame = requestAnimationFrame(draw_frame);
@@ -2941,12 +3205,12 @@ function enable_pan(view) {
     function begin() {
         base = {x: view.x.scale.copy(), y: view.y.scale.copy(), window: view.window};
         at = NO_GESTURE;
+        redrawing = false;
         // a growable box would otherwise resize as the tick labels change
         expandable = view.expandable;
         view.expandable = false;
         active = true;
-        // a resize now would destroy the <svg> this gesture started on while
-        // the handlers below still hold its `args` and scales
+        // the gesture is driving the frame itself; a resize would draw over it
         view.gesturing = true;
         addClass(svg, "panning");
         // the pointer is about to leave whatever it was over without a
@@ -2969,6 +3233,13 @@ function enable_pan(view) {
         }
         view.panned = true;
         view.window = window_at(g);
+        if (redrawing) {
+            // the frames drew the marks where they land; this one is for the
+            // window the last frame missed, and for the box to grow again
+            render_view(view);
+            flush_resize(view);
+            return;
+        }
         // The frame stood still for the gesture; now let the axes take the
         // room their new labels need. A slide leaves the marks where the new
         // window wants them -- panning a linear scale is a translation -- so
@@ -3102,7 +3373,7 @@ function enable_pan(view) {
                 Math.exp(-dy * WHEEL_ZOOM_RATE))),
             r = svg.getBoundingClientRect();
         zoom_at(k, [evt.clientX - r.left - view.left,
-            evt.clientY - r.top - view.top]);
+                    evt.clientY - r.top - view.top]);
     }, {passive: false});
     svg.addEventListener("mousedown", function (evt) {
         if (evt.button !== 0) {
@@ -3163,24 +3434,45 @@ function render_view(view) {
     for (const t of document.querySelectorAll(GRAPH_BUBBLES)) {
         t.remove();
     }
-    element.replaceChildren();
 
     // the box `size_box` derived, before `make_axis_pair` grows it: that is
     // what `check_resize` recomputes to decide whether anything moved
     view.box = compute_box(element, view.args);
     view.resize_stale = false;
-    const svg = d3.select(element).append("svg")
-            .attr("class", "hotgraph")
-            .attr("width", view.box[0])
-            .attr("height", view.box[1]),
-        clipid = `hg-clip-${++clip_counter}`;
-    view.clip = svg.append("clipPath").attr("id", clipid).append("rect");
-    view.svg = svg.append("g").attr("clip-path", `url(#${clipid})`).append("g");
-    // pointer targets cover the margins, so they sit outside the clip
-    view.overlay = svg.append("g");
+
+    // construct parts
+    if (!view.owner) {
+        view.owner = d3.select(element).append("svg").attr("class", "hotgraph");
+    }
+    view.owner.attr("width", view.box[0]).attr("height", view.box[1]);
+    if (!view.clip) {
+        view.clipid = `hg-clip-${++clip_counter}`;
+        view.clip = view.owner.append("clipPath")
+            .attr("id", view.clipid)
+            .append("rect");
+    }
+    if (!view.canvas) {
+        view.canvas = view.owner.append("g")
+            .attr("clip-path", `url(#${view.clipid})`)
+            .append("g");
+    } else {
+        view.canvas.node().replaceChildren();
+    }
+    if (!view.overlay && view.args.interactive !== false) {
+        view.overlay = view.owner.append("g");
+    }
+
+    view.x = make_linear_scale(view.x.extent, view.args.x_extent);
+    view.y = make_linear_scale(view.y.extent, view.args.y_extent);
+    make_axis_pair(view, view.x, view.y);
+    draw_axes(view.owner, view);
+    draw_annotations(view.canvas, view);
+
+    // `make_axis_pair` put the overlay back at the plot's origin
+    place_overlay_rect(view, view.left, view.top, 1, 1);
 
     const g = graphers[view.args.gtype],
-        result = g["function"].call(view.svg, element, view);
+        result = g["function"].call(view.canvas, element, view);
 
     view.zoom_axes = g.zoom ?? "xy";
     if (view.highlight) {
@@ -3191,7 +3483,10 @@ function render_view(view) {
             || {x: view.x.scale.domain().slice(), y: view.y.scale.domain().slice()};
         view.home = view.home || {x: view.window.x.slice(), y: view.window.y.slice()};
         view.mark_shift = [0, 0];
-        if (view.args.interactive !== false) {
+        // The gesture handlers read the live `view`, so unlike the overlay's
+        // they survive a render; the <svg> they are on does too.
+        if (view.args.interactive !== false && !view.pannable) {
+            view.pannable = true;
             enable_pan(view);
         }
     }
@@ -3240,7 +3535,7 @@ function check_resize(view) {
  * @param {object} view */
 function schedule_resize(view) {
     if (view.gesturing) {
-        // the drag handlers hold the `args` and the scales this would replace
+        // the gesture owns the frame until it ends
         view.resize_wanted = true;
     } else if (view.render_ms <= RESIZE_FRAME_BUDGET) {
         view.resize_frame = view.resize_frame
@@ -3321,18 +3616,32 @@ handle_ui.on("js-hotgraph-zoom", function () {
 
 // `make_axis_pair` derives the plot rectangle from the measured ticks and
 // labels plus the insets, except on any edge the caller pins.
-function normalize_args(args) {
-    args.expandable = normalize_expandable(args.expandable);
-    args.insetTop = args.insetTop ?? INSET_TOP;
-    args.insetRight = args.insetRight ?? INSET_RIGHT;
-    args.insetBottom = args.insetBottom ?? INSET_BOTTOM;
-    args.insetLeft = args.insetLeft ?? INSET_LEFT;
+/** Instantiate the axes and move the data into the coordinate system they
+ * define. The server sends identities -- a reviewer, a tag -- and the axis
+ * says where each one sits, so this must happen before a graph type prepares
+ * its data: bars and boxes bucket by position, and read `discrete` off the
+ * axis to pad their ends. It rewrites `args.data`, so it runs once per args.
+ * @param {object} args */
+function normalize_axes(args) {
     args.x = instantiate_axis(args.x || {});
     args.y = instantiate_axis(args.y || {});
     if (args.xorder) {
         args.xorder = instantiate_axis(args.xorder);
     }
     project_data(args, args);
+}
+
+function normalize_args(args) {
+    args.expandable = normalize_expandable(args.expandable);
+    args.insetTop = args.insetTop ?? INSET_TOP;
+    args.insetRight = args.insetRight ?? INSET_RIGHT;
+    args.insetBottom = args.insetBottom ?? INSET_BOTTOM;
+    args.insetLeft = args.insetLeft ?? INSET_LEFT;
+    args.x_extent = args.x_extent
+        || expand_extent(data_extent(args.data, args.data_format, proj0), args.x);
+    args.y_extent = args.y_extent
+        || expand_extent(data_extent(args.data, args.data_format, proj1), args.y);
+    args.titles = hotcrp.demand_load.make(resolve => args_load_titles(args, resolve));
     // Other arguments:
     // args.aspectRatio: box width divided by height, as in CSS; overrides the
     //   container's `aspect-ratio`, whose `auto` means DEFAULT_ASPECT_RATIO
@@ -3358,6 +3667,15 @@ function make_graph(selector, args) {
     if (!element) {
         return null;
     }
+    // A render reuses the drawing it made last time, so clearing the container
+    // belongs here: this is where a graph starts over.
+    const old = graph_views.get(element);
+    if (old) {
+        old.abort && old.abort.abort();
+        old.life.abort();
+        graph_views.delete(element);
+    }
+    element.replaceChildren();
     if (!d3) {
         const erre = $e("div", "msg-error");
         feedback.append_item_near(erre, {message: "<0>Graphs are not supported on this browser", status: 2});
@@ -3365,19 +3683,19 @@ function make_graph(selector, args) {
         return null;
     }
 
-    // build args
+    // build args through transformation
     let g = graphers[args.gtype];
-    while (g && g.prepare_function) {
-        const vargs = g.prepare_function(args);
-        if (!vargs || vargs === args) {
-            break;
-        }
-        args = vargs;
+    while (g && g.transform_function) {
+        args = g.transform_function(args);
         g = graphers[args.gtype];
     }
-    if (!g) {
+    if (!g || !g.function) {
         return null;
     }
+
+    // normalize axes, prepare data, normalize remains
+    normalize_axes(args);
+    g.prepare_function && g.prepare_function(args);
     normalize_args(args);
 
     // build view
@@ -3388,17 +3706,19 @@ function make_graph(selector, args) {
         panned: false, mark_shift: [0, 0], highlight: null,
         box: null, abort: null, render_ms: 0, gesturing: false,
         resize_stale: false, resize_wanted: false,
-        resize_frame: 0, resize_timer: 0
+        resize_frame: 0, resize_timer: 0,
+        pannable: false, life: new AbortController(),
+        generation: 1
     };
     graph_views.set(element, view);
-    // a pan ends over the redrawn graph; that click is not the user's
+    // a pan ends over the graph; that click is not the user's
     element.addEventListener("click", function (evt) {
         if (view.panned) {
             view.panned = false;
             evt.stopPropagation();
             evt.preventDefault();
         }
-    }, true);
+    }, {capture: true, signal: view.life.signal});
     const result = render_view(view);
     if (args.autoresize !== false) {
         observe_resize(view);

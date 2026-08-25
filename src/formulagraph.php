@@ -1509,6 +1509,14 @@ class FormulaGraph extends MessageSet {
         if ($this->_series_axis) {
             $j["series"] = $this->axis_json($this->_series_axis);
         }
+        if (($this->gtype & self::GT_CDF) === 0) {
+            if ($this->_index_type !== 0
+                && ($this->_index_type & Fexpr::IDXM_REVIEW) === $this->_index_type) {
+                $j["id_format"] = "rid";
+            } else {
+                $j["id_format"] = "pid";
+            }
+        }
         if ($this->fxorder && $this->_xorder_data) {
             // the ordering values are per-x-position, so they live on the x
             // axis; the sidecar `xorder` axis just carries their format + label

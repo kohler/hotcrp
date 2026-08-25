@@ -5966,6 +5966,7 @@ th.pl_logaction {
 }
 .hg-axis {
 	font-size: smaller;
+	pointer-events: none;
 }
 .hg-axis path, .hg-axis line, path.hg-axis {
 	fill: none;
