@@ -558,9 +558,13 @@ Ready\n";
         if ($revname && $revtime) {
             echo '<span class="barsep">·</span>';
         }
+        Icons::stash_defs("upload");
+        echo Ht::unstash();
         echo $revtime,
-            Ht::button("Review offline", ["class" => "ui js-offline-review btn ml-4"]),
-            '</div>';
+            '<span class="btnbox ml-4">',
+            Ht::button("Review offline", ["class" => "ui js-offline-review btn"]),
+            Ht::button(Icons::ui_use("upload"), ["class" => "ui js-offline-review upload btn btn-licon need-tooltip", "aria-label" => "Upload offline review form"]),
+            '</span></div>';
 
         echo '<hr class="c"></div>', "\n";
 

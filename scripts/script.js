@@ -3262,20 +3262,22 @@ function $popup(options) {
     }
 
     function close() {
-        removeClass(document.body, "modal-open");
-        document.body.removeEventListener("keydown", dialog_keydown);
-        set_inert(false);
-        if (document.activeElement
-            && modale.contains(document.activeElement)) {
-            document.activeElement.blur();
+        if (!modale.hidden) {
+            removeClass(document.body, "modal-open");
+            document.body.removeEventListener("keydown", dialog_keydown);
+            set_inert(false);
+            if (document.activeElement
+                && modale.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+            hotcrp.tooltip.close();
+            $(modale).find("textarea, input").unautogrow();
+            $(forme).trigger("closedialog");
+            if (prior_focus) {
+                prior_focus.focus({preventScroll: true});
+            }
         }
-        hotcrp.tooltip.close();
-        $(modale).find("textarea, input").unautogrow();
-        $(forme).trigger("closedialog");
         modale.remove();
-        if (prior_focus) {
-            prior_focus.focus({preventScroll: true});
-        }
     }
 
     function dialog_click(evt) {
@@ -3342,7 +3344,10 @@ function $popup(options) {
         awaken: function () {
             $(forme).awaken();
         },
-        close: close
+        close: close,
+        is_visible: function () {
+            return !modale.hidden;
+        }
     };
 
     function open() {
@@ -14537,7 +14542,7 @@ handle_ui.on("js-offline-review", function () {
         rid = self.form.getAttribute("data-rid"),
         args1 = {p: pid},
         filee = $e("input", {type: "file", name: "file", accept: "text/plain", hidden: true}),
-        uploade = $e("button", {type: "submit", name: "upload", value: 1, class: "btn-primary"}, "Upload form");
+        uploade = $e("button", {type: "submit", name: "upload", value: 1, class: "btn-success btn-big"}, $svg_use_licon("upload"), " Upload form");
     let $pu, dry_run = true;
     (rid != "") && (args1.r = rid);
     self.hasAttribute("data-force") && (args1.forceShow = 1);
@@ -14552,7 +14557,18 @@ handle_ui.on("js-offline-review", function () {
     function change_file() {
         dry_run = true;
         uploade.replaceChildren("Upload form");
-        has_file() && upload();
+        if (has_file()) {
+            $pu.show();
+            upload();
+        } else if (!$pu.is_visible()) {
+            $pu.close();
+        }
+    }
+
+    function cancel_file() {
+        if (!$pu.is_visible()) {
+            $pu.close();
+        }
     }
 
     function done(data) {
@@ -14608,18 +14624,26 @@ handle_ui.on("js-offline-review", function () {
 
     $pu = $popup({near: self, className: "modal-dialog-w40", "aria-label": "Offline reviewing"})
         .append($e("h2", null, "Offline reviewing"),
+            $e("div", "mx-auto mt-5 mb-5", uploade),
             $e("p", "w-text",
-                $e("a", {href: hoturl("api/review", Object.assign({}, args1, {format: "form"})), class: "js-download-review-form"}, "Download this review form as text"),
-                ", fill it out offline, then upload it here. ",
+                "If you don’t have an offline form yet, ",
+                $e("a", {href: hoturl("api/review", Object.assign({}, args1, {format: "form"})), class: "js-download-review-form"}, "download it here"),
+                " and fill it out. ",
                 $e("a", {href: hoturl("offline")}, "Offline reviewing"),
-                " handles many forms at once."),
+                " can handle a single text file containing multiple forms."),
             filee)
-        .append_actions("Cancel", uploade)
+        .append_actions("Cancel")
         .on("submit", submit)
         .on("change", "input[type=file]", change_file)
+        .on("cancel", "input[type=file]", cancel_file)
         .on("click", "button[name=upload]", upload_click)
-        .on("click", "a.js-download-review-form", function () { $pu.close(); })
-        .show();
+        .on("click", "a.js-download-review-form", function () { $pu.close(); });
+    if (hasClass(self, "upload")) {
+        hotcrp.tooltip.close();
+        uploade.click();
+    } else {
+        $pu.show();
+    }
 });
 
 

@@ -44,7 +44,10 @@ class Icons {
         case "description":
             return '<path d="M3 8L57 8L57 13L3 13ZM3 18L56 18L56 23L3 23ZM3 28L62 28L62 33L3 33ZM3 38L58 38L58 43L3 43ZM3 48L25 48L25 53L3 53Z" />';
         case "upload":
-            return '<path d="M 13 15 L 22 15 L 20 18 L 16 18 L 16 57 C 16 57 30 57 34 57 C 36 57 36 55 36 54 C 36 51 36 45 36 45 C 36 45 44 45 46 45 C 48 45 48 43 48 42 C 48 38 48 34 48 34 L 51 34 C 51 34 51 42 51 47 C 51 49 50 51 49 52 C 46 55 45 56 43 58 C 42 59 41 60 38 60 C 30 60 13 60 13 60 L 13 15 Z M 38 47 L 38 57 L 48 47 L 38 47 Z M 36 35 L 37 15 L 27 26 L 25 25 L 39 2 L 53 25 L 51 26 L 41 15 L 42 35 L 36 35 Z" />';
+            // arrow rising out of a 40u tray with 14u sides; a 4.0u pen rather
+            // than the set's 3.0u, since two strokes alone read light beside
+            // the denser icons
+            return '<path fill="none" stroke-width="4" d="M12 37V51H52V37M19 20L32 8L45 20M32 8V41" />';
         case "attachment":
             return '<path d="M35 2c-5.2.1-9.5 4.4-9.5 9.7V48c0 3.3 3 5.9 6.3 5.9 3.6-.1 6.5-2.6 6.5-5.9V23.7s0-1.1-.9-1.1H36c-.4 0-.8.6-.8 1.1l.2 23.7c-.1 1.9-1.6 3.5-3.5 3.5-1.8 0-3.3-1.5-3.3-3.4V11.6c0-3.5 2.9-6.5 6.5-6.5 3.6-.1 6.6 2.9 6.6 6.5v37.8c0 5.2-4.4 9.6-9.8 9.6-5.2.1-9.5-4.2-9.5-9.5v-21c0-.5-.5-.9-.9-.9h-1.6c-.6 0-.7 1-.7 1v20.9c0 7 5.8 12.6 12.8 12.5s12.7-5.7 12.7-12.7V11.5c0-5.3-4.3-9.6-9.7-9.5z" />';
         case "tag":

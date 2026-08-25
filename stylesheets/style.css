@@ -1858,7 +1858,7 @@ button.link.disabled, button.q.disabled, button.qo.disabled, button.qx.disabled 
 .differs .if-differs {
 	display: block;
 }
-.aabig button, .aabig .btn {
+.aabig button, .aabig .btn, button.btn-big {
 	padding: 4px 9px 4px;
 	min-height: 31px;
 }

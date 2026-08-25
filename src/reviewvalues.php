@@ -393,7 +393,7 @@ class ReviewValues extends MessageSet {
         $this->textpos = $pos;
 
         if ($nfields === 0 && $this->first_lineno === 1) {
-            $this->rvmsg(self::ERROR, null, "<0>That didn’t appear to be a review form; I was not able to extract any information from it. Please check its formatting and try again.");
+            $this->rvmsg(self::ERROR, null, "<0>That didn’t appear to be a review form; I couldn’t extract any information from it. Please check its formatting and try again.");
         }
 
         if (isset($this->req["readiness"])) {
