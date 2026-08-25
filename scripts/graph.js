@@ -2935,15 +2935,12 @@ function enable_pan(view) {
             frame = requestAnimationFrame(draw_frame);
         }
     }
-    /** Start a gesture, or re-baseline the one in progress when a finger
-     * joins or leaves: `base` is whatever is on screen now, so the movement
-     * already applied stays applied. */
+    /** Start a gesture from what is on screen now. A gesture in progress is
+     * finished first, so fingers joining or leaving commit what they have
+     * done rather than dropping it. */
     function begin() {
         base = {x: view.x.scale.copy(), y: view.y.scale.copy(), window: view.window};
         at = NO_GESTURE;
-        if (active) {
-            return;
-        }
         // a growable box would otherwise resize as the tick labels change
         expandable = view.expandable;
         view.expandable = false;
@@ -3056,10 +3053,10 @@ function enable_pan(view) {
     }
     function touchend(evt) {
         if (evt.touches.length === 1) {
-            // a pinch became a one-finger slide; carry on from where it is
+            // a pinch became a one-finger slide
             const t = evt.touches[0];
             touch_start = [t.clientX, t.clientY];
-            active && begin();
+            active && finish();
             return;
         } else if (evt.touches.length >= 2) {
             return;
@@ -3126,9 +3123,10 @@ function enable_pan(view) {
             active = view.panned = false;
         } else if (evt.touches.length === 2) {
             evt.preventDefault();
+            active && finish();
             pinch_start = two_touches(evt);
             view.panned = false;
-            begin(); // re-baselines if a finger just joined a slide
+            begin();
         } else {
             return;
         }
