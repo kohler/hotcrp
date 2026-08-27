@@ -3333,6 +3333,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v329_delete_withdrawn_certifications()) {
             $conf->update_schema_version(329);
         }
+        if ($conf->sversion === 329) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `WorkItem`");
+            if ($conf->ql_ok("CREATE TABLE `WorkItem` (
+  `workType` varbinary(80) NOT NULL,
+  `workSubtype` varbinary(80) NOT NULL,
+  `work` longblob NOT NULL,
+  PRIMARY KEY (`workType`,`workSubtype`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
+                $conf->update_schema_version(330);
+            }
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

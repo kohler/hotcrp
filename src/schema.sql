@@ -662,11 +662,25 @@ CREATE TABLE `TopicInterest` (
 
 
 
+--
+-- Table structure for table `WorkItem`
+--
+
+DROP TABLE IF EXISTS `WorkItem`;
+CREATE TABLE `WorkItem` (
+  `workType` varbinary(80) NOT NULL,
+  `workSubtype` varbinary(80) NOT NULL,
+  `work` longblob NOT NULL,
+  PRIMARY KEY (`workType`,`workSubtype`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
 
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 329, null),   -- schema version
+  ('allowPaperOption', 330, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

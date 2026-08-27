@@ -126,7 +126,7 @@ class CleanCountries_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
-            "cdb",
+            "cdb,G",
             "d,dry-run"
         )->description("Clean countries in a HotCRP database.
 Usage: php batch/cleancountries.php [-n CONFID] [--cdb] [--dry-run]")

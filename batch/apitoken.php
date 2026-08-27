@@ -225,7 +225,7 @@ class APIToken_Batch {
             "scope:,S: =SCOPE Set API scope",
             "token:,T: =TOKEN !list Search for TOKEN",
             "active !list Only show active tokens",
-            "cdb Global token"
+            "cdb,G Global token"
         )->description("Create and list HotCRP API tokens.
 Usage: php batch/apitoken.php [-n CONFID|--config CONFIG] [create] [ARGS...] EMAIL
        php batch/apitoken.php [-n CONFID|--config CONFIG] list [ARGS...] [EMAIL|TOKEN]")

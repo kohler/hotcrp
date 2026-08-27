@@ -915,9 +915,8 @@ class DocumentInfo implements JsonSerializable {
             && $this->s3_key()
             && ($s3ap = $this->conf->opt("s3AccelRedirect"))) {
             return $s3ap;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param ?string $dspath
@@ -957,10 +956,9 @@ class DocumentInfo implements JsonSerializable {
         if (($dsstmp = self::fopen_docstore($dspath))) {
             $s3l->set_response_body_stream($dsstmp[0])->run();
             return $this->handle_load_s3_curl($s3l, $dspath, $dsstmp[1]);
-        } else {
-            $s3l->run();
-            return $this->handle_load_s3_curl($s3l, null, null);
         }
+        $s3l->run();
+        return $this->handle_load_s3_curl($s3l, null, null);
     }
 
     /** @param CurlS3Result $s3l
@@ -1059,31 +1057,51 @@ class DocumentInfo implements JsonSerializable {
         return ["hotcrp" => json_encode_db($meta)];
     }
 
-    /** @return ?bool */
-    function store_s3() {
+    /** @param ?array<string,string> $user_data
+     * @return ?bool */
+    function store_s3($user_data = null) {
         if (!($s3 = $this->conf->s3_client())
             || !($s3k = $this->s3_key())) {
             return null;
         }
 
+        // maybe delay work
+        if ($user_data === null
+            && $this->filestore !== null
+            && $this->conf->opt("s3ProcessWork")) {
+            $w = [
+                "hash" => $this->text_hash(),
+                "mimetype" => $this->mimetype,
+                "size" => $this->size(),
+                "content_file" => SiteLoader::resolve($this->filestore),
+                "metadata" => $this->s3_user_data()
+            ];
+            if (($wi = WorkItem::make($this->conf, "s3doc", null, $w))
+                && $wi->enqueue()) {
+                return null;
+            }
+        }
+
+        // assume hash equality + size equality == presence
         if ($s3->head_size($s3k) === $this->size()) {
             return true;
         }
 
-        $user_data = $this->s3_user_data();
+        // put file
+        $user_data = $user_data ?? $this->s3_user_data();
         if (($path = $this->available_content_file())
             && $s3->put_file($s3k, $path, $this->mimetype, $user_data)) {
             return true;
         }
 
+        // otherwise put content
         $r = $s3->start_put($s3k, $this->content(), $this->mimetype, $user_data)->run();
         if ($r->status === 200) {
             return true;
-        } else {
-            error_log("S3 error: POST {$s3k}: {$r->status} {$r->status_text} " . json_encode_db($r->response_headers));
-            $this->message_set()->warning_at(".content", "<0>Internal error while saving document to S3");
-            return false;
         }
+        error_log("S3 error: POST {$s3k}: {$r->status} {$r->status_text} " . json_encode_db($r->response_headers));
+        $this->message_set()->warning_at(".content", "<0>Internal error while saving document to S3");
+        return false;
     }
 
 

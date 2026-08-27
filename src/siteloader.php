@@ -74,7 +74,7 @@ class SiteLoader {
         "_valueformat.php" => ["vf_", "src/valueformats"]
     ];
 
-    /** @var string */
+    /** @var string - never ends in `/` */
     static public $root;
 
     static function set_root() {
@@ -102,6 +102,18 @@ class SiteLoader {
      * @deprecated */
     static function find($suffix) {
         return self::resolve($suffix);
+    }
+
+    /** @return ?int */
+    static function server_id() {
+        global $Opt;
+        if (!array_key_exists("serverId", $Opt)
+            && is_readable(SiteLoader::$root . "/conf/serverid.php")) {
+            @include_once SiteLoader::$root . "/conf/serverid.php";
+            $Opt["serverId"] = $Opt["serverId"] ?? null;
+        }
+        $sid = $Opt["serverId"] ?? null;
+        return is_int($sid) && $sid > 0 ? $sid : null;
     }
 
     // Set up conference options

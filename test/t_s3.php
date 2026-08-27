@@ -23,7 +23,9 @@ class S3_Tester {
      * @return S3Client */
     static function make_offline_client() {
         Offline_S3Result::$requests = [];
-        $s3 = new S3Client([
+        // NB `S3Client::make` caches by credentials, so that a conference
+        // configured with these options gets this very client
+        $s3 = S3Client::make([
             "key" => "AKIAOFFLINETESTKEY", "secret" => "offlinetestsecret",
             "bucket" => "offlinetestbucket"
         ]);

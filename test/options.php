@@ -21,3 +21,4 @@ $Opt["obsoletePasswordInterval"] = 1;
 $Opt["updatesSite"] = false;
 $Opt["include"][] = "?test/localoptions.php";
 $Opt["hooks"]["send_mail"] = "MailChecker::send_hook";
+$Opt["workLockfilePrefix"] = "test/var/work";

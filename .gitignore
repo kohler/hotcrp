@@ -17,4 +17,6 @@
 /test/oauth/auths.json
 /test/oauth/servertest-state.json
 /test/oauth/composer.lock
+/test/var
+/var
 /vendor

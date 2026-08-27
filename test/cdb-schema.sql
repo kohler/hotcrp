@@ -113,5 +113,19 @@ CREATE TABLE `Settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
+--
+-- Table structure for table `WorkItem`
+--
 
-insert into Settings (name, value) values ('sversion', 181);
+DROP TABLE IF EXISTS `WorkItem`;
+CREATE TABLE `WorkItem` (
+  `serverId` int NOT NULL,
+  `root` varbinary(255) NOT NULL,
+  `workType` varbinary(80) NOT NULL,
+  `workSubtype` varbinary(80) NOT NULL,
+  `work` longblob NOT NULL,
+  PRIMARY KEY (`serverId`,`root`,`workType`,`workSubtype`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+insert into Settings (name, value) values ('sversion', 186);

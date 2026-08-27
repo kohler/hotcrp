@@ -1,6 +1,6 @@
 <?php
 // t_documentbasics.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class DocumentBasics_Tester {
     /** @var Conf
