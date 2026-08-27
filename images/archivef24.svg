@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="24" viewBox="0 0 22 24">
+<defs>
+<linearGradient id="archivef24-p" gradientUnits="userSpaceOnUse" x1="2.5" y1=".5" x2="5.5" y2="21.5"><stop offset="0" stop-color="#fff9e0"/><stop offset="1" stop-color="#f2e6bd"/></linearGradient>
+<linearGradient id="archivef24-f" gradientUnits="userSpaceOnUse" x1="13.7" y1=".5" x2="13.7" y2="5.3"><stop offset="0" stop-color="#dcdcdc"/><stop offset="1" stop-color="#f8f8f8"/></linearGradient>
+</defs>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#000" fill-opacity=".09" transform="translate(1.2 1.2)"/>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#fffdf0" stroke="#a0a0a0" stroke-width=".9" stroke-linejoin="round"/>
+<clipPath id="archivef24-pc"><path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z"/></clipPath>
+<path d="M 2.5 2.5 L 16.5 2.5 L 16.5 19.5 L 2.5 19.5 Z" fill="url(#archivef24-p)" clip-path="url(#archivef24-pc)"/>
+<path d="M 8.8 2.5 L 10.2 2.5 L 10.2 11.675 L 8.8 11.675 Z M 9.5 2.733 L 10.9 2.733 L 10.9 3.733 L 9.5 3.733 Z M 8.1 4.2 L 9.5 4.2 L 9.5 5.2 L 8.1 5.2 Z M 9.5 5.667 L 10.9 5.667 L 10.9 6.667 L 9.5 6.667 Z M 8.1 7.133 L 9.5 7.133 L 9.5 8.133 L 8.1 8.133 Z M 9.5 8.6 L 10.9 8.6 L 10.9 9.6 L 9.5 9.6 Z M 8.1 10.067 L 9.5 10.067 L 9.5 11.067 L 8.1 11.067 Z M 8.75 12.1 L 10.25 12.1 C 10.796 13.092 11.3 14.58 11.3 16.5 A 1.8 1.8 0 0 1 7.7 16.5 C 7.7 14.58 8.204 13.092 8.75 12.1 Z M 10.45 16.5 A .95 .95 0 1 0 8.55 16.5 A .95 .95 0 1 0 10.45 16.5 Z" fill="#8a6a45"/>
+<path d="M 13.7 .5 L 18.5 5.3 L 13.7 5.3 Z" fill="url(#archivef24-f)" stroke="#a0a0a0" stroke-width=".675" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="24" viewBox="0 0 22 24">
+<defs>
+<linearGradient id="slides24-p" gradientUnits="userSpaceOnUse" x1="2.5" y1=".5" x2="5.5" y2="21.5"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dedede"/></linearGradient>
+<linearGradient id="slides24-f" gradientUnits="userSpaceOnUse" x1="13.7" y1=".5" x2="13.7" y2="5.3"><stop offset="0" stop-color="#dcdcdc"/><stop offset="1" stop-color="#f8f8f8"/></linearGradient>
+</defs>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#000" fill-opacity=".09" transform="translate(1.2 1.2)"/>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#ffffff" stroke="#a0a0a0" stroke-width=".9" stroke-linejoin="round"/>
+<clipPath id="slides24-pc"><path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z"/></clipPath>
+<path d="M 2.5 2.5 L 16.5 2.5 L 16.5 19.5 L 2.5 19.5 Z" fill="url(#slides24-p)" clip-path="url(#slides24-pc)"/>
+<path d="M 9.5 10.1 L 13.5 10.1 A 4 4 0 1 1 9.5 6.1 Z" fill="#b86a35"/><g transform="translate(.601 -.601)"><path d="M 9.5 10.1 L 9.5 6.1 A 4 4 0 0 1 13.5 10.1 Z" fill="#b86a35"/></g><rect x="4" y="15" width="11" height="1" rx=".15" fill="#b86a35"/><rect x="4" y="17" width="6.82" height="1" rx=".15" fill="#b86a35"/>
+<path d="M 13.7 .5 L 18.5 5.3 L 13.7 5.3 Z" fill="url(#slides24-f)" stroke="#a0a0a0" stroke-width=".675" stroke-linejoin="round"/>
+</svg>

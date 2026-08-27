@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="24" viewBox="0 0 22 24">
+<defs>
+<linearGradient id="video24-p" gradientUnits="userSpaceOnUse" x1="2.5" y1=".5" x2="5.5" y2="21.5"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dedede"/></linearGradient>
+<linearGradient id="video24-f" gradientUnits="userSpaceOnUse" x1="13.7" y1=".5" x2="13.7" y2="5.3"><stop offset="0" stop-color="#dcdcdc"/><stop offset="1" stop-color="#f8f8f8"/></linearGradient>
+</defs>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#000" fill-opacity=".09" transform="translate(1.2 1.2)"/>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#ffffff" stroke="#a0a0a0" stroke-width=".9" stroke-linejoin="round"/>
+<clipPath id="video24-pc"><path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z"/></clipPath>
+<path d="M 2.5 2.5 L 16.5 2.5 L 16.5 19.5 L 2.5 19.5 Z" fill="url(#video24-p)" clip-path="url(#video24-pc)"/>
+<rect x="3.4" y="7" width="12.2" height="10.4" rx=".8" fill="#716293"/><rect x="4.1" y="7.7" width="2.4" height="2" rx=".25" fill="#fff"/><rect x="4.1" y="14.7" width="2.4" height="2" rx=".25" fill="#fff"/><rect x="8.3" y="7.7" width="2.4" height="2" rx=".25" fill="#fff"/><rect x="8.3" y="14.7" width="2.4" height="2" rx=".25" fill="#fff"/><rect x="12.5" y="7.7" width="2.4" height="2" rx=".25" fill="#fff"/><rect x="12.5" y="14.7" width="2.4" height="2" rx=".25" fill="#fff"/>
+<path d="M 13.7 .5 L 18.5 5.3 L 13.7 5.3 Z" fill="url(#video24-f)" stroke="#a0a0a0" stroke-width=".675" stroke-linejoin="round"/>
+</svg>

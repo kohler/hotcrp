@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="24" viewBox="0 0 22 24">
+<defs>
+<linearGradient id="imagefx24-p" gradientUnits="userSpaceOnUse" x1="2.5" y1=".5" x2="5.5" y2="21.5"><stop offset="0" stop-color="#fff9e0"/><stop offset="1" stop-color="#f2e6bd"/></linearGradient>
+<linearGradient id="imagefx24-f" gradientUnits="userSpaceOnUse" x1="13.7" y1=".5" x2="13.7" y2="5.3"><stop offset="0" stop-color="#dcdcdc"/><stop offset="1" stop-color="#f8f8f8"/></linearGradient>
+</defs>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#000" fill-opacity=".09" transform="translate(1.2 1.2)"/>
+<path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z" fill="#fffdf0" stroke="#a0a0a0" stroke-width=".9" stroke-linejoin="round"/>
+<clipPath id="imagefx24-pc"><path d="M .5 .5 L 13.7 .5 L 18.5 5.3 L 18.5 21.5 L .5 21.5 Z"/></clipPath>
+<path d="M 2.5 2.5 L 16.5 2.5 L 16.5 19.5 L 2.5 19.5 Z" fill="url(#imagefx24-p)" clip-path="url(#imagefx24-pc)"/>
+<path d="M 2.8 19.5 L 6.82 14.55 L 8.964 17.19 L 11.644 14 L 16.2 19.5 Z" fill="#3d7a72"/>
+<path d="M 13.7 .5 L 18.5 5.3 L 13.7 5.3 Z" fill="url(#imagefx24-f)" stroke="#a0a0a0" stroke-width=".675" stroke-linejoin="round"/>
+<path d="M 10.82 2.82 L 16.58 8.58 M 16.58 2.82 L 10.82 8.58" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/><path d="M 10.82 2.82 L 16.58 8.58 M 16.58 2.82 L 10.82 8.58" stroke="#85101a" stroke-width="2.1" stroke-linecap="round"/>
+</svg>
