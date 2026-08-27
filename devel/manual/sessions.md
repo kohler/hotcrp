@@ -86,6 +86,8 @@ encoding](https://www.php.net/manual/en/function.session-encode.php).
 
 * `sg` (string): Recent settings group
 
+* `pg` (string): Recent profile group
+
 * `login_bounce`
 
 

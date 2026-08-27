@@ -63,9 +63,9 @@ class Home_Page {
             $qreq->unset_csession("freshlogin");
         } else if ($qreq->csession("freshlogin") === true) {
             $qreq->set_csession("freshlogin", "redirect");
-            $qreq->redirect_hoturl("profile", ["redirect" => 1]);
+            $qreq->redirect_hoturl("profile", ["t" => "main", "redirect" => 1]);
         } else {
-            $user->conf->feedback_msg([MessageItem::warning("<5>Please " . $user->conf->hotlink("complete your profile", "profile"))]);
+            $user->conf->feedback_msg([MessageItem::warning("<5>Please " . $user->conf->hotlink("complete your profile", "profile", ["t" => "main"]))]);
         }
     }
 

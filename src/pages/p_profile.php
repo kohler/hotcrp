@@ -519,8 +519,24 @@ class Profile_Page {
     }
 
     function print() {
-        // canonicalize topic
         $this->ustatus->set_user($this->user);
+
+        // maybe redirect to session topic
+        $session_topic = !$this->mode
+            && $this->user === $this->viewer
+            && !$this->viewer->is_actas_user()
+            && $this->viewer->has_email()
+            && $this->qreq->is_getlike();
+        if ($session_topic
+            && !isset($this->qreq->t)
+            && ($pg = $this->qreq->gsession("pg"))
+            && !str_starts_with($pg, "__")
+            && ($g = $this->ustatus->cs()->canonical_group($pg))) {
+            $this->qreq->t = $g;
+            $this->qreq->redirect_self();
+        }
+
+        // canonicalize topic
         $reqtopic = $this->qreq->t ? : "main";
         if (!$this->mode
             && $reqtopic !== "main"
@@ -533,8 +549,14 @@ class Profile_Page {
         if ($this->qreq->t
             && $this->qreq->t !== $this->topic
             && $this->qreq->is_getlike()) {
-            $this->qreq->t = $this->topic === "main" ? null : $this->topic;
+            $this->qreq->t = $this->topic;
             $this->qreq->redirect_self();
+        }
+        if ($session_topic) {
+            $want_pg = $this->topic === "main" ? null : $this->topic;
+            if ($this->qreq->gsession("pg") !== $want_pg) {
+                $this->qreq->set_gsession("pg", $want_pg);
+            }
         }
         $this->ustatus->set_profile_topic($this->topic);
 
