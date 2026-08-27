@@ -135,7 +135,7 @@ class Review_SettingParser extends SettingParser {
         echo $sv->label($namesi->name, "Review round"), " ",
             $sv->entry($namesi->name, ["class" => "ml-1 uii uich js-settings-review-round-name want-delete-marker"]);
         if ($id > 1 || count($sv->conf->defined_rounds()) > 1) {
-            echo Ht::button(Icons::ui_use("trash", "m"), ["id" => "review/{$ctr}/deleter", "class" => "ui js-settings-review-round-delete ml-2 btn-licon-s need-tooltip", "aria-label" => "Delete review round", "tabindex" => -1]);
+            echo Ht::button(Ht::make_licon("trash", "m"), ["id" => "review/{$ctr}/deleter", "class" => "ui js-settings-review-round-delete ml-2 btn-licon-s need-tooltip", "aria-label" => "Delete review round", "tabindex" => -1]);
         }
         if ($id > 0 && ($round_map[$id - 1] ?? 0) > 0) {
             echo '<span class="ml-3 d-inline-block">',
@@ -164,11 +164,9 @@ class Review_SettingParser extends SettingParser {
     }
 
     static function print_rounds(SettingValues $sv) {
-        Icons::stash_defs("trash");
         echo '<p>Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>',
             '<p class="f-d">', $sv->type_hint("date"), '</p>',
-            Ht::hidden("has_review", 1),
-            Ht::unstash();
+            Ht::hidden("has_review", 1);
 
         // prepare round selector
         $sv->set_oldv("rev_roundtag", $sv->conf->setting_data("rev_roundtag") ?? "");

@@ -189,7 +189,8 @@ class Multiconference {
 
         $qreq = $qreq ?? Qrequest::$main_request ?? Qrequest::make_minimal();
         if (!$qreq->conf) {
-            $qreq->set_conf(Conf::$main ?? new Conf($Opt, false));
+            Conf::set_main_instance(Conf::$main ?? new Conf($Opt, false));
+            $qreq->set_conf(Conf::$main);
         }
         if ($link === false) {
             $qreq->set_user(null);

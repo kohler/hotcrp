@@ -528,7 +528,7 @@ class Users_Page {
             } else if ($this->qreq->t === "all") {
                 $this->print_pre_list_links($this->conf->hotlink("Add accounts", "profile", ["u" => "new"], ["class" => "btn"]),
                     'Select a user to edit their profile.',
-                    'Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user.');
+                    'Select ' . Ht::make_icon("viewas", ["aria-label" => "Act as", "role" => "img", "class" => "viewas-icon"]) . ' to view the site as that user.');
             }
         }
 

@@ -264,7 +264,7 @@ class Track_SettingParser extends SettingParser {
             echo 'Submissions not on other tracks';
         } else {
             echo 'Track #', $sv->entry("track/{$ctr}/tag", ["class" => "settings-track-name need-suggest tags want-delete-marker ml-1", "spellcheck" => false, "autocomplete" => "off"]),
-                Ht::button(Icons::ui_use("trash", "m"), ["id" => "track/{$ctr}/deleter", "class" => "ui js-settings-track-delete ml-2 btn-licon-s need-tooltip", "aria-label" => "Delete track", "tabindex" => -1]),
+                Ht::button(Ht::make_licon("trash", "m"), ["id" => "track/{$ctr}/deleter", "class" => "ui js-settings-track-delete ml-2 btn-licon-s need-tooltip", "aria-label" => "Delete track", "tabindex" => -1]),
                 $sv->feedback_at("track/{$ctr}/tag");
             if ($sv->reqstr("track/{$ctr}/delete")) {
                 echo Ht::hidden("track/{$ctr}/delete", "1", ["data-default-value" => ""]);

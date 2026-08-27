@@ -384,13 +384,13 @@ class Options_SettingParser extends SettingParser {
             echo MessageSet::feedback_html([MessageItem::marked_note("<0>This field always appears first on the submission form and cannot be deleted.")]);
         } else {
             echo '<span class="btnbox">',
-                Ht::button(Icons::ui_use("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move move-up need-tooltip", "aria-label" => "Move up in display order"]),
-                Ht::button(Icons::ui_use("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move move-down need-tooltip", "aria-label" => "Move down in display order"]),
+                Ht::button(Ht::make_licon("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move move-up need-tooltip", "aria-label" => "Move up in display order"]),
+                Ht::button(Ht::make_licon("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move move-down need-tooltip", "aria-label" => "Move down in display order"]),
                 '</span>';
             if ($this->sfs->option_id > 0) {
-                echo Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-sf-move delete need-tooltip", "aria-label" => "Delete", "data-exists-count" => $this->option_use_count($this->sfs->option_id)]);
+                echo Ht::button(Ht::make_licon("trash"), ["class" => "btn-licon ui js-settings-sf-move delete need-tooltip", "aria-label" => "Delete", "data-exists-count" => $this->option_use_count($this->sfs->option_id)]);
             } else {
-                echo Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon disabled need-tooltip", "aria-label" => "This intrinsic field cannot be deleted.", "tabindex" => -1]);
+                echo Ht::button(Ht::make_licon("trash"), ["class" => "btn-licon disabled need-tooltip", "aria-label" => "This intrinsic field cannot be deleted.", "tabindex" => -1]);
             }
         }
         echo "</div></div>";
@@ -460,7 +460,7 @@ class Options_SettingParser extends SettingParser {
             'has-fold fold2o ui-fold js-fold-focus hidden">';
         if ($this->sfs->option_id !== PaperOption::TITLEID) {
             echo '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
-                Icons::ui_use("move_handle_horizontal"),
+                Ht::make_icon("move_handle_horizontal", ["width" => "1em", "height" => "0.666em"]),
                 '</div>';
         }
 
@@ -502,7 +502,6 @@ class Options_SettingParser extends SettingParser {
             Ht::hidden("has_sf", 1),
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),
             "\n\n";
-        Icons::stash_defs("movearrow0", "movearrow2", "trash", "move_handle_horizontal");
         Ht::stash_html('<div id="settings-sf-caption-name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div>', 'settings-sf-caption-name');
         Ht::stash_html('<div id="settings-sf-caption-values" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-values');
         Ht::stash_html('<div id="settings-sf-caption-description" class="hidden"><p>Enter an HTML description for the submission form.</p></div>', 'settings-sf-caption-description');

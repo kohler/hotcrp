@@ -152,7 +152,7 @@ class Response_SettingParser extends SettingParser {
     }
 
     function print_name(SettingValues $sv) {
-        $t = Ht::button(Icons::ui_use("trash", "m"), ["class" => "ui js-settings-response-delete btn-licon-s ml-2 need-tooltip", "name" => "response/{$this->ctr}/deleter", "aria-label" => "Delete response", "tabindex" => -1]);
+        $t = Ht::button(Ht::make_licon("trash", "m"), ["class" => "ui js-settings-response-delete btn-licon-s ml-2 need-tooltip", "name" => "response/{$this->ctr}/deleter", "aria-label" => "Delete response", "tabindex" => -1]);
         if (($n = $this->exists_count($sv->conf, $this->ctrid))) {
             $t .= '<span class="ml-3 d-inline-block">' . plural($n, "response") . '</span>';
         }
@@ -210,8 +210,7 @@ class Response_SettingParser extends SettingParser {
     function print(SettingValues $sv) {
         // Authors' response
         $sv->print_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="js-if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
-        Icons::stash_defs("trash");
-        echo Ht::unstash(), Ht::hidden("response_requires_active", 1),
+        echo Ht::hidden("response_requires_active", 1),
             '<div class="js-if-response-active',
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_response", 1);

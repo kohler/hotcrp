@@ -2011,7 +2011,7 @@ final class PaperList extends MessageSet {
         $foot = "<tr class=\"pl_footrow\">";
         if ($arrow_ncol) {
             $foot .= '<td class="plf pl-footer-selector" colspan="' . $arrow_ncol . '">'
-                . Icons::ui_upperleft() . "</td>";
+                . Ht::make_licon("pl_selectall", "m") . "</td>";
         }
         $foot .= '<td id="plact" class="plf pl-footer" colspan="' . $ncol . '"><div class="linelinks" role="tablist">';
 
@@ -2339,7 +2339,6 @@ final class PaperList extends MessageSet {
                     $t .= "<td class=\"plh\" colspan=\"{$rstate->titlecol}\"></td>";
                 }
                 $t .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\"><button type=\"button\" class=\"ui js-annotate-order link\" data-anno-tag=\"{$this->_sort_etag}\">Annotate order</button></td></tr>\n";
-                Icons::stash_defs("trash");
             }
 
             $rstate->thead = "{$t} </thead>\n";

@@ -16,11 +16,10 @@ class Graph_Page {
         if ($h2) {
             echo "<h2>", $h2, "</h2>";
         }
-        Icons::stash_defs("zoom_in", "zoom_out");
         echo '<div class="hotgraph-head-controls">';
         echo '<div class="hotgraph-zoom btnbox">',
-            Ht::button(Icons::ui_use("zoom_in"), ["class" => "btn-licon ui js-hotgraph-zoom zoom-in need-tooltip", "aria-label" => "Zoom in"]),
-            Ht::button(Icons::ui_use("zoom_out"), ["class" => "btn-licon ui js-hotgraph-zoom zoom-out need-tooltip", "aria-label" => "Zoom out"]),
+            Ht::button(Ht::make_licon("zoomin"), ["class" => "btn-licon ui js-hotgraph-zoom zoom-in need-tooltip", "aria-label" => "Zoom in"]),
+            Ht::button(Ht::make_licon("zoomout"), ["class" => "btn-licon ui js-hotgraph-zoom zoom-out need-tooltip", "aria-label" => "Zoom out"]),
             "</div>";
         if ($searchable) {
             echo Ht::entry("q", "", ["placeholder" => "Find on graph", "class" => "uii js-hotgraph-highlight papersearch need-autogrow need-suggest", "spellcheck" => false]);

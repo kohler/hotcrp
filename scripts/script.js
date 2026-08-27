@@ -4837,13 +4837,11 @@ function $svg(tag, attr) {
     return e;
 }
 
-function $svg_use_licon(name, size, rest) {
+function $svg_licon(name, size, rest) {
     rest = Object.assign({}, rest || {});
     rest.class = "licon licon-" + (size || "l") + (rest.class ? ` ${rest.class}` : "");
-    rest.viewBox = "0 0 64 64";
-    rest.preserveAspectRatio = "none";
     rest["aria-hidden"] = "true";
-    return $svg("svg", rest, $svg("use", {href: "#i-def-" + name}));
+    return $svg("svg", rest, $svg("use", {href: window.siteinfo.icons_url + "#" + name}));
 }
 
 function $e(tag, attr) {
@@ -7661,9 +7659,9 @@ function cmt_render_form_prop(cj, cid, btnbox) {
 
     // attachments
     einfo.append($e("div", {class: "cmtprop w-text has-editable-attachments", hidden: true, role: "group", "aria-label": "Attachments"},
-        $e("span", {class: "need-tooltip", "data-tooltip": "Attachments"}, $svg_use_licon("attachment")),
+        $e("span", {class: "need-tooltip", "data-tooltip": "Attachments"}, $svg_licon("attachment")),
         $e("div", {id: cid + "-attachments", class: "entry", "data-dt": -2, "data-document-prefix": "attachment"})));
-    btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, $svg_use_licon("attachment")));
+    btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, $svg_licon("attachment")));
 
     // visibility and thread, stated as an editable sentence
     if (!cj.response) {
@@ -7697,16 +7695,16 @@ function cmt_render_form_prop(cj, cid, btnbox) {
         }*/
         evis.append(cmt_inline_select("topic", cid + "-thread", topt, "Thread"));
         einfo.append($e("div", "cmtprop w-text",
-            $e("span", {class: "need-tooltip", "data-tooltip": "Visibility"}, $svg_use_licon("eye")),
+            $e("span", {class: "need-tooltip", "data-tooltip": "Visibility"}, $svg_licon("eye")),
             $e("div", "entry", evis, eblind, $e("div", {class: "cmtvis-hints", "aria-live": "polite"}))));
     }
 
     // tags (appended below the sentence)
     if (!cj.response && !cj.by_author) {
         einfo.append($e("div", {class: "cmtprop w-text", hidden: true},
-            $e("label", {for: cid + "-tags", class: "need-tooltip", "data-tooltip": "Tags"}, $svg_use_licon("tag")),
+            $e("label", {for: cid + "-tags", class: "need-tooltip", "data-tooltip": "Tags"}, $svg_licon("tag")),
             $e("input", {id: cid + "-tags", class: "pled", name: "tags", type: "text", size: 50, placeholder: "Comment tags", "aria-label": "Tags"})));
-        btnbox.append($e("button", {type: "button", name: "showtags", class: "btn-licon need-tooltip", "aria-label": "Tags"}, $svg_use_licon("tag")));
+        btnbox.append($e("button", {type: "button", name: "showtags", class: "btn-licon need-tooltip", "aria-label": "Tags"}, $svg_licon("tag")));
     }
 
     // delete
@@ -7718,7 +7716,7 @@ function cmt_render_form_prop(cj, cid, btnbox) {
         } else {
             bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
         }
-        btnbox.append($e("button", {type: "button", name: "delete", class: "btn-licon need-tooltip", "aria-label": "Delete " + x, "data-override-text": bnote}, $svg_use_licon("trash")));
+        btnbox.append($e("button", {type: "button", name: "delete", class: "btn-licon need-tooltip", "aria-label": "Delete " + x, "data-override-text": bnote}, $svg_licon("trash")));
     }
 
     // response ready
@@ -10975,7 +10973,7 @@ handle_ui.on("js-annotate-order", function () {
                 type: "button",
                 class: "ml-2 need-tooltip js-delete-ta",
                 "aria-label": "Delete annotation"
-            }, $svg_use_licon("trash", "m")),
+            }, $svg_licon("trash", "m")),
             fieldset = $e("fieldset", "mt-3 mb-2",
                 $e("legend", null,
                     "#" + dtag + "#",
@@ -14548,7 +14546,7 @@ handle_ui.on("js-offline-review", function () {
         rid = self.form.getAttribute("data-rid"),
         args1 = {p: pid},
         filee = $e("input", {type: "file", name: "file", accept: "text/plain", hidden: true}),
-        uploade = $e("button", {type: "submit", name: "upload", value: 1, class: "btn-success btn-big"}, $svg_use_licon("upload"), " Upload form");
+        uploade = $e("button", {type: "submit", name: "upload", value: 1, class: "btn-success btn-big"}, $svg_licon("upload"), " Upload form");
     let $pu, dry_run = true;
     (rid != "") && (args1.r = rid);
     self.hasAttribute("data-force") && (args1.forceShow = 1);
@@ -14662,7 +14660,7 @@ handle_ui.on("js-edit-formulas", function () {
         if (f.editable) {
             nei.className = "mb-1";
             nei.append($e("input", {type: "text", id: "k-formula/" + count + "/name", class: "editformulas-name need-autogrow", name: "formula/" + count + "/name", size: 30, value: f.name, placeholder: "Formula name"}),
-                $e("button", {type: "button", class: "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, $svg_use_licon("trash", "m")));
+                $e("button", {type: "button", class: "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, $svg_licon("trash", "m")));
             xei.append($e("textarea", {class: "editformulas-expression need-autogrow w-99", id: "k-formula/" + count + "/expression", name: "formula/" + count + "/expression", rows: 1, cols: 64, placeholder: "Formula definition"}, f.expression));
         } else {
             nei.append(f.name);

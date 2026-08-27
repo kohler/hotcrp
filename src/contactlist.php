@@ -869,8 +869,9 @@ class ContactList {
             if ($this->user->privChair && $row->email != $this->user->email) {
                 $actast = "Act as " . $row->name(NAME_P);
                 $t .= " " . $this->conf->hotlink(
-                    Ht::img("viewas.png", $actast, ["title" => $actast]),
-                    "index", ["actas" => $row->email]
+                    Ht::make_icon("viewas", ["class" => "viewas-icon"]),
+                    "index", ["actas" => $row->email],
+                    ["title" => $actast]
                 );
             }
             if ($row->is_disabled() && $this->user->isPC) {

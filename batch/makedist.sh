@@ -666,6 +666,7 @@ images/generic.png
 images/generic24.png
 images/genericf.png
 images/genericf24.png
+images/icons.svg
 images/info45.png
 images/pageresultsex.png
 images/pdf.png

@@ -338,8 +338,9 @@ class Assign_Page {
             if ($rrow->contactId !== $this->user->contactId
                 && $this->user->privChair
                 && $this->user->allow_admin($this->prow)) {
-                $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
-                    $this->prow->reviewurl(["actas" => $rrowid->email]));
+                $actas = " " . Ht::link(Ht::make_icon("viewas", ["class" => "viewas-icon"]),
+                    $this->prow->reviewurl(["actas" => $rrowid->email]),
+                    ["title" => "Become user"]);
             }
         } else {
             $name = Text::nameo_h($rrowid, NAME_P);

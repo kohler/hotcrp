@@ -19,6 +19,8 @@ class Ht {
     /** @var string */
     public static $img_base = "";
     /** @var string */
+    public static $icons_url = "";
+    /** @var string */
     private static $_script_open = "<script";
     /** @var ?non-empty-string
      * @readonly */
@@ -580,6 +582,27 @@ class Ht {
             $js["href"] = $href ?? "";
         }
         return "<a" . self::extra($js) . ">{$html}</a>";
+    }
+
+    /** @param string $name
+     * @param array<string,mixed> $js
+     * @return string */
+    static function make_icon($name, $js = []) {
+        if (empty($js)
+            || (!array_key_exists("aria-hidden", $js)
+                && !isset($js["aria-label"])
+                && !isset($js["aria-labelledby"]))) {
+            $js["aria-hidden"] = "true";
+        }
+        return '<svg' . Ht::extra($js) . "><use href=\"" . Ht::escape_attr(self::$icons_url . "#{$name}") . "\" /></svg>";
+    }
+
+    /** @param string $name
+     * @param null|'s'|'m'|'l' $size
+     * @return string */
+    static function make_licon($name, $size = null) {
+        $size = $size ?? "l";
+        return self::make_icon($name, ["class" => "licon licon-{$size}"]);
     }
 
     /** @return string

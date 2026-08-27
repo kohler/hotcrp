@@ -1980,8 +1980,16 @@ button.link.disabled, button.q.disabled, button.qo.disabled, button.qx.disabled 
 	height: 1.2em;
 	vertical-align: -0.22em;
 }
-.move-handle-icon {
-	fill: currentColor;
+.viewas-icon {
+	fill: var(--text);
+	width: 1.125em;
+	height: 0.6875em;
+}
+a:hover .viewas-icon {
+	fill: var(--link-hover-fg);
+}
+a:active .viewas-icon {
+	fill: var(--link-active-fg);
 }
 
 /* Wizard accordion */

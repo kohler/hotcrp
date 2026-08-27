@@ -89,7 +89,7 @@ class Conf {
     /** @var ?array<string,list<int>> */
     private $_save_logs;
     /** @var string */
-    private $_assets_url;
+    private $_assets_url = "";
     /** @var ?string */
     private $_script_assets_url;
     /** @var bool */
@@ -699,25 +699,21 @@ class Conf {
         }
 
         // remove final slash from $Opt["paperSite"]
-        $nav = Navigation::get();
-        if (($papersite = $this->opt["paperSite"] ?? "") === ""
-            && ($papersite = $nav->base_absolute() ?? "") === "") {
-            $papersite = $this->opt["defaultPaperSite"] ?? "";
+        $papersite = $this->opt["paperSite"] ?? "";
+        if ($papersite === "") {
+            $nav = Navigation::get();
+            if ($nav) {
+                $papersite = $nav->base_absolute() ?? "";
+            }
+            if ($papersite === "") {
+                $papersite = $this->opt["defaultPaperSite"] ?? "";
+            }
         }
         while (str_ends_with($papersite, "/")) {
             $papersite = substr($papersite, 0, -1);
         }
         $this->opt["paperSite"] = $papersite;
-
-        // asset URLs (general assets, scripts, jQuery)
-        $baseurl = $nav->base_path_relative ?? "";
-        $this->_assets_url = $this->opt["assetsUrl"] ?? $baseurl;
-        if ($this->_assets_url !== "" && !str_ends_with($this->_assets_url, "/")) {
-            $this->_assets_url .= "/";
-        }
-        $this->_script_assets_url = $this->opt["scriptAssetsUrl"]
-            ?? (strpos($_SERVER["HTTP_USER_AGENT"] ?? "", "MSIE") === false ? $this->_assets_url : $baseurl);
-        $this->_script_assets_site = $this->_script_assets_url === $baseurl;
+        // NB only set assetUrl on global conf (see refresh_globals())
 
         // check passwordHashMethod
         if (isset($this->opt["passwordHashMethod"])
@@ -793,7 +789,17 @@ class Conf {
     }
 
     function refresh_globals() {
+        $nav = Navigation::get();
+        $base_path = $nav->base_path_relative ?? "";
+        $this->_assets_url = $this->opt["assetsUrl"] ?? $base_path;
+        if ($this->_assets_url !== "" && !str_ends_with($this->_assets_url, "/")) {
+            $this->_assets_url .= "/";
+        }
+        $this->_script_assets_url = $this->opt["scriptAssetsUrl"] ?? $this->_assets_url;
+        $this->_script_assets_site = $this->_script_assets_url === $base_path;
         Ht::$img_base = $this->_assets_url . "images/";
+        // NB can't use assets_url, because cross-origin <use> fails
+        Ht::$icons_url = $base_path . $this->decorate_asset_filename("images/icons.svg");
 
         if (isset($this->opt["timezone"])) {
             if (!date_default_timezone_set($this->opt["timezone"])) {
@@ -3929,6 +3935,7 @@ class Conf {
         if ($this->_script_assets_site) {
             $this->_script_assets_url = $nav->base_path_relative;
         }
+        Ht::$icons_url = $nav->base_path_relative . $this->decorate_asset_filename("images/icons.svg");
     }
 
     const HOTURL_RAW = 0;              // XXX backward compatibility
@@ -4767,6 +4774,19 @@ class Conf {
     // Conference header, footer
     //
 
+    /** @param string $asset
+     * @return string */
+    function decorate_asset_filename($asset) {
+        if (($mtime = @filemtime(SiteLoader::resolve($asset))) !== false) {
+            if ($this->opt["assetsPathMtime"] ?? false) {
+                $asset = "@{$mtime}/{$asset}";
+            } else {
+                $asset .= "?mtime={$mtime}";
+            }
+        }
+        return $asset;
+    }
+
     /** @param array $x
      * @return string */
     function make_css_link($x) {
@@ -4776,14 +4796,7 @@ class Conf {
             && (($url[0] !== "h" && $url[0] !== "H")
                 || (substr_compare($url, "http:", 0, 5, true) !== 0
                     && substr_compare($url, "https:", 0, 6, true) !== 0))) {
-            if (($mtime = @filemtime(SiteLoader::resolve($url))) !== false) {
-                if ($this->opt["assetsPathMtime"] ?? false) {
-                    $url = "@{$mtime}/{$url}";
-                } else {
-                    $url .= "?mtime={$mtime}";
-                }
-            }
-            $x["href"] = $this->_assets_url . $url;
+            $x["href"] = $this->_assets_url . $this->decorate_asset_filename($url);
         }
         return "<link" . Ht::extra($x) . ">";
     }
@@ -5027,6 +5040,7 @@ class Conf {
             "base" => $nav->base_path,
             "suffix" => $nav->php_suffix,
             "assets" => $this->_assets_url,
+            "icons_url" => Ht::$icons_url,
             "cookie_params" => "",
             "postvalue" => $qreq->maybe_post_value(),
             "snouns" => $this->snouns

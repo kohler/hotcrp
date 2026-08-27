@@ -602,10 +602,10 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_actions(SettingValues $sv) {
         echo '<div class="entryi mb-0 settings-rf-actions" data-property="actions"><label></label><div class="btnp entry"><span class="btnbox">',
-            Ht::button(Icons::ui_use("movearrow0"), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move move-up need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_use("movearrow2"), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move move-down need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Ht::make_licon("movearrow0"), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move move-up need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Ht::make_licon("movearrow2"), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move move-down need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
-            Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
+            Ht::button(Ht::make_licon("trash"), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
             Ht::hidden("rf/\$/order", "0", ["id" => "rf/\$/order", "class" => "is-order"]),
             Ht::hidden("rf/\$/id", "", ["id" => "rf/\$/id", "class" => "is-id"]),
             "</div></div>";
@@ -641,7 +641,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         echo '</div><template id="rf_template" class="hidden">',
             '<div id="rf/$" class="settings-xf settings-rf has-fold fold2c ui-fold js-fold-focus">',
             '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
-            Icons::ui_move_handle_horizontal(),
+            Ht::make_icon("move_handle_horizontal", ["width" => "1em", "height" => "0.666em"]),
             '</div>',
             '<div id="rf/$/view" class="settings-xf-viewbox fn2 ui js-foldup"></div>',
             '<fieldset id="rf/$/edit" class="fieldset-covert settings-xf-edit fx2">',

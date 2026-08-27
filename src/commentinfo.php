@@ -263,7 +263,6 @@ class CommentInfo {
             }
             $t[] = "hotcrp.set_response_round(" . json_encode_browser($rrd->name) . "," . json_encode_browser($j) . ")";
         }
-        Icons::stash_defs("tag", "attachment", "trash", "eye");
         return Ht::unstash_script(join(";", $t));
     }
 
