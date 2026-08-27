@@ -8066,6 +8066,12 @@ function cmt_toggle_editing(celt, editing) {
     }
 }
 
+function cmt_clear_no_dry_run() {
+    let form = this.closest("form");
+    form.removeAttribute("data-no-dry-run");
+    form.elements.text && form.elements.text.removeEventListener("input", cmt_clear_no_dry_run);
+}
+
 function cmt_save_callback(cj) {
     var cid = cj_cid(cj), celt = $$(cid), form = celt.querySelector("form");
     return function (data) {
@@ -8089,9 +8095,10 @@ function cmt_save_callback(cj) {
                     message: "<0>To continue anyway, click “" + (bsub ? bsub.textContent : "Save") + "” again.",
                     status: -4 /*MessageSet::MARKED_NOTE*/
                 });
+                form.elements.text.addEventListener("input", cmt_clear_no_dry_run);
             }
-            if (form.elements.topic) {
-                toggleClass(form.elements.topic.parentElement, "is-warning", feedback.list_status(ml, "topic") > 0);
+            for (const f of ["visibility", "topic"]) {
+                form.elements[f] && toggleClass(form.elements[f].parentElement, "is-warning", feedback.list_status(ml, f) > 0);
             }
             $(celt).find(".cmtmsg").html(feedback.render_alert(ml));
             $(celt).find("button, input[type=file]").prop("disabled", false);

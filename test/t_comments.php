@@ -378,6 +378,38 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    /** Dry-run a reviewer-only comment on paper 1 and report whether the
+     * "intended for authors" warning fires.
+     * @param string $text
+     * @return bool */
+    private function author_salutation_warning($text) {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => $text, "visibility" => "rev", "dry_run" => "1"], $paper1);
+        xassert($j->ok);
+        foreach ($j->message_list ?? [] as $mi) {
+            if (($mi->field ?? null) === "visibility"
+                && str_starts_with($mi->message ?? "", "<0>This comment appears")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function test_author_salutation_warning() {
+        // salutations addressed to the authors
+        xassert($this->author_salutation_warning("Dear authors,\n\nThe committee has decided to reject this paper."));
+        xassert($this->author_salutation_warning("### Decision Rationale\n\nDear authors,\n\nThe committee has decided to reject this paper."));
+        xassert($this->author_salutation_warning("Authors,\n\nThe badge requirement was marked incorrectly; that has been fixed."));
+        xassert($this->author_salutation_warning("Hi authors, will the build scripts be added to the artifact?"));
+        xassert($this->author_salutation_warning("Comments for authors:\n\nThe reviewers agree the paper is not ready."));
+        // salutations to colleagues, or third-person prose about the authors
+        xassert(!$this->author_salutation_warning("Dear @Mary Baker - the authors have submitted a revision. Could you take a look?"));
+        xassert(!$this->author_salutation_warning("DRAFT\n\nDear authors, the committee has decided to reject this paper."));
+        xassert(!$this->author_salutation_warning("Author-suggested reviewers: Sally Floyd, Mary Baker"));
+        xassert(!$this->author_salutation_warning("Hello, authors have not fully addressed the revision comments."));
+        xassert(!$this->author_salutation_warning("Comments for authors look fine to me."));
+    }
+
     function test_comment_blind() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         // blindness is forced by config unless review blindness is optional

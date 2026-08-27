@@ -250,6 +250,24 @@ final class CommentStatus extends MessageSet {
                 break;
             }
         }
+        // Warn on a salutation addressed to the authors (`Dear authors`,
+        // `Hi authors`, `@authors`, `Authors:`). Third-person prose about
+        // `the authors`, and salutations to colleagues, must not match.
+        if ($this->crow->commentId <= 0
+            && $this->crow->commentType < CommentInfo::CTVIS_AUTHOR
+            && ($this->crow->commentType & CommentInfo::CTM_BYAUTHOR) === 0
+            && preg_match('/\A\s*+(?:\#{1,6}[^\n]{0,60}\n|\[[^\]\n]{1,30}\])?[\s#*"\'`\x80-\xff]{0,8}(?:'
+                . '(?:(?:hel+o|hi|hey|greetings)[!,]*+\s*+)?dears?\s*+(?:the\s++)?\**+@?+auth[oe]rs?+\b'
+                . '|dears?\s++(?:[a-z][^\s,]{0,20}\s++){1,3}(?:co-)?auth[oe]rs?+\s*+[,:!\n]'
+                . '|(?:hel+o|hi|hey|greetings)!*+(?:\s++\**+@?+auth[oe]rs?+\b'
+                . '|\s*+,\s*+\**+@?+auth[oe]rs?+[ \t]*+(?:[-,.:;!?]|\n))'
+                . '|(?:thanks?|thank\s++you|congratulations|congrats)\s*+,\s*+@?+auth[oe]rs?+\b'
+                . '|@\s*+auth[oe]rs?+\b'
+                . '|comments?\s++(?:for|to)\s++(?:the\s++)?auth[oe]rs?+\**+[ \t]*+[:.\n]'
+                . '|to\s++(?:the\s++)?auth[oe]rs?+\s*+[,:]'
+                . '|auth[oe]rs?+\s*+(?:[,:;]|-{1,2}(?!\w)|—|–))/i', $this->crow->raw_content())) {
+            $this->warning_at("visibility", "<0>This comment appears to be intended for authors, but it’s not visible to authors");
+        }
     }
 
     /** Commit the staged changes to the database.
