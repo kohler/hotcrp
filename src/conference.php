@@ -4918,16 +4918,6 @@ class Conf {
         echo "<!DOCTYPE html>\n<html lang=\"{$this->lang}\">\n<head>\n",
             "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n";
 
-        // session theme
-        echo "<style id=\"p-theme\">";
-        $theme = ($user = $qreq->user()) ? $user->session_theme($qreq) : null;
-        if ($theme === "dark") {
-            echo "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }";
-        } else if ($theme === "light") {
-            echo "@layer dark-mode, theme;";
-        }
-        echo "</style>\n";
-
         // gather stylesheets
         $cssx = [];
         $has_default_css = $has_media = false;
@@ -4956,6 +4946,14 @@ class Conf {
             } else {
                 echo "<meta name=\"", htmlspecialchars($key), "\" content=\"", htmlspecialchars($value), "\">\n";
             }
+        }
+
+        // session theme
+        $theme = ($user = $qreq->user()) ? $user->session_theme($qreq) : null;
+        if ($theme === "dark") {
+            echo "<style id=\"p-theme\">@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }</style>\n";
+        } else if ($theme === "light") {
+            echo "<style id=\"p-theme\">@layer dark-mode, theme;</style>\n";
         }
 
         // css references

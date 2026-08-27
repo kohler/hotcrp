@@ -4897,13 +4897,18 @@ function make_expander_element(foldnum) {
 handle_ui.on("js-retheme", function () {
     const v = this.value || this.getAttribute("data-theme"),
         th = $$("p-theme");
-    if (v === "auto") {
-        th.textContent = "";
-    } else if (v === "light") {
-        th.textContent = "@layer dark-mode, theme;";
+    th && th.remove();
+    let want = "";
+    if (v === "light") {
+        want = "@layer dark-mode, theme; ";
     } else if (v === "dark") {
-        th.textContent = "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; }";
+        want = "@supports (color: light-dark(red, blue)) { @layer theme, dark-mode; } ";
     }
+    // 2026-08: Chrome reevaluates layer order only when parsing a sheet that
+    // contains an `@layer` block with a style rule in it.
+    want += "@layer retheme-trigger { :root { --p-theme: 1; } }";
+    const first_css = document.querySelector("link[rel=stylesheet]");
+    first_css.before($e("style", {id: "p-theme"}, want));
 });
 
 
