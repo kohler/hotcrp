@@ -16,9 +16,9 @@ class WorkItem {
     /** @var string */
     public $work;
     /** @var int */
-    public $touchedAt;
+    public $touchedAt = 0;
     /** @var int */
-    public $dequeuedAt;
+    public $dequeuedAt = 0;
     /** @var int */
     private $workpos = 0;
     /** @var int */
@@ -55,6 +55,7 @@ class WorkItem {
         $wi->workType = $workType;
         $wi->workSubtype = $workSubtype ?? "";
         $wi->work = $workstr;
+        $wi->touchedAt = $wi->dequeuedAt = Conf::$now;
         return $wi;
     }
 
@@ -129,7 +130,7 @@ class WorkItem {
         // XXX retry a few times?
         $result = Dbl::qe($db, "insert into WorkItem ({$qp}, work, touchedAt, dequeuedAt) values ?v ?U
             on duplicate key update work=concat(WorkItem.work,?U(work))",
-            [array_merge($qv, [$this->work, Conf::$now, Conf::$now])]);
+            [array_merge($qv, [$this->work, $this->touchedAt, $this->dequeuedAt])]);
         return !Dbl::is_error($result);
     }
 
