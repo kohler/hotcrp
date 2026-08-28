@@ -54,7 +54,7 @@ class Work_Tester {
      * @return ?WorkItem */
     private function load_work($workType) {
         $result = $this->conf->qe("select * from WorkItem where workType=?", $workType);
-        $wi = WorkItem::fetch($result, $this->conf);
+        $wi = WorkItem::fetch($result, $this->conf->dblink);
         $result->close();
         return $wi;
     }
@@ -113,7 +113,7 @@ class Work_Tester {
         xassert_eqq($this->nrows(), 2);
 
         $result = $this->conf->qe("select * from WorkItem where workType=? and workSubtype=?", "testwork", "a");
-        $wi = WorkItem::fetch($result, $this->conf);
+        $wi = WorkItem::fetch($result, $this->conf->dblink);
         $result->close();
         xassert_eqq($wi->workSubtype, "a");
         $ws = $this->drain($wi);
@@ -209,7 +209,7 @@ class Work_Tester {
         xassert_eqq($this->nrows(), 0);
         $result = Dbl::qe($cdb, "select * from WorkItem where serverId=? and root=?",
             99, SiteLoader::$root);
-        $wi = WorkItem::fetch($result, $this->conf);
+        $wi = WorkItem::fetch($result, $cdb);
         $result->close();
         xassert(!!$wi);
         xassert_eqq($wi->serverId, 99);
@@ -229,8 +229,11 @@ class Work_Tester {
     /** @param string $content
      * @return DocumentInfo */
     private function save_document($content) {
+        // these documents are never linked to a comment, so they must be
+        // stored inactive; otherwise the document invariants flag them
         $doc = DocumentInfo::make_content($this->conf, $content, "text/plain")
-            ->set_document_type(DTYPE_COMMENT);
+            ->set_document_type(DTYPE_COMMENT)
+            ->set_prefer_inactive();
         xassert($doc->save());
         return $doc;
     }
@@ -384,5 +387,9 @@ class Work_Tester {
         xassert_eqq($this->nrows(), 0);
 
         $this->conf->save_refresh_setting("opt.docstore", 1, $this->docstore);
+    }
+
+    function test_invariants_last() {
+        xassert(ConfInvariants::test_all($this->conf));
     }
 }

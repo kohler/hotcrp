@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class WorkItem {
-    /** @var Conf */
-    public $conf;
+    /** @var \mysqli */
+    private $dblink;
     /** @var ?int  local if null, CDB if nonnull */
     public $serverId;
     /** @var ?string  only set if CDB */
@@ -25,10 +25,6 @@ class WorkItem {
     private $workendpos = 0;
 
 
-    function __construct(Conf $conf) {
-        $this->conf = $conf;
-    }
-
     /** @param string $workType
      * @param ?string $workSubtype
      * @param object|array|string $work
@@ -45,12 +41,15 @@ class WorkItem {
             }
             $workstr = "\x1E" . $workstr .  "\n";
         }
-        $wi = new WorkItem($conf);
+        $wi = new WorkItem;
         if ($conf->opt("processWorkContactdb")
-            && $conf->contactdb()
+            && ($cdb = $conf->contactdb())
             && ($serverId = SiteLoader::server_id())) {
+            $wi->dblink = $cdb;
             $wi->serverId = $serverId;
             $wi->root = SiteLoader::$root;
+        } else {
+            $wi->dblink = $conf->dblink;
         }
         $wi->workType = $workType;
         $wi->workSubtype = $workSubtype ?? "";
@@ -60,8 +59,8 @@ class WorkItem {
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
-    function incorporate(Conf $conf) {
-        $this->conf = $conf;
+    private function incorporate($dblink) {
+        $this->dblink = $dblink;
         if (isset($this->serverId)) {
             $this->serverId = (int) $this->serverId;
         }
@@ -70,37 +69,36 @@ class WorkItem {
     }
 
     /** @param mysqli_result|Dbl_Result $result
+     * @oaram \mysql $dblink
      * @return ?WorkItem */
-    static function fetch($result, Conf $conf) {
-        $wi = $result->fetch_object("WorkItem", [$conf]);
+    static function fetch($result, $dblink) {
+        $wi = $result->fetch_object("WorkItem");
         '@phan-var ?WorkItem $wi';
         if ($wi) {
-            $wi->incorporate($conf);
+            $wi->incorporate($dblink);
         }
         return $wi;
     }
 
     const DBP_QUERY = 0;
     const DBP_INSERT = 1;
-    /** @return array{\mysqli,string,list<mixed>} */
+    /** @return array{string,list<mixed>} */
     private function dbparts($type) {
         if ($this->serverId !== null) {
-            $db = $this->conf->contactdb();
             $keys = ["serverId", "root", "workType", "workSubtype"];
             $values = [$this->serverId, $this->root, $this->workType, $this->workSubtype];
         } else {
-            $db = $this->conf->dblink;
             $keys = ["workType", "workSubtype"];
             $values = [$this->workType, $this->workSubtype];
         }
         $qp = $type === self::DBP_QUERY ? join("=? and ", $keys) . "=?" : join(",", $keys);
-        return [$db, $qp, $values];
+        return [$qp, $values];
     }
 
     /** @return bool */
     function reload() {
-        [$db, $qp, $qv] = $this->dbparts(self::DBP_QUERY);
-        $result = Dbl::qe($db, "select work from WorkItem where {$qp}", ...$qv);
+        [$qp, $qv] = $this->dbparts(self::DBP_QUERY);
+        $result = Dbl::qe($this->dblink, "select work from WorkItem where {$qp}", ...$qv);
         if (Dbl::is_error($result)) {
             return false;
         }
@@ -126,9 +124,9 @@ class WorkItem {
     /** @return bool */
     function enqueue() {
         assert(str_starts_with($this->work, "\x1E") && str_ends_with($this->work, "\n"));
-        [$db, $qp, $qv] = $this->dbparts(self::DBP_INSERT);
+        [$qp, $qv] = $this->dbparts(self::DBP_INSERT);
         // XXX retry a few times?
-        $result = Dbl::qe($db, "insert into WorkItem ({$qp}, work, touchedAt, dequeuedAt) values ?v ?U
+        $result = Dbl::qe($this->dblink, "insert into WorkItem ({$qp}, work, touchedAt, dequeuedAt) values ?v ?U
             on duplicate key update work=concat(WorkItem.work,?U(work))",
             [array_merge($qv, [$this->work, $this->touchedAt, $this->dequeuedAt])]);
         return !Dbl::is_error($result);
@@ -146,10 +144,10 @@ class WorkItem {
                && ($len === strlen($this->work)
                    || ($this->work[$len - 1] === "\n"
                        && $this->work[$len] === "\x1E")));
-        [$db, $qp, $qv] = $this->dbparts(self::DBP_QUERY);
+        [$qp, $qv] = $this->dbparts(self::DBP_QUERY);
         $result = null;
         if ($len === strlen($this->work)) {
-            $result = Dbl::qe_apply($db,
+            $result = Dbl::qe_apply($this->dblink,
                 "delete from WorkItem where {$qp} and work=?",
                 array_merge($qv, [$this->work]));
             if ($result->affected_rows === 1) {
@@ -161,13 +159,14 @@ class WorkItem {
         if ($len === 0) {
             // update touchedAt so observers can tell we ran, even though
             // we were blocked from making progress
-            Dbl::qe_apply($db,
+            Dbl::qe_apply($this->dblink,
                 "update WorkItem set touchedAt=greatest(touchedAt,?) where {$qp}",
                 array_merge([Conf::$now], $qv));
             return true;
         }
         $prefix = substr($this->work, 0, $len);
-        $result = Dbl::qe_apply($db, "update WorkItem set work=SUBSTR(work FROM ?),
+        $result = Dbl::qe_apply($this->dblink,
+            "update WorkItem set work=SUBSTR(work FROM ?),
             touchedAt=greatest(touchedAt,?), dequeuedAt=greatest(dequeuedAt,?)
             where {$qp} and LEFT(work, ?)=?",
             array_merge([$len + 1, Conf::$now, Conf::$now], $qv, [$len, $prefix]));
