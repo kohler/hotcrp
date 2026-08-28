@@ -34,7 +34,7 @@ class ProcessWork_Batch {
         $this->verbose = $arg["verbose"] ?? 0;
         $this->count = $arg["count"] ?? 100;
         if (!($Opt["loaded"] ?? false)) {
-            SiteLoader::read_main_options($config_file, $this->confid);
+            SiteLoader::read_main_options(null, $this->confid);
         }
         if (($this->cdb = isset($arg["cdb"]))) {
             $this->dblink = Conf::main_contactdb();
