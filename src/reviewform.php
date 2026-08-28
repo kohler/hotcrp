@@ -515,7 +515,7 @@ Ready\n";
         // Links
         if ($rrow->reviewId) {
             echo '<div class="float-right">',
-                $this->conf->hotlink(Ht::img("txt.png", "[Text]", "b") . "&nbsp;<u>Plain text</u>", "review", $rlink1 + ["text" => 1] + $rlink2, ["class" => "noul"]),
+                $this->conf->hotlink(Ht::img("txt24.svg", "[Text]", "sdlimg") . "&nbsp;<u>Plain text</u>", "review", $rlink1 + ["text" => 1] + $rlink2, ["class" => "noul"]),
                 "</div>";
         }
 

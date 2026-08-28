@@ -1034,6 +1034,51 @@ Object.assign(hotcrp.text, {
     urlencode: urlencode
 });
 
+
+// MIME
+
+hotcrp.mimeinfo = function (type, filename) {
+    // ported from Mimetype::image_stem()
+    const ch = type.charCodeAt(0), semi = type.indexOf(";");
+    if (semi >= 0) {
+        type = type.substring(0, semi).trim();
+    }
+    if (ch === 97 /*a*/) {
+        if (type === "application/pdf") {
+            return {image_stem: "pdf", description: "PDF"};
+        } else if (type.startsWith("audio/")) {
+            return {image_stem: "audio"};
+        } else if (type === "application/zip"
+                   || type === "application/x-tar"
+                   || type === "application/x-rar-compressed"
+                   || (filename !== null
+                       && filename.endsWith(".tar.gz")
+                       && type === "application/gzip")) {
+            return {image_stem: "archive"};
+        } else if (type === "application/vnd.ms-powerpoint") {
+            return {image_stem: "slides", description: "PowerPoint"};
+        } else if (type === "application/vnd.apple.keynote") {
+            return {image_stem: "slides", description: "Keynote"};
+        } else if (type === "application/vnd.openxmlformats-officedocument.presentationml.presentation") {
+            return {image_stem: "slides", description: "PowerPoint"};
+        }
+    } else if (ch === 105 /*i*/) {
+        if (type.startsWith("image/")) {
+            return {image_stem: "image"};
+        }
+    } else if (ch === 116 /*t*/) {
+        if (type.startsWith("text/")) {
+            return {image_stem: "txt"};
+        }
+    } else if (ch === 118 /*v*/) {
+        if (type.startsWith("video/")) {
+            return {image_stem: "video"};
+        }
+    }
+    return {image_stem: "generic"};
+}
+
+
 // events
 var event_key = (function () {
 const nonprintable_map = {
@@ -7960,12 +8005,9 @@ function cmt_render_attachment_input(ctr, doc) {
 }
 
 function cmt_render_attachment(doc) {
-    const a = $e("a", {href: siteinfo.site_relative + doc.siteurl, class: "qo"});
-    if (doc.mimetype === "application/pdf") {
-        a.append($e("img", {src: siteinfo.assets + "images/pdf.png", alt: "[PDF]", class: "sdlimg"}));
-    } else {
-        a.append($e("img", {src: siteinfo.assets + "images/generic.png", alt: "[Attachment]", class: "sdlimg"}));
-    }
+    const a = $e("a", {href: siteinfo.site_relative + doc.siteurl, class: "qo"}),
+        mi = hotcrp.mimeinfo(doc.mimetype, doc.filename);
+    a.append($e("img", {src: `${siteinfo.assets}images/${mi.image_stem}24.svg`, alt: mi.description || "Attachment", class: "sdlimg"}));
     a.append(" ", $e("u", "x", doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
         a.append(" ", $e("span", "dlsize", "(" + unparse_byte_size(doc.size) + ")"));
@@ -13004,7 +13046,7 @@ function background_format_check() {
                     && data.ok
                     && img
                     && img.tagName === "IMG"
-                    && (m = img.src.match(/^(.*\/pdff?)x?((?:24)?\.png(?:\?.*)?)$/)))
+                    && (m = img.src.match(/^(.*\/pdff?)x?((?:24)?\.(?:png|svg)(?:\?.*)?)$/)))
                     img.src = m[1] + (data.has_error ? "x" : "") + m[2];
                 next(data && data.ok);
             }
@@ -16189,6 +16231,7 @@ Object.assign(window.hotcrp, {
     make_color_scheme: make_color_scheme,
     // make_review_field
     // make_time_point
+    // mimeinfo
     // monitor_autoassignment
     // monitor_job
     // onload

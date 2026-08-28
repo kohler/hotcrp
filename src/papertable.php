@@ -3071,7 +3071,7 @@ class PaperTable {
         }
         if (!empty($viewable)) {
             $m[] = '<p class="sd mt-5"><a href="' . Ht::escape_attr($this->prow->reviewurl(["m" => "r", "text" => 1])) . '" class="noul">'
-                . Ht::img("txt24.png", "[Text]", "dlimg")
+                . Ht::img("txt24.svg", "Text", "dlimg")
                 . "&nbsp;<u>" . ucfirst(join(" and ", $viewable))
                 . " in plain text</u></a></p>";
         }

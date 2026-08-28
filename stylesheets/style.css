@@ -2975,6 +2975,7 @@ img.dlimg {
 }
 img.sdlimg {
 	position: relative;
+	width: 1em;
 	bottom: -3px;
 	margin-top: -3px;
 }

@@ -20,18 +20,20 @@ class Mimetype {
     const KEYNOTE_TYPE = "application/vnd.apple.keynote";
     const CSV_TYPE = "text/csv";
     const FORM_DATA_TYPE = "multipart/form-data";
+    const GZIP_TYPE = "application/gzip";
 
     const TXT_UTF8_TYPE = "text/plain; charset=utf-8";
     const JSON_UTF8_TYPE = "application/json; charset=utf-8";
     const CSV_UTF8_TYPE = "text/csv; charset=utf-8";
 
-    const FLAG_INLINE = 1;
-    const FLAG_UTF8 = 2;
-    const FLAG_COMPRESSIBLE = 4;
-    const FLAG_INCOMPRESSIBLE = 8;
-    const FLAG_TEXTUAL = 16;
-    const FLAG_REQUIRE_SNIFF = 32;
-    const FLAG_ZIPLIKE = 64;
+    const FLAG_INLINE = 0x1;
+    const FLAG_UTF8 = 0x2;
+    const FLAG_COMPRESSIBLE = 0x4;
+    const FLAG_INCOMPRESSIBLE = 0x8;
+    const FLAG_TEXTUAL = 0x10;
+    const FLAG_REQUIRE_SNIFF = 0x20;
+    const FLAG_ZIPLIKE = 0x40;
+    const FLAG_SLIDES = 0x80;
 
     /** @var string */
     public $mimetype;
@@ -51,10 +53,10 @@ class Mimetype {
         self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
         self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF],
         self::PS_TYPE =>      [".ps", "PostScript", self::FLAG_COMPRESSIBLE],
-        self::PPT_TYPE =>     [".ppt", "PowerPoint", self::FLAG_INCOMPRESSIBLE, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
-        self::KEYNOTE_TYPE => [".key", "Keynote", self::FLAG_INCOMPRESSIBLE | self::FLAG_ZIPLIKE, "application/x-iwork-keynote-sffkey"],
+        self::PPT_TYPE =>     [".ppt", "PowerPoint", self::FLAG_INCOMPRESSIBLE | self::FLAG_SLIDES, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
+        self::KEYNOTE_TYPE => [".key", "Keynote", self::FLAG_INCOMPRESSIBLE | self::FLAG_ZIPLIKE | self::FLAG_SLIDES, "application/x-iwork-keynote-sffkey"],
         "application/vnd.openxmlformats-officedocument.presentationml.presentation" =>
-                              [".pptx", "PowerPoint", self::FLAG_INCOMPRESSIBLE],
+                              [".pptx", "PowerPoint", self::FLAG_INCOMPRESSIBLE | self::FLAG_SLIDES],
         "video/mp4" =>        [".mp4", null, self::FLAG_INCOMPRESSIBLE],
         "video/x-msvideo" =>  [".avi", null, self::FLAG_INCOMPRESSIBLE],
         self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8 | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
@@ -314,6 +316,43 @@ class Mimetype {
         return $xmt === $this->mimetype
             || (($this->flags & self::FLAG_ZIPLIKE) !== 0
                 && $xmt === self::ZIP_TYPE);
+    }
+
+    /** @param ?string $filename
+     * @return string */
+    function image_stem($filename = null) {
+        // see also script.js:image_stem
+        $ch = $this->mimetype[0] ?? "";
+        if ($ch === "a") {
+            if ($this->mimetype === self::PDF_TYPE) {
+                return "pdf";
+            } else if (str_starts_with($this->mimetype, "audio/")) {
+                return "audio";
+            } else if ($this->mimetype === self::ZIP_TYPE
+                       || $this->mimetype === self::TAR_TYPE
+                       || $this->mimetype === self::RAR_TYPE
+                       || ($filename !== null
+                           && str_ends_with($filename, ".tar.gz")
+                           && $this->mimetype === self::GZIP_TYPE)) {
+                return "archive";
+            }
+        } else if ($ch === "i") {
+            if (str_starts_with($this->mimetype, "image/")) {
+                return "image";
+            }
+        } else if ($ch === "t") {
+            if (str_starts_with($this->mimetype, "text/")) {
+                return "txt";
+            }
+        } else if ($ch === "v") {
+            if (str_starts_with($this->mimetype, "video/")) {
+                return "video";
+            }
+        }
+        if ($this->flags & self::FLAG_SLIDES) {
+            return "slides";
+        }
+        return "generic";
     }
 
 

@@ -1749,19 +1749,16 @@ class DocumentInfo implements JsonSerializable {
 
         if ($this->mimetype == "application/pdf") {
             $img = "pdf";
-            $alt = "[PDF]";
-        } else if ($this->mimetype == "application/postscript") {
-            $img = "postscript";
-            $alt = "[PS]";
+            $alt = "PDF";
         } else {
-            $img = "generic";
             $m = Mimetype::lookup($this->mimetype);
-            $alt = "[" . ($m && $m->description ? $m->description : $this->mimetype) . "]";
+            $img = $m ? $m->image_stem($this->filename) : "generic";
+            $alt = $m && $m->description ? $m->description : $this->mimetype;
         }
 
         $x = "<a href=\"{$p}\" class=\"qo" . ($need_run ? " need-format-check" : "") . '"'
             . Ht::extra($attr) . '>'
-            . Ht::img($img . $suffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
+            . Ht::img($img . $suffix . "24.svg", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
         if ($html) {
             $x .= " <u class=\"x\">{$html}</u>";
         }
