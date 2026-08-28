@@ -75,8 +75,8 @@ class CleanDocstore_Batch {
                  ++$j) {
                 $fm = $ftree->random_match();
                 if ($fm->is_complete()
-                    && (!self::is_temp($fm)
-                        || max($fm->atime(), $fm->mtime()) < $this->cutoff)) {
+                    && $fm->atime() !== false
+                    && (!self::is_temp($fm) || $fm->older_than($this->cutoff))) {
                     ++$n;
                     $fmatches[] = $fm;
                 } else {
@@ -107,11 +107,10 @@ class CleanDocstore_Batch {
         });
         if (empty($fmatches)) {
             return null;
-        } else {
-            $fm = $fmatches[0];
-            $fm->tree->hide($fm);
-            return $fm;
         }
+        $fm = $fmatches[0];
+        $fm->tree->hide($fm);
+        return $fm;
     }
 
     /** @param DocumentFileTreeMatch $fm
@@ -136,10 +135,9 @@ class CleanDocstore_Batch {
         }
         if ($doc->check_s3()) {
             return true;
-        } else {
-            fwrite(STDERR, "{$fm->fname}: not on S3\n");
-            return false;
         }
+        fwrite(STDERR, "{$fm->fname}: not on S3\n");
+        return false;
     }
 
     /** @return int */

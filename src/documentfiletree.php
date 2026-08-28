@@ -378,16 +378,24 @@ class DocumentFileTreeMatch {
     /** @return int|false */
     function atime() {
         if ($this->_atime === null) {
-            $this->_atime = fileatime($this->fname);
+            $this->_atime = @fileatime($this->fname);
         }
         return $this->_atime;
     }
     /** @return int|false */
     function mtime() {
         if ($this->_mtime === null) {
-            $this->_mtime = filemtime($this->fname);
+            $this->_mtime = @filemtime($this->fname);
         }
         return $this->_mtime;
+    }
+    /** @param int|float $cutoff
+     * @return bool */
+    function older_than($cutoff) {
+        $at = $this->atime();
+        $mt = $this->mtime();
+        return $at !== false && $at < $cutoff
+            && $mt !== false && $mt < $cutoff;
     }
 }
 
