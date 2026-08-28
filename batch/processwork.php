@@ -25,16 +25,16 @@ class ProcessWork_Batch {
     private $nerrors = 0;
 
     function __construct(?Conf $conf, $arg) {
+        global $Opt;
+        $Opt = $Opt ?? [];
         $this->subcommand = $arg["_subcommand"] ?? "run";
         $this->confid = $arg["name"] ?? null;
         $this->cdb = isset($arg["cdb"]);
         $this->quiet = isset($arg["quiet"]);
         $this->verbose = $arg["verbose"] ?? 0;
         $this->count = $arg["count"] ?? 100;
-        if (!$conf) {
-            global $Opt;
-            $Opt["__no_main"] = true;
-            $conf = initialize_conf(null, $this->confid);
+        if (!($Opt["loaded"] ?? false)) {
+            SiteLoader::read_main_options($config_file, $this->confid);
         }
         if (($this->cdb = isset($arg["cdb"]))) {
             $this->dblink = Conf::main_contactdb();
