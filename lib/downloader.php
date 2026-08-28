@@ -61,6 +61,8 @@ class Downloader {
     private $_response_code;
     /** @var HeaderSet */
     private $_headers;
+    /** @var ?bool */
+    private $_range_check;
 
     function __construct(?Conf $conf = null) {
         $this->conf = $conf;
@@ -318,12 +320,13 @@ class Downloader {
 
     /** @return bool */
     function check_ranges() {
-        if ($this->range === null) {
+        if ($this->_range_check !== null) {
+            return $this->_range_check;
+        } else if ($this->range === null) {
             return true;
-        }
-        if ($this->if_range !== null
-            && ($this->etag === null
-                || !self::etag_equals($this->if_range, $this->etag, true))) {
+        } else if ($this->if_range !== null
+                   && ($this->etag === null
+                       || !self::etag_equals($this->if_range, $this->etag, true))) {
             $this->range = null;
             return true;
         }
@@ -344,10 +347,13 @@ class Downloader {
             }
         }
         if (empty($rs)) {
-            return false;
+            $this->range = null;
+            $this->_range_check = false;
+        } else {
+            $this->range = $rs === [[0, $filesize]] ? null : $rs;
+            $this->_range_check = true;
         }
-        $this->range = $rs === [[0, $filesize]] ? null : $rs;
-        return true;
+        return $this->_range_check;
     }
 
     /** @param Downloader $dl
@@ -496,25 +502,13 @@ class Downloader {
                 yield "Content-Security-Policy" => $csph;
             }
         }
-        if ($this->_content_redirect !== null
-            || (!$this->head && self::skip_content_length_header())) {
-            $bs = null;
-        } else if ($this->range === null) {
-            $bs = $this->content_length;
-        } else if (count($this->range) === 1) {
-            $bs = $this->range[0][1] - $this->range[0][0];
-        } else {
-            $bs = 0;
-            foreach ($this->range as $i => $r) {
-                $bs += $r[1] - $r[0] + strlen($this->_range_separator($i, $r));
+        if ($this->_content_redirect === null
+            && ($this->head || !self::skip_content_length_header())) {
+            $clen = $this->response_content_length();
+            yield "Content-Length" => "{$clen}"; // require string
+            if ($clen > 2000000) {
+                yield "X-Accel-Buffering" => "no";
             }
-            $bs += strlen($this->_range_separator(count($this->range), null));
-        }
-        if ($bs !== null) {
-            yield "Content-Length" => "{$bs}"; // require string
-        }
-        if ($bs !== null && $bs > 2000000) {
-            yield "X-Accel-Buffering" => "no";
         }
         yield from $this->_headers->by_name();
         if ($this->_content_redirect !== null) {
@@ -553,12 +547,33 @@ class Downloader {
         }
     }
 
+    /** @return int */
+    function response_content_length() {
+        $this->check_ranges(); // canonicalize ranges
+        if ($this->range === null) {
+            return $this->content_length;
+        } else if (count($this->range) === 1) {
+            return $this->range[0][1] - $this->range[0][0];
+        }
+        $clen = 0;
+        foreach ($this->range as $i => $r) {
+            $clen += $r[1] - $r[0] + strlen($this->_range_separator($i, $r));
+        }
+        return $clen + strlen($this->_range_separator(count($this->range), null));
+    }
+
     /** Return the download's body as a string, honoring any requested ranges.
      * @return string */
     function content_string() {
         ob_start();
         $this->emit_ranges();
         return ob_get_clean();
+    }
+
+    /** @return bool */
+    function will_emit_content_or_redirect() {
+        return $this->response_code() < 300
+            && !$this->head;
     }
 
     /** @return int */

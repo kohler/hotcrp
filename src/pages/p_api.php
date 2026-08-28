@@ -61,6 +61,11 @@ class API_Page {
         }
         if ($jr instanceof Downloader) {
             $conf->emit_browser_security_headers($qreq);
+            if ($uf
+                && ($uf->charge ?? null) !== false
+                && $jr->will_emit_content_or_redirect()) {
+                $qreq->contact_counter()->api_charge_bytes($jr->response_content_length());
+            }
             $jr->emit();
             Navigation::complete();
         } else if ($jr instanceof PageCompletion) {

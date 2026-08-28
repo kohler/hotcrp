@@ -48,6 +48,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_qsession;
     /** @var ?PaperInfo */
     private $_requested_paper;
+    /** @var ?TokenInfo */
+    private $_bearer_token;
 
     /** @var Qrequest */
     static public $main_request;
@@ -145,6 +147,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this;
     }
 
+    /** @return $this */
+    function set_bearer_token(?TokenInfo $token) {
+        $this->_bearer_token = $token;
+        return $this;
+    }
+
     /** @return string */
     function method() {
         return $this->_method;
@@ -181,6 +189,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @return Qsession */
     function qsession() {
         return $this->_qsession;
+    }
+    /** @return ?ContactCounter */
+    function contact_counter() {
+        if (!$this->_user) {
+            return null;
+        } else if (($t = $this->_bearer_token)) {
+            return $this->_user->contact_counter_for($t->is_cdb, $t->contactId);
+        }
+        return $this->_user->contact_counter();
     }
 
     /** @return ?string */

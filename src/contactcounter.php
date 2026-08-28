@@ -55,6 +55,8 @@ class ContactCounter {
 
     const DEFAULT_SSRW = 60000;
     const DEFAULT_SSRA = 6;
+    /** Default budget charged per kilobyte (1024 bytes) of response body. */
+    const DEFAULT_KBYTE_PRICE = 0.01;
 
     /** @param Conf $conf
      * @param bool $is_cdb
@@ -200,6 +202,21 @@ class ContactCounter {
         }
         $this->_pending += $cost;
         $this->conf->register_shutdown_function("ContactCounterFlush")->add($this);
+    }
+
+    /** Charge for `$nbytes`, using the given price per kilobyte, or the
+     * conference’s default if that is null
+     * @param int $nbytes
+     * @param ?float $kbprice */
+    function api_charge_bytes($nbytes, $kbprice = null) {
+        if ($nbytes <= 0 || $this->contactId <= 0) {
+            return;
+        }
+        $kbprice = $kbprice ?? $this->conf->opt("apiKbytePrice") ?? self::DEFAULT_KBYTE_PRICE;
+        $cost = (int) ($nbytes * $kbprice / 1024 + 0.001);
+        if ($cost > 0) {
+            $this->api_charge($cost);
+        }
     }
 
     /** Save this request's accumulated API charge. */

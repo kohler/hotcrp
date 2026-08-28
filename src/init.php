@@ -325,6 +325,7 @@ function initialize_user($qreq, $kwarg = null) {
                 ->complete();
         }
         $qreq->approve_token(); // the bearer token counts as explicit authorization
+        $qreq->set_bearer_token($token);
         $qreq->set_user($user);
         $qreq->set_qsession(new MemoryQsession($salt, ["u" => $user->email]));
         $user->set_bearer_authorized();
