@@ -722,12 +722,11 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
-    function need_prefetch_content() {
-        return $this->content === null
-            && $this->content_file === null
-            && $this->filestore === null
-            && !$this->load_docstore()
-            && $this->conf->s3_client();
+    function content_available_locally() {
+        return $this->content !== null
+            || $this->content_file !== null
+            || $this->filestore !== null
+            || $this->load_docstore();
     }
 
     /** @return bool */
@@ -1310,7 +1309,8 @@ class DocumentInfo implements JsonSerializable {
     static function prefetch_content($docs, $flags = 0) {
         $pfdocs = [];
         foreach ($docs as $doc) {
-            if ($doc->need_prefetch_content()) {
+            if (!$doc->content_available_locally()
+                && $doc->conf->s3_client()) {
                 $pfdocs[] = $doc;
             }
         }

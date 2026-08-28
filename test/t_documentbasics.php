@@ -271,7 +271,7 @@ class DocumentBasics_Tester {
         $docs = [];
         for ($i = 0; $i !== $n; ++$i) {
             $docs[] = $doc = DocumentInfo::make_hash($this->conf, $hashes[$i], "text/plain");
-            xassert($doc->need_prefetch_content());
+            xassert(!$doc->content_available_locally());
         }
 
         $this->s3c->reset_counts();
