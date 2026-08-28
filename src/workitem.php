@@ -113,12 +113,12 @@ class WorkItem {
             // XXX retry a few times?
             $result = Dbl::qe($this->conf->contactdb(),
                 "insert into WorkItem (serverId, root, workType, workSubtype, work)
-                    values (?, ?, ?, ?, ?) ?U on duplicate key update work=concat(work,?U(work))",
+                    values (?, ?, ?, ?, ?) ?U on duplicate key update work=concat(WorkItem.work,?U(work))",
                 $this->serverId, $this->root, $this->workType, $this->workSubtype, $this->work);
         } else {
             $result = Dbl::qe($this->conf->dblink,
                 "insert into WorkItem (workType, workSubtype, work)
-                    values (?, ?, ?) ?U on duplicate key update work=concat(work,?U(work))",
+                    values (?, ?, ?) ?U on duplicate key update work=concat(WorkItem.work,?U(work))",
                 $this->workType, $this->workSubtype, $this->work);
         }
         return !Dbl::is_error($result);
@@ -151,7 +151,7 @@ class WorkItem {
                     $this->workType, $this->workSubtype, $this->work);
             }
             if ($result->affected_rows === 1) {
-                $this->work = null;
+                $this->work = "";
                 $this->workpos = $this->workendpos = 0;
                 return true;
             }
@@ -178,7 +178,7 @@ class WorkItem {
 
     /** @return bool */
     function done() {
-        return $this->work === null
+        return $this->work === ""
             || $this->workpos >= strlen($this->work);
     }
 
