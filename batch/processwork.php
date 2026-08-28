@@ -31,18 +31,18 @@ class ProcessWork_Batch {
         $this->quiet = isset($arg["quiet"]);
         $this->verbose = $arg["verbose"] ?? 0;
         $this->count = $arg["count"] ?? 100;
+        if (!$conf) {
+            global $Opt;
+            $Opt["__no_main"] = true;
+            $conf = initialize_conf(null, $this->confid);
+        }
         if (($this->cdb = isset($arg["cdb"]))) {
             $this->dblink = Conf::main_contactdb();
             if (!$this->dblink) {
                 throw new CommandLineException("no contactdb");
             }
         } else {
-            if ($conf) {
-                $this->conf = $conf;
-            } else {
-                $Opt["__no_main"] = true;
-                $this->conf = initialize_conf(null, $this->confid);
-            }
+            $this->conf = $conf;
             $this->dblink = $this->conf->dblink;
         }
     }
