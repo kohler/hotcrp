@@ -37,7 +37,12 @@ class ProcessWork_Batch {
                 throw new CommandLineException("no contactdb");
             }
         } else {
-            $this->conf = $conf ?? initialize_conf(null, $this->confid);
+            if ($conf) {
+                $this->conf = $conf;
+            } else {
+                $Opt["__no_main"] = true;
+                $this->conf = initialize_conf(null, $this->confid);
+            }
             $this->dblink = $this->conf->dblink;
         }
     }
@@ -250,7 +255,6 @@ Usage: php batch/processwork.php [-n CONFID | -G] [run]
                       "list Print the contents of the work queue")
          ->maxarg(0)
          ->parse($argv);
-        initialize_conf(null, $arg["name"] ?? null);
         return new ProcessWork_Batch(null, $arg);
     }
 }
