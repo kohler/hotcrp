@@ -16,12 +16,15 @@ class S3Transfer_Batch {
     public $kill;
     /** @var string */
     public $match;
+    /** @var bool */
+    public $verbose;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->active = isset($arg["active"]);
         $this->kill = isset($arg["kill"]);
         $this->match = $arg["match"] ?? "";
+        $this->verbose = isset($arg["V"]);
     }
 
     /** @return int */
@@ -73,7 +76,9 @@ class S3Transfer_Batch {
             }
 
             if ($checked) {
-                fwrite(STDOUT, "{$front}: {$doc->s3_key()} exists\n");
+                if ($this->verbose) {
+                    fwrite(STDOUT, "{$front}: {$doc->s3_key()} exists\n");
+                }
             } else if ($saved) {
                 fwrite(STDOUT, "{$front}: {$doc->s3_key()} saved\n");
             } else {
@@ -101,7 +106,8 @@ class S3Transfer_Batch {
             "config: !",
             "active,a Only transfer active documents (current versions)",
             "kill,k Remove transferred documents from database",
-            "match:,m: =MATCH Transfer documents matching MATCH"
+            "match:,m: =MATCH Transfer documents matching MATCH",
+            "V,verbose Be verbose"
         )->description("Transfer submissions from local HotCRP storage to S3.
 Usage: php batch/s3transfer.php [--active] [--kill] [-m MATCH]")
          ->helpopt("help")
