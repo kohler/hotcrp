@@ -30,7 +30,7 @@ class Multiconference {
         }
 
         if (!$confid) {
-            $Opt["confid"] = "__nonexistent__";
+            $Opt["confid"] = "__unspecified__";
         } else if (preg_match('/\A[a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
             $Opt["confid"] = $confid;
         } else {
@@ -267,7 +267,6 @@ class Multiconference {
         return "Conference not found";
     }
 
-    /** @return never */
     static function fail_bad_options() {
         global $Opt;
         $qreq = null;
@@ -285,7 +284,7 @@ class Multiconference {
         foreach ($Opt["missing"] ?? [] as $x) {
             if (strpos($x, "__invalid__") !== false) {
                 $invalid = true;
-            } else if (strpos($x, "__nonexistent__") === false) {
+            } else if (strpos($x, "__unspecified__") === false) {
                 $missing[] = $x;
             }
         }
@@ -301,7 +300,10 @@ class Multiconference {
                 }, $missing));
             } else if ($invalid) {
                 $errors[] = "Invalid conference specified with `-n`";
-            } else if ($multiconference && $confid === "__nonexistent__") {
+            } else if ($multiconference && $confid === "__unspecified__") {
+                if ($Opt["__no_main"] ?? false) {
+                    return; // not necessarily an error
+                }
                 $errors[] = self::nonexistence_error();
             } else {
                 $errors[] = "Unable to load HotCRP";
@@ -314,7 +316,7 @@ class Multiconference {
                 } else {
                     $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
                 }
-            } else if ($multiconference && $confid === "__nonexistent__") {
+            } else if ($multiconference && $confid === "__unspecified__") {
                 $errors[] = self::nonexistence_error();
             } else {
                 if ($multiconference) {
@@ -340,7 +342,7 @@ class Multiconference {
         $errors = [];
         $confid = $Opt["confid"] ?? null;
         $multiconference = $Opt["multiconference"] ?? null;
-        if ($multiconference && $confid === "__nonexistent__") {
+        if ($multiconference && $confid === "__unspecified__") {
             $errors[] = self::nonexistence_error();
         } else if ($multiconference) {
             $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";

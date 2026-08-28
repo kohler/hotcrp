@@ -33,10 +33,12 @@ class ProcessWork_Batch {
         $this->quiet = isset($arg["quiet"]);
         $this->verbose = $arg["verbose"] ?? 0;
         $this->count = $arg["count"] ?? 100;
-        if (!($Opt["loaded"] ?? false)) {
-            SiteLoader::read_main_options(null, $this->confid);
+        $this->cdb = isset($arg["cdb"]);
+        if (!$conf) {
+            $Opt["__no_main"] = $this->cdb;
+            $conf = initialize_conf(null, $this->confid);
         }
-        if (($this->cdb = isset($arg["cdb"]))) {
+        if ($this->cdb) {
             $this->dblink = Conf::main_contactdb();
             if (!$this->dblink) {
                 throw new CommandLineException("no contactdb");
