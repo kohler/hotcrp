@@ -64,11 +64,11 @@ class S3Transfer_Batch {
             } else {
                 $saved = $checked = $doc->check_s3();
                 if (!$saved) {
-                    $saved = $doc->store_s3();
+                    $saved = $doc->store_s3() > 0;
                 }
                 if (!$saved) {
                     usleep(500000);
-                    $saved = $doc->store_s3();
+                    $saved = $doc->store_s3() > 0;
                 }
             }
 

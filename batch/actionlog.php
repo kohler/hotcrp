@@ -86,11 +86,9 @@ class ActionLog_Batch {
         if ($this->narrow) {
             $leg->set_consolidate_mail(false);
         }
-        $sitename = $this->conf->opt("confid");
-        $siteclass = $this->conf->opt("siteclass");
 
         $csvg = (new CsvGenerator)->set_stream($this->out);
-        $sitename = $this->conf->opt("confid");
+        $sitename = $this->conf->confid;
         $siteclass = $this->conf->opt("siteclass");
         $fields = $this->narrow ? $leg->narrow_csv_fields() : $leg->wide_csv_fields();
         if ($this->sitename) {

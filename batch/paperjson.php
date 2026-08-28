@@ -41,8 +41,8 @@ class PaperJson_Batch {
 
         $pj_first = [];
         if ($this->sitename) {
-            if ($conf->opt("confid")) {
-                $pj_first["sitename"] = $conf->opt("confid");
+            if ($conf->confid) {
+                $pj_first["sitename"] = $conf->confid;
             }
             if ($conf->opt("siteclass")) {
                 $pj_first["siteclass"] = $conf->opt("siteclass");

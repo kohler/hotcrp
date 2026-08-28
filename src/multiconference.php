@@ -105,24 +105,6 @@ class Multiconference {
     /** @param ?string $root
      * @param string $confid
      * @return ?Conf */
-    static function get_conf($root, $confid) {
-        if (self::$conf_cache === null) {
-            self::$conf_cache = [];
-            if (Conf::$main && ($xconfid = Conf::$main->opt("confid"))) {
-                self::$conf_cache[SiteLoader::$root . "\0{$xconfid}"] = Conf::$main;
-            }
-        }
-        $root = $root ?? SiteLoader::$root;
-        $key = "{$root}\0{$confid}";
-        if (!array_key_exists($key, self::$conf_cache)) {
-            self::$conf_cache[$key] = self::load_conf($root, $confid);
-        }
-        return self::$conf_cache[$key];
-    }
-
-    /** @param ?string $root
-     * @param string $confid
-     * @return ?Conf */
     static function load_conf($root, $confid) {
         global $Opt;
         $save_opt = $Opt;
@@ -138,6 +120,31 @@ class Multiconference {
         $Opt = $save_opt;
         return $newconf;
     }
+
+    /** @param ?string $root
+     * @param string $confid
+     * @return ?Conf */
+    static function get_conf($root, $confid) {
+        if (self::$conf_cache === null) {
+            self::$conf_cache = [];
+            if (Conf::$main && ($xconfid = Conf::$main->confid)) {
+                self::$conf_cache[SiteLoader::$root . "\0{$xconfid}"] = Conf::$main;
+            }
+        }
+        $root = $root ?? SiteLoader::$root;
+        $key = "{$root}\0{$confid}";
+        if (!array_key_exists($key, self::$conf_cache)) {
+            self::$conf_cache[$key] = self::load_conf($root, $confid);
+        }
+        return self::$conf_cache[$key];
+    }
+
+    static function trim_conf_cache() {
+        if (!empty(self::$conf_cache) && count(self::$conf_cache) > 400) {
+            self::$conf_cache = null;
+        }
+    }
+
 
     /** @param 401|403|404|array{title?:string,link?:bool,action_bar?:string}|Qrequest|MessageItem|FailureReason|string|null ...$arg
      * @return never */

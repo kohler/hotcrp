@@ -12,7 +12,7 @@ function make_session_name(Conf $conf, $n) {
     }
     if (strpos($n, '${') !== false) {
         $n = SiteLoader::substitute($n, [
-            "confid" => $conf->opt("confid"),
+            "confid" => $conf->confid,
             "siteclass" => $conf->opt("siteclass")
         ]);
     }

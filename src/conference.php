@@ -9,6 +9,9 @@ class Conf {
     /** @var string
      * @readonly */
     public $dbname;
+    /** @var string
+     * @readonly */
+    public $confid;
     /** @var ?string
      * @readonly */
     public $session_key;
@@ -283,7 +286,8 @@ class Conf {
             $this->dbname = $cp->name;
             $this->session_key = "@{$this->dbname}";
         }
-        $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
+        $this->confid = $this->opt["confid"] ?? $this->dbname ?? "";
+        $this->opt["confid"] = $this->confid;
         $this->_paper_opts = new PaperOptionList($this);
         $this->unspecified_decision = new DecisionInfo(0, "Unspecified");
         if ($this->dblink && !Dbl::$default_dblink) {
@@ -645,18 +649,17 @@ class Conf {
     /** @suppress PhanAccessReadOnlyProperty */
     private function refresh_options() {
         // set longName, downloadPrefix, etc.
-        $confid = $this->opt["confid"];
         if (($this->opt["longName"] ?? "") === "") {
             if (($this->opt["shortName"] ?? "") === "") {
                 $this->opt["shortNameDefaulted"] = true;
-                $this->opt["shortName"] = $confid;
+                $this->opt["shortName"] = $this->confid;
             }
             $this->opt["longName"] = $this->opt["shortName"];
         } else if (($this->opt["shortName"] ?? "") === "") {
             $this->opt["shortName"] = $this->opt["longName"];
         }
         if (($this->opt["downloadPrefix"] ?? "") === "") {
-            $this->opt["downloadPrefix"] = $confid . "-";
+            $this->opt["downloadPrefix"] = $this->confid . "-";
         }
         $this->short_name = $this->opt["shortName"];
         $this->long_name = $this->opt["longName"];
@@ -678,7 +681,7 @@ class Conf {
             if (isset($this->opt[$k])
                 && is_string($this->opt[$k])
                 && strpos($this->opt[$k], "\$") !== false) {
-                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $confid, $this->opt[$k]);
+                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $this->confid, $this->opt[$k]);
                 $this->opt[$k] = preg_replace('/\$\{confshortname\}|\$confshortname\b/', $this->short_name, $this->opt[$k]);
             }
         }
@@ -687,7 +690,7 @@ class Conf {
         foreach (["emailFrom", "emailSender", "emailCc", "emailReplyTo"] as $k) {
             if (is_string(($s = $this->opt[$k] ?? null))
                 && strpos($s, "\$") !== false) {
-                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $confid, $s);
+                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $this->confid, $s);
                 if (strpos($this->opt[$k], "confshortname") !== false) {
                     $v = rfc2822_words_quote($this->short_name);
                     if ($v[0] === "\"" && strpos($this->opt[$k], "\"") !== false) {

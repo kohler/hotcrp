@@ -1057,12 +1057,18 @@ class DocumentInfo implements JsonSerializable {
         return ["hotcrp" => json_encode_db($meta)];
     }
 
+    const STORE_S3_UNCONFIGURED = -2;
+    const STORE_S3_FAILED = -1; // or negative status
+    const STORE_S3_DELAYED = 0;
+    const STORE_S3_FOUND = 1;
+    const STORE_S3_PUT = 2;
+
     /** @param ?array<string,string> $user_data
-     * @return ?bool */
+     * @return int */
     function store_s3($user_data = null) {
         if (!($s3 = $this->conf->s3_client())
             || !($s3k = $this->s3_key())) {
-            return null;
+            return self::STORE_S3_UNCONFIGURED;
         }
 
         // maybe delay work
@@ -1075,34 +1081,34 @@ class DocumentInfo implements JsonSerializable {
                 "size" => $this->size(),
                 "content_file" => SiteLoader::resolve($this->filestore),
                 "metadata" => $this->s3_user_data(),
-                "dbname" => $this->conf->dbname
+                "confid" => $this->conf->confid
             ];
             if (($wi = WorkItem::make($this->conf, "s3doc", null, $w))
                 && $wi->enqueue()) {
-                return null;
+                return self::STORE_S3_DELAYED;
             }
         }
 
         // assume hash equality + size equality == presence
         if ($s3->head_size($s3k) === $this->size()) {
-            return true;
+            return self::STORE_S3_FOUND;
         }
 
         // put file
         $user_data = $user_data ?? $this->s3_user_data();
         if (($path = $this->available_content_file())
             && $s3->put_file($s3k, $path, $this->mimetype, $user_data)) {
-            return true;
+            return self::STORE_S3_PUT;
         }
 
         // otherwise put content
         $r = $s3->start_put($s3k, $this->content(), $this->mimetype, $user_data)->run();
         if ($r->status === 200) {
-            return true;
+            return self::STORE_S3_PUT;
         }
         error_log("S3 error: POST {$s3k}: {$r->status} {$r->status_text} " . json_encode_db($r->response_headers));
         $this->message_set()->warning_at(".content", "<0>Internal error while saving document to S3");
-        return false;
+        return $r->status >= 100 ? -$r->status : self::STORE_S3_FAILED;
     }
 
 
@@ -1145,7 +1151,7 @@ class DocumentInfo implements JsonSerializable {
         $s0 = $this->store_skeleton();
         $s1 = $s0 && $this->store_database();
         $s2 = !$s3 && $this->store_docstore($savef);
-        $s3 = $s3 || $this->store_s3();
+        $s3 = $s3 || $this->store_s3() > 0;
         if (!$s0 || (!$s1 && !$s2 && !$s3)) {
             $this->message_set()->prepend_item(MessageItem::error("<0>Document not saved"));
             error_log("Error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . $this->_ms->full_feedback_text());

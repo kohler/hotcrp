@@ -66,7 +66,7 @@ class UpdateContactdb_Batch {
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
-        $this->conftid = $conf->opt["confid"] ?? "<conf>";
+        $this->conftid = $conf->confid ? : "<conf>";
         $this->papers = isset($arg["papers"]);
         $this->users = isset($arg["users"]);
         $this->collaborators = isset($arg["collaborators"]);

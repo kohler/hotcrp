@@ -258,7 +258,7 @@ class ReviewCSV_Batch {
             $prow->ensure_full_reviews();
             $prow->ensure_reviewer_names();
             $px = [
-                "sitename" => $this->conf->opt("confid"),
+                "sitename" => $this->conf->confid,
                 "siteclass" => $this->conf->opt("siteclass"),
                 "pid" => $prow->paperId
             ];

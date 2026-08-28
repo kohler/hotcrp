@@ -288,7 +288,7 @@ class Upload_API {
 
     /** @return string */
     static private function s3_key_for(TokenInfo $cap) {
-        $confid = $cap->conf->opt("confid") ?? false;
+        $confid = $cap->conf->confid;
         return "upload/" . $cap->salt . ($confid ? "-{$confid}" : "");
     }
 
@@ -428,7 +428,7 @@ class Upload_API {
         if (!$this->_capd->s3_uploadid) {
             // small file, move directly to destination
             $doc = DocumentInfo::make_token($this->conf, $this->_cap);
-            if ($doc && $doc->store_s3()) {
+            if ($doc && $doc->store_s3() > 0) {
                 $this->modify_capd(function ($d) {
                     $d->s3_ready = true;
                     $d->status = max($d->status, 5);

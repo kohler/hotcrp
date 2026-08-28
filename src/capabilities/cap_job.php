@@ -176,7 +176,7 @@ class Job_Token extends TokenInfo {
 
         try {
             $argv = [$batch_class];
-            if (($confid = (string) $this->conf->opt("confid")) !== "") {
+            if (($confid = $this->conf->confid) !== "") {
                 // The `-n` option is not normally needed: the batch class
                 // calls initialize_conf, which does nothing as Conf::$main
                 // is already initialized. But we should include it anyway
@@ -228,7 +228,7 @@ class Job_Token extends TokenInfo {
         }
         $cmd[] = self::shell_quote_light($this->conf->opt("phpCommand") ?? "php");
         $cmd[] = self::shell_quote_light($paths[0]);
-        if (($confid = $this->conf->opt("confid"))) {
+        if (($confid = $this->conf->confid)) {
             $cmd[] = self::shell_quote_light("-n{$confid}");
         }
         foreach ($this->input("argv") as $w) {
