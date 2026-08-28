@@ -49,7 +49,7 @@ class S3Transfer_Batch {
                 from PaperStorage where paperStorageId={$did}");
             $doc = DocumentInfo::fetch($result, $this->conf);
             Dbl::free($result);
-            if (!$doc->ensure_content()) {
+            if (!$doc->content_available_locally()) {
                 continue;
             }
 
