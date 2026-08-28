@@ -1074,7 +1074,8 @@ class DocumentInfo implements JsonSerializable {
                 "mimetype" => $this->mimetype,
                 "size" => $this->size(),
                 "content_file" => SiteLoader::resolve($this->filestore),
-                "metadata" => $this->s3_user_data()
+                "metadata" => $this->s3_user_data(),
+                "dbname" => $this->conf->dbname
             ];
             if (($wi = WorkItem::make($this->conf, "s3doc", null, $w))
                 && $wi->enqueue()) {

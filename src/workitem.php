@@ -16,6 +16,10 @@ class WorkItem {
     /** @var string */
     public $work;
     /** @var int */
+    public $touchedAt;
+    /** @var int */
+    public $dequeuedAt;
+    /** @var int */
     private $workpos = 0;
     /** @var int */
     private $workendpos = 0;
@@ -60,6 +64,8 @@ class WorkItem {
         if (isset($this->serverId)) {
             $this->serverId = (int) $this->serverId;
         }
+        $this->touchedAt = (int) $this->touchedAt;
+        $this->dequeuedAt = (int) $this->dequeuedAt;
     }
 
     /** @param mysqli_result|Dbl_Result $result
@@ -73,17 +79,27 @@ class WorkItem {
         return $wi;
     }
 
+    const DBP_QUERY = 0;
+    const DBP_INSERT = 1;
+    /** @return array{\mysqli,string,list<mixed>} */
+    private function dbparts($type) {
+        if ($this->serverId !== null) {
+            $db = $this->conf->contactdb();
+            $keys = ["serverId", "root", "workType", "workSubtype"];
+            $values = [$this->serverId, $this->root, $this->workType, $this->workSubtype];
+        } else {
+            $db = $this->conf->dblink;
+            $keys = ["workType", "workSubtype"];
+            $values = [$this->workType, $this->workSubtype];
+        }
+        $qp = $type === self::DBP_QUERY ? join("=? and ", $keys) . "=?" : join(",", $keys);
+        return [$db, $qp, $values];
+    }
+
     /** @return bool */
     function reload() {
-        if ($this->serverId !== null) {
-            $result = Dbl::qe($this->conf->contactdb(),
-                "select work from WorkItem where serverId=? and root=? and workType=? and workSubtype=?",
-                $this->serverId, $this->root, $this->workType, $this->workSubtype);
-        } else {
-            $result = Dbl::qe($this->conf->dblink,
-                "select work from WorkItem where workType=? and workSubtype=?",
-                $this->workType, $this->workSubtype);
-        }
+        [$db, $qp, $qv] = $this->dbparts(self::DBP_QUERY);
+        $result = Dbl::qe($db, "select work from WorkItem where {$qp}", ...$qv);
         if (Dbl::is_error($result)) {
             return false;
         }
@@ -109,18 +125,11 @@ class WorkItem {
     /** @return bool */
     function enqueue() {
         assert(str_starts_with($this->work, "\x1E") && str_ends_with($this->work, "\n"));
-        if ($this->serverId !== null) {
-            // XXX retry a few times?
-            $result = Dbl::qe($this->conf->contactdb(),
-                "insert into WorkItem (serverId, root, workType, workSubtype, work)
-                    values (?, ?, ?, ?, ?) ?U on duplicate key update work=concat(WorkItem.work,?U(work))",
-                $this->serverId, $this->root, $this->workType, $this->workSubtype, $this->work);
-        } else {
-            $result = Dbl::qe($this->conf->dblink,
-                "insert into WorkItem (workType, workSubtype, work)
-                    values (?, ?, ?) ?U on duplicate key update work=concat(WorkItem.work,?U(work))",
-                $this->workType, $this->workSubtype, $this->work);
-        }
+        [$db, $qp, $qv] = $this->dbparts(self::DBP_INSERT);
+        // XXX retry a few times?
+        $result = Dbl::qe($db, "insert into WorkItem ({$qp}, work, touchedAt, dequeuedAt) values ?v ?U
+            on duplicate key update work=concat(WorkItem.work,?U(work))",
+            [array_merge($qv, [$this->work, Conf::$now, Conf::$now])]);
         return !Dbl::is_error($result);
     }
 
@@ -129,45 +138,38 @@ class WorkItem {
     function dequeue($len = null) {
         $len = $len ?? $this->workpos;
         if ($len < 0) {
-            return $this->reload();
+            throw new Error("bad dequeue");
         }
         assert($len >= 0
                && $len <= strlen($this->work)
                && ($len === strlen($this->work)
                    || ($this->work[$len - 1] === "\n"
                        && $this->work[$len] === "\x1E")));
-        if ($len === 0) {
-            return true;
-        }
+        [$db, $qp, $qv] = $this->dbparts(self::DBP_QUERY);
         $result = null;
         if ($len === strlen($this->work)) {
-            if ($this->serverId !== null) {
-                $result = Dbl::qe($this->conf->contactdb(),
-                    "delete from WorkItem where serverId=? and root=? and workType=? and workSubtype=? and work=?",
-                    $this->serverId, $this->root, $this->workType, $this->workSubtype, $this->work);
-            } else {
-                $result = Dbl::qe($this->conf->dblink,
-                    "delete from WorkItem where workType=? and workSubtype=? and work=?",
-                    $this->workType, $this->workSubtype, $this->work);
-            }
+            $result = Dbl::qe_apply($db,
+                "delete from WorkItem where {$qp} and work=?",
+                array_merge($qv, [$this->work]));
             if ($result->affected_rows === 1) {
                 $this->work = "";
                 $this->workpos = $this->workendpos = 0;
                 return true;
             }
         }
-        $prefix = substr($this->work, 0, $len);
-        if ($this->serverId !== null) {
-            $result = Dbl::qe($this->conf->contactdb(),
-                "update WorkItem set work=SUBSTR(work FROM ?)
-                where serverId=? and root=? and workType=? and workSubtype=? and LEFT(work, ?)=?",
-                $len + 1, $this->serverId, $this->root, $this->workType, $this->workSubtype, $len, $prefix);
-        } else {
-            $result = Dbl::qe($this->conf->dblink,
-                "update WorkItem set work=SUBSTR(work FROM ?)
-                where workType=? and workSubtype=? and LEFT(work, ?)=?",
-                $len + 1, $this->workType, $this->workSubtype, $len, $prefix);
+        if ($len === 0) {
+            // update touchedAt so observers can tell we ran, even though
+            // we were blocked from making progress
+            Dbl::qe_apply($db,
+                "update WorkItem set touchedAt=greatest(touchedAt,?) where {$qp}",
+                array_merge([Conf::$now], $qv));
+            return true;
         }
+        $prefix = substr($this->work, 0, $len);
+        $result = Dbl::qe_apply($db, "update WorkItem set work=SUBSTR(work FROM ?),
+            touchedAt=greatest(touchedAt,?), dequeuedAt=greatest(dequeuedAt,?)
+            where {$qp} and LEFT(work, ?)=?",
+            array_merge([$len + 1, Conf::$now, Conf::$now], $qv, [$len, $prefix]));
         if ($result->affected_rows === 1) {
             $this->work = substr($this->work, $len);
             $this->workpos = $this->workendpos = 0;

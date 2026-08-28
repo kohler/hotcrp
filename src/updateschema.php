@@ -3344,6 +3344,14 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                 $conf->update_schema_version(330);
             }
         }
+        if ($conf->sversion === 330
+            // first with default, then without
+            && $conf->ql_ok("alter table WorkItem add `touchedAt` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table WorkItem add `dequeuedAt` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table WorkItem change `touchedAt` `touchedAt` bigint NOT NULL")
+            && $conf->ql_ok("alter table WorkItem change `dequeuedAt` `dequeuedAt` bigint NOT NULL")) {
+            $conf->update_schema_version(331);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

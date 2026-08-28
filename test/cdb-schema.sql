@@ -124,8 +124,10 @@ CREATE TABLE `WorkItem` (
   `workType` varbinary(80) NOT NULL,
   `workSubtype` varbinary(80) NOT NULL,
   `work` longblob NOT NULL,
+  `touchedAt` bigint NOT NULL DEFAULT 0,
+  `dequeuedAt` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`serverId`,`root`,`workType`,`workSubtype`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
-insert into Settings (name, value) values ('sversion', 186);
+insert into Settings (name, value) values ('sversion', 187);

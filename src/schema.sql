@@ -671,6 +671,8 @@ CREATE TABLE `WorkItem` (
   `workType` varbinary(80) NOT NULL,
   `workSubtype` varbinary(80) NOT NULL,
   `work` longblob NOT NULL,
+  `touchedAt` bigint NOT NULL,
+  `dequeuedAt` bigint NOT NULL,
   PRIMARY KEY (`workType`,`workSubtype`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -680,7 +682,7 @@ CREATE TABLE `WorkItem` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 330, null),   -- schema version
+  ('allowPaperOption', 331, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators
