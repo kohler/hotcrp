@@ -5048,6 +5048,7 @@ class Conf {
             "icons_url" => Ht::$icons_url,
             "cookie_params" => "",
             "postvalue" => $qreq->maybe_post_value(),
+            "download_prefix" => $this->download_prefix,
             "snouns" => $this->snouns
         ];
         $userinfo = [];
