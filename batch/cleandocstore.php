@@ -113,6 +113,46 @@ class CleanDocstore_Batch {
         return $fm;
     }
 
+    /** @return ?DocumentFileTreeMatch */
+    private function tmptree_random_inaccessible(DocumentFileTree $ftree) {
+        assert($ftree->treeid === 1);
+        for ($i = 0; $i !== 5; ++$i) {
+            $fm = $ftree->random_match();
+            if (!$fm->is_complete()
+                || $fm->atime() === false
+                || !$fm->older_than(Conf::$now - 7200)) {
+                continue;
+            }
+            $pos = strrpos($fm->fname, "/") + 1;
+            if (preg_match('/\Gcsvtmp-[0-9a-f]{24}[^\/]*+\z/', $fm->fname, $m, 0, $pos)) {
+                // `csvtmp-` files with this name pattern last for one request;
+                // after 2 hours almost certainly dead.
+                $ftree->hide($fm);
+                return $fm;
+            } else if ($fm->older_than(Conf::$now - 10800)
+                       && preg_match('/\Gupload-hcup[^\/]*+\z/', $fm->fname, $m, 0, $pos)) {
+                // upload tokens only last for two hours; give an extra hour slack
+                $ftree->hide($fm);
+                return $fm;
+            }
+        }
+        return null;
+    }
+
+    /** @param DocumentFileTreeMatch $fm
+     * @return int|false */
+    private function remove($fm) {
+        $fsize = filesize($fm->fname);
+        if ($this->dry_run || unlink($fm->fname)) {
+            if ($this->verbose) {
+                fwrite(STDOUT, "{$fm->fname}: " . ($this->dry_run ? "would remove\n" : "removed\n"));
+            }
+            return (int) $fsize;
+        }
+        fwrite(STDERR, "{$fm->fname}: cannot remove\n");
+        return false;
+    }
+
     /** @param DocumentFileTreeMatch $fm
      * @return bool */
     private function check_match($fm) {
@@ -176,6 +216,7 @@ class CleanDocstore_Batch {
             $count = $this->count ?? 10;
         }
 
+        $tmp_ftrees = [];
         foreach ($this->docstores as $i => $dp) {
             if (!str_starts_with($dp, "/") || strpos($dp, "%") === false) {
                 throw new CommandLineException("{$dp}: Bad docstore pattern");
@@ -185,26 +226,38 @@ class CleanDocstore_Batch {
             }
             if (!$this->keep_temp) {
                 $ds = Docstore::make($dp);
-                $this->ftrees[] = new DocumentFileTree($ds->root_pattern() . "tmp/%w", $this->hash_matcher, 1);
+                $this->ftrees[] = $tmp_ftrees[] =
+                    new DocumentFileTree($ds->root_pattern() . "tmp/%w", $this->hash_matcher, 1);
             }
         }
 
         // actual run
         $ndone = $nsuccess = $bytesremoved = 0;
+
+        // temporary files can collect quickly; ones with inaccessible names
+        // last only for a single request; remove them
+        while ($count > 0
+               && ($usage_threshold === null || $bytesremoved < $usage_threshold)
+               && !empty($tmp_ftrees)) {
+            if (($fm = $this->tmptree_random_inaccessible($tmp_ftrees[0]))) {
+                if (($fsize = $this->remove($fm)) !== false) {
+                    ++$nsuccess;
+                    $bytesremoved += $fsize;
+                }
+                --$count;
+                ++$ndone;
+            } else {
+                array_shift($tmp_ftrees);
+            }
+        }
+
         while ($count > 0
                && ($usage_threshold === null || $bytesremoved < $usage_threshold)
                && ($fm = $this->fparts_random_match())) {
-            if (self::is_temp($fm) || $this->check_match($fm)) {
-                $size = filesize($fm->fname);
-                if ($this->dry_run || unlink($fm->fname)) {
-                    if ($this->verbose) {
-                        fwrite(STDOUT, "{$fm->fname}: " . ($this->dry_run ? "would remove\n" : "removed\n"));
-                    }
-                    ++$nsuccess;
-                    $bytesremoved += $size;
-                } else {
-                    fwrite(STDERR, "{$fm->fname}: cannot remove\n");
-                }
+            if ((self::is_temp($fm) || $this->check_match($fm))
+                && ($fsize = $this->remove($fm)) !== false) {
+                ++$nsuccess;
+                $bytesremoved += $fsize;
             }
             --$count;
             ++$ndone;

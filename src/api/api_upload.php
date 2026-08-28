@@ -8,6 +8,9 @@ class Upload_API {
     const MAX_BLOB = 32 << 20;
     const SERVER_PROGRESS_FACTOR = 0.5;
 
+    // seconds before upload token expires; see also cleandocstore.php
+    const EXPIRES_IN = 7200;
+
     /** @var Conf */
     public $conf;
     /** @var int */
@@ -150,7 +153,7 @@ class Upload_API {
         $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
             ->set_user_from($user, false)
             ->set_paper($prow)
-            ->set_expires_in(7200);
+            ->set_expires_in(self::EXPIRES_IN);
         if (isset($qreq->filename)
             && strlen($qreq->filename) <= 255
             && is_valid_utf8($qreq->filename)) {
