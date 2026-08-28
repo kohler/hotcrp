@@ -1037,46 +1037,64 @@ Object.assign(hotcrp.text, {
 
 // MIME
 
-hotcrp.mimeinfo = function (type, filename) {
+hotcrp.mimeinfo = (function () {
+let cache = new Map;
+
+function image(alt, className) {
+    return $e("img", {src: `${siteinfo.assets}images/${this.image_stem}24.svg`,
+                      alt: alt || mi.description || "File", class:
+                      className ?? "sdlimg"});
+}
+
+return function (type, filename) {
     // ported from Mimetype::image_stem()
-    const ch = type.charCodeAt(0), semi = type.indexOf(";");
+    const semi = type.indexOf(";");
     if (semi >= 0) {
         type = type.substring(0, semi).trim();
     }
+    if (cache.has(type)) {
+        return cache.get(type);
+    }
+    const ch = type.charCodeAt(0);
+    let ans;
     if (ch === 97 /*a*/) {
         if (type === "application/pdf") {
-            return {image_stem: "pdf", description: "PDF"};
+            ans = {image_stem: "pdf", description: "PDF"};
         } else if (type.startsWith("audio/")) {
-            return {image_stem: "audio"};
+            ans = {image_stem: "audio"};
         } else if (type === "application/zip"
                    || type === "application/x-tar"
                    || type === "application/x-rar-compressed"
                    || (filename !== null
                        && filename.endsWith(".tar.gz")
                        && type === "application/gzip")) {
-            return {image_stem: "archive"};
+            ans = {image_stem: "archive"};
         } else if (type === "application/vnd.ms-powerpoint") {
-            return {image_stem: "slides", description: "PowerPoint"};
+            ans = {image_stem: "slides", description: "PowerPoint"};
         } else if (type === "application/vnd.apple.keynote") {
-            return {image_stem: "slides", description: "Keynote"};
+            ans = {image_stem: "slides", description: "Keynote"};
         } else if (type === "application/vnd.openxmlformats-officedocument.presentationml.presentation") {
-            return {image_stem: "slides", description: "PowerPoint"};
+            ans = {image_stem: "slides", description: "PowerPoint"};
         }
     } else if (ch === 105 /*i*/) {
         if (type.startsWith("image/")) {
-            return {image_stem: "image"};
+            ans = {image_stem: "image"};
         }
     } else if (ch === 116 /*t*/) {
         if (type.startsWith("text/")) {
-            return {image_stem: "txt"};
+            ans = {image_stem: "txt"};
         }
     } else if (ch === 118 /*v*/) {
         if (type.startsWith("video/")) {
-            return {image_stem: "video"};
+            ans = {image_stem: "video"};
         }
     }
-    return {image_stem: "generic"};
-}
+    ans = ans || {image_stem: "generic"};
+    ans.image = image;
+    cache.set(type, ans);
+    return ans;
+};
+})();
 
 
 // events
@@ -8007,8 +8025,8 @@ function cmt_render_attachment_input(ctr, doc) {
 function cmt_render_attachment(doc) {
     const a = $e("a", {href: siteinfo.site_relative + doc.siteurl, class: "qo"}),
         mi = hotcrp.mimeinfo(doc.mimetype, doc.filename);
-    a.append($e("img", {src: `${siteinfo.assets}images/${mi.image_stem}24.svg`, alt: mi.description || "Attachment", class: "sdlimg"}));
-    a.append(" ", $e("u", "x", doc.unique_filename || doc.filename || "Attachment"));
+    a.append(mi.image(mi.description || "Attachment", "sdlimg"),
+             " ", $e("u", "x", doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
         a.append(" ", $e("span", "dlsize", "(" + unparse_byte_size(doc.size) + ")"));
     }
