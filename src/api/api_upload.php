@@ -245,11 +245,11 @@ class Upload_API {
     }
 
     private function _make_hashctx() {
-        if (!$this->_hashctx
-            && isset($this->_capd->hashctx)
+        if (isset($this->_capd->hashctx)
             && isset($this->_capd->crc32ctx)
             && isset($this->_capd->hashpos)
             && is_int($this->_capd->hashpos)
+            && (!$this->_hashctx || $this->_hashpos < $this->_capd->hashpos)
             && ($hashctx = $this->_parse_hashctx($this->_capd->hashctx))
             && ($crc32ctx = $this->_parse_hashctx($this->_capd->crc32ctx))) {
             $this->_hashctx = $hashctx;
