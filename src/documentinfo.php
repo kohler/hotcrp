@@ -282,9 +282,6 @@ class DocumentInfo implements JsonSerializable {
             $doc = self::make_capability($conf, $fu);
         } else if (($fi = $qreq->file("{$name}:file"))) {
             $doc = self::make_uploaded_file($conf, $fi);
-        } else if (($fi = $qreq->file($name) /* XXX obsolete */)) {
-            error_log("obsolete use of file attachment {$name}");
-            $doc = self::make_uploaded_file($conf, $fi);
         } else {
             $doc = null;
         }
