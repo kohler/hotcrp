@@ -288,7 +288,10 @@ class DocumentInfo implements JsonSerializable {
         } else {
             $doc = null;
         }
-        if (!$doc) {
+        if (!$doc
+            || ($doc->paperId !== $paperId
+                && $doc->paperId !== 0
+                && $doc->paperId !== -1)) {
             return null;
         }
         return $doc->set_paper_id($paperId)->set_document_type($dt);

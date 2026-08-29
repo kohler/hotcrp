@@ -190,6 +190,68 @@ class Batch_Tester {
         $this->delete_batch_users();
     }
 
+    /** Parse `hotcrapi.php upload` arguments.
+     * @param string ...$argv
+     * @return Upload_CLIBatch */
+    private function parse_upload_args(...$argv) {
+        $hcli = Hotcrapi_Batch::make_args(["hotcrapi.php", "--config", "none", "test"]);
+        $arg = $hcli->getopt->parse(["hotcrapi.php", "--config", "none", "upload", ...$argv]);
+        return Upload_CLIBatch::make_arg($hcli, $arg);
+    }
+
+    function test_cli_upload_args() {
+        $f = SiteLoader::$root . "/README.md";
+
+        $ucb = $this->parse_upload_args($f);
+        xassert_eqq($ucb->doctype, null);
+        xassert_eqq($ucb->pid, null);
+        xassert(!$ucb->temporary);
+
+        // document type
+        xassert_eqq($this->parse_upload_args("--dt", "final", $f)->doctype, "final");
+        xassert_eqq($this->parse_upload_args("-D", "final", $f)->doctype, "final");
+        xassert_eqq($this->parse_upload_args("--dt=Attachments", $f)->doctype, "Attachments");
+        xassert_eqq($this->parse_upload_args("--dt", "2", $f)->doctype, "2");
+
+        // submission ID, by each spelling, and as an integer
+        foreach (["-p", "--pid", "--paper"] as $opt) {
+            $ucb = $this->parse_upload_args($opt, "3", $f);
+            xassert_eqq($ucb->pid, 3);
+        }
+
+        // exposed filename defaults to the input file's basename
+        xassert_eqq($this->parse_upload_args($f)->filename, "README.md");
+        xassert_eqq($this->parse_upload_args("-f", "other.md", $f)->filename, "other.md");
+        xassert_eqq($this->parse_upload_args("--filename=other.md", $f)->filename, "other.md");
+        xassert_eqq($this->parse_upload_args("--no-filename", $f)->filename, null);
+        xassert_eqq($this->parse_upload_args("-f", "dir/other.md", $f)->filename, "dir/other.md");
+
+        // combinations
+        $ucb = $this->parse_upload_args("--dt", "Attachments", "-p", "3", "--temporary", $f);
+        xassert_eqq($ucb->doctype, "Attachments");
+        xassert_eqq($ucb->pid, 3);
+        xassert_eqq($ucb->temporary, true);
+
+        // arguments reach the `start` query
+        xassert_eqq($this->parse_upload_args($f)->start_query(),
+            "start=1&filename=README.md&size=" . filesize($f) . "&temp=0");
+        xassert_eqq($this->parse_upload_args("--no-filename", "--temporary", $f)->start_query(),
+            "start=1&size=" . filesize($f) . "&temp=1");
+        xassert_eqq($this->parse_upload_args("-f", "other name.md", "--dt", "Attachments", "-p", "3", $f)->start_query(),
+            "start=1&filename=other+name.md&size=" . filesize($f) . "&p=3&dt=Attachments");
+        xassert_eqq($this->parse_upload_args("--dt", "final", "--temporary", $f)->start_query(),
+            "start=1&filename=README.md&size=" . filesize($f) . "&dt=final&temp=1");
+
+        // a non-numeric submission ID is an error
+        $ok = false;
+        try {
+            $this->parse_upload_args("-p", "butterfly", $f);
+        } catch (CommandLineException $ex) {
+            $ok = true;
+        }
+        xassert($ok);
+    }
+
     function test_hotcrp_daemonize() {
         if ((!is_dir("/proc/self/fd") && !is_dir("/dev/fd"))
             || !is_executable("/bin/bash")

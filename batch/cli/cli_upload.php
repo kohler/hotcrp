@@ -12,6 +12,10 @@ class Upload_CLIBatch implements CLIBatchCommand {
     /** @var bool */
     public $temporary;
     /** @var ?string */
+    public $doctype;
+    /** @var ?int */
+    public $pid;
+    /** @var ?string */
     public $input_filename;
     /** @var ?int */
     public $size;
@@ -44,6 +48,20 @@ class Upload_CLIBatch implements CLIBatchCommand {
      * @return $this */
     function set_temporary($x) {
         $this->temporary = $x;
+        return $this;
+    }
+
+    /** @param ?string $dt
+     * @return $this */
+    function set_doctype($dt) {
+        $this->doctype = $dt;
+        return $this;
+    }
+
+    /** @return $this */
+    function set_pid(?int $pid) {
+        assert($pid === null || is_int($pid));
+        $this->pid = $pid;
         return $this;
     }
 
@@ -114,22 +132,36 @@ class Upload_CLIBatch implements CLIBatchCommand {
         return null;
     }
 
+    /** Return the query string for the initial `start` request.
+     * @return string */
+    function start_query() {
+        $startargs = "start=1";
+        if (isset($this->filename)) {
+            $startargs .= "&filename=" . urlencode($this->filename);
+        }
+        if (isset($this->size)) {
+            $startargs .= "&size={$this->size}";
+        }
+        if (isset($this->pid)) {
+            $startargs .= "&p={$this->pid}";
+        }
+        if (isset($this->doctype)) {
+            $startargs .= "&dt=" . urlencode($this->doctype);
+        }
+        // explicitly set `temp` argument; without `dt`, temp defaults to 1
+        if ($this->temporary || !isset($this->doctype)) {
+            $startargs .= "&temp=" . ($this->temporary ? 1 : 0);
+        }
+        return $startargs;
+    }
+
     /** @return ?string */
     private function _execute(Hotcrapi_Batch $clib) {
         $this->offset = 0;
         $this->retry = false;
         $this->token = $token = null;
         $curlh = $clib->make_curl("POST");
-        $startargs = "start=1";
-        if ($this->filename) {
-            $startargs .= "&filename=" . urlencode($this->filename);
-        }
-        if (isset($this->size)) {
-            $startargs .= "&size={$this->size}";
-        }
-        if ($this->temporary) {
-            $startargs .= "&temp=1";
-        }
+        $startargs = $this->start_query();
         $this->clib = $clib;
         if ($clib->progress) {
             $x = "↑";
@@ -265,9 +297,17 @@ class Upload_CLIBatch implements CLIBatchCommand {
         $ucb->mimetype = $arg["mimetype"] ?? null;
         if (isset($arg["no-filename"])) {
             $ucb->filename = null;
+        } else if (isset($arg["filename"])) {
+            $ucb->filename = $arg["filename"];
         }
         if (isset($arg["temporary"])) {
-            $ucb->temporary = true;
+            $ucb->set_temporary(true);
+        }
+        if (isset($arg["dt"])) {
+            $ucb->set_doctype($arg["dt"]);
+        }
+        if (isset($arg["p"])) {
+            $ucb->set_pid($arg["p"]);
         }
         return $ucb;
     }
@@ -280,7 +320,9 @@ Usage: php batch/hotcrapi.php upload [-f NAME] [-m TYPE] FILE"
         )->long(
             "filename:,f: =NAME !upload Exposed name for uploaded file",
             "no-filename !upload !",
-            "mimetype:,m: =MIMETYPE !upload Type for uploaded file",
+            "mimetype:,m: =MIMETYPE !upload MIME type for uploaded file",
+            "p:,pid:,paper: {n} =PID !upload Set submission ID",
+            "dt:,D: =DOCTYPE !upload Set document type",
             "temporary,temp !upload Uploaded file is temporary"
         );
         $clib->register_command("upload", "Upload_CLIBatch");

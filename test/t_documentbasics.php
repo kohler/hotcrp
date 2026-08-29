@@ -294,6 +294,140 @@ class DocumentBasics_Tester {
         $this->conf->refresh_settings();
     }
 
+    /** Install $defs as the submission field list, call $f, then restore.
+     * @param list<array<string,mixed>> $defs
+     * @param callable() $f */
+    private function with_options($defs, $f) {
+        $saved = $this->conf->setting_data("options");
+        $this->conf->save_refresh_setting("options", 1, json_encode($defs));
+        try {
+            $f();
+        } finally {
+            if ($saved === null) {
+                $this->conf->save_refresh_setting("options", null);
+            } else {
+                $this->conf->save_refresh_setting("options", 1, $saved);
+            }
+        }
+    }
+
+    function test_parse_doctype() {
+        $conf = $this->conf;
+        $this->with_options([
+            ["id" => 1, "name" => "Calories", "type" => "numeric", "order" => 1],
+            ["id" => 2, "name" => "Attachments", "type" => "attachments", "order" => 2],
+            ["id" => 3, "name" => "Logo", "type" => "document", "order" => 3, "nonpaper" => true]
+        ], function () use ($conf) {
+            // intrinsic document types, by name and by ID
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "paper"), DTYPE_SUBMISSION);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "submission"), DTYPE_SUBMISSION);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "final"), DTYPE_FINAL);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, 0), DTYPE_SUBMISSION);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "0"), DTYPE_SUBMISSION);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, -1), DTYPE_FINAL);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "-1"), DTYPE_FINAL);
+
+            // comments are a document type
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "comment"), DTYPE_COMMENT);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, DTYPE_COMMENT), DTYPE_COMMENT);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "-2"), DTYPE_COMMENT);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "-2", 1), DTYPE_COMMENT);
+
+            // submission fields, by name and by ID
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Attachments"), 2);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "attachments"), 2);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, 2), 2);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "2"), 2);
+
+            // fields that hold no document are not document types
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Calories"), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, 1), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "1"), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "abstract"), null);
+
+            // unknown and empty names, unknown IDs
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "butterfly"), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, ""), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "", -2), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, 99), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "99"), null);
+
+            // $pid chooses the paper or nonpaper namespace; null tries both.
+            // Only -2 means nonpaper: -1 and 0 are paperless paper requests
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Logo"), 3);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Logo", -2), 3);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Logo", 1), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Logo", 0), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Logo", -1), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Attachments", 1), 2);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Attachments", 0), 2);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Attachments", -1), 2);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "Attachments", -2), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "paper", -2), null);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "paper", -1), DTYPE_SUBMISSION);
+
+            // ...but an ID lookup ignores it
+            xassert_eqq(DocumentRequest::parse_doctype($conf, 3, 1), 3);
+            xassert_eqq(DocumentRequest::parse_doctype($conf, "2", -2), 2);
+        });
+    }
+
+    function test_document_request_doctype() {
+        $conf = $this->conf;
+        $user = $conf->checked_user_by_email("chair@_.com");
+        $saved_options = $conf->setting_data("options");
+        $conf->save_refresh_setting("options", 1, json_encode([
+            ["id" => 1, "name" => "Calories", "type" => "numeric", "order" => 1],
+            ["id" => 2, "name" => "Attachments", "type" => "attachments", "order" => 2],
+            ["id" => 3, "name" => "Logo", "type" => "document", "order" => 3, "nonpaper" => true]
+        ]));
+
+        try {
+            // `dt` names a document type; no `dt` means the submission
+            $dr = new DocumentRequest(["p" => 1], $user);
+            xassert(!$dr->has_error());
+            xassert_eqq($dr->dtype, DTYPE_SUBMISSION);
+
+            $dr = new DocumentRequest(["p" => 1, "dt" => "Attachments"], $user);
+            xassert(!$dr->has_error());
+            xassert_eqq($dr->dtype, 2);
+
+            $dr = new DocumentRequest(["p" => 1, "dt" => "2"], $user);
+            xassert(!$dr->has_error());
+            xassert_eqq($dr->dtype, 2);
+
+            // a field that holds no document is not a document type
+            $dr = new DocumentRequest(["p" => 1, "dt" => "Calories"], $user);
+            xassert($dr->has_error());
+            xassert_eqq($dr->response_code(), 404);
+
+            $dr = new DocumentRequest(["p" => 1, "dt" => "1"], $user);
+            xassert($dr->has_error());
+
+            // unknown document types are errors
+            $dr = new DocumentRequest(["p" => 1, "dt" => "butterfly"], $user);
+            xassert($dr->has_error());
+            xassert_eqq($dr->response_code(), 404);
+
+            // nonpaper fields require a nonpaper request, and vice versa
+            $dr = new DocumentRequest(["p" => 1, "dt" => "Logo"], $user);
+            xassert($dr->has_error());
+
+            $dr = new DocumentRequest(["p" => -2, "dt" => "Logo"], $user);
+            xassert(!$dr->has_error());
+            xassert_eqq($dr->dtype, 3);
+
+            $dr = new DocumentRequest(["p" => -2, "dt" => "Attachments"], $user);
+            xassert($dr->has_error());
+        } finally {
+            if ($saved_options === null) {
+                $conf->save_refresh_setting("options", null);
+            } else {
+                $conf->save_refresh_setting("options", 1, $saved_options);
+            }
+        }
+    }
+
     function test_create_s3() {
         if (!$this->s3c) {
             return;

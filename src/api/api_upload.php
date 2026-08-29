@@ -142,6 +142,17 @@ class Upload_API {
         if (isset($qreq->token)) {
             return JsonResult::make_parameter_error("start", "<0>Start requests must not specify a token");
         }
+        if ($prow) {
+            $pid = $prow->paperId;
+        } else if ((string) $qreq->p === "") {
+            $pid = null;  // `dt` can be either paper option or nonpaper option
+        } else if (in_array((string) $qreq->p, ["0", "-1", "new"], true)) {
+            $pid = 0;     // `dt` must be paper option if set
+        } else if ((string) $qreq->p === "-2") {
+            $pid = -2;    // `dt` must be nonpaper option if set
+        } else {
+            return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
+        }
         $size = stoi($qreq->size);
         if ($size === null || $size < 0) {
             if (isset($qreq->size)) {
@@ -150,10 +161,6 @@ class Upload_API {
         } else if ($size > $this->max_size) {
             return JsonResult::make_parameter_error("size", "<0>File too large")->set("maxsize", $this->max_size);
         }
-        $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
-            ->set_user_from($user, false)
-            ->set_paper($prow)
-            ->set_expires_in(self::EXPIRES_IN);
         if (isset($qreq->filename)
             && strlen($qreq->filename) <= 255
             && is_valid_utf8($qreq->filename)) {
@@ -162,19 +169,29 @@ class Upload_API {
             $filename = "_upload_";
         }
         $dtarg = $qreq->dt ?? $qreq->dtype /* XXX backward compat */;
-        if (is_int($dtarg)) {
-            $dtype = $dtarg;
-        } else if ($dtarg && preg_match('/\A-?\d+\z/', $dtarg)) {
-            $dtype = intval($dtarg);
-        } else {
+        if ($dtarg === null) {
             $dtype = null;
+        } else {
+            $dtype = DocumentRequest::parse_doctype($this->conf, $dtarg, $pid);
+            if ($dtype === null) {
+                return JsonResult::make_parameter_error("dt", "<0>Document type not found");
+            }
         }
+        if ($pid === null) {
+            // resolve `pid` to appropriate value (0 paper, -2 nonpaper)
+            $opt = $dtype !== null ? $this->conf->option_by_id($dtype) : null;
+            $pid = $opt && $opt->nonpaper ? -2 : 0;
+        }
+        $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
+            ->set_user_from($user, false)
+            ->set_pid($pid)
+            ->set_expires_in(self::EXPIRES_IN);
         $data = [
             "size" => $size,
             "ranges" => [0, 0],
             "filename" => $filename,
             "mimetype" => Mimetype::sanitize($qreq->mimetype) ?? "application/octet-stream",
-            "pid" => $prow ? $prow->paperId : -1,
+            "pid" => $pid,
             "dtype" => $dtype,
             "temp" => friendly_boolean($qreq->temp) ?? $dtype === null,
             "hash" => null,

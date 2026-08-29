@@ -157,14 +157,8 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 $this->dtype = DTYPE_COMMENT;
                 break;
             }
-            if (($dtnum = stoi($dtname)) !== null) {
-                $this->opt = $this->conf->option_by_id($dtnum);
-            } else if ($this->paperId >= 0) {
-                $this->opt = $this->conf->options()->find($dtname);
-            } else {
-                $this->opt = $this->conf->options()->find_nonpaper($dtname);
-            }
-            if ($this->opt !== null) {
+            if (($opt = self::parse_option($this->conf, $dtname, $this->paperId))) {
+                $this->opt = $opt;
                 $this->dtype = $this->opt->id;
                 break;
             }
@@ -185,12 +179,12 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             }
         }
 
-        // if nothing found, use the base
+        // if nothing found, use the base (paper or final, always exists)
         if ($this->dtype === null && $dtname === "") {
             $this->opt = $this->conf->options()->find($base_dtname);
             $this->dtype = $this->opt->id;
         } else if ($this->dtype === null) {
-            $this->error_at("dt", "<0>Document class ‘{$dtname}’ not found");
+            $this->error_at("dt", "<0>Document type not found");
             return;
         }
 
@@ -237,7 +231,8 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         }
 
         if ($this->dtype === null
-            || ($this->opt && $this->opt->nonpaper) !== ($this->paperId < 0)) {
+            || ($this->opt && $this->opt->nonpaper) !== ($this->paperId < 0)
+            || ($this->opt && !$this->opt->has_document())) {
             $this->error_at("doc", "<0>Document ‘{$this->req_filename}’ not found");
             return;
         }
@@ -266,6 +261,39 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             }
         }
     }
+
+    /** @param int|string $dtname
+     * @param ?int $pid
+     * @return ?PaperOption */
+    static function parse_option(Conf $conf, $dtname, $pid = null) {
+        if (is_int($dtname)) {
+            return $conf->option_by_id($dtname);
+        } else if (($dtnum = stoi($dtname)) !== null) {
+            return $conf->option_by_id($dtnum);
+        }
+        $opt = null;
+        if ($pid === null || $pid >= -1) {
+            $opt = $conf->options()->find($dtname);
+        }
+        if (($pid === null && !$opt) || $pid === -2) {
+            $opt = $conf->options()->find_nonpaper($dtname);
+        }
+        return $opt;
+    }
+
+    /** @param int|string $dtname
+     * @param ?int $pid
+     * @return ?int */
+    static function parse_doctype(Conf $conf, $dtname, $pid = null) {
+        if ($dtname === "comment" || stoi($dtname) === DTYPE_COMMENT) {
+            return DTYPE_COMMENT;
+        } else if (($opt = self::parse_option($conf, $dtname, $pid))
+                   && $opt->has_document()) {
+            return $opt->id;
+        }
+        return null;
+    }
+
 
     /** @param string $dtname
      * @param 0|1|2 $reqtype

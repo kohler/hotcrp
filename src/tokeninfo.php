@@ -164,6 +164,14 @@ class TokenInfo {
 
     /** @return $this
      * @suppress PhanAccessReadOnlyProperty */
+    final function set_pid(int $pid) {
+        assert(!$this->stored() && $pid >= -2);
+        $this->paperId = $pid;
+        return $this;
+    }
+
+    /** @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     final function set_review(ReviewInfo $rrow) {
         assert(!$this->stored());
         $this->paperId = $rrow->paperId;

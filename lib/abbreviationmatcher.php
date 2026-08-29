@@ -276,6 +276,11 @@ class AbbreviationMatcher {
         if (empty($this->xmatches)) {
             $this->_analyze();
         }
+        // special case: empty string matches nothing
+        if ($pattern === "") {
+            $this->xmatches[$pattern] = [];
+            return;
+        }
 
         $upat = $pattern;
         $lpattern = strtolower($pattern);

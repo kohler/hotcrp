@@ -338,9 +338,8 @@ class PaperOptionList implements IteratorAggregate {
         if (($oj->nonpaper ?? false) !== true
             && !($nonfinal && ($oj->final ?? false) === true)) {
             return $this->option_by_id($id);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param ?string $key
@@ -403,41 +402,54 @@ class PaperOptionList implements IteratorAggregate {
         return count($this->option_json_map()) !== 0;
     }
 
-    /** @return array<int,PaperOption> */
-    function find_all($name) {
-        $iname = strtolower($name);
-        if ($iname === (string) DTYPE_SUBMISSION
-            || $iname === "paper"
-            || $iname === "submission") {
-            return [DTYPE_SUBMISSION => $this->option_by_id(DTYPE_SUBMISSION)];
-        } else if ($iname === (string) DTYPE_FINAL
-                   || $iname === "final") {
-            return [DTYPE_FINAL => $this->option_by_id(DTYPE_FINAL)];
-        } else if ($iname === "" || $iname === "none") {
+    /** @param bool $nonpaper
+     * @param bool $no_any
+     * @return list<PaperOption> */
+    private function _list_all($name, $nonpaper, $no_any) {
+        $lname = strtolower($name);
+        if ($lname === "" || $lname === "none") {
             return [];
-        } else if ($iname === "any") {
-            return $this->normal();
-        } else if (substr($iname, 0, 3) === "opt"
-                   && ctype_digit(substr($iname, 3))) {
-            $o = $this->option_by_id((int) substr($iname, 3));
-            return $o ? [$o->id => $o] : [];
-        } else {
-            if (substr($iname, 0, 4) === "opt-") {
+        } else if ($lname === "any") {
+            if ($no_any) {
+                return [];
+            }
+            return array_values($nonpaper ? $this->nonpaper() : $this->normal());
+        } else if (str_starts_with($lname, "opt")) {
+            if (ctype_digit(substr($lname, 3))) {
+                $o = $this->option_by_id(intval(substr($lname, 3)));
+                return $o && $o->nonpaper === $nonpaper ? [$o] : [];
+            } else if (($lname[3] ?? "") === "-") {
                 $name = substr($name, 4);
             }
-            $omap = [];
-            foreach ($this->conf->find_all_fields($name, Conf::MFLAG_OPTION) as $o) {
-                $omap[$o->id] = $o;
+        } else if (!$nonpaper) {
+            if ($lname === (string) DTYPE_SUBMISSION
+                || $lname === "paper"
+                || $lname === "submission") {
+                return [$this->option_by_id(DTYPE_SUBMISSION)];
+            } else if ($lname === (string) DTYPE_FINAL
+                       || $lname === "final") {
+                return [$this->option_by_id(DTYPE_FINAL)];
             }
-            return $omap;
         }
+        if ($nonpaper) {
+            return $this->nonpaper_abbrev_matcher()->find_all($name);
+        }
+        return $this->conf->find_all_fields($name, Conf::MFLAG_OPTION);
+    }
+
+    /** @return array<int,PaperOption> */
+    function find_all($name) {
+        $omap = [];
+        foreach ($this->_list_all($name, false, false) as $o) {
+            $omap[$o->id] = $o;
+        }
+        return $omap;
     }
 
     /** @return ?PaperOption */
     function find($name) {
-        $omap = $this->find_all($name);
-        reset($omap);
-        return count($omap) === 1 ? current($omap) : null;
+        $olist = $this->_list_all($name, false, true);
+        return count($olist) === 1 ? $olist[0] : null;
     }
 
     /** @return AbbreviationMatcher<PaperOption> */
@@ -459,7 +471,7 @@ class PaperOptionList implements IteratorAggregate {
     /** @return array<int,PaperOption> */
     function find_all_nonpaper($name) {
         $omap = [];
-        foreach ($this->nonpaper_abbrev_matcher()->find_all($name) as $o) {
+        foreach ($this->_list_all($name, true, false) as $o) {
             $omap[$o->id] = $o;
         }
         return $omap;
@@ -467,9 +479,8 @@ class PaperOptionList implements IteratorAggregate {
 
     /** @return ?PaperOption */
     function find_nonpaper($name) {
-        $omap = $this->find_all_nonpaper($name);
-        reset($omap);
-        return count($omap) == 1 ? current($omap) : null;
+        $olist = $this->_list_all($name, true, true);
+        return count($olist) === 1 ? $olist[0] : null;
     }
 
     function refresh_topics() {
