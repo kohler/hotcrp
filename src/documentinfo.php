@@ -47,6 +47,7 @@ class DocumentInfo implements JsonSerializable {
     /** @var ?int */
     private $height;
 
+    // content fields
     /** @var ?string */
     private $content;
     /** @var ?string */
@@ -1126,7 +1127,6 @@ class DocumentInfo implements JsonSerializable {
 
         // look for an existing document with same sha1
         if ($this->binary_hash() !== false
-            && $this->paperId != 0
             && $this->_save_check_existing($savef)) {
             return true;
         }
@@ -1171,6 +1171,12 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param int $savef */
     private function _save_check_existing($savef) {
+        if ($this->paperId === 0 || $this->paperId === -1) {
+            // These paperIds match documents relating to concurrent or failed
+            // paper creations. It is unsafe to adopt them.
+            return false;
+        }
+
         $qf = ["paperId=?", "documentType=?", "sha1=?",
                "filterType<=>?", "originalStorageId<=>?"];
         $qv = [$this->paperId, $this->documentType, $this->binary_hash(),

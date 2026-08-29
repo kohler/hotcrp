@@ -239,6 +239,99 @@ class PaperAPI_Tester {
         $this->npid = $jr->paper->pid;
     }
 
+    function test_dry_run_then_save_document() {
+        $content = "%PDF-2.0 dry run then save\n";
+        $paper = [
+            "pid" => "new", "title" => "Dry run then save",
+            "abstract" => "Abstract.\r\n",
+            "authors" => [["name" => "Ethan Iverson", "email" => "iverson@_.com"]],
+            "submission" => ["content" => $content],
+            "status" => "draft"
+        ];
+        $nstorage = $this->conf->fetch_ivalue("select count(*) from PaperStorage");
+
+        // a dry run reports success and leaves nothing behind: no paper, and
+        // no document row for the submission it validated
+        $qreq = TestQreq::post_json($paper, ["p" => "new", "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->dry_run, true);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from Paper where title='Dry run then save'"), 0);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperStorage"), $nstorage);
+
+        // saving the same paper then stores exactly one copy
+        $qreq = TestQreq::post_json($paper, ["p" => "new"]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+        $pid = $jr->paper->pid;
+        xassert($pid > 0);
+
+        $prow = $this->conf->checked_paper_by_id($pid);
+        $doc = $prow->document(DTYPE_SUBMISSION);
+        xassert(!!$doc);
+        xassert_eqq($doc->content(), $content);
+
+        // exactly one document row for the paper, and no orphan left behind
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperStorage where paperId=? and documentType=?", $pid, DTYPE_SUBMISSION), 1);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperStorage where sha1=? and paperId<=0", $doc->binary_hash()), 0);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperStorage"), $nstorage + 1);
+
+        // a dry run against an existing paper leaves nothing behind either
+        $nstorage = $this->conf->fetch_ivalue("select count(*) from PaperStorage");
+        $qreq = TestQreq::post_json([
+            "pid" => $pid, "submission" => ["content" => "%PDF-2.0 dry run replacement\n"]
+        ], ["p" => $pid, "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->dry_run, true);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperStorage"), $nstorage);
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->document(DTYPE_SUBMISSION)->content(), $content);
+    }
+
+    /** @return object */
+    private function new_paper_json($title, $content) {
+        return json_decode(json_encode([
+            "pid" => "new", "title" => $title, "abstract" => "Abstract.\r\n",
+            "authors" => [["name" => "Ethan Iverson", "email" => "iverson@_.com"]],
+            "submission" => ["content" => $content],
+            "status" => "draft"
+        ]));
+    }
+
+    /** @return list<array{int,int}> */
+    private function storage_rows($content) {
+        $hash = HashAnalysis::hash_as_binary("sha2-" . hash("sha256", $content));
+        $rows = [];
+        $result = $this->conf->qe("select paperId, inactive from PaperStorage where sha1=?", $hash);
+        while (($row = $result->fetch_row())) {
+            $rows[] = [(int) $row[0], (int) $row[1]];
+        }
+        Dbl::free($result);
+        return $rows;
+    }
+
+    function test_abort_save_document_disposition() {
+        // preparing a save stores the document under the paper ID it reserved
+        $content = "%PDF-2.0 abort tombstone\n";
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_json($this->new_paper_json("Abort tombstone", $content)));
+        $rows = $this->storage_rows($content);
+        xassert_eqq(count($rows), 1);
+        xassert_gt($rows[0][0], 0);
+
+        // an aborted save keeps that document as an unattached, inactive tombstone
+        $ps->abort_save();
+        xassert_eqq($this->storage_rows($content), [[-1, 1]]);
+
+        // ...but an abort that promises to modify nothing removes it
+        $content = "%PDF-2.0 abort delete\n";
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_json($this->new_paper_json("Abort delete", $content)));
+        xassert_eqq(count($this->storage_rows($content)), 1);
+        $ps->abort_save(true);
+        xassert_eqq($this->storage_rows($content), []);
+    }
+
     function test_save_submit_new_paper_zip() {
         $qreq = TestQreq::post_zip([
             "data.json" => ["pid" => "new", "title" => "Jans paper", "abstract" => "Swafford 4eva\r\n", "authors" => [["name" => "Jan Swafford", "email" => "swafford@_.com"]], "submission" => ["content_file" => "janspaper.pdf"], "status" => "submitted"],
@@ -1091,7 +1184,7 @@ class PaperAPI_Tester {
                 ["name" => "Mikael Degermark", "email" => $this->u_micke->email]
             ],
             "submission" => ["content" => "%PDF-2"],
-            "status" => "submitted"
+            "status" => "bogus status"
         ], ["p" => "new"]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert($jr->ok);

@@ -1026,23 +1026,30 @@ final class PaperStatus extends MessageSet {
         return $dids;
     }
 
-    private function _invalidate_uploaded_documents() {
+    /** @param bool $delete_docs */
+    private function _invalidate_uploaded_documents($delete_docs) {
         if (empty($this->_docs)) {
             return;
         }
-        if ($this->prow->is_new()) {
-            $this->conf->qe("update PaperStorage set paperId=-1, inactive=1 where paperStorageId?a", $this->_dids());
-            return;
-        }
-        $inactive_dids = [];
+        // We delete newly-uploaded documents only in case of dry runs.
+        // If the save fails for another reason, tombstone rows for the
+        // uploaded documents remain in the database forever.
+        $inactive_dids = $delete_dids = [];
         foreach ($this->_docs as $doc) {
-            if ($doc->was_inserted()) {
+            if ($doc->was_inserted() && $delete_docs) {
+                $delete_dids[] = $doc->paperStorageId;
+            } else if ($doc->was_inserted()) {
                 $inactive_dids[] = $doc->paperStorageId;
             }
             $doc->abort_prop();
         }
+        $pidch = $this->prow->is_new() ? "paperId=-1, " : "";
+        $pidmatch = $this->prow->is_new() ? "" : "paperId={$this->prow->paperId} and ";
+        if (!empty($delete_dids)) {
+            $this->conf->qe("delete from PaperStorage where {$pidmatch}paperStorageId?a", $delete_dids);
+        }
         if (!empty($inactive_dids)) {
-            $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and paperStorageId?a", $this->prow->paperId, $inactive_dids);
+            $this->conf->qe("update PaperStorage set {$pidch}inactive=1 where {$pidmatch}paperStorageId?a", $inactive_dids);
         }
     }
 
@@ -1386,7 +1393,8 @@ final class PaperStatus extends MessageSet {
     }
 
 
-    function abort_save() {
+    /** @param bool $delete_docs */
+    function abort_save($delete_docs = false) {
         if (($this->_save_status & (self::SSF_SAVED | self::SSF_ABORTED)) === 0) {
             $this->_save_status |= self::SSF_ABORTED;
             // preparation may fail before `$this->prow` is set
@@ -1394,7 +1402,7 @@ final class PaperStatus extends MessageSet {
                 $this->prow->abort_prop();
                 $this->prow->remove_option_overrides();
             }
-            $this->_invalidate_uploaded_documents();
+            $this->_invalidate_uploaded_documents($delete_docs);
         }
     }
 
