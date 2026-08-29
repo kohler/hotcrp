@@ -26,6 +26,8 @@ class APIToken_Batch {
     private $token;
     /** @var bool */
     private $active_only;
+    /** @var bool */
+    private $full;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
@@ -47,6 +49,7 @@ class APIToken_Batch {
             throw new CommandLineException("Bad `--scope`");
         }
         $this->active_only = isset($arg["active"]);
+        $this->full = isset($arg["full"]);
         if (!empty($arg["_"])) {
             if (strpos($arg["_"][0], "@") === false) {
                 $this->token = $arg["_"][0];
@@ -209,7 +212,9 @@ class APIToken_Batch {
         if ($note !== "") {
             $f[] = "note \"{$note}\"";
         }
-        return "{$tok->salt}  {$who}\n    " . join(" · ", $f) . "\n";
+        // Abbreviated by default to avoid accidental exposure
+        $salt = $this->full ? $tok->salt : $tok->abbreviation(TokenInfo::ABBREVIATION_ELLIPSIS);
+        return "{$salt}  {$who}\n    " . join(" · ", $f) . "\n";
     }
 
     /** @param list<string> $argv
@@ -225,6 +230,7 @@ class APIToken_Batch {
             "scope:,S: =SCOPE Set API scope",
             "token:,T: =TOKEN !list Search for TOKEN",
             "active !list Only show active tokens",
+            "full !list Print complete token values, not abbreviations",
             "cdb,G Global token"
         )->description("Create and list HotCRP API tokens.
 Usage: php batch/apitoken.php [-n CONFID|--config CONFIG] [create] [ARGS...] EMAIL
