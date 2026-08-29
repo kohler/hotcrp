@@ -1428,6 +1428,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->save_setting("__reviewSubmitted_null_v328", 1);
         }
 
+        // remove obsolete S3 settings
+        if ($conf->sversion <= 332
+            && $conf->setting("__s3_scope")) {
+            $conf->ql("delete from Settings where name in ('__s3_scope', '__s3_signing_key')");
+        }
+
         if ($conf->sversion === 6
             && $conf->ql_ok("alter table ReviewRequest add `reason` text")) {
             $conf->update_schema_version(7);

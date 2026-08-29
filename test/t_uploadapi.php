@@ -16,8 +16,6 @@ class UploadAPI_Tester {
     private $verbose = 0;
     /** @var ?string */
     private $old_docstore;
-    /** @var ?array{?string,?string,?string,?string} */
-    private $old_s3_opt;
     /** @var string */
     public $tmpdir;
 
@@ -57,7 +55,7 @@ In thee!
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->user = $conf->root_user();
-        $this->s3c = S3_Tester::make_s3_client($conf, "UploadAPI");
+        $this->s3c = S3_Tester::make_live($conf, "UploadAPI");
         $this->tmpdir = tempdir();
         $this->old_docstore = $this->conf->opt("docstore");
         $this->conf->set_opt("docstore", "{$this->tmpdir}%h%x");
@@ -72,7 +70,7 @@ In thee!
 
     function initialize() {
         if ($this->s3c) {
-            $this->old_s3_opt = S3_Tester::install_s3_options($this->conf, $this->s3c);
+            S3_Tester::install($this->conf, $this->s3c);
             $this->s3c->delete_many([
                 "doc/32f/sha2-32f67cf69678d2ac17ab979b926e18cb830b96cbdb46866362bd083c619c4d6c.txt",
                 "doc/054/sha2-054bfbd046e415952829e66856a1c7d6240d97ea2c08de3069d1578052b9b7a7.txt"
@@ -594,9 +592,9 @@ In thee!
 
     function test_s3_requests() {
         if (!$this->s3c) {
-            if ($this->conf->opt("testS3Key")) {
+            if (Xassert::verbosity() > 0) {
                 Xassert::will_print();
-                fwrite(STDERR, "  - UploadAPI: S3 not tested; set testS3Key and testS3Secret, and add \"UploadAPI\" to testS3Testers\n");
+                fwrite(STDERR, "  - UploadAPI: S3 not tested; set testS3Client and add \"UploadAPI\" to testS3Testers\n");
             }
             return;
         }
@@ -617,7 +615,7 @@ In thee!
         rm_rf_tempdir($this->tmpdir);
         $this->conf->set_opt("docstore", $this->old_docstore);
         if ($this->s3c) {
-            S3_Tester::install_s3_options($this->conf, $this->old_s3_opt);
+            S3_Tester::install($this->conf);
         }
         $this->conf->refresh_settings();
     }

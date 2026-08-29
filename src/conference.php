@@ -173,8 +173,8 @@ class Conf {
     /** @var array<int,NamedFormula> */
     private $_defined_formulas;
     private $_emoji_codes;
-    /** @var S3Client|null|false */
-    private $_s3_client = false;
+    /** @var ?list<S3Client> */
+    private $_s3_clients;
     /** @var ?Fmt */
     private $_fmt;
     /** @var ?list<string> */
@@ -728,12 +728,11 @@ class Conf {
         $this->_docstore = false;
         if (($this->opt["dbNoPapers"] ?? null)
             && !($this->opt["docstore"] ?? null)
+            && !($this->opt["s3Clients"] ?? null)
             && !($this->opt["s3_bucket"] ?? null)) {
             unset($this->opt["dbNoPapers"]);
         }
-        if ($this->_s3_client !== false) {
-            $this->_s3_client = $this->_refresh_s3_client();
-        }
+        $this->_s3_clients = null;
 
         // defaultFormat
         $this->default_format = (int) ($this->opt["defaultFormat"] ?? 0);
@@ -1234,27 +1233,28 @@ class Conf {
         return $ds ? $ds->tempdir() : null;
     }
 
-    /** @return ?S3Client */
-    private function _refresh_s3_client() {
-        if (!($k = $this->opt["s3_key"] ?? null)
-            || !($s = $this->opt["s3_secret"] ?? null)
-            || !($b = $this->opt["s3_bucket"] ?? null)) {
-            return null;
+    /** @param int $index
+     * @return ?S3Client */
+    function s3_client($index = 0) {
+        if ($this->_s3_clients === null) {
+            $this->_s3_clients = [];
+            $i = 0;
+            while (($config = S3Client::extract_config($this->opt, $i))) {
+                if (($s3c = S3Client::make($config))) {
+                    $this->_s3_clients[] = $s3c;
+                } else {
+                    $this->_s3_clients[] = new S3Client(["bucket" => "", "key" => ""]);
+                }
+                ++$i;
+            }
         }
-        return S3Client::make([
-            "key" => $k, "secret" => $s, "bucket" => $b,
-            "region" => $this->opt["s3_region"] ?? null,
-            "domain" => $this->opt["s3_domain"] ?? null,
-            "setting_cache" => $this, "setting_cache_prefix" => "__s3"
-        ]);
+        return $this->_s3_clients[$index] ?? null;
     }
 
-    /** @return ?S3Client */
-    function s3_client() {
-        if ($this->_s3_client === false) {
-            $this->_s3_client = $this->_refresh_s3_client();
-        }
-        return $this->_s3_client;
+    /** @return int */
+    function s3_client_count() {
+        $this->s3_client();
+        return count($this->_s3_clients);
     }
 
 

@@ -343,24 +343,21 @@ class BackupDB_Batch {
             return $this->_s3_client;
         }
         global $Opt;
-        $arg = [];
-        foreach (["s3_bucket" => "bucket", "s3_secret" => "secret", "s3_key" => "key",
-                  "s3_region" => "region", "s3_backup_pattern" => "pattern"] as $optk => $ak) {
-            if ($ak === "region" && !isset($Opt[$optk])) {
-                // OK to leave out `$Opt["s3_region"]`
+        for ($index = 0; ($config = S3Client::extract_config($Opt, $index)); ++$index) {
+            $config["backup_pattern"] = $config["backup_pattern"] ?? $Opt["s3_backup_pattern"] ?? null;
+            if (!isset($config["backup_pattern"])
+                || !is_string($config["backup_pattern"])
+                || in_array($config["backup_pattern"], ["", "none"], true)) {
                 continue;
             }
-            if (!isset($Opt[$optk]) || !is_string($Opt[$optk])) {
-                throw new CommandLineException("missing or invalid \$Opt[{$optk}]");
+            $this->_s3_client = new S3Client($config);
+            if (function_exists("curl_init")) {
+                $this->_s3_client->set_result_class("CurlS3Result");
             }
-            $arg[$ak] = $Opt[$optk];
+            $this->_s3_pattern = $config["backup_pattern"];
+            return $this->_s3_client;
         }
-        $this->_s3_client = new S3Client($arg);
-        if (function_exists("curl_init")) {
-            $this->_s3_client->set_result_class("CurlS3Result");
-        }
-        $this->_s3_pattern = $arg["pattern"];
-        return $this->_s3_client;
+        throw new CommandLineException("invalid S3 configuration");
     }
 
     /** @param int $count
@@ -425,8 +422,11 @@ class BackupDB_Batch {
         }
         register_shutdown_function("unlink", $fn);
         $this->in = fopen($fn, "w+b");
-        $s3l = $this->s3_client()->start_curl_get($this->_s3_key)
-            ->set_response_body_stream($this->in)
+        $s3l = $this->s3_client()->start_curl_get($this->_s3_key);
+        if (!$s3l) {
+            $this->throw_error("Cannot connect to S3");
+        }
+        $s3l->set_response_body_stream($this->in)
             ->set_timeout(60);
         if ($this->verbose) {
             fwrite(STDERR, "Reading {$this->_s3_key}\n");

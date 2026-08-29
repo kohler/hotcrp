@@ -32,7 +32,6 @@ class SiteLoader {
         "ReviewFieldInfo" => "src/reviewfield.php",
         "SearchSplitter" => "src/searchparser.php",
         "SearchStringContext" => "src/papersearch.php",
-        "StreamS3Result" => "lib/s3result.php",
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",
         "TagMap" => "lib/tagger.php",

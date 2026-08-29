@@ -230,6 +230,7 @@ lib/mimetext.php
 lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php
+lib/nulls3result.php
 lib/oklabcolor.php
 lib/oklchcolor.php
 lib/phpqsession.php
@@ -242,6 +243,7 @@ lib/runsql.sh
 lib/s3client.php
 lib/s3result.php
 lib/scoreinfo.php
+lib/streams3result.php
 lib/subprocess.php
 lib/tagger.php
 lib/toposort.php

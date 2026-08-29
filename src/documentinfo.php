@@ -73,12 +73,15 @@ class DocumentInfo implements JsonSerializable {
     private $_old_prop;
     /** @var int */
     private $_dflags = 0;
+    /** @var ?int */
+    private $_s3_index;
 
     const FLAG_NO_DOCSTORE = 1;
 
     const DF_PREFER_S3 = 1;
     const DF_WAS_INSERTED = 2;
     const DF_PREFER_INACTIVE = 4;
+    const DF_S3_SIZE_MATCH = 8;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -624,33 +627,15 @@ class DocumentInfo implements JsonSerializable {
         return $sz !== false ? $sz : -1;
     }
 
-    const SIZE_NO_CONTENT = 1;
-    /** @param int $flags
-     * @return int */
-    function size($flags = 0) {
+    /** @return int */
+    function size() {
         if ($this->size < 0) {
-            $this->load_size($flags);
+            $this->size = $this->content_size();
+            if ($this->size >= 0 && $this->paperStorageId >= 1) {
+                $this->conf->qe("update PaperStorage set size=? where paperId=? and paperStorageId=? and size<0", $this->size, $this->paperId, $this->paperStorageId);
+            }
         }
         return $this->size;
-    }
-
-    private function load_size($flags) {
-        if (!$this->content_available()
-            && !$this->load_docstore()
-            && !$this->load_database()
-            && ($s3 = $this->conf->s3_client())
-            && $this->has_hash()
-            && ($s3k = $this->s3_key())) {
-            // NB This function may be called from `load_s3()`!
-            // Avoid a recursive call to `load_s3()` via `head_size()`
-            $this->size = $s3->head_size($s3k);
-        }
-        if ($this->size < 0 && ($flags & self::SIZE_NO_CONTENT) === 0) {
-            $this->size = $this->content_size();
-        }
-        if ($this->size >= 0 && $this->paperStorageId > 1) {
-            $this->conf->qe("update PaperStorage set size=? where paperId=? and paperStorageId=? and size<=0", $this->size, $this->paperId, $this->paperStorageId);
-        }
     }
 
     /** @param string $fn
@@ -709,9 +694,8 @@ class DocumentInfo implements JsonSerializable {
         if ($this->size > 0) {
             $sz = self::filesize_expected($path, $this->size);
             if ($sz !== $this->size
-                && ($s3 = $this->conf->s3_client())
-                && ($s3k = $this->s3_key())
-                && $s3->head_size($s3k) === $this->size) {
+                && $this->check_s3() // fetch DF_S3_SIZE_MATCH flag
+                && ($this->_dflags & self::DF_S3_SIZE_MATCH) !== 0) {
                 unlink($path);
                 return false;
             } else if ($sz !== $this->size) {
@@ -912,6 +896,7 @@ class DocumentInfo implements JsonSerializable {
         if ($s3as !== false
             && $this->size >= $s3as
             && $this->conf->s3_client()
+            && $this->conf->s3_client_count() === 1
             && $this->s3_key()
             && ($s3ap = $this->conf->opt("s3AccelRedirect"))) {
             return $s3ap;
@@ -943,45 +928,67 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     private function load_s3() {
-        if (!($s3 = $this->conf->s3_client())
-            || !$this->has_hash()
+        if (!$this->has_hash()
             || !($s3k = $this->s3_key())) {
             return false;
         }
+        $this->_s3_index = $this->_s3_index ?? 0;
+        if (!($s3 = $this->conf->s3_client($this->_s3_index))) {
+            return false;
+        }
+        while ($s3) {
+            $status = $this->load_s3_at($s3, $s3k);
+            if ($status === 200) {
+                return true;
+            } else if ($status !== 404) {
+                break;
+            }
+            ++$this->_s3_index;
+            $s3 = $this->conf->s3_client($this->_s3_index);
+        }
+        return false;
+    }
+
+    /** @param string $s3k
+     * @return int */
+    private function load_s3_at(S3Client $s3, $s3k) {
         $dspath = $this->docstore_path(Docstore::FPATH_MKDIR);
-        if (!function_exists("curl_init")) {
-            return $this->load_s3_direct($s3, $s3k, $dspath);
+        if (($s3l = $s3->start_curl_get($s3k))) {
+            $s3l->set_timeout_size($this->size);
+            if (($dsstmp = self::fopen_docstore($dspath))) {
+                $s3l->set_response_body_stream($dsstmp[0])->run();
+                return $this->handle_load_s3_curl($s3l, $dspath, $dsstmp[1]);
+            }
+            $s3l->run();
+            return $this->handle_load_s3_curl($s3l, null, null);
         }
-        $s3l = $s3->start_curl_get($s3k)->set_timeout_size($this->size(self::SIZE_NO_CONTENT));
-        if (($dsstmp = self::fopen_docstore($dspath))) {
-            $s3l->set_response_body_stream($dsstmp[0])->run();
-            return $this->handle_load_s3_curl($s3l, $dspath, $dsstmp[1]);
-        }
-        $s3l->run();
-        return $this->handle_load_s3_curl($s3l, null, null);
+        return $this->load_s3_direct($s3, $s3k, $dspath);
     }
 
     /** @param CurlS3Result $s3l
      * @param ?string $dspath
      * @param ?string $dstmp
-     * @return bool */
+     * @return int */
     private function handle_load_s3_curl($s3l, $dspath, $dstmp) {
         if ($s3l->status === 404
             && $this->s3_upgrade_extension($s3l->s3, $s3l->skey)) {
             $s3l->reset()->run();
         }
         if ($s3l->status !== 200) {
-            error_log("S3 error: GET {$s3l->skey}: {$s3l->status} {$s3l->status_text} " . json_encode_db($s3l->response_headers));
+            if ($s3l->status !== 404
+                || $this->_s3_index + 1 >= $this->conf->s3_client_count()) {
+                error_log("S3 error: GET {$s3l->skey}: {$s3l->status} {$s3l->status_text} " . json_encode_db($s3l->response_headers));
+            }
             $s3l->close_response_body_stream();
             if ($dstmp) {
                 @unlink($dstmp);
             }
-            return false;
+            return $s3l->status;
         }
         if (!$dstmp) {
             $this->content = $s3l->response_body();
             $s3l->close_response_body_stream();
-            return true;
+            return 200;
         }
         $s3l->close_response_body_stream();
         $sz = self::filesize_expected($dstmp, $this->size);
@@ -990,18 +997,18 @@ class DocumentInfo implements JsonSerializable {
             $s3l->status = 500;
         } else if (rename($dstmp, $dspath)) {
             $this->filestore = $dspath;
-            return true;
+            return 200;
         } else {
             $this->content = file_get_contents($dstmp);
         }
         @unlink($dstmp);
-        return $s3l->status === 200;
+        return $s3l->status;
     }
 
     /** @param S3Client $s3
      * @param string $s3k
      * @param ?string $dspath
-     * @return bool */
+     * @return int */
     private function load_s3_direct($s3, $s3k, $dspath) {
         $r = $s3->start_get($s3k)->run();
         if ($r->status === 404
@@ -1009,27 +1016,45 @@ class DocumentInfo implements JsonSerializable {
             $r = $s3->start_get($s3k)->run();
         }
         if ($r->status !== 200) {
-            error_log("S3 error: GET {$s3k}: {$r->status} {$r->status_text} " . json_encode_db($r->response_headers));
-            return false;
+            if ($r->status !== 404
+                || $this->_s3_index + 1 >= $this->conf->s3_client_count()) {
+                error_log("S3 error: GET {$s3k}: {$r->status} {$r->status_text} " . json_encode_db($r->response_headers));
+            }
+            return $r->status;
         }
         $b = $r->response_body();
         if (($b ?? "") === "") {
-            return false;
+            return 500;
         }
         if ($dspath && file_put_contents($dspath, $b) === $this->size) {
             $this->filestore = $dspath;
         } else {
             $this->content = $b;
         }
-        return true;
+        return 200;
     }
 
     /** @return bool */
     function check_s3() {
-        return ($s3 = $this->conf->s3_client())
-            && ($s3k = $this->s3_key())
-            && ($s3->head($s3k)
-                || ($this->s3_upgrade_extension($s3, $s3k) && $s3->head($s3k)));
+        $this->_s3_index = $this->_s3_index ?? 0;
+        $this->_dflags &= ~self::DF_S3_SIZE_MATCH;
+        if (!($s3k = $this->s3_key())
+            || !($s3 = $this->conf->s3_client($this->_s3_index))) {
+            return false;
+        }
+        while ($s3) {
+            $sz = $s3->head_size($s3k);
+            if ($sz < 0 && $this->s3_upgrade_extension($s3, $s3k)) {
+                $sz = $s3->head_size($s3k);
+            }
+            if ($sz >= 0) {
+                $this->_dflags |= $sz === $this->size ? self::DF_S3_SIZE_MATCH : 0;
+                return true;
+            }
+            ++$this->_s3_index;
+            $s3 = $this->conf->s3_client($this->_s3_index);
+        }
+        return false;
     }
 
     /** @return array<string,string> */
@@ -1090,6 +1115,7 @@ class DocumentInfo implements JsonSerializable {
         }
 
         // assume hash equality + size equality == presence
+        $this->_s3_index = 0;
         if ($s3->head_size($s3k) === $this->size()) {
             return self::STORE_S3_FOUND;
         }
@@ -1313,11 +1339,13 @@ class DocumentInfo implements JsonSerializable {
     /** @param iterable<DocumentInfo> $docs
      * @param int $flags */
     static function prefetch_content($docs, $flags = 0) {
+        $docstore = ($flags & self::FLAG_NO_DOCSTORE) === 0;
         $pfdocs = [];
         foreach ($docs as $doc) {
             if (!$doc->content_available_locally()
                 && $doc->conf->s3_client()) {
-                $pfdocs[] = $doc;
+                $doc->_s3_index = $doc->_s3_index ?? 0;
+                $pfdocs[] = new DocumentPrefetchInfo($doc);
             }
         }
         if (empty($pfdocs) || !function_exists("curl_multi_init")) {
@@ -1325,11 +1353,9 @@ class DocumentInfo implements JsonSerializable {
         }
 
         $adocs = [];
-        '@phan-var-force list<array{DocumentInfo,CurlS3Result,int|float,?string,?string}> $adocs';
         $curlm = curl_multi_init();
         $starttime = microtime(true);
         $stoptime = null;
-        $docstore = ($flags & self::FLAG_NO_DOCSTORE) === 0;
 
         while (true) {
             // check time
@@ -1347,42 +1373,53 @@ class DocumentInfo implements JsonSerializable {
 
             // add documents to sliding window
             while (count($adocs) < 8 && !empty($pfdocs)) {
-                $doc = array_pop($pfdocs);
+                $adoc = array_pop($pfdocs);
+                $doc = $adoc->doc;
                 $s3k = $doc->s3_key();
-                if (!$s3k) {
+                // skip clients that cannot serve this document
+                $adoc->s3l = null;
+                while ($s3k
+                       && ($s3 = $doc->conf->s3_client($doc->_s3_index))
+                       && !($adoc->s3l = $s3->start_curl_get($s3k))) {
+                    ++$doc->_s3_index;
+                }
+                if (!$adoc->s3l) {
                     continue;
                 }
-                $s3 = $doc->conf->s3_client();
-                $s3l = $s3->start_curl_get($s3k)->set_timeout_size($doc->size(self::SIZE_NO_CONTENT));
+                $adoc->s3l->set_timeout_size($doc->size);
+                $adoc->time = 0;
                 if ($docstore
                     && ($dspath = $doc->docstore_path(Docstore::FPATH_MKDIR))
                     && ($dsstmp = self::fopen_docstore($dspath))) {
-                    $s3l->set_response_body_stream($dsstmp[0]);
-                    $adocs[] = [$doc, $s3l, 0, $dspath, $dsstmp[1]];
+                    $adoc->s3l->set_response_body_stream($dsstmp[0]);
+                    $adoc->path = $dspath;
+                    $adoc->filestore = $dsstmp[1];
                 } else {
-                    $adocs[] = [$doc, $s3l, 0, null, null];
+                    $adoc->path = $adoc->filestore = null;
                 }
+                $adocs[] = $adoc;
             }
             if (empty($adocs)) {
                 break;
             }
 
             // start requests that are ready to go
-            // ($adoc[2] is 0 if never attempted, -1 if in flight, otherwise
+            // ($adoc->time is 0 if never attempted, -1 if in flight, otherwise
             // the time at which the next attempt should start; $mintime is
             // the earliest time at which a waiting request comes due)
             $mintime = $stoptime;
             $nactive = 0;
-            foreach ($adocs as &$adoc) {
-                if ($adoc[2] === 0 || ($adoc[2] > 0 && $adoc[2] <= $time)) {
-                    $adoc[1]->prepare();
-                    curl_multi_add_handle($curlm, $adoc[1]->curlh);
-                    $adoc[2] = -1;
+            foreach ($adocs as $adoc) {
+                if ($adoc->time === 0
+                    || ($adoc->time > 0 && $adoc->time <= $time)) {
+                    $adoc->s3l->prepare();
+                    curl_multi_add_handle($curlm, $adoc->s3l->curlh);
+                    $adoc->time = -1;
                 }
-                if ($adoc[2] < 0) {
+                if ($adoc->time < 0) {
                     ++$nactive;
                 } else {
-                    $mintime = min($mintime, $adoc[2]);
+                    $mintime = min($mintime, $adoc->time);
                 }
             }
             unset($adoc);
@@ -1403,22 +1440,26 @@ class DocumentInfo implements JsonSerializable {
             // handle results
             while (($minfo = curl_multi_info_read($curlm))) {
                 $curlh = $minfo["handle"];
-                for ($i = 0; $i !== count($adocs) && $adocs[$i][1]->curlh !== $curlh; ++$i) {
+                for ($i = 0; $i !== count($adocs) && $adocs[$i]->s3l->curlh !== $curlh; ++$i) {
                 }
                 if ($i === count($adocs)) {
-                    // unknown handle: should not happen, but do not lose it
+                    // unknown handle: should not happen, but don't freak out
                     curl_multi_remove_handle($curlm, $curlh);
                     continue;
                 }
                 $adoc = $adocs[$i];
-                $s3l = $adoc[1];
+                $s3l = $adoc->s3l;
                 curl_multi_remove_handle($curlm, $s3l->curlh);
                 if ($s3l->parse_result()) {
-                    $adoc[0]->handle_load_s3_curl($s3l, $adoc[3], $adoc[4]);
+                    $status = $adoc->doc->handle_load_s3_curl($s3l, $adoc->path, $adoc->filestore);
                     array_splice($adocs, $i, 1);
+                    if ($status === 404) {
+                        ++$adoc->doc->_s3_index;
+                        $pfdocs[] = $adoc;
+                    }
                 } else {
                     $retrytime = microtime(true) + 0.005 * (1 << $s3l->runindex);
-                    $adocs[$i][2] = $retrytime;
+                    $adocs[$i]->time = $retrytime;
                     $mintime = min($mintime, $retrytime);
                 }
             }
@@ -1434,7 +1475,7 @@ class DocumentInfo implements JsonSerializable {
 
         // clean up leftovers; these requests never reached a final status
         foreach ($adocs as $adoc) {
-            $s3l = $adoc[1];
+            $s3l = $adoc->s3l;
             // detach the request and close its curl handle *before* its
             // response body stream is closed
             if ($s3l->curlh !== null) {
@@ -1443,7 +1484,7 @@ class DocumentInfo implements JsonSerializable {
             }
             $s3l->status = 598;
             $s3l->s3->account(598);
-            $adoc[0]->handle_load_s3_curl($s3l, $adoc[3], $adoc[4]);
+            $adoc->doc->handle_load_s3_curl($s3l, $adoc->path, $adoc->filestore);
         }
         curl_multi_close($curlm);
         Conf::$blocked_time += microtime(true) - $starttime;
@@ -2201,5 +2242,24 @@ class DocumentInfo implements JsonSerializable {
         }
         Dbl::free($result);
         return $ids;
+    }
+}
+
+class DocumentPrefetchInfo {
+    /** @var DocumentInfo */
+    public $doc;
+    /** @var ?CurlS3Result */
+    public $s3l;
+    /** @var int|float */
+    public $time;
+    /** @var ?string */
+    public $path;
+    /** @var ?string */
+    public $filestore;
+
+    /** @param DocumentInfo $doc */
+    function __construct($doc) {
+        $this->doc = $doc;
+        $this->time = 0;
     }
 }

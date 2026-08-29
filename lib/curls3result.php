@@ -72,10 +72,11 @@ class CurlS3Result extends S3Result {
         return $this;
     }
 
-    /** @param int $xsize
+    /** Set timeout based on expected size. If $xsize < 0, assumes 20MiB.
+     * @param int $xsize
      * @return $this */
     function set_timeout_size($xsize) {
-        $this->_xsize = max($xsize, 0);
+        $this->_xsize = max($xsize < 0 ? 20 << 20 : $xsize, 0);
         return $this;
     }
 
@@ -98,6 +99,8 @@ class CurlS3Result extends S3Result {
 
     /** Return the number of seconds allowed for transferring this request’s
      * bodies: about 0.5MB/sec for the request body, 4MB/sec for the response.
+     * Might return 0; that's ok, it is incremental on top of other timeout
+     * values.
      * @return int */
     private function size_timeout() {
         return ($this->_fsize >> 19) + ($this->_xsize >> 22);
@@ -125,7 +128,8 @@ class CurlS3Result extends S3Result {
             curl_setopt($this->curlh, CURLOPT_LOW_SPEED_LIMIT, self::LOW_SPEED_LIMIT);
             curl_setopt($this->curlh, CURLOPT_LOW_SPEED_TIME, self::LOW_SPEED_TIME);
         }
-        if (++$this->runindex === 1) {
+        ++$this->runindex;
+        if ($this->runindex === 1) {
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 3);
             curl_setopt($this->curlh, CURLOPT_TIMEOUT,
                 $this->_timeout ?? (6 + $this->size_timeout()));
@@ -191,8 +195,6 @@ class CurlS3Result extends S3Result {
         $this->status = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
         if ($this->status === 0) {
             $this->status = null;
-        } else if ($this->status === 403) {
-            $this->status = $this->s3->check_403();
         }
         if (curl_errno($this->curlh) !== 0) {
             error_log("{$this->method} {$this->url} -> {$this->status} {$this->status_text}: CURL error " . curl_errno($this->curlh) . "/" . curl_error($this->curlh));

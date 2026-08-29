@@ -11,33 +11,31 @@ class S3Client {
 
     /** @var string
      * @readonly */
-    public $s3_bucket;
+    private $s3_bucket;
     /** @var string
      * @readonly */
-    public $s3_key;
+    private $s3_key;
     /** @var string
      * @readonly */
-    public $s3_secret;
+    private $s3_secret;
     /** @var string
      * @readonly */
-    public $s3_region;
+    private $s3_region;
     /** @var ?string
      * @readonly */
-    public $s3_domain;
+    private $s3_domain;
     /** @var bool */
     public $verbose = false;
-    /** @var ?Conf */
-    private $setting_cache;
-    /** @var string */
-    private $setting_cache_prefix;
+    /** @var ?string */
+    private $_resolved_key;
+    /** @var ?string */
+    private $_resolved_secret;
     /** @var ?string */
     private $s3_scope;
     /** @var ?string */
     private $s3_signing_key;
     /** @var ?int */
     private $fixed_time;
-    /** @var bool */
-    private $reset_key = false;
     /** @var class-string<S3Result> */
     public $result_class = "StreamS3Result";
     /** @var int */
@@ -50,6 +48,8 @@ class S3Client {
     public $fail_count = 0;
     /** @var int */
     public $incomplete_count = 0;
+    /** @var bool */
+    private $_has_curl;
 
     /** @var int */
     static public $retry_timeout_allowance = 10; // in seconds
@@ -69,31 +69,106 @@ class S3Client {
 
     const CONFIRM_DELETE_BUCKET = 1203498141;
 
-    function __construct($opt = []) {
-        $this->s3_key = $opt["key"];
-        $this->s3_secret = $opt["secret"];
-        $this->s3_bucket = $opt["bucket"];
-        $this->s3_region = $opt["region"] ?? "us-east-1";
-        $this->s3_domain = $opt["domain"] ?? null;
-        $this->setting_cache = $opt["setting_cache"] ?? null;
-        $this->setting_cache_prefix = $opt["setting_cache_prefix"] ?? "__s3";
+
+    /** Extract an S3 configuration -- an array with key, secret, bucket
+     * suitable for the constructor, or for S3Client::make --
+     * from $opt["s3Clients"] if set, $opt["s3_key"] etc. otherwise.
+     * The result is unvalidated; `S3Client::make` checks it.
+     * @param ?array<string,mixed> $opt
+     * @param int $index
+     * @return ?array<string,mixed> */
+    static function extract_config($opt, $index) {
+        if (is_array($opt["s3Clients"] ?? null)) {
+            $config = $opt["s3Clients"][$index] ?? null;
+            if (is_array($config) || is_object($config)) {
+                return (array) $config;
+            } else if ($index === 0 && isset($opt["s3Clients"]["bucket"])) {
+                return $opt["s3Clients"];
+            }
+        } else if ($index === 0 && isset($opt["s3_bucket"])) {
+            return [
+                "bucket" => $opt["s3_bucket"],
+                "key" => $opt["s3_key"] ?? null,
+                "secret" => $opt["s3_secret"] ?? null,
+                "region" => $opt["s3_region"] ?? null,
+                "domain" => $opt["s3_domain"] ?? null
+            ];
+        }
+        return null;
     }
 
-    /** @param array{key:string,secret:string,bucket:string} $opt
-     * @return S3Client */
-    static function make($opt) {
+
+    /** @param array{bucket:string,key:string} $config */
+    function __construct($config) {
+        $this->s3_bucket = $config["bucket"];
+        $this->s3_key = $config["key"];
+        $this->s3_secret = $config["secret"] ?? "";
+        $this->s3_region = $config["region"] ?? "us-east-1";
+        $this->s3_domain = $config["domain"] ?? null;
+        $this->_has_curl = function_exists("curl_init");
+    }
+
+    /** Return a *cached* S3Client for this key, secret, bucket.
+     * Caching is useful for multiconference setups, which often have the
+     * same S3 configuration. Returns null if $config is invalid.
+     * @param array{bucket:string,key:string} $config
+     * @return ?S3Client */
+    static function make($config) {
+        if (!is_string($config["bucket"] ?? null)
+            || !is_string($config["key"] ?? null)
+            || !is_string($config["secret"] ?? "")
+            || (isset($config["region"]) && !is_string($config["region"]))
+            || (isset($config["domain"]) && !is_string($config["domain"]))) {
+            return null;
+        }
         foreach (self::$instances as $s3) {
-            if ($s3->s3_key === $opt["key"]
-                && $s3->s3_secret === $opt["secret"]
-                && $s3->s3_bucket === $opt["bucket"]
-                && $s3->s3_region === ($opt["region"] ?? "us-east-1")
-                && $s3->s3_domain === ($opt["domain"] ?? null))
+            if ($s3->config_matches($config))
                 return $s3;
         }
-        $s3 = new S3Client($opt);
+        $s3 = new S3Client($config);
         self::$instances[] = $s3;
         return $s3;
     }
+
+    /** @return string */
+    function bucket() {
+        return $this->s3_bucket;
+    }
+    /** @return string */
+    function key() {
+        return $this->s3_key;
+    }
+    /** @return string */
+    function secret() {
+        return $this->s3_secret;
+    }
+    /** @return string */
+    function region() {
+        return $this->s3_region;
+    }
+    /** @return string */
+    function domain() {
+        return $this->s3_domain;
+    }
+
+
+    /** @return array<string,mixed> */
+    function config() {
+        return [
+            "bucket" => $this->s3_bucket, "key" => $this->s3_key,
+            "secret" => $this->s3_secret, "region" => $this->s3_region,
+            "domain" => $this->s3_domain
+        ];
+    }
+    /** @return bool */
+    function config_matches($config) {
+        return $this->s3_bucket === $config["bucket"]
+            && $this->s3_key === $config["key"]
+            && $this->s3_secret === ($config["secret"] ?? "")
+            && $this->s3_region === ($config["region"] ?? "us-east-1")
+            && $this->s3_domain === ($config["domain"] ?? null);
+    }
+
 
     /** @param ?int $t
      * @return $this */
@@ -135,43 +210,75 @@ class S3Client {
         }
     }
 
-    /** @return string */
-    function bucket() {
-        return $this->s3_bucket;
+    private function _resolve_credentials($text, $is_key) {
+        $colon = strrpos($text, ":");
+        $fn = substr($text, 1, $colon === false ? strlen($text) - 1 : $colon - 1);
+        $str = trim((string) @file_get_contents($fn, false, null, 0, 16384));
+        if ($str === "") {
+            // fail
+        } else if ($is_key && preg_match('/\A\w{16,128}\z/', $str)) {
+            $this->_resolved_key = $str;
+        } else if (!$is_key && preg_match('/\A[A-Za-z0-9+\/]{16,128}\z/', $str)) {
+            $this->_resolved_secret = $str;
+        } else {
+            $gn = $colon !== false ? substr($text, $colon + 1) : "";
+            $pos = strpos($str, $gn === "" ? "[default]" : "[{$gn}]");
+            if ($pos === false || ($pos !== 0 && $str[$pos - 1] !== "\n")) {
+                return;
+            }
+            $endpos = strpos($str, "\n[", $pos + 1);
+            $gstr = $endpos === false ? substr($str, $pos) : substr($str, $pos, $endpos - $pos);
+            if ($this->_resolved_key === null
+                && preg_match('/\n\s*aws_access_key_id\s*=\s*(\w{16,128})\s*/', $gstr, $m)) {
+                $this->_resolved_key = $m[1];
+            }
+            if ($this->_resolved_secret === null
+                && preg_match('/\n\s*aws_secret_access_key\s*=\s*([A-Za-z0-9+\/]{40,256})\s*/', $gstr, $m)) {
+                $this->_resolved_secret = $m[1];
+            }
+        }
+    }
+
+    private function _resolve_key_and_secret() {
+        if ($this->_resolved_key !== null) {
+            return;
+        }
+        if (!str_starts_with($this->s3_key, "@")) {
+            $this->_resolved_key = $this->s3_key;
+        } else {
+            $this->_resolve_credentials($this->s3_key, true);
+        }
+        if ($this->_resolved_secret === null) {
+            if (!str_starts_with($this->s3_secret, "@")) {
+                $this->_resolved_secret = $this->s3_secret;
+            } else {
+                $this->_resolve_credentials($this->s3_secret, false);
+            }
+        }
+        if ($this->s3_bucket === ""
+            || (string) $this->_resolved_key === ""
+            || (string) $this->_resolved_secret === "") {
+            $b = $this->s3_bucket === "" ? "<emptybucket>" : $this->s3_bucket;
+            $k = $this->s3_key === "" ? "<emptykey>" : $this->s3_key;
+            error_log("bad S3 configuration for {$b}/{$k}");
+            $this->_resolved_key = $this->_resolved_secret = "";
+        }
     }
 
     /** @param int $time
      * @return array{string,string} */
     function scope_and_signing_key($time) {
-        if ($this->s3_scope === null
-            && $this->setting_cache) {
-            $this->s3_scope = $this->setting_cache->setting_data("{$this->setting_cache_prefix}_scope");
-            $this->s3_signing_key = $this->setting_cache->setting_data("{$this->setting_cache_prefix}_signing_key");
-        }
+        $this->_resolve_key_and_secret();
         $s3_scope_date = gmdate("Ymd", $time);
         $expected_s3_scope = "{$s3_scope_date}/{$this->s3_region}/s3/aws4_request";
         if ($this->s3_scope !== $expected_s3_scope) {
-            $this->reset_key = true;
             $this->s3_scope = $expected_s3_scope;
-            $date_key = hash_hmac("sha256", $s3_scope_date, "AWS4" . $this->s3_secret, true);
+            $date_key = hash_hmac("sha256", $s3_scope_date, "AWS4" . $this->_resolved_secret, true);
             $region_key = hash_hmac("sha256", $this->s3_region, $date_key, true);
             $service_key = hash_hmac("sha256", "s3", $region_key, true);
             $this->s3_signing_key = hash_hmac("sha256", "aws4_request", $service_key, true);
-            if ($this->setting_cache) {
-                $this->setting_cache->save_setting("{$this->setting_cache_prefix}_scope", Conf::$now, $this->s3_scope);
-                $this->setting_cache->save_setting("{$this->setting_cache_prefix}_signing_key", Conf::$now, $this->s3_signing_key);
-            }
         }
         return [$this->s3_scope, $this->s3_signing_key];
-    }
-
-    /** @return ?int */
-    function check_403() {
-        if ($this->reset_key) {
-            return 403;
-        }
-        $this->s3_scope = $this->s3_signing_key = "";
-        return null;
     }
 
     /** @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
@@ -251,6 +358,7 @@ class S3Client {
             . $chdr["x-amz-content-sha256"];
 
         list($scope, $signing_key) = $this->scope_and_signing_key($current_time);
+        // NB that also creates _resolved_key
 
         $signable = "AWS4-HMAC-SHA256\n"
             . $chdr["x-amz-date"] . "\n"
@@ -268,7 +376,7 @@ class S3Client {
             }
         }
         $hdrarr[] = "Authorization: AWS4-HMAC-SHA256 Credential="
-            . "{$this->s3_key}/{$scope},SignedHeaders=" . substr($chk, 1)
+            . "{$this->_resolved_key}/{$scope},SignedHeaders=" . substr($chk, 1)
             . ",Signature={$signature}";
         return ["headers" => $hdrarr, "signature" => $signature];
     }
@@ -308,7 +416,7 @@ class S3Client {
     private function start($skey, $method, $args,
                            $finisher = "S3Result::success_finisher") {
         ++$this->request_count;
-        $klass = $this->result_class;
+        $klass = $this->s3_key === "" ? "NullS3Result" : $this->result_class;
         return new $klass($this, $skey, $method, $args, $finisher);
     }
 
@@ -374,9 +482,14 @@ class S3Client {
         return $this->start($skey, "GET", [], "S3Client::finish_get");
     }
 
-    /** @param string $skey
-     * @return CurlS3Result<?string> */
+    /** Return a curl-based GET result, or null if this client cannot
+     * make curl requests.
+     * @param string $skey
+     * @return ?CurlS3Result<?string> */
     function start_curl_get($skey) {
+        if ($this->s3_key === "" || !$this->_has_curl) {
+            return null;
+        }
         ++$this->request_count;
         return new CurlS3Result($this, $skey, "GET", [], "S3Client::finish_get");
     }

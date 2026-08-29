@@ -8,8 +8,6 @@ class Work_Tester {
     public $conf;
     /** @var ?S3Client */
     private $s3c;
-    /** @var ?array{?string,?string,?string,?string} */
-    private $old_s3_opt;
     /** @var ?string */
     private $docstore;
 
@@ -18,8 +16,8 @@ class Work_Tester {
     }
 
     function initialize() {
-        $this->s3c = S3_Tester::make_offline_client();
-        $this->old_s3_opt = S3_Tester::install_s3_options($this->conf, $this->s3c);
+        $this->s3c = S3_Tester::make_offline();
+        S3_Tester::install($this->conf, $this->s3c);
 
         $this->docstore = tempdir();
         $this->conf->save_refresh_setting("opt.docstore", 1, $this->docstore);
@@ -43,9 +41,7 @@ class Work_Tester {
             Dbl::qe($cdb, "delete from WorkItem where serverId=?", 99);
         }
         $this->conf->save_refresh_setting("opt.docstore", null);
-        if ($this->old_s3_opt !== null) {
-            S3_Tester::install_s3_options($this->conf, $this->old_s3_opt);
-        }
+        S3_Tester::install($this->conf);
         $this->conf->refresh_settings();
     }
 

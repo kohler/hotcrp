@@ -111,17 +111,19 @@ $Opt["emailSender"] = null;
 //                   passwords. Defaults to false.
 
 
-// PAPER STORAGE
+// DOCUMENT STORAGE
 //
-//   docstore        Set to true to serve papers and other downloads from a
-//                   cache on the local filesystem. By default this cache is
-//                   created in the "docs" directory. You can also set
-//                   $Opt["docstore"] to a directory name, or to a directory
+//   docstore        Set to true to serve documents from the local filesystem.
+//                   By default the document directory is "docs". You can also
+//                   set $Opt["docstore"] to a directory name, or to a directory
 //                   pattern such as "docs/%2H/%h%x".
-//   s3_bucket       Amazon S3 bucket name to store paper submissions.
-//   s3_key          Amazon AWS access key ID (used for S3).
-//   s3_secret       Amazon AWS secret access key (used for S3).
-//   dbNoPapers      Set to true to not store papers in the database.
+//   s3Clients       List of S3 bucket specifications, which are arrays/objects
+//                   with "bucket" (bucket name), "key" (access key ID),
+//                   "secret" (secret access key), "region", "domain".
+//                   ("key" "@FILENAME:PROFILE" reads keys from an AWS
+//                   credentials file.) If the list has more than one entry,
+//                   the first receives writes, and reads try them in order.
+//   dbNoPapers      Set to true to not store documents in the database.
 //                   Requires docstore, S3 storage, or both.
 
 

@@ -487,6 +487,11 @@ class Xassert {
         self::$retry = $r;
         $f();
     }
+
+    /** @return int */
+    static function verbosity() {
+        return self::$test_runner->verbose ?? 0;
+    }
 }
 
 /** @param int $errno
@@ -1552,6 +1557,10 @@ class TestRunner {
             $this->tester = null;
         }
 
+        if ($test === "") {
+            return;
+        }
+
         $need_fresh = $this->need_fresh;
         $class = new ReflectionClass($test);
         if (!$this->check_test_attributes($class)) {
@@ -1688,6 +1697,8 @@ class TestRunner {
         if ($this->color && !$this->verbose) {
             fwrite(STDERR, "\r\x1b[K");
         }
+        // run last `finalize` method if any
+        $this->set_test_class("");
     }
 
     private function expand($tests) {

@@ -6,33 +6,38 @@ class DocumentBasics_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
-    /** @var ?S3Client
-     * @readonly */
+    /** @var ?S3Client */
     public $s3c;
+    /** @var string */
+    public $bucket;
     /** @var int */
     private $verbose = 0;
-    /** @var ?array{?string,?string,?string,?string} */
-    private $old_s3_opt;
+    /** @var bool */
+    public $bucket_created = false;
+    /** @var ?S3Client */
+    public $s3c2;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->s3c = S3_Tester::make_s3_client($conf, "DocumentBasics");
     }
 
     function set_verbose($v) {
         $this->verbose = $v;
-        if ($v > 1 && $this->s3c) {
-            $this->s3c->set_verbose(true);
-        }
     }
 
     function initialize() {
-        if ($this->s3c) {
-            $this->old_s3_opt = S3_Tester::install_s3_options($this->conf, $this->s3c);
+        if (($s3c = S3_Tester::make_live($this->conf, "DocumentBasics"))) {
+            $this->bucket = "hotcrptest-" . strtolower(encode_token(random_bytes(8)));
+            S3_Tester::install($this->conf, array_merge($s3c->config(), ["bucket" => $this->bucket]));
+            $this->conf->refresh_settings();
             // NB `S3Client::make` caches by credentials, so this client may be
             // shared with another tester that has already used it
+            $this->s3c = $this->conf->s3_client();
             $this->s3c->reset_counts();
-            $this->conf->refresh_settings();
+            assert($this->s3c->bucket() === $this->bucket);
+            if ($this->verbose > 1) {
+                $this->s3c->set_verbose(true);
+            }
         }
     }
 
@@ -64,7 +69,7 @@ class DocumentBasics_Tester {
     }
 
     function test_s3_response_lines() {
-        $s3 = S3_Tester::make_offline_client();
+        $s3 = S3_Tester::make_offline();
         $s3r = new Offline_S3Result($s3, "test.txt", "GET", [], "S3Result::success_finisher");
         // a `100 Continue` block must not shadow the real response
         $s3r->parse_response_lines([
@@ -83,7 +88,7 @@ class DocumentBasics_Tester {
     }
 
     function test_s3_delete_many() {
-        $s3 = S3_Tester::make_offline_client();
+        $s3 = S3_Tester::make_offline();
         $keys = [];
         for ($i = 0; $i !== 1500; ++$i) {
             $keys[] = sprintf("offline/%04d.txt", $i);
@@ -102,7 +107,7 @@ class DocumentBasics_Tester {
         if (!function_exists("curl_init")) {
             return;
         }
-        $s3 = S3_Tester::make_offline_client();
+        $s3 = S3_Tester::make_offline();
 
         // `close()` must not close a caller-provided request body stream
         $stream = fopen("php://temp", "w+b");
@@ -125,6 +130,120 @@ class DocumentBasics_Tester {
         xassert_eqq(Conf::$blocked_time, $blocked);
         xassert_eqq($s3r->response_body(), "");
         xassert_eqq(Conf::$blocked_time, $blocked);
+    }
+
+    /** Sign the AWS SigV4 documentation example with $key and $secret.
+     * @param string $key
+     * @param string $secret
+     * @return string */
+    private function s3_example_signature($key, $secret) {
+        $s3d = new S3Client([
+            "key" => $key, "secret" => $secret, "bucket" => null
+        ]);
+        $s3d->set_fixed_time(gmmktime(0, 0, 0, 5, 24, 2013));
+        $sig = $s3d->signature("GET",
+                               "https://examplebucket.s3.amazonaws.com/test.txt",
+                               ["Range" => "bytes=0-9"]);
+        return $sig["signature"];
+    }
+
+    function test_s3_credential_file() {
+        $key = "AKIAIOSFODNN7EXAMPLE";
+        $secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+        // the signature these credentials produce (cf. `test_s3_signature`)
+        $expected = "f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41";
+        xassert_eqq($this->s3_example_signature($key, $secret), $expected);
+
+        $dir = tempdir();
+        // an AWS-format credentials file; `[default]` holds decoy credentials
+        file_put_contents("{$dir}/credentials",
+            "[default]\naws_access_key_id = AKIADECOYDECOYDECOY0\n"
+            . "aws_secret_access_key = decoyDECOYdecoyDECOYdecoyDECOYdecoyDECO0\n"
+            . "\n[hotcrptest]\naws_access_key_id = {$key}\n"
+            . "aws_secret_access_key = {$secret}\n");
+        // files holding a single credential
+        file_put_contents("{$dir}/keyfile", "{$key}\n");
+        file_put_contents("{$dir}/secretfile", "{$secret}\n");
+
+        // `@FILE:PROFILE` resolves both key and secret from that profile
+        xassert_eqq($this->s3_example_signature("@{$dir}/credentials:hotcrptest", ""),
+                    $expected);
+        // `@FILE` alone resolves `[default]`, which here is the decoy
+        xassert_neqq($this->s3_example_signature("@{$dir}/credentials", ""),
+                     $expected);
+        // single-credential files
+        xassert_eqq($this->s3_example_signature("@{$dir}/keyfile", "@{$dir}/secretfile"),
+                    $expected);
+        // key and secret may come from different files, and the profile named
+        // in the secret must not be looked up in the key
+        xassert_eqq($this->s3_example_signature("@{$dir}/keyfile", "@{$dir}/credentials:hotcrptest"),
+                    $expected);
+
+        rm_rf_tempdir($dir);
+    }
+
+    function test_s3_client_config() {
+        $conf = $this->conf;
+        $old = [$conf->opt("s3Clients"), $conf->opt("s3_bucket"),
+                $conf->opt("s3_key"), $conf->opt("s3_secret")];
+        $ck = ["key" => "AKIACONFIGTESTKEY000", "secret" => "configtestsecret"];
+
+        // no S3 configuration at all
+        $conf->set_opt("s3Clients", null);
+        $conf->set_opt("s3_bucket", null);
+        $conf->set_opt("s3_key", null);
+        $conf->set_opt("s3_secret", null);
+        $conf->refresh_settings();
+        xassert_eqq($conf->s3_client(), null);
+        xassert_eqq($conf->s3_client_count(), 0);
+
+        // legacy single-bucket options
+        $conf->set_opt("s3_bucket", "legacybucket");
+        $conf->set_opt("s3_key", $ck["key"]);
+        $conf->set_opt("s3_secret", $ck["secret"]);
+        $conf->refresh_settings();
+        xassert_eqq($conf->s3_client_count(), 1);
+        xassert_eqq($conf->s3_client()->bucket(), "legacybucket");
+        xassert_eqq($conf->s3_client(1), null);
+
+        // `s3Clients` overrides the legacy options; an empty list means no S3
+        $conf->set_opt("s3Clients", []);
+        $conf->refresh_settings();
+        xassert_eqq($conf->s3_client_count(), 0);
+        xassert_eqq($conf->s3_client(), null);
+
+        // buckets are addressed in configuration order
+        $conf->set_opt("s3Clients", [["bucket" => "b0"] + $ck, ["bucket" => "b1"] + $ck]);
+        $conf->refresh_settings();
+        xassert_eqq($conf->s3_client_count(), 2);
+        xassert_eqq($conf->s3_client(0)->bucket(), "b0");
+        xassert_eqq($conf->s3_client(1)->bucket(), "b1");
+        xassert_eqq($conf->s3_client(2), null);
+
+        // a malformed entry keeps its slot, so later buckets do not move up
+        // (in particular a fallback bucket cannot become the write bucket)
+        $conf->set_opt("s3Clients", [["bucket" => "b0", "key" => 17], ["bucket" => "b1"] + $ck]);
+        $conf->refresh_settings();
+        xassert_eqq($conf->s3_client_count(), 2);
+        xassert_eqq($conf->s3_client(0)->bucket(), "");
+        xassert_eqq($conf->s3_client(1)->bucket(), "b1");
+
+        // an entry that is neither array nor object truncates the list
+        $conf->set_opt("s3Clients", [["bucket" => "b0"] + $ck, "nonsense", ["bucket" => "b2"] + $ck]);
+        $conf->refresh_settings();
+        xassert_eqq($conf->s3_client_count(), 1);
+
+        // objects are accepted as well as arrays
+        $conf->set_opt("s3Clients", [(object) (["bucket" => "b0"] + $ck)]);
+        $conf->refresh_settings();
+        xassert_eqq($conf->s3_client_count(), 1);
+        xassert_eqq($conf->s3_client(0)->bucket(), "b0");
+
+        $conf->set_opt("s3Clients", $old[0]);
+        $conf->set_opt("s3_bucket", $old[1]);
+        $conf->set_opt("s3_key", $old[2]);
+        $conf->set_opt("s3_secret", $old[3]);
+        $conf->refresh_settings();
     }
 
     function test_docstore_root() {
@@ -246,10 +365,18 @@ class DocumentBasics_Tester {
         $this->conf->save_refresh_setting("opt.docstore", null);
     }
 
+    function create_bucket() {
+        if (!$this->bucket_created) {
+            xassert_eqq($this->s3c->create_bucket(), true);
+            $this->bucket_created = true;
+        }
+    }
+
     function test_prefetch_content() {
         if (!$this->s3c) {
             return;
         }
+        $this->create_bucket();
         $old_docstore = $this->conf->opt("docstore");
         $this->conf->set_opt("docstore", null);
         $this->conf->refresh_settings();
@@ -432,8 +559,7 @@ class DocumentBasics_Tester {
         if (!$this->s3c) {
             return;
         }
-        $x = $this->s3c->create_bucket();
-        xassert_eqq($x, true);
+        $this->create_bucket();
 
         $x = $this->s3c->put("hello.txt", file_get_contents(SiteLoader::$root . "/README.md"), "text/plain");
         xassert_eqq($x, true);
@@ -444,11 +570,140 @@ class DocumentBasics_Tester {
         xassert_eqq(iterator_to_array($this->s3c->ls_all_keys("h")), ["hello.txt", "hello1.txt"]);
     }
 
+    private function create_bucket2() {
+        if (!$this->s3c2) {
+            $b2 = "hotcrptest-" . strtolower(encode_token(random_bytes(8)));
+            $this->s3c2 = S3Client::make(array_merge($this->s3c->config(), ["bucket" => $b2]));
+            xassert_eqq($this->s3c2->create_bucket(), true);
+        }
+    }
+
+    /** Install $s3cs as the client list, call $f, then restore.
+     * @param list<S3Client|array<string,mixed>> $s3cs
+     * @param callable() $f */
+    private function with_s3_clients($s3cs, $f) {
+        $old_clients = $this->conf->opt("s3Clients");
+        $old_docstore = $this->conf->opt("docstore");
+        $this->conf->set_opt("docstore", null);
+        S3_Tester::install($this->conf, ...$s3cs);
+        $this->conf->refresh_settings();
+        try {
+            $f();
+        } finally {
+            $this->conf->set_opt("s3Clients", $old_clients);
+            $this->conf->set_opt("docstore", $old_docstore);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** Store $content in $s3 only, and return [key, fresh document].
+     * @param S3Client $s3
+     * @param string $content
+     * @return array{string,DocumentInfo} */
+    private function s3_only_document($s3, $content) {
+        $doc = DocumentInfo::make_content($this->conf, $content, "text/plain");
+        $s3k = $doc->s3_key();
+        xassert_eqq($s3->put($s3k, $content, "text/plain"), true);
+        $rdoc = DocumentInfo::make_hash($this->conf, $doc->text_hash(), "text/plain");
+        xassert(!$rdoc->content_available_locally());
+        return [$s3k, $rdoc];
+    }
+
+    function test_s3_cascade() {
+        if (!$this->s3c) {
+            return;
+        }
+        $this->create_bucket();
+        $this->create_bucket2();
+        $s3c1 = $this->s3c;
+        $s3c2 = $this->s3c2;
+
+        $this->with_s3_clients([$s3c1, $s3c2], function () use ($s3c1, $s3c2) {
+            xassert_eqq($this->conf->s3_client_count(), 2);
+            xassert($this->conf->s3_client(0) === $s3c1);
+            xassert($this->conf->s3_client(1) === $s3c2);
+
+            // a document stored only in the second bucket
+            $content = "cascade test\n" . str_repeat("abcdefgh", 40);
+            list($s3k, $rdoc) = $this->s3_only_document($s3c2, $content);
+            xassert_lt($s3c1->head_size($s3k), 0);
+
+            // reading falls through to the second bucket
+            xassert_eqq($rdoc->content(), $content);
+            // `check_s3` is satisfied by any bucket
+            xassert($rdoc->check_s3());
+            // reading did not copy the document into the first bucket
+            xassert_lt($s3c1->head_size($s3k), 0);
+
+            // storing always writes the first bucket, not the one read from
+            $wdoc = DocumentInfo::make_content($this->conf, $content, "text/plain");
+            xassert_gt($wdoc->store_s3(), 0);
+            xassert_eqq($s3c1->head_size($s3k), strlen($content));
+            xassert_eqq($s3c2->head_size($s3k), strlen($content));
+
+            // a document in no bucket is not found
+            $missing = DocumentInfo::make_content($this->conf, "{$content} missing", "text/plain");
+            $mdoc = DocumentInfo::make_hash($this->conf, $missing->text_hash(), "text/plain");
+            xassert(!$mdoc->check_s3());
+            xassert_eqq($mdoc->content(), false);
+
+            // prefetch cascades as well; documents alternate between buckets
+            $n = 10;
+            $pcontent = $pkeys = $pdocs = [];
+            for ($i = 0; $i !== $n; ++$i) {
+                $pcontent[] = $t = "cascade prefetch {$i}\n" . str_repeat("stuvwxyz", $i + 1);
+                list($pk, $pdoc) = $this->s3_only_document($i % 2 === 0 ? $s3c1 : $s3c2, $t);
+                $pkeys[] = $pk;
+                $pdocs[] = $pdoc;
+            }
+            DocumentInfo::prefetch_content($pdocs, DocumentInfo::FLAG_NO_DOCSTORE);
+            for ($i = 0; $i !== $n; ++$i) {
+                xassert($pdocs[$i]->content_available());
+                xassert_eqq($pdocs[$i]->content(), $pcontent[$i]);
+            }
+
+            $s3c1->delete_many(array_merge([$s3k], $pkeys));
+            $s3c2->delete_many(array_merge([$s3k], $pkeys));
+        });
+    }
+
+    function test_s3_cascade_malformed_entry() {
+        if (!$this->s3c) {
+            return;
+        }
+        $this->create_bucket();
+        $this->create_bucket2();
+        $s3c1 = $this->s3c;
+        $s3c2 = $this->s3c2;
+
+        // a malformed middle entry must not hide the buckets behind it
+        $bogus = ["bucket" => "malformed", "key" => 17];
+        $this->with_s3_clients([$s3c1, $bogus, $s3c2], function () use ($s3c1, $s3c2) {
+            xassert_eqq($this->conf->s3_client_count(), 3);
+            xassert($this->conf->s3_client(0) === $s3c1);
+            xassert_eqq($this->conf->s3_client(1)->bucket(), "");
+            xassert($this->conf->s3_client(2) === $s3c2);
+
+            $content = "malformed cascade test\n" . str_repeat("ijklmnop", 40);
+            list($s3k, $rdoc) = $this->s3_only_document($s3c2, $content);
+            xassert_eqq($rdoc->content(), $content);
+            xassert($rdoc->check_s3());
+
+            // prefetch must skip the malformed entry too
+            list($pk, $pdoc) = $this->s3_only_document($s3c2, "{$content} prefetched");
+            DocumentInfo::prefetch_content([$pdoc], DocumentInfo::FLAG_NO_DOCSTORE);
+            xassert($pdoc->content_available());
+            xassert_eqq($pdoc->content(), "{$content} prefetched");
+
+            $s3c2->delete_many([$s3k, $pk]);
+        });
+    }
+
     function test_s3_requests() {
         if (!$this->s3c) {
-            if ($this->conf->opt("testS3Key")) {
+            if ($this->verbose > 0) {
                 Xassert::will_print();
-                fwrite(STDERR, "  - DocumentBasics: S3 not tested; set testS3Key and testS3Secret, and add \"DocumentBasics\" to testS3Testers\n");
+                fwrite(STDERR, "  - DocumentBasics: S3 not tested; set testS3Client and add \"DocumentBasics\" to testS3Testers\n");
             }
             return;
         }
@@ -465,21 +720,18 @@ class DocumentBasics_Tester {
         }
     }
 
-    function test_cleanup_s3() {
-        if (!$this->s3c) {
-            return;
-        }
-        if ($this->conf->opt("testS3Bucket")) {
-            $this->s3c->delete_many(["hello.txt", "hello1.txt"]);
-        } else {
-            $this->s3c->delete_many(iterator_to_array($this->s3c->ls_all_keys("")));
-            $this->s3c->delete_bucket(S3Client::CONFIRM_DELETE_BUCKET);
-        }
-    }
-
     function finalize() {
         if ($this->s3c) {
-            S3_Tester::install_s3_options($this->conf, $this->old_s3_opt);
+            xassert_eqq($this->s3c->bucket(), $this->bucket);
+            if ($this->bucket_created) {
+                $this->s3c->delete_many(iterator_to_array($this->s3c->ls_all_keys("")));
+                $this->s3c->delete_bucket(S3Client::CONFIRM_DELETE_BUCKET);
+            }
+            if ($this->s3c2) {
+                $this->s3c2->delete_many(iterator_to_array($this->s3c2->ls_all_keys("")));
+                $this->s3c2->delete_bucket(S3Client::CONFIRM_DELETE_BUCKET);
+            }
+            S3_Tester::install($this->conf);
             $this->conf->refresh_settings();
         }
     }
