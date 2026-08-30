@@ -22,7 +22,7 @@ class Login_Tester {
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
         $this->cdb = $conf->contactdb();
 
-        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com"];
+        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {
             Dbl::qe($this->cdb, "delete from ContactInfo where email?a", $removables);
@@ -94,6 +94,61 @@ class Login_Tester {
             xassert_eqq($user->contactDbId, 0);
             xassert(!$user->is_unconfirmed());
         }
+    }
+
+    /** A request for an email with no local account builds its `Contact` out
+     * of the POST body. A stored contactdb identity outranks those request
+     * fields, just as it would once `Contact::store` ran. */
+    function test_forgot_password_uses_cdb_name() {
+        if (!$this->cdb) {
+            return;
+        }
+        $email = "cdbonly@hotcrp.com";
+        $reqlast = "Tian” <other@example.com>, “Chris";
+
+        // make a contactdb-only, non-placeholder account
+        $this->us1->save_user((object) ["email" => $email, "firstName" => "Chris", "lastName" => "Tian"]);
+        Dbl::qe($this->cdb, "update ContactInfo set cflags=cflags&~? where email=?",
+                Contact::CF_PLACEHOLDER, $email);
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users");
+        xassert_eqq($this->conf->fresh_user_by_email($email), null);
+        xassert(!$this->conf->fresh_cdb_user_by_email($email)->is_placeholder());
+
+        $qreq = TestQreq::post([
+            "email" => $email, "firstName" => "Chris", "lastName" => $reqlast
+        ])->set_user(Contact::make($this->conf))->set_page("forgotpassword");
+        $info = LoginHelper::forgot_password_info($this->conf, $qreq, false);
+        xassert_eqq($info["ok"], true);
+        $u = $info["user"];
+        xassert_eqq($u->email, $email);
+        xassert_eqq($u->lastName, "Tian");
+
+        // so the reset mail is addressed by the contactdb name
+        $prep = $u->prepare_mail($info["mailtemplate"], []);
+        $to = (new MimeText("\r\n"))->encode_email_header("To", join(", ", $prep->recipient_texts()));
+        xassert_eqq($to, "To: Chris Tian <{$email}>");
+
+        // but a *placeholder* contactdb name yields to the request, so
+        // self-registration can still introduce a name
+        Dbl::qe($this->cdb, "update ContactInfo set cflags=cflags|? where email=?",
+                Contact::CF_PLACEHOLDER, $email);
+        $this->conf->invalidate_caches("users");
+        $qreq = TestQreq::post([
+            "email" => $email, "firstName" => "Chris", "lastName" => $reqlast
+        ])->set_user(Contact::make($this->conf))->set_page("newaccount");
+        $info = LoginHelper::new_account_info($this->conf, $qreq);
+        xassert_eqq($info["ok"], true);
+        xassert_eqq($info["user"]->lastName, $reqlast);
+
+        // and that name is quoted for the mail header
+        $prep = $info["user"]->prepare_mail($info["mailtemplate"], []);
+        $to = (new MimeText("\r\n"))->encode_email_header("To", join(", ", $prep->recipient_texts()));
+        xassert_eqq($to, "To: \"Chris Tian\\\" <other@example.com>, \\\"Chris\" <{$email}>");
+
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        Dbl::qe($this->cdb, "delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users");
     }
 
     function test_reset_request_with_email() {

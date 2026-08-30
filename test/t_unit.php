@@ -1705,6 +1705,22 @@ class Unit_Tester {
         xassert_eqq(Text::name("Bob", "Ferreira Costa", "", NAME_PARSABLE), "Ferreira Costa, Bob");
     }
 
+    function test_mailquote_name() {
+        // `NAME_MAILQUOTE` output is joined into an address list that
+        // `MimeText::encode_email_header` parses again, so a name must survive
+        // that parse as one mailbox with its display name intact.
+        $email = "bob@example.com";
+        $mt = new MimeText("\r\n");
+        foreach ([["Bob", "Jones"], ["Bob", "Jones Jr."], ["Bob", "Jones, Jr."],
+                  ["Bob \"Bobby\"", "Jones"], ["Bob “Bobby”", "Jones"],
+                  ["Bob", "Jones <other@example.com>"],
+                  ["Bob", "Jones” <other@example.com>, “Bob"]] as $fl) {
+            $n = Text::name($fl[0], $fl[1], $email, NAME_MAILQUOTE | NAME_E);
+            xassert_str_ends_with($n, " <{$email}>");
+            xassert_eqq($mt->encode_email_header("To", $n), "To: {$n}");
+        }
+    }
+
     function test_score_sort_counts() {
         $s = [];
         foreach (["1,2,3,4,5", "1,2,3,5,5", "3,5,5", "3,3,5,5", "2,3,3,5,5"] as $st) {

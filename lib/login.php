@@ -87,6 +87,10 @@ class LoginHelper {
                 $keys[] = "preferredEmail";
             }
             $u = Contact::make_keyed($conf, $qreq->subset_as_array(...$keys));
+            // A contactdb identity outranks request-supplied props
+            if (($cdbu = $u->cdb_user())) {
+                $u->import_prop($cdbu, $cdbu->is_placeholder() ? 2 : 0);
+            }
         }
         return ["ok" => true, "user" => $u];
     }
@@ -225,7 +229,7 @@ class LoginHelper {
     }
 
 
-    /** @return array{ok:true,user:Contact}|array{ok:false,email?:true} */
+    /** @return array{ok:true,user:Contact,mailtemplate:string}|array{ok:false,email?:true} */
     static function new_account_info(Conf $conf, Qrequest $qreq) {
         assert(!$conf->external_login() && $conf->allow_user_self_register());
         assert($qreq->valid_post());

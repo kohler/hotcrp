@@ -112,15 +112,24 @@ class MimeText {
         }
     }
 
+    /** Normalize the smart quotes people paste into hand-typed address
+     * lists. `Text::name(NAME_MAILQUOTE)` applies this too; keep them in step.
+     * @param string $str
+     * @return string */
+    static function normalize_quotes($str) {
+        if (strpos($str, "\xE2") === false) {
+            return $str;
+        }
+        return str_replace(["“", "”"], ["\"", "\""], $str);
+    }
+
     /** @param string $field
      * @param string $str
      * @return false|string */
     function encode_email_header($field, $str) {
         $header = $field === "" ? "" : "{$field}: ";
         $this->reset($header, $str);
-        if (strpos($this->in, chr(0xE2)) !== false) {
-            $this->in = str_replace(["“", "”"], ["\"", "\""], $this->in);
-        }
+        $this->in = self::normalize_quotes($this->in);
         $str = $this->in;
         $inlen = strlen($str);
 

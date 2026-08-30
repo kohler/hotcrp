@@ -149,9 +149,13 @@ class Text {
         if (($flags & NAME_U) !== 0 && !is_usascii($name)) {
             $name = UnicodeHelper::deaccent($name);
         }
-        if (($flags & NAME_MAILQUOTE) !== 0
-            && preg_match('/[\000-\037()[\]<>@,;:\\".\\\\]/', $name)) {
-            $name = "\"" . addcslashes($name, '"\\') . "\"";
+        if (($flags & NAME_MAILQUOTE) !== 0) {
+            // Normalize smart quotes to avoid bad interactions with
+            // MimeText::encode_email_header
+            $name = MimeText::normalize_quotes($name);
+            if (preg_match('/[\000-\037()[\]<>@,;:\\".\\\\]/', $name)) {
+                $name = "\"" . addcslashes($name, '"\\') . "\"";
+            }
         }
         if ($email !== "" && ($flags & NAME_E) !== 0) {
             if ($name !== "") {
