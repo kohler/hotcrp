@@ -4,6 +4,9 @@
 
 class Upload_API {
     const MIN_MULTIPART_SIZE = 5 << 20;
+    // How long to respect an `s3_lock` recorded by the previous code; see
+    // transfer(). Remove with that check.
+    const OLD_LOCK_TIMEOUT = 300;
     const MAX_SIZE = 1 << 30;
     const MAX_BLOB = 32 << 20;
     const SERVER_PROGRESS_FACTOR = 0.5;
@@ -83,6 +86,11 @@ class Upload_API {
      * @return string */
     private function segment_file($segno) {
         return $this->tmpdir . $this->_cap->salt . ($segno ? "-{$segno}" : "");
+    }
+
+    /** @return string */
+    private function lock_file() {
+        return $this->tmpdir . $this->_cap->salt . "-lock";
     }
 
     /** @return string */
@@ -190,16 +198,18 @@ class Upload_API {
             "size" => $size,
             "ranges" => [0, 0],
             "filename" => $filename,
-            "mimetype" => Mimetype::sanitize($qreq->mimetype) ?? "application/octet-stream",
+            "req_mimetype" => Mimetype::sanitize($qreq->mimetype) ?? "application/octet-stream",
+            "mimetype" => null,
             "pid" => $pid,
             "dtype" => $dtype,
             "temp" => friendly_boolean($qreq->temp) ?? $dtype === null,
             "hash" => null,
             "crc32" => null,
+            // 0: not started, 1: hash complete, 2: docstore assembled,
+            // 3: docstore emplaced, 4: multipart upload complete, 5: S3 emplaced
+            "status" => 0,
             "s3_parts" => [],
             "s3_uploadid" => false,
-            "s3_lock" => null,
-            "status" => 0,
             "hashctx" => base64_encode(serialize(hash_init($this->conf->content_hash_algorithm()))),
             "crc32ctx" => base64_encode(serialize(hash_init("crc32b"))),
             "hashpos" => 0
@@ -281,6 +291,7 @@ class Upload_API {
         $pos = 0;
         $last_offset = $offset + strlen($data);
         while ($offset !== $last_offset) {
+            // write data into relevant segment
             list($segi, $seg0, $seg1) = $this->find_segment($offset);
             $nbytes = min($last_offset, $seg1) - $offset;
             $fname = $this->segment_file($segi);
@@ -291,8 +302,11 @@ class Upload_API {
                 return false;
             }
             $this->_update_hashctx($offset, substr($data, $pos, $nbytes));
-            $this->modify_capd(function ($d) use ($offset, $nbytes) {
+            $this->modify_capd(function ($d) use ($segi, $offset, $nbytes) {
                 $d->ranges = Upload_API::add_range($d->ranges, $offset, $offset + $nbytes);
+                while (count($d->s3_parts) <= $segi) {
+                    $d->s3_parts[] = null;
+                }
                 if ($this->_hashctx
                     && $d->hashpos === $offset) {
                     $d->hashctx = base64_encode(serialize($this->_hashctx));
@@ -327,13 +341,18 @@ class Upload_API {
         return ["hotcrp" => json_encode_db(["conf" => $this->conf->dbname, "pid" => $this->_capd->pid, "dtype" => $this->_capd->dtype])];
     }
 
+    /** Update this capability’s data by compare-and-swap.
+     * If `$callable === null`, just reload the capability data.
+     * @param callable(object) $callable */
     private function modify_capd($callable) {
         Dbl::compare_exchange(
             $this->conf->dblink,
             "select `data` from Capability where salt=?", [$this->_cap->salt],
             function ($oldd) use ($callable) {
                 $this->_cap->assign_data($oldd);
-                if (!$oldd || !($this->_capd = json_decode($oldd))) {
+                if (!$oldd
+                    || !($this->_capd = json_decode($oldd))
+                    || !$callable) {
                     return $oldd;
                 }
                 call_user_func($callable, $this->_capd);
@@ -342,13 +361,6 @@ class Upload_API {
             },
             "update Capability set `data`=?{desired} where salt=? and `data`=?{expected}", [$this->_cap->salt]
         );
-    }
-
-    /** @return int */
-    private function reload_capd_status() {
-        $this->_cap->load_data();
-        $this->_capd = $this->_cap->data();
-        return $this->_capd->status ?? -1;
     }
 
     /** @param S3Client $s3c
@@ -394,6 +406,8 @@ class Upload_API {
         }
         ftruncate($file, 0);
         $nseg = count($this->_capd->s3_parts);
+        assert($this->_capd->size !== null);
+        assert(($this->segment_boundaries($nseg))[0] >= $this->_capd->size);
         for ($segi = 0; $segi !== $nseg; ++$segi)  {
             $infilename = $this->segment_file($segi);
             if (!($infile = fopen($infilename, "r"))) {
@@ -431,16 +445,16 @@ class Upload_API {
         }
         if (!rename($asmfn, $finalfn)) {
             usleep(100);
-            $this->reload_capd_status();
-            return;
+            $this->modify_capd(null);
+        } else {
+            $this->modify_capd(function ($d) use ($finalfn) {
+                if ($d->status === 2) {
+                    $d->content_file = $finalfn;
+                    $d->status = 3;
+                    $d->ready = true;
+                }
+            });
         }
-        $this->modify_capd(function ($d) use ($finalfn) {
-            if ($d->status === 2) {
-                $d->content_file = $finalfn;
-                $d->status = 3;
-                $d->ready = true;
-            }
-        });
     }
 
     /** @param ?S3Client $s3c */
@@ -463,17 +477,91 @@ class Upload_API {
         }
     }
 
+    /** @param bool $synchronous
+     * @return ?resource */
+    private function lock($synchronous) {
+        // S3 dislikes parallel/out-of-order multi-part uploads. File lock
+        // so process exit fixes it.
+        $lockf = @fopen($this->lock_file(), "c");
+        if (!$lockf) {
+            $this->_ml[] = MessageItem::error("<0>Upload lock error");
+        } else if (!flock($lockf, $synchronous ? LOCK_EX : (LOCK_EX | LOCK_NB))) {
+            // another request is transferring
+            fclose($lockf);
+            $lockf = null;
+        }
+        return $lockf ? : null;
+    }
+
+    /** @param resource $lockf */
+    private function unlock($lockf) {
+        flock($lockf, LOCK_UN);
+        fclose($lockf);
+    }
+
+    /** @param bool $synchronous
+     * @param string $debugid */
+    private function transfer_s3_parts(S3Client $s3c, $synchronous, $debugid) {
+        if (!($lockf = $this->lock($synchronous))) {
+            return;
+        }
+
+        // locking may have blocked, check for state update
+        $this->modify_capd(null);
+        if (!$this->_capd) {
+            $this->_ml[] = MessageItem::error("<0>Upload token changed underneath us");
+            $this->unlock($lockf);
+            return;
+        }
+
+        // XXX Backward compatibility: Exit if a lock from the previous code
+        // is still apparently active
+        if (($this->_capd->s3_lock ?? 0) > time() - self::OLD_LOCK_TIMEOUT) {
+            $this->unlock($lockf);
+            return;
+        }
+
+        // walk available parts and transfer to S3
+        for ($segindex = 0; true; ++$segindex) {
+            list($seg0, $seg1) = $this->segment_boundaries($segindex);
+            // exit if part not available
+            if ($segindex >= count($this->_capd->s3_parts)
+                || $seg0 >= $this->_capd->ranges[1]
+                || min($seg1, $this->_capd->size ?? $seg1) > $this->_capd->ranges[1]) {
+                break;
+            }
+            // skip if part already uploaded
+            if ($this->_capd->s3_parts[$segindex] !== null) {
+                continue;
+            }
+            // upload part
+            set_time_limit(120);
+            assert($seg1 - $seg0 >= self::MIN_MULTIPART_SIZE);
+            $part = $this->s3_transfer_segment($s3c, $segindex);
+            if ($part === false) {
+                // may retry (XXX should give up eventually)
+                break;
+            }
+            $this->modify_capd(function ($d) use ($segindex, $part) {
+                $d->s3_parts[$segindex] = $part;
+            });
+        }
+        $this->unlock($lockf);
+    }
+
     /** @param ?S3Client $s3c */
     private function complete_transfer($s3c) {
+        assert($this->_capd->size !== null);
+        assert(count($this->_capd->ranges) === 2);
+        assert($this->_capd->ranges[1] >= $this->_capd->size);
         $nseg = count($this->_capd->s3_parts);
-        if ($nseg === 0) {
+        assert(($this->segment_boundaries($nseg))[0] >= $this->_capd->size);
+
+        if ($this->_capd->size === 0) {
             $this->_ml[] = MessageItem::error("<0>Empty upload");
             $this->delete_files();
             return;
         }
-        assert($this->_capd->size !== null);
-        assert(($this->segment_boundaries($nseg))[0] >= $this->_capd->size);
-        assert(!array_filter($this->_capd->s3_parts, function ($p) { return $p === null; }));
 
         // status 0: hash not yet computed
         if ($this->_capd->status === 0) {
@@ -506,6 +594,7 @@ class Upload_API {
             $ha = new HashAnalysis($this->conf->content_hash_algorithm());
             $hash = $ha->prefix() . hash_final($this->_hashctx);
             $crc = hash_final($this->_crc32ctx);
+            $this->_hashctx = $this->_crc32ctx = null;
             $this->modify_capd(function ($d) use ($hash, $crc) {
                 $d->hash = $hash;
                 $d->crc32 = $crc;
@@ -514,24 +603,34 @@ class Upload_API {
         }
 
         // status 1: hash computed, docstore not assembled
-        if ($this->_capd->status === 1) {
+        if ($this->_capd
+            && $this->_capd->status === 1) {
             $this->assemble_docstore();
         }
 
         // status 2: docstore assembled, not ready
-        if ($this->_capd->status === 2) {
+        if ($this->_capd
+            && $this->_capd->status === 2) {
             $this->complete_docstore();
         }
 
-        // status 3: hash computed, docstore ready, S3 not ready
-        if ($this->_capd->status === 3
+        // status 3: docstore ready, S3 not ready or not configured
+        if ($this->_capd
+            && $this->_capd->status === 3
             && $s3c) {
+            // check for upload in progress
+            // -- Do not *restart* in-progress upload; that was handled before,
+            // in transfer_s3_parts
+            for ($segi = 0; $segi !== $nseg; ++$segi) {
+                if ($this->_capd->s3_parts[$segi] === null)
+                    return;
+            }
             $this->assemble_s3($s3c);
         }
 
-        // status 4: hash computed, docstore ready,
-        // S3 multipart complete but not moved to destination
-        if ($this->_capd->status === 4
+        // status 4: docstore ready, S3 multipart complete but not emplaced
+        if ($this->_capd
+            && $this->_capd->status === 4
             && $s3c
             && !$this->no_s3_move) {
             // move to final location
@@ -539,18 +638,23 @@ class Upload_API {
             if ($s3c->head_size($this->dest_s3_key()) === $this->_capd->size
                 || $s3c->copy($this->s3_key(), $this->dest_s3_key(), $doc->s3_user_data() + ["content_type" => $doc->mimetype])) {
                 $this->modify_capd(function ($d) {
-                    $d->s3_ready = true;
+                    $d->ready = true;
                     $d->status = max($d->status, 5);
                 });
                 $s3c->delete($this->s3_key());
             }
         }
 
-        if ($this->_capd->status >= 3
-            || $this->reload_capd_status() >= 3) {
-            // success; clean up
+        if (!$this->_capd
+            || $this->_capd->status < 3) {
+            $this->modify_capd(null);
+        }
+
+        if ($this->_capd
+            && $this->_capd->status >= ($s3c ? 5 : 3)) {
             $this->delete_files();
-        } else {
+        } else if (!$this->_capd
+                   || $this->_capd->status < 3) {
             $this->_ml[] = MessageItem::error("<0>Upload error");
         }
     }
@@ -558,83 +662,44 @@ class Upload_API {
     /** @param bool $synchronous
      * @param string $debugid */
     private function transfer($synchronous, $debugid) {
-        // obtain lock
-        $start = time();
-        $have_lock = false;
-        $delay = 50000;
-        while (true) {
-            if (($this->_capd->ready ?? false)
-                || time() > $start + 5) {
-                return;
-            } else if (!$this->_capd->s3_lock) {
-                $this->_capd->s3_lock = time();
-                $new_data = json_encode_db($this->_capd);
-                $result = $this->conf->qe("update Capability set `data`=? where salt=? and `data`=?", $new_data, $this->_cap->salt, $this->_cap->encoded_data());
-                if ($result->affected_rows > 0) {
-                    $this->_cap->assign_data($new_data);
-                    $have_lock = $this->_capd->s3_lock;
-                    break;
-                }
-            } else if (!$synchronous) {
-                return;
-            }
-            usleep($delay);
-            $delay = min($delay * 2, 250000);
-            $this->_cap->load_data();
-            $this->_capd = $this->_cap->data();
-            if (!$this->_capd) {
-                $this->_ml[] = MessageItem::error("<0>Capability changed underneath us");
-                return;
-            }
+        // compute data mimetype (before starting S3 upload)
+        if ($this->_capd->mimetype === null
+            && ($this->_capd->ranges[1] >= 4096
+                || ($this->_capd->size !== null
+                    && $this->_capd->ranges[1] >= $this->_capd->size))) {
+            $content = file_get_contents($this->segment_file(0), false, null, 0, 4096);
+            $mimetype = Mimetype::content_type($content, $this->_capd->req_mimetype);
+            $this->modify_capd(function ($d) use ($mimetype) {
+                $d->mimetype = $mimetype;
+            });
         }
 
-        // walk parts, transfer to S3 if available
-        $segindex = count($this->_capd->s3_parts);
-        list($seg0, $seg1) = $this->segment_boundaries($segindex);
+        // transfer S3 parts
         $s3c = null;
         if (!$this->no_s3 && !$this->_capd->temp) {
             $s3c = $this->conf->s3_client();
         }
-        if ($s3c && function_exists("curl_init")) {
-            $s3c->set_result_class("CurlS3Result");
+        // Nothing left to do only once the S3 side is done too. `ready` is set
+        // at status 3, which is now before all the S3 work rather than after
+        // it, so returning on `ready` alone strands the multipart upload
+        // whenever transfer_s3_parts() was skipped -- the lock was held, or an
+        // old-style lock deferred us -- and no later request can resume it.
+        if (($this->_capd->ready ?? false)
+            && (!$s3c || $this->_capd->status >= 5)) {
+            return;
         }
-        while ($seg0 < $this->_capd->ranges[1]
-               && min($seg1, $this->_capd->size ?? $seg1) <= $this->_capd->ranges[1]) {
-            set_time_limit(120);
-            assert($seg1 - $seg0 >= self::MIN_MULTIPART_SIZE);
-            if ($segindex === 0) {
-                $content = file_get_contents($this->segment_file(0), false, null, 0, 4096);
-                $mimetype = Mimetype::content_type($content, $this->_capd->mimetype);
-                $this->modify_capd(function ($d) use ($mimetype) {
-                    $d->mimetype = $mimetype;
-                });
+        if ($s3c) {
+            if (function_exists("curl_init")) {
+                $s3c->set_result_class("CurlS3Result");
             }
-            $part = $s3c ? $this->s3_transfer_segment($s3c, $segindex) : "x";
-            if ($part === false) {
-                return false;
-            }
-            $this->modify_capd(function ($d) use ($segindex, $part) {
-                while (count($d->s3_parts) <= $segindex) {
-                    $d->s3_parts[] = null;
-                }
-                $d->s3_parts[$segindex] = $part;
-            });
-            ++$segindex;
-            list($seg0, $seg1) = $this->segment_boundaries($segindex);
+            $this->transfer_s3_parts($s3c, $synchronous, $debugid);
         }
 
         // complete
-        if (isset($this->_capd->size)
-            && $seg0 >= $this->_capd->size) {
+        if ($this->_capd->size !== null
+            && $this->_capd->ranges[1] >= $this->_capd->size) {
             $this->complete_transfer($s3c);
         }
-
-        // release lock
-        $this->modify_capd(function ($d) use ($have_lock) {
-            if ($d->s3_lock === $have_lock) {
-                $d->s3_lock = null;
-            }
-        });
     }
 
     /** @param MessageItem ...$ml
@@ -648,10 +713,12 @@ class Upload_API {
             "ok" => $status < MessageSet::ERROR,
             "token" => $this->_cap->salt,
             "dt" => $this->_capd->dtype,
-            "filename" => $this->_capd->filename,
-            "mimetype" => $this->_capd->mimetype,
-            "ranges" => $this->_capd->ranges
+            "filename" => $this->_capd->filename
         ];
+        if ($this->_capd->mimetype !== null) {
+            $j["mimetype"] = $this->_capd->mimetype;
+        }
+        $j["ranges"] = $this->_capd->ranges;
         if (isset($this->_capd->size)) {
             $j["size"] = $this->_capd->size;
         }
@@ -789,7 +856,7 @@ class Upload_API {
             Navigation::complete();
         }
 
-        $this->transfer(true, "finish");
+        $this->transfer($this->synchronous, "finish");
         return $this->_make_result();
     }
 

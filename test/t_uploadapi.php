@@ -153,6 +153,124 @@ In thee!
             ->set_file_content("blob", $content);
     }
 
+    /** Readiness must not wait for S3.
+     *
+     * When a client uploads faster than parts reach S3, another request holds
+     * the S3 lock for the rest of the upload. The docstore copy does not depend
+     * on that, so the upload becomes usable as soon as it is assembled --
+     * `finish` reports the hash, `ready` is set, and the token converts into a
+     * document with the right content, all while the S3 side is still pending.
+     *
+     * Getting this wrong is silent: DocumentInfo::make_capability() returns
+     * null for an unready token, PaperOption::parse_qreq() then returns null,
+     * and PaperStatus treats the field as absent -- so the save succeeds with
+     * the document quietly missing. */
+    function test_ready_does_not_wait_for_s3() {
+        if (!$this->s3c) {
+            if (Xassert::verbosity() > 0) {
+                Xassert::will_print();
+                fwrite(STDERR, "  - UploadAPI: S3 not tested; set testS3Client and add \"UploadAPI\" to testS3Testers\n");
+            }
+            return;
+        }
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $qreq = (new Qrequest("POST", [
+                "start" => 1,
+                "temp" => 0,
+                "size" => strlen(self::TEXT),
+                "filename" => "locked.txt",
+                "mimetype" => "text/plain",
+                "offset" => 0
+            ]))->approve_token()
+            ->set_file_content("blob", substr(self::TEXT, 0, 100));
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $token = $j->token;
+
+        // Stand in for the request that is still pushing parts. flock() treats
+        // separate open file descriptions independently, so a second fopen() in
+        // this same process is denied exactly as another process would be.
+        $lockf = fopen($this->conf->docstore_tempdir() . $token . "-lock", "c");
+        xassert(!!$lockf);
+        xassert(flock($lockf, LOCK_EX | LOCK_NB));
+
+        $qreq = (new Qrequest("POST", [
+                "token" => $token,
+                "offset" => 100,
+                "finish" => 1
+            ]))->approve_token()
+            ->set_file_content("blob", substr(self::TEXT, 100));
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+
+        $ha = new HashAnalysis($this->conf->content_hash_algorithm());
+        xassert_eqq($j->hash ?? null,
+                    $ha->prefix() . hash($this->conf->content_hash_algorithm(), self::TEXT));
+        xassert_eqq($j->crc32 ?? null, sprintf("%08x", crc32(self::TEXT)));
+
+        // usable now, with S3 still outstanding
+        $tok = TokenInfo::find($token, $this->conf);
+        xassert_eqq($tok->data("ready"), true);
+        xassert_lt($tok->data("status"), 5);
+        $doc = DocumentInfo::make_capability($this->conf, $token);
+        xassert(!!$doc);
+        xassert_eqq($doc->content(), self::TEXT);
+
+        flock($lockf, LOCK_UN);
+        fclose($lockf);
+    }
+
+    /** During an incremental deployment a request running the previous code
+     * holds a lock recorded in the capability, which flock() cannot see. New
+     * code must not transfer parts alongside it -- two writers would PUT the
+     * same part number and record different ETags, failing
+     * CompleteMultipartUpload. The docstore side proceeds regardless. */
+    function test_defers_to_old_style_lock() {
+        if (!$this->s3c) {
+            return;
+        }
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $qreq = (new Qrequest("POST", [
+                "start" => 1,
+                "temp" => 0,
+                "size" => strlen(self::TEXT),
+                "filename" => "oldlock.txt",
+                "mimetype" => "text/plain",
+                "offset" => 0
+            ]))->approve_token()
+            ->set_file_content("blob", substr(self::TEXT, 0, 100));
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $token = $j->token;
+
+        // Re-fetch before each poke: TokenInfo::update() writes the whole data
+        // blob, so a stale object would roll back what the API just wrote.
+        $set_lock = function ($t) use ($token) {
+            TokenInfo::find($token, $this->conf)->change_data("s3_lock", $t)->update();
+        };
+        $set_lock(time());
+
+        $qreq = (new Qrequest("POST", [
+                "token" => $token, "offset" => 100, "finish" => 1
+            ]))->approve_token()
+            ->set_file_content("blob", substr(self::TEXT, 100));
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+
+        // docstore done, S3 left alone
+        $tok = TokenInfo::find($token, $this->conf);
+        xassert_eqq($tok->data("ready"), true);
+        xassert_lt($tok->data("status"), 4);
+        xassert(!!DocumentInfo::make_capability($this->conf, $token));
+
+        // a stale lock is ignored, so a crashed old holder cannot strand S3
+        $set_lock(time() - Upload_API::OLD_LOCK_TIMEOUT - 60);
+        $j = call_api("=upload", $user,
+                      (new Qrequest("POST", ["token" => $token]))->approve_token(), null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("status"), 5);
+    }
+
     function test_upload_doctype_by_name() {
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         $saved_options = $this->conf->setting_data("options");
