@@ -1720,7 +1720,7 @@ class Document_PaperOption extends PaperOption {
     }
 
     function view_option_schema() {
-        return ["format=type|time,timestamp^"];
+        return ["format=type|time,timestamp|hash^"];
     }
     function sort_view_options() {
         return ["format"];
@@ -1735,6 +1735,8 @@ class Document_PaperOption extends PaperOption {
         } else if ($format === "time") {
             $ts = $d->timeReferenced ?? $d->timestamp;
             $t = $ts > 1 ? $d->conf->unparse_time($ts) : "";
+        } else if ($format === "hash") {
+            $t = HashAnalysis::hash_as_text($d->sha1);
         } else if ($is_attachment) {
             $t = $d->member_filename();
         } else if ($fr->want(FieldRender::CFFORM)) {
