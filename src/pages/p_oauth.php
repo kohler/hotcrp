@@ -88,7 +88,8 @@ class OAuth_Page {
             return MessageItem::error("<0>Authentication attempt failed");
         }
         $this->qreq->set_cookie_opt("hotcrp-oauth-nonce-" . $tokdata["nonce"], "1", [
-            "expires" => Conf::$now + 600, "httponly" => true
+            "expires" => Conf::$now + 600, "httponly" => true,
+            "path" => self::redirect_uri_path($authi)
         ]);
         $params = "client_id=" . urlencode($authi->client_id)
             . "&response_type=code"
@@ -115,6 +116,20 @@ class OAuth_Page {
             }
         }
         throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
+    }
+
+    /** Path scope for the nonce cookie: the directory holding the
+     * `redirect_uri`, which is where the provider will return. That need not
+     * be this site—one site's `redirect_uri` may name another on the same
+     * host—and a cookie scoped to the starting site would not be sent back.
+     * The return leg deletes the cookie using its own `base_path`, which is
+     * this same directory, since `oauth` sits directly under a site's root.
+     * @param OAuthProvider $authi
+     * @return string */
+    static private function redirect_uri_path($authi) {
+        $path = parse_url($authi->redirect_uri, PHP_URL_PATH);
+        $slash = is_string($path) ? strrpos($path, "/") : false;
+        return $slash === false ? "/" : substr($path, 0, $slash + 1);
     }
 
     /** @return MessageItem|list<MessageItem> */
