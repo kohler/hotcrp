@@ -56,9 +56,11 @@ class AccessTokenEntity implements AccessTokenEntityInterface {
 class AuthCodeEntity implements AuthCodeEntityInterface {
     use EntityTrait, TokenEntityTrait, AuthCodeTrait;
     public $nonce;
+    public $auth_time;
 
-    function __construct($nonce) {
+    function __construct($nonce, $auth_time) {
         $this->nonce = $nonce;
+        $this->auth_time = $auth_time;
     }
 }
 
@@ -106,6 +108,7 @@ class My implements ClientRepositoryInterface, AuthCodeRepositoryInterface, Acce
     public $tokens = [];
     public $interactions = [];
     public $nonce;
+    public $auth_time;
     private $last_auth;
 
     /** @var My */
@@ -130,7 +133,8 @@ class My implements ClientRepositoryInterface, AuthCodeRepositoryInterface, Acce
             "aud" => $ac->getClient()->getIdentifier(),
             "iat" => time(),
             "exp" => $ac->getExpiryDateTime()->getTimestamp(),
-            "nonce" => $ac->nonce
+            "nonce" => $ac->nonce,
+            "auth_time" => $ac->auth_time
         ];
     }
     function getAuthCode($codeId) {
@@ -149,7 +153,7 @@ class My implements ClientRepositoryInterface, AuthCodeRepositoryInterface, Acce
         return $this->last_auth && ($this->last_auth->revoked ?? false);
     }
     function getNewAuthCode() {
-        return new AuthCodeEntity($this->nonce);
+        return new AuthCodeEntity($this->nonce, $this->auth_time);
     }
     function getLastAuthCode() {
         return $this->last_auth;
@@ -309,8 +313,15 @@ class IdentityBearerTokenResponse extends BearerTokenResponse {
                     $idt[$k] = $u->$k;
             }
         }
-        if (($auth = $this->my->getLastAuthCode()) && $auth->nonce) {
-            $idt["nonce"] = $auth->nonce;
+        if (($auth = $this->my->getLastAuthCode())) {
+            if ($auth->nonce) {
+                $idt["nonce"] = $auth->nonce;
+            }
+            // required in a response to `max_age`, and the only way a relying
+            // party can tell a fresh authentication from a reused session
+            if ($auth->auth_time) {
+                $idt["auth_time"] = $auth->auth_time;
+            }
         }
         return ["id_token" => make_plaintext_jwt($idt)];
     }
@@ -401,6 +412,7 @@ function handle_auth_req(ServerRequestInterface $req, Response $res, Authorizati
             $authreq->setUser(My::$main->user_by_email($login_hint));
             $authreq->setAuthorizationApproved(true);
             My::$main->nonce = ($req->getQueryParams())["nonce"] ?? null;
+            My::$main->auth_time = $autht;
             return $server->completeAuthorizationRequest($authreq, $res);
         }
     }
@@ -507,6 +519,7 @@ function handle_req(ServerRequestInterface $req) {
             if ($email && ($u = My::$main->user_by_email($email))) {
                 $authreq->setUser($u);
                 $authreq->setAuthorizationApproved(true);
+                My::$main->auth_time = time();
                 if (($cookie = get_cookie($req))) {
                     My::$main->record_cookie_authorization($cookie, $u->email);
                 }
