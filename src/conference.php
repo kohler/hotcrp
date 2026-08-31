@@ -4251,12 +4251,10 @@ class Conf {
 
     /** @return int */
     function report_saved_messages() {
-        $ml = $this->claim_saved_messages();
+        $st = $this->saved_messages_status();
         echo '<div id="h-messages"', $this->_mx_auto ? ' class="want-mx-auto"' : '', '>';
-        $st = 0;
-        foreach ($ml as $mx) {
+        foreach ($this->claim_saved_messages() as $mx) {
             self::msg_on($this, $mx[0], $mx[1]);
-            $st = max($st, $mx[1]);
         }
         echo '</div>';
         return $st;

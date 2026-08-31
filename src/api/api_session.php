@@ -255,10 +255,12 @@ class Session_API {
      * @param string $smsg
      * @param array{string,int} ...$mx */
     static function store_smsg($qreq, $smsg, ...$mx) {
-        $qreq->open_session();
-        $smsgs = $qreq->gsession("smsg") ?? [];
-        $smsgs[] = [$smsg, Conf::$now, ...$mx];
-        $qreq->set_gsession("smsg", $smsgs);
+        if (!empty($mx)) {
+            $qreq->open_session();
+            $smsgs = $qreq->gsession("smsg") ?? [];
+            $smsgs[] = [$smsg, Conf::$now, ...$mx];
+            $qreq->set_gsession("smsg", $smsgs);
+        }
     }
 
     static function reauth(Contact $user, Qrequest $qreq) {
