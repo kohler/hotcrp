@@ -431,7 +431,9 @@ class PaperTable {
         if ($this->_allow_collapse["anonau"] ?? false) {
             $folders[] = "fold8c";
         }
-        $folders[] = "fold9c";
+        if ($this->allow_folds) {
+            $folders[] = "fold9c";
+        }
         echo '<div id="foldpaper" class="', join(" ", $folders);
         if ($require_folds) {
             echo '">';
@@ -1202,7 +1204,8 @@ class PaperTable {
                 || $this->mode !== "edit"
                 || $this->prow->timeSubmitted <= 0)) {
             $contacts_option = $this->conf->option_by_id(PaperOption::CONTACTSID);
-            $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
+            $fr->value .= '<div class="pg' . ($this->allow_folds ? " fx9" : "")
+                . ($vas > 1 ? "" : " fx8") . '">'
                 . $this->papt($contacts_option->title_html(new FmtArg("count", $contacts)))
                 . '<div class="pavb">'
                 . $this->authorData($contacts, "col", $this->user)
