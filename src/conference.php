@@ -4233,7 +4233,7 @@ class Conf {
         return $this;
     }
 
-    /** @return list<MessageItem> */
+    /** @return list<array{string,int}> */
     function claim_saved_messages() {
         $ml = $this->_save_msgs ?? [];
         $this->_save_msgs = null;

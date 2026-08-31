@@ -3,8 +3,9 @@
 // Copyright (c) 2022-2026 Eddie Kohler; see LICENSE.
 
 namespace HotCRP;
-use Conf, Contact, MessageItem, Navigation, NavigationState, Qrequest, Redirection;
-use LoginHelper, TokenInfo, UserSecurityEvent, UserStatus;
+use Conf, Contact, MessageItem, Navigation, NavigationState, Qrequest;
+use Redirection, LoginHelper, TokenInfo, UserSecurityEvent, UserStatus;
+use Session_API;
 
 class OAuth_Page {
     /** @var Conf */
@@ -489,7 +490,7 @@ class OAuth_Page {
         }
         // direct the saved messages to the relevant conference
         if ($this->smsg !== null) {
-            Session_API::store_smsg($this->qreq, $this->smsg, $this->conf->claim_saved_messages());
+            Session_API::store_smsg($this->qreq, $this->smsg, ...$this->conf->claim_saved_messages());
         } else {
             $this->conf->saved_messages_commit($this->qreq);
         }

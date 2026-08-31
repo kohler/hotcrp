@@ -247,17 +247,17 @@ class Session_API {
             return JsonResult::make_ok()->set("smsg", false);
         }
         $smsg = $qreq->smsg ?? base48_encode(random_bytes(6));
-        self::store_smsg($qreq, $smsg, $ml);
+        self::store_smsg($qreq, $smsg, Ht::feedback_msg_content($ml));
         return (new JsonResult(200))->set("smsg", $smsg);
     }
 
     /** @param Qrequest $qreq
      * @param string $smsg
-     * @param list<MessageItem> $ml */
-    static function store_smsg($qreq, $smsg, $ml) {
+     * @param array{string,int} ...$mx */
+    static function store_smsg($qreq, $smsg, ...$mx) {
         $qreq->open_session();
         $smsgs = $qreq->gsession("smsg") ?? [];
-        $smsgs[] = [$smsg, Conf::$now, Ht::feedback_msg_content($ml)];
+        $smsgs[] = [$smsg, Conf::$now, ...$mx];
         $qreq->set_gsession("smsg", $smsgs);
     }
 
