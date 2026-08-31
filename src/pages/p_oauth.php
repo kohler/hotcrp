@@ -16,6 +16,8 @@ class OAuth_Page {
     /** @var ?string */
     public $site_uri;
     /** @var ?string */
+    public $smsg;
+    /** @var ?string */
     public $email;
     /** @var ?string */
     public $success_redirect;
@@ -27,6 +29,8 @@ class OAuth_Page {
     /** Testing hook: if set, called instead of an actual token request.
      * @var ?callable(OAuthProvider,array<string,string>):(array{int,string}) */
     static public $fetch_function;
+
+    const SIGNIN_LIFETIME = 900;
 
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
@@ -49,11 +53,17 @@ class OAuth_Page {
         $reauth = friendly_boolean($this->qreq->reauth)
             && $this->viewer->has_email();
 
+        $random_bytes = random_bytes(12 + 6 + ($authi->pkce ? 32 : 0));
+        $nonce_bytes = substr($random_bytes, 0, 12);
+        $smsg = base48_encode(substr($random_bytes, 12, 6));
+        $pkce_bytes = substr($random_bytes, 12 + 6);
+
         $tokdata = [
             "authtype" => $authi->name,
             "session" => $this->qreq->qsid(),
             "site_uri" => $this->conf->opt("paperSite"),
-            "nonce" => base48_encode(random_bytes(12))
+            "nonce" => base48_encode($nonce_bytes),
+            "smsg" => $smsg
         ];
         if ($reauth) {
             $tokdata["reauth"] = $this->viewer->email;
@@ -75,21 +85,26 @@ class OAuth_Page {
         }
         if ($authi->pkce) {
             // the verifier stays here; only its hash goes to the provider
-            $tokdata["code_verifier"] = base64url_encode(random_bytes(32));
+            $tokdata["code_verifier"] = base64url_encode($pkce_bytes);
         }
 
         $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
         $tok->set_contactdb(!!$this->conf->contactdb())
-            ->set_expires_in(600)
+            ->set_expires_in(self::SIGNIN_LIFETIME)
             ->set_token_pattern("hcoa[20]")
             ->assign_data($tokdata)
             ->insert();
         if (!$tok->stored()) {
             return MessageItem::error("<0>Authentication attempt failed");
         }
+        // nonce cookie will be consumed by the OAuth-handling instance
         $this->qreq->set_cookie_opt("hotcrp-oauth-nonce-" . $tokdata["nonce"], "1", [
-            "expires" => Conf::$now + 600, "httponly" => true,
+            "expires" => Conf::$now + self::SIGNIN_LIFETIME, "httponly" => true,
             "path" => self::redirect_uri_path($authi)
+        ]);
+        // smsg cookie will be consumed by our instance
+        $this->qreq->set_cookie_opt("hotcrp-smsg-" . $smsg, "1", [
+            "expires" => Conf::$now + self::SIGNIN_LIFETIME + 60, "httponly" => true
         ]);
         $params = "client_id=" . urlencode($authi->client_id)
             . "&response_type=code"
@@ -172,6 +187,7 @@ class OAuth_Page {
         $redirect = $tok->data("redirect") /* XXX obsolete */;
         $this->success_redirect = $tok->data("success_redirect") ?? $redirect;
         $this->failure_redirect = $tok->data("failure_redirect") ?? $redirect;
+        $this->smsg = $tok->data("smsg");
 
         if (($nonce = $tok->data("nonce")) !== null) {
             $noncematch = isset($_COOKIE["hotcrp-oauth-nonce-{$nonce}"]);
@@ -188,9 +204,8 @@ class OAuth_Page {
             return MessageItem::error("<0>Authentication failed");
         } else if (($authi = OAuthProvider::find($this->conf, $tok->data("authtype")))) {
             return $this->instance_response($authi, $tok);
-        } else {
-            return MessageItem::error("<0>OAuth authentication internal error");
         }
+        return MessageItem::error("<0>OAuth authentication internal error");
     }
 
     /** @param OAuthProvider $authi
@@ -471,6 +486,12 @@ class OAuth_Page {
         if ($r) {
             $rnav = NavigationState::make_base($uri);
             $uri = $rnav->resolve_within($r, $this->site_uri) ?? $uri;
+        }
+        // direct the saved messages to the relevant conference
+        if ($this->smsg !== null) {
+            Session_API::store_smsg($this->qreq, $this->smsg, $this->conf->claim_saved_messages());
+        } else {
+            $this->conf->saved_messages_commit($this->qreq);
         }
         throw new Redirection($uri);
     }

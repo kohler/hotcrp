@@ -4233,6 +4233,13 @@ class Conf {
         return $this;
     }
 
+    /** @return list<MessageItem> */
+    function claim_saved_messages() {
+        $ml = $this->_save_msgs ?? [];
+        $this->_save_msgs = null;
+        return $ml;
+    }
+
     /** @return int */
     function saved_messages_status() {
         $st = 0;
@@ -4244,12 +4251,12 @@ class Conf {
 
     /** @return int */
     function report_saved_messages() {
-        $st = $this->saved_messages_status();
-        $ml = $this->_save_msgs ?? [];
-        $this->_save_msgs = null;
+        $ml = $this->claim_saved_messages();
         echo '<div id="h-messages"', $this->_mx_auto ? ' class="want-mx-auto"' : '', '>';
+        $st = 0;
         foreach ($ml as $mx) {
             self::msg_on($this, $mx[0], $mx[1]);
+            $st = max($st, $mx[1]);
         }
         echo '</div>';
         return $st;

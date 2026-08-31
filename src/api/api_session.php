@@ -247,11 +247,18 @@ class Session_API {
             return JsonResult::make_ok()->set("smsg", false);
         }
         $smsg = $qreq->smsg ?? base48_encode(random_bytes(6));
+        self::store_smsg($qreq, $smsg, $ml);
+        return (new JsonResult(200))->set("smsg", $smsg);
+    }
+
+    /** @param Qrequest $qreq
+     * @param string $smsg
+     * @param list<MessageItem> $ml */
+    static function store_smsg($qreq, $smsg, $ml) {
         $qreq->open_session();
         $smsgs = $qreq->gsession("smsg") ?? [];
         $smsgs[] = [$smsg, Conf::$now, Ht::feedback_msg_content($ml)];
         $qreq->set_gsession("smsg", $smsgs);
-        return (new JsonResult(200))->set("smsg", $smsg);
     }
 
     static function reauth(Contact $user, Qrequest $qreq) {
