@@ -51,7 +51,7 @@ class Search_Batch {
         $pl = new PaperList("empty", $this->search);
         $pl->set_view("pid", true, PaperList::VIEWORIGIN_MAX);
         foreach ($this->fields as $f) {
-            $pl->set_view($f, true, PaperList::VIEWORIGIN_MAX);
+            $pl->parse_view($f, PaperList::VIEWORIGIN_MAX);
         }
         list($header, $body) = $pl->text_csv();
 
