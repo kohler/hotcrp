@@ -107,21 +107,24 @@ class AuthenticationChecker {
     }
 
 
-    /** @return iterable<UserSecurityEvent> */
-    function security_events() {
+    /** @param bool $reverse
+     * @return iterable<UserSecurityEvent> */
+    final function security_events($reverse = false) {
         if (!$this->user->has_email()) {
             return [];
         }
-        return UserSecurityEvent::session_list_by_email($this->qreq->qsession(), $this->user->email);
+        return UserSecurityEvent::session_list_by_email($this->qreq->qsession(), $this->user->email, $reverse);
     }
 
     /** @return int */
     final function latest() {
         if ($this->latest === null) {
             $this->latest = 0;
-            foreach ($this->security_events() as $use) {
-                if ($this->include_security_event($use))
+            foreach ($this->security_events(true) as $use) {
+                if ($this->include_security_event($use)) {
                     $this->latest = $use->success ? $use->timestamp : 0;
+                    break;
+                }
             }
         }
         return $this->latest;
@@ -152,11 +155,13 @@ class AuthenticationChecker {
 
     function print() {
         $use = null;
-        foreach ($this->security_events() as $usex) {
+        foreach ($this->security_events(true) as $usex) {
             if ($usex->reason === UserSecurityEvent::REASON_SIGNIN
                 && ($usex->type === UserSecurityEvent::TYPE_PASSWORD
-                    || $usex->type === UserSecurityEvent::TYPE_OAUTH))
+                    || $usex->type === UserSecurityEvent::TYPE_OAUTH)) {
                 $use = $usex;
+                break;
+            }
         }
         if (!$use && $this->user->can_use_password()) {
             $use = UserSecurityEvent::make($this->user->email, UserSecurityEvent::TYPE_PASSWORD);

@@ -122,10 +122,14 @@ class UserSecurityEvent {
     }
 
     /** @param string $email
+     * @param bool $reverse
      * @return Generator<UserSecurityEvent> */
-    static function session_list_by_email(Qsession $qs, $email) {
+    static function session_list_by_email(Qsession $qs, $email, $reverse = false) {
         $uindex = Contact::session_index_by_email($qs, $email);
-        foreach ($qs->get("usec") ?? [] as $x) {
+        $usec = $qs->get("usec") ?? [];
+        $n = count($usec);
+        for ($i = $reverse ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $reverse ? -1 : 1) {
+            $x = $usec[$i];
             if (isset($x["e"])
                 ? strcasecmp($x["e"], $email) !== 0
                 : ($x["u"] ?? 0) !== $uindex) {
@@ -138,12 +142,11 @@ class UserSecurityEvent {
     /** @param string $email
      * @return ?UserSecurityEvent */
     static function session_latest_signin_by_email(Qsession $qs, $email) {
-        $signin = null;
-        foreach (self::session_list_by_email($qs, $email) as $use) {
+        foreach (self::session_list_by_email($qs, $email, true) as $use) {
             if ($use->reason === self::REASON_SIGNIN)
-                $signin = $use;
+                return $use;
         }
-        return $signin;
+        return null;
     }
 
 
