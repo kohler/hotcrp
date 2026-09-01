@@ -4052,8 +4052,8 @@ tr.plx {
 }
 }
 @layer dark-mode {
-.tag-red, .tag-orange, .tag-yellow, .tag-green,
-.tag-blue, .tag-purple, .tag-gray, .tag-white {
+.tagbg.tag-red, .tagbg.tag-orange, .tagbg.tag-yellow, .tagbg.tag-green,
+.tagbg.tag-blue, .tagbg.tag-purple, .tagbg.tag-gray, .tagbg.tag-white {
 	color-scheme: dark;
 }
 }
