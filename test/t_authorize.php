@@ -902,21 +902,32 @@ class Authorize_Tester {
         xassert_eqq($payload->exp ?? null, ($payload->iat ?? 0) + 86400);
     }
 
-    /** A client that asks for a fresh sign-in has no way to judge one without
-     * `auth_time`, so an ID token reports when the person last authenticated.
-     */
+    /** `auth_time` answers a question only a client that sent `max_age` asked,
+     * so it is reported to that client and not volunteered to others. */
     #[RequireClass("Uri\\Rfc3986\\Uri")]
     function test_id_token_auth_time() {
-        $t = Conf::$now - 120;
-        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
-            ["scope" => "openid read", "auth_time" => $t]);
+        $t = Conf::$now - 60;
+        $rest = ["scope" => "openid read", "auth_time" => $t,
+                 "auth_reason" => UserSecurityEvent::REASON_REAUTH];
+
+        // nothing asked, nothing said
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair, $rest);
         xassert_neqq($jr, null);
-        if (!$jr) {
-            return;
+        if ($jr) {
+            $payload = (new HotCRP\JWTParser)->validate($jr->id_token);
+            xassert_neqq($payload, null);
+            xassert_eqq($payload->auth_time ?? null, null);
         }
-        $payload = (new HotCRP\JWTParser)->validate($jr->id_token);
-        xassert_neqq($payload, null);
-        xassert_eqq($payload->auth_time ?? null, $t);
+
+        // `max_age` asks, so the confirmation's own time is reported
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            $rest + ["max_age" => "600"]);
+        xassert_neqq($jr, null);
+        if ($jr) {
+            $payload = (new HotCRP\JWTParser)->validate($jr->id_token);
+            xassert_neqq($payload, null);
+            xassert_eqq($payload->auth_time ?? null, $t);
+        }
     }
 
     /** A client that asks for a fresh sign-in must not be handed a code just

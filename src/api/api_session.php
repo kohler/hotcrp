@@ -264,6 +264,6 @@ class Session_API {
     }
 
     static function reauth(Contact $user, Qrequest $qreq) {
-        return $user->authentication_checker($qreq, $qreq->reason ?? "api")->api();
+        return $user->authentication_checker($qreq, "api")->api();
     }
 }

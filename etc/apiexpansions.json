@@ -493,7 +493,7 @@
   {
     "name": "reauth", "post": true,
     "tags": ["Session"],
-    "parameters": "?confirm ?=reason ?=email ?=password ?=totpcode"
+    "parameters": "?confirm ?=email ?=password ?=totpcode"
   },
   {
     "name": "stashmessages", "post": true,

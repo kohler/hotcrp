@@ -14,11 +14,13 @@ class AuthenticationChecker {
     protected $qreq;
     /** @var string
      * @readonly */
-    public $reason;
+    protected $caller_id;
     /** @var int */
-    public $max_age;
-    /** @var ?bool */
-    protected $ok;
+    protected $max_age = 600;
+    /** @var int */
+    protected $max_signin_age = 600;
+    /** @var ?int */
+    protected $latest;
     /** @var ?string */
     protected $actions_class;
     /** @var ?list<string> */
@@ -26,26 +28,39 @@ class AuthenticationChecker {
     /** @var ?string */
     protected $redirect;
 
-    function __construct(Contact $user, Qrequest $qreq, $reason) {
+    /** @param string $caller_id */
+    function __construct(Contact $user, Qrequest $qreq, $caller_id) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->qreq = $qreq;
-        $this->reason = $reason;
-        if ($reason === "manageemail") {
-            $this->max_age = 3600;
-        } else {
-            $this->max_age = 600;
+        $this->caller_id = $caller_id;
+        if ($caller_id === "manageemail") {
+            // Manageemail collects multiple confirmations, which might take time
+            $this->max_age = 1800;
+        } else if ($caller_id === "profile_security") {
+            // Profile security changes should ignore signins,
+            // except for very recent ones
+            $this->max_signin_age = 120;
         }
     }
 
-    /** Shortest window a confirmation can fit inside. */
-    const MIN_MAX_AGE = 300;
+    // Prevent max_age from going out of bounds
+    const MAX_AGE_BOUND = 157680000; // 5 years
 
-    /** Set the freshness window an outside party asked for.
+    /** Set the desired freshness window for authentication.
      * @param int $max_age
      * @return $this */
     function set_max_age($max_age) {
-        $this->max_age = max($max_age, self::MIN_MAX_AGE);
+        $this->max_age = min($max_age, self::MAX_AGE_BOUND);
+        return $this;
+    }
+
+    /** Set the desired freshness window for authentication by signin
+     * (rather than reauth).
+     * @param int $max_age
+     * @return $this */
+    function set_max_signin_age($max_age) {
+        $this->max_signin_age = min($max_age, self::MAX_AGE_BOUND);
         return $this;
     }
 
@@ -92,31 +107,40 @@ class AuthenticationChecker {
     }
 
 
-
-    /** @return Generator<UserSecurityEvent> */
+    /** @return iterable<UserSecurityEvent> */
     function security_events() {
+        if (!$this->user->has_email()) {
+            return [];
+        }
         return UserSecurityEvent::session_list_by_email($this->qreq->qsession(), $this->user->email);
+    }
+
+    /** @return int */
+    final function latest() {
+        if ($this->latest === null) {
+            $this->latest = 0;
+            foreach ($this->security_events() as $use) {
+                if ($this->include_security_event($use))
+                    $this->latest = $use->success ? $use->timestamp : 0;
+            }
+        }
+        return $this->latest;
+    }
+
+    /** @param UserSecurityEvent $use
+     * @return bool */
+    function include_security_event($use) {
+        // NB failed reauthentication events take precedence
+        return $use->reason === UserSecurityEvent::REASON_REAUTH
+            || ($use->reason === UserSecurityEvent::REASON_SIGNIN
+                && $this->max_signin_age > 0
+                && $use->timestamp >= Conf::$now - $this->max_signin_age);
     }
 
     /** @return bool */
     function test() {
-        if ($this->ok !== null) {
-            return $this->ok;
-        }
-        $this->ok = false;
-        if (!$this->user->has_email()) {
-            return false;
-        }
-        // NB bearer tokens have no security events, so this intentionally fails
-        foreach ($this->security_events() as $use) {
-            if (($use->reason === UserSecurityEvent::REASON_REAUTH
-                 && $use->timestamp >= Conf::$now - $this->max_age)
-                || ($use->reason === UserSecurityEvent::REASON_SIGNIN
-                    && $use->timestamp >= Conf::$now - min(120, $this->max_age))) {
-                $this->ok = $use->success;
-            }
-        }
-        return $this->ok;
+        // NB bearer tokens have no security events, so this will correctly return false
+        return $this->latest() >= Conf::$now - $this->max_age;
     }
 
     protected function print_actions(...$actions) {
@@ -144,8 +168,6 @@ class AuthenticationChecker {
             Ht::stash_html($this->conf->hotform("=signout", ["cap" => null], ["id" => "f-signout"]) . "</form>", "f-signout");
             return false;
         }
-        echo Ht::hidden("reason", $this->reason, ["form" => "f-reauth", "class" => "ignore-diff"]);
-
         // password
         if ($use->type === UserSecurityEvent::TYPE_PASSWORD) {
             echo '<div class="f-i"><label for="k-reauth-password">Current password for ',

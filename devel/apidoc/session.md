@@ -137,16 +137,12 @@ Supply the user’s `password`. On success the response has `ok` of `true`; if t
 password is wrong, the response is an error (`ok` is `false`) whose
 `message_list` describes the problem.
 
-The `reason` parameter is a short tag describing why reauthentication is being
-requested (HotCRP uses values such as `manageemail`); it can influence how long
-the resulting confirmation remains valid. `confirm=1` requests an explicit
-success message in `message_list` on success. The `email` and `totpcode`
-parameters support alternate verification flows (such as time-based one-time
-passwords) where those are configured.
+`confirm=1` requests an explicit success message in `message_list` on success.
+The `email` and `totpcode` parameters support alternate verification flows (such
+as time-based one-time passwords) where those are configured.
 
 * scope none
 * param ?confirm boolean: If true, include a success message on success
-* param ?=reason string: Short tag describing why reauthentication is requested
 * param ?=email email: Email of the account being confirmed
 * param ?=password string: Account password
 * param ?=totpcode string: Time-based one-time password code, if applicable

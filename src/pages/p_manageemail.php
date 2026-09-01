@@ -300,9 +300,14 @@ class ManageEmail_Page {
         return $u;
     }
 
+    /** @return AuthenticationChecker */
+    private function make_authentication_checker(Contact $user) {
+        return ManageEmail_API::make_authentication_checker($user, $this->qreq);
+    }
+
     /** @return ?AuthenticationChecker */
     private function find_failed_authchecker() {
-        $acv = $this->viewer->authentication_checker($this->qreq, "manageemail");
+        $acv = $this->make_authentication_checker($this->viewer);
         if (!$acv->test()) {
             return $acv;
         }
@@ -310,13 +315,13 @@ class ManageEmail_Page {
             return null;
         }
         if ($this->user !== $this->viewer) {
-            $ac = $this->user->authentication_checker($this->qreq, "manageemail");
+            $ac = $this->make_authentication_checker($this->user);
             if (!$ac->test()) {
                 return $ac;
             }
         }
         if ($this->dstuser && $this->dstuser !== $this->viewer) {
-            $ac = $this->dstuser->authentication_checker($this->qreq, "manageemail");
+            $ac = $this->make_authentication_checker($this->dstuser);
             if (!$ac->test()) {
                 return $ac;
             }

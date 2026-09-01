@@ -1334,11 +1334,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     /** @param Qrequest $qreq
-     * @param string $reason
+     * @param string $caller_id
      * @return AuthenticationChecker */
-    function authentication_checker($qreq, $reason) {
+    function authentication_checker($qreq, $caller_id) {
         $class = $this->conf->opt("authenticationCheckerClass") ?? "AuthenticationChecker";
-        return new $class($this, $qreq, $reason);
+        return new $class($this, $qreq, $caller_id);
     }
 
     /** @param int $flags

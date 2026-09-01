@@ -11004,7 +11004,7 @@
         "/reauth": {
             "post": {
                 "summary": "Reconfirm the signed-in user’s identity",
-                "description": "Reconfirm the credentials of the already-signed-in user. HotCRP requires\nreauthentication before especially sensitive actions (for example, changing\naccount email or managing security settings); a successful call records a\nrecent-authentication marker in the session so those actions can proceed.\n\nSupply the user’s `password`. On success the response has `ok` of `true`; if the\npassword is wrong, the response is an error (`ok` is `false`) whose\n`message_list` describes the problem.\n\nThe `reason` parameter is a short tag describing why reauthentication is being\nrequested (HotCRP uses values such as `manageemail`); it can influence how long\nthe resulting confirmation remains valid. `confirm=1` requests an explicit\nsuccess message in `message_list` on success. The `email` and `totpcode`\nparameters support alternate verification flows (such as time-based one-time\npasswords) where those are configured.\n",
+                "description": "Reconfirm the credentials of the already-signed-in user. HotCRP requires\nreauthentication before especially sensitive actions (for example, changing\naccount email or managing security settings); a successful call records a\nrecent-authentication marker in the session so those actions can proceed.\n\nSupply the user’s `password`. On success the response has `ok` of `true`; if the\npassword is wrong, the response is an error (`ok` is `false`) whose\n`message_list` describes the problem.\n\n`confirm=1` requests an explicit success message in `message_list` on success.\nThe `email` and `totpcode` parameters support alternate verification flows (such\nas time-based one-time passwords) where those are configured.\n",
                 "operationId": "reauth",
                 "x-order": 57,
                 "tags": [
@@ -11040,24 +11040,19 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "reason": {
-                                        "type": "string",
-                                        "description": "Short tag describing why reauthentication is requested",
-                                        "x-order": 1
-                                    },
                                     "email": {
                                         "$ref": "#/components/schemas/email",
-                                        "x-order": 2
+                                        "x-order": 1
                                     },
                                     "password": {
                                         "type": "string",
                                         "description": "Account password",
-                                        "x-order": 3
+                                        "x-order": 2
                                     },
                                     "totpcode": {
                                         "type": "string",
                                         "description": "Time-based one-time password code, if applicable",
-                                        "x-order": 4
+                                        "x-order": 3
                                     }
                                 }
                             }

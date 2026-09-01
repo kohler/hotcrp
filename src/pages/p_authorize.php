@@ -264,7 +264,8 @@ class Authorize_Page {
             return null;
         }
         return $user->authentication_checker($this->qreq, "authorize")
-            ->set_max_age($max_age);
+            ->set_max_age(max($max_age, 300))  // always allow auth within 5 minutes
+            ->set_max_signin_age($max_age);
     }
 
     /** The confirmation this request owes for `$user`, or null if it owes none.
@@ -691,9 +692,10 @@ class Authorize_Page {
 
         // A client that asked for a fresh sign-in gets one before the code is
         // bound to an account.
+        $viewer_ac = $this->authentication_checker($this->viewer);
         if (!$this->token->data("email")
-            && ($ac = $this->authentication_checker($this->viewer))
-            && !$ac->test()) {
+            && $viewer_ac
+            && !$viewer_ac->test()) {
             // The user has already agreed to this; only the confirmation is
             // missing. Keep what they agreed to, so that finishing the
             // confirmation finishes the authorization rather than asking again.
@@ -705,7 +707,7 @@ class Authorize_Page {
                 $this->token->change_data("consented_bot", $this->qreq->authbot);
             }
             $this->token->update();
-            $this->print_reauth_exit($ac);
+            $this->print_reauth_exit($viewer_ac);
         }
 
         if (!$this->token->data("email")) {
@@ -715,8 +717,9 @@ class Authorize_Page {
             // they last authenticated, so a client asking for a fresh sign-in
             // can tell. A bot never signs in, so a bot grant records nothing.
             if ($grantee === $this->viewer
-                && ($auth_time = UserSecurityEvent::session_auth_time($this->qreq->qsession(), $this->viewer->email)) > 0) {
-                $this->token->change_data("auth_time", $auth_time);
+                && $viewer_ac
+                && ($at = $viewer_ac->latest()) > 0) {
+                $this->token->change_data("auth_time", $at);
             }
             if ($grantee !== $this->viewer) {
                 // the grant speaks as the bot, but a person made it: record who

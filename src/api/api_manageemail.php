@@ -206,9 +206,14 @@ class ManageEmail_API extends MessageSet {
         return null;
     }
 
+    /** @return AuthenticationChecker */
+    static function make_authentication_checker(Contact $u, Qrequest $qreq) {
+        return $u->authentication_checker($qreq, "manageemail");
+    }
+
     /** @return bool */
     private function confirm(Contact $u) {
-        return $u->authentication_checker($this->session_qreq, "manageemail")->test();
+        return self::make_authentication_checker($u, $this->session_qreq)->test();
     }
 
 
