@@ -135,6 +135,21 @@ class UserSecurityEvent {
         }
     }
 
+    /** Time of this account's most recent successful authentication in this
+     * session, or 0. A sign-in and a later confirmation both count: each is an
+     * occasion on which the person proved who they are.
+     * @param string $email
+     * @return int */
+    static function session_auth_time(Qsession $qs, $email) {
+        $t = 0;
+        foreach (self::session_list_by_email($qs, $email) as $use) {
+            if ($use->success && $use->timestamp > $t) {
+                $t = $use->timestamp;
+            }
+        }
+        return $t;
+    }
+
     /** @param string $email
      * @return ?UserSecurityEvent */
     static function session_latest_signin_by_email(Qsession $qs, $email) {

@@ -12983,11 +12983,14 @@ handle_ui.on("js-reauth", function (evt) {
     evt.preventDefault();
     let url;
     if (f.hasAttribute("data-session-index")) {
-        url = `${siteinfo.base}u/${f.getAttribute("data-session-index")}/api/reauth`;
+        url = `${siteinfo.base}u/${f.getAttribute("data-session-index")}/api/reauth?`;
     } else {
-        url = `${siteinfo.site_relative}api/reauth`;
+        url = `${siteinfo.site_relative}api/reauth?`;
     }
-    $.post(`${url}?confirm=1&post=${siteinfo.postvalue}`,
+    if (!f.hasAttribute("data-no-confirm")) {
+        url += "confirm=1&";
+    }
+    $.post(`${url}post=${siteinfo.postvalue}`,
         $(form).serialize(),
         function (data) {
             if (data.ok) {

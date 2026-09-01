@@ -15,8 +15,7 @@ class AuthenticationChecker {
     /** @var string
      * @readonly */
     public $reason;
-    /** @var int
-     * @readonly */
+    /** @var int */
     public $max_age;
     /** @var ?bool */
     protected $ok;
@@ -37,6 +36,17 @@ class AuthenticationChecker {
         } else {
             $this->max_age = 600;
         }
+    }
+
+    /** Shortest window a confirmation can fit inside. */
+    const MIN_MAX_AGE = 300;
+
+    /** Set the freshness window an outside party asked for.
+     * @param int $max_age
+     * @return $this */
+    function set_max_age($max_age) {
+        $this->max_age = max($max_age, self::MIN_MAX_AGE);
+        return $this;
     }
 
     /** @param string $url

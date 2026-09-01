@@ -301,9 +301,8 @@ class OAuth_Page {
         // handle reauthentication requests
         if ($tok->data("reauth")) {
             return $this->instance_reauth($authi, $tok, $jid);
-        } else {
-            return $this->instance_signin($authi, $tok, $jid);
         }
+        return $this->instance_signin($authi, $tok, $jid);
     }
 
     /** @param OAuthProvider $authi
@@ -334,7 +333,7 @@ class OAuth_Page {
             $use->set_success(false)->store($this->qreq);
             return [
                 MessageItem::error("<0>The {$authi->title()} authenticator did not confirm a recent sign-in"),
-                MessageItem::inform("<0>Its response must include an `auth_time` claim no older than {$max_age}s.")
+                MessageItem::inform("<0>Its response must include an ‘auth_time’ claim no older than {$max_age}s.")
             ];
         }
         $use->store($this->qreq);

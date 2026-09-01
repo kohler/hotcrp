@@ -655,6 +655,11 @@ class Authorize_Tester {
         if (isset($rest["nonce"])) {
             $args["nonce"] = $rest["nonce"];
         }
+        foreach (["max_age", "prompt", "login_hint"] as $k) {
+            if (isset($rest[$k])) {
+                $args[$k] = $rest[$k];
+            }
+        }
         if (!($rest["no_pkce"] ?? false)) {
             $args["code_challenge_method"] = $rest["code_challenge_method"] ?? "S256";
             $args["code_challenge"] = $args["code_challenge_method"] === "plain"
@@ -698,6 +703,12 @@ class Authorize_Tester {
         // Step 2: Confirm authorization request
         $qreq = TestQreq::user_post($user, ["code" => $code, "authconfirm" => "1"])
             ->set_page("authorize");
+        if (isset($rest["auth_time"])) {
+            $use = UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_PASSWORD,
+                $rest["auth_reason"] ?? UserSecurityEvent::REASON_SIGNIN);
+            $use->timestamp = $rest["auth_time"];
+            $use->store($qreq);
+        }
         Qrequest::set_main_request($qreq);
 
         Navigation::$test_mode = 2;
@@ -889,6 +900,183 @@ class Authorize_Tester {
         // account on it; a HotCRP email is permanent, so it serves
         xassert_eqq($payload->sub ?? null, "chair@_.com");
         xassert_eqq($payload->exp ?? null, ($payload->iat ?? 0) + 86400);
+    }
+
+    /** A client that asks for a fresh sign-in has no way to judge one without
+     * `auth_time`, so an ID token reports when the person last authenticated.
+     */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_id_token_auth_time() {
+        $t = Conf::$now - 120;
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            ["scope" => "openid read", "auth_time" => $t]);
+        xassert_neqq($jr, null);
+        if (!$jr) {
+            return;
+        }
+        $payload = (new HotCRP\JWTParser)->validate($jr->id_token);
+        xassert_neqq($payload, null);
+        xassert_eqq($payload->auth_time ?? null, $t);
+    }
+
+    /** A client that asks for a fresh sign-in must not be handed a code just
+     * because some session is open. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_authorize_max_age_requires_confirmation() {
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            ["scope" => "openid read", "max_age" => "600"]);
+        xassert_eqq($jr, null);
+        xassert_str_contains($this->_failure ?? "", "login_required");
+    }
+
+    /** `prompt=login` asks for a window of zero, but a confirmation that has
+     * just succeeded has to satisfy it, or there is no way through. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_authorize_prompt_login_accepts_fresh_confirmation() {
+        $t = Conf::$now - 60;
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            ["scope" => "openid read", "prompt" => "login",
+             "auth_time" => $t, "auth_reason" => UserSecurityEvent::REASON_REAUTH]);
+        xassert_neqq($jr, null);
+        if (!$jr) {
+            return;
+        }
+        $payload = (new HotCRP\JWTParser)->validate($jr->id_token);
+        xassert_neqq($payload, null);
+        xassert_eqq($payload->auth_time ?? null, $t);
+    }
+
+    /** `login_hint` names the account to authenticate, so the consent page
+     * offers that account and no other. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_authorize_login_hint_limits_accounts() {
+        // the hinted account is the one signed in: business as usual
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            ["scope" => "openid read", "login_hint" => $this->u_chair->email]);
+        xassert_neqq($jr, null);
+
+        // the hinted account is someone else: this session cannot serve it, so
+        // the page has nothing to offer and sends the user to sign in
+        $verifier = base48_encode(random_bytes(32));
+        $qreq = TestQreq::user_get($this->u_chair, [
+            "client_id" => self::MDOC_CLIENT_ID,
+            "redirect_uri" => self::MDOC_REDIRECT_URI,
+            "response_type" => "code",
+            "state" => base48_encode(random_bytes(16)),
+            "scope" => "openid read",
+            "login_hint" => $this->u_mgbaker->email,
+            "code_challenge_method" => "S256",
+            "code_challenge" => base64url_encode(hash("sha256", $verifier, true))
+        ])->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        $redir = null;
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
+        } catch (Redirection $r) {
+            $redir = $r->url;
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        xassert_str_contains($redir ?? "", "signin");
+        xassert_str_contains($redir ?? "", "mgbaker");
+    }
+
+    /** Pressing an account's button is the consent; a confirmation demanded
+     * in the middle of it interrupts that consent rather than replacing it, so
+     * finishing the confirmation finishes the authorization. */
+    function test_confirmation_resumes_the_consent_it_interrupted() {
+        $param = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read",
+            "max_age" => "600"
+        ];
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "code");
+
+        // the consent post: nothing confirms this session, so one is demanded
+        $vq = TestQreq::user_post($this->u_chair,
+            ["authconfirm" => 1, "code" => $code, "authemail" => $this->u_chair->email])
+            ->set_page("authorize");
+        Qrequest::set_main_request($vq);
+        $err = null;
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vq))->go();
+        } catch (JsonCompletion $jc) {
+            $err = $jc->result->content["error"] ?? null;
+        } catch (PageCompletion $pc) {
+        } finally {
+            ob_end_clean();
+        }
+        xassert_eqq($err, "login_required");
+
+        // the confirmation lands, and the consent finishes without being
+        // asked for a second time
+        $vq2 = TestQreq::user_get($this->u_chair, ["code" => $code])->set_page("authorize");
+        Qrequest::set_main_request($vq2);
+        UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_PASSWORD,
+            UserSecurityEvent::REASON_REAUTH)->store($vq2);
+        $redir = null;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vq2))->go();
+        } catch (Redirection $r) {
+            $redir = $r->url;
+        } catch (JsonCompletion $jc) {
+        } catch (PageCompletion $pc) {
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        xassert_str_starts_with($redir ?? "", "https://conf1.example.com/cb");
+        xassert_str_contains($redir ?? "", "code=");
+    }
+
+    /** `prompt=none` forbids interaction, so each condition the consent page
+     * would have resolved has to come back named, not lumped together. */
+    function test_prompt_none_names_what_is_missing() {
+        $param = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read",
+            "prompt" => "none"
+        ];
+
+        // nobody signed in
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_empty);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), "login_required");
+
+        // signed in, but this site never recorded consent, so the page is
+        // still needed
+        [$how, $detail] = $this->authorize_outcome($param, $this->u_chair);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), "consent_required");
+
+        // signed in, but not recently enough for the window asked for
+        [$how, $detail] = $this->authorize_outcome($param + ["max_age" => "600"], $this->u_chair);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), "login_required");
+
+        // a hint for an account this session cannot serve is the same as
+        // having no account at all
+        [$how, $detail] = $this->authorize_outcome(
+            $param + ["login_hint" => $this->u_mgbaker->email], $this->u_chair);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), "login_required");
+
+        // `none` rules out interaction, so it cannot ask for some
+        [$how, $detail] = $this->authorize_outcome(
+            ["prompt" => "none login"] + $param, $this->u_chair);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), "invalid_request");
     }
 
     /** An ID token is proof for this site only if this site is its whole
@@ -1580,7 +1768,7 @@ class Authorize_Tester {
             $href = html_entity_decode($m[1]);
         }
         xassert_neqq($href, null);
-        xassert_eqq($this->redirect_error($href ?? ""), "interaction_required");
+        xassert_eqq($this->redirect_error($href ?? ""), "consent_required");
 
         // a client this site's administrator registered names a redirect URI
         // this site chose to trust, so it is answered either way
@@ -1593,7 +1781,7 @@ class Authorize_Tester {
         [$how, $detail] = $this->authorize_outcome($cparam, $this->u_empty);
         xassert_eqq($how, "redirect");
         xassert_str_starts_with($detail ?? "", "https://conf1.example.com/cb");
-        xassert_eqq($this->redirect_error($detail), "interaction_required");
+        xassert_eqq($this->redirect_error($detail), "login_required");
 
         // and the user can authorize the bounce themselves: Cancel on the
         // consent form is a CSRF-protected POST, so it answers the client
