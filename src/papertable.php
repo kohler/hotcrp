@@ -1740,7 +1740,7 @@ class PaperTable {
         $this->_ps_start_expandable("tags", false, [
             "class" => "ui-fold js-fold-focus"
         ]);
-        echo $this->papt(Ht::label("Tags", "k-tags"), [
+        echo $this->papt(Ht::label("Tags", "k-tags", ["class" => "link-hover"]), [
                 "type" => "ps", "fold" => "xx",
                 "aria-controls" => "f-tags",
                 "aria-label" => "Edit tags"

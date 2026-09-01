@@ -556,12 +556,16 @@ a.pnum:visited, a.ptitle:visited {
 }
 a:hover, a.track:hover,
 a.pnum:hover, a.ptitle:hover,
-button.link:hover, button.q:hover, button.qo:hover,
+button.q:hover, button.qo:hover, .link:hover, .link-hover:hover,
 .js-click-child:hover a.hover-child,
 a:hover .pavfn {
 	color: var(--link-hover-fg);
 	-webkit-text-decoration-color: var(--link-hover-fg);
 	text-decoration-color: var(--link-hover-fg);
+}
+.link-hover:hover {
+	-webkit-text-decoration-line: underline;
+	text-decoration-line: underline;
 }
 a:active, a.track:active, a.noq:active,
 a.pnum:active, a.ptitle:active,
@@ -583,7 +587,7 @@ u.x {
 }
 .ul,
 a.ulh:hover, a.q:hover,
-button.link, button.q:hover,
+.link, button.q:hover,
 .papmode.active:hover > a, .leftmenu-item:hover > a,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
@@ -592,7 +596,7 @@ div.js-assignment-fold:hover a.js-assignment-fold,
 a:hover u.x {
 	text-decoration: underline;
 }
-button.link.noul {
+.link.noul {
 	text-decoration: inherit;
 }
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle {
