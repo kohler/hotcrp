@@ -440,7 +440,6 @@ class Authorize_Page {
         echo '<p class="feedback is-warning">', htmlspecialchars($this->client->title_text()),
             ' asks you to confirm your account before continuing.</p>';
         $ac->print();
-        echo '</div>';
     }
 
     function print_form_title() {
