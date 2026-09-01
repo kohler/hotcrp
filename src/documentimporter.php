@@ -92,13 +92,9 @@ final class DocumentImporter {
         // check content_file
         if (!($docj instanceof DocumentInfo)
             && isset($docj->content_file)
-            && $docj->content_file !== false) {
-            if (($this->doc_savef & DocumentInfo::SAVEF_IGNORE_CONTENT_FILE) !== 0) {
-                $docj->content_file = null;
-            } else if (($problem = $this->check_content_file_first($docj->content_file))) {
-                $this->error($problem);
-                return null;
-            }
+            && $docj->content_file !== false
+            && !$this->check_content_file_first($docj)) {
+            return null;
         }
 
         // check on_document_import
@@ -129,16 +125,25 @@ final class DocumentImporter {
         return $doc;
     }
 
-    /** @param mixed $content_file
-     * @return ?string */
-    private function check_content_file_first($content_file) {
-        if (!is_string($content_file)) {
-            return "<0>Invalid `content_file`";
-        } else if (($this->doc_savef & DocumentInfo::SAVEF_ANY_CONTENT_FILE) === 0
-                   && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $content_file)) {
-            return "<0>`content_file` filename violates locality constraints";
+    /** @param object $docj
+     * @return bool */
+    private function check_content_file_first($docj) {
+        if (!is_string($docj->content_file)) {
+            $this->error("<0>Invalid `content_file`");
+            return false;
         }
-        return null;
+        if (!preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)
+            || ($this->doc_savef & DocumentInfo::SAVEF_ANY_CONTENT_FILE) !== 0) {
+            // filename appears safe or any filename allowed
+            return true;
+        }
+        if (($this->doc_savef & DocumentInfo::SAVEF_TRUST_METADATA) !== 0) {
+            // we may not need this invalid content_file
+            $docj->content_file = null;
+            return true;
+        }
+        $this->error("<0>`content_file` filename violates locality constraints");
+        return false;
     }
 
     /** @param object $docj
@@ -148,26 +153,6 @@ final class DocumentImporter {
         $mimetype = null;
         if (isset($docj->mimetype) && is_string($docj->mimetype)) {
             $mimetype = $docj->mimetype;
-        }
-
-        // extract content
-        $content = $content_file = null;
-        if (isset($docj->content) && is_string($docj->content)) {
-            $content = $docj->content;
-        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
-            $content = base64_decode($docj->content_base64);
-        } else if (($this->doc_savef & DocumentInfo::SAVEF_IGNORE_CONTENT_FILE) !== 0) {
-            /* no content */
-        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            if (is_readable($docj->content_file)) {
-                $content_file = $docj->content_file;
-            } else {
-                $this->error("<0>Could not access `content_file`");
-            }
-        } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
-            if (!($content_file = $this->_upload_content_stream($docj->content_file, $mimetype))) {
-                $this->warning("<0>Could not copy `content_file` to a temporary file");
-            }
         }
 
         // extract filename
@@ -199,10 +184,31 @@ final class DocumentImporter {
             $this->warning("<0>Invalid `hash` ignored");
             $ha = null;
         }
+        $ha_trusted = $ha && ($this->doc_savef & DocumentInfo::SAVEF_TRUST_METADATA) !== 0;
+
+        // extract content
+        $content = $content_file = null;
+        if ($ha_trusted) {
+            /* skip content, use provided hash */
+        } else if (isset($docj->content) && is_string($docj->content)) {
+            $content = $docj->content;
+        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
+            $content = base64_decode($docj->content_base64);
+        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
+            if (is_readable($docj->content_file)) {
+                $content_file = $docj->content_file;
+            } else {
+                $this->error("<0>Could not access `content_file`");
+            }
+        } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
+            if (!($content_file = $this->_upload_content_stream($docj->content_file, $mimetype))) {
+                $this->warning("<0>Could not copy `content_file` to a temporary file");
+            }
+        }
 
         // compute content hash
         $content_ha = HashAnalysis::make_algorithm($this->conf, $ha ? $ha->algorithm() : null);
-        if (($this->doc_savef & DocumentInfo::SAVEF_SKIP_VERIFY) !== 0) {
+        if ($ha_trusted) {
             // do not compute content hash
         } else if ($content !== null) {
             $content_ha->set_hash($content);
@@ -231,8 +237,8 @@ final class DocumentImporter {
         }
         if ($crc32 !== null) {
             $content_crc32 = false;
-            if (($this->doc_savef & DocumentInfo::SAVEF_SKIP_VERIFY) !== 0) {
-                // do not compute content hash
+            if ($ha_trusted) {
+                // assume provided crc32 was correct
             } else if ($content !== null) {
                 $content_crc32 = hash("crc32b", $content, true);
             } else if ($content_file !== null) {
@@ -333,7 +339,7 @@ final class DocumentImporter {
         }
         if (isset($docj->size)
             && is_int($docj->size)
-            && ($this->doc_savef & DocumentInfo::SAVEF_SKIP_CONTENT) !== 0) {
+            && $ha_trusted) {
             $doc->set_size($docj->size);
         }
         if (($docj->inactive ?? null) === true) {
@@ -341,7 +347,9 @@ final class DocumentImporter {
         }
 
         // analyze content, complain if not available
-        if ($doc->content_available() || $doc->ensure_content()) {
+        if ($ha_trusted) {
+            // don't analyze content
+        } else if ($doc->content_available() || $doc->ensure_content()) {
             $doc->analyze_content();
         } else {
             $doc->error("<0>Document has no content");

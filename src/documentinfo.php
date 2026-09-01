@@ -724,16 +724,24 @@ class DocumentInfo implements JsonSerializable {
         return ($this->_dflags & self::DF_PREFER_INACTIVE) !== 0;
     }
 
-    /** @return bool */
-    function store_skeleton() {
+    /** @param int $savef
+     * @return bool */
+    private function store_skeleton($savef) {
         if (!$this->timestamp) {
             $this->timestamp = Conf::$now;
+        }
+        if (($savef & self::SAVEF_TRUST_METADATA) === 0) {
+            // populate $this->size and $this->crc32 from content
+            $this->size();
+            if ($this->size >= 0 && $this->size <= 10000000) {
+                $this->crc32();
+            }
         }
         $upd = [
             "paperId" => $this->paperId,
             "sha1" => $this->binary_hash(),
             "timestamp" => $this->timestamp,
-            "size" => $this->size(),
+            "size" => $this->size,
             "mimetype" => $this->mimetype,
             "documentType" => $this->documentType,
             "inactive" => $this->inactive
@@ -741,9 +749,8 @@ class DocumentInfo implements JsonSerializable {
         if ($this->timeReferenced !== null) {
             $upd["timeReferenced"] = $this->timeReferenced;
         }
-        if (($this->crc32 || ($this->size >= 0 && $this->size <= 10000000))
-            && ($crc32 = $this->crc32()) !== false) {
-            $upd["crc32"] = $crc32;
+        if ($this->crc32) {
+            $upd["crc32"] = $this->crc32;
         }
         foreach (["filename", "filterType", "originalStorageId"] as $k) {
             if ($this->$k)
@@ -812,7 +819,7 @@ class DocumentInfo implements JsonSerializable {
             return null;
         }
         if (file_exists($dspath)
-            && (($savef & self::SAVEF_SKIP_VERIFY) !== 0
+            && (($savef & self::SAVEF_TRUST_METADATA) !== 0
                 || $this->file_binary_hash($dspath, $this->binary_hash()) === $this->binary_hash())) {
             $this->filestore = $dspath;
             return true;
@@ -992,6 +999,9 @@ class DocumentInfo implements JsonSerializable {
         }
         $s3l->close_response_body_stream();
         $sz = self::filesize_expected($dstmp, $this->size);
+        if ($this->size < 0 && $sz >= 0) {
+            $this->size = $sz;
+        }
         if ($sz !== $this->size) {
             error_log("Disk error: GET {$s3l->skey}: expected size {$this->size}, got " . json_encode($sz));
             $s3l->status = 500;
@@ -1138,30 +1148,40 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    const SAVEF_SKIP_VERIFY = 1;          // do not verify content hash
-    const SAVEF_SKIP_CONTENT = 2;         // do not store content
+    const SAVEF_TRUST_METADATA = 2;       // dangerous: assume content exists,
+                                          // require sufficient metadata
     const SAVEF_DELAY_PROP = 4;           // do not save skeleton
     // These properties are defined for convenience in caller code:
     const SAVEF_ANY_CONTENT_FILE = 8;     // allow any content_file
-    const SAVEF_IGNORE_CONTENT_FILE = 16; // ignore content_file
     const SAVEF_ALLOW_HASH_WITHOUT_CONTENT = 32; // allow finding document by hash
 
     /** @param int $savef
      * @return bool */
     function save($savef = 0) {
         assert($this->paperStorageId <= 0);
+        if ($this->has_error()) {
+            return false;
+        }
 
-        // look for an existing document with same sha1
+        // deduplicate to an existing document with same sha1
         if ($this->binary_hash() !== false
             && $this->_save_check_existing($savef)) {
             return true;
         }
 
         // ensure content
-        $s3 = ($savef & self::SAVEF_SKIP_CONTENT) !== 0
-            || (($this->_dflags & self::DF_PREFER_S3) !== 0
-                && $this->check_s3());
-        if ($this->has_error() || (!$s3 && !$this->ensure_content())) {
+        if (($savef & self::SAVEF_TRUST_METADATA) !== 0) {
+            if ($this->binary_hash() === false
+                || !$this->conf->opt("dbNoPapers")) {
+                $this->message_set()->append_item(MessageItem::error("<0>Document not saved without content"));
+                return false;
+            }
+            $s3 = true;
+        } else {
+            $s3 = ($this->_dflags & self::DF_PREFER_S3) !== 0
+                && $this->check_s3();
+        }
+        if (!$s3 && !$this->ensure_content()) {
             return false;
         }
 
@@ -1173,8 +1193,8 @@ class DocumentInfo implements JsonSerializable {
         }
 
         // store
-        $s0 = $this->store_skeleton();
-        $s1 = $s0 && $this->store_database();
+        $s0 = $this->store_skeleton($savef);
+        $s1 = $s0 && !$s3 && $this->store_database();
         $s2 = !$s3 && $this->store_docstore($savef);
         $s3 = $s3 || $this->store_s3() > 0;
         if (!$s0 || (!$s1 && !$s2 && !$s3)) {

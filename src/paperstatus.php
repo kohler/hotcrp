@@ -161,6 +161,13 @@ final class PaperStatus extends MessageSet {
         return $this;
     }
 
+    /** @param ?bool $x
+     * @return $this */
+    function set_json_fields($x) {
+        $this->override_json_fields = $x;
+        return $this;
+    }
+
     /** @param int $f
      * @param bool $x
      * @return $this */
@@ -177,27 +184,8 @@ final class PaperStatus extends MessageSet {
 
     /** @param bool $x
      * @return $this */
-    function set_ignore_content_file($x) {
-        return $this->set_doc_savef(DocumentInfo::SAVEF_IGNORE_CONTENT_FILE, $x);
-    }
-
-    /** @param ?bool $x
-     * @return $this */
-    function set_json_fields($x) {
-        $this->override_json_fields = $x;
-        return $this;
-    }
-
-    /** @param bool $x
-     * @return $this */
-    function set_skip_document_verify($x) {
-        return $this->set_doc_savef(DocumentInfo::SAVEF_SKIP_VERIFY, $x);
-    }
-
-    /** @param bool $x
-     * @return $this */
-    function set_skip_document_content($x) {
-        return $this->set_doc_savef(DocumentInfo::SAVEF_SKIP_CONTENT, $x);
+    function set_trust_document_metadata($x) {
+        return $this->set_doc_savef(DocumentInfo::SAVEF_TRUST_METADATA, $x);
     }
 
     /** @param callable(object,PaperOption,PaperStatus):(?bool) $cb
