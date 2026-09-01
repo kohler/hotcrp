@@ -276,6 +276,9 @@ class HotCRPMailer extends Mailer {
         if ($this->rrow) {
             return $this->rrow->deadline_name();
         }
+        if (!$this->recipient) {
+            return null;
+        }
         if ($this->row
             && ($rrows = $this->row->reviews_by_user($this->recipient))) {
             $rrow0 = $rrow1 = null;
@@ -294,7 +297,7 @@ class HotCRPMailer extends Mailer {
                 return ($rrow1 ?? $rrow0)->deadline_name();
             }
         }
-        if (!$this->recipient || !$this->recipient->isPC) {
+        if (!$this->recipient->isPC) {
             return null;
         }
         $bestdl = $bestdln = null;
