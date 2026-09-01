@@ -158,9 +158,9 @@ class UserSecurityEvent {
         $nusec = count($qs->get("usec") ?? []);
         $result = [];
         foreach (self::session_list($qs) as $use) {
-            // skip old reauths
+            // skip old reauths (they always expire after MAX_AGE_BOUND)
             if ($use->reason === self::REASON_REAUTH
-                && $use->timestamp < Conf::$now - 86400) {
+                && $use->timestamp < Conf::$now - AuthenticationChecker::MAX_AGE_BOUND) {
                 continue;
             }
             // if lots of results, drop old failures

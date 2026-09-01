@@ -134,17 +134,18 @@ class UserSecurity_Tester {
 
     function test_store_drops_stale_reauth() {
         $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $bound = AuthenticationChecker::MAX_AGE_BOUND;
         $qreq->set_gsession("usec", [
-            ["r" => 1, "a" => Conf::$now - 86401],  // stale reauth: dropped
-            ["r" => 1, "a" => Conf::$now - 86399],  // still fresh
-            ["a" => Conf::$now - 200000]            // signin: no age limit
+            ["r" => 1, "a" => Conf::$now - $bound - 2],  // beyond any window: dropped
+            ["r" => 1, "a" => Conf::$now - $bound + 2],  // still usable
+            ["a" => Conf::$now - 200000]                 // signin: no age limit
         ]);
         UserSecurityEvent::make("floyd@ee.lbl.gov")->store($qreq);
         $ages = [];
         foreach ($qreq->gsession("usec") as $x) {
             $ages[] = Conf::$now - $x["a"];
         }
-        xassert_eqq($ages, [86399, 200000, 0]);
+        xassert_eqq($ages, [$bound - 2, 200000, 0]);
     }
 
     function test_store_drops_old_failures_when_crowded() {

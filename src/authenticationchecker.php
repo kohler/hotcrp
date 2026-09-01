@@ -44,8 +44,8 @@ class AuthenticationChecker {
         }
     }
 
-    // Prevent max_age from going out of bounds
-    const MAX_AGE_BOUND = 157680000; // 5 years
+    /** The oldest authentication this site will call fresh (30 days) */
+    const MAX_AGE_BOUND = 2592000;
 
     /** Set the desired freshness window for authentication.
      * @param int $max_age
@@ -140,7 +140,8 @@ class AuthenticationChecker {
     /** @return bool */
     function test() {
         // NB bearer tokens have no security events, so this will correctly return false
-        return $this->latest() >= Conf::$now - $this->max_age;
+        return ($t = $this->latest()) > 0
+            && $t >= Conf::$now - $this->max_age;
     }
 
     protected function print_actions(...$actions) {
