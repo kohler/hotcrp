@@ -69,10 +69,22 @@ encoding](https://www.php.net/manual/en/function.session-encode.php).
       HotCRP passwords, 2 for TOTP MFA requests.
     * `r` (optional integer, default 0): Reason for the security event. 0 is
       used for login attempts, 1 for security confirmations (e.g., preceding
-      attempts to change password).
+      attempts to change password), 2 for authorizations granted to OAuth
+      clients. Reason 2 is not an authentication and never satisfies one.
+    * `ci` (optional string): For reason 2, the `client_id` that was
+      authorized.
+    * `ru` (optional string): For reason 2, the `redirect_uri` the
+      authorization was granted for.
+    * `sc` (optional string): For reason 2, the scope that was granted.
+    * `db` (optional string): For reason 2, the conference the authorization
+      was granted at. Absent for a contact-database client, whose grant is
+      cross-conference by design.
     * `x` (optional boolean, default false): Error status. False means the
       check succeeded, true means it failed.
     * `a` (integer timestamp): Time of the event.
+
+    A reason-2 event replaces any earlier one for the same account and
+    `ci`, and at most 200 are kept in a session.
 
 * `themes` (list of nullable strings): Array of theme by user index
 

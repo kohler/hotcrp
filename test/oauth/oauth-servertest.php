@@ -34,6 +34,12 @@ class ServerTestState {
     public $txns = [];
     /** @var ?object */
     public $report;
+    /** Who each server last authenticated, by server label. A run that names
+     * an account with `login_hint` narrows the consent page to it, which is
+     * what makes `prompt=none` reachable: the server answers
+     * `account_selection_required` when several accounts are signed in.
+     * @var object */
+    public $subjects;
     /** @var ServerTestState */
     static public $main;
 
@@ -47,12 +53,15 @@ class ServerTestState {
                     self::$main->txns[] = $t;
             }
             self::$main->report = $j->report ?? null;
+            self::$main->subjects = $j->subjects ?? null;
         }
+        self::$main->subjects = self::$main->subjects ?? (object) [];
     }
 
     static function save() {
         file_put_contents(SERVER_STATE_FILE, json_encode([
-            "txns" => self::$main->txns, "report" => self::$main->report
+            "txns" => self::$main->txns, "report" => self::$main->report,
+            "subjects" => self::$main->subjects
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
     }
 
@@ -588,6 +597,9 @@ function server_handle_callback(ServerRequestInterface $req, Response $res) {
                         || strcasecmp((string) ($claims->email ?? ""), $email) === 0,
                 "id_token identifies the same user as the API");
         }
+        if ($email !== null) {
+            ServerTestState::$main->subjects->{$txn->server ?? "?"} = $email;
+        }
     } else {
         $rep->skip("access token is accepted by the API",
             "no API base; configure `hotcrp_uri` to check this");
@@ -686,7 +698,20 @@ function server_handle_index(ServerRequestInterface $req, Response $res) {
             '<a class="start" href="/servers/start?mode=document', $sel, '">Metadata document</a></p>',
             '<p><a class="start" href="/servers/start?mode=configured&amp;prompt=login', $sel, '">Force a fresh sign-in (<code>prompt=login</code>)</a>',
             '<a class="start" href="/servers/start?mode=configured&amp;max_age=600', $sel, '">Ask for one within 10 minutes (<code>max_age</code>)</a>',
+            '<a class="start" href="/servers/start?mode=configured&amp;max_age=30', $sel, '">Ask for one within 30 seconds (<code>max_age</code>)</a>',
             '<a class="start" href="/servers/start?mode=configured&amp;prompt=none', $sel, '">Silent check (<code>prompt=none</code>)</a></p>';
+        $subj = ServerTestState::$main->subjects->{server_label($s)} ?? null;
+        if ($subj !== null) {
+            $hint = "&amp;login_hint=" . urlencode($subj);
+            echo '<p>Last authenticated as <code>', htmlspecialchars($subj), '</code>. ',
+                'A hinted run narrows the consent page to that account, which is what ',
+                '<code>prompt=none</code> needs — otherwise a browser with several ',
+                'accounts signed in answers <code>account_selection_required</code>.</p>',
+                '<p><a class="start" href="/servers/start?mode=configured&amp;prompt=none', $hint, $sel, '">Silent check as this user</a>',
+                '<a class="start" href="/servers/start?mode=configured&amp;max_age=600', $hint, $sel, '">Within 10 minutes as this user</a>',
+                '<a class="start" href="/servers/start?mode=configured&amp;max_age=30', $hint, $sel, '">Within 30 seconds as this user</a>',
+                '<a class="start" href="/servers/start?mode=configured&amp;prompt=login', $hint, $sel, '">Fresh sign-in as this user</a></p>';
+        }
     }
     if (($r = ServerTestState::$main->report)) {
         $cls = $r->nfailed ? "sum-bad" : "sum-ok";

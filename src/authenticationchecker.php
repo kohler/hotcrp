@@ -19,14 +19,14 @@ class AuthenticationChecker {
     protected $max_age = 600;
     /** @var int */
     protected $max_signin_age = 600;
-    /** @var ?int */
-    protected $latest;
     /** @var ?string */
     protected $actions_class;
     /** @var ?list<string> */
     protected $additional_actions;
-    /** @var ?string */
-    protected $redirect;
+    /** @var bool */
+    protected $quiet = false;
+    /** @var ?int */
+    protected $latest;
 
     /** @param string $caller_id */
     function __construct(Contact $user, Qrequest $qreq, $caller_id) {
@@ -64,13 +64,6 @@ class AuthenticationChecker {
         return $this;
     }
 
-    /** @param string $url
-     * @return $this */
-    function set_redirect($url) {
-        $this->redirect = $url;
-        return $this;
-    }
-
     /** @param ?string $class
      * @return $this */
     function set_actions_class($class) {
@@ -86,15 +79,13 @@ class AuthenticationChecker {
         return $this;
     }
 
-
-    /** @return string */
-    function redirect() {
-        if ($this->redirect !== null) {
-            return $this->redirect;
-        }
-        $nav = $this->qreq->navigation();
-        return $nav->site_path . $nav->raw_page . $nav->query;
+    /** @param bool $x
+     * @return $this */
+    function set_quiet($x) {
+        $this->quiet = $x;
+        return $this;
     }
+
 
     /** @return string */
     function actions_class() {
@@ -153,29 +144,61 @@ class AuthenticationChecker {
             '</div>';
     }
 
-    function print() {
-        $use = null;
+    /** How this account most recently proved who it was, which is how it will
+     * be asked to prove it again.
+     * @return ?UserSecurityEvent */
+    protected function signin_event() {
         foreach ($this->security_events(true) as $usex) {
             if ($usex->reason === UserSecurityEvent::REASON_SIGNIN
                 && ($usex->type === UserSecurityEvent::TYPE_PASSWORD
                     || $usex->type === UserSecurityEvent::TYPE_OAUTH)) {
-                $use = $usex;
-                break;
+                return $usex;
             }
         }
-        if (!$use && $this->user->can_use_password()) {
-            $use = UserSecurityEvent::make($this->user->email, UserSecurityEvent::TYPE_PASSWORD);
+        if ($this->user->can_use_password()) {
+            return UserSecurityEvent::make($this->user->email, UserSecurityEvent::TYPE_PASSWORD);
         }
-        if (!$use) {
-            echo Ht::feedback_msg(MessageItem::error("<5><strong>Account {$this->user->email} cannot be confirmed using this session.</strong> Please sign out and sign in again and retry.")),
-                '<div class="', $this->actions_class(), '">',
-                Ht::submit("Sign out", ["type" => "submit", "class" => "btn-danger", "form" => "f-signout"]),
-                '</div>';
-            Ht::stash_html($this->conf->hotform("=signout", ["cap" => null], ["id" => "f-signout"]) . "</form>", "f-signout");
-            return false;
+        return null;
+    }
+
+    /** Where to send the user to confirm against `$use`'s provider, or null if
+     * this site has no such provider configured.
+     * @param UserSecurityEvent $use
+     * @return ?string */
+    private function oauth_url($use, $redirect) {
+        if (!((HotCRP\OAuthProvider::list($this->conf))[$use->subtype] ?? null)) {
+            return null;
         }
+        $nav = $this->qreq->navigation();
+        $redirect = $redirect ?? $nav->site_path . $nav->raw_page . $nav->query;
+        $path = $nav->base_path;
+        if (($uindex = Contact::session_index_by_email($this->qreq, $this->user->email)) >= 0) {
+            $path .= "u/{$uindex}/";
+        }
+        return $path . $this->conf->hoturl("oauth", [
+            "reauth" => 1, "max_age" => $this->max_age, "redirect" => $redirect,
+            "quiet" => $this->quiet ? 1 : null
+        ], Conf::HOTURL_SITEREL);
+    }
+
+    /** URL that carries out this confirmation without showing the user
+     * anything, or null when confirmation needs something typed here.
+     * @param string $redirect
+     * @return ?string */
+    function authenticator_url($redirect) {
+        if (($use = $this->signin_event())
+            && $use->type === UserSecurityEvent::TYPE_OAUTH) {
+            return $this->oauth_url($use, $redirect);
+        }
+        return null;
+    }
+
+    function print() {
+        $use = $this->signin_event();
+
         // password
-        if ($use->type === UserSecurityEvent::TYPE_PASSWORD) {
+        if ($use
+            && $use->type === UserSecurityEvent::TYPE_PASSWORD) {
             echo '<div class="f-i"><label for="k-reauth-password">Current password for ',
                 htmlspecialchars($this->user->email), '</label>',
                 Ht::entry("email", $this->user->email, ["autocomplete" => "username", "class" => "ignore-diff", "readonly" => true, "form" => "f-reauth", "hidden" => true]),
@@ -189,25 +212,24 @@ class AuthenticationChecker {
         }
 
         // OAuth
-        $authi = (HotCRP\OAuthProvider::list($this->conf))[$use->subtype] ?? null;
-        if (!$authi) {
-            return false;
+        if ($use
+            && $use->type === UserSecurityEvent::TYPE_OAUTH
+            && ($url = $this->oauth_url($use, null))) {
+            $this->print_actions(Ht::submit("Confirm " . htmlspecialchars($this->user->email), [
+                "class" => "btn-success",
+                "form" => "f-reauth",
+                "formaction" => $url,
+                "formmethod" => "post"
+            ]));
+            return true;
         }
-        $url = $this->conf->hoturl("oauth", [
-            "reauth" => 1, "max_age" => $this->max_age, "redirect" => $this->redirect()
-        ], Conf::HOTURL_SITEREL);
-        if (($uindex = Contact::session_index_by_email($this->qreq, $this->user->email)) >= 0) {
-            $url = $this->qreq->navigation()->base_path . "u/{$uindex}/" . $url;
-        } else {
-            $url = $this->qreq->navigation()->site_path . $url;
-        }
-        $this->print_actions(Ht::submit("Confirm " . htmlspecialchars($this->user->email), [
-            "class" => "btn-success",
-            "form" => "f-reauth",
-            "formaction" => $url,
-            "formmethod" => "post"
-        ]));
-        return true;
+
+        echo Ht::feedback_msg(MessageItem::error("<5><strong>Account {$this->user->email} cannot be confirmed using this session.</strong> Please sign out and sign in again and retry.")),
+            '<div class="', $this->actions_class(), '">',
+            Ht::submit("Sign out", ["type" => "submit", "class" => "btn-danger", "form" => "f-signout"]),
+            '</div>';
+        Ht::stash_html($this->conf->hotform("=signout", ["cap" => null], ["id" => "f-signout"]) . "</form>", "f-signout");
+        return false;
     }
 
     function api() {

@@ -132,6 +132,136 @@ class UserSecurity_Tester {
         xassert_eqq(count($qreq->gsession("usec")), 2);
     }
 
+    /** @return UserSecurityEvent */
+    private function make_confirmation($email, $client_id, $scope = "read",
+                                       $dbname = "confA") {
+        return UserSecurityEvent::make($email)
+            ->set_oauth_confirmation($client_id, "https://c.example.com/cb",
+                $scope, $dbname);
+    }
+
+    /** An authorization reaches one conference's submissions and reviews, so a
+     * consent granted at one must not answer for another. Sessions can be
+     * shared across conferences, and a site-wide client has the same id,
+     * redirect URI, and scope at every one of them. */
+    function test_oauth_confirmation_is_scoped_to_its_conference() {
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $this->make_confirmation("estrin@usc.edu", "c1", "read", "confA")->store($qreq);
+        $qs = $qreq->qsession();
+
+        // the conference it was granted at answers
+        xassert_neqq(UserSecurityEvent::session_oauth_confirmation($qs,
+            "estrin@usc.edu", "c1", "https://c.example.com/cb", "read", "confA"), null);
+        // a different one does not
+        xassert_eqq(UserSecurityEvent::session_oauth_confirmation($qs,
+            "estrin@usc.edu", "c1", "https://c.example.com/cb", "read", "confB"), null);
+        // nor does a cdb client's cross-conference lookup
+        xassert_eqq(UserSecurityEvent::session_oauth_confirmation($qs,
+            "estrin@usc.edu", "c1", "https://c.example.com/cb", "read", null), null);
+
+        // and granting at confB leaves confA's consent intact
+        $this->make_confirmation("estrin@usc.edu", "c1", "read", "confB")->store($qreq);
+        xassert_neqq(UserSecurityEvent::session_oauth_confirmation($qs,
+            "estrin@usc.edu", "c1", "https://c.example.com/cb", "read", "confA"), null);
+        xassert_neqq(UserSecurityEvent::session_oauth_confirmation($qs,
+            "estrin@usc.edu", "c1", "https://c.example.com/cb", "read", "confB"), null);
+    }
+
+    /** An authorization is per client, so granting one again replaces what
+     * that client had rather than piling up. */
+    function test_oauth_confirmation_replaces_same_client() {
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $this->make_confirmation("estrin@usc.edu", "c1")->store($qreq);
+        $this->make_confirmation("estrin@usc.edu", "c2")->store($qreq);
+        xassert_eqq(count($qreq->gsession("usec")), 2);
+
+        // same client again, wider scope: one record, and it is the new one
+        $this->make_confirmation("estrin@usc.edu", "c1", "read paper:write")->store($qreq);
+        $usec = $qreq->gsession("usec");
+        xassert_eqq(count($usec), 2);
+        $found = UserSecurityEvent::session_oauth_confirmation($qreq->qsession(),
+            "estrin@usc.edu", "c1", "https://c.example.com/cb", "read paper:write", "confA");
+        xassert_neqq($found, null);
+        // the scope it replaced is no longer on offer
+        xassert_eqq(UserSecurityEvent::session_oauth_confirmation($qreq->qsession(),
+            "estrin@usc.edu", "c1", "https://c.example.com/cb", "read", "confA"), null);
+    }
+
+    /** Authorizations are not replaced by a later sign-in the way
+     * authentications are, so the session caps how many it keeps. */
+    function test_oauth_confirmations_are_capped() {
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $n = UserSecurityEvent::MAX_OAUTH_CONFIRMATIONS;
+        for ($i = 0; $i !== $n + 5; ++$i) {
+            $this->make_confirmation("estrin@usc.edu", "c{$i}")->store($qreq);
+        }
+        xassert_eqq(count($qreq->gsession("usec")), $n);
+        // the oldest went first
+        xassert_eqq(UserSecurityEvent::session_oauth_confirmation($qreq->qsession(),
+            "estrin@usc.edu", "c0", "https://c.example.com/cb", "read", "confA"), null);
+        xassert_neqq(UserSecurityEvent::session_oauth_confirmation($qreq->qsession(),
+            "estrin@usc.edu", "c" . ($n + 4), "https://c.example.com/cb", "read", "confA"), null);
+    }
+
+    /** A caller asking for more than the bound is answered with the bound, so
+     * a confirmation older than that is never fresh however wide the ask. */
+    function test_max_age_bound_clamps_down() {
+        $u = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $bound = AuthenticationChecker::MAX_AGE_BOUND;
+
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $qreq->set_gsession("usec", [["r" => 1, "a" => Conf::$now - $bound - 10]]);
+        xassert(!$u->authentication_checker($qreq, "api")
+            ->set_max_age(PHP_INT_MAX)->test());
+
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $qreq->set_gsession("usec", [["r" => 1, "a" => Conf::$now - $bound + 10]]);
+        xassert($u->authentication_checker($qreq, "api")
+            ->set_max_age(PHP_INT_MAX)->test());
+    }
+
+    /** An account that never authenticated is never fresh, whatever window was
+     * asked for. */
+    function test_no_authentication_is_never_fresh() {
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $u = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $ac = $u->authentication_checker($qreq, "api")->set_max_age(PHP_INT_MAX);
+        xassert_eqq($ac->latest(), 0);
+        xassert(!$ac->test());
+    }
+
+    /** Stale authorizations are collected when something else is stored. */
+    function test_oauth_confirmations_are_collected() {
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $life = UserSecurityEvent::OAUTH_CONFIRMATION_LIFETIME;
+        $qreq->set_gsession("usec", [
+            ["r" => 2, "ci" => "old", "ru" => "https://c.example.com/cb",
+             "sc" => "read", "db" => "confA", "a" => Conf::$now - $life - 10],
+            ["r" => 2, "ci" => "new", "ru" => "https://c.example.com/cb",
+             "sc" => "read", "db" => "confA", "a" => Conf::$now - $life + 10]
+        ]);
+        UserSecurityEvent::make("estrin@usc.edu")->store($qreq);
+        $qs = $qreq->qsession();
+        xassert_eqq(UserSecurityEvent::session_oauth_confirmation($qs,
+            "estrin@usc.edu", "old", "https://c.example.com/cb", "read", "confA"), null);
+        xassert_neqq(UserSecurityEvent::session_oauth_confirmation($qs,
+            "estrin@usc.edu", "new", "https://c.example.com/cb", "read", "confA"), null);
+    }
+
+    /** An authorization is not an authentication, and must never satisfy one. */
+    function test_oauth_confirmation_is_not_an_authentication() {
+        $qreq = $this->make_qrequest(["estrin@usc.edu"]);
+        $this->make_confirmation("estrin@usc.edu", "c1")->store($qreq);
+        $u = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $ac = $u->authentication_checker($qreq, "api");
+        xassert_eqq($ac->latest(), 0);
+        xassert(!$ac->test());
+        xassert_eqq(UserSecurityEvent::session_latest_signin_by_email($qreq->qsession(),
+            "estrin@usc.edu"), null);
+    }
+
+    /** A reauth is kept as long as some window could still honor it, so the
+     * horizon tracks the checker's bound rather than a fixed day. */
     function test_store_drops_stale_reauth() {
         $qreq = $this->make_qrequest(["estrin@usc.edu"]);
         $bound = AuthenticationChecker::MAX_AGE_BOUND;

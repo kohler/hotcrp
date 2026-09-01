@@ -944,7 +944,8 @@ class Authorize_Tester {
      * just succeeded has to satisfy it, or there is no way through. */
     #[RequireClass("Uri\\Rfc3986\\Uri")]
     function test_authorize_prompt_login_accepts_fresh_confirmation() {
-        $t = Conf::$now - 60;
+        // inside the floor `prompt=login` is clamped to, whatever it is set to
+        $t = Conf::$now - intdiv(HotCRP\Authorize_Page::MAX_AGE_MIN_BOUND, 2);
         $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
             ["scope" => "openid read", "prompt" => "login",
              "auth_time" => $t, "auth_reason" => UserSecurityEvent::REASON_REAUTH]);
@@ -1048,6 +1049,360 @@ class Authorize_Tester {
         }
         xassert_str_starts_with($redir ?? "", "https://conf1.example.com/cb");
         xassert_str_contains($redir ?? "", "code=");
+    }
+
+    /** Install a navigation whose `query` is `$param`, as a real request would
+     * have, and return the one it replaced.
+     *
+     * `TestQreq` puts parameters in the `Qrequest` only; `Navigation::get()` is
+     * process-wide and carries no query, so code that reflects the request's own
+     * query string sees nothing without this.
+     * @param string $page
+     * @param array $param
+     * @return NavigationState */
+    private function push_navigation_query($page, $param) {
+        $old = Navigation::get();
+        Navigation::set(NavigationState::make_base(
+            $old->server . $old->base_path, $page . "?" . http_build_query($param)));
+        return $old;
+    }
+
+    /** @return array{string,?string} */
+    private function authorize_go($qreq) {
+        Qrequest::set_main_request($qreq);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
+            return ["none", null];
+        } catch (JsonCompletion $jc) {
+            return ["code", $jc->result->content["code"] ?? null];
+        } catch (Redirection $redir) {
+            return ["redirect", $redir->url];
+        } catch (PageCompletion $pc) {
+            return ["page", trim(preg_replace('/\s+/', " ", strip_tags(ob_get_contents())))];
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** @return array{string,?string} */
+    private function authorize_run($param, $qs) {
+        return $this->authorize_go(TestQreq::user_get($this->u_chair, $param, $qs)
+            ->set_page("authorize"));
+    }
+
+    /** @return array{string,?string} */
+    private function authorize_confirm($code, $qs) {
+        return $this->authorize_go(TestQreq::apply_user($this->u_chair,
+            TestQreq::post(["authconfirm" => 1, "code" => $code]), $qs)
+            ->set_page("authorize"));
+    }
+
+    /** Drive a consent post with a real ComponentSet, so `print_reauth_exit`
+     * reaches the branch that decides where a confirmation happens.
+     * @return array{string,?string} */
+    private function authorize_confirm_with_cs($code, $qs) {
+        $qreq = TestQreq::apply_user($this->u_chair,
+            TestQreq::post(["authconfirm" => 1, "code" => $code]), $qs)
+            ->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        $cs = $this->conf->page_components($this->u_chair, $qreq);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $qreq, $cs))->go();
+            return ["none", null];
+        } catch (Redirection $redir) {
+            return ["redirect", $redir->url];
+        } catch (JsonCompletion $jc) {
+            return ["json", json_encode($jc->result->content)];
+        } catch (PageCompletion $pc) {
+            return ["page", null];
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    /** @return string */
+    private function max_age_code($qs) {
+        [$how, $code] = $this->authorize_run([
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read",
+            "max_age" => "600"
+        ], $qs);
+        xassert_eqq($how, "code");
+        return $code;
+    }
+
+    /** A confirmation happens wherever the account authenticates. An account
+     * that signed in here is asked here; one that signed in through a provider
+     * is sent back to that provider, with no intervening page whose only
+     * content would be a button to leave it. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_confirmation_goes_to_the_authenticator() {
+        // signed in with a password: the confirmation is asked for on this site
+        $qs = new MemoryQsession;
+        UserSecurityEvent::session_user_add($qs, $this->u_chair->email);
+        [$how, $url] = $this->authorize_confirm_with_cs($this->max_age_code($qs), $qs);
+        xassert_eqq($how, "redirect");
+        xassert_str_contains($url ?? "", "authorize");
+        xassert_str_contains($url ?? "", "code=");
+        xassert(!str_contains($url ?? "", "reauth=1"));
+
+        // signed in through a provider: sent to that provider, and told to come
+        // back to the code this consent belongs to
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        try {
+            $qs = new MemoryQsession;
+            UserSecurityEvent::session_user_add($qs, $this->u_chair->email);
+            $code = $this->max_age_code($qs);
+            $sqreq = TestQreq::user_get($this->u_chair, [], $qs);
+            $use = UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_OAUTH)
+                ->set_subtype("p");
+            // old enough that it no longer satisfies the window, but still the
+            // sign-in that says how this account authenticates
+            $use->timestamp = Conf::$now - 1000;
+            $use->store($sqreq);
+
+            [$how, $url] = $this->authorize_confirm_with_cs($code, $qs);
+            xassert_eqq($how, "redirect");
+            xassert_str_contains($url ?? "", "oauth");
+            xassert_str_contains($url ?? "", "reauth=1");
+            // the round trip returns to the code, so the consent can resume
+            xassert_str_contains(urldecode($url ?? ""), "code={$code}");
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** Render the authorize page for `$param` with a ComponentSet, returning
+     * its HTML.
+     * @return string */
+    private function authorize_page_html($param, $qs) {
+        $qreq = TestQreq::user_get($this->u_chair, $param, $qs)->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        $cs = $this->conf->page_components($this->u_chair, $qreq);
+        $page = new HotCRP\Authorize_Page($this->u_chair, $qreq, $cs);
+        // the `authorize/form/*` callbacks would otherwise construct their own
+        $cs->set_callable("HotCRP\\Authorize_Page", $page);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            $page->go();
+        } catch (Redirection $r) {
+        } catch (JsonCompletion $jc) {
+        } catch (PageCompletion $pc) {
+        } finally {
+            $html = ob_get_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        return $html;
+    }
+
+    /** A checker that cannot confirm the account says so and offers a way out,
+     * rather than leaving a page that asks for a confirmation it will not
+     * show. Reachable when the provider an account signed in with is no longer
+     * configured on the site. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_unconfirmable_account_is_not_a_dead_end() {
+        $qs = new MemoryQsession;
+        UserSecurityEvent::session_user_add($qs, $this->u_chair->email);
+        $code = $this->max_age_code($qs);
+
+        // signed in through a provider this site no longer configures
+        $sqreq = TestQreq::user_get($this->u_chair, [], $qs);
+        $use = UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_OAUTH)
+            ->set_subtype("departed");
+        $use->timestamp = Conf::$now - 1000;
+        $use->store($sqreq);
+
+        [$how, $url] = $this->authorize_confirm_with_cs($code, $qs);
+        xassert_eqq($how, "redirect");
+        // no authenticator to send them to, so back to the page
+        xassert_str_contains($url ?? "", "code=");
+
+        $html = $this->authorize_page_html(
+            ["code" => $code, "authemail" => $this->u_chair->email], $qs);
+        xassert_str_contains($html, "cannot be confirmed using this session");
+        xassert_str_contains($html, "Sign out");
+        // and it does not promise a confirmation it cannot offer
+        xassert(!str_contains($html, "asks you to confirm your account"));
+    }
+
+    /** A `login_hint` naming a signed-in account other than the one the request
+     * landed on is addressed by a redirect to that account's session slot, not
+     * refused as a selection the user has to make. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_prompt_none_addresses_a_hinted_account() {
+        $qs = new MemoryQsession;
+        UserSecurityEvent::session_user_add($qs, $this->u_chair->email);
+        $uindex = UserSecurityEvent::session_user_add($qs, $this->u_mgbaker->email);
+        xassert($uindex > 0);
+
+        $param = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read",
+            "prompt" => "none", "login_hint" => $this->u_mgbaker->email,
+            // an OpenID parameter this endpoint ignores: it must survive the
+            // redirect, or the request the client sent is not the one replayed
+            "ui_locales" => "en-US"
+        ];
+        $onav = $this->push_navigation_query("authorize", $param);
+        $how = $detail = null;
+        try {
+            $qreq = TestQreq::user_get($this->u_chair, $param, $qs)->set_page("authorize");
+            [$how, $detail] = $this->authorize_go($qreq);
+        } finally {
+            Navigation::set($onav);
+        }
+
+        // not `account_selection_required` — the account was named, so the
+        // request is sent to its slot
+        xassert_eqq($how, "redirect");
+        xassert_str_contains($detail ?? "", "u/{$uindex}/authorize");
+        // and it carries the request's own parameters, not a chosen subset
+        xassert_str_contains($detail ?? "", "prompt=none");
+        xassert_str_contains($detail ?? "", "login_hint=");
+        xassert_str_contains($detail ?? "", "client_id=confclient");
+        xassert_str_contains($detail ?? "", "redirect_uri=");
+        xassert_str_contains($detail ?? "", "ui_locales=en-US");
+    }
+
+    /** A bot grant interrupted by a freshness challenge resumes as the bot.
+     * The grantee is replayed from the code, not from the request that landed
+     * the confirmation, so the account the chair chose is the one that ends up
+     * bound. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_confirmation_resumes_a_bot_consent() {
+        $bot = $this->make_bot("resumebot@" . Contact::BOT_EMAIL_DOMAIN);
+        $qs = new MemoryQsession;
+        $param = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read",
+            "max_age" => "600"
+        ];
+
+        [$how, $code] = $this->authorize_run($param, $qs);
+        xassert_eqq($how, "code");
+
+        // the chair picks the bot, but nothing confirms this session yet
+        $vq = TestQreq::apply_user($this->u_chair, TestQreq::post([
+            "authconfirm" => 1, "code" => $code, "authbot" => $bot->email
+        ]), $qs)->set_page("authorize");
+        [$how, $detail] = $this->authorize_go($vq);
+        xassert_eqq($how, "code"); // JSON `login_required`, no ComponentSet here
+        $tok = TokenInfo::find($code, $this->conf);
+        xassert_eqq($tok ? $tok->data("consented_grantee") : null, $bot->email);
+
+        // the confirmation lands, and the interrupted consent finishes as the bot
+        $vq2 = TestQreq::user_get($this->u_chair, ["code" => $code], $qs)
+            ->set_page("authorize");
+        UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_PASSWORD,
+            UserSecurityEvent::REASON_REAUTH)->store($vq2);
+        [$how, $detail] = $this->authorize_go($vq2);
+        xassert_eqq($how, "redirect");
+        xassert_str_starts_with($detail ?? "", "https://conf1.example.com/cb");
+
+        $tok = TokenInfo::find($code, $this->conf);
+        xassert_neqq($tok, null);
+        if ($tok) {
+            xassert_eqq($tok->data("email"), $bot->email);
+            xassert_eqq($tok->data("authorized_by"), $this->u_chair->email);
+        }
+
+        $this->delete_bot($bot);
+    }
+
+    /** A remembered authorization is for the account that granted it. A silent
+     * request must not be able to redirect it to another account by naming one:
+     * `authbot` is a parameter of the consent form's post, and replaying a
+     * consent must not re-read it from whatever query provoked the replay. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_silent_consent_cannot_name_a_different_grantee() {
+        $bot = $this->make_bot("silentbot@" . Contact::BOT_EMAIL_DOMAIN);
+        $qs = new MemoryQsession;
+        $param = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+
+        // the chair grants this client for their own account
+        [$how, $code] = $this->authorize_run($param, $qs);
+        xassert_eqq($how, "code");
+        [$how, $detail] = $this->authorize_confirm($code, $qs);
+        xassert_eqq($how, "redirect");
+
+        // the same request, answered silently, but naming a bot as grantee
+        [$how, $detail] = $this->authorize_run(
+            $param + ["prompt" => "none", "authbot" => $bot->email], $qs);
+        xassert_eqq($how, "redirect");
+        parse_str(parse_url($detail ?? "", PHP_URL_QUERY) ?? "", $rparam);
+        xassert_eqq($rparam["error"] ?? null, null);
+        xassert_neqq($rparam["code"] ?? null, null);
+
+        // the code speaks as the chair, who consented — not as the bot
+        $tok = TokenInfo::find($rparam["code"] ?? "", $this->conf);
+        xassert_neqq($tok, null);
+        if ($tok) {
+            xassert_eqq($tok->data("email"), $this->u_chair->email);
+            xassert_eqq($tok->data("authorized_by"), null);
+        }
+
+        $this->delete_bot($bot);
+    }
+
+    /** An authorization this account already granted answers a later
+     * `prompt=none` request, which is the only way such a request can succeed
+     * on a site that would otherwise have to show a consent page. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_prompt_none_uses_a_recorded_authorization() {
+        $qs = new MemoryQsession;
+        $param = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+
+        // nothing granted yet, so a silent request still has to ask
+        [$how, $detail] = $this->authorize_run($param + ["prompt" => "none"], $qs);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), "consent_required");
+
+        // grant it the ordinary way
+        [$how, $code] = $this->authorize_run($param, $qs);
+        xassert_eqq($how, "code");
+        [$how, $detail] = $this->authorize_confirm($code, $qs);
+        xassert_eqq($how, "redirect");
+        xassert_str_starts_with($detail ?? "", "https://conf1.example.com/cb");
+
+        // the same request is now answered without showing anything
+        [$how, $detail] = $this->authorize_run($param + ["prompt" => "none"], $qs);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), null);
+        xassert_str_contains($detail ?? "", "code=");
+
+        // a wider scope is not what was agreed to
+        [$how, $detail] = $this->authorize_run(
+            ["scope" => "read paper:write"] + $param + ["prompt" => "none"], $qs);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), "consent_required");
     }
 
     /** `prompt=none` forbids interaction, so each condition the consent page
