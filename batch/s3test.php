@@ -14,10 +14,12 @@ class S3Test_Batch {
     public $quiet;
     /** @var bool */
     public $extensions;
-    /** @var bool */
+    /** @var int */
     public $verbose;
     /** @var bool */
     public $rm;
+    /** @var bool */
+    public $fallback;
     /** @var list<string> */
     public $files;
 
@@ -25,8 +27,9 @@ class S3Test_Batch {
         $this->conf = $conf;
         $this->quiet = isset($arg["quiet"]);
         $this->extensions = isset($arg["extensions"]);
-        $this->verbose = isset($arg["verbose"]);
+        $this->verbose = $arg["verbose"] ?? 0;
         $this->rm = isset($arg["rm"]);
+        $this->fallback = !isset($arg["no-fallback"]);
         $this->files = $arg["_"];
         if (empty($this->files)) {
             $this->files[] = "-";
@@ -35,8 +38,16 @@ class S3Test_Batch {
 
     /** @return int */
     function run() {
-        $s3doc = $this->conf->s3_client();
+        $s3docs = [];
+        while (count($s3docs) < $this->conf->s3_client_count()
+               && ($this->fallback || empty($s3docs))) {
+            $s3docs[] = $s3 = $this->conf->s3_client(count($s3docs));
+            if ($this->verbose > 1) {
+                $s3->set_verbose(true);
+            }
+        }
         $status = 0;
+        $no_fallback = count($s3docs) < $this->conf->s3_client_count() ? " (no fallback)" : "";
 
         foreach ($this->files as $fn) {
             $stdin = $fn === "-";
@@ -63,15 +74,20 @@ class S3Test_Batch {
             }
             $doc = DocumentInfo::make_content($this->conf, $content, $mimetype);
             $s3fn = $doc->s3_key();
-            if (!$s3doc->head($s3fn)) {
+            $s3i = 0;
+            while ($s3i !== count($s3docs) && !$s3docs[$s3i]->head($s3fn)) {
+                ++$s3i;
+            }
+            if ($s3i === count($s3docs)) {
                 if (!$this->quiet) {
-                    fwrite(STDOUT, "{$fn}: {$s3fn} not found\n");
+                    fwrite(STDOUT, "{$fn}: {$s3fn} not found{$no_fallback}\n");
                 }
                 $status = 1;
                 continue;
             }
             if ($this->verbose) {
-                fwrite(STDOUT, "{$fn}: {$s3fn} present\n");
+                $m = count($s3docs) > 0 ? " in " . $s3docs[$s3i]->bucket() : "";
+                fwrite(STDOUT, "{$fn}: {$s3fn} present{$m}\n");
             }
             if ($this->rm && !$stdin) {
                 if (@unlink($fn)) {
@@ -101,7 +117,8 @@ class S3Test_Batch {
             "quiet,q Do not report missing files",
             "rm,remove Remove matching files",
             "extensions,x,e Use file extensions to deduce file type",
-            "verbose,V Be verbose"
+            "no-fallback,F Don't fall back to backup buckets",
+            "verbose#,V# Be verbose"
         )->description("Check whether named files are on HotCRP S3.
 Usage: php batch/s3test.php [-q] [--extensions] FILE...")
          ->helpopt("help")
