@@ -929,6 +929,7 @@ class Formulas_Tester {
     private function graph_point_count($fx, $fy, $t) {
         $fg = new FormulaGraph($this->u_chair, "scatter", $fx, $fy);
         $fg->add_dataset(new FormulaGraphDataset("", $t, "", ""));
+        $fg->prepare();
         $data = $fg->graph_json([])["data"];
         $n = 0;
         array_walk_recursive($data, function () use (&$n) { ++$n; });
@@ -979,6 +980,7 @@ class Formulas_Tester {
                   ["dotlabel", "ldot"], ["numdot", "ldot"]] as $st) {
             $fg = new FormulaGraph($this->u_chair, $st[0], "pid", "pid");
             $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+            $fg->prepare();
             $j = $fg->graph_json([]);
             xassert_eqq($j["gtype"], $st[1]);
             xassert_eqq($j["data_format"], "style_xyi");
@@ -990,8 +992,226 @@ class Formulas_Tester {
         // the type may also arrive as a prefix on the Y axis formula
         $fg = new FormulaGraph($this->u_chair, null, "pid", "ldot pid");
         $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+        xassert($fg->prepare());
         xassert_eqq($fg->graph_json([])["gtype"], "ldot");
         xassert_eqq($fg->fy->expression, "pid");
+    }
+
+    /** @param string $gtype
+     * @param string $fx
+     * @param string $fy
+     * @return array */
+    private function graph_json_array($gtype, $fx, $fy) {
+        $fg = new FormulaGraph($this->u_chair, $gtype, $fx, $fy);
+        $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+        xassert($fg->prepare());
+        return json_decode(json_encode($fg->graph_json([])), true);
+    }
+
+    /** @param string $fx
+     * @param string $fy
+     * @return array<int|string,list> bar `[x, y, ids]` triples indexed by x */
+    private function bars_by_x($fx, $fy) {
+        $bars = [];
+        foreach ($this->graph_json_array("bars", $fx, $fy)["data"] as $bar) {
+            $bars[$bar[0]] = $bar;
+        }
+        return $bars;
+    }
+
+    function test_graph_bars_combine_aggregates() {
+        // A bar chart splits the Y formula into a per-review extractor and a
+        // combiner. The chart must iterate over reviews even when the formula
+        // is an expression over aggregates rather than a single aggregate.
+        // Paper 19 ovemer scores: 4, 5, 3; paper 20: 2, 5.
+        $bars = $this->bars_by_x("pid", "sum(ovemer)/count(ovemer)");
+        xassert_eqq($bars[19][1], 4);
+        xassert_eqq($bars[19][2], ["19A", "19B", "19C"]);
+        xassert_eqq($bars[20][1], 3.5);
+        xassert_eqq($bars[20][2], ["20A", "20B"]);
+
+        $bars = $this->bars_by_x("pid", "sum(ovemer)");
+        xassert_eqq($bars[19][1], 12);
+        xassert_eqq($bars[20][1], 7);
+    }
+
+    function test_graph_bars_mixed_index_types() {
+        // lixia, mjh, floyd reviewed paper 19; lixia and mjh reviewed paper 20
+        $conf = $this->conf;
+        foreach (["lixia@cs.ucla.edu" => 2, "mjh@isi.edu" => -1, "floyd@ee.lbl.gov" => 3] as $email => $pref) {
+            $cid = $conf->checked_user_by_email($email)->contactId;
+            $conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values (19, ?, ?), (20, ?, ?)",
+                $cid, $pref, $cid, -$pref);
+        }
+
+        // Aggregates over reviews and over preferences in one Y formula:
+        // paper 19 = (4+5+3) + (2-1+3), paper 20 = (2+5) + (-2+1-3)
+        $bars = $this->bars_by_x("pid", "sum(ovemer)+sum(pref)");
+        xassert_eqq($bars[19][1], 16);
+        xassert_eqq($bars[20][1], 3);
+
+        // X indexed by PC member, Y by review: the extractor must be compiled
+        // against the chart's index type (PC members), not the aggregate's own
+        $bars = $this->bars_by_x("pref", "sum(ovemer)");
+        xassert_eqq($bars[2][1], 4);      // lixia on paper 19
+        xassert_eqq($bars[-2][1], 2);     // lixia on paper 20
+        xassert_eqq($bars[-1][1], 5);     // mjh on paper 19
+        xassert_eqq($bars[1][1], 5);      // mjh on paper 20
+        xassert_eqq($bars[3][1], 3);      // floyd on paper 19
+        xassert_eqq($bars[-3][1], null);  // floyd did not review paper 20
+
+        $conf->qe("delete from PaperReviewPreference where paperId in (19, 20)");
+    }
+
+    function test_graph_bars_xorder() {
+        // `sort F` orders the X axis by F. For a bar chart with no review
+        // index, F is evaluated per paper, not through the extractor/combiner.
+        $j = $this->graph_json_array("bars", "sort -pid", "sum(1)");
+        $order = $j["x"]["order"];
+        $values = $j["x"]["order_values"];
+        xassert_eqq(count($order), count($values));
+        xassert(count($order) > 1);
+        for ($i = 0; $i !== count($order); ++$i) {
+            xassert_eqq($values[$i], -$order[$i]);
+            xassert($i === 0 || $order[$i] < $order[$i - 1]);
+        }
+
+        // An aggregate order formula works too: papers with scores sort after
+        // papers without, in increasing score order
+        $j = $this->graph_json_array("bars", "sort avg(ovemer)", "sum(1)");
+        $vmap = array_combine($j["x"]["order"], $j["x"]["order_values"]);
+        xassert_eqq($vmap[20], 3.5);
+        xassert_eqq($vmap[19], 4);
+        $last = null;
+        foreach ($j["x"]["order_values"] as $v) {
+            xassert($v === null ? $last === null : $last === null || $v >= $last);
+            $last = $v;
+        }
+        xassert_eqq(array_slice($j["x"]["order"], -2), [20, 19]);
+    }
+
+    /** @param FormulaGraph $fg
+     * @return array{array,list<string>} graph JSON plus any PHP warnings raised */
+    private function graph_json_and_warnings($fg) {
+        $warnings = [];
+        set_error_handler(function ($errno, $errstr, $errfile, $errline) use (&$warnings) {
+            $warnings[] = "{$errstr} @ " . basename($errfile) . ":{$errline}";
+            return true;
+        });
+        try {
+            $j = json_decode(json_encode($fg->graph_json([])), true);
+        } finally {
+            restore_error_handler();
+        }
+        return [$j, $warnings];
+    }
+
+    function test_graph_count_function_is_not_a_graph_type() {
+        // `count` names the bar-chart type only when it stands alone;
+        // `count(...)` is the formula function
+        xassert_eqq(FormulaGraph::graph_type_prefix("count(ovemer)"), null);
+        xassert_eqq(FormulaGraph::graph_type_prefix("count ovemer"), [FormulaGraph::GT_BARCHART, "count "]);
+        xassert_eqq(FormulaGraph::graph_type_prefix("bars(ovemer)"), null);
+
+        $fg = new FormulaGraph($this->u_chair, null, "pid", "count(ovemer)");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert($fg->prepare());
+        xassert_eqq($fg->gtype_json(), "scatter");
+        xassert_eqq($fg->fy->expression, "count(ovemer)");
+        [$j, $warnings] = $this->graph_json_and_warnings($fg);
+        xassert_eqq($warnings, []);
+        xassert_eqq($j["data"], ["none" => [[19, 3, 19], [20, 2, 20]]]);
+    }
+
+    function test_graph_bars_error_with_noncombinable_y() {
+        // An X-axis error must not leave a bar chart's Y formula in the
+        // combining path, where a per-review formula has no extractor
+        foreach ([["", "ovemer"], ["", "reviewer"], ["ovemer", "bogus"], ["bogus", "pref"]] as [$fx, $fy]) {
+            $fg = new FormulaGraph($this->u_chair, "bars", $fx, $fy);
+            $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+            xassert(!$fg->prepare());
+            [$j, $warnings] = $this->graph_json_and_warnings($fg);
+            xassert_eqq($warnings, []);
+            xassert_eqq($j["gtype"], "blank");
+            xassert_eqq($j["data"], []);
+        }
+    }
+
+    function test_graph_bare_review_value_cannot_combine() {
+        // A formula that reads a per-review value outside any aggregate has
+        // nothing to extract, so it must not claim combiner support (even
+        // when it never touches the paper, as `reviewer` does not)
+        foreach (["reviewer", "pref", "ovemer", "re:pc", "revtype"] as $e) {
+            xassert(!Formula::make_indexed($this->u_chair, $e)->support_combiner());
+        }
+        foreach (["count(ovemer)", "sum(pref)", "avg(ovemer)/count(ovemer)", "1"] as $e) {
+            xassert(Formula::make_indexed($this->u_chair, $e)->support_combiner());
+        }
+
+        // so a scatterplot of one review value against another stays a
+        // per-review scatterplot
+        $fg = new FormulaGraph($this->u_chair, null, "ovemer", "reviewer");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert($fg->prepare());
+        xassert_eqq($fg->gtype_json(), "scatter");
+        [$j, $warnings] = $this->graph_json_and_warnings($fg);
+        xassert_eqq($warnings, []);
+        $ids = array_map(function ($pt) { return $pt[2]; }, $j["data"]["none"]);
+        sort($ids);
+        xassert_eqq($ids, ["19A", "19B", "19C", "20A", "20B"]);
+        $u_lixia_point = array_values(array_filter($j["data"]["none"], function ($pt) { return $pt[2] === "19A"; }));
+        xassert_eqq($u_lixia_point[0][0], 4);
+        xassert_eqq($u_lixia_point[0][1], $this->u_lixia->contactId);
+
+        // and a bar chart of it is rejected rather than evaluated
+        $fg = new FormulaGraph($this->u_chair, "bars", "pid", "reviewer");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert(!$fg->prepare());
+        xassert_str_contains($fg->full_feedback_text(), "Y axis formula incompatible with this chart type");
+    }
+
+    function test_graph_review_type_under_pc_index() {
+        // `re:pc` (review type ≥ PC) looks up the current PC member's review
+        // when evaluated under a PC index; the review must be looked up
+        // before its metadata visibility is tested
+        $f = Formula::make_indexed($this->u_chair, "re:pc");
+        $f->set_external_index_type(Fexpr::IDX_PC);
+        $f->prepare();
+        $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
+        $warnings = [];
+        set_error_handler(function ($errno, $errstr) use (&$warnings) {
+            $warnings[] = $errstr;
+            return true;
+        });
+        try {
+            $v_lixia = $f->eval($p19, $this->u_lixia);
+            $v_chair = $f->eval($p19, $this->u_chair);
+        } finally {
+            restore_error_handler();
+        }
+        xassert_eqq($warnings, []);
+        xassert_eqq($v_lixia, true);      // lixia reviewed paper 19
+        xassert_eqq($v_chair, null);      // the chair did not
+
+        // the same lookup happens when a PC-indexed chart uses the formula:
+        // lixia 2 / mjh -1 / floyd 3 on paper 19, lixia -2 / mjh 1 on 20
+        $conf = $this->conf;
+        foreach (["lixia@cs.ucla.edu" => 2, "mjh@isi.edu" => -1, "floyd@ee.lbl.gov" => 3] as $email => $pref) {
+            $cid = $conf->checked_user_by_email($email)->contactId;
+            $conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values (19, ?, ?), (20, ?, ?)",
+                $cid, $pref, $cid, -$pref);
+        }
+        $fg = new FormulaGraph($this->u_chair, "bars", "re:pc", "sum(pref)");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert($fg->prepare());
+        [$j, $warnings] = $this->graph_json_and_warnings($fg);
+        xassert_eqq($warnings, []);
+        $bars = [];
+        foreach ($j["data"] as $bar) {
+            $bars[json_encode($bar[0])] = $bar[1];
+        }
+        xassert_eqq($bars["true"], 3);
+        $conf->qe("delete from PaperReviewPreference where paperId in (19, 20)");
     }
 
     function test_graph_explains_empty_data() {
@@ -999,6 +1219,7 @@ class Formulas_Tester {
         // rendering a blank chart.
         $fg = new FormulaGraph($this->u_chair, "scatter", "pid", "pid");
         $fg->add_dataset(new FormulaGraphDataset("12345", "all", "", ""));
+        xassert($fg->prepare());
         xassert_eqq($fg->graph_json([])["data"], []);
         xassert_eqq($fg->full_feedback_text(), "No data to graph\n");
     }
@@ -1037,6 +1258,7 @@ class Formulas_Tester {
         // but never on the same review, and the graph explains why it is empty
         $fg = new FormulaGraph($this->u_chair, "scatter", "OveMer", "RevExp");
         $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+        xassert($fg->prepare());
         xassert_eqq($fg->graph_json([])["data"], []);
         xassert_eqq($fg->full_feedback_text(),
             "No review has values for both ‘OveMer’ and ‘RevExp’\n    Try ‘avg(OveMer)’ and ‘avg(RevExp)’ to compare per-submission averages.\n");
@@ -1284,7 +1506,7 @@ class Formulas_Tester {
     private function graph_point_ids($user, $fx, $fy, $q) {
         $fg = new FormulaGraph($user, "scatter", $fx, $fy);
         $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
-        xassert(!$fg->has_error());
+        xassert($fg->prepare());
         $ids = [];
         foreach ($fg->graph_json([])["data"] as $points) {
             foreach ($points as $pt) {
@@ -1345,7 +1567,7 @@ class Formulas_Tester {
         foreach ($qs as $i => $q) {
             $fg->add_dataset(new FormulaGraphDataset($q, "all", "", (string) ($i + 1)));
         }
-        xassert(!$fg->has_error());
+        xassert($fg->prepare());
         $j = $fg->graph_json([]);
         $buckets = [];
         foreach ($j["data"] as $bar) {
@@ -1393,7 +1615,7 @@ class Formulas_Tester {
         // list names the data that landed in the bucket
         $fg = new FormulaGraph($user, "bars", $fx, "");
         $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
-        xassert(!$fg->has_error());
+        xassert($fg->prepare());
         $buckets = [];
         foreach ($fg->graph_json([])["data"] as $bar) {
             $buckets[] = [$bar->x, $bar->ids];
@@ -1429,7 +1651,7 @@ class Formulas_Tester {
     private function graph_cdf_values($user, $fx, $q) {
         $fg = new FormulaGraph($user, "cdf", $fx, "");
         $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
-        xassert(!$fg->has_error());
+        xassert($fg->prepare());
         $vs = [];
         foreach ($fg->graph_json([])["data"] as $d) {
             foreach ($d->d as $v) {
@@ -1444,7 +1666,7 @@ class Formulas_Tester {
     private function multicdf_lines(Contact $user, $fx, $split, $q) {
         $fg = new FormulaGraph($user, null, $fx, "multicdf {$split}");
         $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
-        xassert(!$fg->has_error());
+        xassert($fg->prepare());
         xassert_eqq($fg->gtype_json(), "cdf");
         $lines = [];
         foreach ($fg->graph_json([])["data"] as $d) {
@@ -1480,6 +1702,7 @@ class Formulas_Tester {
         // blank ticks. So the y axis carries no scale.
         $fg = new FormulaGraph($this->u_chair, null, "ovemer", "multicdf reviewer");
         $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert($fg->prepare());
         $yj = $fg->graph_json([])["y"];
         xassert_eqq($yj->label, "CDF of reviews");
         xassert_eqq($yj->scale_class, "linear");
@@ -1545,7 +1768,7 @@ class Formulas_Tester {
     private function graph_bar_values($user, $fx, $fy, $q) {
         $fg = new FormulaGraph($user, "bars", $fx, $fy);
         $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
-        xassert(!$fg->has_error());
+        xassert($fg->prepare());
         $bars = [];
         foreach ($fg->graph_json([])["data"] as $bar) {
             $bars[$bar->x] = $bar->y;
@@ -1600,6 +1823,84 @@ class Formulas_Tester {
     }
 
 
+    function test_graph_bar_with_nonaggregate_combiner_y() {
+        // `sum(x)/count(x)` combines per-review values, but its root is not an
+        // aggregate, so the formula carries an index type only on its
+        // extractor. The graph's index type must come from there.
+        // Papers 19 and 20 have OveMer 4/5/3 and 2/5.
+        xassert_eqq($this->graph_bar_values($this->u_chair, "pid", "sum(ovemer)/count(ovemer)", "19 20"),
+                    [19 => 4, 20 => 3.5]);
+    }
+
+    /** @param ?string $gtype
+     * @param string $fx
+     * @param string $fy
+     * @return string */
+    private function graph_blank_feedback($gtype, $fx, $fy) {
+        $fg = new FormulaGraph($this->u_chair, $gtype, $fx, $fy);
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert(!$fg->prepare());
+        // the page computes the graph and decorates its messages before it
+        // learns the graph is erroneous
+        $j = $fg->graph_json([]);
+        xassert_eqq($j["gtype"], "blank");
+        xassert_eqq($j["data"], []);
+        $fg->decorated_message_list();
+        return $fg->full_feedback_text();
+    }
+
+    function test_graph_erroneous_input_graphs_blank() {
+        // An erroneous graph is still computed -- the page calls graph_json
+        // before it inspects the message list -- so an error must leave a
+        // graph that can be walked without touching what failed to parse.
+
+        // Y axis has no combiner, and neither does its replacement
+        xassert_str_contains($this->graph_blank_feedback("bars", "pid", "my(ovemer)"),
+                             "Y axis formula incompatible with this chart type");
+        // X axis fails, so Y's combiner is never compiled at all
+        xassert_str_contains($this->graph_blank_feedback("bars", "bogusformula", "sum(ovemer)/count(ovemer)"),
+                             "not found");
+        // a multi-formula CDF with one bad formula has no single `fx`
+        xassert_str_contains($this->graph_blank_feedback("cdf", "ovemer; bogusformula", ""),
+                             "not found");
+        // an X axis with no formula at all
+        xassert_str_contains($this->graph_blank_feedback("cdf", ";", ""), "Entry required");
+        xassert_str_contains($this->graph_blank_feedback("cdf", "", ""), "Entry required");
+    }
+
+    function test_graph_xorder_noninteger_x() {
+        // Ordering data is bucketed by X value; a non-integer X must keep its
+        // own bucket rather than collapse into the neighboring integer's.
+        // Papers 19 and 20 have OveMer 4/5/3 and 2/5, so `ovemer/2` takes the
+        // values 1, 1.5, 2, and 2.5; ordering by `-avg(ovemer)` reverses them.
+        $fg = new FormulaGraph($this->u_chair, "bars", "ovemer/2", "sum(1)");
+        $fg->set_xorder("-avg(ovemer)");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert($fg->prepare());
+        $j = $fg->graph_json([]);
+        xassert_eqq($j["x"]->order, [2.5, 2, 1.5, 1]);
+    }
+
+    function test_graph_xorder_missing_order_data() {
+        // An ordered graph whose search matches nothing collects no ordering
+        // data at all
+        $fg = new FormulaGraph($this->u_chair, "scatter", "pid", "pid");
+        $fg->set_xorder("ovemer");
+        $fg->add_dataset(new FormulaGraphDataset("12345", "all", "", ""));
+        xassert($fg->prepare());
+        xassert_eqq($fg->graph_json([])["data"], []);
+
+        // ...and an ordinal axis may hold ticks that no ordering value covers
+        $fg = new FormulaGraph($this->u_chair, "bars", "tag", "sum(1)");
+        $fg->set_xorder("ovemer");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert($fg->prepare());
+        $j = $fg->graph_json([]);
+        xassert_eqq(array_map(function ($t) { return $t->text; }, $j["x"]->ticks),
+                    ["scored", "testtag"]);
+    }
+
+
     function test_graph_pref_dataset_filtering() {
         // A preference-indexed graph splits its data across datasets like any
         // other graph. `_filter_queries` must resolve each preference element
@@ -1626,7 +1927,7 @@ class Formulas_Tester {
             $fg = new FormulaGraph($this->u_chair, "bars", "pref", "sum(1)");
             $fg->add_dataset(new FormulaGraphDataset($q1, null, "", "1"));
             $fg->add_dataset(new FormulaGraphDataset($q2, null, "", "2"));
-            xassert(!$fg->has_error());
+            xassert($fg->prepare());
             $t = [];
             foreach ($fg->graph_json([])["data"] as $bar) {
                 $sx = $bar->sx ?? 0;

@@ -151,6 +151,7 @@ class Graph_Formula_Page {
             if ($qreq->xorder) {
                 $fg->set_xorder($qreq->xorder);
             }
+            $fg->prepare();
             $this->print_graph($fg, $datasets);
             $this->print_ui($fg, $datasets);
         } else {

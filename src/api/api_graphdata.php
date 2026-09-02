@@ -14,8 +14,7 @@ class GraphData_API {
         foreach (FormulaGraph::parse_datasets($qreq) as $dataset) {
             $fg->add_dataset($dataset);
         }
-
-        if ($fg->has_error()) {
+        if (!$fg->prepare()) {
             return new JsonResult(["ok" => false, "message_list" => $fg->message_list()]);
         }
         return new JsonResult($fg->graph_json(["ok" => true, "message_list" => $fg->message_list()]))

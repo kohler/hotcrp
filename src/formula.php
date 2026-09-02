@@ -1476,31 +1476,33 @@ class FormulaCompiler {
      * @readonly */
     public $tagger;
     /** @var array<string,true> */
-    private $defined;
+    private $defined = [];
     /** @var list<string> */
-    private $g0stmt;
+    private $g0stmt = [];
     /** @var list<string> */
-    public $gstmt;
+    public $gstmt = [];
     /** @var list<string> */
-    public $lstmt;
+    public $lstmt = [];
     /** @var int */
-    public $index_type;
+    public $index_type = Fexpr::IDX_NONE;
     /** @var int */
     public $external_index_type;
     /** @var bool */
-    public $indexed;
+    public $indexed = false;
     /** @var int */
-    private $_lprefix;
+    private $_lprefix = 0;
     /** @var int */
-    private $_maxlprefix;
+    private $_maxlprefix = 0;
     /** @var int */
-    private $_lflags;
+    private $_lflags = 0;
     /** @var int */
     public $indent = 2;
     public $queryOptions = [];
-    private $_stack;
+    private $_stack = [];
     /** @var ?FormulaCompiler */
     public $term_compiler;
+    /** @var int */
+    public $term_index_type = 0;
     /** @var ?list<string> */
     public $term_list;
     /** @var bool */
@@ -1519,7 +1521,6 @@ class FormulaCompiler {
         $this->formula = $formula;
         $this->tagger = new Tagger($formula->user);
         $this->external_index_type = $formula->external_index_type();
-        $this->clear();
     }
 
     /** @return FormulaCompiler */
@@ -1528,18 +1529,6 @@ class FormulaCompiler {
         $fc->term_compiler = new FormulaCompiler($formula);
         $fc->term_compiler->term_list = [];
         return $fc;
-    }
-
-    function clear() {
-        $this->defined = $this->g0stmt = $this->gstmt = $this->lstmt = [];
-        $this->index_type = Fexpr::IDX_NONE;
-        $this->indexed = false;
-        $this->_lprefix = 0;
-        $this->_maxlprefix = 0;
-        $this->_lflags = 0;
-        $this->_stack = [];
-        $this->term_compiler = $this->term_list = null;
-        $this->term_error = false;
     }
 
     /** @param string $gvar
@@ -1663,6 +1652,9 @@ class FormulaCompiler {
 
     /** @return string */
     function current_uid() {
+        if ($this->term_compiler) {
+            $this->term_error = true;
+        }
         $this->indexed = true;
         $it = $this->index_type ? : $this->external_index_type;
         if ($it === Fexpr::IDX_MY) {
@@ -1689,6 +1681,9 @@ class FormulaCompiler {
 
     /** @return string */
     function current_rrow() {
+        if ($this->term_compiler) {
+            $this->term_error = true;
+        }
         $this->indexed = true;
         $this->queryOptions["reviewSignatures"] = true;
         $it = $this->index_type ? : $this->external_index_type;
@@ -1712,8 +1707,8 @@ class FormulaCompiler {
         $mv = "{$rrow}_meta_viewable";
         if ($this->ensure_defined($mv)) {
             $expr = "{$rrow} && \$user->can_view_review_meta(\$prow, {$rrow})";
-            if ($this->index_type === Fexpr::IDX_NONE
-                || $this->index_type === Fexpr::IDX_MY) {
+            $it = $this->index_type ? : $this->external_index_type;
+            if ($it === Fexpr::IDX_NONE || $it === Fexpr::IDX_MY) {
                 $this->gstmt[] = "{$mv} = {$expr};";
             } else {
                 $this->lstmt[] = "{$mv} = {$expr};";
@@ -1743,6 +1738,9 @@ class FormulaCompiler {
 
     /** @return string */
     function current_preference() {
+        if ($this->term_compiler) {
+            $this->term_error = true;
+        }
         $it = $this->index_type ? : $this->external_index_type;
         $this->indexed = true;
         $this->queryOptions["allReviewerPreference"] = true;
@@ -1887,6 +1885,8 @@ class FormulaCompiler {
         return "[null]";
     }
 
+    /** @param int $index_type
+     * @return string */
     function extracted_index_range($index_type) {
         $ir = $this->index_range($index_type);
         if ($index_type === Fexpr::IDX_PREF) {
@@ -1901,6 +1901,11 @@ class FormulaCompiler {
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
         $this->index_type = $e->index_type;
+        if ($this->term_compiler !== null) {
+            $this->term_index_type = Formula::combine_index_types(
+                $this->user, $this->index_type, $this->term_index_type
+            );
+        }
         $loopstmt = [];
 
         preg_match_all('/~l(\d*)~/', $combiner, $m);
@@ -1977,6 +1982,8 @@ final class Formula implements JsonSerializable {
     private $_index_type = 0;
     /** @var bool */
     private $_extractor_indexed = false;
+    /** @var int */
+    private $_extractor_index_type = 0;
     /** @var int */
     private $_external_index_type = 0;
     /** @var array<string,VarDef_Fexpr> */
@@ -2272,6 +2279,7 @@ final class Formula implements JsonSerializable {
             && $this->_format !== Fexpr::FNULL;
     }
 
+
     /** @return int */
     function format() {
         return $this->_format;
@@ -2312,6 +2320,17 @@ final class Formula implements JsonSerializable {
     }
 
 
+    /** @return bool */
+    function indexed() {
+        return $this->_indexed;
+    }
+
+    /** @return int */
+    function index_type() {
+        return $this->_index_type;
+    }
+
+
     /** @return $this */
     function bind_clear() {
         foreach ($this->_params as $vdef) {
@@ -2346,11 +2365,11 @@ final class Formula implements JsonSerializable {
     }
 
 
-    private static function debug_report($function) {
+    private function debug_report($function, $reason) {
         if (self::$DEBUG === 1) {
             error_log("{$function}\n");
         } else if (self::$DEBUG > 1) {
-            Conf::msg_debugt("{$function}\n");
+            Conf::msg_debugt("// {$reason}\n{$function}\n");
         }
     }
 
@@ -2404,9 +2423,7 @@ final class Formula implements JsonSerializable {
             $function .= "// " . self::protect_string($this->expression) . "\n  ";
         }
         $function .= $body . "}";
-        if (self::$DEBUG) {
-            self::debug_report($function);
-        }
+        $this->debug_report($function, "main");
         return eval("return {$function};");
     }
 
@@ -2486,9 +2503,7 @@ final class Formula implements JsonSerializable {
             $function .= "// index type " . dechex($index_type) . "\n  ";
         }
         $function .= $body . "}";
-        if (self::$DEBUG) {
-            self::debug_report($function);
-        }
+        $this->debug_report($function, "indexer");
         $this->_f_indexer = eval("return {$function};");
         return $this;
     }
@@ -2537,6 +2552,7 @@ final class Formula implements JsonSerializable {
         }
         $this->_supports_combiner = true;
         $this->_extractor_indexed = $state->term_compiler->indexed;
+        $this->_extractor_index_type = $state->term_index_type;
 
         $extractor_str = "function (\$prow, \$index, \$user, \$formula) {\n  ";
         if (self::$DEBUG) {
@@ -2545,6 +2561,7 @@ final class Formula implements JsonSerializable {
         $state->term_compiler->ensure_initial_index();
         $extractor_str .= self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0)
             . "}";
+        $this->debug_report($extractor_str, "extractor");
         $this->_f_extractor = eval("return {$extractor_str};\n");
 
         if ($this->_f_combiner === null) {
@@ -2555,6 +2572,7 @@ final class Formula implements JsonSerializable {
             }
             $combiner_str .= self::compile_body(null, $state, $fexpr, 0)
                 . "}";
+            $this->debug_report($combiner_str, "combiner");
             $this->_f_combiner = eval("return {$combiner_str};\n");
         }
 
@@ -2666,19 +2684,16 @@ final class Formula implements JsonSerializable {
     }
 
     /** @return bool */
-    function indexed() {
-        return $this->_indexed;
+    function extractor_indexed() {
+        $this->support_combiner();
+        return $this->_supports_combiner && $this->_extractor_indexed;
     }
 
     /** @return int */
-    function index_type() {
-        return $this->_index_type;
-    }
-
-    /** @return bool */
-    function extractor_indexed() {
-        assert($this->_f_extractor !== null);
-        return $this->_extractor_indexed;
+    function extractor_index_type() {
+        $this->support_combiner();
+        assert($this->_supports_combiner);
+        return $this->_extractor_index_type;
     }
 
     #[\ReturnTypeWillChange]
