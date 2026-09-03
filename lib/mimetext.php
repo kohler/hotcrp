@@ -4,15 +4,17 @@
 
 class MimeText {
     /** @var string */
-    public $in;
+    private $in;
     /** @var string */
-    public $out;
+    private $out;
     /** @var int */
-    public $linelen;
+    private $linelen;
     /** @var string */
-    public $eol;
+    private $eol;
     /** @var ?MessageItem */
     public $mi;
+
+    const WSP = " \r\n\t\x0B\x0C";
 
     /** @param string $eol */
     function __construct($eol = "\r\n") {
@@ -22,10 +24,10 @@ class MimeText {
     /** @param string $header
      * @param string $str */
     function reset($header, $str) {
-        if (preg_match('/[\r\n]/', $str)) {
-            $this->in = simplify_whitespace($str);
-        } else {
+        if (strcspn($str, "\r\n") === strlen($str)) {
             $this->in = $str;
+        } else {
+            $this->in = simplify_whitespace($str);
         }
         $this->mi = null;
         $this->out = $header;
@@ -51,7 +53,7 @@ class MimeText {
             $last = 0;
             foreach ($m[0] as $mx) {
                 $xstr .= substr($str, $last, $mx[1] - $last)
-                    . "=" . strtoupper(dechex(ord($mx[0])));
+                    . sprintf("=%02X", ord($mx[0]));
                 $last = $mx[1] + 1;
             }
             $xstr .= substr($str, $last);
@@ -113,15 +115,38 @@ class MimeText {
     }
 
     /** Normalize the smart quotes people paste into hand-typed address
-     * lists. `Text::name(NAME_MAILQUOTE)` applies this too; keep them in step.
+     * lists, but not within straight quotes that might have been added
+     * by an external quoting mechanism like Text::name with NAME_MAILQUOTE.
      * @param string $str
      * @return string */
     static function normalize_quotes($str) {
         if (strpos($str, "\xE2") === false) {
             return $str;
         }
-        return str_replace(["“", "”"], ["\"", "\""], $str);
+        return preg_replace_callback('/"[^"\\\\]*+(?:\\\\.[^"\\\\]*+)*+"|“|”/s', function ($m) {
+            return $m[0][0] === "\"" ? $m[0] : "\"";
+        }, $str) ?? "invalid";
     }
+
+    private function invalid_destination_error($field, $in, $inpos) {
+        $this->mi = $mi = MessageItem::error_at($field);
+        $mi->pos1 = $inpos;
+        $mi->pos2 = $inpos + strcspn($in, self::WSP . ",;", $inpos);
+        $mi->context = $in;
+        if (strcspn($in, self::WSP . "<>@") !== strlen($in)) {
+            $mi->message = "<0>Invalid destination (possible quoting problem)";
+        } else {
+            $mi->message = "<0>Invalid email address";
+        }
+        return false;
+    }
+
+    // order matters
+    const ENCWORD_QUOTED = 0;
+    const ENCWORD_BARE = 1;
+    const ENCWORD_BAREAPOS = 2;
+    const ENCWORD_EMAIL = 3;
+    const ENCWORD_SEP = 4;
 
     /** @param string $field
      * @param string $str
@@ -129,78 +154,141 @@ class MimeText {
     function encode_email_header($field, $str) {
         $header = $field === "" ? "" : "{$field}: ";
         $this->reset($header, $str);
-        $this->in = self::normalize_quotes($this->in);
-        $str = $this->in;
-        $inlen = strlen($str);
 
-        // separate $str into emails, quote each separately
+        $in = $this->in;
+        $inpos = 0;
+        $inlen = strlen($in);
+        $words = $wpos = $wtype = [];
+        $WSP = " \r\n\t\x0B\x0C";
+
+        // separate $str into words
+        // This is like RFC 5322 parsing, but slightly more liberal; we
+        // accept `.` in bare words, for example.
         while (true) {
-            $str = preg_replace('/\A[,;\s]+/', "", $str);
-            if ($str === "") {
-                return $this->out;
+            $inpos += strspn($in, self::WSP, $inpos);
+            if ($inpos === $inlen) {
+                break;
             }
-
-            // try three types of match in turn:
-            // 1. name <email> [RFC 822]
-            // 2. name including periods and “\'” but no quotes <email>
-            if (preg_match('/\A((?:(?:"(?:[^"\\\\]|\\\\.)*"|[^\s\000-\037()\[\\]<>@,;:\\\\".]+)\s*?)*)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)
-                || preg_match('/\A((?:[^\000-\037()\[\\]<>@,;:\\\\"]|\\\\\')+?)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)) {
-                $emailpos = $inlen - strlen($m[4]) - strlen($m[3]) - strlen($m[2]);
-                $name = $m[1];
-                $email = $m[2];
-                $str = $m[4];
-            } else if (preg_match('/\A<\s*([^\s\000-\037()[\\]<>,;:\\\\"]+)(\s*>?\s*)(.*)\z/s', $str, $m)) {
-                $emailpos = $inlen - strlen($m[3]) - strlen($m[2]) - strlen($m[1]);
-                $name = "";
-                $email = $m[1];
-                $str = $m[3];
-            } else if (preg_match('/\A(none|hidden|[^\s\000-\037()[\\]<>,;:\\\\"]+@[^\s\000-\037()[\\]<>,;:\\\\"]+)(\s*)(.*)\z/s', $str, $m)) {
-                $emailpos = $inlen - strlen($m[3]) - strlen($m[2]) - strlen($m[1]);
-                $name = "";
-                $email = $m[1];
-                $str = $m[3];
-            } else {
-                $this->mi = $mi = MessageItem::error_at($field);
-                $mi->pos1 = $inlen - strlen($str);
-                $mi->context = $this->in;
-                if (preg_match('/[\s<>@]/', $str)) {
-                    $mi->message = "<0>Invalid destination (possible quoting problem)";
+            $ch = $in[$inpos];
+            if ($ch === "," || $ch === ";") {
+                $words[] = $ch;
+                $wpos[] = $inpos;
+                $wtype[] = self::ENCWORD_SEP;
+                ++$inpos;
+            } else if ($ch === "\""
+                       && preg_match('/\G"[^"\\\\]*+(?:\\\\.|[^"\\\\]*+)*+"/', $in, $m, 0, $inpos)) {
+                $words[] = $m[0];
+                $wpos[] = $inpos;
+                $wtype[] = self::ENCWORD_QUOTED;
+                $inpos += strlen($m[0]);
+            } else if ($ch === "<" && ($gt = strpos($in, ">", $inpos + 1)) !== false) {
+                $words[] = substr($in, $inpos, $gt + 1 - $inpos);
+                $wpos[] = $inpos;
+                $wtype[] = self::ENCWORD_EMAIL;
+                $inpos = $gt + 1;
+            } else if (($ch === "\xE2" || $ch === "\"")
+                       && preg_match('/\G(?:\"|“|”)[^"\\\\\xE2]*+(?:\\\\.|(?!“|”)\xE2|[^"\\\\\xE2]*+)*+(?:\"|“|”)/', $in, $m, 0, $inpos)) {
+                $words[] = $m[0];
+                $wpos[] = $inpos;
+                $wtype[] = self::ENCWORD_QUOTED;
+                $inpos += strlen($m[0]);
+            } else if (preg_match('/\G(?!“|”)\xE2?+[^\000-\040()\[\\]<>,;:\\\\"\xE2]*+((?:\\\\\'|(?!“|”)\xE2|[^\000-\040()\[\\]<>,;:\\\\"\xE2]*+)*+)/', $in, $m, 0, $inpos)
+                       && $m[0] !== "") {
+                $words[] = $m[0];
+                $wpos[] = $inpos;
+                if (strpos($m[0], "@") !== false) {
+                    $wtype[] = self::ENCWORD_EMAIL;
+                } else if ($m[1] !== "") {
+                    $wtype[] = self::ENCWORD_BAREAPOS;
                 } else {
-                    $mi->message = "<0>Invalid email address";
+                    $wtype[] = self::ENCWORD_BARE;
                 }
-                preg_match('/\A[^\s,;]*/', $str, $m);
-                $mi->pos2 = $mi->pos1 + strlen($m[0]);
-                return false;
+                $inpos += strlen($m[0]);
+            } else {
+                return $this->invalid_destination_error($field, $in, $inpos);
+            }
+        }
+        $wpos[] = $inlen;
+
+        // group $words into emails
+        $nw = count($words);
+        for ($wi = 0; $wi < $nw; ) {
+            if ($wtype[$wi] === self::ENCWORD_SEP) {
+                ++$wi;
+                continue;
             }
 
-            // Validate email
-            if (!validate_email($email)
-                && $email !== "none"
-                && $email !== "hidden") {
+            // find end of name + email span
+            $wj = $wi;
+            while ($wj !== $nw && $wtype[$wj] < self::ENCWORD_EMAIL) {
+                ++$wj;
+            }
+            // default to bare email
+            if ($wj === $nw || $wtype[$wj] === self::ENCWORD_SEP) {
+                if ($wtype[$wi] === self::ENCWORD_BARE
+                    && (strcasecmp($words[$wi], "none") === 0
+                        || strcasecmp($words[$wi], "hidden") === 0)) {
+                    $wj = $wi;
+                } else {
+                    return $this->invalid_destination_error($field, $in, $wpos[$wi]);
+                }
+            }
+
+            // extract name and email
+            $name = "";
+            for ($wk = $wi; $wk !== $wj; ++$wk) {
+                if ($wk !== $wi) {
+                    $sp = $wpos[$wk-1] + strlen($words[$wk-1]);
+                    $name .= substr($in, $sp, $wpos[$wk] - $sp);
+                }
+                if ($wtype[$wk] === self::ENCWORD_BAREAPOS) {
+                    $name .= str_replace("\\'", "'", $words[$wk]);
+                } else {
+                    $name .= $words[$wk];
+                }
+            }
+            if (!str_starts_with($words[$wj], "<")) {
+                $email = $words[$wj];
+            } else {
+                $email = trim(substr($words[$wj], 1, -1));
+            }
+
+            // validate email
+            $valid = validate_email($email);
+            $hidden = !$valid
+                && (strcasecmp($email, "none") === 0
+                    || strcasecmp($email, "hidden") === 0);
+            if (!$valid && !$hidden) {
                 $this->mi = $mi = MessageItem::error_at($field, "<0>Invalid email address");
-                $mi->pos1 = $emailpos;
-                $mi->pos2 = $emailpos + strlen($email);
-                $mi->context = $this->in;
+                $mi->pos1 = $wpos[$wj];
+                $mi->pos2 = $wpos[$wj] + strlen($words[$wj]);
+                $mi->context = $in;
                 return false;
             }
 
-            // Validate rest of string
-            if ($str !== ""
-                && $str[0] !== ","
-                && $str[0] !== ";") {
+            // validate rest of string
+            // Generally require separators between emails, but allow
+            // bare emails without separators (no display name, no mixture of
+            // bracketed & unbracketed emails).
+            if ($wj + 1 !== $nw
+                && $wtype[$wj+1] !== self::ENCWORD_SEP
+                && ($wj !== $wi
+                    || $wtype[$wj] !== self::ENCWORD_EMAIL
+                    || $wtype[$wj+1] !== self::ENCWORD_EMAIL
+                    || (str_starts_with($words[$wj], "<") !== str_starts_with($words[$wj+1], "<")))) {
                 if (!$this->mi) {
                     $this->mi = $mi = MessageItem::error_at($field, "<0>Destinations must be separated with commas");
-                    $mi->pos1 = $mi->pos2 = $inlen - strlen($str);
-                    $mi->context = $this->in;
+                    $mi->pos1 = $mi->pos2 = $wpos[$wj] + strlen($words[$wj]);
+                    $mi->context = $in;
                 }
-                if (!preg_match('/\A<?\s*([^\s>]*)/', $str, $m)
-                    || !validate_email($m[1])) {
-                    return false;
-                }
+                return false;
             }
 
-            // Append email
-            if ($email === "none" || $email === "hidden") {
+            // success from here on
+            $owi = $wi;
+            $wi = $wj + 1;
+
+            if ($hidden) {
                 continue;
             }
             if ($this->out !== $header) {
@@ -209,16 +297,28 @@ class MimeText {
             }
 
             // unquote any existing UTF-8 encoding
-            if ($name !== ""
-                && $name[0] === "="
-                && strcasecmp(substr($name, 0, 10), "=?utf-8?q?") === 0) {
+            if (str_starts_with($name, "=?")
+                && substr_compare($name, "=?utf-8?q?", 0, 10, true) === 0) {
                 $name = self::decode_header($name);
             }
 
-            $utf8 = is_usascii($name) ? 0 : 2;
-            if ($name !== ""
-                && $name[0] === "\""
-                && preg_match('/\A"([^\\\\"]|\\\\.)*"\z/s', $name)) {
+            // curly -> straight if user provided a single quoted name
+            if ($wtype[$owi] === self::ENCWORD_QUOTED
+                && $owi + 1 === $wj) {
+                if ($name[0] === "\xE2") {
+                    $name = "\"" . substr($name, 3);
+                }
+                if (strlen($name) > 3 && $name[strlen($name) - 3] === "\xE2") {
+                    $name = substr($name, 0, -3) . "\"";
+                }
+            }
+
+            // Encode non-ASCII names and names with control characters
+            // (which `decode_header` might have introduced), and names
+            // that could include substrings that look like encodings.
+            $utf8 = preg_match('/[\000-\037\177-\377]|=\?/', $name) ? 2 : 0;
+            if ($wtype[$owi] === self::ENCWORD_QUOTED
+                && $owi + 1 === $wj) {
                 if ($utf8 > 0) {
                     $this->append(substr($name, 1, -1), $utf8);
                 } else {
@@ -236,6 +336,8 @@ class MimeText {
                 $this->append(" <{$email}>", 0);
             }
         }
+
+        return $this->out;
     }
 
     /** @param string $header
@@ -260,13 +362,14 @@ class MimeText {
             return $text;
         }
         $out = '';
-        while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/i', $text, $m)) {
+        $pos = 0;
+        while (preg_match('/\G=\?utf-8\?q\?([^?]*+(?:\?(?!=)|[^?]*+)*+)\?=(\r?+\n )?+/i', $text, $m, 0, $pos)) {
             $f = str_replace('_', ' ', $m[1]);
             $out .= preg_replace_callback('/=([0-9A-F][0-9A-F])/',
                                           "MimeText::chr_hexdec_callback",
                                           $f);
-            $text = substr($text, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        return $out . $text;
+        return $out . substr($text, $pos);
     }
 }

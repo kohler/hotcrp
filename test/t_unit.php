@@ -1705,6 +1705,26 @@ class Unit_Tester {
         xassert_eqq(Text::name("Bob", "Ferreira Costa", "", NAME_PARSABLE), "Ferreira Costa, Bob");
     }
 
+    /** Unfold a To: header and remove its display names (quoted-strings
+     * and encoded-words), leaving the mailbox skeleton.
+     * @param string $hdr
+     * @return string */
+    static function mail_header_skeleton($hdr) {
+        xassert_str_starts_with($hdr, "To: ");
+        $s = preg_replace('/\r\n[ \t]/', " ", substr($hdr, 4));
+        $s = preg_replace('/"(?:[^"\\\\]|\\\\.)*"|=\?utf-8\?q\?[^?\s]*\?=/i', "", $s);
+        $s = preg_replace('/(?:[^\s<>@,;"]+\s+)+(?=<)/', "", $s);
+        return "To: " . simplify_whitespace($s);
+    }
+
+    /** @param string $hdr */
+    static function xassert_clean_wire($hdr) {
+        xassert(is_string($hdr));
+        // folds are `CRLF SP`; nothing else outside printable ASCII
+        xassert(!preg_match('/\r(?!\n )|(?<!\r)\n/', $hdr));
+        xassert(!preg_match('/[^\x20-\x7E\r\n]/', $hdr));
+    }
+
     function test_mailquote_name() {
         // `NAME_MAILQUOTE` output is joined into an address list that
         // `MimeText::encode_email_header` parses again, so a name must survive
@@ -1714,11 +1734,159 @@ class Unit_Tester {
         foreach ([["Bob", "Jones"], ["Bob", "Jones Jr."], ["Bob", "Jones, Jr."],
                   ["Bob \"Bobby\"", "Jones"], ["Bob “Bobby”", "Jones"],
                   ["Bob", "Jones <other@example.com>"],
-                  ["Bob", "Jones” <other@example.com>, “Bob"]] as $fl) {
+                  ["Bob", "Jones” <other@example.com>, “Bob"],
+                  ["Bob", "\" <other@example.com>, \""],
+                  ["Bob", "\\\" <other@example.com>, \\\""],
+                  ["Bob\\", "Jones"],
+                  ["Bob", "=?utf-8?q?Jones?="]] as $fl) {
             $n = Text::name($fl[0], $fl[1], $email, NAME_MAILQUOTE | NAME_E);
             xassert_str_ends_with($n, " <{$email}>");
-            xassert_eqq($mt->encode_email_header("To", $n), "To: {$n}");
+            $hdr = $mt->encode_email_header("To", $n);
+            self::xassert_clean_wire($hdr);
+            xassert_eqq(self::mail_header_skeleton($hdr), "To: <{$email}>");
+            // display name round-trips: either a quoted-string or encoded-words
+            $name = substr($hdr, 4, -strlen(" <{$email}>"));
+            $plain = "{$fl[0]} {$fl[1]}";
+            if ($name[0] === "\"") {
+                xassert_eqq(stripcslashes(substr($name, 1, -1)), $plain);
+            } else if (str_starts_with($name, "=?")) {
+                xassert_eqq(MimeText::decode_header($name), $plain);
+            } else {
+                xassert_eqq($name, $plain);
+            }
         }
+        // ASCII names without specials are not quoted at all
+        xassert_eqq($mt->encode_email_header("To", Text::name("Bob", "Jones", $email, NAME_MAILQUOTE | NAME_E)),
+                    "To: Bob Jones <{$email}>");
+    }
+
+    function test_mailquote_injection() {
+        // A display name chosen by someone else must never add, split, or
+        // extend a recipient, even when merged with other recipients.
+        $evil = "evil@attacker.net";
+        $mt = new MimeText("\r\n");
+        foreach (["” <{$evil}>, “Christian",
+                  "\" <{$evil}>, \"",
+                  "\\\" <{$evil}>, \\\"",
+                  "\\\\\" <{$evil}>, \\\\\"",
+                  "\\",
+                  "<{$evil}>",
+                  ", {$evil}",
+                  "; {$evil}",
+                  "“{$evil}”",
+                  "\r\nBcc: {$evil}",
+                  "\nBcc: {$evil}",
+                  "=?utf-8?q?V=0D=0ABcc=3A_evil=40attacker=2Enet?=",
+                  "=?utf-8?q?=22_=3C{$evil}=3E=2C_=22?=",
+                  "Bob =?utf-8?q?x?= Jones",
+                  "Bob\x7FJones",
+                  "Bob\x00Jones",
+                  "Bob\tJones",
+                  "none", "hidden", "<none>",
+                  str_repeat("a”", 100) . " <{$evil}>, “x"] as $last) {
+            foreach ([["Eve", $last], ["", $last], [$last, "Eve"]] as $fl) {
+                $a1 = Text::name($fl[0], $fl[1], "victim@_.com", NAME_MAILQUOTE | NAME_E);
+                $a2 = Text::name($fl[0], $fl[1], "second@_.com", NAME_MAILQUOTE | NAME_E);
+                $hdr = $mt->encode_email_header("To", "{$a1}, {$a2}, Bob <third@_.com>");
+                self::xassert_clean_wire($hdr);
+                xassert_eqq(self::mail_header_skeleton($hdr),
+                            "To: <victim@_.com>, <second@_.com>, <third@_.com>");
+            }
+        }
+    }
+
+    function test_mime_quote() {
+        xassert_eqq(mime_quote_string("Bob"), "\"Bob\"");
+        xassert_eqq(mime_quote_string("a\"b"), "\"a\\\"b\"");
+        xassert_eqq(mime_quote_string("a\\b"), "\"a\\\\b\"");
+        xassert_eqq(mime_quote_string("a\\\"b"), "\"a\\\\\\\"b\"");
+        xassert_eqq(mime_quote_string("\\"), "\"\\\\\"");
+        xassert_eqq(mime_quote_string("a\x01b"), "\"a\\\x01b\"");
+
+        xassert_eqq(mime_token_quote("plain-token_1.pdf"), "plain-token_1.pdf");
+        xassert_eqq(mime_token_quote("a b"), "\"a b\"");
+        xassert_eqq(mime_token_quote("a\\b"), "\"a\\\\b\"");
+        xassert_eqq(mime_token_quote("a\"b"), "\"a\\\"b\"");
+        xassert_eqq(mime_token_quote("a[b]"), "\"a[b]\"");
+        xassert_eqq(mime_token_quote("a=b"), "\"a=b\"");
+        xassert_eqq(mime_token_quote("Kö"), "\"Kö\"");
+        xassert_eqq(mime_token_quote(""), "\"\"");
+
+        xassert_eqq(rfc2822_words_quote("Bob Jones"), "Bob Jones");
+        xassert_eqq(rfc2822_words_quote("O'Brien"), "\"O'Brien\"");
+        xassert_eqq(rfc2822_words_quote("J. R. Jones"), "\"J. R. Jones\"");
+        xassert_eqq(rfc2822_words_quote("a\\\"b"), "\"a\\\\\\\"b\"");
+    }
+
+    function test_encode_email_header() {
+        $mt = new MimeText("\r\n");
+        $enc = function ($s) use ($mt) {
+            $r = $mt->encode_email_header("To", $s);
+            xassert(($r === false) === ($mt->mi !== null));
+            return $r === false ? $mt->mi->message : $r;
+        };
+
+        // mailbox forms
+        xassert_eqq($enc("a@b.com"), "To: a@b.com");
+        xassert_eqq($enc("<a@b.com>"), "To: a@b.com");
+        xassert_eqq($enc("Bob Jones <a@b.com>"), "To: Bob Jones <a@b.com>");
+        xassert_eqq($enc("Bob < a@b.com >"), "To: Bob <a@b.com>");
+        xassert_eqq($enc("\"Jones, Bob\" <a@b.com>"), "To: \"Jones, Bob\" <a@b.com>");
+        xassert_eqq($enc("J.R. Jones <a@b.com>"), "To: \"J.R. Jones\" <a@b.com>");
+        xassert_eqq($enc("O'Brien <a@b.com>"), "To: \"O'Brien\" <a@b.com>");
+        xassert_eqq($enc("Bob\\'s <a@b.com>"), "To: \"Bob's\" <a@b.com>");
+        xassert_eqq($enc("Bob a@b.com"), "To: Bob <a@b.com>");
+        xassert_eqq($enc("Bob Jones a@b.com, Eve c@d.com"), "To: Bob Jones <a@b.com>, Eve <c@d.com>");
+        xassert_eqq($enc("a@b.com,\r\n c@d.com;e@f.com"), "To: a@b.com, c@d.com, e@f.com");
+
+        // curly quotes typed as delimiters are straightened
+        xassert_eqq($enc("“Jones, Bob” <a@b.com>"), "To: \"Jones, Bob\" <a@b.com>");
+        xassert_eqq($enc("“Bob\" <a@b.com>"), "To: \"Bob\" <a@b.com>");
+        // but curly quotes inside a quoted-string are content
+        xassert_eqq($enc("\"a”b\" <a@b.com>"), "To: =?utf-8?q?a=E2=80=9Db?= <a@b.com>");
+
+        // encoded-words: unquoted ones are decoded, then anything that
+        // still looks like one is re-encoded so no decoder sees it in a
+        // quoted-string
+        xassert_eqq($enc("=?utf-8?q?Bob?= <a@b.com>"), "To: Bob <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?K=C3=B6?= <a@b.com>"), "To: =?utf-8?q?K=C3=B6?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?V=0D=0ABcc=3A_x?= <a@b.com>"), "To: =?utf-8?q?V=0D=0ABcc=3A_x?= <a@b.com>");
+        $hdr = $enc("\"=?utf-8?q?V=0D=0A?=\" <a@b.com>");
+        self::xassert_clean_wire($hdr);
+        xassert_not_str_contains($hdr, "\"=?");
+        xassert_eqq(MimeText::decode_header(substr($hdr, 4, -strlen(" <a@b.com>"))), "=?utf-8?q?V=0D=0A?=");
+        xassert_eqq($enc("\"a =? b\" <a@b.com>"), "To: =?utf-8?q?a_=3D=3F_b?= <a@b.com>");
+
+        // control characters and DEL never reach the wire
+        foreach (["Bob\x7FJones", "\"Bob\x01Jones\"", "\"Bob\tJones\"", "\"Bob\x7FJones\""] as $name) {
+            $hdr = $enc("{$name} <a@b.com>");
+            self::xassert_clean_wire($hdr);
+            xassert_str_starts_with($hdr, "To: =?utf-8?q?");
+        }
+        xassert_eqq($enc("Bob\x01Jones <a@b.com>"), "<0>Invalid destination (possible quoting problem)");
+
+        // none/hidden
+        xassert_eqq($enc("none"), "To: ");
+        xassert_eqq($enc("Bob <NONE>, a@b.com, Eve <Hidden>"), "To: a@b.com");
+        xassert_eqq($enc("nonea@b.com"), "To: nonea@b.com");
+
+        // whitespace-separated addresses are accepted only when unambiguous
+        xassert_eqq($enc("<a@b.com> <c@d.com>"), "To: a@b.com, c@d.com");
+        xassert_eqq($enc("a@b.com c@d.com"), "To: a@b.com, c@d.com");
+        xassert_eqq($enc("a@b.com <c@d.com>"), "<0>Destinations must be separated with commas");
+        xassert_eqq($enc("Bob <a@b.com> <c@d.com>"), "<0>Destinations must be separated with commas");
+        xassert_eqq($enc("Bob a@b.com <c@d.com>"), "<0>Destinations must be separated with commas");
+        xassert_eqq($enc("Bob <a@b.com> Eve <c@d.com>"), "<0>Destinations must be separated with commas");
+        xassert_eqq($enc("Bob <a@b.com> c@d.com"), "<0>Destinations must be separated with commas");
+
+        // errors
+        xassert_eqq($enc("<a@b.com"), "<0>Invalid destination (possible quoting problem)");
+        xassert_eqq($enc("Bob (x) <a@b.com>"), "<0>Invalid destination (possible quoting problem)");
+        xassert_eqq($enc("Bob"), "<0>Invalid email address");
+        xassert_eqq($enc("\"unterminated <a@b.com>"), "<0>Invalid destination (possible quoting problem)");
+        xassert_eqq($enc("<bad>"), "<0>Invalid email address");
+        xassert_eqq($enc("bad@"), "<0>Invalid email address");
+        xassert_eqq($enc("Bob <a@b>"), "<0>Invalid email address");
     }
 
     function test_score_sort_counts() {
@@ -1866,6 +2034,8 @@ class Unit_Tester {
         xassert_eqq(SearchWord::unquote("\"abc“"), "abc");
         xassert_eqq(SearchWord::unquote("\"abc\\\"def\""), "abc\"def");
         xassert_eqq(SearchWord::quote("abc\"def"), "\"abc\\\"def\"");
+        xassert_eqq(SearchWord::quote("abcdef\\"), "\"abcdef\\\\\"");
+        xassert_eqq(SearchWord::quote("abcdef\\\""), "\"abcdef\\\"\"");
     }
 
     function test_view_option_schema() {

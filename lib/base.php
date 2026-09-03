@@ -433,13 +433,13 @@ function validate_email_at($s, $pos) {
 /** @param string $word
  * @return string */
 function mime_quote_string($word) {
-    return '"' . preg_replace('/(?=[\x00-\x1F\\"])/', '\\', $word) . '"';
+    return '"' . preg_replace('/(?=[\x00-\x1F\\\\"])/', '\\', $word) . '"';
 }
 
 /** @param string $word
  * @return string */
 function mime_token_quote($word) {
-    if (preg_match('/\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"\/?=]+\z/', $word)) {
+    if (preg_match('/\A[^\x00-\x20\x80-\xFF()\[\\]<>@,;:\\\\"\/?=]++\z/', $word)) {
         return $word;
     }
     return mime_quote_string($word);
@@ -450,7 +450,7 @@ function mime_token_quote($word) {
 function rfc2822_words_quote($words) {
     // NB: Do not allow `'` in an unquoted <phrase>; Proofpoint can add quotes
     // to names containing `'`, which invalidates a DKIM signature.
-    if (preg_match('/\A[-A-Za-z0-9!#$%&*+\/=?^_`{|}~ \t]*\z/', $words)) {
+    if (preg_match('/\A[-A-Za-z0-9!\#$%&*+\/=?^_`{|}~ \t]*+\z/', $words)) {
         return $words;
     }
     return mime_quote_string($words);

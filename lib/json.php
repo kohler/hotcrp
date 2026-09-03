@@ -67,9 +67,9 @@ class Json {
             return (string) $x;
         } else if (is_string($x)) {
             if ($options & JSON_UNESCAPED_SLASHES) {
-                $pat = "{[\\\"\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
+                $pat = "{[\\\\\"\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
             } else {
-                $pat = "{[\\\"/\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
+                $pat = "{[\\\\\"/\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
             }
             return "\"" . preg_replace_callback($pat, "Json::encode_escape", $x) . "\"";
         } else if (is_object($x) || is_array($x)) {

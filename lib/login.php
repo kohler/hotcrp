@@ -60,16 +60,16 @@ class LoginHelper {
         // Look up the account information
         // to determine if the user is registered
         if (isset($qreq->email)) {
+            if (strpos($qreq->email, "@") === false
+                && strpos($qreq->email, "%40") !== false) {
+                foreach ($qreq->keys() as $k) {
+                    $qreq[$k] = rawurldecode($qreq[$k]);
+                }
+            }
             $qreq->email = simplify_whitespace($qreq->email);
         }
         if (!isset($qreq->email) || $qreq->email === "") {
             return ["ok" => false, "email" => true, "noemail" => true];
-        }
-        if (strpos($qreq->email, "@") === false
-            && strpos($qreq->email, "%40") !== false) {
-            foreach ($qreq->keys() as $k) {
-                $qreq[$k] = rawurldecode($qreq[$k]);
-            }
         }
         $u = $conf->user_by_email($qreq->email);
         if (!$u) {

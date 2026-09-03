@@ -59,7 +59,9 @@ class SearchWord {
             || preg_match('/\A[-A-Za-z0-9_.@\/]+\z/', $str)) {
             return $str;
         }
-        return "\"" . preg_replace('/\\(?=[\\\\"]|"/', '\\\\$0', $str) . "\"";
+        return "\"" . preg_replace_callback('/\\\\.?+|"/', function ($m) {
+            return strlen($m[0]) === 1 ? "\\" . $m[0] : $m[0];
+        }, $str) . "\"";
     }
 
     /** @param string $str
