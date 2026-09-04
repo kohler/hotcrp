@@ -471,6 +471,94 @@ class Mailer_Tester {
         MailChecker::clear();
     }
 
+    function test_recipient_address_curly_quotes() {
+        // A display name containing curly quotes and address syntax must
+        // reach the To: header as one mailbox: MimeText straightens curly
+        // quotes that users type as delimiters, but must not do so inside
+        // the quoted-string that Text::name produces.
+        $u = Contact::make_keyed($this->conf, [
+            "email" => "victim@_.com",
+            "firstName" => "Eve",
+            "lastName" => "” <evil@example.net>, “Christian"
+        ]);
+        $addr = MailPreparation::recipient_address($u);
+        xassert_str_starts_with($addr, "\"");
+        $mt = new MimeText;
+        $to = $mt->encode_email_header("To", $addr);
+        xassert(is_string($to));
+        xassert_str_contains($to, "<victim@_.com>");
+        xassert_not_str_contains($to, "evil@example.net");
+        xassert_eqq(substr_count($to, "@"), 1);
+        xassert_eqq(MimeText::decode_header(substr($to, 4)),
+                    "Eve ” <evil@example.net>, “Christian <victim@_.com>");
+
+        // an unbalanced curly quote is quoted too, and does not disturb
+        // other recipients merged into the same header
+        $u2 = Contact::make_keyed($this->conf, [
+            "email" => "other@_.com", "firstName" => "Bob”", "lastName" => "Jones"
+        ]);
+        $addr2 = MailPreparation::recipient_address($u2);
+        xassert_str_starts_with($addr2, "\"");
+        $to = $mt->encode_email_header("To", "{$addr2}, {$addr}, {$addr2}");
+        xassert(is_string($to));
+        xassert_eqq(substr_count($to, "<other@_.com>"), 2);
+        xassert_eqq(substr_count($to, "<victim@_.com>"), 1);
+        xassert_not_str_contains($to, "evil@example.net");
+        xassert_eqq(substr_count($to, "@"), 3);
+
+        // nor do many curly quotes in one name
+        $u3 = Contact::make_keyed($this->conf, [
+            "email" => "victim@_.com",
+            "firstName" => "Eve",
+            "lastName" => str_repeat("a”", 250) . " <evil@example.net>, “Christian"
+        ]);
+        $to = $mt->encode_email_header("To", MailPreparation::recipient_address($u3));
+        xassert(is_string($to));
+        xassert_str_contains($to, "<victim@_.com>");
+        xassert_not_str_contains($to, "evil@example.net");
+        xassert_eqq(substr_count($to, "@"), 1);
+
+        // curly quotes typed as delimiters are still straightened
+        $to = $mt->encode_email_header("To", "“Jones, Bob” <other@_.com>, “Eve” <victim@_.com>");
+        xassert_eqq($to, "To: \"Jones, Bob\" <other@_.com>, \"Eve\" <victim@_.com>");
+    }
+
+    function test_recipient_address_encoded_word() {
+        // A display name that looks like an RFC 2047 encoded-word must not
+        // be decoded into raw control characters (i.e., extra header
+        // lines): Text::name quotes it, and MimeText re-encodes whatever
+        // it decodes.
+        $evil = "=?utf-8?q?V=0D=0ABcc=3A_evil=40example=2Enet?=";
+        xassert_eqq(MimeText::decode_header($evil), "V\r\nBcc: evil@example.net");
+        $u = Contact::make_keyed($this->conf, [
+            "email" => "mimevictim@_.com", "lastName" => $evil
+        ]);
+        $addr = MailPreparation::recipient_address($u);
+        xassert_str_starts_with($addr, "\"=?");
+        $mt = new MimeText;
+        $to = $mt->encode_email_header("To", $addr);
+        xassert_eqq($to, "To: \"{$evil}\" <mimevictim@_.com>");
+
+        // same for a name that has been stored, in a folded header
+        $u->store();
+        $u = $this->conf->fresh_user_by_email("mimevictim@_.com");
+        xassert_eqq($u->lastName, $evil);
+        $addr = MailPreparation::recipient_address($u);
+        $to = $mt->encode_email_header("To", "{$addr}, {$addr}");
+        xassert(is_string($to));
+        xassert_str_contains($to, "\r\n ");
+        xassert(!preg_match('/\r(?!\n )|[^\r]\n/', $to));
+        xassert_eqq(substr_count($to, "@"), 2);
+        $this->conf->qe("delete from ContactInfo where email='mimevictim@_.com'");
+        $this->conf->invalidate_user($u);
+
+        // an unquoted encoded-word is decoded, but control characters
+        // are encoded again
+        $to = $mt->encode_email_header("To", "{$evil} <victim@_.com>, =?utf-8?Q?=22x=0Ay=3A=22?= <other@_.com>, =?utf-8?q?a=09b?= <tab@_.com>");
+        xassert_eqq($to, "To: {$evil} <victim@_.com>, \r\n =?utf-8?q?x=0Ay=3A?= <other@_.com>, =?utf-8?q?a=09b?= <tab@_.com>");
+        xassert(!preg_match('/\r(?!\n )|[^\r]\n/', $to));
+    }
+
     function test_mailtext_without_recipient() {
         $conf = $this->conf;
         $chair = $conf->checked_user_by_email("chair@_.com");

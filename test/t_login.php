@@ -268,6 +268,64 @@ class Login_Tester {
         xassert_str_contains(urldecode($info["redirect"]), "redirect=paper/1");
     }
 
+    function test_forgot_urlencoded_email() {
+        // A still-urlencoded `email` is decoded before lookup. Whitespace
+        // the decoding introduces must not make the lookup miss an existing
+        // account, or request-supplied names would replace the stored ones
+        // on the password reset mail.
+        $this->conf->invalidate_caches("users");
+        $user = Contact::make($this->conf);
+        $qreq = TestQreq::post([
+            "email" => "marina%40poema.ru%20",
+            "firstName" => "Eve",
+            "lastName" => "” <evil@_.com>, “Marina"
+        ])->set_user($user)->set_page("forgotpassword");
+        $info = LoginHelper::forgot_password_info($this->conf, $qreq, false);
+        xassert_eqq($qreq->email, "marina@poema.ru");
+        xassert_eqq($info["ok"], true);
+        $u = $info["user"] ?? null;
+        xassert(!!$u);
+        if (!$u) {
+            return;
+        }
+        xassert($u->contactId > 0);
+        xassert_eqq($u->firstName, "Marina");
+        xassert_eqq($u->lastName, "Tsvetaeva");
+        $to = (new MimeText)->encode_email_header("To", MailPreparation::recipient_address($u));
+        xassert_eqq($to, "To: Marina Tsvetaeva <marina@poema.ru>");
+
+        // An account known only to the contact database gets mail too,
+        // but again not under a request-supplied name.
+        $email = "forgotcdb@_.com";
+        if ($this->cdb !== null) {
+            Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Anne', lastName='Carson', email=?, affiliation='', password='', cflags=0", $email);
+        }
+        $this->conf->invalidate_caches("users");
+        $qreq = TestQreq::post([
+            "email" => $email,
+            "firstName" => "Eve",
+            "lastName" => "” <evil@_.com>, “Anne",
+            "affiliation" => "NYU"
+        ])->set_user($user)->set_page("forgotpassword");
+        $info = LoginHelper::forgot_password_info($this->conf, $qreq, false);
+        xassert_eqq($info["ok"], $this->cdb !== null);
+        $u = $info["user"] ?? null;
+        xassert_eqq(!!$u, $this->cdb !== null);
+        if ($u) {
+            xassert_eqq($u->email, $email);
+            xassert_eqq($u->contactId, 0);
+            xassert_eqq($u->firstName, "");
+            xassert_eqq($u->lastName, "");
+            xassert_eqq($u->affiliation, "");
+            $to = (new MimeText)->encode_email_header("To", MailPreparation::recipient_address($u));
+            xassert_eqq($to, "To: {$email}");
+        }
+        if ($this->cdb !== null) {
+            Dbl::qe($this->cdb, "delete from ContactInfo where email=?", $email);
+            $this->conf->invalidate_caches("users");
+        }
+    }
+
     function test_login_placeholder() {
         $email = "scapegoat2@baa.com";
         Contact::make_keyed($this->conf, [
