@@ -27,9 +27,8 @@ class Shepherd_PaperColumn extends PaperColumn {
     static private function cid(PaperList $pl, PaperInfo $row) {
         if ($row->shepherdContactId > 0 && $pl->user->can_view_shepherd($row)) {
             return $row->shepherdContactId;
-        } else {
-            return 0;
         }
+        return 0;
     }
     function reset(PaperList $pl) {
         if (!$this->was_reset && $pl->conf->setting("extrev_shepherd")) {

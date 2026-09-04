@@ -1512,7 +1512,7 @@ final class PaperList extends MessageSet {
             return "";
         }
         $h = $this->user->name_for("r", $u, $flags);
-        if ($prow && ($rrow = $prow->review_by_user($u))) {
+        if ($prow && ($rrow = $prow->viewable_review_by_user($u, $this->user))) {
             $h .= " " . $this->make_review_analysis($rrow, $prow)->icon_html(false);
         }
         return $h;
