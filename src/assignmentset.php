@@ -1144,6 +1144,8 @@ class AssignmentSet {
     private $astate;
     /** @var array<string,PaperSearch> */
     private $searches = [];
+    /** @var list<MessageItem> */
+    private $user_lookup_errors = [];
     /** @var ?string */
     private $unparse_search;
     /** @var array<string,bool> */
@@ -1386,6 +1388,8 @@ class AssignmentSet {
 
     /** @return null|string|list<Contact> */
     private function lookup_users($req, AssignmentParser $aparser) {
+        $this->user_lookup_errors = [];
+
         // check user universe
         $users = $aparser->user_universe($req, $this->astate);
         if ($users === "none") {
@@ -1398,7 +1402,7 @@ class AssignmentSet {
                 && ($u = $this->astate->user_by_id(intval($req["uid"])))) {
                 return [$u];
             } else {
-                $this->error("<0>User ID ‘" . $req["uid"] . "’ not found");
+                $this->user_lookup_errors[] = MessageItem::error("<0>User ID ‘" . $req["uid"] . "’ not found");
                 return null;
             }
         }
@@ -1490,11 +1494,11 @@ class AssignmentSet {
             if (count($ret->user_ids()) === 1) {
                 return $ret->users();
             } else if (count($ret->user_ids()) > 1) {
-                $this->error("<0>‘" . self::req_user_text($req) . "’ matches more than one {$cset_text}");
-                $this->astate->append_item_here(MessageItem::inform("<0>Use a full email address to disambiguate."));
+                $this->user_lookup_errors[] = MessageItem::error("<0>‘" . self::req_user_text($req) . "’ matches more than one {$cset_text}");
+                $this->user_lookup_errors[] = MessageItem::inform("<0>Use a full email address to disambiguate.");
                 return null;
             }
-            $this->error("<0>" . ucfirst($cset_text) . " ‘" . self::req_user_text($req) . "’ not found");
+            $this->user_lookup_errors[] = MessageItem::error("<0>" . ucfirst($cset_text) . " ‘" . self::req_user_text($req) . "’ not found");
             return null;
         } else if ($email
                    && validate_email($email)
@@ -1503,11 +1507,11 @@ class AssignmentSet {
             return [$u];
         }
         if (!$email) {
-            $this->error("<0>Email address required");
+            $this->user_lookup_errors[] = MessageItem::error("<0>Email address required");
         } else if (!validate_email($email)) {
-            $this->error("<0>Email address ‘{$email}’ invalid");
+            $this->user_lookup_errors[] = MessageItem::error("<0>Email address ‘{$email}’ invalid");
         } else {
-            $this->error("<0>Could not create user");
+            $this->user_lookup_errors[] = MessageItem::error("<0>Could not create user");
         }
         return null;
     }
@@ -1718,6 +1722,22 @@ class AssignmentSet {
         return $us;
     }
 
+    /** @param list<int> $pids
+     * @return bool */
+    private function allow_paper_filter($pids) {
+        // Filtering a paper set can expose information about papers, so only
+        // allow it if the current user can administer every paper in the set
+        if ($this->user->allow_admin_all()) {
+            return true;
+        }
+        foreach ($pids as $pid) {
+            if (!($prow = $this->astate->prow($pid))
+                || !$this->user->allow_admin($prow))
+                return false;
+        }
+        return true;
+    }
+
     /** @param CsvRow $req
      * @return void */
     private function apply_req(?AssignmentParser $aparser, $req) {
@@ -1757,18 +1777,16 @@ class AssignmentSet {
         // load state
         $aparser->load_state($this->astate);
 
-        // clean user parts
+        // look up relevant users, but don't report errors yet
         $contacts = $this->lookup_users($req, $aparser);
-        if ($contacts === null) {
-            return;
-        }
 
         // maybe filter papers
         if (count($pids) > 20
             && is_array($contacts)
             && count($contacts) == 1
             && $contacts[0]->contactId > 0
-            && ($pf = $aparser->paper_filter($contacts[0], $req, $this->astate)) !== null) {
+            && ($pf = $aparser->paper_filter($contacts[0], $req, $this->astate)) !== null
+            && $this->allow_paper_filter($pids)) {
             $npids = [];
             foreach ($pids as $p) {
                 if ($pf[$p] ?? null)
@@ -1805,15 +1823,24 @@ class AssignmentSet {
         }
     }
 
-    /** @param list<Contact>|string $contacts
+    /** @param null|string|list<Contact> $contacts
      * @param CsvRow $req
      * @return 0|1|-1 */
     private function apply_paper(PaperInfo $prow, $contacts, AssignmentParser $aparser, $req) {
+        // check if we can affect the paper
         $allow = $aparser->allow_paper($prow, $this->astate);
         if ($allow !== true) {
             $allow = $allow ? : new AssignmentError($prow->failure_reason(["administer" => true]));
             $this->astate->paper_error($allow->getMessage());
             return 0;
+        }
+
+        // report if user lookup failed only after we can affect the paper
+        if ($contacts === null) {
+            foreach ($this->user_lookup_errors as $mi) {
+                $this->astate->append_item_here($mi);
+            }
+            return -1;
         }
 
         // expand “all” and “missing”
