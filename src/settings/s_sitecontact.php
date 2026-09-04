@@ -18,8 +18,11 @@ class SiteContact_SettingParser extends SettingParser {
     /** @param string $v
      * @param Si $si */
     static private function cleanstr($v, $si) {
-        $iv = $si->name === "site_contact_email" ? self::EMAIL_PLACEHOLDER : self::NAME_PLACEHOLDER;
-        return $v !== $iv ? $v : "";
+        if (($si->name === "site_contact_email" && $v === self::EMAIL_PLACEHOLDER)
+            || ($si->name === "site_contact_name" && $v === self::NAME_PLACEHOLDER)) {
+            return "";
+        }
+        return $v;
     }
 
     /** @param SettingValues $sv
@@ -30,21 +33,37 @@ class SiteContact_SettingParser extends SettingParser {
         $opt = substr($si->storage_name(), 4);
         if (array_key_exists($opt, $si->conf->opt_override)) {
             return $si->conf->opt_override[$opt];
-        } else {
-            return $si->conf->opt($opt) ?? "";
         }
+        return $si->conf->opt($opt) ?? "";
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        $user = $sv->conf->site_contact();
-        $s = $si->name === "site_contact_email" ? $user->email : $user->name();
-        $sv->set_oldv($si, self::cleanstr($s, $si));
+        if ($si->name === "site_contact_email") {
+            $s = self::cleanstr($sv->conf->site_contact()->email, $si);
+        } else if ($si->name === "site_contact_name") {
+            $s = self::cleanstr($sv->conf->site_contact()->name(), $si);
+        } else if ($si->name === "email_default_cc"
+                   || $si->name === "email_default_reply_to") {
+            $s = MimeText::expand_email_header_setting($sv->conf, substr($si->storage_name(), 4));
+        }
+        $sv->set_oldv($si, $s);
     }
 
     function apply_req(Si $si, SettingValues $sv) {
-        if (($creqv = $sv->base_parse_req($si)) !== null
-            && $sv->update($si, self::cleanstr($creqv, $si))) {
-            $sv->request_store_value($si);
+        if (($creqv = $sv->base_parse_req($si)) !== null) {
+            $cstr = self::cleanstr($creqv, $si);
+            if (str_starts_with($si->name, "email_")
+                && ($basev = self::basev($sv, $si)) !== null
+                && strpos($basev, "\$") !== false) {
+                $mt = new MimeText("\r\n");
+                if ($mt->expand_email_header_macros($sv->conf, $basev) === $cstr) {
+                    $cstr = $basev;
+                }
+            }
+            if ($sv->update($si, $cstr)
+                && !str_starts_with($si->name, "email_")) {
+                $sv->request_store_value($si);
+            }
         }
         return true;
     }

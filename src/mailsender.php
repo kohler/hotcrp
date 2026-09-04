@@ -161,13 +161,13 @@ class MailSender {
             // XXX should only apply to papers you administer
             $qreq->cc = simplify_whitespace($qreq->cc);
         } else {
-            $qreq->cc = simplify_whitespace($conf->opt("emailCc") ?? "");
+            $qreq->cc = MimeText::expand_email_header_setting($conf, "emailCc");
         }
         if (isset($qreq["reply-to"]) && $qreq->user()->is_manager()) {
             // XXX should only apply to papers you administer
             $qreq["reply-to"] = simplify_whitespace($qreq["reply-to"]);
         } else {
-            $qreq["reply-to"] = $conf->opt("emailReplyTo") ?? "";
+            $qreq["reply-to"] = MimeText::expand_email_header_setting($conf, "emailReplyTo");
         }
     }
 
@@ -471,10 +471,10 @@ class MailSender {
                     $vh = "<div class=\"mb-1\">{$vh}</div>" . MessageSet::feedback_html($ml);
                 }
             } else if ($k == "Subject") {
-                $vh = htmlspecialchars(MimeText::decode_header($show_prep->subject));
+                $vh = htmlspecialchars(MimeText::decode_text_header($show_prep->subject));
             } else if (($line = $show_prep->headers[$k] ?? null)) {
                 $k = substr($line, 0, strlen($k));
-                $vh = htmlspecialchars(MimeText::decode_header(substr($line, strlen($k) + 2)));
+                $vh = htmlspecialchars(MimeText::decode_email_header(substr($line, strlen($k) + 2)));
             } else {
                 continue;
             }
@@ -545,8 +545,8 @@ class MailSender {
             "no_error_quit" => true,
             "author_permission" => $is_authors
         ];
-        if ($rest["cc"] !== ""
-            && $rest["cc"] !== simplify_whitespace($this->conf->opt("emailCc") ?? "")
+        if ((string) $rest["cc"] !== ""
+            && simplify_whitespace($rest["cc"]) !== simplify_whitespace(MimeText::expand_email_header_setting($this->conf, "emailCc"))
             && !$this->user->privChair) {
             $rest["sender_visible"] = true;
         }

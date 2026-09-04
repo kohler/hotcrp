@@ -614,7 +614,7 @@ class EmailHeader_Sitype extends Sitype {
         $mt = new MimeText;
         $t = $mt->encode_email_header("", $vstr);
         if ($t !== false) {
-            return $t != "" ? MimeText::decode_header($t) : "";
+            return $t != "" ? MimeText::decode_email_header($t) : "";
         }
         $sv->append_item_at($si, $mt->mi);
         return null;

@@ -305,16 +305,12 @@ class MailPreparation implements JsonSerializable {
 
         // then try `mail` function
         if ($sendable) {
-            if (strpos($to, $eol) === false) {
-                unset($headers["to"]);
-                $to = substr($to, 4); // skip "To: "
-            } else {
-                $to = "";
-            }
-            unset($headers["subject"]);
+            unset($headers["to"], $headers["subject"]);
             $htext = substr(join("", $headers), 0, -2);
-            $extra = $extra ?? '';
-            return ($this->sent = mail($to, $this->subject, $qpe_body, $htext, $extra));
+            $to = str_replace("{$eol} ", " ", substr($to, 4));
+            $subject = str_replace("{$eol} ", " ", $this->subject);
+            $extra = $extra ?? "";
+            return ($this->sent = mail($to, $subject, $qpe_body, $htext, $extra));
         }
 
         // print email if debugging (and pretend email was successfully sent)

@@ -677,29 +677,15 @@ class Conf {
         // expand ${confid}, ${confshortname}
         foreach (["sessionName", "downloadPrefix", "conferenceSite",
                   "paperSite", "defaultPaperSite", "contactName",
-                  "contactEmail", "docstore"] as $k) {
-            if (isset($this->opt[$k])
-                && is_string($this->opt[$k])
-                && strpos($this->opt[$k], "\$") !== false) {
-                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $this->confid, $this->opt[$k]);
-                $this->opt[$k] = preg_replace('/\$\{confshortname\}|\$confshortname\b/', $this->short_name, $this->opt[$k]);
+                  "contactEmail", "docstore", "emailSender"] as $k) {
+            if (is_string(($s = $this->opt[$k] ?? null))
+                && strpos($s, "\$") !== false) {
+                $this->opt[$k] = preg_replace_callback('/\$\{conf(?:id|shortname)\}|\$conf(?:id|shortname)\b/', function ($m) {
+                    return strlen($m[0]) > 9 ? $this->short_name : $this->confid;
+                }, $s);
             }
         }
         $this->download_prefix = $this->opt["downloadPrefix"];
-
-        foreach (["emailFrom", "emailSender", "emailCc", "emailReplyTo"] as $k) {
-            if (is_string(($s = $this->opt[$k] ?? null))
-                && strpos($s, "\$") !== false) {
-                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $this->confid, $s);
-                if (strpos($this->opt[$k], "confshortname") !== false) {
-                    $v = rfc2822_words_quote($this->short_name);
-                    if ($v[0] === "\"" && strpos($this->opt[$k], "\"") !== false) {
-                        $v = substr($v, 1, strlen($v) - 2);
-                    }
-                    $this->opt[$k] = preg_replace('/\$\{confshortname\}|\$confshortname\b/', $v, $this->opt[$k]);
-                }
-            }
-        }
 
         // remove final slash from $Opt["paperSite"]
         $papersite = $this->opt["paperSite"] ?? "";

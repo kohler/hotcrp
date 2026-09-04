@@ -248,12 +248,14 @@
         "name": "email_default_cc", "storage": "opt.emailCc",
         "title": "Default Cc for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)",
+        "parser_class": "SiteContact_SettingParser",
         "tags": "mail identity"
     },
     {
         "name": "email_default_reply_to", "storage": "opt.emailReplyTo",
         "title": "Default Reply-To for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)",
+        "parser_class": "SiteContact_SettingParser",
         "tags": "mail identity"
     },
     {

@@ -1738,19 +1738,26 @@ class Unit_Tester {
                   ["Bob", "\" <other@example.com>, \""],
                   ["Bob", "\\\" <other@example.com>, \\\""],
                   ["Bob\\", "Jones"],
-                  ["Bob", "=?utf-8?q?Jones?="]] as $fl) {
+                  ["Bob", "=?utf-8?q?Jones?="],
+                  ["Bob \"Bobby\"", "Kö"],
+                  ["Bob\\", "Kö"],
+                  ["Bob \"Bobby\"", "Jones” <other@example.com>, “Bob"]] as $fl) {
             $n = Text::name($fl[0], $fl[1], $email, NAME_MAILQUOTE | NAME_E);
             xassert_str_ends_with($n, " <{$email}>");
             $hdr = $mt->encode_email_header("To", $n);
             self::xassert_clean_wire($hdr);
             xassert_eqq(self::mail_header_skeleton($hdr), "To: <{$email}>");
-            // display name round-trips: either a quoted-string or encoded-words
+            // the display name round-trips, whatever form it took
             $name = substr($hdr, 4, -strlen(" <{$email}>"));
             $plain = "{$fl[0]} {$fl[1]}";
             if ($name[0] === "\"") {
                 xassert_eqq(stripcslashes(substr($name, 1, -1)), $plain);
             } else if (str_starts_with($name, "=?")) {
-                xassert_eqq(MimeText::decode_header($name), $plain);
+                $d = MimeText::decode_email_header($name);
+                if (str_starts_with($d, "\"")) {
+                    $d = preg_replace('/\\\\(.)/s', '$1', substr($d, 1, -1));
+                }
+                xassert_eqq($d, $plain);
             } else {
                 xassert_eqq($name, $plain);
             }
@@ -1801,7 +1808,12 @@ class Unit_Tester {
         xassert_eqq(mime_quote_string("a\\b"), "\"a\\\\b\"");
         xassert_eqq(mime_quote_string("a\\\"b"), "\"a\\\\\\\"b\"");
         xassert_eqq(mime_quote_string("\\"), "\"\\\\\"");
-        xassert_eqq(mime_quote_string("a\x01b"), "\"a\\\x01b\"");
+        // control characters are dropped, tabs kept, folds unfolded
+        xassert_eqq(mime_quote_string("a\x01b"), "\"ab\"");
+        xassert_eqq(mime_quote_string("a\tb"), "\"a\tb\"");
+        xassert_eqq(mime_quote_string("a\rb\nc"), "\"abc\"");
+        xassert_eqq(mime_quote_string("Bob\r\n Jones"), "\"Bob Jones\"");
+        xassert_eqq(mime_quote_string("Bob\n\tJones"), "\"Bob\tJones\"");
 
         xassert_eqq(mime_token_quote("plain-token_1.pdf"), "plain-token_1.pdf");
         xassert_eqq(mime_token_quote("a b"), "\"a b\"");
@@ -1845,24 +1857,39 @@ class Unit_Tester {
         // but curly quotes inside a quoted-string are content
         xassert_eqq($enc("\"a”b\" <a@b.com>"), "To: =?utf-8?q?a=E2=80=9Db?= <a@b.com>");
 
-        // encoded-words: unquoted ones are decoded, then anything that
-        // still looks like one is re-encoded so no decoder sees it in a
-        // quoted-string
+        // unquoted encoded-words are decoded; text that still looks like
+        // one is re-encoded rather than quoted
         xassert_eqq($enc("=?utf-8?q?Bob?= <a@b.com>"), "To: Bob <a@b.com>");
         xassert_eqq($enc("=?utf-8?q?K=C3=B6?= <a@b.com>"), "To: =?utf-8?q?K=C3=B6?= <a@b.com>");
         xassert_eqq($enc("=?utf-8?q?V=0D=0ABcc=3A_x?= <a@b.com>"), "To: =?utf-8?q?V=0D=0ABcc=3A_x?= <a@b.com>");
         $hdr = $enc("\"=?utf-8?q?V=0D=0A?=\" <a@b.com>");
         self::xassert_clean_wire($hdr);
         xassert_not_str_contains($hdr, "\"=?");
-        xassert_eqq(MimeText::decode_header(substr($hdr, 4, -strlen(" <a@b.com>"))), "=?utf-8?q?V=0D=0A?=");
+        xassert_eqq(MimeText::decode_email_header(substr($hdr, 4, -strlen(" <a@b.com>"))), "\"=?utf-8?q?V=0D=0A?=\"");
         xassert_eqq($enc("\"a =? b\" <a@b.com>"), "To: =?utf-8?q?a_=3D=3F_b?= <a@b.com>");
 
         // control characters and DEL never reach the wire
-        foreach (["Bob\x7FJones", "\"Bob\x01Jones\"", "\"Bob\tJones\"", "\"Bob\x7FJones\""] as $name) {
+        foreach (["Bob\x7FJones", "\"Bob\x01Jones\"", "\"Bob\x7FJones\""] as $name) {
             $hdr = $enc("{$name} <a@b.com>");
             self::xassert_clean_wire($hdr);
             xassert_str_starts_with($hdr, "To: =?utf-8?q?");
         }
+        // whitespace runs collapse; a whitespace-only name is no name
+        xassert_eqq($enc("\"Bob\tJones\" <a@b.com>"), "To: \"Bob Jones\" <a@b.com>");
+        xassert_eqq($enc("Bob \t Jones <a@b.com>"), "To: Bob Jones <a@b.com>");
+        xassert_eqq($enc("\"  Bob  \" <a@b.com>"), "To: \"Bob\" <a@b.com>");
+        xassert_eqq($enc("\" \" <a@b.com>"), "To: a@b.com");
+        xassert_eqq($enc("=?utf-8?q?_?= <a@b.com>"), "To: a@b.com");
+        xassert_eqq($enc("=?utf-8?q?_Bob_?= <a@b.com>"), "To: Bob <a@b.com>");
+
+        // a quoted name is Q-encoded with its quoted-pairs undone, so the
+        // recipient sees the name, not its escaping
+        xassert_eqq($enc("\"K\xC3\xB6 \\\"x\\\"\" <a@b.com>"), "To: =?utf-8?q?K=C3=B6_=22x=22?= <a@b.com>");
+        xassert_eqq($enc("\"a\\\\b K\xC3\xB6\" <a@b.com>"), "To: =?utf-8?q?a=5Cb_K=C3=B6?= <a@b.com>");
+        xassert_eqq($enc("\"=? \\\"q\\\"\" <a@b.com>"), "To: =?utf-8?q?=3D=3F_=22q=22?= <a@b.com>");
+        xassert_eqq($enc("\"a\\\"b\" <a@b.com>"), "To: \"a\\\"b\" <a@b.com>");
+        // a truncated UTF-8 sequence at the end of a name is not a curly quote
+        xassert_eqq($enc("\"=? \xE2\x80\" <a@b.com>"), "To: =?utf-8?q?=3D=3F_=E2=80?= <a@b.com>");
         xassert_eqq($enc("Bob\x01Jones <a@b.com>"), "<0>Invalid destination (possible quoting problem)");
 
         // none/hidden
@@ -1890,10 +1917,9 @@ class Unit_Tester {
     }
 
     function test_encode_email_header_encoded_words() {
-        // An unquoted `=?utf-8?q?...?=` word is decoded wherever it appears
-        // in a display name; adjacent encoded-words join without the
-        // whitespace between them (RFC 2047 §6.2); the decoded bytes are
-        // text, never syntax.
+        // Unquoted encoded-words are decoded anywhere in a display name;
+        // adjacent ones join without the whitespace between them
+        // (RFC 2047 §6.2); decoded bytes are text, never syntax.
         $mt = new MimeText("\r\n");
         $enc = function ($s) use ($mt) {
             $r = $mt->encode_email_header("To", $s);
@@ -1940,6 +1966,160 @@ class Unit_Tester {
         xassert_eqq($enc("=?utf-8?q?unterminated <a@b.com>"), "To: =?utf-8?q?=3D=3Futf-8=3Fq=3Funterminated?= <a@b.com>");
         xassert_eqq($enc("\"=?utf-8?q?Bob?=\" <a@b.com>"), "To: =?utf-8?q?=3D=3Futf-8=3Fq=3FBob=3F=3D?= <a@b.com>");
         xassert_eqq($enc("Bob=?utf-8?q?x?= <a@b.com>"), "To: =?utf-8?q?Bob=3D=3Futf-8=3Fq=3Fx=3F=3D?= <a@b.com>");
+    }
+
+    function test_decode_email_header() {
+        $mt = new MimeText("\r\n");
+        $dec = "MimeText::decode_email_header";
+
+        // adjacent encoded-words join without the whitespace between them;
+        // other whitespace after an encoded-word becomes one space
+        xassert_eqq($dec(""), "");
+        xassert_eqq($dec("Bob Jones <a@b.com>"), "Bob Jones <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6hler?="), "Köhler");
+        xassert_eqq($dec("Eddie =?utf-8?q?K=C3=B6hler?= <a@b.com>"), "Eddie Köhler <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6?= =?utf-8?q?hler?= <a@b.com>"), "Köhler <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6?=\r\n =?utf-8?q?hler?=\r\n <a@b.com>"), "Köhler <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6?= \t \r\n\t=?utf-8?q?hler?="), "Köhler");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6?=\r\n <a@b.com>"), "Kö <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6?=  \t<a@b.com>"), "Kö <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?a?= "), "a");
+        xassert_eqq($dec("=?utf-8?q?a?= =?utf-8?q?_b?="), "a b");
+        // decoded text that would not re-parse as a phrase is quoted
+        xassert_eqq($dec("=?utf-8?q?a=3D=3F_=5F?="), "\"a=? _\"");
+        xassert_eqq($dec("=?utf-8?q?Jones=2C_K=C3=B6?= <a@b.com>"), "\"Jones, Kö\" <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6_=22x=22?= <a@b.com>"), "\"Kö \\\"x\\\"\" <a@b.com>");
+        xassert_eqq($dec("=?UTF-8?Q?K=C3=B6?="), "Kö");
+        xassert_eqq($dec("=?utf-8?q?K=c3=b6?="), "Kö");
+        // and text that decodes to control characters stays encoded
+        xassert_eqq($dec("=?utf-8?q?V=0D=0ABcc=3A_x?="), "=?utf-8?q?V=0D=0ABcc=3A_x?=");
+        xassert_eqq($dec("=?utf-8?q?a?= =?utf-8?q?=7F?= <a@b.com>"), "=?utf-8?q?a?= =?utf-8?q?=7F?= <a@b.com>");
+        xassert_eqq($dec("=?utf-8?q?a=3F?=b?= c"), "\"a?\"b?= c");
+
+        // not decoded: inside quoted-strings, other charsets or encodings,
+        // unterminated words, and a word glued to other text
+        xassert_eqq($dec("\"=?utf-8?q?Bob?=\" <a@b.com>"), "\"=?utf-8?q?Bob?=\" <a@b.com>");
+        xassert_eqq($dec("\"a =?utf-8?q?b?= c\" =?utf-8?q?d?="), "\"a =?utf-8?q?b?= c\" d");
+        xassert_eqq($dec("=?iso-8859-1?q?Andr=E9?= <a@b.com>"), "=?iso-8859-1?q?Andr=E9?= <a@b.com>");
+        xassert_eqq($dec("=?utf-8?b?Qm9i?="), "=?utf-8?b?Qm9i?=");
+        xassert_eqq($dec("Re: =?utf-8?q?unterminated"), "Re: =?utf-8?q?unterminated");
+        xassert_eqq($dec("=?utf-8?q?a?= =?bad?= =?utf-8?q?b?="), "a =?bad?= b");
+        xassert_eqq($dec("Re: 50=? =?x =?utf-8?q?y?="), "Re: 50=? =?x y");
+        xassert_eqq($dec("x=?utf-8?q?y?="), "x=?utf-8?q?y?=");
+        xassert_eqq($dec("\"unterminated <a@b.com>"), "\"unterminated <a@b.com>");
+
+        // round trip through the address encoder
+        foreach (["Kö <a@b.com>", "Kö <a@b.com>, " . str_repeat("Ünï ", 20) . "Jr <c@d.com>"] as $to) {
+            $hdr = $mt->encode_email_header("To", $to);
+            $dec1 = $dec(substr($hdr, 4));
+            xassert_not_str_contains($dec1, "=?");
+            xassert_eqq($mt->encode_email_header("To", $dec1), $hdr);
+        }
+    }
+
+    function test_text_header() {
+        $mt = new MimeText("\r\n");
+        $enc = function ($s) use ($mt) {
+            $hdr = $mt->encode_text_header("Subject", $s);
+            xassert_str_starts_with($hdr, "Subject: ");
+            xassert(!preg_match('/[^\x20-\x7E\t\r\n]/', $hdr));
+            return substr($hdr, 9);
+        };
+        $dec = "MimeText::decode_text_header";
+
+        // encoding: plain text stays plain, tab included (it is legal
+        // whitespace in an unstructured header); non-ASCII, `=?`, and other
+        // control characters are Q-encoded, tabs along with them
+        xassert_eqq($enc("plain ascii"), "plain ascii");
+        xassert_eqq($enc("Re: Kö"), "=?utf-8?q?Re:_K=C3=B6?=");
+        xassert_eqq($enc("Re: =?utf-8?q?x?="), "=?utf-8?q?Re:_=3D=3Futf-8=3Fq=3Fx=3F=3D?=");
+        xassert_eqq($enc("tab\there"), "tab\there");
+        xassert_eqq($enc("Kö\tx"), "=?utf-8?q?K=C3=B6=09x?=");
+        xassert_eqq($enc("a\x01b"), "=?utf-8?q?a=01b?=");
+        xassert_eqq($enc("a\x7Fb"), "=?utf-8?q?a=7Fb?=");
+        xassert_eqq($enc("line\r\nbreak"), "line break");
+
+        // decoding is the display form: it never quotes or re-parses
+        xassert_eqq($dec("plain ascii"), "plain ascii");
+        xassert_eqq($dec("=?utf-8?q?Re:_K=C3=B6?="), "Re: Kö");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6?= =?utf-8?q?hler?="), "Köhler");
+        xassert_eqq($dec("=?utf-8?q?K=C3=B6?=\r\n =?utf-8?q?hler?= x"), "Köhler x");
+        xassert_eqq($dec("=?utf-8?q?=22Jones=2C_Bob=22?="), "\"Jones, Bob\"");
+        xassert_eqq($dec("\"=?utf-8?q?x?=\""), "\"=?utf-8?q?x?=\"");
+        xassert_eqq($dec("=?iso-8859-1?q?Andr=E9?="), "=?iso-8859-1?q?Andr=E9?=");
+        xassert_eqq($dec("Re: 50=?"), "Re: 50=?");
+        foreach (["Re: Kö", "Re: " . str_repeat("Ünï ", 40) . "end", "plain ascii =? subject",
+                  "Re: 100% =?utf-8?q?not_encoded?=", "\"Jones, Kö\" <a@b.com>", "tab\there"] as $subj) {
+            xassert_eqq($dec($enc($subj)), $subj);
+        }
+    }
+
+    function test_expand_email_header_macros() {
+        $conf = $this->conf;
+        $save = [$conf->short_name, $conf->confid];
+        $conf->confid = "osdi26";
+        $mt = new MimeText("\r\n");
+        // encode the expansion and return [display name, email] of its
+        // one mailbox
+        $one = function ($tpl, $email) use ($conf, $mt) {
+            $x = $mt->expand_email_header_macros($conf, $tpl);
+            $h = $mt->encode_email_header("To", $x);
+            xassert(is_string($h), $x);
+            self::xassert_clean_wire($h);
+            xassert_eqq(self::mail_header_skeleton($h), "To: <{$email}>");
+            $d = MimeText::decode_email_header(substr($h, 4, -strlen(" <{$email}>")));
+            return str_starts_with($d, "\"") ? preg_replace('/\\\\(.)/s', '$1', substr($d, 1, -1)) : $d;
+        };
+        $tpl = '"${confshortname} Chairs" <noreply-${confid}@usenix.org>';
+        $bare = '${confshortname} <pc@x.org>';
+        $curly = '“${confshortname}” <pc@x.org>';
+
+        // the deployed shape, with every kind of short name, which always
+        // comes through intact
+        foreach (["OSDI", "OSDI '26", "Kö", "Kö, Conf", "Conf \"26", "A\\B", "Conf: 2026",
+                  "Conf (Fall)", "Conf@Home", "Conf <x@y.org>", "Conf “X”", "Conf “X", "=?utf-8?q?Evil?=",
+                  "Conf $1 \\1", "\" <evil@attacker.net>, \"", "” <evil@attacker.net>, “",
+                  "\\\" <evil@attacker.net>, \\\""] as $sn) {
+            $conf->short_name = $sn;
+            xassert_eqq($one($tpl, "noreply-osdi26@usenix.org"), "{$sn} Chairs");
+            xassert_eqq($one($bare, "pc@x.org"), $sn);
+            xassert_eqq($one($curly, "pc@x.org"), $sn);
+        }
+
+        // no macro, nothing changes
+        $conf->short_name = "OSDI";
+        foreach (['"$5 Club" <pc@x.org>', '“$5” <pc@x.org>', 'PC <pc@x.org>', '$confshortnames <pc@x.org>'] as $s) {
+            xassert_eqq($mt->expand_email_header_macros($conf, $s), $s);
+        }
+        // forms and positions
+        xassert_eqq($mt->expand_email_header_macros($conf, '$confshortname <pc@x.org>'), "OSDI <pc@x.org>");
+        xassert_eqq($mt->expand_email_header_macros($conf, 'x${confshortname}y ${confid} <pc@x.org>'), "xOSDIy osdi26 <pc@x.org>");
+        xassert_eqq($mt->expand_email_header_macros($conf, '${confshortname}${confshortname} <pc@x.org>'), "OSDIOSDI <pc@x.org>");
+        xassert_eqq($mt->expand_email_header_macros($conf, 'A <a@x.org>, ${confshortname} <b@x.org>'), "A <a@x.org>, OSDI <b@x.org>");
+        // inside an address, a macro expands only to something that can be
+        // part of an address
+        xassert_eqq($mt->expand_email_header_macros($conf, 'PC <pc-${confid}@x.org>'), "PC <pc-osdi26@x.org>");
+        xassert_eqq($mt->expand_email_header_macros($conf, '${confshortname}@x.org'), "OSDI@x.org");
+        $conf->short_name = "OSDI '26";
+        xassert_eqq($mt->expand_email_header_macros($conf, 'PC <${confshortname}@x.org>'), 'PC <${confshortname}@x.org>');
+        $conf->short_name = "OSDI";
+        // a bare word is quoted only when the expansion needs it
+        $conf->short_name = "Kö, Conf";
+        xassert_eqq($mt->expand_email_header_macros($conf, $bare), "\"Kö, Conf\" <pc@x.org>");
+        $conf->short_name = "Conf@Home";
+        xassert_eqq($mt->expand_email_header_macros($conf, $bare), "\"Conf@Home\" <pc@x.org>");
+        $conf->short_name = "OSDI '26";
+        xassert_eqq($mt->expand_email_header_macros($conf, $bare), "OSDI '26 <pc@x.org>");
+        xassert_eqq($mt->expand_email_header_macros($conf, 'O\'Brien\\\'s ${confshortname} <pc@x.org>'), "O'Brien\\'s OSDI '26 <pc@x.org>");
+        // inside quotes the expansion is escaped; a curly-delimited word
+        // that receives a curly quote is straightened so the quote is content
+        $conf->short_name = "Conf \"26 \\ ”";
+        xassert_eqq($mt->expand_email_header_macros($conf, $tpl), "\"Conf \\\"26 \\\\ ” Chairs\" <noreply-osdi26@usenix.org>");
+        xassert_eqq($mt->expand_email_header_macros($conf, $curly), "\"Conf \\\"26 \\\\ ”\" <pc@x.org>");
+        $conf->short_name = "Kö";
+        xassert_eqq($mt->expand_email_header_macros($conf, $curly), "“Kö” <pc@x.org>");
+
+        [$conf->short_name, $conf->confid] = $save;
     }
 
     function test_score_sort_counts() {

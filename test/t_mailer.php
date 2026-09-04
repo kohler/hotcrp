@@ -293,12 +293,11 @@ class Mailer_Tester {
         // configured one, so the two must be normalized the same way
         $qreq = (new Qrequest("POST", []))->set_user($chair)->approve_token();
         MailSender::clean_request($qreq);
-        xassert_eqq($qreq->cc, simplify_whitespace($conf->opt("emailCc")));
+        xassert_eqq(trim($qreq->cc), trim($conf->opt("emailCc")));
 
         $qreq = (new Qrequest("POST", ["cc" => " friend@example.invalid "]))
             ->set_user($chair)->approve_token();
         MailSender::clean_request($qreq);
-        xassert_neqq($qreq->cc, simplify_whitespace($conf->opt("emailCc")));
         xassert_eqq($qreq->cc, "friend@example.invalid");
 
         $conf->set_opt("emailCc", $old_cc);
@@ -489,8 +488,9 @@ class Mailer_Tester {
         xassert_str_contains($to, "<victim@_.com>");
         xassert_not_str_contains($to, "evil@example.net");
         xassert_eqq(substr_count($to, "@"), 1);
-        xassert_eqq(MimeText::decode_header(substr($to, 4)),
-                    "Eve ” <evil@example.net>, “Christian <victim@_.com>");
+        // decode_email_header re-quotes a name that would not re-parse as one
+        xassert_eqq(MimeText::decode_email_header(substr($to, 4)),
+                    "\"Eve ” <evil@example.net>, “Christian\" <victim@_.com>");
 
         // an unbalanced curly quote is quoted too, and does not disturb
         // other recipients merged into the same header
@@ -524,11 +524,11 @@ class Mailer_Tester {
     }
 
     function test_recipient_address_encoded_word() {
-        // A display name that looks like an RFC 2047 encoded-word must not
-        // be decoded into raw control characters (i.e., extra header
-        // lines)
+        // A display name that looks like an encoded-word must not be
+        // decoded into raw control characters (extra header lines)
         $evil = "=?utf-8?q?V=0D=0ABcc=3A_evil=40example=2Enet?=";
-        xassert_eqq(MimeText::decode_header($evil), "V\r\nBcc: evil@example.net");
+        // decode_email_header leaves a word that decodes to control characters alone
+        xassert_eqq(MimeText::decode_email_header($evil), $evil);
         $u = Contact::make_keyed($this->conf, [
             "email" => "mimevictim@_.com", "lastName" => $evil
         ]);
@@ -554,7 +554,8 @@ class Mailer_Tester {
         // an unquoted encoded-word is decoded, but control characters
         // are encoded again
         $to = $mt->encode_email_header("To", "{$evil} <victim@_.com>, =?utf-8?Q?=22x=0Ay=3A=22?= <other@_.com>, =?utf-8?q?a=09b?= <tab@_.com>");
-        xassert_eqq($to, "To: {$evil} <victim@_.com>, \r\n =?utf-8?q?=22x=0Ay=3A=22?= <other@_.com>, =?utf-8?q?a=09b?= <tab@_.com>");
+        // (a tab is whitespace between words, so it becomes a space)
+        xassert_eqq($to, "To: {$evil} <victim@_.com>, \r\n =?utf-8?q?=22x=0Ay=3A=22?= <other@_.com>, a b <tab@_.com>");
         xassert(!preg_match('/\r(?!\n )|[^\r]\n/', $to));
     }
 

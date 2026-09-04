@@ -847,19 +847,14 @@ class Mailer {
         $this->preparation = null;
 
         $mail["to"] = MailPreparation::recipient_address(($prep->recipients())[0]);
-        $subject = $mimetext->encode_header("Subject: ", $mail["subject"]);
+        $subject = $mimetext->encode_text_header("Subject", $mail["subject"]);
         $prep->subject = substr($subject, 9);
         $prep->body = $mail["body"];
 
         // parse headers
-        $fromHeader = $this->conf->opt("emailFromHeader");
-        if ($fromHeader === null) {
-            $fromHeader = $mimetext->encode_email_header("From", $this->conf->opt("emailFrom"));
-            $this->conf->set_opt("emailFromHeader", $fromHeader);
-        }
         $prep->headers = [];
-        if ($fromHeader) {
-            $prep->headers["from"] = $fromHeader . $this->eol;
+        if (($from = MimeText::expand_email_header_setting($this->conf, "emailFrom"))) {
+            $prep->headers["from"] = $mimetext->encode_email_header("From", $from) . $this->eol;
         }
         $prep->headers["subject"] = $subject . $this->eol;
         $prep->headers["to"] = "";

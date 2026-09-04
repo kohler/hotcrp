@@ -3181,6 +3181,98 @@ class Settings_Tester {
         xassert_str_contains($sv2->full_feedback_text(), "Valid web address");
     }
 
+    function test_email_header_macros() {
+        // Model a conference whose options.php sets `$Opt["emailCc"]` to a
+        // value with macros. The settings UI and JSON show the expansion;
+        // a chair can override it, which stores a Settings row that is used
+        // literally; and changing it back to the expansion (or to the macro
+        // text) resets the row rather than storing a copy.
+        $conf = $this->conf;
+        $macro = '"${confshortname}" <${confid}@z.com>';
+        $expansion = "\"{$conf->short_name}\" <{$conf->confid}@z.com>";
+        xassert_neqq($macro, $expansion);
+        $row = function () use ($conf) {
+            return $conf->fetch_value("select data from Settings where name='opt.emailCc'");
+        };
+        $sv_oldv = function () {
+            $sv = SettingValues::make_request($this->u_chair, []);
+            return [$sv->oldv("email_default_cc"), $sv->all_jsonv()->email_default_cc ?? null];
+        };
+        xassert_eqq($row(), null);
+        $save_opt = $conf->opt["emailCc"] ?? null;
+        $save_override = array_key_exists("emailCc", $conf->opt_override) ? [$conf->opt_override["emailCc"]] : null;
+        // (an options.php value: no Settings row, so no opt_override entry)
+        $conf->opt["emailCc"] = $macro;
+        unset($conf->opt_override["emailCc"]);
+
+        // display shows the expansion; the mail tool uses it
+        xassert_eqq($sv_oldv(), [$expansion, $expansion]);
+        $mt = new MimeText("\r\n");
+        xassert_eqq(MimeText::expand_email_header_setting($conf, "emailCc"), $expansion);
+        xassert_eqq($mt->encode_email_header("Cc", $expansion), "Cc: {$expansion}");
+
+        // saving the displayed value unchanged stores nothing
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => $expansion]);
+        xassert($sv->execute());
+        xassert_eqq($row(), null);
+        xassert_eqq($conf->opt("emailCc"), $macro);
+
+        // an override is stored and displayed
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => "PC <pc@z.com>"]);
+        xassert($sv->execute());
+        xassert_eqq($row(), "PC <pc@z.com>");
+        xassert_eqq($conf->opt("emailCc"), "PC <pc@z.com>");
+        xassert_eqq($conf->opt_override["emailCc"], $macro);
+        xassert_eqq($sv_oldv(), ["PC <pc@z.com>", "PC <pc@z.com>"]);
+        xassert_eqq(MimeText::expand_email_header_setting($conf, "emailCc"), "PC <pc@z.com>");
+
+        // changing back to the expansion resets the row
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => $expansion]);
+        xassert($sv->execute());
+        xassert_eqq($row(), null);
+        xassert_eqq($conf->opt("emailCc"), $macro);
+        xassert_eqq($sv_oldv(), [$expansion, $expansion]);
+
+        // so does submitting the macro text itself
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => "PC <pc@z.com>"]);
+        xassert($sv->execute());
+        xassert_eqq($row(), "PC <pc@z.com>");
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => $macro]);
+        xassert($sv->execute());
+        xassert_eqq($row(), null);
+        xassert_eqq($conf->opt("emailCc"), $macro);
+
+        // a stored value is never expanded, even if it looks like a macro
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => 'Chairs of ${confshortname} <c@z.com>']);
+        xassert($sv->execute());
+        xassert_eqq($row(), 'Chairs of ${confshortname} <c@z.com>');
+        xassert_eqq($sv_oldv(), ['Chairs of ${confshortname} <c@z.com>', 'Chairs of ${confshortname} <c@z.com>']);
+        xassert_eqq(MimeText::expand_email_header_setting($conf, "emailCc"), 'Chairs of ${confshortname} <c@z.com>');
+        // (and the macro form is only expanded when it is the options.php value)
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => $expansion]);
+        xassert($sv->execute());
+        xassert_eqq($row(), null);
+        xassert_eqq(MimeText::expand_email_header_setting($conf, "emailCc"), $expansion);
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => 'Chairs of ${confshortname} <c@z.com>']);
+        xassert($sv->execute());
+
+        // an invalid override is rejected and changes nothing
+        $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => "Bob <nope>"]);
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("email_default_cc"));
+        xassert_eqq($row(), 'Chairs of ${confshortname} <c@z.com>');
+
+        // clean up
+        $conf->save_refresh_setting("opt.emailCc", null);
+        xassert_eqq($row(), null);
+        $conf->opt["emailCc"] = $save_opt;
+        if ($save_override === null) {
+            unset($conf->opt_override["emailCc"]);
+        } else {
+            $conf->opt_override["emailCc"] = $save_override[0];
+        }
+    }
+
     // Undo the settings this tester changes to avoid polluting later tests
     function finalize() {
         $this->conf->save_refresh_setting("outcome_map", null);

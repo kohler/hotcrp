@@ -116,11 +116,6 @@ class UpdateContactdb_Batch {
             $qf[] = "conferenceSite=?";
             $qv[] = $this->conf->opt("conferenceSite");
         }
-        $email = $this->conf->opt_override["emailReplyTo"] ?? $this->conf->opt("emailReplyTo");
-        if ($email && $email !== $this->confrow->requester_email) {
-            $qf[] = "requester_email=?";
-            $qv[] = $email;
-        }
         $max_sub = 0;
         foreach ($this->conf->submission_round_list() as $sr) {
             $max_sub = max($max_sub, $sr->register, $sr->submit);
