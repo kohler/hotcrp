@@ -13237,6 +13237,14 @@ handle_ui.on("document-uploader", function (event) {
         return;
     }
 
+    function send_cancel() {
+        if (!token || cancel_sent) {
+            return;
+        }
+        cancel_sent = true;
+        $.ajax(hoturl("=api/upload", {p: siteinfo.paperid, token: token, cancel: 1}),
+               {method: "POST"});
+    }
     function cancel() {
         if (that.hotcrpUploader !== self) {
             return false;
@@ -13245,12 +13253,17 @@ handle_ui.on("document-uploader", function (event) {
         that.hidden = false;
         removeClass(that, "prevent-submit");
         delete that.hotcrpUploader;
-        cancelled = true;
+        canceled = true;
         $(that).off("hotcrp-change-document", cancel);
+        if (jqxhr && token) {
+            jqxhr.abort();
+        }
+        send_cancel();
         return true;
     }
     var self = {cancel: cancel},
-        token = false, cancelled = false, size = file.size,
+        token = false, canceled = false, cancel_sent = false, jqxhr = null,
+        size = file.size,
         pos = 0, uploading = 0, sprogress0 = 0, sprogress1 = size,
         progresselt = $e("progress", {class: "mr-2", max: size + sprogress1, value: "0"});
     that.hotcrpUploader = self;
@@ -13269,6 +13282,14 @@ handle_ui.on("document-uploader", function (event) {
     }
 
     function ajax(r) {
+        if (canceled) {
+            // the request that created the token landed after the cancel
+            if (r.ok && r.token) {
+                token = r.token;
+                send_cancel();
+            }
+            return;
+        }
         if (!r.ok) {
             if (cancel() && r.message_list) {
                 doce.appendChild(feedback.render_alert(r.message_list));
@@ -13293,12 +13314,7 @@ handle_ui.on("document-uploader", function (event) {
             args.dt = doce.getAttribute("data-dt");
             args.start = 1;
         }
-        if (cancelled) {
-            if (token) {
-                args.cancel = 1;
-                $.ajax(hoturl("=api/upload", args), {method: "POST"});
-            }
-        } else if (!r.hash) {
+        if (!r.hash) {
             let fd = new FormData, myxhr;
             fd.append("mimetype", file.type);
             fd.append("filename", file.name);
@@ -13312,9 +13328,14 @@ handle_ui.on("document-uploader", function (event) {
             if (endpos === size)
                 args.finish = 1;
             pos = endpos;
-            $.ajax(hoturl("=api/upload", args), {
+            jqxhr = $.ajax(hoturl("=api/upload", args), {
                 method: "POST", data: fd, processData: false,
                 contentType: false, success: ajax, timeout: 300000,
+                error: function (xhr, status) {
+                    if (status !== "abort" && cancel()) {
+                        doce.appendChild(feedback.render_alert([{message: "<0>Upload failed", status: 2 /*MessageSet::ERROR*/}]));
+                    }
+                },
                 xhr: function () {
                     myxhr = new window.XMLHttpRequest();
                     myxhr.upload.addEventListener("progress", upload_progress);

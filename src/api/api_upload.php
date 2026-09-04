@@ -26,7 +26,7 @@ class Upload_API {
     public $tmpdir;
     /** @var TokenInfo */
     private $_cap;
-    /** @var object */
+    /** @var ?object */
     private $_capd;
     /** @var bool */
     public $no_s3 = false;
@@ -230,6 +230,13 @@ class Upload_API {
 
     function delete_all() {
         $this->delete_files();
+        // `delete_files` globs `<salt>*`, which does not match a temporary
+        // final file (`upload-<salt><ext>`). Only temporary files are ours to
+        // remove; a non-temporary `content_file` is a shared docstore path.
+        if (($this->_capd->temp ?? false)
+            && isset($this->_capd->content_file)) {
+            @unlink($this->_capd->content_file);
+        }
         if ($this->_capd->s3_uploadid
             && ($s3d = $this->conf->s3_client())) {
             if ($this->_capd->status < 3) {
@@ -238,6 +245,57 @@ class Upload_API {
                 $s3d->delete($this->s3_key());
             }
         }
+    }
+
+    /** @return bool */
+    private function canceled() {
+        return !$this->_capd || ($this->_capd->canceled ?? false);
+    }
+
+    /** Discard a canceled upload’s files and S3 state. The token itself is
+     * left invalid and expired for the token GC to sweep.
+     * The caller must hold the transfer lock. */
+    private function reclaim() {
+        if ($this->_capd && !($this->_capd->deleted ?? false)) {
+            $this->delete_all();
+            $this->modify_capd(function ($d) {
+                $d->s3_uploadid = false;   // forget the S3 upload
+                $d->deleted = true;        // mark local files as deleted
+            });
+            $this->_cap->set_invalid()->set_expires_at(Conf::$now - 1)->update();
+        }
+    }
+
+    /** Delete a canceled upload unless another request is transferring it.
+     * Also append an error message to _ml unless `$quiet`. */
+    private function reclaim_canceled($quiet = false) {
+        // Take the lock before deleting: `s3_transfer_segment` creates the
+        // multipart upload under the lock, so this is what keeps a concurrent
+        // transfer from stranding one after `delete_all` aborts it. That
+        // transfer polls `canceled` and reclaims the upload itself.
+        if (($lockf = $this->lock(false))) {
+            $this->modify_capd(null);
+            $this->reclaim();
+            $this->unlock($lockf);
+        }
+        if (!$quiet) {
+            $this->_ml[] = MessageItem::error($this->_capd->cancel_message ?? "<0>Upload canceled");
+        }
+    }
+
+    /** Mark this upload canceled, and delete it if no other request is
+     * transferring it. */
+    function cancel($message = null) {
+        // An expired token is refused by `exec` and swept by the token GC,
+        // which calls `cleanup` to finish any teardown left undone here.
+        $this->_cap->set_invalid()->set_expires_at(Conf::$now - 1)->update();
+        $this->modify_capd(function ($d) use ($message) {
+            $d->canceled = true;
+            if ($message !== null) {
+                $d->cancel_message = $message;
+            }
+        });
+        $this->reclaim_canceled(true);
     }
 
     /** @return ?HashContext */
@@ -292,30 +350,65 @@ class Upload_API {
         $last_offset = $offset + strlen($data);
         while ($offset !== $last_offset) {
             // write data into relevant segment
-            list($segi, $seg0, $seg1) = $this->find_segment($offset);
-            $nbytes = min($last_offset, $seg1) - $offset;
+            $offset0 = $offset;
+            [$segi, $seg0, $seg1] = $this->find_segment($offset);
+            $seg1 = min($seg1, $last_offset);
             $fname = $this->segment_file($segi);
-            $handle = fopen($fname, "c");
+            $handle = fopen($fname, "c+");
             if (!$handle
-                || fseek($handle, $offset - $seg0, SEEK_SET) !== 0
-                || fwrite($handle, substr($data, $pos, $nbytes)) !== $nbytes) {
+                || fseek($handle, $offset - $seg0, SEEK_SET) !== 0) {
                 return false;
             }
-            $this->_update_hashctx($offset, substr($data, $pos, $nbytes));
-            $this->modify_capd(function ($d) use ($segi, $offset, $nbytes) {
-                $d->ranges = Upload_API::add_range($d->ranges, $offset, $offset + $nbytes);
+            // check integrity of overlapping data, write missing data
+            $ranges = $this->_capd->ranges;
+            $ranges[] = PHP_INT_MAX; // sentinel
+            $ri = 0;
+            while ($offset !== $seg1) {
+                $have = null;
+                if ($offset < $ranges[$ri]) {
+                    $n = min($seg1, $ranges[$ri]) - $offset;
+                } else if ($offset < $ranges[$ri + 1]) {
+                    $n = min($seg1, $ranges[$ri + 1]) - $offset;
+                    $have = fread($handle, $n);
+                } else if ($offset < $ranges[$ri + 2]) {
+                    $n = min($seg1, $ranges[$ri + 2]) - $offset;
+                } else {
+                    $ri += 2;
+                    continue;
+                }
+                $want = substr($data, $pos, $n);
+                if ($have !== null) {
+                    if ($have === false || strlen($have) !== $n) {
+                        return false;
+                    } else if ($want !== $have) {
+                        $m = "<0>Upload aborted by data mismatch";
+                        $this->cancel($m);
+                        $this->_ml[] = MessageItem::error($m);
+                        return false;
+                    }
+                } else if (fwrite($handle, $want) !== $n) {
+                    return false;
+                }
+                $this->_update_hashctx($offset, $want);
+                $offset += $n;
+                $pos += $n;
+            }
+            if (!fflush($handle)
+                || !fclose($handle)) {
+                return false;
+            }
+            $this->modify_capd(function ($d) use ($segi, $offset0, $seg1) {
+                $d->ranges = Upload_API::add_range($d->ranges, $offset0, $seg1);
                 while (count($d->s3_parts) <= $segi) {
                     $d->s3_parts[] = null;
                 }
                 if ($this->_hashctx
-                    && $d->hashpos === $offset) {
+                    && $d->hashpos < $this->_hashpos) {
                     $d->hashctx = base64_encode(serialize($this->_hashctx));
                     $d->crc32ctx = base64_encode(serialize($this->_crc32ctx));
                     $d->hashpos = $this->_hashpos;
                 }
             });
-            $pos += $nbytes;
-            $offset += $nbytes;
         }
         return true;
     }
@@ -350,9 +443,8 @@ class Upload_API {
             "select `data` from Capability where salt=?", [$this->_cap->salt],
             function ($oldd) use ($callable) {
                 $this->_cap->assign_data($oldd);
-                if (!$oldd
-                    || !($this->_capd = json_decode($oldd))
-                    || !$callable) {
+                $this->_capd = $oldd ? json_decode($oldd) : null;
+                if (!$this->_capd || !$callable) {
                     return $oldd;
                 }
                 call_user_func($callable, $this->_capd);
@@ -522,7 +614,7 @@ class Upload_API {
         }
 
         // walk available parts and transfer to S3
-        for ($segindex = 0; true; ++$segindex) {
+        for ($segindex = 0; !$this->canceled(); ++$segindex) {
             list($seg0, $seg1) = $this->segment_boundaries($segindex);
             // exit if part not available
             if ($segindex >= count($this->_capd->s3_parts)
@@ -545,6 +637,11 @@ class Upload_API {
             $this->modify_capd(function ($d) use ($segindex, $part) {
                 $d->s3_parts[$segindex] = $part;
             });
+        }
+        // `cancel` leaves the teardown to whoever holds the lock
+        if ($this->canceled()) {
+            $this->reclaim();
+            $this->_ml[] = MessageItem::error($this->_capd->cancel_message ?? "<0>Upload canceled");
         }
         $this->unlock($lockf);
     }
@@ -603,19 +700,19 @@ class Upload_API {
         }
 
         // status 1: hash computed, docstore not assembled
-        if ($this->_capd
+        if (!$this->canceled()
             && $this->_capd->status === 1) {
             $this->assemble_docstore();
         }
 
         // status 2: docstore assembled, not ready
-        if ($this->_capd
+        if (!$this->canceled()
             && $this->_capd->status === 2) {
             $this->complete_docstore();
         }
 
         // status 3: docstore ready, S3 not ready or not configured
-        if ($this->_capd
+        if (!$this->canceled()
             && $this->_capd->status === 3
             && $s3c) {
             // check for upload in progress
@@ -629,7 +726,7 @@ class Upload_API {
         }
 
         // status 4: docstore ready, S3 multipart complete but not emplaced
-        if ($this->_capd
+        if (!$this->canceled()
             && $this->_capd->status === 4
             && $s3c
             && !$this->no_s3_move) {
@@ -645,16 +742,16 @@ class Upload_API {
             }
         }
 
-        if (!$this->_capd
+        if ($this->canceled()
             || $this->_capd->status < 3) {
             $this->modify_capd(null);
         }
 
-        if ($this->_capd
-            && $this->_capd->status >= ($s3c ? 5 : 3)) {
+        if ($this->canceled()) {
+            $this->reclaim_canceled();
+        } else if ($this->_capd->status >= ($s3c ? 5 : 3)) {
             $this->delete_files();
-        } else if (!$this->_capd
-                   || $this->_capd->status < 3) {
+        } else if ($this->_capd->status < 3) {
             $this->_ml[] = MessageItem::error("<0>Upload error");
         }
     }
@@ -662,6 +759,11 @@ class Upload_API {
     /** @param bool $synchronous
      * @param string $debugid */
     private function transfer($synchronous, $debugid) {
+        if ($this->canceled()) {
+            $this->reclaim_canceled();
+            return;
+        }
+
         // compute data mimetype (before starting S3 upload)
         if ($this->_capd->mimetype === null
             && ($this->_capd->ranges[1] >= 4096
@@ -696,7 +798,8 @@ class Upload_API {
         }
 
         // complete
-        if ($this->_capd->size !== null
+        if (!$this->canceled()
+            && $this->_capd->size !== null
             && $this->_capd->ranges[1] >= $this->_capd->size) {
             $this->complete_transfer($s3c);
         }
@@ -709,6 +812,14 @@ class Upload_API {
             $this->_ml[] = $mi;
         }
         $status = MessageSet::list_status($this->_ml);
+        if (!$this->_capd) {
+            // token vanished underneath us, e.g. swept by the token GC
+            return new JsonResult($status < MessageSet::ERROR ? 200 : 400, [
+                "ok" => $status < MessageSet::ERROR,
+                "token" => $this->_cap->salt,
+                "message_list" => $this->_ml
+            ]);
+        }
         $j = [
             "ok" => $status < MessageSet::ERROR,
             "token" => $this->_cap->salt,
@@ -762,18 +873,22 @@ class Upload_API {
 
         if (!$this->_cap || $this->_cap->capabilityType !== TokenInfo::UPLOAD) {
             return JsonResult::make_not_found_error("token", "<0>Upload token not found");
-        } else if (!$this->_cap->is_active()) {
-            error_log("token {$qreq->token} inactive: expires {$this->_cap->timeExpires}, invalid {$this->_cap->timeInvalid}");
-            return JsonResult::make_not_found_error("token", "<0>Upload inactive or expired");
         } else if ($this->_cap->contactId !== $user->contactId) {
             return JsonResult::make_parameter_error("token", "<0>That upload belongs to another user");
         }
-        $this->_capd = $this->_cap->data();
 
+        $this->_capd = $this->_cap->data();
         if (friendly_boolean($qreq->cancel)) {
-            $this->delete_all();
-            $this->_cap->delete();
-            return JsonResult::make_message_list(MessageItem::marked_note("<0>Upload canceled"))->set("token", $qreq->token);
+            if ($this->_cap->is_active()) {
+                $this->cancel();
+            }
+            $m = $this->_capd->cancel_message ?? "<0>Upload canceled";
+            $this->_ml = [MessageItem::warning_note($m)];
+            return $this->_make_result();
+        }
+
+        if (!$this->_cap->is_active()) {
+            return JsonResult::make_not_found_error("token", "<0>Upload inactive or expired");
         }
 
         if (isset($qreq->size)) {
@@ -821,10 +936,20 @@ class Upload_API {
                 return $this->_make_result(MessageItem::error_at("blob", "<0>Problem reading uploaded file"));
             }
             if (!$this->exec_upload($user, $offset, $data)) {
-                return $this->_make_result(MessageItem::error("<0>Upload failed"));
+                // `exec_upload` explains itself where it can
+                if (empty($this->_ml)) {
+                    $this->_ml[] = MessageItem::error("<0>Upload failed");
+                }
+                return $this->_make_result();
             }
         } else if ($qreq->has_annex("upload_errors")) {
             return $this->_make_result(MessageItem::error_at("blob", "<0>Problem with uploaded file"));
+        }
+
+        // a concurrent cancel may have removed the upload underneath us
+        if ($this->canceled()) {
+            $this->reclaim_canceled();
+            return $this->_make_result();
         }
 
         $finish = friendly_boolean($qreq->finish);
