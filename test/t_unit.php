@@ -1889,6 +1889,59 @@ class Unit_Tester {
         xassert_eqq($enc("Bob <a@b>"), "<0>Invalid email address");
     }
 
+    function test_encode_email_header_encoded_words() {
+        // An unquoted `=?utf-8?q?...?=` word is decoded wherever it appears
+        // in a display name; adjacent encoded-words join without the
+        // whitespace between them (RFC 2047 §6.2); the decoded bytes are
+        // text, never syntax.
+        $mt = new MimeText("\r\n");
+        $enc = function ($s) use ($mt) {
+            $r = $mt->encode_email_header("To", $s);
+            return $r === false ? $mt->mi->message : $r;
+        };
+
+        // position in the phrase
+        xassert_eqq($enc("=?utf-8?q?Bob?= <a@b.com>"), "To: Bob <a@b.com>");
+        xassert_eqq($enc("=?UTF-8?Q?Bob?= Jones <a@b.com>"), "To: Bob Jones <a@b.com>");
+        xassert_eqq($enc("Bob =?utf-8?q?Jones?= <a@b.com>"), "To: Bob Jones <a@b.com>");
+        xassert_eqq($enc("Bob =?utf-8?q?K=C3=B6?= Jones <a@b.com>"), "To: =?utf-8?q?Bob_K=C3=B6_Jones?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?Bob?= <a@b.com>, Eve =?utf-8?q?K=C3=B6?= <c@d.com>"),
+                    "To: Bob <a@b.com>, =?utf-8?q?Eve_K=C3=B6?= <c@d.com>");
+
+        // adjacent encoded-words: separating whitespace is dropped
+        xassert_eqq($enc("=?utf-8?q?K=C3=B6?= =?utf-8?q?hler?= <a@b.com>"), "To: =?utf-8?q?K=C3=B6hler?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?K=C3=B6?=\r\n =?utf-8?q?hler?= <a@b.com>"), "To: =?utf-8?q?K=C3=B6hler?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?K=C3=B6?=\t \t=?utf-8?q?hler?= <a@b.com>"), "To: =?utf-8?q?K=C3=B6hler?= <a@b.com>");
+        xassert_eqq($enc("Eddie =?utf-8?q?K=C3=B6?= =?utf-8?q?hler?= Jr <a@b.com>"), "To: =?utf-8?q?Eddie_K=C3=B6hler_Jr?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?a?= =?utf-8?q?_b?= <a@b.com>"), "To: a b <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?a?= b =?utf-8?q?c?= <a@b.com>"), "To: a b c <a@b.com>");
+        // a long folded name, as produced by the encoder itself
+        $long = str_repeat("Ünï ", 30) . "Jones";
+        $hdr = $mt->encode_email_header("To", "{$long} <a@b.com>");
+        xassert_str_contains($hdr, "?=\r\n =?");
+        xassert_eqq($enc(substr($hdr, 4)), $hdr);
+
+        // decoded bytes are text: quotes, address syntax, separators, and
+        // keywords inside an encoded-word do not become syntax
+        xassert_eqq($enc("=?utf-8?q?=22Bob=22?= <a@b.com>"), "To: \"\\\"Bob\\\"\" <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?Bob_=3Cx=40y=3E?= <a@b.com>"), "To: \"Bob <x@y>\" <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?a=2C_b?= <a@b.com>, c@d.com"), "To: \"a, b\" <a@b.com>, c@d.com");
+        xassert_eqq($enc("=?utf-8?q?a=40b=2Ecom?= <c@d.com>"), "To: \"a@b.com\" <c@d.com>");
+        xassert_eqq($enc("=?utf-8?q?none?= <a@b.com>"), "To: none <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?=3Cnone=3E?= <a@b.com>"), "To: \"<none>\" <a@b.com>");
+        xassert_eqq($enc("=?utf-8?Q?=22x=0Ay=3A=22?= <a@b.com>"), "To: =?utf-8?q?=22x=0Ay=3A=22?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?V=0D=0ABcc=3A_x?= <a@b.com>"), "To: =?utf-8?q?V=0D=0ABcc=3A_x?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?a?= =?utf-8?q?=3D=3Futf-8=3Fq=3Fb=3F=3D?= <a@b.com>"),
+                    "To: =?utf-8?q?a=3D=3Futf-8=3Fq=3Fb=3F=3D?= <a@b.com>");
+
+        // things that are not utf-8 Q encoded-words stay literal text
+        xassert_eqq($enc("=?iso-8859-1?q?Andr=E9?= <a@b.com>"), "To: =?utf-8?q?=3D=3Fiso-8859-1=3Fq=3FAndr=3DE9=3F=3D?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?b?Qm9i?= <a@b.com>"), "To: =?utf-8?q?=3D=3Futf-8=3Fb=3FQm9i=3F=3D?= <a@b.com>");
+        xassert_eqq($enc("=?utf-8?q?unterminated <a@b.com>"), "To: =?utf-8?q?=3D=3Futf-8=3Fq=3Funterminated?= <a@b.com>");
+        xassert_eqq($enc("\"=?utf-8?q?Bob?=\" <a@b.com>"), "To: =?utf-8?q?=3D=3Futf-8=3Fq=3FBob=3F=3D?= <a@b.com>");
+        xassert_eqq($enc("Bob=?utf-8?q?x?= <a@b.com>"), "To: =?utf-8?q?Bob=3D=3Futf-8=3Fq=3Fx=3F=3D?= <a@b.com>");
+    }
+
     function test_score_sort_counts() {
         $s = [];
         foreach (["1,2,3,4,5", "1,2,3,5,5", "3,5,5", "3,3,5,5", "2,3,3,5,5"] as $st) {

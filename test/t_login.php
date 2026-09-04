@@ -298,7 +298,7 @@ class Login_Tester {
         // but again not under a request-supplied name.
         $email = "forgotcdb@_.com";
         if ($this->cdb !== null) {
-            Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Anne', lastName='Carson', email=?, affiliation='', password='', cflags=0", $email);
+            Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Anne', lastName='Carson', email=?, affiliation='UCSF', password='', cflags=0", $email);
         }
         $this->conf->invalidate_caches("users");
         $qreq = TestQreq::post([
@@ -314,11 +314,11 @@ class Login_Tester {
         if ($u) {
             xassert_eqq($u->email, $email);
             xassert_eqq($u->contactId, 0);
-            xassert_eqq($u->firstName, "");
-            xassert_eqq($u->lastName, "");
-            xassert_eqq($u->affiliation, "");
+            xassert_eqq($u->firstName, "Anne");
+            xassert_eqq($u->lastName, "Carson");
+            xassert_eqq($u->affiliation, "UCSF");
             $to = (new MimeText)->encode_email_header("To", MailPreparation::recipient_address($u));
-            xassert_eqq($to, "To: {$email}");
+            xassert_eqq($to, "To: Anne Carson <{$email}>");
         }
         if ($this->cdb !== null) {
             Dbl::qe($this->cdb, "delete from ContactInfo where email=?", $email);

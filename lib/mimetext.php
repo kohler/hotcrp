@@ -145,8 +145,9 @@ class MimeText {
     const ENCWORD_QUOTED = 0;
     const ENCWORD_BARE = 1;
     const ENCWORD_BAREAPOS = 2;
-    const ENCWORD_EMAIL = 3;
-    const ENCWORD_SEP = 4;
+    const ENCWORD_QENC = 3;
+    const ENCWORD_EMAIL = 4;
+    const ENCWORD_SEP = 5;
 
     /** @param string $field
      * @param string $str
@@ -191,6 +192,12 @@ class MimeText {
                 $words[] = $m[0];
                 $wpos[] = $inpos;
                 $wtype[] = self::ENCWORD_QUOTED;
+                $inpos += strlen($m[0]);
+            } elseif ($ch === "="
+                      && preg_match('/\G=\?utf-8\?q\?(?:[^?\s]*+(?:\?(?!=)|[^?\s]*+)*+)\?=/i', $in, $m, 0, $inpos)) {
+                $words[] = $m[0];
+                $wpos[] = $inpos;
+                $wtype[] = self::ENCWORD_QENC;
                 $inpos += strlen($m[0]);
             } else if (preg_match('/\G(?!“|”)\xE2?+[^\000-\040()\[\\]<>,;:\\\\"\xE2]*+((?:\\\\\'|(?!“|”)\xE2|[^\000-\040()\[\\]<>,;:\\\\"\xE2]*+)*+)/', $in, $m, 0, $inpos)
                        && $m[0] !== "") {
@@ -237,12 +244,16 @@ class MimeText {
             // extract name and email
             $name = "";
             for ($wk = $wi; $wk !== $wj; ++$wk) {
-                if ($wk !== $wi) {
+                if ($wk !== $wi
+                    && ($wtype[$wk] !== self::ENCWORD_QENC
+                        || $wtype[$wk-1] !== self::ENCWORD_QENC)) {
                     $sp = $wpos[$wk-1] + strlen($words[$wk-1]);
                     $name .= substr($in, $sp, $wpos[$wk] - $sp);
                 }
                 if ($wtype[$wk] === self::ENCWORD_BAREAPOS) {
                     $name .= str_replace("\\'", "'", $words[$wk]);
+                } else if ($wtype[$wk] === self::ENCWORD_QENC) {
+                    $name .= self::decode_header($words[$wk]);
                 } else {
                     $name .= $words[$wk];
                 }
@@ -294,12 +305,6 @@ class MimeText {
             if ($this->out !== $header) {
                 $this->out .= ", ";
                 $this->linelen += 2;
-            }
-
-            // unquote any existing UTF-8 encoding
-            if (str_starts_with($name, "=?")
-                && substr_compare($name, "=?utf-8?q?", 0, 10, true) === 0) {
-                $name = self::decode_header($name);
             }
 
             // curly -> straight if user provided a single quoted name
@@ -363,7 +368,7 @@ class MimeText {
         }
         $out = '';
         $pos = 0;
-        while (preg_match('/\G=\?utf-8\?q\?([^?]*+(?:\?(?!=)|[^?]*+)*+)\?=(\r?+\n )?+/i', $text, $m, 0, $pos)) {
+        while (preg_match('/\G=\?utf-8\?q\?([^?\s]*+(?:\?(?!=)|[^?\s]*+)*+)\?=[ \t]*+(\r?+\n[ \t]++)?+/i', $text, $m, 0, $pos)) {
             $f = str_replace('_', ' ', $m[1]);
             $out .= preg_replace_callback('/=([0-9A-F][0-9A-F])/',
                                           "MimeText::chr_hexdec_callback",
