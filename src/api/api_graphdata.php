@@ -17,7 +17,7 @@ class GraphData_API {
         if (!$fg->prepare()) {
             return new JsonResult(["ok" => false, "message_list" => $fg->message_list()]);
         }
-        return new JsonResult($fg->graph_json(["ok" => true, "message_list" => $fg->message_list()]))
+        return (new JsonResult($fg->graph_json(["ok" => true, "message_list" => $fg->message_list()])))
             ->set_pretty_print(false);
     }
 }
