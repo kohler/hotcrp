@@ -940,4 +940,30 @@ class Tags_Tester {
         xassert_eqq(TagInfo::TF_SITEWIDE, TagInfo::TF_ADMIN_PUBLIC);
         xassert_eqq(TagInfo::TF_CONFLICT_FREE, TagInfo::TF_PC_PUBLIC);
     }
+
+    function test_vote_tag_with_slash() {
+        // tags may contain `/`, which must not terminate regex delimiters
+        $this->conf->save_refresh_setting("tag_vote", 1, "a/b#2");
+        $this->conf->update_automatic_tags();
+        xassert_assign($this->u_varghese, "paper,tag\n1,+~a/b#1\n");
+        $prow = $this->u_chair->checked_paper_by_id(1);
+        xassert_eqq($prow->tag_value("{$this->u_varghese->contactId}~a/b"), 1.0);
+
+        $qreq = TestQreq::get(["p" => 1, "tag" => "a/b"])->set_user($this->u_chair);
+        $jr = Tags_API::votereport_api($this->u_chair, $qreq, $prow);
+        xassert_eqq($jr["ok"], true);
+        xassert_str_contains($jr["vote_report"], "Varghese");
+
+        $search = new PaperSearch($this->u_chair, "1");
+        $pl = new PaperList("empty", $search);
+        $pl->parse_view("show:tagreport:a/b", PaperList::VIEWORIGIN_MAX);
+        xassert_str_contains($pl->table_html(), "Varghese");
+
+        $aset = new AssignmentSet($this->u_varghese);
+        $aset->parse("paper,action,tag\n1,cleartag,~a/b\n");
+        xassert($aset->execute());
+        $this->conf->save_refresh_setting("tag_vote", null);
+        $prow = $this->u_chair->checked_paper_by_id(1);
+        xassert_eqq($prow->tag_value("{$this->u_varghese->contactId}~a/b"), null);
+    }
 }

@@ -35,7 +35,7 @@ class TagReport_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $a = [];
-        preg_match_all('/ (\d+)~' . preg_quote($this->tag) . '#(\S+)/i', $row->all_tags_text(), $m);
+        preg_match_all('/ (\d+)~' . preg_quote($this->tag, '/') . '#(\S+)/i', $row->all_tags_text(), $m);
         for ($i = 0; $i != count($m[0]); ++$i) {
             if ($this->viewtype == 2 && $m[2][$i] <= 0) {
                 continue;

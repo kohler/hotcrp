@@ -1369,7 +1369,7 @@ class ReviewInfo implements JsonSerializable {
             } else if ($w === "bad" || $w === "-" || $w === "\xE2\x88\x92" /* MINUS */) {
                 $n |= ReviewInfo::RATING_BADMASK;
             } else if ($w !== "") {
-                $re = '/\A' . str_replace('\*', '.*', preg_quote(str_replace("_", "-", $w))) . '\z/';
+                $re = '/\A' . str_replace('\*', '.*', preg_quote(str_replace("_", "-", $w), '/')) . '\z/';
                 $matches = preg_grep($re, self::$rating_match_strings);
                 if (empty($matches) && strpos($w, "*") === false) {
                     return null;

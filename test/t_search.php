@@ -15,6 +15,15 @@ class Search_Tester {
         $this->u_root = $conf->root_user();
     }
 
+    function test_wildcard_search_word_with_slash() {
+        // a `/` in a wildcard word must not terminate the regex delimiter
+        xassert_search($this->u_root, "round:x/*", "");
+        xassert_int_list_eqq(array_keys(search_json($this->u_root, "rate:x/*")),
+                             array_keys(search_json($this->u_root, "rate:x*")));
+        xassert_int_list_eqq(array_keys(search_json($this->u_root, "round:R1*")),
+                             array_keys(search_json($this->u_root, "round:R1")));
+    }
+
     function test_canonical_query() {
         xassert_eqq(PaperSearch::canonical_query("(a b) OR (c d)", "", "", "", $this->conf),
                     "(a b) OR (c d)");

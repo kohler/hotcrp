@@ -196,7 +196,7 @@ class Tags_API {
             return JsonResult::make_permission_error();
         }
         $votemap = [];
-        preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);
+        preg_match_all('/ (\d+)~' . preg_quote($tag, '/') . '#(\S+)/i', $prow->all_tags_text(), $m);
         $is_approval = $user->conf->tags()->is_approval($tag);
         $min_vote = $is_approval ? 0 : 0.001;
         for ($i = 0; $i != count($m[0]); ++$i) {
