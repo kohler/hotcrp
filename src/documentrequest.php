@@ -417,7 +417,8 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         if ($this->active_count === null) {
             $this->active_count = count($docs);
         }
-        if ($this->viewer->can_view_document_history($this->prow)) {
+        if ($this->dtype >= DTYPE_FINAL
+            && $this->viewer->can_view_document_history($this->prow)) {
             $active_docids = [];
             foreach ($docs as $doc) {
                 $active_docids[] = $doc->paperStorageId;

@@ -332,6 +332,31 @@ class Comments_Tester {
         xassert(!$cmt->has_attachments());
     }
 
+    // a comment attachment’s history lists only that comment’s attachments
+    function test_attachment_history_per_comment() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $cids = $docids = [];
+        foreach (["a", "b"] as $name) {
+            $qreq = new Qrequest("POST", ["c" => "new", "text" => "Attached {$name}", "attachment:1" => "new"]);
+            $qreq->approve_token();
+            $qreq->set_file_content("attachment:1:file", "File {$name}", "{$name}.txt", "text/plain");
+            $j = call_api("=comment", $this->u_chair, $qreq, $paper1);
+            xassert($j->ok);
+            $cids[] = (int) $j->comment->cid;
+            $docids[] = $j->comment->docs[0]->docid;
+        }
+
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert($this->u_chair->can_view_document_history($paper1));
+        $j = call_api("documentlist", $this->u_chair, ["p" => "1", "dt" => "comment-cx{$cids[0]}", "attachment" => "a.txt", "history" => "1"], $paper1);
+        xassert($j->ok);
+        xassert_eqq(array_map(function ($dj) { return $dj->docid; }, $j->document_history), [$docids[0]]);
+
+        foreach ($cids as $cid) {
+            call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper1);
+        }
+    }
+
     function test_plain_comment_visibility_topic() {
         $paper1 = $this->conf->checked_paper_by_id(1);
 
