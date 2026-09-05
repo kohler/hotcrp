@@ -3606,12 +3606,16 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $confpdf = $this->conf->setting("pc_confpdf") ?? 0;
         }
         $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
-        if ($this->hidden_papers
-            || !$this->scope_allows(TS::S_SUB_READ)
-            || $confpdf > 1) {
+        // We don’t use `$this->scope_allows()` because there’s a chance
+        // `($this->overrides() & Contact::OVERRIDE_SCOPE)`, and
+        // dangerous_track_mask() (which must be conservative) must obey the
+        // non-overridden scope.
+        if ($confpdf > 1
+            || $this->hidden_papers
+            || ($this->_scope && !$this->_scope->allows(TS::S_SUB_READ))) {
             $this->_dangerous_track_mask |= Track::FM_VIEWPDF;
-        } else if (!$this->scope_allows(TS::S_DOC_READ)
-                   || $confpdf > 0) {
+        } else if ($confpdf > 0
+                   || ($this->_scope && !$this->_scope->allows(TS::S_DOC_READ))) {
             $this->_dangerous_track_mask |= 1 << Track::VIEWPDF;
         }
         return $this->_dangerous_track_mask;
