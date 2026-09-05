@@ -409,7 +409,11 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         } else {
             $whynot = $state->user->perm_edit_some_tag($prow);
         }
-        return $whynot ? new AssignmentError($whynot) : true;
+        if (!$whynot) {
+            return true;
+        }
+        $state->paper_error($whynot);
+        return false;
     }
     /** @return false */
     static function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {

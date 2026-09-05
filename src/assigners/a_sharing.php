@@ -68,11 +68,8 @@ class Sharing_AssignmentParser extends UserlessAssignmentParser {
         Dbl::free($result);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($state->user->can_manage($prow)
-            || $prow->has_author($state->user)) {
-            return true;
-        }
-        return new AssignmentError("<0>Permission error");
+        return $state->user->can_manage($prow)
+            || $prow->has_author($state->user);
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $ia = 0;

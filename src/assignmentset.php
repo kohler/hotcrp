@@ -569,13 +569,21 @@ class AssignmentState extends MessageSet {
         $this->has_user_error = true;
         $this->error($msg);
     }
-    /** @param string $msg
+    /** @param string|MessageItem|FailureReason $msg
      * @return void */
     function paper_error($msg) {
-        if ($this->paper_exact_match) {
-            $this->append_item_here(MessageItem::error($msg));
+        if ($msg instanceof FailureReason) {
+            foreach ($msg->message_list(2) as $mi) {
+                $this->paper_error($mi);
+            }
         } else {
-            $this->nonexact_msgs[] = $this->append_item_here(MessageItem::warning($msg));
+            $mi = $msg instanceof MessageItem ? $msg : MessageItem::error($msg);
+            if ($this->paper_exact_match) {
+                $this->append_item_here($mi);
+            } else {
+                $mi->status = min(1, $mi->status);
+                $this->nonexact_msgs[] = $this->append_item_here($mi);
+            }
         }
     }
     function mark_matching_errors() {
@@ -818,32 +826,34 @@ abstract class AssignmentParser {
     function __construct($type) {
         $this->type = $type;
     }
-    // Return a descriptor of the set of papers relevant for this action.
-    // `"req"`, the default, means call `apply` for each requested paper.
-    // `"none"` means call `apply` exactly once with a placeholder paper.
-    // `"reqpost"` means each requested paper, then once with a placeholder.
-    /** @param CsvRow $req
+
+    /** Return a descriptor of the set of papers relevant for this action.
+     * `"req"`, the default, means call `apply` for each requested paper.
+     * `"none"` means call `apply` exactly once with a placeholder paper.
+     * `"reqpost"` means each requested paper, then once with a placeholder.
+     * @param CsvRow $req
      * @return 'req'|'none'|'reqpost' */
     function paper_universe($req, AssignmentState $state) {
         return "req";
     }
-    // Optionally expand the set of interesting papers. Returns a search
-    // expression, such as "ALL", or false.
-    //
-    // `expand_papers` is called for *all* actions before any actions are
-    // processed further.
-    /** @param CsvRow $req
+
+    /** Optionally expand the set of interesting papers. Returns a search
+     * expression, such as "ALL", or false.
+     *
+     * `expand_papers` is called for *all* actions before any actions are
+     * processed further.
+     * @param CsvRow $req
      * @return string */
     function expand_papers($req, AssignmentState $state) {
         return (string) $req["paper"];
     }
 
-    // Initialize parser for a request.
-    // The request passed to `set_req` is used for subsequent `user_universe`,
-    // `paper_filter`, `expand_*user`, `allow_user`, `allow_paper`, and `apply`
-    // calls. Returns false if `$req` is erroneous and should not be parsed
-    // further.
-    /** @param CsvRow $req
+    /** Initialize parser for a request.
+     * The request passed to `set_req` is used for subsequent `user_universe`,
+     * `paper_filter`, `expand_*user`, `allow_user`, `allow_paper`, and `apply`
+     * calls. Returns false if `$req` is erroneous and should not be parsed
+     * further.
+     * @param CsvRow $req
      * @return bool */
     function set_req($req, AssignmentState $state) {
         return true;
@@ -853,75 +863,76 @@ abstract class AssignmentParser {
     function load_state(AssignmentState $state) {
     }
 
-    // Return `true` iff this user may perform this action class on this paper.
-    // To indicate an error, return an `AssignmentError` or simply `false`
-    // (which means the user cannot administer the submission).
-    // Called before the action is fully parsed, so it may be appropriate to
-    // return `true` here and perform the full permission check later.
-    /** @return bool|AssignmentError */
+    /** Return `true` iff this user may perform this action class on this paper.
+     * To indicate an error, optionally report it via `$state->paper_error`,
+     * then return `false`. (The generic message is that the user cannot
+     * administer the submission.) Called before the action is fully parsed, so
+     * it may be appropriate to return `true` here and perform a full
+     * permission check later.
+     * @return bool */
     abstract function allow_paper(PaperInfo $prow, AssignmentState $state);
 
-    // Return a descriptor of the set of users relevant for this action.
-    // Returns `"none"`, `"pc"`, `"reviewers"`, `"pc+reviewers"`, or `"any"`.
-    /** @param CsvRow $req
+    /** Return a descriptor of the set of users relevant for this action.
+     * Returns `"none"`, `"pc"`, `"reviewers"`, `"pc+reviewers"`, or `"any"`.
+     * @param CsvRow $req
      * @return 'none'|'pc'|'reviewers'|'pc+reviewers'|'any' */
     function user_universe($req, AssignmentState $state) {
         return "pc";
     }
 
-    // Return a conservative approximation of the papers relevant for this
-    // action, or `null` if such an approximation is difficult to compute.
-    // The approximation is an array whose keys are paper IDs; a truthy value
-    // for pid X means the action applies to paper X.
-    //
-    // The assignment logic calls `paper_filter` when an action is applied to
-    // an unusually large number of papers, such as removing all reviews by a
-    // specific user.
-    /** @param CsvRow $req
+    /** Return a conservative approximation of the papers relevant for this
+     * action, or `null` if such an approximation is difficult to compute.
+     * The approximation is an array whose keys are paper IDs; a truthy value
+     * for pid X means the action might apply to paper X.
+     *
+     * The assignment logic calls `paper_filter` when an action is applied to
+     * an unusually large number of papers, such as removing all reviews by a
+     * specific user.
+     * @param CsvRow $req
      * @return ?array */
     function paper_filter($contact, $req, AssignmentState $state) {
         return null;
     }
 
-    // Return the list of users corresponding to user `"any"` for this request,
-    // or null if `"any"` is an invalid user.
-    /** @param CsvRow $req
+    /** Return the list of users corresponding to user `"any"` for this request,
+     * or null if `"any"` is an invalid user.
+     * @param CsvRow $req
      * @return ?array<Contact> */
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return null;
     }
 
-    // Return the list of users relevant for this request, whose user is not
-    // specified, or false if an explicit user is required.
-    /** @param CsvRow $req
+    /** Return the list of users relevant for this request, whose user is not
+     * specified, or false if an explicit user is required.
+     * @param CsvRow $req
      * @return ?array<Contact> */
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return null;
     }
 
-    // Return the list of users corresponding to `$user`, which is an anonymous
-    // user (either `anonymous\d*` or `anonymous-new`), or null if a
-    // non-anonymous user is required.
-    /** @param CsvRow $req
+    /** Return the list of users corresponding to `$user`, which is an anonymous
+     * user (either `anonymous\d*` or `anonymous-new`), or null if a
+     * non-anonymous user is required.
+     * @param CsvRow $req
      * @return ?array<Contact> */
     function expand_anonymous_user(PaperInfo $prow, $req, $user, AssignmentState $state) {
         return null;
     }
 
-    // Return true iff this action may be applied to paper `$prow` and user
-    // `$contact`. Note that `$contact` might not be a true database user;
-    // for instance, it might have `contactId == 0` (for user `"none"`)
-    // or it might have a negative `contactId` (for a user that doesn’t yet
-    // exist in the database).
-    /** @param CsvRow $req
+    /** Return true iff this action may be applied to paper `$prow` and user
+     * `$contact`. Note that `$contact` might not be a true database user;
+     * for instance, it might have `contactId == 0` (for user `"none"`)
+     * or it might have a negative `contactId` (for a user that doesn’t yet
+     * exist in the database).
+     * @param CsvRow $req
      * @return bool|AssignmentError */
     abstract function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
 
-    // Apply this action to `$state` for paper `$prow` and user `$contact`.
-    // Return `true` iff the action succeeds. To indicate an error, call
-    // `$state->error($ftext)` and return `false`, or, equivalently, return
-    // an `AssignmentError`.
-    /** @param CsvRow $req
+    /** Apply this action to `$state` for paper `$prow` and user `$contact`.
+     * Return `true` iff the action succeeds. To indicate an error, call
+     * `$state->error($ftext)` and return `false`, or, equivalently, return
+     * an `AssignmentError`.
+     * @param CsvRow $req
      * @return bool|AssignmentError */
     abstract function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
 }
@@ -1828,10 +1839,15 @@ class AssignmentSet {
      * @return 0|1|-1 */
     private function apply_paper(PaperInfo $prow, $contacts, AssignmentParser $aparser, $req) {
         // check if we can affect the paper
+        $mcount = $this->astate->message_count();
         $allow = $aparser->allow_paper($prow, $this->astate);
         if ($allow !== true) {
-            $allow = $allow ? : new AssignmentError($prow->failure_reason(["administer" => true]));
-            $this->astate->paper_error($allow->getMessage());
+            if ($allow instanceof AssignmentError) {
+                $this->astate->paper_error($allow->getMessage());
+            }
+            if ($this->astate->message_count() === $mcount) {
+                $this->astate->paper_error($prow->failure_reason(["administer" => true]));
+            }
             return 0;
         }
 

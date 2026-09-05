@@ -63,7 +63,8 @@ class Lead_AssignmentParser extends AssignmentParser {
         } else if ($state->user->privChair) {
             return true;
         }
-        return new AssignmentError("<0>Only chairs and sysadmins can change paper administrators");
+        $state->paper_error("<0>Only chairs and sysadmins can change paper administrators");
+        return false;
     }
     function user_universe($req, AssignmentState $state) {
         if ($this->key === "shepherd" && $state->conf->setting("extrev_shepherd")) {

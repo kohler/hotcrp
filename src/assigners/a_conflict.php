@@ -51,10 +51,11 @@ class Conflict_AssignmentParser extends AssignmentParser {
         if ($state->user->can_manage($prow)) {
             return true;
         } else if ($prow->has_author($state->user)) {
-            if ($this->iscontact || !($whyNot = $state->user->perm_edit_paper($prow))) {
+            if ($this->iscontact
+                || !($fr = $state->user->perm_edit_paper($prow))) {
                 return true;
             }
-            return new AssignmentError($whyNot);
+            $state->paper_error($fr);
         }
         return false;
     }

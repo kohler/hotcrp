@@ -106,8 +106,9 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($prow->paperId > 0
-            && ($whyNot = $state->user->perm_edit_some_tag($prow))) {
-            return new AssignmentError($whyNot);
+            && ($fr = $state->user->perm_edit_some_tag($prow))) {
+            $state->paper_error($fr);
+            return false;
         }
         return true;
     }
