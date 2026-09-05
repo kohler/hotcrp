@@ -35,7 +35,7 @@ class Log_Page {
         $x = [];
         foreach ($this->conf->options()->form_fields() as $opt) {
             if ($opt->is_document())
-                $x[] = $opt->json_key();
+                $x[] = preg_quote($opt->json_key(), "/");
         }
         $this->document_regexp = join("|", $x);
         $this->unix_timestamp = $qreq->time === "u";
@@ -514,7 +514,9 @@ class Log_Page {
             $act = substr($act, $colon);
             while (preg_match("/\\A(.*? )({$this->document_regexp})((?:,| |\\z).*)\\z/", $act, $m)) {
                 $at .= htmlspecialchars($m[1])
-                    . $conf->hotlink($m[2], "doc", ["p" => $row->paperId, "dt" => $m[2], "at" => $row->timestamp]);
+                    . $conf->hotlink(htmlspecialchars($m[2]), "doc", [
+                        "p" => $row->paperId, "dt" => $m[2], "at" => $row->timestamp
+                    ]);
                 $act = $m[3];
             }
         }
