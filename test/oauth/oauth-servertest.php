@@ -587,11 +587,37 @@ function server_handle_callback(ServerRequestInterface $req, Response $res) {
     // the access token actually works. This needs an API to call, which a
     // server described only by `auth_uri` and `token_uri` may not name.
     $email = null;
-    if ($txn->api !== null) {
-        $whoami = server_api($txn, "whoami", $tok->access_token);
+    // An identity-only (`openid`)-scoped grant conveys the user through the
+    // id_token and gets no API access: the provider returns a placeholder
+    // access token (HotCRP uses `hct_invalid_token`, `expires_in` 0) only
+    // because OIDC requires the field. There is nothing to accept at the API,
+    // so skip the check, as the id_token check is skipped when `openid` was not
+    // asked for.
+    $identity_only = ($tok->access_token ?? "") === "hct_invalid_token"
+        || ($tok->access_token_expires_in ?? null) === 0
+        || ($tok->expires_in ?? null) === 0;
+    if ($txn->api !== null && $identity_only) {
+        $rep->skip("access token is accepted by the API",
+            "identity-only grant: the access token carries no API scope");
+    } else if ($txn->api !== null) {
+        // call whoami with the bearer token; capture the raw response too, so a
+        // failure can say whether the token was rejected (status), what scope
+        // it carried, and what the endpoint actually returned
+        [$wstatus, $whdr, $wbody] = server_http("GET", "{$txn->api}whoami", [
+            "headers" => ["Authorization" => "Bearer {$tok->access_token}"]
+        ]);
+        $wj = json_decode($wbody);
+        $whoami = is_object($wj) ? (object) ["status" => $wstatus, "headers" => $whdr, "body" => $wj] : null;
         $email = $whoami->body->email ?? null;
+        $detail = $email;
+        if ($email === null) {
+            $detail = "no email: HTTP {$wstatus}"
+                . ", requested scope " . json_encode($txn->scope)
+                . ", token scope " . json_encode($tok->scope ?? null)
+                . ", body " . substr(trim($wbody), 0, 300);
+        }
         $rep->check($whoami && $whoami->status === 200 && $email,
-            "access token is accepted by the API", (string) ($email ?? "no email"));
+            "access token is accepted by the API", (string) $detail);
         if ($claims && $email) {
             $rep->check(strcasecmp((string) ($claims->sub ?? ""), $email) === 0
                         || strcasecmp((string) ($claims->email ?? ""), $email) === 0,
