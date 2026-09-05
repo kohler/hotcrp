@@ -1069,6 +1069,31 @@ class Permission_Tester {
         xassert($this->u_marina->is_manager());
     }
 
+    /** `hidden_papers` (set by Contact::actas_user when a chair conflicted with
+     * a paper managed by someone else "becomes" a user) forces can_view_paper()
+     * to false at the top, but the rights/admin computation never consults it,
+     * so can_manage() stays true. A principal who may not view a paper must not
+     * be able to administer it (or the assignment paths leak its conflicts and
+     * authors). This test FAILS until the hole is plugged. */
+    function test_hidden_papers_block_management() {
+        $paper4 = $this->conf->checked_paper_by_id(4);
+        xassert_eqq($paper4->managerContactId, $this->u_marina->contactId);
+
+        // baseline: as the paper's manager, marina may view and manage #4
+        $marina = $this->conf->fresh_user_by_email("marina@poema.ru");
+        xassert($marina->can_view_paper($paper4));
+        xassert($marina->can_manage($paper4));
+
+        // the state Contact::actas_user() produces for a hidden paper (set on a
+        // fresh user object so it is applied before any rights are cached)
+        $marina->hidden_papers = [$paper4->paperId => false];
+        Contact::update_rights();
+        xassert(!$marina->can_view_paper($paper4));
+        xassert(!$marina->can_manage($paper4));
+
+        Contact::update_rights(); // forget Marina's cached rights
+    }
+
     function test_override_conflicts() {
         xassert_assign($this->conf->root_user(), "action,paper,user,tag\nconflict,4 5,chair@_.com\ntag,4 5,,testtag");
         $paper4 = $this->u_chair->checked_paper_by_id(4);

@@ -3201,8 +3201,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $this->role_mask = self::ROLE_DBMASK;
         $this->roles = $this->roles & self::ROLE_DBMASK;
         $this->_session_roles = $this->roles;
-        $this->_conflict_types = $this->_can_view_pc = $this->_dangerous_track_mask =
-            $this->_has_approvable = $this->_authored_papers = null;
+        $this->_conflict_types = $this->_can_view_pc = null;
+        $this->_has_approvable = $this->_authored_papers = null;
+        $this->_dangerous_track_mask = $this->_root_user ? 0 : null;
         $this->_rights_version = self::$rights_version;
     }
 
@@ -3613,6 +3614,25 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->_dangerous_track_mask;
     }
 
+    /** @param PaperInfo $prow
+     * @param PaperContactInfo $ci
+     * @return bool */
+    private function _compute_allow_admin_0($prow, $ci) {
+        // Already checked isPC and hidden_papers
+        return $this->_root_user
+            || $prow->managerContactId === $this->contactXid
+            || ($this->privChair
+                && (!$prow->managerContactId
+                    || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
+                && (($this->dangerous_track_mask() & Track::FM_VIEWADMIN) === 0
+                    || ($this->conf->check_tracks($prow, $this, Track::VIEW)
+                        && $this->conf->check_tracks($prow, $this, Track::ADMIN))))
+            || ($this->is_track_manager()
+                && (!$prow->managerContactId
+                    || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
+                && $this->conf->check_admin_tracks($prow, $this));
+    }
+
     /** @return PaperContactInfo */
     private function rights(PaperInfo $prow) {
         // short-circuit lookup
@@ -3627,19 +3647,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // check first whether administration is allowed
         if (($ci->ciflags & PCI::CIF_SET0) === 0) {
             $ci->ciflags |= PCI::CIF_SET0;
-            if ($prow->managerContactId === $this->contactXid
-                || ($this->privChair
-                    && (!$prow->managerContactId
-                        || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
-                    && (($this->dangerous_track_mask() & Track::FM_VIEWADMIN) === 0
-                        || ($this->conf->check_tracks($prow, $this, Track::VIEW)
-                            && $this->conf->check_tracks($prow, $this, Track::ADMIN))))
-                || ($this->isPC
-                    && $this->is_track_manager()
-                    && (!$prow->managerContactId
-                        || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
-                    && $this->conf->check_admin_tracks($prow, $this))
-                || $this->_root_user) {
+            if ($this->isPC
+                && !isset($this->hidden_papers[$prow->paperId])
+                && $this->_compute_allow_admin_0($prow, $ci)) {
                 $ci->ciflags |= PCI::CIF_ALLOW_ADMIN_0;
             }
         }
@@ -4351,8 +4361,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         // hidden_papers is set when a chair with a conflicted, managed paper
         // “becomes” a user
-        if ($this->hidden_papers !== null
-            && isset($this->hidden_papers[$prow->paperId])) {
+        if (isset($this->hidden_papers[$prow->paperId])) {
             $this->hidden_papers[$prow->paperId] = true;
             return false;
         }
