@@ -254,10 +254,9 @@ class Review_Page {
 
     /** @return ?int */
     function current_capability_rrid() {
-        if (($capuid = $this->user->reviewer_capability($this->prow))) {
-            $u = $this->conf->user_by_id($capuid, USER_SLICE);
-            $rrow = $this->prow->review_by_user($capuid);
-            $refs = $u ? $this->prow->review_refusals_by_user($u) : [];
+        if (($capu = $this->user->reviewer_capability_user($this->prow))) {
+            $rrow = $this->prow->review_by_user($capu->contactId);
+            $refs = $this->prow->review_refusals_by_user($capu);
             if ($rrow && (!$this->rrow || $this->rrow === $rrow)) {
                 return $rrow->reviewId;
             } else if (!$rrow && !empty($refs) && $refs[0]->refusedReviewId > 0) {
@@ -267,8 +266,8 @@ class Review_Page {
         return null;
     }
 
-    function add_capability_user_message($capuid) {
-        if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
+    function add_capability_user_message() {
+        if (($u = $this->prow->reviewer_capability_user())) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = Contact::session_index_by_email($this->qreq, $u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL);
@@ -300,6 +299,9 @@ class Review_Page {
             } else {
                 $m = "<5>You’re accessing this review using a special link for reviewer {$hemail}. " . $this->conf->hotlink("Sign in to the site", "signin", ["email" => $u->email, "cap" => null], ["class" => "nw"]);
             }
+            $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
+        } else {
+            $m = $this->conf->_("<0>Your reviewer link is no longer active");
             $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
         }
     }
@@ -356,9 +358,6 @@ class Review_Page {
         $pp = new Review_Page($user, $qreq);
         $pp->load_prow();
 
-        // fix user
-        $capuid = $user->reviewer_capability($pp->prow);
-
         // action
         if ($qreq->cancel) {
             $pp->handle_cancel();
@@ -371,11 +370,12 @@ class Review_Page {
         }
 
         // capability may accept to different user
+        $capuid = $user->reviewer_capability($pp->prow);
         if ($capuid
             && $pp->rrow
             && $capuid === $pp->rrow->contactId
             && $capuid !== $user->contactXid) {
-            $pp->add_capability_user_message($capuid);
+            $pp->add_capability_user_message();
         }
 
         $pp->print();

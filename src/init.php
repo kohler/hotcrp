@@ -446,7 +446,7 @@ function initialize_user($qreq, $kwarg = null) {
 
     // author view capability pages should not be indexed
     if ($muser->email === ""
-        && $muser->has_author_view_capability()
+        && $muser->author_view_capability_paper_ids()
         && !$conf->opt("allowIndexPapers")) {
         Navigation::header("X-Robots-Tag: noindex, noarchive");
     }

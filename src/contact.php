@@ -2044,20 +2044,20 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 || isset($this->_capabilities["@ra{$pid}"]));
     }
 
-    /** @return bool */
-    function has_author_view_capability() {
-        return $this->_capabilities !== null && $this->author_view_capability_paper_ids();
+    /** @return list<int> */
+    private function capability_paper_ids($pfx) {
+        $pids = [];
+        foreach ($this->_capabilities ?? [] as $k => $v) {
+            if (str_starts_with($k, $pfx)
+                && ($p = stoi(substr($k, strlen($pfx)))) !== null)
+                $pids[] = $p;
+        }
+        return $pids;
     }
 
     /** @return list<int> */
     function author_view_capability_paper_ids() {
-        $pids = [];
-        foreach ($this->_capabilities ?? [] as $k => $v) {
-            if (str_starts_with($k, "@av") && ctype_digit(substr($k, 3))) {
-                $pids[] = (int) substr($k, 3);
-            }
-        }
-        return $pids;
+        return $this->_capabilities ? $this->capability_paper_ids("@av") : [];
     }
 
     /** @param int|PaperInfo $p
@@ -2071,10 +2071,17 @@ final class Contact extends ContactPermissions implements JsonSerializable {
      * @return ?Contact */
     function reviewer_capability_user($p) {
         $pid = is_int($p) ? $p : $p->paperId;
-        if (($rcid = $this->_capabilities["@ra{$pid}"] ?? null)) {
-            return $this->conf->user_by_id($rcid, USER_SLICE);
+        if (($rcid = $this->_capabilities["@ra{$pid}"] ?? null)
+            && ($u = $this->conf->user_by_id($rcid, USER_SLICE))
+            && !$u->is_disabled()) {
+            return $u;
         }
         return null;
+    }
+
+    /** @return list<int> */
+    function reviewer_capability_paper_ids() {
+        return $this->_capabilities ? $this->capability_paper_ids("@ra") : [];
     }
 
     /** @param string $name
@@ -3295,7 +3302,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if (($this->role_mask & self::ROLE_OUTSTANDING_REVIEW) === 0) {
             $this->role_mask |= self::ROLE_OUTSTANDING_REVIEW;
             if ($this->has_review()
-                && $this->conf->fetch_ivalue("select exists (select * from PaperReview join Paper using (paperId) where Paper.timeSubmitted>0 and " . $this->act_reviewer_sql("PaperReview") . " and reviewNeedsSubmit!=0)")) {
+                && $this->conf->fetch_ivalue("select exists (select * from PaperReview join Paper using (paperId) where Paper.timeSubmitted>0 and " . $this->act_reviewer_sql("PaperReview", true) . " and reviewNeedsSubmit!=0)")) {
                 $this->roles |= self::ROLE_OUTSTANDING_REVIEW;
             }
         }
@@ -3741,7 +3748,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             if ($ci->reviewType == 0
                 && $this->_capabilities !== null
                 && ($ru = $this->reviewer_capability_user($prow->paperId))
-                && ($rci = $prow->contact_info($ru))) {
+                && ($rci = $prow->contact_info($ru))
+                && $rci->conflictType <= CONFLICT_MAXUNCONFLICTED) {
                 if ($rci->review_status === 0) {
                     $rci->review_status = PCI::CIRS_DECLINED;
                 }
@@ -4097,7 +4105,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return empty($m) ? "false" : $m[0];
     }
 
-    function act_reviewer_sql($table) {
+    /** @param string $table
+     * @param bool $include_capabilities
+     * @return string */
+    function act_reviewer_sql($table, $include_capabilities) {
         $m = [];
         if ($this->contactId > 0) {
             $m[] = "{$table}.contactId={$this->contactId}";
@@ -4105,7 +4116,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if (($rev_tokens = $this->review_tokens())) {
             $m[] = "{$table}.reviewToken in (" . join(",", $rev_tokens) . ")";
         }
-        if ($this->_capabilities !== null) {
+        if ($this->_capabilities !== null && $include_capabilities) {
             foreach ($this->_capabilities as $k => $v) {
                 if (str_starts_with($k, "@ra")
                     && $v
@@ -4115,12 +4126,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         if (empty($m)) {
             return "false";
-        } else if (count($m) > 1) {
-            $m = ["(" . join(" or ", $m) . ")"];
         }
+        $s = count($m) === 1 ? $m[0] : "(" . join(" or ", $m) . ")";
         // see also ReviewInfo::is_ghost
         $mask = $this->conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
-        return "({$m[0]} and ({$table}.rflags&{$mask})!=0)";
+        return "({$s} and ({$table}.rflags&{$mask})!=0)";
     }
 
     /** @param bool $allow_no_email

@@ -187,13 +187,12 @@ class SearchQueryInfo {
         if ($this->_has_review_signatures) {
             $this->add_column("reviewSignatures", "coalesce((select " . ReviewInfo::review_signature_sql($user->conf, $this->_review_scores) . " from PaperReview r force index (primary) where r.paperId=Paper.paperId), '')");
         } else if ($this->_has_my_review) {
-            $act_reviewer_sql = $user->act_reviewer_sql("PaperReview");
-            if ($act_reviewer_sql === "false") {
-                $this->add_column("myReviewPermissions", "''");
-            } else if (isset($this->tables["MyReviews"])) {
+            if (isset($this->tables["MyReviews"])) {
                 $this->add_column("myReviewPermissions", "coalesce(" . PaperInfo::my_review_permissions_sql("MyReviews.") . ", '')");
+            } else if (($act_reviewer_sql = $user->act_reviewer_sql("PaperReview", false)) === "false") {
+                $this->add_column("myReviewPermissions", "''");
             } else {
-                $this->add_column("myReviewPermissions", "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview force index (primary) where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId), '')");
+                $this->add_column("myReviewPermissions", "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview force index (primary) where PaperReview.paperId=Paper.paperId and {$act_reviewer_sql} group by paperId), '')");
             }
         }
     }

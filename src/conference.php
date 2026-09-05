@@ -4445,19 +4445,23 @@ class Conf {
         }
 
         // reviewer options
-        $recondition = $user ? $user->act_reviewer_sql("PaperReview") : "false";
+        $recondition = $user ? $user->act_reviewer_sql("PaperReview", false) : "false";
         $no_paperreview = $paperreview_is_my_reviews = false;
-        if ($options["myReviews"] ?? false) {
-            if ($recondition === "false") {
-                return Dbl_Result::make_empty();
-            }
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and {$recondition})";
+        if (($options["myReviews"] ?? false)
+            || ($options["myOutstandingReviews"] ?? false)) {
+            $cond = $recondition;
             $paperreview_is_my_reviews = true;
-        } else if ($options["myOutstandingReviews"] ?? false) {
-            if ($recondition === "false") {
+            if ($user && $user->reviewer_capability_paper_ids()) {
+                $cond = $user->act_reviewer_sql("PaperReview", true);
+                $paperreview_is_my_reviews = false;
+            }
+            if ($cond === "false") {
                 return Dbl_Result::make_empty();
             }
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and {$recondition} and reviewNeedsSubmit!=0)";
+            if (!($options["myReviews"] ?? false)) {
+                $cond .= " and reviewNeedsSubmit!=0";
+            }
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and {$cond})";
         } else if ($options["myReviewRequests"] ?? false) {
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and requestedBy={$cxid} and reviewType=" . REVIEW_EXTERNAL . ")";
         } else {

@@ -260,8 +260,8 @@ class PaperRequest {
     function find_review($user, $qreq) {
         // no review set? maybe use capability to find review
         if (!isset($qreq->reviewId)) {
-            $capuid = $user->reviewer_capability($this->prow);
-            return $capuid ? $this->prow->review_by_user($capuid) : null;
+            $capu = $user->reviewer_capability_user($this->prow);
+            return $capu ? $this->prow->review_by_user($capu) : null;
         }
         // `new` reviewId will definitey not exist
         if (str_ends_with($qreq->reviewId, "new")) {

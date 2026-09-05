@@ -1434,14 +1434,20 @@ class Limit_SearchTerm extends SearchTerm {
         }
         if ($need_ar & 2) {
             $sqi->add_reviewer_columns();
-            $rtable = $sqi->required() ? "MyReviews" : "PaperReview";
-            $q = $this->user->act_reviewer_sql($rtable);
+            if ($sqi->required()
+                && $this->limit !== "rout"
+                && !$this->user->reviewer_capability_paper_ids()) {
+                $rtable = "MyReviews";
+            } else {
+                $rtable = "PaperReview";
+            }
+            $q = $this->user->act_reviewer_sql($rtable, true);
             if ($q !== "false" && $this->limit === "rout") {
                 $q .= " and reviewNeedsSubmit!=0";
             }
             if ($q === "false") {
                 $arf[] = "false";
-            } else if (!$sqi->required()) {
+            } else if ($rtable === "PaperReview") {
                 $arf[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$q})";
             } else {
                 $sqi->add_table("MyReviews", [$need_ar === 3 ? "left join" : "join", "PaperReview", $q]);
@@ -1464,7 +1470,7 @@ class Limit_SearchTerm extends SearchTerm {
             if (!$this->reviewer->isPC
                 && (($this->lflag & self::LFLAG_REVIEWER) === 0
                     || $this->user->is_manager())) {
-                $reviewable_sql = $this->reviewer->act_reviewer_sql("PaperReview");
+                $reviewable_sql = $this->reviewer->act_reviewer_sql("PaperReview", true);
                 $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$reviewable_sql})";
             }
             break;

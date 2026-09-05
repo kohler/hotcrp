@@ -1025,6 +1025,117 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    function test_review_capability_conflict() {
+        // A review acceptance capability grants the reviewer's rights on
+        // the paper; if the reviewer is conflicted, it must grant no more
+        // than the conflicted reviewer would have when signed in.
+        $conf = $this->conf;
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        ++MailChecker::$disabled;
+
+        // paper 17 has a submitted PC review and a reviewer-only comment
+        $rrow17m = save_review(17, $this->u_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => true], null, ["quiet" => true]);
+        xassert($rrow17m && $rrow17m->reviewStatus >= ReviewInfo::RS_COMPLETED);
+        $prow = $conf->checked_paper_by_id(17);
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => "new", "text" => "Reviewers only", "visibility" => "rev"], $prow);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+
+        // an external reviewer submits a review using the emailed link
+        $ext = Contact::make_keyed($conf, ["email" => "capconflict@_.com", "name" => "Cap Conflict"])->store();
+        xassert(!!$ext);
+        $rrid = $this->u_chair->assign_review(17, $ext, REVIEW_EXTERNAL);
+        xassert(is_int($rrid) && $rrid > 0);
+        $prow = $conf->checked_paper_by_id(17);
+        $rrow = $prow->review_by_user($ext);
+        xassert(!!$rrow);
+        $tok = ReviewAccept_Capability::make($rrow, true);
+        xassert(!!$tok);
+        $capu = Contact::make($conf);
+        $capu->apply_capability_text($tok->salt);
+        xassert_eqq($capu->reviewer_capability($prow), $ext->contactId);
+        $tf = new ReviewValues($capu);
+        $tf->parse_qreq(new Qrequest("POST", ["ovemer" => 2, "revexp" => 2, "ready" => true]));
+        xassert($tf->check_and_save($prow, $rrow));
+
+        // unconflicted: both the account and the link see the other review
+        // and the comment
+        $prow = $conf->checked_paper_by_id(17);
+        $rrow = $prow->review_by_user($ext);
+        $rrow17m = $prow->review_by_user($this->u_mgbaker);
+        $crow = $prow->comment_by_id($cid);
+        xassert($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED);
+        foreach ([$ext, $capu] as $u) {
+            xassert($u->can_view_paper($prow));
+            xassert($u->can_view_review($prow, $rrow));
+            xassert($u->can_view_review($prow, $rrow17m));
+            xassert($u->can_view_review_identity($prow, $rrow17m));
+            xassert($u->can_view_comment($prow, $crow));
+        }
+
+        // the chair records a conflict for the external reviewer
+        xassert_assign($this->u_chair, "paper,action,email,conflict\n17,conflict,capconflict@_.com,pinned conflicted\n");
+        xassert($conf->checked_paper_by_id(17)->has_conflict($ext));
+        $capu = Contact::make($conf);
+        $capu->apply_capability_text($tok->salt);
+        xassert_eqq($capu->reviewer_capability(17), $ext->contactId);
+
+        // conflicted, signed in: the reviewer keeps the paper and their own
+        // review, but not other reviews or comments -- however loaded
+        foreach ([$conf->checked_paper_by_id(17), $ext->checked_paper_by_id(17)] as $xprow) {
+            $rrow = $xprow->review_by_user($ext);
+            xassert(!!$rrow);
+            $rrow17m = $xprow->review_by_user($this->u_mgbaker);
+            $crow = $xprow->comment_by_id($cid);
+            xassert($ext->can_view_paper($xprow));
+            xassert($ext->is_my_review($rrow));
+            xassert($ext->can_view_review($xprow, $rrow));
+            xassert(!$ext->can_view_review($xprow, $rrow17m));
+            xassert(!$ext->can_view_comment($xprow, $crow));
+            $whynot = $ext->perm_view_review($xprow, $rrow17m);
+            xassert($whynot && isset($whynot["conflict"]));
+        }
+        $j = call_api("review", $ext, ["p" => 17, "r" => $rrow17m->reviewId]);
+        xassert(!$j->ok);
+        $j = call_api("review", $ext, ["p" => 17, "r" => $rrow->reviewId]);
+        xassert($j->ok);
+        xassert_eqq($j->review->rid, $rrow->reviewId);
+        $j = call_api("comments", $ext, ["p" => 17]);
+        xassert($j->ok);
+        xassert_eqq($j->comments, []);
+
+        // conflicted, via the review-accept link: the capability confers no
+        // more than the signed-in conflicted account -- crucially not the
+        // other reviews, their identities, or the reviewer-only comment --
+        // however the paper is loaded
+        foreach ([$conf->checked_paper_by_id(17), $capu->checked_paper_by_id(17)] as $xprow) {
+            $rrow17m = $xprow->review_by_user($this->u_mgbaker);
+            $crow = $xprow->comment_by_id($cid);
+            xassert(!$capu->can_view_review($xprow, $rrow17m));
+            xassert(!$capu->can_view_review_identity($xprow, $rrow17m));
+            xassert(!$capu->can_view_comment($xprow, $crow));
+        }
+        $j = call_api("review", $capu, ["p" => 17, "r" => $rrow17m->reviewId]);
+        xassert(!$j->ok);
+        xassert(!isset($j->review));
+        $j = call_api("comments", $capu, ["p" => 17]);
+        xassert(!$j->ok || $j->comments === []);
+
+        // clean up
+        --MailChecker::$disabled;
+        xassert_assign($this->u_chair, "paper,action,email\n17,clearconflict,capconflict@_.com\n");
+        $prow = $conf->checked_paper_by_id(17);
+        xassert(!$prow->has_conflict($ext));
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => (string) $cid, "delete" => 1], $prow);
+        xassert($j->ok);
+        $prow->fresh_review_by_user($ext)->delete($this->u_chair, ["no_rights" => true]);
+        xassert(!$prow->fresh_review_by_user($ext));
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        Contact::update_rights();
+    }
+
     function test_reassign_preserves_review_history() {
         $conf = $this->conf;
         $conf->save_refresh_setting("rev_open", 1);

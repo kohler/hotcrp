@@ -314,12 +314,15 @@ class Paper_Page {
     }
 
     /** @param int $capuid */
-    private function print_capability_user_message($capuid) {
-        if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
+    private function print_capability_user_message() {
+        if (($u = $this->prow->reviewer_capability_user())) {
             $m = $this->conf->_("<0>You’re accessing this {submission} using a special link for reviewer {reviewer}",
                 new FmtArg("reviewer", $u->email, 0),
                 new FmtArg("self", $this->user->email, 0),
                 new FmtArg("signinurl", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
+            $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
+        } else {
+            $m = $this->conf->_("<0>Your reviewer link is no longer active");
             $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
         }
     }
@@ -456,7 +459,7 @@ class Paper_Page {
         // capability messages: decline, accept to different user
         if (($capuid = $user->reviewer_capability($pp->prow))
             && $capuid !== $user->contactXid) {
-            $pp->print_capability_user_message($capuid);
+            $pp->print_capability_user_message();
         }
 
         // render
