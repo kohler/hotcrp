@@ -102,4 +102,18 @@ class UpdateSession {
             $qs->set("themes", $themes);
         }
     }
+
+    /** Return this browser session’s persistent secret.
+     * This secret must never be sent to the user, and thus doesn’t need to be
+     * rotated on authentication changes.
+     * @param Qsession $qs
+     * @return string */
+    static function session_secret($qs) {
+        $ss = $qs->get("ssecret");
+        if (!is_string($ss) || $ss === "") {
+            $ss = base48_encode(random_bytes(18));
+            $qs->set("ssecret", $ss);
+        }
+        return $ss;
+    }
 }

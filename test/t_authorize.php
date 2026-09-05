@@ -29,6 +29,12 @@ class Authorize_Tester {
     private $_documents = [];
     /** @var ?string */
     private $_last_error;
+    /** The browser session of the flow under test. `authorize_outcome` starts a
+     * fresh one when a new authorization begins and reuses it otherwise, so the
+     * confirm/re-view steps share the session that minted the code — as one
+     * browser would. A code is bound to its minting session (`ssecret`).
+     * @var ?Qsession */
+    private $_qs;
 
     const MDOC_CLIENT_ID = "https://mdoc.example.com/client.json";
     const MDOC_REDIRECT_URI = "http://127.0.0.1:5173/callback";
@@ -143,7 +149,10 @@ class Authorize_Tester {
         $this->_last_client_id = $jr->client_id;
         $this->_last_client_secret = $jr->client_secret;
 
-        // Step 2: Begin authorization request (Authorize_Page::go without ComponentSet)
+        // Step 2: Begin authorization request (Authorize_Page::go without ComponentSet).
+        // Mint and confirm share one session, as a single browser would: the
+        // code is bound to the session that created it.
+        $qs = new MemoryQsession;
         $state = base48_encode(random_bytes(16));
         $args = [
             "client_id" => $this->_last_client_id,
@@ -156,7 +165,7 @@ class Authorize_Tester {
         if (isset($rest["scope"])) {
             $args["scope"] = $rest["scope"];
         }
-        $qreq = TestQreq::user_get($user, $args)->set_page("authorize");
+        $qreq = TestQreq::user_get($user, $args, $qs)->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         $code = null;
@@ -181,7 +190,7 @@ class Authorize_Tester {
             // account: the grant speaks as the bot, the chair authorizes it
             $confirm["authbot"] = $rest["authbot"];
         }
-        $qreq = TestQreq::user_post($user, $confirm)->set_page("authorize");
+        $qreq = TestQreq::user_post($user, $confirm, $qs)->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         try {
@@ -641,6 +650,9 @@ class Authorize_Tester {
 
         $verifier = base48_encode(random_bytes(32));
 
+        // Mint and confirm share one session, as a single browser would.
+        $qs = new MemoryQsession;
+
         // Step 1: Begin authorization request
         $state = base48_encode(random_bytes(16));
         $args = [
@@ -665,7 +677,7 @@ class Authorize_Tester {
             $args["code_challenge"] = $args["code_challenge_method"] === "plain"
                 ? $verifier : base64url_encode(hash("sha256", $verifier, true));
         }
-        $qreq = TestQreq::user_get($user, $args)->set_page("authorize");
+        $qreq = TestQreq::user_get($user, $args, $qs)->set_page("authorize");
         Qrequest::set_main_request($qreq);
 
         // test_mode 2 routes page feedback messages into the page, where the
@@ -701,7 +713,7 @@ class Authorize_Tester {
         }
 
         // Step 2: Confirm authorization request
-        $qreq = TestQreq::user_post($user, ["code" => $code, "authconfirm" => "1"])
+        $qreq = TestQreq::user_post($user, ["code" => $code, "authconfirm" => "1"], $qs)
             ->set_page("authorize");
         if (isset($rest["auth_time"])) {
             $use = UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_PASSWORD,
@@ -778,8 +790,15 @@ class Authorize_Tester {
      * @param array<string,mixed> $param
      * @param Contact $user
      * @return array{'code'|'redirect'|'page'|'none',?string} */
-    private function authorize_outcome($param, $user) {
-        $qreq = TestQreq::user_get($user, $param)->set_page("authorize");
+    private function authorize_outcome($param, $user, $qs = null) {
+        if ($qs !== null) {
+            $this->_qs = $qs;
+        } else if (isset($param["client_id"]) || $this->_qs === null) {
+            // a new authorization begins in a fresh browser session; a bare
+            // `?code=` re-view reuses the session that minted the code
+            $this->_qs = new MemoryQsession;
+        }
+        $qreq = TestQreq::user_get($user, $param, $this->_qs)->set_page("authorize");
         Qrequest::set_main_request($qreq);
         // test_mode 2 routes page feedback into the page, where the output
         // buffer absorbs it
@@ -1012,7 +1031,8 @@ class Authorize_Tester {
 
         // the consent post: nothing confirms this session, so one is demanded
         $vq = TestQreq::user_post($this->u_chair,
-            ["authconfirm" => 1, "code" => $code, "authemail" => $this->u_chair->email])
+            ["authconfirm" => 1, "code" => $code, "authemail" => $this->u_chair->email],
+            $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         $err = null;
@@ -1031,7 +1051,7 @@ class Authorize_Tester {
 
         // the confirmation lands, and the consent finishes without being
         // asked for a second time
-        $vq2 = TestQreq::user_get($this->u_chair, ["code" => $code])->set_page("authorize");
+        $vq2 = TestQreq::user_get($this->u_chair, ["code" => $code], $this->_qs)->set_page("authorize");
         Qrequest::set_main_request($vq2);
         UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_PASSWORD,
             UserSecurityEvent::REASON_REAUTH)->store($vq2);
@@ -1996,19 +2016,20 @@ class Authorize_Tester {
      * binding that user's account to a client the attacker controls
      * (RFC 6749 §10.12). */
     function test_authconfirm_requires_valid_post() {
-        // an attacker registers a client and, from their own account, obtains
-        // a code that is not yet bound to anyone
+        // a client is registered, and one browser session obtains a code that
+        // is not yet bound to anyone. Mint and confirm share that session.
         $jr = call_api("=oauthregister", $this->u_empty,
             TestQreq::post_json(["redirect_uris" => ["https://dro.com/"]]));
         xassert(isset($jr->client_id));
-        $qreq = TestQreq::user_get($this->u_mgbaker, [
+        $qs = new MemoryQsession;
+        $qreq = TestQreq::user_get($this->u_chair, [
             "client_id" => $jr->client_id, "redirect_uri" => "https://dro.com/",
             "response_type" => "code", "state" => "S", "scope" => "read"
-        ])->set_page("authorize");
+        ], $qs)->set_page("authorize");
         Qrequest::set_main_request($qreq);
         $code = null;
         try {
-            (new HotCRP\Authorize_Page($this->u_mgbaker, $qreq))->go();
+            (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
         } catch (JsonCompletion $jc) {
             $code = $jc->result->content["code"] ?? null;
         }
@@ -2017,22 +2038,22 @@ class Authorize_Tester {
             return;
         }
 
-        // a signed-in victim is made to issue a GET: no redirect, no binding
-        $vq = TestQreq::user_get($this->u_chair, ["authconfirm" => 1, "code" => $code])
+        // a GET in that same session does not confirm: no redirect, no binding
+        $vq = TestQreq::user_get($this->u_chair, ["authconfirm" => 1, "code" => $code], $qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert(!$this->authconfirm_redirects($vq));
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
 
         // nor does a POST without the form's post token
-        $vq = TestQreq::apply_user($this->u_chair, TestQreq::unapproved_post(["authconfirm" => 1, "code" => $code]))
+        $vq = TestQreq::apply_user($this->u_chair, TestQreq::unapproved_post(["authconfirm" => 1, "code" => $code]), $qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert(!$this->authconfirm_redirects($vq));
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
 
         // the real form, which posts with a token, still works
-        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code], $qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         $url = null;
@@ -2045,6 +2066,59 @@ class Authorize_Tester {
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), "chair@_.com");
     }
 
+    /** A code is bound to the browser session that created it: another session,
+     * even a signed-in one, can neither view nor confirm it. Otherwise a
+     * signed-in user could mint a code and relay its first-party link to a
+     * victim, whose one consent click would bind the victim to the attacker's
+     * code (OAuth authorization-code fixation). */
+    function test_code_bound_to_minting_session() {
+        $client_id = $this->register_client("https://dall.com/");
+        $args = [
+            "client_id" => $client_id, "redirect_uri" => "https://dall.com/",
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+
+        // session A mints a code
+        $qsA = new MemoryQsession;
+        $qreq = TestQreq::user_get($this->u_chair, $args, $qsA)->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        $code = null;
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
+        } catch (JsonCompletion $jc) {
+            $code = $jc->result->content["code"] ?? null;
+        }
+        xassert_neqq($code, null);
+
+        // a different signed-in session cannot even view the code's consent page
+        $qsB = new MemoryQsession;
+        $gqB = TestQreq::user_get($this->u_chair, ["code" => $code], $qsB)->set_page("authorize");
+        Qrequest::set_main_request($gqB);
+        xassert(!$this->authconfirm_redirects($gqB));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
+
+        // nor can it confirm the code with a valid POST: no binding, no redirect
+        $vqB = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code], $qsB)
+            ->set_page("authorize");
+        Qrequest::set_main_request($vqB);
+        xassert(!$this->authconfirm_redirects($vqB));
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
+
+        // the minting session still can confirm it
+        $vqA = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code], $qsA)
+            ->set_page("authorize");
+        Qrequest::set_main_request($vqA);
+        $url = null;
+        try {
+            (new HotCRP\Authorize_Page($this->u_chair, $vqA))->go();
+        } catch (Redirection $redir) {
+            $url = $redir->url;
+        }
+        xassert_neqq($url, null);
+        xassert_str_starts_with($url ?? "", "https://dall.com/");
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), "chair@_.com");
+    }
+
     /** The consent form's scope field limits what the client asked for, as its
      * description says; it cannot widen the grant, and it is user input. */
     function test_authconfirm_scope_limits_only() {
@@ -2052,19 +2126,20 @@ class Authorize_Tester {
             $jr = call_api("=oauthregister", $this->u_empty,
                 TestQreq::post_json(["redirect_uris" => ["https://dall.com/"]]));
             xassert(isset($jr->client_id));
-            $qreq = TestQreq::user_get($this->u_mgbaker, [
+            $qs = new MemoryQsession;
+            $qreq = TestQreq::user_get($this->u_chair, [
                 "client_id" => $jr->client_id, "redirect_uri" => "https://dall.com/",
                 "response_type" => "code", "state" => "S", "scope" => "read"
-            ])->set_page("authorize");
+            ], $qs)->set_page("authorize");
             Qrequest::set_main_request($qreq);
             $code = null;
             try {
-                (new HotCRP\Authorize_Page($this->u_mgbaker, $qreq))->go();
+                (new HotCRP\Authorize_Page($this->u_chair, $qreq))->go();
             } catch (JsonCompletion $jc) {
                 $code = $jc->result->content["code"] ?? null;
             }
             xassert_neqq($code, null);
-            $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "scope" => $form_scope])
+            $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "scope" => $form_scope], $qs)
                 ->set_page("authorize");
             Qrequest::set_main_request($vq);
             $err = $url = null;
@@ -2154,8 +2229,7 @@ class Authorize_Tester {
         unset($param["prompt"]);
         [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
         xassert_eqq($how, "code");
-        $vq = TestQreq::user_post($this->u_chair,
-            ["authconfirm" => 1, "code" => $code, "cancel" => 1])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "cancel" => 1], $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         $url = null;
@@ -2236,14 +2310,14 @@ class Authorize_Tester {
         };
 
         // the grant
-        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code], $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert_eqq($status($vq), 303);
 
         // and the error responses that answer the same form
         [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
-        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "cancel" => 1])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "cancel" => 1], $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert_eqq($status($vq), 303);
@@ -2315,7 +2389,7 @@ class Authorize_Tester {
         ], $this->u_chair);
         xassert_eqq($how, "code");
 
-        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "cancel" => 1])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "cancel" => 1], $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         $url = null;
@@ -2350,7 +2424,7 @@ class Authorize_Tester {
         if ($form_scope !== null) {
             $param["scope"] = $form_scope;
         }
-        $vq = TestQreq::user_post($this->u_chair, $param)
+        $vq = TestQreq::user_post($this->u_chair, $param, $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         $old_test_mode = Navigation::$test_mode;
@@ -3070,11 +3144,12 @@ class Authorize_Tester {
         $this->conf->refresh_settings();
 
         $authorize = function ($rest) {
+            $this->_qs = new MemoryQsession;
             $qreq = TestQreq::user_get($this->u_chair, $rest + [
                 "client_id" => "nosecret-client",
                 "redirect_uri" => "https://nosecret.example.com/cb",
                 "response_type" => "code", "state" => "S", "scope" => "read"
-            ])->set_page("authorize");
+            ], $this->_qs)->set_page("authorize");
             Qrequest::set_main_request($qreq);
             $code = $err = null;
             try {
@@ -3085,7 +3160,7 @@ class Authorize_Tester {
                 $err = $this->redirect_error($redir->url);
             }
             if ($code !== null) {
-                $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+                $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code], $this->_qs)
                     ->set_page("authorize");
                 Qrequest::set_main_request($vq);
                 try {
@@ -3348,8 +3423,7 @@ class Authorize_Tester {
             "state" => "S", "scope" => "openid read"
         ], $this->u_chair);
         xassert_eqq($how, "code");
-        $vq = TestQreq::user_post($this->u_chair,
-            ["authconfirm" => 1, "code" => $code, "scope" => "openid read"])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code, "scope" => "openid read"], $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         try {
@@ -3701,7 +3775,7 @@ class Authorize_Tester {
         // the slot now resolves to someone else than the button named
         $vq = TestQreq::user_post($this->u_chair, [
             "authconfirm" => 1, "code" => $code, "authemail" => $this->u_mgbaker->email
-        ])->set_page("authorize");
+        ], $this->_qs)->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert(!$this->authconfirm_redirects($vq));
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
@@ -3709,7 +3783,7 @@ class Authorize_Tester {
         // the button the user actually pressed still works
         $vq = TestQreq::user_post($this->u_chair, [
             "authconfirm" => 1, "code" => $code, "authemail" => "CHAIR@_.com"
-        ])->set_page("authorize");
+        ], $this->_qs)->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert($this->authconfirm_redirects($vq));
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), "chair@_.com");
@@ -4485,10 +4559,12 @@ class Authorize_Tester {
     /** Obtain an authorization code for `$client_id` as `$user`.
      * @return ?string */
     private function authorization_code($client_id, $redirect_uri, $user, $scope = "read") {
+        // mint in a fresh browser session; the confirm step reuses it
+        $this->_qs = new MemoryQsession;
         $qreq = TestQreq::user_get($user, [
             "client_id" => $client_id, "redirect_uri" => $redirect_uri,
             "response_type" => "code", "state" => "S", "scope" => $scope
-        ])->set_page("authorize");
+        ], $this->_qs)->set_page("authorize");
         Qrequest::set_main_request($qreq);
         try {
             (new HotCRP\Authorize_Page($user, $qreq))->go();
@@ -4575,7 +4651,7 @@ class Authorize_Tester {
         xassert_eqq($gid, substr($codetok->salt, 4, Authorization_Token::GRANT_ID_LENGTH));
 
         // consent logs that identifier
-        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code], $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert($this->authconfirm_redirects($vq));
@@ -4711,7 +4787,7 @@ class Authorize_Tester {
 
         $vq = TestQreq::user_post($this->u_chair, [
             "authconfirm" => 1, "code" => $code, "authbot" => $bot->email
-        ])->set_page("authorize");
+        ], $this->_qs)->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert($this->authconfirm_redirects($vq));
 
@@ -4760,7 +4836,7 @@ class Authorize_Tester {
             xassert_neqq($code, null);
             $vq = TestQreq::user_post($user, [
                 "authconfirm" => 1, "code" => $code, "authbot" => $authbot
-            ])->set_page("authorize");
+            ], $this->_qs)->set_page("authorize");
             Qrequest::set_main_request($vq);
             $redirected = $this->authconfirm_redirects($vq, $user);
             return [$redirected, TokenInfo::find($code, $this->conf)->data("email")];
@@ -4795,12 +4871,12 @@ class Authorize_Tester {
         xassert_neqq($code, null);
         $vq = TestQreq::user_post($this->u_chair, [
             "authconfirm" => 1, "code" => $code, "authbot" => $bot->email
-        ])->set_page("authorize");
+        ], $this->_qs)->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert(!$this->authconfirm_redirects($vq));
         xassert_eqq(TokenInfo::find($code, $this->conf)->data("email"), null);
         // and the chair's own authorization of that client still works
-        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code])
+        $vq = TestQreq::user_post($this->u_chair, ["authconfirm" => 1, "code" => $code], $this->_qs)
             ->set_page("authorize");
         Qrequest::set_main_request($vq);
         xassert($this->authconfirm_redirects($vq));

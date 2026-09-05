@@ -6,7 +6,8 @@ namespace HotCRP;
 use Conf, Contact, Navigation, Ht, JsonResult, Qrequest, Redirection,
     MessageItem, MessageSet, FmtArg, UnicodeHelper, ComponentSet, XtParams,
     PageCompletion, TokenInfo, TokenScope, Authorization_Token, SettingParser,
-    BotContact, Signin_Page, UserSecurityEvent, AuthenticationChecker;
+    BotContact, Signin_Page, UserSecurityEvent, AuthenticationChecker,
+    UpdateSession;
 
 class Authorize_Page {
     /** @var Conf */
@@ -411,7 +412,9 @@ class Authorize_Page {
             // the name the consent page is about to show, so that the name
             // the user later revokes is the name they agreed to
             ->change_data("client_name", $this->client->title_text())
-            ->change_data("redirect_uri", $this->qreq->redirect_uri);
+            ->change_data("redirect_uri", $this->qreq->redirect_uri)
+            // bind the code to this browser session
+            ->change_data("ssecret", UpdateSession::session_secret($this->qreq->qsession()));
         if ($token_params["max_age"] !== null) {
             $token->change_data("max_age", $token_params["max_age"]);
         }
@@ -673,6 +676,7 @@ class Authorize_Page {
             && ($tok = TokenInfo::find($this->qreq->code, $this->conf))
             && $tok->is_active(TokenInfo::OAUTHCODE)
             && $tok->useCount === 0
+            && $tok->data("ssecret") === UpdateSession::session_secret($this->qreq->qsession())
             && ($client = $this->find_client($tok->data("client_id")))
             && $this->apply_token_document($tok, $client)) {
             $this->token = $tok;

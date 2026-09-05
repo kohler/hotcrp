@@ -1882,9 +1882,10 @@ class TestQreq {
     }
 
     /** @param array<string,mixed> $args
+     * @param ?Qsession $qs
      * @return Qrequest */
-    static function user_post(Contact $user, $args = []) {
-        return self::apply_user($user, self::post($args));
+    static function user_post(Contact $user, $args = [], ?Qsession $qs = null) {
+        return self::apply_user($user, self::post($args), $qs);
     }
 
     /** @param string $page
