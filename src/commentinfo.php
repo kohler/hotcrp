@@ -518,7 +518,7 @@ class CommentInfo {
         foreach ($crows as $cr) {
             $cid = 0;
             if ($viewer->can_view_comment_identity($cr->prow, $cr)
-                || $cr->unparse_commenter_pseudonym($viewer)) {
+                || $cr->unparse_commenter_pseudonym($viewer, false)) {
                 $cid = $cr->contactId;
             }
             if ($cr->commentType & self::CT_RESPONSE) {
@@ -555,15 +555,26 @@ class CommentInfo {
         return $result;
     }
 
-    /** @return ?string */
-    function unparse_commenter_pseudonym(ContactPermissions $viewer) {
-        if (($this->commentType & self::CTM_BYAUTHOR) !== 0) {
+    /** @param bool $idable
+     * @return ?string */
+    function unparse_commenter_pseudonym(ContactPermissions $viewer, $idable) {
+        if (($this->commentType & self::CTM_BYAUTHOR) !== 0
+            && (!$idable || $viewer->can_view_authors($this->prow))) {
             return "Author";
-        } else if (($this->commentType & (self::CTM_VIS | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)
-                   && $this->contactId === $this->prow->shepherdContactId) {
+        }
+        $shepherd = ($this->commentType & self::CT_BYSHEPHERD) !== 0
+            && $this->contactId === $this->prow->shepherdContactId
+            && (!$idable || $viewer->can_view_shepherd($this->prow));
+        if ($shepherd
+            && ($this->commentType & self::CTM_VIS) === self::CTVIS_AUTHOR) {
             return "Shepherd";
         }
-        if (($rrow = $this->prow->review_by_user($this->contactId))) {
+        // A review pseudonym ("Reviewer A") shown next to a revealed author
+        // name would deanonymize a blind review, so offer it only when the
+        // identity is not already being shown ($idable false) or the viewer
+        // may view that review's identity anyway.
+        if (($rrow = $this->prow->review_by_user($this->contactId))
+            && (!$idable || $viewer->can_view_review_identity($this->prow, $rrow))) {
             if ($rrow->reviewOrdinal
                 && $viewer->can_view_review_assignment($this->prow, $rrow)) {
                 return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
@@ -571,10 +582,10 @@ class CommentInfo {
                 return "Metareviewer";
             }
         }
-        if (($this->commentType & self::CT_BYSHEPHERD) !== 0
-            && $this->contactId === $this->prow->shepherdContactId) {
+        if ($shepherd) {
             return "Shepherd";
-        } else if (($this->commentType & self::CT_BYADMINISTRATOR) !== 0) {
+        }
+        if (($this->commentType & self::CT_BYADMINISTRATOR) !== 0) {
             return "Administrator";
         }
         return null;
@@ -597,7 +608,7 @@ class CommentInfo {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo_h($this->commenter(), NAME_P|NAME_I);
         } else {
-            $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
+            $n = $this->unparse_commenter_pseudonym($viewer, false) ?? "anonymous";
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $n = "<i>" . $this->unparse_response_text() . "</i>"
@@ -613,7 +624,7 @@ class CommentInfo {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo($this->commenter(), NAME_P|NAME_I);
         } else {
-            $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
+            $n = $this->unparse_commenter_pseudonym($viewer, false) ?? "anonymous";
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $n = $this->unparse_response_text()
@@ -866,7 +877,7 @@ class CommentInfo {
                 $cj["author_hidden"] = true;
             }
         }
-        if (($p = $this->unparse_commenter_pseudonym($viewer))) {
+        if (($p = $this->unparse_commenter_pseudonym($viewer, $idable))) {
             $cj["author_pseudonym"] = $p;
         }
         if ($idable && $this->commenter_may_be_pseudonymous()) {
@@ -924,8 +935,8 @@ class CommentInfo {
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @{$ordinal}" : "");
         }
-        $p = $this->unparse_commenter_pseudonym($viewer);
         $idable = $viewer->can_view_comment_identity($this->prow, $this);
+        $p = $this->unparse_commenter_pseudonym($viewer, $idable);
         if ($idable) {
             $n = Text::nameo($this->commenter(), NAME_EB);
             $np = $this->commenter_may_be_pseudonymous();

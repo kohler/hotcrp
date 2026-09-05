@@ -239,6 +239,74 @@ class Comments_Tester {
         $this->conf->save_refresh_setting("tracks", null);
     }
 
+    /** A former shepherd's author-visible comment must not let the paper's
+     * authors link the shepherd's revealed name to the blind review's ordinal.
+     * The comment JSON may show the shepherd's name (shepherd identity is
+     * author-visible) but must omit the review pseudonym ("Reviewer A") for a
+     * viewer who can see who wrote the comment yet not the identity of that
+     * person's review (HC-010). */
+    function test_shepherd_comment_hides_review_pseudonym() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);   // mgbaker: Reviewer A, blind
+
+        // capture settings so they can be restored exactly (e.g. `rev_blind`
+        // is read unconditionally by Conf::review_blindness)
+        $old = [];
+        foreach (["au_seerev", "rev_blind", "shepherd_hide", "au_seedec"] as $s) {
+            $old[$s] = $this->conf->setting($s);
+        }
+        $this->conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
+        $this->conf->save_setting("rev_blind", Conf::BLIND_ALWAYS);
+        $this->conf->save_refresh_setting("shepherd_hide", null); // 0: authors see shepherd
+        $this->conf->save_refresh_setting("au_seedec", 1);        // authors see decisions (derived cache)
+
+        // a decision lets the paper's authors view the shepherd (can_view_shepherd)
+        xassert_assign($this->u_chair, "paper,action,decision\n1,decision,accept\n");
+
+        // mgbaker becomes shepherd and writes an author-visible comment
+        xassert_assign($this->u_chair, "paper,action,email\n1,shepherd,mgbaker@cs.stanford.edu\n");
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_mgbaker,
+            ["c" => "new", "text" => "Hello authors, I will shepherd your paper.",
+             "visibility" => "au", "topic" => "rev"], $paper1);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+
+        // the shepherd is reassigned; mgbaker is now a *former* shepherd
+        xassert_assign($this->u_chair, "paper,action,email\n1,shepherd,lixia@cs.ucla.edu\n");
+
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $paper1->load_comments();
+        $cmt = $paper1->comment_by_id($cid);
+        xassert(!!$cmt);
+        $rrow = $paper1->review_by_user($this->u_mgbaker);
+
+        // preconditions: an author sees the comment and the shepherd's name,
+        // but not the (blind) review's identity
+        $author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+        xassert($author->can_view_comment($paper1, $cmt));
+        xassert($author->can_view_comment_identity($paper1, $cmt));
+        xassert(!$author->can_view_review_identity($paper1, $rrow));
+
+        // the leak: name is shown, but the review pseudonym must not be
+        $cj = $cmt->unparse_json($author);
+        xassert_eqq($cj->author ?? null, "Mary Baker");
+        xassert(!isset($cj->author_pseudonym));
+
+        // control: a viewer who may view the review identity (chair) still gets
+        // both, so the fix does not over-suppress
+        xassert($this->u_chair->can_view_review_identity($paper1, $rrow));
+        $cjc = $cmt->unparse_json($this->u_chair);
+        xassert_eqq($cjc->author_pseudonym ?? null, "Reviewer A");
+
+        // cleanup: restore settings to their prior values
+        xassert_assign($this->u_chair, "paper,action,email\n1,shepherd,none\n");
+        $this->conf->save_setting("au_seerev", $old["au_seerev"]);
+        $this->conf->save_setting("rev_blind", $old["rev_blind"]);
+        $this->conf->save_refresh_setting("shepherd_hide", $old["shepherd_hide"]);
+        $this->conf->save_refresh_setting("au_seedec", $old["au_seedec"]);
+    }
+
     function test_attachments() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $qreq = new Qrequest("POST", ["c" => "new", "text" => "Hello", "attachment:1" => "new"]);
