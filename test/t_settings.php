@@ -3273,6 +3273,50 @@ class Settings_Tester {
         }
     }
 
+    function test_sf_title_escaped_on_paper_page() {
+        $conf = $this->conf;
+        $title = "Q&A <b>bold</b>";
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => $title,
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "mtext"
+        ]);
+        xassert($sv->execute());
+        $opt = $conf->options()->find($title);
+        xassert(!!$opt);
+
+        // both short and long values render the title escaped
+        $prow = $conf->checked_paper_by_id(1);
+        $ps = new PaperStatus($this->u_chair);
+        $render = function () use ($conf) {
+            $prow = $conf->checked_paper_by_id(1);
+            $qreq = TestQreq::get(["p" => 1])->set_user($this->u_chair);
+            $pt = new PaperTable($this->u_chair, $qreq, $prow);
+            $pt->resolve_comments();
+            $pt->resolve_review(false);
+            ob_start();
+            $pt->print_paper_info();
+            return ob_get_clean();
+        };
+        foreach (["Short answer.", str_repeat("Lorem ipsum dolor sit amet. ", 60)] as $value) {
+            xassert($ps->save_paper_json((object) ["id" => 1, $opt->json_key() => $value]));
+            $html = $render();
+            xassert_str_contains($html, "Q&amp;A &lt;b&gt;bold&lt;/b&gt;");
+            xassert(strpos($html, $title) === false);
+        }
+
+        // clean up
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $opt->id,
+            "sf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+        xassert(!$conf->options()->find($title));
+    }
+
     // Undo the settings this tester changes to avoid polluting later tests
     function finalize() {
         $this->conf->save_refresh_setting("outcome_map", null);

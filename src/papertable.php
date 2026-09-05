@@ -1460,9 +1460,9 @@ class PaperTable {
                     $class .= " fx8";
                 }
                 $want_fold = $this->_allow_collapse[$o1->page_group] ?? false;
-                if ($want_fold && $rgroup[0]->title !== "") {
-                    $group_html = "<span class=\"ifnx\">{$group_html}</span><span class=\"ifx\">" . $rgroup[0]->title . '</span>';
-                    $rgroup[0]->title = false;
+                if ($want_fold && $rgroup[0]->title_html !== "") {
+                    $group_html = "<span class=\"ifnx\">{$group_html}</span><span class=\"ifx\">" . $rgroup[0]->title_html . '</span>';
+                    $rgroup[0]->title_html = false;
                     $rgroup[0]->value = '<div class="'
                         . ($rgroup[0]->value_long ? "pg" : "pgsm")
                         . ' pavb">' . $rgroup[0]->value . '</div>';
@@ -1484,26 +1484,26 @@ class PaperTable {
             // echo contents
             foreach ($rgroup as $r) {
                 if ($r->value_long === false
-                    || (!$r->value_long && $r->title === "")) {
+                    || (!$r->value_long && $r->title_html === "")) {
                     $class = "pgsm";
                 } else {
                     $class = "pg";
                 }
                 if ($r->value === ""
-                    || ($r->title === "" && preg_match('/\A(?:[^<]|<a|<span)/i', $r->value))) {
+                    || ($r->title_html === "" && preg_match('/\A(?:[^<]|<a|<span)/i', $r->value))) {
                     $class .= " outdent";
                 }
                 if ($r->view_state === 1) {
                     $class .= " fx8";
                 }
-                if ($r->title === false) {
+                if ($r->title_html === false) {
                     echo $r->value;
-                } else if ($r->title === "") {
+                } else if ($r->title_html === "") {
                     echo '<div class="', $class, '">', $r->value, '</div>';
                 } else if ($r->value === "") {
-                    echo '<div class="', $class, '"><h3 class="pavfn">', $r->title, '</h3></div>';
+                    echo '<div class="', $class, '"><h3 class="pavfn">', $r->title_html, '</h3></div>';
                 } else {
-                    echo '<div class="', $class, '"><div class="pavt"><h3 class="pavfn">', $r->title, '</h3></div><div class="pavb">', $r->value, '</div></div>';
+                    echo '<div class="', $class, '"><div class="pavt"><h3 class="pavfn">', $r->title_html, '</h3></div><div class="pavb">', $r->value, '</div></div>';
                 }
             }
 
@@ -3396,16 +3396,20 @@ class PaperTableFieldRender {
     public $option;
     /** @var int */
     public $view_state;
-    public $title;
+    /** @var false|string */
+    public $title_html;
+    /** @var string */
     public $value;
     /** @var ?bool */
     public $value_long;
 
-    /** @param PaperOption $option */
+    /** @param PaperOption $option
+     * @param int $view_state */
     function __construct($option, $view_state, FieldRender $fr) {
         $this->option = $option;
         $this->view_state = $view_state;
-        $this->title = $fr->title;
+        // FieldRender::$title is plain text; `false` means the value contains the title
+        $this->title_html = $fr->title === false ? false : htmlspecialchars((string) $fr->title);
         $this->value = $fr->value;
         $this->value_long = $fr->value_long;
     }
