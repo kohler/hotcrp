@@ -61,6 +61,10 @@ class Lead_AssignmentParser extends AssignmentParser {
         if ($this->key !== "manager") {
             return $state->user->can_manage($prow);
         } else if ($state->user->privChair) {
+            if (!$state->user->scope_allows(TokenScope::S_SUB_ADMIN, $prow)) {
+                $state->paper_error($prow->failure_reason(["scope" => TokenScope::S_SUB_ADMIN]));
+                return false;
+            }
             return true;
         }
         $state->paper_error("<0>Only chairs and sysadmins can change paper administrators");
