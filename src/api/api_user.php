@@ -112,9 +112,11 @@ class User_API {
 
     /** @param bool $disabled
      * @return JsonResult */
-    static function account_disable(Contact $user, Contact $viewer, $disabled) {
+    static private function account_disable(Contact $user, Contact $viewer, Qrequest $qreq, $disabled) {
         if (!$viewer->privChair) {
             return JsonResult::make_permission_error();
+        } else if (!$viewer->scope_allows(TokenScope::S_OTH_ADMIN)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_OTH_ADMIN);
         } else if ($viewer->contactId === $user->contactId) {
             return JsonResult::make_error(400, "<0>You cannot disable your own account");
         }
@@ -126,9 +128,11 @@ class User_API {
     }
 
     /** @return JsonResult */
-    static function account_sendinfo(Contact $user, Contact $viewer) {
+    static private function account_sendinfo(Contact $user, Contact $viewer, Qrequest $qreq) {
         if (!$viewer->privChair) {
             return JsonResult::make_permission_error();
+        } else if (!$viewer->scope_allows(TokenScope::S_OTH_ADMIN)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_OTH_ADMIN);
         }
         $user->activate_placeholder(false, $viewer);
         $prep = $user->prepare_mail("@accountinfo");
@@ -143,23 +147,22 @@ class User_API {
         $u = $qreq->email ?? $qreq->u;
         if ($u === null || $u === "me" || strcasecmp($u, $viewer->email) === 0) {
             $user = $viewer;
-        } else if ($viewer->privChair) {
-            $user = $viewer->conf->user_by_email($u);
-        } else {
+        } else if (!$viewer->privChair) {
             return JsonResult::make_permission_error();
+        } else {
+            $user = $viewer->conf->user_by_email($u);
         }
         if (!$user) {
             return JsonResult::make_error(404, "<0>User not found");
         }
-        $disable = friendly_boolean($qreq->disable);
         $jr = null;
         if ($qreq->valid_post()) {
             if (friendly_boolean($qreq->disable)) {
-                $jr = self::account_disable($user, $viewer, true);
+                $jr = self::account_disable($user, $viewer, $qreq, true);
             } else if (friendly_boolean($qreq->enable)) {
-                $jr = self::account_disable($user, $viewer, false);
+                $jr = self::account_disable($user, $viewer, $qreq, false);
             } else if (friendly_boolean($qreq->sendinfo)) {
-                $jr = self::account_sendinfo($user, $viewer);
+                $jr = self::account_sendinfo($user, $viewer, $qreq);
             }
         }
         $jr = $jr ?? new JsonResult(["ok" => true]);

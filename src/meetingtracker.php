@@ -68,6 +68,8 @@ class MeetingTracker {
         // track="IDENTIFIER POSITION" or track="IDENTIFIER stop" or track=stop
         if (!$user->is_track_manager() || !$qreq->valid_post()) {
             return JsonResult::make_permission_error();
+        } else if (!$user->scope_allows(TokenScope::S_OTH_WRITE)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_OTH_WRITE);
         }
 
         if ($qreq->track === "stop") {
@@ -90,7 +92,8 @@ class MeetingTracker {
 
         // apply change; may require multiple tries on concurrent update
         do {
-            $x = MeetingTracker_ConfigSet::load($user->conf)->apply_track_api($args, $xlist, $user, $qreq);
+            $x = MeetingTracker_ConfigSet::load($user->conf)
+                ->apply_track_api($args, $xlist, $user, $qreq);
         } while ($x === false);
         return $x === true ? null : $x;
     }
@@ -137,6 +140,9 @@ class MeetingTracker {
             foreach ($ti->pids ?? [] as $pid) {
                 $prow = $prows->get($pid);
                 $ti->papers[] = $p = (object) [];
+                if (!$user->can_view_paper($prow)) {
+                    continue;
+                }
                 if (($ti->allow_administer
                      || $prow->conflictType <= CONFLICT_MAXUNCONFLICTED
                      || !$trs[$ti_index]->hide_conflicts)
@@ -359,6 +365,13 @@ class MeetingTracker_Config implements JsonSerializable {
         $ti->position_at = $this->position_at;
         $ti->url = $this->url;
         $ti->calculated_at = Conf::$now;
+        // KNOWN LEAK (inherent to the tracker mechanism): the tracked paper-id
+        // list travels in `listinfo`/`pids` to every viewer who passes
+        // `can_view_tracker()` (i.e. holds S_OTH_READ), without a per-paper
+        // S_SUB_READ/can_view_paper check — the client needs the list to render
+        // the tracker. Only the viewer's own conflicts are removed
+        // (`hide_conflicts` below). Per-paper metadata beyond the ids (title,
+        // pc_conflicts) IS gated by `can_view_paper()` in `trinfo_papers()`.
         if (!$ti->allow_administer && $this->hide_conflicts && $user->contactId > 0) {
             $ids = [];
             $cts = $user->conflict_types();

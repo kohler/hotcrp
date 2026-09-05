@@ -249,6 +249,8 @@ class TrackerConfig_API {
     static function run(Contact $user, $qreq) {
         if (!$user->is_track_manager() || !$qreq->valid_post()) {
             return JsonResult::make_permission_error();
+        } else if (!$user->scope_allows(TokenScope::S_OTH_WRITE)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_OTH_WRITE);
         }
         return (new TrackerConfig_API($user, $qreq))->go();
     }

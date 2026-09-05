@@ -4029,14 +4029,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_view_tracker($tracker_json = null) {
-        return $this->privChair
-            || ($this->isPC
-                && $this->check_xtrack("viewtracker")
-                && (!$tracker_json
-                    || ($tracker_json->visibility ?? "") === ""
-                    || ($this->has_tag(substr($tracker_json->visibility, 1))
-                        === ($tracker_json->visibility[0] === "+"))))
-            || $this->tracker_kiosk_state > 0;
+        return ($this->privChair
+                || ($this->isPC
+                    && $this->check_xtrack("viewtracker")
+                    && (!$tracker_json
+                        || ($tracker_json->visibility ?? "") === ""
+                        || ($this->has_tag(substr($tracker_json->visibility, 1))
+                            === ($tracker_json->visibility[0] === "+"))))
+                || $this->tracker_kiosk_state > 0)
+            && $this->scope_allows(TS::S_OTH_READ);
     }
 
     /** @return bool */
