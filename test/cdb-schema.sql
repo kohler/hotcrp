@@ -45,6 +45,30 @@ CREATE TABLE `ConferenceUpdates` (
 
 
 --
+-- Table structure for table `ContactCounter`
+--
+
+DROP TABLE IF EXISTS `ContactCounter`;
+CREATE TABLE `ContactCounter` (
+  `contactId` int NOT NULL,
+  `apiCount` bigint NOT NULL DEFAULT 0,
+  `apiBase` bigint NOT NULL DEFAULT 0,
+  `apiBaseMtime` bigint NOT NULL DEFAULT 0,
+  `apiRefreshWindow` int DEFAULT NULL,
+  `apiRefreshAmount` int DEFAULT NULL,
+  `apiBase2` bigint NOT NULL DEFAULT 0,
+  `apiBaseMtime2` bigint NOT NULL DEFAULT 0,
+  `apiRefreshWindow2` int DEFAULT NULL,
+  `apiRefreshAmount2` int DEFAULT NULL,
+  `sensitiveSearchCount` bigint NOT NULL DEFAULT 0,
+  `sensitiveSearchFallbackCount` bigint NOT NULL DEFAULT 0,
+  `sensitiveSearchBase` bigint NOT NULL DEFAULT 0,
+  `sensitiveSearchBaseMtime` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`contactId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+--
 -- Table structure for table `ContactInfo`
 --
 
@@ -130,4 +154,4 @@ CREATE TABLE `WorkItem` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
-insert into Settings (name, value) values ('sversion', 187);
+insert into Settings (name, value) values ('sversion', 188);
