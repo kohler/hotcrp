@@ -1324,6 +1324,25 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("tracks", null);
     }
 
+    /** `has_permission(null)` must stay true for every user, PC or not.
+     * `Conf::permissive_track_tag_for` passes an unrestricted (null) track perm to
+     * it, and `Contact::can_view_some_review_identity` uses that so an external
+     * (non-PC) reviewer gets review-identity visibility from a track that does not
+     * restrict VIEWREVID. This pins the invariant noted in Contact::has_permission. */
+    function test_has_permission_null_invariant() {
+        xassert(!$this->u_kohler->isPC);
+        xassert($this->u_kohler->has_permission(null));
+        xassert($this->u_nobody->has_permission(null));
+
+        // a non-default track with no VIEWREVID restriction is "permissively"
+        // matched by a non-PC user precisely because has_permission(null) is true
+        $this->conf->save_refresh_setting("tracks", 1, '{"green":{"admin":"+red"}}');
+        Contact::update_rights();
+        xassert_neqq($this->conf->permissive_track_tag_for($this->u_kohler, Track::VIEWREVID), null);
+        $this->conf->save_refresh_setting("tracks", null);
+        Contact::update_rights();
+    }
+
     function test_tracks() {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $user_randy = $this->conf->checked_user_by_email("randy@cs.berkeley.edu"); // author

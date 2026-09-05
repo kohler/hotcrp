@@ -1882,14 +1882,17 @@ final class Contact extends ContactPermissions implements JsonSerializable {
      * @return bool */
     function has_permission($perm) {
         // other code assumes `has_permission(null)` is always true
+        // XXX Should negative permissions ever apply to non-PC users?
         return !$perm || $this->has_tag(substr($perm, 1)) === ($perm[0] === "+");
     }
 
     /** @param string $xright
      * @return bool */
     function check_xtrack($xright) {
-        $p = $this->conf->xtrack_permission($xright);
-        return $p ? $this->has_permission($p) : !str_ends_with($xright, "!");
+        return $this->isPC
+            && (($p = $this->conf->xtrack_permission($xright))
+                ? $this->has_permission($p)
+                : !str_ends_with($xright, "!"));
     }
 
 
