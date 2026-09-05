@@ -121,6 +121,38 @@ class Mailer_Tester {
         xassert_assign($chair, "paper,action,decision\n13,cleardecision,yes\n");
     }
 
+    /** Ensure a finalized paper has completed reviews that a non-reviewer PC and
+     * the paper's authors can see, plus the settings that permit it. In the full
+     * test06 run Reviews_Tester establishes this; doing it here lets the review-
+     * and comment-content mailer tests also pass when Mailer_Tester runs alone.
+     * Idempotent: a no-op once such reviews exist. */
+    private function ensure_reviews() {
+        $conf = $this->conf;
+        if ($this->find_distinctive_review() && $this->find_author_readable_review()) {
+            return;
+        }
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $conf->save_setting("rev_open", 1);
+        $conf->save_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        $conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
+        $conf->refresh_settings();
+        xassert_assign($chair, "paper,action,user\n1,primary,mgbaker@cs.stanford.edu\n1,primary,lixia@cs.ucla.edu\n");
+        // a distinctive word in one field (papsum) only, so find_distinctive_review can key on it
+        foreach ([["mgbaker@cs.stanford.edu", "Xylophonics"], ["lixia@cs.ucla.edu", "Kaleidoscopy"]] as list($email, $word)) {
+            $u = $conf->checked_user_by_email($email);
+            $prow = $conf->checked_paper_by_id(1, $u);
+            $rrow = $prow->review_by_user($u);
+            if (!$rrow || $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
+                $tf = new ReviewValues($u);
+                xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "ready" => true,
+                    "papsum" => "Summary that mentions {$word} exactly once.",
+                    "comaut" => "Comments for the authors of this submission."]));
+                xassert($tf->check_and_save($prow));
+            }
+        }
+        $conf->refresh_settings();
+    }
+
     /** Find a complete review whose text distinguishes one field from the rest,
      * plus its author and a PC member who may read it but does not administer it.
      * @return ?array{PaperInfo,ReviewInfo,Contact,Contact,ReviewField,string} */
@@ -182,6 +214,7 @@ class Mailer_Tester {
 
     function test_censored_review_expansion_narrows_fields() {
         $conf = $this->conf;
+        $this->ensure_reviews();
         $chair = $conf->checked_user_by_email("chair@_.com");
 
         $x = $this->find_distinctive_review();
@@ -215,13 +248,13 @@ class Mailer_Tester {
         xassert_str_contains($sent, $secret);
 
         // the sender’s preview of that same mail does not
-        $mailer = new HotCRPMailer($reader, $reviewer, $rest + ["censor" => Mailer::CENSOR_PREVIEW]);
+        $mailer = new HotCRPMailer($reader, $reviewer, $rest + ["censor" => Mailer::CENSOR_PREVIEW, "preview" => true]);
         $shown = $mailer->expand("{{REVIEWS}}", "body");
         xassert_str_contains($shown, "Review"); // the review itself is still expanded
         xassert_not_str_contains($shown, $secret);
 
         // a chair sees everything they would send
-        $mailer = new HotCRPMailer($chair, $reviewer, $rest + ["censor" => Mailer::CENSOR_PREVIEW]);
+        $mailer = new HotCRPMailer($chair, $reviewer, $rest + ["censor" => Mailer::CENSOR_PREVIEW, "preview" => true]);
         xassert_str_contains($mailer->expand("{{REVIEWS}}", "body"), $secret);
 
         $sv = SettingValues::make_request($chair, [
@@ -234,6 +267,7 @@ class Mailer_Tester {
 
     function test_sender_visible_cc_narrows_expansion() {
         $conf = $this->conf;
+        $this->ensure_reviews();
         $chair = $conf->checked_user_by_email("chair@_.com");
 
         $x = $this->find_distinctive_review();
@@ -267,13 +301,17 @@ class Mailer_Tester {
         xassert_str_contains($t, $secret);
         xassert_str_contains($t, "{{REVIEWACCEPTOR}}"); // suppressed, so left unexpanded
 
-        // A cc the sender chose also bounds the content by the sender.
-        $mailer = new HotCRPMailer($reader, $reviewer,
-            $rest + ["cc" => "friend@example.invalid", "sender_visible" => true]);
-        $t = $mailer->expand("R[{{REVIEWS}}] A[{{REVIEWACCEPTOR}}]", "body");
-        xassert_str_contains($t, "Review"); // the review itself is still expanded
-        xassert_not_str_contains($t, $secret);
-        xassert_str_contains($t, "{{REVIEWACCEPTOR}}");
+        // A cc the sender chose also bounds the content by the sender, and so
+        // does a sender’s preview — even when that preview carries a cc, whose
+        // credential-censoring must not clobber the sender-narrowed content.
+        foreach ([["cc" => "friend@example.invalid", "sender_visible" => true],
+                  ["cc" => "archive@example.invalid", "censor" => Mailer::CENSOR_PREVIEW, "preview" => true]] as $extra) {
+            $mailer = new HotCRPMailer($reader, $reviewer, $rest + $extra);
+            $t = $mailer->expand("R[{{REVIEWS}}] A[{{REVIEWACCEPTOR}}]", "body");
+            xassert_str_contains($t, "Review"); // the review itself is still expanded
+            xassert_not_str_contains($t, $secret);
+            xassert_str_contains($t, "{{REVIEWACCEPTOR}}");
+        }
 
         $sv = SettingValues::make_request($chair, [
             "has_rf" => 1,
@@ -341,11 +379,11 @@ class Mailer_Tester {
         xassert_str_contains($mailer->expand("{{COMMENTS}}", "body"), "SECRETCOMMENTARY");
 
         // the conflicted sender’s preview of that same mail does not
-        $mailer = new HotCRPMailer($probe, $reader, $rest + ["censor" => Mailer::CENSOR_PREVIEW]);
+        $mailer = new HotCRPMailer($probe, $reader, $rest + ["censor" => Mailer::CENSOR_PREVIEW, "preview" => true]);
         xassert_not_str_contains($mailer->expand("{{COMMENTS}}", "body"), "SECRETCOMMENTARY");
 
         // a chair sees everything they would send
-        $mailer = new HotCRPMailer($chair, $reader, $rest + ["censor" => Mailer::CENSOR_PREVIEW]);
+        $mailer = new HotCRPMailer($chair, $reader, $rest + ["censor" => Mailer::CENSOR_PREVIEW, "preview" => true]);
         xassert_str_contains($mailer->expand("{{COMMENTS}}", "body"), "SECRETCOMMENTARY");
 
         xassert_assign($chair, "paper,action,user\n13,noconflict,{$probe->email}\n");
@@ -356,6 +394,7 @@ class Mailer_Tester {
 
     function test_censored_comment_expansion_renders_tags_and_mentions() {
         $conf = $this->conf;
+        $this->ensure_reviews();
         $chair = $conf->checked_user_by_email("chair@_.com");
         $mentioned = $conf->checked_user_by_email("lixia@cs.ucla.edu");
         $prow = $conf->checked_paper_by_id(1);
@@ -386,7 +425,7 @@ class Mailer_Tester {
         }
 
         $mailer = new HotCRPMailer($readers[0], $readers[1],
-            ["prow" => $prow, "width" => 10000, "censor" => Mailer::CENSOR_PREVIEW]);
+            ["prow" => $prow, "width" => 10000, "censor" => Mailer::CENSOR_PREVIEW, "preview" => true]);
         $t = $mailer->expand("{{COMMENTS}}", "body");
         xassert_str_contains($t, "SPICYCOMMENTARY");
         xassert_str_contains($t, "#hot");
@@ -425,6 +464,7 @@ class Mailer_Tester {
 
     function test_mail_preview_does_not_mark_review_author_seen() {
         $conf = $this->conf;
+        $this->ensure_reviews();
         $chair = $conf->checked_user_by_email("chair@_.com");
 
         $x = $this->find_author_readable_review();
@@ -438,6 +478,9 @@ class Mailer_Tester {
         $rtext = "Review #" . $rrow->unparse_ordinal_id();
 
         $unseen = ~ReviewInfo::RF_AUSEEN;
+        // drain any author-seen update queued by an earlier test before
+        // establishing the zero baseline (test order is otherwise significant)
+        $conf->call_shutdown_function("ReviewAuthorSeenUpdate");
         $conf->qe("update PaperReview set reviewAuthorSeen=0, rflags=rflags&{$unseen} where reviewId=?", $rid);
         xassert_eqq($this->author_seen_after_shutdown($rid), 0);
 

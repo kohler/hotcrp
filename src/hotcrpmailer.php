@@ -102,6 +102,7 @@ class HotCRPMailer extends Mailer {
         $this->newrev_since = $rest["newrev_since"] ?? null;
         $this->rrow_unsubmitted = !!($rest["rrow_unsubmitted"] ?? false);
         $this->preview = !!($rest["preview"] ?? false);
+        assert($this->censor !== self::CENSOR_PREVIEW || $this->preview);
         $this->sender_visible = !!($rest["sender_visible"] ?? false);
         if (($rest["author_permission"] ?? false) && $this->row) {
             $this->permreceiver = $this->row->author_user();
@@ -117,11 +118,6 @@ class HotCRPMailer extends Mailer {
                 $this->contacts["reviewer"] = $this->comment_row->commenter();
             }
         }
-        // Do not put passwords in email that is cc'd elsewhere
-        if ((($rest["cc"] ?? null) || ($rest["bcc"] ?? null))
-            && (!$this->censor || $this->censor === self::CENSOR_PREVIEW)) {
-            $this->censor = self::CENSOR_ALL;
-        }
         // Create `permuser`. Bound the expansion by the sending user’s
         // permissions only if the sending user, or someone they chose, will
         // read this copy; a conference-configured cc/bcc is not their choice.
@@ -129,6 +125,11 @@ class HotCRPMailer extends Mailer {
             $this->permuser = ContactIntersection::make($this->permsender, $this->permreceiver);
         } else {
             $this->permuser = $this->permreceiver;
+        }
+        // Do not put passwords in email that is cc'd elsewhere
+        if ((($rest["cc"] ?? null) || ($rest["bcc"] ?? null))
+            && (!$this->censor || $this->censor === self::CENSOR_PREVIEW)) {
+            $this->censor = self::CENSOR_ALL;
         }
     }
 
@@ -191,7 +192,7 @@ class HotCRPMailer extends Mailer {
                 $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
             }
             $flags = ReviewForm::UNPARSE_NO_TITLE;
-            if ($this->preview || $this->censor === self::CENSOR_PREVIEW) {
+            if ($this->preview) {
                 $flags |= ReviewForm::UNPARSE_NO_AUTHOR_SEEN;
             }
             $text .= $rf->unparse_text($this->row, $rrow, $this->permuser, $flags);

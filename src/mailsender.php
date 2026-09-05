@@ -543,7 +543,8 @@ class MailSender {
             "cc" => $this->qreq->cc,
             "reply-to" => $this->qreq["reply-to"],
             "no_error_quit" => true,
-            "author_permission" => $is_authors
+            "author_permission" => $is_authors,
+            "preview" => !$this->sending
         ];
         if ((string) $rest["cc"] !== ""
             && simplify_whitespace($rest["cc"]) !== simplify_whitespace(MimeText::expand_email_header_setting($this->conf, "emailCc"))
@@ -570,8 +571,6 @@ class MailSender {
         if ($this->sending) {
             // Mail format matters
             $this->user->log_activity("Sending mail #{$this->mailid} \"{$subject}\"");
-        } else {
-            $rest["preview"] = true;
         }
         $need_censored_prep = !$this->user->privChair || $this->conf->opt("chairHidePasswords");
 
@@ -636,9 +635,11 @@ class MailSender {
                     $this->active_censored_prep->merge($prep);
                 } else {
                     $rest["censor"] = Mailer::CENSOR_PREVIEW;
+                    $rest["preview"] = true;
                     $mailer->reset($user, $rest);
                     $this->active_censored_prep = $mailer->prepare($template, $rest);
                     $rest["censor"] = Mailer::CENSOR_NONE;
+                    $rest["preview"] = !$this->sending;
                 }
             }
 
