@@ -327,9 +327,7 @@ class AuthorMatcher extends Author {
                 $preg->add_matches($preg1);
             }
         }
-        if ($preg) {
-            $au = Text::highlight($au, $preg);
-        }
+        $au = Text::highlight($au, $preg);
         if ($aff_suffix !== null && str_ends_with($au, $aff_suffix)) {
             $au = substr($au, 0, -strlen($aff_suffix))
                 . '<span class="auaff">' . $aff_suffix . '</span>';
