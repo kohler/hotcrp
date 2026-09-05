@@ -3647,9 +3647,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // check first whether administration is allowed
         if (($ci->ciflags & PCI::CIF_SET0) === 0) {
             $ci->ciflags |= PCI::CIF_SET0;
-            if ($this->isPC
-                && !isset($this->hidden_papers[$prow->paperId])
-                && $this->_compute_allow_admin_0($prow, $ci)) {
+            if (isset($this->hidden_papers[$prow->paperId])) {
+                // totally invisible; this skips the main rights computation
+                $ci->ciflags |= PCI::CIF_SET1;
+                $ci->scope_bits = 0;
+            } else if ($this->isPC
+                       && $this->_compute_allow_admin_0($prow, $ci)) {
                 $ci->ciflags |= PCI::CIF_ALLOW_ADMIN_0;
             }
         }
@@ -3787,6 +3790,33 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             }
             if ($can_view_decision) {
                 $cif |= PCI::CIF_CAN_VIEW_DECISION;
+            }
+
+            // check paper & document visibility
+            if ($allow_administer || $act_author_view) {
+                $cif |= PCI::CIF_VIEW | PCI::CIF_VIEW_DOC;
+            } else if (!$sub_read_scope) {
+                // cannot view
+            } else if ($ci->review_status > 0) {
+                $cif |= PCI::CIF_VIEW;
+                if ($ci->review_status > PCI::CIRS_DECLINED
+                    || $prow->timeSubmitted != 0) {
+                    $cif |= PCI::CIF_VIEW_DOC;
+                }
+            } else if ($allow_pc_broad
+                       && $this->conf->time_pc_view($prow, false)) {
+                $v = $allow_pc ? 0 : $this->conf->setting("pc_confpdf") ?? 0;
+                if ($v < 2) {
+                    $cif |= PCI::CIF_VIEW;
+                    if ($v < 1
+                        && $this->conf->check_tracks($prow, $this, Track::VIEWPDF)
+                        && $this->conf->time_pc_view($prow, true)) {
+                        $cif |= PCI::CIF_VIEW_DOC;
+                    }
+                }
+            }
+            if (($ci->scope_bits & TS::S_DOC_READ) === 0) {
+                $cif &= ~PCI::CIF_VIEW_DOC;
             }
 
             $ci->__set_ciflags($cif);
@@ -4355,47 +4385,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_view_paper(PaperInfo $prow, $pdf = false) {
-        // root user can view everything
-        if ($this->_root_user) {
+        if ($this->_root_user
+            || $this->rights($prow)->can_view($pdf)) {
             return true;
         }
-        // hidden_papers is set when a chair with a conflicted, managed paper
-        // “becomes” a user
+        // remember if a user touches a hidden paper
         if (isset($this->hidden_papers[$prow->paperId])) {
             $this->hidden_papers[$prow->paperId] = true;
-            return false;
         }
-        // chairs can view everything unless there are dangerous view tracks
-        if ($this->privChair) {
-            $f = $pdf ? Track::FM_VIEWPDF : Track::FM_VIEW;
-            if (($this->dangerous_track_mask() & $f) === 0) {
-                return true;
-            }
-        }
-        // otherwise check rights
-        $rights = $this->rights($prow);
-        if (!$rights->scope_allows(TS::S_SUB_READ | ($pdf ? TS::S_DOC_READ : 0))) {
-            return false;
-        }
-        if ($rights->allow_author_view()) {
-            return true;
-        }
-        // reviewers can view papers; active reviewers can view PDFs for
-        // submitted (or withdrawn + submitted) papers
-        if ($rights->review_status > 0
-            && (!$pdf
-                || ($rights->review_status > PCI::CIRS_DECLINED
-                    && $prow->timeSubmitted != 0))) {
-            return true;
-        }
-        // PC can see papers and usually PDFs
-        return $rights->allow_pc_broad()
-            && $this->conf->time_pc_view($prow, $pdf)
-            && (!$pdf
-                || $this->conf->check_tracks($prow, $this, Track::VIEWPDF))
-            && ($rights->allow_pc()
-                || ($this->conf->setting("pc_confpdf") ?? 0) < ($pdf ? 1 : 2)
-                || $rights->allow_admin());
+        return false;
     }
 
     /** @return ?FailureReason */

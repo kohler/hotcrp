@@ -140,12 +140,14 @@ final class PaperContactInfo {
     const CIF_ACT_AUTHOR_VIEW = 0x4000;
     const CIF_ALLOW_AUTHOR_VIEW = 0x8000;
     const CIF_CAN_VIEW_DECISION = 0x10000;
-    const CIF_SET2 = 0x20000;
-    const CIF_ALLOW_VIEW_AUTHORS = 0x40000;
-    const CIF_PREFER_VIEW_AUTHORS = 0x80000;
-    const CIFSHIFT_VIEW_AUTHORS_STATE = 18; // === log2(CIF_ALLOW_VIEW_AUTHORS)
-    const CIF_SET3 = 0x100000;
-    const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x200000;
+    const CIF_VIEW = 0x20000;
+    const CIF_VIEW_DOC = 0x40000;
+    const CIF_SET2 = 0x80000;
+    const CIF_ALLOW_VIEW_AUTHORS = 0x100000;
+    const CIF_PREFER_VIEW_AUTHORS = 0x200000;
+    const CIFSHIFT_VIEW_AUTHORS_STATE = 20; // === log2(CIF_ALLOW_VIEW_AUTHORS)
+    const CIF_SET3 = 0x400000;
+    const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x800000;
     /** @var int */
     public $scope_bits;
     /** @var bool */
@@ -242,6 +244,11 @@ final class PaperContactInfo {
      * @return bool */
     function scope_allows($bits) {
         return ($this->scope_bits & $bits) === $bits;
+    }
+
+    /** @return bool */
+    function can_view($pdf = false) {
+        return ($this->ciflags & ($pdf ? self::CIF_VIEW_DOC : self::CIF_VIEW)) !== 0;
     }
 
     /** @return bool */
