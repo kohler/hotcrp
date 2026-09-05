@@ -948,6 +948,12 @@ class Tags_Tester {
         xassert_assign($this->u_varghese, "paper,tag\n1,+~a/b#1\n");
         $prow = $this->u_chair->checked_paper_by_id(1);
         xassert_eqq($prow->tag_value("{$this->u_varghese->contactId}~a/b"), 1.0);
+        // compiled formulas quote the tag correctly, so the vote aggregates
+        xassert_eqq($prow->tag_value("a/b"), 1.0);
+        $f = Formula::make($this->u_chair, "#{$this->u_varghese->contactId}~a/b");
+        xassert($f->ok());
+        $f->prepare();
+        xassert_eqq($f->eval($prow, null), 1.0);
 
         $qreq = TestQreq::get(["p" => 1, "tag" => "a/b"])->set_user($this->u_chair);
         $jr = Tags_API::votereport_api($this->u_chair, $qreq, $prow);
@@ -965,5 +971,6 @@ class Tags_Tester {
         $this->conf->save_refresh_setting("tag_vote", null);
         $prow = $this->u_chair->checked_paper_by_id(1);
         xassert_eqq($prow->tag_value("{$this->u_varghese->contactId}~a/b"), null);
+        xassert_eqq($prow->tag_value("a/b"), null);
     }
 }

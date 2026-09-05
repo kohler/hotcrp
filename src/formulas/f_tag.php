@@ -106,9 +106,9 @@ class Tag_Fexpr extends Fexpr {
         }
         if (str_starts_with($this->tag, "_~")) {
             $str = "\" \"." . $state->current_uid() . "."
-                . json_encode(substr($tag, strpos($tag, "~")) . "#");
+                . var_export(substr($tag, strpos($tag, "~")) . "#", true);
         } else {
-            $str = json_encode(" {$tag}#");
+            $str = var_export(" {$tag}#", true);
         }
         $tags = $state->prow_tags();
         $jvalue = json_encode($this->isvalue);
@@ -121,9 +121,9 @@ class Tag_Fexpr extends Fexpr {
             assert(strpos($regex, "|") === false
                    && str_starts_with($regex, "{ {$state->user->contactId}~"));
             $regex = "\"{ \"." . $state->current_uid() . "."
-                . json_encode(substr($regex, strlen((string) $state->user->contactId) + 2));
+                . var_export(substr($regex, strlen((string) $state->user->contactId) + 2), true);
         } else {
-            $regex = json_encode($regex);
+            $regex = var_export($regex, true);
         }
         $tags = $state->prow_tags();
         $jvalue = json_encode($this->isvalue);
