@@ -105,7 +105,8 @@ class Review_SearchTerm extends SearchTerm {
             return SearchTerm::make_constant($rsm->tautology());
         }
         if ($contacts !== null && $contacts !== "") {
-            $rsm->set_contacts($srch->matching_uids($contacts, null, $rsm->only_pc()));
+            $usword = SearchWord::make_maybe_quoted($contacts);
+            $rsm->set_contacts($srch->user_search(ContactSearch::F_USER | ($rsm->only_pc() ? ContactSearch::F_PC : 0) | ContactSearch::F_REQUIRED, $usword));
             if (strcasecmp($contacts, "me") === 0) {
                 $rsm->apply_tokens($srch->user->review_tokens());
             }
@@ -202,8 +203,8 @@ class Review_SearchTerm extends SearchTerm {
                 || $rsm->apply_review_word($part, $srch->conf)) {
                 // OK
             } else {
-                list($part, $quoted) = SearchWord::maybe_unquote($part);
-                $rsm->set_contacts($srch->matching_uids($part, $quoted, false));
+                $usword = SearchWord::make_maybe_quoted($part);
+                $rsm->set_contacts($srch->user_search(ContactSearch::F_USER | ContactSearch::F_REQUIRED, $usword));
             }
         }
 

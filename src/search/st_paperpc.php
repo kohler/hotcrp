@@ -22,7 +22,7 @@ class PaperPC_SearchTerm extends SearchTerm {
         } else if (($word === "none" || $word === "no") && !$sword->quoted) {
             $match = "=0";
         } else {
-            $match = $srch->matching_uids($word, $sword->quoted, true);
+            $match = $srch->user_search(ContactSearch::F_USER | ContactSearch::F_PC | ContactSearch::F_REQUIRED, $sword)->user_ids();
         }
         // XXX what about track admin privilege?
         $qt = [new PaperPC_SearchTerm($srch->user, $sword->kwdef->pcfield, $match)];

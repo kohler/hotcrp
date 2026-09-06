@@ -22,7 +22,7 @@ class Pref_Fexpr extends Fexpr {
             $arg = substr($arg, 1);
         }
         $csm = ContactSearch::make_pc($arg, $ff->user);
-        if (!$csm->has_error()) {
+        if ($csm->resolved()) {
             $ff->modifier = $csm->user_ids();
             return true;
         }

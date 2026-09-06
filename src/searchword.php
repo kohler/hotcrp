@@ -35,6 +35,15 @@ class SearchWord {
         return $sw;
     }
 
+    /** @param string $word
+     * @return SearchWord */
+    static function make_maybe_quoted($qword) {
+        $sw = new SearchWord;
+        $sw->qword = $qword;
+        [$sw->word, $sw->quoted] = self::maybe_unquote($qword);
+        return $sw;
+    }
+
     /** @param string $kwarg
      * @param int $kwpos1
      * @param int $pos1
@@ -44,7 +53,7 @@ class SearchWord {
     static function make_kwarg($kwarg, $kwpos1, $pos1, $pos2, $string_context) {
         $sw = new SearchWord;
         $sw->qword = $kwarg;
-        list($sw->word, $sw->quoted) = self::maybe_unquote($kwarg);
+        [$sw->word, $sw->quoted] = self::maybe_unquote($kwarg);
         $sw->kwpos1 = $kwpos1;
         $sw->pos1 = $pos1;
         $sw->pos2 = $pos2;
@@ -114,5 +123,66 @@ class SearchWord {
             $this->compar = $m[0] === "" ? "" : CountMatcher::canonical_relation($m[0]);
             $this->cword = ltrim(substr($cword, strlen($m[0])));
         }
+    }
+
+    /** @return list<SearchWord> */
+    function split() {
+        $s = $this->qword;
+        $pos = 0;
+        $l = [];
+        while (preg_match('/\G:?+\s*+(?:[=!<>]=?|≠|≤|≥)?+[^":=!<>\xE2]*+(?:(?:"|“|”)[^\\\\"]*+(?:\\\\.|[^\\\\"]*+)*+(?:"|“|”|\z)|[^":=!<>\xE2]*+|(?!“|”)\xE2)*+/', $s, $m, 0, $pos)
+               && $m[0] !== "") {
+            $p1 = $pos + strspn(" \t\n\r\x0C\x0D", mask);
+            $p2 = $pos + strlen($m[0]);
+            while ($p2 > $p1 && ctype_space($s[$p2 - 1])) {
+                --$p2;
+            }
+            if ($p1 === $p2) {
+                // nothing
+            } else if ($p1 === 0 && $p2 === strlen($this->qword)) {
+                $l[] = $this;
+            } else if ($p1 < $p2) {
+                $l[] = SearchWord::make_kwarg(
+                    substr($this->qword, $p1, $p2 - $p1), $this->kwpos1,
+                    $this->pos1 + $p1, $this->pos1 + $p2, $this->string_context
+                );
+            }
+            $pos = $p2;
+        }
+        return $l;
+    }
+
+    /** @return array{?SearchWord,int,int} */
+    function pop_comparison() {
+        // see also CountMatcher::unpack_search_comparison
+        $s = $this->qword;
+        $r = strlen($s);
+        if ($s === "" || $s === "any" || $s === "yes") {
+            return [null, 4, 0];
+        } else if ($s === "none" || $s === "no") {
+            return [null, 2, 0];
+        } else if (preg_match('/(?::\s*|(?=[=!<>\xE2]))(|[=!<>]=?|≤|≥|≠)\s*([-+]?\d+)\s*\z/', $s, $m)) {
+            $r -= strlen($m[0]);
+            $op = CountMatcher::$opmap[$m[1]];
+            $v = (int) $m[2];
+        } else if (preg_match('/:\s*(any|none)\s*\z/', $s, $m)) {
+            $r -= strlen($m[0]);
+            $op = $m[1] === "any" ? 4 : 2;
+            $v = 0;
+        } else if (ctype_digit($s)) {
+            return [null, 4, (int) $s];
+        } else {
+            $op = 4;
+            $v = 0;
+        }
+        while ($r > 0 && ctype_space($s[$r - 1])) {
+            --$r;
+        }
+        $ns = substr($this->qword, 0, $r);
+        $nw = $ns === "" || strcasecmp($ns, "any") === 0 ? null : SearchWord::make_kwarg(
+            $ns, $this->kwpos1, $this->pos1,
+            $this->pos1 + $r, $this->string_context
+        );
+        return [$nw, $op, $v];
     }
 }

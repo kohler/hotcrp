@@ -568,6 +568,78 @@ class Search_Tester {
         $conf->save_refresh_setting("sub_pcconfvis", $old_pccv);
     }
 
+    function test_conflict_search_hides_nonpc_author_identities() {
+        // HC-006: the `conflict:` keyword resolves arbitrary accounts (pc_only=false),
+        // and `test()` counted a match whenever the searcher `can_view_conflicts`.
+        // That permission governs *PC* conflict info (true for all PC when
+        // `sub_pcconfvis` is "always", or under an active meeting tracker), so an
+        // unconflicted PC member at a blind conference could confirm — and, via
+        // wildcard probes — enumerate the contact emails of blind submissions,
+        // even though the paper page, paper API, and `au:` all hid the authors.
+        $conf = $this->conf;
+        xassert_eqq($conf->submission_blindness(), Conf::BLIND_ALWAYS);
+        $old_pccv = $conf->setting("sub_pcconfvis");
+        $conf->save_refresh_setting("sub_pcconfvis", 2); // PC can always see PC conflicts
+
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $mg = $conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // PC, not admin, not conflicted p1
+        $p1 = $conf->checked_paper_by_id(1);
+
+        // Controls: paper 1 is blind to mgbaker, but they *can* view its conflicts.
+        xassert(!$mg->can_view_authors($p1));
+        xassert($mg->can_view_conflicts($p1));
+
+        // puneet and van are non-PC author/contacts of blind paper 1. `conflict:`
+        // must not count their author conflicts, or it leaks the blind authors.
+        xassert_not_in_eqq(1, (new PaperSearch($mg, "conflict:puneet@catarina.usc.edu>0"))->paper_ids());
+        xassert_not_in_eqq(1, (new PaperSearch($mg, "conflict:van@ee.lbl.gov>0"))->paper_ids());
+        // wildcard probing is equally blocked
+        xassert_not_in_eqq(1, (new PaperSearch($mg, "conflict:puneet*>0"))->paper_ids());
+
+        // An administrator legitimately sees the author conflict.
+        xassert_in_eqq(1, (new PaperSearch($chair, "conflict:puneet@catarina.usc.edu>0"))->paper_ids());
+
+        // The fix does not over-block: a *PC* member's conflict is still visible
+        // to mgbaker under pcconfvis=always.
+        xassert_assign($chair, "paper,action,user\n1,conflict,marina@poema.ru\n");
+        xassert_in_eqq(1, (new PaperSearch($mg, "conflict:marina@poema.ru>0"))->paper_ids());
+
+        // clean up
+        xassert_assign($chair, "paper,action,user\n1,noconflict,marina@poema.ru\n");
+        $conf->save_refresh_setting("sub_pcconfvis", $old_pccv);
+    }
+
+    function test_conflict_search_is_not_a_user_oracle() {
+        // `conflict:USER` resolves the whole account table; reporting "user not
+        // found" would turn it into an account-existence oracle. A non-admin gets
+        // no such feedback (real and fake accounts are indistinguishable); an
+        // admin, who can enumerate accounts anyway, is told; and the PC-restricted
+        // `pcconf:` may report a missing PC member to anyone who can view the PC.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $mg = $conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // PC, not admin
+        xassert(!$mg->privChair);
+        xassert($mg->can_view_pc());
+
+        // Non-admin: no feedback whether the named account exists or not.
+        $s = new PaperSearch($mg, "conflict:nonesuch-zqz@example.invalid");
+        $s->paper_ids();
+        xassert_eqq($s->full_feedback_text(), "");
+        $s = new PaperSearch($mg, "conflict:puneet@catarina.usc.edu"); // real, non-PC account
+        $s->paper_ids();
+        xassert_eqq($s->full_feedback_text(), "");
+
+        // Admin: told when nobody matches.
+        $s = new PaperSearch($chair, "conflict:nonesuch-zqz@example.invalid");
+        $s->paper_ids();
+        xassert_match($s->full_feedback_text(), '/User .*not found/');
+
+        // PC-restricted keyword: a viewer of the PC is told when no PC member matches.
+        $s = new PaperSearch($mg, "pcconf:nonesuch-zqz@example.invalid");
+        $s->paper_ids();
+        xassert_match($s->full_feedback_text(), '/PC .*not found/');
+    }
+
     function test_desirability_column_respects_aggregate_pref_visibility() {
         // Regression: the Desirability column renders the signed reviewer-
         // preference aggregate. `prepare()` gates only on the global `is_manager()`

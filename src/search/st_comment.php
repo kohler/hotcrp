@@ -84,23 +84,24 @@ class Comment_SearchTerm extends SearchTerm {
         ];
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $a = CountMatcher::unpack_search_comparison($sword->qword);
-        if (($qr = SearchTerm::make_constant(CountMatcher::comparison_tautology($a[1], $a[2])))) {
+        [$nsword, $op, $value] = $sword->pop_comparison();
+        if (($qr = SearchTerm::make_constant(CountMatcher::comparison_tautology($op, $value)))) {
             return $qr;
         }
-        $tags = $contacts = null;
-        if (str_starts_with($a[0], "#")
-            && !$srch->conf->pc_tag_exists(substr($a[0], 1))) {
+        $tags = $usrch = null;
+        if ($nsword
+            && str_starts_with($nsword->qword, "#")
+            && !$srch->conf->pc_tag_exists(substr($nsword->qword, 1))) {
             $tags = new TagSearchMatcher($srch->user);
-            $tags->add_check_tag(substr($a[0], 1), true);
+            $tags->add_check_tag(substr($nsword->qword, 1), true);
             foreach ($tags->error_ftexts() as $e) {
                 $srch->lwarning($sword, $e);
             }
-        } else if ($a[0] !== "") {
-            $contacts = $srch->matching_uids($a[0], $sword->quoted, false);
+        } else if ($nsword) {
+            $usrch = $srch->user_search(ContactSearch::F_USER | ContactSearch::F_REQUIRED, $nsword);
         }
-        $compar = CountMatcher::unparse_comparison($a[1], $a[2]);
-        $csm = new ContactCountMatcher($compar, $contacts);
+        $compar = CountMatcher::unparse_comparison($op, $value);
+        $csm = new ContactCountMatcher($compar, $usrch);
         return new Comment_SearchTerm($srch->user, $csm, $tags, $sword->kwdef);
     }
     /** @return bool */

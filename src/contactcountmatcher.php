@@ -7,7 +7,7 @@ class ContactCountMatcher extends CountMatcher {
     private $_contacts; // null means ‘matches all contacts’
 
     /** @param string $countexpr
-     * @param null|int|list<int> $contacts */
+     * @param null|int|list<int>|ContactSearch $contacts */
     function __construct($countexpr, $contacts) {
         parent::__construct($countexpr);
         $this->set_contacts($contacts);
@@ -64,11 +64,17 @@ class ContactCountMatcher extends CountMatcher {
         return $this;
     }
 
-    /** @param null|int|list<int> $contacts
+    /** @param null|int|list<int>|ContactSearch $contacts
      * @return $this */
     function set_contacts($contacts) {
-        assert($contacts === null || is_array($contacts) || is_int($contacts));
-        $this->_contacts = is_int($contacts) ? [$contacts] : $contacts;
+        if ($contacts instanceof ContactSearch) {
+            $this->_contacts = $contacts->user_ids();
+        } else if (is_int($contacts)) {
+            $this->_contacts = [$contacts];
+        } else {
+            assert(is_array($contacts ?? []));
+            $this->_contacts = $contacts;
+        }
         return $this;
     }
 }

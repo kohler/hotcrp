@@ -23,9 +23,11 @@ final class Conflict_SearchTerm extends SearchTerm {
         $this->self = $ccm->single_cid() === $user->contactXid;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $a = CountMatcher::unpack_search_comparison($sword->qword);
-        $contacts = $srch->matching_uids($a[0], $sword->quoted, $sword->kwdef->pc_only);
-        $ccm = new ContactCountMatcher(CountMatcher::unparse_comparison($a[1], $a[2]), $contacts);
+        [$usword, $op, $value] = $sword->pop_comparison();
+        $usrch = $usword
+            ? $srch->user_search(ContactSearch::F_USER | ($sword->kwdef->pc_only ? ContactSearch::F_PC : 0) | ContactSearch::F_REQUIRED, $usword)
+            : null;
+        $ccm = new ContactCountMatcher(CountMatcher::unparse_comparison($op, $value), $usrch);
         if (($qr = SearchTerm::make_constant($ccm->tautology()))) {
             return $qr;
         }

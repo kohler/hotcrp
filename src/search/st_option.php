@@ -62,7 +62,7 @@ abstract class Option_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         // option name and option content
         if ($sword->kwdef->name === "option") {
-            if (preg_match('/\A(.*?)(?::|(?=[#=!<>]|≠|≤|≥))(.*)\z/s', $word, $m)) {
+            if (preg_match('/\A(.*?)(?::|(?=[\#=!<>]|≠|≤|≥))(.*)\z/s', $word, $m)) {
                 $oname = $m[1];
                 $ocontent = $m[2];
             } else {

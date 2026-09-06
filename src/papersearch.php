@@ -506,73 +506,42 @@ class PaperSearch extends MessageSet {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    /** @return ContactSearch */
-    private function _find_contact_search($type, $word) {
+    /** @param int $ustype
+     * @return ContactSearch */
+    private function _find_contact_search($ustype, $word) {
         foreach ($this->_contact_searches ?? [] as $cs) {
-            if ($cs->type === $type && $cs->text === $word)
+            if ($cs->type === $ustype && $cs->text === $word)
                 return $cs;
         }
-        $this->_contact_searches[] = $cs = new ContactSearch($type, $word, $this->user);
+        $this->_contact_searches[] = $cs = new ContactSearch($ustype, $word, $this->user);
         return $cs;
     }
-    /** @return ContactSearch */
-    private function _contact_search($type, $word, $quoted) {
-        $xword = $word;
-        if ($quoted === null) {
-            $word = SearchWord::unquote($word);
-            $quoted = strlen($word) !== strlen($xword);
-        }
-        $type |= ($quoted ? ContactSearch::F_QUOTED : 0)
-            | (!$quoted && $this->user->isPC ? ContactSearch::F_TAG : 0);
-        $cs = $this->_find_contact_search($type, $word);
-        if ($cs->warn_html) {
-            $this->warning("<5>{$cs->warn_html}");
-        }
-        return $cs;
-    }
-    /** @param int $type
+    /** @param int $ustype
      * @param SearchWord $sword
      * @return ContactSearch */
-    function user_search($type, $sword) {
+    function user_search($ustype, $sword) {
         if ($sword->quoted) {
-            $type |= ContactSearch::F_QUOTED;
-        } else if ($this->user->isPC) {
-            $type |= ContactSearch::F_TAG;
+            $ustype |= ContactSearch::F_QUOTED;
+        } else if ($this->user->can_view_user_tags()) {
+            $ustype |= ContactSearch::F_TAG;
         }
-        $cs = $this->_find_contact_search($type, $sword->word);
-        if ($cs->warn_html) {
-            $this->lwarning($sword, "<5>{$cs->warn_html}");
-        } else if ($cs->is_empty() && ($type & ContactSearch::F_USER) !== 0) {
-            $this->lwarning($sword, $type & ContactSearch::F_PC ? "<0>PC member not found" : "<0>User not found");
+        $cs = $this->_find_contact_search($ustype, $sword->word);
+        foreach ($cs->message_list() as $mi) {
+            $this->lwarning($sword, $mi->message);
         }
         return $cs;
     }
     /** @param string $word
      * @param ?bool $quoted
      * @param bool $pc_only
-     * @return list<int> */
+     * @return list<int>
+     * @deprecated */
     function matching_uids($word, $quoted, $pc_only) {
-        $pc_type = $pc_only ? ContactSearch::F_PC : 0;
-        $scm = $this->_contact_search(ContactSearch::F_USER | $pc_type, $word, $quoted);
-        return $scm->user_ids();
-    }
-    /** @param string $word
-     * @param bool $quoted
-     * @param bool $pc_only
-     * @return list<Contact> */
-    function matching_contacts($word, $quoted, $pc_only) {
-        $pc_type = $pc_only ? ContactSearch::F_PC : 0;
-        $scm = $this->_contact_search(ContactSearch::F_USER | $pc_type, $word, $quoted);
-        return $scm->users();
-    }
-    /** @param string $word
-     * @param bool $quoted
-     * @param bool $pc_only
-     * @return ?list<int> */
-    function matching_special_uids($word, $quoted, $pc_only) {
-        $pc_type = $pc_only ? ContactSearch::F_PC : 0;
-        $scm = $this->_contact_search($pc_type, $word, $quoted);
-        return $scm->has_error() ? null : $scm->user_ids();
+        $sw = new SearchWord;
+        $sw->qword = $sw->word = $word;
+        $sw->quoted = $quoted;
+        return $this->user_search(ContactSearch::F_USER | ($pc_only ? ContactSearch::F_PC : 0), $sw)
+            ->user_ids();
     }
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {

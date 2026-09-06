@@ -73,10 +73,10 @@ class Revpref_SearchTerm extends SearchTerm {
         $utype = -1;
         if (preg_match('/\A((?:(?!≠|≤|≥)[^:=!<>])+)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
-            $contacts = $srch->matching_special_uids($m[1], $sword->quoted, true);
-            if ($contacts === null) {
-                $contacts = $srch->matching_uids($m[1], $sword->quoted, true);
-            } else if (in_array(trim(strtolower($m[1])), ["pc", "all", "any", "*"], true)) {
+            $usword = SearchWord::make_maybe_quoted($m[1]);
+            $usrch = $srch->user_search(ContactSearch::F_USER | ContactSearch::F_PC, $usword);
+            if ($usrch->is_roles()
+                && in_array(strtolower($usrch->text), ["pc", "all", "any", "*"], true)) {
                 // searching safe aggregate group of users
                 $utype = 1;
             }
@@ -84,9 +84,10 @@ class Revpref_SearchTerm extends SearchTerm {
             if ($word === "") {
                 $word = "any";
             }
+            $contacts = $usrch->user_ids();
         } else if ($srch->user->can_view_pc()) {
-            $contacts = array_keys($srch->conf->pc_members());
             $utype = 0;
+            $contacts = array_keys($srch->conf->pc_members());
         } else {
             $contacts = [$srch->user->contactXid];
         }

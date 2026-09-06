@@ -215,6 +215,7 @@ class CountMatcher {
     /** @param string $s
      * @return array{string,int,int} */
     static function unpack_search_comparison($s) {
+        // see also SearchWord::pop_comparison
         if ($s === "" || $s === "any" || $s === "yes") {
             return ["", 4, 0];
         } else if ($s === "none" || $s === "no") {

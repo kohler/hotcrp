@@ -34,7 +34,7 @@ class Admin_SearchTerm extends SearchTerm {
             return new False_SearchTerm;
         }
         // searches only PC members; needs update if non-PC can be admins
-        $match = $srch->user_search(ContactSearch::F_PC | ContactSearch::F_USER, $sword);
+        $match = $srch->user_search(ContactSearch::F_PC | ContactSearch::F_USER | ContactSearch::F_REQUIRED, $sword);
         if ($match->is_empty()) {
             return new False_SearchTerm;
         }

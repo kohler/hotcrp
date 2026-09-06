@@ -15,18 +15,16 @@ class ReviewRequestSearchMatcher extends ContactCountMatcher {
         if (($round = $conf->round_number($word)) !== null) {
             $this->round[] = $round;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
     function apply_comparison($word) {
         $a = CountMatcher::unpack_search_comparison($word);
         if ($a[0] === "") {
             $this->set_relation_value($a[1], $a[2]);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
     /** @param int $cid */
     function apply_requester($cid) {
@@ -67,7 +65,6 @@ class Proposal_SearchTerm extends SearchTerm {
         $rqsm = new ReviewRequestSearchMatcher;
 
         $qword = $sword->qword;
-        $quoted = false;
         $contacts = null;
         $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/s';
         while ($qword !== "") {
@@ -79,9 +76,6 @@ class Proposal_SearchTerm extends SearchTerm {
                            || $rqsm->apply_comparison($m[1]))) {
                 $qword = $m[2];
             } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
-                if (($quoted = $m[1][0] === "\"")) {
-                    $m[1] = str_replace(['"', '*'], ['', '\*'], $m[1]);
-                }
                 $contacts = $m[1];
                 $qword = $m[2];
             } else {
@@ -95,7 +89,8 @@ class Proposal_SearchTerm extends SearchTerm {
         }
 
         if ($contacts) {
-            $rqsm->set_contacts($srch->matching_uids($contacts, $quoted, false));
+            $usword = SearchWord::make_kwarg($contacts, $sword->kwpos1, $sword->pos1, $sword->pos2, $sword->string_context);
+            $rqsm->set_contacts($srch->user_search(ContactSearch::F_USER | ContactSearch::F_REQUIRED, $usword));
         }
         return new Proposal_SearchTerm($srch->user, $rqsm);
     }
