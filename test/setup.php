@@ -1448,11 +1448,17 @@ class TestRunner {
         if (!$this->verbose) {
             return;
         }
-        $mpfx = str_pad("{$ro->getName()}::{$m->name} ", $this->width, ".");
-        if (strlen($mpfx) > $this->width) {
-            $mpfx = rtrim($mpfx);
+        $digits = sprintf("[%{$this->test_digits}d/%d]", $this->test_index, $this->test_count);
+        $method = $ro->getName() . "::" . $m->name;
+        $dots = str_repeat(".", max(0, $this->width - strlen($digits) - strlen($method) - 2));
+        if (strlen($digits) + 1 + strlen($method) < $this->width) {
+            $dots = " " . $dots;
         }
-        $this->verbose_test = $mpfx;
+        if ($this->color) {
+            $this->verbose_test = "\x1b[38;2;212;23;67m{$digits} \x1b[38;2;70;100;150m{$method}\x1b[1;90m{$dots}\x1b[m";
+        } else {
+            $this->verbose_test = $digits . " " . $method . $dots;
+        }
     }
 
     /** @param object $testo
@@ -1573,6 +1579,11 @@ class TestRunner {
 
         // prepare database
         if ($this->reset ?? $this->need_fresh) {
+            if ($this->color && !$this->verbose) {
+                fwrite(STDERR, sprintf("\r\x1b[38;2;212;23;67m[%{$this->test_digits}d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
+                                       $this->test_index - 1, $this->test_count, "(reset database)"));
+                $this->need_newline = true;
+            }
             self::reset_db($this->reset ?? false);
             $this->need_fresh = false;
             $this->reset = null;
@@ -1627,6 +1638,10 @@ class TestRunner {
         $this->save_stack = $this->save_stack->next;
     }
 
+    private static $special_tests = [
+        "no_argv", "(", ")", "if_all", "no_cdb", "reset_db", "fresh_db"
+    ];
+
     /** @param string $test */
     private function run_test($test) {
         if ($test === "no_argv") {
@@ -1661,6 +1676,7 @@ class TestRunner {
             return;
         }
 
+        ++$this->test_index;
         if ($this->color && !$this->verbose) {
             fwrite(STDERR, sprintf("\r\x1b[38;2;212;23;67m[%{$this->test_digits}d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
                                    $this->test_index, $this->test_count, $test));
@@ -1687,12 +1703,28 @@ class TestRunner {
     }
 
     private function run_test_list($tests) {
+        // normalize tests
+        $skipstack = [];
+        $skipping = false;
+        $this->test_count = 0;
+        foreach ($tests as $t) {
+            if (!in_array($t, self::$special_tests)) {
+                if (!$skipping) {
+                    ++$this->test_count;
+                }
+            } else if ($t === "(") {
+                $skipstack[] = $skipping;
+            } else if ($t === ")") {
+                $skipping = array_pop($skipstack);
+            } else if ($t === "if_all" && !$this->all) {
+                $skipping = true;
+            }
+        }
+
         $this->test_index = 0;
-        $this->test_count = count($tests);
         $this->test_digits = (int) floor(log10(max($this->test_count, 1))) + 1;
-        foreach ($tests as $test) {
-            ++$this->test_index;
-            $this->run_test($test);
+        foreach ($tests as $t) {
+            $this->run_test($t);
         }
         if ($this->color && !$this->verbose) {
             fwrite(STDERR, "\r\x1b[K");
