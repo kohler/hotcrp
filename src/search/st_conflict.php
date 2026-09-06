@@ -28,9 +28,8 @@ final class Conflict_SearchTerm extends SearchTerm {
         $ccm = new ContactCountMatcher(CountMatcher::unparse_comparison($a[1], $a[2]), $contacts);
         if (($qr = SearchTerm::make_constant($ccm->tautology()))) {
             return $qr;
-        } else {
-            return new Conflict_SearchTerm($srch->user, $ccm, $sword->kwdef->pc_only);
         }
+        return new Conflict_SearchTerm($srch->user, $ccm, $sword->kwdef->pc_only);
     }
     function merge(SearchTerm $st) {
         if ($st instanceof Conflict_SearchTerm
@@ -43,9 +42,8 @@ final class Conflict_SearchTerm extends SearchTerm {
             $this->ispc = $this->ispc && $st->ispc;
             $this->self = $this->self && $st->self;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
     function paper_requirements(&$options) {
         if (!$this->self) {
@@ -82,9 +80,12 @@ final class Conflict_SearchTerm extends SearchTerm {
             $n = $row->has_conflict($this->user->contactXid) ? 1 : 0;
         } else {
             $n = 0;
-            $can_view = $this->user->can_view_conflicts($row);
+            $vc = $this->user->can_view_conflicts($row);
+            $va = $this->ispc || $this->user->can_view_authors($row);
+            $pcm = $va ? null : $this->user->conf->viewable_pc_members($this->user);
             foreach ($this->ccm->contact_set() as $cid) {
-                if (($cid === $this->user->contactXid || $can_view)
+                if (($vc || $cid === $this->user->contactXid)
+                    && ($va || isset($pcm[$cid]))
                     && $row->has_conflict($cid))
                     ++$n;
             }
@@ -106,8 +107,7 @@ final class Conflict_SearchTerm extends SearchTerm {
                 "compar" => $this->ccm->relation(),
                 "value" => $this->ccm->value()
             ];
-        } else {
-            return $this->test($row, null);
         }
+        return $this->test($row, null);
     }
 }
