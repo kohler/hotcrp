@@ -44,6 +44,8 @@ class Autoassign_Batch {
     public $profile = false;
     /** @var bool */
     public $no_force = false;
+    /** @var bool */
+    public $progress = false;
     /** @var ?callable */
     public $detacher;
     /** @var ?TokenInfo */
@@ -140,6 +142,7 @@ class Autoassign_Batch {
         $this->help_param = $this->help_param || isset($arg["help-param"]);
         $this->profile = $this->profile || isset($arg["profile"]);
         $this->no_force = $this->no_force || isset($arg["no-force"]);
+        $this->progress = $this->progress || isset($arg["progress"]);
         if (isset($arg["autoassigner"])) {
             $this->aaname = $arg["autoassigner"];
         } else if (!empty($arg["_"])) {
@@ -257,6 +260,10 @@ class Autoassign_Batch {
             $this->_jtok->change_data("progress", $progress)
                 ->update_use()
                 ->update();
+        }
+        if ($this->progress) {
+            fwrite(STDOUT, json_encode(["progress" => $progress]) . "\n");
+            fflush(STDOUT);
         }
         set_time_limit(240);
     }
@@ -452,6 +459,7 @@ class Autoassign_Batch {
             "u[],user[] =USER Include users matching USER (`-u -USER` excludes)",
             "disjoint[],X[] =USER1,USER2 Don’t coassign users",
             "count:,c: {n} =N Set `count` parameter to N",
+            "progress Write progress information to stdout as JSONL",
             "no-force Do not override conflicts",
             "help-param Print parameters for AUTOASSIGNER",
             "profile Print profile to standard error",
