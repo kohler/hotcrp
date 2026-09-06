@@ -920,9 +920,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $actasuser = $this->actas_user($actas);
             if ($actasuser !== $this) {
                 $qreq->set_gsession("last_actas", $actasuser->email);
-                $actasuser->_activated |= self::ACTIVATED_ACTAS;
+                $actasuser->_activated |= self::ACTIVATED_ACTAS
+                    | ($this->_activated & self::ACTIVATED_TOKEN);
                 $actasuser->_admin_base_user = $this;
                 $actasuser->_hoturl_defaults["actas"] = $actasuser->email;
+                // token scope bounds the whole request; its subset
+                // selectors continue to be evaluated as `$this`
+                $actasuser->set_scope($this->_scope);
                 return $actasuser->activate($qreq, true, $userindex);
             }
         }
@@ -3456,10 +3460,16 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->_scope;
     }
 
-    /** @param ?string $s
+    /** A TokenScope argument must have been created for a user (as by
+     * TokenScope::parse); it is stored as is, so its subset selectors are
+     * evaluated as that user, which need not be `$this`.
+     *
+     * @param null|string|TokenScope $s
      * @return $this */
     function set_scope($s = null) {
-        if ((string) $s !== "") {
+        if ($s instanceof TokenScope) {
+            $scope = $s;
+        } else if ((string) $s !== "") {
             $scope = TokenScope::parse($s, $this);
         } else {
             $scope = null;

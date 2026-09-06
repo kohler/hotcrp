@@ -326,13 +326,11 @@ function initialize_user($qreq, $kwarg = null) {
         }
         $qreq->approve_token(); // the bearer token counts as explicit authorization
         $qreq->set_bearer_token($token);
-        $qreq->set_user($user);
         $qreq->set_qsession(new MemoryQsession($salt, ["u" => $user->email]));
         $user->set_bearer_authorized();
         if (($scope = $token->data("scope")) && is_string($scope)) {
             $user->set_scope($scope);
         }
-        Contact::set_main_user($user);
         $ucounter = $user->contact_counter_for($token->is_cdb, $token->contactId);
         $allow = $ucounter->api_account();
         $ucounter->api_ratelimit_headers();
@@ -340,7 +338,10 @@ function initialize_user($qreq, $kwarg = null) {
             $ucounter->api_fail()->complete();
         }
         $token->update_use(86400)->update(); // mark use once a day
-        return $user->activate($qreq, true);
+        $muser = $user->activate($qreq, true);
+        Contact::set_main_user($muser);
+        $qreq->set_user($muser);
+        return $muser;
     }
 
     // set up session

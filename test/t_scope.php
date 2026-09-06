@@ -234,4 +234,48 @@ class Scope_Tester {
         xassert_str_contains($header, "error=\"insufficient_scope\"");
         xassert_str_contains($header, "scope=\"{$scope}\"");
     }
+
+    function test_actas_forwards_token_scope() {
+        // A privileged user’s scoped token may `actas` another user, but the
+        // token’s scope must bound the impersonated user too; the scope’s
+        // subset selectors stay evaluated as the token owner.
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $u_micke = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        xassert($p2->has_author($u_micke));
+        xassert(!$p2->has_author($this->u_chair));
+
+        // `read`: the actas user inherits the scope -- reads, no writes
+        $u = clone $this->u_chair;
+        $u->set_scope("read");
+        $qreq = TestQreq::get();
+        $qreq->actas = "micke@cdt.luth.se";
+        $au = $u->activate($qreq, true);
+        xassert_eqq($au->email, "micke@cdt.luth.se");
+        xassert($au->is_actas_user());
+        xassert_eqq(TokenScope::unparse($au->scope()), "read");
+        xassert($au->scope_allows(TokenScope::S_SUB_READ));
+        xassert(!$au->scope_allows(TokenScope::S_SUB_WRITE));
+
+        // `write?q=au:me`: the owner (chair) authors nothing, so the subset
+        // selector -- evaluated as the owner, not the impersonated author --
+        // grants write nowhere, even acting as an author of #2
+        $u = clone $this->u_chair;
+        $u->set_scope("read write?q=au:me");
+        $qreq = TestQreq::get();
+        $qreq->actas = "micke@cdt.luth.se";
+        $au = $u->activate($qreq, true);
+        xassert_eqq($au->email, "micke@cdt.luth.se");
+        xassert_eqq(TokenScope::unparse($au->scope()), "read write?q=au%3Ame");
+        xassert(!$au->scope_allows(TokenScope::S_SUB_WRITE, $au->checked_paper_by_id(2)));
+
+        // `none`: no submission access even when acting as an author of #2
+        $u = clone $this->u_chair;
+        $u->set_scope("none");
+        $qreq = TestQreq::get();
+        $qreq->actas = "micke@cdt.luth.se";
+        $au = $u->activate($qreq, true);
+        xassert_eqq($au->email, "micke@cdt.luth.se");
+        xassert(!$au->scope_allows(TokenScope::S_SUB_READ));
+        xassert(!$au->can_view_paper($au->checked_paper_by_id(2)));
+    }
 }
