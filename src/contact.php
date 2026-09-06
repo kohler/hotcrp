@@ -3492,6 +3492,18 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     /** @param int $scope
+     * @param ?PaperInfo $prow
+     * @return ?FailureReason */
+    function perm_scope_allows($scope, $prow = null) {
+        if ($this->scope_allows($scope, $prow)) {
+            return null;
+        }
+        return $prow
+            ? $prow->failure_reason(["scope" => $scope])
+            : new FailureReason($this->conf, ["scope" => $scope]);
+    }
+
+    /** @param int $scope
      * @return bool */
     function scope_allows_some($scope) {
         return !$this->_scope
@@ -4150,10 +4162,22 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->perm_edit_paper($prow);
     }
 
-    /** @return bool */
+    /** @return bool
+     *
+     * Is this user allowed to edit any part of `$prow` as an author or
+     * administrator, such as contacts? Checks `submeta:write` scope; ignores
+     * deadlines and submission state. */
     function allow_edit_paper(PaperInfo $prow) {
+        return $this->rights($prow)->allow_author_edit();
+    }
+
+    /** @return ?FailureReason */
+    function perm_allow_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return $rights->allow_admin() || $prow->has_author($this);
+        if ($rights->allow_author_edit()) {
+            return null;
+        }
+        return $this->perm_edit_paper_failure($prow, $rights, "w");
     }
 
     /** @return 0|1|2 */

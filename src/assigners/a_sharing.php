@@ -68,8 +68,12 @@ class Sharing_AssignmentParser extends UserlessAssignmentParser {
         Dbl::free($result);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return $state->user->can_manage($prow)
-            || $prow->has_author($state->user);
+        if (($fr = $state->user->perm_scope_allows(TokenScope::S_SUB_ADMIN, $prow)
+                   ?? $state->user->perm_allow_edit_paper($prow))) {
+            $state->paper_error($fr);
+            return false;
+        }
+        return true;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $ia = 0;

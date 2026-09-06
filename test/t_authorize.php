@@ -538,7 +538,7 @@ class Authorize_Tester {
         xassert_eqq($jr->get("email"), "chair@_.com");
 
         $jr = call_api_result("=account", $token, ["enable" => 1, "email" => "mgbaker@cs.stanford.edu"]);
-        xassert_eqq($jr->response_code(), 401);
+        xassert_eqq($jr->response_code(), 403);
 
         // token that requested limited rights from read/write scope
         // has only those rights
@@ -548,7 +548,7 @@ class Authorize_Tester {
         xassert_eqq($jr->get("email"), "chair@_.com");
 
         $jr = call_api_result("=account", $token, ["enable" => 1, "email" => "mgbaker@cs.stanford.edu"]);
-        xassert_eqq($jr->response_code(), 401);
+        xassert_eqq($jr->response_code(), 403);
     }
 
     function test_refresh_token_scope() {
@@ -883,7 +883,7 @@ class Authorize_Tester {
         if ($jr) {
             xassert_eqq($jr->_token->data("scope"), "read");
             xassert_eqq(call_api_result("=account", $jr->_token,
-                ["enable" => 1, "email" => "mgbaker@cs.stanford.edu"])->response_code(), 401);
+                ["enable" => 1, "email" => "mgbaker@cs.stanford.edu"])->response_code(), 403);
         }
 
         $this->set_default_document();
@@ -2597,20 +2597,20 @@ class Authorize_Tester {
         $wtok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "write"]);
         xassert_eqq(call_api_result("settings", $wtok, [])->response_code(), 200);
         $jr = call_api_result("=settings", $wtok, []);
-        xassert_eqq($jr->response_code(), 401);
+        xassert_eqq($jr->response_code(), 403);
         // the refusal names the scope to ask for
         xassert_str_contains($jr->header("WWW-Authenticate") ?? "", 'scope="settings:admin"');
 
         $atok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "settings:admin"]);
-        xassert_neqq(call_api_result("=settings", $atok, [])->response_code(), 401);
+        xassert_neqq(call_api_result("=settings", $atok, [])->response_code(), 403);
 
         // settings is its own family: administering everything else is not
         // enough, and reading is a separate grant from `read`
         $otok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "other:admin"]);
-        xassert_eqq(call_api_result("=settings", $otok, [])->response_code(), 401);
+        xassert_eqq(call_api_result("=settings", $otok, [])->response_code(), 403);
         $rtok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "settings:read"]);
         xassert_eqq(call_api_result("settings", $rtok, [])->response_code(), 200);
-        xassert_eqq(call_api_result("=settings", $rtok, [])->response_code(), 401);
+        xassert_eqq(call_api_result("=settings", $rtok, [])->response_code(), 403);
     }
 
     /** A 401 has to say how to authenticate (RFC 6750 §3). This is the 401 a

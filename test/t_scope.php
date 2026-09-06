@@ -176,6 +176,367 @@ class Scope_Tester {
         xassert($this->u_chair->can_view_option($this->p1, $subopt));
     }
 
+    function test_contacts_require_write_scope() {
+        // A read-scoped token must not be able to change a submission’s
+        // contacts, even though contact edits bypass submission deadlines.
+        $this->u_chair->set_scope();
+        MailChecker::clear();
+        $u_estrin = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $u_kohler = $this->conf->checked_user_by_email("kohler@seas.harvard.edu");
+        xassert($this->p1->has_author($u_estrin));
+        xassert(!$this->p1->has_author($u_kohler));
+        xassert($u_estrin->allow_edit_paper($this->p1));
+        xassert_eqq($u_estrin->perm_allow_edit_paper($this->p1), null);
+        $nstorage = $this->conf->fetch_ivalue("select count(*) from PaperStorage where paperId=1");
+
+        $u_estrin->set_scope("read");
+        $p1 = $u_estrin->checked_paper_by_id(1);
+        xassert($u_estrin->can_view_paper($p1));
+        xassert(!$u_estrin->allow_edit_paper($p1));
+        xassert(!$u_estrin->can_edit_paper($p1));
+        $whynot = $u_estrin->perm_allow_edit_paper($p1);
+        xassert_eqq($whynot["scope"] ?? null, TokenScope::S_SUB_WRITE);
+
+        $jr = call_api("=paper", $u_estrin, self::contact_json_qreq(1, $u_kohler->email));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(self::message_text($jr), "submeta:write");
+        $jr = call_api("=paper", $u_estrin, self::contact_form_qreq(1, $u_kohler, true));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(self::message_text($jr), "submeta:write");
+        $jr = call_api("=assign", $u_estrin, self::contact_assign_qreq(1, $u_kohler, true));
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->status_code ?? null, 403);
+        xassert_str_contains(self::message_text($jr), "submeta:write");
+        xassert(!$this->conf->checked_paper_by_id(1)->has_author($u_kohler));
+
+        // ...including on a dry run
+        $jr = call_api("=paper", $u_estrin, TestQreq::post_json(["pid" => 1, "title" => "", "contacts" => [$u_kohler->email => true]], ["p" => 1, "dry_run" => 1]));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(self::message_text($jr), "submeta:write");
+
+        // the request is refused before anything is stored: no placeholder
+        // account for a new contact, no document upload
+        $jr = call_api("=paper", $u_estrin, self::contact_json_qreq(1, "scoped-nobody@_.com"));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(self::message_text($jr), "submeta:write");
+        xassert(!$this->conf->fresh_user_by_email("scoped-nobody@_.com"));
+        $jr = call_api("=paper", $u_estrin, TestQreq::post_json(["pid" => 1, "submission" => ["content" => "%PDF-read-scoped\n", "type" => "application/pdf"]], ["p" => 1]));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(self::message_text($jr), "submeta:write");
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperStorage where paperId=1"), $nstorage);
+
+        // same for read-scoped administrators
+        $this->u_chair->set_scope("read");
+        $p1 = $this->u_chair->checked_paper_by_id(1);
+        xassert($this->u_chair->allow_admin($p1));
+        xassert(!$this->u_chair->allow_edit_paper($p1));
+        $jr = call_api("=paper", $this->u_chair, self::contact_form_qreq(1, $u_kohler, true));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(self::message_text($jr), "submeta:write");
+        $jr = call_api("=assign", $this->u_chair, self::contact_assign_qreq(1, $u_kohler, true));
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->status_code ?? null, 403);
+        xassert_str_contains(self::message_text($jr), "can’t administer");
+        xassert(!$this->conf->checked_paper_by_id(1)->has_author($u_kohler));
+        $this->u_chair->set_scope();
+        MailChecker::check0();
+
+        // write scope suffices
+        $u_estrin->set_scope("submission:write");
+        $p1 = $u_estrin->checked_paper_by_id(1);
+        xassert($u_estrin->allow_edit_paper($p1));
+        $jr = call_api("=paper", $u_estrin, self::contact_form_qreq(1, $u_kohler, true));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["contacts"]);
+        xassert($this->conf->checked_paper_by_id(1)->has_author($u_kohler));
+
+        $jr = call_api("=paper", $u_estrin, self::contact_form_qreq(1, $u_kohler, false));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["contacts"]);
+        xassert(!$this->conf->checked_paper_by_id(1)->has_author($u_kohler));
+
+        $jr = call_api("=assign", $u_estrin, self::contact_assign_qreq(1, $u_kohler, true));
+        xassert_eqq($jr->ok, true);
+        xassert($this->conf->checked_paper_by_id(1)->has_author($u_kohler));
+        $jr = call_api("=paper", $u_estrin, self::contact_form_qreq(1, $u_kohler, false));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["contacts"]);
+        xassert(!$this->conf->checked_paper_by_id(1)->has_author($u_kohler));
+        $u_estrin->set_scope();
+        MailChecker::clear();
+
+        // non-PC authors with `none` or `read` scope cannot add or remove
+        // contacts via api/assign either
+        $u_micke = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        $u_randy = $this->conf->checked_user_by_email("randy@cs.berkeley.edu");
+        xassert_eqq($u_micke->roles & Contact::ROLE_PCLIKE, 0);
+        xassert($this->p2->has_author($u_micke));
+        xassert(!$this->p2->has_author($u_randy));
+        // (give #2 a second contact, so that `clearcontact` refusals below
+        // are about scope, not about removing the last contact)
+        xassert_assign($this->u_chair, "action,paper,email\ncontact,2,{$u_kohler->email}\n");
+        xassert($this->conf->checked_paper_by_id(2)->has_author($u_kohler));
+        MailChecker::clear();
+        foreach (["none", "read"] as $scope) {
+            $u_micke->set_scope($scope);
+            $jr = call_api("=assign", $u_micke, self::contact_assign_qreq(2, $u_randy, true));
+            xassert_eqq($jr->ok, false);
+            xassert_eqq($jr->status_code ?? null, 403);
+            xassert_str_contains(self::message_text($jr), "submeta:write");
+            xassert(!$this->conf->checked_paper_by_id(2)->has_author($u_randy));
+            $jr = call_api("=assign", $u_micke, self::contact_assign_qreq(2, $u_kohler, false));
+            xassert_eqq($jr->ok, false);
+            xassert_eqq($jr->status_code ?? null, 403);
+            xassert_str_contains(self::message_text($jr), "submeta:write");
+            xassert($this->conf->checked_paper_by_id(2)->has_author($u_kohler));
+        }
+        MailChecker::check0();
+        $u_micke->set_scope("submission:write");
+        $jr = call_api("=assign", $u_micke, self::contact_assign_qreq(2, $u_randy, true));
+        xassert_eqq($jr->ok, true);
+        xassert($this->conf->checked_paper_by_id(2)->has_author($u_randy));
+        $jr = call_api("=assign", $u_micke, self::contact_assign_qreq(2, $u_kohler, false));
+        xassert_eqq($jr->ok, true);
+        xassert(!$this->conf->checked_paper_by_id(2)->has_author($u_kohler));
+        $u_micke->set_scope();
+
+        $jr = call_api("=paper", $this->u_chair, self::contact_form_qreq(2, $u_randy, false));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["contacts"]);
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert(!$p2->has_author($u_randy));
+        xassert(!$p2->has_author($u_kohler));
+        MailChecker::clear();
+    }
+
+    function test_potential_conflicts_scope() {
+        // Previewing potential conflicts for unsaved authors runs the save
+        // machinery, so it requires write scope; reporting them for the
+        // saved authors does not.
+        $this->u_chair->set_scope();
+        $u_estrin = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $preview = ["p" => 1, "has_authors" => 1, "authors:1:email" => "huitema@bellcore.com", "authors:1:name" => "Christian Huitema", "authors:1:affiliation" => "Bellcore"];
+        foreach ([$this->u_chair, $u_estrin] as $u) {
+            $u->set_scope();
+            $saved = self::potential_conflict_emails(call_api("potentialconflicts", $u, TestQreq::get(["p" => 1])));
+            xassert_in_eqq("floyd@ee.lbl.gov", $saved);
+            xassert_not_in_eqq("huitema@bellcore.com", $saved);
+            $unsaved = self::potential_conflict_emails(call_api("potentialconflicts", $u, TestQreq::get($preview)));
+            xassert_in_eqq("huitema@bellcore.com", $unsaved);
+            xassert_not_in_eqq("floyd@ee.lbl.gov", $unsaved);
+
+            $u->set_scope("read");
+            xassert_eqq(self::potential_conflict_emails(call_api("potentialconflicts", $u, TestQreq::get(["p" => 1]))), $saved);
+            $resp = call_api_result("potentialconflicts", $u, TestQreq::get($preview));
+            self::xassert_scope_error($resp, "submeta:write");
+            xassert(!isset($resp->content["potential_conflicts"]));
+
+            $u->set_scope("submission:write");
+            xassert_eqq(self::potential_conflict_emails(call_api("potentialconflicts", $u, TestQreq::get(["p" => 1]))), $saved);
+            xassert_eqq(self::potential_conflict_emails(call_api("potentialconflicts", $u, TestQreq::get($preview))), $unsaved);
+            $u->set_scope();
+        }
+    }
+
+    /** @param object $jr
+     * @return list<string> */
+    static private function potential_conflict_emails($jr) {
+        xassert_eqq($jr->ok, true);
+        $e = [];
+        foreach ($jr->potential_conflicts ?? [] as $pcj) {
+            $e[] = $pcj->email;
+        }
+        sort($e);
+        return $e;
+    }
+
+    function test_share_requires_admin_scope() {
+        // The submission’s author-view share link is a bearer credential, so
+        // obtaining, creating, rotating, or revoking it requires
+        // `submeta:admin` scope — a `write`-scoped token is not enough —
+        // through either /api/share or /api/assign.
+        $this->u_chair->set_scope();
+        $u_estrin = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $p1 = $this->conf->checked_paper_by_id(1);
+        $minted = [];
+        if (!($tok0 = AuthorView_Capability::find($p1))) {
+            $tok0 = AuthorView_Capability::make($p1, AuthorView_Capability::AV_CREATE);
+            $minted[] = $tok0->salt;
+        }
+        $had_tok0 = empty($minted);
+        $salt0 = $tok0->salt;
+        xassert(is_string($salt0));
+        xassert_eqq($this->share_salt(1), $salt0);
+
+        // scopes without submeta:admin -- including write -- are refused
+        // (the error names the lowest scope tier still missing)
+        foreach (["none", "read", "submission:write"] as $scope) {
+            $u_estrin->set_scope($scope);
+            $resp = call_api_result("share", $u_estrin, TestQreq::get(["p" => 1]));
+            self::xassert_scope_error($resp, "submeta:admin");
+            xassert(!isset($resp->content["token"]));
+            xassert(!isset($resp->content["url"]));
+            $resp = call_api_result("=share", $u_estrin, TestQreq::post(["p" => 1, "share" => "new"]));
+            self::xassert_scope_error($resp, "submeta:admin");
+            xassert(!isset($resp->content["token"]));
+            $jr = call_api("=assign", $u_estrin, self::assign_qreq("action,paper,share\nshare,1,new\n"));
+            xassert_eqq($jr->ok, false);
+            xassert_eqq($jr->status_code ?? null, 403);
+            xassert_eqq($this->share_salt(1), $salt0);
+        }
+
+        // nor can a read-scoped administrator fetch it (write is the first
+        // scope tier still missing)
+        $this->u_chair->set_scope("read");
+        $resp = call_api_result("share", $this->u_chair, TestQreq::get(["p" => 1]));
+        self::xassert_scope_error($resp, "submeta:admin");
+        xassert(!isset($resp->content["token"]));
+        $this->u_chair->set_scope();
+
+        // submeta:admin scope can fetch, create, rotate, and revoke it via
+        // either route
+        $u_estrin->set_scope("submission:admin");
+        $jr = call_api("share", $u_estrin, TestQreq::get(["p" => 1]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->token, $salt0);
+        xassert(is_string($jr->url));
+        $jr = call_api("=share", $u_estrin, TestQreq::post(["p" => 1, "share" => "new"]));
+        xassert_eqq($jr->ok, true);
+        xassert(is_string($jr->token));
+        xassert_neqq($jr->token, $salt0);
+        $minted[] = $salt1 = $jr->token;
+        xassert_eqq($this->share_salt(1), $salt1);
+
+        // write scope is still refused on the assign route
+        $u_estrin->set_scope("submission:write");
+        $jr = call_api("=assign", $u_estrin, self::assign_qreq("action,paper,share\nshare,1,no\n"));
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($this->share_salt(1), $salt1);
+
+        $u_estrin->set_scope("submission:admin");
+        $jr = call_api("share", $u_estrin, TestQreq::delete(["p" => 1]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->token, null);
+        xassert_eqq($this->share_salt(1), null);
+
+        $jr = call_api("=assign", $u_estrin, self::assign_qreq("action,paper,share\nshare,1,new\n"));
+        xassert_eqq($jr->ok, true);
+        $minted[] = $salt2 = $this->share_salt(1);
+        xassert(is_string($salt2));
+        xassert_neqq($salt2, $salt1);
+        $jr = call_api("=assign", $u_estrin, self::assign_qreq("action,paper,share\nshare,1,no\n"));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($this->share_salt(1), null);
+        $u_estrin->set_scope();
+
+        // restore the original link, if any, and forget the ones made here
+        $this->conf->qe("delete from Capability where salt?a", $minted);
+        if ($had_tok0) {
+            $this->conf->qe("update Capability set timeInvalid=?, timeExpires=? where salt=?", $tok0->timeInvalid, $tok0->timeExpires, $salt0);
+        }
+        xassert_eqq($this->share_salt(1), $had_tok0 ? $salt0 : null);
+    }
+
+    /** @param int $pid
+     * @return ?string */
+    private function share_salt($pid) {
+        $tok = AuthorView_Capability::find($this->conf->checked_paper_by_id($pid));
+        return $tok ? $tok->salt : null;
+    }
+
+    function test_withdraw_reason_requires_write_scope() {
+        // A `none`- or `read`-scoped author token must not be able to
+        // change a withdrawn submission’s withdrawal reason. (Reviving was
+        // already refused by perm_revive_paper; check it stays that way.)
+        $this->u_chair->set_scope();
+        MailChecker::clear();
+        $u_micke = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert($p2->has_author($u_micke));
+        xassert($p2->timeWithdrawn <= 0);
+        xassert($p2->timeSubmitted > 0);
+        $reason0 = $p2->withdrawReason;
+        $tags0 = $p2->all_tags_text();
+        xassert_assign($this->u_chair, "action,paper,withdraw_reason,notify\nwithdraw,2,Chair reason,no\n");
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert($p2->timeWithdrawn > 0);
+        xassert_eqq($p2->withdrawReason, "Chair reason");
+        MailChecker::clear();
+
+        foreach (["none", "read"] as $scope) {
+            $u_micke->set_scope($scope);
+            $jr = call_api("=assign", $u_micke, self::assign_qreq("action,paper,withdraw_reason\nwithdraw,2,Scoped {$scope}\n"));
+            xassert_eqq($jr->ok, false);
+            xassert_eqq($jr->status_code ?? null, 403);
+            xassert_str_contains(self::message_text($jr), "submeta:write");
+            $jr = call_api("=assign", $u_micke, self::assign_qreq("action,paper\nrevive,2\n"));
+            xassert_eqq($jr->ok, false);
+            xassert_str_contains(self::message_text($jr), "submeta:write");
+            $p2 = $this->conf->checked_paper_by_id(2);
+            xassert($p2->timeWithdrawn > 0);
+            xassert_eqq($p2->withdrawReason, "Chair reason");
+        }
+        MailChecker::check0();
+
+        $u_micke->set_scope("submission:write");
+        $jr = call_api("=assign", $u_micke, self::assign_qreq("action,paper,withdraw_reason\nwithdraw,2,Author reason\n"));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($this->conf->checked_paper_by_id(2)->withdrawReason, "Author reason");
+        $u_micke->set_scope();
+
+        // restore #2
+        xassert_assign($this->u_chair, "action,paper\nrevive,2\n");
+        $this->conf->qe("update Paper set withdrawReason=? where paperId=2", $reason0);
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert($p2->timeWithdrawn <= 0);
+        xassert($p2->timeSubmitted > 0);
+        xassert_eqq($p2->withdrawReason, $reason0);
+        xassert_eqq($p2->all_tags_text(), $tags0);
+        MailChecker::clear();
+    }
+
+    /** @param int $pid
+     * @param string $email
+     * @return Qrequest */
+    static private function contact_json_qreq($pid, $email) {
+        return TestQreq::post_json(["pid" => $pid, "contacts" => [$email => true]], ["p" => $pid]);
+    }
+
+    /** @param int $pid
+     * @param bool $active
+     * @return Qrequest */
+    static private function contact_form_qreq($pid, Contact $u, $active) {
+        $args = ["p" => $pid, "status:phase" => "contacts", "has_contacts" => 1, "contacts:1:email" => $u->email, "has_contacts:1:active" => 1];
+        if ($active) {
+            $args["contacts:1:active"] = 1;
+        }
+        return TestQreq::post($args);
+    }
+
+    /** @param int $pid
+     * @param bool $active
+     * @return Qrequest */
+    static private function contact_assign_qreq($pid, Contact $u, $active) {
+        $action = $active ? "contact" : "clearcontact";
+        return self::assign_qreq("action,paper,email\n{$action},{$pid},{$u->email}\n");
+    }
+
+    /** @param string $csv
+     * @return Qrequest */
+    static private function assign_qreq($csv) {
+        return TestQreq::post(["assignments" => $csv]);
+    }
+
+    /** @param object $jr
+     * @return string */
+    static private function message_text($jr) {
+        $t = [];
+        foreach ($jr->message_list ?? [] as $mi) {
+            $t[] = $mi->message;
+        }
+        return join("\n", $t);
+    }
+
     function test_token_scope_operations() {
         $s = TokenScope::parse("all tag:read", $this->u_chair);
         xassert_eqq(TokenScope::unparse($s), "all");

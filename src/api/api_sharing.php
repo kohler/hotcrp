@@ -4,11 +4,11 @@
 
 class Sharing_API extends MessageSet {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        // require `can_manage` (admin scope) because this yields a bearer
-        // credential
-        if (!$prow->has_author($user)
-            && !$user->can_manage($prow)) {
-            return JsonResult::make_permission_error();
+        // Obtaining or modifying the share link requires S_SUB_ADMIN scope,
+        // which subsumes perm_allow_edit_paper.
+        if (($fr = $user->perm_scope_allows(TokenScope::S_SUB_ADMIN, $prow)
+                   ?? $user->perm_allow_edit_paper($prow))) {
+            return Conf::paper_error_json_result($fr);
         }
         if (!$qreq->is_getlike()) {
             if ($qreq->method() === "DELETE") {

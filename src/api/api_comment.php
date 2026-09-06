@@ -762,9 +762,8 @@ class Comment_API extends MessageSet {
 
         // changing comment documents requires document:write scope
         if (self::document_ids($req["docs"] ?? []) !== $xcrow->attachment_ids()
-            && !$this->user->scope_allows(TokenScope::S_DOC_WRITE, $this->prow)) {
-            $this->prow->failure_reason(["scope" => TokenScope::S_DOC_WRITE])
-                ->set("expand", true)->append_to($this, null, 2);
+            && ($fr = $this->user->perm_scope_allows(TokenScope::S_DOC_WRITE, $this->prow))) {
+            $fr->set("expand", true)->append_to($this, null, 2);
             return null;
         }
 

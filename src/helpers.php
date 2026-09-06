@@ -203,7 +203,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
      * @return JsonResult */
     static function make_scope_error(Qrequest $qreq, $bits, $ftext = null) {
         $mi = new MessageItem(2, null, $ftext ?? "<0>Method not permitted by scope");
-        return (new JsonResult(401, ["ok" => false, "message_list" => [$mi]]))
+        return (new JsonResult(403, ["ok" => false, "message_list" => [$mi]]))
             ->set_header($qreq->conf()->www_authenticate_header("insufficient_scope", $qreq, $bits));
     }
 

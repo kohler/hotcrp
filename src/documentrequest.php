@@ -357,8 +357,8 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
      * @suppress PhanAccessReadOnlyProperty */
     private function perm_view_comment_document() {
         // check document read scope before checking whether document exists
-        if (!$this->viewer->scope_allows(TokenScope::S_DOC_READ, $this->prow)) {
-            return $this->prow->failure_reason(["scope" => TokenScope::S_DOC_READ]);
+        if (($fr = $this->viewer->perm_scope_allows(TokenScope::S_DOC_READ, $this->prow))) {
+            return $fr;
         }
         // find document
         $cmtid = $doc = $dcrow = null;

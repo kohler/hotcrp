@@ -68,7 +68,7 @@
     {   "name": "settingdescriptions", "get": true, "function": "Settings_API::descriptions"   },
     {   "name": "settings", "get": true, "session": false, "function": "Settings_API::run", "scope": "settings:read"   },
     {   "name": "settings", "post": true, "session": false, "function": "Settings_API::run", "scope": "settings:admin"   },
-    {   "name": "share", "get": true, "post": true, "delete": true, "paper": true, "function": "Sharing_API::run"   },
+    {   "name": "share", "get": true, "post": true, "delete": true, "paper": true, "scope": "submeta:admin", "function": "Sharing_API::run"   },
     {   "name": "shepherd", "get": true, "post": true, "paper": true, "function": "PaperPC_API::shepherd_api"   },
     {   "name": "stashmessages", "post": true, "function": "Session_API::stashmessages"   },
     {   "name": "submissionfieldlibrary", "get": true, "allow_if": "chair", "function": "Settings_API::submissionfieldlibrary"   },

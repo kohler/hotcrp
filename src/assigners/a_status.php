@@ -75,8 +75,14 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $this->xtype = $aj->type;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return $state->user->can_manage($prow)
-            || $prow->has_author($state->user);
+        if ($state->user->can_manage($prow)) {
+            return true;
+        } else if (!$prow->has_author($state->user)) {
+            return false;
+        } else if (($whynot = $state->user->perm_allow_edit_paper($prow))) {
+            return new AssignmentError($whynot);
+        }
+        return true;
     }
     static function load_status_state(AssignmentState $state) {
         if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {

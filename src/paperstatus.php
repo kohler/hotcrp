@@ -1276,8 +1276,8 @@ final class PaperStatus extends MessageSet {
         $pid = $this->prow->is_new() ? "new" : $this->prow->paperId;
         $perm = $this->user->perm_view_paper($this->prow, false, $pid);
         if (!$perm && !$this->user->allow_edit_paper($this->prow)) {
-            $perm = $this->user->perm_edit_paper($this->prow);
-            assert(!!$perm);
+            $perm = $this->user->perm_edit_paper($this->prow)
+                ?? $this->user->perm_allow_edit_paper($this->prow);
         }
         if ($perm) {
             $perm->append_to($this, null, MessageSet::ESTOP);

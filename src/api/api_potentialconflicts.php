@@ -25,10 +25,8 @@ class PotentialConflicts_API {
             return JsonResult::make_permission_error("p", "<0>PC conflicts not visible");
         }
 
-        // apply changes
-        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $ps = new PaperStatus($user);
-        $ps->set_ignore_errors(true);
+        // extract unsaved changes
+        $njson = $nqreq = null;
         if (isset($qreq->json)) {
             $json = json_decode($qreq->json);
             if (!is_object($json)) {
@@ -41,8 +39,8 @@ class PotentialConflicts_API {
             if (isset($json->collaborators)) {
                 $njson->collaborators = $json->collaborators;
             }
-            if (count((array) $njson) > 0) {
-                $ps->prepare_save_paper_json($njson, $prow);
+            if (count((array) $njson) === 0) {
+                $njson = null;
             }
         } else {
             $nqreq = (new Qrequest("POST"))->set_user($user);
@@ -58,11 +56,27 @@ class PotentialConflicts_API {
             if ($hasau) {
                 $nqreq["has_authors"] = "1";
             }
-            if ($nqreq->count() > 0) {
-                $ps->prepare_save_paper_web($nqreq, $prow);
+            if ($nqreq->count() === 0) {
+                $nqreq = null;
             }
         }
-        $user->set_overrides($overrides);
+
+        // apply changes; this runs the save machinery, so it requires edit
+        // permission (in particular, `submeta:write` scope)
+        if ($njson || $nqreq) {
+            if (($whynot = $user->perm_allow_edit_paper($prow))) {
+                return Conf::paper_error_json_result($whynot);
+            }
+            $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            $ps = new PaperStatus($user);
+            $ps->set_ignore_errors(true);
+            if ($njson) {
+                $ps->prepare_save_paper_json($njson, $prow);
+            } else {
+                $ps->prepare_save_paper_web($nqreq, $prow);
+            }
+            $user->set_overrides($overrides);
+        }
 
         // compute potential conflict list
         $potconfs = [];

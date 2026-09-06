@@ -51,8 +51,11 @@ class Conflict_AssignmentParser extends AssignmentParser {
         if ($state->user->can_manage($prow)) {
             return true;
         } else if ($prow->has_author($state->user)) {
-            if ($this->iscontact
-                || !($fr = $state->user->perm_edit_paper($prow))) {
+            // contacts are editable past the edit deadline
+            $fr = $this->iscontact
+                ? $state->user->perm_allow_edit_paper($prow)
+                : $state->user->perm_edit_paper($prow);
+            if (!$fr) {
                 return true;
             }
             $state->paper_error($fr);

@@ -61,8 +61,8 @@ class Lead_AssignmentParser extends AssignmentParser {
         if ($this->key !== "manager") {
             return $state->user->can_manage($prow);
         } else if ($state->user->privChair) {
-            if (!$state->user->scope_allows(TokenScope::S_SUB_ADMIN, $prow)) {
-                $state->paper_error($prow->failure_reason(["scope" => TokenScope::S_SUB_ADMIN]));
+            if (($fr = $state->user->perm_scope_allows(TokenScope::S_SUB_ADMIN, $prow))) {
+                $state->paper_error($fr);
                 return false;
             }
             return true;
