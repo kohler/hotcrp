@@ -62,13 +62,9 @@ abstract class Option_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         // option name and option content
         if ($sword->kwdef->name === "option") {
-            if (preg_match('/\A(.*?)(?::|(?=[\#=!<>]|≠|≤|≥))(.*)\z/s', $word, $m)) {
-                $oname = $m[1];
-                $ocontent = $m[2];
-            } else {
-                $oname = $word;
-                $ocontent = "any";
-            }
+            $parts = $sword->split(2);
+            $oname = empty($parts) ? "" : $parts[0]->qword;
+            $ocontent = count($parts) > 1 ? $parts[1]->qword : "any";
         } else {
             $oname = $sword->kwdef->name;
             $ocontent = $word;
@@ -99,16 +95,14 @@ abstract class Option_SearchTerm extends SearchTerm {
             return new OptionPresent_SearchTerm($srch->user, $opt);
         } else if (!$sword->quoted && strcasecmp($sword->cword, "none") === 0) {
             return (new OptionPresent_SearchTerm($srch->user, $opt))->negate();
-        } else {
-            $nmsg = $srch->message_set()->message_count();
-            if (($st = $opt->parse_search($sword, $srch))) {
-                return $st;
-            } else {
-                if ($srch->message_set()->message_count() === $nmsg) {
-                    $srch->lwarning($sword, "<0>Submission field ‘" . $opt->title() . "’ does not support this search");
-                }
-                return new False_SearchTerm;
-            }
         }
+        $nmsg = $srch->message_set()->message_count();
+        if (($st = $opt->parse_search($sword, $srch))) {
+            return $st;
+        }
+        if ($srch->message_set()->message_count() === $nmsg) {
+            $srch->lwarning($sword, "<0>Submission field ‘" . $opt->title() . "’ does not support this search");
+        }
+        return new False_SearchTerm;
     }
 }

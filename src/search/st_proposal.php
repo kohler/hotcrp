@@ -102,9 +102,8 @@ class Proposal_SearchTerm extends SearchTerm {
         // ">=0" is a useless constraint in SQL-land.
         if ($this->rqsm->conservative_nonnegative_comparison() === ">=0") {
             return "true";
-        } else {
-            return "exists (select * from ReviewRequest where paperId=Paper.paperId)";
         }
+        return "exists (select * from ReviewRequest where paperId=Paper.paperId)";
     }
     function test(PaperInfo $prow, $xinfo) {
         $n = 0;

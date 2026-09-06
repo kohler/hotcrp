@@ -1389,8 +1389,19 @@ class Unit_Tester {
     }
 
     function test_review_search_split() {
-        xassert_eqq(Review_SearchTerm::split("butt>2:foo:3"), ["butt", ">2", "foo", "3"]);
-        xassert_eqq(Review_SearchTerm::split("butt>2:foo:3>=2"), ["butt", ">2", "foo", "3", ">=2"]);
+        $words = function ($s) {
+            $sw = SearchWord::make_kwarg($s, 0, 0, strlen($s), null);
+            return array_map(function ($w) { return $w->qword; }, $sw->split());
+        };
+        xassert_eqq($words("butt>2:foo:3"), ["butt", ">2", "foo", "3"]);
+        xassert_eqq($words("butt>2:foo:3>=2"), ["butt", ">2", "foo", "3", ">=2"]);
+        // components keep quotes, and positions point into the source string
+        xassert_eqq($words("pri:\"Deborah Estrin\">2"), ["pri", "\"Deborah Estrin\"", ">2"]);
+        $sw = SearchWord::make_kwarg("butt>2:foo", 0, 3, 13, null);
+        $parts = $sw->split();
+        xassert_eqq(count($parts), 3);
+        xassert_eqq([$parts[1]->qword, $parts[1]->pos1, $parts[1]->pos2], [">2", 7, 9]);
+        xassert_eqq([$parts[2]->qword, $parts[2]->pos1, $parts[2]->pos2], ["foo", 10, 13]);
     }
 
     function test_count_matcher() {

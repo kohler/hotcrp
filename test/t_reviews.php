@@ -3502,6 +3502,73 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    function test_proposal_search() {
+        // `proposal:` matches papers with pending review requests (ReviewRequest
+        // rows). Exercises every parse branch — comparison, round, contact,
+        // any/none, and the combined form — so a future refactor of
+        // Proposal_SearchTerm::parse is covered.
+        $conf = $this->conf;
+        $old_chairreq = $conf->setting("extrev_chairreq");
+        $old_revopen = $conf->setting("rev_open");
+        $conf->save_refresh_setting("extrev_chairreq", 1);
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        $chair = $this->u_chair;
+
+        // a PC reviewer proposes a (registered) external reviewer -> a pending
+        // ReviewRequest. The request is keyed by email (no contactId column), so
+        // `proposal:EMAIL` matches via the request's resolved reviewer identity.
+        $proposee = Contact::make_keyed($conf, ["email" => "proposalsearch@_.com", "name" => "Prop Search"])->store();
+        xassert(!!$proposee);
+        $paper17 = $conf->checked_paper_by_id(17);
+        $xqreq = new Qrequest("POST", ["email" => "proposalsearch@_.com", "name" => "Prop Search", "affiliation" => "PS Inc"]);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert_eqq($result->content["action"] ?? null, "propose");
+        MailChecker::clear();
+
+        // pin the request to a known round so `proposal:ROUND` is testable
+        $r1 = $conf->round_number("R1");
+        xassert($r1 > 0);
+        $conf->qe("update ReviewRequest set reviewRound=? where paperId=? and email=?", $r1, 17, "proposalsearch@_.com");
+
+        // chair can view review identities, so the proposal is visible.
+        // Exercises the comparison, round, any, contact, and combined branches.
+        xassert_in_eqq(17, (new PaperSearch($chair, "proposal:any"))->paper_ids());
+        xassert_in_eqq(17, (new PaperSearch($chair, "proposal:>0"))->paper_ids());
+        xassert_in_eqq(17, (new PaperSearch($chair, "proposal:R1"))->paper_ids());
+        xassert_in_eqq(17, (new PaperSearch($chair, "proposal:proposalsearch@_.com"))->paper_ids());
+        xassert_in_eqq(17, (new PaperSearch($chair, "proposal:R1:proposalsearch@_.com>0"))->paper_ids());
+        // `re:proposal` delegates to Proposal_SearchTerm
+        xassert_in_eqq(17, (new PaperSearch($chair, "re:proposal"))->paper_ids());
+
+        // negatives: wrong round, none, empty comparison, and a resolvable-but-
+        // non-matching contact
+        xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:R2"))->paper_ids());
+        xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:none"))->paper_ids());
+        xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:=0"))->paper_ids());
+        xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:mgbaker@cs.stanford.edu"))->paper_ids());
+
+        // an unresolvable contact is reported to an administrator
+        $s = new PaperSearch($chair, "proposal:nosuchzzz-xyz");
+        $s->paper_ids();
+        xassert_str_contains($s->full_feedback_text(), "not found");
+
+        // clean up: retract the proposal, drop the reviewer, restore settings
+        $xqreq = new Qrequest("POST", ["email" => "proposalsearch@_.com"]);
+        $result = RequestReview_API::retractreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert_eqq($conf->fetch_ivalue("select count(*) from ReviewRequest where paperId=? and email=?", 17, "proposalsearch@_.com"), 0);
+        $conf->qe("delete from ContactInfo where contactId=?", $proposee->contactId);
+        $conf->invalidate_user($proposee);
+        $conf->save_refresh_setting("extrev_chairreq", $old_chairreq);
+        $conf->save_refresh_setting("rev_open", $old_revopen);
+        Contact::update_rights();
+        MailChecker::clear();
+    }
+
     function test_invariants_last() {
         xassert(ConfInvariants::test_all($this->conf));
     }

@@ -125,29 +125,33 @@ class SearchWord {
         }
     }
 
-    /** @return list<SearchWord> */
-    function split() {
+    /** @param int $max
+     * @return list<SearchWord> */
+    function split($max = 0) {
         $s = $this->qword;
         $pos = 0;
         $l = [];
-        while (preg_match('/\G:?+\s*+(?:[=!<>]=?|≠|≤|≥)?+[^":=!<>\xE2]*+(?:(?:"|“|”)[^\\\\"]*+(?:\\\\.|[^\\\\"]*+)*+(?:"|“|”|\z)|[^":=!<>\xE2]*+|(?!“|”)\xE2)*+/', $s, $m, 0, $pos)
+        while (preg_match('/\G:?+\s*+(?:[=!<>]=?|≠|≤|≥)?+[^":=!<>\xE2]*+(?:"[^\\\\"]*+(?:\\\\.|[^\\\\"]*+)*+(?:"|\z)|(?:“|”)[^\\\\"\xE2]*+(?:\\\\.|(?!“|”)\xE2|[^\\\\"\xE2]*+)*+(?:"|“|”|\z)|(?!“|”)\xE2|[^":=!<>\xE2]++)*+/', $s, $m, 0, $pos)
                && $m[0] !== "") {
-            $p1 = $pos + strspn(" \t\n\r\x0C\x0D", mask);
-            $p2 = $pos + strlen($m[0]);
+            $p1 = $pos + strspn($s, ": \t\n\r\x0B\x0C", $pos);
+            if ($max > 0 && count($l) + 1 === $max) {
+                $p2 = $pos = strlen($s);
+            } else {
+                $p2 = $pos = $pos + strlen($m[0]);
+            }
             while ($p2 > $p1 && ctype_space($s[$p2 - 1])) {
                 --$p2;
             }
             if ($p1 === $p2) {
-                // nothing
+                /* do nothing */
             } else if ($p1 === 0 && $p2 === strlen($this->qword)) {
                 $l[] = $this;
             } else if ($p1 < $p2) {
-                $l[] = SearchWord::make_kwarg(
+                $l[] = $sw = SearchWord::make_kwarg(
                     substr($this->qword, $p1, $p2 - $p1), $this->kwpos1,
                     $this->pos1 + $p1, $this->pos1 + $p2, $this->string_context
                 );
             }
-            $pos = $p2;
         }
         return $l;
     }
@@ -179,10 +183,14 @@ class SearchWord {
             --$r;
         }
         $ns = substr($this->qword, 0, $r);
-        $nw = $ns === "" || strcasecmp($ns, "any") === 0 ? null : SearchWord::make_kwarg(
-            $ns, $this->kwpos1, $this->pos1,
-            $this->pos1 + $r, $this->string_context
-        );
+        if ($ns === "" || strcasecmp($ns, "any") === 0) {
+            $nw = null;
+        } else {
+            $nw = SearchWord::make_kwarg(
+                $ns, $this->kwpos1, $this->pos1,
+                $this->pos1 + $r, $this->string_context
+            );
+        }
         return [$nw, $op, $v];
     }
 }
