@@ -59,6 +59,9 @@ class Formulas_Tester {
     }
 
     function finalize() {
+        // papers 19 and 20 had no reviews before these tests
+        $this->conf->qe("delete from PaperReview where paperId in (19,20)");
+        $this->conf->qe("delete from PaperReviewHistory where paperId in (19,20)");
         $this->conf->qe("delete from PaperOption where paperId=1 and optionId in (1,2,3)");
         if ($this->saved_options === null) {
             $this->conf->save_refresh_setting("options", null);
@@ -1336,13 +1339,16 @@ class Formulas_Tester {
         // The document and its page count still exist; they are merely hidden.
         xassert_eqq($paper1->document(DTYPE_SUBMISSION)->npages(), 50);
 
-        // Restore the submission field.
+        // Restore the submission field and paper 1’s original document.
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
             "sf/1/id" => "submission",
             "sf/1/presence" => "all"
         ]);
         xassert($sv->execute());
+        $ps = new PaperStatus($this->conf->root_user());
+        xassert($ps->save_paper_json(json_decode('{"id":1,"submission":{"content":"%PDF-whatever"}}')));
+        xassert_paper_status($ps);
     }
 
     function test_formulas_respect_option_presence() {

@@ -847,6 +847,7 @@ class ReviewAPI_Tester {
 
     function test_create_review_type_nonadmin_default() {
         // enable PC self-assignment
+        $pcrev_any = $this->conf->setting("pcrev_any");
         $this->conf->save_setting("pcrev_any", 1);
         $this->conf->refresh_settings();
         $prow = $this->conf->checked_paper_by_id(18);
@@ -871,7 +872,7 @@ class ReviewAPI_Tester {
         xassert_str_contains(json_encode($j->message_list ?? []), "administrator can set the review type");
         xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=18 and contactId=?", $cid), 0);
 
-        $this->conf->save_setting("pcrev_any", null);
+        $this->conf->save_setting("pcrev_any", $pcrev_any);
         $this->conf->refresh_settings();
     }
 
@@ -1100,6 +1101,7 @@ class ReviewAPI_Tester {
 
         // hide reviewer identities from the PC: a name is subject to the same
         // kind of bound as a field
+        $viewrevid = $conf->setting("viewrevid");
         $conf->save_refresh_setting("viewrevid", Conf::VIEWREV_NEVER);
         xassert($this->u_chair->can_view_review_identity($prow, $rrow));
         xassert(!$u_other->can_view_review_identity($prow, $rrow));
@@ -1146,7 +1148,7 @@ class ReviewAPI_Tester {
         xassert($sv->execute());
         xassert(!$conf->review_field("t09"));
         $conf->save_refresh_setting("viewrev", null);
-        $conf->save_refresh_setting("viewrevid", null);
+        $conf->save_refresh_setting("viewrevid", $viewrevid);
     }
 
     // A reviewer must not write a field they cannot see. The render path hides
@@ -1321,6 +1323,7 @@ class ReviewAPI_Tester {
         $diot = $this->u_diot;
 
         // the PC may read every review, but never a reviewer's identity
+        $viewrevid = $conf->setting("viewrevid");
         $conf->save_refresh_setting("viewrev", Conf::VIEWREV_ALWAYS);
         $conf->save_refresh_setting("viewrevid", Conf::VIEWREV_NEVER);
         $prow = $conf->checked_paper_by_id(18);
@@ -1415,7 +1418,7 @@ class ReviewAPI_Tester {
         xassert_str_contains($refusals[0], "permission to edit this review");
 
         $conf->save_refresh_setting("viewrev", null);
-        $conf->save_refresh_setting("viewrevid", null);
+        $conf->save_refresh_setting("viewrevid", $viewrevid);
     }
 
     // `u` names the reviewer for a POST whose data does not name one

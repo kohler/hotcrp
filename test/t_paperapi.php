@@ -2,7 +2,7 @@
 // t_paperapi.php -- HotCRP tests
 // Copyright (c) 2024-2025 Eddie Kohler; see LICENSE.
 
-#[RequireDb("fresh")]
+#[RequireDb(true)]
 class PaperAPI_Tester {
     /** @var Conf
      * @readonly */

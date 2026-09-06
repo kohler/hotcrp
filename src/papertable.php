@@ -1615,12 +1615,12 @@ class PaperTable {
         $pcm = $this->conf->viewable_pc_members($this->user);
         foreach ($this->prow->conflict_list() as $cu) {
             if (!$cu->user // XXX should never happen
-                || !isset($pcm[$cu->user->contactId])
+                || !($pc = $pcm[$cu->contactId] ?? null)
                 || !Conflict::is_conflicted($cu->conflictType)) {
                 continue;
             }
-            $h = $this->user->reviewer_extended_html_for($cu->user);
-            $pcconf[$cu->user->pc_index] = "<li class=\"odname\">{$h}</li>";
+            $h = $this->user->reviewer_extended_html_for($pc);
+            $pcconf[$pc->pc_index] = "<li class=\"odname\">{$h}</li>";
         }
         if (empty($pcconf)) {
             $pcconf[] = '<li class="od">None</li>';

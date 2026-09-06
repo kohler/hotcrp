@@ -1292,10 +1292,8 @@ class TestRunner {
             $stmt = $m[1];
             $s = substr($s, strlen($m[0]));
             if (preg_match('/\ACREATE\s*TABLE\s*\`(.*?)\`/i', $stmt, $m)) {
+                // TRUNCATE also resets AUTO_INCREMENT
                 $truncates[] = "TRUNCATE TABLE `{$m[1]}`;\n";
-                if (stripos($stmt, "auto_increment") !== false) {
-                    $truncates[] = "ALTER TABLE `{$m[1]}` AUTO_INCREMENT=0;\n";
-                }
             } else if (!preg_match('/\ADROP\s*TABLE\s*(?:IF\s*EXISTS\s*|)\`.*?\`;\z/', $stmt)) {
                 $rebuild = true;
                 break;

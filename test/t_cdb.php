@@ -187,6 +187,11 @@ class Cdb_Tester {
         $user_van = user("van@ee.lbl.gov");
         xassert(!maybe_user("akhmatova@poema.ru")); // but she is in cdb
 
+        $paper1 = $this->user_chair->checked_paper_by_id(1);
+        $authors = array_map(function ($au) {
+            return (object) ["name" => $au->name(), "email" => $au->email, "affiliation" => $au->affiliation];
+        }, $paper1->author_list());
+
         $ps = new PaperStatus($this->conf->root_user());
         $saved = $ps->save_paper_json((object) [
             "id" => 1,
@@ -202,6 +207,10 @@ class Cdb_Tester {
         xassert($user_estrin->act_author_view($paper1));
         xassert($user_floyd->act_author_view($paper1));
         xassert($user_van->act_author_view($paper1));
+
+        // restore the original author list
+        $ps = new PaperStatus($this->conf->root_user());
+        xassert($ps->save_paper_json((object) ["id" => 1, "authors" => $authors]));
     }
 
     function test_add_annes() {

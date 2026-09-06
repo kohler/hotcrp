@@ -34,7 +34,7 @@
     {
         "name": "test05",
         "members": [
-            "fresh_db", "PaperStatus_Tester", "AuthorCertification_Tester",
+            "PaperStatus_Tester", "AuthorCertification_Tester",
             "Login_Tester", "UserStatus_Tester",
             "(", "no_cdb", "Login_Tester", "UserStatus_Tester", ")"
         ]
@@ -65,13 +65,13 @@
             "Invariants_Tester", "Batch_Tester",
             "PaperStatus_Tester", "Login_Tester",
             "fresh_db", "Reviews_Tester", "Comments_Tester",
-            "UserAPI_Tester", ")"
+            "UserAPI_Tester", "fresh_db", ")"
         ]
     },
     {
         "name": "test09",
         "members": [
-            "fresh_db", "PaperAPI_Tester", "ReviewAPI_Tester",
+            "PaperAPI_Tester", "ReviewAPI_Tester",
             "FollowAPI_Tester", "Scope_Tester", "Authorize_Tester",
             "APICounter_Tester",
             "SubmissionRound_Tester", "RequestReviewAPI_Tester"

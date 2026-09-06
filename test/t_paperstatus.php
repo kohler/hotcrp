@@ -2,7 +2,7 @@
 // t_paperstatus.php -- HotCRP tests
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-#[RequireDb("fresh")]
+#[RequireDb(true)]
 class PaperStatus_Tester {
     /** @var Conf
      * @readonly */

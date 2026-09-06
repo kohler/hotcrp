@@ -2,7 +2,7 @@
 // t_submissionround.php -- HotCRP tests for named submission rounds/classes
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
-#[RequireDb("fresh")]
+#[RequireDb(true)]
 class SubmissionRound_Tester {
     /** @var Conf
      * @readonly */
