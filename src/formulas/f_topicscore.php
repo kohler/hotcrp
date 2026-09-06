@@ -26,7 +26,9 @@ class TopicScore_Fexpr extends Fexpr {
             || $state->index_type === Fexpr::IDX_MY) {
             return "{$prow}->topic_interest_score({$uid})";
         }
-        $cvp = $state->prow_can_view_preference();
-        return "({$uid} && ({$uid} === {$state->user->contactId} || {$cvp}) ? {$prow}->topic_interest_score({$uid}) : null)";
+        $vps = $state->prow_view_preference_state();
+        return "({$uid} && ({$vps} >= ({$uid} === {$state->user->contactId} ? "
+            . Contact::VIEWPREF_OWN . " : " . Contact::VIEWPREF_ALL
+            . ")) ? {$prow}->topic_interest_score({$uid}) : null)";
     }
 }

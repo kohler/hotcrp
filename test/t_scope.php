@@ -191,7 +191,7 @@ class Scope_Tester {
         xassert_eqq(TokenScope::unparse(TokenScope::intersect($s1, $s2)), "tag:read submission:read#p tag:write#p");
 
         xassert_eqq(TokenScope::unparse_missing_bits(TokenScope::S_CMT_READ | TokenScope::S_TAG_WRITE), ["comment:read", "tag:write"]);
-        xassert_eqq(TokenScope::unparse_missing_bits(TokenScope::S_CMT_READ | TokenScope::S_TAG_READ | TokenScope::S_SUB_READ | TokenScope::S_DOC_READ | TokenScope::S_REV_READ), ["paper:read"]);
+        xassert_eqq(TokenScope::unparse_missing_bits(TokenScope::S_CMT_READ | TokenScope::S_TAG_READ | TokenScope::S_SUB_READ | TokenScope::S_DOC_READ | TokenScope::S_REV_READ | TokenScope::S_PREF_READ), ["paper:read"]);
 
         xassert(TokenScope::scope_str_all_openid("openid"));
         xassert(!TokenScope::scope_str_all_openid("openid all"));

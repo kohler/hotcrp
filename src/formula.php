@@ -1591,12 +1591,12 @@ class FormulaCompiler {
     }
 
     /** @return string */
-    function prow_can_view_preference() {
-        if ($this->ensure_defined('$can_view_pref')) {
+    function prow_view_preference_state() {
+        if ($this->ensure_defined('$view_pref_state')) {
             $prow = $this->_prow();
-            $this->gstmt[] = "\$can_view_pref = \$user->can_view_preference({$prow});";
+            $this->gstmt[] = "\$view_pref_state = \$user->view_preference_state({$prow});";
         }
-        return '$can_view_pref';
+        return '$view_pref_state';
     }
 
     /** @return string */
@@ -1664,8 +1664,10 @@ class FormulaCompiler {
         $vu = "\$vu{$this->_lprefix}";
         if ($it === Fexpr::IDX_PREF) {
             if ($this->ensure_defined($vu)) {
-                $cvp = $this->prow_can_view_preference();
-                $this->lstmt[] = "{$vu} = {$u} === {$this->user->contactId} || {$cvp} ? {$u} : null;";
+                $vps = $this->prow_view_preference_state();
+                $this->lstmt[] = "{$vu} = ({$vps} >= ({$u} === {$this->user->contactId} ? "
+                    . Contact::VIEWPREF_OWN . " : " . Contact::VIEWPREF_ALL
+                    . ")) ? {$u} : null;";
             }
             return $vu;
         } else if (($it & Fexpr::IDXM_REVIEW) !== 0) {
@@ -1754,8 +1756,10 @@ class FormulaCompiler {
         if ($this->ensure_defined($var)) {
             $u = $this->current_uid();
             $prefs = $this->prow_preferences();
-            $cvp = $this->prow_can_view_preference();
-            $this->lstmt[] = "{$var} = {$u} === {$this->user->contactId} || {$cvp} ? {$prefs}[{$u}] ?? null : null;";
+            $vps = $this->prow_view_preference_state();
+            $this->lstmt[] = "{$var} = ({$vps} >= ({$u} === {$this->user->contactId} ? "
+                . Contact::VIEWPREF_OWN . " : " . Contact::VIEWPREF_ALL
+                . ")) ? {$prefs}[{$u}] ?? null : null;";
         }
         return $var;
     }
@@ -1871,9 +1875,10 @@ class FormulaCompiler {
             if ($this->ensure_defined('$vpref')) {
                 $prow = $this->_prow();
                 $prefs = $this->prow_preferences();
-                $this->gstmt[] = "if (\$user->can_view_preference({$prow}, true)) {";
+                $vps = $this->prow_view_preference_state();
+                $this->gstmt[] = "if ({$vps} >= " . Contact::VIEWPREF_AGG . ") {";
                 $this->gstmt[] = "  \$vpref = {$prefs};";
-                $this->gstmt[] = "} else if (isset({$prefs}[{$this->user->contactId}])) {";
+                $this->gstmt[] = "} else if ({$vps} >= " . Contact::VIEWPREF_OWN . " && isset({$prefs}[{$this->user->contactId}])) {";
                 $this->gstmt[] = "  \$vpref = [{$this->user->contactId} => {$prefs}[{$this->user->contactId}]];";
                 $this->gstmt[] = "} else {";
                 $this->gstmt[] = "  \$vpref = [];";

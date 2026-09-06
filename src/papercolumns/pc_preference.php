@@ -11,6 +11,8 @@ class Preference_PaperColumn extends PaperColumn {
     private $user;
     /** @var bool */
     private $not_me;
+    /** @var int */
+    private $view_bound;
     /** @var string */
     private $prefix;
     /** @var bool */
@@ -42,7 +44,7 @@ class Preference_PaperColumn extends PaperColumn {
         $this->user = $this->user ?? $pl->reviewer_user();
         $this->not_me = $this->user->contactId !== $this->viewer->contactId;
         if (!$this->viewer->isPC
-            || ($this->not_me && !$this->viewer->can_view_preference(null))) {
+            || $this->viewer->view_preference_state(null) < ($this->not_me ? Contact::VIEWPREF_ALLOW_ALL : Contact::VIEWPREF_OWN)) {
             return false;
         }
         $this->editable = $this->view_option("edit") ?? false;
@@ -59,14 +61,12 @@ class Preference_PaperColumn extends PaperColumn {
         if ($this->as_row) {
             $this->prefix = $this->viewer->reviewer_html_for($this->user) . " ";
         }
+        $this->view_bound = $this->not_me ? Contact::VIEWPREF_ALLOW_ALL : Contact::VIEWPREF_OWN;
         return true;
     }
     /** @return PaperReviewPreference */
     private function sortable_preference(PaperInfo $row) {
-        if ($this->not_me
-            && ($this->editable
-                ? !$this->viewer->allow_view_preference($row)
-                : !$this->viewer->can_view_preference($row))) {
+        if ($this->viewer->view_preference_state($row) < $this->view_bound) {
             return PaperReviewPreference::make_sentinel();
         }
         $pf = $row->preference($this->user);
@@ -115,7 +115,7 @@ class Preference_PaperColumn extends PaperColumn {
         return $this->viewer->reviewer_html_for($this->user) . "<br>preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->not_me && !$this->viewer->allow_view_preference($row);
+        return $this->viewer->view_preference_state($row) < $this->view_bound;
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pf = $row->preference($this->user);
@@ -148,9 +148,8 @@ class Preference_PaperColumn extends PaperColumn {
         }
 
         // account for statistics and maybe wrap HTML in conflict
-        if ($this->not_me
-            && !$editable
-            && !$pl->user->can_view_preference($row)
+        if (!$editable
+            && $this->viewer->view_preference_state($row) === Contact::VIEWPREF_ALLOW_ALL
             && $t !== "") {
             $tag = $this->as_row ? "div" : "span";
             $t = "<{$tag} class=\"fx5\">{$t}</{$tag}>";
@@ -164,7 +163,7 @@ class Preference_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if ($this->not_me && !$this->viewer->can_view_preference($row)) {
+        if ($this->viewer->view_preference_state($row) < $this->view_bound) {
             return "";
         }
         return $row->preference($this->user)->unparse();
@@ -195,7 +194,7 @@ class Preference_PaperColumn extends PaperColumn {
     }
 
     static function examples(Contact $user, $xfj) {
-        if (!$user->can_view_preference(null)) {
+        if ($user->view_preference_state(null) <= Contact::VIEWPREF_OWN) {
             return [];
         }
         return [new SearchExample("pref:{user}", "<0>Review preference for PC member",

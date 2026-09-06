@@ -2418,9 +2418,10 @@ class PaperInfo {
 
     /** @return array<int,PaperReviewPreference> */
     function viewable_preferences(Contact $viewer, $aggregate = false) {
-        if ($viewer->can_view_preference($this, $aggregate)) {
+        $vps = $viewer->view_preference_state($this);
+        if ($vps >= ($aggregate ? Contact::VIEWPREF_AGG : Contact::VIEWPREF_ALL)) {
             return $this->preferences();
-        } else if ($viewer->isPC) {
+        } else if ($vps >= Contact::VIEWPREF_OWN) {
             $pref = $this->preference($viewer);
             if ($pref->preference !== 0 || $pref->expertise !== null) {
                 return [$viewer->contactId => $pref];

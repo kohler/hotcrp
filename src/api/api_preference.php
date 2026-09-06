@@ -10,10 +10,14 @@ class Preference_API {
         if (!$u->isPC) {
             return JsonResult::make_permission_error();
         }
+        $scope = $qreq->is_post() ? ($u !== $user ? TokenScope::S_PREF_ADMIN : TokenScope::S_PREF_WRITE) : TokenScope::S_PREF_READ;
+        if ($prow ? !$u->scope_allows_some($scope) : !$u->scope_allows($scope, $prow)) {
+            return JsonResult::make_scope_error($qreq, $scope);
+        }
 
         // parse preference if POST, return error if incorrect
         $postpref = null;
-        if ($qreq->method() === "POST") {
+        if ($qreq->is_post()) {
             if (!isset($qreq->pref)) {
                 return JsonResult::make_missing_error("pref")->set_response_code(200);
             }
@@ -52,13 +56,14 @@ class Preference_API {
         } else if ($postpref) {
             $jr = JsonResult::make_error(200, Preference_AssignmentParser::cannot_edit_preference_message($user, $prow, $u));
         }
-        $pf = $prow->preference($u);
         $jr = $jr ?? JsonResult::make_ok();
-
-        $jr->set("value", $pf->exists() ? $pf->unparse() : "");
-        $jr->set("pref", $pf->preference);
-        if ($pf->expertise !== null) {
-            $jr->set("prefexp", unparse_expertise($pf->expertise));
+        if ($user->view_preference_state($prow) >= ($u === $user ? Contact::VIEWPREF_OWN : Contact::VIEWPREF_ALL)) {
+            $pf = $prow->preference($u);
+            $jr->set("value", $pf->exists() ? $pf->unparse() : "");
+            $jr->set("pref", $pf->preference);
+            if ($pf->expertise !== null) {
+                $jr->set("prefexp", unparse_expertise($pf->expertise));
+            }
         }
         if ($prow->conf->has_topics()) {
             $jr->set("topic_score", $prow->topic_interest_score($u));

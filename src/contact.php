@@ -5240,34 +5240,67 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && $this->conf->check_tracks($prow, $this, Track::ASSREV)));
     }
 
-    /** @return bool */
-    function allow_view_preference(?PaperInfo $prow = null, $aggregate = false) {
-        if (!$prow) {
-            return $this->is_manager();
+    const VIEWPREF_NONE = 0;
+    const VIEWPREF_OWN = 1;
+    const VIEWPREF_AGG = 2;
+    const VIEWPREF_ALLOW_ALL = 3;
+    const VIEWPREF_ALL = 4;
+
+    /** @return 0|1|2|3|4 */
+    function view_preference_state(?PaperInfo $prow) {
+        if (!$this->isPC) {
+            return 0;
+        } else if (!$prow) {
+            if (!$this->scope_allows_some(TS::S_PREF_READ)) {
+                return self::VIEWPREF_NONE;
+            }
+            return $this->is_manager() ? self::VIEWPREF_ALL : self::VIEWPREF_OWN;
         }
         $rights = $this->rights($prow);
-        return $aggregate
-            ? $rights->allow_pc() && $this->can_view_pc()
-            : $rights->allow_admin();
+        if (!$rights->scope_allows(TS::S_PREF_READ)) {
+            return 0;
+        } else if ($rights->is_admin()) {
+            return self::VIEWPREF_ALL;
+        } else if ($rights->allow_admin()) {
+            return self::VIEWPREF_ALLOW_ALL;
+        } else if ($rights->allow_pc() && $this->can_view_pc()) {
+            return self::VIEWPREF_AGG;
+        }
+        return self::VIEWPREF_OWN;
+    }
+
+    /** @return bool */
+    function can_view_own_preference(?PaperInfo $prow = null) {
+        return $this->view_preference_state($prow) >= self::VIEWPREF_OWN;
+    }
+
+    /** @return bool */
+    function allow_view_preference(?PaperInfo $prow = null) {
+        return $this->view_preference_state($prow) >= self::VIEWPREF_ALLOW_ALL;
     }
 
     /** @return bool */
     function can_view_preference(?PaperInfo $prow = null, $aggregate = false) {
-        if (!$prow) {
-            return $this->is_manager();
-        }
-        $rights = $this->rights($prow);
-        return $aggregate
-            ? $rights->allow_pc() && $this->can_view_pc()
-            : $rights->is_admin();
+        return $this->view_preference_state($prow) >= ($aggregate ? self::VIEWPREF_AGG : self::VIEWPREF_ALL);
     }
 
     /** @return bool */
     function can_edit_preference_for(?PaperInfo $prow, Contact $user) {
-        return $user->isPC
-            && (($user->contactId === $this->contactId
-                 && $user->conf->allow_pc_edit_preference())
-                || ($prow ? $this->can_manage_reviews($prow) : $this->is_manager()));
+        if (!$user->isPC) {
+            return false;
+        } else if (!$prow) {
+            return ($user->contactId === $this->contactId
+                    && $this->conf->allow_pc_edit_preference()
+                    && $this->scope_allows_some(TS::S_PREF_WRITE))
+                || ($this->is_manager()
+                    && $this->scope_allows_some(TS::S_PREF_ADMIN));
+        }
+        $rights = $this->rights($prow);
+        return ($user->contactId === $this->contactId
+                && $this->conf->allow_pc_edit_preference()
+                && $rights->scope_allows(TS::S_PREF_WRITE))
+            || ($rights->is_admin()
+                && $rights->scope_allows(TS::S_PREF_ADMIN));
     }
 
     /** @return bool */

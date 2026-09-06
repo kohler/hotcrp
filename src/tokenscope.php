@@ -38,13 +38,16 @@ final class TokenScope {
     const S_CMT_READ = 0x10000;
     const S_CMT_WRITE = 0x20000;
     const S_CMT_ADMIN = 0x40000;
-    const S_PAPER_ADMIN = 0x77777; // {SUB+DOC+REV+TAG+CMT}_ADMIN
-    const S_OTH_READ = 0x100000;
-    const S_OTH_WRITE = 0x200000;
-    const S_OTH_ADMIN = 0x400000;
-    const S_SETTINGS_READ = 0x1000000;
-    const S_SETTINGS_WRITE = 0x2000000;
-    const S_SETTINGS_ADMIN = 0x4000000;
+    const S_PREF_READ = 0x100000;
+    const S_PREF_WRITE = 0x200000;
+    const S_PREF_ADMIN = 0x400000;
+    const S_PAPER_ADMIN = 0x777777; // {SUB+DOC+REV+TAG+CMT+PREF}_ADMIN
+    const S_OTH_READ = 0x1000000;
+    const S_OTH_WRITE = 0x2000000;
+    const S_OTH_ADMIN = 0x4000000;
+    const S_SETTINGS_READ = 0x10000000;
+    const S_SETTINGS_WRITE = 0x20000000;
+    const S_SETTINGS_ADMIN = 0x40000000;
 
     /** @var int */
     private $_all_bits;
@@ -59,16 +62,17 @@ final class TokenScope {
     static public $scopes = [
         "*" => -1, "all" => -1, "none" => 0,
         "openid" => -2, "email" => -2, "profile" => -2, "address" => -2, "phone" => -2,
-        "write" => 0x3333333, "read" => 0x1111111, "admin" => -1,
-        "paper:admin" => 0x77777, "paper:write" => 0x33333, "paper:read" => 0x11111,
+        "write" => 0x33333333, "read" => 0x11111111, "admin" => -1,
+        "paper:admin" => 0x777777, "paper:write" => 0x333333, "paper:read" => 0x111111,
         "submission:admin" => 0x77, "submission:write" => 0x33, "submission:read" => 0x11,
         "document:admin" => 0x73, "document:write" => 0x33, "document:read" => 0x11,
         "review:admin" => 0x701, "review:write" => 0x301, "review:read" => 0x101,
         "tag:admin" => 0x7001, "tag:write" => 0x3001, "tag:read" => 0x1001,
         "comment:admin" => 0x70001, "comment:write" => 0x30001, "comment:read" => 0x10001,
-        "other:admin" => 0x700000, "other:write" => 0x300000, "other:read" => 0x100000,
+        "preference:admin" => 0x700001, "preference:write" => 0x300001, "preference:read" => 0x100001,
+        "other:admin" => 0x7000000, "other:write" => 0x3000000, "other:read" => 0x1000000,
         "submeta:admin" => 0x7, "submeta:write" => 0x3, "submeta:read" => 0x1,
-        "settings:admin" => 0x7000000, "settings:write" => 0x3000000, "settings:read" => 0x1000000
+        "settings:admin" => 0x70000000, "settings:write" => 0x30000000, "settings:read" => 0x10000000
     ];
 
     /** @param int $all_bits

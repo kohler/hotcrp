@@ -12,7 +12,7 @@
             "Unit_Tester", "XtCheck_Tester", "Navigation_Tester",
             "AuthorMatch_Tester", "Ht_Tester", "Fmt_Tester",
             "Getopt_Tester", "CleanHTML_Tester", "MessageSet_Tester",
-            "Abbreviation_Tester",
+            "Abbreviation_Tester", "Preferences_Tester",
             "DocumentBasics_Tester", "FixCollaborators_Tester",
             "Work_Tester",
             "Mention_Tester", "Search_Tester", "Settings_Tester",

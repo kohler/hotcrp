@@ -49,11 +49,20 @@ class Revpref_SearchTerm extends SearchTerm {
     private $user;
     /** @var RevprefSearchMatcher */
     private $rpsm;
+    /** @var 0|1|2|3|4|5 */
+    private $view_bound;
 
     function __construct(Contact $user, RevprefSearchMatcher $rpsm) {
         parent::__construct("revpref");
         $this->user = $user;
         $this->rpsm = $rpsm;
+        if ($rpsm->single_cid() === $user->contactXid) {
+            $this->view_bound = Contact::VIEWPREF_OWN;
+        } else if ($rpsm->aggregate) {
+            $this->view_bound = Contact::VIEWPREF_AGG;
+        } else {
+            $this->view_bound = Contact::VIEWPREF_ALL;
+        }
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->isPC) { // PC only
@@ -141,10 +150,10 @@ class Revpref_SearchTerm extends SearchTerm {
         return "coalesce((select count(*) from PaperReviewPreference where " . join(" and ", $where) . "),0)" . $this->rpsm->comparison();
     }
     function test(PaperInfo $row, $xinfo) {
-        $can_view = $this->user->can_view_preference($row, $this->rpsm->aggregate);
+        $vps = $this->user->view_preference_state($row);
         $n = 0;
         foreach ($this->rpsm->contact_set() as $cid) {
-            if (($cid == $this->user->contactXid || $can_view)
+            if ($vps >= ($cid === $this->user->contactXid ? Contact::VIEWPREF_OWN : $this->view_bound)
                 && $this->rpsm->test_preference($row->preference($cid)))
                 ++$n;
         }
