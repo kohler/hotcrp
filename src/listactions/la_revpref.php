@@ -55,28 +55,34 @@ class Revpref_ListAction extends ListAction {
 
     function run_get(Contact $user, Qrequest $qreq, SearchSelection $ssel,
                      Contact $reviewer, $extended) {
-        $not_me = $user->contactId !== $reviewer->contactId;
+        if ($reviewer->contactXid === $user->contactXid) {
+            $reviewer = $user;
+        }
+        $view_bound = $user === $reviewer ? Contact::VIEWPREF_OWN : Contact::VIEWPREF_ALLOW_ALL;
         $fields = [
-            "paper" => true, "title" => true, "email" => $not_me, "preference" => true,
+            "paper" => true, "title" => true, "email" => $user !== $reviewer, "preference" => true,
             "notes" => false, "authors" => false, "abstract" => !!$extended, "topics" => false
         ];
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
             // own preferences require view access, others' require administration
-            if ($not_me ? !$user->allow_admin($prow) : !$user->can_view_paper($prow)) {
+            if ($user->view_preference_state($prow) < $view_bound
+                || !$user->can_view_paper($prow)) {
                 continue;
             }
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
-            if ($not_me) {
+            if ($user !== $reviewer) {
                 $item["email"] = $reviewer->email;
             }
             $item["preference"] = $prow->preference($reviewer)->unparse();
-            if ($prow->has_conflict($reviewer)) {
+            if ($prow->has_conflict($reviewer)
+                && $user->can_view_conflicts($prow)) {
                 $item["notes"] = "conflict";
                 $fields["notes"] = true;
             }
             if ($extended) {
-                if ($reviewer->can_view_authors($prow)) {
+                if ($user->can_view_authors($prow)
+                    && ($user === $reviewer || $reviewer->can_view_authors($prow))) {
                     $aus = array_map(function ($a) { return $a->name(NAME_P|NAME_A); }, $prow->author_list());
                     $item["authors"] = join("\n", $aus);
                     $fields["authors"] = true;
@@ -90,7 +96,7 @@ class Revpref_ListAction extends ListAction {
             $texts[] = $item;
         }
         $title = "revprefs";
-        if ($not_me) {
+        if ($user !== $reviewer) {
             $title .= "-" . (preg_replace('/@.*|[^\w@.]/', "", $reviewer->email) ? : "user");
         }
         return $user->conf->make_csvg($title, CsvGenerator::FLAG_ITEM_COMMENTS)

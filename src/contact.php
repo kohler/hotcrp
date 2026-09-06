@@ -5240,13 +5240,20 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && $this->conf->check_tracks($prow, $this, Track::ASSREV)));
     }
 
-    const VIEWPREF_NONE = 0;
-    const VIEWPREF_OWN = 1;
-    const VIEWPREF_AGG = 2;
-    const VIEWPREF_ALLOW_ALL = 3;
-    const VIEWPREF_ALL = 4;
+    const VIEWPREF_NONE = 0;        // can't see any preferences
+    const VIEWPREF_OWN = 1;         // can see own preference
+    const VIEWPREF_AGG = 2;         // can see an aggregate of all preferences
+    const VIEWPREF_ALLOW_ALL = 3;   // allowed to see individual preferences
+    const VIEWPREF_ALL = 4;         // can see individual preferences
 
-    /** @return 0|1|2|3|4 */
+    /** Return an integer representing which kinds of preference this user
+     * can view.
+     *
+     * Note that view_preference_state($prow) might be positive (specifically,
+     * VIEWPREF_OWN) even if !can_view_paper($prow). This is intentional:
+     * during preference editing a preference might be entered concurrently
+     * with a withdrawal; errors would be distracting.
+     * @return 0|1|2|3|4 */
     function view_preference_state(?PaperInfo $prow) {
         if (!$this->isPC) {
             return 0;
@@ -5263,7 +5270,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return self::VIEWPREF_ALL;
         } else if ($rights->allow_admin()) {
             return self::VIEWPREF_ALLOW_ALL;
-        } else if ($rights->allow_pc() && $this->can_view_pc()) {
+        } else if ($rights->allow_pc()
+                   && $rights->can_view(false)
+                   && $this->can_view_pc()) {
             return self::VIEWPREF_AGG;
         }
         return self::VIEWPREF_OWN;

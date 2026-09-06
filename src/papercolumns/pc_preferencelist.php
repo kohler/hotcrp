@@ -29,7 +29,7 @@ class PreferenceList_PaperColumn extends PaperColumn {
         return true;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->is_admin($row);
+        return !$pl->user->can_view_preference($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ts = [];

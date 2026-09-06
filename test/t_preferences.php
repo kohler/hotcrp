@@ -48,4 +48,45 @@ class Preferences_Tester {
         // clean up
         call_api("=pref", $this->u_chair, ["p" => 1, "pref" => "0"]);
     }
+
+    function test_preference_export_obeys_scope() {
+        // The preference emitters (get/allrevpref, get/revpref, the
+        // preference-list column) must respect the preference scope: a chair
+        // token without preference:read exports no PC preferences.
+        require_once(SiteLoader::resolve("src/listactions/la_getallrevpref.php"));
+        require_once(SiteLoader::resolve("src/listactions/la_revpref.php"));
+        $conf = $this->conf;
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $this->u_chair->set_scope();
+        call_api("=pref", $this->u_chair, ["p" => 1, "u" => $mgbaker->email, "pref" => "9"]);
+
+        $allrevpref = function ($scope) use ($conf) {
+            $u = clone $this->u_chair; $u->set_scope($scope);
+            $la = new GetAllRevpref_ListAction($conf, (object) ["name" => "get/allrevpref"]);
+            return $la->run($u, TestQreq::get(), new SearchSelection([1]))->unparse();
+        };
+        $revpref = function ($scope) use ($conf, $mgbaker) {
+            $u = clone $this->u_chair; $u->set_scope($scope);
+            $la = new Revpref_ListAction($conf, (object) ["name" => "get/revpref"]);
+            return $la->run_get($u, TestQreq::get(), new SearchSelection([1]), $mgbaker, true)->unparse();
+        };
+
+        // with preference:read (or unscoped) the exports include mgbaker's pref
+        foreach (["preference:read", null] as $scope) {
+            xassert_str_contains($allrevpref($scope), $mgbaker->email);
+            xassert_str_contains($revpref($scope), $mgbaker->email);
+            $u = clone $this->u_chair; $u->set_scope($scope);
+            xassert($u->can_view_preference($conf->checked_paper_by_id(1))); // pc_preferencelist gate
+        }
+        // without preference scope nothing leaks
+        foreach (["submission:read", "review:read"] as $scope) {
+            xassert_not_str_contains($allrevpref($scope), $mgbaker->email);
+            xassert_not_str_contains($revpref($scope), $mgbaker->email);
+            $u = clone $this->u_chair; $u->set_scope($scope);
+            xassert(!$u->can_view_preference($conf->checked_paper_by_id(1)));
+        }
+
+        call_api("=pref", $this->u_chair, ["p" => 1, "u" => $mgbaker->email, "pref" => "0"]);
+        $this->u_chair->set_scope();
+    }
 }

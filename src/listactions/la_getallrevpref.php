@@ -26,10 +26,10 @@ class GetAllRevpref_ListAction extends ListAction {
         $csvg = $user->conf->make_csvg("allprefs")->set_header($headers);
         $pcm = $user->conf->pc_members();
         foreach ($ssel->paper_set($user, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {
-            if (!$user->allow_admin($prow)) {
+            if (!$user->allow_view_preference($prow)) {
                 continue;
             }
-            $ctypes = $prow->conflict_types();
+            $ctypes = $user->can_view_conflicts($prow) ? $prow->conflict_types() : [];
             foreach ($pcm as $uid => $p) {
                 $pf = $prow->preference($p);
                 $ctype = $ctypes[$uid] ?? 0;
