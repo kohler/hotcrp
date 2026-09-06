@@ -32,14 +32,13 @@ class AssignReview_PaperColumn extends PaperColumn {
             return "Assignment";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " assignment";
-        } else {
-            return $pl->user->reviewer_html_for($this->contact) . "<br>assignment";
         }
+        return $pl->user->reviewer_html_for($this->contact) . "<br>assignment";
     }
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
-            if ($pl->user->allow_admin($row)) {
+            if ($pl->user->allow_manage_reviews($row)) {
                 $ci = $row->contact_info($this->contact);
                 if ($ci->conflictType >= CONFLICT_AUTHOR) {
                     $v = -100;
@@ -58,7 +57,7 @@ class AssignReview_PaperColumn extends PaperColumn {
         return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->allow_admin($row);
+        return !$pl->user->allow_manage_reviews($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ci = $row->contact_info($this->contact);

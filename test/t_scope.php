@@ -278,4 +278,63 @@ class Scope_Tester {
         xassert(!$au->scope_allows(TokenScope::S_SUB_READ));
         xassert(!$au->can_view_paper($au->checked_paper_by_id(2)));
     }
+
+    function test_pcassignments_obeys_review_scope() {
+        // get/pcassignments exports review assignments (reviewer identities,
+        // types, rounds) and, for anonymous reviews, the secret review_token
+        // credential. Token scope must bound both: `review:read` to read the
+        // assignments, `review:admin` for the review_token.
+        $conf = $this->conf;
+        $this->u_chair->set_scope();
+        // an anonymous review supplies both a reviewer-assignment row and a
+        // secret review_token in the export
+        xassert_assign($this->u_chair, "paper,action,user\n3,review,new-anonymous\n");
+        $token = $conf->fetch_ivalue("select reviewToken from PaperReview where paperId=3 and reviewToken!=0 order by reviewId desc limit 1");
+        xassert(!!$token);
+
+        // returns [#reviewer rows, review_token exported?, "not reported" warning?]
+        $run = function ($scope) {
+            $u = clone $this->u_chair;
+            $u->set_scope($scope);
+            list($header, $texts) = ListAction::pcassignments_csv_data($u, [3]);
+            $nrows = $warning = 0;
+            foreach ($texts as $t) {
+                $e = $t["email"] ?? "";
+                if ($e !== "" && $e !== "#pc") {
+                    ++$nrows;
+                }
+                if (($t["action"] ?? "") === "warning") {
+                    $warning = 1;
+                }
+            }
+            return [$nrows, in_array("review_token", $header, true), $warning];
+        };
+
+        // review:admin (and an unscoped chair) export assignments + the token
+        foreach (["review:admin", null] as $scope) {
+            list($nrows, $has_token, $warning) = $run($scope);
+            xassert_gt($nrows, 0);
+            xassert($has_token);
+            xassert(!$warning);
+        }
+
+        // review:read exports the assignments but NOT the review_token credential
+        list($nrows, $has_token, $warning) = $run("review:read");
+        xassert_gt($nrows, 0);
+        xassert(!$has_token);
+        xassert(!$warning);
+
+        // submission:read (no review scope) exports no assignment data at all
+        list($nrows, $has_token, $warning) = $run("submission:read");
+        xassert_eqq($nrows, 0);
+        xassert(!$has_token);
+        xassert($warning);
+
+        // clean up
+        $prow = $conf->checked_paper_by_id(3);
+        $prow->load_reviews();
+        $anon = $conf->user_by_id($prow->review_by_token($token)->contactId);
+        xassert_assign($this->u_chair, "paper,action,user\n3,clearreview,{$anon->email}\n");
+        $this->u_chair->set_scope();
+    }
 }

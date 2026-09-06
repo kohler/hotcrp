@@ -29,7 +29,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         return $is_text ? $t : "<strong>{$t}</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->allow_admin($row);
+        return !$pl->user->allow_manage($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pf = $row->preference($this->contact);

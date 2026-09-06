@@ -165,51 +165,58 @@ class ListAction {
         $pcm = $user->conf->pc_members();
 
         $round_list = $user->conf->round_list();
-        $any_round = $any_token = false;
+        $any_round = $any_token = $any_warning = false;
 
         $texts = [];
         foreach ($user->paper_set(["paperId" => $pids, "reviewSignatures" => true]) as $prow) {
-            if (!$user->allow_admin($prow)) {
+            if (!$user->allow_admin($prow)
+                || !$user->scope_allows(TokenScope::S_REV_READ, $prow)) {
+                if (!$user->can_view_paper($prow)) {
+                    continue;
+                }
                 $texts[] = [];
                 $texts[] = ["paper" => $prow->paperId,
-                            "action" => "none",
-                            "title" => "You cannot override your conflict with this paper"];
-            } else {
-                $any_this_paper = false;
-                foreach ($prow->reviews_as_display() as $rrow) {
-                    $cid = $rrow->contactId;
-                    if ($rrow->reviewToken) {
-                        $u = $user->conf->user_by_id($cid);
-                    } else if ($rrow->reviewType >= REVIEW_PC) {
-                        $u = $pcm[$cid] ?? null;
-                    } else {
-                        $u = null;
-                    }
-                    if (!$u) {
-                        continue;
-                    }
-
-                    if (!$any_this_paper) {
-                        $texts[] = [];
-                        $texts[] = ["paper" => $prow->paperId,
-                                    "action" => "clearreview",
-                                    "email" => "#pc",
-                                    "round" => "any",
-                                    "title" => $prow->title];
-                        $any_this_paper = true;
-                    }
-
-                    $round = $rrow->reviewRound;
-                    $d = ["paper" => $prow->paperId,
-                          "action" => ReviewInfo::unparse_assigner_action($rrow->reviewType),
-                          "email" => $u->email,
-                          "round" => $round ? $round_list[$round] : "none"];
-                    if ($rrow->reviewToken) {
-                        $d["review_token"] = $any_token = encode_token((int) $rrow->reviewToken);
-                    }
-                    $texts[] = $d;
-                    $any_round = $any_round || $round != 0;
+                            "action" => "warning",
+                            "title" => $prow->title,
+                            "message" => "* Assignments not reported *"];
+                $any_warning = true;
+                continue;
+            }
+            $any_this_paper = false;
+            foreach ($prow->reviews_as_display() as $rrow) {
+                $cid = $rrow->contactId;
+                if ($rrow->reviewToken) {
+                    $u = $user->conf->user_by_id($cid);
+                } else if ($rrow->reviewType >= REVIEW_PC) {
+                    $u = $pcm[$cid] ?? null;
+                } else {
+                    $u = null;
                 }
+                if (!$u) {
+                    continue;
+                }
+
+                if (!$any_this_paper) {
+                    $texts[] = [];
+                    $texts[] = ["paper" => $prow->paperId,
+                                "action" => "clearreview",
+                                "email" => "#pc",
+                                "round" => "any",
+                                "title" => $prow->title];
+                    $any_this_paper = true;
+                }
+
+                $round = $rrow->reviewRound;
+                $d = ["paper" => $prow->paperId,
+                      "action" => ReviewInfo::unparse_assigner_action($rrow->reviewType),
+                      "email" => $u->email,
+                      "round" => $round ? $round_list[$round] : "none"];
+                if ($rrow->reviewToken
+                    && $user->allow_manage_reviews($prow)) {
+                    $d["review_token"] = $any_token = encode_token((int) $rrow->reviewToken);
+                }
+                $texts[] = $d;
+                $any_round = $any_round || $round != 0;
             }
         }
 
@@ -221,6 +228,9 @@ class ListAction {
             $header[] = "review_token";
         }
         $header[] = "title";
+        if ($any_warning) {
+            $header[] = "message";
+        }
         return [$header, $texts];
     }
 }

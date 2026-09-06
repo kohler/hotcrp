@@ -108,7 +108,7 @@ class Conflict_PaperColumn extends PaperColumn {
         return $this->cset->unparse_html(min($ct, CONFLICT_AUTHOR));
     }
     private function edit_content(PaperList $pl, PaperInfo $row) {
-        if (!$pl->user->allow_admin($row)) {
+        if (!$pl->user->allow_manage($row)) {
             return "";
         }
         $ct = $row->conflict_type($this->user);
