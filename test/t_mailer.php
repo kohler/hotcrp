@@ -42,6 +42,75 @@ class Mailer_Tester {
         return ob_get_clean();
     }
 
+    /** Run a mail preview and return the feedback the sender would see
+     * (messages copied to MailRecipients), without printing the form. `$qreq`
+     * may set subject/body/reply-to/cc.
+     * @param string $recipients
+     * @return string */
+    function preview_feedback(Contact $user, $recipients, $args = []) {
+        $mr = (new MailRecipients($user))->set_recipients($recipients);
+        $args["subject"] = $args["subject"] ?? "Test subject";
+        $args["body"] = $args["body"] ?? "Test body";
+        $qreq = TestQreq::user_post($user, $args);
+        MailSender::clean_request($qreq);
+        $old_main = Qrequest::$main_request;
+        Qrequest::set_main_request($qreq);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2; // route page feedback through the buffer, not STDOUT/STDERR
+        ob_start();
+        try {
+            $ms = new MailSender($mr, $qreq, MailSender::PHASE_PREVIEW);
+            $ms->set_no_print(true);
+            $ms->run();
+        } catch (PageCompletion $unused) {
+        }
+        ob_end_clean();
+        Navigation::$test_mode = $old_test_mode;
+        $this->conf->claim_saved_messages(); // discard queued page feedback
+        Qrequest::$main_request = $old_main;
+        return $mr->full_feedback_text();
+    }
+
+    function test_paper_admin_mail_preview_hides_password_link() {
+        $conf = $this->conf;
+        $jon = $conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // PC, tagged "red"
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        xassert(!$jon->privChair);
+        xassert(!$jon->is_manager());
+
+        $old_tracks = $conf->setting("tracks");
+        $old_tracks_data = $conf->setting_data("tracks");
+        $conf->save_refresh_setting("tracks", 1, '{"green":{"admin":"+red"}}');
+        Contact::update_rights();
+        $jon = $conf->checked_user_by_email("jon@cs.ucl.ac.uk");
+        xassert($jon->is_manager()); // track manager => non-chair is_manager principal
+
+        $captype = TokenInfo::RESETPASSWORD;
+        $nchair = $conf->fetch_ivalue("select count(*) from Capability where capabilityType=? and contactId=?", $captype, $chair->contactId);
+
+        MailChecker::clear();
+        // the sender-visible feedback (messages copied to MailRecipients) must not
+        // carry any recipient's reset token
+        $fb = $this->preview_feedback($jon, "pc", ["reply-to" => "{{PASSWORDLINK}}"]);
+        xassert(!str_contains($fb, "hcpw"));
+        // and none was minted for the chair (the would-be victim)
+        xassert_eqq($conf->fetch_ivalue("select count(*) from Capability where capabilityType=? and contactId=?", $captype, $chair->contactId), $nchair);
+
+        // {{IF}} expansion errors are still surfaced (guards the Mailer::warning
+        // -> MailPreparation message unification)
+        MailChecker::clear();
+        $fb = $this->preview_feedback($jon, "pc", ["body" => "hello {{IF(t01)}} world"]);
+        xassert_str_contains($fb, "Incomplete {{IF}}");
+
+        if ($old_tracks === null) {
+            $conf->save_refresh_setting("tracks", null);
+        } else {
+            $conf->save_refresh_setting("tracks", $old_tracks, $old_tracks_data);
+        }
+        Contact::update_rights();
+        MailChecker::clear();
+    }
+
     function test_send() {
         MailChecker::clear();
         $user = $this->conf->checked_user_by_email("chair@_.com");

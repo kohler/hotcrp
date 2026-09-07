@@ -572,7 +572,6 @@ class MailSender {
             // Mail format matters
             $this->user->log_activity("Sending mail #{$this->mailid} \"{$subject}\"");
         }
-        $need_censored_prep = !$this->user->privChair || $this->conf->opt("chairHidePasswords");
 
         $mailer = new HotCRPMailer($this->user);
         $mailer->set_recip_set($this->recip);
@@ -610,47 +609,61 @@ class MailSender {
                 }
             }
 
-
             // skip if reviews don’t match
             $rest["prow"] = $prow = $this->recip->paper($pid);
             if ($prow && !$this->recip->test_paper($prow, $user)) {
                 continue;
             }
 
+            // prepare censored preparation
+            $rest["censor"] = Mailer::CENSOR_PREVIEW;
+            $rest["preview"] = true;
             $mailer->reset($user, $rest);
-            $prep = $mailer->prepare($template, $rest);
+            $cprep = $mailer->prepare($template, $rest);
 
-            foreach ($prep->message_list() as $mi) {
+            foreach ($cprep->message_list() as $mi) {
                 $this->recip->append_item($mi);
-                if (!$has_decoration) {
+                if (!$has_decoration
+                    && in_array($mi->field, ["reply-to", "cc", "bcc"], true)) {
                     $this->recip->inform_at($mi->field, "<0>Put names in \"double quotes\" and email addresses in <angle brackets>, and separate destinations with commas.");
                     $has_decoration = true;
                 }
             }
 
-            if (!$prep->has_error()
-                && $this->process_prep($prep, $user)
-                && $need_censored_prep) {
-                if ($this->active_censored_prep) {
-                    $this->active_censored_prep->merge($prep);
+            // prepare uncensored preparation
+            $merge = false;
+            if (!$cprep->has_error()) {
+                $rest["censor"] = Mailer::CENSOR_NONE;
+                $rest["preview"] = !$this->sending;
+                $mailer->reset($user, $rest);
+                $prep = $mailer->prepare($template, $rest);
+
+                if ($prep->has_error()) {
+                    foreach ($prep->message_list() as $mi) {
+                        // context might report data that should be censored
+                        $this->recip->append_item($mi->without_context());
+                    }
                 } else {
-                    $rest["censor"] = Mailer::CENSOR_PREVIEW;
-                    $rest["preview"] = true;
-                    $mailer->reset($user, $rest);
-                    $this->active_censored_prep = $mailer->prepare($template, $rest);
-                    $rest["censor"] = Mailer::CENSOR_NONE;
-                    $rest["preview"] = !$this->sending;
+                    $merge = $this->process_prep($prep, $user);
                 }
             }
 
-            if ($nwarnings !== $mailer->message_count() || $nrows_done % 5 == 0) {
+            // maybe merge censored preparation
+            if ($this->active_censored_prep) {
+                $this->active_censored_prep->merge($cprep);
+            } else {
+                $this->active_censored_prep = $cprep;
+            }
+
+            if ($nwarnings !== $this->recip->message_count()
+                || $nrows_done % 5 == 0) {
                 $this->print_mailinfo($nrows_done, $nrows_total);
             }
-            if ($nwarnings !== $mailer->message_count()) {
+            if ($nwarnings !== $this->recip->message_count()) {
                 $this->print_prologue();
-                $nwarnings = $mailer->message_count();
+                $nwarnings = $this->recip->message_count();
                 echo "<div id=\"foldmailwarn{$nwarnings}\" class=\"hidden\"><div class=\"msg msg-warning\">",
-                    MessageSet::feedback_html($mailer->decorated_message_list()),
+                    MessageSet::feedback_html($this->recip->decorated_message_list()),
                     "</ul></div></div>",
                     Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn{$nwarnings}').innerHTML;");
             }
@@ -674,7 +687,6 @@ class MailSender {
             } else {
                 $this->recip->warning_at(null, "<0>Mail not sent: no users match this search");
             }
-            $this->recip->append_list($mailer->message_list());
             $this->conf->feedback_msg($this->recip->decorated_message_list());
             echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('f-mail').action=" . json_encode_browser($this->conf->hoturl("=mail", ["check" => 1])));
             return;

@@ -2,7 +2,7 @@
 // mailpreparation.php -- HotCRP prepared mail
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-class MailPreparation implements JsonSerializable {
+class MailPreparation extends MessageSet implements JsonSerializable {
     /** @var Conf */
     public $conf;
     /** @var string */
@@ -19,10 +19,6 @@ class MailPreparation implements JsonSerializable {
     public $sensitive = false;
     /** @var array<string,string> */
     public $headers = [];
-    /** @var int */
-    private $problem_status = 0;
-    /** @var list<MessageItem> */
-    private $errors = [];
     /** @var bool */
     public $unique_preparation = false;
     /** @var ?string */
@@ -42,6 +38,8 @@ class MailPreparation implements JsonSerializable {
         if ($recipient) {
             $this->add_recipient($recipient);
         }
+        $this->set_ignore_duplicates(true)
+            ->set_message_formatter($this->conf);
     }
 
     /** @return bool */
@@ -54,29 +52,6 @@ class MailPreparation implements JsonSerializable {
     function set_self_requested($x) {
         $this->_self_requested = $x;
         return $this;
-    }
-
-    /** @return int */
-    function problem_status() {
-        return $this->problem_status;
-    }
-
-    /** @return bool */
-    function has_error() {
-        return $this->problem_status > 1;
-    }
-
-    /** @param MessageItem $mi
-     * @return MessageItem */
-    function append_item($mi) {
-        $this->errors[] = $mi;
-        $this->problem_status = max($this->problem_status, $mi->status);
-        return $mi;
-    }
-
-    /** @return list<MessageItem> */
-    function message_list() {
-        return $this->errors;
     }
 
     /** @param Contact $u

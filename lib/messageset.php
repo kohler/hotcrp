@@ -165,6 +165,16 @@ class MessageItem implements JsonSerializable {
         return $mi;
     }
 
+    /** @return MessageItem */
+    function without_context() {
+        if ($this->pos1 === null && $this->pos2 === null && $this->context === null) {
+            return $this;
+        }
+        $mi = clone $this;
+        $mi->pos1 = $mi->pos2 = $mi->context = null;
+        return $mi;
+    }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = ["status" => $this->status];

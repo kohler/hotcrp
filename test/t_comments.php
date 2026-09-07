@@ -244,7 +244,7 @@ class Comments_Tester {
      * The comment JSON may show the shepherd's name (shepherd identity is
      * author-visible) but must omit the review pseudonym ("Reviewer A") for a
      * viewer who can see who wrote the comment yet not the identity of that
-     * person's review (HC-010). */
+     * person's review. */
     function test_shepherd_comment_hides_review_pseudonym() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $this->ensure_paper1_review($paper1);   // mgbaker: Reviewer A, blind

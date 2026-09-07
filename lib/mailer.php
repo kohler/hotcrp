@@ -57,8 +57,6 @@ class Mailer {
 
     /** @var array<string,true> */
     private $_unexpanded = [];
-    /** @var list<string> */
-    protected $_errors_reported = [];
     /** @var ?MessageSet */
     private $_ms;
     /** @var bool */
@@ -867,11 +865,6 @@ class Mailer {
             } else {
                 $mimetext->mi->field = $lcfield;
                 $prep->append_item($mimetext->mi);
-                $logmsg = "{$lcfield}: {$text}";
-                if (!in_array($logmsg, $this->_errors_reported, true)) {
-                    error_log("mailer error on {$logmsg}");
-                    $this->_errors_reported[] = $logmsg;
-                }
             }
         }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . $this->eol;
@@ -905,16 +898,6 @@ class Mailer {
     }
 
 
-    /** @return int */
-    function message_count() {
-        return $this->_ms ? $this->_ms->message_count() : 0;
-    }
-
-    /** @return iterable<MessageItem> */
-    function message_list() {
-        return $this->_ms ? $this->_ms->message_list() : [];
-    }
-
     /** @param MessageItem $mi
      * @return MessageItem */
     static function decorated_message($mi) {
@@ -924,24 +907,11 @@ class Mailer {
         return $mi;
     }
 
-    /** @return \Generator<MessageItem> */
-    function decorated_message_list() {
-        foreach ($this->message_list() as $mi) {
-            yield self::decorated_message($mi);
-        }
-    }
-
-    /** @return string */
-    function full_feedback_text() {
-        return $this->_ms ? $this->_ms->full_feedback_text() : "";
-    }
-
     /** @param string $message
      * @return MessageItem */
-    function warning($message) {
-        $this->_ms = $this->_ms ?? (new MessageSet)->set_ignore_duplicates(true)
-            ->set_message_formatter($this->conf);
-        return $this->_ms->warning_at($this->field, $message);
+    function warning($message, ...$args) {
+        $mi = MessageItem::warning_at($this->field, $message, ...$args);
+        return $this->preparation ? $this->preparation->append_item($mi) : $mi;
     }
 
     /** @param string $ref */

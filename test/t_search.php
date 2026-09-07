@@ -569,13 +569,6 @@ class Search_Tester {
     }
 
     function test_conflict_search_hides_nonpc_author_identities() {
-        // HC-006: the `conflict:` keyword resolves arbitrary accounts (pc_only=false),
-        // and `test()` counted a match whenever the searcher `can_view_conflicts`.
-        // That permission governs *PC* conflict info (true for all PC when
-        // `sub_pcconfvis` is "always", or under an active meeting tracker), so an
-        // unconflicted PC member at a blind conference could confirm — and, via
-        // wildcard probes — enumerate the contact emails of blind submissions,
-        // even though the paper page, paper API, and `au:` all hid the authors.
         $conf = $this->conf;
         xassert_eqq($conf->submission_blindness(), Conf::BLIND_ALWAYS);
         $old_pccv = $conf->setting("sub_pcconfvis");

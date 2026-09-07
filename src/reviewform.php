@@ -243,10 +243,8 @@ class ReviewForm {
 
     /** @param PaperInfo $prow
      * @param ?ReviewInfo $rrow
-     * @param ContactPermissions $viewer
-     * @param bool $no_update */
-    static function check_review_author_seen($prow, $rrow, $viewer,
-                                             $no_update = false) {
+     * @param ContactPermissions $viewer */
+    static function check_review_author_seen($prow, $rrow, $viewer) {
         if (!$rrow
             || !$rrow->reviewId
             || ($rrow->reviewAuthorSeen && ($rrow->rflags & ReviewInfo::RF_AUSEEN) !== 0)
@@ -256,10 +254,8 @@ class ReviewForm {
         // XXX combination of review tokens & authorship gets weird -- old comment
         $rrow->reviewAuthorSeen = $rrow->reviewAuthorSeen ? : Conf::$now;
         $rrow->rflags |= ReviewInfo::RF_AUSEEN;
-        if (!$no_update) {
-            $prow->conf->register_shutdown_function("ReviewAuthorSeenUpdate")
-                ->add(Conf::$now, $rrow->paperId, $rrow->reviewId);
-        }
+        $prow->conf->register_shutdown_function("ReviewAuthorSeenUpdate")
+            ->add(Conf::$now, $rrow->paperId, $rrow->reviewId);
     }
 
 
@@ -352,7 +348,9 @@ Ready\n";
 
     function unparse_text(PaperInfo $prow, ReviewInfo $rrow,
                           ContactPermissions $viewer, $flags = 0) {
-        self::check_review_author_seen($prow, $rrow, $viewer, !!($flags & self::UNPARSE_NO_AUTHOR_SEEN));
+        if (($flags & self::UNPARSE_NO_AUTHOR_SEEN) === 0) {
+            self::check_review_author_seen($prow, $rrow, $viewer);
+        }
 
         $n = "";
         if (!($flags & self::UNPARSE_NO_TITLE)) {
