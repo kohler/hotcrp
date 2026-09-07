@@ -434,7 +434,7 @@ class Mimetype {
     /** @param ?string $content
      * @param ?string $type
      * @param ?DocumentInfo $doc
-     * @return ?array{type:string,width?:int,height?:int} */
+     * @return ?array{type:string,width?:int,height?:int,duration?:float,npages?:int} */
     static function content_info($content, $type = null, $doc = null) {
         if ($content === null && $doc) {
             if ($doc->has_memory_content()) {
@@ -465,6 +465,12 @@ class Mimetype {
                 $ivm = ISOVideoMimetype::make_string($content);
             }
             return $ivm->content_info();
+        } else if ($type === self::PDF_TYPE) {
+            if (!$doc || strlen($content) === $doc->size()) {
+                return HotCRP\PDFMimetype::make_string($content)->content_info();
+            } else if (($file = $doc->content_file())) {
+                return HotCRP\PDFMimetype::make_file($file, $content)->content_info();
+            }
         }
         return ["type" => $type];
     }

@@ -129,6 +129,16 @@ class PaperStatus_Tester {
         xassert_eqq(sha1($paper1->primary_document()->content()), "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
     }
 
+    function test_document_structural_npages() {
+        $doc = DocumentInfo::make_uploaded_file($this->conf, QrequestFile::make_finfo([
+                "error" => UPLOAD_ERR_OK, "name" => "linear.pdf",
+                "tmp_name" => SiteLoader::resolve("test/sample-linearized.pdf"),
+                "type" => "application/pdf"
+            ]))->set_document_type(DTYPE_SUBMISSION);
+        // page count comes from the PDF structure, no banal run
+        xassert_eqq($doc->npages(new CheckFormat($this->conf, CheckFormat::RUN_NEVER)), 2);
+    }
+
     function test_paper_replace_document() {
         $pex = new PaperExport($this->conf->root_user());
         $paper2a = $pex->paper_json(2);
@@ -2117,21 +2127,20 @@ Phil Porras.");
         $paper3 = $this->u_estrin->checked_paper_by_id(3);
         $doc = $paper3->document(DTYPE_SUBMISSION);
         $cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
-        xassert_eqq($doc->npages($cf), null);  // page count not yet calculated
-        xassert_eqq($doc->npages(), 50);       // once it IS calculated,
-        xassert_eqq($doc->npages($cf), 50);    // it is cached
+        xassert_eqq($doc->npages($cf), 50);    // page count from PDF structure; no banal run
 
         $paper3 = $this->u_estrin->checked_paper_by_id(3);
         $doc = $paper3->document(DTYPE_SUBMISSION);
         xassert_eqq($doc->npages($cf), 50);    // ...even on reload
 
-        // check format checker; this uses result from previous npages()
+        // format checker still needs banal
         $cf_nec = new CheckFormat($this->conf, CheckFormat::RUN_IF_NECESSARY);
         $cf_nec->check_document($doc);
         xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit textblock");
         xassert(!$cf_nec->need_recheck());
-        xassert(!$cf_nec->run_attempted());
+        xassert($cf_nec->run_attempted());
         xassert_eq($paper3->pdfFormatStatus, -$spects);
+        xassert_eqq($doc->npages($cf), 50);
 
         // change the format spec
         ++$spects;

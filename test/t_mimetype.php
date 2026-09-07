@@ -74,6 +74,51 @@ class Mimetype_Tester {
         xassert_eqq(Mimetype::textual("application/json"), true);
     }
 
+    function test_pdf_xref() {
+        // classic xref table
+        $f = SiteLoader::resolve("etc/sample.pdf");
+        $ci = Mimetype::content_info(file_get_contents($f));
+        xassert_eqq($ci["type"], Mimetype::PDF_TYPE);
+        xassert_eqq($ci["npages"] ?? null, 2);
+        xassert_eqq(HotCRP\PDFMimetype::make_file($f)->content_info()["npages"] ?? null, 2);
+
+        // xref stream + object streams, deep page tree
+        $f = SiteLoader::resolve("test/sample50pg.pdf");
+        $s = file_get_contents($f);
+        xassert_eqq(HotCRP\PDFMimetype::make_string($s)->content_info()["npages"] ?? null, 50);
+        xassert_eqq(HotCRP\PDFMimetype::make_file($f)->content_info()["npages"] ?? null, 50);
+
+        // linearized file: first-page xref section chains to the main one
+        $f = SiteLoader::resolve("test/sample-linearized.pdf");
+        $pm = HotCRP\PDFMimetype::make_file($f);
+        xassert_eqq($pm->content_info()["npages"] ?? null, 2);
+        xassert_eqq(json_encode($pm), '{"size":14573,"version":"1.7","nxref":16,"trailer":{"Size":"17","Info":"5 0 R","Root":"9 0 R","ID":"[(16 bytes) (16 bytes)]","Prev":"14364"},"reads":7,"read_bytes":20449,"tree_nodes":3,"npages":2}');
+        xassert_eqq(Mimetype::content_info(file_get_contents($f))["npages"] ?? null, 2);
+
+        // truncated file: no trailer
+        $ci = Mimetype::content_info(substr($s, 0, 20000));
+        xassert_eqq($ci["type"], Mimetype::PDF_TYPE);
+        xassert(!isset($ci["npages"]));
+        // appended comments: startxref offset still right
+        $ci = Mimetype::content_info($s . str_repeat("%\n", 10));
+        xassert_eqq($ci["npages"] ?? null, 50);
+        // corrupted startxref offset
+        $s2 = preg_replace('/startxref\s+\d+/', "startxref 22000", $s);
+        xassert(!isset(Mimetype::content_info($s2)["npages"]));
+        // inconsistent /Count in page tree root: reject rather than guess
+        $s2 = file_get_contents(SiteLoader::resolve("etc/sample.pdf"));
+        xassert_str_contains($s2, "/Count 2");
+        $s3 = str_replace("/Count 2", "/Count 3", $s2);
+        xassert(!isset(Mimetype::content_info($s3)["npages"]));
+        // damaged xref entry
+        xassert(preg_match('/^(\d{10}) 00000 n/m', $s2, $m) === 1);
+        $s3 = preg_replace('/^' . $m[1] . ' 00000 n/m', sprintf("%010d 00000 n", (int) $m[1] + 1), $s2, 1);
+        xassert(!isset(Mimetype::content_info($s3)["npages"]));
+        // not a PDF
+        xassert(!isset(HotCRP\PDFMimetype::make_string("hello")->content_info()["npages"]));
+        xassert(!isset(HotCRP\PDFMimetype::make_string("")->content_info()["npages"]));
+    }
+
     function xxx_test_mp4() {
         foreach (glob("/Users/kohler/Downloads/sigcomm23-10_minute_presentation_video/*.mp4") as $f) {
             $mt = ISOVideoMimetype::make_file($f)->set_verbose(true);

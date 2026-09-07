@@ -496,6 +496,9 @@ class DocumentInfo implements JsonSerializable {
             && (str_starts_with($this->mimetype, "video/")
                 || str_starts_with($this->mimetype, "audio/"))) {
             $this->set_prop("npages", (int) ($info["duration"] * 10 + 0.5));
+        } else if (isset($info["npages"])
+                   && $this->mimetype === Mimetype::PDF_TYPE) {
+            $this->set_prop("npages", $info["npages"]);
         }
         return $this;
     }
