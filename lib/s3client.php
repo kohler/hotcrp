@@ -150,6 +150,11 @@ class S3Client {
     function domain() {
         return $this->s3_domain;
     }
+    /** @param string $skey
+     * @return string */
+    function arn($skey) {
+        return "arn:aws:s3:::{$this->s3_bucket}/{$skey}";
+    }
 
 
     /** @return array<string,mixed> */

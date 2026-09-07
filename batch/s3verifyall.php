@@ -104,14 +104,14 @@ class S3VerifyAll_Batch {
                 && preg_match($key_re, $last_key, $m)
                 && ($khash = HashAnalysis::hash_as_binary($m[1]))) {
                 if ($this->verbose) {
-                    fwrite(STDOUT, "$last_key: ");
+                    fwrite(STDOUT, $s3doc->arn($last_key) . ": ");
                 }
                 $content = $s3doc->get($last_key);
                 $doc->set_simple_content($content);
                 $chash = $doc->content_binary_hash($khash);
                 if ($chash !== $khash) {
                     if (!$this->verbose) {
-                        fwrite(STDOUT, "$last_key: ");
+                        fwrite(STDOUT, $s3doc->arn($last_key) . ": ");
                     }
                     fwrite(STDOUT, "bad checksum " . HashAnalysis::hash_as_text($chash) . " (" . HashAnalysis::hash_as_text($khash) . ")\n");
                 } else if ($this->verbose) {

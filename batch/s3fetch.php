@@ -30,6 +30,8 @@ class S3Fetch_Batch {
     public $files = [];
     /** @var array<string,string> */
     public $metadata = [];
+    /** @var bool */
+    public $force;
     /** @var array<string,null|int|float|bool|string> */
     public $hotcrp_metadata = [];
     /** @var int */
@@ -106,6 +108,7 @@ class S3Fetch_Batch {
 
     private function parse_put_args($arg) {
         $this->files = $arg["_"];
+        $this->force = isset($arg["force"]);
         foreach ($arg["metadata"] ?? [] as $m) {
             list($k, $v) = $this->split_metadata($m, "--metadata");
             $this->hotcrp_metadata[$k] = self::detect_metadata_value($v);
@@ -174,7 +177,7 @@ class S3Fetch_Batch {
             $xfn = str_starts_with($ofn, "./") ? substr($ofn, 2) : $ofn;
             if (file_put_contents($ofn, $s3->get($key)) !== false) {
                 if ($this->verbose) {
-                    fwrite(STDERR, "{$xfn} ← {$key}\n");
+                    fwrite(STDERR, "{$xfn} ← " . $s3->arn($key) . "\n");
                 }
                 continue;
             }
@@ -222,18 +225,25 @@ class S3Fetch_Batch {
                 $this->status = 1;
                 continue;
             }
-            // explicit user data bypasses the s3ProcessWork queue
-            $stored = $doc->store_s3($this->user_data($doc));
+            $user_data = $this->user_data($doc);
+            if ($this->force) {
+                $r = $s3->start_put_file($key, $fn, $doc->mimetype, $user_data)->run();
+                $stored = $r->status === 200 ? DocumentInfo::STORE_S3_PUT
+                    : ($r->status >= 100 ? -$r->status : DocumentInfo::STORE_S3_FAILED);
+            } else {
+                // explicit user data bypasses the s3ProcessWork queue
+                $stored = $doc->store_s3($user_data);
+            }
             if ($stored > 0) {
                 if ($this->verbose) {
                     $what = $stored === DocumentInfo::STORE_S3_FOUND ? "exists" : "saved";
-                    fwrite(STDERR, "{$fn} → {$key} ({$what})\n");
+                    fwrite(STDERR, "{$fn} → " . $s3->arn($key) . " ({$what})\n");
                 }
                 continue;
             }
             if (!$this->quiet) {
                 $what = $stored <= -100 ? " (HTTP status " . (-$stored) . ")" : "";
-                fwrite(STDERR, "{$fn}: error saving to {$key}{$what}\n");
+                fwrite(STDERR, "{$fn}: error saving to " . $s3->arn($key) . "{$what}\n");
             }
             $this->status = 1;
         }
@@ -250,16 +260,18 @@ class S3Fetch_Batch {
             "extension::,x:: !get =EXT Assume S3 key extension",
             "metadata[],m[] !put =K=V Set key in `hotcrp` metadata (empty V removes)",
             "explicit-metadata[],M[] !put =K=V Set S3 user metadata key to exact string",
+            "force,f !put Upload even if S3 already has the document",
             "quiet,q",
             "verbose#,V#"
         )->description("Fetch documents from S3, or ensure files are stored on S3.
 Usage: php batch/s3fetch.php [get] [-o DIR] HASH...
-       php batch/s3fetch.php put [-m KEY=VALUE] [-M KEY=VALUE] FILE...
+       php batch/s3fetch.php put [-f] [-m KEY=VALUE] [-M KEY=VALUE] FILE...
 
 In `put` mode, `--metadata KEY=VALUE` sets a key in the `hotcrp` JSON
 metadata; VALUE is parsed as an integer, float, boolean, or string, and an
 empty VALUE removes KEY. `--explicit-metadata KEY=VALUE` sets S3 user
-metadata KEY (e.g., `hotcrp`) to VALUE exactly.")
+metadata KEY (e.g., `hotcrp`) to VALUE exactly. Without `--force`, a file
+whose S3 document already exists with the same size is not re-uploaded.")
          ->helpopt("help")
          ->interleave(true)
          ->subcommand("get Fetch documents from S3 by hash",

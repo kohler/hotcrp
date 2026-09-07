@@ -34,6 +34,7 @@ class S3Transfer_Batch {
 
     /** @return int */
     function run() {
+        $s3 = $this->conf->s3_client();
         $activedocs = $this->active ? DocumentInfo::active_document_map($this->conf) : null;
         $matcher = $this->match !== "" ? new DocumentHashMatcher($this->match) : null;
 
@@ -83,10 +84,10 @@ class S3Transfer_Batch {
 
             if ($checked) {
                 if ($this->verbose) {
-                    fwrite(STDOUT, "{$front}: {$doc->s3_key()} exists\n");
+                    fwrite(STDOUT, "{$front}: " . $s3->arn($doc->s3_key()) . " exists\n");
                 }
             } else if ($saved) {
-                fwrite(STDOUT, "{$front}: {$doc->s3_key()} saved\n");
+                fwrite(STDOUT, "{$front}: " . $s3->arn($doc->s3_key()) . " saved\n");
             } else {
                 fwrite(STDOUT, "{$front}: SAVE FAILED\n");
                 ++$failures;
