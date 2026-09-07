@@ -3545,9 +3545,13 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_in_eqq(17, (new PaperSearch($chair, "re:proposal"))->paper_ids());
 
         // negatives: wrong round, none, empty comparison, and a resolvable-but-
-        // non-matching contact
+        // non-matching contact. `none` is a count, not the unnamed round, so
+        // it matches papers without proposals; `unnamed` names the round.
         xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:R2"))->paper_ids());
         xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:none"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($chair, "proposal:none"))->paper_ids());
+        xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:unnamed"))->paper_ids());
+        xassert_not_in_eqq(1, (new PaperSearch($chair, "proposal:unnamed"))->paper_ids());
         xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:=0"))->paper_ids());
         xassert_not_in_eqq(17, (new PaperSearch($chair, "proposal:mgbaker@cs.stanford.edu"))->paper_ids());
 

@@ -12,11 +12,13 @@ class ReviewRequestSearchMatcher extends ContactCountMatcher {
     }
 
     function apply_round($word, Conf $conf) {
-        if (($round = $conf->round_number($word)) !== null) {
-            $this->round[] = $round;
-            return true;
+        $round = $conf->round_number($word);
+        if ($round === null
+            || ($round === 0 && strcasecmp($word, "unnamed") !== 0)) {
+            return false;
         }
-        return false;
+        $this->round[] = $round;
+        return true;
     }
     function apply_comparison($word) {
         $a = CountMatcher::unpack_search_comparison($word);
@@ -38,7 +40,7 @@ class ReviewRequestSearchMatcher extends ContactCountMatcher {
              && !in_array($rqrow->reviewRound, $this->round, true))
             || !$user->can_view_review_identity($prow, $rqrow)
             || ($this->has_contacts()
-                && !$this->test_contact($rqrow->contactId))
+                && !$this->test_contact($rqrow->reviewer()->contactId))
             || ($this->requester !== null
                 && ($rqrow->requestedBy !== $this->requester
                     || !$user->can_view_review_requester($prow, $rqrow)))) {
