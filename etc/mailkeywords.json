@@ -51,7 +51,7 @@
     {"name": "DECISION", "function": "*kw_decision", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWS", "function": "*kw_reviews", "expand_if": "*kw_haspaper"},
     {"name": "COMMENTS", "function": "*kw_comments", "expand_if": "*kw_haspaper"},
-    {"match": "(OTHER|REQUESTER|REVIEWER)(CONTACT|NAME|EMAIL|FIRST|LAST)", "function": "*kw_reviewercontact", "global": true},
+    {"match": "(OTHER(?!\\z)|REQUESTER|REVIEWER)(CONTACT|USER|NAME|EMAIL|FIRST|LAST|)", "function": "*kw_reviewercontact", "global": true},
     {"name": "REVIEWNAME", "function": "*kw_reviewname", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWID", "function": "*kw_reviewid", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWAUTHOR", "function": "*kw_reviewercontact", "global": true, "match_data": [null, "REVIEWER", "CONTACT"]},

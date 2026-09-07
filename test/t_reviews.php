@@ -3502,6 +3502,47 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    function test_retract_review_cc_not_template() {
+        // The @retractrequest notice cc's the requester; a user's display name
+        // must never be treated as mail-template text -- keywords embedded in a
+        // name were expanded with the recipient's rights, leaking hidden
+        // reviews, admin comments, and decisions into the sender's own copy.
+        $conf = $this->conf;
+        $old_rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        // give the requester a name containing mail keywords
+        $floyd = $this->u_floyd;
+        $old_last = $floyd->lastName;
+        $kwname = "Floyd {{TITLE}} %NUMBER%";
+        $floyd->set_prop("lastName", $kwname);
+        xassert($floyd->save_prop());
+
+        // floyd delegates paper 22 to an external reviewer, then retracts it
+        $this->u_chair->assign_review(22, $floyd, REVIEW_SECONDARY);
+        $ext = Contact::make_keyed($conf, ["email" => "retractee@_.com", "name" => "Ret Ractee"])->store();
+        $floyd->assign_review(22, $ext, REVIEW_EXTERNAL);
+
+        MailChecker::clear();
+        $paper22 = $conf->checked_paper_by_id(22);
+        $result = RequestReview_API::retractreview($floyd, new Qrequest("POST", ["email" => "retractee@_.com"]), $paper22);
+        xassert($result->content["ok"]);
+
+        // floyd is cc'd; his name appears literally, its keywords unexpanded
+        xassert_eqq(count(MailChecker::$preps), 1);
+        $cc = preg_replace('/\r?\n[ \t]+/', " ", MailChecker::$preps[0]->headers["cc"] ?? "");
+        xassert_str_contains($cc, $kwname);
+
+        // clean up
+        $floyd->set_prop("lastName", $old_last);
+        $floyd->save_prop();
+        $this->u_chair->assign_review(22, $floyd, 0);
+        $conf->save_refresh_setting("rev_open", $old_rev_open);
+        Contact::update_rights();
+        MailChecker::clear();
+    }
+
     function test_proposal_search() {
         // `proposal:` matches papers with pending review requests (ReviewRequest
         // rows). Exercises every parse branch — comparison, round, contact,

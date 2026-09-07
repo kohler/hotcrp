@@ -6179,9 +6179,8 @@ class Conf {
         if (is_string($j->match ?? null) || is_int($j->type ?? null)) {
             $this->_token_factories[] = $j;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     private function load_token_types() {

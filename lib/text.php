@@ -150,7 +150,7 @@ class Text {
             $name = UnicodeHelper::deaccent($name);
         }
         if (($flags & NAME_MAILQUOTE) !== 0
-            && preg_match('/[\000-\037()[\]<>@,;:".\\\\]|“|”|=\?/', $name)) {
+            && preg_match('/[\000-\037()[\]%{}<>@,;:".\\\\]|“|”|=\?/', $name)) {
             // will be processed by MimeText::encode_email_header;
             // quote MIME special characters, plus characters MimeText
             // treats specially (curly quotes, Q encoding)

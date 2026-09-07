@@ -111,7 +111,7 @@ class Mailer {
 
         if ($out === "EMAIL") {
             return $flags & NAME_B ? "<{$email}>" : $email;
-        } else if ($out === "CONTACT") {
+        } else if ($out === "CONTACT" || $out === "USER" || $out == "") {
             return Text::name($r->firstName, $r->lastName, $email, $flags | NAME_E);
         } else if ($out === "NAME") {
             if ($this->context !== self::CONTEXT_EMAIL) {

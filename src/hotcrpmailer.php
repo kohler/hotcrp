@@ -76,7 +76,7 @@ class HotCRPMailer extends Mailer {
 
 
     /** @param ?Contact $recipient
-     * @param array{prow?:PaperInfo,rrow?:ReviewInfo,requester_contact?:Contact,reviewer_contact?:Contact} $rest */
+     * @param array{prow?:PaperInfo,rrow?:ReviewInfo,requester_contact?:Contact,reviewer_contact?:Contact,other_contact?:Contact} $rest */
     function __construct(Contact $permsender, $recipient = null, $rest = []) {
         parent::__construct($permsender);
         $this->reset($recipient, $rest);

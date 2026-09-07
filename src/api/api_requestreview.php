@@ -629,18 +629,20 @@ class RequestReview_API {
         $notified = false;
         if ($user->conf->time_review_open()) {
             foreach ($rrows as $rrow) {
-                if (($reviewer = $user->conf->user_by_id($rrow->contactId, USER_SLICE))) {
-                    $cc = Text::nameo($user, NAME_MAILQUOTE|NAME_E);
-                    if (($requester = $user->conf->user_by_id($rrow->requestedBy, USER_SLICE))
-                        && $requester->contactId != $user->contactId) {
-                        $cc .= ", " . Text::nameo($requester, NAME_MAILQUOTE|NAME_E);
-                    }
-                    HotCRPMailer::send_to($reviewer, "@retractrequest", [
-                        "prow" => $prow,
-                        "requester_contact" => $user, "cc" => $cc
-                    ]);
-                    $notified = true;
+                if (!($reviewer = $user->conf->user_by_id($rrow->contactId, USER_SLICE))) {
+                    continue;
                 }
+                $rest = [
+                    "prow" => $prow, "cc" => "{{REQUESTER}}",
+                    "requester_contact" => $user
+                ];
+                if ($rrow->requestedBy != $user->contactId
+                    && ($requester = $user->conf->user_by_id($rrow->requestedBy, USER_SLICE))) {
+                    $rest["cc"] .= ", {{OTHERUSER}}";
+                    $rest["other_contact"] = $requester;
+                }
+                HotCRPMailer::send_to($reviewer, "@retractrequest", $rest);
+                $notified = true;
             }
         }
 
