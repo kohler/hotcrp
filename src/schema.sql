@@ -282,7 +282,7 @@ CREATE TABLE `Paper` (
   `timeSubmittedReviewable` bigint NOT NULL DEFAULT 0,
   `timeAcceptNotified` bigint NOT NULL DEFAULT 0,
   `paperStorageId` int NOT NULL DEFAULT 0,
-  # `sha1` copied from PaperStorage to reduce joins
+  -- `sha1` copied from PaperStorage to reduce joins
   `sha1` varbinary(64) NOT NULL DEFAULT '',
   `finalPaperStorageId` int NOT NULL DEFAULT 0,
   `blind` tinyint NOT NULL DEFAULT 1,
@@ -290,8 +290,8 @@ CREATE TABLE `Paper` (
   `leadContactId` int NOT NULL DEFAULT 0,
   `shepherdContactId` int NOT NULL DEFAULT 0,
   `managerContactId` int NOT NULL DEFAULT 0,
-  `capVersion` int NOT NULL DEFAULT 0, # XXX obsolete
-  # next 3 fields copied from PaperStorage to reduce joins
+  `capVersion` int NOT NULL DEFAULT 0, -- XXX obsolete
+  -- next 3 fields copied from PaperStorage to reduce joins
   `size` bigint NOT NULL DEFAULT -1,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `timestamp` bigint NOT NULL DEFAULT 0,
@@ -535,7 +535,7 @@ CREATE TABLE `PaperStorage` (
 DROP TABLE IF EXISTS `PaperTag`;
 CREATE TABLE `PaperTag` (
   `paperId` int NOT NULL,
-  `tag` varchar(80) NOT NULL,		# case-insensitive; see TAG_MAXLEN in init.php
+  `tag` varchar(80) NOT NULL,		-- case-insensitive; see TAG_MAXLEN in init.php
   `tagIndex` float NOT NULL DEFAULT 0,
   PRIMARY KEY (`paperId`,`tag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -548,7 +548,7 @@ CREATE TABLE `PaperTag` (
 
 DROP TABLE IF EXISTS `PaperTagAnno`;
 CREATE TABLE `PaperTagAnno` (
-  `tag` varchar(80) NOT NULL,   # case-insensitive; see TAG_MAXLEN in init.php
+  `tag` varchar(80) NOT NULL,   -- case-insensitive; see TAG_MAXLEN in init.php
   `annoId` int NOT NULL,
   `tagIndex` float NOT NULL DEFAULT 0,
   `heading` varbinary(8192) DEFAULT NULL,
