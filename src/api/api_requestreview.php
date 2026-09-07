@@ -405,6 +405,8 @@ class RequestReview_API {
             return JsonResult::make_permission_error("r");
         } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
             return JsonResult::make_permission_error("r");
+        } else if (!$user->scope_allows(TokenScope::S_REV_WRITE, $prow)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_REV_WRITE);
         }
 
         if (!$rrow) {
@@ -460,6 +462,8 @@ class RequestReview_API {
             return JsonResult::make_permission_error("r");
         } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
             return JsonResult::make_permission_error("r");
+        } else if (!$user->scope_allows(TokenScope::S_REV_WRITE, $prow)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_REV_WRITE);
         } else if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DELIVERED) {
             return JsonResult::make_permission_error("r", "<0>Review has already been submitted");
         } else if ($rrow && $rrow->reviewType >= REVIEW_SECONDARY) {
@@ -537,6 +541,8 @@ class RequestReview_API {
             }
         } else if (!self::allow_accept_decline($user, $prow, $rrow)) {
             return JsonResult::make_permission_error("r");
+        } else if (!$user->scope_allows(TokenScope::S_REV_WRITE, $prow)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_REV_WRITE);
         } else if ($rrow->reviewStatus > ReviewInfo::RS_DRAFTED) {
             return JsonResult::make_permission_error("r", "<0>Reviews cannot be reassigned after they are submitted");
         }
