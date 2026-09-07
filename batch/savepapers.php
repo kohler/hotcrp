@@ -235,7 +235,7 @@ class SavePapers_Batch {
             $action = "failed";
             $pid = false;
         }
-        if (!is_bool($pid) && $pidish === "new") {
+        if (!is_bool($pid) && !is_int($pidish)) {
             if (!$this->quiet) {
                 fwrite(STDERR, "-> #{$pid}: ");
             }
