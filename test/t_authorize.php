@@ -2590,6 +2590,20 @@ class Authorize_Tester {
         xassert(!!$this->find_token($atok)->is_active());
     }
 
+    function test_namedsearch_needs_scope() {
+        $otok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "openid"]);
+        xassert_eqq($otok->data("scope"), "none");
+        $jr = call_api_result("namedsearch", $otok, []);
+        xassert_eqq($jr->response_code(), 403);
+        xassert_str_contains($jr->header("WWW-Authenticate") ?? "", 'scope="other:read"');
+        xassert_eqq(call_api_result("namedformula", $otok, [])->response_code(), 403);
+
+        // a token that carries `other:read` reads them
+        $rtok = $this->dynamic_client_token("https://dall.com/", $this->u_chair, ["scope" => "other:read"]);
+        xassert_eqq(call_api_result("namedsearch", $rtok, [])->response_code(), 200);
+        xassert_eqq(call_api_result("namedformula", $rtok, [])->response_code(), 200);
+    }
+
     /** Changing conference settings is administration, not writing, so it
      * needs `settings:admin`. `write` keeps meaning “write anything I can
      * write”, and still reads settings. */
