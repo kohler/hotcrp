@@ -302,6 +302,11 @@ class Dbl {
         if (isset($opt["dbSocket"]) && is_string($opt["dbSocket"])) {
             $cp->socket = $opt["dbSocket"];
         }
+        if (isset($opt["dbPort"])
+            && (is_int($opt["dbPort"]) || (is_string($opt["dbPort"]) && ctype_digit($opt["dbPort"])))
+            && (int) $opt["dbPort"] > 0) {
+            $cp->port = (int) $opt["dbPort"];
+        }
         if (($opt["dbSsl"] ?? false) === true) {
             $cp->ssl = true;
             if (isset($opt["dbSslKey"]) && is_string($opt["dbSslKey"])) {

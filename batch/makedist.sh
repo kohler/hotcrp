@@ -140,6 +140,7 @@ batch/saveusers.php
 batch/search.php
 batch/settings.php
 batch/sparsifypref.php
+batch/sql.php
 batch/updatecontactdb.php
 
 conf/.htaccess

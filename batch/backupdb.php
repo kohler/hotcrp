@@ -468,6 +468,13 @@ class BackupDB_Batch {
      * @param list<string> $restargs
      * @return list<string> */
     function mysqlcmd($cmd, $flagargs, $restargs) {
+        // the mysql client is not configured for SSL
+        assert($this->connp->ssl === null
+               && $this->connp->ssl_key === null
+               && $this->connp->ssl_cert === null
+               && $this->connp->ssl_ca === null
+               && $this->connp->ssl_capath === null
+               && $this->connp->ssl_cipher === null);
         $a = [$cmd];
         if (($this->connp->password ?? "") !== "") {
             if ($this->_pwfile === null) {
@@ -491,6 +498,10 @@ class BackupDB_Batch {
             && $this->connp->host !== "") {
             $a[] = "-h";
             $a[] = $this->connp->host;
+        }
+        if (($this->connp->port ?? 0) > 0 && $this->connp->port !== 3306) {
+            $a[] = "-P";
+            $a[] = (string) $this->connp->port;
         }
         if (($this->connp->user ?? "") !== "") {
             $a[] = "-u";
