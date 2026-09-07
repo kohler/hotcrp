@@ -13,8 +13,7 @@ function stoi($s) {
         return null;
     }
     $iv = intval($s);
-    $fv = floatval($s);
-    return $iv == $fv ? $iv : null;
+    return (string) $iv === $s ? $iv : null;
 }
 
 /** @param null|int|float|string $s
@@ -26,8 +25,10 @@ function stonum($s) {
         return null;
     }
     $iv = intval($s);
-    $fv = floatval($s);
-    return $iv == $fv ? $iv : $fv;
+    if ((string) $iv === $s) {
+        return $iv;
+    }
+    return floatval($s);
 }
 
 /** @param null|int|float|string $value
