@@ -23,14 +23,11 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         foreach ($row->reviews_as_display() as $rrow) {
             if ($rrow->reviewType !== REVIEW_EXTERNAL
                 || $rrow->requestedBy !== $this->requester->contactId
-                || !$pl->user->can_view_review_assignment($row, $rrow)) {
+                || !$pl->user->can_view_review_assignment($row, $rrow)
+                || !$pl->user->can_view_review_requester($row, $rrow)) {
                 continue;
             }
-            if ($pl->user->can_view_review_identity($row, $rrow)) {
-                $t = $pl->user->reviewer_html_for($rrow);
-            } else {
-                $t = "review";
-            }
+            $t = $pl->user->reviewer_html_for($rrow);
             $ranal = $pl->make_review_analysis($rrow, $row);
             $d = $rrow->status_description();
             if ($rrow->reviewOrdinal) {
