@@ -249,8 +249,8 @@ class CheckFormat extends MessageSet {
             && ($allow_run !== CheckFormat::RUN_ALWAYS
                 || $bj->at >= Conf::$now - 86400)
             && (!isset($bj->npages) /* i.e., banal JSON is not truncated */
-                || ($this->last_spec->timestamp
-                    && isset($bj->msx)
+                || !$this->last_spec->timestamp /* no spec to re-verify */
+                || (isset($bj->msx)
                     && is_array($bj->msx)
                     && ($bj->msx[0] ?? null) === $this->last_spec->timestamp))) {
             // existing banal JSON should suffice
@@ -563,8 +563,7 @@ class Default_FormatChecker implements FormatChecker {
         }
 
         // maybe use existing messages
-        if ($spec->timestamp
-            && isset($bj->msx)
+        if (isset($bj->msx)
             && is_array($bj->msx)
             && ($bj->msx[0] ?? null) === $spec->timestamp) {
             for ($i = 1; $i !== count($bj->msx); ++$i) {

@@ -2082,16 +2082,13 @@ class DocumentInfo implements JsonSerializable {
         return null;
     }
 
-    /** @param ?CheckFormat $cf
-     * @return ?int */
-    function nwords(?CheckFormat $cf = null) {
+    /** @return ?int */
+    function nwords(CheckFormat $cf) {
         if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
-        } else {
-            $cf = $cf ?? new CheckFormat($this->conf, CheckFormat::RUN_ALWAYS);
-            $cf->check_document($this);
-            return $cf->nwords;
         }
+        $cf->check_document($this);
+        return $cf->nwords;
     }
 
     /** @return ?int */

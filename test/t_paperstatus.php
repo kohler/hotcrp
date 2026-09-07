@@ -2190,6 +2190,63 @@ Phil Porras.");
         $this->conf->save_setting("sub_banal", $spects, "letter;2;;7.5x9in");
     }
 
+    // With no format spec configured, a truncated cached checker result (for a
+    // document with more than 48 pages) still suffices for page and word counts,
+    // so list rendering does not rerun the checker.
+    function test_banal_nospec_cached_wordcount() {
+        $old_spects = $this->conf->setting("sub_banal");
+        $old_specdata = $this->conf->setting_data("sub_banal");
+        $this->conf->save_setting("sub_banal", null);
+        $this->conf->invalidate_caches("options");
+        xassert_eqq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, 0);
+
+        $ps = new PaperStatus($this->conf->root_user());
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
+            if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
+                $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
+            }
+        });
+        $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content_file\":\"test/sample50pg.pdf\",\"type\":\"application/pdf\"}}"));
+        xassert_paper_status($ps);
+
+        // drop any cached checker result so the first word count runs the checker
+        $paper3 = $this->u_estrin->checked_paper_by_id(3);
+        $doc = $paper3->document(DTYPE_SUBMISSION);
+        $doc->set_prop("banal", null);
+        $doc->save_prop();
+        $paper3 = $this->u_estrin->checked_paper_by_id(3);
+        $doc = $paper3->document(DTYPE_SUBMISSION);
+        $runcount = CheckFormat::$runcount;
+        $cf = new CheckFormat($this->conf, CheckFormat::RUN_IF_NECESSARY);
+        $nw = $doc->nwords($cf);
+        xassert($cf->run_attempted());
+        xassert_eqq(CheckFormat::$runcount, $runcount + 1);
+        xassert_gt($nw, 0);
+        xassert_eqq($doc->npages($cf), 50);
+
+        // the cached result is truncated, but there is no spec to re-verify
+        $paper3 = $this->u_estrin->checked_paper_by_id(3);
+        $doc = $paper3->document(DTYPE_SUBMISSION);
+        $cf = new CheckFormat($this->conf, CheckFormat::RUN_IF_NECESSARY);
+        xassert_eqq($doc->nwords($cf), $nw);
+        xassert(!$cf->run_attempted());
+        xassert(!$cf->need_recheck());
+        xassert_eqq(CheckFormat::$runcount, $runcount + 1);
+
+        // a list showing word count does not rerun the checker either
+        Conf::$blocked_time = 0.0;
+        $col = PaperColumn::make($this->conf, $this->conf->paper_columns("wordcount", $this->u_chair)[0]);
+        $pl = new PaperList("empty", new PaperSearch($this->u_chair, "3"));
+        xassert($col->prepare($pl, FieldRender::CFLIST));
+        xassert(!$col->content_empty($pl, $paper3));
+        xassert_eqq($col->content($pl, $paper3), (string) $nw);
+        xassert_eqq($col->json($pl, $paper3), $nw);
+        xassert_eqq(CheckFormat::$runcount, $runcount + 1);
+
+        $this->conf->save_setting("sub_banal", $old_spects, $old_specdata);
+        $this->conf->invalidate_caches("options");
+    }
+
     // Two format-checker runs on the same document must not proceed at once:
     // whoever claims the `__banal.PID.DOCID` lease runs `banal`, and the other
     // is refused. We widen the window by pointing the checker at a `pdftohtml`
