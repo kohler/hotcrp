@@ -75,6 +75,20 @@ function array_sort_unique(&$a) {
 }
 
 
+// math helpers
+
+/** @param null|int|float $n
+ * @return null|int|float */
+function itrunc($n) {
+    if ($n === null || !is_finite($n)) {
+        return null;
+    } else if ($n < PHP_INT_MIN || $n > PHP_INT_MAX) {
+        return $n < 0 ? ceil($n) : floor($n);
+    }
+    return (int) $n;
+}
+
+
 // string helpers
 
 /** @param string $haystack

@@ -657,8 +657,10 @@ class Multiplicative_Fexpr extends Fexpr {
         $t2 = $state->ltemp($this->args[1]->compile($state));
         if ($this->op === "*") {
             return $this->check_null_args("{$t1} * {$t2}", $t1, $t2);
+        } else if ($this->op === "/") {
+            return "({$t1} !== null && {$t2} ? {$t1} / {$t2} : null)";
         }
-        return "({$t1} !== null && {$t2} ? {$t1} {$this->op} {$t2} : null)";
+        return "({$t1} !== null && {$t2} ? (is_int({$t1}) && is_int({$t2}) ? {$t1} % {$t2} : fmod({$t1}, {$t2})) : null)";
     }
 }
 
@@ -673,7 +675,7 @@ class Shift_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
         $t2 = $state->ltemp($this->args[1]->compile($state));
-        return $this->check_null_args("{$t1} {$this->op} {$t2}", $t1, $t2);
+        return "(is_int({$t1}) && is_int({$t2}) && {$t2} >= 0 ? {$t1} {$this->op} {$t2} : null)";
     }
 }
 
@@ -688,13 +690,13 @@ class Bitwise_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
         $t2 = $state->ltemp($this->args[1]->compile($state));
-        return $this->check_null_args("{$t1} {$this->op} {$t2}", $t1, $t2);
+        return "(is_int({$t1}) && is_int({$t2}) ? {$t1} {$this->op} {$t2} : null)";
     }
 }
 
 class Pow_Fexpr extends Fexpr {
-    function __construct($e1, $e2) {
-        parent::__construct("**", [$e1, $e2]);
+    function __construct(FormulaCall $ff) {
+        parent::__construct("**", $ff->args);
     }
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula, true);
@@ -702,7 +704,7 @@ class Pow_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
         $t2 = $state->ltemp($this->args[1]->compile($state));
-        return $this->check_null_args("pow({$t1}, {$t2})", $t1, $t2);
+        return "({$t1} !== null && {$t2} !== null && ({$t1} || {$t2} >= 0) ? pow({$t1}, {$t2}) : null)";
     }
 }
 
@@ -744,11 +746,11 @@ class LeastGreatest_Fexpr extends Fexpr {
         if (count($this->args) === 0) {
             return "null";
         }
-        $t = $state->ltemp($this->args[0]->compile($state));
+        $t = $state->ltemp($this->args[0]->compile($state), true);
         $cmp = $this->compiled_relation($this->op === "greatest" ? ">" : "<");
-        for ($i = 0; $i < count($this->args); ++$i) {
+        for ($i = 1; $i < count($this->args); ++$i) {
             $t2 = $state->ltemp($this->args[$i]->compile($state));
-            $state->lstmt[] = "if ({$t} !== null && ({$t2} === null || {$t2} {$cmp} {$t}))\n  {$t} = {$t2};";
+            $state->lstmt[] = "if ({$t} !== null && ({$t2} === null || {$t2} {$cmp} {$t})) { {$t} = {$t2}; }";
         }
         return $t;
     }
@@ -772,7 +774,7 @@ class Coalesce_Fexpr extends Fexpr {
         if (count($this->args) === 0) {
             return "null";
         }
-        $t = $state->ltemp($this->args[0]->compile($state));
+        $t = $state->ltemp($this->args[0]->compile($state), true);
         for ($i = 1; $i < count($this->args); ++$i) {
             $state->lstmt[] = "{$t} = {$t} ?? (" . $this->args[$i]->compile($state) . ");";
         }
@@ -794,8 +796,8 @@ class Math_Fexpr extends Fexpr {
         } else {
             $t2 = null;
         }
-        if ($this->op === "log" && $t2) {
-            return $this->check_null_args("log({$t1}, {$t2})", $t1, $t2);
+        if ($this->op === "log" && $t2 !== null) {
+            return "({$t1} !== null && {$t2} > 0 ? log({$t1}, {$t2}) : null)";
         } else if ($this->op === "log10") {
             return $this->check_null_args("log10({$t1})", $t1);
         } else if ($this->op === "log2" || $this->op === "lg") {
@@ -829,13 +831,13 @@ class Round_Fexpr extends Fexpr {
         return $this->typecheck_arguments($formula, true);
     }
     function compile(FormulaCompiler $state) {
-        $op = $this->op === "trunc" ? "(int) " : $this->op;
+        $op = $this->op === "trunc" ? "itrunc" : $this->op;
         $t1 = $state->ltemp($this->args[0]->compile($state));
         if (count($this->args) === 1) {
-            return $this->check_null_args("{$op}({$t1})", $t1);
+            return "({$t1} !== null && is_finite({$t1}) ? {$op}({$t1}) : null)";
         }
         $t2 = $state->ltemp($this->args[1]->compile($state));
-        return "({$t1} !== null && {$t2} ? {$op}({$t1} / {$t2}) * {$t2} : null)";
+        return "({$t1} !== null && is_finite({$t1}) && {$t2} ? {$op}({$t1} / {$t2}) * {$t2} : null)";
     }
 }
 
@@ -1339,7 +1341,7 @@ class Let_Fexpr extends Fexpr {
         return $this->args[1]->null_controllers();
     }
     function compile(FormulaCompiler $state) {
-        $this->vardef->ltemp = $state->ltemp($this->args[0]->compile($state));
+        $this->vardef->ltemp = $state->ltemp($this->args[0]->compile($state), true);
         return $this->args[1]->compile($state);
     }
     function jsonSerialize() {
@@ -1830,10 +1832,10 @@ class FormulaCompiler {
      * @param bool $always_var
      * @return string */
     function ltemp($expr = "null", $always_var = false) {
-        if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr)) {
+        if (!$always_var && preg_match('/\A(?:[\d.]++|\$\w++|null)\z/', $expr)) {
             return $expr;
         }
-        $tname = "\$t" . $this->_lprefix . "_" . count($this->lstmt);
+        $tname = "\$t__{$this->_lprefix}__" . count($this->lstmt);
         $this->lstmt[] = "{$tname} = {$expr};";
         return $tname;
     }
@@ -2406,17 +2408,11 @@ final class Formula implements JsonSerializable {
         }
         $t .= $state->statement_text();
         if ($expr !== null) {
-            if ($sortable & 3) {
-                $t .= "\n  \$x = {$expr};";
-            }
+            $t .= "\n  \$x = {$expr};";
             if ($sortable & 1) {
                 $t .= "\n  \$x = is_bool(\$x) ? (int) \$x : \$x;";
             }
-            if ($sortable & 2) {
-                $t .= "\n  if (is_float(\$x) && !is_finite(\$x)) {\n"
-                    . "    \$x = null;\n  }";
-            }
-            $t .= "\n  return " . ($sortable & 3 ? "\$x" : $expr) . ";\n";
+            $t .= "\n  return is_float(\$x) && !is_finite(\$x) ? null : \$x;\n";
         }
         return $t;
     }

@@ -797,7 +797,7 @@ class FormulaParser {
             } else if ($opx === "<<" || $opx === ">>") {
                 $e = new Shift_Fexpr($opx, $e, $e2);
             } else if ($opx === "**") {
-                $e = new Pow_Fexpr($e, $e2);
+                $e = new Pow_Fexpr(FormulaCall::make_args($this, "**", [$e, $e2]));
             } else {
                 throw new Exception("Unknown operator {$opx}");
             }
