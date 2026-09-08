@@ -50,10 +50,10 @@ class TopicScore_PaperColumn extends PaperColumn {
         return $v !== null ? self::unparse_value($v) : "";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return (string) $this->value($this->user);
+        return (string) $this->value($row);
     }
     function json(PaperList $pl, PaperInfo $row) {
-        return $this->value($this->user);
+        return $this->value($row);
     }
     function has_statistics() {
         return true;
