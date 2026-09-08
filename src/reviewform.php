@@ -394,7 +394,7 @@ Ready\n";
 
     /** @param ReviewInfo $rrow
      * @param Contact $user
-     * @return ?FailureReasons */
+     * @return ?FailureReason */
     private function _override_reason($rrow, $user) {
         if ($this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             return null;

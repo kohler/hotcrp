@@ -101,7 +101,8 @@ class Lead_AssignmentParser extends AssignmentParser {
         }
         $uname = $user->name(NAME_E);
         $verb = $this->key === "manager" ? "administer" : $this->key;
-        return new AssignmentError("<0>{$uname} can’t {$verb} #{$prow->paperId}");
+        $state->paper_error("<0>{$uname} can’t {$verb} #{$prow->paperId}");
+        return false;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $remcid = null;

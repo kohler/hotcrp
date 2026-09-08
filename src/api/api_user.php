@@ -89,7 +89,7 @@ class User_API {
 
     static function clickthrough(Contact $user, Qrequest $qreq) {
         if (!$user->scope_allows(TokenScope::S_OTH_WRITE)) {
-            return JsonRequest::make_scope_error($qreq, TokenScope::S_OTH_WRITE);
+            return JsonResult::make_scope_error($qreq, TokenScope::S_OTH_WRITE);
         } else if ($qreq->accept
                    && $qreq->clickthrough_id
                    && ($hash = HashAnalysis::sha1_hash_as_text($qreq->clickthrough_id))) {

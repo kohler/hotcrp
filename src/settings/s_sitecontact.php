@@ -42,8 +42,8 @@ class SiteContact_SettingParser extends SettingParser {
             $s = self::cleanstr($sv->conf->site_contact()->email, $si);
         } else if ($si->name === "site_contact_name") {
             $s = self::cleanstr($sv->conf->site_contact()->name(), $si);
-        } else if ($si->name === "email_default_cc"
-                   || $si->name === "email_default_reply_to") {
+        } else {
+            assert(in_array($si->name, ["email_default_cc", "email_default_reply_to"], true));
             $s = MimeText::expand_email_header_setting($sv->conf, substr($si->storage_name(), 4));
         }
         $sv->set_oldv($si, $s);

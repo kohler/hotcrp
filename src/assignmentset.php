@@ -610,7 +610,7 @@ final class AssignmentState extends MessageSet {
      * @return void */
     function paper_error($msg, ...$args) {
         if ($msg instanceof FailureReason) {
-            foreach ($msg->message_list(2) as $mi) {
+            foreach ($msg->message_list() as $mi) {
                 $this->paper_error($mi);
             }
         } else {

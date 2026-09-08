@@ -279,7 +279,7 @@ class Conf {
      * @param bool $connect */
     function __construct($options, $connect) {
         global $Opt;
-        $this->opt = $options ?? $Opt;
+        $this->opt = $options ?? $Opt ?? [];
         // unpack dsn, connect to database, load current settings
         if (($cp = Dbl::parse_connection_params($this->opt))) {
             $this->dblink = $connect ? $cp->connect() : null;

@@ -139,7 +139,8 @@ class Conflict_AssignmentParser extends AssignmentParser {
         if ($new_ct !== $old_ct
             && !$this->iscontact
             && !$admin
-            && ($contact->viewable_pc_roles($state->user) & Contact::ROLE_ANYPC) === 0) {
+            && (!$contact->isPC
+                || ($contact->roles & Contact::ROLE_ANYPC & $state->user->viewable_roles_mask()) === 0)) {
             $state->paper_error("<0>Only PC members can be assigned conflicts");
             $new_ct = $old_ct;
         }

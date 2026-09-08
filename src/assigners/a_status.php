@@ -79,8 +79,9 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             return true;
         } else if (!$prow->has_author($state->user)) {
             return false;
-        } else if (($whynot = $state->user->perm_allow_edit_paper($prow))) {
-            return new AssignmentError($whynot);
+        } else if (($fr = $state->user->perm_allow_edit_paper($prow))) {
+            $state->paper_error($fr);
+            return false;
         }
         return true;
     }
