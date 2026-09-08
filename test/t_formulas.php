@@ -2243,6 +2243,180 @@ class Formulas_Tester {
         $conf->save_refresh_setting("has_topics", $old_has_topics);
     }
 
+    /** The `topics` paper column, as JSON, for one viewer and search.
+     * @param string $t
+     * @param string $q
+     * @return string */
+    private function topics_column_json(Contact $user, $t, $q) {
+        $pl = new PaperList("empty", new PaperSearch($user, ["t" => $t, "q" => $q]));
+        $pl->parse_view("topics", PaperList::VIEWORIGIN_MAX);
+        return json_encode($pl->table_html_json()["data"]);
+    }
+
+    /** The text a `get/...` list action produces for one viewer.
+     * @param string $name
+     * @param string $pids
+     * @return string */
+    private function list_action_text(Contact $user, $name, $pids) {
+        $qreq = TestQreq::get(["p" => $pids]);
+        $ssel = SearchSelection::make($qreq, $user);
+        $la = ListAction::lookup($name, $user, $qreq, $ssel);
+        xassert($la instanceof ListAction);
+        $csvg = $la->run($user, $qreq, $ssel);
+        xassert($csvg instanceof CsvGenerator);
+        return $csvg->unparse();
+    }
+
+    /** One paper's row from a list showing marina's topic-score column.
+     * @param int $pid
+     * @return array<string,mixed> */
+    private function topicscore_column(Contact $user, $pid) {
+        $pl = new PaperList("empty", new PaperSearch($user, ["t" => "s", "q" => (string) $pid]));
+        $pl->parse_view("topicscore:marina@poema.ru", PaperList::VIEWORIGIN_MAX);
+        return ($pl->table_html_json()["data"])[$pid] ?? [];
+    }
+
+    /** Set the intrinsic Topics field's presence through the settings path.
+     * @param string $presence
+     * @param ?string $condition */
+    private function set_topics_presence($presence, $condition) {
+        $req = ["has_sf" => 1, "sf/1/id" => "topics", "sf/1/presence" => $presence];
+        if ($condition !== null) {
+            $req["sf/1/condition"] = $condition;
+        }
+        $sv = SettingValues::make_request($this->u_chair, $req);
+        xassert($sv->execute());
+    }
+
+    function test_topics_respect_presence_condition() {
+        // The intrinsic Topics field can be gated on a presence condition,
+        // and every route that reads a paper's topics must honor it: the
+        // `topic` and `topicscore` formula terms, the `topics` paper column,
+        // and the `get/topics` and `get/abstract` list actions. The tests
+        // above cover custom fields; an intrinsic field is a separate code
+        // path, since its option id is negative.
+        //
+        // Two conditions are exercised, because they hide the field from
+        // different people. `phase:final` -- a stock settings choice -- hides
+        // it from anyone who cannot see decisions, and since only accepted
+        // papers reach that phase, a reader that ignores it leaks the
+        // decision as well as the field. A tag condition hides it from
+        // everyone the tag does not match, PC members included, which is
+        // what `topicscore` needs: a PC member still sees decisions here.
+        $conf = $this->conf;
+        $old_final_open = $conf->setting("final_open");
+        $old_au_seedec = $conf->setting("au_seedec");
+        $old_seedec = $conf->setting("seedec");
+        $old_has_topics = $conf->setting("has_topics");
+        $old_ioptions = $conf->setting_data("ioptions");
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        xassert($u_marina->isPC && !$u_marina->is_manager());
+
+        // Two topics on paper 5 and none on paper 6, with marina interested
+        // in one of them, so that a leaked topic score is nonzero.
+        $tids = [];
+        foreach (["Tvis Networking", "Tvis Security"] as $tn) {
+            $conf->qe("insert into TopicArea set topicName=?", $tn);
+            $tids[] = (int) $conf->dblink->insert_id;
+        }
+        foreach ($tids as $tid) {
+            $conf->qe("insert into PaperTopic set paperId=5, topicId=?", $tid);
+        }
+        $conf->qe("insert into TopicInterest set contactId=?, topicId=?, interest=2",
+                  $u_marina->contactId, $tids[0]);
+        $conf->save_refresh_setting("has_topics", 1);
+
+        // Paper 5 is accepted and paper 6 rejected; reviewers cannot see
+        // decisions; Topics exists only in the final-version phase.
+        $conf->save_refresh_setting("final_open", 1);
+        $conf->save_refresh_setting("au_seedec", 2);
+        $conf->save_refresh_setting("seedec", 0);
+        xassert_assign($this->u_chair, "paper,action,decision\n5,decision,accept\n6,decision,reject\n");
+        xassert_assign($this->u_chair, "paper,action,user\n5,review,external@_.com\n6,review,external@_.com\n");
+        $this->set_topics_presence("custom", "phase:final");
+
+        $topics = $conf->option_by_id(PaperOption::TOPICSID);
+        xassert(!$topics->always_visible());
+        $reviewer = $conf->checked_user_by_email("external@_.com");
+        xassert(!$reviewer->isPC);
+        $p5r = $conf->checked_paper_by_id(5, $reviewer);
+        $p5c = $conf->checked_paper_by_id(5, $this->u_chair);
+        xassert($this->u_chair->can_view_option($p5c, $topics));
+        xassert(!$reviewer->can_view_decision($p5r));
+        xassert(!$reviewer->can_view_option($p5r, $topics));
+
+        // `topic` tells the reviewer nothing, and cannot be searched to
+        // separate the accepted paper from the rejected one.
+        xassert_eqq($this->formula_as($this->u_chair, "topic")->eval($p5c, null), 2);
+        xassert_eqq($this->formula_as($reviewer, "topic")->eval($p5r, null), 0);
+        xassert_search($reviewer, ["t" => "r", "q" => "formula:(topic>0)"], "");
+        xassert_search($reviewer, ["t" => "r", "q" => "topic:\"Tvis Networking\""], "");
+
+        // Nor does the `topics` column...
+        xassert_str_contains($this->topics_column_json($this->u_chair, "s", "5 6"), "Tvis Networking");
+        xassert_not_str_contains($this->topics_column_json($reviewer, "r", "5 6"), "Tvis Networking");
+
+        // ...nor either list action that renders topics. `get/topics` prints
+        // `<none>`, which is exactly what a paper with no topics prints, so
+        // the row says nothing about whether the field was hidden.
+        xassert_str_contains($this->list_action_text($this->u_chair, "get/topics", "5 6"), "Tvis Networking");
+        $latopics = $this->list_action_text($reviewer, "get/topics", "5 6");
+        xassert_not_str_contains($latopics, "Tvis Networking");
+        xassert_eqq(substr_count($latopics, "<none>"), 2);
+        xassert_str_contains($this->list_action_text($this->u_chair, "get/abstract", "5 6"), "Tvis Networking");
+        xassert_not_str_contains($this->list_action_text($reviewer, "get/abstract", "5 6"), "Tvis Networking");
+
+        // A tag condition paper 5 does not satisfy hides the field from an
+        // ordinary PC member, who can see decisions and so was unaffected
+        // above. Her own topic score is real, but reading it would disclose
+        // the hidden field, so `topicscore` must decline to report it.
+        $this->set_topics_presence("custom", "#secret");
+        $topics = $conf->option_by_id(PaperOption::TOPICSID);
+        $p5m = $conf->checked_paper_by_id(5, $u_marina);
+        xassert(!$u_marina->can_view_option($p5m, $topics));
+        xassert_gt($p5m->topic_interest_score($u_marina), 0);
+        xassert_eqq($this->formula_as($u_marina, "max.pc(topicscore)")->eval($p5m, null), null);
+        xassert_eqq($this->formula_as($u_marina, "topic")->eval($p5m, null), 0);
+        xassert_not_str_contains($this->topics_column_json($u_marina, "s", "5 6"), "Tvis Networking");
+        // The topicscore *column* is manager-gated, and a manager can always
+        // see decisions, so no principal distinguishes its `can_view_option`
+        // check from the `test_exists` check it replaced. These two assertions
+        // therefore pin behavior rather than cover a reachable leak: a hidden
+        // field must produce no column value at all.
+        xassert(!isset($this->topicscore_column($this->u_chair, 5)["topicscore:marina@poema.ru"]));
+
+        // With no condition every route reports the topics again, so none of
+        // the assertions above passed by simply denying everything.
+        $this->set_topics_presence("all", null);
+        xassert($conf->option_by_id(PaperOption::TOPICSID)->always_visible());
+        $p5r = $conf->checked_paper_by_id(5, $reviewer);
+        $p5m = $conf->checked_paper_by_id(5, $u_marina);
+        xassert_eqq($this->formula_as($reviewer, "topic")->eval($p5r, null), 2);
+        xassert_search($reviewer, ["t" => "r", "q" => "formula:(topic>0)"], "5");
+        // `eval` on a paper fetched outside a paper list does not apply the
+        // formula's own query options, and `topic_interest_score` reports 0
+        // for a paper whose topics were never loaded; read it once to load
+        // them, as the topic-score test above does.
+        xassert_gt($p5m->topic_interest_score($u_marina), 0);
+        xassert_gt($this->formula_as($u_marina, "max.pc(topicscore)")->eval($p5m, null), 0);
+        xassert(isset($this->topicscore_column($this->u_chair, 5)["topicscore:marina@poema.ru"]));
+        xassert_str_contains($this->topics_column_json($reviewer, "r", "5 6"), "Tvis Networking");
+        xassert_str_contains($this->list_action_text($reviewer, "get/topics", "5 6"), "Tvis Networking");
+        xassert_str_contains($this->list_action_text($reviewer, "get/abstract", "5 6"), "Tvis Networking");
+
+        xassert_assign($this->u_chair, "paper,action,decision\n5,decision,none\n6,decision,none\n");
+        xassert_assign($this->u_chair, "paper,action,user\n5,clearreview,external@_.com\n6,clearreview,external@_.com\n");
+        foreach ($tids as $tid) {
+            $conf->qe("delete from TopicInterest where topicId=?", $tid);
+            $conf->qe("delete from PaperTopic where topicId=?", $tid);
+            $conf->qe("delete from TopicArea where topicId=?", $tid);
+        }
+        $conf->save_refresh_setting("has_topics", $old_has_topics);
+        $conf->save_refresh_setting("ioptions", $old_ioptions === null ? null : 1, $old_ioptions);
+        $conf->save_refresh_setting("final_open", $old_final_open);
+        $conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        $conf->save_refresh_setting("seedec", $old_seedec);
+    }
 
     /** Seed distinct review preferences on paper 1, including one from a PC
      * member who is conflicted with the paper.

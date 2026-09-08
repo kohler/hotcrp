@@ -7,10 +7,12 @@ class TopicScore_PaperColumn extends PaperColumn {
     private $opt;
     /** @var Contact */
     private $user;
+    /** @var Contact */
+    private $viewer;
+    /** @var bool */
+    private $safe;
     /** @var ScoreInfo */
     private $statistics;
-    /** @var ContactInfo */
-    private $observer;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->opt = $conf->option_by_id(PaperOption::TOPICSID);
@@ -20,26 +22,29 @@ class TopicScore_PaperColumn extends PaperColumn {
         $this->statistics = new ScoreInfo;
     }
     function prepare(PaperList $pl, $visible) {
+        $this->viewer = $pl->user;
         $this->user = $this->user ?? $pl->reviewer_user();
-        if (!$pl->conf->has_topics()
-            || !$pl->user->isPC
+        if ($this->user->contactId === $this->viewer->contactId) {
+            $this->user = $this->viewer;
+        }
+        if (!$pl->user->isPC
             || !$pl->user->can_view_some_option($this->opt)) {
             return false;
         }
-        if ($pl->user->contactId !== $this->user->contactId
-            && !$pl->user->privChair) {
-            $this->observer = $pl->user;
-        }
         $pl->qopts["topics"] = 1;
+        $this->safe = $this->opt->always_visible()
+            && ($this->viewer === $this->user
+                || $this->viewer->privChair);
         return true;
     }
     private function value(PaperInfo $row) {
-        if ((!$this->observer
-             || $this->observer->allow_view_preference($row))
-            && $this->opt->test_exists($row)) {
-            return $row->topic_interest_score($this->user);
+        if (!$this->safe
+            && (!$this->viewer->can_view_option($row, $this->opt)
+                || ($this->viewer !== $this->user
+                    && !$this->viewer->allow_view_preference($row)))) {
+            return null;
         }
-        return null;
+        return $row->topic_interest_score($this->user);
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return ($this->value($a) ?? -10000) <=> ($this->value($b) ?? -10000);

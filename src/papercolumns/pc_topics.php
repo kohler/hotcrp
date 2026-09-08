@@ -5,11 +5,16 @@
 class Topics_PaperColumn extends PaperColumn {
     /** @var ?Contact */
     private $interest_contact;
+    /** @var PaperOption */
+    private $opt;
+    /** @var bool */
+    private $safe;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+        $this->opt = $conf->option_by_id(PaperOption::TOPICSID);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->conf->has_topics()) {
+        if (!$pl->user->can_view_some_option($this->opt)) {
             return false;
         }
         $pl->qopts["topics"] = 1;
@@ -19,13 +24,17 @@ class Topics_PaperColumn extends PaperColumn {
             && !$pl->user->is_manager()) {
             $this->interest_contact = null;
         }
+        $this->safe = $this->opt->always_visible();
         return true;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $row->topicIds === "";
+        return $row->topicIds === ""
+            || (!$this->safe
+                && !$pl->user->can_view_option($row, $this->opt));
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->conf->topic_set()->unparse_list_html($row->topic_list(), $this->interest_contact ? $this->interest_contact->topic_interest_map() : null);
+        return $pl->conf->topic_set()->unparse_list_html($row->topic_list(),
+            $this->interest_contact ? $this->interest_contact->topic_interest_map() : null);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $row->unparse_topics_text();

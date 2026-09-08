@@ -88,15 +88,20 @@ class GetPcconflicts_ListAction extends ListAction {
 class GetTopics_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $texts = [];
+        $opt = $user->conf->option_by_id(PaperOption::TOPICSID);
+        $safe = $opt->always_visible();
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $row) {
-            if ($user->can_view_paper($row)) {
-                $n = count($texts);
+            if (!$user->can_view_paper($row)) {
+                continue;
+            }
+            $n = count($texts);
+            if ($safe || $user->can_view_option($row, $opt)) {
                 foreach ($row->topic_map() as $t) {
                     $texts[] = [$row->paperId, $row->title, $t];
                 }
-                if (count($texts) === $n) {
-                    $texts[] = [$row->paperId, $row->title, "<none>"];
-                }
+            }
+            if (count($texts) === $n) {
+                $texts[] = [$row->paperId, $row->title, "<none>"];
             }
         }
         return $user->conf->make_csvg("topics")
