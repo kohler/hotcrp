@@ -264,9 +264,8 @@ class ScoreInfo {
         $this->sort();
         if ($this->_n % 2) {
             return $this->_scores[($this->_n - 1) >> 1];
-        } else {
-            return ($this->_scores[($this->_n - 2) >> 1] + $this->_scores[$this->_n >> 1]) / 2;
         }
+        return ($this->_scores[($this->_n - 2) >> 1] + $this->_scores[$this->_n >> 1]) / 2;
     }
 
     /** @return int|float */
@@ -313,9 +312,10 @@ class ScoreInfo {
             return $vf->sum_format();
         } else if ($stat === self::VARIANCE_P || $stat === self::STDDEV_P) {
             return $vf->difference_format();
-        } else {
-            return $vf;
+        } else if ($stat === self::MEAN || $stat === self::MEDIAN) {
+            return $vf->mean_format();
         }
+        return $vf;
     }
 
     /** @return list<int|float> */
@@ -343,9 +343,8 @@ class ScoreInfo {
             return $this->variance_p();
         } else if ($score_sort === "maxmin") {
             return $this->max() - $this->min();
-        } else {
-            return $this->mean();
         }
+        return $this->mean();
     }
 
     /** @param null|int|float|list<int> $av

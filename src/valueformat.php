@@ -51,6 +51,11 @@ abstract class ValueFormat {
     function sum_format() {
         return $this;
     }
+
+    /** @return ValueFormat */
+    function mean_format() {
+        return $this;
+    }
 }
 
 class Null_ValueFormat extends ValueFormat {
@@ -238,6 +243,10 @@ class User_ValueFormat extends ValueFormat {
     }
 
     function sum_format() {
+        return Null_ValueFormat::main();
+    }
+
+    function mean_format() {
         return Null_ValueFormat::main();
     }
 }
