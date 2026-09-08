@@ -2111,6 +2111,170 @@ class Permission_Tester {
         $conf->save_refresh_setting("au_seerev", $old_auseerev);
     }
 
+    /** @param Contact $who
+     * @param int|string $pid
+     * @param string $action
+     * @param string $user
+     * @return string */
+    private function assign_feedback($who, $pid, $action, $user) {
+        $aset = new AssignmentSet($who);
+        $aset->parse("paper,action,user\n{$pid},{$action},{$user}\n");
+        // feedback may echo the looked-up user; normalize that away
+        return str_replace($user, "<user>", $aset->full_feedback_text());
+    }
+
+    // User lookup errors in bulk assignment must not reveal whether an email
+    // address has an account. For a viewer who cannot administer the paper, an
+    // unknown address, a non-PC account, and a placeholder author account all
+    // produce the same feedback; only visible PC membership may show through.
+    function test_assignment_user_lookup_oracle() {
+        $conf = $this->conf;
+        $unknown = "nobody-at-all@_.com";
+        $placeholder = "puneet@catarina.usc.edu"; // author of #1, never signed in
+        $nonpc = $this->u_van->email;             // registered, not PC
+        $pc = $this->u_estrin->email;
+        xassert_eqq($conf->fetch_ivalue("select count(*) from ContactInfo where email=?", $unknown), 0);
+        $u_placeholder = $conf->checked_user_by_email($placeholder);
+        xassert($u_placeholder->is_placeholder());
+        xassert(!$u_placeholder->isPC);
+        xassert(!$this->u_van->isPC);
+        xassert($this->u_estrin->isPC);
+
+        // an unlisted PC member is visible only to viewers with full PC
+        // visibility
+        $unlisted = "unlisted-oracle@_.com";
+        $us = new UserStatus($conf->root_user());
+        $u_unlisted = $us->save_user((object) ["email" => $unlisted, "roles" => ["unlistedpc"]]);
+        xassert(!!$u_unlisted, $us->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        Contact::update_rights();
+
+        $viewer = $this->u_kohler; // registered, not PC, not an author of #1
+        $prow1 = $conf->checked_paper_by_id(1);
+        xassert(!$viewer->isPC);
+        xassert(!$prow1->has_author($viewer));
+        xassert(!$viewer->can_manage($prow1));
+        xassert($viewer->can_view_pc());
+        xassert(!isset($conf->viewable_pc_members($viewer)[$u_unlisted->contactId]));
+
+        foreach (["lead", "conflict", "pref", "follow"] as $action) {
+            $expected = $this->assign_feedback($viewer, 1, $action, $unknown);
+            xassert_neqq($expected, "");
+            foreach ([$placeholder, $nonpc, $unlisted] as $email) {
+                xassert_eqq($this->assign_feedback($viewer, 1, $action, $email), $expected);
+            }
+            // name lookups are in the same boat
+            $expected = $this->assign_feedback($viewer, 1, $action, "Nobody");
+            xassert_eqq($this->assign_feedback($viewer, 1, $action, "Sharma"), $expected);
+        }
+
+        // a PC member who can see the papers but cannot administer them, and
+        // a paper range rather than a single paper (messages are downgraded
+        // and then re-marked for non-exact paper specifications)
+        $pcviewer = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($pcviewer->isPC && !$pcviewer->privChair);
+        foreach ([1, 2] as $pid) {
+            $prow = $conf->checked_paper_by_id($pid);
+            xassert($pcviewer->can_view_paper($prow) && !$pcviewer->can_manage($prow));
+        }
+        foreach (["lead", "conflict", "pref", "follow"] as $action) {
+            $expected = $this->assign_feedback($pcviewer, "1-2", $action, $unknown);
+            xassert_neqq($expected, "");
+            foreach ([$placeholder, $nonpc, $unlisted] as $email) {
+                xassert_eqq($this->assign_feedback($pcviewer, "1-2", $action, $email), $expected);
+            }
+            $expected = $this->assign_feedback($pcviewer, "1-2", $action, "Nobody");
+            xassert_eqq($this->assign_feedback($pcviewer, "1-2", $action, "Sharma"), $expected);
+        }
+
+        // nor does a nonexistent paper change the answer
+        $expected = $this->assign_feedback($viewer, 9999, "lead", $unknown);
+        xassert_neqq($expected, "");
+        foreach ([$placeholder, $nonpc, $unlisted] as $email) {
+            xassert_eqq($this->assign_feedback($viewer, 9999, "lead", $email), $expected);
+        }
+
+        // with a secret PC, even PC membership is hidden
+        $conf->set_opt("secretPC", true);
+        Contact::update_rights();
+        $viewer = $conf->checked_user_by_email($viewer->email);
+        xassert(!$viewer->can_view_pc());
+        foreach (["lead", "pref"] as $action) {
+            $expected = $this->assign_feedback($viewer, 1, $action, $unknown);
+            xassert_neqq($expected, "");
+            foreach ([$placeholder, $nonpc, $unlisted, $pc] as $email) {
+                xassert_eqq($this->assign_feedback($viewer, 1, $action, $email), $expected);
+            }
+            $expected = $this->assign_feedback($viewer, 1, $action, "Nobody");
+            xassert_eqq($this->assign_feedback($viewer, 1, $action, "Estrin"), $expected);
+        }
+
+        // a non-PC author can still follow their own paper by email
+        $u_van = $conf->checked_user_by_email($this->u_van->email);
+        xassert($prow1->has_author($u_van));
+        xassert_assign($u_van, "paper,action,user\n1,follow,{$u_van->email}\n");
+        xassert_assign($u_van, "paper,action,user\n1,clearfollow,{$u_van->email}\n");
+
+        $conf->set_opt("secretPC", null);
+        Contact::update_rights();
+        $u_van = $conf->checked_user_by_email($this->u_van->email);
+        xassert_assign($u_van, "paper,action,user\n1,follow,{$u_van->email}\n");
+        xassert_assign($u_van, "paper,action,user\n1,clearfollow,{$u_van->email}\n");
+
+        // administrators still get useful feedback
+        $t = $this->assign_feedback($this->u_chair, 1, "lead", $unknown);
+        xassert_str_contains($t, "not found");
+        xassert_assign($this->u_chair, "paper,action,user\n1,lead,{$unlisted}\n");
+        // ...but a conflicted PC member cannot replace an existing lead
+        xassert_str_contains($this->assign_feedback($this->u_chair, 1, "lead", $pc), "conflicted");
+        xassert_assign_fail($this->u_chair, "paper,action,user\n1,lead,{$pc}\n");
+        xassert_assign($this->u_chair, "paper,action,user\n1,clearlead,any\n");
+        // ...and a missing user is reported as missing, not as a non-PC user
+        foreach ([1, "1-2"] as $pid) {
+            $t = $this->assign_feedback($this->u_chair, $pid, "pref", $unknown);
+            xassert_str_contains($t, "not found");
+            xassert_not_str_contains($t, "Only PC members");
+            $t = $this->assign_feedback($this->u_chair, $pid, "pref", $nonpc);
+            xassert_str_contains($t, "Only PC members");
+            xassert_not_str_contains($t, "not found");
+        }
+
+        $conf->qe("delete from ContactInfo where email=?", $unlisted);
+        $conf->invalidate_caches("users", "pc");
+        Contact::update_rights();
+    }
+
+    function test_lead_replacement_checks_conflicts() {
+        // Replacing an existing lead with a conflicted PC member is rejected,
+        // just as a fresh assignment would be. Reassigning the same lead,
+        // clearing the lead, and an explicit override still work.
+        $conf = $this->conf;
+        $p1 = $conf->checked_paper_by_id(1);
+        $estrin = $this->u_estrin;
+        xassert($estrin->isPC && $p1->has_author($estrin));
+        $lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($lixia->isPC && !$p1->has_conflict($lixia));
+        $lead = function () use ($conf) {
+            return $conf->fetch_ivalue("select leadContactId from Paper where paperId=1");
+        };
+
+        xassert_assign($this->u_chair, "paper,action,user\n1,clearlead,any\n");
+        xassert_assign($this->u_chair, "paper,action,user\n1,lead,{$lixia->email}\n");
+        xassert_eqq($lead(), $lixia->contactId);
+
+        xassert_assign_fail($this->u_chair, "paper,action,user\n1,lead,{$estrin->email}\n");
+        xassert_eqq($lead(), $lixia->contactId);
+        xassert_str_contains($this->assign_feedback($this->u_chair, 1, "lead", $estrin->email), "conflicted");
+        xassert_eqq($lead(), $lixia->contactId);
+
+        xassert_assign($this->u_chair, "paper,action,user\n1,lead,{$lixia->email}\n");
+        xassert_eqq($lead(), $lixia->contactId);
+        xassert_assign($this->u_chair, "paper,action,user,override\n1,lead,{$estrin->email},yes\n");
+        xassert_eqq($lead(), $estrin->contactId);
+        xassert_assign($this->u_chair, "paper,action,user\n1,clearlead,any\n");
+        xassert_eqq($lead(), 0);
+    }
+
     function test_reset_deadlines() {
         $this->conf->save_setting("sub_reg", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);

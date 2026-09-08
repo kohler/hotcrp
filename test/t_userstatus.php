@@ -652,6 +652,84 @@ class UserStatus_Tester {
         $this->conf->invalidate_caches("users", "pc");
     }
 
+    // `make_cset` searches only the supplied set. An empty set matches
+    // nothing; it must not fall back to searching the whole user table.
+    function test_contactsearch_empty_cset() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        $puneet = $conf->checked_user_by_email("puneet@catarina.usc.edu"); // non-PC
+        xassert($estrin->isPC);
+        xassert(!$puneet->isPC);
+
+        // a populated set resolves as expected
+        $cs = ContactSearch::make_cset("Estrin", $chair, $conf->pc_members());
+        xassert_eqq($cs->user_ids(), [$estrin->contactId]);
+        $cs = ContactSearch::make_cset("puneet@catarina.usc.edu", $chair, $conf->pc_members());
+        xassert_eqq($cs->user_ids(), []);
+
+        // an empty set resolves nothing, whether by name, by email, or via
+        // the `anonymous` shortcut
+        foreach (["Estrin", "estrin@usc.edu", "Sharma", "puneet@catarina.usc.edu", "anonymous", "chair@_.com"] as $text) {
+            $cs = ContactSearch::make_cset($text, $chair, []);
+            xassert_eqq($cs->user_ids(), [], $text);
+            xassert($cs->is_empty(), $text);
+            xassert(!$cs->resolved_unique(), $text);
+        }
+    }
+
+    // `secretPC` hides the PC from everyone outside it; `privatePC` hides it
+    // from non-PC users. ContactSearch and the viewable PC list obey both.
+    function test_secret_and_private_pc() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $pc = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $au = $conf->checked_user_by_email("micke@cdt.luth.se");
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        xassert(!$au->isPC);
+        xassert($pc->isPC && !$pc->privChair);
+        xassert(!$conf->opt("secretPC") && !$conf->opt("privatePC"));
+
+        $probe = function (Contact $viewer, $sees) use ($conf, $estrin) {
+            xassert_eqq($viewer->can_view_pc(), $sees, $viewer->email);
+            xassert_eqq(isset($conf->viewable_pc_members($viewer)[$estrin->contactId]), $sees, $viewer->email);
+            xassert_eqq($viewer->viewable_roles_mask() !== 0, $sees, $viewer->email);
+            foreach (["pc", "estrin@usc.edu", "Estrin", "chair"] as $text) {
+                $ids = ContactSearch::make_pc($text, $viewer)->user_ids();
+                xassert_eqq(!empty($ids), $sees, "{$viewer->email} {$text}");
+            }
+            $ids = ContactSearch::make_special("pc", $viewer)->user_ids();
+            xassert_eqq(!empty($ids), $sees, $viewer->email);
+            $ids = ContactSearch::make_cset("Estrin", $viewer, $conf->viewable_pc_members($viewer))->user_ids();
+            xassert_eqq(!empty($ids), $sees, $viewer->email);
+        };
+
+        // default: the PC is public
+        $probe($chair, true);
+        $probe($pc, true);
+        $probe($au, true);
+
+        // privatePC: hidden from non-PC users only
+        $conf->set_opt("privatePC", true);
+        Contact::update_rights();
+        $probe($chair, true);
+        $probe($pc, true);
+        $probe($au, false);
+        $conf->set_opt("privatePC", null);
+
+        // secretPC: hidden from everyone but managers
+        $conf->set_opt("secretPC", true);
+        Contact::update_rights();
+        $probe($chair, true);
+        $probe($pc, false);
+        $probe($au, false);
+
+        $conf->set_opt("secretPC", null);
+        Contact::update_rights();
+        $probe($pc, true);
+        $probe($au, true);
+    }
+
     function test_edit_own_password() {
         list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
         xassert_eqq($u->email, "estrin@usc.edu");

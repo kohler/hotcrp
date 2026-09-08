@@ -55,23 +55,28 @@ class Preference_AssignmentParser extends AssignmentParser {
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->isPC ? [$state->reviewer] : null;
     }
-    static function cannot_edit_preference_message(Contact $viewer, PaperInfo $prow, Contact $user) {
+    /** @param bool $skip_poison
+     * @return string */
+    static function cannot_edit_preference_message(Contact $viewer, PaperInfo $prow, Contact $user, $skip_poison = false) {
         if ($viewer->contactId === $user->contactId) {
             return $prow->conf->_("<0>You can’t enter a preference for {submission} #{}", $prow->paperId);
-        } else if (!$user->isPC) {
-            return "<0>Only PC members can enter preferences";
         } else if (!$viewer->can_manage_reviews($prow)) {
             return $prow->conf->_("<0>You can’t administer {submission} #{}", $prow->paperId);
+        } else if ($user->contactId === 0 && $skip_poison) {
+            return "";
+        } else if (!$user->isPC) {
+            return "<0>Only PC members can enter preferences";
         }
         return $prow->conf->_("<0>User {$user->email} can’t enter a preference for {submission} #{}", $prow->paperId);
     }
     function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
-        if (!$user->contactId) {
+        if (!$state->user->can_edit_preference_for($prow, $user)) {
+            if (($m = self::cannot_edit_preference_message($state->user, $prow, $user, true))) {
+                $state->paper_error($m);
+            }
             return false;
-        } else if ($state->user->can_edit_preference_for($prow, $user)) {
-            return true;
         }
-        return new AssignmentError(self::cannot_edit_preference_message($state->user, $prow, $user));
+        return $user->contactId > 0;
     }
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;

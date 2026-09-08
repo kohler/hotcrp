@@ -13,7 +13,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         return $state->user->can_manage_reviews($prow);
     }
     function user_universe($req, AssignmentState $state) {
-        return "reviewers";
+        return self::UU_REVIEWERS;
     }
     /** @param 'pid'|'cid' $key
      * @param ?int $pid
@@ -39,7 +39,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         return $this->expand_any_user($prow, $req, $state);
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        return $contact->contactId != 0;
+        return $contact->contactId !== 0;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // parse round and reviewtype arguments

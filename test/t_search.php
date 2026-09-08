@@ -777,6 +777,7 @@ class Search_Tester {
         $rid = $conf->fetch_ivalue("select reviewId from PaperReview where paperId=1 and reviewType>0 order by reviewId asc limit 1");
         xassert_gt($rid, 0);
         $conf->qe("update PaperReview set reviewToken=? where reviewId=?", 8675309, $rid);
+        $conf->update_rev_tokens_setting(1);
         $conf->invalidate_caches("pc");
 
         $estrin = $conf->checked_user_by_email("estrin@usc.edu"); // author of paper 1
@@ -799,6 +800,7 @@ class Search_Tester {
 
         // clean up
         $conf->qe("update PaperReview set reviewToken=0 where reviewId=?", $rid);
+        $conf->update_rev_tokens_setting(-1);
         $conf->save_refresh_setting("au_seerev", $old_auseerev);
     }
 

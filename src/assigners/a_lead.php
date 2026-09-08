@@ -72,9 +72,9 @@ class Lead_AssignmentParser extends AssignmentParser {
     }
     function user_universe($req, AssignmentState $state) {
         if ($this->key === "shepherd" && $state->conf->setting("extrev_shepherd")) {
-            return "pc+reviewers";
+            return self::UU_PC_REVIEWERS;
         }
-        return "pc";
+        return self::UU_PC;
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
@@ -88,14 +88,15 @@ class Lead_AssignmentParser extends AssignmentParser {
         return $this->expand_any_user($prow, $req, $state);
     }
     function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
-        if ($this->remove
-            || !$user->contactId
-            || $user->pc_track_assignable($prow)
-            || $user->allow_admin($prow)
-            || ($rt = $prow->review_type($user)) >= REVIEW_PC
-            || ($rt === REVIEW_EXTERNAL
-                && $this->key === "shepherd"
-                && $state->conf->setting("extrev_shepherd"))) {
+        if (!$user->contactId) {
+            return $user === $state->none_user();
+        } else if ($this->remove
+                   || $user->pc_track_assignable($prow)
+                   || $user->allow_admin($prow)
+                   || ($rt = $prow->review_type($user)) >= REVIEW_PC
+                   || ($rt === REVIEW_EXTERNAL
+                       && $this->key === "shepherd"
+                       && $state->conf->setting("extrev_shepherd"))) {
             return true;
         }
         $uname = $user->name(NAME_E);
@@ -126,7 +127,8 @@ class Lead_Assigner extends Assigner {
         $this->description = $this->type() === "manager" ? "administrator" : $this->type();
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
-        if (!$item->existed()) {
+        if (!$item->deleted()
+            && $item->post("_cid") !== $item->pre("_cid")) {
             Conflict_Assigner::check_unconflicted($item, $state);
         }
         return new Lead_Assigner($item, $state);

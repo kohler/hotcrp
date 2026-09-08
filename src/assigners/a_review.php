@@ -117,13 +117,13 @@ class Review_AssignmentParser extends AssignmentParser {
     /** @param CsvRow $req */
     function user_universe($req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL) {
-            return "pc";
+            return self::UU_PC;
         } else if ($this->rtype == 0
                    || (($rdata = $this->make_rdata($req, $state))
                        && !$rdata->might_create_review())) {
-            return "reviewers";
+            return self::UU_REVIEWERS;
         }
-        return "any";
+        return self::UU_ANY;
     }
     function paper_filter($contact, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
@@ -169,7 +169,8 @@ class Review_AssignmentParser extends AssignmentParser {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->newtype >= REVIEW_PC && !$contact->is_pc_member()) {
             $uname = $contact->name(NAME_E);
-            return new AssignmentError("<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
+            $state->paper_error("<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
+            return false;
         }
         // Conflict allowed if we're not going to assign a new review
         if ($this->rtype == 0
@@ -188,7 +189,8 @@ class Review_AssignmentParser extends AssignmentParser {
                 || !isset($req["override"])
                 || !friendly_boolean($req["override"]))) {
             $uname = $contact->name(NAME_E);
-            return new AssignmentError("<0>{$uname} cannot be assigned to review #{$prow->paperId}");
+            $state->paper_error("<0>{$uname} cannot be assigned to review #{$prow->paperId}");
+            return false;
         }
         return true;
     }

@@ -206,7 +206,7 @@ class ContactSearch {
     /** @return list<int> */
     private function check_user() {
         if (strcasecmp($this->text, "anonymous") === 0
-            && !$this->cset
+            && $this->cset === null
             && ($this->type & self::F_PC) === 0) {
             $regex = Dbl::utf8ci($this->conf->dblink, "'^anonymous[0-9]*\$'");
             return $this->select_ids("select contactId from ContactInfo where email regexp {$regex}", []);
@@ -234,7 +234,7 @@ class ContactSearch {
         }
 
         // contact database if not restricted to PC or cset
-        if ($this->cset) {
+        if ($this->cset !== null) {
             $cs = $this->cset;
         } else if ($this->type & self::F_PC) {
             $cs = $this->conf->viewable_pc_members($this->viewer);
@@ -318,6 +318,11 @@ class ContactSearch {
     /** @return bool */
     function is_empty() {
         return empty($this->ids);
+    }
+
+    /** @return bool */
+    function resolved_unique() {
+        return count($this->ids) === 1;
     }
 
     /** @return list<MessageItem> */

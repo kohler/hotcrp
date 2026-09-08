@@ -78,10 +78,13 @@ class Follow_AssignmentParser extends AssignmentParser {
         return $state->reviewer->contactId > 0 ? [$state->reviewer] : null;
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        return $contact->contactId != 0
-            && $contact->can_view_paper($prow)
-            && ($contact->contactId == $state->user->contactId
-                || $state->user->can_manage($prow));
+        if ($contact->contactId !== $state->user->contactId
+            && !$state->user->can_manage($prow)) {
+            $state->paper_error($prow->failure_reason(["administer" => true]));
+            return false;
+        }
+        return $contact->contactId !== 0
+            && $contact->can_view_paper($prow);
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);

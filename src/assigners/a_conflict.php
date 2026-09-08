@@ -63,7 +63,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         return false;
     }
     function user_universe($req, AssignmentState $state) {
-        return $this->iscontact ? "any" : "pc";
+        return $this->iscontact ? self::UU_ANY : self::UU_PC;
     }
     /** @return ?CountMatcher */
     private function _matcher($req, Conf $conf) {
