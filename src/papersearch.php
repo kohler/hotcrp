@@ -152,6 +152,14 @@ class SearchQueryInfo {
         return $this->try_add_table($table, $joiner, true);
     }
 
+    /** @param string $name
+     * @return bool */
+    function has_column($name) {
+        return isset($this->columns[$name]);
+    }
+
+    /** @param string $name
+     * @param string $expr */
     function add_column($name, $expr) {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
@@ -172,6 +180,10 @@ class SearchQueryInfo {
             $this->columns["topicIds"] = "coalesce((select group_concat(topicId) from PaperTopic force index (primary) where PaperTopic.paperId=Paper.paperId), '')";
         }
     }
+    function add_my_conflictType_column() {
+        $ct = $this->conflict_table($this->srch->user);
+        $this->add_column("conflictType", $ct ? "{$ct}.conflictType" : "null");
+    }
     function add_reviewer_columns() {
         $this->_has_my_review = true;
     }
@@ -181,8 +193,7 @@ class SearchQueryInfo {
     function finish_reviewer_columns() {
         $user = $this->srch->user;
         if ($this->_has_my_review) {
-            $ct = $this->conflict_table($user);
-            $this->add_column("conflictType", $ct ? "{$ct}.conflictType" : "null");
+            $this->add_my_conflictType_column();
         }
         if ($this->_has_review_signatures) {
             $this->add_column("reviewSignatures", "coalesce((select " . ReviewInfo::review_signature_sql($user->conf, $this->_review_scores) . " from PaperReview r force index (primary) where r.paperId=Paper.paperId), '')");
@@ -1057,7 +1068,8 @@ class PaperSearch extends MessageSet {
         @file_put_contents($fn, "{$line}\n", FILE_APPEND);
     }
 
-    private function _prepare_result(SearchTerm $qe) {
+    /** @return PaperInfoSet */
+    private function _prepare_rowset(SearchTerm $qe) {
         $sqi = new SearchQueryInfo($this);
         $sqi->add_column("paperId", "Paper.paperId");
         // always include columns needed by rights machinery
@@ -1095,7 +1107,7 @@ class PaperSearch extends MessageSet {
         }
         //Conf::msg_debugt($filter);
         if ($filter === "false") {
-            return Dbl_Result::make_empty();
+            return new PaperInfoSet($this->conf);
         }
 
         // add permissions tables and columns
@@ -1154,7 +1166,13 @@ class PaperSearch extends MessageSet {
         //error_log(json_encode($this->_qe->debug_json()));
 
         // actually perform query
-        return $this->conf->qe_raw($q);
+        $result = $this->conf->qe_raw($q);
+
+        // only allowed to call PaperInfo::make_my() if the conflictType column exists
+        if (!$sqi->has_column("conflictType")) {
+            return PaperInfoSet::make_result($result, null, $this->conf);
+        }
+        return PaperInfoSet::make_result($result, $this->user);
     }
 
     private function _prepare() {
@@ -1171,8 +1189,7 @@ class PaperSearch extends MessageSet {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         // collect papers
-        $result = $this->_prepare_result($qe);
-        $rowset = PaperInfoSet::make_result($result, $this->user);
+        $rowset = $this->_prepare_rowset($qe);
 
         // filter papers
         $thqe = $this->_then_term;

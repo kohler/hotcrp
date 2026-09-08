@@ -55,13 +55,14 @@ final class Conflict_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $cidsql = $this->ccm->contact_match_sql("contactId");
         if ($this->self) {
+            $sqi->add_my_conflictType_column();
             // The searcher always sees their own conflicts, so an exact prefilter is safe.
             $snc = $this->ccm->simplified_nonnegative_comparison();
             if ($snc === ">0" || $snc === "=0") {
                 $n = $snc === "=0" ? "not exists" : "exists";
-                return "{$n} (select * from PaperConflict where paperId=Paper.paperId and {$cidsql})";
+                return "{$n} (select * from PaperConflict where paperId=Paper.paperId and {$cidsql} and conflictType>" . CONFLICT_MAXUNCONFLICTED . ")";
             }
-            return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$snc}";
+            return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql} and conflictType>" . CONFLICT_MAXUNCONFLICTED . "),0){$snc}";
         }
         // For other users the searcher may not be able to view every conflict
         // (`test()` gates each on `can_view_conflicts`), so the prefilter must be a
@@ -72,7 +73,7 @@ final class Conflict_SearchTerm extends SearchTerm {
         if ($cnc === ">=0") {
             return "true";
         }
-        return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$cnc}";
+        return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql} and conflictType>" . CONFLICT_MAXUNCONFLICTED . "),0){$cnc}";
     }
     function is_sqlexpr_precise() {
         return $this->self;
