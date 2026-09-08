@@ -1299,6 +1299,99 @@ class Permission_Tester {
         xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu");
     }
 
+    // Authors may only assign conflicts to PC members, and only while the
+    // PC conflicts field is editable; contacts are unaffected.
+    function test_assign_conflicts_author_limits() {
+        $user_sclin = $this->conf->checked_user_by_email("sclin@leland.stanford.edu");
+        $user_rguerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
+        $user_nonpc = $this->conf->checked_user_by_email("kohler@seas.harvard.edu");
+        xassert($user_rguerin->isPC);
+        xassert(!$user_nonpc->isPC);
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 10);
+        xassert_assign($this->u_chair, "paper,action,user\n3,contact,sclin@leland.stanford.edu\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert($paper3->has_author($user_sclin));
+        xassert($user_sclin->can_edit_paper($paper3));
+        xassert_eqq($paper3->conflict_type($user_nonpc), 0);
+
+        // author cannot assign a conflict to a non-PC account, and the
+        // refused assignment reveals nothing about that account
+        $aset = new AssignmentSet($user_sclin);
+        $aset->parse("paper,action,user\n3,conflict,kohler@seas.harvard.edu\n");
+        xassert($aset->has_error());
+        xassert_str_contains($aset->full_feedback_text(), "Only PC members can be assigned conflicts");
+        xassert(!$aset->execute());
+        xassert_eqq($aset->make_acsv()->rows(), []);
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->conflict_type($user_nonpc), 0);
+
+        // nor to an account that does not exist
+        xassert_assign_fail($user_sclin, "paper,action,user\n3,conflict,nobody-here-zzz@example.com\n");
+
+        // nor an author-type conflict
+        xassert_assign_fail($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,author\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->conflict_type($user_rguerin), 0);
+
+        // PC conflicts still work for authors
+        xassert_assign($user_sclin, "paper,action,user\n3,conflict,rguerin@ibm.com\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
+        xassert_assign($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->conflict_type($user_rguerin), 0);
+
+        // administrators can still conflict non-PC accounts
+        xassert_assign($this->u_chair, "paper,action,user\n3,conflict,kohler@seas.harvard.edu\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->conflict_type($user_nonpc), Conflict::CT_ADMINISTRATIVE);
+        xassert_assign($this->u_chair, "paper,action,user\n3,clearconflict,kohler@seas.harvard.edu\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->conflict_type($user_nonpc), 0);
+
+        // in the final phase the paper is editable but PC conflicts are not
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $old_final = [$this->conf->setting("final_open"), $this->conf->setting("final_soft"), $this->conf->setting("final_done")];
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
+        $this->conf->save_refresh_setting("au_seedec", 2);
+        $this->conf->save_refresh_setting("final_open", 1);
+        $this->conf->save_refresh_setting("final_soft", Conf::$now + 10);
+        $this->conf->save_refresh_setting("final_done", Conf::$now + 10);
+        xassert_assign($this->u_chair, "paper,action,decision\n3,decision,yes\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->viewable_phase($user_sclin), PaperInfo::PHASE_FINAL);
+        xassert($user_sclin->can_edit_paper($paper3));
+        xassert(!$user_sclin->can_edit_option($paper3, $this->conf->option_by_id(PaperOption::PCCONFID)));
+        $aset = new AssignmentSet($user_sclin);
+        $aset->parse("paper,action,user\n3,conflict,rguerin@ibm.com\n");
+        xassert($aset->has_error());
+        xassert_str_contains($aset->full_feedback_text(), "PC conflicts cannot be edited now");
+        xassert(!$aset->execute());
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq($paper3->conflict_type($user_rguerin), 0);
+        // contacts remain editable
+        xassert_assign($user_sclin, "paper,action,user\n3,contact,rguerin@ibm.com\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert($paper3->has_author($user_rguerin));
+        xassert_assign($user_sclin, "paper,action,user\n3,clearcontact,rguerin@ibm.com\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert(!$paper3->has_author($user_rguerin));
+        xassert_eqq($paper3->conflict_type($user_rguerin), 0);
+
+        // restore
+        xassert_assign($this->u_chair, "paper,action,decision\n3,cleardecision,yes\n");
+        xassert_assign($this->u_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n");
+        $paper3 = $this->u_chair->checked_paper_by_id(3);
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_CONTACTS), "mgbaker@cs.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu");
+        $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        $this->conf->save_refresh_setting("final_open", $old_final[0]);
+        $this->conf->save_refresh_setting("final_soft", $old_final[1]);
+        $this->conf->save_refresh_setting("final_done", $old_final[2]);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+    }
+
     function test_tracker_permissionizer() {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
 

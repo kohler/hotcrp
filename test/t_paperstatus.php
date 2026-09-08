@@ -613,6 +613,61 @@ class PaperStatus_Tester {
         $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
     }
 
+    // After the deadline, authors may still change contacts, but not PC
+    // conflicts. A PC conflicts field that matches the current state, as the
+    // form always sends, must not block a contact change.
+    function test_save_existing_deadline_pc_conflicts() {
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now - 1000);
+        xassert(!$this->conf->unnamed_submission_round()->time_submit(true));
+
+        $u_diot = $this->conf->checked_user_by_email("christophe.diot@sophia.inria.fr");
+        $u_kohler = $this->conf->checked_user_by_email("kohler@seas.harvard.edu");
+        xassert($u_diot->isPC);
+        xassert(!$u_kohler->isPC);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert($paper1->has_author($this->u_estrin));
+        xassert_eqq($paper1->conflict_type($u_diot), 0);
+        xassert_eqq($paper1->conflict_type($u_kohler), 0);
+        $pcc = (new PaperExport($this->u_estrin))->paper_json(1)->pc_conflicts;
+        $contacts = [];
+        foreach ($paper1->contact_list() as $au) {
+            $contacts[] = (object) ["email" => $au->email];
+        }
+        $new_contacts = array_merge($contacts, [(object) ["email" => $u_kohler->email]]);
+
+        // PC conflicts cannot change
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["pid" => 1, "pc_conflicts" => [$u_diot->email => true]]));
+        xassert_str_contains($ps->full_feedback_text(), "deadline has passed");
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->conflict_type($u_diot), 0);
+
+        // not even alongside a contact change
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["pid" => 1, "pc_conflicts" => [$u_diot->email => true], "contacts" => $new_contacts]));
+        xassert_str_contains($ps->full_feedback_text(), "deadline has passed");
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->conflict_type($u_diot), 0);
+        xassert_eqq($paper1->conflict_type($u_kohler), 0);
+
+        // contacts remain editable, even with the unchanged PC conflicts field
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "pc_conflicts" => $pcc, "contacts" => $new_contacts]));
+        xassert($ps->has_change_at("contacts"));
+        xassert(!$ps->has_change_at("pc_conflicts"));
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->conflict_type($u_kohler), CONFLICT_CONTACTAUTHOR);
+        xassert_eqq($paper1->conflict_type($u_diot), 0);
+
+        // restore
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "contacts" => $contacts]));
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->conflict_type($u_kohler), 0);
+        $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+    }
+
     function test_save_finalize_no_edit() {
         // Check that information is not leaked about papers by trying
         // to save them

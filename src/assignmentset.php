@@ -245,6 +245,7 @@ final class AssignmentState extends MessageSet {
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
+        $this->set_message_formatter($this->conf);
         $this->user = $this->reviewer = $user;
         $this->cmap = new AssignerContacts($this->conf, $this->user);
         $this->overrides = $user->overrides();
@@ -576,7 +577,8 @@ final class AssignmentState extends MessageSet {
         }
         if (($bmi = $this->back_message())
             && $bmi->landmark === $mi->landmark
-            && $bmi->message === $mi->message) {
+            && $bmi->message === $mi->message
+            && $bmi->args === $mi->args) {
             $this->change_item_status($bmi, $mi->status);
             ++$this->cumulative_message_count;
             return $bmi;
@@ -606,13 +608,13 @@ final class AssignmentState extends MessageSet {
     }
     /** @param string|MessageItem|FailureReason $msg
      * @return void */
-    function paper_error($msg) {
+    function paper_error($msg, ...$args) {
         if ($msg instanceof FailureReason) {
             foreach ($msg->message_list(2) as $mi) {
                 $this->paper_error($mi);
             }
         } else {
-            $mi = $msg instanceof MessageItem ? $msg : MessageItem::error($msg);
+            $mi = $msg instanceof MessageItem ? $msg : MessageItem::error($msg, ...$args);
             if ($this->paper_exact_match) {
                 $this->append_item_here($mi);
             } else {

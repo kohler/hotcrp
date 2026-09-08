@@ -30,10 +30,13 @@ class Conflict_AssignmentParser extends AssignmentParser {
     private $remove;
     /** @var bool */
     private $iscontact;
+    /** @var PaperOption */
+    private $opt;
     function __construct(Conf $conf, $aj) {
         parent::__construct("conflict");
         $this->remove = $aj->remove;
         $this->iscontact = $aj->iscontact;
+        $this->opt = $conf->option_by_id($this->iscontact ? PaperOption::CONTACTSID : PaperOption::PCCONFID);
     }
     static function load_conflict_state(AssignmentState $state) {
         if ($state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make")) {
@@ -50,16 +53,26 @@ class Conflict_AssignmentParser extends AssignmentParser {
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($state->user->can_manage($prow)) {
             return true;
-        } else if ($prow->has_author($state->user)) {
-            // contacts are editable past the edit deadline
-            $fr = $this->iscontact
-                ? $state->user->perm_allow_edit_paper($prow)
-                : $state->user->perm_edit_paper($prow);
-            if (!$fr) {
-                return true;
-            }
-            $state->paper_error($fr);
         }
+        if (!$prow->has_author($state->user)) {
+            return false;
+        }
+        if ($this->iscontact) {
+            // contacts are editable past the edit deadline
+            $fr = $state->user->perm_allow_edit_paper($prow);
+        } else {
+            $fr = $state->user->perm_edit_paper($prow)
+                ?? $state->user->perm_view_option($prow, $this->opt);
+            if (!$fr && !$state->user->can_edit_option($prow, $this->opt)) {
+                $state->paper_error("<0>{Submission} #{}’s {} cannot be edited now",
+                    $prow->paperId, $this->opt->edit_title($prow));
+                return false;
+            }
+        }
+        if (!$fr) {
+            return true;
+        }
+        $state->paper_error($fr);
         return false;
     }
     function user_universe($req, AssignmentState $state) {
@@ -92,7 +105,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         return null;
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        return $contact->contactId != 0;
+        return $contact->contactId !== 0;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $res = $state->remove(new Conflict_Assignable($prow->paperId, $contact->contactId));
@@ -108,19 +121,27 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 $text = substr($text, $colon + 1);
             }
             $ct = $state->conf->conflict_set()->parse_assignment($text);
-            if ($ct === false || Conflict::is_author($ct)) {
+            if ($ct === false) {
                 $text = $text === "" ? "<empty>" : "text";
                 return new AssignmentError("<0>Conflict type ‘{$text}’ not found");
+            } else if (Conflict::is_author($ct)) {
+                return new AssignmentError("<0>The ‘conflict’ assigner can’t control authorship");
             }
             $ct = Conflict::apply_pc($old_ct, $ct, $admin);
         }
         $mask = $this->iscontact ? CONFLICT_CONTACTAUTHOR : Conflict::FM_PC;
         $matcher = $this->_matcher($req, $state->conf);
-        if (($matcher && !$matcher->test($old_ct & $mask))
-            || (!$this->iscontact && Conflict::is_pinned($old_ct) && !$admin)) {
-            $new_ct = $old_ct;
-        } else {
+        $new_ct = $old_ct;
+        if ((!$matcher || $matcher->test($old_ct & $mask))
+            && ($admin || $this->iscontact || !Conflict::is_pinned($old_ct))) {
             $new_ct = ($old_ct & ~$mask) | $ct;
+        }
+        if ($new_ct !== $old_ct
+            && !$this->iscontact
+            && !$admin
+            && ($contact->viewable_pc_roles($state->user) & Contact::ROLE_ANYPC) === 0) {
+            $state->paper_error("<0>Only PC members can be assigned conflicts");
+            $new_ct = $old_ct;
         }
         if ($new_ct !== 0) {
             $state->add(new Conflict_Assignable($prow->paperId, $contact->contactId, $new_ct));

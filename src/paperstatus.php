@@ -989,13 +989,18 @@ final class PaperStatus extends MessageSet {
         $this->checkpoint_conflict_values();
     }
 
-    /** @return bool */
-    private function _check_conflict_diff() {
+    /** @return int */
+    private function _conflict_changed_bits() {
         $changes = 0;
         foreach ($this->_conflict_values ?? [] as $cv) {
-            $ncv = self::new_conflict_value($cv);
-            $changes |= $cv[0] ^ $ncv;
+            $changes |= $cv[0] ^ self::new_conflict_value($cv);
         }
+        return $changes;
+    }
+
+    /** @return bool */
+    private function _check_conflict_diff() {
+        $changes = $this->_conflict_changed_bits();
         if (($changes & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0) {
             $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
         }
@@ -1336,6 +1341,10 @@ final class PaperStatus extends MessageSet {
                     $this->change_at($ov->option);
                 }
             }
+        }
+        // PC conflict changes are subject to the deadline (contact changes are not)
+        if (($this->_conflict_changed_bits() & Conflict::FM_PC) !== 0) {
+            $this->_noncontacts_changed = true;
         }
 
         // prepare non-fields for saving
