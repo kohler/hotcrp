@@ -19,13 +19,16 @@ class Phase_SearchTerm extends SearchTerm {
             return new Phase_SearchTerm($srch->user, PaperInfo::PHASE_FINAL);
         } else if (strcasecmp($word, "review") === 0) {
             return new Phase_SearchTerm($srch->user, PaperInfo::PHASE_REVIEW);
-        } else {
-            $srch->lwarning($sword, "<0>Only “phase:review” and “phase:final” are allowed");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>Only “phase:review” and “phase:final” are allowed");
+        return new False_SearchTerm;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        return $this->phase === PaperInfo::PHASE_FINAL ? "(Paper.timeWithdrawn<=0 and Paper.outcome>0)" : "true";
+        if (!$this->user->can_view_some_decision()
+            || $this->phase !== PaperInfo::PHASE_FINAL) {
+            return "true";
+        }
+        return "(Paper.timeWithdrawn<=0 and Paper.outcome>0)";
     }
     function test(PaperInfo $row, $xinfo) {
         return $row->viewable_phase($this->user) === $this->phase;
