@@ -28,6 +28,7 @@ class TopicScore_Fexpr extends Fexpr {
         $state->queryOptions["topics"] = true;
         $prow = $state->_prow();
         $uid = $state->current_uid();
+        $tscores = $state->define_gvar('$topic_scores', '[]');
         $cond = [];
         if ($this->topic_idx >= 0) {
             $cond[] = "\$user->can_view_option(\$prow, \$formula->info[{$this->topic_idx}])";
@@ -42,6 +43,7 @@ class TopicScore_Fexpr extends Fexpr {
         if (!empty($cond)) {
             $r = "(" . join(" && ", $cond) . " ? {$r} : null)";
         }
-        return $r;
+        $state->lstmt[] = "if (!array_key_exists({$uid}, {$tscores})) { {$tscores}[{$uid}] = {$r}; }";
+        return "{$tscores}[{$uid}]";
     }
 }
