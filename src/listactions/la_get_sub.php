@@ -55,9 +55,11 @@ class GetPcconflicts_ListAction extends ListAction {
             ->select(["paper", "title", "given_name", "family_name", "email", "conflicttype"]);
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
-            if (!$user->can_view_conflicts($prow)) {
+            if (!$user->can_view_paper($prow)
+                || !$user->can_view_conflicts($prow)) {
                 continue;
             }
+            $cva = $user->can_view_authors($prow);
             $m = [];
             foreach ($prow->conflict_types() as $uid => $ctype) {
                 if (!($pc = $pcm[$uid] ?? null)
@@ -70,7 +72,7 @@ class GetPcconflicts_ListAction extends ListAction {
                     $pc->firstName,
                     $pc->lastName,
                     $pc->email,
-                    $confset->unparse_text($ctype)
+                    $confset->unparse_text($cva ? $ctype : Conflict::CT_GENERIC)
                 ];
             }
             ksort($m);

@@ -653,26 +653,20 @@ class ReviewerType_PaperColumn extends PaperColumn {
     /** @var array<int,int> */
     private $sortmap;
 
-    // bits 0-4 are for conflicts
-    // bit  5   is for no conflict
-    // bits 6-9 are for reviews
-    // bit  10  is for lead
-    // bit  11  is for shepherd
-    const FM_CONFLICT = 30;
-    const F_CONFLICT = 2;
-    const F_NOCONFLICT = 32;
-    const FM_REVIEW = 0x3C0;
-    const FS_REVIEWTYPE = 7;
-    const F_REVIEWCOMPLETE = 0x40;
-    const F_LEAD = 0x400;
-    const F_SHEPHERD = 0x800;
+    // review type status bits, meant to provide a sensible sort order
+    const FM_CONFLICT = 0x3E;       // conflict types (Conflict::FM_PCTYPE | CONFLICT_AUTHOR)
+    const F_NOCONFLICT = 0x80;      // not a conflict
+    const FM_REVIEW = 0xF00;        // review bits
+    const F_REVIEWCOMPLETE = 0x100; // is review complete
+    const FS_REVIEWTYPE = 9;
+    const F_LEAD = 0x1000;          // paper lead?
+    const F_SHEPHERD = 0x2000;      // paper shepherd?
 
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (isset($cj->user)) {
             $this->user = $conf->pc_member_by_email($cj->user);
         }
-        assert(self::FM_CONFLICT === Conflict::FM_PCTYPE);
     }
     function view_option_schema() {
         return ["simple", "description", "desc/description", "confdesc/description", "user$"];
@@ -710,7 +704,14 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
         if (($ct = $row->conflict_type($this->user)) > CONFLICT_MAXUNCONFLICTED
             && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
-            $flags = $this->description ? $ct & self::FM_CONFLICT : self::F_CONFLICT;
+            if (!$this->description
+                || ($this->not_me
+                    && !$pl->user->can_view_authors($row))) {
+                $flags = Conflict::CT_GENERIC;
+            } else {
+                // don't care about pinned status for sorting
+                $flags = $ct >= CONFLICT_AUTHOR ? CONFLICT_AUTHOR : $ct & self::FM_CONFLICT;
+            }
         } else {
             $flags = self::F_NOCONFLICT;
         }
@@ -754,7 +755,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         $t = "";
         if ($ranal) {
             $t = $ranal->icon_html(true);
-        } else if (($flags & self::F_CONFLICT) !== 0
+        } else if (($flags & self::FM_CONFLICT) !== 0
                    && $pl->search->limit() !== "a") {
             $t = review_type_icon(-1);
             if ($this->description) {
@@ -796,8 +797,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if ($ranal) {
             $t[] = $ranal->icon_text();
         }
-        if ($flags & self::F_CONFLICT) {
-            $t[] = "Conflict";
+        if ($flags & self::FM_CONFLICT) {
+            $t[] = $this->description ? $pl->conf->conflict_set()->unparse_text($flags & self::FM_CONFLICT) : "Conflict";
         }
         return empty($t) ? "" : join("; ", $t);
     }

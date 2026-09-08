@@ -1094,6 +1094,129 @@ class Permission_Tester {
         Contact::update_rights(); // forget Marina's cached rights
     }
 
+    /** @param Contact $user
+     * @param string $pids
+     * @return string */
+    private function get_pcconf_csv($user, $pids = "1") {
+        $qreq = TestQreq::get(["p" => $pids]);
+        $ssel = SearchSelection::make($qreq, $user);
+        $la = ListAction::lookup("get/pcconf", $user, $qreq, $ssel);
+        xassert($la instanceof ListAction);
+        $csvg = $la->run($user, $qreq, $ssel);
+        xassert($csvg instanceof CsvGenerator);
+        return $csvg->unparse();
+    }
+
+    /** @param Contact $viewer
+     * @param Contact $pc
+     * @param bool $force
+     * @return string */
+    private function revtype_description_html($viewer, $pc, $force = false) {
+        $pl = new PaperList("empty", new PaperSearch($viewer, "1"));
+        $pl->parse_view("revtype[description,user={$pc->email}]", PaperList::VIEWORIGIN_MAX);
+        if ($force) {
+            $pl->set_view("force", true, PaperList::VIEWORIGIN_MAX);
+        }
+        xassert(!$pl->has_problem());
+        if ($force) {
+            // table_html_json() never renders overridden content
+            return $pl->text_json()[1]["revtype"] ?? "";
+        }
+        return $pl->table_html_json()["data"][1]["revtype"] ?? "";
+    }
+
+    function test_pc_conflict_kind_hidden_with_authors() {
+        // When PC conflicts are visible but (blind) authors are not,
+        // neither get/pcconf nor revtype[description] may reveal which
+        // conflicted PC members are authors
+        xassert_eqq($this->conf->setting("sub_blind"), Conf::BLIND_ALWAYS);
+        $pccv = $this->conf->setting("sub_pcconfvis");
+        $pccs = $this->conf->setting("sub_pcconfsel");
+        $this->conf->save_refresh_setting("sub_pcconfvis", 2);
+        $u_mjh = $this->conf->checked_user_by_email("mjh@isi.edu");
+        $u_vera = $this->conf->checked_user_by_email("vera@bombay.com");
+        xassert(!$this->conf->checked_paper_by_id(2)->has_conflict($this->u_estrin));
+        xassert(!$this->conf->checked_paper_by_id(6)->managerContactId);
+        xassert_assign($this->u_chair, "paper,action,user,conflict\n1,conflict,vera@bombay.com,collaborator\n2,conflict,estrin@usc.edu,collaborator\n6,administrator,marina@poema.ru\n");
+
+        // marina administers other papers, but not paper 1, where estrin
+        // and floyd are PC authors, mjh has an administrative conflict,
+        // and vera has a declared conflict
+        $user = $this->u_marina;
+        xassert($user->is_manager());
+        $paper1 = $user->checked_paper_by_id(1);
+        xassert(!$user->allow_admin($paper1));
+        xassert($user->can_view_conflicts($paper1));
+        xassert(!$user->allow_view_authors($paper1));
+        xassert($paper1->has_author($this->u_estrin));
+        xassert_eqq($paper1->conflict_type($u_mjh), Conflict::CT_ADMINISTRATIVE);
+        xassert_eqq($paper1->conflict_type($u_vera), Conflict::CT_DEFAULT);
+
+        foreach ([null, 1] as $sel) {
+            $this->conf->save_refresh_setting("sub_pcconfsel", $sel);
+
+            $csv = $this->get_pcconf_csv($this->u_chair);
+            xassert_match($csv, '/^1,.*,estrin@usc\.edu,Author$/m');
+            xassert_match($csv, '/^1,.*,floyd@ee\.lbl\.gov,Author$/m');
+            xassert_match($csv, $sel ? '/^1,.*,mjh@isi\.edu,Administrative$/m' : '/^1,.*,mjh@isi\.edu,Conflict$/m');
+            xassert_match($csv, $sel ? '/^1,.*,vera@bombay\.com,Recent collaborator$/m' : '/^1,.*,vera@bombay\.com,Conflict$/m');
+
+            $csv = $this->get_pcconf_csv($user);
+            xassert_match($csv, '/^1,.*,estrin@usc\.edu,Conflict$/m');
+            xassert_match($csv, '/^1,.*,floyd@ee\.lbl\.gov,Conflict$/m');
+            xassert_match($csv, '/^1,.*,mjh@isi\.edu,Conflict$/m');
+            xassert_match($csv, '/^1,.*,vera@bombay\.com,Conflict$/m');
+            xassert_not_str_contains($csv, "Author");
+        }
+
+        // get/pcconf must also skip submissions the user cannot view
+        $p3 = $this->conf->checked_paper_by_id(3);
+        $title3 = $p3->title;
+        $sub3 = $p3->timeSubmitted;
+        $wd3 = $p3->timeWithdrawn;
+        xassert($p3->has_conflict($this->u_mgbaker));
+        $this->conf->qe("update Paper set timeWithdrawn=?, timeSubmitted=? where paperId=3", 100, -100);
+        xassert(!$user->can_view_paper($this->conf->checked_paper_by_id(3)));
+        $csv = $this->get_pcconf_csv($user, "1 3");
+        xassert_str_contains($csv, "Scalable Timers");
+        xassert_not_str_contains($csv, $title3);
+        xassert(!preg_match('/^3,/m', $csv));
+        xassert_match($this->get_pcconf_csv($this->u_chair, "1 3"), '/^3,.*,mgbaker@cs\.stanford\.edu,/m');
+        $this->conf->qe("update Paper set timeWithdrawn=?, timeSubmitted=? where paperId=3", $wd3, $sub3);
+
+        // With conflict descriptions enabled, `revtype[description]` must
+        // not render or sort a PC author’s conflict differently from a
+        // declared conflict for a PC member who cannot see authors...
+        xassert_eqq($this->conf->setting("sub_pcconfsel"), 1);
+        $pc = $this->u_mgbaker;
+        xassert(!$pc->is_manager());
+        xassert($pc->can_view_conflicts($paper1));
+        xassert(!$pc->allow_view_authors($paper1));
+        $h = $this->revtype_description_html($pc, $u_vera);
+        xassert_str_contains($h, "Conflict");
+        xassert_not_str_contains($h, "collaborator");
+        xassert_eqq($this->revtype_description_html($pc, $this->u_estrin), $h);
+        xassert_eqq($this->revtype_description_html($user, $this->u_estrin), $h);
+        xassert_search($pc, "1 2 sort:revtype[description,user=estrin@usc.edu]", "1 2");
+        xassert_search($pc, "1 2 sort:-revtype[description,user=estrin@usc.edu]", "1 2");
+        // ...but administrators still see declared conflict kinds (the
+        // list censors the chair too until conflicts are overridden)
+        xassert_eqq($this->revtype_description_html($this->u_chair, $u_vera), $h);
+        xassert_eqq($this->revtype_description_html($this->u_chair, $u_vera, true), "Recent collaborator");
+        xassert_eqq($this->revtype_description_html($this->u_chair, $this->u_estrin, true), "Author");
+        // text output is censored the same way
+        $pl = new PaperList("empty", new PaperSearch($pc, "1"));
+        $pl->parse_view("revtype[description,user=estrin@usc.edu]", PaperList::VIEWORIGIN_MAX);
+        xassert_eqq($pl->text_json()[1]["revtype"] ?? "", "Conflict");
+
+        xassert_assign($this->u_chair, "paper,action,user\n1,clearconflict,vera@bombay.com\n2,clearconflict,estrin@usc.edu\n6,clearadministrator,marina@poema.ru\n");
+        xassert_eqq($this->conf->checked_paper_by_id(1)->conflict_type($u_vera), 0);
+        xassert(!$this->conf->checked_paper_by_id(6)->managerContactId);
+        $this->conf->save_refresh_setting("sub_pcconfsel", $pccs);
+        $this->conf->save_refresh_setting("sub_pcconfvis", $pccv);
+    }
+
+
     function test_override_conflicts() {
         xassert_assign($this->conf->root_user(), "action,paper,user,tag\nconflict,4 5,chair@_.com\ntag,4 5,,testtag");
         $paper4 = $this->u_chair->checked_paper_by_id(4);

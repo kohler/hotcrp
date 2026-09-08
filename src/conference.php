@@ -477,6 +477,7 @@ class Conf {
         $this->_assignment_parsers = null;
         $this->_decision_set = null;
         $this->_topic_set = null;
+        $this->_conflict_set = null;
         $this->_oauth_providers = null;
         $this->_au_seerev = null;
         $this->_au_seedec = null;
