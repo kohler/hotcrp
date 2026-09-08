@@ -42,12 +42,29 @@ class NamedFormula {
         return $formula;
     }
 
+    /** @return bool */
+    function is_global() {
+        return $this->createdBy <= 0;
+    }
+
+    function populate_abbrev_matcher(AbbreviationMatcher $am) {
+        if (!$this->name) {
+            return;
+        }
+        $amflag = Conf::MFLAG_FORMULA | ($this->createdBy <= 0 ? Conf::MFLAG_GLOBAL : 0);
+        $am->add_phrase($this->name, $this, $amflag);
+    }
+
     function assign_search_keyword(AbbreviationMatcher $am) {
+        if (!$this->name) {
+            return;
+        }
+        $amflag = Conf::MFLAG_FORMULA | ($this->createdBy <= 0 ? Conf::MFLAG_GLOBAL : 0);
         if ($this->_abbreviation === null) {
-            $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_FORMULA);
+            $e = new AbbreviationEntry($this->name, $this, $amflag);
             $this->_abbreviation = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
         } else {
-            $am->add_keyword($this->_abbreviation, $this, Conf::MFLAG_FORMULA);
+            $am->add_keyword($this->_abbreviation, $this, $amflag);
         }
     }
 

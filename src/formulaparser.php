@@ -432,6 +432,13 @@ class FormulaParser {
         return new Ternary_Fexpr($e1, $e0, Fexpr::cnull());
     }
 
+    /** @param string $text
+     * @return list<PaperOption|ReviewField|NamedFormula> */
+    function find_all_fields($text) {
+        $amflag = $this->user->is_root_user() ? Conf::MFLAG_GLOBAL : 0;
+        return $this->conf->find_all_fields($text, $amflag);
+    }
+
     /** @param string &$field
      * @return ?object */
     private function _find_formula_field(&$field) {
@@ -440,7 +447,7 @@ class FormulaParser {
             $s = substr($s, 0, $colon);
         }
         while (strlen($s) > 1) {
-            $fs = $this->conf->find_all_fields($s);
+            $fs = $this->find_all_fields($s);
             if (count($fs) === 1) {
                 $field = $s;
                 return $fs[0];
@@ -694,7 +701,7 @@ class FormulaParser {
         } else if (($ch === "\"" && preg_match('/\G"(.*?)"/s', $t, $m, 0, $this->pos))
                    || ($ch === "\xE2" && preg_match('/\G(?:“|”)(.*?)(?:"|“|”)/s', $t, $m, 0, $this->pos))) {
             $this->pos += strlen($m[0]);
-            $fs = $m[1] === "" ? [] : $this->conf->find_all_fields($m[1]);
+            $fs = $m[1] === "" ? [] : $this->find_all_fields($m[1]);
             if (count($fs) === 1) {
                 $e = $this->_parse_field($pos1, $fs[0]);
             } else {

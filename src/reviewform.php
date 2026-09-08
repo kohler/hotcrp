@@ -135,12 +135,12 @@ class ReviewForm {
     }
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
         foreach ($this->all_fields() as $f) {
-            $am->add_phrase($f->name, $f, Conf::MFLAG_REVIEW);
+            $am->add_phrase($f->name, $f, Conf::MFLAG_REVIEW | Conf::MFLAG_GLOBAL);
         }
     }
     function assign_search_keywords(AbbreviationMatcher $am) {
         foreach ($this->all_fields() as $f) {
-            $e = new AbbreviationEntry($f->name, $f, Conf::MFLAG_REVIEW);
+            $e = new AbbreviationEntry($f->name, $f, Conf::MFLAG_REVIEW | Conf::MFLAG_GLOBAL);
             $f->_search_keyword = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL) ?? false;
         }
     }
@@ -172,7 +172,7 @@ class ReviewForm {
         $fs = [];
         foreach (ViewCommand::split_parse($s, 0) as $svc) {
             if ($svc->is_show()
-                && ($x = $this->conf->find_all_fields($svc->keyword))
+                && ($x = $this->conf->find_all_fields($svc->keyword, Conf::MFLAG_GLOBAL))
                 && count($x) === 1
                 && $x[0] instanceof Score_ReviewField
                 && $x[0]->view_score >= VIEWSCORE_PC

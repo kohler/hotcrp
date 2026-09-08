@@ -2241,4 +2241,64 @@ class Formulas_Tester {
         $conf->qe("delete from PaperReviewPreference where paperId=1");
     }
 
+    // A PC member's named formula never shadows a field keyword, and site
+    // formulas (automatic tags, conditions) never expand PC members' formulas
+    function test_pc_named_formula_cannot_shadow_field() {
+        $conf = $this->conf;
+        $root = $conf->root_user();
+        $u_pc = $this->u_lixia;
+        xassert($u_pc->isPC && !$u_pc->privChair);
+        xassert_eqq($conf->review_form()->field("s01")->search_keyword(), "OveMer");
+
+        // PC member names a formula after the field keyword
+        $qreq = TestQreq::post(["formula/1/id" => "new", "formula/1/name" => "OveMer", "formula/1/expression" => "(au:Floyd||0)*10+1"]);
+        $jr = SearchConfig_API::save_namedformula($u_pc, $qreq);
+        xassert($jr->content["ok"]);
+        xassert_eqq(count($jr->content["formulas"]), 1);
+        xassert_eqq($jr->content["formulas"][0]["name"] ?? null, "OveMer");
+        $nf = null;
+        foreach ($conf->named_formulas() as $f) {
+            if ($f->name === "OveMer") {
+                $nf = $f;
+            }
+        }
+        xassert($nf instanceof NamedFormula);
+        xassert_eqq($nf->createdBy, $u_pc->contactId);
+        xassert(!$nf->is_global());
+
+        // the field keeps its keyword; the formula is the one renamed
+        xassert_eqq($conf->review_form()->field("s01")->search_keyword(), "OveMer");
+        xassert_eqq($nf->abbreviation(), "OveMer.1");
+        $fs = $conf->find_all_fields("OveMer");
+        xassert_eqq(count($fs), 1);
+        xassert($fs[0] instanceof ReviewField);
+        $fs = $conf->find_all_fields("OveMer.1");
+        xassert_eqq(count($fs), 1);
+        xassert($fs[0] === $nf);
+
+        // the site user does not see the PC formula at all
+        $fs = $conf->find_all_fields("OveMer", Conf::MFLAG_GLOBAL);
+        xassert_eqq(count($fs), 1);
+        xassert($fs[0] instanceof ReviewField);
+        xassert_eqq($conf->find_all_fields("OveMer.1", Conf::MFLAG_GLOBAL), []);
+        xassert(Formula::make($root, "avg(OveMer)")->ok());
+        $f = Formula::make($root, "OveMer.1");
+        xassert(!$f->ok());
+        xassert_str_contains($f->full_feedback_text(), "not found");
+
+        // the author and the chair can still use it under its own keyword
+        xassert(Formula::make($u_pc, "OveMer.1")->ok());
+        xassert(Formula::make($this->u_chair, "OveMer.1")->ok());
+
+        // clean up
+        $qreq = TestQreq::post(["formula/1/id" => (string) $nf->formulaId, "formula/1/delete" => 1]);
+        $jr = SearchConfig_API::save_namedformula($u_pc, $qreq);
+        xassert($jr->content["ok"]);
+        xassert_eqq($jr->content["formulas"], []);
+        foreach ($conf->named_formulas() as $f) {
+            xassert_neqq($f->name, "OveMer");
+        }
+        xassert_eqq($conf->find_all_fields("OveMer.1"), []);
+        xassert_eqq($conf->review_form()->field("s01")->search_keyword(), "OveMer");
+    }
 }

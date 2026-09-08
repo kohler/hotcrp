@@ -184,11 +184,10 @@ class AbbreviationMatcher {
         } else {
             preg_match_all('/(?:\A_+|)[A-Za-z~?!][A-Za-z~?!]*|(?:[0-9]|\.[0-9])[0-9.]*|\pL+|\pN+|\pZ+/u', $s, $m);
         }
-        if (!empty($m[0])) {
-            return " " . join(" ", $m[0]);
-        } else {
+        if (empty($m[0])) {
             return "";
         }
+        return " " . join(" ", $m[0]);
     }
     /** @param string $s
      * @param bool $case_sensitive
@@ -199,15 +198,14 @@ class AbbreviationMatcher {
     /** @param string $name
      * @return string */
     static private function deparenthesize($name) {
-        if (strpos($name, "(") !== false || strpos($name, "[") !== false) {
-            $x = preg_replace_callback('/(?:\s+|\A)(?:\(.*?\)|\[.*?\])(?=\s|\z)|[a-z]\(s\)(?=[\s\']|\z)/',
-                function ($m) {
-                    return ctype_alpha($m[0][0]) ? "{$m[0][0]}s" : "";
-                }, $name);
-            return $x !== "" && $x !== $name ? $x : "";
-        } else {
+        if (strpos($name, "(") === false && strpos($name, "[") === false) {
             return "";
         }
+        $x = preg_replace_callback('/(?:\s+|\A)(?:\([^)]*+\)|\[[^\]]*+\])(?=\s|\z)|[a-z]\(s\)(?=[\s\']|\z)/',
+            function ($m) {
+                return ctype_alpha($m[0][0]) ? "{$m[0][0]}s" : "";
+            }, $name);
+        return $x !== "" && $x !== $name ? $x : "";
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -512,16 +510,15 @@ class AbbreviationMatcher {
         $a = $this->find_all($pattern, $tflags);
         if (count($a) <= 1 || strpos($pattern, "*") !== false) {
             return $a;
-        } else {
-            return [];
         }
+        return [];
     }
 
 
     function print_state() {
         $this->_analyze();
         foreach ($this->data as $i => $d) {
-            echo "#$i: {$d->name} dd:{$d->dedash_name} ltester:{$this->ltesters[$i]}\n";
+            echo "#{$i}: {$d->name} dd:{$d->dedash_name} ltester:{$this->ltesters[$i]}\n";
         }
     }
 
@@ -681,9 +678,8 @@ class AbbreviationMatcher {
             $e2->tflags |= AbbreviationEntry::TFLAG_KW;
             $this->add_entry($e2, false);
             return $cname . $suffix;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $class

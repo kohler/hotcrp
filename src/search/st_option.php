@@ -53,9 +53,8 @@ abstract class Option_SearchTerm extends SearchTerm {
                 "parse_function" => "Option_SearchTerm::parse",
                 "has" => "any"
             ];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return SearchTerm */

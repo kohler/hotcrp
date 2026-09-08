@@ -1445,32 +1445,46 @@ class Conf {
     const MFLAG_OPTION = 1;
     const MFLAG_REVIEW = 2;
     const MFLAG_FORMULA = 4;
+    const MFLAG_GLOBAL = 8;
 
     /** @return AbbreviationMatcher<PaperOption|ReviewField|NamedFormula> */
     function abbrev_matcher() {
-        if (!$this->_abbrev_matcher) {
-            $this->_abbrev_matcher = new AbbreviationMatcher;
-            $this->_abbrev_matcher->set_priority(self::MFLAG_FORMULA, -1);
-            // XXX exposes invisible paper options, review fields
-            $this->_paper_opts->populate_abbrev_matcher($this->_abbrev_matcher);
-            $this->review_form()->populate_abbrev_matcher($this->_abbrev_matcher);
-            foreach ($this->named_formulas() as $f) {
-                if ($f->name) {
-                    $this->_abbrev_matcher->add_phrase($f->name, $f, self::MFLAG_FORMULA);
-                }
+        if ($this->_abbrev_matcher) {
+            return $this->_abbrev_matcher;
+        }
+        $this->_abbrev_matcher = new AbbreviationMatcher;
+        $this->_abbrev_matcher->set_priority(self::MFLAG_FORMULA, -1);
+        // populate matcher with global fields
+        $this->_paper_opts->populate_abbrev_matcher($this->_abbrev_matcher);
+        $this->review_form()->populate_abbrev_matcher($this->_abbrev_matcher);
+        $global_nf = $local_nf = [];
+        foreach ($this->named_formulas() as $f) {
+            if ($f->is_global()) {
+                $f->populate_abbrev_matcher($this->_abbrev_matcher);
+                $global_nf[] = $f;
+            } else {
+                $local_nf[] = $f;
             }
-            $this->_paper_opts->assign_search_keywords(false, $this->_abbrev_matcher);
-            $this->review_form()->assign_search_keywords($this->_abbrev_matcher);
-            foreach ($this->named_formulas() as $f) {
-                if ($f->name) {
-                    $f->assign_search_keyword($this->_abbrev_matcher);
-                }
-            }
+        }
+        // assign search keywords for global fields
+        $this->_paper_opts->assign_search_keywords(false, $this->_abbrev_matcher);
+        $this->review_form()->assign_search_keywords($this->_abbrev_matcher);
+        foreach ($global_nf as $f) {
+            $f->assign_search_keyword($this->_abbrev_matcher);
+        }
+        // populate and assign local fields
+        foreach ($local_nf as $f) {
+            $f->populate_abbrev_matcher($this->_abbrev_matcher);
+        }
+        foreach ($local_nf as $f) {
+            $f->assign_search_keyword($this->_abbrev_matcher);
         }
         return $this->_abbrev_matcher;
     }
 
-    /** @return list<PaperOption|ReviewField|NamedFormula> */
+    /** @param string $text
+     * @param int $tflags
+     * @return list<PaperOption|ReviewField|NamedFormula> */
     function find_all_fields($text, $tflags = 0) {
         return $this->abbrev_matcher()->find_all($text, $tflags);
     }

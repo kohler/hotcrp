@@ -211,15 +211,11 @@ class SearchConfig_API {
                 array_push($qv, $f->name, $f->expression, Conf::$now, $f->formulaId);
             }
         }
-        if (empty($new_formula_by_id)) {
-            $q[] = "delete from Settings where name='formulas'";
-        } else {
-            $q[] = "insert into Settings set name='formulas', value=1 on duplicate key update value=1";
-        }
         $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
         $mresult->free_all();
 
         $user->conf->replace_named_formulas(null);
+        $user->conf->save_refresh_setting("formulas", empty($new_formula_by_id) ? null : 1);
         return self::namedformula($user, $qreq);
     }
 

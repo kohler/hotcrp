@@ -429,7 +429,7 @@ class PaperOption implements JsonSerializable {
         if ($this->_dtype_name === null) {
             if ($this->name !== "") {
                 $am = $this->abbrev_matcher();
-                $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
+                $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION | Conf::MFLAG_GLOBAL);
                 $this->_dtype_name = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE);
             }
             $this->_dtype_name = $this->_dtype_name ?? $this->formid;

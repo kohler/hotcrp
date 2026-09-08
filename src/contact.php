@@ -6010,9 +6010,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_edit_named_formula(?NamedFormula $formula = null) {
-        // XXX one PC member can edit another's formulas?
         return $this->privChair
-            || ($this->isPC && (!$formula || $formula->createdBy > 0));
+            || ($this->isPC
+                && (!$formula || $formula->createdBy === $this->contactXid));
     }
 
     // A review field is visible only if its view_score > view_score_bound.

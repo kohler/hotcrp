@@ -67,36 +67,38 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     private function add_abbrev_matcher(AbbreviationMatcher $am, $id, $oj) {
+        $amflag = Conf::MFLAG_OPTION | Conf::MFLAG_GLOBAL;
         $cb = [$this, "option_by_id"];
-        $am->add_keyword_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
+        $am->add_keyword_lazy("opt{$id}", $cb, [$id], $amflag);
         if ($oj->name ?? null) {
-            $am->add_phrase_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+            $am->add_phrase_lazy($oj->name, $cb, [$id], $amflag);
         }
         $oj->search_keyword = $oj->search_keyword ?? $oj->json_key ?? null;
         if ($oj->search_keyword) {
-            $am->add_keyword_lazy($oj->search_keyword, $cb, [$id], Conf::MFLAG_OPTION);
+            $am->add_keyword_lazy($oj->search_keyword, $cb, [$id], $amflag);
         }
         if (($oj->json_key ?? null)
             && $oj->json_key !== $oj->search_keyword
             && (($oj->name ?? null)
                 || strcasecmp(str_replace("_", " ", $oj->json_key), $oj->name) !== 0)) {
-            $am->add_keyword_lazy($oj->json_key, $cb, [$id], Conf::MFLAG_OPTION);
+            $am->add_keyword_lazy($oj->json_key, $cb, [$id], $amflag);
         }
     }
 
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
+        $amflag = Conf::MFLAG_OPTION | Conf::MFLAG_GLOBAL;
         $cb = [$this, "option_by_id"];
-        $am->add_keyword_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("final", $cb, [DTYPE_FINAL], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("title", $cb, [PaperOption::TITLEID], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("authors", $cb, [PaperOption::AUTHORSID], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("nonblind", $cb, [PaperOption::ANONYMITYID], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("contacts", $cb, [PaperOption::CONTACTSID], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("abstract", $cb, [PaperOption::ABSTRACTID], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("topics", $cb, [PaperOption::TOPICSID], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("pc_conflicts", $cb, [PaperOption::PCCONFID], Conf::MFLAG_OPTION);
-        $am->add_keyword_lazy("collaborators", $cb, [PaperOption::COLLABORATORSID], Conf::MFLAG_OPTION);
+        $am->add_keyword_lazy("paper", $cb, [DTYPE_SUBMISSION], $amflag);
+        $am->add_keyword_lazy("submission", $cb, [DTYPE_SUBMISSION], $amflag);
+        $am->add_keyword_lazy("final", $cb, [DTYPE_FINAL], $amflag);
+        $am->add_keyword_lazy("title", $cb, [PaperOption::TITLEID], $amflag);
+        $am->add_keyword_lazy("authors", $cb, [PaperOption::AUTHORSID], $amflag);
+        $am->add_keyword_lazy("nonblind", $cb, [PaperOption::ANONYMITYID], $amflag);
+        $am->add_keyword_lazy("contacts", $cb, [PaperOption::CONTACTSID], $amflag);
+        $am->add_keyword_lazy("abstract", $cb, [PaperOption::ABSTRACTID], $amflag);
+        $am->add_keyword_lazy("topics", $cb, [PaperOption::TOPICSID], $amflag);
+        $am->add_keyword_lazy("pc_conflicts", $cb, [PaperOption::PCCONFID], $amflag);
+        $am->add_keyword_lazy("collaborators", $cb, [PaperOption::COLLABORATORSID], $amflag);
         $am->add_keyword("reviews", null); // reserve keyword
         $am->add_keyword("comments", null); // reserve keyword
         $am->add_keyword("json", null); // reserve keyword
@@ -108,12 +110,13 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     function assign_search_keywords($nonpaper, AbbreviationMatcher $am) {
+        $amflag = Conf::MFLAG_OPTION | Conf::MFLAG_GLOBAL;
         $cb = [$this, "option_by_id"];
         foreach ($this->option_json_map() as $id => $oj) {
             if (!isset($oj->search_keyword)
                 && (($oj->nonpaper ?? false) === true) === $nonpaper) {
                 if ($oj->name ?? null) {
-                    $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+                    $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], $amflag);
                     $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL) ?? false;
                 } else {
                     $s = false;
