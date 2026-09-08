@@ -315,7 +315,7 @@ class Paper_Page {
 
     /** @param int $capuid */
     private function print_capability_user_message() {
-        if (($u = $this->prow->reviewer_capability_user())) {
+        if (($u = $this->user->reviewer_capability_user($this->prow))) {
             $m = $this->conf->_("<0>You’re accessing this {submission} using a special link for reviewer {reviewer}",
                 new FmtArg("reviewer", $u->email, 0),
                 new FmtArg("self", $this->user->email, 0),

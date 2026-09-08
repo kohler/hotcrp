@@ -267,7 +267,7 @@ class Review_Page {
     }
 
     function add_capability_user_message() {
-        if (($u = $this->prow->reviewer_capability_user())) {
+        if (($u = $this->user->reviewer_capability_user($this->prow))) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = Contact::session_index_by_email($this->qreq, $u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL);
