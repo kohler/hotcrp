@@ -1675,11 +1675,6 @@ class TestRunner {
         }
 
         ++$this->test_index;
-        if ($this->color && !$this->verbose) {
-            fwrite(STDERR, sprintf("\r\x1b[38;2;212;23;67m[%{$this->test_digits}d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
-                                   $this->test_index, $this->test_count, $test));
-            $this->need_newline = true;
-        }
 
         $methodmatch = "";
         if (($pos = strpos($test, "::")) !== false) {
@@ -1695,7 +1690,13 @@ class TestRunner {
         if ($testclass !== $this->last_classname || $methodmatch === "") {
             $this->set_test_class($testclass);
         }
+
         if ($this->tester) {
+            if ($this->color && !$this->verbose) {
+                fwrite(STDERR, sprintf("\r\x1b[38;2;212;23;67m[%{$this->test_digits}d/%d] \x1b[38;2;70;100;150m%s...\x1b[m \x1b[K",
+                                       $this->test_index, $this->test_count, $test));
+                $this->need_newline = true;
+            }
             $this->run_object_tests($this->tester, $methodmatch);
         }
     }

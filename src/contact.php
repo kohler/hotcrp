@@ -6117,22 +6117,6 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $fl;
     }
 
-    function __view_tags_complain(?PaperInfo $prow, $tag, $v1) {
-        if ($tag) {
-            $ts = sprintf("tag %s [%x]", $tag, $this->conf->tags()->perm_flags($tag, $this->contactId));
-        } else {
-            $ts = sprintf("[tp %x]", $this->conf->tags()->flags);
-        }
-        if ($prow) {
-            $ps = sprintf("paper %d [%x S%x]", $prow->paperId, $this->tag_perm_flags($prow), $this->rights($prow)->scope_bits & 0xFFFF);
-        } else {
-            $ps = sprintf("[utp %x]", $this->tag_perm_flags(null));
-        }
-        error_log(caller_landmark() . " alignment error: expected " . json_encode($v1)
-            . ", user {$this->contactId}, {$ts}, {$ps}");
-        assert(false);
-    }
-
     /** @return bool */
     function can_view_tags(?PaperInfo $prow = null) {
         return ($this->tag_perm_flags($prow) & $this->conf->tags()->flags) !== 0;

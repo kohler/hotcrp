@@ -1533,7 +1533,7 @@ class FormulaCompiler {
 
     /** @param string $gvar
      * @return bool */
-    function ensure_defined($gvar) {
+    function ensure_gvar($gvar) {
         if ($this->defined[$gvar] ?? false) {
             return false;
         }
@@ -1541,27 +1541,41 @@ class FormulaCompiler {
         return true;
     }
 
-    /** @param string $name
+    /** @param string $gvar
+     * @return bool
+     * @deprecated */
+    function ensure_defined($gvar) {
+        return $this->ensure_gvar($gvar);
+    }
+
+    /** @param string $gvar
      * @param string $expr
      * @return string */
-    function define_gvar($name, $expr) {
-        if (!str_starts_with($name, "\$")) {
-            $name = "\${$name}";
+    function define_gvar($gvar, $expr) {
+        assert(preg_match('/\A\$[a-zA-Z][a-zA-Z0-9]*+(?:_(?!_|\z)|[a-zA-Z0-9]*+)*+\z/', $gvar));
+        if (!isset($this->defined[$gvar])) {
+            $this->defined[$gvar] = true;
+            $this->gstmt[] = "{$gvar} = {$expr};";
         }
-        if (preg_match('/\A\$(\d.*|.*[^A-Ya-z0-9_].*)\z/', $name, $m)) {
-            $name = '$' . preg_replace_callback('/\A\d|[^A-Ya-z0-9_]/', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
+        return $gvar;
+    }
+
+    /** @param string $lvar_prefix
+     * @return array{string,bool} */
+    function define_lvar($lvar_prefix, $expr) {
+        $lvar = "{$lvar_prefix}__{$this->_lprefix}";
+        if ($this->defined[$lvar] ?? false) {
+            return $lvar;
         }
-        if (!isset($this->defined[$name])) {
-            $this->defined[$name] = true;
-            $this->gstmt[] = "{$name} = {$expr};";
-        }
-        return $name;
+        $this->defined[$lvar] = true;
+        $this->lstmt[] = "{$lvar} = {$expr};";
+        return $lvar;
     }
 
 
     /** @return string */
     function g_viewable_pc() {
-        if ($this->ensure_defined('$pc')) {
+        if ($this->ensure_gvar('$pc')) {
             $this->gstmt[] = "\$pc = \$formula->conf->viewable_pc_members(\$user);";
         }
         return '$pc';
@@ -1583,7 +1597,7 @@ class FormulaCompiler {
 
     /** @return string */
     function prow_preferences() {
-        if ($this->ensure_defined('$pref')) {
+        if ($this->ensure_gvar('$pref')) {
             $prow = $this->_prow();
             $this->gstmt[] = "\$pref = {$prow}->preferences();";
         }
@@ -1592,7 +1606,7 @@ class FormulaCompiler {
 
     /** @return string */
     function prow_view_preference_state() {
-        if ($this->ensure_defined('$view_pref_state')) {
+        if ($this->ensure_gvar('$view_pref_state')) {
             $prow = $this->_prow();
             $this->gstmt[] = "\$view_pref_state = \$user->view_preference_state({$prow});";
         }
@@ -1601,7 +1615,7 @@ class FormulaCompiler {
 
     /** @return string */
     function prow_viewable_conflict_types() {
-        if ($this->ensure_defined('$conflict_types')) {
+        if ($this->ensure_gvar('$conflict_types')) {
             $this->queryOptions["allConflictType"] = true;
             $prow = $this->_prow();
             $this->gstmt[] = "\$conflict_types = {$prow}->viewable_conflict_types(\$user);";
@@ -1611,7 +1625,7 @@ class FormulaCompiler {
 
     /** @return string */
     function prow_tags() {
-        if ($this->ensure_defined('$tags')) {
+        if ($this->ensure_gvar('$tags')) {
             $this->queryOptions["tags"] = true;
             $this->gstmt[] = "\$tags = " . $this->_prow() . "->searchable_tags(\$user);";
         }
@@ -1621,7 +1635,7 @@ class FormulaCompiler {
     /** @return string */
     function prow_option_value(PaperOption $o) {
         $n = '$ov_' . ($o->id < 0 ? "m" . -$o->id : $o->id);
-        if ($this->ensure_defined($n)) {
+        if ($this->ensure_gvar($n)) {
             $this->queryOptions["options"] = true;
             $this->gstmt[] = "{$n} = " . $this->_prow() . "->option({$o->id});";
             $this->gstmt[] = "if ({$n} && !\$user->can_view_option(" . $this->_prow() . ", {$n}->option)) {";
@@ -1633,7 +1647,7 @@ class FormulaCompiler {
 
     /** @return string */
     function prow_primary_document() {
-        if ($this->ensure_defined('$primary_document')) {
+        if ($this->ensure_gvar('$primary_document')) {
             $this->queryOptions["primaryDocument"] = true;
             $prow = $this->_prow();
             $this->gstmt[] = "\$primary_document = {$prow}->viewable_primary_document(\$user);";
@@ -1643,7 +1657,7 @@ class FormulaCompiler {
 
     /** @return string */
     function prow_decision() {
-        if ($this->ensure_defined('$decision')) {
+        if ($this->ensure_gvar('$decision')) {
             $prow = $this->_prow();
             $this->gstmt[] = "\$decision = \$user->can_view_decision({$prow}) ? {$prow}->outcome : 0;";
         }
@@ -1664,7 +1678,7 @@ class FormulaCompiler {
         $u = "\$u{$this->_lprefix}";
         $vu = "\$vu{$this->_lprefix}";
         if ($it === Fexpr::IDX_PREF) {
-            if ($this->ensure_defined($vu)) {
+            if ($this->ensure_gvar($vu)) {
                 $vps = $this->prow_view_preference_state();
                 $this->lstmt[] = "{$vu} = ({$vps} >= ({$u} === {$this->user->contactId} ? "
                     . Contact::VIEWPREF_OWN . " : " . Contact::VIEWPREF_ALL
@@ -1672,7 +1686,7 @@ class FormulaCompiler {
             }
             return $vu;
         } else if (($it & Fexpr::IDXM_REVIEW) !== 0) {
-            if ($this->ensure_defined($vu)) {
+            if ($this->ensure_gvar($vu)) {
                 $prow = $this->_prow();
                 $rrow = $this->current_rrow();
                 $this->lstmt[] = "{$vu} = {$rrow} && \$user->can_view_review_identity({$prow}, {$rrow}) ? {$rrow}->contactId : null;";
@@ -1696,7 +1710,7 @@ class FormulaCompiler {
             return "\$v{$this->_lprefix}";
         }
         $vr = "\$vr{$this->_lprefix}";
-        if ($this->ensure_defined($vr)) {
+        if ($this->ensure_gvar($vr)) {
             $prow = $this->_prow();
             $uid = $this->current_uid();
             $this->lstmt[] = "{$vr} = {$uid} ? {$prow}->viewable_review_by_user({$uid}, \$user) : null;";
@@ -1708,7 +1722,7 @@ class FormulaCompiler {
     function current_rrow_meta_viewable() {
         $rrow = $this->current_rrow();
         $mv = "{$rrow}_meta_viewable";
-        if ($this->ensure_defined($mv)) {
+        if ($this->ensure_gvar($mv)) {
             $expr = "{$rrow} && \$user->can_view_review_meta(\$prow, {$rrow})";
             $it = $this->index_type ? : $this->external_index_type;
             if ($it === Fexpr::IDX_NONE || $it === Fexpr::IDX_MY) {
@@ -1732,7 +1746,7 @@ class FormulaCompiler {
             $clause = $submitted ? " && {$rrow}->reviewSubmitted" : "";
         }
         $var = "{$rrow}_vsb{$sfx}";
-        if ($this->ensure_defined($var)) {
+        if ($this->ensure_gvar($var)) {
             $prow = $this->_prow();
             $this->lstmt[] = "{$var} = {$rrow}{$clause} ? \$user->view_score_bound({$prow}, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ";";
         }
@@ -1754,7 +1768,7 @@ class FormulaCompiler {
             return "\$v{$this->_lprefix}";
         }
         $var = "\$pref{$this->_lprefix}";
-        if ($this->ensure_defined($var)) {
+        if ($this->ensure_gvar($var)) {
             $u = $this->current_uid();
             $prefs = $this->prow_preferences();
             $vps = $this->prow_view_preference_state();
@@ -1771,20 +1785,20 @@ class FormulaCompiler {
         if (!in_array($f, $this->queryOptions["scores"] ?? [], true)) {
             $this->queryOptions["scores"][] = $f;
         }
-        if ($this->ensure_defined('$ensure_score_' . $f->short_id)) {
+        if ($this->ensure_gvar('$ensure_score_' . $f->short_id)) {
             $this->g0stmt[] = "\$prow->ensure_review_field_order({$f->order});";
         }
     }
 
     function ensure_review_word_counts() {
         $this->queryOptions["reviewWordCounts"] = true;
-        if ($this->ensure_defined('$ensure_reviewWordCounts')) {
+        if ($this->ensure_gvar('$ensure_reviewWordCounts')) {
             $this->g0stmt[] = "\$prow->ensure_review_word_counts();";
         }
     }
 
     function ensure_initial_index() {
-        if ($this->ensure_defined('$u0')) {
+        if ($this->ensure_gvar('$u0')) {
             if ($this->external_index_type === Fexpr::IDX_PREF) {
                 $this->g0stmt[] = "[\$u0, \$v0] = \$index;";
             } else if ($this->external_index_type !== 0) {
@@ -1839,7 +1853,7 @@ class FormulaCompiler {
      * @return string */
     function index_range($index_type) {
         if ($index_type === Fexpr::IDX_PC_SET_PRIVATE_TAG) {
-            if ($this->ensure_defined('$tag_pc')) {
+            if ($this->ensure_gvar('$tag_pc')) {
                 $this->gstmt[] = "\$tag_pc = [];";
                 if ($this->user->can_view_pc()) {
                     $tags = $this->prow_tags();
@@ -1855,7 +1869,7 @@ class FormulaCompiler {
             }
             return '$tag_pc';
         } else if ($index_type === Fexpr::IDX_CREVIEW) {
-            if ($this->ensure_defined('$cvreviews')) {
+            if ($this->ensure_gvar('$cvreviews')) {
                 $vreviews = $this->index_range(Fexpr::IDX_REVIEW);
                 $this->gstmt[] = '$cvreviews = [];';
                 $this->gstmt[] = "foreach ({$vreviews} as \$r) {";
@@ -1865,7 +1879,7 @@ class FormulaCompiler {
             }
             return '$cvreviews';
         } else if (($index_type & Fexpr::IDXM_REVIEW) === $index_type) {
-            if ($this->ensure_defined('$vreviews')) {
+            if ($this->ensure_gvar('$vreviews')) {
                 $this->queryOptions["reviewSignatures"] = true;
                 $this->gstmt[] = "\$vreviews = " . $this->_prow() . "->viewable_reviews_as_display(\$user);";
             }
@@ -1873,7 +1887,7 @@ class FormulaCompiler {
         } else if ($index_type === Fexpr::IDX_PC) {
             return $this->g_viewable_pc();
         } else if ($index_type === Fexpr::IDX_PREF) {
-            if ($this->ensure_defined('$vpref')) {
+            if ($this->ensure_gvar('$vpref')) {
                 $prow = $this->_prow();
                 $prefs = $this->prow_preferences();
                 $vps = $this->prow_view_preference_state();
