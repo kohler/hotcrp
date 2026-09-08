@@ -66,8 +66,17 @@ class TagSearchMatcher {
             $this->add_tag($xtag);
         } else if ($twiddle > 0) {
             $c = substr($xtag, 0, $twiddle);
-            if (ctype_digit($c)) {
-                $cids = [(int) $c];
+            if (($uid = stoi($c)) !== null) {
+                if ($uid > 0
+                    && ($uid === $this->user->contactXid
+                        || $this->user->privChair
+                        || ($this->user->can_view_pc()
+                            && ($u = $this->user->conf->pc_user_by_id($uid))
+                            && ($u->roles & $this->user->viewable_roles_mask()) !== 0))) {
+                    $cids = [$uid];
+                } else {
+                    $cids = [];
+                }
             } else {
                 $cids = ContactSearch::make_pc($c, $this->user)->user_ids();
             }
