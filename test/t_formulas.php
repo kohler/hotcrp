@@ -2324,6 +2324,10 @@ class Formulas_Tester {
         }
         $conf->qe("insert into TopicInterest set contactId=?, topicId=?, interest=2",
                   $u_marina->contactId, $tids[0]);
+        // `pc_members()` bulk-loads topic interests and caches them, and a
+        // formula resolves its loop uid through that cache; without this the
+        // interest just written would be invisible there.
+        $conf->invalidate_caches("pc");
         $conf->save_refresh_setting("has_topics", 1);
 
         // Paper 5 is accepted and paper 6 rejected; reviewers cannot see
@@ -2393,11 +2397,6 @@ class Formulas_Tester {
         $p5m = $conf->checked_paper_by_id(5, $u_marina);
         xassert_eqq($this->formula_as($reviewer, "topic")->eval($p5r, null), 2);
         xassert_search($reviewer, ["t" => "r", "q" => "formula:(topic>0)"], "5");
-        // `eval` on a paper fetched outside a paper list does not apply the
-        // formula's own query options, and `topic_interest_score` reports 0
-        // for a paper whose topics were never loaded; read it once to load
-        // them, as the topic-score test above does.
-        xassert_gt($p5m->topic_interest_score($u_marina), 0);
         xassert_gt($this->formula_as($u_marina, "max.pc(topicscore)")->eval($p5m, null), 0);
         xassert(isset($this->topicscore_column($this->u_chair, 5)["topicscore:marina@poema.ru"]));
         xassert_str_contains($this->topics_column_json($reviewer, "r", "5 6"), "Tvis Networking");

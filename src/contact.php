@@ -6029,7 +6029,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // So returning -3 means all scores are visible.
         // Deadlines are not considered.
         $rights = $this->rights($prow);
-        if ($rights->is_admin()) {
+        if (!$rights->scope_allows(TS::S_REV_READ)) {
+            return VIEWSCORE_EMPTYBOUND;
+        } else if ($rights->is_admin()) {
             return VIEWSCORE_ADMINONLY - 1;
         } else if ($this->is_owned_review($prow, $rrow)) {
             return VIEWSCORE_REVIEWERONLY - 1;

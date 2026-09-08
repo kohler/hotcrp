@@ -698,4 +698,116 @@ class Scope_Tester {
         xassert_assign($this->u_chair, "paper,action,user\n3,clearreview,{$anon->email}\n");
         $this->u_chair->set_scope();
     }
+
+    /** @param array<string,string> $args
+     * @return JsonResult|Downloader */
+    static private function searchaction($u, $args) {
+        return call_api_result("searchaction", $u, TestQreq::get($args));
+    }
+
+    function test_revform_requires_review_scope() {
+        // Offline review forms carry review contents: a token without
+        // review scope must not download filled-in forms, neither an
+        // administrator’s token through get/allrevform nor a reviewer’s
+        // token, for the reviewer’s own review, through get/revform.
+        $conf = $this->conf;
+        $this->u_chair->set_scope();
+        MailChecker::clear();
+        $u_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($u_mgbaker->isPC);
+        xassert(!$u_mgbaker->is_manager());
+        $u_mgbaker->set_scope();
+        $cases = [[$this->u_chair, "get/allrevform"], [$u_mgbaker, "get/revform"]];
+        $old_rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+
+        // chair creates and submits a fresh PC review for mgbaker on a
+        // submission unrelated to mgbaker and the chair (so the test
+        // disturbs no seeded review); a second such submission checks
+        // subset selectors
+        $pids = [];
+        foreach ($this->u_chair->paper_set(["paperId" => range(3, 18)]) as $prow) {
+            if ($prow->timeSubmitted > 0
+                && !$prow->review_by_user($u_mgbaker)
+                && !$prow->has_conflict($u_mgbaker)
+                && !$prow->has_conflict($this->u_chair)) {
+                $pids[] = $prow->paperId;
+            }
+        }
+        xassert_ge(count($pids), 2);
+        list($pid, $pidx) = $pids;
+        $p = (string) $pid;
+        $prow = $conf->checked_paper_by_id($pid);
+        $jr = call_api("review", $this->u_chair, TestQreq::post_json(["object" => "review", "email" => $u_mgbaker->email, "OveMer" => 2, "RevExp" => 1, "PapSum" => "Summary SKOPE1", "ComPC" => "PC comments SKOPE2", "ready" => true], ["p" => $pid, "r" => "new"]), $prow);
+        xassert_eqq($jr->ok, true);
+        MailChecker::clear();
+        $rrow = checked_fresh_review($conf->checked_paper_by_id($pid), $u_mgbaker);
+        xassert_ge($rrow->reviewStatus, ReviewInfo::RS_COMPLETED);
+        $rid = $rrow->reviewId;
+
+        // unscoped administrator and reviewer see the review contents
+        foreach ($cases as list($u, $action)) {
+            $resp = self::searchaction($u, ["action" => $action, "p" => $p]);
+            xassert($resp instanceof Downloader);
+            $t = $resp->content_string();
+            xassert_str_contains($t, "==+== Paper #{$p}\n");
+            xassert_str_contains($t, "SKOPE1");
+            xassert_str_contains($t, "SKOPE2");
+            $px = $u->checked_paper_by_id($pid);
+            xassert_eqq($u->perm_edit_some_review($px), null);
+            xassert_lt($u->view_score_bound($px, $px->checked_review_by_user($u_mgbaker)), VIEWSCORE_PC);
+        }
+
+        // scopes lacking `review:read` see nothing
+        foreach (["submission:read", "submission:admin document:read tag:admin comment:read"] as $scope) {
+            foreach ($cases as list($u, $action)) {
+                $u->set_scope($scope);
+                $px = $u->checked_paper_by_id($pid);
+                xassert($u->can_view_paper($px));
+                foreach ([["p" => $p], ["q" => "", "t" => "s"]] as $sel) {
+                    $resp = self::searchaction($u, ["action" => $action] + $sel);
+                    xassert(!($resp instanceof Downloader));
+                    xassert_eqq($resp->response_code(), 403);
+                    xassert_not_str_contains(json_encode($resp->content), "SKOPE");
+                }
+                $whynot = $u->perm_edit_some_review($px);
+                xassert($whynot && isset($whynot["scope"]));
+                $rx = $px->checked_review_by_user($u_mgbaker);
+                xassert(!$u->can_view_review($px, $rx));
+                xassert_eqq($u->view_score_bound($px, $rx), VIEWSCORE_EMPTYBOUND);
+                $u->set_scope();
+            }
+        }
+
+        // review scope suffices; a subset selector confines it to the
+        // selected submissions
+        foreach ($cases as list($u, $action)) {
+            $u->set_scope("submission:read review:write#{$pidx}");
+            $resp = self::searchaction($u, ["action" => $action, "p" => "{$pid} {$pidx}"]);
+            xassert($resp instanceof Downloader);
+            $t = $resp->content_string();
+            xassert_str_contains($t, "==+== Paper #{$pidx}\n");
+            xassert_not_str_contains($t, "==+== Paper #{$p}\n");
+            xassert_not_str_contains($t, "SKOPE");
+            $px = $u->checked_paper_by_id($pid);
+            xassert_eqq($u->view_score_bound($px, $px->checked_review_by_user($u_mgbaker)), VIEWSCORE_EMPTYBOUND);
+            $u->set_scope("submission:read review:write#{$p}");
+            $resp = self::searchaction($u, ["action" => $action, "p" => $p]);
+            xassert($resp instanceof Downloader);
+            $t = $resp->content_string();
+            xassert_str_contains($t, "SKOPE1");
+            xassert_str_contains($t, "SKOPE2");
+            $u->set_scope();
+        }
+        MailChecker::clear();
+
+        // restore
+        $jr = call_api("review", $this->u_chair, TestQreq::delete(["p" => $pid, "r" => $rid]), $conf->checked_paper_by_id($pid));
+        xassert_eqq($jr->ok, true);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $pid, $rid);
+        $conf->qe("delete from Capability where salt>=? and salt<?", "hcra{$rid}@", "hcra{$rid}~");
+        xassert(!$conf->checked_paper_by_id($pid)->review_by_user($u_mgbaker));
+        $conf->save_refresh_setting("rev_open", $old_rev_open);
+        MailChecker::clear();
+    }
 }
