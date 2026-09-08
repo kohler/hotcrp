@@ -2816,7 +2816,7 @@ class PaperTable {
             // scores
             $scores = [];
             if ($canView
-                && ($want_scores || ($user->is_owned_review($rr) && $this->mode === "re"))) {
+                && ($want_scores || ($user->is_owned_review($prow, $rr) && $this->mode === "re"))) {
                 $view_score = $user->view_score_bound($prow, $rr);
                 foreach ($conf->review_form()->forder as $f) {
                     if ($f->view_score > $view_score
@@ -3199,7 +3199,7 @@ class PaperTable {
     /** @param bool $editable
      * @return bool */
     private function _mark_review_messages($editable, ReviewInfo $rrow) {
-        if (($this->user->is_owned_review($rrow) || $this->admin)
+        if (($this->user->is_owned_review($this->prow, $rrow) || $this->admin)
             && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             if ($this->conf->time_review_open()) {
                 $t = '<5>You can’t edit your review because the ' . $this->conf->hotlink("review deadline", "deadlines") . ' has passed.';
@@ -3218,7 +3218,7 @@ class PaperTable {
 
         // administrator?
         if (!$this->user->is_my_review($rrow)) {
-            if ($this->user->is_owned_review($rrow)) {
+            if ($this->user->is_owned_review($this->prow, $rrow)) {
                 $rrow->message_list[] = MessageItem::marked_note("<0>This isn’t your review, but you can make changes since you requested it.");
             } else if ($this->admin) {
                 $rrow->message_list[] = MessageItem::marked_note("<0>This isn’t your review, but as an administrator you can still make changes.");

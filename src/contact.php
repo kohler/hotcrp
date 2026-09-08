@@ -4849,20 +4849,31 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && ($this->_capabilities["@ra{$rrow->paperId}"] ?? null) == $rrow->contactId));
     }
 
+    /** Conflicted requesters can no longer edit their requested reviews.
+     * @return bool */
+    private function act_requester(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        return !$rights->is_conflict_view()
+            || $rights->is_reviewer()
+            || $rights->allow_admin()
+            || ($this->isPC && $prow->leadContactId === $this->contactXid);
+    }
+
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @return bool */
-    function is_owned_review($rbase) {
+    function is_owned_review(PaperInfo $prow, $rbase) {
         return $rbase
             && $rbase->contactId > 0
             && ($rbase->contactId === $this->contactXid
                 || ($this->_review_tokens
                     && $rbase->reviewToken !== 0
                     && in_array($rbase->reviewToken, $this->_review_tokens, true))
+                || ($this->_capabilities !== null
+                    && ($this->_capabilities["@ra{$rbase->paperId}"] ?? null) === $rbase->contactId)
                 || ($rbase->requestedBy === $this->contactId
                     && $rbase->reviewType === REVIEW_EXTERNAL
-                    && $this->conf->ext_subreviews)
-                || ($this->_capabilities !== null
-                    && ($this->_capabilities["@ra{$rbase->paperId}"] ?? null) == $rbase->contactId));
+                    && $this->conf->ext_subreviews
+                    && $this->act_requester($prow)));
     }
 
     /** Returns true if this review's existence is visible by this user.
@@ -5003,7 +5014,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // can view if is metareviewer, own review
         if ($rights->reviewType === REVIEW_META
             || ($rrow
-                && $this->is_owned_review($rrow)
+                && $this->is_owned_review($prow, $rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY)) {
             return true;
         }
@@ -5130,7 +5141,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 && $rbase->requestedBy == $this->contactId
                 && $rights->allow_pc())
             || ($rbase
-                && $this->is_owned_review($rbase))
+                && $this->is_owned_review($prow, $rbase))
             || ($rights->act_author_view()
                 && (!$rbase || $rbase->reviewType > 0)
                 && !$this->conf->is_review_blind(!$rbase || (bool) $rbase->reviewBlind)
@@ -5199,7 +5210,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $rights = $this->rights($prow);
         return $rights->is_admin()
             || ($rbase && $rbase->requestedBy == $this->contactId && $rights->allow_pc())
-            || ($rbase && $this->is_owned_review($rbase))
+            || ($rbase && $this->is_owned_review($prow, $rbase))
             || ($rights->allow_pc() && $this->can_view_review_identity($prow, $rbase));
     }
 
@@ -5462,7 +5473,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         return $rights->can_manage_reviews()
-            || ($this->is_owned_review($rrow)
+            || ($this->is_owned_review($prow, $rrow)
                 && $this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)
                 && $rights->scope_allows(TS::S_REV_WRITE));
     }
@@ -5480,7 +5491,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             && $this->can_edit_review($prow, $rrow, $erflags & ~self::EDIT_REVIEW_SUBMIT)) {
             $whyNot["clickthrough"] = true;
         } else if (!$rights->can_manage_reviews()
-                   && !$this->is_owned_review($rrow)) {
+                   && !$this->is_owned_review($prow, $rrow)) {
             $whyNot["differentReviewer"] = true;
         } else if (!$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             $whyNot["deadline"] = $rrow->reviewType >= REVIEW_PC ? "pcrev_hard" : "extrev_hard";
@@ -5500,6 +5511,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 || ($this->isPC
                     && $prow->timeSubmitted > 0
                     && $rrow->requestedBy === $this->contactXid
+                    && $this->act_requester($prow)
                     && $this->conf->time_review(null, true, true)
                     && $rights->scope_allows(TS::S_REV_WRITE)));
     }
@@ -6019,7 +6031,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $rights = $this->rights($prow);
         if ($rights->is_admin()) {
             return VIEWSCORE_ADMINONLY - 1;
-        } else if ($this->is_owned_review($rrow)) {
+        } else if ($this->is_owned_review($prow, $rrow)) {
             return VIEWSCORE_REVIEWERONLY - 1;
         } else if (!$this->can_view_review($prow, $rrow)) {
             return VIEWSCORE_EMPTYBOUND;

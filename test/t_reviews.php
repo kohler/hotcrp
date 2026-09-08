@@ -3614,6 +3614,170 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::clear();
     }
 
+    function test_conflicted_requester_subreview() {
+        // A requester's privilege over an external subreview
+        // (pcrev_editdelegate) must not survive a conflict with the
+        // submission, unless an administrator overrides the conflict and
+        // keeps the requester associated with it (review assignment or
+        // discussion lead).
+        $old_rev_open = $this->conf->setting("rev_open");
+        $old_editdelegate = $this->conf->setting("pcrev_editdelegate");
+        $old_chairreq = $this->conf->setting("extrev_chairreq");
+        $this->conf->save_refresh_setting("rev_open", 1);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
+        $this->conf->save_refresh_setting("extrev_chairreq", 2);
+        Contact::update_rights();
+        $u_rguerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
+        xassert_eqq($u_rguerin->roles & Contact::ROLE_DBMASK, Contact::ROLE_PC);
+        $p26 = $this->conf->checked_paper_by_id(26);
+        xassert(!$p26->has_conflict($u_rguerin));
+        xassert(!$p26->review_by_user($u_rguerin));
+        xassert_eqq($p26->leadContactId, 0);
+
+        // rguerin, a primary reviewer, requests an external review
+        xassert_assign($this->u_chair, "paper,action,email\n26,primary,rguerin@ibm.com\n");
+        $p26 = $this->conf->checked_paper_by_id(26);
+        MailChecker::clear();
+        $xqreq = new Qrequest("POST", ["email" => "external5@_.com", "name" => "Subre Viewer", "affiliation" => "Elsewhere University"]);
+        $result = RequestReview_API::requestreview($u_rguerin, $xqreq, $p26);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        xassert_eqq($result->content["action"], "request");
+        MailChecker::clear();
+        $u_ext5 = $this->conf->checked_user_by_email("external5@_.com");
+
+        // external reviewer drafts a review
+        $r26x = save_review(26, $u_ext5, ["ovemer" => 2, "revexp" => 3, "papsum" => "Ext summary", "ready" => false]);
+        xassert(!!$r26x);
+        xassert_eqq($r26x->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($r26x->requestedBy, $u_rguerin->contactId);
+        xassert_eqq($r26x->fidval("t01"), "Ext summary\n");
+        xassert_lt($r26x->reviewStatus, ReviewInfo::RS_DELIVERED);
+        xassert($r26x->subject_to_approval());
+        MailChecker::clear();
+
+        // requester can see and edit the draft
+        $p26 = $this->conf->checked_paper_by_id(26);
+        $r26x = $p26->review_by_id($r26x->reviewId);
+        xassert($u_rguerin->can_view_review($p26, $r26x));
+        xassert($u_rguerin->can_view_review_identity($p26, $r26x));
+        xassert($u_rguerin->can_edit_review($p26, $r26x));
+        xassert_eqq($u_rguerin->view_score_bound($p26, $r26x), VIEWSCORE_REVIEWERONLY - 1);
+
+        // chair discovers rguerin's conflict: unassign and mark conflict
+        xassert_assign($this->u_chair, "paper,action,email\n26,clearreview,rguerin@ibm.com\n26,conflict,rguerin@ibm.com\n");
+        $p26 = $this->conf->checked_paper_by_id(26);
+        $r26x = $p26->review_by_id($r26x->reviewId);
+        xassert($p26->has_conflict($u_rguerin));
+        xassert(!$p26->review_by_user($u_rguerin));
+        xassert_eqq($r26x->requestedBy, $u_rguerin->contactId);
+
+        // conflicted ex-requester can no longer see or edit it
+        xassert(!$u_rguerin->can_view_review($p26, $r26x));
+        xassert(!$u_rguerin->can_view_review_identity($p26, $r26x));
+        xassert(!$u_rguerin->can_view_review_requester($p26, $r26x));
+        xassert(!$u_rguerin->can_edit_review($p26, $r26x));
+        xassert_eqq($u_rguerin->view_score_bound($p26, $r26x), VIEWSCORE_EMPTYBOUND);
+        $pr26 = $u_rguerin->checked_paper_by_id(26);
+        xassert_neqq($u_rguerin->perm_view_review($pr26, $pr26->review_by_id($r26x->reviewId)), null);
+        $j = call_api("review", $u_rguerin, ["p" => 26, "r" => $r26x->reviewId], $pr26);
+        xassert(!$j->ok);
+        xassert(!isset($j->review));
+        xassert_search($u_rguerin, "re:external5@_.com", "");
+
+        // ...and an attempted save leaves the review untouched
+        save_review($p26, $u_rguerin, ["papsum" => "Tampered", "ready" => false], $r26x, ["quiet" => true]);
+        $r26x = $p26->fresh_review_by_id($r26x->reviewId);
+        xassert_eqq($r26x->fidval("t01"), "Ext summary\n");
+
+        // the external reviewer and the chair are unaffected
+        xassert($u_ext5->can_view_review($p26, $r26x));
+        xassert($u_ext5->can_edit_review($p26, $r26x));
+        xassert($this->u_chair->can_view_review($p26, $r26x));
+
+        // but if the chair overrides the conflict and assigns rguerin anyway,
+        // requester privilege returns: rguerin is notified when the
+        // subreview is delivered, and can view, edit, and approve it
+        xassert_assign($this->u_chair, "paper,action,email,override\n26,primary,rguerin@ibm.com,yes\n", true);
+        $p26 = $this->conf->checked_paper_by_id(26);
+        $r26x = $p26->review_by_id($r26x->reviewId);
+        xassert($p26->has_conflict($u_rguerin));
+        xassert_eqq($p26->review_type($u_rguerin), REVIEW_PRIMARY);
+        xassert($u_rguerin->can_view_review($p26, $r26x));
+        xassert($u_rguerin->can_edit_review($p26, $r26x));
+        MailChecker::clear();
+        save_review($p26, $u_ext5, ["ready" => true], $r26x);
+        $nmail = 0;
+        foreach (MailChecker::$preps as $prep) {
+            xassert_str_contains($prep->subject, "Review approval requested");
+            if ($prep->has_recipient($u_rguerin)) {
+                ++$nmail;
+            }
+        }
+        xassert_eqq($nmail, 1);
+        MailChecker::clear();
+        $pr26 = $u_rguerin->checked_paper_by_id(26);
+        $r26x = $pr26->fresh_review_by_id($r26x->reviewId);
+        xassert_eqq($r26x->reviewStatus, ReviewInfo::RS_DELIVERED);
+        xassert($u_rguerin->can_view_review($pr26, $r26x));
+        xassert($u_rguerin->can_edit_review($pr26, $r26x));
+        xassert($u_rguerin->can_approve_review($pr26, $r26x));
+        $j = call_api("review", $u_rguerin, ["p" => 26, "r" => $r26x->reviewId], $pr26);
+        xassert($j->ok);
+        xassert_eqq($j->review->PapSum ?? null, "Ext summary\n");
+        xassert_search($u_rguerin, "re:pending-my-approval", "26");
+
+        // without the assignment, the conflict wins again
+        xassert_assign($this->u_chair, "paper,action,email\n26,clearreview,rguerin@ibm.com\n");
+        $pr26 = $u_rguerin->checked_paper_by_id(26);
+        $r26x = $pr26->fresh_review_by_id($r26x->reviewId);
+        xassert(!$u_rguerin->can_view_review($pr26, $r26x));
+        xassert(!$u_rguerin->can_edit_review($pr26, $r26x));
+        xassert(!$u_rguerin->can_approve_review($pr26, $r26x));
+        xassert_search($u_rguerin, "re:pending-my-approval", "");
+
+        // a conflict-overridden discussion lead may request reviews, so
+        // they too keep requester privilege, and can approve the subreview
+        xassert($this->conf->setting("extrev_chairreq") >= 0);
+        xassert(!$u_rguerin->can_request_review($pr26, null, false));
+        xassert_assign($this->u_chair, "paper,action,email,override\n26,lead,rguerin@ibm.com,yes\n", true);
+        $pr26 = $u_rguerin->checked_paper_by_id(26);
+        $r26x = $pr26->fresh_review_by_id($r26x->reviewId);
+        xassert($pr26->has_conflict($u_rguerin));
+        xassert(!$pr26->review_type($u_rguerin));
+        xassert_eqq($pr26->leadContactId, $u_rguerin->contactId);
+        xassert($u_rguerin->can_request_review($pr26, null, false));
+        xassert($u_rguerin->can_view_review($pr26, $r26x));
+        xassert($u_rguerin->can_edit_review($pr26, $r26x));
+        xassert($u_rguerin->can_approve_review($pr26, $r26x));
+        $rv = new ReviewValues($u_rguerin);
+        $rv->set_req_approval("approved");
+        xassert($rv->check_and_save($pr26, $r26x));
+        $r26x = $pr26->fresh_review_by_id($r26x->reviewId);
+        xassert_eqq($r26x->reviewStatus, ReviewInfo::RS_APPROVED);
+        MailChecker::clear();
+        xassert_assign($this->u_chair, "paper,action,email\n26,clearlead,rguerin@ibm.com\n");
+        $pr26 = $u_rguerin->checked_paper_by_id(26);
+        $r26x = $pr26->fresh_review_by_id($r26x->reviewId);
+        xassert_eqq($pr26->leadContactId, 0);
+        xassert(!$u_rguerin->can_view_review($pr26, $r26x));
+        xassert(!$u_rguerin->can_edit_review($pr26, $r26x));
+
+        // clean up
+        $r26x->delete($this->u_chair);
+        xassert_assign($this->u_chair, "paper,action,email\n26,clearconflict,rguerin@ibm.com\n");
+        $p26 = $this->conf->checked_paper_by_id(26);
+        xassert(!$p26->fresh_review_by_user($u_ext5));
+        xassert(!$p26->review_by_user($u_rguerin));
+        xassert(!$p26->has_conflict($u_rguerin));
+        xassert_eqq($p26->leadContactId, 0);
+        MailChecker::clear();
+        $this->conf->save_refresh_setting("rev_open", $old_rev_open);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", $old_editdelegate);
+        $this->conf->save_refresh_setting("extrev_chairreq", $old_chairreq);
+        Contact::update_rights();
+    }
+
     function test_invariants_last() {
         xassert(ConfInvariants::test_all($this->conf));
     }

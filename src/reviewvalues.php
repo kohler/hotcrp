@@ -1084,7 +1084,7 @@ class ReviewValues extends MessageSet {
         '@phan-var-force int $rflags';
 
         // can only edit reviews you own or administer
-        if (!$user->is_owned_review($rrow)
+        if (!$user->is_owned_review($prow, $rrow)
             && !$user->can_manage_reviews($prow)) {
             $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
             return false;
