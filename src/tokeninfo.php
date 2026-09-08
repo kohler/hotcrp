@@ -616,7 +616,7 @@ class TokenInfo {
      * @suppress PhanAccessReadOnlyProperty */
     final function assign_data($data) {
         if ($data !== null && !is_string($data)) {
-            $data = json_encode_db($data);
+            $data = json_encode_db($data, JSON_INVALID_UTF8_SUBSTITUTE);
         }
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->data = $data;

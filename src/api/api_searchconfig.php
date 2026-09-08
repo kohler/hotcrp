@@ -83,15 +83,6 @@ class SearchConfig_API {
         return new JsonResult(["ok" => true, "formulas" => $fjs]);
     }
 
-    static private function translate_qreq(Qrequest $qreq) { // XXX backward compat
-        for ($fidx = 1; isset($qreq["formulaid_{$fidx}"]); ++$fidx) {
-            $qreq["formula/{$fidx}/name"] = $qreq["formulaname_{$fidx}"];
-            $qreq["formula/{$fidx}/expression"] = $qreq["formulaexpression_{$fidx}"];
-            $qreq["formula/{$fidx}/id"] = $qreq["formulaid_{$fidx}"];
-            $qreq["formula/{$fidx}/delete"] = $qreq["formuladeleted_{$fidx}"];
-        }
-    }
-
     static function save_namedformula(Contact $user, Qrequest $qreq) {
         // NB permissions handled in loop
 
@@ -100,10 +91,6 @@ class SearchConfig_API {
         $max_id = array_reduce($formula_by_id, function ($max, $f) {
             return max($max, $f->formulaId);
         }, 0);
-
-        if (!isset($qreq["formula/1/id"])) {
-            self::translate_qreq($qreq);
-        }
 
         // determine new formula set from request
         $id2idx = [];
@@ -117,9 +104,9 @@ class SearchConfig_API {
                 continue;
             }
 
-            $name = simplify_whitespace($name ?? "");
+            $name = simplify_whitespace(convert_to_utf8($name ?? ""));
             $lname = strtolower($name);
-            $expr = simplify_whitespace($expr ?? "");
+            $expr = simplify_whitespace(convert_to_utf8($expr ?? ""));
             $pfx = $name === "" ? "" : "{$name}: ";
 
             if ($id === "new") {
@@ -340,8 +327,9 @@ class SearchConfig_API {
                 continue;
             }
 
-            $name = simplify_whitespace($name ?? "");
-            $q = simplify_whitespace($q ?? "");
+            $id = convert_to_utf8($id);
+            $name = simplify_whitespace(convert_to_utf8($name ?? ""));
+            $q = simplify_whitespace(convert_to_utf8($q ?? ""));
             $pfx = $name === "" ? "" : "{$name}: ";
 
             // fix name and id
@@ -370,7 +358,7 @@ class SearchConfig_API {
 
             // parse requested description and display
             if (($description = $qreq["{$kpfx}/description"]) !== null) {
-                $description = cleannl($description);
+                $description = cleannl(convert_to_utf8($description));
                 if ($description === "") {
                     $description = null;
                 }

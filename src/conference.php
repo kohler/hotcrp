@@ -4303,7 +4303,9 @@ class Conf {
     /** @param Qrequest $qreq
      * @return ?string */
     function qreq_redirect_url($qreq) {
-        if (($r = $qreq->redirect ?? "") !== "" && $r !== "1") {
+        if (($r = $qreq->redirect ?? "") !== ""
+            && $r !== "1"
+            && is_valid_utf8($r)) {
             $nav = $qreq->navigation();
             return $nav->resolve_within($r, $nav->base_path);
         }
