@@ -15,8 +15,10 @@ class GetCheckFormat_ListAction extends ListAction {
         echo $csvg->unparse();
         $cf = new CheckFormat($user->conf, CheckFormat::RUN_IF_NECESSARY);
         foreach ($papers as $prow) {
-            $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
-            $doc = $prow->document($dtype, 0, true);
+            if (($doc = $prow->viewable_primary_document($user))) {
+                // reload full PaperStorage row for CheckFormat
+                $doc = $prow->document($doc->documentType, $doc->paperStorageId, true);
+            }
             if ($doc && $doc->mimetype === "application/pdf") {
                 $cf->check_document($doc);
                 $pages = $cf->npages ?? "?";

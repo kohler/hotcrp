@@ -2679,19 +2679,6 @@ class PaperInfo {
                     && $doc->documentType === DTYPE_FINAL));
     }
 
-    /** @return int */
-    function primary_document_size() {
-        // ensure `Paper.size` exists (might not due to import bugs)
-        if (($this->size ?? -1) < 0 && ($doc = $this->primary_document())) {
-            $this->size = $doc->size();
-            if ($this->size >= 0) {
-                $key = $doc->documentType === DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId";
-                $this->conf->qe("update Paper set size=? where paperId=? and {$key}=? and size<=0", $this->size, $this->paperId, $doc->paperStorageId);
-            }
-        }
-        return $this->size ?? -1;
-    }
-
     /** @param int $dtype
      * @return list<DocumentInfo> */
     function documents($dtype) {

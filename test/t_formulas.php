@@ -1314,6 +1314,7 @@ class Formulas_Tester {
         // page count.
         xassert_eqq($this->pagecount_eval($u_mgbaker, 1), 50);
         xassert_search($u_mgbaker, "pages:>40", "1");
+        xassert_search($u_mgbaker, "formula:(pagecount>40)", "1");
 
         // Hide the submission field behind a presence condition that paper 1
         // does not satisfy. mgbaker can still view the paper’s PDF in general,
@@ -1335,6 +1336,7 @@ class Formulas_Tester {
         xassert_eqq($this->pagecount_eval($u_mgbaker, 1), null);
         // ...or through search.
         xassert_search($u_mgbaker, "pages:>40", "");
+        xassert_search($u_mgbaker, "formula:(pagecount>40)", "");
 
         // The document and its page count still exist; they are merely hidden.
         xassert_eqq($paper1->document(DTYPE_SUBMISSION)->npages(), 50);
@@ -1349,6 +1351,203 @@ class Formulas_Tester {
         $ps = new PaperStatus($this->conf->root_user());
         xassert($ps->save_paper_json(json_decode('{"id":1,"submission":{"content":"%PDF-whatever"}}')));
         xassert_paper_status($ps);
+    }
+
+    function test_pdfsize_hides_final_version() {
+        // Once a final version is uploaded, `Paper.size` tracks it. A viewer
+        // who can read the submission PDF but not the decision (here, an
+        // external reviewer whose reviews are not yet submitted) cannot view
+        // the final version, so `pdfsize` -- like `pagecount` -- must report
+        // the submission's size, and no other route should reveal that a
+        // final version exists (i.e., that the paper was accepted).
+        $conf = $this->conf;
+        $old_final_open = $conf->setting("final_open");
+        $old_au_seedec = $conf->setting("au_seedec");
+        $old_seedec = $conf->setting("seedec");
+        $old_sub_banal = $conf->setting("sub_banal");
+        $old_sub_banal_data = $conf->setting_data("sub_banal");
+        $conf->save_refresh_setting("final_open", 1);
+        $conf->save_refresh_setting("au_seedec", 2);
+        $conf->save_refresh_setting("seedec", 0);
+
+        // Configure a submission format checker, give papers 2-4 identical
+        // real PDF submissions, and check their formats while those are the
+        // papers' primary documents, as viewing the paper page would: the
+        // result is cached both on the document and, for a primary
+        // document, on the paper row. (This test assumes papers 2-4 start
+        // with no final versions.) NB The spec timestamp is never less
+        // than that of `src/banal` (`FormatSpec::merge_banal`).
+        $spects = max(Conf::$now - 10, (int) @filemtime(SiteLoader::resolve("src/banal")));
+        $conf->save_refresh_setting("sub_banal", $spects, "letter;30");
+        xassert_eqq($conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
+        $ps = new PaperStatus($conf->root_user());
+        $ps->on_document_import(function ($dj, $dt, $pstatus) {
+            if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
+                $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
+            }
+        });
+        $cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY);
+        foreach ([2, 3, 4] as $pid) {
+            xassert($conf->checked_paper_by_id($pid)->finalPaperStorageId <= 0);
+            xassert($ps->save_paper_json(json_decode("{\"id\":{$pid},\"submission\":{\"content_file\":\"etc/sample.pdf\",\"type\":\"application/pdf\"}}")));
+            xassert_paper_status($ps);
+            $cf->check_document($conf->checked_paper_by_id($pid)->document(DTYPE_SUBMISSION));
+            xassert($cf->check_ok());
+            xassert(!$cf->has_problem());
+            xassert(!$cf->need_recheck());
+            xassert_eq($conf->checked_paper_by_id($pid)->pdfFormatStatus, $spects);
+        }
+
+        // Accept papers 2 and 3, leaving 4 undecided; the contact author of
+        // paper 2 (only) submits a final version whose size differs from the
+        // submission's.
+        xassert_assign($this->u_chair, "paper,action,decision\n2,decision,accept\n3,decision,accept\n");
+        $author = $conf->checked_user_by_email("micke@cdt.luth.se");
+        $p2a = $conf->checked_paper_by_id(2, $author);
+        xassert($p2a->has_author($author));
+        xassert($author->can_view_decision($p2a));
+        $ps = new PaperStatus($author);
+        xassert($ps->save_paper_json(json_decode('{"id":2,"status":{"final_submitted":true},"final":{"content":"%PDF-final version of 2\n","type":"application/pdf"}}')));
+        xassert_paper_status($ps);
+        $p2 = $conf->checked_paper_by_id(2);
+        xassert($p2->finalPaperStorageId > 1);
+        xassert($p2->timeFinalSubmitted > 0);
+        xassert_eq($p2->pdfFormatStatus, 0); // now describes the final version
+        $sub_size = $p2->document(DTYPE_SUBMISSION)->size();
+        $final_size = $p2->document(DTYPE_FINAL)->size();
+        xassert_eqq($sub_size, filesize(SiteLoader::resolve("etc/sample.pdf")));
+        xassert_eqq($conf->checked_paper_by_id(3)->document(DTYPE_SUBMISSION)->size(), $sub_size);
+        xassert_eqq($final_size, 24);
+
+        // An external reviewer with unsubmitted reviews can read the
+        // submissions but not the decisions or the final version.
+        xassert_assign($this->u_chair, "paper,action,user\n2,review,external@_.com\n3,review,external@_.com\n4,review,external@_.com\n");
+        $reviewer = $conf->checked_user_by_email("external@_.com");
+        xassert(!$reviewer->isPC);
+        $p2 = $conf->checked_paper_by_id(2, $reviewer);
+        xassert($reviewer->can_view_pdf($p2));
+        xassert(!$reviewer->can_view_decision($p2));
+        xassert(!$reviewer->can_view_option($p2, $conf->option_by_id(DTYPE_FINAL)));
+        xassert_eqq($p2->viewable_primary_document($reviewer)->documentType, DTYPE_SUBMISSION);
+        xassert_search($reviewer, ["t" => "r", "q" => ""], "2 3 4");
+        xassert_search($reviewer, ["t" => "r", "q" => "dec:yes"], "");
+        xassert_search($reviewer, ["t" => "r", "q" => "has:final"], "");
+
+        // `pdfsize` reflects the submission for them...
+        xassert_eqq($this->formula_as($reviewer, "pdfsize")->eval($p2, null), $sub_size);
+        xassert_search($reviewer, ["t" => "r", "q" => "formula:(pdfsize={$sub_size})"], "2 3 4");
+        xassert_search($reviewer, ["t" => "r", "q" => "formula:(pdfsize!={$sub_size})"], "");
+        xassert_search($reviewer, ["t" => "r", "q" => "formula:(pdfsize={$final_size})"], "");
+
+        // ...and the final version for those who can see it.
+        $p2c = $conf->checked_paper_by_id(2, $this->u_chair);
+        xassert_eqq($this->formula_as($this->u_chair, "pdfsize")->eval($p2c, null), $final_size);
+        xassert_search($this->u_chair, "2-4 formula:(pdfsize={$final_size})", "2");
+        $p2a = $conf->checked_paper_by_id(2, $author);
+        xassert_eqq($this->formula_as($author, "pdfsize")->eval($p2a, null), $final_size);
+
+        // The paper page likewise links only the submission for the reviewer.
+        $pt = new PaperTable($reviewer, TestQreq::get_page("paper/2")->set_user($reviewer), $p2);
+        $fr = new FieldRender(FieldRender::CFHTML | FieldRender::CFPAGE, $reviewer);
+        $pt->render_submission($fr, $conf->option_by_id(DTYPE_SUBMISSION));
+        xassert_str_contains($fr->value, "Submission");
+        xassert_not_str_contains($fr->value, "Final version");
+        xassert_not_str_contains($fr->value, "final");
+
+        // So does the title column's PDF icon on their review list: every
+        // paper links its submission, indistinguishably, whether the
+        // submissions pass the format checker (as cached above), fail it
+        // (on the first listing, that is recomputed for each paper from
+        // the checker output cached on the documents; by the second, it has
+        // been cached on paper rows 3 and 4, but cannot be on 2's), or none
+        // is configured...
+        foreach (["letter;30", "letter;1", "letter;1", null] as $i => $spec) {
+            if ($spec === null) {
+                $spects = 0;
+                $conf->save_refresh_setting("sub_banal", null);
+            } else if ($spec !== $conf->setting_data("sub_banal")) {
+                ++$spects;
+                $conf->save_refresh_setting("sub_banal", $spects, $spec);
+            }
+            xassert_eqq($conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
+            $pl = new PaperList("empty", new PaperSearch($reviewer, ["t" => "r", "q" => ""]));
+            $pl->parse_view("title", PaperList::VIEWORIGIN_MAX);
+            $data = $pl->table_html_json()["data"];
+            $titles = [];
+            foreach ([2, 3, 4] as $pid) {
+                xassert_str_contains($data[$pid]["title"], "-paper{$pid}.pdf\"");
+                preg_match('/<a class="ptitle.*?<\/a>(.*)/s', $data[$pid]["title"], $m);
+                $titles[] = str_replace("paper{$pid}.", "paperN.", $m[1] ?? "");
+            }
+            xassert_eqq($titles[1], $titles[0]);
+            xassert_eqq($titles[2], $titles[0]);
+            $img = $i === 1 || $i === 2 ? "pdfx24.svg" : "pdf24.svg";
+            xassert_str_contains($titles[0], "/images/{$img}\"");
+            xassert_not_str_contains($titles[0], "need-format-check");
+            if ($i === 2) {
+                xassert_eq($conf->checked_paper_by_id(2)->pdfFormatStatus, 0);
+                xassert_eq($conf->checked_paper_by_id(3)->pdfFormatStatus, -$spects);
+                xassert_eq($conf->checked_paper_by_id(4)->pdfFormatStatus, -$spects);
+            }
+            // ...while the chair's list links the final version.
+            $pl = new PaperList("empty", new PaperSearch($this->u_chair, "2 3"));
+            $pl->parse_view("title", PaperList::VIEWORIGIN_MAX);
+            $data = $pl->table_html_json()["data"];
+            xassert_str_contains($data[2]["title"], "-final2.pdf\"");
+            xassert_str_contains($data[3]["title"], "-paper3.pdf\"");
+        }
+        $conf->save_refresh_setting("sub_banal", $old_sub_banal, $old_sub_banal_data);
+
+        // api/paper does not report the final version or its submission
+        // time to the reviewer...
+        foreach ([2, 3, 4] as $pid) {
+            $prow = $conf->checked_paper_by_id($pid, $reviewer);
+            $j = call_api("paper", $reviewer, ["p" => (string) $pid], $prow);
+            xassert($j->ok);
+            xassert(!isset($j->paper->decision));
+            xassert(!isset($j->paper->final));
+            xassert(!isset($j->paper->final_submitted));
+            xassert(!isset($j->paper->final_submitted_at));
+            xassert_eqq($j->paper->status, "submitted");
+        }
+        // ...but does to the chair and the author.
+        foreach ([$this->u_chair, $author] as $u) {
+            $j = call_api("paper", $u, ["p" => "2"], $conf->checked_paper_by_id(2, $u));
+            xassert($j->ok);
+            xassert_eqq($j->paper->final_submitted, true);
+            xassert_eqq($j->paper->final->size, $final_size);
+        }
+
+        // Requests for the final version fail for the reviewer whether or
+        // not it exists...
+        foreach ([2, 3, 4] as $pid) {
+            $prow = $conf->checked_paper_by_id($pid, $reviewer);
+            $j = call_api("document", $reviewer, ["p" => (string) $pid, "dt" => "final"], $prow);
+            xassert(!$j->ok);
+        }
+        // ...while the chair can download it.
+        $jr = call_api_result("document", $this->u_chair, ["p" => "2", "dt" => "final"], $p2c);
+        xassert_eqq($jr->response_code(), 200);
+
+        // Restore final-submitted status, the original submissions,
+        // reviews, decisions and settings. NB Paper 2 keeps its final
+        // version (a required document cannot be deleted through
+        // PaperStatus), now at outcome 0, as
+        // `PaperStatus_Tester::test_paper_replace_document` also leaves it;
+        // later tests should not depend on paper 2's primary document.
+        $ps = new PaperStatus($conf->root_user());
+        xassert($ps->save_paper_json(json_decode('{"id":2,"status":{"final_submitted":false}}')));
+        xassert_paper_status($ps);
+        xassert_eqq($conf->checked_paper_by_id(2)->timeFinalSubmitted, 0);
+        xassert_assign($this->u_chair, "paper,action,user\n2,clearreview,external@_.com\n3,clearreview,external@_.com\n4,clearreview,external@_.com\n");
+        xassert_assign($this->u_chair, "paper,action\n2,cleardecision\n3,cleardecision\n");
+        $conf->save_refresh_setting("final_open", $old_final_open);
+        $conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        $conf->save_refresh_setting("seedec", $old_seedec);
+        foreach ([2, 3, 4] as $pid) {
+            xassert($ps->save_paper_json(json_decode("{\"id\":{$pid},\"submission\":{\"content\":\"%PDF-whatever{$pid}\"}}")));
+            xassert_paper_status($ps);
+        }
     }
 
     function test_formulas_respect_option_presence() {

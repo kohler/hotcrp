@@ -234,6 +234,17 @@ class SearchQueryInfo {
             $this->add_column("allConflictType", "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict force index (paperId) where PaperConflict.paperId=Paper.paperId), '')");
         }
     }
+    function add_primary_document_columns() {
+        // columns consumed by `PaperInfo::viewable_primary_document` and
+        // `DocumentInfo::make_primary_document`
+        $this->add_column("paperStorageId", "Paper.paperStorageId");
+        $this->add_column("finalPaperStorageId", "Paper.finalPaperStorageId");
+        $this->add_column("mimetype", "Paper.mimetype");
+        $this->add_column("sha1", "Paper.sha1");
+        $this->add_column("timestamp", "Paper.timestamp");
+        $this->add_column("size", "Paper.size");
+        $this->add_column("pdfFormatStatus", "Paper.pdfFormatStatus");
+    }
 }
 
 class PaperSearch extends MessageSet {
@@ -1129,8 +1140,8 @@ class PaperSearch extends MessageSet {
         if ($sqi->query_options["authorInformation"] ?? false) {
             $sqi->add_column("authorInformation", "Paper.authorInformation");
         }
-        if ($sqi->query_options["pdfSize"] ?? false) {
-            $sqi->add_column("size", "Paper.size");
+        if ($sqi->query_options["primaryDocument"] ?? false) {
+            $sqi->add_primary_document_columns();
         }
         foreach ($this->conf->rights_terms() as $st) {
             $ctx = $sqi->set_context(SearchQueryInfo::CTX_ANY);

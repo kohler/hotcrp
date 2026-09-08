@@ -275,13 +275,9 @@ class Title_PaperColumn extends PaperColumn {
             $js["data-title"] = $title;
         }
         $t = $pl->hotlink_to($highlight_text, $row, $js);
-        if ($this->want_pdf) {
-            $dtype = $row->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION;
-            if (($dtype === DTYPE_FINAL ? $row->finalPaperStorageId : $row->paperStorageId) > 1
-                && $pl->user->can_view_option($row, $pl->conf->option_by_id($dtype))
-                && ($doc = $row->document($dtype))) {
-                $t .= " " . $doc->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
-            }
+        if ($this->want_pdf
+            && ($doc = $row->viewable_primary_document($pl->user))) {
+            $t .= " " . $doc->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
         }
         if ($this->want_decoration
             && ($pl->row_tags !== "" || $pl->row_tags_override !== "")) {

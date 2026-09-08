@@ -1634,6 +1634,7 @@ class FormulaCompiler {
     /** @return string */
     function prow_primary_document() {
         if ($this->ensure_defined('$primary_document')) {
+            $this->queryOptions["primaryDocument"] = true;
             $prow = $this->_prow();
             $this->gstmt[] = "\$primary_document = {$prow}->viewable_primary_document(\$user);";
         }

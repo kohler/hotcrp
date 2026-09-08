@@ -256,7 +256,8 @@ class PaperExport {
             $pj->submitted_at = $t;
         }
 
-        if ($prow->timeFinalSubmitted > 0) {
+        if ($prow->timeFinalSubmitted > 0
+            && $this->viewer->can_view_decision($prow)) {
             $pj->final_submitted = true;
             $pj->final_submitted_at = $prow->timeFinalSubmitted;
         }

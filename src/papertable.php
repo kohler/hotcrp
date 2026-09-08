@@ -771,9 +771,8 @@ class PaperTable {
             return;
         }
 
-        $dtype = $this->prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
-        if (($doc = $this->prow->document($dtype))
-            && $doc->paperStorageId > 1) {
+        if (($doc = $this->prow->viewable_primary_document($this->user))) {
+            $dtype = $doc->documentType;
             if (($stamps = self::pdf_stamps_html($doc))) {
                 $stamps = '<span class="sep"></span>' . $stamps;
             }

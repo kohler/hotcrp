@@ -63,15 +63,8 @@ class PaperPDF_SearchTerm extends SearchTerm {
         $srch->lwarning($sword, "<0>Format error not found");
         return null;
     }
-    static function add_columns(SearchQueryInfo $sqi) {
-        $sqi->add_column("paperStorageId", "Paper.paperStorageId");
-        $sqi->add_column("finalPaperStorageId", "Paper.finalPaperStorageId");
-        $sqi->add_column("mimetype", "Paper.mimetype");
-        $sqi->add_column("sha1", "Paper.sha1");
-        $sqi->add_column("pdfFormatStatus", "Paper.pdfFormatStatus");
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $this->add_columns($sqi);
+        $sqi->add_primary_document_columns();
         if (!$this->present
             && ($this->dtype === null
                 || !$this->user->conf->option_by_id($this->dtype)->always_visible()
@@ -149,7 +142,7 @@ class Pages_SearchTerm extends SearchTerm {
         return null;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        PaperPDF_SearchTerm::add_columns($sqi);
+        $sqi->add_primary_document_columns();
         return "true";
     }
     function test(PaperInfo $row, $xinfo) {

@@ -7,8 +7,7 @@ class PdfSize_Fexpr extends Fexpr {
         return SearchTerm::ABOUT_SUB;
     }
     function compile(FormulaCompiler $state) {
-        $state->queryOptions["pdfSize"] = true;
-        $prow = $state->_prow();
-        return "(\$user->can_view_pdf({$prow}) ? (int) {$prow}->primary_document_size() : null)";
+        $doc = $state->prow_primary_document();
+        return "({$doc} ? {$doc}->size() : null)";
     }
 }
