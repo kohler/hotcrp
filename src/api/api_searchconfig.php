@@ -370,16 +370,37 @@ class SearchConfig_API {
                     continue;
                 }
             }
-
-            // check if search is editable
             $fdef = $ssjs[$sidx] ?? null;
-            $editable = !$fdef || self::can_edit_search($user, $fdef);
-            if (!$editable
-                && !$ms->has_error_at("{$kpfx}/name")
-                && (strcasecmp($name, $fdef->name) !== 0
-                    || $q !== $fdef->q
-                    || $deleted)) {
-                $ms->error_at("{$kpfx}/name", "<0>{$pfx}You can’t change this named search");
+
+            // parse requested description and display
+            if (($description = $qreq["{$kpfx}/description"]) !== null) {
+                $description = cleannl($description);
+                if ($description === "") {
+                    $description = null;
+                }
+            } else {
+                $description = $fdef->description ?? null;
+            }
+            if ($qreq["{$kpfx}/highlight"]) {
+                $display = "highlight";
+            } else if ($qreq["has-{$kpfx}/highlight"]) {
+                $display = null;
+            } else {
+                $display = $fdef->display ?? null;
+            }
+
+            // check if search is editable; non-editors may resubmit an
+            // existing search unchanged, but never modify it
+            if ($fdef && !self::can_edit_search($user, $fdef)) {
+                if (!$ms->has_error_at("{$kpfx}/name")
+                    && (strcasecmp($name, $fdef->name) !== 0
+                        || $q !== $fdef->q
+                        || $deleted
+                        || $description !== ($fdef->description ?? null)
+                        || $display !== ($fdef->display ?? null))) {
+                    $ms->error_at("{$kpfx}/name", "<0>{$pfx}You can’t change this named search");
+                }
+                continue;
             }
 
             // maybe delete search
@@ -408,18 +429,15 @@ class SearchConfig_API {
             $fdef->q = $q;
             $fdef->owner = $user->privChair ? "chair" : $user->contactId;
             $fdef->ctr = $ctr;
-            if ($qreq["{$kpfx}/highlight"]) {
-                $fdef->display = "highlight";
-            } else if ($qreq["has-{$kpfx}/highlight"]) {
+            if ($display !== null) {
+                $fdef->display = $display;
+            } else {
                 unset($fdef->display);
             }
-            if (($description = $qreq["{$kpfx}/description"]) !== null) {
-                $description = cleannl($description);
-                if ($description !== "") {
-                    $fdef->description = $description;
-                } else {
-                    unset($fdef->description);
-                }
+            if ($description !== null) {
+                $fdef->description = $description;
+            } else {
+                unset($fdef->description);
             }
         }
 

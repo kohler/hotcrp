@@ -334,6 +334,144 @@ class Search_Tester {
         $this->conf->qe("delete from PaperTag where tag like '%~sscx'");
     }
 
+    function test_namedsearch_api_owner_not_transferable() {
+        // A PC member who cannot edit a chair-owned named search must not
+        // be able to modify it, or take it over by resubmitting it.
+        $before = $this->conf->setting_data("named_searches");
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($chair->privChair && $pc->isPC && !$pc->privChair);
+
+        $j = call_api("=namedsearch", $chair, [
+            "named_search/1/id" => "new",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#interesting",
+            "named_search/1/description" => "Chair list"
+        ]);
+        xassert($j->ok);
+        $find = function () {
+            foreach ($this->conf->named_searches() as $sj) {
+                if ($sj->name === "sscown") {
+                    return $sj;
+                }
+            }
+            return null;
+        };
+        $check_unchanged = function () use ($find, $pc) {
+            $sj = $find();
+            xassert($sj !== null);
+            xassert_eqq($sj->owner, "chair");
+            xassert_eqq($sj->q, "#interesting");
+            xassert_eqq($sj->description ?? null, "Chair list");
+            xassert(!isset($sj->display));
+            xassert(!SearchConfig_API::can_edit_search($pc, $sj));
+        };
+        $check_unchanged();
+        $cant_change = "<0>sscown: You can’t change this named search";
+
+        // direct rewrite is rejected
+        $j = call_api("=namedsearch", $pc, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#pwned"
+        ]);
+        xassert(!$j->ok);
+        xassert_eqq($j->message_list[0]->message ?? null, $cant_change);
+        $check_unchanged();
+
+        // description change is rejected
+        $j = call_api("=namedsearch", $pc, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#interesting",
+            "named_search/1/description" => "pwned"
+        ]);
+        xassert(!$j->ok);
+        xassert_eqq($j->message_list[0]->message ?? null, $cant_change);
+        $check_unchanged();
+
+        // display change is rejected
+        $j = call_api("=namedsearch", $pc, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#interesting",
+            "named_search/1/highlight" => 1,
+            "has-named_search/1/highlight" => 1
+        ]);
+        xassert(!$j->ok);
+        xassert_eqq($j->message_list[0]->message ?? null, $cant_change);
+        $check_unchanged();
+
+        // delete is rejected
+        $j = call_api("=namedsearch", $pc, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/delete" => 1
+        ]);
+        xassert(!$j->ok);
+        $check_unchanged();
+
+        // genuinely unchanged resubmission is a no-op: succeeds, but
+        // must not transfer ownership
+        $j = call_api("=namedsearch", $pc, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#interesting",
+            "named_search/1/description" => "Chair list"
+        ]);
+        xassert($j->ok);
+        $check_unchanged();
+        $j = call_api("=namedsearch", $pc, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#interesting"
+        ]);
+        xassert($j->ok);
+        $check_unchanged();
+
+        // ...so a follow-up rewrite is still rejected
+        $j = call_api("=namedsearch", $pc, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#pwned"
+        ]);
+        xassert(!$j->ok);
+        xassert_eqq($j->message_list[0]->message ?? null, $cant_change);
+        $check_unchanged();
+
+        // PC listing still reports it as not editable
+        $j = call_api("namedsearch", $pc, []);
+        xassert($j->ok);
+        $seen = false;
+        foreach ($j->searches as $nsj) {
+            if ($nsj["name"] === "sscown") {
+                $seen = true;
+                xassert(!($nsj["editable"] ?? false));
+            }
+        }
+        xassert($seen);
+
+        // chair can still edit it
+        $j = call_api("=namedsearch", $chair, [
+            "named_search/1/id" => "sscown",
+            "named_search/1/name" => "sscown",
+            "named_search/1/search" => "#interesting",
+            "named_search/1/description" => "Chair list 2",
+            "named_search/1/highlight" => 1
+        ]);
+        xassert($j->ok);
+        $sj = $find();
+        xassert_eqq($sj->owner, "chair");
+        xassert_eqq($sj->description ?? null, "Chair list 2");
+        xassert_eqq($sj->display ?? null, "highlight");
+
+        if ($before === null) {
+            $this->conf->save_setting("named_searches", null);
+        } else {
+            $this->conf->save_setting("named_searches", 1, $before);
+        }
+        $this->conf->load_settings();
+    }
+
     function test_sensitive_search_rate_limit() {
         $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
         xassert($u->contactId > 0);
