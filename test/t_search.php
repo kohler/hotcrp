@@ -578,6 +578,133 @@ class Search_Tester {
         $this->conf->set_opt("sensitiveSearchRefreshWindow", null);
     }
 
+    function test_sensitive_search_cdb_token() {
+        // A request authenticated by a contact-database bearer token charges
+        // API usage to the token's CDB counter, but sensitive searches are
+        // about this conference's data, so they are charged to the user's
+        // local counter, and never to the CDB row.
+        if (!$this->conf->contactdb()) {
+            return;
+        }
+        $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($u->contactId > 0);
+        $u->update_cdb();
+        $cdbu = $this->conf->fresh_cdb_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($cdbu && $cdbu->contactDbId > 0);
+        $this->conf->qe("delete from ContactCounter where contactId=?", $u->contactId);
+        Dbl::qe($this->conf->contactdb(), "delete from ContactCounter where contactId=?", $cdbu->contactDbId);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", 2);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", 3600000);
+
+        $tok = Authorization_Token::prepare_bearer($cdbu, 3600)->insert();
+        xassert($tok->is_cdb);
+        xassert(str_starts_with($tok->salt, "hcT_"));
+
+        $main_user = Contact::$main_user;
+        $qreq = TestQreq::get([])->set_conf($this->conf)
+            ->set_page("api")->set_path("/search")
+            ->set_header("Authorization", "Bearer {$tok->salt}");
+        Qrequest::set_main_request($qreq);
+        $muser = initialize_user($qreq, ["bearer" => true]);
+        Contact::set_main_user($main_user);
+        xassert_eqq($muser->email, "mgbaker@cs.stanford.edu");
+        xassert($muser->is_bearer_authorized());
+        xassert(!$muser->is_cdb_user());
+        xassert_eqq($muser->contactId, $u->contactId);
+
+        // the API counter is the token's, in the CDB
+        $api_cc = $qreq->contact_counter();
+        xassert($api_cc->is_cdb);
+        xassert_eqq($api_cc->contactId, $cdbu->contactDbId);
+
+        // the sensitive-search counter is the local user's
+        $ss_cc = $muser->contact_counter();
+        xassert(!$ss_cc->is_cdb);
+        xassert_eqq($ss_cc->contactId, $u->contactId);
+
+        $s1 = new PaperSearch($muser, "ti:the");
+        xassert(count($s1->paper_ids()) > 0);
+        $row = Dbl::fetch_first_object($this->conf->qe("select * from ContactCounter where contactId=?", $u->contactId));
+        xassert_eqq((int) ($row->sensitiveSearchCount ?? -1), 1);
+        $crow = Dbl::fetch_first_object(Dbl::qe($this->conf->contactdb(), "select * from ContactCounter where contactId=?", $cdbu->contactDbId));
+        xassert_eqq((int) ($crow->sensitiveSearchCount ?? 0), 0);
+
+        $this->conf->call_shutdown_function("ContactCounterFlush");
+        $this->conf->qe("delete from Capability where salt=?", $tok->salt);
+        Dbl::qe($this->conf->contactdb(), "delete from Capability where salt=?", $tok->salt);
+        $this->conf->qe("delete from ContactCounter where contactId=?", $u->contactId);
+        Dbl::qe($this->conf->contactdb(), "delete from ContactCounter where contactId=?", $cdbu->contactDbId);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", null);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", null);
+    }
+
+    function test_sensitive_search_cdb_only_token() {
+        // A contact-database bearer token whose holder has no account in this
+        // conference still yields a local viewer, one with no contactId. Such
+        // a viewer has no sensitive-search budget, so its imprecise searches
+        // take the precise path, and no counter row is touched anywhere.
+        if (!$this->conf->contactdb()) {
+            return;
+        }
+        $email = "ssearch-cdbonly@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, $email));
+        $cdbu = Contact::make_cdb_email($this->conf, $email);
+        $cdbu->set_prop("firstName", "Cdb");
+        $cdbu->set_prop("lastName", "Only");
+        $cdbu->save_prop();
+        $cdbu = $this->conf->fresh_cdb_user_by_email($email);
+        xassert($cdbu && $cdbu->contactDbId > 0);
+        xassert(!$this->conf->fresh_user_by_email($email));
+        Dbl::qe($this->conf->contactdb(), "delete from ContactCounter where contactId=?", $cdbu->contactDbId);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", 2);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", 3600000);
+
+        $tok = Authorization_Token::prepare_bearer($cdbu, 3600)->insert();
+        xassert($tok->is_cdb);
+
+        $main_user = Contact::$main_user;
+        $qreq = TestQreq::get([])->set_conf($this->conf)
+            ->set_page("api")->set_path("/search")
+            ->set_header("Authorization", "Bearer {$tok->salt}");
+        Qrequest::set_main_request($qreq);
+        $muser = initialize_user($qreq, ["bearer" => true]);
+        Contact::set_main_user($main_user);
+        xassert_eqq($muser->email, $email);
+        xassert($muser->is_bearer_authorized());
+        xassert(!$muser->is_cdb_user());
+        xassert_eqq($muser->contactId, 0);
+        xassert(!$this->conf->fresh_user_by_email($email));
+
+        // the API counter is the token's, in the CDB
+        $api_cc = $qreq->contact_counter();
+        xassert($api_cc->is_cdb);
+        xassert_eqq($api_cc->contactId, $cdbu->contactDbId);
+
+        // the sensitive-search counter is local, and has no budget
+        $ss_cc = $muser->contact_counter();
+        xassert(!$ss_cc->is_cdb);
+        xassert_eqq($ss_cc->contactId, 0);
+        xassert(!$ss_cc->sensitive_search_account());
+
+        $s1 = new PaperSearch($muser, "ti:the");
+        $s1->paper_ids();
+        $nlocal = $this->conf->fetch_ivalue("select count(*) from ContactCounter where contactId<=0");
+        xassert_eqq($nlocal, 0);
+        $crow = Dbl::fetch_first_object(Dbl::qe($this->conf->contactdb(), "select * from ContactCounter where contactId=?", $cdbu->contactDbId));
+        xassert_eqq((int) ($crow->sensitiveSearchCount ?? 0), 0);
+        xassert_eqq((int) ($crow->sensitiveSearchFallbackCount ?? 0), 0);
+
+        $this->conf->call_shutdown_function("ContactCounterFlush");
+        Dbl::qe($this->conf->contactdb(), "delete from Capability where salt=?", $tok->salt);
+        Dbl::qe($this->conf->contactdb(), "delete from ContactCounter where contactId=?", $cdbu->contactDbId);
+        Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_user($cdbu);
+        $this->conf->set_opt("sensitiveSearchRefreshAmount", null);
+        $this->conf->set_opt("sensitiveSearchRefreshWindow", null);
+    }
+
     function test_decision_none_matches_invisible_decision() {
         // When a user cannot see a paper's decision, that decision degrades to
         // 0 ("no decision") for that user (see `Decision_SearchTerm::test()`),

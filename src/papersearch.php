@@ -1098,9 +1098,9 @@ class PaperSearch extends MessageSet {
         // superset whose size can depend on information the user cannot see,
         // leaking that information through query time. Once a user has issued
         // too many imprecise searches, fall back to filtering only in PHP.
-        // Chairs are exempt: they can view the hidden data, so their searches
-        // leak nothing.
-        $allow_imprecise = $this->user->privChair
+        // Chairs are exempt, even when acting as others; they can view the
+        // hidden data, so their searches leak nothing.
+        $allow_imprecise = $this->user->base_user()->privChair
             || $qe->is_sqlexpr_precise()
             || $this->user->contact_counter()->sensitive_search_account();
         if (!$allow_imprecise
