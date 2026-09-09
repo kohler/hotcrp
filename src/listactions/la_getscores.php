@@ -14,8 +14,7 @@ class GetScores_ListAction extends ListAction {
         $ms = new MessageSet;
         $any_decision = $any_reviewer_identity = $any_ordinal = false;
         foreach ($ssel->paper_set($user) as $row) {
-            if (($whyNot = $user->perm_view_paper($row))
-                || ($whyNot = $user->perm_view_review($row, null))) {
+            if (($whyNot = $user->perm_view_review($row, null))) {
                 foreach ($whyNot->message_list(null, 2) as $mi) {
                     $mi->landmark = "#{$row->paperId}";
                     $ms->append_item($mi);
@@ -58,25 +57,25 @@ class GetScores_ListAction extends ListAction {
         }
         $user->set_overrides($overrides);
 
-        if (!empty($texts)) {
-            $header = ["paper", "title"];
-            if ($any_decision) {
-                $header[] = "decision";
-            }
-            if ($any_ordinal) {
-                $header[] = "review";
-            }
-            if ($any_reviewer_identity) {
-                array_push($header, "reviewername", "email");
-            }
-            return $user->conf->make_csvg("scores")
-                ->select(array_merge($header, array_keys($any_scores)))
-                ->append($texts);
-        } else {
+        if (empty($texts)) {
             if (!$ms->has_message()) {
                 $ms->append_item(MessageItem::marked_note("<0>Nothing to download"));
             }
-            $user->conf->feedback_msg($ms);
+            return JsonResult::make_message_list($ms);
         }
+
+        $header = ["paper", "title"];
+        if ($any_decision) {
+            $header[] = "decision";
+        }
+        if ($any_ordinal) {
+            $header[] = "review";
+        }
+        if ($any_reviewer_identity) {
+            array_push($header, "reviewername", "email");
+        }
+        return $user->conf->make_csvg("scores")
+            ->select(array_merge($header, array_keys($any_scores)))
+            ->append($texts);
     }
 }

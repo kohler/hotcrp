@@ -105,6 +105,7 @@ class SearchSelection {
         $options["paperId"] = $this->sel;
         $pset = $user->paper_set($options);
         $pset->sort_by([$this, "order_compare"]);
+        $pset->apply_filter([$user, "can_view_paper"]);
         return $pset;
     }
 

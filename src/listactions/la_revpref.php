@@ -65,9 +65,7 @@ class Revpref_ListAction extends ListAction {
         ];
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
-            // own preferences require view access, others' require administration
-            if ($user->view_preference_state($prow) < $view_bound
-                || !$user->can_view_paper($prow)) {
+            if ($user->view_preference_state($prow) < $view_bound) {
                 continue;
             }
             $item = ["paper" => $prow->paperId, "title" => $prow->title];

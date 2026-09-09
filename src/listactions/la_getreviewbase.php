@@ -14,11 +14,10 @@ class GetReviewBase_ListAction extends ListAction {
      * @param MessageSet $ms */
     protected function finish(Contact $user, $texts, $ms) {
         if (empty($texts)) {
-            $user->conf->feedback_msg(
+            return JsonResult::make_message_list(
                 MessageItem::marked_note("<0>Nothing to download"),
                 $ms->message_list()
             );
-            return;
         }
 
         if ($ms->has_error()) {

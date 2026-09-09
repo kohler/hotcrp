@@ -76,17 +76,9 @@ class GetAbstracts_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $texts = [];
         $lastpid = null;
-        $ml = [];
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $prow) {
-            if (($whyNot = $user->perm_view_paper($prow))) {
-                array_push($ml, ...$whyNot->message_list(null, 2));
-            } else {
-                $texts[] = $this->render($prow, $user);
-                $lastpid = $prow->paperId;
-            }
-        }
-        if (!empty($ml)) {
-            $user->conf->feedback_msg($ml);
+            $texts[] = $this->render($prow, $user);
+            $lastpid = $prow->paperId;
         }
         if (!empty($texts)) {
             $filename = "abstract" . (count($texts) === 1 ? $lastpid : "s");

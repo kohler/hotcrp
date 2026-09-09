@@ -1398,8 +1398,10 @@ class AssignmentSet {
     const FEEDBACK_CHANGE = 1;
     const FEEDBACK_PROPOSE = 2;
     const FEEDBACK_CHANGE_IGNORE = 3;
-    /** @param int $type */
-    function feedback_msg($type) {
+    /** @param int $type
+     * @param int $max_messages
+     * @return list<MessageItem> */
+    function feedback_message_list($type, $max_messages = 1000) {
         $fml = [];
         if ($this->executed > 0) {
             if ($type === self::FEEDBACK_CHANGE) {
@@ -1422,9 +1424,13 @@ class AssignmentSet {
             $fml[] = MessageItem::warning_note("<0>No changes");
         }
         if ($this->astate->has_message()) {
-            $fml[] = $this->message_list(1000);
+            array_push($fml, ...$this->message_list($max_messages));
         }
-        $this->conf->feedback_msg(...$fml);
+        return $fml;
+    }
+    /** @param int $type */
+    function feedback_msg($type) {
+        $this->conf->feedback_msg(...$this->feedback_message_list($type, 1000));
     }
     /** @return JsonResult */
     function json_result() {

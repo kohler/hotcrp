@@ -27,9 +27,8 @@ class GetRank_ListAction extends ListAction {
                 return $tv1 === null ? 1 : -1;
             } else if ($tv1 != $tv2) {
                 return $tv1 < $tv2 ? -1 : 1;
-            } else {
-                return $p1->paperId - $p2->paperId;
             }
+            return $p1->paperId - $p2->paperId;
         });
         $lastIndex = null;
         foreach ($pset as $prow) {

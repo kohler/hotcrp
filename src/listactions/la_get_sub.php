@@ -4,17 +4,12 @@
 
 class GetCheckFormat_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $papers = [];
-        foreach ($ssel->paper_set($user) as $prow) {
-            if ($user->can_view_pdf($prow))
-                $papers[$prow->paperId] = $prow;
-        }
         $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format_status", "format", "messages"]);
         $csvg->export_headers();
         Navigation::header("Content-Type: " . $csvg->mimetype_with_charset());
         echo $csvg->unparse();
         $cf = new CheckFormat($user->conf, CheckFormat::RUN_IF_NECESSARY);
-        foreach ($papers as $prow) {
+        foreach ($ssel->paper_set($user) as $prow) {
             if (($doc = $prow->viewable_primary_document($user))) {
                 // reload full PaperStorage row for CheckFormat
                 $doc = $prow->document($doc->documentType, $doc->paperStorageId, true);
@@ -57,8 +52,7 @@ class GetPcconflicts_ListAction extends ListAction {
             ->select(["paper", "title", "given_name", "family_name", "email", "conflicttype"]);
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
-            if (!$user->can_view_paper($prow)
-                || !$user->can_view_conflicts($prow)) {
+            if (!$user->can_view_conflicts($prow)) {
                 continue;
             }
             $cva = $user->can_view_authors($prow);
@@ -91,9 +85,6 @@ class GetTopics_ListAction extends ListAction {
         $opt = $user->conf->option_by_id(PaperOption::TOPICSID);
         $safe = $opt->always_visible();
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $row) {
-            if (!$user->can_view_paper($row)) {
-                continue;
-            }
             $n = count($texts);
             if ($safe || $user->can_view_option($row, $opt)) {
                 foreach ($row->topic_map() as $t) {

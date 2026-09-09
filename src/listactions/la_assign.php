@@ -65,7 +65,6 @@ class Assign_ListAction extends ListAction {
         $assignset->enable_papers($ssel->selection());
         $assignset->parse($text);
         $assignset->execute();
-        $assignset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
-        return null;
+        return JsonResult::make_message_list($assignset->feedback_message_list(AssignmentSet::FEEDBACK_ASSIGN));
     }
 }
