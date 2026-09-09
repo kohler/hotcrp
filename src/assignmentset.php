@@ -1017,6 +1017,10 @@ class Assigner {
     function type() {
         return $this->item->type();
     }
+    /** @return bool */
+    function is_system() {
+        return false;
+    }
     /** @return int */
     function about() {
         return SearchTerm::ABOUT_ANY;
@@ -1189,6 +1193,8 @@ class AssignmentSet {
     private $progressf = [];
     /** @var list<Assigner> */
     private $assigners = [];
+    /** @var list<Assigner> */
+    private $system_assigners = [];
     /** @var array<int,int> */
     private $assigners_pidhead = [];
     /** @var int */
@@ -1293,7 +1299,7 @@ class AssignmentSet {
     /** @param string|list<string> $action
      * @return $this */
     function enable_actions($action) {
-        assert(empty($this->assigners));
+        assert(empty($this->assigners) && empty($this->system_assigners));
         if ($this->enabled_actions === null) {
             $this->enabled_actions = [];
         }
@@ -1307,7 +1313,7 @@ class AssignmentSet {
     /** @param int|PaperInfo|list<int|PaperInfo> $paper
      * @return $this */
     function enable_papers($paper) {
-        assert(empty($this->assigners));
+        assert(empty($this->assigners) && empty($this->system_assigners));
         $this->enabled_pids = $this->enabled_pids ?? [];
         foreach (is_array($paper) ? $paper : [$paper] as $p) {
             if ($p instanceof PaperInfo) {
@@ -2013,7 +2019,7 @@ class AssignmentSet {
      * @param ?array<string,mixed> $defaults
      * @return $this */
     function parse($text, $filename = null, $defaults = null) {
-        assert(empty($this->assigners));
+        assert(empty($this->assigners) && empty($this->system_assigners));
         if ($text instanceof CsvParser) {
             $csv = $text;
             assert($filename === null || $text->filename() === $filename);
@@ -2029,7 +2035,7 @@ class AssignmentSet {
     /** @param ?array<string,mixed> $defaults
      * @return $this */
     function parse_csv(CsvParser $csv, $defaults = null) {
-        assert(empty($this->assigners));
+        assert(empty($this->assigners) && empty($this->system_assigners));
         $this->astate->set_filename($csv->filename());
         $this->astate->defaults = $defaults ?? [];
 
@@ -2062,6 +2068,10 @@ class AssignmentSet {
                 $this->astate->set_landmark($item->landmark);
                 $a = $item->realize($this->astate);
                 if (!$a) {
+                    continue;
+                }
+                if ($a->is_system()) {
+                    $this->system_assigners[] = $a;
                     continue;
                 }
                 if ($a->pid > 0) {
@@ -2170,6 +2180,9 @@ class AssignmentSet {
     function assigned_about() {
         $about = 0;
         foreach ($this->assigners as $assigner) {
+            $about |= $assigner->about();
+        }
+        foreach ($this->system_assigners as $assigner) {
             $about |= $assigner->about();
         }
         return $about;
@@ -2315,12 +2328,29 @@ class AssignmentSet {
         return $this->astate->prow($pid);
     }
 
+    private function _pre_execute_assigner(Assigner $assigner, &$locks, &$pids) {
+        if (($u = $assigner->contact)
+            && $u->contactId < 0
+            && !$u->store($u->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0, $this->user)) {
+            if (!$assigner->is_system()) {
+                $this->append_item_near(MessageItem::error("<0>Could not create account for user {$u->email}"), $assigner->item);
+            } else {
+                $this->append_item_near(MessageItem::error(""));
+            }
+            return;
+        }
+        $assigner->add_locks($this, $locks);
+        if ($assigner->pid > 0) {
+            $pids[$assigner->pid] = true;
+        }
+    }
+
     /** @return bool */
     function execute() {
         assert($this->executed === 0);
         if ($this->has_error()) {
             return false;
-        } else if (empty($this->assigners)) {
+        } else if (empty($this->assigners) && empty($this->system_assigners)) {
             return true;
         }
 
@@ -2333,16 +2363,10 @@ class AssignmentSet {
         $this->conf->pause_log();
         $pids = [];
         foreach ($this->assigners as $assigner) {
-            if (($u = $assigner->contact)
-                && $u->contactId < 0
-                && !$u->store($u->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0, $this->user)) {
-                $this->append_item_near(MessageItem::error("<0>Could not create account for user {$u->email}"), $assigner->item);
-                continue;
-            }
-            $assigner->add_locks($this, $locks);
-            if ($assigner->pid > 0) {
-                $pids[$assigner->pid] = true;
-            }
+            $this->_pre_execute_assigner($assigner, $locks, $pids);
+        }
+        foreach ($this->system_assigners as $assigner) {
+            $this->_pre_execute_assigner($assigner, $locks, $pids);
         }
         if ($this->has_error()) {
             $this->conf->resume_log();
@@ -2368,6 +2392,9 @@ class AssignmentSet {
                 $this->notify_progress();
             }
         }
+        foreach ($this->system_assigners as $assigner) {
+            $assigner->execute($this);
+        }
         if ($this->progress_value % $progresscadence !== 0) {
             $this->notify_progress();
         }
@@ -2379,6 +2406,9 @@ class AssignmentSet {
 
         // clean up
         foreach ($this->assigners as $assigner) {
+            $assigner->cleanup($this);
+        }
+        foreach ($this->system_assigners as $assigner) {
             $assigner->cleanup($this);
         }
         foreach ($this->_cleanup_callbacks as $cb) {

@@ -885,6 +885,65 @@ class Tags_Tester {
         $this->clear_vote_tags("vwd awd");
     }
 
+    function test_withdraw_hides_votes_from_author() {
+        // Withdrawing a paper removes its PC vote tags as a side effect.
+        // An author withdrawing via api/assign, especially with dry_run,
+        // must not be shown those tags.
+        $this->set_vote_allotment("vwd#2");
+        $this->conf->save_refresh_setting("tag_approval", 1, "awd#0");
+        $sub_withdraw = $this->conf->setting("sub_withdraw");
+        $this->conf->save_refresh_setting("sub_withdraw", 2);
+        $vcid = $this->u_varghese->contactId;
+
+        // sclin is paper 3's contact in the fixture; an earlier tester may
+        // have removed them
+        $u_sclin = $this->conf->checked_user_by_email("sclin@leland.stanford.edu");
+        $was_contact = $this->conf->checked_paper_by_id(3)->has_author($u_sclin);
+        if (!$was_contact) {
+            xassert_assign($this->u_chair, "paper,action,user\n3,contact,sclin@leland.stanford.edu\n");
+        }
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,3,~vwd#2\ntag,3,~awd\n");
+        xassert_assign($this->u_floyd, "action,paper,tag\ntag,3,~vwd#1\n");
+
+        $p3 = $u_sclin->checked_paper_by_id(3);
+        xassert(!$u_sclin->isPC && $u_sclin->can_withdraw_paper($p3));
+        xassert(!$u_sclin->can_view_tag($p3, "{$vcid}~vwd"));
+
+        // the author's dry run reports only the withdrawal...
+        $req = ["assignments" => "paper,action\n3,withdraw\n", "format" => "json"];
+        $jr = call_api("=assign", $u_sclin, TestQreq::post($req + ["dry_run" => 1]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(json_encode($jr->assignments), '[{"pid":3,"action":"withdraw"}]');
+        xassert_eqq($jr->assignment_count, 1);
+        xassert_not_str_contains(json_encode($jr), "~vwd");
+        xassert_not_str_contains(json_encode($jr), "~awd");
+
+        // ...and so does the chair's: system changes are never reported
+        $jr = call_api("=assign", $this->u_chair, TestQreq::post($req + ["dry_run" => 1]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(json_encode($jr->assignments), '[{"pid":3,"action":"withdraw"}]');
+
+        // the votes are still removed when the author really withdraws
+        $jr = call_api("=assign", $u_sclin, TestQreq::post($req));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(json_encode($jr->assignments), '[{"pid":3,"action":"withdraw"}]');
+        MailChecker::clear();
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_gt($p3->timeWithdrawn, 0);
+        xassert_eqq($p3->tag_value("{$vcid}~vwd"), null);
+        xassert_eqq($p3->tag_value("vwd"), null);
+        xassert_eqq($p3->tag_value("awd"), null);
+
+        // restore
+        xassert_assign($this->u_chair, "paper,action,notify\n3,revive,no\n");
+        if (!$was_contact) {
+            xassert_assign($this->u_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n");
+        }
+        $this->conf->save_refresh_setting("sub_withdraw", $sub_withdraw);
+        $this->conf->save_refresh_setting("tag_approval", null);
+        $this->clear_vote_tags("vwd awd");
+    }
+
     function test_vote_allotment_other_user() {
         $this->set_vote_allotment("vother#3");
         $fcid = $this->u_floyd->contactId;

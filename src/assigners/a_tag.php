@@ -1,6 +1,6 @@
 <?php
 // a_tag.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Tag_Assignable extends Assignable {
     /** @var string */
@@ -10,18 +10,18 @@ class Tag_Assignable extends Assignable {
     /** @var ?float */
     public $_index;
     /** @var ?bool */
-    public $_override;
+    public $_system;
     /** @param ?int $pid
      * @param string $ltag
      * @param ?string $tag
      * @param ?float $index
-     * @param ?bool $override */
-    function __construct($pid, $ltag, $tag = null, $index = null, $override = null) {
+     * @param ?bool $system */
+    function __construct($pid, $ltag, $tag = null, $index = null, $system = null) {
         $this->pid = $pid;
         $this->ltag = $ltag;
         $this->_tag = $tag ?? $ltag;
         $this->_index = $index;
-        $this->_override = $override;
+        $this->_system = $system;
     }
     /** @return string */
     function type() {
@@ -650,6 +650,9 @@ class Tag_Assigner extends Assigner {
     /** @var bool
      * @readonly */
     public $case_only;
+    /** @var bool
+     * @readonly */
+    public $system;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->tag = $item["_tag"];
@@ -657,11 +660,12 @@ class Tag_Assigner extends Assigner {
         $this->case_only = $item->existed()
             && !$item->deleted()
             && $item->before->match($item->after);
+        $this->system = !!$item["_system"];
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         $prow = $state->prow($item["pid"]);
         // check permissions
-        if (!$item["_override"]) {
+        if (!$item["_system"]) {
             $whyNot = $state->user->perm_edit_tag($prow, $item["ltag"],
                 $item->pre("_index"), $item->post("_index"));
             if ($whyNot) {
@@ -672,6 +676,9 @@ class Tag_Assigner extends Assigner {
             }
         }
         return new Tag_Assigner($item, $state);
+    }
+    function is_system() {
+        return $this->system;
     }
     function about() {
         return SearchTerm::ABOUT_TAGS;
