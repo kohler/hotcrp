@@ -234,6 +234,7 @@ lib/navigation.php
 lib/nulls3result.php
 lib/oklabcolor.php
 lib/oklchcolor.php
+lib/paperidset.php
 lib/pdfmimetype.php
 lib/phpqsession.php
 lib/polyfills.php

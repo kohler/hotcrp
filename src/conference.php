@@ -4375,7 +4375,7 @@ class Conf {
     }
 
 
-    /** @param array{paperId?:list<int>|PaperID_SearchTerm,where?:string} $options
+    /** @param array{paperId?:list<int>|PaperIDSet|PaperID_SearchTerm,where?:string} $options
      * @param bool $want_set
      * @return \mysqli_result|Dbl_Result|PaperInfoSet */
     private function _paper_result($options, ?Contact $user, $want_set) {
@@ -4407,7 +4407,7 @@ class Conf {
 
         // paper selection
         $paperset = null;
-        '@phan-var null|list<int>|PaperID_SearchTerm $paperset';
+        '@phan-var null|list<int>|PaperIDSet|PaperID_SearchTerm $paperset';
         if (isset($options["paperId"])) {
             $paperset = $options["paperId"];
         }
@@ -4565,11 +4565,18 @@ class Conf {
 
         // conditions
         if ($paperset !== null) {
-            if (is_array($paperset)) {
+            if (!is_array($paperset)) {
+                $where[] = $paperset->sql_predicate("Paper.paperId");
+            } else if (count($paperset) > 2000) {
+                sort($paperset);
+                $ps = new PaperIDSet;
+                foreach ($paperset as $pid) {
+                    $ps->add($pid);
+                }
+                $where[] = $ps->sql_predicate("Paper.paperId");
+            } else {
                 $where[] = "Paper.paperId?a";
                 $qv[] = $paperset;
-            } else{
-                $where[] = $paperset->sql_predicate("Paper.paperId");
             }
         }
         if ($options["finalized"] ?? false) {

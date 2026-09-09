@@ -1710,159 +1710,43 @@ class Show_SearchTerm {
     }
 }
 
-class PaperIDRange {
-    /** @var int */
-    public $first;
-    /** @var int */
-    public $last;
-    /** @var int */
-    public $pos;
-    /** @var bool */
-    public $rev;
-    /** @var bool */
-    public $explicit;
-
-    function __construct($first, $last, $pos, $rev, $explicit) {
-        $this->first = $first;
-        $this->last = $last;
-        $this->pos = $pos;
-        $this->rev = $rev;
-        $this->explicit = $explicit;
-    }
-}
-
 class PaperID_SearchTerm extends SearchTerm {
-    /** @var list<PaperIDRange> */
-    private $r = [];
-    /** @var int */
-    private $n = 0;
-    /** @var bool */
-    private $in_order = true;
+    /** @var PaperIDSet */
+    private $pidset;
 
     function __construct() {
         parent::__construct("pn");
-    }
-    /** @param int $p
-     * @return int */
-    private function lower_bound($p) {
-        $l = 0;
-        $r = count($this->r);
-        while ($l < $r) {
-            $m = $l + (($r - $l) >> 1);
-            $x = $this->r[$m];
-            if ($p < $x->first) {
-                $r = $m;
-            } else if ($p >= $x->last) {
-                $l = $m + 1;
-            } else {
-                $l = $r = $m;
-            }
-        }
-        return $l;
-    }
-    /** @return int|false */
-    function index_of($p) {
-        $i = $this->lower_bound($p);
-        if ($i >= count($this->r) || $p < $this->r[$i]->first) {
-            return false;
-        }
-        $d = $p - $this->r[$i]->first;
-        return $this->r[$i]->pos + ($this->r[$i]->rev ? -$d : $d);
-    }
-    /** @param int $p0
-     * @param int $p1
-     * @param bool $rev */
-    private function add_drange($p0, $p1, $rev, $explicit) {
-        while ($p0 < $p1) {
-            $i = $this->lower_bound($p0);
-            if ($i < count($this->r) && $p0 >= $this->r[$i]->first) {
-                $p0 = $this->r[$i]->last;
-                ++$i;
-            }
-            $p1x = $p1;
-            if ($i < count($this->r) && $p1 >= $this->r[$i]->first) {
-                $p1x = $this->r[$i]->first;
-            }
-            if ($p0 < $p1x) {
-                if ($rev || $i < count($this->r)) {
-                    $this->in_order = false;
-                }
-                if ($i > 0
-                    && $this->in_order
-                    && $p0 === $this->r[$i - 1]->last
-                    && $explicit === $this->r[$i - 1]->explicit) {
-                    $this->r[$i - 1]->last = $p1x;
-                } else {
-                    $n = $this->n + ($rev ? $p1x - $p0 - 1 : 0);
-                    array_splice($this->r, $i, 0, [new PaperIDRange($p0, $p1x, $n, $rev, $explicit)]);
-                }
-                // ensure `$this->n <= PHP_INT_MAX`
-                // (it naturally will be, UNLESS someone calls add_range
-                // with negative PIDs)
-                $delta = min($p1x - $p0, PHP_INT_MAX - $this->n);
-                $this->n += $delta;
-            }
-            $p0 = max($p0, $p1x);
-        }
+        $this->pidset = new PaperIDSet;
     }
     /** @param int $p0
      * @param int $p1
      * @param bool $explicit */
     function add_range($p0, $p1, $explicit = false) {
-        if ($p0 <= $p1) {
-            $this->add_drange($p0, $p1 + 1, false, $explicit);
-        } else {
-            $this->add_drange($p1, $p0 + 1, true, false);
-        }
+        $this->pidset->add_range($p0, $p1, $explicit);
     }
     function merge(SearchTerm $st) {
         if (!($st instanceof PaperID_SearchTerm)) {
             return false;
         }
-        $rs = $st->r;
-        if (!$st->in_order) {
-            usort($rs, function ($a, $b) { return $a->first <=> $b->first; });
-        }
-        foreach ($rs as $r) {
-            $this->add_drange($r->first, $r->last, $r->rev, $r->explicit);
-        }
+        $this->pidset->merge($st->pidset);
         return true;
     }
     /** @return ?list<int> */
     function paper_ids() {
-        if ($this->n > 1000) {
-            return null;
-        }
-        $a = [];
-        foreach ($this->r as $r) {
-            for ($i = $r->first; $i < $r->last; ++$i) {
-                $a[] = $i;
-            }
-        }
-        return $a;
+        return $this->pidset->ids(1000);
     }
-    /** @return list<PaperIDRange> */
+    /** @return list<PaperIDSetRange> */
     function ranges() {
-        return $this->r;
+        return $this->pidset->ranges();
     }
     /** @return bool */
     function is_empty() {
-        return empty($this->r);
+        return $this->pidset->is_empty();
     }
     /** @param string $field
      * @return string */
     function sql_predicate($field) {
-        if (empty($this->r)) {
-            return "false";
-        } else if ($this->n <= 8 * count($this->r)
-                   && ($pids = $this->paper_ids()) !== null) {
-            return "{$field} in (" . join(",", $pids) . ")";
-        }
-        $s = [];
-        foreach ($this->r as $r) {
-            $s[] = "({$field}>={$r->first} and {$field}<{$r->last})";
-        }
-        return "(" . join(" or ", $s) . ")";
+        return $this->pidset->sql_predicate($field);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1872,22 +1756,26 @@ class PaperID_SearchTerm extends SearchTerm {
         return true;
     }
     function test(PaperInfo $row, $xinfo) {
-        return $this->index_of($row->paperId) !== false;
+        return $this->pidset->contains($row->paperId);
     }
     function default_sort_column($top, $pl) {
-        if ($top && !$this->in_order) {
-            return new PaperIDOrder_PaperColumn($pl->conf, $this);
+        if ($top && !$this->pidset->is_sorted()) {
+            return new PaperIDOrder_PaperColumn($pl->conf, $this->pidset);
         }
         return null;
     }
     static function parse_pidcode($word, SearchWord $sword, PaperSearch $srch) {
-        if (($ids = SessionList::decode_ids($word)) === null) {
+        if (($ids = SessionList::decode_ids($word, true)) === null) {
             $srch->lwarning($sword, "<0>Invalid pidcode");
             return new False_SearchTerm;
         }
         $st = new PaperID_SearchTerm;
         foreach ($ids as $id) {
-            $st->add_range($id, $id);
+            if (is_array($id)) {
+                $st->add_range($id[0], $id[1]);
+            } else {
+                $st->add_range($id, $id);
+            }
         }
         return $st;
     }

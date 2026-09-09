@@ -42,7 +42,7 @@ class GetJson_ListAction extends ListAction {
         $user->set_overrides($old_overrides);
         if (count($pj) === 1) {
             $pj = $pj[0];
-            $pj_filename = $user->conf->download_prefix . "paper" . $ssel->selection_at(0) . "-data.json";
+            $pj_filename = $user->conf->download_prefix . "paper{$pj->pid}-data.json";
         } else {
             $pj_filename = $user->conf->download_prefix . "data.json";
         }

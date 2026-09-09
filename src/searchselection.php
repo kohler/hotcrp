@@ -3,21 +3,25 @@
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class SearchSelection {
-    /** @var list<int> */
-    private $sel = [];
-    /** @var array<int,int> */
-    private $selmap = [];
+    /** @var PaperIDSet */
+    private $pidset;
     /** @var bool */
     private $default;
 
+    /** @param null|list<int|array{int,int}>|PaperIDSet $papers */
     function __construct($papers = null) {
-        $n = 1;
-        foreach ($papers ?? [] as $pid) {
-            if (($pid = stoi($pid) ?? -1) > 0
-                && !isset($this->selmap[$pid])) {
-                $this->sel[] = $pid;
-                $this->selmap[$pid] = $n;
-                ++$n;
+        if ($papers instanceof PaperIDSet) {
+            $this->pidset = $papers;
+        } else {
+            $this->pidset = new PaperIDSet;
+            foreach ($papers ?? [] as $id) {
+                if (is_array($id)) {
+                    $this->pidset->add_range($id[0], $id[1]);
+                } else if (is_int($id)) {
+                    $this->pidset->add($id);
+                } else if (($i = stoi($id) ?? -1) > 0) {
+                    $this->pidset->add($i);
+                }
             }
         }
     }
@@ -32,7 +36,7 @@ class SearchSelection {
         } else if ($qreq->get($key) === "all") {
             $ps = $user ? (new PaperSearch($user, $qreq))->sorted_paper_ids() : null;
         } else if ($qreq->has($key)) {
-            $ps = SessionList::decode_ids($qreq->get($key));
+            $ps = SessionList::decode_ids($qreq->get($key), true);
         } else {
             $ps = null;
         }
@@ -52,7 +56,7 @@ class SearchSelection {
 
     /** @return bool */
     function is_empty() {
-        return empty($this->sel);
+        return $this->pidset->is_empty();
     }
 
     /** @return bool */
@@ -70,39 +74,23 @@ class SearchSelection {
     /** @param PaperSearch $srch
      * @return $this */
     function reset_default($srch) {
-        $this->default = $srch->sorted_paper_ids() === $this->sel;
+        $this->default = $this->equals_search($srch);
         return $this;
     }
 
     /** @return int */
     function count() {
-        return count($this->sel);
+        return $this->pidset->count();
     }
 
     /** @return list<int> */
     function selection() {
-        return $this->sel;
-    }
-
-    /** @return ?int */
-    function selection_at($i) {
-        return $this->sel[$i] ?? null;
-    }
-
-    /** @return array<int,int> */
-    function selection_map() {
-        if ($this->selmap === null) {
-            $this->selmap = [];
-            foreach ($this->sel as $i => $pid) {
-                $this->selmap[$pid] = $i + 1;
-            }
-        }
-        return $this->selmap;
+        return $this->pidset->ids(100000);
     }
 
     /** @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set(Contact $user, $options = []) {
-        $options["paperId"] = $this->sel;
+        $options["paperId"] = $this->pidset;
         $pset = $user->paper_set($options);
         $pset->sort_by([$this, "order_compare"]);
         $pset->apply_filter([$user, "can_view_paper"]);
@@ -111,69 +99,33 @@ class SearchSelection {
 
     /** @return bool */
     function is_selected($pid) {
-        return (($this->selection_map())[$pid] ?? null) !== null;
-    }
-
-    /** @return int */
-    function selection_index($pid) {
-        return (($this->selection_map())[$pid] ?? 0) - 1;
+        return $this->pidset->contains($pid);
     }
 
     function sort_selection() {
-        sort($this->sel);
-        $this->selmap = null;
+        $this->pidset = $this->pidset->sorted();
     }
 
     /** @param int|PaperInfo $a
      * @param int|PaperInfo $b
      * @return int */
     function order_compare($a, $b) {
-        if ($a instanceof PaperInfo) {
-            $a = $a->paperId;
-        }
-        if ($b instanceof PaperInfo) {
-            $b = $b->paperId;
-        }
-        $sm = $this->selection_map();
-        $as = $sm[$a] ?? PHP_INT_MAX;
-        $bs = $sm[$b] ?? PHP_INT_MAX;
-        if ($as === $bs) {
-            return $a < $b ? -1 : ($a == $b ? 0 : 1);
-        }
-        return $as < $bs ? -1 : 1;
+        return $this->pidset->compare($a instanceof PaperInfo ? $a->paperId : $a,
+                                      $b instanceof PaperInfo ? $b->paperId : $b);
     }
 
     /** @return bool */
-    function equals_search($search) {
-        if ($search instanceof PaperSearch) {
-            $search = $search->paper_ids();
-        }
-        if (count($search) !== count($this->sel)) {
-            return false;
-        }
-        sort($search);
-        $sel = $this->sel;
-        sort($sel);
-        return join(" ", $search) === join(" ", $sel);
-    }
-
-    /** @return string */
-    function sql_predicate() {
-        return sql_in_int_list($this->sel);
-    }
-
-    /** @return string */
-    function request_value() {
-        return join(" ", $this->sel);
+    function equals_search($srch) {
+        return $this->pidset->equal_contents($srch instanceof PaperSearch ? $srch->paper_ids() : $srch);
     }
 
     /** @return string */
     function unparse_search() {
-        if (empty($this->sel)) {
+        if ($this->pidset->is_empty()) {
             return "NONE";
-        } else if (count($this->sel) > 100) {
-            return "pidcode:" . SessionList::encode_ids($this->sel);
+        } else if ($this->pidset->count() > 100) {
+            return "pidcode:" . $this->pidset->encode_ids();
         }
-        return join(" ", $this->sel);
+        return join(" ", $this->pidset->ids());
     }
 }
