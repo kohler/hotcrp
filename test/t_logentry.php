@@ -277,6 +277,33 @@ class LogEntry_Tester {
         $conf->qe("alter table ActionLog AUTO_INCREMENT = 1");
     }
 
+    // Consecutive tag messages are combined before formatting, so the
+    // paper list stays last and log filters can narrow the entry
+    function test_combined_tag_log_keeps_paper_list_last() {
+        $conf = $this->conf;
+        $maxlog = $conf->fetch_ivalue("select max(logId) from ActionLog");
+        xassert_assign($this->u_chair, "paper,action,tag\n1 3,tag,zza zzb\n");
+        $rows = $conf->fetch_rows("select paperId, action from ActionLog where logId>? order by logId", $maxlog);
+        xassert_eqq(count($rows), 1);
+        xassert_eqq($rows[0][0], null);
+        xassert_eqq($rows[0][1], "Tag +#zza +#zzb (papers 1, 3)");
+
+        // an administrator of paper 3 alone sees the entry narrowed to #3
+        $leg = new LogEntryGenerator($conf, 50);
+        $leg->set_filter(new LogEntryFilter($this->u_floyd, [3 => true], true, null));
+        $seen = [];
+        foreach ($leg->page_rows(1) as $row) {
+            if (str_starts_with($row->action, "Tag +#zza")) {
+                $seen[] = [$row->paperId, $row->action];
+            }
+        }
+        xassert_eqq($seen, [[3, "Tag +#zza +#zzb"]]);
+
+        // clean up
+        xassert_assign($this->u_chair, "paper,action,tag\n1 3,cleartag,zza zzb\n");
+        $conf->qe("delete from ActionLog where logId>?", $maxlog);
+    }
+
     function finalize() {
         $this->conf->qe("delete from ActionLog");
         $this->conf->qe("alter table ActionLog AUTO_INCREMENT = 1");

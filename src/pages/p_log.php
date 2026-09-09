@@ -43,7 +43,7 @@ class Log_Page {
     }
 
 
-    private function parse_papers(LogEntryGenerator $leg) {
+    private function parse_papers() {
         $query = $this->qreq->p ?? "";
         if (trim($query) === "") {
             return;
@@ -58,10 +58,7 @@ class Log_Page {
         } else if (empty($pids)) {
             $this->ms->warning_at("p", "<0>No papers match that search");
         }
-        if (!empty($pids)) {
-            $this->include_pids = array_flip($pids);
-        }
-        $leg->set_paper_ids($pids);
+        $this->include_pids = array_flip($pids);
     }
 
     private function add_user_clause(LogEntryGenerator $leg) {
@@ -139,6 +136,9 @@ class Log_Page {
             $leg->set_filter(new LogEntryFilter($this->viewer, $good_pids, true, $this->include_pids));
         } else if (!$this->qreq->forceShow && !empty($this->exclude_pids)) {
             $leg->set_filter(new LogEntryFilter($this->viewer, $this->exclude_pids, false, $this->include_pids));
+        }
+        if ($this->include_pids !== null) {
+            $leg->set_paper_ids(array_keys($this->include_pids));
         }
 
         return $leg;
@@ -575,10 +575,10 @@ class Log_Page {
         }
 
         // create entry generator
-        $leg = $lp->make_generator($qreq->download ? 10000 : $count);
         if ($qreq->p !== "") {
-            $lp->parse_papers($leg);
+            $lp->parse_papers();
         }
+        $leg = $lp->make_generator($qreq->download ? 10000 : $count);
         if ($qreq->u !== "") {
             $lp->add_user_clause($leg);
         }

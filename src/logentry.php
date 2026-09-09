@@ -173,7 +173,7 @@ class LogEntryGenerator {
                 $t = addcslashes($m, '^$.*+?|(){}[]\\');
                 $ex[] = str_replace('\\*', ".*", $t);
             }
-            $this->action_regex = '(' . join("|", $ex) . ')';
+            $this->action_regex = str_replace("\x01", ".", '(' . join("|", $ex) . ')');
         }
         $this->reset();
         return $this;
@@ -377,7 +377,10 @@ class LogEntryGenerator {
                 $this->need_users[$destuid] = true;
 
                 // skip filtered rows (before consolidation)
-                if ($this->filter && !call_user_func($this->filter, $row)) {
+                if (($this->filter
+                     && !call_user_func($this->filter, $row))
+                    || ($this->action_regex
+                        && !preg_match("\x01{$this->action_regex}\x01i", $this->cleaned_action($row)))) {
                     continue;
                 }
 

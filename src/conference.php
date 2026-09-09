@@ -377,7 +377,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 331) {
+        if ($this->sversion < 332) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -5593,25 +5593,32 @@ class Conf {
         }
         $qv = [];
         '@phan-var-force list<list<string>> $qv';
-        $last_pids = null;
+        $cur_users = $cur_what = $cur_pids = null;
         foreach ($this->_save_logs as $cid_text => $pids) {
             $pos = strpos($cid_text, "|");
-            list($user, $dest_user, $true_user) = explode(",", substr($cid_text, 0, $pos));
+            $users = substr($cid_text, 0, $pos);
             $what = substr($cid_text, $pos + 1);
             array_sort_unique($pids);
-
-            // Combine `Tag` messages
-            if (str_starts_with($what, "Tag ")
-                && ($n = count($qv)) > 0
-                && str_starts_with($qv[$n-1][self::action_log_query_action_index], "Tag ")
-                && $last_pids === $pids) {
-                $qv[$n-1][self::action_log_query_action_index] .= substr($what, 3);
-            } else {
-                foreach (self::format_log_values($what, $user, $dest_user, $true_user, $pids) as $x) {
-                    $qv[] = $x;
-                }
-                $last_pids = $pids;
+            // combine `Tag` messages on the same user & papers
+            if ($cur_what !== null
+                && str_starts_with($what, "Tag ")
+                && str_starts_with($cur_what, "Tag ")
+                && $cur_users === $users
+                && $cur_pids === $pids) {
+                $cur_what .= substr($what, 3);
+                continue;
             }
+            if ($cur_what !== null) {
+                [$user, $dest_user, $true_user] = explode(",", $cur_users);
+                array_push($qv, ...self::format_log_values($cur_what, $user, $dest_user, $true_user, $cur_pids));
+            }
+            $cur_users = $users;
+            $cur_what = $what;
+            $cur_pids = $pids;
+        }
+        if ($cur_what !== null) {
+            [$user, $dest_user, $true_user] = explode(",", $cur_users);
+            array_push($qv, ...self::format_log_values($cur_what, $user, $dest_user, $true_user, $cur_pids));
         }
         if (!empty($qv)) {
             $this->qe(self::action_log_query . " values ?v", $qv);

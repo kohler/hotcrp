@@ -1303,6 +1303,29 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
     }
 
     /** @return bool */
+    private function v331_reorder_tag_log_entries() {
+        // Combined tag log entries used to append tag words after the paper
+        // list, `Tag +#a (papers 1, 3) +#b`; move the paper list last
+        $result = $this->conf->ql_ok("select logId, action from ActionLog where paperId is null and action like 'Tag %) %'");
+        if (!$result) {
+            return false;
+        }
+        $updates = [];
+        while (($row = $result->fetch_row())) {
+            if (preg_match('/\A(.*?) \(papers ([\d, ]++)\)( .*+)\z/s', $row[1], $m)) {
+                $updates[] = [(int) $row[0], "{$m[1]}{$m[3]} (papers {$m[2]})"];
+            }
+        }
+        $result->close();
+        $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
+        foreach ($updates as [$logid, $action]) {
+            $cleanf("update ActionLog set action=? where logId=?", $action, $logid);
+        }
+        $cleanf(null);
+        return true;
+    }
+
+    /** @return bool */
     function run() {
         $conf = $this->conf;
 
@@ -3357,6 +3380,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table WorkItem change `touchedAt` `touchedAt` bigint NOT NULL")
             && $conf->ql_ok("alter table WorkItem change `dequeuedAt` `dequeuedAt` bigint NOT NULL")) {
             $conf->update_schema_version(331);
+        }
+        if ($conf->sversion === 331
+            && $this->v331_reorder_tag_log_entries()) {
+            $conf->update_schema_version(332);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
