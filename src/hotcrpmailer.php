@@ -467,7 +467,7 @@ class HotCRPMailer extends Mailer {
     }
     function kw_tagvalue($args, $isbool, $uf) {
         $tag = isset($uf->match_data) ? $uf->match_data[1] : $args;
-        $tag = $this->tagger()->check($tag, Tagger::NOVALUE | Tagger::NOPRIVATE);
+        $tag = $this->tagger()->check_syntax($tag, Tagger::NOVALUE | Tagger::NOPRIVATE);
         if (!$tag) {
             return null;
         }
@@ -580,7 +580,7 @@ class HotCRPMailer extends Mailer {
     function kw_comments($args, $isbool) {
         $tag = null;
         if ($args === ""
-            || ($tag = $this->tagger()->check($args, Tagger::NOVALUE))) {
+            || ($tag = $this->tagger()->check_syntax($args, Tagger::NOVALUE))) {
             return $this->get_comments($tag);
         }
         return null;

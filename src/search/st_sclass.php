@@ -18,7 +18,7 @@ class Sclass_SearchTerm extends SearchTerm {
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $tagger = new Tagger($srch->user);
-        $tag = $tagger->check($word, Tagger::ALLOWRESERVED | Tagger::NOPRIVATE | Tagger::NOCHAIR);
+        $tag = $tagger->check_syntax($word, Tagger::ALLOWRESERVED | Tagger::NOPRIVATE | Tagger::NOCHAIR);
         if ($tag === false) {
             $srch->lwarning($sword, $tagger->error_ftext(true));
             return new False_SearchTerm;

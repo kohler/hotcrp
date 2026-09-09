@@ -92,8 +92,9 @@ class Comment_SearchTerm extends SearchTerm {
         if ($nsword
             && str_starts_with($nsword->qword, "#")
             && !$srch->conf->pc_tag_exists(substr($nsword->qword, 1))) {
-            $tags = new TagSearchMatcher($srch->user);
-            $tags->add_check_tag(substr($nsword->qword, 1), true);
+            $tags = (new TagSearchMatcher($srch->user))
+                ->set_allow_star(true);
+            $tags->add_check_tag(substr($nsword->qword, 1));
             foreach ($tags->error_ftexts() as $e) {
                 $srch->lwarning($sword, $e);
             }

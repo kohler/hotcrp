@@ -1033,6 +1033,26 @@ class Tags_Tester {
         xassert_eqq($prow->tag_value("a/b"), null);
     }
 
+    // showing a tag column the viewer can’t see produces a warning, not a
+    // silently missing column
+    function test_hidden_tag_column_warns() {
+        $this->conf->save_refresh_setting("tag_hidden", 1, "award-paper");
+        $u_pc = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($u_pc->isPC && !$u_pc->privChair);
+        $search = function ($u, $col) {
+            return call_api("search", $u, ["q" => "1-3", "t" => "s", "format" => "json", "report" => "pl", "f" => "show:{$col}"]);
+        };
+        $j = $search($u_pc, "#award-paper");
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->fields ?? [], []);
+        xassert_str_contains(json_encode($j->message_list ?? []), "permission to access tag");
+        xassert_eqq(($j->message_list[0]->status ?? null), MessageSet::WARNING);
+        $j = $search($this->u_chair, "#award-paper");
+        xassert_eqq(count($j->fields ?? []), 1);
+        xassert(!isset($j->message_list));
+        $this->conf->save_refresh_setting("tag_hidden", null);
+    }
+
     // `#UID~tag` columns may name PC members, never other accounts
     function test_numeric_twiddle_prefix_requires_pc() {
         $this->set_vote_allotment("vnum#3");

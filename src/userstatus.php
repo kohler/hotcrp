@@ -583,7 +583,7 @@ class UserStatus extends MessageSet {
             } else if ($change && strlen($t) > 1 && $t[0] === "+") {
                 $t = substr($t, 1);
             }
-            if (($tx = $tagger->check($t, $flags))) {
+            if (($tx = $tagger->check_syntax($t, $flags))) {
                 $t1[] = $pfx . $tx;
             } else {
                 $this->error_at($key, $tagger->error_ftext(true));

@@ -760,7 +760,7 @@ final class PaperList extends MessageSet {
         if (empty($fs)) {
             if ($this->user->can_view_tags(null)
                 && ($tagger = new Tagger($this->user))
-                && ($tag = $tagger->check($svc->keyword))
+                && ($tag = $tagger->check_syntax($svc->keyword))
                 && ($ps = new PaperSearch($this->user, ["q" => "#{$tag}", "t" => "vis"]))
                 && $ps->paper_ids()) {
                 $warning = "<0>‘{$svc->keyword}’ cannot be sorted; did you mean “sort:#{$tag}”?";

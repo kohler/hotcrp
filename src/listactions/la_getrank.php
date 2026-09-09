@@ -12,7 +12,7 @@ class GetRank_ListAction extends ListAction {
             return JsonResult::make_permission_error();
         }
         $tagger = new Tagger($user);
-        $tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR);
+        $tag = $tagger->check_syntax($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR);
         if (!$tag) {
             return JsonResult::make_parameter_error("tag", $tagger->error_ftext());
         }

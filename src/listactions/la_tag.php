@@ -135,8 +135,8 @@ class Tag_ListAction extends ListAction {
                 $source_tag = (substr($tagreq, 0, 2) === "~~" ? substr($tagreq, 2) : $tagreq);
             }
             $tagger = new Tagger($user);
-            if ($tagger->check($tagreq, Tagger::NOPRIVATE | Tagger::NOVALUE)
-                && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
+            if ($tagger->check_syntax($tagreq, Tagger::NOPRIVATE | Tagger::NOVALUE)
+                && $tagger->check_syntax($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
                 $r = new PaperRank($papers);
                 $r->load_user_tag_ranks($user->conf, $source_tag);
                 $r->set_gapless($gapless);

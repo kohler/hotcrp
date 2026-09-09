@@ -11,6 +11,8 @@ class TagSearchMatcher {
     private $_include_twiddles = false;
     /** @var bool */
     private $_avoid_regex = false;
+    /** @var bool */
+    private $_allow_star = false;
     /** Defines the class of match.
      *
      * * -2: Matches if no visible tags ("none"/test_empty()).
@@ -37,11 +39,30 @@ class TagSearchMatcher {
     function __construct(Contact $user) {
         $this->user = $user;
     }
+
+    /** @return $this */
     function set_include_twiddles(bool $on) {
         $this->_include_twiddles = $on;
+        return $this;
     }
+    /** @return $this */
     function set_avoid_regex(bool $on) {
         $this->_avoid_regex = $on;
+        return $this;
+    }
+    /** @return $this */
+    function set_allow_star(bool $on) {
+        $this->_allow_star = $on;
+        return $this;
+    }
+
+    /** @return bool */
+    function has_error() {
+        return !empty($this->_errors);
+    }
+    /** @param string $error */
+    function error($error) {
+        $this->_errors[] = $error;
     }
     /** @return list<string> */
     function error_ftexts() {
@@ -50,15 +71,16 @@ class TagSearchMatcher {
 
     /** @param string $tag
      * @param bool $allow_star_any */
-    function add_check_tag($tag, $allow_star_any) {
+    function add_check_tag($tag) {
         $xtag = $tag;
         $twiddle = strpos($xtag, "~");
+        $star = strpos($xtag, $twiddle ? : 0);
 
         $checktag = substr($xtag, (int) $twiddle);
         $tagger = new Tagger($this->user);
-        if (!$tagger->check($checktag, Tagger::NOVALUE | ($allow_star_any ? Tagger::ALLOWRESERVED | Tagger::ALLOWSTAR : 0))) {
-            $this->_errors[] = $tagger->error_ftext();
-            return false;
+        if (!$tagger->check_syntax($checktag, Tagger::NOVALUE | ($this->_allow_star ? Tagger::ALLOWRESERVED | Tagger::ALLOWSTAR : 0))) {
+            $this->_errors[] = $tagger->error_ftext(true);
+            return;
         }
 
         if ($twiddle === false
@@ -80,20 +102,21 @@ class TagSearchMatcher {
             } else {
                 $cids = ContactSearch::make_pc($c, $this->user)->user_ids();
             }
-            if (!$this->user->can_view_some_peruser_tag()) {
-                if (in_array($this->user->contactId, $cids, true)) {
-                    $cids = [$this->user->contactId];
-                } else {
-                    $this->_errors[] = "<0>You can’t search other users’ twiddle tags";
-                    return false;
+            if (empty($cids)) {
+                $this->_errors[] = $uid !== null ? "<0>PC member not found" : "<0>No PC member matches ‘{$c}’";
+                return;
+            } else if ((count($cids) > 1 && !$this->_allow_star)
+                       || ($star !== false && $cids !== [$this->user->contactId])) {
+                $this->_errors[] = "<0>Wildcard tags aren’t allowed here";
+                return;
+            } else if ($star === false
+                       ? !$this->user->can_view_peruser_tag(null, substr($xtag, $twiddle + 1))
+                       : !$this->user->can_view_some_peruser_tag()) {
+                if (!in_array($this->user->contactId, $cids, true)) {
+                    $this->_errors[] = "<0>You don’t have permission to access other users’ private tags";
+                    return;
                 }
-            } else if (empty($cids)) {
-                $this->_errors[] = "<0>No PC members match ‘{$c}’";
-                return false;
-            }
-            if (count($cids) > 1 && !$allow_star_any) {
-                $this->_errors[] = "<0>Wildcard searches like #{$tag} aren’t allowed here";
-                return false;
+                $cids = [$this->user->contactId];
             }
             if (count($cids) === 1 || $this->_avoid_regex) {
                 foreach ($cids as $xcid) {
@@ -110,7 +133,6 @@ class TagSearchMatcher {
         } else {
             $this->add_tag($this->user->contactId . $xtag);
         }
-        return true;
     }
 
     /** @param string $tag
@@ -120,6 +142,12 @@ class TagSearchMatcher {
             $this->_mtype = $tag === "any" ? -1 : -2;
             $this->_tagpat = $this->_tagregex = [];
         } else if ($this->_mtype >= 0) {
+            $star = strpos($tag, "*");
+            if ($star === false
+                && !$this->user->can_view_tag_somewhere($tag)) {
+                $this->_errors[] = "<0>You don’t have permission to access tag ‘{$tag}’";
+                return;
+            }
             $this->_tagpat[] = $tag;
             if ($this->_include_twiddles && strpos($tag, "~") === false)  {
                 $this->_tagpat[] = $this->user->contactId . "~" . $tag;

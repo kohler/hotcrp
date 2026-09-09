@@ -356,7 +356,7 @@ class Track_SettingParser extends SettingParser {
         } else if ($type === "none") {
             $pv = Track::right_name_required($si->name1) ? null : "+none";
         } else {
-            if (($t = $sv->tagger()->check($tag, Tagger::NOVALUE | Tagger::NOPRIVATE))) {
+            if (($t = $sv->tagger()->check_syntax($tag, Tagger::NOVALUE | Tagger::NOPRIVATE))) {
                 $pv = $type . $t;
             } else {
                 $sv->error_at($pfx, $sv->tagger()->error_ftext());
@@ -390,7 +390,7 @@ class Track_SettingParser extends SettingParser {
                     $sv->error_if_duplicate_member("track", $ctr, "tag", "Track tag");
                     if (!$sv->has_error_at("track/{$ctr}/tag")
                         && ($this->cur_trx->tag === "_"
-                            || !$sv->tagger()->check($this->cur_trx->tag, Tagger::NOVALUE))) {
+                            || !$sv->tagger()->check_syntax($this->cur_trx->tag, Tagger::NOVALUE))) {
                         $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘{$this->cur_trx->tag}’ is reserved");
                     }
                 }

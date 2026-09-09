@@ -36,13 +36,13 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
     function set_req($req, AssignmentState $state) {
         // parse tags
         $this->tagger = new Tagger($state->user);
-        $this->tag = $this->tagger->check($req["tag"] ?? "", Tagger::NOVALUE | Tagger::ALLOWSTAR | Tagger::ALLOWCONTACTID);
+        $this->tag = $this->tagger->check_syntax($req["tag"] ?? "", Tagger::NOVALUE | Tagger::ALLOWSTAR | Tagger::ALLOWCONTACTID);
         if (!$this->tag) {
             $state->error($this->tagger->error_ftext(true));
             return false;
         }
 
-        $this->new_tag = $this->tagger->check($req["new_tag"] ?? "", Tagger::NOVALUE | Tagger::ALLOWSTAR | Tagger::ALLOWCONTACTID);
+        $this->new_tag = $this->tagger->check_syntax($req["new_tag"] ?? "", Tagger::NOVALUE | Tagger::ALLOWSTAR | Tagger::ALLOWCONTACTID);
         if (!$this->new_tag) {
             if ($this->tagger->error_code() === Tagger::EEMPTY) {
                 $state->error("<0>New tag required");
@@ -134,7 +134,7 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
             if ($tagmap->is_automatic($new_tag)) {
                 continue;
             }
-            if (!$this->tagger->check($new_tag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)) {
+            if (!$this->tagger->check_syntax($new_tag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)) {
                 $state->error($this->tagger->error_ftext(true));
                 $ok = false;
                 continue;

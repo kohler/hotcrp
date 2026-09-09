@@ -664,7 +664,7 @@ class Tag_Sitype extends Sitype {
                 $flags |= Tagger::ALLOWNONE;
             }
         }
-        if (($t = $sv->tagger()->check($vstr, $flags)) !== false) {
+        if (($t = $sv->tagger()->check_syntax($vstr, $flags)) !== false) {
             return $t;
         }
         $sv->error_at($si, $sv->tagger()->error_ftext());
@@ -700,7 +700,7 @@ class TagList_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         $ts = [];
         foreach (preg_split('/[\s,;]+/', $vstr) as $t) {
-            if ($t !== "" && ($tx = $sv->tagger()->check($t, $this->flags))) {
+            if ($t !== "" && ($tx = $sv->tagger()->check_syntax($t, $this->flags))) {
                 list($tag, $idx) = Tagger::unpack($tx);
                 if ($this->min_idx !== null) {
                     $tx = $tag . "#" . max($this->min_idx, (float) $idx);

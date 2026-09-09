@@ -157,7 +157,7 @@ final class CommentStatus extends MessageSet {
             $ts = [];
             foreach (preg_split('/\s++/', $req["tags"]) as $tt) {
                 if ($tt !== ""
-                    && ($tt = $tagger->check($tt))) {
+                    && ($tt = $tagger->check_syntax($tt))) {
                     list($tag, $value) = Tagger::unpack($tt);
                     $ltag = strtolower($tag);
                     if (!str_ends_with($ltag, "response")) {

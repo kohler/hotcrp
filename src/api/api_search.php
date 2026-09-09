@@ -67,9 +67,6 @@ class Search_API {
         }
         $ih = $pl->ids_and_groups();
         $jr = JsonResult::make_ok();
-        if ($pl->has_message()) {
-            $jr->set("message_list", $pl->message_list());
-        }
         $jr->set("ids", $ih[0]);
         $jr->set("groups", $ih[1]);
         $jr->set("search_params", $pl->encoded_search_params());
@@ -80,6 +77,10 @@ class Search_API {
             foreach ($pl->format_json($format, PaperList::VIEWORIGIN_MAX) as $k => $v) {
                 $jr->set($k, $v);
             }
+        }
+        // column expansion (in `format_json`) can add messages
+        if ($pl->has_message()) {
+            $jr->set("message_list", $pl->message_list());
         }
         $user->set_overrides($old_overrides);
         return $jr;

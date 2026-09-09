@@ -1654,19 +1654,16 @@ class Tagger {
         case self::ERANGE:
             return "<0>Tag value out of range";
         case self::ALLOWSTAR:
-            return "<0>Invalid tag{$t} (stars aren’t allowed here)";
+            return "<0>Wildcard tags aren’t allowed here";
         case self::NOCHAIR:
             if ($this->user->is_chairlike()) {
-                return "<0>Invalid tag{$t} (chair tags aren’t allowed here)";
+                return "<0>Chair tags aren’t allowed here";
             }
-            return "<0>Tag{$t} reserved for chairs";
+            return "<0>You don’t have permission to access chair tag" . ($t ? : "s");
         case self::NOPRIVATE:
             return "<0>Private tags aren’t allowed here";
         case self::ALLOWCONTACTID:
-            if ($verbose && ($twiddle = strpos($this->errtag ?? "", "~"))) {
-                return "<0>Invalid tag{$t} (did you mean ‘#" . substr($this->errtag, $twiddle) . "’?)";
-            }
-            return "<0>Invalid private tag";
+            return "<0>You don’t have permission to access other users’ private tags";
         case self::NOVALUE:
             return "<0>Tag values aren’t allowed here";
         case self::ALLOWRESERVED:
@@ -1695,8 +1692,16 @@ class Tagger {
 
     /** @param ?string $tag
      * @param int $flags
-     * @return string|false */
+     * @return string|false
+     * @deprecated */
     function check($tag, $flags = 0) {
+        return $this->check_syntax($tag, $flags);
+    }
+
+    /** @param ?string $tag
+     * @param int $flags
+     * @return string|false */
+    function check_syntax($tag, $flags = 0) {
         if (($tag = $tag ?? "") !== "" && $tag[0] === "#") {
             $tag = substr($tag, 1);
         }
@@ -1733,16 +1738,8 @@ class Tagger {
                     $m[1] = $this->_contactId . "~";
                 }
             } else if ($m[1] !== $this->_contactId . "~") {
-                $uid = ($flags & self::ALLOWCONTACTID) === 0 ? 0 : intval($m[1]);
-                if ($uid > 0 && !$this->user->privChair) {
-                    $vrm = $this->user->viewable_roles_mask();
-                    if ($vrm === 0
-                        || ($u = $this->user->conf->pc_user_by_id($uid)) === null
-                        || ($u->roles & $vrm) === 0) {
-                        $uid = 0;
-                    }
-                }
-                if ($uid <= 0) {
+                if (($flags & self::ALLOWCONTACTID) === 0
+                    || stoi(substr($m[1], 0, -1)) === null) {
                     return $this->set_error_code(self::ALLOWCONTACTID, $tag);
                 }
             }

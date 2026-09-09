@@ -253,7 +253,7 @@ abstract class Autoassigner extends MessageSet {
     function tag_option($name, $flags = 0) {
         $tagger = new Tagger($this->user);
         $v = trim((string) $this->option($name));
-        $tag = $tagger->check($v, Tagger::NOVALUE | $flags);
+        $tag = $tagger->check_syntax($v, Tagger::NOVALUE | $flags);
         if ($tag === "") {
             return null;
         } else if ($tag !== false) {

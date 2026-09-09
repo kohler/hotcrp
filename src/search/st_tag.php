@@ -34,7 +34,9 @@ class Tag_SearchTerm extends SearchTerm {
         }
 
         // check value matchers
-        $tsm = new TagSearchMatcher($srch->user);
+        $tsm = (new TagSearchMatcher($srch->user))
+            ->set_allow_star(!$sword->kwdef->sorting);
+
         if (preg_match('/\A([^\#=!<>\x80-\xFF]+)[\#=](-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(|-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)) {
             $tagword = $m[1];
             $tsm->add_value_matcher(new CountMatcher(">={$m[2]}"));
@@ -52,7 +54,7 @@ class Tag_SearchTerm extends SearchTerm {
         }
 
         // match tag body
-        $tsm->add_check_tag($tagword, !$sword->kwdef->sorting);
+        $tsm->add_check_tag($tagword);
 
         // expand automatic tags if requested
         $allterms = [];

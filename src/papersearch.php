@@ -1601,7 +1601,7 @@ class PaperSearch extends MessageSet {
         foreach ($this->sort_field_list() as $s) {
             if (preg_match('/\A(?:\#|tag:\s*|tagval:\s*)(\S+)\z/', $s, $m)) {
                 $tagger = $tagger ?? new Tagger($this->user);
-                if (($tag = $tagger->check($m[1]))) {
+                if (($tag = $tagger->check_syntax($m[1]))) {
                     $ht[] = $tag;
                 }
             }

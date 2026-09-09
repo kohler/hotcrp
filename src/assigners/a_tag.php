@@ -378,7 +378,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // star only allowed on remove
         if (!$piece->allow_wildcard()
             && strpos($piece->xtag, "*") !== false) {
-            $state->error("<0>Invalid tag ‘{$tag}’ (wildcards aren’t allowed here)");
+            $state->error("<0>Wildcard tag ‘{$tag}’ isn’t allowed here");
             return false;
         }
 
@@ -390,7 +390,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // if adding, check tag
         if (!$piece->allow_wildcard()) {
             $tagger = new Tagger($state->user);
-            if (!$tagger->check($piece->xtag)) {
+            if (!$tagger->check_syntax($piece->xtag)) {
                 $state->error($tagger->error_ftext(true));
                 return false;
             }

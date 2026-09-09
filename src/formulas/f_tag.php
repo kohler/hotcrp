@@ -40,7 +40,7 @@ class Tag_Fexpr extends Fexpr {
         $tag = $m[1];
         $pc_indexed = str_starts_with($tag, "_~");
         $tsm = new TagSearchMatcher($ff->user);
-        $tsm->add_check_tag($pc_indexed ? substr($tag, 1) : $tag, true);
+        $tsm->add_check_tag($pc_indexed ? substr($tag, 1) : $tag);
         foreach ($tsm->error_ftexts() as $e) {
             $ff->lerror($e);
         }

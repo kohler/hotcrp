@@ -274,7 +274,7 @@ class Users_Page {
             } else {
                 $pfx = "";
             }
-            if (!($t = $tagger->check($t, $flags))) {
+            if (!($t = $tagger->check_syntax($t, $flags))) {
                 $ms->error_at(null, $tagger->error_ftext());
                 continue;
             }

@@ -93,7 +93,7 @@ class TrackerConfig_API {
         } else if ($vis === ""
                    || strcasecmp($vis, "pc") === 0) {
             $this->error_at_sfx($i, "visibility", "<0>PC tag required");
-        } else if (($vt = $this->tagger->check($vis, Tagger::NOPRIVATE | Tagger::NOVALUE))) {
+        } else if (($vt = $this->tagger->check_syntax($vis, Tagger::NOPRIVATE | Tagger::NOVALUE))) {
             if (!$this->conf->pc_tag_exists($vt)) {
                 $this->error_at_sfx($i, "visibility", "<0>Unknown PC tag");
             }

@@ -189,7 +189,7 @@ class Tags_API {
 
     static function votereport_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $tagger = new Tagger($user);
-        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
+        if (!($tag = $tagger->check_syntax($qreq->tag, Tagger::NOVALUE))) {
             return JsonResult::make_parameter_error("tag", $tagger->error_ftext());
         }
         if (!$user->can_view_peruser_tag($prow, $tag)) {
