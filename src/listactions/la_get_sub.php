@@ -112,6 +112,7 @@ class GetTopics_ListAction extends ListAction {
 
 class GetCSV_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
+        $qreq["tsoft"] = $qreq["tsoft"] ?? "1";
         $search = new PaperSearch($user, $qreq);
         $search->restrict_match([$ssel, "is_selected"]);
         assert(!isset($qreq->display));

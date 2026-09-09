@@ -111,7 +111,7 @@ class Mail_Page {
         }
 
         if (friendly_boolean($qreq->plimit)) {
-            $search = new PaperSearch($this->viewer, ["t" => $qreq->t, "q" => $qreq->q]);
+            $search = new PaperSearch($this->viewer, ["t" => $qreq->t, "q" => $qreq->q, "tsoft" => true]);
             $papersel = $search->paper_ids();
             sort($papersel);
             if (!$qreq->recheck
@@ -304,7 +304,7 @@ class Mail_Page {
         $plist = null;
         if ($this->qreq->recheck && $this->qreq->plimit) {
             $plist = new PaperList($this->qreq->t === "req" ? "reqrevs" : "reviewers",
-                new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q]));
+                new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q, "tsoft" => true]));
             foreach ($plist->message_list() as $mi) {
                 $this->recip->append_item_at("q", $mi);
             }

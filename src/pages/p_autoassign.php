@@ -106,7 +106,7 @@ class Autoassign_Page {
             }
             unset($qreq->has_pap, $qreq->assign);
         }
-        $search = new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q]);
+        $search = new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q, "tsoft" => $this->user->privChair]);
         if (isset($qreq->asel)) {
             $this->asel = SearchSelection::make($qreq, $this->user, "asel");
         } else if (isset($qreq->has_pap) && !isset($qreq->saveassignment)) {
@@ -493,7 +493,7 @@ class Autoassign_Page {
             PaperSearch::limit_selector($conf, PaperSearch::viewable_manager_limits($this->user, $qreq->t), $qreq->t),
             " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
         if (isset($qreq->requery) || isset($qreq->has_pap)) {
-            $search = (new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q]))->set_urlbase("autoassign");
+            $search = (new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q, "tsoft" => $this->user->privChair]))->set_urlbase("autoassign");
             $plist = new PaperList("reviewersSel", $search);
             $plist->set_selection($this->ssel)
                 ->set_table_decor(PaperList::DECOR_HEADER);

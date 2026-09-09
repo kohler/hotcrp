@@ -61,7 +61,7 @@ class ReviewPrefs_Page {
         }
 
         $search = (new PaperSearch($user, [
-            "t" => $qreq->t, "q" => $qreq->q, "reviewer" => $reviewer
+            "t" => $qreq->t, "q" => $qreq->q, "reviewer" => $reviewer, "tsoft" => true
         ]))->set_urlbase("reviewprefs");
         $pl = new PaperList("pf", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();

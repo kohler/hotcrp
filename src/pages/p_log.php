@@ -48,7 +48,7 @@ class Log_Page {
         if (trim($query) === "") {
             return;
         }
-        $search = new PaperSearch($this->viewer, ["t" => "all", "q" => $query]);
+        $search = new PaperSearch($this->viewer, ["t" => "all", "q" => $query, "tsoft" => true]);
         $search->set_allow_deleted(true);
         $pids = $search->paper_ids();
         if ($search->has_problem()) {

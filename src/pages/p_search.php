@@ -270,7 +270,7 @@ class Search_Page {
 
         // create PaperList
         if (isset($qreq->q)) {
-            $qreq->toverride = $qreq->toverride ?? "1";
+            $qreq->tsoft = $qreq->tsoft ?? "1";
             $search = new PaperSearch($user, $qreq);
         } else {
             $search = new PaperSearch($user, ["t" => $qreq->t, "q" => "NONE"]);

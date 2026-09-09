@@ -381,20 +381,21 @@ class PaperSearch extends MessageSet {
         }
 
         // paper selection
-        $toverride = friendly_boolean($options["toverride"] ?? null);
+        $tsoft = friendly_boolean($options["tsoft"] ?? null);
         if (isset($options["t"])
             && $options["t"] !== ""
             && $options["t"] !== "default") {
             $lnames = Limit_SearchTerm::canonical_names($this->conf, $options["t"]);
             $limit = $lnames[0] ?? "none";
-            $toverride = $toverride ?? true;
+            $tsoft = $tsoft ?? false;
         } else {
             $limit = "default";
+            $tsoft = $tsoft ?? true;
         }
         $lword = SearchWord::make_simple($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
         $this->_limit_qe->set_base();
-        $this->_limit_override = $toverride ? 0 : -1;
+        $this->_limit_override = $tsoft ? 0 : -1;
     }
 
     private function clear_compilation() {

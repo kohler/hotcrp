@@ -113,7 +113,10 @@ class Paper_API extends MessageSet {
     /** @param array<string,mixed> $args
      * @return array{PaperSearch,PaperInfoSet} */
     static function make_search(Contact $user, Qrequest $qreq, $args = []) {
-        $qreq->t = $qreq->t ?? "viewable";
+        if (!isset($qreq->t)) {
+            $qreq->t = "viewable";
+            $qreq->tsoft = $qreq->tsoft ?? "1";
+        }
         $srch = new PaperSearch($user, $qreq);
         if (friendly_boolean($qreq->warn_missing)) {
             $srch->set_warn_missing(true);
