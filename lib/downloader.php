@@ -104,34 +104,27 @@ class Downloader {
     /** @param ?string $range */
     private function _parse_range($range) {
         if ($range === null
-            || !preg_match('/\Abytes\s*=\s*(?:(?:\d+-\d+|-\d+|\d+-)\s*,?\s*)+\z/', $range)) {
+            || !preg_match('/\Abytes\s*+=\s*+(?:(?:\d++-\d*+|-\d++)\s*+,?+\s*+)++\z/', $range)) {
             $this->range = null;
             return;
         }
         $this->range = [];
-        $lastr = null;
-        preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
+        preg_match_all('/\d++-\d*+|-\d++/', $range, $m);
+        if (count($m[0]) > 200) {
+            $this->range = null;
+            return;
+        }
         foreach ($m[0] as $t) {
             $dash = strpos($t, "-");
             $r1 = $dash === 0 ? null : stoi(substr($t, 0, $dash));
             $r2 = $dash === strlen($t) - 1 ? null : stoi(substr($t, $dash + 1));
-            if ($r1 === null && $r2 !== 0) {
-                $this->range[] = $lastr = [$r1, $r2];
-            } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
-                if ($lastr !== null
-                    && $lastr[0] !== null
-                    && $lastr[1] !== null
-                    && $r1 >= $lastr[0]
-                    && $r1 - $lastr[1] <= 100) {
-                    $nr = count($this->range);
-                    $this->range[$nr - 1][1] = $lastr[1] = $r2;
-                } else {
-                    $this->range[] = $lastr = [$r1, $r2];
-                }
-            } else {
+            if (($r1 === null && ($dash !== 0 || !$r2))
+                || ($r2 === null && $dash !== strlen($t) - 1)
+                || ($r1 !== null && $r2 !== null && $r1 > $r2)) {
                 $this->range = null;
                 return;
             }
+            $this->range[] = [$r1, $r2];
         }
     }
 
@@ -344,6 +337,17 @@ class Downloader {
             }
             if ($r0 < $r1) {
                 $rs[] = [$r0, $r1];
+            }
+        }
+        usort($rs, function ($a, $b) { return $a[0] <=> $b[0]; });
+        for ($i = 0; $i !== count($rs); ++$i) {
+            $j = $i + 1;
+            while ($j !== count($rs) && $rs[$j][0] - $rs[$i][1] <= 1) {
+                $rs[$i][1] = max($rs[$i][1], $rs[$j][1]);
+                ++$j;
+            }
+            if ($j !== $i + 1) {
+                array_splice($rs, $i + 1, $j - ($i + 1));
             }
         }
         if (empty($rs)) {
