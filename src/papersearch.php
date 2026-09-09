@@ -1447,11 +1447,16 @@ class PaperSearch extends MessageSet {
         if ($this->q !== ""
             && $this->q[0] !== "#"
             && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)
-            && $this->user->can_view_tags(null)
+            && $this->user->can_view_tag_somewhere($this->q)
             && in_array($this->limit(), ["s", "all", "r"], true)) {
-            if ($this->q[0] === "~"
-                || $this->conf->fetch_ivalue("select exists(select * from PaperTag where tag=?) from dual", $this->q)) {
-                return "#" . $this->q;
+            if ($this->q[0] === "~") {
+                return "#{$this->q}";
+            }
+            $pset = $this->conf->paper_set(["where" => "exists (select * from PaperTag where tag='" . sqlq($this->q) . "' and paperId=Paper.paperId)", "tags" => true, "limit" => "limit 30"], $this->user);
+            foreach ($pset as $prow) {
+                if ($this->user->can_view_paper($prow)
+                    && $this->user->can_view_tag($prow, $this->q))
+                    return "#{$this->q}";
             }
         }
         return false;
