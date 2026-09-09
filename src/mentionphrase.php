@@ -17,13 +17,16 @@ class MentionPhrase implements JsonSerializable {
     public $pos2;
 
     // NB order matters; at TF_AUTHOR or above the user has a specific
-    // relationship to the paper *that the viewer can view*
+    // relationship to the paper *that the viewer can view*.
+    // The value of `flags` may be serialized so these constants can’t
+    // change.
     const TF_NAMED = 1;
     const TF_PC = 2;
     const TF_AUTHOR = 4;
     const TF_REVIEWER = 8;
     const TF_SHEPHERD = 16;
     const TF_COMMENTER = 32;
+    const TFM_ALL = 0xFF;
 
     /** @param Contact|Author $user
      * @param int $flags
@@ -67,6 +70,6 @@ class MentionPhrase implements JsonSerializable {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        return [$this->user->contactId, $this->pos1, $this->pos2, $this->named()];
+        return [$this->user->contactId, $this->pos1, $this->pos2, $this->flags];
     }
 }

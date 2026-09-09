@@ -349,14 +349,14 @@ class CommentInfo {
     }
 
     /** @param ContactPermissions $viewer
-     * @param array{int,int,int,?bool} $mn
+     * @param array{int,int,int,int|bool} $mn
      * @param int $censor_until
      * @return bool */
     private function _mention_censor($viewer, $mn, $censor_until) {
         // skip bogus, already-pseudonymous, and self mentions
         if (!is_array($mn)
             || count($mn) < 4
-            || !$mn[3]
+            || ((int) $mn[3] & MentionPhrase::TF_NAMED) === 0
             || $mn[0] === $viewer->contactId
             || !($this->_recently_censorable ?? $this->_mention_censorable($viewer))) {
             return false;
@@ -366,16 +366,20 @@ class CommentInfo {
             return false;
         }
         // do not censor visible shepherd
-        if ($mn[0] === $this->prow->shepherdContactId
+        $mt = is_int($mn[3]) ? $mn[3] : MentionPhrase::TFM_ALL;
+        if (($mt & MentionPhrase::TF_SHEPHERD) !== 0
+            && $mn[0] === $this->prow->shepherdContactId
             && $viewer->can_view_shepherd($this->prow)) {
             return false;
         }
         // do not censor visible reviewer identity
-        if ($this->prow->can_view_review_identity_of($mn[0], $viewer)) {
+        if (($mt & MentionPhrase::TF_REVIEWER) !== 0
+            && $this->prow->can_view_review_identity_of($mn[0], $viewer)) {
             return false;
         }
         // do not censor fellow author
-        if ($this->prow->has_author($viewer)
+        if (($mt & MentionPhrase::TF_AUTHOR) !== 0
+            && $this->prow->has_author($viewer)
             && $this->prow->has_author($mn[0])) {
             return false;
         }
@@ -395,9 +399,11 @@ class CommentInfo {
 
     /** @param ContactPermissions $viewer
      * @param int $uid
+     * @param null|int|bool $mt
      * @return string */
-    private function _mention_pseudonym($viewer, $uid) {
-        $s = $this->prow->unparse_pseudonym($viewer, $uid) ?? "Anonymous";
+    private function _mention_pseudonym($viewer, $uid, $mt) {
+        $mt = is_int($mt) ? $mt : null;
+        $s = $this->prow->unparse_pseudonym($viewer, $uid, $mt) ?? "Anonymous";
         return "@{$s}";
     }
 
@@ -438,7 +444,7 @@ class CommentInfo {
             $censor_until = $censor_until ?? PHP_INT_MAX;
             foreach ($mns as $mn) {
                 if ($this->_mention_censor($viewer, $mn, $censor_until - $delta)) {
-                    $r = $this->_mention_pseudonym($viewer, $mn[0]);
+                    $r = $this->_mention_pseudonym($viewer, $mn[0], $mn[3]);
                     $t = substr_replace($t, $r, $mn[1] + $delta, $mn[2] - $mn[1]);
                     $delta += strlen($r) - ($mn[2] - $mn[1]);
                     $this->_recently_censored = true;
@@ -449,8 +455,8 @@ class CommentInfo {
         return $t;
     }
 
-    /** @param list<array{int,int,int,bool}> $mns
-     * @return list<array{int,int,int,bool}> */
+    /** @param list<array{int,int,int,int|bool}> $mns
+     * @return list<array{int,int,int,int|bool}> */
     private function make_my_mentions(Contact $viewer, $mns) {
         $delta = 0;
         $result = [];
@@ -458,7 +464,7 @@ class CommentInfo {
             if ($mn[0] === $viewer->contactId) {
                 $result[] = [$mn[0], $mn[1] + $delta, $mn[2] + $delta, $mn[3]];
             } else if ($this->_mention_censor($viewer, $mn, PHP_INT_MAX)) {
-                $r = $this->_mention_pseudonym($viewer, $mn[0]);
+                $r = $this->_mention_pseudonym($viewer, $mn[0], $mn[3]);
                 $delta += strlen($r) - ($mn[2] - $mn[1]);
             }
         }

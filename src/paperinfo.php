@@ -1814,24 +1814,33 @@ class PaperInfo {
 
     /** @param ?ContactPermissions $viewer
      * @param int $cid
+     * @param ?int $mt
      * @return ?string */
-    function unparse_pseudonym($viewer, $cid) {
-        if ($this->has_author($cid)) {
-            return "Author";
-        } else if ($cid > 0 && $this->managerContactId === $cid) {
+    function unparse_pseudonym($viewer, $cid, $mt = null) {
+        $mt = $mt ?? MentionPhrase::TFM_ALL;
+        if ($cid > 0 && $this->managerContactId === $cid) {
             return "Administrator";
-        } else if ($cid > 0 && $this->shepherdContactId === $cid) {
+        }
+        if (($mt & MentionPhrase::TF_AUTHOR) !== 0
+            && $this->has_author($cid)) {
+            return "Author";
+        }
+        if (($mt & MentionPhrase::TF_SHEPHERD) !== 0
+            && $cid > 0
+            && $this->shepherdContactId === $cid) {
             return "Shepherd";
         }
-        $rrow = $this->review_by_user($cid);
+        $rrow = ($mt & MentionPhrase::TF_REVIEWER) !== 0 ? $this->review_by_user($cid) : null;
         if ($rrow
             && $rrow->reviewOrdinal
             && (!$viewer || $viewer->can_view_review_assignment($this, $rrow))) {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
-        } else if (($p = $this->conf->pc_member_by_id($cid))
-                   && $p->allow_admin($this)) {
+        }
+        if (($p = $this->conf->pc_member_by_id($cid))
+            && $p->allow_admin($this)) {
             return "Administrator";
-        } else if ($rrow) {
+        }
+        if ($rrow) {
             return "Reviewer";
         }
         return null;

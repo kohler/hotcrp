@@ -212,8 +212,8 @@ class Comments_Tester {
         $pos1a = strpos($cmtj->text, "@Lixia");
         $pos1b = strpos($cmtj->text, "@Reviewer B");
         xassert_eqq($cmtj->my_mentions,
-            [[$lixia->contactId, $pos1a, $pos1a + strlen("@Lixia Zhang"), true],
-             [$lixia->contactId, $pos1b, $pos1b + strlen("@Reviewer B"), false]]);
+            [[$lixia->contactId, $pos1a, $pos1a + strlen("@Lixia Zhang"), 9],
+             [$lixia->contactId, $pos1b, $pos1b + strlen("@Reviewer B"), 8]]);
 
         $mgbaker = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
         xassert($mgbaker->can_view_comment($paper1, $cmt));
@@ -222,8 +222,8 @@ class Comments_Tester {
         $pos1a = strpos($cmtj->text, "@Reviewer A");
         $pos1b = strpos($cmtj->text, "@Mary");
         xassert_eqq($cmtj->my_mentions,
-            [[$mgbaker->contactId, $pos1a, $pos1a + strlen("@Reviewer A"), false],
-             [$mgbaker->contactId, $pos1b, $pos1b + strlen("@Mary Baker"), true]]);
+            [[$mgbaker->contactId, $pos1a, $pos1a + strlen("@Reviewer A"), 8],
+             [$mgbaker->contactId, $pos1b, $pos1b + strlen("@Mary Baker"), 9]]);
 
         $diot = $this->conf->checked_user_by_email("christophe.diot@sophia.inria.fr");
         xassert($diot->can_view_comment($paper1, $cmt));
@@ -231,11 +231,41 @@ class Comments_Tester {
         xassert_eqq($cmtj->text, "Hello @Reviewer A @Reviewer B @Reviewer B @Reviewer A @Christophe Diot");
         $pos1a = strpos($cmtj->text, "@Chr");
         xassert_eqq($cmtj->my_mentions,
-            [[$diot->contactId, $pos1a, $pos1a + strlen("@Christophe Diot"), true]]);
+            [[$diot->contactId, $pos1a, $pos1a + strlen("@Christophe Diot"), 3]]);
 
         MailChecker::check_db("t_comments-mention-censor");
 
         $this->conf->save_setting("viewrev", null);
+        $this->conf->save_refresh_setting("tracks", null);
+    }
+
+    function test_mention_censor_hides_authorship() {
+        // A PC reviewer who cannot see paper 1’s authors mentions Estrin, a
+        // PC member who is one of them. The censored form shown to another
+        // reviewer must not reveal that relationship.
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->conf->save_setting("viewrev", Conf::VIEWREV_UNLESSINCOMPLETE);
+        $this->conf->save_setting("cmt_revid", 1); // comments visible though identities hidden
+        $this->conf->save_refresh_setting("tracks", 1, ["_" => ["viewrevid" => "+none"]]);
+        $lixia = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $estrin = $this->conf->checked_user_by_email("estrin@usc.edu");
+        xassert($estrin->isPC && $paper1->has_author($estrin));
+        xassert(!$lixia->can_view_authors($paper1));
+
+        $j = call_api("=comment", $lixia, ["c" => "new", "text" => "Hi @Deborah Estrin"], $paper1);
+        xassert($j->ok);
+        $paper1->load_comments();
+        $cmt = $paper1->comment_by_id($j->comment->cid);
+        xassert_eqq($cmt->unparse_json($lixia)->text, "Hi @Deborah Estrin");
+
+        $diot = $this->conf->checked_user_by_email("christophe.diot@sophia.inria.fr");
+        xassert(!$diot->can_view_authors($paper1));
+        xassert(!$diot->can_view_review_identity($paper1, null));
+        xassert_eqq($cmt->unparse_json($diot)->text, "Hi @Anonymous");
+
+        MailChecker::clear();
+        $this->conf->save_setting("viewrev", null);
+        $this->conf->save_setting("cmt_revid", null);
         $this->conf->save_refresh_setting("tracks", null);
     }
 
