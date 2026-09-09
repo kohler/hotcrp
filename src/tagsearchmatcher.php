@@ -70,9 +70,9 @@ class TagSearchMatcher {
                 if ($uid > 0
                     && ($uid === $this->user->contactXid
                         || $this->user->privChair
-                        || ($this->user->can_view_pc()
+                        || (($vrm = $this->user->viewable_roles_mask()) !== 0
                             && ($u = $this->user->conf->pc_user_by_id($uid))
-                            && ($u->roles & $this->user->viewable_roles_mask()) !== 0))) {
+                            && ($u->roles & $vrm) !== 0))) {
                     $cids = [$uid];
                 } else {
                     $cids = [];

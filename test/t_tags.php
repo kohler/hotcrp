@@ -1032,4 +1032,21 @@ class Tags_Tester {
         xassert_eqq($prow->tag_value("{$this->u_varghese->contactId}~a/b"), null);
         xassert_eqq($prow->tag_value("a/b"), null);
     }
+
+    // `#UID~tag` columns may name PC members, never other accounts
+    function test_numeric_twiddle_prefix_requires_pc() {
+        $this->set_vote_allotment("vnum#3");
+        $u_nonpc = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        xassert(!$u_nonpc->isPC);
+        xassert($this->u_floyd->isPC && $this->u_varghese->isPC && !$this->u_varghese->privChair);
+        $search = function ($name) {
+            $j = call_api("search", $this->u_varghese, ["q" => "", "t" => "s", "format" => "json", "report" => "pl", "f" => "show:{$name}"]);
+            return json_encode($j->fields ?? []);
+        };
+        $t = $search("#{$this->u_floyd->contactId}~vnum");
+        xassert_str_contains($t, "Floyd");
+        $t = $search("#{$u_nonpc->contactId}~vnum");
+        xassert_eqq($t, "[]");
+        $this->clear_vote_tags("vnum");
+    }
 }

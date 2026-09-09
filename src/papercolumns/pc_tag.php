@@ -55,7 +55,8 @@ class Tag_PaperColumn extends PaperColumn {
             return false;
         }
         $tagger = new Tagger($pl->user);
-        if (!($this->etag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID))) {
+        if (!($this->etag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID))
+            || !$pl->user->can_view_tag_somewhere($this->etag)) {
             return false;
         }
         $this->ctag = " {$this->etag}#";
@@ -275,12 +276,17 @@ class Tag_PaperColumn extends PaperColumn {
     }
 
     static function expand($name, XtParams $xtp, $xfj, $m) {
+        $xtp->mark_priority_barrier($xfj);
         $tsm = new TagSearchMatcher($xtp->user);
         $tsm->set_avoid_regex(true);
         $tsm->add_check_tag($m[2], true);
         $dt = $xtp->conf->tags();
         $rs = [];
         foreach ($tsm->expand() as $t) {
+            if (!$xtp->user->can_view_tag_somewhere($t)) {
+                PaperColumn::column_error_at($xtp, $name, "<0>You can’t view tag ‘#{$t}’");
+                continue;
+            }
             $fj = (array) $xfj;
             $fj["name"] = $m[1] . $t;
             $fj["tag"] = $t;

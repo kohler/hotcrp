@@ -1557,7 +1557,7 @@ class Tagger {
     /** @var Conf */
     private $conf;
     /** @var ContactPermissions */
-    private $contact;
+    private $user;
     /** @var int */
     private $_contactId = 0;
     /** @var int */
@@ -1569,11 +1569,11 @@ class Tagger {
     private static $value_increment_map = [1, 1, 1, 1, 1, 2, 2, 2, 3, 4];
 
 
-    function __construct(ContactPermissions $contact) {
-        $this->conf = $contact->conf;
-        $this->contact = $contact;
-        if ($contact->contactId > 0) {
-            $this->_contactId = $contact->contactId;
+    function __construct(ContactPermissions $user) {
+        $this->conf = $user->conf;
+        $this->user = $user;
+        if ($user->contactId > 0) {
+            $this->_contactId = $user->contactId;
         }
     }
 
@@ -1656,7 +1656,7 @@ class Tagger {
         case self::ALLOWSTAR:
             return "<0>Invalid tag{$t} (stars aren’t allowed here)";
         case self::NOCHAIR:
-            if ($this->contact->is_chairlike()) {
+            if ($this->user->is_chairlike()) {
                 return "<0>Invalid tag{$t} (chair tags aren’t allowed here)";
             }
             return "<0>Tag{$t} reserved for chairs";
@@ -1665,9 +1665,8 @@ class Tagger {
         case self::ALLOWCONTACTID:
             if ($verbose && ($twiddle = strpos($this->errtag ?? "", "~"))) {
                 return "<0>Invalid tag{$t} (did you mean ‘#" . substr($this->errtag, $twiddle) . "’?)";
-            } else {
-                return "<0>Invalid private tag";
             }
+            return "<0>Invalid private tag";
         case self::NOVALUE:
             return "<0>Tag values aren’t allowed here";
         case self::ALLOWRESERVED:
@@ -1723,7 +1722,7 @@ class Tagger {
             // OK
         } else if ($m[1] === "~~") {
             if (($flags & self::NOCHAIR) !== 0
-                || !$this->contact->is_chairlike()) {
+                || !$this->user->is_chairlike()) {
                 return $this->set_error_code(self::NOCHAIR, $tag);
             }
         } else {
@@ -1733,9 +1732,19 @@ class Tagger {
                 if ($this->_contactId) {
                     $m[1] = $this->_contactId . "~";
                 }
-            } else if ($m[1] !== $this->_contactId . "~"
-                       && ($flags & self::ALLOWCONTACTID) === 0) {
-                return $this->set_error_code(self::ALLOWCONTACTID, $tag);
+            } else if ($m[1] !== $this->_contactId . "~") {
+                $uid = ($flags & self::ALLOWCONTACTID) === 0 ? 0 : intval($m[1]);
+                if ($uid > 0 && !$this->user->privChair) {
+                    $vrm = $this->user->viewable_roles_mask();
+                    if ($vrm === 0
+                        || ($u = $this->user->conf->pc_user_by_id($uid)) === null
+                        || ($u->roles & $vrm) === 0) {
+                        $uid = 0;
+                    }
+                }
+                if ($uid <= 0) {
+                    return $this->set_error_code(self::ALLOWCONTACTID, $tag);
+                }
             }
         }
         if ($m[3] !== "" && ($flags & self::NOVALUE) !== 0) {

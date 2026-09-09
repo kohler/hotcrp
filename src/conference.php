@@ -6071,9 +6071,8 @@ class Conf {
                 return JsonResult::make_error(405, "<0>Method not supported");
             } else if ($this->has_api($fn, null, $qreq->method())) {
                 return JsonResult::make_error(403, "<0>Permission error");
-            } else {
-                return JsonResult::make_error(404, "<0>Function not found");
             }
+            return JsonResult::make_error(404, "<0>Function not found");
         }
         $prow = $qreq->paper();
         if (!$prow && ($uf->paper ?? false)) {
@@ -6149,15 +6148,20 @@ class Conf {
         if ($name === "" || $name[0] === "?") {
             return [];
         }
-        if ($ctx instanceof Contact) {
+        $xtpnew = $ctx instanceof Contact;
+        if ($xtpnew) {
             $xtp = (new XtParams($this, $ctx))->set_match_ignores_case(true);
+            $xtpctx = null;
         } else {
             $xtp = $ctx;
-            $xtp->last_match = null;
+            $xtpctx = $xtp->swap_search_context();
             assert($xtp->match_ignores_case());
         }
         $uf = $xtp->search_name($this->paper_column_map(), $name);
         $ufs = $xtp->search_factories($this->paper_column_factories(), $name, $uf);
+        if (!$xtpnew) {
+            $xtp->swap_search_context($xtpctx);
+        }
         return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 
