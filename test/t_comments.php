@@ -307,6 +307,68 @@ class Comments_Tester {
         $this->conf->save_refresh_setting("au_seedec", $old["au_seedec"]);
     }
 
+    // A reviewer's pseudonymous comment must never be grouped with a named
+    // comment by the same person (e.g. one written later as shepherd): the
+    // grouped summary would link "Reviewer A" to the name
+    function test_pseudonymous_comment_grouped_separately() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $this->ensure_paper1_review($paper1);   // mgbaker: Reviewer A, blind
+        $old = [];
+        foreach (["au_seerev", "rev_blind", "shepherd_hide", "au_seedec"] as $s) {
+            $old[$s] = $this->conf->setting($s);
+        }
+        $this->conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
+        $this->conf->save_setting("rev_blind", Conf::BLIND_ALWAYS);
+        $this->conf->save_refresh_setting("shepherd_hide", null);
+        $this->conf->save_refresh_setting("au_seedec", 1);
+        xassert_assign($this->u_chair, "paper,action,email\n1,shepherd,none\n");
+
+        // as a plain reviewer, mgbaker's comment is pseudonymous to authors
+        $j = call_api("=comment", $this->u_mgbaker,
+            ["c" => "new", "text" => "A reviewer comment.", "visibility" => "au", "topic" => "rev"], $paper1);
+        xassert($j->ok);
+        $c1 = $j->comment->cid;
+
+        // as shepherd, mgbaker's next comment is named to authors
+        xassert_assign($this->u_chair, "paper,action,decision\n1,decision,accept\n");
+        xassert_assign($this->u_chair, "paper,action,email\n1,shepherd,mgbaker@cs.stanford.edu\n");
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_mgbaker,
+            ["c" => "new", "text" => "A shepherd comment.", "visibility" => "au", "topic" => "rev"], $paper1);
+        xassert($j->ok);
+        $c2 = $j->comment->cid;
+
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+        $cm1 = $paper1->comment_by_id($c1);
+        $cm2 = $paper1->comment_by_id($c2);
+        xassert(!$author->can_view_comment_identity($paper1, $cm1));
+        xassert_eqq($cm1->unparse_json($author)->author_pseudonym ?? null, "Reviewer A");
+        xassert($author->can_view_comment_identity($paper1, $cm2));
+
+        // every group is either all named or all pseudonymous to the author
+        $crows = $paper1->viewable_comments($author);
+        $named = $pseud = $gnamed = $gpseud = 0;
+        foreach ($crows as $cr) {
+            $author->can_view_comment_identity($paper1, $cr) ? ++$named : ++$pseud;
+        }
+        foreach (CommentInfo::group_by_identity($crows, $author, true) as $g) {
+            $author->can_view_comment_identity($paper1, $g[0]) ? $gnamed += $g[1] : $gpseud += $g[1];
+        }
+        xassert_gt($named, 0);
+        xassert_gt($pseud, 0);
+        xassert_eqq([$gnamed, $gpseud], [$named, $pseud]);
+
+        // cleanup
+        call_api("=comment", $this->u_chair, ["c" => (string) $c1, "delete" => 1], $paper1);
+        call_api("=comment", $this->u_chair, ["c" => (string) $c2, "delete" => 1], $paper1);
+        xassert_assign($this->u_chair, "paper,action,email\n1,shepherd,none\n");
+        $this->conf->save_setting("au_seerev", $old["au_seerev"]);
+        $this->conf->save_setting("rev_blind", $old["rev_blind"]);
+        $this->conf->save_refresh_setting("shepherd_hide", $old["shepherd_hide"]);
+        $this->conf->save_refresh_setting("au_seedec", $old["au_seedec"]);
+    }
+
     function test_attachments() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $qreq = new Qrequest("POST", ["c" => "new", "text" => "Hello", "attachment:1" => "new"]);

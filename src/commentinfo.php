@@ -511,15 +511,17 @@ class CommentInfo {
      * @param bool $separateColors
      * @return list<array{CommentInfo,int,string}> */
     static function group_by_identity($crows, Contact $viewer, $separateColors) {
-        $known_cids = [];
+        $known_cids = $pseudonyms = [];
         '@phan-var array<int,int> $known_cids';
         $result = [];
         '@phan-var list<array{CommentInfo,int,string}> $result';
         foreach ($crows as $cr) {
             $cid = 0;
-            if ($viewer->can_view_comment_identity($cr->prow, $cr)
-                || $cr->unparse_commenter_pseudonym($viewer, false)) {
+            if ($viewer->can_view_comment_identity($cr->prow, $cr)) {
                 $cid = $cr->contactId;
+            } else if (($p = $cr->unparse_commenter_pseudonym($viewer, false))) {
+                $pdn = &$pseudonyms[$p];
+                $cid = $pdn = $pdn ?? -count($pseudonyms);
             }
             if ($cr->commentType & self::CT_RESPONSE) {
                 if (!empty($result)) {
