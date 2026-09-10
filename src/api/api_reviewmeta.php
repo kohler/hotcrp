@@ -59,7 +59,7 @@ class ReviewMeta_API {
             return $rrow;
         }
         $editable = $user->can_rate_review($prow, $rrow);
-        if ($qreq->method() !== "GET") {
+        if (!$qreq->is_getlike()) {
             if ($qreq->user_rating === "clearall") {
                 if (!$user->can_manage_reviews($prow)) {
                     return JsonResult::make_permission_error();

@@ -127,7 +127,7 @@ class SpecValidator_API {
                 $this->error("body param `{$n}` unknown");
             } else if (!isset($_GET[$n])
                        && ($t & self::F_BODY) === 0
-                       && !$this->qreq->is_get() /* no `:method:` overriding */) {
+                       && !$this->qreq->is_getlike() /* no `:method:` overriding */) {
                 $this->error("body param `{$n}` should be in query");
             }
         }
