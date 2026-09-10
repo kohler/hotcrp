@@ -123,9 +123,7 @@ class Tag_ListAction extends ListAction {
             }
         } else if (!empty($papers) && $action) {
             foreach ($papers as $p) {
-                foreach ($tags as $t) {
-                    $x[] = "{$action},{$p},{$t}\n";
-                }
+                $x[] = "{$action},{$p->paperId}," . join(" ", $tags) . "\n";
             }
             $assignset->parse(join("", $x));
         } else if (!empty($papers) && $act === "cr" && $user->privChair) {

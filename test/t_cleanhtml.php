@@ -66,8 +66,8 @@ class CleanHTML_Tester {
         xassert_eqq($chtml->clean('<br>'), '<br>');
         xassert_eqq($chtml->clean('<br/>'), '<br>');
         xassert_eqq($chtml->clean('<br />'), '<br>');
-        xassert_eqq($chtml->clean('<br / >'), '<br>');
-        xassert_eqq($chtml->clean('<div / >'), null);
+        xassert_eqq($chtml->clean('<br / >'), null);
+        xassert_eqq($chtml->clean('<div />'), null);
     }
 
     function test_li() {
@@ -372,11 +372,11 @@ class CleanHTML_Tester {
         // close tag not on stack at all
         xassert_eqq($ch->clean('<i>X</b>Y</i>'), null);
         // whitespace in tags: opener must use cleaned tag name
-        xassert_eqq($ch->clean('< B >< I >X</ B >Y</ I >'), '<b><i>X</i></b><i>Y</i>');
+        xassert_eqq($ch->clean('<B ><I >X</B >Y</I >'), '<b><i>X</i></b><i>Y</i>');
         xassert_eqq($ch->clean('<B   ><I   >X</B>Y</I>'), '<b><i>X</i></b><i>Y</i>');
         // whitespace in tags with attributes
-        xassert_eqq($ch->clean('< A  href="u" ><b>X</ A >Y</b>'), '<a href="u"><b>X</b></a><b>Y</b>');
-        xassert_eqq($ch->clean('<b>< A  href="u" >X</b>Y</ A >'), '<b><a href="u">X</a></b><a href="u">Y</a>');
+        xassert_eqq($ch->clean('<A  href="u" ><b>X</A >Y</b>'), '<a href="u"><b>X</b></a><b>Y</b>');
+        xassert_eqq($ch->clean('<b><A  href="u" >X</b>Y</A >'), '<b><a href="u">X</a></b><a href="u">Y</a>');
         // non-fix mode still rejects
         $basic = CleanHTML::basic();
         xassert_eqq($basic->clean('<b><i>X</b></i>'), null);

@@ -515,6 +515,76 @@ class CleanHTML {
         return $value === null ? " {$lattr}" : " {$lattr}=\"" . htmlspecialchars($value) . "\"";
     }
 
+    /** @return null|array{string,string}|array{string,string,string,string} */
+    static private function tag_parse($t, $p) {
+        $len = strlen($t);
+        $p0 = $p;
+        $p1 = $p + 1;
+        if ($p1 === $len) {
+            return null;
+        }
+        $ch1 = $chw = $t[$p1];
+        if ($ch1 === "/") {
+            ++$p1;
+            if ($p1 === $len) {
+                return null;
+            }
+            $chw = $t[$p1];
+        }
+        if (!ctype_alpha($chw)) {
+            return null;
+        }
+        $p2 = $p1 + 1 + strspn($t, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-", $p1 + 1);
+        $p3 = $p2 + strspn($t, " \t\n\r\x0C", $p2);
+        if ($ch1 === "/") {
+            if ($p3 === $len || $t[$p3] !== ">") {
+                return null;
+            }
+            return [substr($t, $p0, $p3 + 1 - $p0), substr($t, $p1, $p2 - $p1)];
+        }
+        if ($p3 === $len || ($p2 === $p3 && $t[$p2] !== "/" && $t[$p2] !== ">")) {
+            return null;
+        }
+        $p4 = $p3;
+        while ($p4 !== $len) {
+            $ch2 = $t[$p4];
+            if ($ch2 === ">") {
+                ++$p4;
+                break;
+            } else if ($ch2 === "<") {
+                break;
+            } else if ($ch2 === "\"" || $ch2 === "'") {
+                $p4 += 1 + strcspn($t, $ch2, $p4 + 1);
+                $p4 += $p4 === $len ? 0 : 1;
+            } else {
+                $p4 += strcspn($t, "<>\"'", $p4);
+            }
+        }
+        return [substr($t, $p0, $p4 - $p0), substr($t, $p0 + 1, $p1 - $p0 - 1),
+                substr($t, $p1, $p2 - $p1), substr($t, $p2, $p3 - $p2)];
+    }
+
+    /** @return array{null|false|string,int} */
+    static private function attribute_value_parse($t, $p) {
+        $len = strlen($t);
+        if ($p === $len || $t[$p] !== "=") {
+            return [null, $p];
+        }
+        $p += 1 + strspn($t, " \t\n\r\x0C", $p + 1);
+        $ch = $p === $len ? 0 : $t[$p];
+        if ($ch === "\"" || $ch === "'") {
+            $q = $p + 1 + strcspn($t, $ch, $p + 1);
+            if ($q === $len) {
+                return [false, $q];
+            }
+            return [html_entity_decode(substr($t, $p + 1, $q - $p - 1), ENT_HTML5), $q + 1];
+        } else if (ctype_alnum($ch) || $ch === "_" || $ch === "-") {
+            $q = $p + 1 + strspn($t, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", $p + 1);
+            return [substr($t, $p, $q - $p), $q];
+        }
+        return [false, $p];
+    }
+
     /** @param string $t
      * @return ?string */
     function clean($t) {
@@ -537,20 +607,24 @@ class CleanHTML {
             }
             $p = $nextp;
             if ($p + 1 < $len && $t[$p + 1] === "!") {
-                if (preg_match('/\G<!\[CDATA\[(.*?)(\]\]>|\z)/s', $t, $m, 0, $p)) {
-                    if ($m[2] === "") {
-                        $this->lerror("<0>Unclosed CDATA section", $p, $p + strlen($m[0]));
+                if (substr_compare($t, "<![CDATA[", $p, 9) === 0) {
+                    $ep = strpos($t, "]]>", $p + 9);
+                    if ($ep === false) {
+                        $this->lerror("<0>Unclosed CDATA section", $p, $len);
                         return $this->fail();
                     }
-                    $this->check_text($curtf, $p, $p + strlen($m[0]));
-                    $x .= substr($t, $xp, $p - $xp) . htmlspecialchars($m[1]);
-                    $p = $xp = $p + strlen($m[0]);
-                } else if (preg_match('/\G<!--.*?(-->|\z)/s', $t, $m, 0, $p)) {
-                    if (!$this->check_comment($m[0], $p)) {
+                    $this->check_text($curtf, $p, $ep + 3);
+                    $x .= substr($t, $xp, $p - $xp)
+                        . htmlspecialchars(substr($t, $p + 9, $ep - $p - 9));
+                    $p = $xp = $ep + 3;
+                } else if (substr_compare($t, "<!--", $p, 4) === 0) {
+                    $ep = strpos($t, "-->", $p + 4);
+                    $ep = $ep === false ? $len : $ep + 3;
+                    if (!$this->check_comment(substr($t, $p, $ep - $p), $p)) {
                         return $this->fail();
                     }
                     $x .= substr($t, $xp, $p - $xp);
-                    $p = $xp = $p + strlen($m[0]);
+                    $p = $xp = $ep;
                 } else {
                     preg_match('/\G<!\s*+(\S*+)/s', $t, $m, 0, $p);
                     if (str_starts_with(strtolower($m[1]), "doctype")) {
@@ -563,7 +637,7 @@ class CleanHTML {
                     }
                     return $this->fail();
                 }
-            } else if (preg_match('/\G<(\s*+)([A-Za-z][-A-Za-z0-9]*+)(?=[\s\/>])(\s*+)(?:[^<>\'"]+|\'[^\']*\'|"[^"]*")*+>?/s', $t, $m, 0, $p)) {
+            } else if (($m = self::tag_parse($t, $p)) && count($m) === 4) {
                 $tag = strtolower($m[2]);
                 $tagp = $p;
                 $endp = $p + strlen($m[0]);
@@ -602,26 +676,23 @@ class CleanHTML {
                 }
                 $p = $tagp + 1 + strlen($m[1]) + strlen($m[2]) + strlen($m[3]);
                 while ($p !== $len && $t[$p] !== "/" && $t[$p] !== ">") {
-                    if (!preg_match('/\G([^\s\/<>=\'"]++)\s*+/s', $t, $m, 0, $p)) {
-                        $this->lerror("<0>Invalid character in HTML tag attributes", $p, $p);
-                        $p = $endp;
-                        break;
-                    }
                     $ap = $p;
-                    $p += strlen($m[0]);
-                    $value = null;
-                    if (preg_match('/\G=\s*+(\'[^\']*+\'|"[^\"]*+"|\w++)\s*+/s', $t, $mm, 0, $p)) {
-                        if ($mm[1][0] === "'" || $mm[1][0] === "\"") {
-                            $mm[1] = substr($mm[1], 1, -1);
-                        }
-                        $value = html_entity_decode($mm[1], ENT_HTML5);
-                        $p += strlen($mm[0]);
-                    } else if ($p !== $len && $t[$p] === "=") {
-                        $this->lerror("<0>Broken value on HTML attribute {$m[1]}", $ap, $p + 1);
+                    $p += strcspn($t, " \t\n\r\x0C/<>='\"", $p);
+                    if ($p === $ap) {
+                        $this->lerror("<0>Invalid character in HTML tag attribute", $p, $p);
                         $p = $endp;
                         break;
                     }
-                    $x .= $this->clean_attribute($tag, $m[1], $value, $ap, $p);
+                    $aname = substr($t, $ap, $p - $ap);
+                    $p += strspn($t, " \t\n\r\x0C", $p);
+                    [$value, $p] = self::attribute_value_parse($t, $p);
+                    if ($value === false) {
+                        $this->lerror("<0>Broken value on HTML attribute {$aname}", $ap, $p + 1);
+                        $p = $endp;
+                        break;
+                    }
+                    $x .= $this->clean_attribute($tag, $aname, $value, $ap, $p);
+                    $p += strspn($t, " \t\n\r\x0C", $p);
                 }
                 if ($p === $endp) {
                     if ($endp === $len) {
@@ -631,7 +702,7 @@ class CleanHTML {
                     $xp = $endp - 1;
                 } else if ($t[$p] === ">") {
                     $xp = $p;
-                } else if (preg_match('/\G\/\s*+>/s', $t, $m, 0, $p)) {
+                } else if ($t[$p] === "/" && $p + 1 !== $len && $t[$p+1] === ">") {
                     if (($tagtf & self::F_VOID) === 0) {
                         $this->lerror("<0>HTML tag <{$tag}> cannot be self-closed", $p, $p);
                     }
@@ -655,7 +726,7 @@ class CleanHTML {
                     }
                 }
                 $curtf = $tagtf;
-            } else if (preg_match('/\G<\s*+\/\s*+([A-Za-z][-A-Za-z0-9]*+)\s*+>/s', $t, $m, 0, $p)) {
+            } else if ($m) {
                 $tag = strtolower($m[1]);
                 $tagp = $p;
                 $endp = $tagp + strlen($m[0]);
@@ -736,6 +807,11 @@ class CleanHTML {
         }
         if ($this->opentags) {
             $this->lerror("<0>Unclosed tag", $this->opentags->pos1, $this->opentags->pos2);
+            // save garbage collector
+            while (($ot = $this->opentags)) {
+                $this->opentags = $ot->next;
+                $ot->next = null;
+            }
         }
 
         $this->context = $this->opentags = null;
