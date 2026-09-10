@@ -210,7 +210,7 @@ class Author {
             $this->email = $email ?? "";
             $this->_name = $email === null ? $name : null;
         }
-        $this->affiliation = $affiliation;
+        $this->affiliation = simplify_whitespace($affiliation);
         $this->seal_nea();
     }
 
