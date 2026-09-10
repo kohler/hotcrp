@@ -123,7 +123,7 @@ class PaperRequest {
             if (($p = $conf->fetch_ivalue("select paperId from PaperReview where reviewId=?", $rid)) > 0) {
                 return $p;
             } else {
-                throw new FailureReason($conf, ["invalidId" => "review", "reviewId" => $qreq->reviewId]);
+                throw new FailureReason($conf, ["missingId" => "paper"]);
             }
         }
         // give up on POST, empty user
@@ -286,6 +286,6 @@ class PaperRequest {
         }
         // error
         throw $user->perm_view_review($this->prow, null)
-            ?? $this->prow->failure_reason(["invalidId" => "review"]);
+            ?? $this->prow->failure_reason(["reviewNonexistent" => true]);
     }
 }
