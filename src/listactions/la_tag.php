@@ -50,7 +50,6 @@ class Tag_ListAction extends ListAction {
         return $user->can_edit_some_tag();
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $papers = $ssel->selection();
         $gapless = friendly_boolean($qreq->gapless);
 
         $act = $this->tagfn ?? $qreq->tagfn;
@@ -83,6 +82,7 @@ class Tag_ListAction extends ListAction {
 
         $tagreq = trim(str_replace(",", " ", (string) $qreq->tag));
         $tags = preg_split('/\s+/', $tagreq);
+        $papers = $ssel->paper_set($user);
 
         if ($act === "da") {
             $otags = $tags;
@@ -91,7 +91,7 @@ class Tag_ListAction extends ListAction {
             }
             $act = "d";
         } else if ($act === "sor" || $act === "sosr") {
-            shuffle($papers);
+            $papers->shuffle();
         }
 
         $x = ["action,paper,tag\n"];
@@ -121,7 +121,7 @@ class Tag_ListAction extends ListAction {
             if ($tagreq === "") {
                 $assignset->message_set()->append_item(MessageItem::error_at("tag", "<0>Tags required"));
             }
-        } else if (!empty($papers) && $action) {
+        } else if (!$papers->is_empty() && $action) {
             foreach ($papers as $p) {
                 $x[] = "{$action},{$p->paperId}," . join(" ", $tags) . "\n";
             }

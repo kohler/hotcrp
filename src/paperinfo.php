@@ -634,6 +634,13 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             });
         }
     }
+    function shuffle() {
+        shuffle($this->prows);
+        $this->by_pid = [];
+        foreach ($this->prows as $prow) {
+            $this->by_pid[$prow->paperId] = $prow;
+        }
+    }
     /** @return list<int> */
     function paper_ids() {
         return array_keys($this->by_pid);
