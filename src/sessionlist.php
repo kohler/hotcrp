@@ -86,9 +86,14 @@ class SessionList {
                         $ch = $i !== $l ? ord($s[$i]) : 0;
                     }
                 }
-                while ($n1 <= $n2) {
-                    $a[] = $n1;
-                    ++$n1;
+                if ($n2 - $n1 > 10 && $allow_ranges) {
+                    $a[] = [$n1, $n2];
+                    $n1 = $n2 + 1;
+                } else {
+                    while ($n1 <= $n2) {
+                        $a[] = $n1;
+                        ++$n1;
+                    }
                 }
                 $next = $n1;
                 $sign = 1;
