@@ -1376,7 +1376,7 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
         $info = [
             "prow" => $this->prow,
             "comment_row" => $this,
-            "combination_type" => 1
+            "combination_type" => HotCRPMailer::COMBINE_PAPER
         ];
         $preps = [];
         foreach ($this->followers() as $minic) {
@@ -1391,21 +1391,12 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
             $notification->flags |= NotificationInfo::ATTEMPTED;
             // prepare mail
             $this->_recently_censored = false;
-            $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
-            if (!$p) {
-                continue;
-            }
-            // Don't combine preparations unless you can see all submitted
-            // reviewer identities
-            // XXX maybe should not combine preparations at all?
-            if (!$this->prow->has_author($minic)
-                && !$minic->can_view_review_identity($this->prow, null)) {
-                $p->unique_preparation = true;
-            }
-            $preps[] = $p;
-            $notification->flags |= NotificationInfo::SENT;
-            if ($this->_recently_censored) {
-                $notification->flags |= NotificationInfo::CENSORED;
+            if (($p = HotCRPMailer::prepare_to($minic, $tmpl, $info))) {
+                $preps[] = $p;
+                $notification->flags |= NotificationInfo::SENT;
+                if ($this->_recently_censored) {
+                    $notification->flags |= NotificationInfo::CENSORED;
+                }
             }
         }
         HotCRPMailer::send_combined_preparations($preps);

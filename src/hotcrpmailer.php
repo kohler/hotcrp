@@ -3,10 +3,14 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class HotCRPMailPreparation extends MailPreparation {
-    /** @var int */
-    public $paperId = -1;
+    /** @var ?PaperInfo */
+    public $prow;
     /** @var bool */
-    public $author_recipient = false;
+    public $recipient_class = 0;
+    /** @var bool */
+    public $reviewer_recipient = false;
+    /** @var bool */
+    public $administrator_recipient = false;
     /** @var int */
     public $paper_expansions = 0;
     /** @var int */
@@ -25,13 +29,15 @@ class HotCRPMailPreparation extends MailPreparation {
         return parent::can_merge($p)
             && $p instanceof HotCRPMailPreparation
             && $this->combination_type === $p->combination_type
-            && (($this->combination_type === 2
+            && (($this->combination_type === HotCRPMailer::COMBINE_GROUP
                  && !$this->paper_expansions
                  && !$p->paper_expansions)
-                || ($this->author_recipient === $p->author_recipient
-                    && $this->combination_type != 0
-                    && $this->paperId === $p->paperId)
-                || ($this->author_recipient === $p->author_recipient
+                || ($this->recipient_class === $p->recipient_class
+                    && ($this->recipient_class !== 0
+                        || !$this->paper_expansions)
+                    && $this->combination_type !== 0
+                    && $this->prow === $p->prow)
+                || ($this->recipient_class === $p->recipient_class
                     && $this->has_same_recipients($p)));
     }
     function finalize() {
@@ -73,6 +79,17 @@ class HotCRPMailer extends Mailer {
     protected $_unexpanded_paper_keyword;
 
     protected $_statistics = null;
+
+    const RCLASS_NONE = 0;
+    const RCLASS_AUTHOR = 1;
+    const RCLASS_REVIEWER = 2;
+    const RCLASS_ADMIN = 3;
+
+    const COMBINE_NONE = 0;     // combine only identical recipients
+    const COMBINE_PAPER = 1;    // combine across mutually-visible recipients
+    const COMBINE_GROUP = 2;    // COMBINE_PAPER *and* combine if message has
+                                // no paper-specific information
+
 
 
     /** @param ?Contact $recipient
@@ -152,9 +169,8 @@ class HotCRPMailer extends Mailer {
                 return false;
             } else if ($this->context == self::CONTEXT_EMAIL) {
                 return "<hidden>";
-            } else {
-                return "Hidden for anonymous review";
             }
+            return "Hidden for anonymous review";
         }
         return $this->expand_user($c, $type);
     }
@@ -608,23 +624,20 @@ class HotCRPMailer extends Mailer {
         assert($this->recipient && $this->recipient->email);
         $prep = new HotCRPMailPreparation($this->conf, $this->recipient);
         if ($this->row && ($this->row->paperId ?? 0) > 0) {
-            $prep->paperId = $this->row->paperId;
-            $prep->author_recipient = $this->row->has_author($this->recipient);
+            $prep->prow = $this->row;
+            if ($this->row->has_author($this->recipient)) {
+                $prep->recipient_class = HotCRPMailer::RCLASS_AUTHOR;
+            } else if ($this->row->has_active_reviewer($this->recipient)) {
+                $prep->recipient_class = HotCRPMailer::RCLASS_REVIEWER;
+            } else if ($this->recipient->allow_admin($this->row)) {
+                $prep->recipient_class = HotCRPMailer::RCLASS_ADMIN;
+            }
         }
         $prep->combination_type = $this->combination_type;
         $this->populate_preparation($prep, $template, $rest);
         return $prep;
     }
 
-
-    /** @param Contact $recipient
-     * @param PaperInfo $prow
-     * @param ?ReviewInfo $rrow
-     * @return bool */
-    static function check_can_view_review($recipient, $prow, $rrow) {
-        assert(!($recipient->overrides() & Contact::OVERRIDE_CONFLICT));
-        return $recipient->can_view_review($prow, $rrow);
-    }
 
     /** @param Contact $recipient
      * @return ?HotCRPMailPreparation */
@@ -654,7 +667,7 @@ class HotCRPMailer extends Mailer {
     static function send_contacts($template, $row, $rest = []) {
         $preps = $aunames = [];
         $rest["prow"] = $row;
-        $rest["combination_type"] = 1;
+        $rest["combination_type"] = HotCRPMailer::COMBINE_PAPER;
         $rest["author_permission"] = true;
         foreach ($row->contact_followers() as $minic) {
             assert(empty($minic->review_tokens()));
@@ -680,12 +693,40 @@ class HotCRPMailer extends Mailer {
     static function send_administrators($template, $row, $rest = []) {
         $preps = [];
         $rest["prow"] = $row;
-        $rest["combination_type"] = 1;
+        $rest["combination_type"] = HotCRPMailer::COMBINE_PAPER;
         foreach ($row->administrators() as $u) {
             if (($p = self::prepare_to($u, $template, $rest))) {
                 $preps[] = $p;
             }
         }
         self::send_combined_preparations($preps);
+    }
+
+    /** @param list<HotCRPMailPreparation> $preps */
+    static function send_combined_preparations($preps) {
+        $repreps = [];
+        foreach ($preps as $prep) {
+            if ($prep->recipient_class !== HotCRPMailer::RCLASS_REVIEWER
+                || !$prep->prow) {
+                continue;
+            }
+            $useri = $prep->single_recipient();
+            $prow = $prep->prow;
+            for ($j = 0; $j !== count($repreps); ++$j) {
+                if ($repreps[$j]->prow !== $prow) {
+                    continue;
+                }
+                $userj = $repreps[$j]->single_recipient();
+                if (!$prow->can_view_review_identity_of($userj->contactId, $useri)
+                    || !$prow->can_view_review_identity_of($useri->contactId, $userj)) {
+                    $prep->unique_preparation = true;
+                    break;
+                }
+            }
+            if (!$prep->unique_preparation) {
+                $repreps[] = $prep;
+            }
+        }
+        parent::send_combined_preparations($preps);
     }
 }

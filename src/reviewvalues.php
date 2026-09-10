@@ -1592,7 +1592,7 @@ class ReviewValues extends MessageSet {
             "prow" => $prow,
             "rrow" => $rrow,
             "reviewer_contact" => $reviewer,
-            "combination_type" => 1
+            "combination_type" => HotCRPMailer::COMBINE_PAPER
         ];
         if ($newstatus >= ReviewInfo::RS_COMPLETED
             && ($diffinfo->notify || $diffinfo->notify_author)) {
@@ -1601,7 +1601,6 @@ class ReviewValues extends MessageSet {
             } else {
                 $tmpl = "@reviewupdate";
             }
-            $always_combine = false;
             $diff_view_score = $diffinfo->view_score();
         } else if ($newstatus >= ReviewInfo::RS_DELIVERED
                    && $newstatus < ReviewInfo::RS_COMPLETED
@@ -1616,7 +1615,6 @@ class ReviewValues extends MessageSet {
             } else {
                 $tmpl = "@reviewapprovalupdate";
             }
-            $always_combine = true;
             $diff_view_score = null;
             $info["rrow_unsubmitted"] = true;
         } else if ($newstatus >= ReviewInfo::RS_ACKNOWLEDGED
@@ -1635,7 +1633,7 @@ class ReviewValues extends MessageSet {
             return;
         }
 
-        $preps = [];
+        $preps = $reviewer_preps = [];
         foreach ($prow->review_followers(0) as $minic) {
             assert(($minic->overrides() & Contact::OVERRIDE_CONFLICT) === 0);
             // skip same user, dormant user, cannot view review
@@ -1657,19 +1655,9 @@ class ReviewValues extends MessageSet {
                 continue;
             }
             // prepare mail
-            $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
-            if (!$p) {
-                continue;
+            if (($p = HotCRPMailer::prepare_to($minic, $tmpl, $info))) {
+                $preps[] = $p;
             }
-            // Don't combine preparations unless you can see all submitted
-            // reviewer identities
-            if (!$always_combine
-                && !$prow->has_author($minic)
-                && (!$prow->has_active_reviewer($minic)
-                    || !$minic->can_view_review_identity($prow, null))) {
-                $p->unique_preparation = true;
-            }
-            $preps[] = $p;
         }
 
         HotCRPMailer::send_combined_preparations($preps);

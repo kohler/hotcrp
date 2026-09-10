@@ -419,9 +419,9 @@ class MailRecipients extends MessageSet {
      * @return int */
     function combination_type($paper_sensitive) {
         if (preg_match('/\A(?:pc|pc:.*|(?:|unc|new)pcrev|lead|shepherd)\z/', $this->rect->name)) {
-            return 2;
+            return HotCRPMailer::COMBINE_GROUP;
         } else if ($this->is_authors() || $paper_sensitive) {
-            return 1;
+            return HotCRPMailer::COMBINE_PAPER;
         }
         return 0;
     }

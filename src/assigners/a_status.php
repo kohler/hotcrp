@@ -279,7 +279,7 @@ class Status_Assigner extends Assigner {
             "prow" => $prow,
             "reason" => $reason,
             "adminupdate" => $tmpl === "@adminwithdraw",
-            "combination_type" => 1
+            "combination_type" => HotCRPMailer::COMBINE_PAPER
         ];
 
         // email contact authors

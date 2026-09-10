@@ -412,7 +412,8 @@ class MailSender {
     /** @param HotCRPMailPreparation $prep
      * @return string */
     static private function prepid($prep) {
-        return "c" . join("_", $prep->recipient_uids()) . "p" . $prep->paperId;
+        return "c" . join("_", $prep->recipient_uids())
+            . ($prep->prow ? "p{$prep->prow->paperId}" : "px");
     }
 
     /** @param HotCRPMailPreparation $prep
@@ -515,7 +516,7 @@ class MailSender {
                 $this->mrecipients[$recip->contactId] = true;
                 if ($this->sending) {
                     // Log format matters
-                    $this->conf->log_for($this->user, $recip, "Sent mail #{$this->mailid}", $prep->paperId);
+                    $this->conf->log_for($this->user, $recip, "Sent mail #{$this->mailid}", $prep->prow);
                 }
             }
         }

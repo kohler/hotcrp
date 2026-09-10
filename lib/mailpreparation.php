@@ -61,6 +61,12 @@ class MailPreparation extends MessageSet implements JsonSerializable {
         return Text::name($u->firstName, $u->lastName, $e, NAME_MAILQUOTE | NAME_E);
     }
 
+    /** @return Contact */
+    function single_recipient() {
+        assert(count($this->recip) === 1);
+        return $this->recip[0];
+    }
+
     /** @return list<Contact> */
     function recipients() {
         return $this->recip;
