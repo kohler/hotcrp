@@ -48,7 +48,7 @@ class Autoassign_Batch {
     public $progress = false;
     /** @var ?callable */
     public $detacher;
-    /** @var ?TokenInfo */
+    /** @var ?Job_Token */
     private $_jtok;
 
     /** @return list<string> */
@@ -70,7 +70,7 @@ class Autoassign_Batch {
         $this->detacher = $detacher;
         if (isset($arg["job"])) {
             $this->_jtok = Job_Token::claim($arg["job"], $this->conf, "Autoassign");
-            $this->user = $this->_jtok->user() ?? $conf->root_user();
+            $this->user = $this->_jtok->job_user();
         } else {
             $this->user = $conf->root_user();
         }
@@ -268,6 +268,43 @@ class Autoassign_Batch {
         set_time_limit(240);
     }
 
+    /** @param list<int> $pids */
+    private function check_token_scope(Autoassigner $aa, $pids) {
+        // A scoped token must grant, on every selected paper, the rights the
+        // autoassigner exercises: it reads assignments and preferences, and
+        // its proposals are reported (`--minimal-dry-run`) before
+        // AssignmentSet checks them.
+        $scope = $aa->token_scope($this->dry_run);
+        if ($this->user->scope_allows($scope)) {
+            // unscoped, or granted regardless of paper: the common case
+            return;
+        } else if (!$this->user->scope_allows_some($scope)) {
+            // no subset selector grants it either
+            $badpids = $pids;
+        } else {
+            // granted per paper by `#PID`/`#TAG`/`?q=` subset selectors,
+            // which may test any field
+            $badpids = [];
+            foreach ($this->user->paper_set(["paperId" => $pids]) as $prow) {
+                if (!$this->user->scope_allows($scope, $prow)) {
+                    $badpids[] = $prow->paperId;
+                }
+            }
+            if (empty($badpids)) {
+                return;
+            }
+        }
+        $scopestr = join(" ", TokenScope::unparse_missing_bits($scope));
+        $ml = (new FailureReason($this->conf, ["scope" => $scopestr]))->message_list();
+        $ml[] = MessageItem::inform($this->conf->_(
+            "<0>Token scope does not cover {pids:plural {submission}} {pids:numlist#}",
+            new FmtArg("pids", $badpids)
+        ));
+        $this->change_data("valid", false);
+        $this->change_data("insufficient_scope", $scopestr);
+        $this->report($ml, 1);
+    }
+
     /** @return string */
     private function run_autoassigner() {
         // perform search; exit if no papers match
@@ -314,6 +351,7 @@ class Autoassign_Batch {
             $this->report($aa->message_list(), 1);
         }
         $this->report($aa->message_list());
+        $this->check_token_scope($aa, $pids);
 
         // run autoassigner
         if ($this->detacher) {

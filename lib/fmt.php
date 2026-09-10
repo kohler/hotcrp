@@ -237,7 +237,7 @@ class FmtContext {
             return [$vformat, commajoin($a)];
         } else if (str_starts_with($fspec, ":plural ")) {
             $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
-            return [$vformat, plural_word(count($value), substr($fspec, 8))];
+            return [$vformat, plural_word(count($value), $word)];
         }
         return $this->complain("{$fspec} does not expect array");
     }

@@ -560,6 +560,24 @@ class Scope_Tester {
 
         $s = TokenScope::parse("all#r2-forced", $this->u_chair);
         xassert_eqq(TokenScope::unparse($s), "all#r2-forced");
+
+        // a scope reparsed from its unparsing (as when an api/autoassign
+        // job replays the requesting token’s scope) grants what the
+        // original did
+        foreach (["submission:read", "openid email", "read review:admin#1",
+                  "submission:read tag:write#green review:write#~~vote",
+                  "paper:admin?q=1-3+OR+%23red", "submeta:admin#2 review:read#2"] as $str) {
+            $s1 = TokenScope::parse($str, $this->u_chair);
+            $s2 = TokenScope::parse(TokenScope::unparse($s1), $this->u_chair);
+            xassert_neqq($s2, null);
+            xassert_eqq(TokenScope::unparse($s2), TokenScope::unparse($s1));
+            foreach ([TokenScope::S_SUB_READ, TokenScope::S_REV_ADMIN, TokenScope::S_TAG_WRITE,
+                      TokenScope::S_SUB_ADMIN | TokenScope::S_REV_READ] as $bits) {
+                foreach ([null, $this->p1, $this->p2] as $prow) {
+                    xassert_eqq($s2->allows($bits, $prow), $s1->allows($bits, $prow));
+                }
+            }
+        }
     }
 
     function test_scope_str_split_openid() {
@@ -703,6 +721,230 @@ class Scope_Tester {
      * @return JsonResult|Downloader */
     static private function searchaction($u, $args) {
         return call_api_result("searchaction", $u, TestQreq::get($args));
+    }
+
+    /** @return list<string> */
+    private function job_salts(Contact $u) {
+        return Dbl::fetch_first_columns($this->conf->dblink,
+            "select salt from Capability where capabilityType=? and contactId=?",
+            TokenInfo::JOB, $u->contactId);
+    }
+
+    /** @param array<string,string> $args
+     * @param list<string> &$jobs
+     * @return array{JsonResult,?string}
+     *
+     * Runs api/autoassign as `$u` -- installed as the main user, as in a
+     * live request, so that the job runs with `$u`’s token scope -- and
+     * returns its response together with the job output read back through
+     * api/job, as a client would (the in-process api/autoassign response
+     * does not carry `output`), or null if no job completed. Appends any
+     * job created to `$jobs`. */
+    private function autoassign_api(Contact $u, $args, &$jobs) {
+        $main_user = Contact::$main_user;
+        Contact::set_main_user($u);
+        try {
+            $salts = $this->job_salts($u);
+            $resp = call_api_result("=autoassign", $u, TestQreq::post($args));
+            xassert($resp instanceof JsonResult);
+            $fresh = array_values(array_diff($this->job_salts($u), $salts));
+            xassert_le(count($fresh), 1);
+            if (empty($fresh)) {
+                return [$resp, null];
+            }
+            $jobs[] = $fresh[0];
+            $j = call_api("job", $u, ["job" => $fresh[0], "output" => "string"]);
+            xassert_eqq($j->status, "done");
+            return [$resp, $j->output ?? ""];
+        } finally {
+            Contact::set_main_user($main_user);
+        }
+    }
+
+    function test_autoassign_requires_scope() {
+        // Autoassigners read review assignments and preferences for every
+        // selected submission, and a minimal dry run reports their
+        // proposals -- including `clear...review` rows naming existing
+        // reviewers -- before AssignmentSet checks anything: an
+        // administrator’s token must hold the scope the autoassigner
+        // exercises on each selected submission.
+        $this->u_chair->set_scope();
+        MailChecker::clear();
+        $emails = [];
+        foreach ($this->u_chair->checked_paper_by_id(1)->reviews_as_list() as $rrow) {
+            if ($rrow->reviewType === REVIEW_PRIMARY && !$rrow->reviewRound) {
+                $emails[] = $rrow->reviewer()->email;
+            }
+        }
+        xassert(!empty($emails));
+        $review_args = [
+            "autoassigner" => "review_adjust", "q" => "1", "t" => "s",
+            "param" => json_encode(["count=1", "max_load=1", "rtype=primary", "round=unnamed"])
+        ];
+        $lead_args = [
+            "autoassigner" => "lead", "q" => "1", "t" => "s",
+            "param" => json_encode(["score=random", "allow_incomplete=yes"])
+        ];
+        $jobs = [];
+
+        try {
+            // unscoped chair sees the existing assignments
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $review_args + ["minimal_dry_run" => "1"], $jobs);
+            xassert_eqq($resp->content["ok"], true);
+            xassert($output !== null);
+            $ncleared = 0;
+            foreach ($emails as $e) {
+                if (strpos($output, "1,clearprimaryreview,{$e}") !== false) {
+                    ++$ncleared;
+                }
+            }
+            // count=1 keeps one primary per paper and proposes clearing the rest
+            xassert_ge($ncleared, count($emails) - 1);
+            xassert_ge($ncleared, 1);
+
+            // The review autoassigner’s output names existing reviewers and
+            // carries preference/topic_score columns, so it requires
+            // `review:admin` AND `preference:read`; `review:admin` alone no
+            // longer suffices. Scopes lacking either on #1 are refused
+            // however the autoassigner is run: the job fails before it loads
+            // anything.
+            foreach (["submission:read", "read", "submission:admin review:write", "review:admin"] as $scope) {
+                $this->u_chair->set_scope($scope);
+                xassert($this->u_chair->is_manager());
+                foreach (["minimal_dry_run", "dry_run"] as $how) {
+                    list($resp, $output) = $this->autoassign_api($this->u_chair, $review_args + [$how => "1"], $jobs);
+                    xassert_eqq($resp->content["ok"], false);
+                    xassert_eqq($resp->content["status"] ?? null, "failed");
+                    xassert_eqq($resp->response_code(), 403);
+                    xassert_str_contains($resp->header("WWW-Authenticate") ?? "", "error=\"insufficient_scope\", scope=\"preference:read review:admin\"");
+                    xassert_eqq($output, null);
+                    $text = json_encode($resp->content, JSON_UNESCAPED_UNICODE);
+                    xassert_str_contains($text, "Action requires scope ‘preference:read review:admin’");
+                    xassert_str_contains($text, "Token scope does not cover submission #1\"");
+                    xassert_not_str_contains($text, "clearprimaryreview");
+                    foreach ($emails as $e) {
+                        xassert_not_str_contains($text, $e);
+                    }
+                }
+            }
+
+            // `review:admin` plus `preference:read` on #1 suffices,
+            // including through a subset selector; so does `paper:admin`
+            foreach (["review:admin preference:read", "submission:read review:admin#1 preference:read#1", "paper:admin?q=1"] as $scope) {
+                $this->u_chair->set_scope($scope);
+                xassert($this->u_chair->can_manage_reviews($this->u_chair->checked_paper_by_id(1)));
+                list($resp, $output) = $this->autoassign_api($this->u_chair, $review_args + ["minimal_dry_run" => "1"], $jobs);
+                xassert_eqq($resp->content["ok"], true);
+                xassert($output !== null);
+                xassert_str_contains($output, "1,clearprimaryreview,");
+                // the job records the token’s scope...
+                $input = Dbl::fetch_value($this->conf->dblink, "select inputData from Capability where salt=?", $jobs[count($jobs) - 1]);
+                xassert_str_contains($input, "\"scope\":" . json_encode($scope));
+            }
+
+            // ... and a job so recorded runs with that scope even when its
+            // user carries none (as in a separate process)
+            $this->u_chair->set_scope();
+            $main_user = Contact::$main_user;
+            Contact::set_main_user($this->u_chair);
+            try {
+                $tok = Job_Token::make($this->u_chair, "Autoassign", ["-je", "-D"])
+                    ->set_input("assign_argv", ["-q=1", "-t=s", "-a=review_adjust", "count=1", "max_load=1", "rtype=primary", "round=unnamed"])
+                    ->set_input("scope", "submission:read")
+                    ->insert();
+                $jobs[] = $tok->salt;
+                xassert_eqq($tok->run_live(), "done");
+            } finally {
+                Contact::set_main_user($main_user);
+                $this->u_chair->set_scope();
+            }
+            $tok = Job_Token::find($tok->salt, $this->conf);
+            xassert_eqq($tok->data("exit_status"), 1);
+            xassert_eqq($tok->data("valid"), false);
+            xassert_eqq($tok->outputData, null);
+            $text = json_encode($tok->data("message_list"), JSON_UNESCAPED_UNICODE);
+            xassert_str_contains($text, "Action requires scope ‘preference:read review:admin’");
+            foreach ($emails as $e) {
+                xassert_not_str_contains($text, $e);
+            }
+
+            // the lead autoassigner picks leads among reviewers: it needs
+            // `review:read` as well as `submeta:admin`
+            $this->u_chair->set_scope("submission:admin");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $lead_args + ["dry_run" => "1"], $jobs);
+            xassert_eqq($resp->content["ok"], false);
+            xassert_eqq($output, null);
+            $text = json_encode($resp->content, JSON_UNESCAPED_UNICODE);
+            xassert_str_contains($text, "Action requires scope ‘review:read submeta:admin’");
+            foreach ($emails as $e) {
+                xassert_not_str_contains($text, $e);
+            }
+            $this->u_chair->set_scope("submeta:admin review:read");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $lead_args + ["dry_run" => "1"], $jobs);
+            xassert_eqq($resp->content["ok"], true);
+
+            // clearing reviews names the reviewers: `review:admin`, not
+            // just `submeta:admin`...
+            $clear_args = ["autoassigner" => "clear", "q" => "1", "t" => "s", "minimal_dry_run" => "1"];
+            $this->u_chair->set_scope("submeta:admin");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $clear_args + ["param" => json_encode(["type=primary"])], $jobs);
+            xassert_eqq($resp->content["ok"], false);
+            xassert_eqq($resp->response_code(), 403);
+            xassert_eqq($output, null);
+            $text = json_encode($resp->content, JSON_UNESCAPED_UNICODE);
+            xassert_str_contains($text, "Action requires scope ‘review:admin’");
+            foreach ($emails as $e) {
+                xassert_not_str_contains($text, $e);
+            }
+            $this->u_chair->set_scope("review:admin");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $clear_args + ["param" => json_encode(["type=primary"])], $jobs);
+            xassert_eqq($resp->content["ok"], true);
+            foreach ($emails as $e) {
+                xassert_str_contains($output, "1,noreview,{$e}");
+            }
+            // ... which however suffices for clearing conflicts or leads
+            $this->u_chair->set_scope("submeta:admin");
+            foreach (["conflict", "lead"] as $type) {
+                list($resp, $output) = $this->autoassign_api($this->u_chair, $clear_args + ["param" => json_encode(["type={$type}"])], $jobs);
+                xassert_eqq($resp->content["ok"], true);
+                xassert_not_str_contains(json_encode($resp->content, JSON_UNESCAPED_UNICODE), "Action requires scope");
+            }
+
+            // prefconflict reads preferences to propose conflicts naming
+            // reviewers: `review:read` and `preference:read` as well as
+            // `submeta:admin`
+            $prefconflict_args = ["autoassigner" => "prefconflict", "q" => "1", "t" => "s", "minimal_dry_run" => "1"];
+            $this->u_chair->set_scope("submeta:admin review:read");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $prefconflict_args, $jobs);
+            xassert_eqq($resp->content["ok"], false);
+            xassert_eqq($resp->response_code(), 403);
+            xassert_eqq($output, null);
+            xassert_str_contains(json_encode($resp->content, JSON_UNESCAPED_UNICODE), "Action requires scope ‘preference:read review:read submeta:admin’");
+            $this->u_chair->set_scope("submeta:admin review:read preference:read");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $prefconflict_args, $jobs);
+            xassert_eqq($resp->content["ok"], true);
+
+            // discussion_order assigns tags: `tag:write`
+            $discorder_args = ["autoassigner" => "discussion_order", "q" => "1 2 3", "t" => "s", "param" => json_encode(["tag=disco"]), "minimal_dry_run" => "1"];
+            $this->u_chair->set_scope("submission:read");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $discorder_args, $jobs);
+            xassert_eqq($resp->content["ok"], false);
+            xassert_eqq($resp->response_code(), 403);
+            xassert_eqq($output, null);
+            xassert_str_contains(json_encode($resp->content, JSON_UNESCAPED_UNICODE), "Action requires scope ‘tag:write’");
+            $this->u_chair->set_scope("tag:write");
+            list($resp, $output) = $this->autoassign_api($this->u_chair, $discorder_args, $jobs);
+            xassert_eqq($resp->content["ok"], true);
+            xassert_str_contains($output, ",tag,disco#");
+            $this->u_chair->set_scope();
+            xassert_search($this->u_chair, "#disco", "");
+        } finally {
+            if (!empty($jobs)) {
+                $this->conf->qe("delete from Capability where salt?a", $jobs);
+            }
+            $this->u_chair->set_scope();
+            MailChecker::clear();
+        }
     }
 
     function test_revform_requires_review_scope() {

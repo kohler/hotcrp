@@ -11,6 +11,11 @@ class PrefConflict_Autoassigner extends Autoassigner {
     function configure() {
     }
 
+    function token_scope($dry_run) {
+        // reads review preferences to propose conflicts naming reviewers
+        return TokenScope::S_SUB_ADMIN | TokenScope::S_REV_READ | TokenScope::S_PREF_READ;
+    }
+
     /** @param bool $exists_submitted
      * @return Dbl_Result */
     static function query_result(Conf $conf, $exists_submitted) {

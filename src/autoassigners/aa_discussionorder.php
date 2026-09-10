@@ -20,6 +20,10 @@ class DiscussionOrder_Autoassigner extends Autoassigner {
         $this->tag = $this->tag_option("tag");
     }
 
+    function token_scope($dry_run) {
+        return TokenScope::S_TAG_WRITE;
+    }
+
     /** @param array<int,list<int>> $cflt */
     private function run_discussion_order_once($cflt, $plist) {
         $m = new MinCostMaxFlow;

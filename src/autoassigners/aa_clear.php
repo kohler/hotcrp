@@ -29,6 +29,14 @@ class Clear_Autoassigner extends Autoassigner {
         }
     }
 
+    function token_scope($dry_run) {
+        if (is_int($this->type)) {
+            // clearing reviews names the assigned reviewers
+            return TokenScope::S_REV_READ | TokenScope::S_REV_ADMIN;
+        }
+        return TokenScope::S_SUB_ADMIN;
+    }
+
     function run() {
         if (is_int($this->type)) {
             $q = "select paperId, contactId from PaperReview where reviewType=" . $this->type;

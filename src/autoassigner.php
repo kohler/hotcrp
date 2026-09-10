@@ -294,6 +294,24 @@ abstract class Autoassigner extends MessageSet {
     /** @return void */
     abstract function configure();
 
+    /** @param bool $dry_run
+     * @return int
+     *
+     * Return the token scope this autoassigner exercises on each selected
+     * submission, as `TokenScope::S_*` bits that must all be held. A scoped
+     * token may run the autoassigner only if it grants this scope on every
+     * selected submission. `$dry_run` is true for dry-run and minimal-dry-run
+     * requests, whose output is reported before AssignmentSet checks it; the
+     * required scope is currently the same for dry and non-dry runs.
+     *
+     * Autoassigners load review assignments, preferences and scores and
+     * propose review assignments naming reviewers, so the default is
+     * `S_REV_READ | S_REV_ADMIN | S_PREF_READ`; subclasses that read or
+     * assign other things override this. Call after `configure()`. */
+    function token_scope($dry_run) {
+        return TokenScope::S_REV_READ | TokenScope::S_REV_ADMIN | TokenScope::S_PREF_READ;
+    }
+
 
     /** @return list<string> */
     static function balance_method_schema() {

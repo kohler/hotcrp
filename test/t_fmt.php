@@ -239,6 +239,8 @@ class Fmt_Tester {
         $ms->define_template("submission", "paper");
         xassert_eqq($ms->_("{:plural {submission}}", 0), "papers");
         xassert_eqq($ms->_("{:plural {submission}}", 1), "paper");
+        xassert_eqq($ms->_("{pids:plural {submission}}", new FmtArg("pids", 1)), "paper");
+        xassert_eqq($ms->_("{pids:plural {submission}}", new FmtArg("pids", [1])), "paper");
     }
 
     function test_j() {

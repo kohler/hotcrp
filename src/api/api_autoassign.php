@@ -139,6 +139,10 @@ class Autoassign_API {
         // The job ran but failed; report `status: failed`, matching `/job`.
         $jr = JsonResult::make_message_list($tok->data("message_list") ?? [])
             ->set("status", "failed");
+        if (is_string(($scope = $tok->data("insufficient_scope")))) {
+            $jr->set_response_code(403)
+                ->set_header($user->conf->www_authenticate_header("insufficient_scope", $qreq, $scope));
+        }
         $tok->delete();
         return $jr;
     }

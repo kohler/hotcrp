@@ -60,6 +60,11 @@ class PaperPC_Autoassigner extends Autoassigner {
         $this->configure_costs();
     }
 
+    function token_scope($dry_run) {
+        // picks leads/shepherds among reviewers, reading review scores
+        return TokenScope::S_SUB_ADMIN | TokenScope::S_REV_READ;
+    }
+
     private function set_load() {
         $q = "select {$this->ass_action}ContactId, count(paperId) from Paper where paperId?A group by {$this->ass_action}ContactId";
         $result = $this->conf->qe($q, $this->paper_ids());
