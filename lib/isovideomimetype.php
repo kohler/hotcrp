@@ -13,6 +13,8 @@ class ISOVideoMimetype implements JsonSerializable {
     private $verbose = false;
     /** @var int */
     private $depth = 0;
+    /** @var int */
+    private $nboxes = 0;
 
     /** @var int */
     private $flags = 0;
@@ -41,6 +43,9 @@ class ISOVideoMimetype implements JsonSerializable {
     const TF_VIDEO = 2;
     const TF_ASPECT = 4;
     const TF_PREVIEW = 8;
+
+    // maximum box headers examined per file (bounds work on corrupt input)
+    const MAX_BOXES = 16384;
 
 
     private function __construct() {
@@ -74,6 +79,10 @@ class ISOVideoMimetype implements JsonSerializable {
         return $this;
     }
 
+    // Return a fragment containing file bytes [$pos,$epos), given
+    // $data->pos <= $pos. Reads aligned 32KiB chunks; extends $data in
+    // place only while it stays within 64KiB, else starts a fresh
+    // fragment, so memory does not grow with the number of boxes walked.
     /** @param ISOVideoFragment $data
      * @param int $pos
      * @param int $epos
@@ -85,7 +94,8 @@ class ISOVideoMimetype implements JsonSerializable {
         }
         $xpos = $pos & ~32767;
         $xepos = min((($epos - 1) | 32767) + 1, $this->bound);
-        if ($xpos <= $data->epos) {
+        if ($xpos <= $data->epos
+            && $xepos - $data->pos <= 65536) {
             $d = file_get_contents($this->filename, false, null, $data->epos, $xepos - $data->epos);
             if ($d === false || $data->epos + strlen($d) < $epos) {
                 return null;
@@ -102,11 +112,18 @@ class ISOVideoMimetype implements JsonSerializable {
         }
     }
 
+    // Return the box whose header is at $pos, or null if there is none.
+    // Also returns null once MAX_BOXES headers have been examined by this
+    // object, which ends every walk.
     /** @param ISOVideoFragment $data
      * @param int $pos
      * @param int $bound
      * @return ?ISOVideoBox */
     function iso_box_at($data, $pos, $bound) {
+        if ($this->nboxes >= self::MAX_BOXES) {
+            return null;
+        }
+        ++$this->nboxes;
         if ($pos + 8 > $data->epos
             && !($data = $this->ensure($data, $pos, $pos + 8))) {
             return null;
@@ -295,8 +312,8 @@ class ISOVideoMimetype implements JsonSerializable {
      * @param ISOVideoTrack $track */
     private function walk_hdlr($data, $pos, $bound, $track) {
         if ($bound - $pos < 24
-            || ($bound > $data->epos
-                && !($data = $this->ensure($data, $pos, $bound)))) {
+            || ($pos + 24 > $data->epos
+                && !($data = $this->ensure($data, $pos, $pos + 24)))) {
             return;
         }
         if (ord($data->s[$pos - $data->pos]) !== 0) {
