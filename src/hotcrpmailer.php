@@ -453,11 +453,13 @@ class HotCRPMailer extends Mailer {
         }
         return null;
     }
+
     function kw_decision($args, $isbool) {
         $outcome = $this->row->outcome;
         if ($outcome !== 0
-            && $this->censor !== self::CENSOR_NONE
-            && !$this->permsender->can_view_decision($this->row)) {
+            && !$this->permsender->can_view_decision($this->row)
+            && ($this->censor !== self::CENSOR_NONE
+                || !$this->permsender->privChair)) {
             $outcome = 0;
         }
         if ($outcome === 0 && $isbool) {
@@ -465,6 +467,7 @@ class HotCRPMailer extends Mailer {
         }
         return $this->conf->decision_set()->get($outcome)->name;
     }
+
     function kw_tagvalue($args, $isbool, $uf) {
         $tag = isset($uf->match_data) ? $uf->match_data[1] : $args;
         $tag = $this->tagger()->check_syntax($tag, Tagger::NOVALUE | Tagger::NOPRIVATE);
@@ -513,10 +516,12 @@ class HotCRPMailer extends Mailer {
         }
         return (string) $value;
     }
+
     function kw_is_paperfield($uf) {
         $uf->option = $this->conf->options()->find($uf->match_data[1]);
         return !!$uf->option && $uf->option->published(FieldRender::CFMAIL);
     }
+
     function kw_paperfield($args, $isbool, $uf) {
         if (!($ov = $this->row->option($uf->option))) {
             return $isbool ? false : "";
@@ -530,13 +535,15 @@ class HotCRPMailer extends Mailer {
         }
         return (string) $fr->value;
     }
+
     function kw_shepherd($args, $isbool, $uf) {
         $is_email = $this->context === self::CONTEXT_EMAIL
             || $uf->userx === "EMAIL";
         $cid = $this->row->shepherdContactId;
         if ($cid > 0
-            && $this->censor !== self::CENSOR_NONE
-            && !$this->permsender->can_view_shepherd($this->row)) {
+            && !$this->permsender->can_view_shepherd($this->row)
+            && ($this->censor !== self::CENSOR_NONE
+                || !$this->permsender->privChair)) {
             if ($isbool) {
                 return false;
             }
