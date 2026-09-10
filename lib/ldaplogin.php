@@ -12,6 +12,11 @@ class LDAPLogin {
             ];
         }
 
+        // reject empty passwords before contacting LDAP server
+        if (trim((string) $qreq->password) === "") {
+            return self::fail($conf, $qreq, 49);
+        }
+
         // connect to the LDAP server
         if ($m[2] == "") {
             $ldapc = @ldap_connect($m[1]);
@@ -29,13 +34,15 @@ class LDAPLogin {
         $qemail = addcslashes((string) $qreq->email, ',=+<>#;\"');
         $dn = $m[3] . $qemail . $m[4];
 
-        $success = @ldap_bind($ldapc, $dn, (string) $qreq->password);
+        $success = @ldap_bind($ldapc, $dn, $qreq->password);
         if (!$success && @ldap_errno($ldapc) == 2) {
             @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 2);
-            $success = @ldap_bind($ldapc, $dn, (string) $qreq->password);
+            $success = @ldap_bind($ldapc, $dn, $qreq->password);
         }
         if (!$success) {
-            return self::fail($conf, $qreq, $ldapc);
+            $lerrno = ldap_errno($ldapc);
+            ldap_close($ldapc);
+            return self::fail($conf, $qreq, $lerrno);
         }
 
         // use LDAP information to prepopulate the database with names
@@ -68,9 +75,8 @@ class LDAPLogin {
         return ["ok" => true];
     }
 
-    static private function fail(Conf $conf, Qrequest $qreq, $ldapc) {
+    static private function fail(Conf $conf, Qrequest $qreq, $lerrno) {
         // connection failed, report error
-        $lerrno = ldap_errno($ldapc);
         $suffix = "";
         if ($lerrno != 49) {
             $suffix = "<br><span class='hint'>(LDAP error {$lerrno}: " . htmlspecialchars(ldap_err2str($lerrno)) . ")</span>";
@@ -81,7 +87,7 @@ class LDAPLogin {
                 "ok" => false, "ldap" => true, "internal" => true, "email" => true,
                 "ldap_detail" => "<5>LDAP protocol error. Logins will fail until this error is fixed.$suffix"
             ];
-        } else if ((string) $qreq->password === "") {
+        } else if (trim((string) $qreq->password) === "") {
             return [
                 "ok" => false, "ldap" => true, "nopw" => true,
                 "ldap_detail" => "<5>Password missing." . ($lerrno == 53 ? "" : $suffix)
