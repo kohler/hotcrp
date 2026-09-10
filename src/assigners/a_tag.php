@@ -424,6 +424,23 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         return false;
     }
+    /** @param string $ltag
+     * @param null|int|float $index
+     * @return ?bool */
+    static function check_unviewable_add(PaperInfo $prow, $ltag, $index, AssignmentState $state) {
+        // If you can't view a tag, you can't set it. Decide that before
+        // consulting any current value
+        if ($state->user->can_view_tag($prow, $ltag)
+            || !($fr = $state->user->perm_edit_tag($prow, $ltag, null, $index ?? 0.0))) {
+            return null;
+        } else if ($fr["otherTwiddleTag"] ?? null) {
+            return true;
+        }
+        foreach ($fr->message_list(null, 2) as $mi) {
+            $state->append_item_here($mi);
+        }
+        return false;
+    }
 
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $ok = true;
@@ -480,6 +497,9 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // compute final tag and value
         $ntag = $piece->xuser . $piece->xtag;
         $ltag = strtolower($ntag);
+        if (($r = self::check_unviewable_add($prow, $ltag, $nvalue, $state)) !== null) {
+            return $r;
+        }
         if ($piece->xitype === self::I_NEXT
             || $piece->xitype === self::I_NEXTSEQ) {
             $nvalue = $state->callable("NextTagAssignmentState")

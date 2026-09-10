@@ -127,7 +127,10 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
         }
         $tagmap = $state->conf->tags();
         foreach ($res as $x) {
-            if (!preg_match($this->pattern, $x->ltag, $m)) {
+            // skip source tags you can't view
+            if (!preg_match($this->pattern, $x->ltag, $m)
+                || ($prow->paperId > 0
+                    && !$state->user->can_view_tag($prow, $x->ltag))) {
                 continue;
             }
             $new_tag = substr_replace($this->new_tag, $m[1], $this->new_star, 1);
@@ -154,6 +157,10 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
         if (strcasecmp($tag, $new_tag) === 0) {
             return true;
         }
+        $new_ltag = strtolower($new_tag);
+        if (($r = Tag_AssignmentParser::check_unviewable_add($prow, $new_ltag, null, $state)) !== null) {
+            return $r;
+        }
 
         $res = $state->query(new Tag_Assignable($prow->paperId, strtolower($tag)));
         assert(count($res) <= 1);
@@ -162,7 +169,6 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
             return true;
         }
 
-        $new_ltag = strtolower($new_tag);
         if ($this->value !== "old") {
             $new_res = $state->query(new Tag_Assignable($prow->paperId, $new_ltag));
             $new_value = empty($new_res) ? null : $new_res[0]->_index;

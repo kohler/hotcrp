@@ -710,6 +710,113 @@ class Tags_Tester {
         xassert_assign($this->u_chair, "action,paper,tag,user\nclearconflict,1-4,,huitema@bellcore.com\nclearadministrator,4\ncleartag,1-4,~~ch ~~chx\n");
     }
 
+    function test_add_hidden_tag_no_oracle() {
+        // A PC member who cannot view a hidden tag must get the same
+        // response when “adding” it whether or not the paper already
+        // carries the tag, and whatever its value.
+        $this->conf->save_refresh_setting("tag_hidden", 1, "shortlist");
+        xassert_assign($this->u_chair, "paper,tag\n1,shortlist#2\n2,shortlist#clear\n");
+        $p1 = $this->conf->checked_paper_by_id(1);
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert(!$this->u_varghese->can_view_tag($p1, "shortlist"));
+        xassert(!$this->u_varghese->can_view_tag($p2, "shortlist"));
+        xassert($this->u_varghese->can_edit_some_tag($p1));
+        xassert($this->u_varghese->can_edit_some_tag($p2));
+
+        $probes = [[1, "shortlist"], [2, "shortlist"],
+                   [1, "shortlist#1"], [1, "shortlist#2"], [1, "shortlist#3"],
+                   [2, "shortlist#2"], [1, "shortlist#some"], [2, "shortlist#some"]];
+        $feedback = [];
+        foreach ($probes as $pt) {
+            $prow = $this->conf->checked_paper_by_id($pt[0]);
+            $jr = call_api("=tags", $this->u_varghese, ["addtags" => $pt[1]], $prow);
+            xassert_eqq($jr->ok, false);
+            $aset = (new AssignmentSet($this->u_varghese))->parse("paper,action,tag\n{$pt[0]},tag,{$pt[1]}\n");
+            xassert(!$aset->execute());
+            $feedback[] = str_replace("#{$pt[0]}", "#N", $aset->full_feedback_text());
+            $qreq = TestQreq::post_page("api/searchaction", ["p" => (string) $pt[0], "tag" => $pt[1]])
+                ->set_user($this->u_varghese);
+            $ssel = SearchSelection::make($qreq, $this->u_varghese);
+            $la = ListAction::lookup("tag/add", $this->u_varghese, $qreq, $ssel, ListAction::F_API);
+            xassert($la instanceof ListAction);
+            $jr = $la->run($this->u_varghese, $qreq, $ssel);
+            xassert($jr instanceof JsonResult);
+            xassert_eqq($jr->content["ok"], false);
+            xassert_eqq($jr->status, 403);
+            $feedback[] = str_replace("#{$pt[0]}", "#N", json_encode($jr->content["message_list"] ?? null));
+        }
+        foreach ([1, 2] as $pid) {
+            $aset = (new AssignmentSet($this->u_varghese))->parse("paper,action,tag\n{$pid},nexttag,shortlist\n");
+            xassert(!$aset->execute());
+            $feedback[] = str_replace("#{$pid}", "#N", $aset->full_feedback_text());
+        }
+        xassert_eqq(count(array_unique($feedback)), 2);
+        xassert_str_contains($feedback[0], "can only be changed by administrators");
+
+        // nothing changed; administrators can still set the tag
+        $p1->load_tags();
+        $p2->load_tags();
+        xassert_eqq($p1->tag_value("shortlist"), 2.0);
+        xassert_eqq($p2->tag_value("shortlist"), null);
+        xassert_assign($this->u_chair, "paper,tag\n2,shortlist#3\n");
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("shortlist"), 3.0);
+
+        xassert_assign($this->u_chair, "action,paper,tag\ncleartag,1-2,shortlist\n");
+        $this->conf->save_refresh_setting("tag_hidden", null);
+    }
+
+    function test_copy_hidden_tag_no_oracle() {
+        // Likewise when copying or moving a visible tag onto a hidden tag,
+        // whatever the value combination; and wildcard copies must not
+        // report hidden source tags.
+        $this->conf->save_refresh_setting("tag_hidden", 1, "shortlist");
+        xassert_assign($this->u_chair, "paper,tag\n1,shortlist#2\n2,shortlist#clear\n1-2,srctest#5\n");
+        $p1 = $this->conf->checked_paper_by_id(1);
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert(!$this->u_varghese->can_view_tag($p1, "shortlist"));
+        xassert(!$this->u_varghese->can_view_tag($p2, "shortlist"));
+        xassert($this->u_varghese->can_view_tag($p1, "srctest"));
+        xassert($this->u_varghese->can_view_tag($p2, "srctest"));
+
+        $feedback = [];
+        foreach ([1, 2] as $pid) {
+            foreach (["copytag", "movetag"] as $action) {
+                foreach (["old", "new", "min", "max", "sum"] as $tv) {
+                    $csv = "paper,action,tag,new_tag,tag_value\n{$pid},{$action},srctest,shortlist,{$tv}\n";
+                    $aset = (new AssignmentSet($this->u_varghese))->parse($csv);
+                    xassert(!$aset->execute());
+                    $feedback[] = str_replace("#{$pid}", "#N", $aset->full_feedback_text());
+                    $jr = call_api("=assign", $this->u_varghese, TestQreq::post(["assignments" => $csv]));
+                    xassert_eqq($jr->ok, false);
+                    $feedback[] = str_replace("#{$pid}", "#N", json_encode($jr->message_list ?? null));
+                }
+            }
+            // wildcard source matching only the hidden tag
+            $aset = (new AssignmentSet($this->u_varghese))->parse("paper,action,tag,new_tag\n{$pid},copytag,shortl*,shortm*\n");
+            xassert($aset->execute());
+            xassert_eqq($aset->full_feedback_text(), "");
+        }
+        xassert_eqq(count(array_unique($feedback)), 2);
+        xassert_str_contains($feedback[0], "can only be changed by administrators");
+
+        // nothing changed; administrators can still copy onto the tag
+        $p1->load_tags();
+        $p2->load_tags();
+        xassert_eqq($p1->tag_value("shortlist"), 2.0);
+        xassert_eqq($p2->tag_value("shortlist"), null);
+        xassert_eqq($p1->tag_value("shortmist"), null);
+        xassert_eqq($p1->tag_value("srctest"), 5.0);
+        xassert_eqq($p2->tag_value("srctest"), 5.0);
+        xassert_assign($this->u_chair, "paper,action,tag,new_tag\n2,movetag,srctest,shortlist\n");
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("shortlist"), 5.0);
+        xassert_eqq($p2->tag_value("srctest"), null);
+
+        xassert_assign($this->u_chair, "action,paper,tag\ncleartag,1-2,shortlist srctest\n");
+        $this->conf->save_refresh_setting("tag_hidden", null);
+    }
+
     function test_vote_allotment_exceeded() {
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "tag_vote_allotment": "vtest#1"
