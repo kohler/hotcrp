@@ -200,7 +200,8 @@ class Tag_SearchTerm extends SearchTerm {
             return $this->_make_default_sort_column($pl, $tag, $dt);
         }
         foreach ($pl->unordered_rowset() as $prow) {
-            if ($prow->tag_value($tag) != 0) {
+            if ($prow->tag_value($tag) != 0
+                && $pl->user->can_view_tag($prow, $tag)) {
                 return $this->_make_default_sort_column($pl, $tag, $dt);
             }
         }

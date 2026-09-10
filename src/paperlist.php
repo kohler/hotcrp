@@ -990,6 +990,7 @@ final class PaperList extends MessageSet {
         assert($this->_sortcol_fixed !== 1);
         if ($this->_sortcol_fixed === 0) {
             $this->_sortcol_fixed = 1;
+            $overrides = $this->user->add_overrides($this->_view_force);
             // apply sorters from search terms
             if (($thenqe = $this->search->then_term())) {
                 foreach ($thenqe->subset_terms() as $chrange) {
@@ -1011,6 +1012,7 @@ final class PaperList extends MessageSet {
             }
             // done
             $this->_sortcol_fixed = 2;
+            $this->user->set_overrides($overrides);
         }
         return $this->_sortcol;
     }

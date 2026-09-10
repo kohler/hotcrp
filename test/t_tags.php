@@ -1176,4 +1176,19 @@ class Tags_Tester {
         xassert_eqq($t, "[]");
         $this->clear_vote_tags("vnum");
     }
+    // a hidden tag on a conflicted paper must not choose a THEN group's sort
+    function test_hidden_tag_does_not_choose_sort() {
+        $u_mjh = $this->conf->checked_user_by_email("mjh@isi.edu");
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert($p1->has_conflict($u_mjh) && !$u_mjh->can_view_tags($p1));
+        $sorters = function ($u) {
+            $pl = new PaperList("pl", new PaperSearch($u, "1 THEN (1 AND #discuss)"));
+            return array_map(function ($s) { return $s->name; }, $pl->sorters());
+        };
+        xassert_eqq($sorters($u_mjh), ["id"]);
+        xassert_assign($this->u_chair, "paper,action,tag\n1,tag,discuss#2\n");
+        xassert_eqq($sorters($u_mjh), ["id"]);
+        xassert_eqq($sorters($this->u_chair), ["#discuss"]);
+        xassert_assign($this->u_chair, "paper,action,tag\n1,cleartag,discuss\n");
+    }
 }
