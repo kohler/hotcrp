@@ -165,10 +165,10 @@ class ManualAssign_Page {
 
         // main assignment form
         $search = (new PaperSearch($this->viewer, [
-            "t" => $this->qreq->t,
             "q" => $this->qreq->q,
+            "t" => $this->qreq->t,
             "reviewer" => $reviewer,
-            "tsoft" => true
+            "tsoft" => $this->user->privChair
         ]))->set_urlbase("manualassign");
         $pl = new PaperList("reviewAssignment", $search, ["sort" => true], $this->qreq);
         $pl->apply_view_session($this->qreq);

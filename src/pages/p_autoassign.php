@@ -106,7 +106,11 @@ class Autoassign_Page {
             }
             unset($qreq->has_pap, $qreq->assign);
         }
-        $search = new PaperSearch($this->user, ["t" => $qreq->t, "q" => $qreq->q, "tsoft" => $this->user->privChair]);
+        $search = new PaperSearch($this->user, [
+            "q" => $qreq->q,
+            "t" => $qreq->t,
+            "tsoft" => $this->user->privChair
+        ]);
         if (isset($qreq->asel)) {
             $this->asel = SearchSelection::make($qreq, $this->user, "asel");
         } else if (isset($qreq->has_pap) && !isset($qreq->saveassignment)) {
